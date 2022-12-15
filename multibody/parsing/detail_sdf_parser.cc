@@ -327,9 +327,13 @@ Vector3d ExtractJointAxis(
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    diagnostic.Error(fmt::format(
+    DiagnosticDetail detail;
+    detail.filename = joint_spec.Element()->FilePath();
+    detail.line = joint_spec.Element()->LineNumber();
+    detail.message = fmt::format(
         "An axis must be specified for joint '{}'",
-        joint_spec.Name()));
+        joint_spec.Name());
+    diagnostic.Error(detail);
     return Vector3d(0, 0, 1);
   }
 
@@ -349,9 +353,13 @@ std::pair<Vector3d, Vector3d> ExtractJointAxisAndAxis2(
   const sdf::JointAxis* axis = joint_spec.Axis(0);
   const sdf::JointAxis* axis2 = joint_spec.Axis(1);
   if (axis == nullptr || axis2 == nullptr) {
-    diagnostic.Error(fmt::format(
+    DiagnosticDetail detail;
+    detail.filename = joint_spec.Element()->FilePath();
+    detail.line = joint_spec.Element()->LineNumber();
+    detail.message = fmt::format(
         "Both axis and axis2 must be specified for joint '{}'",
-        joint_spec.Name()));
+        joint_spec.Name());
+    diagnostic.Error(detail);
     return std::make_pair(Vector3d(1, 0, 0), Vector3d(0, 1, 0));
   }
 
@@ -381,10 +389,14 @@ double ParseJointDamping(
   }
   const double damping = axis->Damping();
   if (damping < 0) {
-    diagnostic.Error(fmt::format(
+    DiagnosticDetail detail;
+    detail.filename = joint_spec.Element()->FilePath();
+    detail.line = joint_spec.Element()->LineNumber();
+    detail.message = fmt::format(
         "Joint damping is negative for joint '{}'. "
         "Joint damping must be a non-negative number.",
-        joint_spec.Name()));
+        joint_spec.Name());
+    diagnostic.Error(detail);
     return 0.0;
   }
   // If there are more than one axis (e.g. universal joint), we ignore the
@@ -393,13 +405,17 @@ double ParseJointDamping(
   if (axis2 != nullptr) {
     const double damping2 = axis2->Damping();
     if (damping2 != damping) {
-      diagnostic.Warning(fmt::format(
+      DiagnosticDetail detail;
+      detail.filename = joint_spec.Element()->FilePath();
+      detail.line = joint_spec.Element()->LineNumber();
+      detail.message = fmt::format(
           "Joint damping must be equal for both axes for joint {}. "
           "The damping coefficient for 'axis' ({}) is used. The "
           "value for 'axis2' ({}) is ignored. The damping coefficient "
           "for 'axis2' should be explicitly defined as {} to match that for "
           "'axis'.",
-          joint_spec.Name(), damping, damping2, damping));
+          joint_spec.Name(), damping, damping2, damping);
+      diagnostic.Warning(detail);
     }
   }
 
@@ -416,10 +432,14 @@ double GetEffortLimit(
   DRAKE_DEMAND(axis_index == 0 || axis_index == 1);
   const sdf::JointAxis* axis = joint_spec.Axis(axis_index);
   if (axis == nullptr) {
-    diagnostic.Warning(fmt::format(
+    DiagnosticDetail detail;
+    detail.filename = joint_spec.Element()->FilePath();
+    detail.line = joint_spec.Element()->LineNumber();
+    detail.message = fmt::format(
         "An axis{} must be specified for joint '{}'",
         axis_index > 0 ? "2" : "",
-        joint_spec.Name()));
+        joint_spec.Name());
+    diagnostic.Warning(detail);
     return 0.0;
   }
   return axis->Effort();
@@ -448,16 +468,24 @@ void AddJointActuatorFromSpecification(
   if (joint_spec.Type() == sdf::JointType::BALL) {
     if (joint_spec.Axis(0) != nullptr) {
       if (GetEffortLimit(diagnostic, joint_spec, 0) != 0) {
-        diagnostic.Warning(fmt::format(
+        DiagnosticDetail detail;
+        detail.filename = joint_spec.Element()->FilePath();
+        detail.line = joint_spec.Element()->LineNumber();
+        detail.message = fmt::format(
             "Actuation (via non-zero effort limits) for ball joint '{}' is"
             " not implemented yet and will be ignored.",
-            joint_spec.Name()));
+            joint_spec.Name());
+        diagnostic.Warning(detail);
       }
     }
     if (joint_spec.Axis(1) != nullptr) {
-      diagnostic.Warning(fmt::format(
+      DiagnosticDetail detail;
+      detail.filename = joint_spec.Element()->FilePath();
+      detail.line = joint_spec.Element()->LineNumber();
+      detail.message = fmt::format(
           "An axis2 may not specified for ball joint '{}' and will be ignored",
-          joint_spec.Name()));
+          joint_spec.Name());
+      diagnostic.Warning(detail);
     }
     return;
   }
@@ -467,10 +495,14 @@ void AddJointActuatorFromSpecification(
   if (joint_spec.Type() == sdf::JointType::UNIVERSAL) {
     if (GetEffortLimit(diagnostic, joint_spec, 0) != 0 ||
         GetEffortLimit(diagnostic, joint_spec, 1) != 0) {
-      diagnostic.Warning(fmt::format(
+      DiagnosticDetail detail;
+      detail.filename = joint_spec.Element()->FilePath();
+      detail.line = joint_spec.Element()->LineNumber();
+      detail.message = fmt::format(
           "Actuation (via non-zero effort limits) for universal joint '{}' is"
           " not implemented yet and will be ignored.",
-          joint_spec.Name()));
+          joint_spec.Name());
+      diagnostic.Warning(detail);
     }
     return;
   }
@@ -496,9 +528,13 @@ void AddJointActuatorFromSpecification(
     }
   }
   if (joint_spec.Axis(1) != nullptr) {
-    diagnostic.Warning(fmt::format(
+    DiagnosticDetail detail;
+    detail.filename = joint_spec.Element()->FilePath();
+    detail.line = joint_spec.Element()->LineNumber();
+    detail.message = fmt::format(
         "An axis2 may not specified for 1-dof joint '{}' and will be ignored",
-        joint_spec.Name()));
+        joint_spec.Name());
+    diagnostic.Warning(detail);
   }
 }
 
@@ -517,8 +553,12 @@ void AddPrismaticSpringFromSpecification(const DiagnosticPolicy& diagnostic,
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    diagnostic.Error(fmt::format("An axis must be specified for joint '{}'.",
-                                 joint_spec.Name()));
+    DiagnosticDetail detail;
+    detail.filename = joint_spec.Element()->FilePath();
+    detail.line = joint_spec.Element()->LineNumber();
+    detail.message = fmt::format("An axis must be specified for joint '{}'.",
+                                 joint_spec.Name());
+    diagnostic.Error(detail);
   }
 
   const double spring_reference = axis->SpringReference();
@@ -530,9 +570,13 @@ void AddPrismaticSpringFromSpecification(const DiagnosticPolicy& diagnostic,
     plant->AddForceElement<PrismaticSpring>(
       joint, spring_reference, spring_stiffness);
   } else if (spring_stiffness < 0) {
-    diagnostic.Error(fmt::format(
+    DiagnosticDetail detail;
+    detail.filename = joint_spec.Element()->FilePath();
+    detail.line = joint_spec.Element()->LineNumber();
+    detail.message = fmt::format(
         "The stiffness specified for joint '{}' must be non-negative.",
-        joint_spec.Name()));
+        joint_spec.Name());
+    diagnostic.Error(detail);
   }
 }
 
@@ -762,9 +806,13 @@ void AddJointFromSpecification(
       // We require that axis and axis2 are orthogonal. As a result, R_JI should
       // be a valid rotation matrix.
       if (!math::RotationMatrixd::IsValid(R_JI)) {
-        diagnostic.Error(fmt::format(
+        DiagnosticDetail detail;
+        detail.filename = joint_spec.Element()->FilePath();
+        detail.line = joint_spec.Element()->LineNumber();
+        detail.message = fmt::format(
             "axis and axis2 must be orthogonal for joint '{}'",
-            joint_spec.Name()));
+            joint_spec.Name());
+        diagnostic.Error(detail);
       } else {
         const RigidTransformd X_JI(math::RotationMatrix<double>{R_JI});
         // The value of X_PJ is the identity if X_PJ == nullopt.
@@ -827,25 +875,37 @@ void AddJointFromSpecification(
     case sdf::JointType::GEARBOX: {
       // TODO(jwnimmer-tri) Demote this to a warning, possibly adding a
       // RevoluteJoint as an approximation (stopgap) in that case.
-      diagnostic.Error(fmt::format(
+        DiagnosticDetail detail;
+        detail.filename = joint_spec.Element()->FilePath();
+        detail.line = joint_spec.Element()->LineNumber();
+        detail.message = fmt::format(
           "Joint type (gearbox) not supported for joint '{}'.",
-          joint_spec.Name()));
+          joint_spec.Name());
+      diagnostic.Error(detail);
       break;
     }
     case sdf::JointType::REVOLUTE2: {
       // TODO(jwnimmer-tri) Demote this to a warning, possibly adding a
       // UniversalJoint as an approximation (stopgap) in that case.
-      diagnostic.Error(fmt::format(
+      DiagnosticDetail detail;
+      detail.filename = joint_spec.Element()->FilePath();
+      detail.line = joint_spec.Element()->LineNumber();
+      detail.message = fmt::format(
           "Joint type (revolute2) not supported for joint '{}'.",
-          joint_spec.Name()));
+          joint_spec.Name());
+      diagnostic.Error(detail);
       break;
     }
     case sdf::JointType::INVALID: {
       // N.B. It's not practical to reach this code via unit test.
       // In (probably?) all cases, libsdformat will have already detected
       // this error and so Drake won't even call this function.
-      diagnostic.Error(fmt::format(
-          "Unknown joint type for joint '{}'.", joint_spec.Name()));
+      DiagnosticDetail detail;
+      detail.filename = joint_spec.Element()->FilePath();
+      detail.line = joint_spec.Element()->LineNumber();
+      detail.message = fmt::format(
+          "Unknown joint type for joint '{}'.", joint_spec.Name());
+      diagnostic.Error(detail);
       break;
     }
   }
@@ -1046,7 +1106,11 @@ const Frame<double>& AddFrameFromSpecification(
   }
   if (parent_frame == nullptr) {
     // TODO(jwnimmer-tri) Not covered by unit tests.
-    diagnostic.Error("Could not find parent frame");
+    DiagnosticDetail detail;
+    detail.filename = frame_spec.Element()->FilePath();
+    detail.line = frame_spec.Element()->LineNumber();
+    detail.message = "Could not find parent frame";
+    diagnostic.Error(detail);
     parent_frame = &plant->world_frame();
   }
   const Frame<double>& frame =
