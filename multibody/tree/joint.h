@@ -67,7 +67,7 @@ namespace multibody {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Joint : public MultibodyElement<Joint, T, JointIndex> {
+class Joint : public MultibodyElement<T, JointIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
@@ -119,7 +119,7 @@ class Joint : public MultibodyElement<Joint, T, JointIndex> {
         const VectorX<double>& vel_upper_limits,
         const VectorX<double>& acc_lower_limits,
         const VectorX<double>& acc_upper_limits)
-      : MultibodyElement<Joint, T, JointIndex>(frame_on_child.model_instance()),
+      : MultibodyElement<T, JointIndex>(frame_on_child.model_instance()),
         name_(name),
         frame_on_parent_(frame_on_parent),
         frame_on_child_(frame_on_child),

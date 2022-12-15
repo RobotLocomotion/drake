@@ -181,7 +181,7 @@ class BodyAttorney {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Body : public MultibodyElement<Body, T, BodyIndex> {
+class Body : public MultibodyElement<T, BodyIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
 
@@ -469,7 +469,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// Creates a %Body named `name` in model instance `model_instance`.
   /// The `name` must not be empty.
   Body(const std::string& name, ModelInstanceIndex model_instance)
-      : MultibodyElement<Body, T, BodyIndex>(model_instance),
+      : MultibodyElement<T, BodyIndex>(model_instance),
         name_(internal::DeprecateWhenEmptyName(name, "Body")),
         body_frame_(*this) {}
 
