@@ -141,6 +141,7 @@ ConvertVisualizationConfigToMeshcatParams(
     illustration.prefix = std::string("illustration");
     illustration.delete_on_initialization_event =
         config.delete_on_initialization_event;
+    illustration.enable_alpha_slider = config.enable_alpha_sliders;
     result.push_back(illustration);
   }
 
@@ -152,6 +153,7 @@ ConvertVisualizationConfigToMeshcatParams(
     proximity.prefix = std::string("proximity");
     proximity.delete_on_initialization_event =
         config.delete_on_initialization_event;
+    proximity.enable_alpha_slider = config.enable_alpha_sliders;
     result.push_back(proximity);
   }
 
