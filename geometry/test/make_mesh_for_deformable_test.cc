@@ -63,7 +63,7 @@ TEST_F(MeshBuilderForDeformableTest, Mesh) {
 }
 
 TEST_F(MeshBuilderForDeformableTest, Convex) {
-  const Convex m("path/to/file", 1.5);
+  const Convex m("/path/to/file", 1.5);
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder_.Build(m, kRezHint),
       ".*don't yet generate deformable meshes.+ Convex.");

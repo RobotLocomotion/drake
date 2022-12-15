@@ -323,8 +323,8 @@ class TestGeometryCore(unittest.TestCase):
             mut.Capsule(radius=1.0, length=2.0),
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
-            mut.Mesh(absolute_filename="arbitrary/path", scale=1.0),
-            mut.Convex(absolute_filename="arbitrary/path", scale=1.0),
+            mut.Mesh(absolute_filename="/arbitrary/path", scale=1.0),
+            mut.Convex(absolute_filename="/arbitrary/path", scale=1.0),
             mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
         for shape in shapes:
@@ -366,7 +366,7 @@ class TestGeometryCore(unittest.TestCase):
         assert_pickle(
             self, capsule, lambda shape: [shape.radius(), shape.length()])
 
-        junk_path = "arbitrary/path"
+        junk_path = "/arbitrary/path"
         convex = mut.Convex(absolute_filename=junk_path, scale=1.0)
         assert_shape_api(convex)
         self.assertEqual(convex.filename(), junk_path)

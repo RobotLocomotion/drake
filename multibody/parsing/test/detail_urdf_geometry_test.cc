@@ -520,7 +520,7 @@ TEST_F(UrdfGeometryTest, TestParseMaterial2) {
   ASSERT_TRUE(mesh);
 
   const std::string& mesh_filename = mesh->filename();
-  std::string obj_name = "tri_cube.obj";
+  std::string obj_name = "/tri_cube.obj";
   EXPECT_EQ(mesh_filename.rfind(obj_name),
             mesh_filename.size() - obj_name.size());
 

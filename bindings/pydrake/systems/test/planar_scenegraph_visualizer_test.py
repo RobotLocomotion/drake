@@ -176,13 +176,13 @@ class TestPlanarSceneGraphVisualizer(unittest.TestCase):
                 scene_graph, substitute_collocated_mesh_files=False)
 
         # This should report that the file does not exist.
-        scene_graph = scene_graph_with_mesh("garbage.obj")
+        scene_graph = scene_graph_with_mesh("/garbage.obj")
         with self.assertRaises(FileNotFoundError):
             PlanarSceneGraphVisualizer(scene_graph)
 
         # This should report that the extension was wrong and no .obj was
         # found.
-        scene_graph = scene_graph_with_mesh("garbage.STL")
+        scene_graph = scene_graph_with_mesh("/garbage.STL")
         with self.assertRaises(RuntimeError):
             PlanarSceneGraphVisualizer(scene_graph)
 

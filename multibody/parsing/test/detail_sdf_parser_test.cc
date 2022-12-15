@@ -1553,7 +1553,7 @@ class GeometrySdfParserTest : public SdfParserTest {
     const auto frame_id =
         plant_.GetBodyFrameIdOrThrow(plant_.GetBodyByName("link1").index());
 
-    const std::string mesh_uri = "drake/multibody/parsing/test/tri_cube.obj";
+    const std::string mesh_uri = "/drake/multibody/parsing/test/tri_cube.obj";
 
     // Note: the parameters for the various example shapes do not matter to this
     // test.

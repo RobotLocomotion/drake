@@ -808,12 +808,12 @@ TEST_F(GeometryStateTest, IntrospectShapes) {
         matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
   }
   {
-    ShapeMatcher<Mesh> matcher(Mesh{"Path/to/mesh", 0.25});
+    ShapeMatcher<Mesh> matcher(Mesh{"/Path/to/mesh", 0.25});
     EXPECT_TRUE(
         matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
   }
   {
-    ShapeMatcher<Convex> matcher(Convex{"Path/to/convex", 0.25});
+    ShapeMatcher<Convex> matcher(Convex{"/Path/to/convex", 0.25});
     EXPECT_TRUE(
         matcher.ShapeIntrospects(&geometry_state_, source_id, frame_id));
   }

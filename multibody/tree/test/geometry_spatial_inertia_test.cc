@@ -163,7 +163,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
       "drake/multibody/parsing/test/box_package/meshes/box.obj");
   const MeshType unit_scale(valid_path, 1.0);
   const MeshType double_scale(valid_path, 2.0);
-  const MeshType nonexistant("nonexistant.stl", 1.0);
+  const MeshType nonexistant("/nonexistant.stl", 1.0);
 
   {
     // Extension test; .obj doesn't throw, everything else does.
@@ -175,7 +175,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
     EXPECT_NO_THROW(CalcSpatialInertia(unit_scale, kDensity));
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcSpatialInertia(nonexistant, kDensity),
-        ".*only supports .obj .* given 'nonexistant.stl'.*");
+        ".*only supports .obj .* given '/nonexistant.stl'.*");
   }
 
   {

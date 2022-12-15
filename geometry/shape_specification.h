@@ -185,6 +185,8 @@ class Convex final : public Shape {
                                 We assume that the polyhedron is convex.
    @param scale                 An optional scale to coordinates.
 
+   @throws std::exception       if `absolute_filename` is not absolute or a
+                                filename.
    @throws std::exception       if the .obj file doesn't define a single object.
                                 This can happen if it is empty, if there are
                                 multiple object-name statements (e.g.,
@@ -312,7 +314,9 @@ class Mesh final : public Shape {
    @throws std::exception if |scale| < 1e-8. Note that a negative scale is
    considered valid. We want to preclude scales near zero but recognise that
    scale is a convenience tool for "tweaking" models. 8 orders of magnitude
-   should be plenty without considering revisiting the model itself. */
+   should be plenty without considering revisiting the model itself.
+   @throws std::exception if `absolute_filename` is not absolute or a filename.
+  */
   explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }

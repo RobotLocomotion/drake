@@ -679,7 +679,7 @@ Capsule CharacterizeResultTest<T>::capsule(bool alt) {
 
 template <typename T>
 Convex CharacterizeResultTest<T>::convex(bool) {
-  return Convex("ignored for this test", 1.0);
+  return Convex("/ignored/for/this/test", 1.0);
 }
 
 template <typename T>

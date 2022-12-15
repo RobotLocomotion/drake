@@ -74,6 +74,17 @@ Capsule::Capsule(const Vector2<double>& measures)
 
 Convex::Convex(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {
+  auto path = std::filesystem::path(absolute_filename);
+  if (path.is_relative()) {
+    throw std::logic_error(fmt::format(
+      "Mesh filename `{}` is a relative path; it must be absolute.",
+      absolute_filename));
+  }
+  if (!path.has_filename()) {
+    throw std::logic_error(fmt::format(
+      "Mesh filename `{}` is a directory; it must be a file.",
+      absolute_filename));
+  }
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
@@ -142,6 +153,17 @@ RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
 
 Mesh::Mesh(const std::string& absolute_filename, double scale)
     : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
+  auto path = std::filesystem::path(absolute_filename);
+  if (path.is_relative()) {
+    throw std::logic_error(fmt::format(
+      "Mesh filename `{}` is a relative path; it must be absolute.",
+      absolute_filename));
+  }
+  if (!path.has_filename()) {
+    throw std::logic_error(fmt::format(
+      "Mesh filename `{}` is a directory; it must be a file.",
+      absolute_filename));
+  }
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }

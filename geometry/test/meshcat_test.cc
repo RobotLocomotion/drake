@@ -299,10 +299,10 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
                        .25));
   EXPECT_FALSE(meshcat.GetPackedObject("convex").empty());
   // Bad filename (no extension).  Should only log a warning.
-  meshcat.SetObject("bad", Mesh("test"));
+  meshcat.SetObject("bad", Mesh("/test"));
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
   // Bad filename (file doesn't exist).  Should only log a warning.
-  meshcat.SetObject("bad", Mesh("test.obj"));
+  meshcat.SetObject("bad", Mesh("/test.obj"));
   EXPECT_TRUE(meshcat.GetPackedObject("bad").empty());
 }
 

@@ -123,7 +123,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
 
   Reset();
 
-  const Convex convex{"fictitious_name.obj", 1.0};
+  const Convex convex{"/fictitious_name.obj", 1.0};
   convex.Reify(this);
   EXPECT_FALSE(sphere_made_);
   EXPECT_FALSE(half_space_made_);
@@ -179,7 +179,7 @@ TEST_F(ReifierTest, ReificationDifferentiation) {
 
   Reset();
 
-  const Mesh mesh{"fictitious_mesh_name.obj", 1.4};
+  const Mesh mesh{"/fictitious_mesh_name.obj", 1.4};
   mesh.Reify(this);
   EXPECT_FALSE(sphere_made_);
   EXPECT_FALSE(half_space_made_);
@@ -406,7 +406,7 @@ GTEST_TEST(BoxTest, Cube) {
 // Simple test that exercises all constructors and confirms the construction
 // parameters are reflected in the getters.
 GTEST_TEST(ShapeTest, Constructors) {
-  const std::string kFilename = "fictitious_name.obj";
+  const std::string kFilename = "/fictitious_name.obj";
 
   const Box box{1, 2, 3};
   EXPECT_EQ(box.width(), 1);
@@ -489,9 +489,9 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
   DRAKE_EXPECT_THROWS_MESSAGE(Capsule(Vector2<double>{0.5, -1}),
                               "Capsule radius and length should both be > 0.+");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Convex("bar", 0),
+  DRAKE_EXPECT_THROWS_MESSAGE(Convex("/bar", 0),
                               "Convex .scale. cannot be < 1e-8.");
-  DRAKE_EXPECT_NO_THROW(Convex("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Convex("/foo", -1));  // Special case: negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       Cylinder(0, 1), "Cylinder radius and length should both be > 0.+");
@@ -514,9 +514,9 @@ GTEST_TEST(ShapeTest, NumericalValidation) {
                               "Ellipsoid lengths of principal semi-axes a, b, "
                               "and c should all be > 0.+");
 
-  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("foo", 1e-9),
+  DRAKE_EXPECT_THROWS_MESSAGE(Mesh("/foo", 1e-9),
                               "Mesh .scale. cannot be < 1e-8.");
-  DRAKE_EXPECT_NO_THROW(Mesh("foo", -1));  // Special case for negative scale.
+  DRAKE_EXPECT_NO_THROW(Mesh("/foo", -1));  // Special case for negative scale.
 
   DRAKE_EXPECT_THROWS_MESSAGE(MeshcatCone(0, 1, 1),
                               "MeshcatCone parameters .+ should all be > 0.*");
@@ -540,7 +540,7 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
                               "This class (.+) does not support Box.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Capsule(1, 2), nullptr),
                               "This class (.+) does not support Capsule.");
-  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Convex("a", 1), nullptr),
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Convex("/a", 1), nullptr),
                               "This class (.+) does not support Convex.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Cylinder(1, 2), nullptr),
                               "This class (.+) does not support Cylinder.");
@@ -549,7 +549,7 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
                               "This class (.+) does not support Ellipsoid.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(HalfSpace(), nullptr),
                               "This class (.+) does not support HalfSpace.");
-  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Mesh("foo", 1), nullptr),
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Mesh("/foo", 1), nullptr),
                               "This class (.+) does not support Mesh.");
   DRAKE_EXPECT_THROWS_MESSAGE(this->ImplementGeometry(Sphere(0.5), nullptr),
                               "This class (.+) does not support Sphere.");
@@ -566,7 +566,7 @@ GTEST_TEST(ShapeName, SimpleReification) {
   Capsule(1, 2).Reify(&name);
   EXPECT_EQ(name.name(), "Capsule");
 
-  Convex("filepath", 1.0).Reify(&name);
+  Convex("/filepath", 1.0).Reify(&name);
   EXPECT_EQ(name.name(), "Convex");
 
   Cylinder(1, 2).Reify(&name);
@@ -578,7 +578,7 @@ GTEST_TEST(ShapeName, SimpleReification) {
   HalfSpace().Reify(&name);
   EXPECT_EQ(name.name(), "HalfSpace");
 
-  Mesh("filepath", 1.0).Reify(&name);
+  Mesh("/filepath", 1.0).Reify(&name);
   EXPECT_EQ(name.name(), "Mesh");
 
   MeshcatCone(1.0, 0.25, 0.5).Reify(&name);
@@ -591,11 +591,11 @@ GTEST_TEST(ShapeName, SimpleReification) {
 GTEST_TEST(ShapeName, ReifyOnConstruction) {
   EXPECT_EQ(ShapeName(Box(1, 2, 3)).name(), "Box");
   EXPECT_EQ(ShapeName(Capsule(1, 2)).name(), "Capsule");
-  EXPECT_EQ(ShapeName(Convex("filepath", 1.0)).name(), "Convex");
+  EXPECT_EQ(ShapeName(Convex("/filepath", 1.0)).name(), "Convex");
   EXPECT_EQ(ShapeName(Cylinder(1, 2)).name(), "Cylinder");
   EXPECT_EQ(ShapeName(Ellipsoid(1, 2, 3)).name(), "Ellipsoid");
   EXPECT_EQ(ShapeName(HalfSpace()).name(), "HalfSpace");
-  EXPECT_EQ(ShapeName(Mesh("filepath", 1.0)).name(), "Mesh");
+  EXPECT_EQ(ShapeName(Mesh("/filepath", 1.0)).name(), "Mesh");
   EXPECT_EQ(ShapeName(Sphere(0.5)).name(), "Sphere");
 }
 
@@ -623,13 +623,13 @@ GTEST_TEST(ShapeTest, Volume) {
   EXPECT_NEAR(CalcVolume(Convex(cube_obj, 1.0)), 8.0, 1e-14);
   EXPECT_NEAR(CalcVolume(Mesh(cube_obj, 1.0)), 8.0, 1e-14);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex("fakename.obj", 1.0)),
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex("/fakename.obj", 1.0)),
                               "Cannot open file.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("fakename.obj", 1.0)),
+  DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh("/fakename.obj", 1.0)),
                               "Cannot open file.*");
 
   // We only support obj but should eventually support vtk.
-  const std::string non_obj = "only_extension_matters.not_obj";
+  const std::string non_obj = "/only_extension_matters.not_obj";
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Convex(non_obj, 1.0)),
                               ".*only supports .obj files.*");
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(non_obj, 1.0)),

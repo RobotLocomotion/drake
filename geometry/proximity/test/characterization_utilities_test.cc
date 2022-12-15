@@ -48,7 +48,7 @@ GTEST_TEST(MakeFclShapeTest, Capsule) {
 }
 
 GTEST_TEST(MakeFclShapeTest, Convex) {
-  auto fcl_geometry = MakeFclShape(Convex("ignored", 1.0)).object();
+  auto fcl_geometry = MakeFclShape(Convex("/ignored", 1.0)).object();
   const auto& fcl_convex = dynamic_cast<fcl::Convexd&>(*fcl_geometry);
   /* The convex shape is actually a box with fixed dimensions. We won't *prove*
    it's the expected box. But we'll confirm:
@@ -216,7 +216,7 @@ GTEST_TEST(SampleShapeSurfaceTest, Convex) {
   /* The convex is actually a box with edge half lengths defined by
    convex_half_size(). We'll generate the samples based on a convex declaration,
    but test against a box.  */
-  const Convex convex("ignored", 1.0);
+  const Convex convex("/ignored", 1.0);
   const Box box = CharacterizeResultTest<double>::box();
   const Vector3d half_size = box.size() / 2;
   /* We validate for a requested penetration that is too deep.  */
