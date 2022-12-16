@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/optimization/dev/collision_geometry.h"
 #include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
@@ -59,6 +60,13 @@ class CspaceFreePolytopeTester {
     return cspace_free_polytope_->CalcDminusCs<T>(C, d);
   }
 
+  [[nodiscard]] std::unordered_map<SortedPair<multibody::BodyIndex>,
+                                   VectorX<symbolic::Monomial>>
+  CalcMonomialBasis(
+      const std::vector<PlaneSeparatesGeometries>& plane_geometries) const {
+    return cspace_free_polytope_->CalcMonomialBasis(plane_geometries);
+  }
+
   [[nodiscard]] CspaceFreePolytope::SeparationCertificate
   ConstructPlaneSearchProgram(
       const PlaneSeparatesGeometries& plane_geometries,
@@ -68,8 +76,8 @@ class CspaceFreePolytopeTester {
       const std::unordered_set<int>& C_redundant_indices,
       const std::unordered_set<int>& s_lower_redundant_indices,
       const std::unordered_set<int>& s_upper_redundant_indices,
-      std::unordered_map<SortedPair<multibody::BodyIndex>,
-                         VectorX<symbolic::Monomial>>*
+      const std::unordered_map<SortedPair<multibody::BodyIndex>,
+                               VectorX<symbolic::Monomial>>&
           map_body_to_monomial_basis) const {
     return cspace_free_polytope_->ConstructPlaneSearchProgram(
         plane_geometries, d_minus_Cs, s_minus_s_lower, s_upper_minus_s,
@@ -91,6 +99,25 @@ class CspaceFreePolytopeTester {
         prog, unit_length_vec, d_minus_Cs, s_minus_s_lower, s_upper_minus_s,
         C_redundant_indices, s_lower_redundant_indices,
         s_upper_redundant_indices);
+  }
+
+  [[nodiscard]] std::vector<
+      std::optional<CspaceFreePolytope::SeparationCertificateResult>>
+  FindSeparationCertificateGivenPolytope(
+      const std::vector<PlaneSeparatesGeometries>& plane_geometries,
+      const Eigen::Ref<const Eigen::MatrixXd>& C,
+      const Eigen::Ref<const Eigen::VectorXd>& d,
+      const VectorX<symbolic::Polynomial>& s_minus_s_lower,
+      const VectorX<symbolic::Polynomial>& s_upper_minus_s,
+      const Eigen::VectorXd& s_lower, const Eigen::VectorXd& s_upper,
+      const std::unordered_map<SortedPair<multibody::BodyIndex>,
+                               VectorX<symbolic::Monomial>>&
+          map_body_to_monomial_basis,
+      const CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions&
+          options) const {
+    return cspace_free_polytope_->FindSeparationCertificateGivenPolytope(
+        plane_geometries, C, d, s_minus_s_lower, s_upper_minus_s, s_lower,
+        s_upper, map_body_to_monomial_basis, options);
   }
 
  private:
@@ -215,9 +242,8 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
   CspaceFreePolytope dut(plant_, scene_graph_, SeparatingPlaneOrder::kAffine);
   Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytope::FilteredCollsionPairs filtered_collision_pairs = {};
-  std::optional<symbolic::Variable> separating_margin{std::nullopt};
   auto ret = dut.GenerateRationals(q_star, filtered_collision_pairs,
-                                   separating_margin);
+                                   false /* search_separating_margin */);
   EXPECT_EQ(ret.size(), dut.separating_planes().size());
   for (const auto& plane_geometries : ret) {
     const auto& plane = dut.separating_planes()[plane_geometries.plane_index];
@@ -245,14 +271,14 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
               plane.positive_side_geometry->num_rationals_per_side());
     EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
               plane.negative_side_geometry->num_rationals_per_side());
+    EXPECT_FALSE(plane_geometries.separating_margin.has_value());
   }
 
   // Pass a non-empty filtered_collision_pairs with a separating margin.
   filtered_collision_pairs.emplace(
       SortedPair<geometry::GeometryId>(world_box_, body3_sphere_));
-  separating_margin.emplace(symbolic::Variable("delta"));
   ret = dut.GenerateRationals(q_star, filtered_collision_pairs,
-                              separating_margin);
+                              true /* search_separating_margin */);
   EXPECT_EQ(ret.size(), dut.separating_planes().size() - 1);
   for (const auto& plane_geometries : ret) {
     const auto& plane = dut.separating_planes()[plane_geometries.plane_index];
@@ -265,6 +291,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
         EXPECT_EQ(plane_geometries.unit_length_vectors[0](i), plane.a(i));
       }
     }
+    EXPECT_TRUE(plane_geometries.separating_margin.has_value());
   }
 }
 
@@ -340,6 +367,32 @@ TEST_F(CIrisToyRobotTest, CalcSBoundsPolynomial) {
   }
 }
 
+TEST_F(CIrisToyRobotTest, CalcMonomialBasis) {
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine);
+  const Eigen::Vector3d q_star(0, 0, 0);
+  const auto plane_geometries =
+      tester.cspace_free_polytope().GenerateRationals(q_star, {}, false);
+  const auto map_body_to_monomial_basis =
+      tester.CalcMonomialBasis(plane_geometries);
+  // Make sure map_body_to_monomial_basis contains all pairs of bodies.
+  for (const auto& plane : tester.cspace_free_polytope().separating_planes()) {
+    for (const auto collision_geometry :
+         {plane.positive_side_geometry, plane.negative_side_geometry}) {
+      auto it =
+          map_body_to_monomial_basis.find(SortedPair<multibody::BodyIndex>(
+              plane.expressed_body, collision_geometry->body_index()));
+      EXPECT_NE(it, map_body_to_monomial_basis.end());
+      // Make sure the degree for each variable in the monomial is at most 1.
+      for (int i = 0; i < it->second.rows(); ++i) {
+        for (const auto& [var, degree] : it->second(i).get_powers()) {
+          EXPECT_LE(degree, 1);
+        }
+      }
+    }
+  }
+}
+
 void SetupPolytope(const CspaceFreePolytopeTester& tester,
                    const Eigen::Ref<const Eigen::MatrixXd>& C,
                    const Eigen::Ref<const Eigen::VectorXd>& d,
@@ -395,11 +448,8 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram1) {
                 &s_upper_minus_s, &C_redundant_indices,
                 &s_lower_redundant_indices, &s_upper_redundant_indices);
 
-  std::unordered_map<SortedPair<multibody::BodyIndex>,
-                     VectorX<symbolic::Monomial>>
-      map_body_to_monomial_basis;
   const auto plane_geometries_vec =
-      tester.cspace_free_polytope().GenerateRationals(q_star, {}, std::nullopt);
+      tester.cspace_free_polytope().GenerateRationals(q_star, {}, false);
   // Consider the plane between world_box_ and body3_box_.
   // Notice that this chain only has one DOF, hence one of the rationals is
   // actually a constant.
@@ -416,12 +466,12 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram1) {
     }
   }
   const auto& plane_geometries = plane_geometries_vec[plane_geometries_index];
+  const auto map_body_to_monomial_basis =
+      tester.CalcMonomialBasis(plane_geometries_vec);
   auto ret = tester.ConstructPlaneSearchProgram(
       plane_geometries, d_minus_Cs, s_minus_s_lower, s_upper_minus_s,
       C_redundant_indices, s_lower_redundant_indices, s_upper_redundant_indices,
-      &map_body_to_monomial_basis);
-
-  EXPECT_EQ(map_body_to_monomial_basis.size(), 2);
+      map_body_to_monomial_basis);
 
   solvers::MosekSolver solver;
   if (solver.available()) {
@@ -523,11 +573,8 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram2) {
                 &s_upper_minus_s, &C_redundant_indices,
                 &s_lower_redundant_indices, &s_upper_redundant_indices);
 
-  std::unordered_map<SortedPair<multibody::BodyIndex>,
-                     VectorX<symbolic::Monomial>>
-      map_body_to_monomial_basis;
   const auto plane_geometries_vec =
-      tester.cspace_free_polytope().GenerateRationals(q_star, {}, std::nullopt);
+      tester.cspace_free_polytope().GenerateRationals(q_star, {}, false);
   // Consider the plane between world_sphere_ and body2_capsule_.
   int plane_geometries_index = -1;
   for (int i = 0; i < static_cast<int>(plane_geometries_vec.size()); ++i) {
@@ -542,11 +589,12 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram2) {
     }
   }
   const auto& plane_geometries = plane_geometries_vec[plane_geometries_index];
+  const auto map_body_to_monomial_basis =
+      tester.CalcMonomialBasis(plane_geometries_vec);
   auto ret = tester.ConstructPlaneSearchProgram(
       plane_geometries, d_minus_Cs, s_minus_s_lower, s_upper_minus_s,
       C_redundant_indices, s_lower_redundant_indices, s_upper_redundant_indices,
-      &map_body_to_monomial_basis);
-  EXPECT_EQ(map_body_to_monomial_basis.size(), 2);
+      map_body_to_monomial_basis);
   EXPECT_EQ(ret.unit_length_lagrangians.size(),
             plane_geometries.unit_length_vectors.size());
 
@@ -629,7 +677,7 @@ TEST_F(CIrisToyRobotTest, AddUnitLengthConstraint) {
       tester.cspace_free_polytope().rational_forward_kin().s());
 
   const auto plane_geometries_vec =
-      tester.cspace_free_polytope().GenerateRationals(q_star, {}, std::nullopt);
+      tester.cspace_free_polytope().GenerateRationals(q_star, {}, false);
   // Consider the separating plane between world_sphere_ and body2_capsule_.
   int plane_geometries_index = -1;
   for (int i = 0; i < static_cast<int>(plane_geometries_vec.size()); ++i) {
@@ -728,6 +776,141 @@ TEST_F(CIrisToyRobotTest, AddUnitLengthConstraint) {
         unit_length_vec_val(j) = unit_length_vec(j).Evaluate(env);
       }
       EXPECT_LE(unit_length_vec_val.norm(), 1);
+    }
+  }
+}
+
+TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope1) {
+  // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope for a
+  // collision-free C-space polytope.
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine);
+
+  const Eigen::Vector3d q_star(0, 0, 0);
+  const CspaceFreePolytope::FilteredCollsionPairs filtered_collision_pairs{
+      {SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)}};
+  const auto plane_geometries = tester.cspace_free_polytope().GenerateRationals(
+      q_star, filtered_collision_pairs, true /* search_separating_plane */);
+  // This/ C-space polytope is collision free.
+  Eigen::Matrix<double, 9, 3> C;
+  // clang-format off
+  C << 1, 1, 0,
+       -1, -1, 0,
+       -1, 0, 1,
+       1, 0, -1,
+       0, 1, 1,
+       0, -1, -1,
+       1, 0, 1,
+       1, 1, -1,
+       1, -1, 1;
+  // clang-format on
+  Eigen::Matrix<double, 9, 1> d;
+  d << 0.1, 0.1, 0.1, 0.02, 0.02, 0.2, 0.1, 0.1, 0.2;
+
+  VectorX<symbolic::Polynomial> d_minus_Cs;
+  VectorX<symbolic::Polynomial> s_minus_s_lower;
+  VectorX<symbolic::Polynomial> s_upper_minus_s;
+  std::unordered_set<int> C_redundant_indices;
+  std::unordered_set<int> s_lower_redundant_indices;
+  std::unordered_set<int> s_upper_redundant_indices;
+  SetupPolytope(tester, C, d, q_star, &d_minus_Cs, &s_minus_s_lower,
+                &s_upper_minus_s, &C_redundant_indices,
+                &s_lower_redundant_indices, &s_upper_redundant_indices);
+  const Eigen::Vector3d s_lower =
+      tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
+          plant_->GetPositionLowerLimits(), q_star);
+  const Eigen::Vector3d s_upper =
+      tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
+          plant_->GetPositionUpperLimits(), q_star);
+
+  const auto map_body_to_monomial_basis =
+      tester.CalcMonomialBasis(plane_geometries);
+  CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions options;
+  options.verbose = true;
+  solvers::MosekSolver solver;
+  options.solver_id = solver.id();
+  if (solver.available()) {
+    for (int num_threads : {-1, 1, 5}) {
+      options.num_threads = num_threads;
+
+      const auto certificates_result =
+          tester.FindSeparationCertificateGivenPolytope(
+              plane_geometries, C, d, s_minus_s_lower, s_upper_minus_s, s_lower,
+              s_upper, map_body_to_monomial_basis, options);
+      EXPECT_EQ(certificates_result.size(), plane_geometries.size());
+      for (int i = 0; i < static_cast<int>(certificates_result.size()); ++i) {
+        EXPECT_TRUE(certificates_result[i].has_value());
+        EXPECT_EQ(certificates_result[i]->plane_index,
+                  plane_geometries[i].plane_index);
+        EXPECT_TRUE(certificates_result[i]->separating_margin.has_value());
+        EXPECT_GT(certificates_result[i]->separating_margin.value(), 0);
+        EXPECT_TRUE(CompareMatrices(certificates_result[i]->C, C));
+        EXPECT_TRUE(CompareMatrices(certificates_result[i]->d, d));
+      }
+    }
+  }
+}
+
+TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope2) {
+  // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope. The
+  // C-space polytope is NOT collision free.
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine);
+
+  const Eigen::Vector3d q_star(0, 0, 0);
+  const CspaceFreePolytope::FilteredCollsionPairs filtered_collision_pairs{
+      {SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)}};
+  const auto plane_geometries = tester.cspace_free_polytope().GenerateRationals(
+      q_star, filtered_collision_pairs, true /* search_separating_plane */);
+  // This/ C-space polytope is collision free.
+  Eigen::Matrix<double, 4, 3> C;
+  // clang-format off
+  C << 1, 1, 0,
+       -1, -1, 0,
+       -1, 0, 1,
+       1, 0, -1;
+  // clang-format on
+  Eigen::Matrix<double, 4, 1> d;
+  d << 0.1, 0.3, 0.4, 0.2;
+
+  VectorX<symbolic::Polynomial> d_minus_Cs;
+  VectorX<symbolic::Polynomial> s_minus_s_lower;
+  VectorX<symbolic::Polynomial> s_upper_minus_s;
+  std::unordered_set<int> C_redundant_indices;
+  std::unordered_set<int> s_lower_redundant_indices;
+  std::unordered_set<int> s_upper_redundant_indices;
+  SetupPolytope(tester, C, d, q_star, &d_minus_Cs, &s_minus_s_lower,
+                &s_upper_minus_s, &C_redundant_indices,
+                &s_lower_redundant_indices, &s_upper_redundant_indices);
+  const Eigen::Vector3d s_lower =
+      tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
+          plant_->GetPositionLowerLimits(), q_star);
+  const Eigen::Vector3d s_upper =
+      tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
+          plant_->GetPositionUpperLimits(), q_star);
+
+  const auto map_body_to_monomial_basis =
+      tester.CalcMonomialBasis(plane_geometries);
+  CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions options;
+  options.verbose = true;
+  solvers::MosekSolver solver;
+  options.solver_id = solver.id();
+  if (solver.available()) {
+    for (int num_threads : {-1, 1, 5}) {
+      options.num_threads = num_threads;
+
+      const auto certificates_result =
+          tester.FindSeparationCertificateGivenPolytope(
+              plane_geometries, C, d, s_minus_s_lower, s_upper_minus_s, s_lower,
+              s_upper, map_body_to_monomial_basis, options);
+      EXPECT_EQ(certificates_result.size(), plane_geometries.size());
+      EXPECT_TRUE(
+          std::any_of(certificates_result.begin(), certificates_result.end(),
+                      [](const std::optional<
+                          CspaceFreePolytope::SeparationCertificateResult>&
+                             certificate_result) {
+                        return !certificate_result.has_value();
+                      }));
     }
   }
 }
