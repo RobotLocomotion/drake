@@ -184,19 +184,28 @@ RationalForwardKinematics::ConvertMultilinearPolynomialToRationalFunction(
   return e_rational;
 }
 
-Eigen::VectorXd RationalForwardKinematics::ComputeSValue(
-    const Eigen::Ref<const Eigen::VectorXd>& q_val,
+template<class T>
+Eigen::Matrix<T, -1, 1> RationalForwardKinematics::ComputeSValue(
+    const Eigen::Ref<const Eigen::Matrix<T, -1, 1>>& q_val,
     const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
-  Eigen::VectorXd s_val(s_.size());
+  Eigen::Matrix<T, -1, 1> s_val(s_.size());
+  void (*tan_T)(T, T);
+  if constexpr (std::is_arithmetic<T>::value) {
+    tan_T = &std::tan;
+  } else if constexpr (std::is_same <T, symbolic::Expression>::value) {
+    tan_T = &symbolic::tan;
+  } else if constexpr (std::is_same<T, AutoDiffXd>::value) {
+    tan_T = &tan;
+  }
   for (int i = 0; i < s_val.size(); ++i) {
-    const internal::Mobilizer<double>& mobilizer =
+    const internal::Mobilizer<T>& mobilizer =
         GetInternalTree(plant_).get_mobilizer(
             map_s_to_mobilizer_.at(s_[i].get_id()));
     // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
     // variable into s_.
     if (IsRevolute(mobilizer)) {
       const int q_index = mobilizer.position_start_in_q();
-      s_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
+      s_val(i) = tan((q_val(q_index) - q_star_val(q_index)) / 2);
     } else if (IsPrismatic(mobilizer)) {
       const int q_index = mobilizer.position_start_in_q();
       s_val(i) = q_val(q_index) - q_star_val(q_index);
@@ -209,20 +218,48 @@ Eigen::VectorXd RationalForwardKinematics::ComputeSValue(
   return s_val;
 }
 
-template<class T>
-T RationalForwardKinematics::ComputeQValue(
-      const Eigen::Ref<const T>& s_val,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val){
-  T q_val(q_star_val.size());
-  // deduce which version of atan2 we will need to use
-  if constexpr(std::is_same<T,Eigen::VectorXd>) {
-    void (*atan2_T)(T, T) = &std::atan2;
-  }
-  else if constexpr(std::is_same<T, VectorX<symbolic::Expression>) {
-    atan2_T = &std::atan2;
-  }
-  else if constexpr(std::is_same<T, VectorX<AutoDiffXd>) {
+//Eigen::VectorXd RationalForwardKinematics::ComputeSValue(
+//    const Eigen::Ref<const Eigen::VectorXd>& q_val,
+//    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+//  Eigen::VectorXd s_val(s_.size());
+//  for (int i = 0; i < s_val.size(); ++i) {
+//    const internal::Mobilizer<double>& mobilizer =
+//        GetInternalTree(plant_).get_mobilizer(
+//            map_s_to_mobilizer_.at(s_[i].get_id()));
+//    // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
+//    // variable into s_.
+//    if (IsRevolute(mobilizer)) {
+//      const int q_index = mobilizer.position_start_in_q();
+//      s_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
+//    } else if (IsPrismatic(mobilizer)) {
+//      const int q_index = mobilizer.position_start_in_q();
+//      s_val(i) = q_val(q_index) - q_star_val(q_index);
+//    } else {
+//      // Successful construction guarantees nothing but supported mobilizer
+//      // types.
+//      DRAKE_UNREACHABLE();
+//    }
+//  }
+//  return s_val;
+//}
 
+template <class T>
+VectorX<T> RationalForwardKinematics::ComputeQValue(
+    const Eigen::Ref<const VectorX<T>>& s_val,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+  VectorX<T> q_val(q_star_val.size());
+  // deduce which version of atan2 we will need to use
+  void (*atan2_T)(T, T);
+  void (*pow_T)(T, T);
+  if constexpr (std::is_arithmetic<T>::value) {
+    atan2_T = &std::atan2;
+    pow_T = &std::pow;
+  } else if constexpr (std::is_same <T, symbolic::Expression>::value) {
+    atan2_T = &symbolic::atan2;
+    pow_T = &symbolic::pow;
+  } else if constexpr (std::is_same<T, AutoDiffXd>::value) {
+    atan2_T = &atan2;
+    pow_T = &pow;
   }
 
   for (int i = 0; i < s_val.size(); ++i) {
@@ -231,12 +268,14 @@ T RationalForwardKinematics::ComputeQValue(
             map_s_to_mobilizer_.at(s_[i].get_id()));
     // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
     // variable into s_.
+    const int q_index = mobilizer.position_start_in_q();
     if (IsRevolute(mobilizer)) {
-      const int q_index = mobilizer.position_start_in_q();
-      q_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
+      q_val(q_index) =
+          atan2(2 * s_val(i) / (1 + pow_T(s_val(i), 2)),
+                (1 - pow_T(s_val(i), 2)) / (1 + pow_T(s_val(i), 2))) +
+          q_star_val(q_index);
     } else if (IsPrismatic(mobilizer)) {
-      const int q_index = mobilizer.position_start_in_q();
-      s_val(i) = q_val(q_index) - q_star_val(q_index);
+      q_val(q_index) = s_val(i) + q_star_val(q_index);
     } else {
       // Successful construction guarantees nothing but supported mobilizer
       // types.
@@ -244,8 +283,8 @@ T RationalForwardKinematics::ComputeQValue(
     }
   }
   return q_val;
-
 }
+
 
 template <typename T>
 RationalForwardKinematics::Pose<T> RationalForwardKinematics::
@@ -407,6 +446,7 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   // handled.
   DRAKE_UNREACHABLE();
 }
+
 
 }  // namespace multibody
 }  // namespace drake
