@@ -8,6 +8,8 @@
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/common/symbolic/expression.h"
+
 
 namespace drake {
 namespace geometry {
@@ -172,8 +174,8 @@ class SamePointConstraint : public solvers::Constraint {
   const multibody::Frame<double>* frameB_{nullptr};
   std::unique_ptr<Context<double>> context_;
 
-  std::unique_ptr<MultibodyPlant<Expression>> symbolic_plant_{nullptr};
-  std::unique_ptr<Context<Expression>> symbolic_context_{nullptr};
+  std::unique_ptr<MultibodyPlant<symbolic::Expression>> symbolic_plant_{nullptr};
+  std::unique_ptr<Context<symbolic::Expression>> symbolic_context_{nullptr};
 };
 
 // takes t, p_AA, and p_BB and enforces that p_WA == p_WB
