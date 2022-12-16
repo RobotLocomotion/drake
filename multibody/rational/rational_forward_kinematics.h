@@ -164,15 +164,6 @@ class RationalForwardKinematics {
     return q_val;
   }
 
-  /** Computes values of q from s_val and q_star_val, while handling the index
-   matching between q and s (we don't guarantee that s(i) is computed from
-   q(i)).
-   */
-  template<class T>
-  [[nodiscard]] T ComputeQValue(
-      const Eigen::Ref<const T>& s_val,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const;
-
   const MultibodyPlant<double>& plant() const { return plant_; }
 
   Eigen::Map<const VectorX<symbolic::Variable>> s() const {
