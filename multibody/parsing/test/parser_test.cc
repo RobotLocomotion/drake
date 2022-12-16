@@ -36,33 +36,41 @@ GTEST_TEST(FileParserTest, BasicTest) {
 
   // Load from SDF using plural method.
   // Add a second one with an overridden model_name.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.AddModels(sdf_name).size(), 1);
     dut.AddModelFromFile(sdf_name, "foo");
+    Parser(&plant, "prefix").AddModels(sdf_name);
   }
 
   // Load from URDF using plural method.
   // Add a second one with an overridden model_name.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(dut.AddModels(urdf_name).size(), 1);
     dut.AddModelFromFile(urdf_name, "foo");
+    Parser(&plant, "prefix").AddModels(urdf_name);
   }
 
   // Load an SDF then a URDF.
+  // Load an SDF then a URDF with name prefixes.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     dut.AddModelFromFile(sdf_name, "foo");
     dut.AddModelFromFile(urdf_name, "bar");
+    Parser(&plant, "foo").AddModels(sdf_name);
+    Parser(&plant, "bar").AddModels(urdf_name);
   }
 
   // Load from XML using plural method.
   // Add a second one with an overridden model_name.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
@@ -71,10 +79,14 @@ GTEST_TEST(FileParserTest, BasicTest) {
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
     const ModelInstanceIndex id = dut.AddModelFromFile(xml_name, "foo");
     EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
+    const auto prefix_ids = Parser(&plant, "prefix").AddModels(xml_name);
+    EXPECT_EQ(prefix_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(prefix_ids[0]), "prefix::acrobot");
   }
 
   // Load from DMD using plural method.
   // Using the singular method is always an error.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
@@ -84,6 +96,9 @@ GTEST_TEST(FileParserTest, BasicTest) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         dut.AddModelFromFile(dmd_name, "foo"),
         ".* always an error.*");
+    const auto prefix_ids = Parser(&plant, "prefix").AddModels(dmd_name);
+    EXPECT_EQ(prefix_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(prefix_ids[0]), "prefix::acrobot");
   }
 }
 

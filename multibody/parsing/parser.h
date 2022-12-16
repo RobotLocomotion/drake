@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -68,9 +69,33 @@ class Parser final {
   /// @param scene_graph A pointer to a mutable SceneGraph object used for
   ///   geometry registration (either to model visual or contact geometry).
   ///   May be nullptr.
-  explicit Parser(
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+  explicit Parser(MultibodyPlant<double>* plant,
+                  geometry::SceneGraph<double>* scene_graph = nullptr);
+
+  /// Creates a Parser that adds models to the given plant and
+  /// scene_graph. The model names will be within the given scope.
+  ///
+  /// @param model_name_prefix A string that will be added as a scoped name
+  ///   prefix to the names of any models loaded by this parser.
+  /// @param plant A pointer to a mutable MultibodyPlant object to which parsed
+  ///   model(s) will be added; `plant->is_finalized()` must remain `false` for
+  ///   as long as the @p plant is in used by `this`.
+  /// @param scene_graph A pointer to a mutable SceneGraph object used for
+  ///   geometry registration (either to model visual or contact geometry).
+  ///   May be nullptr.
+  Parser(MultibodyPlant<double>* plant,
+         geometry::SceneGraph<double>* scene_graph,
+         std::string_view model_name_prefix);
+
+  /// Creates a Parser that adds models to the given plant and (optionally) its
+  /// registered scene graph. The model names will be within the given scope.
+  ///
+  /// @param model_name_prefix A string that will be added as a scoped name
+  ///   prefix to the names of any models loaded by this parser.
+  /// @param plant A pointer to a mutable MultibodyPlant object to which parsed
+  ///   model(s) will be added; `plant->is_finalized()` must remain `false` for
+  ///   as long as the @p plant is in used by `this`.
+  Parser(MultibodyPlant<double>* plant, std::string_view model_name_prefix);
 
   /// Gets a mutable reference to the plant that will be modified by this
   /// parser.
@@ -152,6 +177,7 @@ class Parser final {
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
+  std::optional<std::string> model_name_prefix_;
 };
 
 }  // namespace multibody
