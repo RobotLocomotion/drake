@@ -26,6 +26,7 @@ import unittest
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.geometry import SceneGraph
 from pydrake.multibody.tree import (
     ModelInstanceIndex,
 )
@@ -119,6 +120,26 @@ class TestParsing(unittest.TestCase):
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(results[0], ModelInstanceIndex)
 
+    def test_parser_prefix_constructors(self):
+        model = "<robot name='r'><link name='a'/></robot>"
+        plant = MultibodyPlant(time_step=0.0)
+        scene_graph = SceneGraph()
+
+        Parser(plant=plant).AddModelsFromString(model, "urdf")
+
+        # Reload the same model, via a different parser constructor. Catch the
+        # name collision.
+        with self.assertRaisesRegex(RuntimeError, r'.*names must be unique.*'):
+            Parser(plant=plant, scene_graph=scene_graph).AddModelsFromString(
+                model, "urdf")
+
+        # Reload the same model, but use model_name_prefix to avoid name
+        # collisions.
+        Parser(plant=plant, model_name_prefix="prefix1").AddModelsFromString(
+            model, "urdf")
+        Parser(plant=plant, scene_graph=scene_graph,
+               model_name_prefix="prefix2").AddModelsFromString(model, "urdf")
+
     def test_strict(self):
         model = """<robot name='robot' version='0.99'>
             <link name='a'/>
@@ -133,13 +154,8 @@ class TestParsing(unittest.TestCase):
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
         parser.SetStrictParsing()
-        with self.assertRaises(RuntimeError) as e:
-            result = parser.AddModelsFromString(
-                file_contents=model, file_type='urdf')
-        pattern = r'.*version.*ignored.*'
-        message = str(e.exception)
-        match = re.match(pattern, message)
-        self.assertTrue(match, f'"{message}" does not match "{pattern}"')
+        with self.assertRaisesRegex(RuntimeError, r'.*version.*ignored.*'):
+            parser.AddModelsFromString(file_contents=model, file_type='urdf')
 
     def test_model_instance_info(self):
         """Checks that ModelInstanceInfo bindings exist."""

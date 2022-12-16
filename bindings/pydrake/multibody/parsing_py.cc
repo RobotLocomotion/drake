@@ -70,9 +70,17 @@ PYBIND11_MODULE(parsing, m) {
     constexpr auto& cls_doc = doc.Parser;
     auto cls = py::class_<Class>(m, "Parser", cls_doc.doc);
     cls  // BR
+        .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*,
+                 std::string_view>(),
+            py::arg("plant"), py::arg("scene_graph"),
+            py::arg("model_name_prefix"),
+            cls_doc.ctor.doc_3args_plant_scene_graph_model_name_prefix)
         .def(py::init<MultibodyPlant<double>*, SceneGraph<double>*>(),
             py::arg("plant"), py::arg("scene_graph") = nullptr,
-            cls_doc.ctor.doc)
+            cls_doc.ctor.doc_2args_plant_scene_graph)
+        .def(py::init<MultibodyPlant<double>*, std::string_view>(),
+            py::arg("plant"), py::arg("model_name_prefix"),
+            cls_doc.ctor.doc_2args_plant_model_name_prefix)
         .def("plant", &Class::plant, py_rvp::reference_internal,
             cls_doc.plant.doc)
         .def("package_map", &Class::package_map, py_rvp::reference_internal,
