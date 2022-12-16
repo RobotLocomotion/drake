@@ -4,16 +4,19 @@
 #include <optional>
 #include <vector>
 
+#include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
-#include "drake/common/symbolic/expression.h"
-
 
 namespace drake {
 namespace geometry {
 namespace optimization {
+
+using multibody::MultibodyPlant;
+using symbolic::Expression;
+using systems::Context;
 
 /** Configuration options for the IRIS algorithm.
 
@@ -97,15 +100,15 @@ struct IrisOptions {
   int random_seed{1234};
 };
 
-
-/** Configuration options for the IRIS algorithm running in rational configuration space.
+/** Configuration options for the IRIS algorithm running in rational
+configuration space.
 
 @ingroup geometry_optimization
 */
 struct IrisOptionsRationalSpace : public IrisOptions {
   IrisOptionsRationalSpace() = default;
 
-  //TODO(Alex.Amice) support turning this option on.
+  // TODO(Alex.Amice) support turning this option on.
   /** For IRIS in rational configuration space, we can certify that the regions
    * are truly collision free using SOS programming and the methods in
    * multibody/rational_forward_kinematics. Turning this option on
@@ -125,7 +128,6 @@ struct IrisOptionsRationalSpace : public IrisOptions {
   std::optional<Eigen::VectorXd> q_star;
 };
 
-
 // Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
 class SamePointConstraint : public solvers::Constraint {
  public:
@@ -134,7 +136,7 @@ class SamePointConstraint : public solvers::Constraint {
   SamePointConstraint(const MultibodyPlant<double>* plant,
                       const Context<double>& context)
       : solvers::Constraint(3, plant->num_positions() + 6,
-                            Vector3d::Zero(), Vector3d::Zero()),
+                            Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
         plant_(plant),
         context_(plant->CreateDefaultContext()) {
     DRAKE_DEMAND(plant_ != nullptr);
@@ -165,7 +167,7 @@ class SamePointConstraint : public solvers::Constraint {
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override;
 
-  void DoEval(const Ref<const VectorX<symbolic::Variable>>& x,
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override;
 
  protected:
@@ -174,39 +176,44 @@ class SamePointConstraint : public solvers::Constraint {
   const multibody::Frame<double>* frameB_{nullptr};
   std::unique_ptr<Context<double>> context_;
 
-  std::unique_ptr<MultibodyPlant<symbolic::Expression>> symbolic_plant_{nullptr};
+  std::unique_ptr<MultibodyPlant<symbolic::Expression>> symbolic_plant_{
+      nullptr};
   std::unique_ptr<Context<symbolic::Expression>> symbolic_context_{nullptr};
 };
 
-// takes t, p_AA, and p_BB and enforces that p_WA == p_WB
-//class SamePointConstraintRational : public SamePointConstraint {
-// public:
-//  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraintRational)
-//
-//  SamePointConstraintRational(const multibody::RationalForwardKinematics*
-//                                  rational_forward_kinematics_ptr,
-//                              const Eigen::Ref<const Eigen::VectorXd>& q_star,
-//                              const Context<double>& context)
-//      : SamePointConstraint(&rational_forward_kinematics_ptr->plant(), context),
-//        rational_forward_kinematics_ptr_(rational_forward_kinematics_ptr),
-//        q_star_(q_star) {}
-//
-//  ~SamePointConstraintRational() override {}
-//
-// private:
-//  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-//              Eigen::VectorXd* y) const override;
-//
-//  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-//              AutoDiffVecXd* y) const override;
-//
-//  void DoEval(const Ref<const VectorX<symbolic::Variable>>& x,
-//              VectorX<symbolic::Expression>* y) const override;
-//
-// protected:
-//  const multibody::RationalForwardKinematics* rational_forward_kinematics_ptr_;
-//  const Eigen::VectorXd q_star_;
-//};
+// takes s, p_AA, and p_BB and enforces that p_WA == p_WB
+class SamePointConstraintRational : public SamePointConstraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraintRational)
+  // @param rational_forward_kinematics_ptr points to a
+  // RationalForwardKinematics object which contains a reference to the plant
+  // for which we will run Iris
+  // @param q_star, the point about which any stereographic projections in our
+  // plant are taken
+  SamePointConstraintRational(const multibody::RationalForwardKinematics*
+                                  rational_forward_kinematics_ptr,
+                              const Eigen::Ref<const Eigen::VectorXd>& q_star,
+                              const Context<double>& context)
+      : SamePointConstraint(&rational_forward_kinematics_ptr->plant(), context),
+        rational_forward_kinematics_ptr_(rational_forward_kinematics_ptr),
+        q_star_(q_star) {}
+
+  ~SamePointConstraintRational() override {}
+
+ private:
+  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+              Eigen::VectorXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override;
+
+  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override;
+
+ protected:
+  const multibody::RationalForwardKinematics* rational_forward_kinematics_ptr_;
+  const Eigen::VectorXd q_star_;
+};
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
 as described in
@@ -305,11 +312,11 @@ Iris search. This defaults to the joint limits of the plants, but if there is a
 reason to constrain it further this option is provided.
 @ingroup geometry_optimization
 */
-//HPolyhedron IrisInRationalConfigurationSpace(
-//    const multibody::MultibodyPlant<double>& plant,
-//    const systems::Context<double>& context,
-//    const IrisOptionsRationalSpace& options = IrisOptionsRationalSpace(),
-//    const std::optional<HPolyhedron>& starting_hpolyhedron = std::nullopt);
+HPolyhedron IrisInRationalConfigurationSpace(
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const IrisOptionsRationalSpace& options = IrisOptionsRationalSpace(),
+    const std::optional<HPolyhedron>& starting_hpolyhedron = std::nullopt);
 
 /**
  * Internal method for actually running Iris. We assume that the HPolyhedron in
@@ -321,12 +328,12 @@ reason to constrain it further this option is provided.
  * of joints in the plant.
  * @return
  */
-//void _DoIris_(const multibody::MultibodyPlant<double>& plant,
-//              const systems::Context<double>& context,
-//              const IrisOptions& options,
-//              const Eigen::Ref<const Eigen::VectorXd>& sample,
-//              const std::shared_ptr<SamePointConstraint>& same_point_constraint,
-//              HPolyhedron* P_ptr, Hyperellipsoid* E_ptr);
+void _DoIris_(const multibody::MultibodyPlant<double>& plant,
+              const systems::Context<double>& context,
+              const IrisOptions& options,
+              const Eigen::Ref<const Eigen::VectorXd>& sample,
+              const std::shared_ptr<SamePointConstraint>& same_point_constraint,
+              HPolyhedron* P_ptr, Hyperellipsoid* E_ptr);
 
 }  // namespace optimization
 }  // namespace geometry
