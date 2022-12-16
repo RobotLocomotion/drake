@@ -930,7 +930,7 @@ void SamePointConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
     *y = p_WA - p_WB;
   }
 
-// p_WA = X_WA(q)*p_AA
+  // p_WA = X_WA(q)*p_AA
   // dp_WA = Jq_v_WA*dq + X_WA(q)*dp_AA
   void SamePointConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const {
