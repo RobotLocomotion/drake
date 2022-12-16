@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -55,6 +56,29 @@ class CompositeParse;
 /// absence of units specified by the format itself. This includes the literals
 /// in the explicitly specified files as well as referenced files such as OBJ
 /// or other data file formats.
+///
+/// MultibodyPlant requires that model instances have unique names. To support
+/// loading multiple instances of the same model file(s) into a plant, Parser
+/// offers constructors that take a model name prefix, which gets applied to
+/// all models loaded with that Parser instance. The resulting workflow makes
+/// multiple parsers to build models for a single plant:
+/// @code
+///  Parser left_parser(plant, "left");
+///  Parser right_parser(plant, "right");
+///  left_parser.AddModels(arm_model);  // "left::arm"
+///  right_parser.AddModels(arm_model);  // "right::arm"
+///  left_parser.AddModels(gripper_model);  // "left::gripper"
+///  right_parser.AddModels(gripper_model);  // "right::gripper"
+/// @endcode
+///
+/// Parser constructors can accept a SceneGraph pointer. If it is provided and
+/// non-null and the MultibodyPlant is not registered as a source, the Parser
+/// will perform the registration.
+///
+/// If the plant is registered as a geometry source, (either by the Parser or
+/// separately), then subsequent parsing will register geometries (visual and
+/// collision), and apply collision filters. Otherwise, geometry and collision
+/// filter inputs will be ignored.
 class Parser final {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Parser)
@@ -64,13 +88,41 @@ class Parser final {
   ///
   /// @param plant A pointer to a mutable MultibodyPlant object to which parsed
   ///   model(s) will be added; `plant->is_finalized()` must remain `false` for
-  ///   as long as the @p plant is in used by `this`.
+  ///   as long as the @p plant is in use by `this`.
   /// @param scene_graph A pointer to a mutable SceneGraph object used for
   ///   geometry registration (either to model visual or contact geometry).
   ///   May be nullptr.
-  explicit Parser(
-    MultibodyPlant<double>* plant,
-    geometry::SceneGraph<double>* scene_graph = nullptr);
+  explicit Parser(MultibodyPlant<double>* plant,
+                  geometry::SceneGraph<double>* scene_graph = nullptr);
+
+  /// Creates a Parser that adds models to the given plant and scene_graph. The
+  /// resulting parser will apply `model_name_prefix` to the names of any
+  /// models parsed.
+  ///
+  /// @param plant A pointer to a mutable MultibodyPlant object to which parsed
+  ///   model(s) will be added; `plant->is_finalized()` must remain `false` for
+  ///   as long as the @p plant is in use by `this`.
+  /// @param scene_graph A pointer to a mutable SceneGraph object used for
+  ///   geometry registration (either to model visual or contact geometry).
+  ///   May be nullptr.
+  /// @param model_name_prefix A string that will be added as a scoped name
+  ///   prefix to the names of any models loaded by this parser;
+  ///   when empty, no scoping will be added.
+  Parser(MultibodyPlant<double>* plant,
+         geometry::SceneGraph<double>* scene_graph,
+         std::string_view model_name_prefix);
+
+  /// Creates a Parser that adds models to the given plant and scene_graph. The
+  /// resulting parser will apply `model_name_prefix` to the names of any
+  /// models parsed.
+  ///
+  /// @param plant A pointer to a mutable MultibodyPlant object to which parsed
+  ///   model(s) will be added; `plant->is_finalized()` must remain `false` for
+  ///   as long as the @p plant is in use by `this`.
+  /// @param model_name_prefix A string that will be added as a scoped name
+  ///   prefix to the names of any models loaded by this parser;
+  ///   when empty, no scoping will be added.
+  Parser(MultibodyPlant<double>* plant, std::string_view model_name_prefix);
 
   /// Gets a mutable reference to the plant that will be modified by this
   /// parser.
@@ -152,6 +204,7 @@ class Parser final {
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
+  std::optional<std::string> model_name_prefix_;
 };
 
 }  // namespace multibody
