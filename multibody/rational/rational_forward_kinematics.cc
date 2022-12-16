@@ -214,6 +214,17 @@ T RationalForwardKinematics::ComputeQValue(
       const Eigen::Ref<const T>& s_val,
       const Eigen::Ref<const Eigen::VectorXd>& q_star_val){
   T q_val(q_star_val.size());
+  // deduce which version of atan2 we will need to use
+  if constexpr(std::is_same<T,Eigen::VectorXd>) {
+    void (*atan2_T)(T, T) = &std::atan2;
+  }
+  else if constexpr(std::is_same<T, VectorX<symbolic::Expression>) {
+    atan2_T = &std::atan2;
+  }
+  else if constexpr(std::is_same<T, VectorX<AutoDiffXd>) {
+
+  }
+
   for (int i = 0; i < s_val.size(); ++i) {
     const internal::Mobilizer<double>& mobilizer =
         GetInternalTree(plant_).get_mobilizer(
@@ -222,7 +233,7 @@ T RationalForwardKinematics::ComputeQValue(
     // variable into s_.
     if (IsRevolute(mobilizer)) {
       const int q_index = mobilizer.position_start_in_q();
-      s_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
+      q_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
     } else if (IsPrismatic(mobilizer)) {
       const int q_index = mobilizer.position_start_in_q();
       s_val(i) = q_val(q_index) - q_star_val(q_index);
