@@ -7,9 +7,9 @@
 #include <Eigen/Core>
 
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Configuration distance takes two configurations of the robot, q1 and q2,
@@ -75,4 +75,4 @@ struct CollisionCheckerParams {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
