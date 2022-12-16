@@ -209,6 +209,33 @@ Eigen::VectorXd RationalForwardKinematics::ComputeSValue(
   return s_val;
 }
 
+template<class T>
+T RationalForwardKinematics::ComputeQValue(
+      const Eigen::Ref<const T>& s_val,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val){
+  T q_val(q_star_val.size());
+  for (int i = 0; i < s_val.size(); ++i) {
+    const internal::Mobilizer<double>& mobilizer =
+        GetInternalTree(plant_).get_mobilizer(
+            map_s_to_mobilizer_.at(s_[i].get_id()));
+    // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
+    // variable into s_.
+    if (IsRevolute(mobilizer)) {
+      const int q_index = mobilizer.position_start_in_q();
+      s_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
+    } else if (IsPrismatic(mobilizer)) {
+      const int q_index = mobilizer.position_start_in_q();
+      s_val(i) = q_val(q_index) - q_star_val(q_index);
+    } else {
+      // Successful construction guarantees nothing but supported mobilizer
+      // types.
+      DRAKE_UNREACHABLE();
+    }
+  }
+  return q_val;
+
+}
+
 template <typename T>
 RationalForwardKinematics::Pose<T> RationalForwardKinematics::
     CalcRevoluteJointChildBodyPoseAsMultilinearPolynomial(
