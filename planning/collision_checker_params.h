@@ -7,9 +7,9 @@
 #include <Eigen/Core>
 
 #include "drake/multibody/tree/multibody_tree_indexes.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Configuration distance takes two configurations of the robot, q1 and q2,
@@ -56,18 +56,21 @@ struct CollisionCheckerParams {
   that data must outlive the collision checker. */
   ConfigurationDistanceFunction configuration_distance_function;
 
+  // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** Step size for edge checking; in units compatible with the configuration
-   distance function..
+  distance function.
   Collision checking of edges q1->q2 is performed by interpolating from q1 to q2
   at edge_step_size steps and checking the interpolated configuration for
   collision. The value must be positive. */
   double edge_step_size{};
 
+  // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** Additional padding to apply to all robot-environment collision queries. If
   distance between robot and environment is less than padding, the checker
   reports a collision. */
   double env_collision_padding{};
 
+  // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** Additional padding to apply to all robot-robot self collision queries. If
   distance between robot and itself is less than padding, the checker reports a
   collision. */
@@ -75,4 +78,4 @@ struct CollisionCheckerParams {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
