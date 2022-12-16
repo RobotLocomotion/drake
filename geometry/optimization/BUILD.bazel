@@ -81,6 +81,7 @@ drake_cc_library(
         ":convex_set",
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//multibody/rational:rational_forward_kinematics",
         "//solvers:choose_best_solver",
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
