@@ -134,6 +134,7 @@ def _download_binaries(*, timestamp, staging, version):
             f"drake-{version[1:]}-cp38-cp38-manylinux_2_31_x86_64.whl",
             f"drake-{version[1:]}-cp39-cp39-manylinux_2_31_x86_64.whl",
             f"drake-{version[1:]}-cp310-cp310-manylinux_2_31_x86_64.whl",
+            f"drake-{version[1:]}-cp311-cp311-manylinux_2_31_x86_64.whl",
             f"drake-{version[1:]}-cp310-cp310-macosx_12_0_x86_64.whl",
             f"drake-{version[1:]}-cp310-cp310-macosx_12_0_arm64.whl",
             # Deb filenames.
