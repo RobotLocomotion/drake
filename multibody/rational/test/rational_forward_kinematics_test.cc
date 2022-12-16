@@ -318,6 +318,65 @@ TEST_F(KinematicTreeTest, CalcBodyPoses) {
   Eigen::VectorXd s_val = dut.ComputeSValue(q_val, q_star_val);
   CheckBodyKinematics(dut, q_val, q_star_val, s_val, body_indices_[2]);
 }
+
+TEST_F(KinematicTreeTest, TestSAndQConversionDouble) {
+  RationalForwardKinematics dut(plant_.get());
+  EXPECT_EQ(dut.s().rows(), plant_->num_positions());
+  const double tol{1E-12};
+
+  auto check_s_val = [&dut, tol](const Eigen::VectorXd& q_val,
+                                 Eigen::VectorXd& q_star) {
+    Eigen::VectorXd s_val = dut.ComputeSValue(q_val, q_star);
+    Eigen::VectorXd q_val_computed = dut.ComputeQValue(s_val, q_star);
+    EXPECT_TRUE(CompareMatrices(q_val, q_val_computed, tol));
+  };
+
+  check_s_val(Eigen::VectorXd::Zero(plant_->num_positions(),
+                                    Eigen::VectorXd::Zero(plant_->num_positions());
+
+  // arbitrary non-zero q_val
+  Eigen::VectorXd q_val;
+  q_val << 1.2, -0.4, 0.3, -0.5, 0.4, 1;
+  check_s_val(q_val, Eigen::VectorXd::Zero(plant_->num_positions());
+
+  // arbitrary non-zero q_val and q_star
+  Eigen::VectorXd q_star;
+  q_star << 0.2, 0.3, 0.5, -0.1, 1.2, 2.3;
+  check_s_val(q_val, q_star);
+}
+
+TEST_F(KinematicTreeTest, TestSAndQConversionSymbolic) {
+  RationalForwardKinematics dut(plant_.get());
+  EXPECT_EQ(dut.s().rows(), plant_->num_positions());
+  const double tol{1E-12};
+
+  auto check_s_val = [&dut, tol](const Eigen::Ref<const VectorX<symbolic::Expression>>& q_val,
+                                 Eigen::VectorXd& q_star) {
+    VectorX<symbolic::Expression> s_val = dut.ComputeSValue(q_val, q_star);
+    VectorX<symbolic::Expression> q_val_computed = dut.ComputeQValue(s_val, q_star);
+    for(int i = 0; i < q_star.size(); ++i) {
+      EXPECT_TRUE(q_val_computed.at(i).Expand().Equals(q_val(i).Expand()));
+    }
+  };
+
+  // arbitrary non-zero q_val
+  VectorX<symbolic::Expression> q_val;
+  for(int i = 0; i < plant_->num_positions(); ++i){
+    symbolic::Variable qi(fmt::format("q[{}]", i));
+    symbolic::Expression qi_expr = symbolic::pow(qi, 2);
+    q_val << qi_expr;
+  }
+  VectorX<symbolic::Expression> s_val = dut.ComputeSValue(q_val,
+                                                          Eigen::VectorXd::Zero(plant_->num_positions()));
+  check_s_val(q_val, Eigen::VectorXd::Zero(plant_->num_positions()));
+
+  // arbitrary non-zero q_val and q_star
+  Eigen::VectorXd q_star;
+  q_star << 0.2, 0.3, 0.5, -0.1, 1.2, 2.3;
+  check_s_val(q_val, q_star);
+}
+
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
