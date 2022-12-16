@@ -24,9 +24,9 @@ namespace internal {
 // @param model_name
 //   The name given to the newly created instance of this model.  If
 //   empty, the "name" attribute from the model tag will be used.
-// @param parent_model_name
-//   Optional name of parent model. If set, this will be prefixed with the model
-//   name (either `model_name` or from the "name" attribute) using the SDFormat
+// @param parent_model_name Optional name of parent model. If set, the model
+//   name of the parsed model (either `model_name` or from the "name"
+//   attribute) will be prefixed with the parent_model_name, using the SDFormat
 //   scope delimiter "::". The prefixed name will used as the name given to the
 //   newly created instance of this model.
 // @param workspace
