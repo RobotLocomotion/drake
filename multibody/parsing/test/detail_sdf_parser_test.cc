@@ -79,47 +79,52 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
 
   ModelInstanceIndex AddModelFromSdfFile(
       const std::string& file_name,
-      const std::string& model_name) {
+      const std::string& model_name,
+      const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
-    std::optional<ModelInstanceIndex> result = AddModelFromSdf(
-        data_source, model_name, w);
+    std::optional<ModelInstanceIndex> result =
+        AddModelFromSdf(data_source, model_name, parent_model_name, w);
     EXPECT_TRUE(result.has_value());
     resolver.Resolve(diagnostic_policy_);
     return result.value_or(ModelInstanceIndex{});
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfFile(
-      const std::string& file_name) {
+      const std::string& file_name,
+      const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
-    auto result = AddModelsFromSdf(data_source, w);
+    auto result = AddModelsFromSdf(data_source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
 
   std::vector<ModelInstanceIndex> AddModelsFromSdfString(
-      const std::string& file_contents) {
+      const std::string& file_contents,
+      const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kContents, &file_contents};
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_,
                        &resolver, TestingSelect};
-    auto result = AddModelsFromSdf(data_source, w);
+    auto result = AddModelsFromSdf(data_source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
 
-  void ParseTestString(const std::string& inner,
-                       const std::string& sdf_version = "1.6") {
+  void ParseTestString(
+      const std::string& inner,
+      const std::string& sdf_version = "1.6",
+      const std::optional<std::string>& parent_model_name = {}) {
     SCOPED_TRACE(inner);
     FlushDiagnostics();
     const std::string file_contents =
         "<sdf version='" + sdf_version + "'>" + inner + "\n</sdf>\n";
-    AddModelsFromSdfString(file_contents);
+    AddModelsFromSdfString(file_contents, parent_model_name);
   }
 
   // Returns the first error as a string (or else fails the test case,
@@ -251,16 +256,25 @@ TEST_F(SdfParserTest, ModelInstanceTest) {
   EXPECT_THROW(AddModelFromSdfFile(acrobot_sdf_name, ""),
                std::logic_error);
 
+  // Avoid name collisions with model renaming.
   ModelInstanceIndex acrobot2 =
       AddModelFromSdfFile(acrobot_sdf_name, "acrobot2");
+
+  // Avoid name collisions with parent model names; both entry points.
+  ModelInstanceIndex acrobot3 =
+      AddModelFromSdfFile(acrobot_sdf_name, "", "3");
+  ModelInstanceIndex acrobot4 =
+      AddModelsFromSdfFile(acrobot_sdf_name, "4").at(0);
 
   // We are done adding models.
   plant_.Finalize();
 
-  ASSERT_EQ(plant_.num_model_instances(), 5);
+  ASSERT_EQ(plant_.num_model_instances(), 7);
   EXPECT_EQ(plant_.GetModelInstanceByName("instance1"), instance1);
   EXPECT_EQ(plant_.GetModelInstanceByName("acrobot"), acrobot1);
   EXPECT_EQ(plant_.GetModelInstanceByName("acrobot2"), acrobot2);
+  EXPECT_EQ(plant_.GetModelInstanceByName("3::acrobot"), acrobot3);
+  EXPECT_EQ(plant_.GetModelInstanceByName("4::acrobot"), acrobot4);
 
   // Check a couple links from the first model without specifying the model
   // instance.
@@ -357,6 +371,35 @@ TEST_F(SdfParserTest, ModelInstanceTest) {
   const RigidTransformd X_MF3(Vector3d(0.7, 0.8, 0.9));
   check_frame(
       "__model__", "model_scope_model_frame_implicit", X_MF3);
+}
+
+TEST_F(SdfParserTest, ParentModelNameWithString) {
+  std::string model = "<model name='something'><link name='link'/></model>";
+  ParseTestString(model);
+  // Add a parent model name to avoid name collisions.
+  ParseTestString(model, "1.6", "2");
+  plant_.Finalize();
+  ASSERT_EQ(plant_.num_model_instances(), 4);
+  EXPECT_NO_THROW(plant_.GetModelInstanceByName("something"));
+  EXPECT_NO_THROW(plant_.GetModelInstanceByName("2::something"));
+}
+
+TEST_F(SdfParserTest, ParentModelNameWithStringWorld) {
+  std::string model = R"""(
+<world name='here'>
+  <model name='a'><link name='link'/></model>
+  <model name='b'><link name='link'/></model>
+</world>
+)""";
+  ParseTestString(model);
+  // Add a parent model name to avoid name collisions.
+  ParseTestString(model, "1.6", "2");
+  plant_.Finalize();
+  ASSERT_EQ(plant_.num_model_instances(), 6);
+  EXPECT_NO_THROW(plant_.GetModelInstanceByName("a"));
+  EXPECT_NO_THROW(plant_.GetModelInstanceByName("b"));
+  EXPECT_NO_THROW(plant_.GetModelInstanceByName("2::a"));
+  EXPECT_NO_THROW(plant_.GetModelInstanceByName("2::b"));
 }
 
 TEST_F(SdfParserTest, EntireInertialTagOmitted) {

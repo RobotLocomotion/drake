@@ -30,14 +30,19 @@ namespace internal {
 // @param model_name
 //   The name given to the newly created instance of this model.  If
 //   empty, the "name" attribute from the model tag will be used.
+// @param parent_model_name
+//   Optional name of parent model. If set, this will be prefixed with the model
+//   name (either `model_name` or from the "name" attribute) using the SDFormat
+//   scope delimiter "::". The prefixed name will used as the name given to the
+//   newly created instance of this model.
 // @param workspace
 //   The ParsingWorkspace.
 // @returns The model instance index for the newly added model; this might be
 //   null if there were parsing errors reported through the workspace.diagnostic
 //   policy.
 std::optional<ModelInstanceIndex> AddModelFromSdf(
-    const DataSource& data_source,
-    const std::string& model_name,
+    const DataSource& data_source, const std::string& model_name,
+    const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace);
 
 // Parses all `<model>` elements from the SDF file specified by `data_source`
@@ -54,6 +59,11 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 //
 // @param data_source
 //   The SDF data to be parsed.
+// @param parent_model_name
+//   Optional name of parent model. If set, this will be prefixed with the model
+//   name (either `model_name` or from the "name" attribute) using the SDFormat
+//   scope delimiter "::". The prefixed name will used as the name given to the
+//   newly created instance of this model.
 // @param workspace
 //   The ParsingWorkspace.
 // @returns The set of model instance indices for the newly added models. This
@@ -61,6 +71,7 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 //   errors reported through the workspace.diagnostic policy.
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
+    const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace);
 
 class SdfParserWrapper final : public ParserInterface {
