@@ -188,7 +188,8 @@ CspaceFreePolytope::CspaceFreePolytope(
     : rational_forward_kin_(plant),
       scene_graph_{*scene_graph},
       link_geometries_{GetCollisionGeometries(*plant, *scene_graph)},
-      plane_order_{plane_order} {
+      plane_order_{plane_order},
+      s_set_{rational_forward_kin_.s()} {
   // Create separating planes.
   // collision_pairs maps each pair of body to the pair of collision geometries
   // on that pair of body.
@@ -243,6 +244,12 @@ CspaceFreePolytope::CspaceFreePolytope(
                                            geometry_pair.second->id()),
           static_cast<int>(separating_planes_.size()) - 1);
     }
+  }
+  // Currently we only need to impose the constraint that a 3D vector to have
+  // unit length, which requires a 3 + 1 = 4 dimensional y_slack.
+  y_slack_.resize(4);
+  for (int i = 0; i < 4; ++i) {
+    y_slack_(i) = symbolic::Variable("y" + std::to_string(i));
   }
 }
 
@@ -533,10 +540,120 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
                plane.negative_side_geometry->body_index(),
                &ret.negative_side_lagrangians);
   if (!plane_geometries.unit_length_vectors.empty()) {
-    throw std::runtime_error(
-        "ConstructPlaneSearchProgram: cannot handle unit length vector "
-        "constraint yet.");
+    ret.prog->AddIndeterminates(y_slack_);
+    for (const auto& vec : plane_geometries.unit_length_vectors) {
+      ret.unit_length_lagrangians.push_back(AddUnitLengthConstraint(
+          ret.prog.get(), vec, d_minus_Cs, s_minus_s_lower, s_upper_minus_s,
+          C_redundant_indices, s_lower_redundant_indices,
+          s_upper_redundant_indices));
+    }
   }
+  return ret;
+}
+
+CspaceFreePolytope::UnitLengthLagrangians
+CspaceFreePolytope::AddUnitLengthConstraint(
+    solvers::MathematicalProgram* prog,
+    const VectorX<symbolic::Polynomial>& unit_length_vec,
+    const VectorX<symbolic::Polynomial>& d_minus_Cs,
+    const VectorX<symbolic::Polynomial>& s_minus_s_lower,
+    const VectorX<symbolic::Polynomial>& s_upper_minus_s,
+    const std::unordered_set<int>& C_redundant_indices,
+    const std::unordered_set<int>& s_lower_redundant_indices,
+    const std::unordered_set<int>& s_upper_redundant_indices) const {
+  CspaceFreePolytope::UnitLengthLagrangians ret(d_minus_Cs.rows(),
+                                                s_minus_s_lower.rows());
+  // Currently we only handle unit_length_vec.rows() == 3, and each polynomial
+  // in unit_length_vec has degree <= 1.
+  // TODO(hongkai.dai): handle unit_length_vec.rows() != 3.
+  if (unit_length_vec.rows() != 3) {
+    throw std::runtime_error(
+        "AddUnitLengthConstraint(): unit_length_vec should have 3 rows.");
+  }
+  // TODO(hongkai.dai): handle higher degree unit length vector.
+  for (int i = 0; i < unit_length_vec.rows(); ++i) {
+    // We set the Lagrangian multiplier degrees based on the assumption that
+    // unit_length_vec is an affine polynomial of s.
+    if (unit_length_vec(i).TotalDegree() > 1) {
+      throw std::runtime_error(fmt::format(
+          "AddUnitLengthConstraint(): unit_length_vec({}) has degree >1", i));
+    }
+  }
+  // Compute p(y, s) = yᵀ * ⌈ 1   a(s)ᵀ⌉ * y
+  //                        ⌊a(s)    I ⌋
+  symbolic::Polynomial::MapType p_map;
+  for (int i = 0; i < 1 + unit_length_vec.rows(); ++i) {
+    p_map.emplace(symbolic::Monomial(y_slack_(i), 2), 1);
+  }
+  symbolic::Polynomial p{p_map};
+  for (int i = 0; i < unit_length_vec.rows(); ++i) {
+    p += 2 * unit_length_vec(i) *
+         symbolic::Polynomial(symbolic::Monomial(y_slack_(i + 1)));
+  }
+  const int num_grams = 1 + d_minus_Cs.rows() + 2 * s_minus_s_lower.rows();
+  // Since p(y, s) is quadratic in y and linear in s, with the highest-degree
+  // monomial in the form yᵢ²sⱼ, we know that to make p(y, s) - λ₁(y, s)ᵀ(d−Cs)
+  // − λ₂(y, s)ᵀ(s−s_lower) − λ₃(y, s)ᵀ(s_upper−s) - ν₄(y, s)(1−yᵀy) being sos,
+  // we can set λ₁(y, s) λ₂(y, s) and λ₃(y, s) to be quadratic polynomials of y
+  // and ν₄(y, s) to be an affine polynomial of s. These Lagrangian multipliers
+  // degrees meet the minimum requirement to match the degree of p(y, s).
+  VectorX<symbolic::Monomial> monomial_basis(2 + unit_length_vec.rows() + 1);
+  monomial_basis(0) = symbolic::Monomial();
+  for (int i = 0; i < 1 + unit_length_vec.rows(); ++i) {
+    monomial_basis(1 + i) = symbolic::Monomial(y_slack_(i));
+  }
+  const int gram_size = monomial_basis.rows() * (monomial_basis.rows() + 1) / 2;
+  const int num_gram_vars = gram_size * num_grams;
+  const VectorX<symbolic::Variable> gram_vars =
+      prog->NewContinuousVariables(num_gram_vars, "Gram");
+  int gram_var_count = 0;
+  MatrixX<symbolic::Variable> gram(monomial_basis.rows(),
+                                   monomial_basis.rows());
+  for (int i = 0; i < d_minus_Cs.rows(); ++i) {
+    AddLagrangian(prog, monomial_basis,
+                  gram_vars.segment(gram_var_count, gram_size),
+                  C_redundant_indices.count(i) > 0, &(ret.polytope(i)), &gram);
+    gram_var_count += gram_size;
+  }
+  for (int i = 0; i < s_minus_s_lower.rows(); ++i) {
+    AddLagrangian(
+        prog, monomial_basis, gram_vars.segment(gram_var_count, gram_size),
+        s_lower_redundant_indices.count(i) > 0, &(ret.s_lower(i)), &gram);
+    gram_var_count += gram_size;
+    AddLagrangian(
+        prog, monomial_basis, gram_vars.segment(gram_var_count, gram_size),
+        s_upper_redundant_indices.count(i) > 0, &(ret.s_upper(i)), &gram);
+    gram_var_count += gram_size;
+  }
+  // This Lagrangian is just an affine polynomial of s, it is for the algebraic
+  // set {y | yᵀy=1}.
+  ret.y_square = prog->NewFreePolynomial(s_set_, 1);
+  // Compute polynomial 1 - yᵀy
+  symbolic::Polynomial::MapType one_minus_y_square_map;
+  one_minus_y_square_map.emplace(symbolic::Monomial(), 1);
+  for (int i = 0; i < 1 + unit_length_vec.rows(); ++i) {
+    one_minus_y_square_map.emplace(symbolic::Monomial(y_slack_(i), 2), -1);
+  }
+  const symbolic::Polynomial one_minus_y_square{one_minus_y_square_map};
+  const symbolic::Polynomial poly =
+      p - ret.polytope.dot(d_minus_Cs) - ret.s_lower.dot(s_minus_s_lower) -
+      ret.s_upper.dot(s_upper_minus_s) - ret.y_square * one_minus_y_square;
+  // Now constrain poly to be sos.
+  // `poly` is affine in `s`, specifically it only contains monomials in the
+  // form of yᵢ²sⱼ, yᵢ², yᵢ, sⱼ, 1. Hence to make `poly` a sos polynomial, we
+  // only need to consider the monomial basis [1, y], and cancel out the terms
+  // that are linear in s.
+  SymmetricMatrixFromLowerTriangularPart<symbolic::Variable>(
+      monomial_basis.rows(), gram_vars.segment(gram_var_count, gram_size),
+      &gram);
+  prog->AddPositiveSemidefiniteConstraint(gram);
+  const symbolic::Polynomial poly_sos =
+      symbolic::CalcPolynomialWLowerTriangularPart(
+          monomial_basis, gram_vars.segment(gram_var_count, gram_size));
+  gram_var_count += gram_size;
+  DRAKE_DEMAND(gram_var_count == num_gram_vars);
+  prog->AddEqualityConstraintBetweenPolynomials(poly, poly_sos);
+
   return ret;
 }
 
