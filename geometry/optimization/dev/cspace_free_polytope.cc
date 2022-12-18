@@ -442,7 +442,7 @@ CspaceFreePolytope::SeparatingPlaneLagrangians::GetSolution(
   return ret;
 }
 
-CspaceFreePolytope::SeparationCertificate
+CspaceFreePolytope::v
 CspaceFreePolytope::ConstructPlaneSearchProgram(
     const PlaneSeparatesGeometries& plane_geometries,
     const VectorX<symbolic::Polynomial>& d_minus_Cs,

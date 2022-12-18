@@ -15,7 +15,7 @@ namespace multibody {
 
 /// _Articulated %Body Inertia_ is the inertia that a body appears to have when
 /// it is the base (or root) of a rigid-body system, also referred to as
-/// _Articulated %Body_ in the context of articulated body algorithms.
+/// _Articulated %Body_ in the context ofg articulated body algorithms.
 /// The _Articulated %Body Inertia_ is a very useful multibody dynamics concept
 /// that was introduced by Featherstone [Featherstone 1983] to develop the
 /// remarkable `O(n)` Articulated Body Algorithm (ABA) for solving forward
