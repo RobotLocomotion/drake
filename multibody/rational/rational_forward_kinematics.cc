@@ -3,13 +3,9 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
+//#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
-#include "drake/multibody/tree/prismatic_mobilizer.h"
-#include "drake/multibody/tree/revolute_mobilizer.h"
-#include "drake/multibody/tree/space_xyz_mobilizer.h"
-#include "drake/multibody/tree/weld_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -56,42 +52,6 @@ RationalForwardKinematics::Pose<Scalar2> CalcChildPose(
   X_AC.position = R_AM * p_MC + p_AM;
   return X_AC;
 }
-
-// TODO(hongkai.dai): determine the joint type through a Reifier.
-bool IsRevolute(const internal::Mobilizer<double>& mobilizer) {
-  const bool is_revolute =
-      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
-       mobilizer.can_rotate() && !mobilizer.can_translate());
-  if (is_revolute) {
-    DRAKE_THROW_UNLESS(dynamic_cast<const internal::RevoluteMobilizer<double>*>(
-                           &mobilizer) != nullptr);
-  }
-  return is_revolute;
-}
-
-// TODO(hongkai.dai): determine the joint type through a Reifier.
-bool IsWeld(const internal::Mobilizer<double>& mobilizer) {
-  const bool is_weld =
-      (mobilizer.num_positions() == 0 && mobilizer.num_velocities() == 0 &&
-       !mobilizer.can_rotate() && !mobilizer.can_translate());
-  if (is_weld) {
-    DRAKE_THROW_UNLESS(dynamic_cast<const internal::WeldMobilizer<double>*>(
-                           &mobilizer) != nullptr);
-  }
-  return is_weld;
-}
-
-bool IsPrismatic(const internal::Mobilizer<double>& mobilizer) {
-  const bool is_prismatic =
-      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
-       !mobilizer.can_rotate() && mobilizer.can_translate());
-  if (is_prismatic) {
-    DRAKE_THROW_UNLESS(
-        dynamic_cast<const internal::PrismaticMobilizer<double>*>(&mobilizer) !=
-        nullptr);
-  }
-  return is_prismatic;
-}
 }  // namespace
 
 RationalForwardKinematics::RationalForwardKinematics(
@@ -108,7 +68,7 @@ RationalForwardKinematics::RationalForwardKinematics(
         tree.get_topology().get_body(body_index);
     const internal::Mobilizer<double>* mobilizer =
         &(tree.get_mobilizer(body_topology.inboard_mobilizer));
-    if (IsRevolute(*mobilizer)) {
+    if (internal::IsRevolute(*mobilizer)) {
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
       s_angles_.push_back(s_angle);
@@ -122,9 +82,9 @@ RationalForwardKinematics::RationalForwardKinematics(
       map_s_index_to_angle_index_.emplace(s_.size() - 1, s_angles_.size() - 1);
       map_s_to_mobilizer_.emplace(s_.back().get_id(), mobilizer->index());
       map_mobilizer_to_s_index_[mobilizer->index()] = s_.size() - 1;
-    } else if (IsWeld(*mobilizer)) {
+    } else if (internal::IsWeld(*mobilizer)) {
       // Do nothing for a weld joint.
-    } else if (IsPrismatic(*mobilizer)) {
+    } else if (internal::IsPrismatic(*mobilizer)) {
       s_.emplace_back("s[" + std::to_string(s_.size()) + "]");
       map_mobilizer_to_s_index_[mobilizer->index()] = s_.size() - 1;
       map_s_to_mobilizer_.emplace(s_.back().get_id(), mobilizer->index());
@@ -183,108 +143,6 @@ RationalForwardKinematics::ConvertMultilinearPolynomialToRationalFunction(
           one_minus_s_angles_squared_);
   return e_rational;
 }
-
-template<class T>
-Eigen::Matrix<T, -1, 1> RationalForwardKinematics::ComputeSValue(
-    const Eigen::Ref<const Eigen::Matrix<T, -1, 1>>& q_val,
-    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
-  Eigen::Matrix<T, -1, 1> s_val(s_.size());
-  void (*tan_T)(T, T);
-  if constexpr (std::is_arithmetic<T>::value) {
-    tan_T = &std::tan;
-  } else if constexpr (std::is_same <T, symbolic::Expression>::value) {
-    tan_T = &symbolic::tan;
-  } else if constexpr (std::is_same<T, AutoDiffXd>::value) {
-    tan_T = &tan;
-  }
-  for (int i = 0; i < s_val.size(); ++i) {
-    const internal::Mobilizer<T>& mobilizer =
-        GetInternalTree(plant_).get_mobilizer(
-            map_s_to_mobilizer_.at(s_[i].get_id()));
-    // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
-    // variable into s_.
-    if (IsRevolute(mobilizer)) {
-      const int q_index = mobilizer.position_start_in_q();
-      s_val(i) = tan((q_val(q_index) - q_star_val(q_index)) / 2);
-    } else if (IsPrismatic(mobilizer)) {
-      const int q_index = mobilizer.position_start_in_q();
-      s_val(i) = q_val(q_index) - q_star_val(q_index);
-    } else {
-      // Successful construction guarantees nothing but supported mobilizer
-      // types.
-      DRAKE_UNREACHABLE();
-    }
-  }
-  return s_val;
-}
-
-//Eigen::VectorXd RationalForwardKinematics::ComputeSValue(
-//    const Eigen::Ref<const Eigen::VectorXd>& q_val,
-//    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
-//  Eigen::VectorXd s_val(s_.size());
-//  for (int i = 0; i < s_val.size(); ++i) {
-//    const internal::Mobilizer<double>& mobilizer =
-//        GetInternalTree(plant_).get_mobilizer(
-//            map_s_to_mobilizer_.at(s_[i].get_id()));
-//    // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
-//    // variable into s_.
-//    if (IsRevolute(mobilizer)) {
-//      const int q_index = mobilizer.position_start_in_q();
-//      s_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
-//    } else if (IsPrismatic(mobilizer)) {
-//      const int q_index = mobilizer.position_start_in_q();
-//      s_val(i) = q_val(q_index) - q_star_val(q_index);
-//    } else {
-//      // Successful construction guarantees nothing but supported mobilizer
-//      // types.
-//      DRAKE_UNREACHABLE();
-//    }
-//  }
-//  return s_val;
-//}
-
-template <class T>
-VectorX<T> RationalForwardKinematics::ComputeQValue(
-    const Eigen::Ref<const VectorX<T>>& s_val,
-    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
-  VectorX<T> q_val(q_star_val.size());
-  // deduce which version of atan2 we will need to use
-  void (*atan2_T)(T, T);
-  void (*pow_T)(T, T);
-  if constexpr (std::is_arithmetic<T>::value) {
-    atan2_T = &std::atan2;
-    pow_T = &std::pow;
-  } else if constexpr (std::is_same <T, symbolic::Expression>::value) {
-    atan2_T = &symbolic::atan2;
-    pow_T = &symbolic::pow;
-  } else if constexpr (std::is_same<T, AutoDiffXd>::value) {
-    atan2_T = &atan2;
-    pow_T = &pow;
-  }
-
-  for (int i = 0; i < s_val.size(); ++i) {
-    const internal::Mobilizer<double>& mobilizer =
-        GetInternalTree(plant_).get_mobilizer(
-            map_s_to_mobilizer_.at(s_[i].get_id()));
-    // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
-    // variable into s_.
-    const int q_index = mobilizer.position_start_in_q();
-    if (IsRevolute(mobilizer)) {
-      q_val(q_index) =
-          atan2(2 * s_val(i) / (1 + pow_T(s_val(i), 2)),
-                (1 - pow_T(s_val(i), 2)) / (1 + pow_T(s_val(i), 2))) +
-          q_star_val(q_index);
-    } else if (IsPrismatic(mobilizer)) {
-      q_val(q_index) = s_val(i) + q_star_val(q_index);
-    } else {
-      // Successful construction guarantees nothing but supported mobilizer
-      // types.
-      DRAKE_UNREACHABLE();
-    }
-  }
-  return q_val;
-}
-
 
 template <typename T>
 RationalForwardKinematics::Pose<T> RationalForwardKinematics::
@@ -400,7 +258,7 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
     X_PF = mobilizer->outboard_frame().GetFixedPoseInBodyFrame();
     X_MC = mobilizer->inboard_frame().GetFixedPoseInBodyFrame().inverse();
   }
-  if (IsRevolute(*mobilizer)) {
+  if (internal::IsRevolute(*mobilizer)) {
     // A revolute joint.
     const internal::RevoluteMobilizer<double>* revolute_mobilizer =
         static_cast<const internal::RevoluteMobilizer<double>*>(mobilizer);
@@ -417,7 +275,7 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
     return CalcRevoluteJointChildBodyPoseAsMultilinearPolynomial(
         axis_F, X_PF, X_MC, X_AP, q_star(q_index), cos_delta_[s_angle_index],
         sin_delta_[s_angle_index]);
-  } else if (IsPrismatic(*mobilizer)) {
+  } else if (internal::IsPrismatic(*mobilizer)) {
     // A prismatic joint.
     const internal::PrismaticMobilizer<double>* prismatic_mobilizer =
         static_cast<const internal::PrismaticMobilizer<double>*>(mobilizer);
@@ -431,7 +289,7 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
     }
     return CalcPrismaticJointChildLinkPose(axis_F, X_PF, X_MC, X_AP,
                                            q_star(s_index), s_[s_index]);
-  } else if (IsWeld(*mobilizer)) {
+  } else if (internal::IsWeld(*mobilizer)) {
     const internal::WeldMobilizer<double>* weld_mobilizer =
         static_cast<const internal::WeldMobilizer<double>*>(mobilizer);
     math::RigidTransformd X_FM;
@@ -446,7 +304,6 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   // handled.
   DRAKE_UNREACHABLE();
 }
-
 
 }  // namespace multibody
 }  // namespace drake
