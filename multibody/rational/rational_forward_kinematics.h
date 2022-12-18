@@ -8,10 +8,12 @@
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
+
 /** For certain robots (whose joint transforms are algebraic functions of joint
  variables, for example revolute/prismatic/floating-base joints), we can
  represent the pose (position, orientation) of each body, as rational
@@ -105,22 +107,63 @@ class RationalForwardKinematics {
    matching between q and s (we don't guarantee that s(i) is computed from
    q(i)).
    */
-//  [[nodiscard]] Eigen::VectorXd ComputeSValue(
-//      const Eigen::Ref<const Eigen::VectorXd>& q_val,
-//      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const;
-  template<class T>
-  [[nodiscard]] Eigen::Matrix<T, -1, 1> ComputeSValue(
-      const Eigen::Ref<const Eigen::Matrix<T, -1, 1>>& s_val,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const;
+  template <typename Derived>
+  [[nodiscard]] Eigen::VectorX<typename Derived::Scalar> ComputeSValue(
+      const Eigen::MatrixBase<Derived>& q_val,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+    Eigen::VectorX<typename Derived::Scalar> s_val(s_.size());
+    for (int i = 0; i < s_val.size(); ++i) {
+      const internal::Mobilizer<double>& mobilizer =
+          GetInternalTree(plant_).get_mobilizer(
+              map_s_to_mobilizer_.at(s_[i].get_id()));
+      // the mobilizer cannot be a weld joint since weld joint doesn't introduce
+      // a variable into s_.
+      if (internal::IsRevolute(mobilizer)) {
+        const int q_index = mobilizer.position_start_in_q();
+        s_val(i) = tan((q_val(q_index) - q_star_val(q_index)) / 2);
+      } else if (internal::IsPrismatic(mobilizer)) {
+        const int q_index = mobilizer.position_start_in_q();
+        s_val(i) = q_val(q_index) - q_star_val(q_index);
+      } else {
+        // Successful construction guarantees nothing but supported mobilizer
+        // types.
+        DRAKE_UNREACHABLE();
+      }
+    }
+    return s_val;
+  }
 
   /** Computes values of q from s_val and q_star_val, while handling the index
    matching between q and s (we don't guarantee that s(i) is computed from
    q(i)).
    */
-  template<class T>
-  [[nodiscard]] Eigen::Matrix<T, -1, 1> ComputeQValue(
-      const Eigen::Ref<const Eigen::Matrix<T, -1, 1>>& s_val,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const;
+  template <typename Derived>
+  [[nodiscard]] Eigen::VectorX<typename Derived::Scalar> ComputeQValue(
+      const Eigen::MatrixBase<Derived>& s_val,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+    Eigen::VectorX<typename Derived::Scalar> q_val(s_.size());
+    for (int i = 0; i < s_val.size(); ++i) {
+      const internal::Mobilizer<double>& mobilizer =
+          GetInternalTree(plant_).get_mobilizer(
+              map_s_to_mobilizer_.at(s_[i].get_id()));
+      // the mobilizer cannot be a weld joint since weld joint doesn't introduce
+      // a variable into s_.
+      const int q_index = mobilizer.position_start_in_q();
+      if (internal::IsRevolute(mobilizer)) {
+        q_val(q_index) =
+            atan2(2 * s_val(i) / (1 + pow_T(s_val(i), 2)),
+                  (1 - pow(s_val(i), 2)) / (1 + pow(s_val(i), 2))) +
+            q_star_val(q_index);
+      } else if (internal::IsPrismatic(mobilizer)) {
+        q_val(q_index) = s_val(i) + q_star_val(q_index);
+      } else {
+        // Successful construction guarantees nothing but supported mobilizer
+        // types.
+        DRAKE_UNREACHABLE();
+      }
+    }
+    return q_val;
+  }
 
   const MultibodyPlant<double>& plant() const { return plant_; }
 
