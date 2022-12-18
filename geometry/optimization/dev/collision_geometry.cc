@@ -287,6 +287,65 @@ class NumRationalsPerPlaneSideReifier : public ShapeReifier {
 
   const Shape* shape_;
 };
+
+/**
+ Compute the signed distance from a collision geometry to the halfspace { p_GQ |
+ a_Gᵀ*p_GQ+b_G >= 0}, where a_G is in the collision geometry frame.
+ */
+class DistanceToHalfspaceReifier : public ShapeReifier {
+ public:
+  explicit DistanceToHalfspaceReifier(const Shape* shape, Eigen::Vector3d a_G,
+                                      double b_G)
+      : shape_{shape}, a_G_{std::move(a_G)}, b_G_{b_G} {}
+
+  double ProcessData() {
+    double ret;
+    shape_->Reify(this, &ret);
+    return ret;
+  }
+
+ private:
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Box& box, void* data) {
+    double* distance = static_cast<double*>(data);
+    // Box vertices.
+    Eigen::Matrix<double, 3, 8> p_GV;
+    // clang-format off
+    p_GV << -1, -1, -1, -1, 1, 1, 1, 1,
+            1, 1, -1, -1, 1, 1, -1, -1,
+            1, -1, 1, -1, 1, -1, 1, -1;
+    // clang-format on
+    p_GV.row(0) *= box.width() / 2;
+    p_GV.row(1) *= box.depth() / 2;
+    p_GV.row(2) *= box.height() / 2;
+    *distance = ((a_G_.transpose() * p_GV).minCoeff() + b_G_) / (a_G_.norm());
+  }
+
+  void ImplementGeometry(const Convex& convex, void* data) {
+    double* distance = static_cast<double*>(data);
+    *distance = ((a_G_.transpose() * GetVertices(convex)).minCoeff() + b_G_) /
+                (a_G_.norm());
+  }
+
+  void ImplementGeometry(const Sphere& sphere, void* data) {
+    double* distance = static_cast<double*>(data);
+    *distance = b_G_ / (a_G_.norm()) - sphere.radius();
+  }
+
+  void ImplementGeometry(const Capsule& capsule, void* data) {
+    double* distance = static_cast<double*>(data);
+    Eigen::Matrix<double, 3, 2> p_GS;
+    p_GS.col(0) << 0, 0, capsule.length() / 2;
+    p_GS.col(1) << 0, 0, -capsule.length() / 2;
+    *distance = ((a_G_.transpose() * p_GS).minCoeff() + b_G_) / (a_G_.norm()) -
+                capsule.radius();
+  }
+
+  const Shape* shape_;
+  Eigen::Vector3d a_G_;
+  double b_G_;
+};
 }  // namespace
 
 void CollisionGeometry::OnPlaneSide(
@@ -310,6 +369,39 @@ GeometryType CollisionGeometry::type() const {
 
 int CollisionGeometry::num_rationals_per_side() const {
   NumRationalsPerPlaneSideReifier reifier(geometry_);
+  return reifier.ProcessData();
+}
+
+double DistanceToHalfspace(const CollisionGeometry& collision_geometry,
+                           const Eigen::Vector3d& a, double b,
+                           multibody::BodyIndex expressed_body,
+                           PlaneSide plane_side,
+                           const multibody::MultibodyPlant<double>& plant,
+                           const systems::Context<double>& plant_context) {
+  // Transforms the halfspace from expressed frame (E) to the collision_geometry
+  // geometry frame (G). First compute the pose of expressed frame (E) to the
+  // collision geometry body frame (B).
+  const auto X_BE = plant.CalcRelativeTransform(
+      plant_context,
+      plant.get_body(collision_geometry.body_index()).body_frame(),
+      plant.get_body(expressed_body).body_frame());
+  const auto X_GE = collision_geometry.X_BG().inverse() * X_BE;
+  // Compute the outward normal a_G and constant b_G of the halfspace in the G
+  // frame. If we have a point Q on the plane, namely a_E.dot(p_EQ) + b_E = 0,
+  // we want to express this point Q in the G frame as p_GQ = R_GE * p_EQ +
+  // p_GE, and compute a_G, b_G such that a_G.dot(p_GQ) + b_G = 0.
+  // We have a_G = R_GE * a_E, a_G.dot(p_GE) + b_G = b_E
+  Eigen::Vector3d a_G;
+  double b_G;
+  a_G = X_GE.rotation() * a;
+  b_G = b - a_G.dot(X_GE.translation());
+  if (plane_side == PlaneSide::kNegative) {
+    a_G = -a_G;
+    b_G = -b_G;
+  }
+
+  DistanceToHalfspaceReifier reifier(&(collision_geometry.geometry()), a_G,
+                                     b_G);
   return reifier.ProcessData();
 }
 }  // namespace optimization

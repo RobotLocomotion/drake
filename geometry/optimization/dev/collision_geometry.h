@@ -113,6 +113,17 @@ class CollisionGeometry {
   geometry::GeometryId id_;
   math::RigidTransformd X_BG_;
 };
+
+/** Computes the signed distance from `collision_geometry` to the halfspace ℋ,
+ where ℋ ={ x | aᵀx+b >= 0} if plane_side=PlaneSide::kPositive, and ℋ ={ x |
+ aᵀx+b <= 0} if plane_side=PlaneSide::kNegative.
+ The halfspace is expressed in the expressed_body's body frame.
+ */
+[[nodiscard]] double DistanceToHalfspace(
+    const CollisionGeometry& collision_geometry, const Eigen::Vector3d& a,
+    double b, multibody::BodyIndex expressed_body, PlaneSide plane_side,
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& plant_context);
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
