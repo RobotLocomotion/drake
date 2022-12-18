@@ -6,8 +6,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
+#include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/shape_specification.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
 namespace drake {
@@ -400,6 +405,159 @@ TEST_F(CollisionGeometryTest, Capsule) {
   }
 }
 
+GTEST_TEST(DistanceToHalfspace, Test) {
+  // Construct a plant with many collision geometries (including halfspace).
+  systems::DiagramBuilder<double> builder;
+  multibody::MultibodyPlant<double>* plant;
+  geometry::SceneGraph<double>* scene_graph;
+  std::tie(plant, scene_graph) =
+      multibody::AddMultibodyPlantSceneGraph(&builder, 0.);
+
+  ProximityProperties proximity_properties{};
+  // C-IRIS doesn't care about robot dynamics. Use arbitrary material
+  // properties.
+  AddContactMaterial(0.1, 250.0, multibody::CoulombFriction<double>{0.9, 0.5},
+                     &proximity_properties);
+  // C-IRIS only considers robot kinematics, not dynamics. So we use an
+  // arbitrary inertia.
+  const multibody::SpatialInertia<double> spatial_inertia(
+      1, Eigen::Vector3d::Zero(),
+      multibody::UnitInertia<double>(0.01, 0.01, 0.01, 0, 0, 0));
+
+  std::vector<multibody::BodyIndex> body_indices;
+  for (int i = 0; i < 5; ++i) {
+    body_indices.push_back(
+        plant->AddRigidBody("body" + std::to_string(i), spatial_inertia)
+            .index());
+  }
+  const Eigen::Vector3d box_size(0.05, 0.02, 0.03);
+  const geometry::GeometryId body0_box = plant->RegisterCollisionGeometry(
+      plant->get_body(body_indices[0]),
+      math::RigidTransform(Eigen::Vector3d(0.01, 0.02, 0.03)),
+      Box(box_size(0), box_size(1), box_size(2)), "body0_box",
+      proximity_properties);
+
+  const geometry::GeometryId body1_sphere = plant->RegisterCollisionGeometry(
+      plant->get_body(body_indices[1]),
+      math::RigidTransform(Eigen::Vector3d(0.02, -0.01, 0.05)), Sphere(0.01),
+      "body1_sphere", proximity_properties);
+
+  const double capsule_radius = 0.04;
+  const double capsule_length = 0.1;
+  const geometry::GeometryId body2_capsule = plant->RegisterCollisionGeometry(
+      plant->get_body(body_indices[2]),
+      math::RigidTransformd(math::RollPitchYawd(0.05, -0.02, 0.01),
+                            Eigen::Vector3d(0.01, 0.02, -0.03)),
+      Capsule(capsule_radius, capsule_length), "body2_capsule",
+      proximity_properties);
+
+  const geometry::GeometryId body3_halfspace = plant->RegisterCollisionGeometry(
+      plant->get_body(body_indices[3]),
+      math::RigidTransformd(math::RollPitchYawd(0.02, -0.1, 0.05),
+                            Eigen::Vector3d(0.03, -0.01, 0.02)),
+      HalfSpace(), "body3_halfspace", proximity_properties);
+  plant->Finalize();
+  auto diagram = builder.Build();
+
+  const auto& model_inspector = scene_graph->model_inspector();
+
+  auto diagram_context = diagram->CreateDefaultContext();
+  systems::Context<double>& plant_context =
+      plant->GetMyMutableContextFromRoot(diagram_context.get());
+  Eigen::VectorXd q = plant->GetPositions(plant_context);
+  q.head<7>() << 0, 1, 0, 0, 0.2, -0.1, 0.3;
+  q.segment<7>(7) << 0, 0, 1, 0, -0.5, 0.3, 0.2;
+  q.segment<7>(14) << 0.5, 0.5, -0.5, 0.5, 0.3, -0.5, 0.2;
+  q.segment<7>(21) << 0.5, -0.5, -0.5, 0.5, -0.1, 0.4, 1;
+  q.tail<7>() << 0.5, -0.5, -0.5, -0.5, 0.3, -0.2, 0.4;
+  plant->SetPositions(&plant_context, q);
+
+  // Test the distance for each geometry.
+  const CollisionGeometry sphere(&(model_inspector.GetShape(body1_sphere)),
+                                 body_indices[1], body1_sphere,
+                                 model_inspector.GetPoseInFrame(body1_sphere));
+
+  // Expressed body is where the halfspace is welded to.
+  const multibody::BodyIndex expressed_body = body_indices[3];
+  const auto X_HalfspaceE =
+      model_inspector.GetPoseInFrame(body3_halfspace).inverse();
+
+  Eigen::Vector3d a = X_HalfspaceE.rotation().matrix().row(2).transpose();
+  double b = X_HalfspaceE.translation()(2);
+  // Now multiply a and b arbitrarily to make a.norm() != 1.
+  a *= 1.5;
+  b *= 1.5;
+
+  const auto& query_port = plant->get_geometry_query_input_port();
+  const auto& query_object =
+      query_port.Eval<geometry::QueryObject<double>>(plant_context);
+  const double kTol = 1E-10;
+
+  {
+    // Distance to sphere.
+    const double distance =
+        DistanceToHalfspace(sphere, a, b, expressed_body, PlaneSide::kPositive,
+                            *plant, plant_context);
+    const double distance_expected =
+        query_object
+            .ComputeSignedDistancePairClosestPoints(body3_halfspace,
+                                                    body1_sphere)
+            .distance;
+    EXPECT_NEAR(distance, distance_expected, kTol);
+  }
+
+  {
+    // Distance to box
+    const CollisionGeometry box(&(model_inspector.GetShape(body0_box)),
+                                body_indices[0], body0_box,
+                                model_inspector.GetPoseInFrame(body0_box));
+    const double distance = DistanceToHalfspace(
+        box, a, b, expressed_body, PlaneSide::kNegative, *plant, plant_context);
+    // SceneGraph doesn't support distance between box and halfspace yet.
+    Eigen::Matrix<double, 3, 8> p_GV;
+    // clang-format off
+    p_GV << -1, -1, -1, -1, 1, 1, 1, 1,
+            1, 1, -1, -1, 1, 1, -1, -1,
+            1, -1, 1, -1, 1, -1, 1, -1;
+    // clang-format on
+    p_GV.row(0) *= box_size(0) / 2;
+    p_GV.row(1) *= box_size(1) / 2;
+    p_GV.row(2) *= box_size(2) / 2;
+    // Now compute the position of these vertices V in the halfspace frame H.
+    Eigen::Matrix<double, 3, 8> p_EV;
+    plant->CalcPointsPositions(
+        plant_context, plant->get_body(body_indices[0]).body_frame(),
+        model_inspector.GetPoseInFrame(body0_box) * p_GV,
+        plant->get_body(expressed_body).body_frame(), &p_EV);
+    const Eigen::Matrix<double, 3, 8> p_HV = X_HalfspaceE * p_EV;
+    const double distance_expected = (-p_HV.row(2)).minCoeff();
+    EXPECT_NEAR(distance, distance_expected, kTol);
+  }
+
+  {
+    // Distance to capsule
+    const CollisionGeometry capsule(
+        &(model_inspector.GetShape(body2_capsule)), body_indices[2],
+        body2_capsule, model_inspector.GetPoseInFrame(body2_capsule));
+    const double distance =
+        DistanceToHalfspace(capsule, a, b, expressed_body, PlaneSide::kNegative,
+                            *plant, plant_context);
+    // SceneGraph doesn't support distance between capsule and halfspace yet.
+    // Compute the position of capsule sphere center S in the halfspace frame.
+    Eigen::Matrix<double, 3, 2> p_GS;
+    p_GS.col(0) << 0, 0, capsule_length / 2;
+    p_GS.col(1) << 0, 0, -capsule_length / 2;
+    Eigen::Matrix<double, 3, 2> p_ES;
+    plant->CalcPointsPositions(
+        plant_context, plant->get_body(body_indices[2]).body_frame(),
+        model_inspector.GetPoseInFrame(body2_capsule) * p_GS,
+        plant->get_body(expressed_body).body_frame(), &p_ES);
+    const Eigen::Matrix<double, 3, 2> p_HS = X_HalfspaceE * p_ES;
+
+    const double distance_expected = (-p_HS.row(2)).minCoeff() - capsule_radius;
+    EXPECT_NEAR(distance, distance_expected, kTol);
+  }
+}
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
