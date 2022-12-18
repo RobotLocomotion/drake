@@ -250,6 +250,7 @@ class RationalForwardKinematics {
   Pose<symbolic::Polynomial> CalcChildBodyPoseAsMultilinearPolynomial(
       const Eigen::Ref<const Eigen::VectorXd>& q_star, BodyIndex parent,
       BodyIndex child, const Pose<symbolic::Polynomial>& X_AP) const;
+
   /*
    * Determines whether the current joint is revolute.
    */
