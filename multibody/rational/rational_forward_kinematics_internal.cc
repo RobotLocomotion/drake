@@ -109,6 +109,43 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
   return path_not_weld[(path_not_weld.size() / 2)];
 }
 
+// TODO(hongkai.dai): determine the joint type through a Reifier.
+bool IsRevolute(const Mobilizer<double>& mobilizer) {
+  const bool is_revolute =
+      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
+       mobilizer.can_rotate() && !mobilizer.can_translate());
+  if (is_revolute) {
+    DRAKE_THROW_UNLESS(dynamic_cast<const RevoluteMobilizer<double>*>(
+                           &mobilizer) != nullptr);
+  }
+  return is_revolute;
+}
+
+// TODO(hongkai.dai): determine the joint type through a Reifier.
+bool IsWeld(const Mobilizer<double>& mobilizer) {
+  const bool is_weld =
+      (mobilizer.num_positions() == 0 && mobilizer.num_velocities() == 0 &&
+       !mobilizer.can_rotate() && !mobilizer.can_translate());
+  if (is_weld) {
+    DRAKE_THROW_UNLESS(dynamic_cast<const WeldMobilizer<double>*>(
+                           &mobilizer) != nullptr);
+  }
+  return is_weld;
+}
+
+// TODO(hongkai.dai): determine the joint type through a Reifier.
+bool IsPrismatic(const Mobilizer<double>& mobilizer) {
+  const bool is_prismatic =
+      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
+       !mobilizer.can_rotate() && mobilizer.can_translate());
+  if (is_prismatic) {
+    DRAKE_THROW_UNLESS(
+        dynamic_cast<const PrismaticMobilizer<double>*>(&mobilizer) !=
+        nullptr);
+  }
+  return is_prismatic;
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

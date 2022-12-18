@@ -6,6 +6,10 @@
 #include <vector>
 
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/tree/prismatic_mobilizer.h"
+#include "drake/multibody/tree/revolute_mobilizer.h"
+#include "drake/multibody/tree/space_xyz_mobilizer.h"
+#include "drake/multibody/tree/weld_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -41,6 +45,22 @@ std::vector<internal::MobilizerIndex> FindMobilizersOnPath(
  */
 BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
                                      BodyIndex start, BodyIndex end);
+
+/*
+ * Determines whether the current joint is revolute.
+ */
+bool IsRevolute(const Mobilizer<double>& mobilizer);
+
+/*
+ * Determines whether the current joint is a weld.
+ */
+bool IsWeld(const Mobilizer<double>& mobilizer);
+
+/*
+ * Determines whether the current joint is prismatic.
+ */
+bool IsPrismatic(const Mobilizer<double>& mobilizer);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
