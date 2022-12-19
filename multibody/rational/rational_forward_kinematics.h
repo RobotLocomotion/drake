@@ -8,8 +8,8 @@
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
 namespace multibody {
