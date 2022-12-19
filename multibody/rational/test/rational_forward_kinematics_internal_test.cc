@@ -9,6 +9,8 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/unit_inertia.h"
+#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/multibody_tree_topology.h"
 
 using testing::ElementsAre;
 
