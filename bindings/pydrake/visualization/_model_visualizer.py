@@ -202,7 +202,8 @@ class ModelVisualizer:
         # illustration and proximity geometry.
         ApplyVisualizationConfig(
             config=VisualizationConfig(
-                publish_contacts=self._publish_contacts),
+                publish_contacts=self._publish_contacts,
+                enable_alpha_sliders=True),
             plant=self._plant,
             scene_graph=self._scene_graph,
             builder=self._builder,
