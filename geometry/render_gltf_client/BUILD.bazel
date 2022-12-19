@@ -19,8 +19,7 @@ package(default_visibility = ["//visibility:private"])
 
 drake_cc_package_library(
     name = "render_gltf_client",
-    # TODO(jwnimmer-tri) Make public once we add libcurl to the wheel builds.
-    visibility = ["//visibility:private"],
+    visibility = ["//visibility:public"],
     deps = [
         ":factory",
         ":render_engine_gltf_client_params",
@@ -31,6 +30,7 @@ drake_cc_library(
     name = "factory",
     srcs = ["factory.cc"],
     hdrs = ["factory.h"],
+    visibility = ["//visibility:public"],
     interface_deps = [
         ":render_engine_gltf_client_params",
         "//geometry/render:render_camera",
@@ -44,6 +44,7 @@ drake_cc_library(
     name = "render_engine_gltf_client_params",
     srcs = ["render_engine_gltf_client_params.cc"],
     hdrs = ["render_engine_gltf_client_params.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//geometry/render:render_label",
     ],
