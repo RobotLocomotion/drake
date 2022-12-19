@@ -1,0 +1,37 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+# This should encompass every cc_library in this package, except for items that
+# should only ever be linked into main() programs.
+drake_cc_package_library(
+    name = "test_utilities",
+    testonly = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":rigid_body_on_compliant_ground",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_body_on_compliant_ground",
+    testonly = 1,
+    hdrs = ["rigid_body_on_compliant_ground.h"],
+    data = ["square_surface.obj"],
+    deps = [
+        "//common:find_resource",
+        "//multibody/plant",
+        "//multibody/plant:compliant_contact_manager_tester",
+        "//systems/analysis:simulator",
+        "@gtest//:without_main",
+    ],
+)
+
+add_lint_tests()
