@@ -826,10 +826,10 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   int sos_dispatched = 0;
   // If any SOS is infeasible, then we don't dispatch any more SOS and report
   // failure.
-  bool terminate = false;
+  bool stop_dispatching = false;
   while ((active_operations.size() > 0 ||
-          sos_dispatched < static_cast<int>(plane_geometries.size())) &&
-         !terminate) {
+          (sos_dispatched < static_cast<int>(plane_geometries.size()) &&
+           !stop_dispatching))) {
     // Check for completed operations.
     for (auto operation = active_operations.begin();
          operation != active_operations.end();) {
@@ -842,8 +842,7 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
                             is_success[plane_count].value());
         if (!(is_success[plane_count].value()) &&
             options.terminate_at_failure) {
-          terminate = true;
-          break;
+          stop_dispatching = true;
         }
         // Erase returned iterator to the next node in the list.
         operation = active_operations.erase(operation);
@@ -855,7 +854,8 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
 
     // Dispatch new SOS.
     while (static_cast<int>(active_operations.size()) < num_threads &&
-           sos_dispatched < static_cast<int>(plane_geometries.size())) {
+           sos_dispatched < static_cast<int>(plane_geometries.size()) &&
+           !stop_dispatching) {
       active_operations.emplace_back(std::async(
           std::launch::async, std::move(solve_small_sos), sos_dispatched));
       drake::log()->debug("SOS {}/{} dispatched", sos_dispatched,
