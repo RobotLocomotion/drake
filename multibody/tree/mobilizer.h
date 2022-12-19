@@ -665,6 +665,43 @@ class Mobilizer : public MultibodyElement<T, MobilizerIndex> {
         is_locked_parameter_index_);
   }
 
+  // Determines whether the current joint is revolute.
+  bool is_revolute() {
+    const bool is_revolute =
+      (this->num_positions() == 1 && this->num_velocities() == 1 &&
+       this->can_rotate() && !this->can_translate());
+    if (is_revolute) {
+      DRAKE_THROW_UNLESS(dynamic_cast<const RevoluteMobilizer<double>*>(
+                             this) != nullptr);
+    }
+    return is_revolute;
+  };
+
+  // Determines whether the mobilizer is a weld.
+  bool is_weld() {
+    const bool is_weld =
+      (this -> num_positions() == 0 && this -> num_velocities() == 0 &&
+       !this -> can_rotate() && !this -> can_translate());
+    if (is_weld) {
+      DRAKE_THROW_UNLESS(dynamic_cast<const WeldMobilizer<double>*>(
+                             this) != nullptr);
+    }
+    return is_weld;
+  };
+
+  // Determines whether the current joint is prismatic.
+  bool is_prismatic() {
+    const bool is_prismatic =
+      (this -> num_positions() == 1 && this -> num_velocities() == 1 &&
+       !this -> can_rotate() && this -> can_translate());
+    if (is_prismatic) {
+      DRAKE_THROW_UNLESS(
+          dynamic_cast<const PrismaticMobilizer<double>*>(this) !=
+          nullptr);
+    }
+    return is_prismatic;
+  };
+
  protected:
   // NVI to CalcNMatrix(). Implementations can safely assume that N is not the
   // nullptr and that N has the proper size.
