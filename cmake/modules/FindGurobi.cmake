@@ -1,11 +1,15 @@
 # -*- mode: cmake -*-
 # vi: set ft=cmake :
 
+file(GLOB _GUROBI_SEARCH_PATHS
+    /Library/gurobi95*/macos_universal2
+    /opt/gurobi95*/linux64
+    /opt/gurobi95*/power64
+)
+
 find_path(Gurobi_INCLUDE_DIR NAMES gurobi_c.h
   PATHS
-    /Library/gurobi951/macos_universal2
-    /opt/gurobi951/linux64
-    /opt/gurobi951/power64
+    ${_GUROBI_SEARCH_PATHS}
     ENV GUROBI_HOME
   PATH_SUFFIXES include
 )
@@ -38,14 +42,13 @@ find_library(Gurobi_LIBRARY
   NAMES "gurobi${Gurobi_VERSION_MAJOR}${Gurobi_VERSION_MINOR}"
   HINTS "${_GUROBI_ROOT}"
   PATHS
-    /Library/gurobi951/macos_universal2
-    /opt/gurobi951/linux64
-    /opt/gurobi951/power64
+    ${_GUROBI_SEARCH_PATHS}
     ENV GUROBI_HOME
   PATH_SUFFIXES lib
 )
 
 unset(_GUROBI_ROOT)
+unset(_GUROBI_SEARCH_PATHS)
 
 include(FindPackageHandleStandardArgs)
 
