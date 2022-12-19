@@ -511,6 +511,7 @@ CspaceFreePolytope::SeparatingPlaneLagrangians::GetSolution(
   return ret;
 }
 
+
 CspaceFreePolytope::UnitLengthLagrangians
 CspaceFreePolytope::UnitLengthLagrangians::GetSolution(
     const solvers::MathematicalProgramResult& result) const {
