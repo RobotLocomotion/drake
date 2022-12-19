@@ -108,9 +108,10 @@ class RationalForwardKinematics {
    q(i)).
    */
   template <typename Derived>
-  [[nodiscard]] VectorX<typename Derived::Scalar> ComputeSValue(
-      const Eigen::MatrixBase<Derived>& q_val,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+      [[nodiscard]] std::enable_if_t < is_eigen_vector<Derived>::value,
+      VectorX<typename Derived::Scalar> ComputeSValue(
+          const Eigen::MatrixBase<Derived>& q_val,
+          const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
     VectorX<typename Derived::Scalar> s_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
       const internal::Mobilizer<double>& mobilizer =
@@ -138,9 +139,10 @@ class RationalForwardKinematics {
    q(i)).
    */
   template <typename Derived>
-  [[nodiscard]] VectorX<typename Derived::Scalar> ComputeQValue(
-      const Eigen::MatrixBase<Derived>& s_val,
-      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+      [[nodiscard]] std::enable_if_t < is_eigen_vector<Derived>::value,
+      VectorX<typename Derived::Scalar> ComputeQValue(
+          const Eigen::MatrixBase<Derived>& s_val,
+          const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
     VectorX<typename Derived::Scalar> q_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
       const internal::Mobilizer<double>& mobilizer =
@@ -151,9 +153,7 @@ class RationalForwardKinematics {
       const int q_index = mobilizer.position_start_in_q();
       if (internal::IsRevolute(mobilizer)) {
         q_val(q_index) =
-            atan2(2 * s_val(i) / (1 + pow(s_val(i), 2)),
-                  (1 - pow(s_val(i), 2)) / (1 + pow(s_val(i), 2))) +
-            q_star_val(q_index);
+            atan2(2 * s_val(i), 1 - pow(s_val(i), 2)) + q_star_val(q_index);
       } else if (internal::IsPrismatic(mobilizer)) {
         q_val(q_index) = s_val(i) + q_star_val(q_index);
       } else {
