@@ -4,7 +4,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
-#include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
