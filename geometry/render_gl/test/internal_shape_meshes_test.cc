@@ -71,6 +71,30 @@ f 1//1 2//1 3//1
     DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
                                 "Not all faces reference texture.+");
   }
+  // Case: Zero normal or texture indices. Even though `tinyobjloader` allows
+  // them to be zero during parsing, it doesn't result in a valid normal or
+  // texture indexing.  Note: the face specification is otherwise invalid in
+  // that it references vertex positions that don't exist.
+  {
+    std::stringstream in_stream(R"""(
+v 1 2 3
+vn 0 0 1
+vt 0 1
+f 1//0 2//0 3//0
+)""");
+    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
+                                "Not all faces reference normals.+");
+  }
+  {
+    std::stringstream in_stream(R"""(
+v 1 2 3
+vn 0 0 1
+vt 0 0
+f 1/0/1 2/0/1 3/0/1
+)""");
+    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
+                                "Not all faces reference texture.+");
+  }
 }
 
 GTEST_TEST(LoadMeshFromObjTest, NoMeshUvs) {
