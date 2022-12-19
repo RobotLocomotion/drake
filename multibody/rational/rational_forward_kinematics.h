@@ -8,7 +8,6 @@
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -108,10 +107,10 @@ class RationalForwardKinematics {
    q(i)).
    */
   template <typename Derived>
-      [[nodiscard]] std::enable_if_t < is_eigen_vector<Derived>::value,
-      VectorX<typename Derived::Scalar> ComputeSValue(
-          const Eigen::MatrixBase<Derived>& q_val,
-          const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+  [[nodiscard]] std::enable_if_t<is_eigen_vector<Derived>::value,
+                                 VectorX<typename Derived::Scalar>>
+  ComputeSValue(const Eigen::MatrixBase<Derived>& q_val,
+                const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
     VectorX<typename Derived::Scalar> s_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
       const internal::Mobilizer<double>& mobilizer =
@@ -119,10 +118,10 @@ class RationalForwardKinematics {
               map_s_to_mobilizer_.at(s_[i].get_id()));
       // the mobilizer cannot be a weld joint since weld joint doesn't introduce
       // a variable into s_.
-      if (internal::IsRevolute(mobilizer)) {
+      if (IsRevolute(mobilizer)) {
         const int q_index = mobilizer.position_start_in_q();
         s_val(i) = tan((q_val(q_index) - q_star_val(q_index)) / 2);
-      } else if (internal::IsPrismatic(mobilizer)) {
+      } else if (IsPrismatic(mobilizer)) {
         const int q_index = mobilizer.position_start_in_q();
         s_val(i) = q_val(q_index) - q_star_val(q_index);
       } else {
@@ -139,10 +138,10 @@ class RationalForwardKinematics {
    q(i)).
    */
   template <typename Derived>
-      [[nodiscard]] std::enable_if_t < is_eigen_vector<Derived>::value,
-      VectorX<typename Derived::Scalar> ComputeQValue(
-          const Eigen::MatrixBase<Derived>& s_val,
-          const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
+  [[nodiscard]] std::enable_if_t<is_eigen_vector<Derived>::value,
+                                 VectorX<typename Derived::Scalar>>
+  ComputeQValue(const Eigen::MatrixBase<Derived>& s_val,
+                const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
     VectorX<typename Derived::Scalar> q_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
       const internal::Mobilizer<double>& mobilizer =
@@ -151,10 +150,10 @@ class RationalForwardKinematics {
       // the mobilizer cannot be a weld joint since weld joint doesn't introduce
       // a variable into s_.
       const int q_index = mobilizer.position_start_in_q();
-      if (internal::IsRevolute(mobilizer)) {
+      if (IsRevolute(mobilizer)) {
         q_val(q_index) =
             atan2(2 * s_val(i), 1 - pow(s_val(i), 2)) + q_star_val(q_index);
-      } else if (internal::IsPrismatic(mobilizer)) {
+      } else if (IsPrismatic(mobilizer)) {
         q_val(q_index) = s_val(i) + q_star_val(q_index);
       } else {
         // Successful construction guarantees nothing but supported mobilizer
@@ -251,6 +250,20 @@ class RationalForwardKinematics {
   Pose<symbolic::Polynomial> CalcChildBodyPoseAsMultilinearPolynomial(
       const Eigen::Ref<const Eigen::VectorXd>& q_star, BodyIndex parent,
       BodyIndex child, const Pose<symbolic::Polynomial>& X_AP) const;
+  /*
+   * Determines whether the current joint is revolute.
+   */
+  static bool IsRevolute(const internal::Mobilizer<double>& mobilizer);
+
+  /*
+   * Determines whether the current joint is a weld.
+   */
+  static bool IsWeld(const internal::Mobilizer<double>& mobilizer);
+
+  /*
+   * Determines whether the current joint is prismatic.
+   */
+  static bool IsPrismatic(const internal::Mobilizer<double>& mobilizer);
 
   const MultibodyPlant<double>& plant_;
   // The variables used in computing the pose as rational functions. s_ are the

@@ -46,20 +46,6 @@ std::vector<internal::MobilizerIndex> FindMobilizersOnPath(
 BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
                                      BodyIndex start, BodyIndex end);
 
-/*
- * Determines whether the current joint is revolute.
- */
-bool IsRevolute(const Mobilizer<double>& mobilizer);
-
-/*
- * Determines whether the current joint is a weld.
- */
-bool IsWeld(const Mobilizer<double>& mobilizer);
-
-/*
- * Determines whether the current joint is prismatic.
- */
-bool IsPrismatic(const Mobilizer<double>& mobilizer);
 
 }  // namespace internal
 }  // namespace multibody
