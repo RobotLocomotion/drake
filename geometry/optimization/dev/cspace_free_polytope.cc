@@ -548,7 +548,7 @@ CspaceFreePolytope::CalcMonomialBasis(
   return ret;
 }
 
-CspaceFreePolytope::v
+CspaceFreePolytope::SeparationCertificate
 CspaceFreePolytope::ConstructPlaneSearchProgram(
     const PlaneSeparatesGeometries& plane_geometries,
     const VectorX<symbolic::Polynomial>& d_minus_Cs,

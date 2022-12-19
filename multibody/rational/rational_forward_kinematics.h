@@ -151,7 +151,7 @@ class RationalForwardKinematics {
       const int q_index = mobilizer.position_start_in_q();
       if (internal::IsRevolute(mobilizer)) {
         q_val(q_index) =
-            atan2(2 * s_val(i) / (1 + pow_T(s_val(i), 2)),
+            atan2(2 * s_val(i) / (1 + pow(s_val(i), 2)),
                   (1 - pow(s_val(i), 2)) / (1 + pow(s_val(i), 2))) +
             q_star_val(q_index);
       } else if (internal::IsPrismatic(mobilizer)) {
