@@ -1,7 +1,5 @@
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
-#include <iostream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/rational_function.h"
