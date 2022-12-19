@@ -108,10 +108,10 @@ class RationalForwardKinematics {
    q(i)).
    */
   template <typename Derived>
-  [[nodiscard]] Eigen::VectorX<typename Derived::Scalar> ComputeSValue(
+  [[nodiscard]] VectorX<typename Derived::Scalar> ComputeSValue(
       const Eigen::MatrixBase<Derived>& q_val,
       const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
-    Eigen::VectorX<typename Derived::Scalar> s_val(s_.size());
+    VectorX<typename Derived::Scalar> s_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
       const internal::Mobilizer<double>& mobilizer =
           GetInternalTree(plant_).get_mobilizer(
@@ -138,10 +138,10 @@ class RationalForwardKinematics {
    q(i)).
    */
   template <typename Derived>
-  [[nodiscard]] Eigen::VectorX<typename Derived::Scalar> ComputeQValue(
+  [[nodiscard]] VectorX<typename Derived::Scalar> ComputeQValue(
       const Eigen::MatrixBase<Derived>& s_val,
       const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
-    Eigen::VectorX<typename Derived::Scalar> q_val(s_.size());
+    VectorX<typename Derived::Scalar> q_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
       const internal::Mobilizer<double>& mobilizer =
           GetInternalTree(plant_).get_mobilizer(
