@@ -35,13 +35,8 @@ class SpatialInertiaCalculator final : public ShapeReifier {
   }
 
   void ImplementGeometry(const geometry::Capsule& capsule, void*) final {
-    const double volume = (M_PI * 4.0 / 3.0 * pow(capsule.radius(), 3) +
-                           M_PI * pow(capsule.radius(), 2) * capsule.length());
-    const double mass = volume * density_;
-    const Vector3d p_SoScm_S = Vector3d::Zero();
-    const UnitInertia<double> G_SSo_S =
-        UnitInertia<double>::SolidCapsule(capsule.radius(), capsule.length());
-    spatial_inertia_ = SpatialInertia<double>{mass, p_SoScm_S, G_SSo_S};
+    spatial_inertia_ = SpatialInertia<double>::SolidCapsuleWithDensity(
+        density_, capsule.radius(), capsule.length(), Vector3d::UnitZ());
   }
 
   void ImplementGeometry(const geometry::Convex& convex, void*) final {
@@ -49,12 +44,8 @@ class SpatialInertiaCalculator final : public ShapeReifier {
   }
 
   void ImplementGeometry(const geometry::Cylinder& cylinder, void*) final {
-    const double volume = M_PI * pow(cylinder.radius(), 2) * cylinder.length();
-    const double mass = volume * density_;
-    const Vector3d p_SoScm_S = Vector3d::Zero();
-    const UnitInertia<double> G_SSo_S = UnitInertia<double>::SolidCylinder(
-        cylinder.radius(), cylinder.length());
-    spatial_inertia_ = SpatialInertia<double>{mass, p_SoScm_S, G_SSo_S};
+    spatial_inertia_ = SpatialInertia<double>::SolidCylinderWithDensity(
+        density_, cylinder.radius(), cylinder.length(), Vector3d::UnitZ());
   }
 
   void ImplementGeometry(const geometry::Ellipsoid& ellipsoid, void*) final {
