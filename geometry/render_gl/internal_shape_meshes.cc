@@ -135,11 +135,6 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
         const int position_index = shape_mesh.indices[v_index].vertex_index;
         const int norm_index = shape_mesh.indices[v_index].normal_index;
         const int uv_index = shape_mesh.indices[v_index].texcoord_index;
-        // TODO(SeanCurtis-TRI) PR 14656 changed parse semantics. This error
-        // condition appears to no longer be reachable (it no longer appears
-        // in the unit tests) and the condition that this detects won't trigger
-        // this helpful message. Either clean up this case or find a way to give
-        // this feedback under the new tinyobj.
         if (norm_index < 0) {
           throw std::runtime_error(
               fmt::format("Not all faces reference normals: {}", filename));
