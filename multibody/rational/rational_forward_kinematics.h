@@ -255,17 +255,17 @@ class RationalForwardKinematics {
   /*
    * Determines whether the current joint is revolute.
    */
-  static bool IsRevolute(const internal::Mobilizer<double>& mobilizer);
+  bool IsRevolute(const internal::Mobilizer<double>& mobilizer) const;
 
   /*
    * Determines whether the current joint is a weld.
    */
-  static bool IsWeld(const internal::Mobilizer<double>& mobilizer);
+  bool IsWeld(const internal::Mobilizer<double>& mobilizer) const;
 
   /*
    * Determines whether the current joint is prismatic.
    */
-  static bool IsPrismatic(const internal::Mobilizer<double>& mobilizer);
+  bool IsPrismatic(const internal::Mobilizer<double>& mobilizer) const;
 
   const MultibodyPlant<double>& plant_;
   // The variables used in computing the pose as rational functions. s_ are the

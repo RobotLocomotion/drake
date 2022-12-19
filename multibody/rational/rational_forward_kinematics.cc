@@ -310,7 +310,7 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
 
 // TODO(hongkai.dai): determine the joint type through a Reifier.
 bool RationalForwardKinematics::IsRevolute(
-    const internal::Mobilizer<double>& mobilizer) {
+    const internal::Mobilizer<double>& mobilizer) const {
   const bool is_revolute =
       (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
        mobilizer.can_rotate() && !mobilizer.can_translate());
@@ -323,7 +323,7 @@ bool RationalForwardKinematics::IsRevolute(
 
 // TODO(hongkai.dai): determine the joint type through a Reifier.
 bool RationalForwardKinematics::IsWeld(
-    const internal::Mobilizer<double>& mobilizer) {
+    const internal::Mobilizer<double>& mobilizer) const {
   const bool is_weld =
       (mobilizer.num_positions() == 0 && mobilizer.num_velocities() == 0 &&
        !mobilizer.can_rotate() && !mobilizer.can_translate());
@@ -336,7 +336,7 @@ bool RationalForwardKinematics::IsWeld(
 
 // TODO(hongkai.dai): determine the joint type through a Reifier.
 bool RationalForwardKinematics::IsPrismatic(
-    const internal::Mobilizer<double>& mobilizer) {
+    const internal::Mobilizer<double>& mobilizer) const {
   const bool is_prismatic =
       (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
        !mobilizer.can_rotate() && mobilizer.can_translate());
