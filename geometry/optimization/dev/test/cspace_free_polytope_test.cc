@@ -828,7 +828,9 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope1) {
   }
 }
 
-TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope2) {
+// This test is disabled, pending a fix of thread sanitizer-detected data
+// races.
+TEST_F(CIrisToyRobotTest, DISABLED_FindSeparationCertificateGivenPolytope2) {
   // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope. The
   // C-space polytope is NOT collision free.
   const Eigen::Vector3d q_star(0, 0, 0);
