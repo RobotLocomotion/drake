@@ -19,9 +19,56 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(const T& density,
     const T& lx, const T& ly, const T& lz) {
   const T volume = lx * ly * lz;
-  const T mass = volume * density;
+  const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidBox(lx, ly, lz);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(const T& density,
+    const T& r, const T& l, const Vector3<T>& unit_vector) {
+  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
+  // UnitInertia::SolidCapsule() normalizes unit_vector before its use.
+  using std::abs;
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
+    // ‖unit_vector‖ is not within 6 bits of 1.0 (2^6 = 64).
+    std::string error_message = fmt::format(
+      "{}(): The unit_vector argument is not a unit vector. "
+      "Consider normalizing it.", __func__);
+      throw std::logic_error(error_message);
+  }
+
+  const T pi_r_squared = M_PI * r * r;
+  const T volume = 4.0 / 3.0 * pi_r_squared * r +  pi_r_squared * l;
+  const T mass = density * volume;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B =
+      UnitInertia<T>::SolidCapsule(r, l, unit_vector);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(const T& density,
+    const T& r, const T& l, const Vector3<T>& unit_vector) {
+  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
+  // UnitInertia::SolidCylinder() normalizes unit_vector before its use.
+  using std::abs;
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
+    // ‖unit_vector‖ is not within 6 bits of 1.0 (2^6 = 64).
+    std::string error_message = fmt::format(
+      "{}(): The unit_vector argument is not a unit vector. "
+      "Consider normalizing it.", __func__);
+      throw std::logic_error(error_message);
+  }
+
+  const T volume = M_PI * r * r * l;
+  const T mass = density * volume;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B =
+      UnitInertia<T>::SolidCylinder(r, l, unit_vector);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 

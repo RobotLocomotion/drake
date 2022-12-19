@@ -17,15 +17,23 @@ UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
                      one_twelfth * (Lx2 + Ly2));
 }
 
+
 template <typename T>
-UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
+UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
+    const Vector3<T>& unit_vector) {
+  // Ensure r and L are non-negative and ‖unit_vector‖ is within 6 bits of 1.0.
+  // Note: UnitInertia::AxiallySymmetric() normalizes unit_vector before use.
+  using std::abs;
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
+  DRAKE_THROW_UNLESS(abs(unit_vector.norm() - 1) <=
+    64 * std::numeric_limits<double>::epsilon());
+
   // A special case is required for r = 0 because r = 0 creates a zero volume
   // capsule (and we divide by volume later on). No special case for L = 0 is
   // needed because the capsule degenerates into a sphere (non-zero volume).
   if (r == 0.0) {
-    return UnitInertia<T>::ThinRod(L, Vector3<T>::UnitZ());
+    return UnitInertia<T>::ThinRod(L, unit_vector);
   }
   // The capsule is regarded as a cylinder C of length L and radius r and two
   // half-spheres (each of radius r). The first half-sphere H is rigidly fixed
@@ -55,6 +63,8 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // dH = 3.0 / 8.0 * r + L / 2.0;
   const T dH = 0.375 * r + 0.5 * L;
 
+  // The discussion that follows assumes Ic_zz is the axial moment of inertia
+  // and Ix_xx = Ic_yy is the transverse moment of inertia.
   // Form cylinder C's moments of inertia about Ccm (C's center of mass).
   // Ic_xx = Ic_yy = mc(L²/12 + r²/4)  From [Kane, Figure A20, pg. 368].
   // Ic_zz = mc r²/2                   From [Kane, Figure A20, pg. 368].
@@ -75,8 +85,10 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // The previous algorithm for Ixx and Izz is algebraically manipulated to a
   // more efficient result by factoring on mh and mc and computing numbers as
   const T Ixx = mc * (L*L/12.0 + 0.25*r2) + mh * (0.51875*r2 + 2*dH*dH);
-  const T Izz = (0.5*mc + 0.8*mh) * r2;
-  return UnitInertia(Ixx, Ixx, Izz);
+  const T Izz = (0.5*mc + 0.8*mh) * r2;  // Axial moment of inertia.
+
+  return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
+
 }
 
 }  // namespace multibody
