@@ -141,6 +141,8 @@ TEST_F(FinalizedIiwaTest, CalcBodyPose3) {
   for (int i = 0; i < 8; ++i) {
     CheckBodyKinematics(dut, q_val, q_star_val, s_val, iiwa_link_[i]);
   }
+  const Eigen::VectorXd q_recompute = dut.ComputeQValue(s_val, q_star_val);
+  EXPECT_TRUE(CompareMatrices(q_val, q_recompute, 1E-12));
 }
 
 GTEST_TEST(RationalForwardKinematicsTest, CalcBodyPosesForDualArmIiwa) {
@@ -317,6 +319,8 @@ TEST_F(KinematicTreeTest, CalcBodyPoses) {
   }
   Eigen::VectorXd s_val = dut.ComputeSValue(q_val, q_star_val);
   CheckBodyKinematics(dut, q_val, q_star_val, s_val, body_indices_[2]);
+  const Eigen::VectorXd q_recompute = dut.ComputeQValue(s_val, q_star_val);
+  EXPECT_TRUE(CompareMatrices(q_val, q_recompute, 1E-12));
 }
 }  // namespace
 }  // namespace multibody

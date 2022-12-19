@@ -109,6 +109,14 @@ class RationalForwardKinematics {
       const Eigen::Ref<const Eigen::VectorXd>& q_val,
       const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const;
 
+  /** Computes the value of q from s_val and q_star_val, while handling the
+   * index matching between q and s (we don't guarantee that s(i) is computed
+   * from q(i)). This function is the inverse operation of ComputeSValue().
+   */
+  [[nodiscard]] Eigen::VectorXd ComputeQValue(
+      const Eigen::Ref<const Eigen::VectorXd>& s_val,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const;
+
   const MultibodyPlant<double>& plant() const { return plant_; }
 
   Eigen::Map<const VectorX<symbolic::Variable>> s() const {
