@@ -52,7 +52,7 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
 
   // Retrieve the path in reverse order.
   std::vector<BodyIndex> path;
-  for (BodyIndex current = end;; current = ancestors.at(current)) {
+  for (BodyIndex current = end; ; current = ancestors.at(current)) {
     path.push_back(current);
     if (current == start) {
       break;
@@ -108,6 +108,7 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
 
   return path_not_weld[(path_not_weld.size() / 2)];
 }
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
