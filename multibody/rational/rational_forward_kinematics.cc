@@ -321,8 +321,8 @@ bool RationalForwardKinematics::IsRevolute(
   }
   return is_revolute;
 }
-
-// TODO(hongkai.dai): determine the joint type through a Reifier.
+//
+//// TODO(hongkai.dai): determine the joint type through a Reifier.
 bool RationalForwardKinematics::IsWeld(
     const internal::Mobilizer<double>& mobilizer) {
   const bool is_weld =
