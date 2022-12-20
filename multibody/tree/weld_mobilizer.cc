@@ -9,10 +9,6 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-math::RigidTransform<T> WeldMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>&) const { return X_FM_.cast<T>(); }
-
-template <typename T>
 SpatialVelocity<T> WeldMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {

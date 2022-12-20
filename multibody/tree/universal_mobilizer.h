@@ -45,7 +45,8 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
+class UniversalMobilizer final
+    : public MobilizerImpl<T, 2, 2, UniversalMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UniversalMobilizer)
 
@@ -102,10 +103,8 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
       systems::Context<T>* context, const Vector2<T>& angles_dot) const;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
-  // frame F and the outboard frame M as a function of the angles (θ₁, θ₂)
-  // stored in `context`.
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override;
+  // frame F and the outboard frame M as a function of the angles q=(θ₁, θ₂).
+  math::RigidTransform<T> CalcX_FM(const Vector<T, 2>& q) const;
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   // M measured and expressed in frame F as a function of the angles (θ₁, θ₂)
@@ -174,13 +173,7 @@ class UniversalMobilizer final : public MobilizerImpl<T, 2, 2> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 2, 2> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
+  using MobilizerBase = MobilizerImpl<T, 2, 2, UniversalMobilizer>;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 

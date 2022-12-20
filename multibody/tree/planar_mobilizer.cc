@@ -110,12 +110,9 @@ const PlanarMobilizer<T>& PlanarMobilizer<T>::set_angular_rate(
 }
 
 template <typename T>
-math::RigidTransform<T> PlanarMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
-  Vector3<T> X_FM_translation;
-  X_FM_translation << q[0], q[1], 0.0;
+math::RigidTransform<T> PlanarMobilizer<T>::CalcX_FM(
+    const Vector<T, 3>& q) const {
+  const Vector3<T> X_FM_translation(q[0], q[1], 0.0);
   return math::RigidTransform<T>(math::RotationMatrix<T>::MakeZRotation(q[2]),
                                  X_FM_translation);
 }

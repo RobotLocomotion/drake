@@ -27,13 +27,14 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // A cylindrical-like mobilizer that permits rotation about the x-axis and
 // translation along the y-axis.
 template <typename T>
-class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
+class FeatherstoneMobilizer final
+    : public MobilizerImpl<T, 2, 2, FeatherstoneMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FeatherstoneMobilizer)
 
   FeatherstoneMobilizer(const Frame<T>& inboard_frame_F,
                         const Frame<T>& outboard_frame_M) :
-      MobilizerImpl<T, 2, 2>(inboard_frame_F, outboard_frame_M) {
+      MobilizerBase(inboard_frame_F, outboard_frame_M) {
     H_FM_ << 1, 0,
              0, 0,
              0, 0,
@@ -54,15 +55,14 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     return *this;
   }
 
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override {
+  math::RigidTransform<T> CalcX_FM(const Vector2<T>& q) const {
     const Vector3<T> axis_rotation_F = rotation_axis();
-    const T rotation = get_rotation(context);
+    const T& rotation = q[0];
     const math::RotationMatrix<T> R_FM(
         Eigen::AngleAxis<T>(rotation, axis_rotation_F));
 
     const Vector3<T> axis_translation_F = translation_axis();
-    const T translation = get_translation(context);
+    const T& translation = q[1];
     const Vector3<T> p_FM = translation * axis_translation_F;
 
     return math::RigidTransform<T>(R_FM, p_FM);
@@ -139,7 +139,9 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
  private:
-  typedef MobilizerImpl<T, 2, 2> MobilizerBase;
+  using MobilizerBase = MobilizerImpl<T, 2, 2, FeatherstoneMobilizer>;
+  using MobilizerBase::kNq;
+  using MobilizerBase::kNv;
 
   const Vector3<T> rotation_axis() const {
     return H_FM_.template block<3, 1>(0, 0);
@@ -170,13 +172,10 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
         inboard_frame_clone, outboard_frame_clone);
   }
 
-  using MobilizerBase::kNq;
-  using MobilizerBase::kNv;
-
   Eigen::Matrix<T, 6, kNv> H_FM_;
 };
 
-// An articulated body inertia from Example 7.1, Pages 123 - 124 of
+// An articulated body inertia from Example 7.1, Pages 122 - 124 of
 // [Featherstone 2008]. The test consists of a cylinder inside of a box. The
 // cylinder is allowed to rotate about the x-axis and translate along the
 // y-axis.

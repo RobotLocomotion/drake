@@ -9,6 +9,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
+#include "drake/multibody/tree/body_node_impl.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_element.h"
@@ -20,25 +21,47 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Base class for specific Mobilizer implementations with the number of
-// generalized positions and velocities resolved at compile time as template
-// parameters. This allows specific mobilizer implementations to only work on
-// fixed-size Eigen expressions therefore allowing for optimized operations on
-// fixed-size matrices. In addition, this layer discourages the proliferation
-// of dynamic-sized Eigen matrices that would otherwise lead to run-time
-// dynamic memory allocations.
-// %MobilizerImpl also provides a number of size specific methods to retrieve
-// multibody quantities of interest from caching structures. These are common
-// to all mobilizer implementations and therefore they live in this class.
-// Users should not need to interact with this class directly unless they need
-// to implement a custom Mobilizer class.
-//
-// @tparam_default_scalar
-template <typename T,
-    int compile_time_num_positions, int compile_time_num_velocities>
+/* Base class for specific Mobilizer implementations with the number of
+generalized positions and velocities resolved at compile time as template
+parameters. Also uses CRTP to pick up specific MobilizerType implementations
+without virtual function calls, permitting fast operations to be inlined.
+
+This design allows specific mobilizer implementations to only work on
+fixed-size Eigen expressions therefore allowing for optimized operations on
+fixed-size matrices. In addition, this layer discourages the proliferation
+of dynamic-sized Eigen matrices that would otherwise lead to run-time
+dynamic memory allocations.
+
+MobilizerImpl also provides a number of size specific methods to retrieve
+multibody quantities of interest from caching structures. These are common
+to all mobilizer implementations and therefore they live in this class.
+Users should not need to interact with this class directly unless they need
+to implement a custom Mobilizer class.
+
+Derived class interface
+-----------------------
+Every concrete mobilizer class must implement the following data members and
+functions:
+
+static constexpr
+  bool kCanRotate, kCanTranslate, kHasQuaternion
+
+CalcX_FM(q)
+CalcV_FM(q,v)
+CalcA_FM(q,v,vdot)
+ProjectF_M
+
+
+@tparam_default_scalar */
+template <typename T, int nq, int nv, template <typename> class MobilizerTypeT>
 class MobilizerImpl : public Mobilizer<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl)
+
+  using MobilizerType = MobilizerTypeT<T>;
+  static constexpr int kNq = nq;
+  static constexpr int kNv = nv;
+  static constexpr int kNx = kNq + kNv;
 
   // As with Mobilizer this the only constructor available for this base class.
   // The minimum amount of information that we need to define a mobilizer is
@@ -73,8 +96,8 @@ class MobilizerImpl : public Mobilizer<T> {
 
   // Sets the default position of this Mobilizer to be used in subsequent
   // calls to set_default_state().
-  void set_default_position(const Eigen::Ref<const Vector<double,
-      compile_time_num_positions>>& position) {
+  void set_default_position(
+      const Eigen::Ref<const Vector<double, kNq>>& position) {
     default_position_.emplace(position);
   }
 
@@ -97,8 +120,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // Defines the distribution used to draw random samples from this
   // mobilizer, using a symbolic::Expression that contains random variables.
   void set_random_position_distribution(
-      const Eigen::Ref<const Vector<symbolic::Expression,
-                                    compile_time_num_positions>>& position) {
+      const Eigen::Ref<const Vector<symbolic::Expression, kNq>>& position) {
     if (!random_state_distribution_) {
       random_state_distribution_.emplace(
           Vector<symbolic::Expression, kNx>::Zero());
@@ -114,8 +136,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // Defines the distribution used to draw random samples from this
   // mobilizer, using a symbolic::Expression that contains random variables.
   void set_random_velocity_distribution(
-      const Eigen::Ref<const Vector<symbolic::Expression,
-                                    compile_time_num_velocities>>& velocity) {
+      const Eigen::Ref<const Vector<symbolic::Expression, kNv>>& velocity) {
     if (!random_state_distribution_) {
       random_state_distribution_.emplace(
           Vector<symbolic::Expression, kNx>());
@@ -126,21 +147,31 @@ class MobilizerImpl : public Mobilizer<T> {
     random_state_distribution_->template tail<kNv>() = velocity;
   }
 
-  // For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
-      const internal::BodyNode<T>* parent_node,
-      const Body<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const internal::BodyNode<T>* parent_node, const Body<T>* body,
+      const Mobilizer<T>* mobilizer) const {
+    return std::make_unique<internal::BodyNodeImpl<T, nq, nv>>(parent_node,
+                                                               body, mobilizer);
+  }
+
+  // These are interfaces to the fast mobilizer specializations of the same name
+  // and signature. Each takes the particular mobilizer's q or v state variables
+  // as a fixed-size Eigen vector and invokes the specialization with no virtual
+  // function calls so that the smaller ones can be inlined.
+  math::RigidTransform<T> CalcX_FM(const Vector<T, kNq>& q) const {
+    return static_cast<const MobilizerType*>(this)->CalcX_FM(q);
+  }
+
+  // These are the implementations of the Mobilizer base class virtual methods,
+  // to be used for convenience not for speed. Each of these has to first
+  // spelunk the state variables from the context, then invoke the faster
+  // inline interface methods above.
+  math::RigidTransform<T> CalcAcrossMobilizerTransform(
+      const systems::Context<T>& context) const final {
+    return CalcX_FM(get_q_ref(context));
+  }
 
  protected:
-  // Handy enum to grant specific implementations compile time sizes.
-  // static constexpr int i = 42; discouraged.  See answer in:
-  // http://stackoverflow.com/questions/37259807/static-constexpr-int-vs-old-fashioned-enum-when-and-why
-  enum : int {
-    kNq = compile_time_num_positions,
-    kNv = compile_time_num_velocities,
-    kNx = compile_time_num_positions + compile_time_num_velocities
-  };
-
   // Returns the zero configuration for the mobilizer.
   virtual Vector<double, kNq> get_zero_position() const {
     return Vector<double, kNq>::Zero();
@@ -225,6 +256,13 @@ class MobilizerImpl : public Mobilizer<T> {
   //@}
 
  private:
+  const Vector<T, kNq>& get_q_ref(const systems::Context<T>& context) const {
+    // TODO(sherm1) Do this much faster; should be inlineable.
+    Eigen::VectorBlock<const VectorX<T>, kNq> q_block = get_positions(context);
+    const T* data = q_block.data();
+    return *reinterpret_cast<const Vector<T, kNq>*>(data);
+  }
+
   // Returns the index in the global array of generalized coordinates in the
   // MultibodyTree model to the first component of the generalized coordinates
   // vector that corresponds to this mobilizer.
