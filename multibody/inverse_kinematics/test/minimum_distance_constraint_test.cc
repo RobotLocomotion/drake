@@ -307,5 +307,100 @@ TEST_F(BoxSphereTest, Test) {
                                 gradient_tol);
   }
 }
+
+/**
+ Constructs a diagram that contains N free-floating spheres.
+ */
+template <typename T>
+class NFreeSpheresModel {
+ public:
+  explicit NFreeSpheresModel(int num_spheres) : num_spheres_{num_spheres} {
+    systems::DiagramBuilder<T> builder;
+    std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, 0.0);
+    const double mass{1};
+    const math::RigidTransformd X_BS{};
+    const Eigen::Vector3d p_AoAcm_A = X_BS.translation();
+    const RotationalInertia<double> I_AAcm_A =
+        UnitInertia<double>::SolidSphere(radius_);
+    const SpatialInertia<double> M_AAo_A =
+        SpatialInertia<double>::MakeFromCentralInertia(mass, p_AoAcm_A,
+                                                       I_AAcm_A);
+    for (int i = 0; i < num_spheres; ++i) {
+      auto& body = plant_->AddRigidBody("sphere" + std::to_string(i), M_AAo_A);
+      plant_->RegisterCollisionGeometry(body, X_BS, geometry::Sphere(radius_),
+                                        fmt::format("sphere{}_collision", i),
+                                        multibody::CoulombFriction<double>());
+      sphere_frame_indices_.push_back(body.body_frame().index());
+    }
+    plant_->Finalize();
+
+    diagram_ = builder.Build();
+
+    diagram_context_ = diagram_->CreateDefaultContext();
+  }
+
+  double radius() const { return radius_; }
+
+  const systems::Diagram<T>& diagram() const { return *diagram_; }
+
+  const MultibodyPlant<T>& plant() const { return *plant_; }
+
+  const systems::Context<T>& plant_context() const {
+    return diagram_->GetSubsystemContext(*plant_, *diagram_context_);
+  }
+
+  systems::Context<T>& get_mutable_plant_context() {
+    return plant_->GetMyMutableContextFromRoot(diagram_context_.get());
+  }
+
+ private:
+  int num_spheres_;
+  const double radius_{0.01};
+  std::unique_ptr<systems::Diagram<T>> diagram_;
+  // This plant points to a sub-system in diagram_.
+  MultibodyPlant<T>* plant_{nullptr};
+  // This scene_graph points to a sub-system in diagram_.
+  geometry::SceneGraph<T>* scene_graph_{nullptr};
+
+  std::vector<FrameIndex> sphere_frame_indices_;
+
+  std::unique_ptr<systems::Context<T>> diagram_context_;
+};
+
+GTEST_TEST(ThreeSpheresTest, SomeLargerThanInfluenceSomeSmallerThanMinimum) {
+  // Test the case with three spheres. Some pair of spheres have distance >
+  // d_influence, and some pairs have distance < d_min.
+  NFreeSpheresModel<double> three_spheres(3);
+  const double d_min = 0.05;
+  const double d_influence = 0.06;
+  // Indices into the q vector for each sphere's position.
+  Eigen::Index kSpheres[] = {4, 11, 18};
+  Eigen::VectorXd q =
+      three_spheres.plant().GetPositions(three_spheres.plant_context());
+  // Position for sphere 0.
+  q.segment<3>(kSpheres[0]) << 0, 0, 0;
+  // Position for sphere 1.
+  q.segment<3>(kSpheres[1]) << 0, 0, 0.05;
+  // Position for sphere 2.
+  q.segment<3>(kSpheres[2]) << 0, 0, 0.1;
+  // Make sure that distance(sphere0, sphere1) < d_min.
+  ASSERT_LT((q.segment<3>(kSpheres[0]) - q.segment<3>(kSpheres[1])).norm() -
+                2 * three_spheres.radius(),
+            d_min);
+  // Make sure distance(sphere0, sphere2) > d_influence.
+  ASSERT_GT((q.segment<3>(kSpheres[2]) - q.segment<3>(kSpheres[0])).norm() -
+                2 * three_spheres.radius(),
+            d_influence);
+  for (MinimumDistancePenaltyFunction penalty_function :
+       {QuadraticallySmoothedHingeLoss, ExponentiallySmoothedHingeLoss}) {
+    MinimumDistanceConstraint dut(&(three_spheres.plant()), d_min,
+                                  &(three_spheres.get_mutable_plant_context()),
+                                  penalty_function, d_influence - d_min);
+    Eigen::VectorXd y_val;
+    dut.Eval(q, &y_val);
+    EXPECT_TRUE((y_val.array() < dut.lower_bound().array()).any() ||
+                (y_val.array() > dut.upper_bound().array()).any());
+  }
+}
 }  // namespace multibody
 }  // namespace drake
