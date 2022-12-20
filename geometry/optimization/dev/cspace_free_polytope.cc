@@ -249,9 +249,7 @@ CspaceFreePolytope::CspaceFreePolytope(
       link_geometries_{GetCollisionGeometries(*plant, *scene_graph)},
       plane_order_{plane_order},
       s_set_{rational_forward_kin_.s()},
-      q_star_{q_star},
-      rationals_with_margin_{GenerateRationals(true)},
-      rationals_without_margin_{GenerateRationals(false)} {
+      q_star_{q_star} {
   // Create separating planes.
   // collision_pairs maps each pair of body to the pair of collision geometries
   // on that pair of body.
@@ -319,6 +317,9 @@ CspaceFreePolytope::CspaceFreePolytope(
   s_upper_ = rational_forward_kin_.ComputeSValue(
       rational_forward_kin_.plant().GetPositionUpperLimits(), q_star_);
   CalcSBoundsPolynomial();
+
+  rationals_with_margin_ = GenerateRationals(true);
+  rationals_without_margin_ = GenerateRationals(false);
 }
 
 std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(

@@ -99,6 +99,16 @@ class CspaceFreePolytope {
     return y_slack_;
   }
 
+  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
+  rationals_with_margin() const {
+    return rationals_with_margin_;
+  }
+
+  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
+  rationals_without_margin() const {
+    return rationals_with_margin_;
+  }
+
   /**
    When searching for the separating plane, we want to certify that the
    numerator of a rational is non-negative in the C-space region C*s<=d,

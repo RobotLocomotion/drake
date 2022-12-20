@@ -121,7 +121,7 @@ class CspaceFreePolytopeTester {
         plane_geometries, C, d, map_body_to_monomial_basis, options);
   }
 
-  [nodiscard]] std::vector<PlaneSeparatesGeometries> GenerateRationals(
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries> GenerateRationals(
       bool search_separating_margin) const {
     return cspace_free_polytope_->GenerateRationals(search_separating_margin);
   }
@@ -223,6 +223,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
 
   for (const auto& [geometry_pair, plane_index] :
        dut.map_geometries_to_separating_planes()) {
+    // check plane
     const auto& plane = dut.separating_planes()[plane_index];
     if (plane.positive_side_geometry->id() <
         plane.negative_side_geometry->id()) {
@@ -243,6 +244,28 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
     }
     EXPECT_EQ(plane.b.TotalDegree(), 1);
     EXPECT_EQ(plane.b.indeterminates(), s_set);
+
+    // ensure the correct number of PlaneSeparatesGeometries objects are
+    // constructed. The content of these objects are tested in
+    // CspaceFreePolytopeGenerateRationals.
+    bool associated_to_PlaneSeparatesGeometries_with_margin = false;
+    bool associated_to_PlaneSeparatesGeometries_without_margin = false;
+    for (const auto& plane_separates_geometries :
+         dut.rationals_with_margin()) {
+      if (plane_separates_geometries.plane_index == plane_index) {
+        associated_to_PlaneSeparatesGeometries_with_margin = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(associated_to_PlaneSeparatesGeometries_with_margin);
+    for (const auto& plane_separates_geometries :
+         dut.rationals_without_margin()) {
+      if (plane_separates_geometries.plane_index == plane_index) {
+        associated_to_PlaneSeparatesGeometries_without_margin = true;
+        break;
+      }
+    }
+    EXPECT_TRUE(associated_to_PlaneSeparatesGeometries_without_margin);
   }
 }
 
@@ -251,9 +274,11 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
                                   SeparatingPlaneOrder::kAffine, q_star);
   auto ret = tester.GenerateRationals(false /* search_separating_margin */);
-  EXPECT_EQ(ret.size(), dut.separating_planes().size());
+  EXPECT_EQ(ret.size(),
+            tester.cspace_free_polytope().separating_planes().size());
   for (const auto& plane_geometries : ret) {
-    const auto& plane = dut.separating_planes()[plane_geometries.plane_index];
+    const auto& plane = tester.cspace_free_polytope()
+                            .separating_planes()[plane_geometries.plane_index];
     if (plane.positive_side_geometry->type() == GeometryType::kCylinder ||
         plane.negative_side_geometry->type() == GeometryType::kCylinder) {
       throw std::runtime_error(
@@ -281,10 +306,12 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
     EXPECT_FALSE(plane_geometries.separating_margin.has_value());
   }
 
-  tester = dut.GenerateRationals(true /* search_separating_margin */);
-  EXPECT_EQ(ret.size(), dut.separating_planes().size() - 1);
+  ret = tester.GenerateRationals(true /* search_separating_margin */);
+  EXPECT_EQ(ret.size(),
+            tester.cspace_free_polytope().separating_planes().size());
   for (const auto& plane_geometries : ret) {
-    const auto& plane = dut.separating_planes()[plane_geometries.plane_index];
+    const auto& plane = tester.cspace_free_polytope()
+                            .separating_planes()[plane_geometries.plane_index];
     if (plane.positive_side_geometry->type() != GeometryType::kCylinder &&
         plane.negative_side_geometry->type() != GeometryType::kCylinder) {
       // The unit length vector is always a.
@@ -375,8 +402,7 @@ TEST_F(CIrisToyRobotTest, CalcMonomialBasis) {
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
                                   SeparatingPlaneOrder::kAffine, q_star);
-  const auto plane_geometries =
-      tester.GenerateRationals(false);
+  const auto plane_geometries = tester.GenerateRationals(false);
   const auto map_body_to_monomial_basis =
       tester.CalcMonomialBasis(plane_geometries);
   // Make sure map_body_to_monomial_basis contains all pairs of bodies.
@@ -437,8 +463,7 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram1) {
   SetupPolytope(tester, C, d, &d_minus_Cs, &C_redundant_indices,
                 &s_lower_redundant_indices, &s_upper_redundant_indices);
 
-  const auto plane_geometries_vec =
-      tester.GenerateRationals(false);
+  const auto plane_geometries_vec = tester.GenerateRationals(false);
   // Consider the plane between world_box_ and body3_box_.
   // Notice that this chain only has one DOF, hence one of the rationals is
   // actually a constant.
@@ -563,8 +588,7 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram2) {
   SetupPolytope(tester, C, d, &d_minus_Cs, &C_redundant_indices,
                 &s_lower_redundant_indices, &s_upper_redundant_indices);
 
-  const auto plane_geometries_vec =
-      tester.GenerateRationals(false);
+  const auto plane_geometries_vec = tester.GenerateRationals(false);
   // Consider the plane between world_sphere_ and body2_capsule_.
   int plane_geometries_index = -1;
   for (int i = 0; i < static_cast<int>(plane_geometries_vec.size()); ++i) {
@@ -663,8 +687,7 @@ TEST_F(CIrisToyRobotTest, AddUnitLengthConstraint) {
   prog.AddIndeterminates(
       tester.cspace_free_polytope().rational_forward_kin().s());
 
-  const auto plane_geometries_vec =
-      tester.GenerateRationals(false);
+  const auto plane_geometries_vec = tester.GenerateRationals(false);
   // Consider the separating plane between world_sphere_ and body2_capsule_.
   int plane_geometries_index = -1;
   for (int i = 0; i < static_cast<int>(plane_geometries_vec.size()); ++i) {
@@ -774,8 +797,8 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope1) {
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
                                   SeparatingPlaneOrder::kAffine, q_star);
 
-  const auto plane_geometries = tester.GenerateRationals(
-      true /* search_separating_plane */);
+  const auto plane_geometries =
+      tester.GenerateRationals(true /* search_separating_plane */);
   // This C-space polytope is collision free.
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off
@@ -832,8 +855,8 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope2) {
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
                                   SeparatingPlaneOrder::kAffine, q_star);
 
-  const auto plane_geometries = tester.GenerateRationals(
-      true /* search_separating_plane */);
+  const auto plane_geometries =
+      tester.GenerateRationals(true /* search_separating_plane */);
   // This/ C-space polytope is collision free.
   Eigen::Matrix<double, 4, 3> C;
   // clang-format off
