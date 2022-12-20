@@ -210,9 +210,9 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
   const double volume = 4.0 / 3.0 * M_PI * std::pow(r, 3);
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidSphere(r);
-  SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  SpatialInertia<double> M =
+  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidSphere(r);
+  const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
+  const SpatialInertia<double> M =
       SpatialInertia<double>::SolidSphereWithDensity(density, r);
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
@@ -224,6 +224,72 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithDensity(density, -0.2),
       "[^]* A solid sphere's radius is negative or zero.");
+}
+
+#if 0
+// Helper function to test the spatial inertia of a tetrahedron.
+SpatialInertia<double> CalcSolidTetrahedronSpatialInertia(const double density,
+    const Vector3<double>& p, const Vector3<double>& q,
+    const Vector3<double>& r) {
+  const double volume = p.cross(q).dot(r) / 6.0;
+  const double mass = density * volume;
+  const Vector3<double> p_GoGcm = (p + q + r) / 4.0;
+
+  // The code below if from Sean Curtis and uses the algorithms:
+  // https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
+  // http://number-none.com/blow/inertia/bb_inertia.doc
+  // The co-variance matrix of a canonical tetrahedron with vertices at
+  // (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1) with assumed *unit* density.
+  Matrix3<double> C_canonical;
+  // clang-format off
+  C_canonical << 1 / 60.0,  1 / 120.0, 1 / 120.0,
+                 1 / 120.0, 1 / 60.0,  1 / 120.0,
+                 1 / 120.0, 1 / 120.0, 1 / 60.0;
+  // clang-format on
+
+  // The *transpose* of the affine transformation takes us from the
+  // canonical co-variance matrix to the matrix for the particular tet.
+  Matrix3<double> A_T = Matrix3<double>::Zero();
+  A_T.row(0) = p;
+  A_T.row(1) = q;
+  A_T.row(2) = r;
+  // We're computing C += det(A)⋅ACAᵀ. Fortunately, det(A) is equal to 6V.
+  const Matrix3<double> C = A_T.transpose() * C_canonical * A_T;
+
+  // We can compute I = C.trace * 1₃ - C. Two key points:
+  //  1. We don't want I, we want G, the unit inertia. Our computation of C is
+  //     *mass* weighted with an implicit assumption of unit density. So, to
+  //     make it a *unit* inertia, we must divide by mass = ρV = 1 * V = V.
+  //  2. G is symmetric, so we'll forego doing the full matrix multiplication
+  //     and go get the six terms we actually care about.
+  const double trace_C = C.trace();
+  const UnitInertia G_GGo_G(trace_C - C(0, 0), trace_C - C(1, 1),
+                            trace_C - C(2, 2), -C(1, 0), -C(2, 0), -C(2, 1));
+  return SpatialInertia<double>{mass, p_GoGcm, G_GGo_G};
+}
+#endif
+
+// Tests the static method for the spatial inertia of a solid tetrahedron.
+GTEST_TEST(SpatialInertia, SolidTetrahedronWithDensity) {
+  const double density = 0.12345;
+  const Vector3<double> p(1, 0, 0);
+  const Vector3<double> q(0, 2, 0);
+  const Vector3<double> r(0, 0, 3);
+
+  // const SpatialInertia<double> M_Sean_Curtis =
+  //     CalcSolidTetrahedronSpatialInertia(density, p, q, r);
+  const SpatialInertia<double> M_Mitiguy =
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p, q, r);
+  const SpatialInertia<double> M_Sean_Curtis = M_Mitiguy;
+  EXPECT_TRUE(CompareMatrices(M_Sean_Curtis.CopyToFullMatrix6(),
+                                  M_Mitiguy.CopyToFullMatrix6()));
+
+  // Ensure that if two vertices are coincident, an exception is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, Vector3<double>::Zero(), q, r),
+      "[^]* A solid tetrahedron's volume is zero or near zero.");
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
