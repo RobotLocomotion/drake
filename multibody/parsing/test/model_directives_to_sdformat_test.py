@@ -136,6 +136,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         directives = LoadModelDirectives(file_path)
         ProcessModelDirectives(directives=directives,
                                plant=directives_plant, parser=parser)
+        directives_plant.Finalize()
 
         # Load converted SDFormat
         sdformat_plant = MultibodyPlant(time_step=0.01)
