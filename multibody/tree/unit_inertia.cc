@@ -17,7 +17,6 @@ UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
                      one_twelfth * (Lx2 + Ly2));
 }
 
-
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
     const Vector3<T>& unit_vector) {
@@ -88,8 +87,33 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   const T Izz = (0.5*mc + 0.8*mh) * r2;  // Axial moment of inertia.
 
   return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
-
 }
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
+      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
+  const Vector3<T> q_plus_r = q + r;
+  const T p_dot_pqr = p.dot(p + q_plus_r);
+  const T q_dot_qr  = q.dot(q_plus_r);
+  const T r_dot_r   = r.dot(r);
+  const T scalar = 0.1 * (p_dot_pqr + q_dot_qr + r_dot_r);
+  const Vector3<T> p_half = 0.5 * p;
+  const Vector3<T> q_half = 0.5 * q;
+  const Vector3<T> r_half = 0.5 * r;
+  // TODO(Mitiguy) The G matrix below can be calculated more efficiently since
+  //  G is symmetric (so we only need its upper or lower triangular part).
+  const Matrix3<T> G = -0.1 * p * (p + q_half + r_half).transpose()
+                      - 0.1 * q * (p_half + q + r_half).transpose()
+                      - 0.1 * r * (p_half + q_half + r).transpose();
+  const T Ixx = scalar + G(0, 0);
+  const T Iyy = scalar + G(1, 1);
+  const T Izz = scalar + G(2, 2);
+  const T Ixy = scalar + G(0, 1);
+  const T Ixz = scalar + G(0, 2);
+  const T Iyz = scalar + G(1, 2);
+  return UnitInertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+}
+
 
 }  // namespace multibody
 }  // namespace drake

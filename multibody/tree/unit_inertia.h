@@ -322,6 +322,16 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia(Ix, Ix, Iz);
   }
 
+  /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
+  /// about its vertex Bo (from which the other 3 vertices P, Q, R are located).
+  /// @param[in] p position vector from vertex Bo to vertex P, expressed in E.
+  /// @param[in] q position vector from vertex Bo to vertex Q, expressed in E.
+  /// @param[in] r position vector from vertex Bo to vertex R, expressed in E.
+  /// @retval G_BBo_E B's spatial inertia about Bo, expressed in E, where E is
+  /// the right-handed orthogonal unit basis (frame) used to express p, q, r.
+  static UnitInertia<T> SolidTetrahedronAboutVertex(
+      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r);
+
   /// Returns the unit inertia for a unit-mass body B for which there exists a
   /// line L passing through the body's center of mass `Bcm` having the property
   /// that the body's moment of inertia about all lines perpendicular to L are

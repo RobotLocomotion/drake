@@ -1119,7 +1119,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("L"), py::arg("b_E") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCylinder.doc)
         .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("r"),
-            py::arg("L"),  py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
+            py::arg("L"), py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCapsule.doc)
         .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
             py::arg("r"), py::arg("L"), cls_doc.SolidCylinderAboutEnd.doc)

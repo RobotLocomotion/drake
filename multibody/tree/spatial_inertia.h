@@ -126,7 +126,7 @@ class SpatialInertia {
 
   // TODO(Mitiguy) Python-bind this and related functions when they are done.
   /// (Internal use only)
-  /// Creates a spatial inertia for a solid box B of uniform density about
+  /// Creates a spatial inertia for a uniform density solid box B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] lx length of the box in the Bx direction.
@@ -138,7 +138,7 @@ class SpatialInertia {
       const T& lx, const T& ly, const T& lz);
 
   /// (Internal use only)
-  /// Creates a spatial inertia for a solid capsule B of uniform density about
+  /// Creates a spatial inertia for a uniform density solid capsule B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] r radius of the cylinder/half-sphere part of the capsule.
@@ -152,7 +152,7 @@ class SpatialInertia {
       const T& r, const T& l, const Vector3<T>& unit_vector);
 
   /// (Internal use only)
-  /// Creates a spatial inertia for a solid cylinder B of uniform density about
+  /// Creates a spatial inertia for a uniform density solid cylinder B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] r radius of the cylinder.
@@ -163,6 +163,39 @@ class SpatialInertia {
   /// @throws std::exception if r or l is negative or ‖unit_vector‖ ≉ 1.
   static SpatialInertia<T> SolidCylinderWithDensity(const T& density,
       const T& r, const T& l, const Vector3<T>& unit_vector);
+
+  /// (Internal use only)
+  /// Creates a spatial inertia for a uniform density solid ellipsoid B about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] a ellipsoid's semi-diameter (½ length) in the Bx direction.
+  /// @param[in] b ellipsoid's semi-diameter (½ length) in the By direction.
+  /// @param[in] c ellipsoid's semi-diameter (½ length) in the Bz direction.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  /// @throws std::exception if any of a, b, c are negative.
+  static SpatialInertia<T> SolidEllipsoidWithDensity(const T& density,
+      const T& a, const T& b, const T& c);
+
+  /// (Internal use only)
+  /// Creates a spatial inertia for a uniform density solid sphere B about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] r sphere's radius.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  /// @throws std::exception if r is negative.
+  static SpatialInertia<T> SolidSphereWithDensity(const T& density, const T& r);
+
+  /// (Internal use only)
+  /// Creates a spatial inertia for a uniform density solid tetrahedron B about
+  /// its vertex Bo (from which the other 3 vertices P, Q, R are located).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] p position vector from vertex Bo to vertex P.
+  /// @param[in] q position vector from vertex Bo to vertex Q.
+  /// @param[in] r position vector from vertex Bo to vertex R.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
+      const T& density,
+      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r);
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
