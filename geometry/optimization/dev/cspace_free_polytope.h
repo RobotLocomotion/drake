@@ -99,18 +99,15 @@ class CspaceFreePolytope {
     return y_slack_;
   }
 
-  /**
-   Generate all the conditions (certain rationals being non-negative, and
-   certain vectors with length <= 1) such that the robot configuration is
-   collision free.
-   @param filtered_collision_pairs
-   @param search_separating_margin If set to true, then when we search for the
-   separating planes, we will attempt to maximize the margin of the separating
-   planes.
-   */
-  [[nodiscard]] std::vector<PlaneSeparatesGeometries> GenerateRationals(
-      const CspaceFreePolytope::FilteredCollsionPairs& filtered_collision_pairs,
-      bool search_separating_margin) const;
+  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
+  rationals_with_margin() const {
+    return rationals_with_margin_;
+  }
+
+  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
+  rationals_without_margin() const {
+    return rationals_with_margin_;
+  }
 
   /**
    When searching for the separating plane, we want to certify that the
@@ -255,6 +252,18 @@ class CspaceFreePolytope {
       const Eigen::Ref<const VectorX<T>>& d) const;
 
   /**
+   Generate all the conditions (certain rationals being non-negative, and
+   certain vectors with length <= 1) such that the robot configuration is
+   collision free.
+   @param filtered_collision_pairs
+   @param search_separating_margin If set to true, then when we search for the
+   separating planes, we will attempt to maximize the margin of the separating
+   planes.
+   */
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries> GenerateRationals(
+      bool search_separating_margin) const;
+
+  /**
    Computes the monomial basis for each pair of bodies.
 
    There can be multiple collision geometries on the same body, and their SOS
@@ -377,6 +386,8 @@ class CspaceFreePolytope {
   Eigen::VectorXd s_upper_;
   VectorX<symbolic::Polynomial> s_minus_s_lower_;
   VectorX<symbolic::Polynomial> s_upper_minus_s_;
+  std::vector<PlaneSeparatesGeometries> rationals_with_margin_;
+  std::vector<PlaneSeparatesGeometries> rationals_without_margin_;
 };
 
 /**
