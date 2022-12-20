@@ -87,6 +87,9 @@ class ModelVisualizer:
         self._pyplot = pyplot
         self._meshcat = meshcat
 
+        # This is both a button label and a flag to enable the button.
+        self._reload_button_name = None
+
         # The following fields remain valid for this object's lifetime after
         # Finalize() has been called.
         self._diagram = None
@@ -197,6 +200,11 @@ class ModelVisualizer:
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
 
+        # We want to place this button far away from the Stop Running button,
+        # hence the work to do this here.
+        if self._reload_button_name:
+            self._meshcat.AddButton(self._reload_button_name)
+
         # Connect to drake_visualizer, meldis, and meshcat.
         # Meldis and meshcat provide simultaneous visualization of
         # illustration and proximity geometry.
@@ -214,10 +222,6 @@ class ModelVisualizer:
             "joint_sliders", JointSliders(meshcat=self._meshcat,
                                           plant=self._plant))
 
-        if self._browser_new:
-            url = self._meshcat.web_url()
-            webbrowser.open(url=url, new=self._browser_new)
-
         # Connect to PyPlot.
         if self._pyplot:
             ConnectPlanarSceneGraphVisualizer(self._builder, self._scene_graph)
@@ -227,8 +231,13 @@ class ModelVisualizer:
         self._plant_context = self._plant.GetMyContextFromRoot(self._context)
 
         if position:
+            self._raise_if_invalid_positions(position)
             self._plant.SetPositions(self._plant_context, position)
             self._sliders.SetPositions(position)
+
+        if self._browser_new:
+            url = self._meshcat.web_url()
+            webbrowser.open(url=url, new=self._browser_new)
 
         # Use Simulator to dispatch initialization events.
         # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
@@ -258,6 +267,11 @@ class ModelVisualizer:
             7 positions corresponding to any model bases that aren't welded to
             the world.
           loop_once: a flag that exits the evaluation loop after one pass.
+
+        Returns:
+          The slider positions if the visualizer is internally set to allow
+        reloading model filesand the user clicks the Reload button.
+        Otherwise, always returns None.
         """
         if self._builder:
             self.Finalize(position=position)
@@ -279,12 +293,17 @@ class ModelVisualizer:
             self._meshcat)])
 
         # Wait for the user to cancel us.
-        button_name = "Stop Running"
+        stop_button_name = "Stop Running"
         if not loop_once:
-            print(f"Click '{button_name}' or press Esc to quit")
+            print(f"Click '{stop_button_name}' or press Esc to quit")
 
         try:
-            self._meshcat.AddButton(button_name, "Escape")
+            self._meshcat.AddButton(stop_button_name, "Escape")
+
+            def has_clicks(button_name):
+                if not button_name:
+                    return False
+                return self._meshcat.GetButtonClicks(button_name) > 0
 
             sliders_context = self._sliders.GetMyContextFromRoot(self._context)
             while True:
@@ -292,12 +311,104 @@ class ModelVisualizer:
                 q = self._sliders.get_output_port().Eval(sliders_context)
                 self._plant.SetPositions(self._plant_context, q)
                 self._diagram.ForcedPublish(self._context)
-                if loop_once or self._meshcat.GetButtonClicks(button_name) > 0:
-                    return
+                if loop_once or has_clicks(stop_button_name):
+                    return None
+                if has_clicks(self._reload_button_name):
+                    return q
         except KeyboardInterrupt:
             pass
         finally:
-            self._meshcat.DeleteButton(button_name)
+            self._meshcat.DeleteButton(stop_button_name)
+            if self._reload_button_name:
+                self._meshcat.DeleteButton(self._reload_button_name)
+
+    def RunWithReload(self, filenames, position=None):
+        """
+        Runs the model after adding model files, with an option to reload.
+        Neither Finalize() nor Run() may be called before this method.
+
+        Will iterate until the user clicks the Stop Running button. All model
+        files will be reloaded and meshcat will be reset if the reload button
+        is clicked. If pyplot is being used, clicking reload will create a
+        new pyplot window.
+
+        Args:
+          filenames: a list of model filenames.
+          position: an ndarray-like list of slider positions for the model(s);
+            must match the number of positions in all model(s), including the
+            7 positions corresponding to any model bases that aren't welded to
+            the world.
+        """
+        # This method uses this outer visualizer (self) to track options
+        # and manage meshcat (and its window, if applicable). We then
+        # create an inner visualizer each time through the reload loop.
+
+        # This outer visualizer must not have been Finalized or Run.
+        if self._builder is None:
+            raise RuntimeError("Finalize has already been called.")
+        assert all([x is not None for x in (
+            self._plant,
+            self._scene_graph,
+            self._parser)])
+        assert all([x is None for x in (
+            self._diagram,
+            self._sliders,
+            self._context,
+            self._plant_context)])
+
+        if position:
+            # Add models and finalize the plant so we can validate positions.
+            for filename in filenames:
+                self.AddModels(filename)
+            self._plant.Finalize()
+            self._raise_if_invalid_positions(position)
+
+        if self._browser_new:
+            url = self.meshcat().web_url()
+            webbrowser.open(url=url, new=self._browser_new)
+
+        model_suffix = "s" if len(filenames) != 1 else ""
+        reload_button_name = "Reload Model File%s" % model_suffix
+
+        while True:
+            inner_visualizer = ModelVisualizer(
+                visualize_frames=self._visualize_frames,
+                triad_length=self._triad_length,
+                triad_radius=self._triad_radius,
+                triad_opacity=self._triad_opacity,
+                browser_new=False,
+                pyplot=self._pyplot,
+                meshcat=self._meshcat)
+
+            inner_visualizer._reload_button_name = reload_button_name
+            for filename in filenames:
+                inner_visualizer.AddModels(filename)
+            inner_visualizer.Finalize()
+
+            # Don't exit if the number of positions in the model changes.
+            # TODO(trowell-tri) Examine the scene graph more thoroughly
+            # and properly restore position values to the same joints.
+            if inner_visualizer._plant.num_positions() != len(position):
+                position = None
+
+            position = inner_visualizer.Run(position)
+            if position is None:
+                return
+
+    def _raise_if_invalid_positions(self, position):
+        """
+        Validate the position argument.
+
+        Raises:
+          ValueError: if the length of the position list does not match
+        the number of positions in the scene graph.
+        """
+        assert self._plant is not None
+        if self._plant.num_positions() != len(position):
+            message = ("Number of passed positions (%d) does not match "
+                       "the number in the model (%d).")
+            raise ValueError(
+                message % (len(position), self._plant.num_positions()))
 
     def _add_triad(
         self,
@@ -315,7 +426,7 @@ class ModelVisualizer:
         The axes point in +x, +y and +z directions, respectively.
         Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e59811/manipulation/scenarios.py#L367-L414).# noqa
         Args:
-          frame_id: A geometry::frame_id registered with scene_graph.
+          frame_id: a geometry::frame_id registered with scene_graph.
           length: the length of each axis in meters.
           radius: the radius of each axis in meters.
           opacity: the opacity of the coordinate axes, between 0 and 1.
