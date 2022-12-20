@@ -121,7 +121,7 @@ class CspaceFreePolytopeTester {
         plane_geometries, C, d, map_body_to_monomial_basis, options);
   }
 
-  [nodiscard]] std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
+  [nodiscard]] std::vector<PlaneSeparatesGeometries> GenerateRationals(
       bool search_separating_margin) const {
     return cspace_free_polytope_->GenerateRationals(search_separating_margin);
   }

@@ -762,7 +762,6 @@ CspaceFreePolytope::AddUnitLengthConstraint(
 
 std::vector<std::optional<CspaceFreePolytope::SeparationCertificateResult>>
 CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
-    const FilteredCollsionPairs& filtered_collision_pairs,
     const std::vector<PlaneSeparatesGeometries>& plane_geometries,
     const Eigen::Ref<const Eigen::MatrixXd>& C,
     const Eigen::Ref<const Eigen::VectorXd>& d,
