@@ -244,7 +244,7 @@ Eigen::Matrix<Monomial, Eigen::Dynamic, 1> OddDegreeMonomialBasis(
 /**
  Generates all the monomials of `x`, such that the degree for x(i) is no larger
  than 1 for every x(i) in `x`.
- @param t The variables whose monomials are generated.
+ @param x The variables whose monomials are generated.
  @param sort_monomial If true, the returned monomials are sorted in the graded
  reverse lexicographic order. For example if x = (x₀, x₁) with x₀< x₁, then this
  function returns [x₀x₁, x₁, x₀, 1]. If sort_monomial=false, then we return the

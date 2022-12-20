@@ -9,9 +9,11 @@
 
 namespace drake {
 namespace multibody {
-namespace internal {
+
 template <typename T>
 class PhysicalModel;
+
+namespace internal {
 
 /* This class is used to grant access to a selected collection of
  MultibodyPlant's private methods to PhysicalModel.

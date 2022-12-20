@@ -4,10 +4,13 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/meshcat.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
 
 using drake::geometry::DrakeVisualizerParams;
+using drake::geometry::Meshcat;
+using drake::geometry::MeshcatVisualizerParams;
 using drake::geometry::Rgba;
 using drake::geometry::Role;
 using drake::geometry::SceneGraph;
@@ -29,29 +32,56 @@ namespace {
 // the Params, or whether we agree they can differ (and remove the test).
 GTEST_TEST(VisualizationConfigTest, Defaults) {
   const VisualizationConfig config;
-  const DrakeVisualizerParams params;
-  EXPECT_EQ(config.publish_period, params.publish_period);
-  EXPECT_EQ(config.default_illustration_color, params.default_color);
+  const DrakeVisualizerParams drake_params;
+  const DrakeVisualizerParams meshcat_params;
+  EXPECT_EQ(config.publish_period, drake_params.publish_period);
+  EXPECT_EQ(config.default_illustration_color, drake_params.default_color);
+  EXPECT_EQ(config.publish_period, meshcat_params.publish_period);
+  EXPECT_EQ(config.default_illustration_color, meshcat_params.default_color);
 }
 
 // Tests the mapping from default schema data to geometry params.
 GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
   const VisualizationConfig config;
-  const std::vector<DrakeVisualizerParams> params =
-      ConvertVisualizationConfigToParams(config);
-  ASSERT_EQ(params.size(), 2);
 
-  EXPECT_EQ(params.at(0).role, Role::kIllustration);
-  EXPECT_EQ(params.at(0).default_color, config.default_illustration_color);
-  EXPECT_FALSE(params.at(0).show_hydroelastic);
-  EXPECT_FALSE(params.at(0).use_role_channel_suffix);
-  EXPECT_EQ(params.at(0).publish_period, config.publish_period);
+  const std::vector<DrakeVisualizerParams> drake_params =
+      ConvertVisualizationConfigToDrakeParams(config);
+  ASSERT_EQ(drake_params.size(), 2);
 
-  EXPECT_EQ(params.at(1).role, Role::kProximity);
-  EXPECT_EQ(params.at(1).default_color, config.default_proximity_color);
-  EXPECT_TRUE(params.at(1).show_hydroelastic);
-  EXPECT_TRUE(params.at(1).use_role_channel_suffix);
-  EXPECT_EQ(params.at(1).publish_period, config.publish_period);
+  EXPECT_EQ(drake_params.at(0).role, Role::kIllustration);
+  EXPECT_EQ(drake_params.at(0).default_color,
+            config.default_illustration_color);
+  EXPECT_FALSE(drake_params.at(0).show_hydroelastic);
+  EXPECT_FALSE(drake_params.at(0).use_role_channel_suffix);
+  EXPECT_EQ(drake_params.at(0).publish_period, config.publish_period);
+
+  EXPECT_EQ(drake_params.at(1).role, Role::kProximity);
+  EXPECT_EQ(drake_params.at(1).default_color, config.default_proximity_color);
+  EXPECT_TRUE(drake_params.at(1).show_hydroelastic);
+  EXPECT_TRUE(drake_params.at(1).use_role_channel_suffix);
+  EXPECT_EQ(drake_params.at(1).publish_period, config.publish_period);
+
+  const std::vector<MeshcatVisualizerParams> meshcat_params =
+      ConvertVisualizationConfigToMeshcatParams(config);
+  ASSERT_EQ(meshcat_params.size(), 2);
+
+  EXPECT_EQ(meshcat_params.at(0).role, Role::kIllustration);
+  EXPECT_EQ(meshcat_params.at(0).publish_period, config.publish_period);
+  EXPECT_EQ(meshcat_params.at(0).default_color,
+            config.default_illustration_color);
+  EXPECT_EQ(meshcat_params.at(0).delete_on_initialization_event,
+            config.delete_on_initialization_event);
+  EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider,
+            config.enable_alpha_sliders);
+
+  EXPECT_EQ(meshcat_params.at(1).role, Role::kProximity);
+  EXPECT_EQ(meshcat_params.at(1).publish_period, config.publish_period);
+  EXPECT_EQ(meshcat_params.at(1).default_color,
+            config.default_proximity_color);
+  EXPECT_EQ(meshcat_params.at(1).delete_on_initialization_event,
+            config.delete_on_initialization_event);
+  EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
+            config.enable_alpha_sliders);
 }
 
 // Tests the mapping from non-default schema data to geometry params.
@@ -60,13 +90,23 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
   config.publish_period = 0.5;
   config.publish_proximity = false;
   config.default_illustration_color = Rgba(0.25, 0.25, 0.25, 0.25);
-  const std::vector<DrakeVisualizerParams> params =
-      ConvertVisualizationConfigToParams(config);
-  ASSERT_EQ(params.size(), 1);
-  EXPECT_EQ(params.at(0).role, Role::kIllustration);
-  EXPECT_FALSE(params.at(0).show_hydroelastic);
-  EXPECT_EQ(params.at(0).publish_period, 0.5);
-  EXPECT_EQ(params.at(0).default_color, Rgba(0.25, 0.25, 0.25, 0.25));
+  config.enable_alpha_sliders = true;
+
+  const std::vector<DrakeVisualizerParams> drake_params =
+      ConvertVisualizationConfigToDrakeParams(config);
+  ASSERT_EQ(drake_params.size(), 1);
+  EXPECT_EQ(drake_params.at(0).role, Role::kIllustration);
+  EXPECT_FALSE(drake_params.at(0).show_hydroelastic);
+  EXPECT_EQ(drake_params.at(0).publish_period, 0.5);
+  EXPECT_EQ(drake_params.at(0).default_color, Rgba(0.25, 0.25, 0.25, 0.25));
+
+  const std::vector<MeshcatVisualizerParams> meshcat_params =
+      ConvertVisualizationConfigToMeshcatParams(config);
+  ASSERT_EQ(meshcat_params.size(), 1);
+  EXPECT_EQ(meshcat_params.at(0).role, Role::kIllustration);
+  EXPECT_EQ(meshcat_params.at(0).publish_period, 0.5);
+  EXPECT_EQ(meshcat_params.at(0).default_color, Rgba(0.25, 0.25, 0.25, 0.25));
+  EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider, true);
 }
 
 // Tests everything disabled.
@@ -74,9 +114,14 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionAllDisabled) {
   VisualizationConfig config;
   config.publish_illustration = false;
   config.publish_proximity = false;
-  const std::vector<DrakeVisualizerParams> params =
-      ConvertVisualizationConfigToParams(config);
-  EXPECT_EQ(params.size(), 0);
+
+  const std::vector<DrakeVisualizerParams> drake_params =
+      ConvertVisualizationConfigToDrakeParams(config);
+  EXPECT_EQ(drake_params.size(), 0);
+
+  const std::vector<MeshcatVisualizerParams> meshcat_params =
+      ConvertVisualizationConfigToMeshcatParams(config);
+  EXPECT_EQ(meshcat_params.size(), 0);
 }
 
 // Overall acceptance test with everything enabled.
@@ -96,8 +141,11 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
+  // Check that we can pass an existing meshcat.
+  std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
   const VisualizationConfig config;
-  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
+  ApplyVisualizationConfig(
+    config, &builder, &lcm_buses, &plant, &scene_graph, meshcat);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure everything showed up.
@@ -109,6 +157,14 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
       "DRAKE_VIEWER_DRAW",
       "DRAKE_VIEWER_DRAW_PROXIMITY",
       "CONTACT_RESULTS"}));
+
+  // Check that alpha sliders don't exist by default.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    meshcat->GetSliderValue("illustration α"),
+    ".*does not have any slider named illustration.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    meshcat->GetSliderValue("proximity α"),
+    ".*does not have any slider named proximity.*");
 }
 
 // Overall acceptance test with nothing enabled.
@@ -130,11 +186,66 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
   ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
+
+  // Check that no meshcat object is created if there is nothing to visualize.
+  int meshcat_count = 0;
+  for (const auto* system : builder.GetSystems()) {
+    const std::string& name = system->get_name();
+    if (name.find("MeshcatVisualizer") != std::string::npos) {
+        ++meshcat_count;
+    }
+  }
+  EXPECT_EQ(meshcat_count, 0);
+
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure nothing showed up.
   simulator.AdvanceTo(0.25);
   drake_lcm.HandleSubscriptions(1);
+}
+
+// Check that a Meshcat instance is created when none is passed.
+GTEST_TEST(VisualizationConfigFunctionsTest, NoMeshcat) {
+  DrakeLcm drake_lcm;
+  LcmBuses lcm_buses;
+  lcm_buses.Add("default", &drake_lcm);
+
+  // Add MbP and SG, then the default visualization.
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  const VisualizationConfig config;
+  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph);
+
+  int meshcat_count = 0;
+  for (const auto* system : builder.GetSystems()) {
+    const std::string& name = system->get_name();
+    if (name.find("MeshcatVisualizer") != std::string::npos) {
+        ++meshcat_count;
+    }
+  }
+  EXPECT_EQ(meshcat_count, 2);
+}
+
+// Check that turning on the alpha sliders functions as expected.
+GTEST_TEST(VisualizationConfigFunctionsTest, AlphaSliders) {
+  DrakeLcm drake_lcm;
+  LcmBuses lcm_buses;
+  lcm_buses.Add("default", &drake_lcm);
+
+  // Add MbP and SG, then the default visualization.
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
+  VisualizationConfig config;
+  config.enable_alpha_sliders = true;
+  ApplyVisualizationConfig(
+    config, &builder, &lcm_buses, &plant, &scene_graph, meshcat);
+
+  // Check that alpha sliders exist.
+  meshcat->GetSliderValue("illustration α");
+  meshcat->GetSliderValue("proximity α");
 }
 
 // The AddDefault... sugar shouldn't crash.

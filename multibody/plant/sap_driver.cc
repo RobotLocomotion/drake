@@ -314,7 +314,7 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
   const Vector1<T> stiffness(kInfinity);
   const Vector1<T> relaxation_time(plant().time_step());
 
-  for (const CouplerConstraintSpecs<T>& info :
+  for (const CouplerConstraintSpecs& info :
        manager().coupler_constraints_specs()) {
     const Joint<T>& joint0 = plant().get_joint(info.joint0_index);
     const Joint<T>& joint1 = plant().get_joint(info.joint1_index);
@@ -363,6 +363,110 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
 }
 
 template <typename T>
+void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
+                                          SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Distance constraints do not have impulse limits, they are bi-lateral
+  // constraints. Each distance constraint introduces a single constraint
+  // equation.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  const Vector1<T> gamma_lower(-kInfinity);
+  const Vector1<T> gamma_upper(kInfinity);
+
+  const int nv = plant().num_velocities();
+  Matrix3X<T> Jv_WAp_W(3, nv);
+  Matrix3X<T> Jv_WBq_W(3, nv);
+  MatrixX<T> Jdistance = MatrixX<T>::Zero(1, nv);
+
+  const Frame<T>& frame_W = plant().world_frame();
+  for (const DistanceConstraintSpecs& specs :
+       manager().distance_constraints_specs()) {
+    const Body<T>& body_A = plant().get_body(specs.body_A);
+    const Body<T>& body_B = plant().get_body(specs.body_B);
+
+    const math::RigidTransform<T>& X_WA =
+        plant().EvalBodyPoseInWorld(context, body_A);
+    const math::RigidTransform<T>& X_WB =
+        plant().EvalBodyPoseInWorld(context, body_B);
+    const Vector3<T>& p_WP = X_WA * specs.p_AP.cast<T>();
+    const Vector3<T>& p_WQ = X_WB * specs.p_BQ.cast<T>();
+
+    // Distance as the norm of p_PQ_W = p_WQ - p_WP
+    const Vector3<T> p_PQ_W = p_WQ - p_WP;
+    const T d0 = p_PQ_W.norm();
+    // Verify the distance did not become ridiculously small. We use the
+    // user-specified distance as a reference.
+    constexpr double kMinimumDistance = 1.0e-7;
+    constexpr double kRelativeDistance = 1.0e-2;
+    if (d0 < kMinimumDistance + kRelativeDistance * specs.distance) {
+      const std::string msg = fmt::format(
+          "The distance between bodies '{}' and '{}' is: {}. This is "
+          "nonphysically small when compared to the free length of the "
+          "constraint, {}. ",
+          body_A.name(), body_B.name(), d0, specs.distance);
+      throw std::logic_error(msg);
+    }
+    const Vector3<T> p_hat_W = p_PQ_W / d0;
+
+    DRAKE_DEMAND(body_A.index() != body_B.index());
+
+    // Dense Jacobian.
+    // d(distance)/dt = Jdistance * v.
+    manager().internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_A.body_frame(), frame_W, p_WP,
+        frame_W, frame_W, &Jv_WAp_W);
+    manager().internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_B.body_frame(), frame_W, p_WQ,
+        frame_W, frame_W, &Jv_WBq_W);
+    Jdistance = p_hat_W.transpose() * (Jv_WBq_W - Jv_WAp_W);
+
+    const T dissipation_time_scale = specs.damping / specs.stiffness;
+
+    // TODO(amcastro-tri): consider exposing this parameter.
+    const double beta = 0.1;
+    const typename SapHolonomicConstraint<T>::Parameters parameters{
+        gamma_lower, gamma_upper, Vector1<T>(specs.stiffness),
+        Vector1<T>(dissipation_time_scale), beta};
+
+    const TreeIndex treeA_index =
+        tree_topology().body_to_tree_index(specs.body_A);
+    const TreeIndex treeB_index =
+        tree_topology().body_to_tree_index(specs.body_B);
+
+    // Sanity check at least one body is not the world.
+    DRAKE_DEMAND(treeA_index.is_valid() || treeB_index.is_valid());
+
+    // Both bodies A and B belong to the same tree or one of them is the world.
+    const bool single_tree = !treeA_index.is_valid() ||
+                             !treeB_index.is_valid() ||
+                             treeA_index == treeB_index;
+
+    // Constraint function at current time step.
+    const Vector1<T> g0(d0 - specs.distance);
+    if (single_tree) {
+      const TreeIndex tree_index =
+          treeA_index.is_valid() ? treeA_index : treeB_index;
+      const MatrixX<T> J = Jdistance.middleCols(
+          tree_topology().tree_velocities_start(tree_index),
+          tree_topology().num_tree_velocities(tree_index));
+
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          tree_index, g0, J, parameters));
+    } else {
+      const MatrixX<T> JA = Jdistance.middleCols(
+          tree_topology().tree_velocities_start(treeA_index),
+          tree_topology().num_tree_velocities(treeA_index));
+      const MatrixX<T> JB = Jdistance.middleCols(
+          tree_topology().tree_velocities_start(treeB_index),
+          tree_topology().num_tree_velocities(treeB_index));
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          treeA_index, treeB_index, g0, JA, JB, parameters));
+    }
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   SapContactProblem<T>& problem = *cache->sap_problem;
@@ -378,6 +482,7 @@ void SapDriver<T>::CalcContactProblemCache(
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
   AddCouplerConstraints(context, &problem);
+  AddDistanceConstraints(context, &problem);
 }
 
 template <typename T>

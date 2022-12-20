@@ -132,10 +132,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetName.doc_1args_geometry_id)
         .def("GetShape", &Class::GetShape, py_rvp::reference_internal,
-            py::arg("geometry_id"), cls_doc.GetShape.doc)
-        .def("GetPoseInParent", &Class::GetPoseInParent,
+            py::arg("geometry_id"), cls_doc.GetShape.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // 2023-04-01 Deprecation removal.
+    cls  // BR
+        .def("GetPoseInParent",
+            WrapDeprecated(cls_doc.GetPoseInParent.doc_deprecated,
+                &Class::GetPoseInParent),
             py_rvp::reference_internal, py::arg("geometry_id"),
-            cls_doc.GetPoseInParent.doc)
+            cls_doc.GetPoseInParent.doc_deprecated);
+#pragma GCC diagnostic pop
+
+    cls  // BR
         .def("GetPoseInFrame", &Class::GetPoseInFrame,
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetPoseInFrame.doc)
@@ -171,7 +181,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def("get_source_pose_port", &Class::get_source_pose_port,
-            py_rvp::reference_internal, cls_doc.get_source_pose_port.doc);
+            py_rvp::reference_internal, cls_doc.get_source_pose_port.doc)
+        .def("get_source_configuration_port",
+            &Class::get_source_configuration_port, py_rvp::reference_internal,
+            cls_doc.get_source_configuration_port.doc);
 
     cls  // BR
         .def("get_query_output_port", &Class::get_query_output_port,
@@ -196,20 +209,18 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::overload_cast<SourceId, FrameId,
                 std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
             py::arg("source_id"), py::arg("frame_id"), py::arg("geometry"),
-            cls_doc.RegisterGeometry.doc_3args_source_id_frame_id_geometry)
+            cls_doc.RegisterGeometry.doc_3args);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // 2023-04-01 Deprecation removal.
+    cls  // BR
         .def("RegisterGeometry",
-            py::overload_cast<SourceId, GeometryId,
-                std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
+            WrapDeprecated(cls_doc.RegisterGeometry.doc_deprecated_3args,
+                py::overload_cast<SourceId, GeometryId,
+                    std::unique_ptr<GeometryInstance>>(
+                    &Class::RegisterGeometry)),
             py::arg("source_id"), py::arg("geometry_id"), py::arg("geometry"),
-            cls_doc.RegisterGeometry.doc_3args_source_id_geometry_id_geometry)
-        .def("RegisterGeometry",
-            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
-                FrameId, std::unique_ptr<GeometryInstance>>(
-                &Class::RegisterGeometry),
-            py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
-            py::arg("geometry"),
-            cls_doc.RegisterGeometry
-                .doc_4args_context_source_id_frame_id_geometry)
+            cls_doc.RegisterGeometry.doc_deprecated_3args)
         .def("RegisterGeometry",
             overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
                 GeometryId, std::unique_ptr<GeometryInstance>>(
@@ -217,7 +228,15 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
             py::arg("geometry"),
             cls_doc.RegisterGeometry
-                .doc_4args_context_source_id_geometry_id_geometry)
+                .doc_4args_context_source_id_geometry_id_geometry);
+#pragma GCC diagnostic pop
+    cls  // BR
+        .def("RegisterGeometry",
+            overload_cast_explicit<GeometryId, systems::Context<T>*, SourceId,
+                FrameId, std::unique_ptr<GeometryInstance>>(
+                &Class::RegisterGeometry),
+            py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
+            py::arg("geometry"), cls_doc.RegisterGeometry.doc_4args)
         .def("RegisterAnchoredGeometry",
             py::overload_cast<SourceId, std::unique_ptr<GeometryInstance>>(
                 &Class::RegisterAnchoredGeometry),

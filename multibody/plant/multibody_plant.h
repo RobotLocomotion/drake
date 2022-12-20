@@ -29,7 +29,6 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/plant/tamsi_solver.h"
 #include "drake/multibody/topology/multibody_graph.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
@@ -280,7 +279,8 @@ the dynamics of a multibody system modeled with %MultibodyPlant are
          q̇ = N(q)v
   (1)    M(q)v̇ + C(q, v)v = τ
 </pre>
-where `M(q)` is the mass matrix of the multibody system, `C(q, v)v`
+where `M(q)` is the mass matrix of the multibody system (including rigid body
+mass properties and @ref reflected_inertia "reflected inertias"), `C(q, v)v`
 contains Coriolis, centripetal, and gyroscopic terms and
 `N(q)` is the kinematic coupling matrix describing the relationship between
 q̇ (the time derivatives of the generalized positions) and the generalized
@@ -1193,7 +1193,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @{
 
   /// Returns the total number of constraints specified by the user.
-  int num_constraints() const { return coupler_constraints_specs_.size(); }
+  int num_constraints() const {
+    return static_cast<int>(coupler_constraints_specs_.size() +
+           distance_constraints_specs_.size());
+  }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
   /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
@@ -1215,8 +1218,64 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if the %MultibodyPlant has already been finalized.
   ConstraintIndex AddCouplerConstraint(const Joint<T>& joint0,
                                        const Joint<T>& joint1,
-                                       const T& gear_ratio,
-                                       const T& offset = 0.0);
+                                       double gear_ratio, double offset = 0.0);
+
+  template <typename U = T>
+  DRAKE_DEPRECATED("2023-03-01",
+                   "Only gear_ratio and offset of type double are supported.")
+  ConstraintIndex
+      AddCouplerConstraint(const Joint<U>& joint0, const Joint<U>& joint1,
+                           const U& gear_ratio, const U& offset = 0.0) {
+    return this->AddCouplerConstraint(joint0, joint1,
+                                      ExtractDoubleOrThrow(gear_ratio),
+                                      ExtractDoubleOrThrow(offset));
+  }
+
+  /// Defines a distance constraint between a point P on a body A and a point Q
+  /// on a body B.
+  ///
+  /// This constraint can be compliant, modeling a spring with free length
+  /// `distance` and given `stiffness` and `damping` parameters between points P
+  /// and Q. For d = ‖p_PQ‖, then a compliant distance constraint models a
+  /// spring with force along p_PQ given by:
+  ///
+  ///    f = −stiffness ⋅ d − damping ⋅ ḋ
+  ///
+  /// @param[in] body_A Body to which point P is rigidly attached.
+  /// @param[in] p_AP Position of point P in body A's frame.
+  /// @param[in] body_B Body to which point Q is rigidly attached.
+  /// @param[in] p_BQ Position of point Q in body B's frame.
+  /// @param[in] distance Fixed length of the distance constraint, in meters. It
+  /// must be strictly positive.
+  /// @param[in] stiffness For modeling a spring with free length equal to
+  /// `distance`, the stiffness parameter in N/m. Optional, with its default
+  /// value being infinite to model a rigid massless rod of length `distance`
+  /// connecting points A and B.
+  /// @param[in] damping For modeling a spring with free length equal to
+  /// `distance`, damping parameter in N⋅s/m. Optional, with its default value
+  /// being zero for a non-dissipative constraint.
+  /// @returns the index to the newly added constraint.
+  ///
+  /// @warning Currently, it is the user's responsibility to initialize the
+  /// model's context in a configuration compatible with the newly added
+  /// constraint.
+  ///
+  /// @warning A distance constraint is the wrong modeling choice if the
+  /// distance needs to go through zero. To constrain two points to be
+  /// coincident we need a 3-dof ball constraint, the 1-dof distance constraint
+  /// is singular in this case. Therefore we require the distance parameter to
+  /// be strictly positive.
+  ///
+  /// @throws std::exception if bodies A and B are the same body.
+  /// @throws std::exception if `distance` is not strictly positive.
+  /// @throws std::exception if `stiffness` is not positive or zero.
+  /// @throws std::exception if `damping` is not positive or zero.
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  ConstraintIndex AddDistanceConstraint(
+      const Body<T>& body_A, const Vector3<double>& p_AP, const Body<T>& body_B,
+      const Vector3<double>& p_BQ, double distance,
+      double stiffness = std::numeric_limits<double>::infinity(),
+      double damping = 0.0);
 
   /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
   /// -->
@@ -1773,15 +1832,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called post-finalize. See Finalize().
   /// @note `this` MultibodyPlant will no longer support scalar conversion to or
   /// from symbolic::Expression after a call to this method.
-  void AddPhysicalModel(std::unique_ptr<internal::PhysicalModel<T>> model);
+  void AddPhysicalModel(std::unique_ptr<PhysicalModel<T>> model);
 
-  /// For use only by advanced developers.
+  /// Returns a vector of pointers to all physical models registered with this
+  /// %MultibodyPlant. For use only by advanced developers.
   ///
   /// @experimental
-  const std::vector<std::unique_ptr<internal::PhysicalModel<T>>>&
-  physical_models() const {
-    return physical_models_;
-  }
+  std::vector<const PhysicalModel<T>*> physical_models() const;
 
   // TODO(amcastro-tri): per work in #13064, we should reconsider whether to
   // deprecate/remove this method altogether or at least promote to proper
@@ -2383,6 +2440,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// multibody state vector. For such applications,
   /// Body::floating_positions_start() and Body::floating_velocities_start()
   /// offer the additional level of introspection needed.
+  ///
+  /// It is sometimes convenient for users to perform operations on Bodies
+  /// ubiquitously through the APIs of the Joint class. For that reason we
+  /// implicitly construct a 6-dof joint, QuaternionFloatingJoint, for all free
+  /// bodies at the time of Finalize(). Using Joint APIs to affect a free body
+  /// (setting  state, changing parameters, etc.) has the same effect as using
+  /// the free body APIs below. Each implicitly created joint is named
+  /// "$world_<bodyname>" where "<bodyname>" is the name of the free body, given
+  /// by `Body::name()`.
   /// @{
 
   /// Returns the set of body indexes corresponding to the free (floating)
@@ -2934,14 +3000,16 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Mathematically, this method computes: <pre>
   ///   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
   /// </pre>
-  /// where `M(q)` is the model's mass matrix, `C(q, v)v` is the bias
-  /// term containing Coriolis and gyroscopic effects and `tau_app` consists
+  /// where `M(q)` is the model's mass matrix (including rigid body mass
+  /// properties and @ref reflected_inertia "reflected inertias"), `C(q, v)v` is
+  /// the bias term for Coriolis and gyroscopic effects and `tau_app` consists
   /// of a vector applied generalized forces. The last term is a summation over
   /// all bodies in the model where `Fapp_Bo_W` is an applied spatial force on
   /// body B at `Bo` which gets projected into the space of generalized forces
   /// with the transpose of `Jv_V_WB(q)` (where `Jv_V_WB` is B's spatial
   /// velocity Jacobian in W with respect to generalized velocities v).
   /// Note: B's spatial velocity in W can be written as `V_WB = Jv_V_WB * v`.
+  ///
   /// This method does not compute explicit expressions for the mass matrix nor
   /// for the bias term, which would be of at least `O(n²)` complexity, but it
   /// implements an `O(n)` Newton-Euler recursive algorithm, where n is the
@@ -3047,6 +3115,39 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().CalcGravityGeneralizedForces(context);
   }
 
+  /// Computes the generalized forces result of a set of MultibodyForces applied
+  /// to this model.
+  ///
+  /// MultibodyForces stores applied forces as both generalized forces τₐₚₚ and
+  /// spatial forces F on each body, refer to documentation in MultibodyForces
+  /// for details. Users of MultibodyForces will use
+  /// MultibodyForces::mutable_generalized_forces() to mutate the stored
+  /// generalized forces directly and will use Body::AddInForceInWorld() to
+  /// append spatial forces.
+  ///
+  /// For a given set of forces stored as MultibodyForces, this method will
+  /// compute the total generalized forces on this model. More precisely, if
+  /// J_WBo is the Jacobian (with respect to velocities) for this model,
+  /// including all bodies, then this method computes: <pre>
+  ///   τ = τₐₚₚ + J_WBo⋅F
+  /// </pre>
+  ///
+  /// @param[in] context Context that stores the state of the model.
+  /// @param[in] forces Set of multibody forces, including both generalized
+  /// forces and per-body spatial forces.
+  /// @param[out] generalized_forces The total generalized forces on the model
+  /// that would result from applying `forces`. In other words, `forces` can be
+  /// replaced by the equivalent `generalized_forces`. On output,
+  /// `generalized_forces` is resized to num_velocities().
+  ///
+  /// @throws std::exception if `forces` is null or not compatible with this
+  /// model.
+  /// @throws std::exception if `generalized_forces` is not a valid non-null
+  /// pointer.
+  void CalcGeneralizedForces(const systems::Context<T>& context,
+                             const MultibodyForces<T>& forces,
+                             VectorX<T>* generalized_forces) const;
+
   // Preserve access to base overload from this class.
   using systems::System<T>::MapVelocityToQDot;
 
@@ -3125,20 +3226,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// gyroscopic "bias" terms, and a variety of Jacobian and actuation matrices.
   /// @{
 
-  /// Performs the computation of the mass matrix `M(q)` of the model using
-  /// inverse dynamics, where the generalized positions q are stored in
-  /// `context`. See CalcInverseDynamics().
+  /// Computes the mass matrix `M(q)` of the model using a slow method (inverse
+  /// dynamics). The generalized positions q are taken from the given `context`.
+  /// M includes the mass properties of rigid bodies and @ref reflected_inertia
+  /// "reflected inertias" as provided with JointActuator specifications.
   ///
-  /// Use CalcMassMatrix() for a faster implementation using the Composite Body
+  /// Use CalcMassMatrix() for a faster implementation using the Composite %Body
   /// Algorithm.
   ///
   /// @param[in] context
-  ///   The context containing the state of the model.
+  ///   The Context containing the state of the model from which generalized
+  ///   coordinates q are extracted.
   /// @param[out] M
-  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
-  ///   number of generalized velocities (num_velocities()) of the model.
-  ///   This method aborts if H is nullptr or if it does not have the proper
-  ///   size.
+  ///   A pointer to a square matrix in `ℛⁿˣⁿ` with n the number of generalized
+  ///   velocities (num_velocities()) of the model. Although symmetric, the
+  ///   matrix is filled in completely on return.
+  ///
+  /// @pre M is non-null and has the right size.
   ///
   /// The algorithm used to build `M(q)` consists in computing one column of
   /// `M(q)` at a time using inverse dynamics. The result from inverse dynamics,
@@ -3158,6 +3262,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
   /// mass matrix whenever possible.
+  /// @see CalcMassMatrix(), CalcInverseDynamics()
   void CalcMassMatrixViaInverseDynamics(
       const systems::Context<T>& context, EigenPtr<MatrixX<T>> M) const {
     this->ValidateContext(context);
@@ -3165,21 +3270,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().CalcMassMatrixViaInverseDynamics(context, M);
   }
 
-  /// Performs the computation of the mass matrix `M(q)` of the model, as a
-  /// function of the generalized positions q stored in `context`.
-  /// This method employs the Composite Body Algorithm, which is known to be the
-  /// fastest O(n²) algorithm to compute the mass matrix of a multibody system.
+  /// Efficiently computes the mass matrix `M(q)` of the model. The generalized
+  /// positions q are taken from the given `context`. M includes the mass
+  /// properties of rigid bodies and @ref reflected_inertia "reflected inertias"
+  /// as provided with JointActuator specifications.
+  ///
+  /// This method employs the Composite %Body Algorithm, which we believe to be
+  /// the fastest O(n²) algorithm to compute the mass matrix of a multibody
+  /// system.
   ///
   /// @param[in] context
-  ///   The context containing the state of the model.
+  ///   The Context containing the state of the model from which generalized
+  ///   coordinates q are extracted.
   /// @param[out] M
-  ///   A valid (non-null) pointer to a squared matrix in `ℛⁿˣⁿ` with n the
-  ///   number of generalized velocities (num_velocities()) of the model.
-  ///   This method aborts if M is nullptr or if it does not have the proper
-  ///   size.
+  ///   A pointer to a square matrix in `ℛⁿˣⁿ` with n the number of generalized
+  ///   velocities (num_velocities()) of the model. Although symmetric, the
+  ///   matrix is filled in completely on return.
+  ///
+  /// @pre M is non-null and has the right size.
   ///
   /// @warning This is an O(n²) algorithm. Avoid the explicit computation of the
   /// mass matrix whenever possible.
+  /// @see CalcMassMatrixViaInverseDynamics() (slower)
   void CalcMassMatrix(const systems::Context<T>& context,
                       EigenPtr<MatrixX<T>> M) const {
     this->ValidateContext(context);
@@ -3191,11 +3303,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// gyroscopic effects in the multibody equations of motion: <pre>
   ///   M(q) v̇ + C(q, v) v = tau_app + ∑ (Jv_V_WBᵀ(q) ⋅ Fapp_Bo_W)
   /// </pre>
-  /// where `M(q)` is the multibody model's mass matrix and `tau_app` is a
-  /// vector of generalized forces. The last term is a summation over all bodies
-  /// of the dot-product of `Fapp_Bo_W` (applied spatial force on body B at Bo)
-  /// with `Jv_V_WB(q)` (B's spatial Jacobian in world W with respect to
-  /// generalized velocities v).
+  /// where `M(q)` is the multibody model's mass matrix (including rigid body
+  /// mass properties and @ref reflected_inertia "reflected inertias") and
+  /// `tau_app` is a vector of applied generalized forces. The last term is a
+  /// summation over all bodies of the dot-product of `Fapp_Bo_W` (applied
+  /// spatial force on body B at Bo) with `Jv_V_WB(q)` (B's spatial Jacobian in
+  /// world W with respect to generalized velocities v).
   /// Note: B's spatial velocity in W can be written `V_WB = Jv_V_WB * v`.
   ///
   /// @param[in] context
@@ -4346,7 +4459,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex contact_solver_results;
-    systems::CacheIndex contact_solver_scratch;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
@@ -4509,8 +4621,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                              MultibodyForces<T>* forces) const override;
 
   // Discrete system version of CalcForwardDynamics(). This method does not use
-  // O(n) forward dynamics but the discrete TAMSI solver, for further details
-  // please refer to @ref castro_etal_2019 "[Castro et al., 2019]"
+  // O(n) forward dynamics but a discrete solver according to the discrete
+  // contact solver specified.
+  // @see get_discrete_contact_solver().
   void DoCalcForwardDynamicsDiscrete(
       const drake::systems::Context<T>& context,
       internal::AccelerationKinematicsCache<T>* ac) const override;
@@ -4532,19 +4645,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   systems::EventStatus CalcDiscreteStep(
       const systems::Context<T>& context0,
       systems::DiscreteValues<T>* updates) const;
-
-  // Helper method used within DoCalcDiscreteVariableUpdates() to update
-  // generalized velocities from previous step value v0 to next step value v.
-  // This helper uses num_substeps within a time interval of duration dt
-  // to perform the update using a step size dt_substep = dt/num_substeps.
-  // During the time span dt the problem data M, Jn, Jt and minus_tau, are
-  // approximated to be constant, a first order approximation.
-  TamsiSolverResult SolveUsingSubStepping(
-      TamsiSolver<T>* tamsi_solver,
-      int num_substeps, const MatrixX<T>& M0, const MatrixX<T>& Jn,
-      const MatrixX<T>& Jt, const VectorX<T>& minus_tau,
-      const VectorX<T>& stiffness, const VectorX<T>& damping,
-      const VectorX<T>& mu, const VectorX<T>& v0, const VectorX<T>& fn0) const;
 
   // This method performs the computation of the impulses to advance the state
   // stored in `context0` in time.
@@ -4613,19 +4713,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       internal::HydroelasticFallbackCacheData<T>* data) const;
 
-  // Depending on the ContactModel, this method performs point contact and
-  // hydroelastic queries and prepares the results in the form of a list of
-  // DiscreteContactPair to be consumed by our discrete solvers.
-  // TODO(amcastro-tri): consider adding a separate unit test for this method.
-  void CalcDiscreteContactPairs(
-      const systems::Context<T>&,
-      std::vector<internal::DiscreteContactPair<T>>*) const;
-
-  // Eval version of the method CalcDiscreteContactPairs().
+  // TODO(amcastro-tri): Remove this function when #16955 is resolved. Right now
+  // this function is here only to support the computation of ContactResults,
+  // which should be performed by the discrete update manager instead.
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.discrete_contact_pairs)
-        .template Eval<std::vector<internal::DiscreteContactPair<T>>>(context);
+    return discrete_update_manager_->EvalDiscreteContactPairs(context);
   }
 
   // Helper method to fill in the ContactResults given the current context when
@@ -4820,15 +4913,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       std::vector<geometry::PenetrationAsPointPair<T>>*) const;
 
-  // This helper method combines the friction properties for each pair of
-  // contact points in `point_pairs` according to
-  // CalcContactFrictionFromSurfaceProperties().
-  // The i-th entry in the returned std::vector corresponds to the combined
-  // friction properties for the i-th point pair in `point_pairs`.
-  std::vector<CoulombFriction<double>> CalcCombinedFrictionCoefficients(
-      const drake::systems::Context<T>& context,
-      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs) const;
-
   // (Advanced) Helper method to compute contact forces in the normal direction
   // using a penalty method.
   void CalcAndAddContactForcesByPenaltyMethod(
@@ -4957,14 +5041,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                               joint.child_body().index());
   }
 
-  // Helper to invoke our TamsiSolver.
-  void CallTamsiSolver(
-      TamsiSolver<T>* tamsi_solver, const T& time0, const VectorX<T>& v0,
-      const MatrixX<T>& M0, const VectorX<T>& minus_tau, const VectorX<T>& fn0,
-      const MatrixX<T>& Jn, const MatrixX<T>& Jt, const VectorX<T>& stiffness,
-      const VectorX<T>& damping, const VectorX<T>& mu,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
   // Removes `this` MultibodyPlant's ability to convert to the scalar types
   // unsupported by the given `component`.
   void RemoveUnsupportedScalars(
@@ -5022,12 +5098,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
    private:
     // Stiction velocity tolerance for the Stribeck model.
-    // A negative value indicates it was not properly initialized.
-    double v_stiction_tolerance_{-1};
+    double v_stiction_tolerance_{MultibodyPlantConfig{}.stiction_tolerance};
     // Note: this is the *inverse* of the v_stiction_tolerance_ parameter to
     // optimize for the division.
-    // A negative value indicates it was not properly initialized.
-    double inv_v_stiction_tolerance_{-1};
+    double inv_v_stiction_tolerance_{1.0 / v_stiction_tolerance_};
   };
   StribeckModel friction_model_;
 
@@ -5174,10 +5248,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       discrete_update_manager_;
 
   // (Experimental) The vector of physical models owned by MultibodyPlant.
-  std::vector<std::unique_ptr<internal::PhysicalModel<T>>> physical_models_;
+  std::vector<std::unique_ptr<PhysicalModel<T>>> physical_models_;
 
   // Vector of coupler constraints specifications.
-  std::vector<internal::CouplerConstraintSpecs<T>> coupler_constraints_specs_;
+  std::vector<internal::CouplerConstraintSpecs> coupler_constraints_specs_;
+
+  // Vector of distance constraints specifications.
+  std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

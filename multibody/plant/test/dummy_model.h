@@ -59,11 +59,11 @@ class DummyModel final : public PhysicalModel<T> {
   template <typename U>
   friend class DummyModel;
 
-  /* A dummy stub for PhysicalModelPointerVariant. */
+  /* A dummy stub for PhysicalModelPointerVariant. Here we return a
+   std::monostate() as a proxy for an empty model so that a manager's
+   ExtractConcreteModel() results in a no-op. */
   PhysicalModelPointerVariant<T> DoToPhysicalModelPointerVariant() const final {
-    throw std::logic_error(
-        "DummyModel is used for unit testing only, and is not included in "
-        "PhysicalModelPointerVariant.");
+    return std::monostate();
   }
 
   std::unique_ptr<PhysicalModel<double>> CloneToDouble() const final {

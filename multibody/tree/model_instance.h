@@ -55,13 +55,12 @@ namespace internal {
 
 // @tparam_default_scalar
 template <typename T>
-class ModelInstance :
-      public MultibodyElement<ModelInstance, T, ModelInstanceIndex> {
+class ModelInstance : public MultibodyElement<T, ModelInstanceIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ModelInstance)
 
   explicit ModelInstance(ModelInstanceIndex index)
-      : MultibodyElement<ModelInstance, T, ModelInstanceIndex>(index) {}
+      : MultibodyElement<T, ModelInstanceIndex>(index) {}
 
   int num_positions() const { return num_positions_; }
   int num_velocities() const { return num_velocities_; }

@@ -209,7 +209,7 @@ template<typename T> class BodyNode;
 //
 // @tparam_default_scalar
 template <typename T>
-class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
+class Mobilizer : public MultibodyElement<T, MobilizerIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
 
@@ -633,6 +633,38 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       const internal::BodyNode<T>* parent_node,
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
+  /// Lock the mobilizer. Its generalized velocities will be 0 until it is
+  /// unlocked. Locking is not yet supported for continuous-mode systems.
+  /// @throws std::exception if the parent model uses continuous state.
+  void Lock(systems::Context<T>* context) const {
+    // Joint locking is only supported for discrete mode.
+    // TODO(sherm1): extend the design to support continuous-mode systems.
+    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(true);
+    this->get_parent_tree()
+        .GetMutableVelocities(context)
+        .segment(this->velocity_start_in_v(), this->num_velocities())
+        .setZero();
+  }
+
+  /// Unlock the mobilizer. Unlocking is not yet supported for continuous-mode
+  /// systems.
+  /// @throws std::exception if the parent model uses continuous state.
+  void Unlock(systems::Context<T>* context) const {
+    // Joint locking is only supported for discrete mode.
+    // TODO(sherm1): extend the design to support continuous-mode systems.
+    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
+    context->get_mutable_abstract_parameter(is_locked_parameter_index_)
+        .set_value(false);
+  }
+
+  /// @return true if the mobilizer is locked, false otherwise.
+  bool is_locked(const systems::Context<T>& context) const {
+    return context.get_parameters().template get_abstract_parameter<bool>(
+        is_locked_parameter_index_);
+  }
+
  protected:
   // NVI to CalcNMatrix(). Implementations can safely assume that N is not the
   // nullptr and that N has the proper size.
@@ -670,6 +702,16 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const = 0;
   // @}
 
+  // Implementation for MultibodyElement::DoDeclareParameters().
+  void DoDeclareParameters(
+      internal::MultibodyTreeSystem<T>* tree_system) override {
+    // Declare parent class's parameters
+    MultibodyElement<T, MobilizerIndex>::DoDeclareParameters(tree_system);
+
+    is_locked_parameter_index_ =
+        this->DeclareAbstractParameter(tree_system, Value<bool>(false));
+  }
+
  private:
   // Implementation for MultibodyElement::DoSetTopology().
   // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology
@@ -681,6 +723,10 @@ class Mobilizer : public MultibodyElement<Mobilizer, T, MobilizerIndex> {
   const Frame<T>& inboard_frame_;
   const Frame<T>& outboard_frame_;
   MobilizerTopology topology_;
+
+  // System parameter index for `this` mobilizer's lock state stored in a
+  // context.
+  systems::AbstractParameterIndex is_locked_parameter_index_;
 };
 
 }  // namespace internal

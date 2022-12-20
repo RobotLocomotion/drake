@@ -20,13 +20,20 @@ class MultibodyPlant;
 template <typename T>
 class DeformableModel;
 
-namespace internal {
-
-/* Variant over const pointers to all PhysicalModel. */
+/* Variant over const pointers to all PhysicalModel.
+ MultibodyPlant owns all the physical models, as PhysicalModel pointers. Now,
+ discrete update manager must create concrete instances for each physical model.
+ They do so by using the visitor pattern. Therefore,
+ a variant is used here so that discrete update managers can use the visitor
+ pattern to create concrete physical models, solely from a pointer to the base
+ class PhysicalModel. */
+// N.B. For testing, we allow std::monostate to indicate an "empty model" in the
+// return from PhysicalModel::DoToPhysicalModelPointerVariant().
 template <typename T>
-using PhysicalModelPointerVariant = std::variant<const DeformableModel<T>*>;
+using PhysicalModelPointerVariant =
+    std::variant<const DeformableModel<T>*, std::monostate>;
 
-/* PhysicalModel provides the functionalities to extend the type of
+/** (Internal) PhysicalModel provides the functionalities to extend the type of
  physical model of MultibodyPlant. Developers can derive from this
  PhysicalModel to incorporate additional model elements coupled with the
  rigid body dynamics. For instance, simulation of deformable objects requires
@@ -40,9 +47,12 @@ using PhysicalModelPointerVariant = std::variant<const DeformableModel<T>*>;
  each PhysicalModel it owns. After the system resources are allocated, model
  mutation in the PhysicalModels owned by MultibodyPlant is not allowed.
 
+ This class is for internal use only. Use derived concrete models (e.g.
+ DeformableModel) instead.
+
  @tparam_default_scalar */
 template <typename T>
-class PhysicalModel : public ScalarConvertibleComponent<T> {
+class PhysicalModel : public internal::ScalarConvertibleComponent<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PhysicalModel);
 
@@ -50,11 +60,11 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
 
   ~PhysicalModel() override = default;
 
-  /* (Internal) Creates a clone of the concrete PhysicalModel object
-   with the scalar type `ScalarType`. The clone should be a deep copy of the
-   original PhysicalModel with the exception of members overwritten in
-   `DeclareSystemResources()`. This method is meant to be called by the
-   scalar-converting copy constructor of MultibodyPlant only.
+  /** Creates a clone of the concrete PhysicalModel object with the scalar type
+   `ScalarType`. The clone should be a deep copy of the original PhysicalModel
+   with the exception of members overwritten in `DeclareSystemResources()`. This
+   method is meant to be called by the scalar-converting copy constructor of
+   MultibodyPlant only.
    @tparam_default_scalar */
   template <typename ScalarType>
   std::unique_ptr<PhysicalModel<ScalarType>> CloneToScalar() const {
@@ -68,22 +78,22 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
     DRAKE_UNREACHABLE();
   }
 
-  /* Defaults to false. Derived classes that support making a clone that uses
+  /** Defaults to false. Derived classes that support making a clone that uses
    double as a scalar type must override this to return true. */
   bool is_cloneable_to_double() const override;
 
-  /* Defaults to false. Derived classes that support making a clone that uses
+  /** Defaults to false. Derived classes that support making a clone that uses
    AutoDiffXd as a scalar type must override this to return true. */
   bool is_cloneable_to_autodiff() const override;
 
-  /* Defaults to false. Derived classes that support making a clone that uses
+  /** Defaults to false. Derived classes that support making a clone that uses
    symbolic::Expression as a scalar type must override this to return true. */
   bool is_cloneable_to_symbolic() const override;
 
-  /* (Internal) MultibodyPlant calls this from within Finalize() to declare
-   additional system resources. This method is only meant to be called by
-   MultibodyPlant. We pass in a MultibodyPlant pointer so that derived
-   PhysicalModels can use specific MultibodyPlant cache tickets.
+  /** MultibodyPlant calls this from within Finalize() to declare additional
+   system resources. This method is only meant to be called by MultibodyPlant.
+   We pass in a MultibodyPlant pointer so that derived PhysicalModels can use
+   specific MultibodyPlant cache tickets.
    @pre plant != nullptr. */
   void DeclareSystemResources(MultibodyPlant<T>* plant) {
     DRAKE_DEMAND(plant != nullptr);
@@ -91,7 +101,7 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
     system_resources_declared_ = true;
   }
 
-  /* Returns (a const pointer to) the specific model variant of `this`
+  /** Returns (a const pointer to) the specific model variant of `this`
    PhysicalModel. Note that the variant contains a pointer to the concrete model
    and therefore should not persist longer than the lifespan of this model.  */
   PhysicalModelPointerVariant<T> ToPhysicalModelPointerVariant() const {
@@ -179,8 +189,9 @@ class PhysicalModel : public ScalarConvertibleComponent<T> {
    PhysicalModel have been declared. */
   bool system_resources_declared_{false};
 };
-}  // namespace internal
+
 }  // namespace multibody
 }  // namespace drake
+
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::internal::PhysicalModel);
+    class ::drake::multibody::PhysicalModel);

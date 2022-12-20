@@ -595,11 +595,6 @@ class Frame : public FrameBase<T> {
       : FrameBase<T>(model_instance.value_or(body.model_instance())),
         name_(internal::DeprecateWhenEmptyName(name, "Frame")), body_(body) {}
 
-  DRAKE_DEPRECATED("2022-12-01",
-      "The name parameter to the Frame constructor is now required.")
-  explicit Frame(const Body<T>& body)
-      : Frame("", body) {}
-
   /// @name Methods to make a clone templated on different scalar types.
   ///
   /// These methods are meant to be called by MultibodyTree::CloneToScalar()

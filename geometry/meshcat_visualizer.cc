@@ -20,7 +20,8 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
       meshcat_(std::move(meshcat)),
       params_(std::move(params)),
       animation_(
-          std::make_unique<MeshcatAnimation>(1.0 / params_.publish_period)) {
+          std::make_unique<MeshcatAnimation>(1.0 / params_.publish_period)),
+      alpha_slider_name_(std::string(params_.prefix + " α")) {
   DRAKE_DEMAND(meshcat_ != nullptr);
   DRAKE_DEMAND(params_.publish_period >= 0.0);
   if (params_.role == Role::kUnassigned) {
@@ -42,6 +43,11 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
   query_object_input_port_ =
       this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
           .get_index();
+
+  if (params_.enable_alpha_slider) {
+    meshcat_->AddSlider(
+      alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
+  }
 }
 
 template <typename T>
@@ -97,6 +103,13 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(context, query_object);
+  if (params_.enable_alpha_slider) {
+    double new_alpha_value = meshcat_->GetSliderValue(alpha_slider_name_);
+    if (new_alpha_value != alpha_value_) {
+      alpha_value_ = new_alpha_value;
+      SetColorAlphas();
+    }
+  }
   std::optional<double> rate = realtime_rate_calculator_.UpdateAndRecalculate(
       ExtractDoubleOrThrow(context.get_time()));
   if (rate) {
@@ -109,6 +122,8 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
 template <typename T>
 void MeshcatVisualizer<T>::SetObjects(
     const SceneGraphInspector<T>& inspector) const {
+  colors_.clear();
+
   // Frames registered previously that are not set again here should be deleted.
   std::map <FrameId, std::string> frames_to_delete{};
   dynamic_frames_.swap(frames_to_delete);
@@ -152,6 +167,7 @@ void MeshcatVisualizer<T>::SetObjects(
       meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba);
       meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));
       geometries_[geom_id] = path;
+      colors_[geom_id] = rgba;
       geometries_to_delete.erase(geom_id);  // Don't delete this one.
     }
   }
@@ -181,6 +197,16 @@ void MeshcatVisualizer<T>::SetTransforms(
           animation_->frame(ExtractDoubleOrThrow(context.get_time())), path,
           X_WF);
     }
+  }
+}
+
+template <typename T>
+void MeshcatVisualizer<T>::SetColorAlphas() const {
+  for (const auto& [geom_id, path] : geometries_) {
+    Rgba color = colors_[geom_id];
+    color.set(color.r(), color.g(), color.b(), alpha_value_ * color.a());
+    meshcat_->SetProperty(path, "color",
+      {color.r(), color.g(), color.b(), alpha_value_ * color.a()});
   }
 }
 

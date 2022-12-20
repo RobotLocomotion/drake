@@ -186,6 +186,16 @@ class DoubleOnlyDiscreteUpdateManager final
 
   void DoCalcDiscreteValues(const systems::Context<T>&,
                             systems::DiscreteValues<T>*) const final {}
+
+  void DoCalcContactResults(const systems::Context<T>&,
+                            ContactResults<T>*) const final {}
+
+  // This method will be removed with the resolution of #16955 and therefore a
+  // no-op is implemented simply to be able to instantiate this class.
+  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
+      const systems::Context<T>&) const final {
+    DRAKE_UNREACHABLE();
+  }
 };
 
 // This test verifies that adding external components that do not support some
@@ -193,7 +203,7 @@ class DoubleOnlyDiscreteUpdateManager final
 // scalar types.
 GTEST_TEST(ScalarConversionTest, ExternalComponent) {
   MultibodyPlant<double> plant(0.1);
-  std::unique_ptr<internal::PhysicalModel<double>> dummy_physical_model =
+  std::unique_ptr<PhysicalModel<double>> dummy_physical_model =
       std::make_unique<internal::test::DummyModel<double>>();
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_double());
   EXPECT_TRUE(dummy_physical_model->is_cloneable_to_autodiff());
@@ -232,7 +242,7 @@ GTEST_TEST(ScalarConversionTest, ExternalComponent) {
 class MultibodyPlantTester {
  public:
   template <typename T>
-  static std::vector<internal::CouplerConstraintSpecs<T>>& get_mutable_specs(
+  static std::vector<internal::CouplerConstraintSpecs>& get_mutable_specs(
       MultibodyPlant<T>* plant) {
     return plant->coupler_constraints_specs_;
   }
@@ -251,8 +261,9 @@ GTEST_TEST(ScalarConversionTest, CouplerConstraintSpecs) {
   const JointIndex j1(5);
   constexpr double kGearRatio = 1.2;
   constexpr double kOffset = 0.3;
-  const internal::CouplerConstraintSpecs<double> reference_spec(
-      j0, j1, kGearRatio, kOffset);
+  const internal::CouplerConstraintSpecs reference_spec{j0, j1, kGearRatio,
+                                                        kOffset};
+
   // Directly add dummy constraint specs through the tester so that we don't
   // need to actually add any joints.
   MultibodyPlantTester::get_mutable_specs(&plant_double)

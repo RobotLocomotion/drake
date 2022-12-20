@@ -97,6 +97,8 @@ declare -a bazel_args=(
     --define NO_DREAL=ON
     --define WITH_MOSEK=ON
     --define WITH_SNOPT=ON
+    # See tools/wheel/wheel_builder/macos.py for more on this env variable.
+    --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 )
 
 bazel build "${bazel_args[@]}" //tools/wheel:strip_rpath
@@ -110,7 +112,9 @@ bazel run "${bazel_args[@]}" //:install -- /opt/drake
 
 rm -rf  "/opt/drake-wheel-build/python"
 
-python3 -m venv "/opt/drake-wheel-build/python"
+# NOTE: Xcode ships python3, make sure to use the one from brew.
+$(brew --prefix python@3.10)/bin/python3.10 \
+    -m venv "/opt/drake-wheel-build/python"
 
 . "/opt/drake-wheel-build/python/bin/activate"
 

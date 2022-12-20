@@ -455,6 +455,77 @@ TYPED_TEST(SpatialVelocityTest, ShiftOperation) {
   EXPECT_TRUE(V_XZ_A.IsApprox(expected_V_XZ_A));
 }
 
+// Additional unit tests for ComposeWithMovingFrameVelocity() that verify
+// a few degenerate cases and show that when frame C is replaced by frame M in:
+// V_MC_E = V_MB_E.ComposeWithMovingFrameVelocity(p_BoCo_E, v_BCo_E), then
+// V_MM_E = V_MB_E.ComposeWithMovingFrameVelocity(p_BoMo_E, v_BMo_E) = zero.
+// Note: Frame M, B, C, E are frames listed in this function's documentation.
+TYPED_TEST(SpatialVelocityTest, ComposeWithMovingFrameVelocity) {
+  typedef typename TestFixture::ScalarType T;
+  // Frame B's angular, translational, and spatial velocity in frame M,
+  // expressed in frame E.
+  const Vector3<T> w_MB_E{0.1, 0.5, -0.7};
+  const Vector3<T> v_MBo_E{0.2, 0.4, -0.6};
+  const SpatialVelocity<T> V_MBo_E{w_MB_E, v_MBo_E};
+
+  // Verify ComposeWithMovingFrameVelocity() for the degenerate case in which
+  // frame C is welded to frame B with point Co coincident with point Bo.
+  Vector3<T> p_BoCo_E(0, 0, 0);
+  SpatialVelocity<T> V_MCo_E = V_MBo_E.ComposeWithMovingFrameVelocity(
+      p_BoCo_E, SpatialVelocity<T>::Zero());
+  EXPECT_TRUE(V_MCo_E.IsApprox(V_MBo_E));
+
+  // Form a generic vector from Bo (frame B's origin) to Co (frame C's origin),
+  // expressed in an "expressed-in" frame E.
+  p_BoCo_E = Vector3<T>(1.2, -2.3, 3.4);
+
+  // Verify ComposeWithMovingFrameVelocity() for the degenerate case in which
+  // frame C is welded to frame B with point Co offset from point Bo.
+  V_MCo_E = V_MBo_E.ComposeWithMovingFrameVelocity(
+      p_BoCo_E, SpatialVelocity<T>::Zero());
+  EXPECT_TRUE(CompareMatrices(V_MCo_E.rotational(), w_MB_E));
+  EXPECT_TRUE(CompareMatrices(V_MCo_E.translational(),
+      v_MBo_E + w_MB_E.cross(p_BoCo_E)));
+
+  // Frame Bc is fixed to frame B, but offset by p_BoCo_E from frame B.
+  // At this point, frame C is regarded as welded to frame B and offset by
+  // p_BoCo_E, so verify the equivalence of these various calculations.
+  const SpatialVelocity<T> V_MBc_E = V_MBo_E.Shift(p_BoCo_E);
+  EXPECT_TRUE(V_MBc_E.IsApprox(V_MCo_E));
+
+  // Now regard frame C as rotating and translating in frame B, so provide a
+  // non-zero vector for frame C's angular, translational, and spatial velocity
+  // in frame B, expressed in frame E.
+  const Vector3<T> w_BC_E{0.9, 0.6, -0.3};
+  const Vector3<T> v_BCo_E{0.8, 0.5, -0.2};
+  const SpatialVelocity<T> V_BCo_E{w_BC_E, v_BCo_E};
+
+  // Verify ComposeWithMovingFrameVelocity() for the more general case in which
+  // frame C is rotating/translating in frame B with point Co offset from Bo.
+  V_MCo_E = V_MBo_E.ComposeWithMovingFrameVelocity(p_BoCo_E, V_BCo_E);
+  EXPECT_TRUE(CompareMatrices(V_MCo_E.rotational(), w_MB_E + w_BC_E));
+  EXPECT_TRUE(CompareMatrices(V_MCo_E.translational(),
+      V_MBc_E.translational() + v_BCo_E));
+
+  // Verify ComposeWithMovingFrameVelocity() produces a zero vector for the
+  // special case in which frame C is frame M, i.e.,
+  // V_MM_E = V_MB_E.ComposeWithMovingFrameVelocity(p_BM_E, V_BM_E) = zero.
+  const Vector3<T> p_BoMo_E = p_BoCo_E;
+  const Vector3<T> w_BM_E = -w_MB_E;
+  const Vector3<T> v_BMo_E = -v_MBo_E - w_MB_E.cross(p_BoMo_E);  // Proof below.
+  const SpatialVelocity<T> V_BMo_E(w_BM_E, v_BMo_E);
+  const SpatialVelocity<T> V_MM_E = V_MBo_E.ComposeWithMovingFrameVelocity(
+      p_BoCo_E, V_BMo_E);
+  EXPECT_TRUE(CompareMatrices(V_MM_E.get_coeffs(),
+      SpatialVelocity<T>::Zero().get_coeffs()));
+
+  // The proof that ᴮ𝐯ᴹᵒ = -ᴹ𝐯ᴮᵒ − ᴹ𝛚ᴮ × ᴮᵒ𝐩ᴹᵒ starts with the definition:
+  // ᴮ𝐯ᴹᵒ ≡ ᴮd/dt ᴮᵒ𝐩ᴹᵒ.  Using the transport theorem, allows rewriting to:
+  //      =  ᴹd/dt ᴮᵒ𝐩ᴹᵒ + ᴮ𝛚ᴹ × ᴮᵒ𝐩ᴹᵒ.  Use ᴮᵒ𝐩ᴹᵒ = -ᴹᵒ𝐩ᴮᵒ and ᴮ𝛚ᴹ = -ᴹ𝛚ᴮ
+  //      = -ᴹd/dt ᴹᵒ𝐩ᴮᵒ − ᴹ𝛚ᴮ × ᴮᵒ𝐩ᴹᵒ.  Use ᴹ𝐯ᴮᵒ ≡ ᴹd/dt ᴹᵒ𝐩ᴮᵒ.
+  //      =        -ᴹ𝐯ᴮᵒ − ᴹ𝛚ᴮ × ᴮᵒ𝐩ᴹᵒ
+}
+
 // Tests operator+().
 TYPED_TEST(SpatialVelocityTest, AdditionOperation) {
   typedef typename TestFixture::ScalarType T;

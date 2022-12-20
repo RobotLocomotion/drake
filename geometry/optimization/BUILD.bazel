@@ -178,6 +178,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "iris_in_configuration_space_test",
     timeout = "moderate",
+    data = ["//multibody/parsing:test_models"],
     shard_count = 8,
     # Most of these tests take an exceptionally long time under
     # instrumentation, resulting in timeouts, and so are excluded.

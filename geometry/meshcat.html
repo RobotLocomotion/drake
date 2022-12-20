@@ -62,7 +62,7 @@
         };
         break;  // Just take the first connected gamepad.
       }
-      if (this.connection.readyState == WebSocket.OPEN && 
+      if (this.connection && this.connection.readyState == WebSocket.OPEN && 
         JSON.stringify(gamepad) !== JSON.stringify(last_gamepad)) {
         this.connection.send(MeshCat.msgpack.encode(
           { 'type': 'gamepad', 'name': '', 'gamepad': gamepad }));
@@ -85,7 +85,7 @@
     function handle_message(ws_message) {
       let decoded = viewer.decode(ws_message);
       if (decoded.type == "realtime_rate") {
-        rtr = decoded.rate;
+        latestRealtimeRate = decoded.rate;
       } else if (decoded.type == "show_realtime_rate") {
         stats.dom.style.display = decoded.show ? "block" : "none";
       } else {

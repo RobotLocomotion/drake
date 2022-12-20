@@ -43,20 +43,21 @@ TYPED_TEST(CompliantContactManagerScalarConversionTest, ToAutoDiffXd) {
 TYPED_TEST(CompliantContactManagerScalarConversionTest, ToSymbolic) {
   using T = TypeParam;
   CompliantContactManager<T> source;
-  EXPECT_FALSE(source.is_cloneable_to_symbolic());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      source.template CloneToScalar<symbolic::Expression>(),
-      ".*symbolic.*not supported.*");
+  EXPECT_TRUE(source.is_cloneable_to_symbolic());
+  std::unique_ptr<DiscreteUpdateManager<symbolic::Expression>> clone =
+      source.template CloneToScalar<symbolic::Expression>();
+  ASSERT_NE(clone, nullptr);
 }
 
 constexpr double kTimeStep = 0.001;
 
 // Constructs a plant with a free rigid body and uses the SAP solver.
 template <typename T>
-std::unique_ptr<MultibodyPlant<T>> MakePlant() {
+std::unique_ptr<MultibodyPlant<T>> MakePlant(
+    DiscreteContactSolver solver_type) {
   auto plant = std::make_unique<MultibodyPlant<T>>(kTimeStep);
   plant->AddRigidBody("Body", SpatialInertia<double>::MakeUnitary());
-  plant->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant->set_discrete_contact_solver(solver_type);
   plant->Finalize();
   return plant;
 }
@@ -65,8 +66,8 @@ std::unique_ptr<MultibodyPlant<T>> MakePlant() {
 // conversion from T to U, and that simulations results for models without
 // constraints stay the same.
 template <typename T, typename U>
-void TestPlantConversion() {
-  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>();
+void TestPlantConversionAndSimulate(DiscreteContactSolver solver_type) {
+  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>(solver_type);
   auto source_context = source_plant->CreateDefaultContext();
   const VectorX<T> initial_state =
       source_plant->GetPositionsAndVelocities(*source_context);
@@ -90,11 +91,41 @@ void TestPlantConversion() {
   EXPECT_TRUE(CompareMatrices(dest_final_state, source_final_state));
 }
 
-// We only tests the conversion between double and AutoDiffXd because
-// CompliantContactManager doesn't support symbolic.
-GTEST_TEST(CompliantContactManagerScalarConversionTest, PlantConversion) {
-  TestPlantConversion<double, AutoDiffXd>();
-  TestPlantConversion<AutoDiffXd, double>();
+GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithSap) {
+  TestPlantConversionAndSimulate<double, AutoDiffXd>(
+      DiscreteContactSolver::kSap);
+  TestPlantConversionAndSimulate<AutoDiffXd, double>(
+      DiscreteContactSolver::kSap);
+}
+
+GTEST_TEST(ScalarConvertAndSimulateTest, PlantWithTamsi) {
+  TestPlantConversionAndSimulate<double, AutoDiffXd>(
+      DiscreteContactSolver::kTamsi);
+  TestPlantConversionAndSimulate<AutoDiffXd, double>(
+      DiscreteContactSolver::kTamsi);
+}
+
+template <typename T, typename U>
+void TestPlantConversion(DiscreteContactSolver solver_type) {
+  std::unique_ptr<MultibodyPlant<T>> source_plant = MakePlant<T>(solver_type);
+  // Scalar convert to U. Verify the conversion is successful.
+  EXPECT_NO_THROW(systems::System<T>::template ToScalarType<U>(*source_plant));
+}
+
+// Scalar conversions involving symbolic::Expression are supported, even if
+// discrete updates are not for specific solvers.
+GTEST_TEST(ScalarConvertTest, ConversionToAndFromSymbolic) {
+  // Conversion from double to symbolic.
+  TestPlantConversion<double, symbolic::Expression>(
+      DiscreteContactSolver::kTamsi);
+  TestPlantConversion<double, symbolic::Expression>(
+      DiscreteContactSolver::kSap);
+
+  // Conversion from symbolic to double.
+  TestPlantConversion<symbolic::Expression, double>(
+      DiscreteContactSolver::kTamsi);
+  TestPlantConversion<symbolic::Expression, double>(
+      DiscreteContactSolver::kSap);
 }
 
 }  // namespace internal

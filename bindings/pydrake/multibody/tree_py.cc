@@ -19,6 +19,7 @@
 #include "drake/multibody/tree/door_hinge.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/frame.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/joint_actuator.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
@@ -28,6 +29,8 @@
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -112,6 +115,18 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc.world_model_instance.doc);
   m.def("default_model_instance", &default_model_instance,
       doc.default_model_instance.doc);
+
+  // CalcSpatialInertia.
+  {
+    m.def("CalcSpatialInertia",
+        py::overload_cast<const geometry::Shape&, double>(&CalcSpatialInertia),
+        py::arg("shape"), py::arg("density"), doc.CalcSpatialInertia.doc_shape);
+
+    m.def("CalcSpatialInertia",
+        py::overload_cast<const geometry::TriangleSurfaceMesh<double>&, double>(
+            &CalcSpatialInertia),
+        py::arg("mesh"), py::arg("density"), doc.CalcSpatialInertia.doc_mesh);
+  }
 
   {
     using Class = DoorHingeConfig;
@@ -245,22 +260,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  const RigidTransform<double>&,
                  std::optional<ModelInstanceIndex>>(),
             py::arg("name"), py::arg("P"), py::arg("X_PF"),
-            py::arg("model_instance") = std::nullopt,
-            cls_doc.ctor.doc_4args_name_P_X_PF_model_instance)
-        .def(py_init_deprecated<Class, const Frame<T>&,
-                 const math::RigidTransform<double>&>(
-                 cls_doc.ctor.doc_deprecated_deprecated_2args_P_X_PF),
-            py::arg("P"), py::arg("X_PF"),
-            cls_doc.ctor.doc_deprecated_deprecated_2args_P_X_PF)
+            py::arg("model_instance") = std::nullopt, cls_doc.ctor.doc_4args)
         .def(py::init<const std::string&, const Body<T>&,
                  const math::RigidTransform<double>&>(),
             py::arg("name"), py::arg("bodyB"), py::arg("X_BF"),
-            cls_doc.ctor.doc_3args_name_bodyB_X_BF)
-        .def(py_init_deprecated<Class, const Body<T>&,
-                 const math::RigidTransform<double>&>(
-                 cls_doc.ctor.doc_deprecated_deprecated_2args_bodyB_X_BF),
-            py::arg("bodyB"), py::arg("X_BF"),
-            cls_doc.ctor.doc_deprecated_deprecated_2args_bodyB_X_BF)
+            cls_doc.ctor.doc_3args)
         .def("SetPoseInParentFrame", &Class::SetPoseInParentFrame,
             py::arg("context"), py::arg("X_PF"),
             cls_doc.SetPoseInParentFrame.doc)
@@ -337,9 +341,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Body<T>>(
         m, "RigidBody", param, cls_doc.doc);
     cls  // BR
-        .def(py_init_deprecated<Class, const SpatialInertia<double>&>(
-                 cls_doc.ctor.doc_deprecated_1args),
-            py::arg("M_BBo_B"), cls_doc.ctor.doc_deprecated_1args)
         .def(py::init<const std::string&, const SpatialInertia<double>&>(),
             py::arg("body_name"), py::arg("M_BBo_B"), cls_doc.ctor.doc_2args)
         .def(py::init<const std::string&, ModelInstanceIndex,
@@ -561,6 +562,119 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_random_translation_distribution.doc);
   }
 
+  // QuaternionFloatingJoint
+  {
+    using Class = QuaternionFloatingJoint<T>;
+    constexpr auto& cls_doc = doc.QuaternionFloatingJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "QuaternionFloatingJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
+                 double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("angular_damping") = 0,
+            py::arg("translational_damping") = 0, cls_doc.ctor.doc)
+        .def("angular_damping", &Class::angular_damping,
+            cls_doc.angular_damping.doc)
+        .def("translational_damping", &Class::translational_damping,
+            cls_doc.translational_damping.doc)
+        .def("get_quaternion", &Class::get_quaternion, py::arg("context"),
+            cls_doc.get_quaternion.doc)
+        .def("get_position", &Class::get_position, py::arg("context"),
+            cls_doc.get_position.doc)
+        .def("get_pose", &Class::get_pose, py::arg("context"),
+            cls_doc.get_pose.doc)
+        .def("get_angular_velocity", &Class::get_angular_velocity,
+            py::arg("context"), cls_doc.get_angular_velocity.doc)
+        .def("get_translational_velocity", &Class::get_translational_velocity,
+            py::arg("context"), cls_doc.get_translational_velocity.doc)
+        .def("set_quaternion", &Class::set_quaternion, py::arg("context"),
+            py::arg("q_FM"), cls_doc.set_quaternion.doc)
+        .def("SetFromRotationMatrix", &Class::SetFromRotationMatrix,
+            py::arg("context"), py::arg("R_FM"),
+            cls_doc.SetFromRotationMatrix.doc)
+        .def("set_position", &Class::set_position, py::arg("context"),
+            py::arg("p_FM"), cls_doc.set_position.doc)
+        .def("set_pose", &Class::set_pose, py::arg("context"), py::arg("X_FM"),
+            cls_doc.set_pose.doc)
+        .def("set_angular_velocity", &Class::set_angular_velocity,
+            py::arg("context"), py::arg("w_FM"),
+            cls_doc.set_angular_velocity.doc)
+        .def("set_translational_velocity", &Class::set_translational_velocity,
+            py::arg("context"), py::arg("v_FM"),
+            cls_doc.set_translational_velocity.doc)
+        .def("set_random_position_distribution",
+            &Class::set_random_position_distribution, py::arg("p_FM"),
+            cls_doc.set_random_position_distribution.doc)
+        .def("set_random_quaternion_distribution",
+            &Class::set_random_quaternion_distribution, py::arg("q_FM"),
+            cls_doc.set_random_quaternion_distribution.doc)
+        .def("set_random_quaternion_distribution_to_uniform",
+            &Class::set_random_quaternion_distribution_to_uniform,
+            cls_doc.set_random_quaternion_distribution_to_uniform.doc)
+        .def("get_default_quaternion", &Class::get_default_quaternion,
+            cls_doc.get_default_quaternion.doc)
+        .def("get_default_position", &Class::get_default_position,
+            cls_doc.get_default_position.doc)
+        .def("get_default_pose", &Class::get_default_pose,
+            cls_doc.get_default_pose.doc)
+        .def("set_default_quaternion", &Class::set_default_quaternion,
+            py::arg("q_FM"), cls_doc.set_default_quaternion.doc)
+        .def("set_default_position", &Class::set_default_position,
+            py::arg("p_FM"), cls_doc.set_default_position.doc)
+        .def("SetDefaultPose", &Class::SetDefaultPose, py::arg("X_FM"),
+            cls_doc.SetDefaultPose.doc);
+  }
+
+  // RevoluteJoint
+  {
+    using Class = RevoluteJoint<T>;
+    constexpr auto& cls_doc = doc.RevoluteJoint;
+    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
+        m, "RevoluteJoint", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
+                 const Vector3<double>&, double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("axis"), py::arg("damping") = 0,
+            cls_doc.ctor.doc_5args)
+        .def(py::init<const std::string&, const Frame<T>&, const Frame<T>&,
+                 const Vector3<double>&, double, double, double>(),
+            py::arg("name"), py::arg("frame_on_parent"),
+            py::arg("frame_on_child"), py::arg("axis"),
+            py::arg("pos_lower_limit"), py::arg("pos_upper_limit"),
+            py::arg("damping") = 0.0, cls_doc.ctor.doc_7args)
+        .def("revolute_axis", &Class::revolute_axis, cls_doc.revolute_axis.doc)
+        .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("position_lower_limit", &Class::position_lower_limit,
+            cls_doc.position_lower_limit.doc)
+        .def("position_upper_limit", &Class::position_upper_limit,
+            cls_doc.position_upper_limit.doc)
+        .def("velocity_lower_limit", &Class::velocity_lower_limit,
+            cls_doc.velocity_lower_limit.doc)
+        .def("velocity_upper_limit", &Class::velocity_upper_limit,
+            cls_doc.velocity_upper_limit.doc)
+        .def("acceleration_lower_limit", &Class::acceleration_lower_limit,
+            cls_doc.acceleration_lower_limit.doc)
+        .def("acceleration_upper_limit", &Class::acceleration_upper_limit,
+            cls_doc.acceleration_upper_limit.doc)
+        .def("get_angle", &Class::get_angle, py::arg("context"),
+            cls_doc.get_angle.doc)
+        .def("set_angle", &Class::set_angle, py::arg("context"),
+            py::arg("angle"), cls_doc.set_angle.doc)
+        .def("set_random_angle_distribution",
+            &Class::set_random_angle_distribution, py::arg("angle"),
+            cls_doc.set_random_angle_distribution.doc)
+        .def("get_angular_rate", &Class::get_angular_rate, py::arg("context"),
+            cls_doc.get_angular_rate.doc)
+        .def("set_angular_rate", &Class::set_angular_rate, py::arg("context"),
+            py::arg("angle"), cls_doc.set_angular_rate.doc)
+        .def("get_default_angle", &Class::get_default_angle,
+            cls_doc.get_default_angle.doc)
+        .def("set_default_angle", &Class::set_default_angle, py::arg("angle"),
+            cls_doc.set_default_angle.doc);
+  }
+
   // ScrewJoint
   {
     using Class = ScrewJoint<T>;
@@ -624,55 +738,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_random_pose_distribution.doc);
   }
 
-  // RevoluteJoint
-  {
-    using Class = RevoluteJoint<T>;
-    constexpr auto& cls_doc = doc.RevoluteJoint;
-    auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
-        m, "RevoluteJoint", param, cls_doc.doc);
-    cls  // BR
-        .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
-                 const Vector3<double>&, double>(),
-            py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("axis"), py::arg("damping") = 0,
-            cls_doc.ctor.doc_5args)
-        .def(py::init<const std::string&, const Frame<T>&, const Frame<T>&,
-                 const Vector3<double>&, double, double, double>(),
-            py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("axis"),
-            py::arg("pos_lower_limit"), py::arg("pos_upper_limit"),
-            py::arg("damping") = 0.0, cls_doc.ctor.doc_7args)
-        .def("revolute_axis", &Class::revolute_axis, cls_doc.revolute_axis.doc)
-        .def("damping", &Class::damping, cls_doc.damping.doc)
-        .def("position_lower_limit", &Class::position_lower_limit,
-            cls_doc.position_lower_limit.doc)
-        .def("position_upper_limit", &Class::position_upper_limit,
-            cls_doc.position_upper_limit.doc)
-        .def("velocity_lower_limit", &Class::velocity_lower_limit,
-            cls_doc.velocity_lower_limit.doc)
-        .def("velocity_upper_limit", &Class::velocity_upper_limit,
-            cls_doc.velocity_upper_limit.doc)
-        .def("acceleration_lower_limit", &Class::acceleration_lower_limit,
-            cls_doc.acceleration_lower_limit.doc)
-        .def("acceleration_upper_limit", &Class::acceleration_upper_limit,
-            cls_doc.acceleration_upper_limit.doc)
-        .def("get_angle", &Class::get_angle, py::arg("context"),
-            cls_doc.get_angle.doc)
-        .def("set_angle", &Class::set_angle, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angle.doc)
-        .def("set_random_angle_distribution",
-            &Class::set_random_angle_distribution, py::arg("angle"),
-            cls_doc.set_random_angle_distribution.doc)
-        .def("get_angular_rate", &Class::get_angular_rate, py::arg("context"),
-            cls_doc.get_angular_rate.doc)
-        .def("set_angular_rate", &Class::set_angular_rate, py::arg("context"),
-            py::arg("angle"), cls_doc.set_angular_rate.doc)
-        .def("get_default_angle", &Class::get_default_angle,
-            cls_doc.get_default_angle.doc)
-        .def("set_default_angle", &Class::set_default_angle, py::arg("angle"),
-            cls_doc.set_default_angle.doc);
-  }
-
   // UniversalJoint
   {
     using Class = UniversalJoint<T>;
@@ -714,24 +779,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("name"), py::arg("frame_on_parent_F"),
             py::arg("frame_on_child_M"), py::arg("X_FM"), cls_doc.ctor.doc)
         .def("X_FM", &Class::X_FM, cls_doc.X_FM.doc);
-
-    // Deprecated definitions
-    constexpr char kInitDeprecated[] =
-        "Deprecated:\n    WeldJoint frame notation has changed. Use "
-        "the constructor that uses `frame_on_parent_F`, "
-        "`frame_on_child_M`, and `X_FM`. The deprecated code will be "
-        "removed from Drake on or after 2022-12-01.";
-    cls.def(
-        py_init_deprecated<Class, const string&, const Frame<T>&,
-            const Frame<T>&, const RigidTransform<double>&>(kInitDeprecated),
-        py::arg("name"), py::arg("frame_on_parent_P"),
-        py::arg("frame_on_child_C"), py::arg("X_PC"), kInitDeprecated);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def("X_PC", WrapDeprecated(cls_doc.X_PC.doc_deprecated, &Class::X_PC),
-        cls_doc.X_PC.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   // Actuators.
@@ -788,6 +835,22 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("free_length", &Class::free_length, cls_doc.free_length.doc)
         .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc)
         .def("damping", &Class::damping, cls_doc.damping.doc);
+  }
+
+  {
+    using Class = PrismaticSpring<T>;
+    constexpr auto& cls_doc = doc.PrismaticSpring;
+    auto cls = DefineTemplateClassWithDefault<Class, ForceElement<T>>(
+        m, "PrismaticSpring", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<const PrismaticJoint<T>&, double, double>(),
+            py::arg("joint"), py::arg("nominal_position"), py::arg("stiffness"),
+            cls_doc.ctor.doc)
+        .def("joint", &Class::joint, py_rvp::reference_internal,
+            cls_doc.joint.doc)
+        .def("nominal_position", &Class::nominal_position,
+            cls_doc.nominal_position.doc)
+        .def("stiffness", &Class::stiffness, cls_doc.stiffness.doc);
   }
 
   {

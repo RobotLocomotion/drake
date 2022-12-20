@@ -17,6 +17,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":articulated_body_inertia",
+        ":geometry_spatial_inertia",
         ":multibody_element",
         ":multibody_tree_caches",
         ":multibody_tree_core",
@@ -119,6 +120,8 @@ drake_cc_library(
         "planar_mobilizer.cc",
         "prismatic_joint.cc",
         "prismatic_mobilizer.cc",
+        "prismatic_spring.cc",
+        "quaternion_floating_joint.cc",
         "quaternion_floating_mobilizer.cc",
         "revolute_joint.cc",
         "revolute_mobilizer.cc",
@@ -139,7 +142,7 @@ drake_cc_library(
         "body.h",
         "body_node.h",
         "body_node_impl.h",
-        "body_node_welded.h",
+        "body_node_world.h",
         "door_hinge.h",
         "fixed_offset_frame.h",
         "force_element.h",
@@ -161,6 +164,8 @@ drake_cc_library(
         "planar_mobilizer.h",
         "prismatic_joint.h",
         "prismatic_mobilizer.h",
+        "prismatic_spring.h",
+        "quaternion_floating_joint.h",
         "quaternion_floating_mobilizer.h",
         "revolute_joint.h",
         "revolute_mobilizer.h",
@@ -247,6 +252,18 @@ drake_cc_library(
         "//math:linear_solve",
         "//math:vector3_util",
         "//multibody/math:spatial_algebra",
+    ],
+)
+
+drake_cc_library(
+    name = "geometry_spatial_inertia",
+    srcs = ["geometry_spatial_inertia.cc"],
+    hdrs = ["geometry_spatial_inertia.h"],
+    deps = [
+        ":spatial_inertia",
+        "//geometry:shape_specification",
+        "//geometry/proximity:obj_to_surface_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 
@@ -555,6 +572,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "prismatic_spring_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//systems/framework:context",
+    ],
+)
+
+drake_cc_googletest(
     name = "revolute_spring_test",
     deps = [
         ":tree",
@@ -616,10 +642,32 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "quaternion_floating_joint_test",
+    deps = [
+        ":tree",
+        "//common/test_utilities:expect_no_throw",
+    ],
+)
+
+drake_cc_googletest(
     name = "joint_actuator_test",
     deps = [
         ":tree",
         "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "geometry_spatial_inertia_test",
+    data = ["//multibody/parsing:test_models"],
+    deps = [
+        ":geometry_spatial_inertia",
+        "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:shape_specification",
+        "//geometry/proximity:make_box_mesh",
+        "//geometry/proximity:triangle_surface_mesh",
     ],
 )
 

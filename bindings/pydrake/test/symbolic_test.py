@@ -1580,6 +1580,18 @@ class TestSymbolicPolynomial(unittest.TestCase):
                     (A_coeff[i].dot(decision_variables) + b_coeff[i]).Expand())
             )
 
+    def test_calc_polynomial_w_gram_lower(self):
+        monomial_basis = np.array([sym.Monomial(x, 2), sym.Monomial(x)])
+        Q1_lower = np.array([1., 2., 3.])
+        poly1 = sym.CalcPolynomialWLowerTriangularPart(
+            monomial_basis=monomial_basis, gram_lower=Q1_lower)
+        Q2_lower = np.array([a, b, c])
+        poly2 = sym.CalcPolynomialWLowerTriangularPart(
+            monomial_basis=monomial_basis, gram_lower=Q2_lower)
+        Q3_lower = np.array([a+b, b, 2*b])
+        poly3 = sym.CalcPolynomialWLowerTriangularPart(
+            monomial_basis=monomial_basis, gram_lower=Q3_lower)
+
 
 class TestSymbolicRationalFunction(unittest.TestCase):
     def test_default_constructor(self):

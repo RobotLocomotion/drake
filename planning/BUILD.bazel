@@ -14,9 +14,50 @@ drake_cc_package_library(
     name = "planning",
     visibility = ["//visibility:public"],
     deps = [
+        ":body_shape_description",
+        ":collision_checker_context",
+        ":robot_clearance",
+        ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
     ],
+)
+
+drake_cc_library(
+    name = "body_shape_description",
+    srcs = ["body_shape_description.cc"],
+    hdrs = ["body_shape_description.h"],
+    deps = [
+        "//common:essential",
+        "//geometry",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_checker_context",
+    srcs = ["collision_checker_context.cc"],
+    hdrs = ["collision_checker_context.h"],
+    deps = [
+        ":robot_diagram",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_clearance",
+    srcs = ["robot_clearance.cc"],
+    hdrs = ["robot_clearance.h"],
+    deps = [
+        ":robot_collision_type",
+        "//common:essential",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_collision_type",
+    hdrs = ["robot_collision_type.h"],
 )
 
 drake_cc_library(
@@ -43,6 +84,40 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "body_shape_description_test",
+    deps = [
+        ":body_shape_description",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//planning:robot_diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_checker_context_test",
+    deps = [
+        ":collision_checker_context",
+        ":robot_diagram_builder",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_clearance_test",
+    deps = [
+        ":robot_clearance",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_collision_type_test",
+    deps = [
+        ":robot_collision_type",
     ],
 )
 

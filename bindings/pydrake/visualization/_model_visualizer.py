@@ -192,29 +192,24 @@ class ModelVisualizer:
 
         self._plant.Finalize()
 
-        # Connect to drake_visualizer or meldis. Meldis provides simultaneous
-        # visualization of illustration and proximity geometry.
-        ApplyVisualizationConfig(
-            config=VisualizationConfig(
-                publish_contacts=self._publish_contacts),
-            plant=self._plant,
-            scene_graph=self._scene_graph,
-            builder=self._builder)
-
         # (Re-)initialize the meshcat instance, creating one if needed.
         self.meshcat()
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
 
-        # Connect to MeshCat for visualizing and interfacing w/ widgets.
-        # Add two visualizers: one to publish the "illustration" geometry and
-        # another to publish the "collision" geometry.
-        MeshcatVisualizer.AddToBuilder(
-            self._builder, self._scene_graph, self._meshcat,
-            MeshcatVisualizerParams(role=Role.kIllustration, prefix="visual"))
-        MeshcatVisualizer.AddToBuilder(
-            self._builder, self._scene_graph, self._meshcat,
-            MeshcatVisualizerParams(role=Role.kProximity, prefix="collision"))
+        # Connect to drake_visualizer, meldis, and meshcat.
+        # Meldis and meshcat provide simultaneous visualization of
+        # illustration and proximity geometry.
+        ApplyVisualizationConfig(
+            config=VisualizationConfig(
+                publish_contacts=self._publish_contacts,
+                enable_alpha_sliders=True),
+            plant=self._plant,
+            scene_graph=self._scene_graph,
+            builder=self._builder,
+            meshcat=self._meshcat)
+
+        # Add joint sliders to meshcat.
         self._sliders = self._builder.AddNamedSystem(
             "joint_sliders", JointSliders(meshcat=self._meshcat,
                                           plant=self._plant))
@@ -241,9 +236,9 @@ class ModelVisualizer:
         # Publish draw messages with current state.
         self._diagram.ForcedPublish(self._context)
 
-        # Disable the collision geometry at the start; it can be enabled by
+        # Disable the proximity geometry at the start; it can be enabled by
         # the checkbox in the meshcat controls.
-        self._meshcat.SetProperty("collision", "visible", False)
+        self._meshcat.SetProperty("proximity", "visible", False)
 
         self._builder = None
         self._scene_graph = None
@@ -286,10 +281,10 @@ class ModelVisualizer:
         # Wait for the user to cancel us.
         button_name = "Stop Running"
         if not loop_once:
-            print(f"Use Ctrl-C or click '{button_name}' to quit")
+            print(f"Click '{button_name}' or press Esc to quit")
 
         try:
-            self._meshcat.AddButton(button_name)
+            self._meshcat.AddButton(button_name, "Escape")
 
             sliders_context = self._sliders.GetMyContextFromRoot(self._context)
             while True:

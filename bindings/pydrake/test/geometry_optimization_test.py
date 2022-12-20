@@ -5,7 +5,6 @@ import unittest
 import numpy as np
 
 from pydrake.common import RandomGenerator
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -137,6 +136,10 @@ class TestGeometryOptimization(unittest.TestCase):
             other=h_unit_box,
             check_for_redundancy=False)
         # Check that the ReduceInequalities binding works.
+        redundant_indices = h_half_box_intersect_unit_box.FindRedundant(
+            tol=1E-9)
+        # Check FindRedundant with default tol.
+        h_half_box_intersect_unit_box.FindRedundant()
         h_half_box3 = h_half_box_intersect_unit_box.ReduceInequalities(
             tol=1E-9)
 
@@ -460,28 +463,6 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(spp.SolveShortestPath(
             source=source, target=target, options=options),
             MathematicalProgramResult)
-
-        with catch_drake_warnings(expected_count=6):
-            self.assertIsInstance(spp.SolveShortestPath(
-                source_id=source.id(), target_id=target.id(),
-                convex_relaxation=True), MathematicalProgramResult)
-            self.assertIsInstance(spp.SolveShortestPath(
-                source_id=source.id(), target_id=target.id(),
-                convex_relaxation=True, solver=ClpSolver()),
-                MathematicalProgramResult)
-            self.assertIsInstance(spp.SolveShortestPath(
-                source_id=source.id(), target_id=target.id(),
-                convex_relaxation=True, solver_options=SolverOptions()),
-                MathematicalProgramResult)
-            self.assertIsInstance(spp.SolveShortestPath(
-                source=source, target=target, convex_relaxation=True),
-                MathematicalProgramResult)
-            self.assertIsInstance(spp.SolveShortestPath(
-                source=source, target=target, convex_relaxation=True,
-                solver=ClpSolver()), MathematicalProgramResult)
-            self.assertIsInstance(spp.SolveShortestPath(
-                source=source, target=target, convex_relaxation=True,
-                solver_options=SolverOptions()), MathematicalProgramResult)
 
         self.assertIn("source", spp.GetGraphvizString(
             result=result, show_slacks=True, precision=2, scientific=False))

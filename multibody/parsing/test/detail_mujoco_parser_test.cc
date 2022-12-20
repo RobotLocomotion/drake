@@ -216,19 +216,16 @@ GTEST_TEST(MujocoParser, GeometryPose) {
   const SceneGraphInspector<double>& inspector = scene_graph.model_inspector();
 
   auto CheckPose = [&inspector](const std::string& geometry_name,
-                                const RigidTransformd& X_PG) {
+                                const RigidTransformd& X_FG) {
     GeometryId geom_id = inspector.GetGeometryIdByName(
         inspector.world_frame_id(), Role::kProximity, geometry_name);
-    EXPECT_TRUE(
-        inspector.GetPoseInParent(geom_id).IsNearlyEqualTo(X_PG, 1e-14));
+    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14));
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kPerception, geometry_name);
-    EXPECT_TRUE(
-        inspector.GetPoseInParent(geom_id).IsNearlyEqualTo(X_PG, 1e-14));
+    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14));
     geom_id = inspector.GetGeometryIdByName(inspector.world_frame_id(),
                                             Role::kIllustration, geometry_name);
-    EXPECT_TRUE(
-        inspector.GetPoseInParent(geom_id).IsNearlyEqualTo(X_PG, 1e-14));
+    EXPECT_TRUE(inspector.GetPoseInFrame(geom_id).IsNearlyEqualTo(X_FG, 1e-14));
   };
 
   const Vector3d p{1, 2, 3};
@@ -650,12 +647,10 @@ GTEST_TEST(MujocoParser, InertiaFromGeometry) {
 
   check_body_spatial(
       "box_w_density",
-      SpatialInertia<double>(123 * .8 * 1.2, Vector3d::Zero(),
-                             UnitInertia<double>::SolidBox(0.8, 1.0, 1.2)));
+      SpatialInertia<double>::SolidBoxWithDensity(123, 0.8, 1.0, 1.2));
   check_body_spatial(
       "box_default_density",
-      SpatialInertia<double>(1000 * .8 * 1.2, Vector3d::Zero(),
-                             UnitInertia<double>::SolidBox(0.8, 1.0, 1.2)));
+      SpatialInertia<double>::SolidBoxWithDensity(1000, 0.8, 1.0, 1.2));
   check_body_spatial(
       "box_from_mesh_w_density",
       SpatialInertia<double>(8.0, Vector3d::Zero(),

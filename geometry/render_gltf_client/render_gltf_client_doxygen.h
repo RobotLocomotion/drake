@@ -253,8 +253,12 @@ The client accepts the following image types from a server render:
       interpret this rendering as units of millimeters.  Pixels at their maximum
       value (2¹⁶-1) will be interpreted as kTooFar (i.e., infinity).
 - When `image_type="label"`, the server may return:
-    - A single channel unsigned short PNG image.
-
+    - An RGB (3 channel) unsigned char PNG image.  The client will interpret
+      this rendering as a colored label image and convert to the final label
+      image.
+    - An RGBA (4 channel) unsigned char PNG image.  The client will interpret
+      this rendering as a colored label image and convert to the final label
+      image.
 
 <h3 id="notes-on-gltf-camera-specification">Notes on glTF Camera Specification</h3>
 <hr>

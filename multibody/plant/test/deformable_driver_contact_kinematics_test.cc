@@ -15,8 +15,11 @@ using drake::geometry::internal::DeformableContact;
 using drake::geometry::internal::DeformableContactSurface;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
+using drake::multibody::contact_solvers::internal::PartialPermutation;
 using drake::systems::Context;
 using drake::systems::DiscreteStateIndex;
+using Eigen::Matrix3d;
+using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
@@ -35,6 +38,39 @@ class CompliantContactManagerTester {
     return manager.deformable_driver_.get();
   }
 };
+
+/* Registers a deformable octrahedron with the given `name` and pose in the
+ world to the given `model`.
+ The octahedron looks like this in its geometry frame, F.
+                  +Fz   -Fx
+                   |   /
+                   v5 v3
+                   | /
+                   |/
+   -Fy---v4------v0+------v2---+ Fy
+                  /| Fo
+                 / |
+               v1  v6
+               /   |
+             +Fx   |
+                  -Fz
+*/
+DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
+                                              std::string name,
+                                              const RigidTransformd& X_WF) {
+  auto geometry =
+      make_unique<GeometryInstance>(X_WF, make_unique<Sphere>(1.0), move(name));
+  geometry::ProximityProperties props;
+  geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
+                               &props);
+  geometry->set_proximity_properties(move(props));
+  fem::DeformableBodyConfig<double> body_config;
+  /* Make the resolution hint large enough so that we get an octahedron. */
+  constexpr double kRezHint = 10.0;
+  DeformableBodyId body_id =
+      model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+  return body_id;
+}
 
 /* Test fixture to test DeformableDriver::AppendContactKinematics.
  In particular, this fixture sets up a deformable octahedron centered at world
@@ -58,8 +94,8 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     constexpr double kDt = 0.01;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(&builder, kDt);
     auto deformable_model = make_unique<DeformableModel<double>>(plant_);
-    deformable_body_id_ =
-        RegisterDeformableOctahedron(deformable_model.get(), "deformable");
+    deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
+                                                       "deformable", X_WF_);
     model_ = deformable_model.get();
     plant_->AddPhysicalModel(move(deformable_model));
 
@@ -200,22 +236,6 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
   GeometryId rigid_geometry_id_;
 
  private:
-  DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
-                                                std::string name) {
-    auto geometry = make_unique<GeometryInstance>(
-        X_WF_, make_unique<Sphere>(1.0), move(name));
-    geometry::ProximityProperties props;
-    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
-                                 &props);
-    geometry->set_proximity_properties(move(props));
-    fem::DeformableBodyConfig<double> body_config;
-    /* Make the resolution hint large enough so that we get an octahedron. */
-    constexpr double kRezHint = 10.0;
-    DeformableBodyId body_id =
-        model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
-    return body_id;
-  }
-
   /* Sets all vertices of the deformable body to have the given velocity in
    world frame. */
   void SetVelocity(DeformableBodyId id, const Vector3d& v_WB) {
@@ -261,6 +281,90 @@ TEST_F(DeformableDriverContactKinematicsTest,
        AppendContactKinematicsDynamicRigid) {
   MakeScene(true);
   ValidateContactKinematics(true);
+}
+
+}  // namespace
+
+class DeformableDriverTest {
+ public:
+  static const PartialPermutation& EvalVertexPermutation(
+      const DeformableDriver<double>& driver, const Context<double>& context,
+      GeometryId id) {
+    return driver.EvalVertexPermutation(context, id);
+  }
+};
+
+namespace {
+/* Verify that jacobian columns corresponding to dofs under zero dirichlet
+ boundary conditions are zeroed out. */
+GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
+           ContactJacobianWithBoundaryCondition) {
+  systems::DiagramBuilder<double> builder;
+  constexpr double kDt = 0.01;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, kDt);
+  auto deformable_model = make_unique<DeformableModel<double>>(&plant);
+  DeformableBodyId body_id = RegisterDeformableOctahedron(
+      deformable_model.get(), "deformable", RigidTransformd::Identity());
+  DeformableModel<double>* model = deformable_model.get();
+  /* Put the bottom vertex under bc. */
+  model->SetWallBoundaryCondition(body_id, Vector3d(0, 0, -0.5),
+                                  Vector3d(0, 0, 1));
+  plant.AddPhysicalModel(move(deformable_model));
+
+  /* Define proximity properties for all rigid geometries. */
+  geometry::ProximityProperties rigid_proximity_props;
+  geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
+                               &rigid_proximity_props);
+  // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
+  //  as the trigger for contact with deformable bodies.
+  rigid_proximity_props.AddProperty(geometry::internal::kHydroGroup,
+                                    geometry::internal::kRezHint, 1.0);
+  /* Shift the rigid body so that only the bottom half of the octahedron is in
+   contact. */
+  const RigidTransformd X_WR(Vector3<double>(0, 0, -0.75));
+  /* Register a static rigid geometry in contact with the bottom half of the
+   octahedron. */
+  plant.RegisterCollisionGeometry(
+      plant.world_body(), X_WR, geometry::Box(10, 10, 1),
+      "static_collision_geometry", rigid_proximity_props);
+
+  plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  plant.Finalize();
+  auto contact_manager = make_unique<CompliantContactManager<double>>();
+  const CompliantContactManager<double>* manager = contact_manager.get();
+  plant.SetDiscreteUpdateManager(move(contact_manager));
+  const DeformableDriver<double>* driver =
+      CompliantContactManagerTester::deformable_driver(*manager);
+
+  builder.Connect(
+      model->vertex_positions_port(),
+      scene_graph.get_source_configuration_port(plant.get_source_id().value()));
+  auto diagram = builder.Build();
+  auto context = diagram->CreateDefaultContext();
+
+  const Context<double>& plant_context = plant.GetMyContextFromRoot(*context);
+  std::vector<ContactPairKinematics<double>> contact_kinematics;
+  driver->AppendContactKinematics(plant_context, &contact_kinematics);
+  /* The set of contact points is not empty. */
+  EXPECT_GT(contact_kinematics.size(), 0);
+  const PartialPermutation& vertex_permutation =
+      DeformableDriverTest::EvalVertexPermutation(
+          *driver, plant_context, model->GetGeometryId(body_id));
+  /* We know that the octahedron created as the coarsest sphere indexes the
+   bottom vertex as 6 (see RegisterDeformableOctahedron). */
+  const int bottom_vertex_permuted_index = vertex_permutation.permuted_index(6);
+  for (int i = 0; i < static_cast<int>(contact_kinematics.size()); ++i) {
+    const ContactPairKinematics<double>& contact_kinematic =
+        contact_kinematics[i];
+    /* The first jacobian entry corresponds to the contribution of the
+     deformable clique. */
+    const Matrix3X<double>& J = contact_kinematic.jacobian[0].J;
+    /* The jacobian isn't completely zero. */
+    EXPECT_GT(J.norm(), 0.01);
+    /* But the columns corresponding to the vertex under bc are set to zero. */
+    EXPECT_TRUE(CompareMatrices(
+        J.middleCols<3>(3 * bottom_vertex_permuted_index), Matrix3d::Zero()));
+  }
 }
 
 }  // namespace

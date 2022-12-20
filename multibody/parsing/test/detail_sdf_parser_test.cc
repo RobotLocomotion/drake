@@ -29,6 +29,7 @@
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -731,8 +732,8 @@ TEST_F(SdfParserTest, IncludeTags) {
   EXPECT_EQ(plant_.num_model_instances(), 7);
   // The models should have added 8 more bodies.
   EXPECT_EQ(plant_.num_bodies(), 9);
-  // The models should have added 5 more joints.
-  EXPECT_EQ(plant_.num_joints(), 5);
+  // The models should have added 8 more joints.
+  EXPECT_EQ(plant_.num_joints(), 8);
 
   // There should be a model instance with the name "robot1".
   ASSERT_TRUE(plant_.HasModelInstanceNamed("robot1"));
@@ -1217,6 +1218,55 @@ TEST_F(SdfParserTest, JointActuatorParsingTest) {
   Vector2d effort_limits{100, kInf};
   EXPECT_TRUE(CompareMatrices(plant_.GetEffortLowerLimits(), -effort_limits));
   EXPECT_TRUE(CompareMatrices(plant_.GetEffortUpperLimits(), effort_limits));
+}
+
+// Verifies that the SDF parser parses the prismatic spring parameters
+// correctly.
+TEST_F(SdfParserTest, PrismaticSpringParsingTest) {
+  ParseTestString(R"""(
+  <model name='model_with_prismatic_spring'>
+    <link name='a'/>
+    <joint name='a_prismatic' type='prismatic'>
+      <parent>world</parent>
+      <child>a</child>
+      <axis>
+          <dynamics>
+            <spring_reference>1.5</spring_reference>
+            <spring_stiffness>5.0</spring_stiffness>
+          </dynamics>
+      </axis>
+    </joint>
+  </model>)""");
+
+  // Force Element indexed 1 because Gravity is indexed 0.
+  const auto& spring =
+      plant_.GetForceElement<PrismaticSpring>(ForceElementIndex(1));
+
+  EXPECT_EQ(spring.joint().name(), "a_prismatic");
+  EXPECT_EQ(spring.stiffness(), 5.0);
+  EXPECT_EQ(spring.nominal_position(), 1.5);
+}
+
+// Verifies that the SDF parser handles bad inputs (negative stiffness)
+// correctly
+TEST_F(SdfParserTest, NegativeStiffnessPrismaticSpringParsingTest) {
+  ParseTestString(R"""(
+  <model name='model_with_prismatic_spring'>
+    <link name='a'/>
+    <joint name='a_prismatic' type='prismatic'>
+      <parent>world</parent>
+      <child>a</child>
+      <axis>
+          <dynamics>
+            <spring_reference>1.5</spring_reference>
+            <spring_stiffness>-5.0</spring_stiffness>
+          </dynamics>
+      </axis>
+    </joint>
+  </model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*The stiffness specified for joint '.*' must be non-negative."));
+  ClearDiagnostics();
 }
 
 // Verifies that the SDF parser parses the revolute spring parameters correctly.
@@ -1765,8 +1815,8 @@ TEST_F(SdfParserTest, LoadDirectlyNestedModelsInWorld) {
   EXPECT_EQ(plant_.num_model_instances(), 5);
   // The models should have added 4 more bodies.
   EXPECT_EQ(plant_.num_bodies(), 5);
-  // The models should have added 3 more joints.
-  EXPECT_EQ(plant_.num_joints(), 3);
+  // The models should have added 4 more joints.
+  EXPECT_EQ(plant_.num_joints(), 4);
 
   // There should be a model instance with the name "parent_model".
   ASSERT_TRUE(plant_.HasModelInstanceNamed("parent_model"));
@@ -1821,8 +1871,8 @@ TEST_F(SdfParserTest, LoadDirectlyNestedModelsInModel) {
   EXPECT_EQ(plant_.num_model_instances(), 6);
   // The models should have added 4 more bodies.
   EXPECT_EQ(plant_.num_bodies(), 5);
-  // The models should have added 3 more joints.
-  EXPECT_EQ(plant_.num_joints(), 3);
+  // The models should have added 4 more joints.
+  EXPECT_EQ(plant_.num_joints(), 4);
 
   // There should be a model instance with the name "grand_parent_model" (top
   // level model).
@@ -2548,7 +2598,7 @@ TEST_F(SdfParserTest, MergeInclude) {
   // We should have loaded *only* 1 more model.
   EXPECT_EQ(plant_.num_model_instances(), 3);
   EXPECT_EQ(plant_.num_bodies(), 4);
-  EXPECT_EQ(plant_.num_joints(), 2);
+  EXPECT_EQ(plant_.num_joints(), 3);
 
   ASSERT_TRUE(plant_.HasModelInstanceNamed("robot1_with_tool"));
   ModelInstanceIndex robot1_model =
@@ -2583,6 +2633,66 @@ TEST_F(SdfParserTest, UnsupportedElements) {
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*script"));
   EXPECT_THAT(TakeWarning(), MatchesRegex(".*shader"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*drake:QQQ_dynamic"));
+}
+
+TEST_F(SdfParserTest, WorldJoint) {
+  const std::string full_name = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/"
+      "world_joint_test.sdf");
+  AddSceneGraph();
+  AddModelsFromSdfFile(full_name);
+  plant_.Finalize();
+  auto context = plant_.CreateDefaultContext();
+
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("parent_model"));
+  ASSERT_TRUE(plant_.HasModelInstanceNamed("child_model"));
+  ASSERT_TRUE(plant_.HasFrameNamed("child_frame"));
+  ASSERT_TRUE(plant_.HasJointNamed("J1"));
+  ASSERT_TRUE(plant_.HasJointNamed("J2"));
+
+  EXPECT_EQ(plant_.num_joints(), 2);
+  EXPECT_EQ(plant_.num_model_instances(), 4);
+
+  ModelInstanceIndex parent_instance =
+      plant_.GetModelInstanceByName("parent_model");
+  ModelInstanceIndex child_instance =
+      plant_.GetModelInstanceByName("child_model");
+
+  EXPECT_TRUE(plant_.HasBodyNamed("L_P", parent_instance));
+  EXPECT_TRUE(plant_.HasBodyNamed("L_C", child_instance));
+
+  const Body<double>& parent_link =
+      plant_.GetBodyByName("L_P", parent_instance);
+  const Body<double>& child_link =
+      plant_.GetBodyByName("L_C", child_instance);
+  EXPECT_NE(parent_link.index(), child_link.index());
+  EXPECT_EQ(parent_link.model_instance(), parent_instance);
+  EXPECT_EQ(child_link.model_instance(), child_instance);
+
+  const Joint<double>& joint =
+      plant_.GetJointByName<Joint>("J1");
+  EXPECT_EQ(joint.name(), "J1");
+  EXPECT_EQ(joint.parent_body().name(), "L_P");
+  EXPECT_EQ(joint.child_body().name(), "L_C");
+
+  // check relative pose between frames and joint
+  const RigidTransformd X_CJc_expected(RollPitchYawd(0, 0, 0),
+                                       Vector3d(1, 1, 1));
+  const RigidTransformd X_PJp_expected(RollPitchYawd(0, 0, 0),
+                                       Vector3d(4, 4, 4));
+
+  const auto& frame_P = plant_.GetFrameByName("parent_frame");
+  const auto& frame_C = plant_.GetFrameByName("child_frame");
+
+  const RigidTransformd X_PJp =
+      joint.frame_on_parent().CalcPose(*context, frame_P);
+  EXPECT_TRUE(CompareMatrices(X_PJp_expected.GetAsMatrix4(),
+                              X_PJp.GetAsMatrix4(), kEps));
+
+  const RigidTransformd X_CJc =
+      joint.frame_on_child().CalcPose(*context, frame_C);
+  EXPECT_TRUE(CompareMatrices(X_CJc_expected.GetAsMatrix4(),
+                              X_CJc.GetAsMatrix4(), kEps));
 }
 
 }  // namespace

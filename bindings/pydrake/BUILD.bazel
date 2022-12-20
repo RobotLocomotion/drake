@@ -373,6 +373,14 @@ drake_pybind_cc_googletest(
     py_srcs = ["test/_pydrake_pybind_test_extra.py"],
 )
 
+drake_py_binary(
+    name = "print_symbol_collisions",
+    testonly = 1,
+    srcs = ["test/print_symbol_collisions.py"],
+    add_test_rule = 1,
+    deps = [":all_py"],
+)
+
 drake_py_unittest(
     name = "all_test",
     timeout = "moderate",

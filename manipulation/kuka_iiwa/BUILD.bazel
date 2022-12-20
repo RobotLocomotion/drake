@@ -33,6 +33,7 @@ drake_cc_library(
     hdrs = ["iiwa_constants.h"],
     deps = [
         "//common:essential",
+        "@fmt",
     ],
 )
 
@@ -87,6 +88,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "iiwa_driver",
+    srcs = ["iiwa_driver.cc"],
     hdrs = ["iiwa_driver.h"],
     deps = [
         "//common:essential",
@@ -135,6 +137,11 @@ drake_cc_library(
 )
 
 # === test/ ===
+
+drake_cc_googletest(
+    name = "iiwa_constants_test",
+    deps = [":iiwa_constants"],
+)
 
 drake_cc_googletest(
     name = "iiwa_command_receiver_test",

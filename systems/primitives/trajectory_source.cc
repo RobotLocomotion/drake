@@ -21,11 +21,26 @@ TrajectorySource<T>::TrajectorySource(const Trajectory<T>& trajectory,
   DRAKE_DEMAND(trajectory.cols() == 1);
   DRAKE_DEMAND(output_derivative_order >= 0);
 
-  for (int i = 0; i < output_derivative_order; i++) {
+  for (int i = 0; i < output_derivative_order; ++i) {
     if (i == 0)
       derivatives_.push_back(trajectory_->MakeDerivative());
     else
       derivatives_.push_back(derivatives_[i - 1]->MakeDerivative());
+  }
+}
+
+template <typename T>
+void TrajectorySource<T>::UpdateTrajectory(
+    const trajectories::Trajectory<T>& trajectory) {
+  DRAKE_DEMAND(trajectory.rows() == trajectory_->rows());
+  DRAKE_DEMAND(trajectory.cols() == 1);
+
+  trajectory_ = trajectory.Clone();
+  for (int i = 0; i < static_cast<int>(derivatives_.size()); ++i) {
+    if (i == 0)
+      derivatives_[i] = trajectory_->MakeDerivative();
+    else
+      derivatives_[i] = derivatives_[i - 1]->MakeDerivative();
   }
 }
 

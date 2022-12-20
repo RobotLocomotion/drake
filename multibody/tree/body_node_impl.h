@@ -12,17 +12,17 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// TODO(sherm1) Most of the across-mobilizer code for kinematics and
+//  dynamics should live in this class since the hinge matrices
+//  and related downstream calculations have a compile-time fixed size.
+
 // For internal use only of the MultibodyTree implementation.
 // While all code that is common to any node can be placed in the BodyNode
 // class, %BodyNodeImpl provides compile-time fixed-size BodyNode
 // implementations so that all operations can be performed with fixed-size
-// stack-allocated Eigen variables.
-// In particular, most of the across mobilizer code for velocity kinematics
-// lives in this class since the across mobilizer hinge matrices `H_FM(q)`
-// (defined such that the across mobilizer spatial velocity relates to the
-// mobilizer's generalized velocities v by `V_FM = H_FM(q) * v`) have a
-// compile-time fixed size. For a more detailed discussion of the role of a
-// BodyNode in a MultibodyTree refer to the class documentation for BodyNode.
+// stack-allocated Eigen variables. For a more detailed discussion of the role
+// of a BodyNode in a MultibodyTree refer to the class documentation for
+// BodyNode.
 template <typename T, int  num_positions, int num_velocities>
 class BodyNodeImpl : public BodyNode<T> {
  public:
@@ -45,7 +45,7 @@ class BodyNodeImpl : public BodyNode<T> {
       BodyNode<T>(parent_node, body, mobilizer) {}
 
   // TODO(amcastro-tri): Implement methods for computing velocity kinematics
-  // using fixed-size Eigen matrices.
+  //  using fixed-size Eigen matrices.
 };
 
 }  // namespace internal

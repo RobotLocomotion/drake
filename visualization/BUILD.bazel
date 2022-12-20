@@ -26,6 +26,9 @@ drake_cc_library(
     deps = [
         "//common:name_value",
         "//geometry:drake_visualizer_params",
+        "//geometry:meshcat",
+        "//geometry:meshcat_visualizer",
+        "//geometry:meshcat_visualizer_params",
         "//geometry:rgba",
         "@eigen",
     ],

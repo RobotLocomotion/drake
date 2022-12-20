@@ -60,6 +60,13 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     return data;
   }
 
+  // This method will be removed with the resolution of #16955 and therefore a
+  // no-op is implemented simply to be able to instantiate this class.
+  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
+      const systems::Context<T>&) const final {
+    DRAKE_UNREACHABLE();
+  }
+
  private:
   /* Allow different specializations to access each other's private data for
    cloning to a different scalar type. */
@@ -91,8 +98,8 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
     /* For unit testing we verify there is a single physical model of type
      DummyModel. */
     DRAKE_DEMAND(this->plant().physical_models().size() == 1);
-    const auto* dummy_model = dynamic_cast<const DummyModel<T>*>(
-        this->plant().physical_models()[0].get());
+    const auto* dummy_model =
+        dynamic_cast<const DummyModel<T>*>(this->plant().physical_models()[0]);
     DRAKE_DEMAND(dummy_model != nullptr);
     additional_state_index_ = dummy_model->discrete_state_index();
   }
@@ -151,6 +158,11 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
       additional_data += 2.0 * VectorX<T>::Ones(additional_data.size());
     }
   }
+
+  // TODO(joemasterjohn): Add a unit test here for when the contact results
+  // calculated by the manager are hooked up to MultibodyPlant.
+  void DoCalcContactResults(const systems::Context<T>& context,
+                            ContactResults<T>* contact_results) const final {}
 
  private:
   systems::DiscreteStateIndex additional_state_index_;
@@ -246,7 +258,7 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
   ASSERT_EQ(autodiff_plant->physical_models().size(), 1);
   const DummyModel<AutoDiffXd>* model =
       dynamic_cast<const DummyModel<AutoDiffXd>*>(
-          autodiff_plant->physical_models()[0].get());
+          autodiff_plant->physical_models()[0]);
   ASSERT_NE(model, nullptr);
 
   const int time_steps = 2;

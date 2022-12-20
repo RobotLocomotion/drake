@@ -1,0 +1,88 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "collision_geometry",
+    srcs = ["collision_geometry.cc"],
+    hdrs = ["collision_geometry.h"],
+    deps = [
+        "//geometry:geometry_ids",
+        "//geometry:shape_specification",
+        "//geometry/optimization:convex_set",
+        "//multibody/rational:rational_forward_kinematics",
+        "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "separating_plane",
+    srcs = ["separating_plane.cc"],
+    hdrs = ["separating_plane.h"],
+    deps = [
+        ":collision_geometry",
+        "//common/symbolic:polynomial",
+    ],
+)
+
+drake_cc_library(
+    name = "cspace_free_polytope",
+    srcs = ["cspace_free_polytope.cc"],
+    hdrs = ["cspace_free_polytope.h"],
+    deps = [
+        ":collision_geometry",
+        ":separating_plane",
+        "//common/symbolic:monomial_util",
+        "//solvers:choose_best_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mosek_solver",
+        "//solvers:solve",
+    ],
+)
+
+# test
+
+drake_cc_library(
+    name = "c_iris_test_utilities",
+    testonly = 1,
+    srcs = ["test/c_iris_test_utilities.cc"],
+    hdrs = ["test/c_iris_test_utilities.h"],
+    data = [
+        "test/convex.mtl",
+        "test/convex.obj",
+    ],
+    deps = [
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_geometry_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":collision_geometry",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_polytope_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_polytope",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+        "//solvers:mosek_solver",
+    ],
+)
+
+add_lint_tests()

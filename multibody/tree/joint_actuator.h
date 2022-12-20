@@ -27,8 +27,7 @@ template<typename T> class Joint;
 ///
 /// @tparam_default_scalar
 template <typename T>
-class JointActuator final
-    : public MultibodyElement<JointActuator, T, JointActuatorIndex> {
+class JointActuator final : public MultibodyElement<T, JointActuatorIndex> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(JointActuator)
 
@@ -295,8 +294,7 @@ class JointActuator final
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) final {
     // Declare parent classes' parameters
-    MultibodyElement<JointActuator, T, JointActuatorIndex>::DoDeclareParameters(
-        tree_system);
+    MultibodyElement<T, JointActuatorIndex>::DoDeclareParameters(tree_system);
     rotor_inertia_parameter_index_ = this->DeclareNumericParameter(
         tree_system,
         systems::BasicVector<T>(Vector1<T>(default_rotor_inertia_)));

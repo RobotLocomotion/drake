@@ -11,6 +11,7 @@
 
 #include <mosek.h>
 
+#include "drake/solvers/constraint.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
 
@@ -556,6 +557,18 @@ MSKrescodee SetAffineConeConstraintDualSolution(
     rescode = MSK_getaccdoty(task, whichsol, acc_index, dual_sol.data());
     if (rescode != MSK_RES_OK) {
       return rescode;
+    }
+    if constexpr (std::is_same_v<C, RotatedLorentzConeConstraint>) {
+      // Drake's rotated Lorentz cone constraint on z = Ax+b is
+      // K_drake={ z | z₀z₁≥ z₂² + ... zₙ₋₁², z₀≥0, z₁≥0}
+      // On the other hand, Mosek's rotated Lorentz cone constraint has a
+      // multiplier of 2
+      // K_mosek={ z | 2z₀z₁≥ z₂² + ... zₙ₋₁², z₀≥0, z₁≥0} Hence
+      // we can write K_drake = C*K_mosek where C = diag([2, 1, ..., 1]). By
+      // duality we know K_drake_dual = C⁻ᵀ*K_mosek_dual, where K_drake_dual is
+      // the dual cone of K_drake, likewise K_mosek_dual is the dual cone of
+      // K_mosek.
+      dual_sol(0) *= 0.5;
     }
     result->set_dual_solution(binding, dual_sol);
   }

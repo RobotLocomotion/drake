@@ -33,6 +33,7 @@
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
+#include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
 #include "drake/multibody/tree/screw_joint.h"
@@ -107,16 +108,25 @@ bool StartsWith(const std::string_view str, const std::string_view prefix) {
 // relative_to_model_instance. If the body is a direct child of the model,
 // this simply returns the local name of the body. However, if the body is
 // a child of a nested model, the local name of the body is prefixed with the
-// scoped name of the nested model.
+// scoped name of the nested model. If the relative_to_model_instance is the
+// world_model_instance, the local name of the body is prefixed with the model
+// name.
 std::string GetRelativeBodyName(
     const Body<double>& body,
     ModelInstanceIndex relative_to_model_instance,
     const MultibodyPlant<double>& plant) {
   const std::string& relative_to_model_absolute_name =
       plant.GetModelInstanceName(relative_to_model_instance);
-  // If the body is inside a nested model, we need to prefix the
-  // name with the relative name of the nested model.
-  if (body.model_instance() != relative_to_model_instance) {
+  // If the relative_to_model instance is the world_model_instance, we need to
+  // prefix the body name with the model name
+  if (relative_to_model_instance == world_model_instance()) {
+    const std::string& model_absolute_name =
+        plant.GetModelInstanceName(body.model_instance());
+
+    return sdf::JoinName(model_absolute_name, body.name());
+  } else if (body.model_instance() != relative_to_model_instance) {
+    // If the body is inside a nested model, we need to prefix the
+    // name with the relative name of the nested model.
     const std::string& nested_model_absolute_name =
         plant.GetModelInstanceName(body.model_instance());
     // The relative_to_model_absolute_name must be a prefix of the
@@ -308,9 +318,7 @@ const Body<double>& GetBodyByLinkSpecificationName(
 // Extracts a Vector3d representation of the joint axis for joints with an axis.
 Vector3d ExtractJointAxis(
     const DiagnosticPolicy& diagnostic,
-    const sdf::Model& model_spec,
     const sdf::Joint& joint_spec) {
-  unused(model_spec);
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
                joint_spec.Type() == sdf::JointType::SCREW ||
                joint_spec.Type() == sdf::JointType::PRISMATIC ||
@@ -495,6 +503,40 @@ void AddJointActuatorFromSpecification(
 }
 
 // Extracts the spring stiffness and the spring reference from a joint
+// specification and adds a prismatic spring force element with the
+// corresponding spring reference if the spring stiffness is nonzero.
+// Only available for "prismatic" joints. The units for spring
+// reference is meter and the units for spring stiffness is N/m.
+void AddPrismaticSpringFromSpecification(const DiagnosticPolicy& diagnostic,
+                                         const sdf::Joint& joint_spec,
+                                         const PrismaticJoint<double>& joint,
+                                         MultibodyPlant<double>* plant) {
+  DRAKE_THROW_UNLESS(plant != nullptr);
+  DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::PRISMATIC);
+
+  // Axis specification.
+  const sdf::JointAxis* axis = joint_spec.Axis();
+  if (axis == nullptr) {
+    diagnostic.Error(fmt::format("An axis must be specified for joint '{}'.",
+                                 joint_spec.Name()));
+  }
+
+  const double spring_reference = axis->SpringReference();
+  const double spring_stiffness = axis->SpringStiffness();
+
+  // We add a force element if stiffness is positive, report error
+  // if the stiffness is negative, and pass if the stiffness is zero
+  if (spring_stiffness > 0) {
+    plant->AddForceElement<PrismaticSpring>(
+      joint, spring_reference, spring_stiffness);
+  } else if (spring_stiffness < 0) {
+    diagnostic.Error(fmt::format(
+        "The stiffness specified for joint '{}' must be non-negative.",
+        joint_spec.Name()));
+  }
+}
+
+// Extracts the spring stiffness and the spring reference from a joint
 // specification and adds a revolute spring force element with the
 // corresponding spring reference if the spring stiffness is nonzero.
 // Only available for "revolute" and "continuous" joints. The units for spring
@@ -591,13 +633,14 @@ std::tuple<double, double, double, double> ParseJointLimits(
 }
 
 // Helper method to add joints to a MultibodyPlant given an sdf::Joint
-// specification object.
+// specification object. X_WM should be an identity when adding a world
+// joint (is_model_joint = false) since a world joint doesn't have a
+// containing model, hence M = W.
 void AddJointFromSpecification(
-    const DiagnosticPolicy& diagnostic,
-    const sdf::Model& model_spec, const RigidTransformd& X_WM,
+    const DiagnosticPolicy& diagnostic, const RigidTransformd& X_WM,
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
-    MultibodyPlant<double>* plant,
-    std::set<sdf::JointType>* joint_types) {
+    MultibodyPlant<double>* plant, std::set<sdf::JointType>* joint_types,
+    bool is_model_joint = true) {
 
   const std::set<std::string> supported_joint_elements{
     "axis",
@@ -632,9 +675,10 @@ void AddJointFromSpecification(
   // We need to treat the world case separately since sdformat does not create
   // a "world" link from which we can request its pose (which in that case would
   // be the identity).
+  const std::string relative_to = (is_model_joint) ? "__model__" : "world";
   if (parent_body.index() == world_index()) {
     const RigidTransformd X_MJ = ResolveRigidTransform(
-        diagnostic, joint_spec.SemanticPose(), "__model__");
+        diagnostic, joint_spec.SemanticPose(), relative_to);
     X_PJ = X_WM * X_MJ;  // Since P == W.
   } else {
     X_PJ = ResolveRigidTransform(
@@ -663,7 +707,7 @@ void AddJointFromSpecification(
     }
     case sdf::JointType::PRISMATIC: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
-      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
+      Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(diagnostic, joint_spec);
       const auto& joint = plant->AddJoint<PrismaticJoint>(
@@ -675,11 +719,12 @@ void AddJointFromSpecification(
       plant->get_mutable_joint(joint.index()).set_acceleration_limits(
           Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
+      AddPrismaticSpringFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::REVOLUTE: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
-      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
+      Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
       std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
           ParseJointLimits(diagnostic, joint_spec);
       const auto& joint = plant->AddJoint<RevoluteJoint>(
@@ -750,7 +795,7 @@ void AddJointFromSpecification(
     }
     case sdf::JointType::CONTINUOUS: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
-      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
+      Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
       std::tie(std::ignore, std::ignore, velocity_limit, acceleration_limit) =
           ParseJointLimits(diagnostic, joint_spec);
       const auto& joint =
@@ -771,7 +816,7 @@ void AddJointFromSpecification(
       // The ScrewThreadPitch() API uses the same representation as
       // Drake's ScrewJoint class (meters / revolution, right-handed).
       const double screw_thread_pitch = joint_spec.ScrewThreadPitch();
-      Vector3d axis_J = ExtractJointAxis(diagnostic, model_spec, joint_spec);
+      Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
       const auto& joint = plant->AddJoint<ScrewJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
@@ -1302,7 +1347,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
     AddJointFromSpecification(
-        diagnostic, model, X_WM, joint, model_instance, plant, &joint_types);
+        diagnostic, X_WM, joint, model_instance, plant, &joint_types);
   }
 
   drake::log()->trace("sdf_parser: Add explicit frames");
@@ -1727,6 +1772,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const std::set<std::string> supported_world_elements{
       "frame",
       "include",
+      "joint",
       "model"};
     CheckSupportedElements(
         workspace.diagnostic, world.Element(), supported_world_elements);
@@ -1754,6 +1800,23 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       AddFrameFromSpecification(
           workspace.diagnostic, frame, world_model_instance(),
           workspace.plant->world_frame(), workspace.plant);
+    }
+
+    // Add all the joints
+    std::set<sdf::JointType> joint_types;
+    for (uint64_t joint_index = 0; joint_index < world.JointCount();
+        ++joint_index) {
+      const sdf::Joint& joint = *world.JointByIndex(joint_index);
+      AddJointFromSpecification(
+          workspace.diagnostic, {}, joint, world_model_instance(),
+          workspace.plant, &joint_types, false);
+    }
+
+    for (sdf::JointType joint_type : joint_types) {
+      if (joint_type != sdf::JointType::FIXED) {
+        throw std::runtime_error(
+            "Only fixed joints are permitted in world joints.");
+      }
     }
   }
 

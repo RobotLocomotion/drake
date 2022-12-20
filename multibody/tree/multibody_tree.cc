@@ -15,8 +15,9 @@
 #include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/body_node_welded.h"
+#include "drake/multibody/tree/body_node_world.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
+#include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
 #include "drake/multibody/tree/spatial_inertia.h"
@@ -27,7 +28,7 @@ namespace multibody {
 namespace internal {
 
 using internal::BodyNode;
-using internal::BodyNodeWelded;
+using internal::BodyNodeWorld;
 using math::RigidTransform;
 using math::RotationMatrix;
 
@@ -614,19 +615,66 @@ void MultibodyTree<T>::SetVelocitiesInArray(
 }
 
 template <typename T>
-void MultibodyTree<T>::AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer() {
+void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!topology_is_valid());
+  // Create Joint objects' implementation. Joints are implemented using a
+  // combination of MultibodyTree's building blocks such as Body, Mobilizer,
+  // ForceElement and Constraint. For a same physical Joint, several
+  // implementations could be created (for instance, a Constraint instead of a
+  // Mobilizer). The decision on what implementation to create is performed by
+  // MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
+  // can request MultibodyTree for these choices when building the Joint
+  // implementation. Since a Joint's implementation is built upon
+  // MultibodyTree's building blocks, notice that creating a Joint's
+  // implementation will therefore change the tree topology. Since topology
+  // changes are NOT allowed after Finalize(), joint implementations MUST be
+  // assembled BEFORE the tree's topology is finalized.
+  const int num_joints_pre_floating_joints = num_joints();
+  joint_to_mobilizer_.resize(num_joints_pre_floating_joints);
+  for (int i = 0; i < num_joints_pre_floating_joints; ++i) {
+    auto& joint = owned_joints_[i];
+    std::vector<Mobilizer<T>*> mobilizers =
+        internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+    // Below we assume a single mobilizer per joint, which is  true
+    // for all joint types currently implemented. This may change in the future
+    // when closed topologies are supported.
+    DRAKE_DEMAND(mobilizers.size() == 1);
+    for (Mobilizer<T>* mobilizer : mobilizers) {
+      mobilizer->set_model_instance(joint->model_instance());
+      // Record the joint to mobilizer map.
+      joint_to_mobilizer_[joint->index()] = mobilizer->index();
+    }
+  }
+  // It is VERY important to add joints to free bodies only AFTER joints had a
+  // chance to get implemented with mobilizers. This is because above added
+  // joints' implementations change the topology of the tree. After all joints
+  // above are implemented, any body remaining with no valid inboard mobilizer
+  // will get a 6-dof joint with world as its parent. Therefore, do not change
+  // this order!
+
   // Skip the world.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
-    const BodyTopology& body_topology =
-        get_topology().get_body(body.index());
+    const BodyTopology& body_topology = get_topology().get_body(body.index());
     if (!body_topology.inboard_mobilizer.is_valid()) {
-      std::unique_ptr<QuaternionFloatingMobilizer<T>> mobilizer =
-          std::make_unique<QuaternionFloatingMobilizer<T>>(
-              world_body().body_frame(), body.body_frame());
-      mobilizer->set_model_instance(body.model_instance());
-      this->AddMobilizer(std::move(mobilizer));
+      this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
+                                              world_body(), {}, body, {});
+    }
+  }
+
+  joint_to_mobilizer_.resize(num_joints());
+  for (int i = num_joints_pre_floating_joints; i < num_joints(); ++i) {
+    auto& joint = owned_joints_[i];
+    std::vector<Mobilizer<T>*> mobilizers =
+        internal::JointImplementationBuilder<T>::Build(joint.get(), this);
+    // Below we assume a single mobilizer per joint, which is  true
+    // for all joint types currently implemented. This may change in the future
+    // when closed topologies are supported.
+    DRAKE_DEMAND(mobilizers.size() == 1);
+    for (Mobilizer<T>* mobilizer : mobilizers) {
+      mobilizer->set_model_instance(joint->model_instance());
+      // Record the joint to mobilizer map.
+      joint_to_mobilizer_[joint->index()] = mobilizer->index();
     }
   }
 }
@@ -711,37 +759,7 @@ void MultibodyTree<T>::FinalizeInternals() {
 template <typename T>
 void MultibodyTree<T>::Finalize() {
   DRAKE_MBT_THROW_IF_FINALIZED();
-  // Create Joint objects's implementation. Joints are implemented using a
-  // combination of MultibodyTree's building blocks such as Body, Mobilizer,
-  // ForceElement and Constraint. For a same physical Joint, several
-  // implementations could be created (for instance, a Constraint instead of a
-  // Mobilizer). The decision on what implementation to create is performed by
-  // MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
-  // can request MultibodyTree for these choices when building the Joint
-  // implementation. Since a Joint's implementation is built upon
-  // MultibodyTree's building blocks, notice that creating a Joint's
-  // implementation will therefore change the tree topology. Since topology
-  // changes are NOT allowed after Finalize(), joint implementations MUST be
-  // assembled BEFORE the tree's topology is finalized.
-  joint_to_mobilizer_.resize(num_joints());
-  for (auto& joint : owned_joints_) {
-    std::vector<Mobilizer<T>*> mobilizers =
-        internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, the sane thing to do.
-    // TODO(amcastro-tri): clean up the JointImplementationBuilder so that this
-    // assumption (one mobilizer per joint) is set in stone once and for all.
-    DRAKE_DEMAND(mobilizers.size() == 1);
-    for (Mobilizer<T>* mobilizer : mobilizers) {
-      mobilizer->set_model_instance(joint->model_instance());
-      // Record the joint to mobilizer map.
-      joint_to_mobilizer_[joint->index()] = mobilizer->index();
-    }
-  }
-  // It is VERY important to add quaternions if needed only AFTER joints had a
-  // chance to get implemented with mobilizers. This is because joints's
-  // implementations change the topology of the tree. Therefore, do not change
-  // this order!
-  AddQuaternionFreeMobilizerToAllBodiesWithNoMobilizer();
+  CreateJointImplementations();
   FinalizeTopology();
   FinalizeInternals();
 }
@@ -756,7 +774,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
 
   std::unique_ptr<BodyNode<T>> body_node;
   if (body_index == world_index()) {
-    body_node = std::make_unique<BodyNodeWelded<T>>(&world_body());
+    body_node = std::make_unique<BodyNodeWorld<T>>(&world_body());
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());

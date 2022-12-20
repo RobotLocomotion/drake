@@ -582,5 +582,42 @@ Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
     const Eigen::Ref<const VectorX<Polynomial>>& f,
     const Eigen::Ref<const VectorX<Variable>>& vars);
 
+/**
+ Returns the polynomial m(x)ᵀ * Q * m(x), where m(x) is the monomial basis,
+ and Q is the Gram matrix.
+ @param monomial_basis m(x) in the documentation. A vector of monomials.
+ @param gram_lower The lower triangular entries in Q, stacked columnwise
+ into a vector.
+ */
+template <typename Derived1, typename Derived2>
+[[nodiscard]] typename std::enable_if<
+    is_eigen_vector_of<Derived1, symbolic::Monomial>::value &&
+        (is_eigen_vector_of<Derived2, double>::value ||
+         is_eigen_vector_of<Derived2, symbolic::Variable>::value ||
+         is_eigen_vector_of<Derived2, symbolic::Expression>::value),
+    symbolic::Polynomial>::type
+CalcPolynomialWLowerTriangularPart(
+    const Eigen::MatrixBase<Derived1>& monomial_basis,
+    const Eigen::MatrixBase<Derived2>& gram_lower) {
+  DRAKE_DEMAND(monomial_basis.rows() * (monomial_basis.rows() + 1) / 2 ==
+               gram_lower.rows());
+  Polynomial::MapType monomial_coeff_map;
+  for (int j = 0; j < monomial_basis.rows(); ++j) {
+    for (int i = j; i < monomial_basis.rows(); ++i) {
+      // Compute 2 * mᵢ(x) * Qᵢⱼ * mⱼ(x) if i != j, or mᵢ(x)²*Qᵢᵢ
+      const auto monomial_product = monomial_basis(i) * monomial_basis(j);
+      const auto& Qij =
+          gram_lower(monomial_basis.rows() * j + i - (j + 1) * j / 2);
+      const symbolic::Expression coeff = i == j ? Qij : 2 * Qij;
+      auto it = monomial_coeff_map.find(monomial_product);
+      if (it == monomial_coeff_map.end()) {
+        monomial_coeff_map.emplace_hint(it, monomial_product, coeff);
+      } else {
+        it->second += coeff;
+      }
+    }
+  }
+  return Polynomial(monomial_coeff_map);
+}
 }  // namespace symbolic
 }  // namespace drake

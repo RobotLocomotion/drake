@@ -100,6 +100,18 @@ penalty forces to model a closed loop topology, such as a four bar linkage.
 
 *Strandbeest Source Code:* [https://github.com/RobotLocomotion/drake/tree/master/examples/multibody/strandbeest](https://github.com/RobotLocomotion/drake/tree/master/examples/multibody/strandbeest)
 
+# Hydroelastic contact between non-convex meshes
+
+Drake has an example of modeling hydroelastic contact between non-convex 
+meshes.
+
+{% include video.html
+  url = "https://www.youtube.com/embed/ItE5FNoNsTg"
+  full_width = true
+%}
+
+*Source Code:* [drake/examples/hydroelastic/python_nonconvex_mesh](https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_nonconvex_mesh)
+
 # Third Party Documentation / Tutorials
 
 ## Greg's Tutorial (Python)

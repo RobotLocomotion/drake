@@ -46,12 +46,14 @@ bool BsplineTrajectory<T>::do_has_derivative() const {
 
 template <typename T>
 MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
-        const T& t, int derivative_order) const {
+        const T& time, int derivative_order) const {
   if (derivative_order == 0) {
-    return this->value(t);
+    return this->value(time);
   } else if (derivative_order >= basis_.order()) {
     return MatrixX<T>::Zero(rows(), cols());
   } else if (derivative_order >= 1) {
+    using std::clamp;
+    T clamped_time = clamp(time, start_time(), end_time());
     // For a bspline trajectory of order n, the evaluation of k th derivative
     // should take O(k^2) time by leveraging the sparsity of basis value.
     // This differs from DoMakeDerivative, which takes O(nk) time.
@@ -60,7 +62,8 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
     BsplineBasis<T> lower_order_basis = BsplineBasis<T>(
         basis_.order() - derivative_order, derivative_knots);
     std::vector<MatrixX<T>> coefficients(control_points());
-    std::vector<int> base_indices = basis_.ComputeActiveBasisFunctionIndices(t);
+    std::vector<int> base_indices =
+        basis_.ComputeActiveBasisFunctionIndices(clamped_time);
     for (int j = 1; j <= derivative_order; ++j) {
       for (int i = base_indices.front(); i <= base_indices.back() - j; ++i) {
         coefficients.at(i) =
@@ -72,10 +75,12 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
     std::vector<MatrixX<T>> derivative_control_points(
         num_control_points() - derivative_order,
         MatrixX<T>::Zero(rows(), cols()));
-    for (int i : lower_order_basis.ComputeActiveBasisFunctionIndices(t)) {
+    for (int i :
+         lower_order_basis.ComputeActiveBasisFunctionIndices(clamped_time)) {
       derivative_control_points.at(i) = coefficients.at(i);
     }
-    return lower_order_basis.EvaluateCurve(derivative_control_points, t);
+    return lower_order_basis.EvaluateCurve(derivative_control_points,
+                                           clamped_time);
   } else {
     throw std::invalid_argument(
         fmt::format("Invalid derivative order ({}). The derivative order must "

@@ -104,7 +104,7 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.geometry_id_to_body_index_;
   }
 
-  static const std::vector<internal::CouplerConstraintSpecs<T>>&
+  static const std::vector<internal::CouplerConstraintSpecs>&
   coupler_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.coupler_constraints_specs_;
   }
@@ -112,6 +112,16 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   static const std::vector<int>& EvalJointLockingIndices(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalJointLockingIndices(context);
+  }
+
+  static const std::vector<internal::DistanceConstraintSpecs>&
+  distance_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.distance_constraints_specs_;
+  }
+
+  static BodyIndex FindBodyByGeometryId(const MultibodyPlant<T>& plant,
+                                        geometry::GeometryId geometry_id) {
+    return plant.FindBodyByGeometryId(geometry_id);
   }
 };
 }  // namespace internal

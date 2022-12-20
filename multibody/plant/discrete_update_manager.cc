@@ -145,7 +145,7 @@ DiscreteUpdateManager<T>::collision_geometries() const {
 }
 
 template <typename T>
-const std::vector<internal::CouplerConstraintSpecs<T>>&
+const std::vector<internal::CouplerConstraintSpecs>&
 DiscreteUpdateManager<T>::coupler_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::coupler_constraints_specs(*plant_);
@@ -156,6 +156,20 @@ const std::vector<int>& DiscreteUpdateManager<T>::EvalJointLockingIndices(
     const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::EvalJointLockingIndices(plant(), context);
+}
+
+template <typename T>
+const std::vector<internal::DistanceConstraintSpecs>&
+DiscreteUpdateManager<T>::distance_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::distance_constraints_specs(*plant_);
+}
+
+template <typename T>
+BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
+    geometry::GeometryId geometry_id) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
+      plant(), geometry_id);
 }
 
 }  // namespace internal

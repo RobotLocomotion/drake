@@ -24,12 +24,19 @@ struct IiwaDriver {
   /** Per BuildIiwaControl. */
   double ext_joint_filter_tau{0.01};
 
+  /// Per ParseIiwaControlMode. Valid options are:
+  /// - "position_only"
+  /// - "position_and_torque" (default)
+  /// - "torque_only"
+  std::string control_mode{"position_and_torque"};
+
   std::string lcm_bus{"default"};
 
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(hand_model_name));
     a->Visit(DRAKE_NVP(ext_joint_filter_tau));
+    a->Visit(DRAKE_NVP(control_mode));
     a->Visit(DRAKE_NVP(lcm_bus));
   }
 };

@@ -103,6 +103,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, PublishPeriod) {
 // Confirms that all geometry registered to iiwa_link_7 in the urdf (in all
 // three allowed roles) gets properly added.
 TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
+  // This also tests adding multiple MeshcatVisualizers to a single meshcat,
+  // which is a common workflow in Python notebooks.
   MeshcatVisualizerParams params;
   for (Role role : {Role::kProximity, Role::kIllustration, Role::kPerception}) {
     params.role = role;
@@ -123,6 +125,15 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
   params.role = Role::kUnassigned;
   DRAKE_EXPECT_THROWS_MESSAGE(SetUpDiagram(params),
                               ".*Role::kUnassigned.*");
+}
+
+// Tests that adding multiple MeshcatVisualizers using the same role to a
+// single meshcat works, as this is a common workflow in Python notebooks.
+TEST_F(MeshcatVisualizerWithIiwaTest, DuplicateRole) {
+  MeshcatVisualizerParams params;
+  params.role = Role::kIllustration;
+  SetUpDiagram(params);
+  SetUpDiagram(params);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
@@ -277,6 +288,23 @@ TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
   // UpdateMeshcat / SetObjects SetTransforms.  We simply confirm that the code
   // doesn't blow up.
   ad_diagram->ForcedPublish(*ad_context);
+}
+
+TEST_F(MeshcatVisualizerWithIiwaTest, UpdateAlphaSliders) {
+  MeshcatVisualizerParams params;
+  params.enable_alpha_slider = true;
+  SetUpDiagram(params);
+  systems::Simulator<double> simulator(*diagram_);
+
+  // Simulate for a moment and publish to populate the visualizer.
+  simulator.AdvanceTo(0.1);
+  diagram_->ForcedPublish(*context_);
+
+  meshcat_->SetSliderValue("visualizer α", 0.5);
+
+  // Simulate and publish again to cause an update.
+  simulator.AdvanceTo(0.1);
+  diagram_->ForcedPublish(*context_);
 }
 
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
