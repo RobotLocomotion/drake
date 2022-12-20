@@ -56,7 +56,7 @@ class CspaceFreePolytope {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytope)
 
-  using FilteredCollsionPairs =
+  using IgnoredCollisionPairs =
       std::unordered_set<SortedPair<geometry::GeometryId>>;
 
   ~CspaceFreePolytope() {}
@@ -97,16 +97,6 @@ class CspaceFreePolytope {
 
   [[nodiscard]] const VectorX<symbolic::Variable>& y_slack() const {
     return y_slack_;
-  }
-
-  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
-  rationals_with_margin() const {
-    return rationals_with_margin_;
-  }
-
-  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
-  rationals_without_margin() const {
-    return rationals_with_margin_;
   }
 
   /**
@@ -228,7 +218,47 @@ class CspaceFreePolytope {
 
     // If the SOS in one thread fails, then don't launch any more threads.
     bool terminate_at_failure{true};
+
+    // If backoff_scale is not empty, then after solving the problem with an
+    // optimal cost, we "back-off" the program to solve a feasibility program.
+    // Namely we remove the cost and add a constraint cost(x) <=
+    // cost_upper_bound, where cost_upper_bound = (1 + backoff_scale) *
+    // optimal_cost if optimal_cost >= 0, and cost_upper_bound = (1 -
+    // backoff_scale) * optimal_cost if optimal_cost <= 0. This back-off
+    // technique is useful in bilinear alternation to ensure solutions in the
+    // strict interior of the set.
+    std::optional<double> backoff_scale{std::nullopt};
+
+    // The solver options used for the SOS program.
+    std::optional<solvers::SolverOptions> solver_options{std::nullopt};
   };
+
+  /** Finds the certificates that the C-space polytope {s | C*s<=d, s_lower <= s
+   * <= s_upper} is collision free.
+   *
+   * @param C The C-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}
+   * @param d The C-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}
+   * @param ignored_collision_pairs We will ignore the pair of geometries in
+   * `ignored_collision_pairs`.
+   * @param search_separating_margin If set to true, we will attempt to maximize
+   * the separating margin between each pair of geometries.
+   * @param[out] certificates Contains the certificate we successfully found for
+   * each pair of geometries. Notice that depending on `options`, the program
+   * could search for the certificate for each geometry pair in parallel, and
+   * will terminate the search once it fails to find the certificate for any
+   * pair.
+   * @retval success If true, then we have certified that the C-space polytope
+   * {s | C*s<=d, s_lower<=s<=s_upper} is collision free. Otherwise
+   * success=false.
+   */
+  [[nodiscard]] bool FindSeparationCertificateGivenPolytope(
+      const Eigen::Ref<const Eigen::MatrixXd>& C,
+      const Eigen::Ref<const Eigen::VectorXd>& d,
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      bool search_separating_margin,
+      const FindSeparationCertificateGivenPolytopeOptions& options,
+      std::unordered_map<SortedPair<geometry::GeometryId>,
+                         SeparationCertificateResult>* certificates) const;
 
  private:
   // Forward declaration the tester class. This tester class will expose the
@@ -271,10 +301,7 @@ class CspaceFreePolytope {
    the monomial basis for each body, and reuse the result for all the collision
    geometries on the same body pair.
    */
-  [[nodiscard]] std::unordered_map<SortedPair<multibody::BodyIndex>,
-                                   VectorX<symbolic::Monomial>>
-  CalcMonomialBasis(
-      const std::vector<PlaneSeparatesGeometries>& plane_geometries) const;
+  void CalcMonomialBasis();
 
   /**
    Constructs the program which searches for the plane separating a pair of
@@ -292,19 +319,13 @@ class CspaceFreePolytope {
    in s >= s_lower.
    @param[in] s_upper_redundant_indices. Store the indices of the redundant rows
    in s <= s_upper.
-   @param[in] map_body_to_monomial_basis The sos polynomial requires a
-   monomial basis. This data maps the pair of bodies (expressed body,
-   collision_body) to the monomial basis.
    */
   [[nodiscard]] SeparationCertificate ConstructPlaneSearchProgram(
       const PlaneSeparatesGeometries& plane_geometries,
       const VectorX<symbolic::Polynomial>& d_minus_Cs,
       const std::unordered_set<int>& C_redundant_indices,
       const std::unordered_set<int>& s_lower_redundant_indices,
-      const std::unordered_set<int>& s_upper_redundant_indices,
-      const std::unordered_map<SortedPair<multibody::BodyIndex>,
-                               VectorX<symbolic::Monomial>>&
-          map_body_to_monomial_basis) const;
+      const std::unordered_set<int>& s_upper_redundant_indices) const;
 
   // Impose the condition that |a(s)| <= 1 in the polytope
   // {s | C*s <= d, s_lower <= s <= s_upper}. where a(s) is a vector of
@@ -342,8 +363,8 @@ class CspaceFreePolytope {
    For each pair of geometries, find the certificate that the pair is collision
    free in the C-space region {s | C*s<=d, s_lower<=s<=s_upper}.
 
-   @retval certificates certificates[i] is the separation certificate for the
-   i'th pair in plane_geometries[i]. If we cannot certify or haven't certified
+   @retval certificates certificates[i] is the separation certificate for
+   a pair of geometries. If we cannot certify or haven't certified
    the separation for this pair, then certificates[i] contains std::nullopt.
    Note that when we run this function in parallel and
    options.terminate_at_failure=true, we will terminate all the remaining
@@ -355,12 +376,9 @@ class CspaceFreePolytope {
    */
   [[nodiscard]] std::vector<std::optional<SeparationCertificateResult>>
   FindSeparationCertificateGivenPolytope(
-      const std::vector<PlaneSeparatesGeometries>& plane_geometries,
+      const IgnoredCollisionPairs& ignored_collision_pairs,
       const Eigen::Ref<const Eigen::MatrixXd>& C,
-      const Eigen::Ref<const Eigen::VectorXd>& d,
-      const std::unordered_map<SortedPair<multibody::BodyIndex>,
-                               VectorX<symbolic::Monomial>>&
-          map_body_to_monomial_basis,
+      const Eigen::Ref<const Eigen::VectorXd>& d, bool search_separating_margin,
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
   multibody::RationalForwardKinematics rational_forward_kin_;
@@ -386,8 +404,12 @@ class CspaceFreePolytope {
   Eigen::VectorXd s_upper_;
   VectorX<symbolic::Polynomial> s_minus_s_lower_;
   VectorX<symbolic::Polynomial> s_upper_minus_s_;
-  std::vector<PlaneSeparatesGeometries> rationals_with_margin_;
-  std::vector<PlaneSeparatesGeometries> rationals_without_margin_;
+  std::vector<PlaneSeparatesGeometries> plane_geometries_w_margin_;
+  std::vector<PlaneSeparatesGeometries> plane_geometries_wo_margin_;
+
+  std::unordered_map<SortedPair<multibody::BodyIndex>,
+                     VectorX<symbolic::Monomial>>
+      map_body_to_monomial_basis_;
 };
 
 /**
