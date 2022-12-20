@@ -122,11 +122,14 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
     const T& density,
     const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
-  // Ensure volume is non-zero.
   const T volume = 1.0 / 6.0 * p.cross(q).dot(r);
-  if (volume <= 0) {
+
+  // Ensure volume is sufficiently far from zero. For a given ‖𝐩‖, ‖𝐪‖, ‖𝐫‖,
+  // the maximum volume = ‖𝐩‖ ‖𝐪‖ ‖𝐫‖ / 6 occurs when 𝐩, 𝐪, 𝐫 are orthogonal.
+  constexpr double kTolerance = 0.25 * std::numeric_limits<double>::epsilon();
+  if (volume * volume <= kTolerance * p.dot(p) * q.dot(q) * r.dot(r)) {
     std::string error_message = fmt::format("{}(): A solid tetrahedron's "
-      "volume is zero.", __func__);
+      "volume is zero or near zero.", __func__);
     throw std::logic_error(error_message);
   }
   // Note: Volume, mass, center of mass, and inertia formulas are from the

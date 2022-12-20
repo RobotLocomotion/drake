@@ -102,15 +102,15 @@ UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
   const Vector3<T> r_half = 0.5 * r;
   // TODO(Mitiguy) The G matrix below can be calculated more efficiently since
   //  G is symmetric (so we only need its upper or lower triangular part).
-  const Matrix3<T> G = -0.1 * p * (p + q_half + r_half).transpose()
-                      - 0.1 * q * (p_half + q + r_half).transpose()
-                      - 0.1 * r * (p_half + q_half + r).transpose();
-  const T Ixx = scalar + G(0, 0);
-  const T Iyy = scalar + G(1, 1);
-  const T Izz = scalar + G(2, 2);
-  const T Ixy = scalar + G(0, 1);
-  const T Ixz = scalar + G(0, 2);
-  const T Iyz = scalar + G(1, 2);
+  const Matrix3<T> G = p * (p + q_half + r_half).transpose()
+                     + q * (p_half + q + r_half).transpose()
+                     + r * (p_half + q_half + r).transpose();
+  const T Ixx = scalar - 0.1 * G(0, 0);
+  const T Iyy = scalar - 0.1 * G(1, 1);
+  const T Izz = scalar - 0.1 * G(2, 2);
+  const T Ixy = -0.1 * G(0, 1);
+  const T Ixz = -0.1 * G(0, 2);
+  const T Iyz = -0.1 * G(1, 2);
   return UnitInertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
 }
 
