@@ -54,8 +54,11 @@ def _main():
     assert defaults["pyplot"] is False
     args_parser.add_argument(
         "--pyplot", action="store_true",
-        help="Opens a pyplot figure for rendering using "
+        help="Open a pyplot figure for rendering using "
              "PlanarSceneGraphVisualizer.")
+    args_parser.add_argument(
+        "-r", "--enable_reload", action="store_true",
+        help="Enable reloading of the model.")
     # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
     #  options as additional arguments.
     assert defaults["visualize_frames"] is False
@@ -122,7 +125,10 @@ def _main():
         args_parser.error(f"File does not exist: {filename}")
 
     visualizer.AddModels(filename)
-    visualizer.Run(position=args.position, loop_once=args.loop_once)
+    if not args.loop_once and args.enable_reload:
+        visualizer.RunWithReload(position=args.position)
+    else:
+        visualizer.Run(position=args.position, loop_once=args.loop_once)
 
 
 if __name__ == '__main__':
