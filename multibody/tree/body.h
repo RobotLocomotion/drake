@@ -407,7 +407,7 @@ class Body : public MultibodyElement<T> {
     return parent_plant.EvalBodySpatialAccelerationInWorld(context, *this);
   }
 
-  /// Gets the sptatial force on `this` body B from `forces` as F_BBo_W:
+  /// Gets the spatial force on `this` body B from `forces` as F_BBo_W:
   /// applied at body B's origin Bo and expressed in world frame W.
   const SpatialForce<T>& GetForceInWorld(
       const systems::Context<T>&, const MultibodyForces<T>& forces) const {

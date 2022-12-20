@@ -32,6 +32,11 @@ class FeatherstoneMobilizer final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FeatherstoneMobilizer)
 
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = true;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
+
   FeatherstoneMobilizer(const Frame<T>& inboard_frame_F,
                         const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {
@@ -42,9 +47,6 @@ class FeatherstoneMobilizer final
              0, 1,
              0, 0;
   }
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return true; }
 
   const FeatherstoneMobilizer<T>& SetAngles(
       systems::Context<T>* context,

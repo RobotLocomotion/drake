@@ -1825,9 +1825,9 @@ class BodyNode : public MultibodyElement<T> {
   // - H_FM(q): the mobilizer hinge matrix that relates the mobilizer's
   //            generalized velocities v to the spatial velocity `V_FM` by
   //            `V_FM(q, v) = H_FM(q) * v`.
-  // - Hdot_FM(q): The time derivative of H_FM which is used to computing the
+  // - Hdot_FM(q,v): The time derivative of H_FM which is used to computing the
   //               M's spatial acceleration in frame F, expressed in F as:
-  //               `A_FM(q, v, v̇) = H_FM(q) * v̇ + Hdot_FM(q) * v`
+  //               `A_FM(q,v,v̇) = H_FM(q) * v̇ + Hdot_FM(q,v) * v`
   // - N(q): The kinematic coupling matrix describing the relationship between
   //         the rate of change of generalized coordinates and the generalized
   //         velocities by `q̇ = N(q) * v`.

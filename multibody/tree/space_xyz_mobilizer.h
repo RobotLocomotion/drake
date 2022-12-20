@@ -67,6 +67,11 @@ class SpaceXYZMobilizer final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpaceXYZMobilizer)
 
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = false;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
+
   // Constructor for a %SpaceXYZMobilizer between an inboard frame F
   // `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting
   // three rotational degree of freedom corresponding to angles θ₁, θ₂, θ₃ as
@@ -75,15 +80,10 @@ class SpaceXYZMobilizer final
                    const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  bool has_quaternion_dofs() const override { return false; }
-
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return false; }
 
   // Retrieves from `context` the three space x-y-z angles θ₁, θ₂, θ₃ which
   // describe the state for `this` mobilizer as documented in this class's

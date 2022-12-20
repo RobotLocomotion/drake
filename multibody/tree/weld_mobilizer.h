@@ -26,6 +26,11 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0, WeldMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer)
 
+  static constexpr bool kCanRotate = false;
+  static constexpr bool kCanTranslate = false;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
+
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M`.
   // @param[in] X_FM Pose of `outboard_frame_M` in the `inboard_frame_F`.
@@ -33,8 +38,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0, WeldMobilizer> {
                 const Frame<T>& outboard_frame_M,
                 const math::RigidTransform<double>& X_FM) :
       MobilizerBase(inboard_frame_F, outboard_frame_M), X_FM_(X_FM) {}
-
-  double just_testing() const {return 1.23;}
 
   // @retval X_FM The pose of the outboard frame M in the inboard frame F.
   const math::RigidTransform<double>& get_X_FM() const { return X_FM_; }
@@ -85,9 +88,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0, WeldMobilizer> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const final;
-
-  bool can_rotate() const final    { return false; }
-  bool can_translate() const final { return false; }
 
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
