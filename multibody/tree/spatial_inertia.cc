@@ -18,6 +18,12 @@ SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(const T& density,
     const T& lx, const T& ly, const T& lz) {
+  // Ensure lx, ly, lz are positive.
+  if (lx <= 0 || ly <= 0 || lz <= 0) {
+    std::string error_message = fmt::format("{}(): A solid box's "
+      "length, width, or height is negative or zero.", __func__);
+    throw std::logic_error(error_message);
+  }
   const T volume = lx * ly * lz;
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
@@ -28,18 +34,22 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(const T& density,
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(const T& density,
     const T& r, const T& l, const Vector3<T>& unit_vector) {
+  // Ensure r and l are positive.
+  if (r <= 0 || l <= 0) {
+    std::string error_message = fmt::format("{}(): A solid capsule's "
+      "radius or length is negative or zero.", __func__);
+    throw std::logic_error(error_message);
+  }
   // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
   // UnitInertia::SolidCapsule() normalizes unit_vector before its use.
   using std::abs;
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
   if (abs(unit_vector.norm() - 1) > kTolerance) {
     // ‖unit_vector‖ is not within 6 bits of 1.0 (2^6 = 64).
-    std::string error_message = fmt::format(
-      "{}(): The unit_vector argument is not a unit vector. "
-      "Consider normalizing it.", __func__);
-      throw std::logic_error(error_message);
+    std::string error_message = fmt::format("{}(): The unit_vector argument "
+      "is not a unit vector. Consider normalizing it.", __func__);
+    throw std::logic_error(error_message);
   }
-
   const T pi_r_squared = M_PI * r * r;
   const T volume = 4.0 / 3.0 * pi_r_squared * r +  pi_r_squared * l;
   const T mass = density * volume;
@@ -52,23 +62,81 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(const T& density,
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(const T& density,
     const T& r, const T& l, const Vector3<T>& unit_vector) {
+  // Ensure r and l are positive.
+  if (r <= 0 || l <= 0) {
+    std::string error_message = fmt::format("{}(): A solid cylinder's "
+      "radius or length is negative or zero.", __func__);
+    throw std::logic_error(error_message);
+  }
   // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
   // UnitInertia::SolidCylinder() normalizes unit_vector before its use.
   using std::abs;
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
   if (abs(unit_vector.norm() - 1) > kTolerance) {
     // ‖unit_vector‖ is not within 6 bits of 1.0 (2^6 = 64).
-    std::string error_message = fmt::format(
-      "{}(): The unit_vector argument is not a unit vector. "
-      "Consider normalizing it.", __func__);
-      throw std::logic_error(error_message);
+    std::string error_message = fmt::format("{}(): The unit_vector argument "
+      "is not a unit vector. Consider normalizing it.", __func__);
+    throw std::logic_error(error_message);
   }
-
   const T volume = M_PI * r * r * l;
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCylinder(r, l, unit_vector);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(const T& density,
+    const T& a, const T& b, const T& c) {
+  // Ensure a, b, c are positive.
+  if (a <= 0 || b <= 0 || c <= 0) {
+    std::string error_message = fmt::format("{}(): A solid ellipsoid's "
+      "semi-diameter is negative or zero.", __func__);
+    throw std::logic_error(error_message);
+  }
+  const T volume = 4.0 * M_PI / 3.0 * a * b * c;
+  const T mass = density * volume;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidEllipsoid(a, b, c);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(const T& density,
+    const T& r) {
+  // Ensure r is positive.
+  if (r <= 0) {
+    std::string error_message = fmt::format("{}(): A solid sphere's "
+      "radius is negative or zero.", __func__);
+    throw std::logic_error(error_message);
+  }
+  const T volume = 4.0 * M_PI / 3.0 * r * r * r;
+  const T mass = density * volume;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidSphere(r);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
+    const T& density,
+    const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
+  // Ensure volume is non-zero.
+  const T volume = 1.0 / 6.0 * p.cross(q).dot(r);
+  if (volume <= 0) {
+    std::string error_message = fmt::format("{}(): A solid tetrahedron's "
+      "volume is zero.", __func__);
+    throw std::logic_error(error_message);
+  }
+  // Note: Volume, mass, center of mass, and inertia formulas are from the
+  // mass/inertia appendix in Mitiguy[2017].
+  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
+  //                   For professional engineers and scientists,"
+  //                   Available at www.MotionGenesis.com
+  const T mass = density * volume;
+  const Vector3<T> p_BoBcm_B = 0.25 * (p + q + r);
+  UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidTetrahedronAboutVertex(p, q, r);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 

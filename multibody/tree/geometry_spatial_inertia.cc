@@ -49,13 +49,8 @@ class SpatialInertiaCalculator final : public ShapeReifier {
   }
 
   void ImplementGeometry(const geometry::Ellipsoid& ellipsoid, void*) final {
-    const double volume =
-        4.0 * M_PI / 3.0 * ellipsoid.a() * ellipsoid.b() * ellipsoid.c();
-    const double mass = volume * density_;
-    const Vector3d p_SoScm_S = Vector3d::Zero();
-    const UnitInertia<double> G_SSo_S = UnitInertia<double>::SolidEllipsoid(
-        ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
-    spatial_inertia_ = SpatialInertia<double>{mass, p_SoScm_S, G_SSo_S};
+    spatial_inertia_ = SpatialInertia<double>::SolidEllipsoidWithDensity(
+        density_, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
   }
 
   void ImplementGeometry(const geometry::HalfSpace&, void*) final {
@@ -74,12 +69,8 @@ class SpatialInertiaCalculator final : public ShapeReifier {
   }
 
   void ImplementGeometry(const geometry::Sphere& sphere, void*) final {
-    const double volume = 4.0 * M_PI / 3.0 * pow(sphere.radius(), 3);
-    const double mass = volume * density_;
-    const Vector3d p_SoScm_S = Vector3d::Zero();
-    const UnitInertia<double> G_SSo_S =
-        UnitInertia<double>::SolidSphere(sphere.radius());
-    spatial_inertia_ = SpatialInertia<double>{mass, p_SoScm_S, G_SSo_S};
+    spatial_inertia_ = SpatialInertia<double>::SolidSphereWithDensity(
+        density_, sphere.radius());
   }
 
   template <typename MeshType>
