@@ -252,19 +252,13 @@ class RationalForwardKinematics {
       const Eigen::Ref<const Eigen::VectorXd>& q_star, BodyIndex parent,
       BodyIndex child, const Pose<symbolic::Polynomial>& X_AP) const;
 
-  /*
-   * Determines whether the current joint is revolute.
-   */
+  /* Determines whether the current joint is revolute. */
   bool IsRevolute(const internal::Mobilizer<double>& mobilizer) const;
 
-  /*
-   * Determines whether the current joint is a weld.
-   */
+  /* Determines whether the current joint is a weld. */
   bool IsWeld(const internal::Mobilizer<double>& mobilizer) const;
 
-  /*
-   * Determines whether the current joint is prismatic.
-   */
+  /* Determines whether the current joint is prismatic. */
   bool IsPrismatic(const internal::Mobilizer<double>& mobilizer) const;
 
   const MultibodyPlant<double>& plant_;

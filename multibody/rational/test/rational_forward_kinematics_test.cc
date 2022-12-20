@@ -379,7 +379,6 @@ TEST_F(KinematicTreeTest, TestSAndQConversionSymbolic) {
               return env;
             };
 
-        // clang-format on
         for (int r = 0; r < test_points.rows(); ++r) {
           symbolic::Environment env = build_env(test_points.row(r));
           for (int i = 0; i < q_star.size(); ++i) {
