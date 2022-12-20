@@ -4,7 +4,6 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
-#include "drake/multibody/tree/mobilizer.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
@@ -55,42 +54,6 @@ RationalForwardKinematics::Pose<Scalar2> CalcChildPose(
   X_AC.rotation = R_AM * R_MC;
   X_AC.position = R_AM * p_MC + p_AM;
   return X_AC;
-}
-
-// TODO(hongkai.dai): determine the joint type through a Reifier.
-bool IsRevolute(const internal::Mobilizer<double>& mobilizer) {
-  const bool is_revolute =
-      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
-       mobilizer.can_rotate() && !mobilizer.can_translate());
-  if (is_revolute) {
-    DRAKE_THROW_UNLESS(dynamic_cast<const internal::RevoluteMobilizer<double>*>(
-                           &mobilizer) != nullptr);
-  }
-  return is_revolute;
-}
-
-// TODO(hongkai.dai): determine the joint type through a Reifier.
-bool IsWeld(const internal::Mobilizer<double>& mobilizer) {
-  const bool is_weld =
-      (mobilizer.num_positions() == 0 && mobilizer.num_velocities() == 0 &&
-       !mobilizer.can_rotate() && !mobilizer.can_translate());
-  if (is_weld) {
-    DRAKE_THROW_UNLESS(dynamic_cast<const internal::WeldMobilizer<double>*>(
-                           &mobilizer) != nullptr);
-  }
-  return is_weld;
-}
-
-bool IsPrismatic(const internal::Mobilizer<double>& mobilizer) {
-  const bool is_prismatic =
-      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
-       !mobilizer.can_rotate() && mobilizer.can_translate());
-  if (is_prismatic) {
-    DRAKE_THROW_UNLESS(
-        dynamic_cast<const internal::PrismaticMobilizer<double>*>(&mobilizer) !=
-        nullptr);
-  }
-  return is_prismatic;
 }
 }  // namespace
 
@@ -182,31 +145,6 @@ RationalForwardKinematics::ConvertMultilinearPolynomialToRationalFunction(
           s_variables_, one_plus_s_angles_squared_, two_s_angles_,
           one_minus_s_angles_squared_);
   return e_rational;
-}
-
-Eigen::VectorXd RationalForwardKinematics::ComputeSValue(
-    const Eigen::Ref<const Eigen::VectorXd>& q_val,
-    const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
-  Eigen::VectorXd s_val(s_.size());
-  for (int i = 0; i < s_val.size(); ++i) {
-    const internal::Mobilizer<double>& mobilizer =
-        GetInternalTree(plant_).get_mobilizer(
-            map_s_to_mobilizer_.at(s_[i].get_id()));
-    // the mobilizer cannot be a weld joint since weld joint doesn't introduce a
-    // variable into s_.
-    if (IsRevolute(mobilizer)) {
-      const int q_index = mobilizer.position_start_in_q();
-      s_val(i) = std::tan((q_val(q_index) - q_star_val(q_index)) / 2);
-    } else if (IsPrismatic(mobilizer)) {
-      const int q_index = mobilizer.position_start_in_q();
-      s_val(i) = q_val(q_index) - q_star_val(q_index);
-    } else {
-      // Successful construction guarantees nothing but supported mobilizer
-      // types.
-      DRAKE_UNREACHABLE();
-    }
-  }
-  return s_val;
 }
 
 template <typename T>
@@ -368,6 +306,46 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
   // Successful construction guarantess that all supported mobilizers are
   // handled.
   DRAKE_UNREACHABLE();
+}
+
+// TODO(hongkai.dai): determine the joint type through a Reifier.
+bool RationalForwardKinematics::IsRevolute(
+    const internal::Mobilizer<double>& mobilizer) const {
+  const bool is_revolute =
+      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
+       mobilizer.can_rotate() && !mobilizer.can_translate());
+  if (is_revolute) {
+    DRAKE_THROW_UNLESS(dynamic_cast<const internal::RevoluteMobilizer<double>*>(
+                           &mobilizer) != nullptr);
+  }
+  return is_revolute;
+}
+
+// TODO(hongkai.dai): determine the joint type through a Reifier.
+bool RationalForwardKinematics::IsWeld(
+    const internal::Mobilizer<double>& mobilizer) const {
+  const bool is_weld =
+      (mobilizer.num_positions() == 0 && mobilizer.num_velocities() == 0 &&
+       !mobilizer.can_rotate() && !mobilizer.can_translate());
+  if (is_weld) {
+    DRAKE_THROW_UNLESS(dynamic_cast<const internal::WeldMobilizer<double>*>(
+                           &mobilizer) != nullptr);
+  }
+  return is_weld;
+}
+
+// TODO(hongkai.dai): determine the joint type through a Reifier.
+bool RationalForwardKinematics::IsPrismatic(
+    const internal::Mobilizer<double>& mobilizer) const {
+  const bool is_prismatic =
+      (mobilizer.num_positions() == 1 && mobilizer.num_velocities() == 1 &&
+       !mobilizer.can_rotate() && mobilizer.can_translate());
+  if (is_prismatic) {
+    DRAKE_THROW_UNLESS(
+        dynamic_cast<const internal::PrismaticMobilizer<double>*>(&mobilizer) !=
+        nullptr);
+  }
+  return is_prismatic;
 }
 
 }  // namespace multibody
