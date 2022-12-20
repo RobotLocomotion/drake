@@ -249,7 +249,9 @@ CspaceFreePolytope::CspaceFreePolytope(
       link_geometries_{GetCollisionGeometries(*plant, *scene_graph)},
       plane_order_{plane_order},
       s_set_{rational_forward_kin_.s()},
-      q_star_{q_star} {
+      q_star_{q_star},
+      rationals_with_margin_{GenerateRationals(true)},
+      rationals_without_margin_{GenerateRationals(false)} {
   // Create separating planes.
   // collision_pairs maps each pair of body to the pair of collision geometries
   // on that pair of body.
@@ -320,7 +322,6 @@ CspaceFreePolytope::CspaceFreePolytope(
 }
 
 std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
-    const CspaceFreePolytope::FilteredCollsionPairs& filtered_collision_pairs,
     bool search_separating_margin) const {
   std::vector<PlaneSeparatesGeometries> ret;
   // There can be multiple geometries on the same pair, hence the body pose will
@@ -335,79 +336,75 @@ std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
        plane_index < static_cast<int>(separating_planes_.size());
        ++plane_index) {
     const auto& separating_plane = separating_planes_[plane_index];
-    if (filtered_collision_pairs.count(
-            SortedPair(separating_plane.positive_side_geometry->id(),
-                       separating_plane.negative_side_geometry->id())) == 0) {
-      // Compute X_AB for both side of the geometries.
-      std::vector<symbolic::RationalFunction> positive_side_rationals;
-      std::vector<symbolic::RationalFunction> negative_side_rationals;
-      std::vector<VectorX<symbolic::Polynomial>> unit_length_vectors;
-      std::optional<symbolic::Variable> separating_margin = std::nullopt;
-      if (search_separating_margin) {
-        separating_margin.emplace(symbolic::Variable("margin"));
+    // Compute X_AB for both side of the geometries.
+    std::vector<symbolic::RationalFunction> positive_side_rationals;
+    std::vector<symbolic::RationalFunction> negative_side_rationals;
+    std::vector<VectorX<symbolic::Polynomial>> unit_length_vectors;
+    std::optional<symbolic::Variable> separating_margin = std::nullopt;
+    if (search_separating_margin) {
+      separating_margin.emplace(symbolic::Variable("margin"));
+    }
+    for (const PlaneSide plane_side :
+         {PlaneSide::kPositive, PlaneSide::kNegative}) {
+      const CollisionGeometry* link_geometry =
+          separating_plane.geometry(plane_side);
+
+      const BodyPair expressed_to_link(separating_plane.expressed_body,
+                                       link_geometry->body_index());
+      auto it = body_pair_to_X_AB_multilinear.find(expressed_to_link);
+      if (it == body_pair_to_X_AB_multilinear.end()) {
+        it = body_pair_to_X_AB_multilinear.emplace_hint(
+            it, expressed_to_link,
+            rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
+                q_star_, link_geometry->body_index(),
+                separating_plane.expressed_body));
       }
-      for (const PlaneSide plane_side :
-           {PlaneSide::kPositive, PlaneSide::kNegative}) {
-        const CollisionGeometry* link_geometry =
-            separating_plane.geometry(plane_side);
+      const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
+          X_AB_multilinear = it->second;
+      std::optional<VectorX<symbolic::Polynomial>> unit_length_vec;
+      auto& rationals = plane_side == PlaneSide::kPositive
+                            ? positive_side_rationals
+                            : negative_side_rationals;
+      link_geometry->OnPlaneSide(separating_plane.a, separating_plane.b,
+                                 X_AB_multilinear, rational_forward_kin_,
+                                 separating_margin, plane_side, &rationals,
+                                 &unit_length_vec);
 
-        const BodyPair expressed_to_link(separating_plane.expressed_body,
-                                         link_geometry->body_index());
-        auto it = body_pair_to_X_AB_multilinear.find(expressed_to_link);
-        if (it == body_pair_to_X_AB_multilinear.end()) {
-          it = body_pair_to_X_AB_multilinear.emplace_hint(
-              it, expressed_to_link,
-              rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
-                  q_star_, link_geometry->body_index(),
-                  separating_plane.expressed_body));
-        }
-        const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
-            X_AB_multilinear = it->second;
-        std::optional<VectorX<symbolic::Polynomial>> unit_length_vec;
-        auto& rationals = plane_side == PlaneSide::kPositive
-                              ? positive_side_rationals
-                              : negative_side_rationals;
-        link_geometry->OnPlaneSide(separating_plane.a, separating_plane.b,
-                                   X_AB_multilinear, rational_forward_kin_,
-                                   separating_margin, plane_side, &rationals,
-                                   &unit_length_vec);
-
-        if (unit_length_vec.has_value()) {
-          if (unit_length_vectors.empty()) {
-            unit_length_vectors.push_back(unit_length_vec.value());
-          } else {
-            // The unit length vector for the positive side geometry might be
-            // the same as the unit length vector for the negative side
-            // geometry, for example if both geometries are spheres. So we check
-            // if unit_length_vec is the same as the one in unit_length_vectors;
-            // if they are the same, then we don't add it.
-            bool existing_unit_length_vec = false;
-            for (const auto& vec : unit_length_vectors) {
-              bool match = true;
-              if (vec.rows() == unit_length_vec->rows()) {
-                for (int i = 0; i < vec.rows(); ++i) {
-                  if (!vec(i).EqualTo((*unit_length_vec)(i))) {
-                    match = false;
-                    break;
-                  }
+      if (unit_length_vec.has_value()) {
+        if (unit_length_vectors.empty()) {
+          unit_length_vectors.push_back(unit_length_vec.value());
+        } else {
+          // The unit length vector for the positive side geometry might be
+          // the same as the unit length vector for the negative side
+          // geometry, for example if both geometries are spheres. So we check
+          // if unit_length_vec is the same as the one in unit_length_vectors;
+          // if they are the same, then we don't add it.
+          bool existing_unit_length_vec = false;
+          for (const auto& vec : unit_length_vectors) {
+            bool match = true;
+            if (vec.rows() == unit_length_vec->rows()) {
+              for (int i = 0; i < vec.rows(); ++i) {
+                if (!vec(i).EqualTo((*unit_length_vec)(i))) {
+                  match = false;
+                  break;
                 }
-              } else {
-                match = false;
               }
-              if (match) {
-                existing_unit_length_vec = true;
-                break;
-              }
+            } else {
+              match = false;
             }
-            if (!existing_unit_length_vec) {
-              unit_length_vectors.push_back(unit_length_vec.value());
+            if (match) {
+              existing_unit_length_vec = true;
+              break;
             }
+          }
+          if (!existing_unit_length_vec) {
+            unit_length_vectors.push_back(unit_length_vec.value());
           }
         }
       }
-      ret.emplace_back(positive_side_rationals, negative_side_rationals,
-                       unit_length_vectors, plane_index, separating_margin);
     }
+    ret.emplace_back(positive_side_rationals, negative_side_rationals,
+                     unit_length_vectors, plane_index, separating_margin);
   }
   return ret;
 }
@@ -765,6 +762,7 @@ CspaceFreePolytope::AddUnitLengthConstraint(
 
 std::vector<std::optional<CspaceFreePolytope::SeparationCertificateResult>>
 CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
+    const FilteredCollsionPairs& filtered_collision_pairs,
     const std::vector<PlaneSeparatesGeometries>& plane_geometries,
     const Eigen::Ref<const Eigen::MatrixXd>& C,
     const Eigen::Ref<const Eigen::VectorXd>& d,
@@ -787,32 +785,32 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
 
   // This lambda function formulates and solves a smal SOS program for each pair
   // of geometries.
-  auto solve_small_sos =
-      [this, &plane_geometries, &C, &d, &d_minus_Cs, &C_redundant_indices,
-       &s_lower_redundant_indices, &s_upper_redundant_indices,
-       &map_body_to_monomial_basis, &options, &is_success,
-       &ret](int plane_count) {
-        auto certificate = this->ConstructPlaneSearchProgram(
-            plane_geometries[plane_count], d_minus_Cs, C_redundant_indices,
-            s_lower_redundant_indices, s_upper_redundant_indices,
-            map_body_to_monomial_basis);
-        auto solver = solvers::MakeSolver(options.solver_id);
-        solvers::MathematicalProgramResult result;
-        solver->Solve(*(certificate.prog), std::nullopt, std::nullopt, &result);
-        if (result.is_success()) {
-          const int plane_index = plane_geometries[plane_count].plane_index;
-          ret[plane_count].emplace(
-              GetSolution(plane_index, C, d, certificate,
-                          plane_geometries[plane_count].separating_margin,
-                          separating_planes_[plane_index].a,
-                          separating_planes_[plane_index].b, result));
-          is_success[plane_count].emplace(true);
-        } else {
-          ret[plane_count].reset();
-          is_success[plane_count].emplace(false);
-        }
-        return plane_count;
-      };
+  auto solve_small_sos = [this, &plane_geometries, &C, &d, &d_minus_Cs,
+                          &C_redundant_indices, &s_lower_redundant_indices,
+                          &s_upper_redundant_indices,
+                          &map_body_to_monomial_basis, &options, &is_success,
+                          &ret](int plane_count) {
+    auto certificate = this->ConstructPlaneSearchProgram(
+        plane_geometries[plane_count], d_minus_Cs, C_redundant_indices,
+        s_lower_redundant_indices, s_upper_redundant_indices,
+        map_body_to_monomial_basis);
+    auto solver = solvers::MakeSolver(options.solver_id);
+    solvers::MathematicalProgramResult result;
+    solver->Solve(*(certificate.prog), std::nullopt, std::nullopt, &result);
+    if (result.is_success()) {
+      const int plane_index = plane_geometries[plane_count].plane_index;
+      ret[plane_count].emplace(
+          GetSolution(plane_index, C, d, certificate,
+                      plane_geometries[plane_count].separating_margin,
+                      separating_planes_[plane_index].a,
+                      separating_planes_[plane_index].b, result));
+      is_success[plane_count].emplace(true);
+    } else {
+      ret[plane_count].reset();
+      is_success[plane_count].emplace(false);
+    }
+    return plane_count;
+  };
 
   const int num_threads =
       options.num_threads > 0
