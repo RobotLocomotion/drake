@@ -132,8 +132,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
       "volume is zero or near zero.", __func__);
     throw std::logic_error(error_message);
   }
-  // Note: Volume, mass, center of mass, and inertia formulas are from the
-  // mass/inertia appendix in Mitiguy[2017].
+  // Note: Tetrahedon volume, mass, center of mass, and inertia formulas are
+  // from the mass/inertia appendix in
   // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
   //                   For professional engineers and scientists,"
   //                   Available at www.MotionGenesis.com
