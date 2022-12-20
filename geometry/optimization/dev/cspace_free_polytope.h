@@ -56,7 +56,7 @@ class CspaceFreePolytope {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytope)
 
-  using FilteredCollsionPairs =
+  using IgnoredCollisionPairs =
       std::unordered_set<SortedPair<geometry::GeometryId>>;
 
   ~CspaceFreePolytope() {}
@@ -103,13 +103,13 @@ class CspaceFreePolytope {
    Generate all the conditions (certain rationals being non-negative, and
    certain vectors with length <= 1) such that the robot configuration is
    collision free.
-   @param filtered_collision_pairs
+   @param ignored_collision_pairs
    @param search_separating_margin If set to true, then when we search for the
    separating planes, we will attempt to maximize the margin of the separating
    planes.
    */
   [[nodiscard]] std::vector<PlaneSeparatesGeometries> GenerateRationals(
-      const CspaceFreePolytope::FilteredCollsionPairs& filtered_collision_pairs,
+      const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs,
       bool search_separating_margin) const;
 
   /**
@@ -231,7 +231,46 @@ class CspaceFreePolytope {
 
     // If the SOS in one thread fails, then don't launch any more threads.
     bool terminate_at_failure{true};
+
+    // If backoff_scale is not empty, then after solving the problem with an
+    // optimal cost, we "back-off" the program to solve a feasibility program.
+    // Namely we remove the cost with a constraint cost(x) <= cost_upper_bound,
+    // where cost_upper_bound = (1 + backoff_scale) * optimal_cost if
+    // optimal_cost >= 0, and cost_upper_bound = (1 - backoff_scale) *
+    // optimal_cost if optimal_cost <= 0. This back-off technique is useful in
+    // bilinear alternation.
+    std::optional<double> backoff_scale{std::nullopt};
+
+    // The solver options used for the SOS program.
+    std::optional<solvers::SolverOptions> solver_options{std::nullopt};
   };
+
+  /** Finds the certificates that the C-space polytope {s | C*s<=d, s_lower <= s
+   * <= s_upper} is collision free.
+   *
+   * @param C The C-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}
+   * @param d The C-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}
+   * @param ignored_collision_pairs We will ignore the pair of geometries in
+   * `ignored_collision_pairs`.
+   * @param search_separating_margin If set to true, we will attempt to maximize
+   * the separating margin between each pair of geometries.
+   * @param[out] certificates Contains the certificate we successfully found for
+   * each pair of geometries. Notice that depending on `options`, the program
+   * could search for the certificate for each geometry pair in parallel, and
+   * will terminate the search once it fails to find the certificate for any
+   * pair.
+   * @retval success If true, then we have certified that the C-space polytope
+   * {s | C*s<=d, s_lower<=s<=s_upper} is collision free. Otherwise
+   * success=false.
+   */
+  [[nodiscard]] bool FindSeparationCertificateGivenPolytope(
+      const Eigen::Ref<const Eigen::MatrixXd>& C,
+      const Eigen::Ref<const Eigen::VectorXd>& d,
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      bool search_separating_margin,
+      const FindSeparationCertificateGivenPolytopeOptions& options,
+      std::unordered_map<SortedPair<geometry::GeometryId>,
+                         SeparationCertificateResult>* certificates) const;
 
  private:
   // Forward declaration the tester class. This tester class will expose the

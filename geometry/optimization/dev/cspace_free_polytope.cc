@@ -237,6 +237,37 @@ bool IsFutureReady(const std::future<T>& future) {
   ret.b = result.GetSolution(b);
   return ret;
 }
+
+solvers::MathematicalProgramResult SolveWithBackoff(
+    solvers::MathematicalProgram* prog, std::optional<double> backoff_scale,
+    const std::optional<solvers::SolverOptions>& solver_options,
+    const solvers::SolverId& solver_id) {
+  DRAKE_DEMAND(prog->quadratic_costs().size() == 0);
+  auto solver = solvers::MakeSolver(solver_id);
+  solvers::MathematicalProgramResult result;
+  solver->Solve(*prog, std::nullopt, solver_options, &result);
+  if (result.is_success()) {
+    if (backoff_scale.has_value() && !(prog->linear_costs().empty())) {
+      DRAKE_DEMAND(prog->linear_costs().size() == 1);
+      const double cost_val = result.get_optimal_cost();
+      const double cost_upper_bound =
+          cost_val > 0 ? (1 + backoff_scale.value()) * cost_val
+                       : (1 - backoff_scale.value()) * cost_val;
+      prog->AddLinearConstraint(
+          prog->linear_costs()[0].evaluator()->a(), -kInf,
+          cost_upper_bound - prog->linear_costs()[0].evaluator()->b(),
+          prog->linear_costs()[0].variables());
+      prog->RemoveCost(prog->linear_costs()[0]);
+      solver->Solve(*prog, std::nullopt, solver_options, &result);
+      if (!result.is_success()) {
+        drake::log()->info("Failed in backoff.");
+      }
+    }
+  } else {
+    drake::log()->error("Failed before backoff.");
+  }
+  return result;
+}
 }  // namespace
 
 CspaceFreePolytope::CspaceFreePolytope(
@@ -320,7 +351,7 @@ CspaceFreePolytope::CspaceFreePolytope(
 }
 
 std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
-    const CspaceFreePolytope::FilteredCollsionPairs& filtered_collision_pairs,
+    const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs,
     bool search_separating_margin) const {
   std::vector<PlaneSeparatesGeometries> ret;
   // There can be multiple geometries on the same pair, hence the body pose will
@@ -335,7 +366,7 @@ std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
        plane_index < static_cast<int>(separating_planes_.size());
        ++plane_index) {
     const auto& separating_plane = separating_planes_[plane_index];
-    if (filtered_collision_pairs.count(
+    if (ignored_collision_pairs.count(
             SortedPair(separating_plane.positive_side_geometry->id(),
                        separating_plane.negative_side_geometry->id())) == 0) {
       // Compute X_AB for both side of the geometries.
@@ -787,32 +818,32 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
 
   // This lambda function formulates and solves a smal SOS program for each pair
   // of geometries.
-  auto solve_small_sos =
-      [this, &plane_geometries, &C, &d, &d_minus_Cs, &C_redundant_indices,
-       &s_lower_redundant_indices, &s_upper_redundant_indices,
-       &map_body_to_monomial_basis, &options, &is_success,
-       &ret](int plane_count) {
-        auto certificate = this->ConstructPlaneSearchProgram(
-            plane_geometries[plane_count], d_minus_Cs, C_redundant_indices,
-            s_lower_redundant_indices, s_upper_redundant_indices,
-            map_body_to_monomial_basis);
-        auto solver = solvers::MakeSolver(options.solver_id);
-        solvers::MathematicalProgramResult result;
-        solver->Solve(*(certificate.prog), std::nullopt, std::nullopt, &result);
-        if (result.is_success()) {
-          const int plane_index = plane_geometries[plane_count].plane_index;
-          ret[plane_count].emplace(
-              GetSolution(plane_index, C, d, certificate,
-                          plane_geometries[plane_count].separating_margin,
-                          separating_planes_[plane_index].a,
-                          separating_planes_[plane_index].b, result));
-          is_success[plane_count].emplace(true);
-        } else {
-          ret[plane_count].reset();
-          is_success[plane_count].emplace(false);
-        }
-        return plane_count;
-      };
+  auto solve_small_sos = [this, &plane_geometries, &C, &d, &d_minus_Cs,
+                          &C_redundant_indices, &s_lower_redundant_indices,
+                          &s_upper_redundant_indices,
+                          &map_body_to_monomial_basis, &options, &is_success,
+                          &ret](int plane_count) {
+    auto certificate = this->ConstructPlaneSearchProgram(
+        plane_geometries[plane_count], d_minus_Cs, C_redundant_indices,
+        s_lower_redundant_indices, s_upper_redundant_indices,
+        map_body_to_monomial_basis);
+    const auto result =
+        SolveWithBackoff(certificate.prog.get(), options.backoff_scale,
+                         options.solver_options, options.solver_id);
+    if (result.is_success()) {
+      const int plane_index = plane_geometries[plane_count].plane_index;
+      ret[plane_count].emplace(
+          GetSolution(plane_index, C, d, certificate,
+                      plane_geometries[plane_count].separating_margin,
+                      separating_planes_[plane_index].a,
+                      separating_planes_[plane_index].b, result));
+      is_success[plane_count].emplace(true);
+    } else {
+      ret[plane_count].reset();
+      is_success[plane_count].emplace(false);
+    }
+    return plane_count;
+  };
 
   const int num_threads =
       options.num_threads > 0
@@ -899,6 +930,48 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
     }
   }
   return ret;
+}
+
+bool CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
+    const Eigen::Ref<const Eigen::MatrixXd>& C,
+    const Eigen::Ref<const Eigen::VectorXd>& d,
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    bool search_separating_margin,
+    const CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions&
+        options,
+    std::unordered_map<SortedPair<geometry::GeometryId>,
+                       CspaceFreePolytope::SeparationCertificateResult>*
+        certificates) const {
+  const auto plane_geometries = this->GenerateRationals(
+      ignored_collision_pairs, search_separating_margin);
+  const auto d_minus_Cs = this->CalcDminusCs<double>(C, d);
+
+  std::unordered_set<int> C_redundant_indices;
+  std::unordered_set<int> s_lower_redundant_indices;
+  std::unordered_set<int> s_upper_redundant_indices;
+  this->FindRedundantInequalities(
+      C, d, s_lower_, s_upper_, 0., &C_redundant_indices,
+      &s_lower_redundant_indices, &s_upper_redundant_indices);
+  const auto map_body_to_monomial_basis =
+      this->CalcMonomialBasis(plane_geometries);
+
+  const auto certificates_vec = this->FindSeparationCertificateGivenPolytope(
+      plane_geometries, C, d, map_body_to_monomial_basis, options);
+
+  certificates->clear();
+  bool is_success = true;
+  for (const auto& certificate : certificates_vec) {
+    if (certificate.has_value()) {
+      const auto& plane = separating_planes_[certificate->plane_index];
+      certificates->emplace(
+          SortedPair<geometry::GeometryId>(plane.positive_side_geometry->id(),
+                                           plane.negative_side_geometry->id()),
+          std::move(certificate.value()));
+    } else {
+      is_success = false;
+    }
+  }
+  return is_success;
 }
 
 std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>
