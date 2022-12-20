@@ -6,6 +6,7 @@
 #include "drake/multibody/tree/prismatic_mobilizer.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/revolute_mobilizer.h"
+#include "drake/multibody/tree/screw_mobilizer.h"
 #include "drake/multibody/tree/space_xyz_floating_mobilizer.h"
 #include "drake/multibody/tree/space_xyz_mobilizer.h"
 #include "drake/multibody/tree/universal_mobilizer.h"
@@ -24,6 +25,8 @@ template <typename T>
 class PrismaticImpl : public MobilizerImpl<T, 1, 1, PrismaticMobilizer> {};
 template <typename T>
 class RevoluteImpl : public MobilizerImpl<T, 1, 1, RevoluteMobilizer> {};
+template <typename T>
+class ScrewImpl : public MobilizerImpl<T, 1, 1, ScrewMobilizer> {};
 template <typename T>
 class UniversalImpl : public MobilizerImpl<T, 2, 2, UniversalMobilizer> {};
 template <typename T>
@@ -47,6 +50,8 @@ DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::PrismaticImpl)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::RevoluteImpl)
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class ::drake::multibody::internal::ScrewImpl)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::multibody::internal::UniversalImpl)
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(

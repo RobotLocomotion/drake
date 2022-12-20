@@ -135,7 +135,7 @@ void QuaternionFloatingMobilizer<T>::set_random_position_distribution(
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
   } else {
-    positions = get_zero_position().template cast<symbolic::Expression>();
+    positions = this->get_zero_position().template cast<symbolic::Expression>();
   }
   positions.template segment<3>(4) = position;
   MobilizerBase::set_random_position_distribution(positions);
@@ -149,7 +149,7 @@ void QuaternionFloatingMobilizer<
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
   } else {
-    positions = get_zero_position().template cast<symbolic::Expression>();
+    positions = this->get_zero_position().template cast<symbolic::Expression>();
   }
   positions[0] = q_FM.w();
   positions.template segment<3>(1) = q_FM.vec();
@@ -209,16 +209,6 @@ QuaternionFloatingMobilizer<T>::set_translational_velocity(
   // Note: See storage order notes in get_translational_velocity().
   v.template tail<3>() = v_FM;
   return *this;
-}
-
-template <typename T>
-Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position()
-    const {
-  Vector<double, 7> q = Vector<double, 7>::Zero();
-  const Quaternion<double> quaternion = Quaternion<double>::Identity();
-  q[0] = quaternion.w();
-  q.template segment<3>(1) = quaternion.vec();
-  return q;
 }
 
 template <typename T>

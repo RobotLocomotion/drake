@@ -68,18 +68,16 @@ class SpaceXYZFloatingMobilizer final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpaceXYZFloatingMobilizer)
 
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = true;
+  static constexpr bool kIsFloating = true;
+  static constexpr bool kHasQuaternion = false;
+
   // Constructor for a SpaceXYZFloatingMobilizer between an inboard frame F
   // `inboard_frame_F` and an outboard frame M `outboard_frame_M`.
   SpaceXYZFloatingMobilizer(const Frame<T>& inboard_frame_F,
                             const Frame<T>& outboard_frame_M)
       : MobilizerBase(inboard_frame_F, outboard_frame_M) {}
-
-  bool is_floating() const override { return true; }
-
-  bool has_quaternion_dofs() const override { return false; }
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return true; }
 
   // Returns the generalized postions for this mobilizer stored in `context`.
   // Generalized positions q for this mobilizer are packed in exactly the

@@ -34,6 +34,11 @@ class QuaternionFloatingMobilizer final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer)
 
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = true;
+  static constexpr bool kIsFloating = true;
+  static constexpr bool kHasQuaternion = true;
+
   // Constructor for a %QuaternionFloatingMobilizer granting six degrees of
   // freedom to an outboard frame M with respect to an inboard frame F. The
   // orientation of frame M in F is represented by a quaternion `q_FM` while
@@ -47,17 +52,10 @@ class QuaternionFloatingMobilizer final
                 const Frame<T>& outboard_frame_M) :
       MobilizerBase(inboard_frame_F, outboard_frame_M) {}
 
-  bool is_floating() const override { return true; }
-
-  bool has_quaternion_dofs() const override { return true; }
-
   // Overloads to define the suffix names for the position and velocity
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return true; }
 
   // @name Methods to get and set the state for a QuaternionFloatingMobilizer
   // @{
@@ -226,10 +224,6 @@ class QuaternionFloatingMobilizer final
   // @}
 
  protected:
-  // Sets `state` to store a configuration in which M coincides with F (i.e.
-  // q_FM is the identity quaternion).
-  Vector<double, 7> get_zero_position() const final;
-
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
 

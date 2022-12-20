@@ -58,6 +58,11 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1, ScrewMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ScrewMobilizer)
 
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = true;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
+
   /* Constructor for a %ScrewMobilizer between an inboard frame F and
      an outboard frame M  granting one translational and one rotational degrees
      of freedom as described in this class's documentation.
@@ -88,9 +93,6 @@ class ScrewMobilizer final : public MobilizerImpl<T, 1, 1, ScrewMobilizer> {
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
-
-  bool can_rotate() const final { return true; }
-  bool can_translate() const final { return true; }
 
   /* @returns the normalized axis of motion as a unit vector.
    Since the measures of this axis in either frame F or M are the same (see

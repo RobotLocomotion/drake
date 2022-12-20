@@ -39,6 +39,11 @@ class RevoluteMobilizer final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer)
 
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = false;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
+
   // Constructor for a %RevoluteMobilizer between the inboard frame F
   // `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
   // single rotational degree of freedom about axis `axis_F` expressed in the
@@ -59,9 +64,6 @@ class RevoluteMobilizer final
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return false; }
 
   // @retval axis_F The rotation axis as a unit vector expressed in the inboard
   //                frame F.

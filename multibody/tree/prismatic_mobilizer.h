@@ -37,6 +37,11 @@ class PrismaticMobilizer final
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticMobilizer)
 
+  static constexpr bool kCanRotate = false;
+  static constexpr bool kCanTranslate = true;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
+
   // Constructor for a %PrismaticMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M` granting a single translational degree of freedom along
   // `axis_F`, expressed in the `inboard_frame_F`.
@@ -58,9 +63,6 @@ class PrismaticMobilizer final
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
-
-  bool can_rotate() const final    { return false; }
-  bool can_translate() const final { return true; }
 
   // @retval axis_F The translation axis as a unit vector expressed in the
   // inboard frame F.

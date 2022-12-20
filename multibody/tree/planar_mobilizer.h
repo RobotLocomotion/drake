@@ -37,6 +37,11 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3, PlanarMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarMobilizer)
 
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = true;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
+
   /* Constructor for a %PlanarMobilizer between an inboard frame F
    `inboard_frame_F` and an outboard frame M `outboard_frame_M` granting two
    translational and one rotational degrees of freedom as described in this
@@ -49,9 +54,6 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3, PlanarMobilizer> {
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return true; }
 
   /* Retrieves from `context` the two translations (x, y) which describe the
    position for `this` mobilizer as documented in this class's documentation.
