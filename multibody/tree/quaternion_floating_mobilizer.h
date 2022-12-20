@@ -29,7 +29,8 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
+class QuaternionFloatingMobilizer final
+    : public MobilizerImpl<T, 7, 6, QuaternionFloatingMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingMobilizer)
 
@@ -198,37 +199,36 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @name Mobilizer overrides
   // Refer to the Mobilizer class documentation for details.
   // @{
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override;
+  math::RigidTransform<T> CalcX_FM(const Vector<T, 7>& q) const;
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& v) const override;
+      const Eigen::Ref<const VectorX<T>>& v) const final;
 
   SpatialAcceleration<T> CalcAcrossMobilizerSpatialAcceleration(
       const systems::Context<T>& context,
-      const Eigen::Ref<const VectorX<T>>& vdot) const override;
+      const Eigen::Ref<const VectorX<T>>& vdot) const final;
 
   void ProjectSpatialForce(
       const systems::Context<T>& context,
       const SpatialForce<T>& F_Mo_F,
-      Eigen::Ref<VectorX<T>> tau) const override;
+      Eigen::Ref<VectorX<T>> tau) const final;
 
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
-      EigenPtr<VectorX<T>> qdot) const override;
+      EigenPtr<VectorX<T>> qdot) const final;
 
   void MapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
-      EigenPtr<VectorX<T>> v) const override;
+      EigenPtr<VectorX<T>> v) const final;
   // @}
 
  protected:
   // Sets `state` to store a configuration in which M coincides with F (i.e.
   // q_FM is the identity quaternion).
-  Vector<double, 7> get_zero_position() const override;
+  Vector<double, 7> get_zero_position() const final;
 
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
@@ -237,22 +237,16 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
                          EigenPtr<MatrixX<T>> Nplus) const final;
 
   std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
-      const MultibodyTree<double>& tree_clone) const override;
+      const MultibodyTree<double>& tree_clone) const final;
 
   std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
-      const MultibodyTree<AutoDiffXd>& tree_clone) const override;
+      const MultibodyTree<AutoDiffXd>& tree_clone) const final;
 
   std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
-      const MultibodyTree<symbolic::Expression>& tree_clone) const override;
+      const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  typedef MobilizerImpl<T, 7, 6> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
+  using MobilizerBase = MobilizerImpl<T, 7, 6, QuaternionFloatingMobilizer>;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 

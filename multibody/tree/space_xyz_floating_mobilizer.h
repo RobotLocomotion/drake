@@ -63,7 +63,8 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
+class SpaceXYZFloatingMobilizer final
+    : public MobilizerImpl<T, 6, 6, SpaceXYZFloatingMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpaceXYZFloatingMobilizer)
 
@@ -201,8 +202,7 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
   // frame F and the outboard frame M as a function of the configuration q
   // stored in `context`.
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override;
+  math::RigidTransform<T> CalcX_FM(const Vector<T, 6>& q) const;
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame M
   // measured and expressed in frame F as a function of the configuration stored
@@ -292,13 +292,7 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 6, 6> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, kNq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
+  using MobilizerBase = MobilizerImpl<T, 6, 6, SpaceXYZFloatingMobilizer>;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 

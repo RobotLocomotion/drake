@@ -21,7 +21,7 @@ namespace internal {
  about F's z-axis.
 
  The generalized coordinates for this mobilizer (x, y, θ) correspond to
- translations along the x and y axes of frame F and rotaition about the z-axis
+ translations along the x and y axes of frame F and rotation about the z-axis
  of frame F.
  Zero (x, y, θ) define the "zero configuration" which corresponds to frame F and
  M being coincident and aligned, see set_zero_state(). The translations (x, y)
@@ -33,7 +33,7 @@ namespace internal {
 
  @tparam_default_scalar */
 template <typename T>
-class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
+class PlanarMobilizer final : public MobilizerImpl<T, 3, 3, PlanarMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PlanarMobilizer)
 
@@ -126,8 +126,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
   /* Computes the across-mobilizer transform `X_FM(q)` between the inboard
    frame F and the outboard frame M as a function of the configuration q stored
    in `context`. */
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override;
+  math::RigidTransform<T> CalcX_FM(const Vector<T, 3>& q) const;
 
   /* Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
    M measured and expressed in frame F as a function of the configuration q
@@ -193,13 +192,7 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 3, 3> MobilizerBase;
-  /* Bring the handy number of position and velocities MobilizerImpl enums into
-   this class' scope. This is useful when writing mathematical expressions with
-   fixed-sized vectors since we can do things like Vector<T, nq>.
-   Operations with fixed-sized quantities can be optimized at compile time and
-   therefore they are highly preferred compared to the very slow dynamic sized
-   quantities. */
+  using MobilizerBase = MobilizerImpl<T, 3, 3, PlanarMobilizer>;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 

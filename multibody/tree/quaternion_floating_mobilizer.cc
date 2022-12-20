@@ -223,11 +223,7 @@ Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position()
 
 template <typename T>
 math::RigidTransform<T>
-QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
-
+QuaternionFloatingMobilizer<T>::CalcX_FM(const Vector<T, 7>& q) const {
   // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
   // The last 3 elements in q contain position from Fo to Mo.
   const Vector4<T> wxyz(q.template head<4>());

@@ -63,13 +63,6 @@ const PrismaticMobilizer<T>& PrismaticMobilizer<T>::set_translation_rate(
 }
 
 template <typename T>
-math::RigidTransform<T> PrismaticMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  return math::RigidTransform<T>(
-      get_translation(context) * translation_axis());
-}
-
-template <typename T>
 SpatialVelocity<T> PrismaticMobilizer<T>::CalcAcrossMobilizerSpatialVelocity(
     const systems::Context<T>&,
     const Eigen::Ref<const VectorX<T>>& v) const {

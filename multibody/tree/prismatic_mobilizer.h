@@ -32,7 +32,8 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
+class PrismaticMobilizer final
+    : public MobilizerImpl<T, 1, 1, PrismaticMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(PrismaticMobilizer)
 
@@ -103,12 +104,26 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       systems::Context<T> *context, const T& translation_dot) const;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
-  // frame F and the outboard frame M as a function of the translation distance
-  // along this mobilizer's axis (see translation_axis().)
-  // The generalized coordinate q for `this` mobilizer (the translation
-  // distance) is read from in `context`.
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const final;
+  // frame F and the outboard frame M as a function of the translation
+  // along this mobilizer's axis (@see translation_axis().)
+  //
+  // Note: this generates a full rigid transform from scratch. Since only
+  // the translation (not the rotation) can change, you can update an existing
+  // rigid transform much faster using FillX_FM().
+  //
+  // @param[in] q the translation as a 1-vector
+  // @param[out] X_FM transform
+  math::RigidTransform<T> CalcX_FM(const Vector<T, 1>& q) const {
+      return math::RigidTransform<T>(q[0] * translation_axis());
+  }
+
+  // @param[in] q the translation as a 1-vector
+  // @param[in,out] X_FM transform with already-identity rotation
+  void FillX_FM(const Vector<T, 1>& q,
+                math::RigidTransform<T>* X_FM) const {
+    DRAKE_ASSERT(X_FM->rotation().IsExactlyIdentity());
+    X_FM->set_translation(q[0] * translation_axis());
+  }
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   // M measured and expressed in frame F as a function of the translation taken
@@ -178,13 +193,7 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  typedef MobilizerImpl<T, 1, 1> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
+  using MobilizerBase = MobilizerImpl<T, 1, 1, PrismaticMobilizer>;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 
