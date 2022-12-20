@@ -92,6 +92,11 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
       const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
+  // Note: Tetrahedon volume, mass, center of mass, and inertia formulas are
+  // from the mass/inertia appendix in
+  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
+  //                   For professional engineers and scientists,"
+  //                   Available at www.MotionGenesis.com
   const Vector3<T> q_plus_r = q + r;
   const T p_dot_pqr = p.dot(p + q_plus_r);
   const T q_dot_qr  = q.dot(q_plus_r);
