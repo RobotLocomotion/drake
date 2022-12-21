@@ -12,6 +12,7 @@
 
 #include "drake/geometry/optimization/dev/collision_geometry.h"
 #include "drake/geometry/optimization/dev/separating_plane.h"
+#include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -192,8 +193,6 @@ class CspaceFreePolytope {
    */
   struct SeparationCertificateResult {
     int plane_index;
-    Eigen::MatrixXd C;
-    Eigen::VectorXd d;
     std::vector<SeparatingPlaneLagrangians> positive_side_lagrangians;
     std::vector<SeparatingPlaneLagrangians> negative_side_lagrangians;
     std::vector<UnitLengthLagrangians> unit_length_lagrangians;
@@ -259,6 +258,33 @@ class CspaceFreePolytope {
       const FindSeparationCertificateGivenPolytopeOptions& options,
       std::unordered_map<SortedPair<geometry::GeometryId>,
                          SeparationCertificateResult>* certificates) const;
+
+  /**
+   Adds the constraint that each column of s_inner_pts is in the polytope {s |
+   C*s<=d}.
+   */
+  void AddCspacePolytopeContainment(solvers::MathematicalProgram* prog,
+                                    const MatrixX<symbolic::Variable>& C,
+                                    const VectorX<symbolic::Variable>& d,
+                                    const Eigen::MatrixXd& s_inner_pts) const;
+
+  struct FindPolytopeGivenLagrangianOptions {
+    std::optional<double> backoff_scale{std::nullopt};
+
+    // We will maximize the cost ∏ᵢ (δᵢ + ε) where δᵢ is the margin from each
+    // face of the polytope {s | Cs<=d} to the inscribed ellipsoid, ε is
+    // ellipsoid_margin_epsilon, a small positive constant to make sure δᵢ + ε
+    // being strictly positive.
+    double ellipsoid_margin_epsilon{1E-5};
+
+    solvers::SolverId solver_id{solvers::MosekSolver::id()};
+
+    std::optional<solvers::SolverOptions> solver_options{std::nullopt};
+
+    // We can constrain the C-space polytope {s | C*s<=d, s_lower<=s<=s_upper}
+    // to contain some sampled s. Each column of s_inner_pts is a sample of s.
+    std::optional<Eigen::MatrixXd> s_inner_pts;
+  };
 
  private:
   // Forward declaration the tester class. This tester class will expose the
@@ -351,13 +377,20 @@ class CspaceFreePolytope {
   // ν₄(y, s)(1−yᵀy) is sos.
   // λ₁(y, s), λ₂(y, s), λ₃(y, s) are all sos.
   // ν₄(y, s) is a free polynomial.
-  [[nodiscard]] UnitLengthLagrangians AddUnitLengthConstraint(
+  //
+  // @param polytope_lagrangians If this is not std::nullopt, then we set λ₁(y,
+  // s) to be polytope_lagrangians, and don't need to impose the constraint
+  // λ₁(y, s) is sos. We use this optional polytope_lagrangians when we search
+  // for C and d, keeping the polytope Lagrangians fixed.
+  UnitLengthLagrangians AddUnitLengthConstraint(
       solvers::MathematicalProgram* prog,
       const VectorX<symbolic::Polynomial>& unit_length_vec,
       const VectorX<symbolic::Polynomial>& d_minus_Cs,
       const std::unordered_set<int>& C_redundant_indices,
       const std::unordered_set<int>& s_lower_redundant_indices,
-      const std::unordered_set<int>& s_upper_redundant_indices) const;
+      const std::unordered_set<int>& s_upper_redundant_indices,
+      const std::optional<VectorX<symbolic::Polynomial>>& polytope_lagrangians)
+      const;
 
   /**
    For each pair of geometries, find the certificate that the pair is collision
@@ -380,6 +413,70 @@ class CspaceFreePolytope {
       const Eigen::Ref<const Eigen::MatrixXd>& C,
       const Eigen::Ref<const Eigen::VectorXd>& d, bool search_separating_margin,
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
+
+  /** When we fix the Lagrangian multipliers and search for the C-space polytope
+  {s | C*s<=d, s_lower<=s<=s_upper}, we count the total size of all Gram
+  matrices in the SOS program.
+  */
+  [[nodiscard]] int GetGramVarSizeForPolytopeSearchProgram(
+      const IgnoredCollisionPairs& ignored_collision_pairs) const;
+
+  /**
+   Constructs a program to search for the C-space polytope {s | C*s<=d,
+   s_lower<=s<=s_upper} such that this polytope is collision free.
+   This program takes C and d as decision variables, and searches for the
+   separating planes between each pair of geometries.
+   Note that this program doesn't contain any cost yet.
+   @param certificates_vec The return of
+   FindSeparationCertificateGivenPolytope().
+   @param gram_total_size The return of
+   GetGramVarSizeForPolytopeSearchProgram().
+   */
+  [[nodiscard]] std::unique_ptr<solvers::MathematicalProgram>
+  InitializePolytopeSearchProgram(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const MatrixX<symbolic::Variable>& C,
+      const VectorX<symbolic::Variable>& d,
+      const VectorX<symbolic::Polynomial>& d_minus_Cs,
+      const std::vector<std::optional<SeparationCertificateResult>>&
+          certificates_vec,
+      int gram_total_size) const;
+
+  /** Adds the constraint that the ellipsoid {Q*u+s₀ | uᵀu≤1} is inside the
+     polytope {s | C*s <= d} with margin δ. Namely for the i'th face cᵢᵀs≤dᵢ, we
+     have |cᵢᵀQ|₂ ≤ dᵢ − cᵢᵀs₀ − δᵢ and |cᵢ|₂≤1
+     Note that this function does NOT add the constraint δ>=0
+   */
+  void AddEllipsoidContainmentConstraint(
+      solvers::MathematicalProgram* prog, const Eigen::MatrixXd& Q,
+      const Eigen::VectorXd& s0, const MatrixX<symbolic::Variable>& C,
+      const VectorX<symbolic::Variable>& d,
+      const VectorX<symbolic::Variable>& ellipsoid_margins) const;
+
+  struct FindPolytopeGivenLagrangianResult {
+    Eigen::MatrixXd C;
+    Eigen::MatrixXd d;
+    // a[i].dot(x) + b[i] = 0 is the separation plane for separating_planes_[i].
+    std::unordered_map<int, Vector3<symbolic::Polynomial>> a;
+    std::unordered_map<int, symbolic::Polynomial> b;
+    Eigen::VectorXd ellipsoid_margins;
+  };
+
+  [[nodiscard]] std::optional<FindPolytopeGivenLagrangianResult>
+  FindPolytopeGivenLagrangian(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const MatrixX<symbolic::Variable>& C,
+      const VectorX<symbolic::Variable>& d,
+      const VectorX<symbolic::Polynomial>& d_minus_Cs,
+      const std::vector<std::optional<SeparationCertificateResult>>&
+          certificates_vec,
+      const Eigen::MatrixXd& Q, const Eigen::VectorXd& s0,
+      const VectorX<symbolic::Variable>& ellipsoid_margins, int gram_total_size,
+      const FindPolytopeGivenLagrangianOptions& options) const;
+
+  /** Gets the H-polyhedron {s | C*s<=d, s_lower<=s<=s_upper}. */
+  HPolyhedron GetPolyhedronWithJointLimits(const Eigen::MatrixXd& C,
+                                           const Eigen::VectorXd& d) const;
 
   multibody::RationalForwardKinematics rational_forward_kin_;
   const geometry::SceneGraph<double>& scene_graph_;
