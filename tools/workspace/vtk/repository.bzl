@@ -600,6 +600,39 @@ licenses([
         ],
     )
 
+    vtk_io_export_deps = [
+        ":vtkCommonCore",
+        ":vtkCommonDataModel",
+        ":vtkCommonMath",
+        ":vtkCommonTransforms",
+        ":vtkFiltersGeometry",
+        ":vtkImagingCore",
+        ":vtkIOCore",
+        ":vtkIOGeometry",
+        ":vtkIOImage",
+        ":vtkIOXML",
+        ":vtkRenderingContext2D",
+        ":vtkRenderingCore",
+        ":vtkRenderingFreeType",
+        ":vtkRenderingVtkJS",
+        ":vtklibharu",
+    ]
+
+    if os_result.is_manylinux or os_result.is_macos_wheel:
+        # Normally these would be private dependencies, but no such thing when
+        # VTK is built statically.
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtkfreetype",
+            deps = [
+                ":vtkkwiml",
+                "@zlib",
+            ],
+        )
+        vtk_io_export_deps.append(":vtkfreetype")
+        file_content += _vtk_cc_library(os_result, "vtkjsoncpp")
+        vtk_io_export_deps.append(":vtkjsoncpp")
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOExport",
@@ -609,23 +642,7 @@ licenses([
             "vtkIOExportModule.h",
             "vtkOBJExporter.h",
         ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonMath",
-            ":vtkCommonTransforms",
-            ":vtkFiltersGeometry",
-            ":vtkImagingCore",
-            ":vtkIOCore",
-            ":vtkIOGeometry",
-            ":vtkIOImage",
-            ":vtkIOXML",
-            ":vtkRenderingContext2D",
-            ":vtkRenderingCore",
-            ":vtkRenderingFreeType",
-            ":vtkRenderingVtkJS",
-            ":vtklibharu",
-        ],
+        deps = vtk_io_export_deps,
     )
 
     file_content += _vtk_cc_library(
