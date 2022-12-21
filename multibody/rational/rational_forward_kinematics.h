@@ -138,9 +138,11 @@ class RationalForwardKinematics {
    matching between q and s (we don't guarantee that s(i) is computed from
    q(i)).
    */
+//    template <typename Derived>
+//    [[nodiscard]] std::enable_if_t<is_eigen_vector<Derived>::value,
+//                                   VectorX<typename Derived::Scalar>>
   template <typename Derived>
-  [[nodiscard]] std::enable_if_t<is_eigen_vector<Derived>::value,
-                                 VectorX<typename Derived::Scalar>>
+  VectorX<typename Derived::Scalar>
   ComputeQValue(const Eigen::MatrixBase<Derived>& s_val,
                 const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
     VectorX<typename Derived::Scalar> q_val(s_.size());
@@ -252,19 +254,13 @@ class RationalForwardKinematics {
       const Eigen::Ref<const Eigen::VectorXd>& q_star, BodyIndex parent,
       BodyIndex child, const Pose<symbolic::Polynomial>& X_AP) const;
 
-  /*
-   * Determines whether the current joint is revolute.
-   */
+  /* Determines whether the current joint is revolute. */
   bool IsRevolute(const internal::Mobilizer<double>& mobilizer) const;
 
-  /*
-   * Determines whether the current joint is a weld.
-   */
+  /* Determines whether the current joint is a weld. */
   bool IsWeld(const internal::Mobilizer<double>& mobilizer) const;
 
-  /*
-   * Determines whether the current joint is prismatic.
-   */
+  /* Determines whether the current joint is prismatic. */
   bool IsPrismatic(const internal::Mobilizer<double>& mobilizer) const;
 
   const MultibodyPlant<double>& plant_;

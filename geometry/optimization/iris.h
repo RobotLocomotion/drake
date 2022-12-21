@@ -7,7 +7,6 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/rational/rational_forward_kinematics.h"
 
 namespace drake {
 namespace geometry {
@@ -118,64 +117,12 @@ struct IrisOptionsRationalSpace : public IrisOptions {
   bool certify_region_with_sos_after_generation = false;
 
   /** For IRIS in rational configuration space we need a point around which to
-   * perform the stereographic projection
+   * perform the stereographic projection. We will default to the zero vector if
+   * not provided.
    * */
   std::optional<Eigen::VectorXd> q_star;
 };
 
-// Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
-class SamePointConstraint : public solvers::Constraint {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraint)
-
-  SamePointConstraint(const multibody::MultibodyPlant<double>* plant,
-                      const systems::Context<double>& context)
-      : solvers::Constraint(3, plant->num_positions() + 6,
-                            Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
-        plant_(plant),
-        context_(plant->CreateDefaultContext()) {
-    DRAKE_DEMAND(plant_ != nullptr);
-    context_->SetTimeStateAndParametersFrom(context);
-  }
-
-  ~SamePointConstraint() override {}
-
-  void set_frameA(const multibody::Frame<double>* frame) { frameA_ = frame; }
-
-  void set_frameB(const multibody::Frame<double>* frame) { frameB_ = frame; }
-
-  void EnableSymbolic() {
-    if (symbolic_plant_ != nullptr) {
-      return;
-    }
-    symbolic_plant_ = systems::System<double>::ToSymbolic(*plant_);
-    symbolic_context_ = symbolic_plant_->CreateDefaultContext();
-    symbolic_context_->SetTimeStateAndParametersFrom(*context_);
-  }
-
- private:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const override;
-
-  // p_WA = X_WA(q)*p_AA
-  // dp_WA = Jq_v_WA*dq + X_WA(q)*dp_AA
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-              AutoDiffVecXd* y) const override;
-
-  void DoEval(const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
-              VectorX<symbolic::Expression>* y) const override;
-
- protected:
-  const multibody::MultibodyPlant<double>* const plant_;
-  const multibody::Frame<double>* frameA_{nullptr};
-  const multibody::Frame<double>* frameB_{nullptr};
-  std::unique_ptr<systems::Context<double>> context_;
-
-  std::unique_ptr<multibody::MultibodyPlant<symbolic::Expression>>
-      symbolic_plant_{nullptr};
-  std::unique_ptr<systems::Context<symbolic::Expression>> symbolic_context_{
-      nullptr};
-};
 
 // takes t, p_AA, and p_BB and enforces that p_WA == p_WB
 // class SamePointConstraintRational : public SamePointConstraint {
@@ -310,24 +257,6 @@ reason to constrain it further this option is provided.
 //    const systems::Context<double>& context,
 //    const IrisOptionsRationalSpace& options = IrisOptionsRationalSpace(),
 //    const std::optional<HPolyhedron>& starting_hpolyhedron = std::nullopt);
-
-/**
- * Internal method for actually running Iris. We assume that the HPolyhedron in
- * *P_ptr has been set to a finite bounding box defining the joint limits of the
- * plant.
- * @param P_ptr must have its ambient dimension be the same size as the number
- * of joints in the plant.
- * @param E_ptr must have its ambient dimension be the same size as the nubmer
- * of joints in the plant.
- * @return
- */
-// void _DoIris_(const multibody::MultibodyPlant<double>& plant,
-//              const systems::Context<double>& context,
-//              const IrisOptions& options,
-//              const Eigen::Ref<const Eigen::VectorXd>& sample,
-//              const std::shared_ptr<SamePointConstraint>&
-//              same_point_constraint, HPolyhedron* P_ptr, Hyperellipsoid*
-//              E_ptr);
 
 }  // namespace optimization
 }  // namespace geometry
