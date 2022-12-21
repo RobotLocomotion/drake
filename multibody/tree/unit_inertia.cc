@@ -89,37 +89,6 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
 }
 
-template <typename T>
-UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
-      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
-  // Note: Tetrahedon volume, mass, center of mass, and inertia formulas are
-  // from the mass/inertia appendix in
-  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
-  //                   For professional engineers and scientists,"
-  //                   Available at www.MotionGenesis.com
-  const Vector3<T> q_plus_r = q + r;
-  const T p_dot_pqr = p.dot(p + q_plus_r);
-  const T q_dot_qr  = q.dot(q_plus_r);
-  const T r_dot_r   = r.dot(r);
-  const T scalar = 0.1 * (p_dot_pqr + q_dot_qr + r_dot_r);
-  const Vector3<T> p_half = 0.5 * p;
-  const Vector3<T> q_half = 0.5 * q;
-  const Vector3<T> r_half = 0.5 * r;
-  // TODO(Mitiguy) The G matrix below can be calculated more efficiently since
-  //  G is symmetric (so we only need its upper or lower triangular part).
-  const Matrix3<T> G = p * (p + q_half + r_half).transpose()
-                     + q * (p_half + q + r_half).transpose()
-                     + r * (p_half + q_half + r).transpose();
-  const T Ixx = scalar - 0.1 * G(0, 0);
-  const T Iyy = scalar - 0.1 * G(1, 1);
-  const T Izz = scalar - 0.1 * G(2, 2);
-  const T Ixy = -0.1 * G(0, 1);
-  const T Ixz = -0.1 * G(0, 2);
-  const T Iyz = -0.1 * G(1, 2);
-  return UnitInertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-}
-
-
 }  // namespace multibody
 }  // namespace drake
 

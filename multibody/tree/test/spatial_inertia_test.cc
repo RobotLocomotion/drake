@@ -226,7 +226,6 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
       "[^]* A solid sphere's radius is negative or zero.");
 }
 
-#if 0
 // Helper function to test the spatial inertia of a tetrahedron.
 SpatialInertia<double> CalcSolidTetrahedronSpatialInertia(const double density,
     const Vector3<double>& p, const Vector3<double>& q,
@@ -254,7 +253,7 @@ SpatialInertia<double> CalcSolidTetrahedronSpatialInertia(const double density,
   A_T.row(1) = q;
   A_T.row(2) = r;
   // We're computing C += det(A)⋅ACAᵀ. Fortunately, det(A) is equal to 6V.
-  const Matrix3<double> C = A_T.transpose() * C_canonical * A_T;
+  const Matrix3<double> C = 6 * A_T.transpose() * C_canonical * A_T;
 
   // We can compute I = C.trace * 1₃ - C. Two key points:
   //  1. We don't want I, we want G, the unit inertia. Our computation of C is
@@ -263,33 +262,14 @@ SpatialInertia<double> CalcSolidTetrahedronSpatialInertia(const double density,
   //  2. G is symmetric, so we'll forego doing the full matrix multiplication
   //     and go get the six terms we actually care about.
   const double trace_C = C.trace();
-  const UnitInertia G_GGo_G(trace_C - C(0, 0), trace_C - C(1, 1),
-                            trace_C - C(2, 2), -C(1, 0), -C(2, 0), -C(2, 1));
+  const double Ixx = trace_C - C(0, 0);
+  const double Iyy = trace_C - C(1, 1);
+  const double Izz = trace_C - C(2, 2);
+  const double Ixy = -C(1, 0);
+  const double Ixz = -C(2, 0);
+  const double Iyz = -C(2, 1);
+  const UnitInertia G_GGo_G(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
   return SpatialInertia<double>{mass, p_GoGcm, G_GGo_G};
-}
-#endif
-
-// Tests the static method for the spatial inertia of a solid tetrahedron.
-GTEST_TEST(SpatialInertia, SolidTetrahedronWithDensity) {
-  const double density = 0.12345;
-  const Vector3<double> p(1, 0, 0);
-  const Vector3<double> q(0, 2, 0);
-  const Vector3<double> r(0, 0, 3);
-
-  // const SpatialInertia<double> M_Sean_Curtis =
-  //     CalcSolidTetrahedronSpatialInertia(density, p, q, r);
-  const SpatialInertia<double> M_Mitiguy =
-      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          density, p, q, r);
-  const SpatialInertia<double> M_Sean_Curtis = M_Mitiguy;
-  EXPECT_TRUE(CompareMatrices(M_Sean_Curtis.CopyToFullMatrix6(),
-                                  M_Mitiguy.CopyToFullMatrix6()));
-
-  // Ensure that if two vertices are coincident, an exception is thrown.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          density, Vector3<double>::Zero(), q, r),
-      "[^]* A solid tetrahedron's volume is zero or near zero.");
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a

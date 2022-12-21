@@ -133,9 +133,9 @@ class SpatialInertia {
   /// @param[in] ly length of the box in the By direction.
   /// @param[in] lz length of the box in the Bz direction.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @throws std::exception if any of lx, ly, lz are negative.
-  static SpatialInertia<T> SolidBoxWithDensity(const T& density,
-      const T& lx, const T& ly, const T& lz);
+  /// @throws std::exception if any of lx, ly, lz are zero or negative.
+  static SpatialInertia<T> SolidBoxWithDensity(
+      const T& density, const T& lx, const T& ly, const T& lz);
 
   /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid capsule B about
@@ -143,13 +143,15 @@ class SpatialInertia {
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] r radius of the cylinder/half-sphere part of the capsule.
   /// @param[in] l length of the cylindrical part of the capsule.
-  /// @param[in] unit_vector unit vector defining the direction of the
-  ///   cylindrical part of the capsule.
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  ///   cylindrical part of the capsule, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @note B's rotational inertia about Bo is axially symmetric.
-  /// @throws std::exception if r or l is negative or ‖unit_vector‖ ≉ 1.
-  static SpatialInertia<T> SolidCapsuleWithDensity(const T& density,
-      const T& r, const T& l, const Vector3<T>& unit_vector);
+  /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
+  ///   an equal moment of inertia about any line that both passes through Bo
+  ///   and is perpendicular to unit_vector.
+  /// @throws std::exception if r or l is zero or negative or ‖unit_vector‖ ≉ 1.
+  static SpatialInertia<T> SolidCapsuleWithDensity(
+      const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
   /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid cylinder B about
@@ -157,12 +159,15 @@ class SpatialInertia {
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] r radius of the cylinder.
   /// @param[in] l length of the cylinder in the unit_vector direction.
-  /// @param[in] unit_vector unit vector defining the direction of the cylinder.
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  ///   cylinder, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @note B's rotational inertia about Bo is axially symmetric.
-  /// @throws std::exception if r or l is negative or ‖unit_vector‖ ≉ 1.
-  static SpatialInertia<T> SolidCylinderWithDensity(const T& density,
-      const T& r, const T& l, const Vector3<T>& unit_vector);
+  /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
+  ///   an equal moment of inertia about any line that both passes through Bo
+  ///   and is perpendicular to unit_vector.
+  /// @throws std::exception if r or l is zero or negative or ‖unit_vector‖ ≉ 1.
+  static SpatialInertia<T> SolidCylinderWithDensity(
+      const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
   /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid ellipsoid B about
@@ -172,9 +177,9 @@ class SpatialInertia {
   /// @param[in] b ellipsoid's semi-diameter (½ length) in the By direction.
   /// @param[in] c ellipsoid's semi-diameter (½ length) in the Bz direction.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @throws std::exception if any of a, b, c are negative.
-  static SpatialInertia<T> SolidEllipsoidWithDensity(const T& density,
-      const T& a, const T& b, const T& c);
+  /// @throws std::exception if any of a, b, c are zero or negative.
+  static SpatialInertia<T> SolidEllipsoidWithDensity(
+      const T& density, const T& a, const T& b, const T& c);
 
   /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid sphere B about
@@ -182,20 +187,10 @@ class SpatialInertia {
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] r sphere's radius.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @throws std::exception if r is negative.
+  /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
+  ///   B's has an equal moment of inertia about any line passing through Bo.
+  /// @throws std::exception if r is zero or negative.
   static SpatialInertia<T> SolidSphereWithDensity(const T& density, const T& r);
-
-  /// (Internal use only)
-  /// Creates a spatial inertia for a uniform density solid tetrahedron B about
-  /// its vertex Bo (from which the other 3 vertices P, Q, R are located).
-  /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] p position vector from vertex Bo to vertex P.
-  /// @param[in] q position vector from vertex Bo to vertex Q.
-  /// @param[in] r position vector from vertex Bo to vertex R.
-  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
-      const T& density,
-      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r);
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
