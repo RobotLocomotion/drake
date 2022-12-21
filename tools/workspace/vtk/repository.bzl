@@ -600,6 +600,19 @@ licenses([
         ],
     )
 
+    maybe_include_vtkjsoncpp = []
+    if os_result.is_manylinux or os_result.is_macos_wheel:
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtkfreetype",
+            deps = [
+                ":vtkkwiml",
+                "@zlib",
+            ],
+        )
+        file_content += _vtk_cc_library(os_result, "vtkjsoncpp")
+        maybe_include_vtkjsoncpp = [":vtkjsoncpp", ":vtkfreetype"]
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOExport",
@@ -625,7 +638,7 @@ licenses([
             ":vtkRenderingFreeType",
             ":vtkRenderingVtkJS",
             ":vtklibharu",
-        ],
+        ] + maybe_include_vtkjsoncpp,
     )
 
     file_content += _vtk_cc_library(
