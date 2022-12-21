@@ -1,0 +1,8 @@
+# -*- python -*-
+
+# This file exists to make our directory into a Bazel package, so that our
+# neighboring *.bzl file can be loaded elsewhere.
+
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+add_lint_tests()
