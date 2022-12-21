@@ -30,8 +30,8 @@ class SpatialInertiaCalculator final : public ShapeReifier {
 
  private:
   void ImplementGeometry(const geometry::Box& box, void*) final {
-    spatial_inertia_ = SpatialInertia<double>::SolidBoxWithDensity(density_,
-        box.width(), box.depth(), box.height());
+    spatial_inertia_ = SpatialInertia<double>::SolidBoxWithDensity(
+        density_, box.width(), box.depth(), box.height());
   }
 
   void ImplementGeometry(const geometry::Capsule& capsule, void*) final {

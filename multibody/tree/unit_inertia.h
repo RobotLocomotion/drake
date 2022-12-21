@@ -291,8 +291,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///   - Length L is negative.
   ///   - `b_E` is the zero vector. That is if `‖b_E‖₂ ≤ ε`, where ε is the
   ///     machine epsilon.
-  static UnitInertia<T> SolidCylinder(const T& r, const T& L,
-      const Vector3<T>& b_E = Vector3<T>::UnitZ()) {
+  static UnitInertia<T> SolidCylinder(
+      const T& r, const T& L, const Vector3<T>& b_E = Vector3<T>::UnitZ()) {
     DRAKE_THROW_UNLESS(r >= 0);
     DRAKE_THROW_UNLESS(L >= 0);
     DRAKE_THROW_UNLESS(b_E.norm() > std::numeric_limits<double>::epsilon());
@@ -321,16 +321,6 @@ class UnitInertia : public RotationalInertia<T> {
     const T Ix = (T(3) * r * r + L * L) / T(12) + L * L / T(4);
     return UnitInertia(Ix, Ix, Iz);
   }
-
-  /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
-  /// about its vertex Bo (from which the other 3 vertices P, Q, R are located).
-  /// @param[in] p position vector from vertex Bo to vertex P, expressed in E.
-  /// @param[in] q position vector from vertex Bo to vertex Q, expressed in E.
-  /// @param[in] r position vector from vertex Bo to vertex R, expressed in E.
-  /// @retval G_BBo_E B's spatial inertia about Bo, expressed in E, where E is
-  /// the right-handed orthogonal unit basis (frame) used to express p, q, r.
-  static UnitInertia<T> SolidTetrahedronAboutVertex(
-      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r);
 
   /// Returns the unit inertia for a unit-mass body B for which there exists a
   /// line L passing through the body's center of mass `Bcm` having the property

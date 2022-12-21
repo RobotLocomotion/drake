@@ -16,8 +16,8 @@ SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
 }
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(const T& density,
-    const T& lx, const T& ly, const T& lz) {
+SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
+    const T& density, const T& lx, const T& ly, const T& lz) {
   // Ensure lx, ly, lz are positive.
   if (lx <= 0 || ly <= 0 || lz <= 0) {
     std::string error_message = fmt::format("{}(): A solid box's "
@@ -32,8 +32,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(const T& density,
 }
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(const T& density,
-    const T& r, const T& l, const Vector3<T>& unit_vector) {
+SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
+    const T& density, const T& r, const T& l, const Vector3<T>& unit_vector) {
   // Ensure r and l are positive.
   if (r <= 0 || l <= 0) {
     std::string error_message = fmt::format("{}(): A solid capsule's "
@@ -60,8 +60,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(const T& density,
 }
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(const T& density,
-    const T& r, const T& l, const Vector3<T>& unit_vector) {
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
+    const T& density, const T& r, const T& l, const Vector3<T>& unit_vector) {
   // Ensure r and l are positive.
   if (r <= 0 || l <= 0) {
     std::string error_message = fmt::format("{}(): A solid cylinder's "
@@ -87,8 +87,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(const T& density,
 }
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(const T& density,
-    const T& a, const T& b, const T& c) {
+SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
+    const T& density, const T& a, const T& b, const T& c) {
   // Ensure a, b, c are positive.
   if (a <= 0 || b <= 0 || c <= 0) {
     std::string error_message = fmt::format("{}(): A solid ellipsoid's "
@@ -103,8 +103,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(const T& density,
 }
 
 template <typename T>
-SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(const T& density,
-    const T& r) {
+SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
+    const T& density, const T& r) {
   // Ensure r is positive.
   if (r <= 0) {
     std::string error_message = fmt::format("{}(): A solid sphere's "
@@ -115,31 +115,6 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(const T& density,
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidSphere(r);
-  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
-}
-
-template <typename T>
-SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
-    const T& density,
-    const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
-  const T volume = 1.0 / 6.0 * p.cross(q).dot(r);
-
-  // Ensure volume is sufficiently far from zero. For a given ‖𝐩‖, ‖𝐪‖, ‖𝐫‖,
-  // the maximum volume = ‖𝐩‖ ‖𝐪‖ ‖𝐫‖ / 6 occurs when 𝐩, 𝐪, 𝐫 are orthogonal.
-  constexpr double kTolerance = 0.25 * std::numeric_limits<double>::epsilon();
-  if (volume * volume <= kTolerance * p.dot(p) * q.dot(q) * r.dot(r)) {
-    std::string error_message = fmt::format("{}(): A solid tetrahedron's "
-      "volume is zero or near zero.", __func__);
-    throw std::logic_error(error_message);
-  }
-  // Note: Tetrahedon volume, mass, center of mass, and inertia formulas are
-  // from the mass/inertia appendix in
-  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
-  //                   For professional engineers and scientists,"
-  //                   Available at www.MotionGenesis.com
-  const T mass = density * volume;
-  const Vector3<T> p_BoBcm_B = 0.25 * (p + q + r);
-  UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidTetrahedronAboutVertex(p, q, r);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 
