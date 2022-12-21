@@ -1,3 +1,4 @@
+from enum import Enum
 import time
 import webbrowser
 
@@ -7,9 +8,6 @@ from pydrake.geometry import (
     Cylinder,
     GeometryInstance,
     MakePhongIllustrationProperties,
-    MeshcatVisualizer,
-    MeshcatVisualizerParams,
-    Role,
     StartMeshcat,
 )
 from pydrake.math import RigidTransform, RotationMatrix
@@ -25,6 +23,14 @@ from pydrake.visualization import (
     VisualizationConfig,
     ApplyVisualizationConfig,
 )
+
+
+class RunResult(Enum):
+    """Result code indicating how Run() terminated."""
+    KEEP_GOING = 0  # Note that this is never returned but is used internally.
+    LOOP_ONCE = 1
+    STOPPED = 2
+    RELOAD = 3
 
 
 class ModelVisualizer:
@@ -86,6 +92,10 @@ class ModelVisualizer:
         self._browser_new = browser_new
         self._pyplot = pyplot
         self._meshcat = meshcat
+
+        # This is both a button label and a flag to enable the button.
+        self._reload_button_name = None
+        self._model_filenames = list()
 
         # The following fields remain valid for this object's lifetime after
         # Finalize() has been called.
@@ -151,6 +161,7 @@ class ModelVisualizer:
           filename: the name of a file containing one or more models.
         """
         self._parser.AddModels(filename)
+        self._model_filenames.append(filename)
 
     def Finalize(self, position=None):
         """
@@ -197,6 +208,11 @@ class ModelVisualizer:
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
 
+        # We want to place this button far away from the Stop Running button,
+        # hence the work to do this here.
+        if self._reload_button_name:
+            self._meshcat.AddButton(self._reload_button_name)
+
         # Connect to drake_visualizer, meldis, and meshcat.
         # Meldis and meshcat provide simultaneous visualization of
         # illustration and proximity geometry.
@@ -214,10 +230,6 @@ class ModelVisualizer:
             "joint_sliders", JointSliders(meshcat=self._meshcat,
                                           plant=self._plant))
 
-        if self._browser_new:
-            url = self._meshcat.web_url()
-            webbrowser.open(url=url, new=self._browser_new)
-
         # Connect to PyPlot.
         if self._pyplot:
             ConnectPlanarSceneGraphVisualizer(self._builder, self._scene_graph)
@@ -226,9 +238,16 @@ class ModelVisualizer:
         self._context = self._diagram.CreateDefaultContext()
         self._plant_context = self._plant.GetMyContextFromRoot(self._context)
 
-        if position:
+        # We don't just test 'position' because NumPy does weird things with
+        # the truth values of arrays.
+        if position is not None and len(position) > 0:
+            self._raise_if_invalid_positions(position)
             self._plant.SetPositions(self._plant_context, position)
             self._sliders.SetPositions(position)
+
+        if self._browser_new:
+            url = self._meshcat.web_url()
+            webbrowser.open(url=url, new=self._browser_new)
 
         # Use Simulator to dispatch initialization events.
         # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
@@ -258,10 +277,13 @@ class ModelVisualizer:
             7 positions corresponding to any model bases that aren't welded to
             the world.
           loop_once: a flag that exits the evaluation loop after one pass.
+
+        Returns:
+          A RunResult code indicating why the method stopped.
         """
         if self._builder:
             self.Finalize(position=position)
-        elif position is not None:
+        elif position is not None and len(position) > 0:
             self._plant.SetPositions(self._plant_context, position)
             self._sliders.SetPositions(position)
             self._diagram.ForcedPublish(self._context)
@@ -279,25 +301,143 @@ class ModelVisualizer:
             self._meshcat)])
 
         # Wait for the user to cancel us.
-        button_name = "Stop Running"
+        stop_button_name = "Stop Running"
         if not loop_once:
-            print(f"Click '{button_name}' or press Esc to quit")
+            print(f"Click '{stop_button_name}' or press Esc to quit")
 
+        loop_result = RunResult.KEEP_GOING
         try:
-            self._meshcat.AddButton(button_name, "Escape")
+            self._meshcat.AddButton(stop_button_name, "Escape")
+
+            def has_clicks(button_name):
+                if not button_name:
+                    return False
+                return self._meshcat.GetButtonClicks(button_name) > 0
 
             sliders_context = self._sliders.GetMyContextFromRoot(self._context)
-            while True:
+            while loop_result == RunResult.KEEP_GOING:
                 time.sleep(1 / 32.0)
                 q = self._sliders.get_output_port().Eval(sliders_context)
                 self._plant.SetPositions(self._plant_context, q)
                 self._diagram.ForcedPublish(self._context)
-                if loop_once or self._meshcat.GetButtonClicks(button_name) > 0:
-                    return
+                if loop_once:
+                    loop_result = RunResult.LOOP_ONCE
+                if has_clicks(stop_button_name):
+                    loop_result = RunResult.STOPPED
+                if has_clicks(self._reload_button_name):
+                    loop_result = RunResult.RELOAD
         except KeyboardInterrupt:
-            pass
+            loop_result = RunResult.STOPPED
         finally:
-            self._meshcat.DeleteButton(button_name)
+            self._meshcat.DeleteButton(stop_button_name)
+            if self._reload_button_name:
+                self._meshcat.DeleteButton(self._reload_button_name)
+
+        return loop_result
+
+    def RunWithReload(self, position=None):
+        """
+        Runs the model with an option to reload.
+        Neither Finalize() nor Run() may be called before this method.
+
+        Will iterate until the user clicks the Stop Running button. All model
+        files will be reloaded and meshcat will be reset if the reload button
+        is clicked. If pyplot is being used, clicking reload will create a
+        new pyplot window.
+
+        Only models added using AddModels() will be properly reloaded.
+        If the parser() was accessed to add models directly to the parser
+        then those models will not be properly reloaded by this method.
+
+        Args:
+          position: an ndarray-like list of slider positions for the model(s);
+            must match the number of positions in all model(s), including the
+            7 positions corresponding to any model bases that aren't welded to
+            the world.
+        """
+        # This method uses this outer visualizer (self) to track options
+        # and manage meshcat (and its window, if applicable). We then
+        # create an inner visualizer each time through the reload loop.
+
+        # This outer visualizer must not have been Finalized or Run.
+        if self._builder is None:
+            raise RuntimeError("Finalize has already been called.")
+        assert all([x is not None for x in (
+            self._plant,
+            self._scene_graph,
+            self._parser)])
+        assert all([x is None for x in (
+            self._diagram,
+            self._sliders,
+            self._context,
+            self._plant_context)])
+
+        # We don't just test 'position' because NumPy does weird things with
+        # the truth values of arrays.
+        if position is not None and len(position) > 0:
+            # If we have a position list to validate, finalize the outer
+            # visualizer's plant only so we can validate positions.
+            self._plant.Finalize()
+            self._raise_if_invalid_positions(position)
+
+        if self._browser_new:
+            url = self.meshcat().web_url()
+            webbrowser.open(url=url, new=self._browser_new)
+
+        model_suffix = "s" if len(self._model_filenames) != 1 else ""
+        reload_button_name = "Reload Model File%s" % model_suffix
+
+        while True:
+            inner_visualizer = ModelVisualizer(
+                visualize_frames=self._visualize_frames,
+                triad_length=self._triad_length,
+                triad_radius=self._triad_radius,
+                triad_opacity=self._triad_opacity,
+                browser_new=False,
+                pyplot=self._pyplot,
+                meshcat=self._meshcat)
+
+            inner_visualizer._reload_button_name = reload_button_name
+            for filename in self._model_filenames:
+                inner_visualizer.AddModels(filename)
+
+            # Finalize the inner visualizer outside of Run so that we can
+            # make sure the positions we saved from the prior iteration
+            # are still usable with the reloaded model. This is necessary
+            # so that changes in the number of joints doesn't just exit.
+            inner_visualizer.Finalize()
+
+            # We don't just test 'position' because NumPy does weird things
+            # with the truth values of arrays.
+            if position is not None and len(position) > 0:
+                # Don't exit if the number of positions in the model changes.
+                # TODO(trowell-tri) Examine the plant more thoroughly
+                # and properly restore position values to the same joints.
+                if inner_visualizer._plant.num_positions() != len(position):
+                    position = None
+
+            result = inner_visualizer.Run(position)
+            if result != RunResult.RELOAD:
+                return
+
+            position = inner_visualizer._sliders.get_output_port().Eval(
+                inner_visualizer._sliders.GetMyContextFromRoot(
+                    inner_visualizer._context))
+
+    def _raise_if_invalid_positions(self, position):
+        """
+        Validate the position argument.
+
+        Raises:
+          ValueError: if the length of the position list does not match
+        the number of positions in the plant.
+        """
+        assert self._plant is not None
+        if self._plant.num_positions() != len(position):
+            message = ("Number of passed positions (%d) does not match "
+                       "the number in the model (%d).")
+            raise ValueError(
+                message % (len(position), self._plant.num_positions()))
 
     def _add_triad(
         self,
@@ -315,7 +455,7 @@ class ModelVisualizer:
         The axes point in +x, +y and +z directions, respectively.
         Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e59811/manipulation/scenarios.py#L367-L414).# noqa
         Args:
-          frame_id: A geometry::frame_id registered with scene_graph.
+          frame_id: a geometry::frame_id registered with scene_graph.
           length: the length of each axis in meters.
           radius: the radius of each axis in meters.
           opacity: the opacity of the coordinate axes, between 0 and 1.
