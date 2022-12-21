@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/drake_copyable.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
@@ -19,14 +20,7 @@ construct a valid %BodyShapeDescription; it will extract and verify the correct
 information from a multibody plant and its context. */
 class BodyShapeDescription final {
  public:
-  /** @name     Allows copy semantics, but not move semantics. */
-  //@{
-
-  BodyShapeDescription(const BodyShapeDescription&) = default;
-  BodyShapeDescription& operator=(const BodyShapeDescription&) = default;
-  BodyShapeDescription(BodyShapeDescription&&) = delete;
-  void operator=(BodyShapeDescription&&) = delete;
-  //@}
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyShapeDescription)
 
   /** Constructs a description with the given attributes. Does not check or
   enforce correctness; callers are responsible for providing consistent
@@ -35,9 +29,10 @@ class BodyShapeDescription final {
                        const math::RigidTransformd& X_BS,
                        std::string model_instance_name, std::string body_name);
 
-  /** @returns the shape passed at construction. */
+  /** @returns the shape passed at construction.
+      @throws std::exception if this instance has been moved from. */
   const geometry::Shape& shape() const {
-    DRAKE_DEMAND(shape_ != nullptr);
+    DRAKE_THROW_UNLESS(shape_ != nullptr);
     return *shape_;
   }
 

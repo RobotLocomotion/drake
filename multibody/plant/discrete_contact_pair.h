@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
@@ -44,6 +46,13 @@ struct DiscreteContactPair {
   /* Coefficient of friction. It's always initialized to NAN here and remains
    set to NAN if unused. */
   T friction_coefficient{NAN};
+  /* For mesh contact, the index of the surface this discrete pair corresponds
+   * to. No value if the pair does not correspond to mesh contact.*/
+  std::optional<int> surface_index{};
+  /* For mesh contact, the index of the face in the surface given by
+   * surface_index this discrete pair corresponds to. No value if the pair does
+   * not correspond to mesh contact. */
+  std::optional<int> face_index{};
 };
 
 }  // namespace internal

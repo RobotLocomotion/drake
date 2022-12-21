@@ -13,6 +13,16 @@ namespace multibody {
 */
 template <typename T>
 struct HydroelasticQuadraturePointData {
+  HydroelasticQuadraturePointData() {}
+
+  HydroelasticQuadraturePointData(Vector3<T> p_WQ_in, int face_index_in,
+                                  Vector3<T> vt_BqAq_W_in,
+                                  Vector3<T> traction_Aq_W_in)
+      : p_WQ(p_WQ_in),
+        face_index(face_index_in),
+        vt_BqAq_W(vt_BqAq_W_in),
+        traction_Aq_W(traction_Aq_W_in) {}
+
   /// Q, the point at which quantities (traction, slip velocity) are computed,
   /// as an offset vector expressed in the world frame.
   Vector3<T> p_WQ;
