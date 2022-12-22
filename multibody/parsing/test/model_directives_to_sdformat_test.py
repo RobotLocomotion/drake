@@ -158,7 +158,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         self.assertEqual(
             len(get_bodies(sdformat_plant, [ModelInstanceIndex(2)])), 0)
 
-        for i in range(3, directives_plant.num_model_instances()):
+        for i in range(2, directives_plant.num_model_instances()):
             model_scoped_name = file_name \
                 + model_directives_to_sdformat._SCOPE_DELIMITER \
                 + directives_plant.GetModelInstanceName(
@@ -184,6 +184,19 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             for sdformat_body, directives_body in zip(
                     sdformat_bodies, directives_bodies):
                 self.assertEqual(sdformat_body.name(), directives_body.name())
+
+                # Check that positions in the world frame reference
+                # are also the same
+                directives_body_transform = \
+                    directives_plant.EvalBodyPoseInWorld(
+                        directives_plant.CreateDefaultContext(), directives_body)
+                sdformat_body_transform = \
+                    sdformat_plant.EvalBodyPoseInWorld(
+                    sdformat_plant.CreateDefaultContext(), sdformat_body)
+                directives_body_transform.IsNearlyEqualTo(
+                    sdformat_body_transform, 1e-10)
+
+                # Check frames attached to this body
                 sdformat_frames = get_frames_attached_to(
                     sdformat_plant, [sdformat_body])
                 directives_frames = get_frames_attached_to(
