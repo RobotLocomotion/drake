@@ -60,10 +60,8 @@
             <length>0.1</length>
           </capsule>
         </geometry>
-        <!-- TODO(zachfang): capsules don't have the texture coordinate defined.
-             Revert back to a texture map once Drake 18296 is resolved. -->
         <material>
-          <diffuse>1.0 1.0 0.25 1.0</diffuse>
+          <drake:diffuse_map>4_color_texture.png</drake:diffuse_map>
         </material>
       </visual>
     </link>
