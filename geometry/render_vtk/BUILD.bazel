@@ -77,9 +77,23 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":vtk_textured_casule_source",
         "//common:scope_exit",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
+        "@vtk//:vtkCommonCore",
+        "@vtk//:vtkFiltersSources",
+    ],
+)
+
+drake_cc_library(
+    name = "vtk_textured_casule_source",
+    srcs = ["vtk_textured_casule_source.cc"],
+    hdrs = ["vtk_textured_casule_source.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:scope_exit",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkFiltersSources",
     ],
