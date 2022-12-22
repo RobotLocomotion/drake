@@ -186,7 +186,9 @@ class SpatialInertia {
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] r sphere's radius.
-  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  /// @retval M_BBo B's spatial inertia about Bo. Since B's rotational inertia
+  ///   is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
+  ///   frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
   ///   B's has an equal moment of inertia about any line passing through Bo.
   /// @throws std::exception if r is zero or negative.

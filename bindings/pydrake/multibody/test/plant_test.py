@@ -630,6 +630,9 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             UnitInertia.SolidCylinder(r=1.5, L=2, b_E=[1, 2, 3]), UnitInertia)
         self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2), UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2,
+                                                       unit_vector=[0, 0, 1]),
+                              UnitInertia)
         self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(r=1, L=2),
                               UnitInertia)
         self.assertIsInstance(
