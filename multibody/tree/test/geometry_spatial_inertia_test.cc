@@ -29,7 +29,7 @@ constexpr double kDensity = 1.5;
 constexpr double kTol = std::numeric_limits<double>::epsilon();
 
 // Asserts that the given spatial inertia is equivalent to the given mass
-// properties.
+// properties, i.e., mass, position vector, and unit inertia.
 ::testing::AssertionResult SpatialInertiasEqual(
     const SpatialInertia<double>& dut, const double mass,
     const Vector3d& p_SScm, const UnitInertia<double>& G_SScm_S,
@@ -59,35 +59,44 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
   return ::testing::AssertionSuccess();
 }
 
-// Note: These tests mostly rely on UnitInertia::SolidFoo() methods to validate.
-// The *implementations* use the same logic. So, these tests would seem to be
-// a tautology. This is intentional. The goal is that the unit inertia generated
-// via this API should provide *exactly* the same value as passing through the
-// UnitInertia APIs. This supports that goal as a regression test.
+// Asserts that the two spatial inertias are equivalent to within tolerance.
+::testing::AssertionResult SpatialInertiasEqual(
+    const SpatialInertia<double>& dut,
+    const SpatialInertia<double>& M_expected,
+    double tolerance) {
+  const double mass = M_expected.get_mass();
+  const Vector3<double> p_BoBcm = M_expected.get_com();
+  const UnitInertia<double> G_BBo = M_expected.get_unit_inertia();
+  return SpatialInertiasEqual(dut, mass, p_BoBcm, G_BBo, tolerance);
+}
+
+// Note: Some tests below validate using SpatialInertia::SolidFooWithDensity()
+// or UnitInertia::SolidFoo(). The *implementations* use similar logic, so,
+// these tests would seem to be a tautology. This is intentional. The goal is
+// that the spatial inertia (or unit inertia) generated via this API should
+// provide the same value as passing through the SpatialInertia APIs.
+// This supports that goal as a regression test.
 
 GTEST_TEST(GeometrySpatialInertaTest, Box) {
   const double Lx = 1;
   const double Ly = 2;
   const double Lz = 3;
-  const double volume = 6;  // Lx * Ly * Lz
-  const Vector3d p_SScm = Vector3d::Zero();
-  const auto G_SScm_S = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
-
   const geometry::Box box(Lx, Ly, Lz);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidBoxWithDensity(kDensity, Lx, Ly, Lz);
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(box, kDensity),
-                                   volume * kDensity, p_SScm, G_SScm_S, kTol));
+                                   M_BBo_B, kTol));
 }
 
 GTEST_TEST(GeometrySpatialInertaTest, Capsule) {
   const double r = 1.5;
   const double L = 2;
-  const double volume = 28.274333882308138;  // πr²L + 4/3πr³
-  const Vector3d p_SScm = Vector3d::Zero();
-  const auto G_SScm_S = UnitInertia<double>::SolidCapsule(r, L);
-
   const geometry::Capsule capsule(r, L);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidCapsuleWithDensity(
+          kDensity, r, L, Vector3<double>::UnitZ());
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(capsule, kDensity),
-                                   volume * kDensity, p_SScm, G_SScm_S, kTol));
+                                   M_BBo_B, kTol));
 }
 
 // Note: Convex can be found below in the MeshTypes test.
@@ -95,26 +104,23 @@ GTEST_TEST(GeometrySpatialInertaTest, Capsule) {
 GTEST_TEST(GeometrySpatialInertaTest, Cylinder) {
   const double r = 1.5;
   const double L = 2;
-  const double volume = 14.137166941154069;  // πr²L
-  const Vector3d p_SScm = Vector3d::Zero();
-  const auto G_SScm_S = UnitInertia<double>::SolidCylinder(r, L);
-
   const geometry::Cylinder cylinder(r, L);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidCylinderWithDensity(
+          kDensity, r, L, Vector3<double>::UnitZ());
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(cylinder, kDensity),
-                                   volume * kDensity, p_SScm, G_SScm_S, kTol));
+                                   M_BBo_B, kTol));
 }
 
 GTEST_TEST(GeometrySpatialInertaTest, Ellipsoid) {
   const double a = 1.5;
   const double b = 2.5;
   const double c = 3.5;
-  const double volume = 54.97787143782138;  // 4/3πabc
-  const Vector3d p_SScm = Vector3d::Zero();
-  const auto G_SScm_S = UnitInertia<double>::SolidEllipsoid(a, b, c);
-
   const geometry::Ellipsoid ellipsoid(a, b, c);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidEllipsoidWithDensity(kDensity, a, b, c);
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(ellipsoid, kDensity),
-                                   volume * kDensity, p_SScm, G_SScm_S, kTol));
+                                   M_BBo_B, kTol));
 }
 
 GTEST_TEST(GeometrySpatialInertaTest, HalfSpace) {
@@ -132,13 +138,11 @@ GTEST_TEST(GeometrySpatialInertaTest, MeshcatCone) {
 
 GTEST_TEST(GeometrySpatialInertaTest, Sphere) {
   const double r = 1.5;
-  const double volume = 14.137166941154067;  // 4/3πr³
-  const Vector3d p_SScm = Vector3d::Zero();
-  const auto G_SScm_S = UnitInertia<double>::SolidSphere(r);
-
   const geometry::Sphere sphere(r);
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidSphereWithDensity(kDensity, r);
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(sphere, kDensity),
-                                   volume * kDensity, p_SScm, G_SScm_S, kTol));
+                                   M_BBo_B, kTol));
 }
 
 // Exercises the common code paths for Mesh and Convex (i.e., "MeshTypes").
@@ -210,15 +214,14 @@ INSTANTIATE_TYPED_TEST_SUITE_P(All, MeshTypeSpatialInertaTest, MeshTypes);
      resulting spatial inertia.  */
 GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
   // Note: this is the same box B used in the Box test above.
+  // Note: p_BoBcm = [0, 0, 0]. The box is defined such that its center of mass
+  // is coincident with the box frame's origin.
   const double Lx = 2;
   const double Ly = 1;
   const double Lz = 3;
-  const double volume = 6;  // Lx * Ly * Lz
-  // Note: p_BoBcm = [0, 0, 0]. The box is defined such that its center of mass
-  // is coincident with the box frame's origin.
-  const Vector3d p_BBcm = Vector3d::Zero();
-  const auto G_BBo_B = UnitInertia<double>::SolidBox(Lx, Ly, Lz);
   const geometry::Box box(Lx, Ly, Lz);
+  const SpatialInertia<double> M_BBo_B =
+    SpatialInertia<double>::SolidBoxWithDensity(kDensity, Lx, Ly, Lz);
 
   {
     // Mesh posed in its frame the same as the solid box is in its own frame.
@@ -228,7 +231,7 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
         geometry::internal::MakeBoxSurfaceMesh<double>(box, resolution_hint);
 
     EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(mesh, kDensity),
-                                     volume * kDensity, p_BBcm, G_BBo_B, kTol));
+                                     M_BBo_B, kTol));
   }
 
   {
@@ -252,6 +255,8 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
         geometry::internal::MakeBoxSurfaceMesh<double>(box, 5);
     mesh.TransformVertices(X_MB);
 
+    const double mass = M_BBo_B.get_mass();
+    const UnitInertia<double> G_BBo_B = M_BBo_B.get_unit_inertia();
     const UnitInertia<double> G_BBo_M = G_BBo_B.ReExpress(R_MB);
     const UnitInertia<double> G_MMo_M =
         G_BBo_M.ShiftFromCenterOfMass(p_BcmMcm);
@@ -259,8 +264,7 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
     // The vertex transformation introduces precision loss, requiring a larger
     // tolerance.
     EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(mesh, kDensity),
-                                     volume * kDensity, p_BcmMcm, G_MMo_M,
-                                     8 * kTol));
+                                     mass, p_BcmMcm, G_MMo_M, 8 * kTol));
   }
 }
 
