@@ -80,6 +80,7 @@ drake_cc_library(
         "//common:scope_exit",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
+        "//third_party/com_gitlab_vtk:vtk_textured_casule_source",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkFiltersSources",
     ],
