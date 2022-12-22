@@ -744,26 +744,31 @@ TEST_F(RenderEngineVtkTest, TransparentSphereTest) {
 
 // Performs the shape-centered-in-the-image test with a capsule.
 TEST_F(RenderEngineVtkTest, CapsuleTest) {
-  Init(X_WC_, true);
+  for (const bool use_texture : {false, true}) {
+    Init(X_WC_, true);
 
-  // Sets up a capsule.
-  const double radius = 0.15;
-  const double length = 1.2;
-  Capsule capsule(radius, length);
-  expected_label_ = RenderLabel(2);
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, capsule, simple_material(),
-                            RigidTransformd::Identity(),
-                            true /* needs update */);
-  // Position the top of the capsule to be 1 m above the terrain. Since the
-  // middle of the capsule is positioned at the origin 0, the top of the
-  // capsule is placed at half the length plus the radius, i.e. 1.2/2 + 0.15 =
-  // 0.75. To reach a total of 1, we need to offset it by an additional 0.25.
-  RigidTransformd X_WV{Vector3d{0, 0, 0.25}};
-  renderer_->UpdatePoses(
-      unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
+    // Sets up a capsule.
+    const double radius = 0.15;
+    const double length = 1.2;
+    Capsule capsule(radius, length);
+    expected_label_ = RenderLabel(2);
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, capsule, simple_material(use_texture),
+                              RigidTransformd::Identity(),
+                              true /* needs update */);
+    // Position the top of the capsule to be 1 m above the terrain. Since the
+    // middle of the capsule is positioned at the origin 0, the top of the
+    // capsule is placed at half the length plus the radius, i.e.
+    // 1.2/2 + 0.15 = 0.75. To reach a total of 1, we need to offset it by an
+    // additional 0.25.
+    RigidTransformd X_WV{Vector3d{0, 0, 0.25}};
+    renderer_->UpdatePoses(
+        unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
 
-  PerformCenterShapeTest(renderer_.get(), "Capsule test");
+    expected_color_ =
+        use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+    PerformCenterShapeTest(renderer_.get(), "Capsule test");
+  }
 }
 
 // Performs a test with a capsule centered in the image but rotated
