@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include <vtkCapsuleSource.h>
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
 #include <vtkInformation.h>
@@ -17,6 +16,7 @@
 #include <vtkStreamingDemandDrivenPipeline.h>
 
 #include "drake/common/scope_exit.h"
+#include "drake/third_party/com_gitlab_vtk/vtk_textured_casule_source.h"
 
 namespace drake {
 namespace geometry {
@@ -236,7 +236,9 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
 }  // namespace
 
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule) {
-  vtkNew<vtkCapsuleSource> vtk_capsule;
+  using com_gitlab_vtk::vtkTexturedCapsuleSource;
+
+  vtkNew<vtkTexturedCapsuleSource> vtk_capsule;
   vtk_capsule->SetCylinderLength(capsule.length());
   vtk_capsule->SetRadius(capsule.radius());
   // TODO(SeanCurtis-TRI): Provide control for smoothness/tessellation.
