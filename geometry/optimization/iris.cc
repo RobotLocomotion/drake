@@ -247,6 +247,7 @@ class SamePointConstraint : public Constraint {
     symbolic_context_ = symbolic_plant_->CreateDefaultContext();
     symbolic_context_->SetTimeStateAndParametersFrom(*context_);
   }
+
  protected:
   const MultibodyPlant<double>* const plant_;
   const multibody::Frame<double>* frameA_{nullptr};
@@ -255,6 +256,26 @@ class SamePointConstraint : public Constraint {
 
   std::unique_ptr<MultibodyPlant<Expression>> symbolic_plant_{nullptr};
   std::unique_ptr<Context<Expression>> symbolic_context_{nullptr};
+
+  void EvalSymbolic(const Eigen::Ref<const VectorX<symbolic::Expression>>& x, VectorX<symbolic::Expression>* y) const {
+    DRAKE_DEMAND(symbolic_plant_ != nullptr);
+    DRAKE_DEMAND(frameA_ != nullptr);
+    DRAKE_DEMAND(frameB_ != nullptr);
+    const Frame<Expression>& frameA =
+        symbolic_plant_->get_frame(frameA_->index());
+    const Frame<Expression>& frameB =
+        symbolic_plant_->get_frame(frameB_->index());
+    VectorX<Expression> q = x.head(plant_->num_positions());
+    Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
+                        p_BB = x.template tail<3>();
+    Vector3<Expression> p_WA, p_WB;
+    symbolic_plant_->SetPositions(symbolic_context_.get(), q);
+    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameA, p_AA,
+                                         symbolic_plant_->world_frame(), &p_WA);
+    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameB, p_BB,
+                                         symbolic_plant_->world_frame(), &p_WB);
+    *y = p_WA - p_WB;
+  }
 
 // private:
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -308,23 +329,7 @@ class SamePointConstraint : public Constraint {
 
   void DoEval(const Ref<const VectorX<symbolic::Variable>>& x,
               VectorX<symbolic::Expression>* y) const override {
-    DRAKE_DEMAND(symbolic_plant_ != nullptr);
-    DRAKE_DEMAND(frameA_ != nullptr);
-    DRAKE_DEMAND(frameB_ != nullptr);
-    const Frame<Expression>& frameA =
-        symbolic_plant_->get_frame(frameA_->index());
-    const Frame<Expression>& frameB =
-        symbolic_plant_->get_frame(frameB_->index());
-    VectorX<Expression> q = x.head(plant_->num_positions());
-    Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
-                        p_BB = x.template tail<3>();
-    Vector3<Expression> p_WA, p_WB;
-    symbolic_plant_->SetPositions(symbolic_context_.get(), q);
-    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameA, p_AA,
-                                         symbolic_plant_->world_frame(), &p_WA);
-    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameB, p_BB,
-                                         symbolic_plant_->world_frame(), &p_WB);
-    *y = p_WA - p_WB;
+    EvalSymbolic(x.cast<symbolic::Expression>(), y);
   }
 
 };
@@ -415,7 +420,7 @@ class SamePointConstraintRational : public SamePointConstraint {
   VectorX<Expression> s = x.head(plant_->num_positions());
   VectorX<Expression> q =
       rational_forward_kinematics_ptr_->ComputeQValue(s, q_star_);
-  SamePointConstraint::DoEval(static_cast<const Ref<const VectorX<symbolic::Variable>>(q), y);
+  SamePointConstraint::EvalSymbolic(q, y);
 //  Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
 //                      p_BB = x.template tail<3>();
 //  Vector3<Expression> p_WA, p_WB;
