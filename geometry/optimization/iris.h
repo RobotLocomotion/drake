@@ -101,59 +101,12 @@ configuration space.
 */
 struct IrisOptionsRationalSpace : public IrisOptions {
   IrisOptionsRationalSpace() = default;
-
-  // TODO(Alex.Amice) support turning this option on.
-  /** For IRIS in rational configuration space, we can certify that the regions
-   * are truly collision free using SOS programming and the methods in
-   * multibody/rational_forward_kinematics. Turning this option on
-   * certifies the regions everytime a set of hyperplanes is added */
-  bool certify_region_with_sos_during_generation = false;
-
-  // TODO(Alex.Amice) support turning this option on.
-  /** For IRIS in rational configuration space, we can certify that the regions
-   * are truly collision free using SOS programming and the methods in
-   * multibody/rational_forward_kinematics. Turning this option on
-   * certifies the regions at the end of the loop */
-  bool certify_region_with_sos_after_generation = false;
-
   /** For IRIS in rational configuration space we need a point around which to
    * perform the stereographic projection. We will default to the zero vector if
    * not provided.
    * */
   std::optional<Eigen::VectorXd> q_star;
 };
-
-
-// takes t, p_AA, and p_BB and enforces that p_WA == p_WB
-// class SamePointConstraintRational : public SamePointConstraint {
-// public:
-//  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraintRational)
-//
-//  SamePointConstraintRational(const multibody::RationalForwardKinematics*
-//                                  rational_forward_kinematics_ptr,
-//                              const Eigen::Ref<const Eigen::VectorXd>& q_star,
-//                              const Context<double>& context)
-//      : SamePointConstraint(&rational_forward_kinematics_ptr->plant(),
-//      context),
-//        rational_forward_kinematics_ptr_(rational_forward_kinematics_ptr),
-//        q_star_(q_star) {}
-//
-//  ~SamePointConstraintRational() override {}
-//
-// private:
-//  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-//              Eigen::VectorXd* y) const override;
-//
-//  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-//              AutoDiffVecXd* y) const override;
-//
-//  void DoEval(const Ref<const VectorX<symbolic::Variable>>& x,
-//              VectorX<symbolic::Expression>* y) const override;
-//
-// protected:
-//  const multibody::RationalForwardKinematics*
-//  rational_forward_kinematics_ptr_; const Eigen::VectorXd q_star_;
-//};
 
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
 as described in
@@ -237,26 +190,26 @@ HPolyhedron IrisInConfigurationSpace(
 /** A variation of the Iris (Iterative Region Inflation by Semidefinite
 programming) algorithm which finds collision-free regions in the *rational
 parametrization of the configuration space* of @p plant. @see Iris for details
-on the original algorithm. This is a reimplementation of
-IrisInConfigurationSpace for the rational reparametrization
+on the original algorithm.
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.
 @param context is a context of the @p plant. The context must have the positions
 of the plant set to the initial IRIS seed configuration.
+@param q_star the point in the configuration space around which the rational
+parametrization is take. @see RationalForwardKinematics for more details.
 @param options provides additional configuration options.  In particular,
-`options.certify_region_during_generation` vs
-`options.certify_region_after_generation' can have an impact on computation time
-@param starting_hpolyhedron is an optional argument to constrain the initial
-Iris search. This defaults to the joint limits of the plants, but if there is a
-reason to constrain it further this option is provided.
+increasing `options.num_collision_infeasible_samples` increases the chances that
+the IRIS regions are collision free but can also significantly increase the
+run-time of the algorithm. The same goes for
+`options.num_additional_constraints_infeasible_samples`.
 @ingroup geometry_optimization
 */
-// HPolyhedron IrisInRationalConfigurationSpace(
-//    const multibody::MultibodyPlant<double>& plant,
-//    const systems::Context<double>& context,
-//    const IrisOptionsRationalSpace& options = IrisOptionsRationalSpace(),
-//    const std::optional<HPolyhedron>& starting_hpolyhedron = std::nullopt);
+HPolyhedron IrisInRationalConfigurationSpace(
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const Eigen::Ref<const Eigen::VectorXd> q_star,
+    const IrisOptionsRationalSpace& options = IrisOptionsRationalSpace());
 
 }  // namespace optimization
 }  // namespace geometry
