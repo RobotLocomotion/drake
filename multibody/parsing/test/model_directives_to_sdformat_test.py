@@ -395,3 +395,10 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
              'multibody/parsing/test/'
              'model_directives_to_sdformat_files/hidden_frame.yaml',
              '-n', '-c', '-p', '.']))
+
+    def test_follow_add_directives(self):
+        self.assertEqual(0, model_directives_to_sdformat.main(
+            ['-m',
+             'multibody/parsing/test/'
+             'model_directives_to_sdformat_files/add_directives.yaml',
+             '-p', '.']))

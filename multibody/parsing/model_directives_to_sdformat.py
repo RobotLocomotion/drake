@@ -154,8 +154,8 @@ class AddFrame:
         # If name and base_frame are scoped both should have a common scope
         if (self.resolved_base_frame.instance_name != ""
                 and self.scoped_name.instance_name != ""):
-            if (self.scoped_name.instance_name !=
-                    self.resolved_base_frame.instance_name):
+            if (self.scoped_name.instance_name
+                    != self.resolved_base_frame.instance_name):
                 raise ConversionError(
                     f'Frame named: [{self.name}] has a different '
                     'scope in its name and its base_frame: '
@@ -327,8 +327,8 @@ class AddDirectives:
         self.params = params
         self.model_ns = params.get('model_namespace')
         self.file_path = params['file']
-        self.sdformat_file_path = self.file_path.replace('.yaml', '.sdf')
-        if not self.sdformat_file_path:
+        self.sdformat_uri = self.file_path.replace('.yaml', '.sdf')
+        if not self.sdformat_uri:
             raise ConversionError(
                 'Error trying to guess SDFormat file name '
                 f'for add_directives: {self.params}')
@@ -351,7 +351,7 @@ class AddDirectives:
             include_elem = ET.SubElement(root, 'include', merge='true')
 
         uri_elem = ET.SubElement(include_elem, 'uri')
-        uri_elem.text = self.sdformat_file_path
+        uri_elem.text = self.sdformat_uri
 
         if not self.nofollow:
             self._convert_nested_directive()
@@ -379,7 +379,9 @@ class AddDirectives:
                 'Failed converting the file included through '
                 f' add_directives: {self.params}')
 
-        result_tree.write(self.sdformat_file_path,
+        sdformat_file_path = resolved_file_path.replace('.yaml', '.sdf')
+
+        result_tree.write(sdformat_file_path,
                           pretty_print=True,
                           encoding="unicode")
 
