@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
 import lxml.etree as ET
 import os
-import string
-import subprocess
-import sys
 import unittest
 
 from pydrake.multibody.parsing import (
@@ -40,8 +36,10 @@ from pydrake.common.test_utilities.meta import (
     run_with_multiple_values,
 )
 
-import drake.multibody.parsing.model_directives_to_sdformat \
-    as model_directives_to_sdformat
+import drake.multibody.parsing.model_directives_to_sdformat as \
+    model_directives_to_sdformat
+from drake.multibody.parsing.model_directives_to_sdformat import (
+    convert_directive, ConversionError)
 
 _SCOPE_DELIMITER = '::'
 
@@ -121,8 +119,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                for file_path in files_to_test])
     def test_through_plant_comparison(self, *, file_path):
         # Convert
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
-        sdformat_tree = converter.convert_directive(file_path)
+        sdformat_tree = convert_directive(file_path)
         sfdormat_result = ET.tostring(
             sdformat_tree, pretty_print=True, encoding="unicode")
 
@@ -160,7 +157,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
         for i in range(2, directives_plant.num_model_instances()):
             model_scoped_name = file_name \
-                + model_directives_to_sdformat._SCOPE_DELIMITER \
+                + _SCOPE_DELIMITER \
                 + directives_plant.GetModelInstanceName(
                     ModelInstanceIndex(i))
 
@@ -189,9 +186,9 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                 # are also the same
                 directives_body_transform = \
                     directives_plant.EvalBodyPoseInWorld(
-                        directives_plant.CreateDefaultContext(), directives_body)
-                sdformat_body_transform = \
-                    sdformat_plant.EvalBodyPoseInWorld(
+                        directives_plant.CreateDefaultContext(),
+                        directives_body)
+                sdformat_body_transform = sdformat_plant.EvalBodyPoseInWorld(
                     sdformat_plant.CreateDefaultContext(), sdformat_body)
                 directives_body_transform.IsNearlyEqualTo(
                     sdformat_body_transform, 1e-10)
@@ -236,116 +233,92 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             self.assertEqual(len(directives_joints), 0)
 
     def test_error_no_directives(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
-                r'\[directives\] must be the first keyword'
+                ConversionError, r'\[directives\] must be the first keyword'
                 ' in the yaml file, exiting.'):
-            converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/'
-                    'something_not_directives.yaml')
+            convert_directive('multibody/parsing/test/'
+                              'model_directives_to_sdformat_files/'
+                              'something_not_directives.yaml')
 
     def test_error_directives_not_frist(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
-                r'\[directives\] must be the first keyword'
+                ConversionError, r'\[directives\] must be the first keyword'
                 ' in the yaml file, exiting.'):
-            result = converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/'
-                    'not_directives_first.yaml')
+            convert_directive('multibody/parsing/test/'
+                              'model_directives_to_sdformat_files/'
+                              'not_directives_first.yaml')
 
     def test_error_implicit_hidden_base_frame(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
-                'Failed trying to find scope for frame: '
+                ConversionError, 'Failed trying to find scope for frame: '
                 r'\[frame\] when trying to add frame: '
                 r'\[frame_name\].'):
-            converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/'
-                    'implicit_hidden_base_frame.yaml')
+            convert_directive('multibody/parsing/test/'
+                              'model_directives_to_sdformat_files/'
+                              'implicit_hidden_base_frame.yaml')
 
     def test_error_different_scopes_frame(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
-                'Frame named: '
+                ConversionError, 'Frame named: '
                 r'\[extra_model::sub_added_frame\] has a '
                 'different scope in its name and its '
                 r'base_frame: \[simple_model::frame\].'):
-            converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/'
-                    'different_scopes_frame.yaml')
+            convert_directive('multibody/parsing/test/'
+                              'model_directives_to_sdformat_files/'
+                              'different_scopes_frame.yaml')
 
     def test_error_world_base(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
+                ConversionError,
                 r'Adding a frame using base_frame=\[world\] is '
                 'not supported.'):
-            converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/world_base_frame.yaml')
+            convert_directive(
+                'multibody/parsing/test/'
+                'model_directives_to_sdformat_files/world_base_frame.yaml')
 
     def test_error_frame_name_same_base_name(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
-                r'Frame: \[frame\] has the same name as '
+                ConversionError, r'Frame: \[frame\] has the same name as '
                 'it\'s base frame. This case is not '
                 'supported.'):
-            converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/'
-                    'frame_same_as_base_frame.yaml')
+            convert_directive('multibody/parsing/test/'
+                              'model_directives_to_sdformat_files/'
+                              'frame_same_as_base_frame.yaml')
 
     def test_error_frames_same_name(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
-                'Found more than two frames with name: '
+                ConversionError, 'Found more than two frames with name: '
                 r'\[frame_name\], could not resolve the '
                 'scope.'):
-            converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/frames_same_name.yaml')
+            convert_directive(
+                'multibody/parsing/test/'
+                'model_directives_to_sdformat_files/frames_same_name.yaml')
 
     def test_error_too_many_model_scopes(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         with self.assertRaisesRegex(
-                model_directives_to_sdformat.ConversionError,
-                'Too many nested models in frame: '
+                ConversionError, 'Too many nested models in frame: '
                 r'\[top_level_model::inner_model::base\]. Only one level of '
                 'nesting is allowed.'):
-            converter.convert_directive(
-                    'multibody/parsing/test/'
-                    'model_directives_to_sdformat_files/too_many_models.yaml')
+            convert_directive(
+                'multibody/parsing/test/'
+                'model_directives_to_sdformat_files/too_many_models.yaml')
 
     def test_add_model_instance_add_directives(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
         expected_xml = '<sdf version="1.9">'\
             '<model name="add_directives"><model name="model_instance">'\
             '<include merge="true">'\
             '<uri>package://model_directives_to_sdformat_files/'\
             'hidden_frame.sdf</uri>'\
             '</include></model></model></sdf>'
-        result = converter.convert_directive(
-                'multibody/parsing/test/'
-                'model_directives_to_sdformat_files/add_directives.yaml',
-                True)
+        result = convert_directive(
+            'multibody/parsing/test/'
+            'model_directives_to_sdformat_files/add_directives.yaml', True)
         self.assertEqual(expected_xml, ET.tostring(result, encoding="unicode"))
 
     def test_resulting_xml_and_weld_structures(self):
-        converter = model_directives_to_sdformat.ModelDirectivesToSdf()
-        result = converter.convert_directive(
-                'multibody/parsing/test/'
-                'model_directives_to_sdformat_files/inject_frames.yaml',
-                True)
+        result = convert_directive(
+            'multibody/parsing/test/'
+            'model_directives_to_sdformat_files/inject_frames.yaml', True)
         root = result.getroot()
         self.assertEqual(len(root.getchildren()), 1)
         root_model = root.getchildren()[0]
