@@ -198,6 +198,28 @@ drake_cc_googletest(
     ],
 )
 
+
+drake_cc_googletest(
+    name = "iris_in_rational_configuration_space_test",
+    timeout = "moderate",
+    data = ["//multibody/parsing:test_models"],
+    shard_count = 8,
+    # Most of these tests take an exceptionally long time under
+    # instrumentation, resulting in timeouts, and so are excluded.
+    tags = [
+        "no_asan",
+        "no_memcheck",
+    ],
+    deps = [
+        ":iris",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/parsing:parser",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
 drake_cc_googletest(
     name = "minkowski_sum_test",
     deps = [
