@@ -330,7 +330,7 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // Attempt to read in the SDF file without setting the package map first.
   const std::string new_sdf_filename = sdf_path + "/box.sdf";
   DRAKE_EXPECT_THROWS_MESSAGE(parser.AddModelFromFile(new_sdf_filename),
-      "error.*unknown package.*box_model.*");
+      ".*error.*unknown package.*box_model.*");
 
   // Try again.
   parser.package_map().PopulateFromFolder(temp_dir);

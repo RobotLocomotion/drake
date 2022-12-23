@@ -108,6 +108,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_misc",
         "//common:diagnostic_policy",
         "@sdformat_internal//:sdformat",
     ],

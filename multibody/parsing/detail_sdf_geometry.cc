@@ -89,7 +89,7 @@ T GetChildElementValue(const sdf::Element& element,
 }  // namespace
 
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename) {
   // TODO(amcastro-tri): unit tests for different error paths are needed.
 
@@ -224,7 +224,7 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 static constexpr char kAcceptingTag[] = "drake:accepting_renderer";
 
 std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
     const math::RigidTransformd& X_LG) {
 
@@ -307,7 +307,7 @@ std::unique_ptr<GeometryInstance> MakeGeometryInstanceFromSdfVisual(
 }
 
 IllustrationProperties MakeVisualPropertiesFromSdfVisual(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Visual& sdf_visual, ResolveFilename resolve_filename) {
   // This doesn't directly use the sdf::Material API on purpose. In the current
   // version, if a parameter (e.g., diffuse) is missing it will *not* be
@@ -457,7 +457,7 @@ RigidTransformd MakeGeometryPoseFromSdfCollision(
 }
 
 ProximityProperties MakeProximityPropertiesForCollision(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Collision& sdf_collision) {
   const sdf::ElementPtr collision_element = sdf_collision.Element();
   DRAKE_DEMAND(collision_element != nullptr);
@@ -524,7 +524,8 @@ ProximityProperties MakeProximityPropertiesForCollision(
     }
 
     properties = ParseProximityProperties(
-        diagnostic, read_double, is_rigid, is_compliant);
+        diagnostic.MakePolicyForNode(*drake_element),
+        read_double, is_rigid, is_compliant);
   }
 
   // TODO(SeanCurtis-TRI): Remove all of this legacy parsing code based on
@@ -544,14 +545,14 @@ ProximityProperties MakeProximityPropertiesForCollision(
       const sdf::Element* friction_element =
           MaybeGetChildElement(*surface_element, "friction");
       if (friction_element) {
-      CheckSupportedElements(diagnostic, friction_element, {"ode"});
+        CheckSupportedElements(diagnostic, friction_element, {"ode"});
         const sdf::Element* ode_element =
             MaybeGetChildElement(*friction_element, "ode");
         CheckSupportedElements(diagnostic, ode_element, {"mu", "mu2"});
         if (MaybeGetChildElement(*ode_element, "mu") ||
             MaybeGetChildElement(*ode_element, "mu2")) {
-          diagnostic.Warning(fmt::format(
-              "In <collision name='{}'>: "
+          diagnostic.Warning(collision_element,
+              fmt::format("In <collision name='{}'>: "
               "When drake contact parameters are fully specified in the "
               "<drake:proximity_properties> tag, the <surface><friction><ode>"
               "<mu*> tags are ignored.",

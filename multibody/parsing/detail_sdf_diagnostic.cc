@@ -1,5 +1,7 @@
 #include "drake/multibody/parsing/detail_sdf_diagnostic.h"
 
+#include <utility>
+
 #include "drake/common/drake_assert.h"
 
 namespace drake {
@@ -9,15 +11,136 @@ namespace internal {
 using drake::internal::DiagnosticDetail;
 using drake::internal::DiagnosticPolicy;
 
+SDFormatDiagnostic::SDFormatDiagnostic(
+    const drake::internal::DiagnosticPolicy* diagnostic,
+    const drake::multibody::internal::DataSource* data_source,
+    const std::string& file_extension)
+    : diagnostic_(diagnostic), data_source_(data_source),
+      file_extension_(file_extension) {
+  DRAKE_DEMAND(diagnostic != nullptr);
+  DRAKE_DEMAND(data_source != nullptr);
+}
+
+DiagnosticDetail SDFormatDiagnostic::MakeDetail(
+    const sdf::Element& element, const std::string& message) const {
+  DiagnosticDetail detail;
+  if (!element.FilePath().empty()) {
+        detail.filename = element.FilePath();
+  } else {
+    if (data_source_->IsFilename()) {
+      detail.filename = data_source_->GetAbsolutePath();
+    } else {
+      detail.filename = data_source_->GetStem() + "." + file_extension_;
+    }
+  }
+  detail.line = element.LineNumber();
+  detail.message = message;
+  return detail;
+}
+
+void SDFormatDiagnostic::Warning(
+    sdf::ElementPtr element, const std::string& message) const {
+  diagnostic_->Warning(MakeDetail(*element, message));
+}
+
+void SDFormatDiagnostic::Error(
+    sdf::ElementPtr element, const std::string& message) const {
+  diagnostic_->Error(MakeDetail(*element, message));
+}
+
+DiagnosticPolicy SDFormatDiagnostic::MakePolicyForNode(
+    const sdf::Element& element) const {
+  DiagnosticPolicy result;
+  result.SetActionForWarnings(
+      [this, &element](const DiagnosticDetail& detail) {
+        diagnostic_->Warning(MakeDetail(element, detail.message));
+      });
+  result.SetActionForErrors(
+      [this, &element](const DiagnosticDetail& detail) {
+        diagnostic_->Error(MakeDetail(element, detail.message));
+      });
+  return result;
+}
+
+bool IsError(const sdf::Error& report) {
+  switch (report.Code()) {
+    case sdf::ErrorCode::ELEMENT_DEPRECATED:
+    case sdf::ErrorCode::VERSION_DEPRECATED:
+    case sdf::ErrorCode::NONE: {
+      return false;
+    }
+    default: {
+      return true;
+    }
+  }
+}
+
+bool PropagateErrors(
+    sdf::Errors&& input_errors,
+    sdf::Errors* output_errors) {
+  bool result = false;
+  for (auto& e : input_errors) {
+    if (IsError(e)) {
+      result = true;
+    }
+    output_errors->push_back(std::move(e));
+  }
+  return result;
+}
+
+bool SDFormatDiagnostic::PropagateErrors(
+    const sdf::Errors& errors) const {
+  bool result = false;
+  for (const auto& e : errors) {
+    DiagnosticDetail detail;
+    detail.filename = e.FilePath();
+    detail.line = e.LineNumber();
+    if (e.XmlPath().has_value()) {
+      detail.message = fmt::format(
+          "At XML path {}: {}", e.XmlPath().value(), e.Message());
+    } else {
+      detail.message = e.Message();
+    }
+    if (IsError(e)) {
+      diagnostic_->Error(detail);
+      result = true;
+    } else {
+      diagnostic_->Warning(detail);
+    }
+  }
+  return result;
+}
+
+// void SDFormatDiagnostic::WarnUnsupportedElement(
+//     const sdf::ElementPtr element, const std::string& tag) const {
+//   const
+//   const XMLElement* subnode = node.FirstChildElement(tag.c_str());
+//   if (subnode) {
+//     Warning(*subnode, fmt::format(
+//                 "The tag '{}' found as a child of '{}' is currently"
+//                 " unsupported and will be ignored.", tag, node.Name()));
+//   }
+// }
+//
+// void SDFormatDiagnostic::WarnUnsupportedAttribute(
+//     const XMLElement& node, const std::string& attribute) const {
+//   if (node.Attribute(attribute.c_str())) {
+//     Warning(node, fmt::format(
+//                 "The attribute '{}' found in a '{}' tag is currently"
+//                 " unsupported and will be ignored.",
+//                  attribute, node.Name()));
+//   }
+// }
+
 void CheckSupportedElements(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     sdf::ElementPtr root_element,
     const std::set<std::string>& supported_elements) {
   CheckSupportedElements(diagnostic, root_element.get(), supported_elements);
 }
 
 void CheckSupportedElements(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Element* root_element,
     const std::set<std::string>& supported_elements) {
   DRAKE_DEMAND(root_element != nullptr);
@@ -27,19 +150,14 @@ void CheckSupportedElements(
     const std::string& element_name = element->GetName();
     if ((supported_elements.find(element_name) == supported_elements.end()) &&
         element->GetExplicitlySetInFile()) {
-      internal::DiagnosticDetail detail;
-      if (!element->FilePath().empty()) {
-        detail.filename = element->FilePath();
-      }
-      detail.line = element->LineNumber();
-      detail.message =
+      std::string message =
           std::string("Unsupported SDFormat element in ") +
           root_element->GetName() + std::string(": ") + element_name;
       // Unsupported elements in the drake namespace are errors.
       if (element_name.find("drake:") == 0) {
-        diagnostic.Error(detail);
+        diagnostic.Error(element, std::move(message));
       } else {
-        diagnostic.Warning(detail);
+        diagnostic.Warning(element, std::move(message));
       }
     }
     element = element->GetNextElement();
@@ -47,7 +165,7 @@ void CheckSupportedElements(
 }
 
 void CheckSupportedElementValue(
-    const drake::internal::DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     sdf::ElementPtr root_element,
     const std::string& element_name,
     const std::string& expected) {
@@ -64,15 +182,10 @@ void CheckSupportedElementValue(
 
   sdf::ParamPtr value = element->GetValue();
   if (value->GetAsString() != expected) {
-    internal::DiagnosticDetail detail;
-    if (!element->FilePath().empty()) {
-      detail.filename = element->FilePath();
-    }
-    detail.line = element->LineNumber();
-    detail.message =
-        std::string("Unsupported value for SDFormat element ") +
+    std::string message =
+std::string("Unsupported value for SDFormat element ") +
         element->GetName() + std::string(": ") + value->GetAsString();
-    diagnostic.Warning(detail);
+    diagnostic.Warning(element, message);
   }
 }
 

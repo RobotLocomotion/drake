@@ -163,97 +163,42 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
                                    I(1, 0), I(2, 0), I(2, 1));
 }
 
-// Returns true iff the given report indicates an error, or false for warnings.
-bool IsError(const sdf::Error& report) {
-  switch (report.Code()) {
-    case sdf::ErrorCode::ELEMENT_DEPRECATED:
-    case sdf::ErrorCode::VERSION_DEPRECATED:
-    case sdf::ErrorCode::NONE: {
-      return false;
-    }
-    default: {
-      return true;
-    }
-  }
-}
-
-// Copies all `errors` into `diagnostic`.
-// Returns true if there were any errors.
-bool PropagateErrors(
-    const sdf::Errors& errors,
-    const DiagnosticPolicy& diagnostic) {
-  bool result = false;
-  for (const auto& e : errors) {
-    DiagnosticDetail detail;
-    detail.filename = e.FilePath();
-    detail.line = e.LineNumber();
-    if (e.XmlPath().has_value()) {
-      detail.message = fmt::format(
-          "At XML path {}: {}", e.XmlPath().value(), e.Message());
-    } else {
-      detail.message = e.Message();
-    }
-    if (IsError(e)) {
-      diagnostic.Error(detail);
-      result = true;
-    } else {
-      diagnostic.Warning(detail);
-    }
-  }
-  return result;
-}
-
-// Move-appends all `input_errors` onto `output_errors`.
-// Returns true if there were any errors.
-bool PropagateErrors(
-    sdf::Errors&& input_errors,
-    sdf::Errors* output_errors) {
-  bool result = false;
-  for (auto& e : input_errors) {
-    if (IsError(e)) {
-      result = true;
-    }
-    output_errors->push_back(std::move(e));
-  }
-  return result;
-}
-
 // This takes an `sdf::SemanticPose`, which defines a pose relative to a frame,
 // and resolves its value with respect to another frame.
 math::RigidTransformd ResolveRigidTransform(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::SemanticPose& semantic_pose,
     const std::string& relative_to = "") {
   gz::math::Pose3d pose;
   sdf::Errors errors = semantic_pose.Resolve(pose, relative_to);
-  PropagateErrors(errors, diagnostic);
+  diagnostic.PropagateErrors(errors);
   return ToRigidTransform(pose);
 }
 
 Eigen::Vector3d ResolveAxisXyz(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::JointAxis& axis) {
   gz::math::Vector3d xyz;
   sdf::Errors errors = axis.ResolveXyz(xyz);
-  PropagateErrors(errors, diagnostic);
+  diagnostic.PropagateErrors(errors);
   return ToVector3(xyz);
 }
 
 std::string ResolveJointParentLinkName(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint) {
   std::string link;
   sdf::Errors errors = joint.ResolveParentLink(link);
-  PropagateErrors(errors, diagnostic);
+  diagnostic.PropagateErrors(errors);
   return link;
 }
 
 std::string ResolveJointChildLinkName(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint) {
   std::string link;
   sdf::Errors errors = joint.ResolveChildLink(link);
-  PropagateErrors(errors, diagnostic);
+  diagnostic.PropagateErrors(errors);
   return link;
 }
 
@@ -317,7 +262,7 @@ const Body<double>& GetBodyByLinkSpecificationName(
 
 // Extracts a Vector3d representation of the joint axis for joints with an axis.
 Vector3d ExtractJointAxis(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
                joint_spec.Type() == sdf::JointType::SCREW ||
@@ -327,13 +272,10 @@ Vector3d ExtractJointAxis(
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    DiagnosticDetail detail;
-    detail.filename = joint_spec.Element()->FilePath();
-    detail.line = joint_spec.Element()->LineNumber();
-    detail.message = fmt::format(
+    std::string message = fmt::format(
         "An axis must be specified for joint '{}'",
         joint_spec.Name());
-    diagnostic.Error(detail);
+    diagnostic.Error(joint_spec.Element(), std::move(message));
     return Vector3d(0, 0, 1);
   }
 
@@ -345,7 +287,7 @@ Vector3d ExtractJointAxis(
 // Extracts a Vector3d representation of `axis` and `axis2` for joints with both
 // attributes. Both axes are required. Otherwise, an error is triggered.
 std::pair<Vector3d, Vector3d> ExtractJointAxisAndAxis2(
-    const DiagnosticPolicy& diagnostic, const sdf::Joint& joint_spec) {
+     const SDFormatDiagnostic& diagnostic, const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE2 ||
       joint_spec.Type() == sdf::JointType::UNIVERSAL);
 
@@ -353,13 +295,10 @@ std::pair<Vector3d, Vector3d> ExtractJointAxisAndAxis2(
   const sdf::JointAxis* axis = joint_spec.Axis(0);
   const sdf::JointAxis* axis2 = joint_spec.Axis(1);
   if (axis == nullptr || axis2 == nullptr) {
-    DiagnosticDetail detail;
-    detail.filename = joint_spec.Element()->FilePath();
-    detail.line = joint_spec.Element()->LineNumber();
-    detail.message = fmt::format(
+    std::string message = fmt::format(
         "Both axis and axis2 must be specified for joint '{}'",
         joint_spec.Name());
-    diagnostic.Error(detail);
+    diagnostic.Error(joint_spec.Element(), std::move(message));
     return std::make_pair(Vector3d(1, 0, 0), Vector3d(0, 1, 0));
   }
 
@@ -372,7 +311,7 @@ std::pair<Vector3d, Vector3d> ExtractJointAxisAndAxis2(
 // Helper to parse the damping for a given joint specification.
 // Right now we only parse the <damping> tag.
 double ParseJointDamping(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint_spec) {
   DRAKE_DEMAND(joint_spec.Type() == sdf::JointType::REVOLUTE ||
       joint_spec.Type() == sdf::JointType::PRISMATIC ||
@@ -389,14 +328,11 @@ double ParseJointDamping(
   }
   const double damping = axis->Damping();
   if (damping < 0) {
-    DiagnosticDetail detail;
-    detail.filename = joint_spec.Element()->FilePath();
-    detail.line = joint_spec.Element()->LineNumber();
-    detail.message = fmt::format(
+    std::string message = fmt::format(
         "Joint damping is negative for joint '{}'. "
         "Joint damping must be a non-negative number.",
         joint_spec.Name());
-    diagnostic.Error(detail);
+    diagnostic.Error(joint_spec.Element(), std::move(message));
     return 0.0;
   }
   // If there are more than one axis (e.g. universal joint), we ignore the
@@ -405,17 +341,14 @@ double ParseJointDamping(
   if (axis2 != nullptr) {
     const double damping2 = axis2->Damping();
     if (damping2 != damping) {
-      DiagnosticDetail detail;
-      detail.filename = joint_spec.Element()->FilePath();
-      detail.line = joint_spec.Element()->LineNumber();
-      detail.message = fmt::format(
+      std::string message = fmt::format(
           "Joint damping must be equal for both axes for joint {}. "
           "The damping coefficient for 'axis' ({}) is used. The "
           "value for 'axis2' ({}) is ignored. The damping coefficient "
           "for 'axis2' should be explicitly defined as {} to match that for "
           "'axis'.",
           joint_spec.Name(), damping, damping2, damping);
-      diagnostic.Warning(detail);
+      diagnostic.Warning(joint_spec.Element(), std::move(message));
     }
   }
 
@@ -427,19 +360,16 @@ double ParseJointDamping(
 // SDFormat internally interprets a negative effort limit as infinite and only
 // returns non-negative values.
 double GetEffortLimit(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint_spec, int axis_index) {
   DRAKE_DEMAND(axis_index == 0 || axis_index == 1);
   const sdf::JointAxis* axis = joint_spec.Axis(axis_index);
   if (axis == nullptr) {
-    DiagnosticDetail detail;
-    detail.filename = joint_spec.Element()->FilePath();
-    detail.line = joint_spec.Element()->LineNumber();
-    detail.message = fmt::format(
+    std::string message = fmt::format(
         "An axis{} must be specified for joint '{}'",
         axis_index > 0 ? "2" : "",
         joint_spec.Name());
-    diagnostic.Warning(detail);
+    diagnostic.Warning(joint_spec.Element(), std::move(message));
     return 0.0;
   }
   return axis->Effort();
@@ -451,7 +381,7 @@ double GetEffortLimit(
 // effort limit of zero are not actuated. For joint types that do not have an
 // actuator implementation available in Drake, produces a diagnostic warning.
 void AddJointActuatorFromSpecification(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint_spec, const Joint<double>& joint,
     MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -468,24 +398,18 @@ void AddJointActuatorFromSpecification(
   if (joint_spec.Type() == sdf::JointType::BALL) {
     if (joint_spec.Axis(0) != nullptr) {
       if (GetEffortLimit(diagnostic, joint_spec, 0) != 0) {
-        DiagnosticDetail detail;
-        detail.filename = joint_spec.Element()->FilePath();
-        detail.line = joint_spec.Element()->LineNumber();
-        detail.message = fmt::format(
+        std::string message = fmt::format(
             "Actuation (via non-zero effort limits) for ball joint '{}' is"
             " not implemented yet and will be ignored.",
             joint_spec.Name());
-        diagnostic.Warning(detail);
+        diagnostic.Warning(joint_spec.Element(), std::move(message));
       }
     }
     if (joint_spec.Axis(1) != nullptr) {
-      DiagnosticDetail detail;
-      detail.filename = joint_spec.Element()->FilePath();
-      detail.line = joint_spec.Element()->LineNumber();
-      detail.message = fmt::format(
+      std::string message = fmt::format(
           "An axis2 may not specified for ball joint '{}' and will be ignored",
           joint_spec.Name());
-      diagnostic.Warning(detail);
+      diagnostic.Warning(joint_spec.Element(), std::move(message));
     }
     return;
   }
@@ -495,14 +419,11 @@ void AddJointActuatorFromSpecification(
   if (joint_spec.Type() == sdf::JointType::UNIVERSAL) {
     if (GetEffortLimit(diagnostic, joint_spec, 0) != 0 ||
         GetEffortLimit(diagnostic, joint_spec, 1) != 0) {
-      DiagnosticDetail detail;
-      detail.filename = joint_spec.Element()->FilePath();
-      detail.line = joint_spec.Element()->LineNumber();
-      detail.message = fmt::format(
+      std::string message = fmt::format(
           "Actuation (via non-zero effort limits) for universal joint '{}' is"
           " not implemented yet and will be ignored.",
           joint_spec.Name());
-      diagnostic.Warning(detail);
+      diagnostic.Warning(joint_spec.Element(), std::move(message));
     }
     return;
   }
@@ -528,13 +449,10 @@ void AddJointActuatorFromSpecification(
     }
   }
   if (joint_spec.Axis(1) != nullptr) {
-    DiagnosticDetail detail;
-    detail.filename = joint_spec.Element()->FilePath();
-    detail.line = joint_spec.Element()->LineNumber();
-    detail.message = fmt::format(
+    std::string message = fmt::format(
         "An axis2 may not specified for 1-dof joint '{}' and will be ignored",
         joint_spec.Name());
-    diagnostic.Warning(detail);
+    diagnostic.Warning(joint_spec.Element(), std::move(message));
   }
 }
 
@@ -543,7 +461,7 @@ void AddJointActuatorFromSpecification(
 // corresponding spring reference if the spring stiffness is nonzero.
 // Only available for "prismatic" joints. The units for spring
 // reference is meter and the units for spring stiffness is N/m.
-void AddPrismaticSpringFromSpecification(const DiagnosticPolicy& diagnostic,
+void AddPrismaticSpringFromSpecification(const SDFormatDiagnostic& diagnostic,
                                          const sdf::Joint& joint_spec,
                                          const PrismaticJoint<double>& joint,
                                          MultibodyPlant<double>* plant) {
@@ -553,12 +471,10 @@ void AddPrismaticSpringFromSpecification(const DiagnosticPolicy& diagnostic,
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    DiagnosticDetail detail;
-    detail.filename = joint_spec.Element()->FilePath();
-    detail.line = joint_spec.Element()->LineNumber();
-    detail.message = fmt::format("An axis must be specified for joint '{}'.",
-                                 joint_spec.Name());
-    diagnostic.Error(detail);
+    std::string message = fmt::format(
+        "An axis must be specified for joint '{}'.",
+        joint_spec.Name());
+    diagnostic.Error(joint_spec.Element(), std::move(message));
   }
 
   const double spring_reference = axis->SpringReference();
@@ -570,13 +486,10 @@ void AddPrismaticSpringFromSpecification(const DiagnosticPolicy& diagnostic,
     plant->AddForceElement<PrismaticSpring>(
       joint, spring_reference, spring_stiffness);
   } else if (spring_stiffness < 0) {
-    DiagnosticDetail detail;
-    detail.filename = joint_spec.Element()->FilePath();
-    detail.line = joint_spec.Element()->LineNumber();
-    detail.message = fmt::format(
+    std::string message = fmt::format(
         "The stiffness specified for joint '{}' must be non-negative.",
         joint_spec.Name());
-    diagnostic.Error(detail);
+    diagnostic.Error(joint_spec.Element(), std::move(message));
   }
 }
 
@@ -621,7 +534,7 @@ void AddRevoluteSpringFromSpecification(
 // an exception if the joint type is not one of revolute, prismatic, or
 // continuous.
 std::tuple<double, double, double, double> ParseJointLimits(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
                      joint_spec.Type() == sdf::JointType::PRISMATIC ||
@@ -681,7 +594,7 @@ std::tuple<double, double, double, double> ParseJointLimits(
 // joint (is_model_joint = false) since a world joint doesn't have a
 // containing model, hence M = W.
 void AddJointFromSpecification(
-    const DiagnosticPolicy& diagnostic, const RigidTransformd& X_WM,
+    const SDFormatDiagnostic& diagnostic, const RigidTransformd& X_WM,
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
     MultibodyPlant<double>* plant, std::set<sdf::JointType>* joint_types,
     bool is_model_joint = true) {
@@ -806,13 +719,10 @@ void AddJointFromSpecification(
       // We require that axis and axis2 are orthogonal. As a result, R_JI should
       // be a valid rotation matrix.
       if (!math::RotationMatrixd::IsValid(R_JI)) {
-        DiagnosticDetail detail;
-        detail.filename = joint_spec.Element()->FilePath();
-        detail.line = joint_spec.Element()->LineNumber();
-        detail.message = fmt::format(
+        std::string message = fmt::format(
             "axis and axis2 must be orthogonal for joint '{}'",
             joint_spec.Name());
-        diagnostic.Error(detail);
+        diagnostic.Error(joint_spec.Element(), std::move(message));
       } else {
         const RigidTransformd X_JI(math::RotationMatrix<double>{R_JI});
         // The value of X_PJ is the identity if X_PJ == nullopt.
@@ -875,37 +785,28 @@ void AddJointFromSpecification(
     case sdf::JointType::GEARBOX: {
       // TODO(jwnimmer-tri) Demote this to a warning, possibly adding a
       // RevoluteJoint as an approximation (stopgap) in that case.
-        DiagnosticDetail detail;
-        detail.filename = joint_spec.Element()->FilePath();
-        detail.line = joint_spec.Element()->LineNumber();
-        detail.message = fmt::format(
+        std::string message = fmt::format(
           "Joint type (gearbox) not supported for joint '{}'.",
           joint_spec.Name());
-      diagnostic.Error(detail);
+      diagnostic.Error(joint_spec.Element(), std::move(message));
       break;
     }
     case sdf::JointType::REVOLUTE2: {
       // TODO(jwnimmer-tri) Demote this to a warning, possibly adding a
       // UniversalJoint as an approximation (stopgap) in that case.
-      DiagnosticDetail detail;
-      detail.filename = joint_spec.Element()->FilePath();
-      detail.line = joint_spec.Element()->LineNumber();
-      detail.message = fmt::format(
+      std::string message = fmt::format(
           "Joint type (revolute2) not supported for joint '{}'.",
           joint_spec.Name());
-      diagnostic.Error(detail);
+      diagnostic.Error(joint_spec.Element(), std::move(message));
       break;
     }
     case sdf::JointType::INVALID: {
       // N.B. It's not practical to reach this code via unit test.
       // In (probably?) all cases, libsdformat will have already detected
       // this error and so Drake won't even call this function.
-      DiagnosticDetail detail;
-      detail.filename = joint_spec.Element()->FilePath();
-      detail.line = joint_spec.Element()->LineNumber();
-      detail.message = fmt::format(
+      std::string message = fmt::format(
           "Unknown joint type for joint '{}'.", joint_spec.Name());
-      diagnostic.Error(detail);
+      diagnostic.Error(joint_spec.Element(), std::move(message));
       break;
     }
   }
@@ -915,7 +816,7 @@ void AddJointFromSpecification(
 // Helper method to load an SDF file and read the contents into an sdf::Root
 // object.
 [[nodiscard]] sdf::Errors LoadSdf(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     sdf::Root* root,
     const DataSource& data_source,
     const sdf::ParserConfig& parser_config) {
@@ -946,7 +847,7 @@ struct LinkInfo {
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<LinkInfo> AddLinksFromSpecification(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     const RigidTransformd& X_WM,
@@ -999,9 +900,11 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     plant->SetDefaultFreeBodyPose(body, X_WL);
 
     if (plant->geometry_source_is_registered()) {
-      ResolveFilename resolve_filename = [&package_map, &root_dir](
-          const DiagnosticPolicy& inner_diagnostic, std::string uri) {
-        return ResolveUri(inner_diagnostic, uri, package_map, root_dir);
+      ResolveFilename resolve_filename =
+        [&package_map, &root_dir, &link_element](
+          const SDFormatDiagnostic& inner_diagnostic, std::string uri) {
+        return ResolveUri(inner_diagnostic.MakePolicyForNode(*link_element),
+            uri, package_map, root_dir);
       };
 
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
@@ -1054,7 +957,7 @@ std::vector<LinkInfo> AddLinksFromSpecification(
 }
 
 const Frame<double>& AddFrameFromSpecification(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Frame& frame_spec, ModelInstanceIndex model_instance,
     const Frame<double>& default_frame, MultibodyPlant<double>* plant) {
   const Frame<double>* parent_frame{};
@@ -1094,7 +997,7 @@ const Frame<double>& AddFrameFromSpecification(
         std::string resolved_attached_to_body_name;
         sdf::Errors errors = frame_spec.ResolveAttachedToBody(
             resolved_attached_to_body_name);
-        PropagateErrors(errors, diagnostic);
+        diagnostic.PropagateErrors(errors);
         const std::string resolved_attached_to_body_absolute_name =
             parsing::PrefixName(
                 parsing::GetInstanceScopeName(*plant, model_instance),
@@ -1106,11 +1009,8 @@ const Frame<double>& AddFrameFromSpecification(
   }
   if (parent_frame == nullptr) {
     // TODO(jwnimmer-tri) Not covered by unit tests.
-    DiagnosticDetail detail;
-    detail.filename = frame_spec.Element()->FilePath();
-    detail.line = frame_spec.Element()->LineNumber();
-    detail.message = "Could not find parent frame";
-    diagnostic.Error(detail);
+    std::string message = "Could not find parent frame";
+    diagnostic.Error(frame_spec.Element(), message);
     parent_frame = &plant->world_frame();
   }
   const Frame<double>& frame =
@@ -1155,7 +1055,7 @@ const Frame<double>& ParseFrame(const sdf::ElementPtr node,
 
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
-void AddDrakeJointFromSpecification(const DiagnosticPolicy& diagnostic,
+void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
                                     const sdf::ElementPtr node,
                                     ModelInstanceIndex model_instance,
                                     MultibodyPlant<double>* plant) {
@@ -1201,7 +1101,7 @@ void AddDrakeJointFromSpecification(const DiagnosticPolicy& diagnostic,
 }
 
 const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::ElementPtr node,
     ModelInstanceIndex model_instance,
     MultibodyPlant<double>* plant) {
@@ -1250,7 +1150,7 @@ bool AreWelded(
   return false;
 }
 
-void ParseCollisionFilterGroup(const DiagnosticPolicy& diagnostic,
+void ParseCollisionFilterGroup(const SDFormatDiagnostic& diagnostic,
                                ModelInstanceIndex model_instance,
                                const sdf::Model& model,
                                MultibodyPlant<double>* plant,
@@ -1275,13 +1175,10 @@ void ParseCollisionFilterGroup(const DiagnosticPolicy& diagnostic,
                     const char* attribute_name) -> std::string {
         auto element = std::get<sdf::ElementPtr>(data_element);
         if (!element->HasAttribute(attribute_name)) {
-          DiagnosticDetail detail;
-          detail.filename = element->FilePath();
-          detail.line = element->LineNumber();
-          detail.message = fmt::format(
+          std::string message = fmt::format(
               "The tag <{}> is missing the required attribute \"{}\"",
               element->GetName(), attribute_name);
-          diagnostic.Error(detail);
+          diagnostic.Error(element, std::move(message));
           return {};
         }
         return std::get<sdf::ElementPtr>(data_element)
@@ -1297,19 +1194,17 @@ void ParseCollisionFilterGroup(const DiagnosticPolicy& diagnostic,
         auto element = std::get<sdf::ElementPtr>(data_element);
         sdf::ParamPtr param = element->GetValue();
         if (param == nullptr) {
-          DiagnosticDetail detail;
-          detail.filename = element->FilePath();
-          detail.line = element->LineNumber();
-          detail.message = fmt::format(
+          std::string message = fmt::format(
               "The tag <{}> is missing a required string value.",
               element->GetName());
-          diagnostic.Error(detail);
+          diagnostic.Error(element, std::move(message));
           return {};
         }
         return param->GetAsString();
       };
   ParseCollisionFilterGroupCommon(
-      diagnostic, model_instance, model.Element(), plant, resolver,
+      diagnostic.MakePolicyForNode(*(model.Element())),
+      model_instance, model.Element(), plant, resolver,
       next_child_element, next_sibling_element, has_attribute,
       get_string_attribute, get_bool_attribute, read_tag_string);
 }
@@ -1317,7 +1212,7 @@ void ParseCollisionFilterGroup(const DiagnosticPolicy& diagnostic,
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
 std::vector<ModelInstanceIndex> AddModelsFromSpecification(
-    const DiagnosticPolicy& diagnostic,
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Model& model,
     const std::string& model_name,
     const RigidTransformd& X_WP,
@@ -1757,9 +1652,11 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
   sdf::Root root;
 
+  SDFormatDiagnostic diagnostic(&workspace.diagnostic, &data_source);
+
   sdf::Errors errors = LoadSdf(
-      workspace.diagnostic, &root, data_source, parser_config);
-  if (PropagateErrors(errors, workspace.diagnostic)) {
+      diagnostic, &root, data_source, parser_config);
+  if (diagnostic.PropagateErrors(errors)) {
     return std::nullopt;
   }
 
@@ -1774,7 +1671,7 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
-          workspace.diagnostic, model, model_name, {}, workspace.plant,
+          diagnostic, model, model_name, {}, workspace.plant,
           workspace.collision_resolver,
           workspace.package_map, data_source.GetRootDir());
 
@@ -1791,9 +1688,11 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
   sdf::Root root;
 
+  SDFormatDiagnostic diagnostic(&workspace.diagnostic, &data_source);
+
   sdf::Errors errors = LoadSdf(
-      workspace.diagnostic, &root, data_source, parser_config);
-  if (PropagateErrors(errors, workspace.diagnostic)) {
+      diagnostic, &root, data_source, parser_config);
+  if (diagnostic.PropagateErrors(errors)) {
     return {};
   }
 
@@ -1821,7 +1720,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
     std::vector<ModelInstanceIndex> added_model_instances =
         AddModelsFromSpecification(
-            workspace.diagnostic, model, model.Name(), {}, workspace.plant,
+            diagnostic, model, model.Name(), {}, workspace.plant,
             workspace.collision_resolver,
             workspace.package_map, data_source.GetRootDir());
     model_instances.insert(model_instances.end(),
@@ -1839,7 +1738,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       "joint",
       "model"};
     CheckSupportedElements(
-        workspace.diagnostic, world.Element(), supported_world_elements);
+        diagnostic, world.Element(), supported_world_elements);
 
     // TODO(eric.cousineau): Either support or explicitly prevent adding joints
     // via `//world/joint`, per this Bitbucket comment: https://bit.ly/2udQxhp
@@ -1850,7 +1749,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
       const sdf::Model& model = *world.ModelByIndex(model_index);
       std::vector<ModelInstanceIndex> added_model_instances =
           AddModelsFromSpecification(
-              workspace.diagnostic, model, model.Name(), {}, workspace.plant,
+              diagnostic, model, model.Name(), {}, workspace.plant,
               workspace.collision_resolver,
               workspace.package_map, data_source.GetRootDir());
       model_instances.insert(model_instances.end(),
@@ -1862,7 +1761,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         ++frame_index) {
       const sdf::Frame& frame = *world.FrameByIndex(frame_index);
       AddFrameFromSpecification(
-          workspace.diagnostic, frame, world_model_instance(),
+          diagnostic, frame, world_model_instance(),
           workspace.plant->world_frame(), workspace.plant);
     }
 
@@ -1872,7 +1771,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         ++joint_index) {
       const sdf::Joint& joint = *world.JointByIndex(joint_index);
       AddJointFromSpecification(
-          workspace.diagnostic, {}, joint, world_model_instance(),
+          diagnostic, {}, joint, world_model_instance(),
           workspace.plant, &joint_types, false);
     }
 
