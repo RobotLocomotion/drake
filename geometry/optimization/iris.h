@@ -94,20 +94,6 @@ struct IrisOptions {
   int random_seed{1234};
 };
 
-/** Configuration options for the IRIS algorithm running in rational
-configuration space.
-
-@ingroup geometry_optimization
-*/
-struct IrisOptionsRationalSpace : public IrisOptions {
-  IrisOptionsRationalSpace() = default;
-  /** For IRIS in rational configuration space we need a point around which to
-   * perform the stereographic projection. We will default to the zero vector if
-   * not provided.
-   * */
-  std::optional<Eigen::VectorXd> q_star;
-};
-
 /** The IRIS (Iterative Region Inflation by Semidefinite programming) algorithm,
 as described in
 
@@ -208,8 +194,8 @@ run-time of the algorithm. The same goes for
 HPolyhedron IrisInRationalConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
-    const Eigen::Ref<const Eigen::VectorXd> q_star,
-    const IrisOptionsRationalSpace& options = IrisOptionsRationalSpace());
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const IrisOptions& options = IrisOptions());
 
 }  // namespace optimization
 }  // namespace geometry

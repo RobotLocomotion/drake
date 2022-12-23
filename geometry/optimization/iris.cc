@@ -21,6 +21,8 @@
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
 
+#include <iostream>
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -1007,7 +1009,7 @@ HPolyhedron IrisInRationalConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
-    const IrisOptionsRationalSpace& options) {
+    const IrisOptions& options) {
   plant.ValidateContext(context);
   multibody::RationalForwardKinematics rational_forward_kinematics{&plant};
 
@@ -1016,6 +1018,7 @@ HPolyhedron IrisInRationalConfigurationSpace(
       rational_forward_kinematics.ComputeSValue(q_sample, q_star);
   auto same_point_constraint = std::make_shared<SamePointConstraintRational>(
       &rational_forward_kinematics, q_star, context);
+  std::cout << "all set up" << std::endl;
   return _DoIris_(plant, context, options, sample, same_point_constraint);
 }
 

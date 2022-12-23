@@ -352,6 +352,28 @@ void DefineGeometryOptimization(py::module m) {
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
 
+  m.def("IrisInRationalConfigurationSpace",
+      [](
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const IrisOptions& options) {
+    return IrisInRationalConfigurationSpace(plant, context, q_star, options);
+  },
+      py::arg("plant"), py::arg("context"), py::arg("q_star"),
+      py::arg("options") = IrisOptions(),
+      doc.IrisInRationalConfigurationSpace.doc);
+
+//  m.def("IrisInRationalConfigurationSpace",
+//      py::overload_cast<const multibody::MultibodyPlant<double>&,
+//          const systems::Context<double>&,
+//              const Eigen::Ref<const Eigen::VectorXd>&,
+//                  const IrisOptions&>(
+//          &IrisInRationalConfigurationSpace),
+//      py::arg("plant"), py::arg("context"), py::arg("q_star"),
+//      py::arg("options") = IrisOptions(),
+//      doc.IrisInRationalConfigurationSpace.doc);
+
   // GraphOfConvexSetsOptions
   {
     const auto& cls_doc = doc.GraphOfConvexSetsOptions;
