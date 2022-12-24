@@ -10,8 +10,13 @@
 #include <tuple>
 
 #include <Eigen/Eigenvalues>
+#include <drake_vendor/libqhullcpp/Coordinates.h>
+#include <drake_vendor/libqhullcpp/Qhull.h>
+#include <drake_vendor/libqhullcpp/QhullFacet.h>
+#include <drake_vendor/libqhullcpp/QhullFacetList.h>
 #include <fmt/format.h>
 
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -129,6 +134,27 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
   // A_G*(p_GE + R_GE*p_EE_var) ≤ b_G
   A_ = Ab_G.first * X_GE.rotation().matrix();
   b_ = Ab_G.second - Ab_G.first * X_GE.translation();
+}
+
+HPolyhedron::HPolyhedron(const VPolytope& vpoly)
+    : ConvexSet(&ConvexSetCloner<HPolyhedron>, vpoly.ambient_dimension()) {
+  orgQhull::Qhull qhull;
+  qhull.runQhull("", vpoly.ambient_dimension(), vpoly.vertices().cols(),
+                 vpoly.vertices().data(), "");
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+  A_.resize(qhull.facetCount(), ambient_dimension_);
+  b_.resize(qhull.facetCount());
+  int facet_count = 0;
+  for (const auto& facet : qhull.facetList()) {
+    A_.row(facet_count) = Eigen::Map<Eigen::RowVectorXd>(
+        facet.outerplane().coordinates(), facet.dimension());
+    b_(facet_count) = -facet.outerplane().offset();
+    ++facet_count;
+  }
 }
 
 HPolyhedron::~HPolyhedron() = default;

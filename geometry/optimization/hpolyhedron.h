@@ -13,6 +13,8 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+// Forward-declare VPolytope.
+class VPolytope;
 
 /** Implements a polyhedral convex set using the half-space representation:
 `{x| A x ≤ b}`.  Note: This set may be unbounded.
@@ -38,6 +40,12 @@ class HPolyhedron final : public ConvexSet {
   @throws std::exception the geometry is not a convex polytope. */
   HPolyhedron(const QueryObject<double>& query_object, GeometryId geometry_id,
               std::optional<FrameId> reference_frame = std::nullopt);
+
+  /** Constructs a new HPolyedron from a VPolytope object.
+  This function will use qhull.
+   */
+  explicit HPolyhedron(const VPolytope& vpoly);
+
   // TODO(russt): Add a method/constructor that would create the geometry using
   // SceneGraph's AABB or OBB representation (for arbitrary objects) pending
   // #15121.
