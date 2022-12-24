@@ -17,7 +17,6 @@ namespace {
 
 using Eigen::Vector2d;
 using symbolic::Variable;
-const double kInf = std::numeric_limits<double>::infinity();
 
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
 HPolyhedron IrisFromUrdf(const std::string urdf,
