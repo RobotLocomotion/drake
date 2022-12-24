@@ -97,24 +97,14 @@ GTEST_TEST(IrisInRationalConfigurationSpaceTest, DoublePendulum) {
   // Note: You may use this to plot the solution in the desmos graphing
   // calculator link above.  Just copy each equation in the printed formula into
   // a desmos cell.  The intersection is the computed region.
-   const Vector2<symbolic::Expression> xy{symbolic::Variable("x"),
-                                         symbolic::Variable("y")};
-   std::cout << (region.A()*xy <= region.b()) << std::endl;
-   std::cout << region.MaximumVolumeInscribedEllipsoid().Volume() << std::endl;
+  // const Vector2<symbolic::Expression> xy{symbolic::Variable("x"),
+  //                                       symbolic::Variable("y")};
+  // std::cout << (region.A()*xy <= region.b()) << std::endl;
 
   EXPECT_EQ(region.ambient_dimension(), 2);
-  EXPECT_TRUE(false);
   // Confirm that we've found a substantial region.
-//  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
-//
-//  EXPECT_TRUE(region.PointInSet(Vector2d{.4, 0.0}));
-//  EXPECT_FALSE(region.PointInSet(Vector2d{.5, 0.0}));
-//  EXPECT_TRUE(region.PointInSet(Vector2d{.3, .3}));
-//  EXPECT_FALSE(region.PointInSet(Vector2d{.4, .3}));
-//  EXPECT_TRUE(region.PointInSet(Vector2d{-.4, 0.0}));
-//  EXPECT_FALSE(region.PointInSet(Vector2d{-.5, 0.0}));
-//  EXPECT_TRUE(region.PointInSet(Vector2d{-.3, -.3}));
-//  EXPECT_FALSE(region.PointInSet(Vector2d{-.4, -.3}));
+  EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 1.5);
+
 }
 }  // namespace
 }  // namespace optimization
