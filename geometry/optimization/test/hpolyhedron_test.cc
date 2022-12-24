@@ -10,6 +10,7 @@
 #include "drake/geometry/geometry_frame.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/optimization/test_utilities.h"
+#include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/math/random_rotation.h"
@@ -81,6 +82,38 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   HPolyhedron H_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, H_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(b, H_scene_graph.b()));
+}
+
+GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope) {
+  Eigen::Matrix<double, 3, 4> vert1;
+  // clang-format off
+  vert1 << 0, 1, 0, 0,
+           0, 0, 1, 0,
+           0, 0, 0, 1;
+  // clang-format on
+  const VPolytope vpoly1(vert1);
+  const HPolyhedron hpoly1(vpoly1);
+  EXPECT_EQ(hpoly1.ambient_dimension(), 3);
+  EXPECT_EQ(hpoly1.A().rows(), 4);
+  EXPECT_TRUE(hpoly1.PointInSet(Eigen::Vector3d(1E-3, 1E-3, 1E-3)));
+  EXPECT_TRUE(hpoly1.PointInSet(Eigen::Vector3d(1 - 3E-3, 1E-3, 1E-3)));
+  EXPECT_TRUE(hpoly1.PointInSet(Eigen::Vector3d(1E-3, 1 - 3E-3, 1E-3)));
+  EXPECT_TRUE(hpoly1.PointInSet(Eigen::Vector3d(1E-3, 1E-3, 1 - 3E-3)));
+  EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector3d(0.25, 0.25, 0.51)));
+  EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector3d(-1E-5, 0.1, 0.1)));
+  EXPECT_FALSE(hpoly1.PointInSet(Eigen::Vector3d(0.1, -1E-5, 0.1)));
+
+  const Eigen::Vector3d lb(-1, -2, -3);
+  const Eigen::Vector3d ub(2, 3, 4);
+  const VPolytope vpoly2 = VPolytope::MakeBox(lb, ub);
+  const HPolyhedron hpoly2(vpoly2);
+  EXPECT_EQ(hpoly2.ambient_dimension(), 3);
+  EXPECT_EQ(hpoly2.A().rows(), 6);
+  EXPECT_TRUE(hpoly2.PointInSet(Eigen::Vector3d(-0.99, -1.99, -2.99)));
+  EXPECT_TRUE(hpoly2.PointInSet(Eigen::Vector3d(1.99, -1.99, -2.99)));
+  EXPECT_TRUE(hpoly2.PointInSet(Eigen::Vector3d(1.99, -1.99, 3.99)));
+  EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector3d(0, 3.01, 0)));
+  EXPECT_FALSE(hpoly2.PointInSet(Eigen::Vector3d(-1.01, 0, 0)));
 }
 
 GTEST_TEST(HPolyhedronTest, L1BallTest) {
