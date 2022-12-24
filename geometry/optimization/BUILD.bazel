@@ -198,7 +198,6 @@ drake_cc_googletest(
     ],
 )
 
-
 drake_cc_googletest(
     name = "iris_in_rational_configuration_space_test",
     timeout = "moderate",
