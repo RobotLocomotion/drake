@@ -1,0 +1,96 @@
+diff --git a/stable_baselines3/__init__.py b/stable_baselines3/__init__.py
+index d73f5f0..5797dba 100644
+--- stable_baselines3/__init__.py
++++ stable_baselines3/__init__.py
+@@ -1,13 +1,19 @@
+ import os
+ 
+-from stable_baselines3.a2c import A2C
+-from stable_baselines3.common.utils import get_system_info
+-from stable_baselines3.ddpg import DDPG
+-from stable_baselines3.dqn import DQN
+-from stable_baselines3.her.her_replay_buffer import HerReplayBuffer
+-from stable_baselines3.ppo import PPO
+-from stable_baselines3.sac import SAC
+-from stable_baselines3.td3 import TD3
++def not_loaded(name):
++    raise ImportError(f"{name} not in Drake's internal stable_baselines3")
++
++def make_not_loaded(name):
++    return lambda *args, **kwargs: not_loaded(name)
++
++A2C = make_not_loaded("A2C")
++get_system_info = make_not_loaded("get_system_info")
++DDPG = make_not_loaded("DDPG")
++DQN = make_not_loaded("DQN")
++HerReplayBuffer = make_not_loaded("HerReplayBuffer")
++PPO = make_not_loaded("PPO")
++SAC = make_not_loaded("SAC")
++TD3 = make_not_loaded("TD3")
+ 
+ # Read version from file
+ version_file = os.path.join(os.path.dirname(__file__), "version.txt")
+diff --git a/stable_baselines3/common/env_checker.py b/stable_baselines3/common/env_checker.py
+index 3b2c502..392d9df 100644
+--- stable_baselines3/common/env_checker.py
++++ stable_baselines3/common/env_checker.py
+@@ -6,7 +6,13 @@ import numpy as np
+ from gym import spaces
+ 
+ from stable_baselines3.common.preprocessing import is_image_space_channels_first
+-from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
++
++torch_available = False
++try:
++    from stable_baselines3.common.vec_env import DummyVecEnv, VecCheckNan
++    torch_available = True
++except ImportError:
++    print("Torch not available; skipping vector env tests.")
+ 
+ 
+ def _is_numpy_array_space(space: spaces.Space) -> bool:
+@@ -87,6 +93,8 @@ def _check_unsupported_spaces(env: gym.Env, observation_space: spaces.Space, act
+ 
+ def _check_nan(env: gym.Env) -> None:
+     """Check for Inf and NaN using the VecWrapper."""
++    if not torch_available:
++        return
+     vec_env = VecCheckNan(DummyVecEnv([lambda: env]))
+     for _ in range(10):
+         action = np.array([env.action_space.sample()])
+diff --git a/stable_baselines3/common/preprocessing.py b/stable_baselines3/common/preprocessing.py
+index 01422aa..0603891 100644
+--- stable_baselines3/common/preprocessing.py
++++ stable_baselines3/common/preprocessing.py
+@@ -1,10 +1,15 @@
++from ast import Import
+ import warnings
+ from typing import Dict, Tuple, Union
+ 
+ import numpy as np
+-import torch as th
+ from gym import spaces
+-from torch.nn import functional as F
++
++try:
++    import torch as th
++    from torch.nn import functional as F
++except ImportError:
++    pass  # Let any function calls that use torch fail naturally.
+ 
+ 
+ def is_image_space_channels_first(observation_space: spaces.Box) -> bool:
+@@ -83,10 +88,10 @@ def maybe_transpose(observation: np.ndarray, observation_space: spaces.Space) ->
+ 
+ 
+ def preprocess_obs(
+-    obs: th.Tensor,
++    obs,
+     observation_space: spaces.Space,
+     normalize_images: bool = True,
+-) -> Union[th.Tensor, Dict[str, th.Tensor]]:
++):
+     """
+     Preprocess observation to be to a neural network.
+     For images, it normalizes the values by dividing them by 255 (to have values in [0, 1])
+

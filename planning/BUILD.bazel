@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":body_shape_description",
         ":collision_checker_context",
+        ":collision_checker_params",
         ":robot_clearance",
         ":robot_collision_type",
         ":robot_diagram",
@@ -41,6 +42,15 @@ drake_cc_library(
     deps = [
         ":robot_diagram",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_checker_params",
+    hdrs = ["collision_checker_params.h"],
+    deps = [
+        ":robot_diagram",
+        "//multibody/tree:multibody_tree_indexes",
     ],
 )
 

@@ -6,6 +6,7 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/systems/framework/diagram_builder.h"
 
 using drake::geometry::SceneGraph;

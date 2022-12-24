@@ -47,7 +47,7 @@ def jacobian(function, x):
     """
     x = np.asarray(x)
     assert x.ndim == 1, "x must be a vector"
-    x_ad = np.empty(x.shape, dtype=np.object)
+    x_ad = np.empty(x.shape, dtype=object)
     for i in range(x.size):
         der = np.zeros(x.size)
         der[i] = 1

@@ -22,6 +22,15 @@ TODO(russt): Add videos of a few relevant examples.
 
 # Manipulation
 
+The robotics team at TRI is exploring learning and by combining Drake with
+external high-fidelity rendering, we can generate highly realistic, both
+physically and visually, machine-learning training data to further our research.
+
+{% include video.html
+  url = "https://www.youtube.com/embed/5aVDWjWd0EU"
+  full_width = true
+%}
+
 The Robotics team at TRI is working hard to close the gap between simulation and
 reality.  For manipulation, one important piece is accurate simulation of
 rigid-body contact.
