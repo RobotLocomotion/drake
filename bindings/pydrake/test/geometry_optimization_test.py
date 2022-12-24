@@ -436,7 +436,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertFalse(region.PointInSet([-1.0]))
         region_rational = mut.IrisInRationalConfigurationSpace(
             plant=plant, context=plant.GetMyContextFromRoot(context),
-            q_star=np.zeros(0), options=options)
+            q_star=np.zeros(1), options=options)
         self.assertIsInstance(region_rational, mut.ConvexSet)
         self.assertEqual(region_rational.ambient_dimension(), 1)
         self.assertTrue(region_rational.PointInSet([1.0]))
