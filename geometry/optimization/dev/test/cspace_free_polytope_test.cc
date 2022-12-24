@@ -304,9 +304,11 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
       EXPECT_TRUE(plane_geometries.unit_length_vectors.empty());
     }
     EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
-              plane.positive_side_geometry->num_rationals_per_side());
+              plane.positive_side_geometry->num_rationals_per_side(
+                  false, plane.negative_side_geometry->type()));
     EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
-              plane.negative_side_geometry->num_rationals_per_side());
+              plane.negative_side_geometry->num_rationals_per_side(
+                  false, plane.positive_side_geometry->type()));
     EXPECT_FALSE(plane_geometries.separating_margin.has_value());
   }
 
@@ -811,6 +813,31 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
   Eigen::Matrix<double, 9, 1> d;
   d << 0.1, 0.1, 0.1, 0.02, 0.02, 0.2, 0.1, 0.1, 0.2;
 
+  // We sample some s and project them to the polytope {s | C*s<=d, s_lower <=s
+  // <=s_upper}, then compute the corresponding q.
+  Eigen::Matrix<double, 10, 3> s_samples;
+  // clang-format off
+  s_samples << 1, 2, -1,
+             -0.5, 0.3, 0.2,
+             0.2, 0.1, 0.4,
+             0.5, -1.2, 0.3,
+             0.2, 0.5, -0.4,
+             -0.3, 1.5, 2,
+             0.5, 0.2, 1,
+             -0.4, 0.5, 1,
+             0, 0, 0,
+             0.2, -1.5, 1;
+  // clang-format on
+  Eigen::Matrix3Xd s_vals(3, s_samples.rows());
+  Eigen::Matrix3Xd q_vals(3, s_samples.rows());
+  for (int i = 0; i < s_samples.rows(); ++i) {
+    s_vals.col(i) = ProjectToPolytope(s_samples.row(i).transpose(), C, d,
+                                      tester.s_lower(), tester.s_upper());
+    q_vals.col(i) =
+        tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
+            s_vals.col(i), q_star);
+  }
+
   const CspaceFreePolytope::IgnoredCollisionPairs ignored_collision_pairs{
       SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)};
   CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions options;
@@ -828,28 +855,6 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
       EXPECT_EQ(certificates_result.size(),
                 tester.cspace_free_polytope().separating_planes().size() -
                     ignored_collision_pairs.size());
-      Eigen::Matrix<double, 10, 3> s_samples;
-      // clang-format off
-      s_samples << 1, 2, -1,
-                 -0.5, 0.3, 0.2,
-                 0.2, 0.1, 0.4,
-                 0.5, -1.2, 0.3,
-                 0.2, 0.5, -0.4,
-                 -0.3, 1.5, 2,
-                 0.5, 0.2, 1,
-                 -0.4, 0.5, 1,
-                 0, 0, 0,
-                 0.2, -1.5, 1;
-      // clang-format on
-      Eigen::Matrix3Xd s_vals(3, s_samples.rows());
-      Eigen::Matrix3Xd q_vals(3, s_samples.rows());
-      for (int i = 0; i < s_samples.rows(); ++i) {
-        s_vals.col(i) = ProjectToPolytope(s_samples.row(i).transpose(), C, d,
-                                          tester.s_lower(), tester.s_upper());
-        q_vals.col(i) =
-            tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
-                s_vals.col(i), q_star);
-      }
       for (const auto& certificate : certificates_result) {
         EXPECT_TRUE(certificate.has_value());
         const auto& plane = tester.cspace_free_polytope()
@@ -893,7 +898,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
     std::unordered_map<SortedPair<geometry::GeometryId>,
                        CspaceFreePolytope::SeparationCertificateResult>
         certificates_map;
-    const bool is_success =
+    bool is_success =
         tester.cspace_free_polytope().FindSeparationCertificateGivenPolytope(
             C, d, ignored_collision_pairs, true /* search_separating_margin*/,
             options, &certificates_map);
@@ -901,6 +906,44 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
               tester.cspace_free_polytope().separating_planes().size() -
                   ignored_collision_pairs.size());
     EXPECT_TRUE(is_success);
+
+    // Test search_separating_margin = false.
+    certificates_map.clear();
+    is_success =
+        tester.cspace_free_polytope().FindSeparationCertificateGivenPolytope(
+            C, d, ignored_collision_pairs, false /* search_separating_margin */,
+            options, &certificates_map);
+    EXPECT_EQ(certificates_map.size(),
+              tester.cspace_free_polytope().separating_planes().size() -
+                  ignored_collision_pairs.size());
+    EXPECT_TRUE(is_success);
+    // Check the separating plane does separate the geometries.
+    for (const auto& [geometry_pair, certificate] : certificates_map) {
+      const auto& plane = tester.cspace_free_polytope()
+                              .separating_planes()[certificate.plane_index];
+      for (int j = 0; j < s_vals.cols(); ++j) {
+        symbolic::Environment env;
+        env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
+                   s_vals.col(j));
+        Eigen::Vector3d a_val;
+        for (int k = 0; k < 3; ++k) {
+          a_val(k) = certificate.a(k).Evaluate(env);
+        }
+        const double b_val = certificate.b.Evaluate(env);
+
+        plant_->SetPositions(&plant_context, q_vals.col(j));
+        EXPECT_GE(
+            DistanceToHalfspace(*(plane.positive_side_geometry), a_val, b_val,
+                                plane.expressed_body, PlaneSide::kPositive,
+                                *plant_, plant_context),
+            0);
+        EXPECT_GE(
+            DistanceToHalfspace(*(plane.negative_side_geometry), a_val, b_val,
+                                plane.expressed_body, PlaneSide::kNegative,
+                                *plant_, plant_context),
+            0);
+      }
+    }
   }
 }
 

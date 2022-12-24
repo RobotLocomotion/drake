@@ -25,6 +25,9 @@ enum class PlaneSide {
   kNegative,
 };
 
+/** Returns the other side */
+[[nodiscard]] PlaneSide OtherSide(PlaneSide plane_side);
+
 class CollisionGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionGeometry)
@@ -66,8 +69,9 @@ class CollisionGeometry {
    Similarly we can write down the conditions for other geometry types,
    including polytopes and capsules.
 
-   Note that when we don't require a separating margin δ, and the geometry is a
-   polytope, then we consider the constraint
+   Note that when we don't require a separating margin δ, and both this
+   geometry and the geometry on the other side of the plane are polytopes, then
+   we consider the constraint
    aᵀp_AVᵢ(s) + b ≥ 1 if the polytope is on the positive side of the plane, and
    aᵀp_AVᵢ(s) + b ≤ -1 if the polytope is on the negative side of the plane.
    Note that in this case we don't have the "vector with length <= 1 "
@@ -85,18 +89,23 @@ class CollisionGeometry {
    @param separating_margin δ in the documentation above.
    @param plane_side Whether the geometry is on the positive or negative side of
    the plane.
+   @param other_side_geometry_type The type of the geometry on the other side of
+   the plane.
    @param[out] rationals The rationals that should be positive when the geometry
    is on the designated side of the plane.
    @param[out] unit_length_vector The vector that should have length <= 1 when
    the geometry is on the designated side of the plane.
    */
+  // TODO(hongkai.dai): remove query_object from input when we can construct an
+  // HPolyhedron directly from vertices.
   void OnPlaneSide(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
       const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
       const std::optional<symbolic::Variable>& separating_margin,
-      PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
+      PlaneSide plane_side, GeometryType other_side_geometry_type,
+      std::vector<symbolic::RationalFunction>* rationals,
       std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const;
 
   [[nodiscard]] GeometryType type() const;
@@ -105,7 +114,8 @@ class CollisionGeometry {
    Returns the number of rationals in the condition "this geometry is on one
    side of the plane."
    */
-  [[nodiscard]] int num_rationals_per_side() const;
+  [[nodiscard]] int num_rationals_per_side(
+      bool search_margin, GeometryType other_side_geometry_type) const;
 
  private:
   const Shape* geometry_;
