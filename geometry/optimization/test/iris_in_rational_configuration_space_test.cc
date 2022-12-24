@@ -19,7 +19,6 @@ using Eigen::Vector2d;
 using symbolic::Variable;
 const double kInf = std::numeric_limits<double>::infinity();
 
-
 // Helper method for testing IrisInConfigurationSpace from a urdf string.
 HPolyhedron IrisFromUrdf(const std::string urdf,
                          const Eigen::Ref<const Eigen::VectorXd>& q_sample,
@@ -92,7 +91,8 @@ GTEST_TEST(IrisInRationalConfigurationSpaceTest, DoublePendulum) {
   const Vector2d q_sample = Vector2d::Zero();
   const Vector2d q_star = Vector2d::Ones();
   IrisOptions options;
-  HPolyhedron region = IrisFromUrdf(double_pendulum_urdf, q_sample, q_star, options);
+  HPolyhedron region =
+      IrisFromUrdf(double_pendulum_urdf, q_sample, q_star, options);
 
   // Note: You may use this to plot the solution in the desmos graphing
   // calculator link above.  Just copy each equation in the printed formula into
@@ -104,7 +104,6 @@ GTEST_TEST(IrisInRationalConfigurationSpaceTest, DoublePendulum) {
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 1.5);
-
 }
 }  // namespace
 }  // namespace optimization
