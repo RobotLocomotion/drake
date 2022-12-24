@@ -210,6 +210,22 @@ drake_pybind_library(
     ],
 )
 
+drake_pybind_library(
+    name = "rational_py",
+    cc_deps = [
+        "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
+    ],
+    cc_srcs = ["rational_py.cc"],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        ":module_py",
+        ":plant_py",
+        "//bindings/pydrake/solvers",
+    ],
+)
+
 drake_jupyter_py_binary(
     name = "examples/door_hinge_inspector",
     add_test_rule = 1,
@@ -228,6 +244,7 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":optimization_py",
     ":parsing_py",
     ":plant_py",
+    ":rational_py",
     ":tree_py",
 ]
 
