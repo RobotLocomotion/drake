@@ -78,6 +78,16 @@ class CollisionGeometryTest : public CIrisToyRobotTest {
   Eigen::Vector3d q_val_;
 };
 
+void CheckRationalExpression(const symbolic::RationalFunction& rational,
+                             const symbolic::Environment& env,
+                             const symbolic::Expression& expr_expected) {
+  const symbolic::Expression expr =
+      rational.numerator().EvaluatePartial(env).ToExpression() /
+      rational.denominator().Evaluate(env);
+  EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
+               symbolic::Polynomial(expr_expected), 1E-7);
+}
+
 TEST_F(CollisionGeometryTest, Box) {
   // Test CollisionGeometry constructed from a box.
   const auto& model_inspector = scene_graph_->model_inspector();
@@ -94,11 +104,13 @@ TEST_F(CollisionGeometryTest, Box) {
 
   std::vector<symbolic::RationalFunction> rationals;
   std::optional<VectorX<symbolic::Polynomial>> unit_length_vector;
-  // Positive side, separating_margin is empty.
+  // Positive side, separating_margin is empty, other side geometry is also
+  // polytope.
   box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_, std::nullopt,
-                  PlaneSide::kPositive, &rationals, &unit_length_vector);
+                  PlaneSide::kPositive, GeometryType::kPolytope, &rationals,
+                  &unit_length_vector);
   EXPECT_FALSE(unit_length_vector.has_value());
-  EXPECT_EQ(box.num_rationals_per_side(), 8);
+  EXPECT_EQ(box.num_rationals_per_side(false, GeometryType::kPolytope), 8);
   EXPECT_EQ(rationals.size(), 8);
 
   // The order of the vertices should be the same in collision_geometry.cc
@@ -112,8 +124,17 @@ TEST_F(CollisionGeometryTest, Box) {
   p_GV.row(0) *= box_geometry.width() / 2;
   p_GV.row(1) *= box_geometry.depth() / 2;
   p_GV.row(2) *= box_geometry.height() / 2;
+  // C is the Chebyshev center. The Chebyshev center of the box is not unique,
+  // we choose the one computed from HPolyhedron.
+  const HPolyhedron box_polyhedron{VPolytope(p_GV)};
+  const Eigen::Vector3d p_GC = box_polyhedron.ChebyshevCenter();
+  const double radius =
+      std::min(std::min(box_geometry.width(), box_geometry.depth()),
+               box_geometry.height()) /
+      2;
 
   const Eigen::Matrix<double, 3, 8> p_BV = box.X_BG() * p_GV;
+  const Eigen::Vector3d p_BC = box.X_BG() * p_GC;
 
   // Evaluate the rationals, and compare the evaluation result with a.dot(p_AV)
   // + b - 1
@@ -126,6 +147,10 @@ TEST_F(CollisionGeometryTest, Box) {
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
+  Eigen::Vector3d p_AC;
+  plant_->CalcPointsPositions(
+      *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BC,
+      plant_->get_body(expressed_body).body_frame(), &p_AC);
   Vector3<symbolic::Expression> a_expr;
   for (int j = 0; j < 3; ++j) {
     a_expr(j) = a_(j).EvaluatePartial(env).ToExpression();
@@ -134,34 +159,58 @@ TEST_F(CollisionGeometryTest, Box) {
   for (int i = 0; i < 8; ++i) {
     const symbolic::Expression expr_expected =
         a_expr.dot(p_AV.col(i)) + b_expr - 1;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 
-  // Negative side, with separating margin.
+  // Negative side, with separating margin, the other side geometry is polytope.
   rationals.clear();
   symbolic::Variable separating_margin{"delta"};
   box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                  separating_margin, PlaneSide::kNegative, &rationals,
-                  &unit_length_vector);
+                  separating_margin, PlaneSide::kNegative,
+                  GeometryType::kPolytope, &rationals, &unit_length_vector);
   EXPECT_TRUE(unit_length_vector.has_value());
   EXPECT_EQ(unit_length_vector->rows(), 3);
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ((*unit_length_vector)(i), a_(i));
   }
-  EXPECT_EQ(rationals.size(), 8);
+  EXPECT_EQ(rationals.size(), 9);
+  EXPECT_EQ(box.num_rationals_per_side(true, GeometryType::kPolytope), 9);
   for (int i = 0; i < 8; ++i) {
     const symbolic::Expression expr_expected =
         -separating_margin - a_expr.dot(p_AV.col(i)) - b_expr;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
     EXPECT_TRUE(rationals[i].numerator().decision_variables().include(
+        separating_margin));
+  }
+  {
+    // Check the last rational -0.5*r - a.dot(p_AC) - b
+    const symbolic::Expression expr_expected =
+        -0.5 * radius - a_expr.dot(p_AC) - b_expr;
+    CheckRationalExpression(rationals[8], env, expr_expected);
+    EXPECT_FALSE(rationals[8].numerator().decision_variables().include(
+        separating_margin));
+  }
+
+  // Positive side, no margin, other side is a sphere.
+  rationals.clear();
+  box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_, std::nullopt,
+                  PlaneSide::kPositive, GeometryType::kSphere, &rationals,
+                  &unit_length_vector);
+  EXPECT_FALSE(unit_length_vector.has_value());
+  EXPECT_EQ(rationals.size(), 9);
+  EXPECT_EQ(box.num_rationals_per_side(true, GeometryType::kPolytope), 9);
+  for (int i = 0; i < 8; ++i) {
+    const symbolic::Expression expr_expected = a_expr.dot(p_AV.col(i)) + b_expr;
+    CheckRationalExpression(rationals[i], env, expr_expected);
+    EXPECT_FALSE(rationals[i].numerator().decision_variables().include(
+        separating_margin));
+  }
+  {
+    // Check the last rational a.dot(p_AC) + b - 0.5*r
+    const symbolic::Expression expr_expected =
+        a_expr.dot(p_AC) + b_expr - 0.5 * radius;
+    CheckRationalExpression(rationals[8], env, expr_expected);
+    EXPECT_FALSE(rationals[8].numerator().decision_variables().include(
         separating_margin));
   }
 }
@@ -190,7 +239,9 @@ TEST_F(CollisionGeometryTest, Convex) {
 
   const VPolytope polytope(query_object, body1_convex_,
                            model_inspector.GetFrameId(body1_convex_));
-  EXPECT_EQ(convex.num_rationals_per_side(), polytope.vertices().cols());
+  // Compute the H-polyhedron in the geometry frame.
+  const HPolyhedron h_poly(
+      VPolytope(convex.X_BG().inverse() * polytope.vertices()));
 
   const Eigen::Vector3d q_val(0.2, -0.1, 0.4);
   const Eigen::VectorXd s_val = SetQ(q_star, q_val);
@@ -202,13 +253,24 @@ TEST_F(CollisionGeometryTest, Convex) {
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
+  const Eigen::Vector3d p_GC = h_poly.ChebyshevCenter();
+  const Eigen::Vector3d p_BC = convex.X_BG() * p_GC;
+  Eigen::Vector3d p_AC;
+  plant_->CalcPointsPositions(
+      *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BC,
+      plant_->get_body(expressed_body).body_frame(), &p_AC);
+  const double radius = ((h_poly.b() - h_poly.A() * p_GC).array() /
+                         h_poly.A().rowwise().norm().array())
+                            .minCoeff();
 
-  // negative side, no separating margin.
+  // negative side, no separating margin, other side is a polytope.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     std::nullopt, PlaneSide::kNegative, &rationals,
-                     &unit_length_vector);
+                     std::nullopt, PlaneSide::kNegative,
+                     GeometryType::kPolytope, &rationals, &unit_length_vector);
   EXPECT_FALSE(unit_length_vector.has_value());
   EXPECT_EQ(rationals.size(), polytope.vertices().cols());
+  EXPECT_EQ(convex.num_rationals_per_side(false, GeometryType::kPolytope),
+            polytope.vertices().cols());
   symbolic::Environment env;
   env.insert(rational_forward_kin_.s(), s_val);
   Vector3<symbolic::Expression> a_expr;
@@ -219,44 +281,66 @@ TEST_F(CollisionGeometryTest, Convex) {
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
         -1 - a_expr.dot(p_AV.col(i)) - b_expr;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual,
-                 symbolic::Polynomial(expr_expected),
-                 symbolic::Polynomial(expr), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 
-  // Positive side, with separating margin.
+  // Positive side, with separating margin, other side is a polytope.
   const symbolic::Variable separating_margin("delta");
   // Note that here I didn't clear rationals, so that I can test the new
   // rationals are appended to the existing ones.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     separating_margin, PlaneSide::kPositive, &rationals,
-                     &unit_length_vector);
+                     separating_margin, PlaneSide::kPositive,
+                     GeometryType::kPolytope, &rationals, &unit_length_vector);
   EXPECT_TRUE(unit_length_vector.has_value());
   EXPECT_EQ(unit_length_vector->rows(), 3);
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ((*unit_length_vector)(i), a_(i));
   }
   // The new rationals are appended to the existing ones.
-  EXPECT_EQ(rationals.size(), 2 * polytope.vertices().cols());
+  EXPECT_EQ(rationals.size(), 2 * polytope.vertices().cols() + 1);
+  EXPECT_EQ(convex.num_rationals_per_side(true, GeometryType::kPolytope),
+            1 + polytope.vertices().cols());
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
         a_expr.dot(p_AV.col(i)) + b_expr - separating_margin;
-    const symbolic::Expression expr =
-        rationals[i + polytope.vertices().cols()]
-            .numerator()
-            .EvaluatePartial(env)
-            .ToExpression() /
-        rationals[i + polytope.vertices().cols()].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual,
-                 symbolic::Polynomial(expr_expected),
-                 symbolic::Polynomial(expr), 1E-7);
+    CheckRationalExpression(rationals[i + polytope.vertices().cols()], env,
+                            expr_expected);
     EXPECT_TRUE(rationals[i + polytope.vertices().cols()]
                     .numerator()
                     .decision_variables()
                     .include(separating_margin));
+  }
+  {
+    // Check the last rational as a.dot(p_AC) + b - 0.5*r
+    const symbolic::Expression expr_expected =
+        a_expr.dot(p_AC) + b_expr - 0.5 * radius;
+    CheckRationalExpression(rationals.back(), env, expr_expected);
+    EXPECT_FALSE(rationals.back().numerator().decision_variables().include(
+        separating_margin));
+  }
+
+  // positive side, no separating margin, other side is a sphere.
+  rationals.clear();
+  convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
+                     std::nullopt, PlaneSide::kPositive, GeometryType::kSphere,
+                     &rationals, &unit_length_vector);
+  EXPECT_FALSE(unit_length_vector.has_value());
+  EXPECT_EQ(rationals.size(), polytope.vertices().cols() + 1);
+  EXPECT_EQ(convex.num_rationals_per_side(false, GeometryType::kSphere),
+            1 + polytope.vertices().cols());
+  for (int i = 0; i < polytope.vertices().cols(); ++i) {
+    const symbolic::Expression expr_expected = a_expr.dot(p_AV.col(i)) + b_expr;
+    CheckRationalExpression(rationals[i], env, expr_expected);
+    EXPECT_FALSE(rationals[i].numerator().decision_variables().include(
+        separating_margin));
+  }
+  {
+    // Check the last rational as a.dot(p_AC) + b - 0.5*r
+    const symbolic::Expression expr_expected =
+        a_expr.dot(p_AC) + b_expr - 0.5 * radius;
+    CheckRationalExpression(rationals.back(), env, expr_expected);
+    EXPECT_FALSE(rationals.back().numerator().decision_variables().include(
+        separating_margin));
   }
 }
 
@@ -267,7 +351,8 @@ TEST_F(CollisionGeometryTest, Sphere) {
                            plant_->world_body().index(), world_sphere_,
                            model_inspector.GetPoseInFrame(world_sphere_));
   EXPECT_EQ(sphere.type(), GeometryType::kSphere);
-  EXPECT_EQ(sphere.num_rationals_per_side(), 1);
+  EXPECT_EQ(sphere.num_rationals_per_side(true, GeometryType::kPolytope), 1);
+  EXPECT_EQ(sphere.num_rationals_per_side(false, GeometryType::kPolytope), 1);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[3];
@@ -289,8 +374,8 @@ TEST_F(CollisionGeometryTest, Sphere) {
   std::vector<symbolic::RationalFunction> rationals;
   std::optional<VectorX<symbolic::Polynomial>> unit_length_vector;
   sphere.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     std::nullopt, PlaneSide::kNegative, &rationals,
-                     &unit_length_vector);
+                     std::nullopt, PlaneSide::kNegative,
+                     GeometryType::kPolytope, &rationals, &unit_length_vector);
   EXPECT_TRUE(unit_length_vector.has_value());
   EXPECT_EQ(unit_length_vector->rows(), 3);
   for (int i = 0; i < 3; ++i) {
@@ -306,25 +391,18 @@ TEST_F(CollisionGeometryTest, Sphere) {
       static_cast<const Sphere&>(model_inspector.GetShape(world_sphere_))
           .radius();
   symbolic::Expression expr_expected = -radius - a_expr.dot(p_AS) - b_expr;
-  symbolic::Expression expr =
-      rationals[0].numerator().EvaluatePartial(env).ToExpression() /
-      rationals[0].denominator().Evaluate(env);
-  EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-               symbolic::Polynomial(expr_expected), 1E-7);
+  CheckRationalExpression(rationals[0], env, expr_expected);
 
   // Positive side, with margin.
   rationals.clear();
   const symbolic::Variable separating_margin("delta");
   sphere.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     separating_margin, PlaneSide::kPositive, &rationals,
-                     &unit_length_vector);
+                     separating_margin, PlaneSide::kPositive,
+                     GeometryType::kCapsule, &rationals, &unit_length_vector);
   EXPECT_TRUE(unit_length_vector.has_value());
   EXPECT_EQ(unit_length_vector->rows(), 3);
   expr_expected = a_expr.dot(p_AS) + b_expr - radius - separating_margin;
-  expr = rationals[0].numerator().EvaluatePartial(env).ToExpression() /
-         rationals[0].denominator().Evaluate(env);
-  EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-               symbolic::Polynomial(expr_expected), 1E-7);
+  CheckRationalExpression(rationals[0], env, expr_expected);
 }
 
 TEST_F(CollisionGeometryTest, Capsule) {
@@ -335,7 +413,8 @@ TEST_F(CollisionGeometryTest, Capsule) {
                             geometry_body, body2_capsule_,
                             model_inspector.GetPoseInFrame(body2_capsule_));
   EXPECT_EQ(capsule.type(), GeometryType::kCapsule);
-  EXPECT_EQ(capsule.num_rationals_per_side(), 2);
+  EXPECT_EQ(capsule.num_rationals_per_side(true, GeometryType::kPolytope), 2);
+  EXPECT_EQ(capsule.num_rationals_per_side(false, GeometryType::kCapsule), 2);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[0];
@@ -357,8 +436,8 @@ TEST_F(CollisionGeometryTest, Capsule) {
   std::vector<symbolic::RationalFunction> rationals;
   std::optional<VectorX<symbolic::Polynomial>> unit_length_vector;
   capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                      std::nullopt, PlaneSide::kNegative, &rationals,
-                      &unit_length_vector);
+                      std::nullopt, PlaneSide::kNegative, GeometryType::kSphere,
+                      &rationals, &unit_length_vector);
   EXPECT_TRUE(unit_length_vector.has_value());
   EXPECT_EQ(unit_length_vector->rows(), 3);
   for (int i = 0; i < 3; ++i) {
@@ -378,30 +457,22 @@ TEST_F(CollisionGeometryTest, Capsule) {
   for (int i = 0; i < 2; ++i) {
     symbolic::Expression expr_expected =
         -capsule_shape.radius() - a_expr.dot(p_AS.col(i)) - b_expr;
-    symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 
   // Positive side, with margin.
   rationals.clear();
   const symbolic::Variable separating_margin("delta");
   capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                      separating_margin, PlaneSide::kPositive, &rationals,
-                      &unit_length_vector);
+                      separating_margin, PlaneSide::kPositive,
+                      GeometryType::kPolytope, &rationals, &unit_length_vector);
   EXPECT_TRUE(unit_length_vector.has_value());
   EXPECT_EQ(unit_length_vector->rows(), 3);
   for (int i = 0; i < 2; ++i) {
     const symbolic::Expression expr_expected = a_expr.dot(p_AS.col(i)) +
                                                b_expr - capsule_shape.radius() -
                                                separating_margin;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 }
 
