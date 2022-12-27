@@ -304,11 +304,9 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
       EXPECT_TRUE(plane_geometries.unit_length_vectors.empty());
     }
     EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
-              plane.positive_side_geometry->num_rationals_per_side(
-                  false, plane.negative_side_geometry->type()));
+              plane.positive_side_geometry->num_rationals_per_side());
     EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
-              plane.negative_side_geometry->num_rationals_per_side(
-                  false, plane.positive_side_geometry->type()));
+              plane.negative_side_geometry->num_rationals_per_side());
     EXPECT_FALSE(plane_geometries.separating_margin.has_value());
   }
 
