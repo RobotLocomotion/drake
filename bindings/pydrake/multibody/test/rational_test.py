@@ -31,7 +31,7 @@ class TestRationalForwardKinematics(unittest.TestCase):
         diagram = builder.Build()
 
         # test constructor
-        self.rat_forward = rational.RationalForwardKinematics(self.plant)
+        self.rat_forward = rational.RationalForwardKinematics(plant=self.plant)
 
     def testGetters(self):
         plant = self.rat_forward.plant()

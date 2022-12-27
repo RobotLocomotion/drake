@@ -45,7 +45,7 @@ PYBIND11_MODULE(rational, m) {
         .def("ConvertMultilinearPolynomialToRationalFunction",
             &Class::ConvertMultilinearPolynomialToRationalFunction,
             py::arg("e"), cls_doc.ctor.doc)
-        .def("plant", &Class::plant, cls_doc.ctor.doc)
+        .def("plant", &Class::plant, py_rvp::reference_internal, cls_doc.ctor.doc)
         .def("s", &Class::s, py_rvp::copy, cls_doc.ctor.doc)
         .def(
             "ComputeSValue",
