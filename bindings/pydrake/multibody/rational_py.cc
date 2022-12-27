@@ -28,25 +28,43 @@ PYBIND11_MODULE(rational, m) {
             )
         .def("CalcBodyPoseAsMultilinearPolynomial",
             &Class::CalcBodyPoseAsMultilinearPolynomial, py::arg("q_star"),
-            py::arg("body_index"), py::arg("expressed_body_index"), cls_doc.ctor.doc)
+            py::arg("body_index"), py::arg("expressed_body_index"),
+            cls_doc.ctor.doc)
         .def("ConvertMultilinearPolynomialToRationalFunction",
-            &Class::ConvertMultilinearPolynomialToRationalFunction, py::arg("e"), cls_doc.ctor.doc)
+            &Class::ConvertMultilinearPolynomialToRationalFunction,
+            py::arg("e"), cls_doc.ctor.doc)
         .def("plant", &Class::plant, cls_doc.ctor.doc)
         .def("s", &Class::s, cls_doc.ctor.doc)
-//        .def("ComputeSValue",
-//             &Class::ComputeSValue<const Eigen::VectorXd&,  const Eigen::Ref<const Eigen::VectorXd>>,
-//            py::arg("q_val"), py::arg("q_star_val")
-//            //             cls_doc.CalcLinkPoses
-//            )
+        .def(
+            "ComputeSValue",
+            [](const Class& self, const Eigen::VectorXd& q_val,
+                const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
+              return self.ComputeSValue(q_val, q_star_val);
+            },
+            py::arg("q_val"), py::arg("q_star_val"), cls_doc.ComputeSValue.doc)
+        .def(
+            "ComputeSValue",
+            [](const Class& self, const AutoDiffVecXd& q_val,
+                const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
+              return self.ComputeSValue(q_val, q_star_val);
+            },
+            py::arg("q_val"), py::arg("q_star_val"), cls_doc.ComputeSValue.doc)
+        .def(
+            "ComputeSValue",
+            [](const Class& self, const VectorX<symbolic::Expression>& q_val,
+                const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
+              return self.ComputeSValue(q_val, q_star_val);
+            },
+            py::arg("q_val"), py::arg("q_star_val"), cls_doc.ComputeSValue.doc)
 
-//        .def("ComputeQValue",
-//            overload_cast_explicit<Eigen::VectorXd,
-//                const Eigen::Ref<const Eigen::VectorXd>&,
-//                const Eigen::Ref<const Eigen::VectorXd>&>(
-//                &Class::ComputeQValue),
-//            py::arg("s_val"), py::arg("q_star_val")
-//            //             cls_doc.CalcLinkPoses
-//        )
+        //        .def("ComputeQValue",
+        //            overload_cast_explicit<Eigen::VectorXd,
+        //                const Eigen::Ref<const Eigen::VectorXd>&,
+        //                const Eigen::Ref<const Eigen::VectorXd>&>(
+        //                &Class::ComputeQValue),
+        //            py::arg("s_val"), py::arg("q_star_val")
+        //            //             cls_doc.CalcLinkPoses
+        //        )
         ;
   }
 }
