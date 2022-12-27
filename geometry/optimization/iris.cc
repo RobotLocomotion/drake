@@ -247,6 +247,8 @@ class SamePointConstraintAbstractCSpace : public Constraint {
   }
 
  public:
+  virtual VectorXd ExtractAbstractCspaceVariableFromQ(
+      const Ref<const VectorXd>& q) const = 0;
   virtual VectorXd ExtractQFromAbstractCspaceVariable(
       const Ref<const VectorXd>& cspace_variable) const = 0;
   virtual AutoDiffVecXd ExtractQFromAbstractCspaceVariable(
@@ -357,6 +359,11 @@ class SamePointConstraint : public SamePointConstraintAbstractCSpace {
                       const Context<double>& context)
       : SamePointConstraintAbstractCSpace(plant, context) {}
 
+  VectorXd ExtractAbstractCspaceVariableFromQ(
+      const Ref<const VectorXd>& q) const override {
+    return q;
+  }
+
   VectorXd ExtractQFromAbstractCspaceVariable(
       const Ref<const VectorXd>& cspace_variable) const override {
     return cspace_variable;
@@ -384,6 +391,10 @@ class SamePointConstraintRational : public SamePointConstraintAbstractCSpace {
         rational_forward_kinematics_ptr_(rational_forward_kinematics_ptr),
         q_star_(q_star) {}
 
+  VectorXd ExtractAbstractCspaceVariableFromQ(
+      const Ref<const VectorXd>& q) const override {
+    return rational_forward_kinematics_ptr_->ComputeSValue(q, q_star_);
+  }
   VectorXd ExtractQFromAbstractCspaceVariable(
       const Ref<const VectorXd>& cspace_variable) const override {
     return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
@@ -718,8 +729,11 @@ HPolyhedron _DoIris_(const multibody::MultibodyPlant<double>& plant,
   }
 
   // Make the polytope and ellipsoid.
-  HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
-                                       plant.GetPositionUpperLimits());
+  HPolyhedron P = HPolyhedron::MakeBox(
+      same_point_constraint->ExtractAbstractCspaceVariableFromQ(
+          plant.GetPositionLowerLimits()),
+      same_point_constraint->ExtractAbstractCspaceVariableFromQ(
+          plant.GetPositionUpperLimits()));
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
   const double kEpsilonEllipsoid = 1e-2;
   Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample);
