@@ -2,12 +2,18 @@
 
 #include <utility>
 
+#include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
+
+PlaneSide OtherSide(PlaneSide plane_side) {
+  return plane_side == PlaneSide::kPositive ? PlaneSide::kNegative
+                                            : PlaneSide::kPositive;
+}
 
 CollisionGeometry::CollisionGeometry(const geometry::Shape* geometry,
                                      multibody::BodyIndex body_index,
@@ -23,7 +29,8 @@ struct ReifyData {
           m_X_AB_multilinear,
       const multibody::RationalForwardKinematics& m_rational_forward_kin,
       const std::optional<symbolic::Variable>& m_separating_margin,
-      PlaneSide m_plane_side,
+      PlaneSide m_plane_side, GeometryType m_other_side_geometry_type,
+      GeometryId m_geometry_id,
       std::vector<symbolic::RationalFunction>* m_rationals,
       std::optional<VectorX<symbolic::Polynomial>>* m_unit_length_vector)
       : a{&m_a},
@@ -32,6 +39,8 @@ struct ReifyData {
         rational_forward_kin{&m_rational_forward_kin},
         separating_margin{&m_separating_margin},
         plane_side{m_plane_side},
+        other_side_geometry_type{m_other_side_geometry_type},
+        geometry_id{m_geometry_id},
         rationals{m_rationals},
         unit_length_vector{m_unit_length_vector} {}
 
@@ -44,6 +53,8 @@ struct ReifyData {
   const multibody::RationalForwardKinematics* rational_forward_kin;
   const std::optional<symbolic::Variable>* separating_margin;
   const PlaneSide plane_side;
+  const GeometryType other_side_geometry_type;
+  const GeometryId geometry_id;
   std::vector<symbolic::RationalFunction>* rationals;
   std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector;
 };
@@ -92,29 +103,62 @@ struct ReifyData {
 
 void ImplementPolytopeGeometry(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
                                const math::RigidTransformd& X_BG, void* data) {
-  // For a polytope (including box) to be on one side of the separating plane,
-  // if we only require strict separation but don't explicitly constrain the
-  // separating margin to be at least δ, then we impose the following
-  // constraint:
+  // For a polytope (including box) to be on one side of the separating plane
+  // (and the other side geometry is also a polytope), if we only require
+  // strict separation but don't explicitly constrain the separating margin to
+  // be at least δ, then we impose the following constraint:
   // aᵀ*p_AV+b ≥ 1 if plane_side = kPositive
   // aᵀ*p_AV+b ≤ -1 if plane_side = kNegative.
   //
-  // If we require the separating margin to be at least δ, then we impose the
-  // following constraint:
-  // aᵀ*p_AV+b ≥ δ if plane_side = kPositive
-  // aᵀ*p_AV+b ≤ -δ if plane_side = kNegative
-  // and the constraint |a|≤1.
+  // Otherwise, we impose the following constraint:
+  // if plane_side = kPositive
+  //   aᵀ*p_AV+b ≥ δ
+  //   aᵀ*p_AC+b ≥ 0.5r
+  // if plane_side = kNegative
+  //   aᵀ*p_AV+b ≤ -δ
+  //   aᵀ*p_AC+b ≤ -0.5r
+  // where C is the Chebyshev center of the polytope, and r is the distance
+  // from C to the polytope boundary.
+  //
+  // We impose the condition aᵀ*p_AC+b ≥ 0.5r (or ≤ -0.5r) to rule out the
+  // trivial solution a = 0, b=0, since the right hand side 0.5r (or -0.5r) is
+  // strictly non-zero.
+  //
+  // If separating_margin has value, then we also impose the constraint |a|≤1.
   auto* reify_data = static_cast<ReifyData*>(data);
 
-  reify_data->rationals->reserve(p_GV.cols());
+  double offset{0};
+  int num_rationals{0};
+  const bool consider_chebyshev_center =
+      reify_data->separating_margin->has_value() ||
+      reify_data->other_side_geometry_type != GeometryType::kPolytope;
+  if (consider_chebyshev_center) {
+    num_rationals = p_GV.cols() + 1;
+    offset = 0;
+  } else {
+    num_rationals = p_GV.cols();
+    offset = 1;
+  }
+  reify_data->rationals->reserve(num_rationals);
   // The position of the vertices V in the geometry frame G.
-  const double offset = reify_data->separating_margin->has_value() ? 0 : 1.;
   for (int i = 0; i < p_GV.cols(); ++i) {
     reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
         *(reify_data->a), *(reify_data->b), p_GV.col(i), X_BG,
         *(reify_data->X_AB_multilinear), offset,
         *(reify_data->separating_margin), reify_data->plane_side,
         *(reify_data->rational_forward_kin)));
+  }
+  if (consider_chebyshev_center) {
+    const HPolyhedron h_polyhedron{VPolytope(p_GV)};
+    const Eigen::Vector3d p_GC = h_polyhedron.ChebyshevCenter();
+    const double radius =
+        ((h_polyhedron.b() - h_polyhedron.A() * p_GC).array() /
+         h_polyhedron.A().rowwise().norm().array())
+            .minCoeff();
+    reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
+        *(reify_data->a), *(reify_data->b), p_GC, X_BG,
+        *(reify_data->X_AB_multilinear), 0.5 * radius, std::nullopt,
+        reify_data->plane_side, *(reify_data->rational_forward_kin)));
   }
   if (reify_data->separating_margin->has_value()) {
     reify_data->unit_length_vector->emplace(*(reify_data->a));
@@ -125,8 +169,11 @@ void ImplementPolytopeGeometry(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
 
 class OnPlaneSideReifier : public ShapeReifier {
  public:
-  OnPlaneSideReifier(const Shape* geometry, math::RigidTransformd X_BG)
-      : geometry_{geometry}, X_BG_{std::move(X_BG)} {}
+  OnPlaneSideReifier(const Shape* geometry, math::RigidTransformd X_BG,
+                     GeometryId geometry_id)
+      : geometry_{geometry},
+        X_BG_{std::move(X_BG)},
+        geometry_id_{geometry_id} {}
 
   void ProcessData(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
@@ -134,11 +181,12 @@ class OnPlaneSideReifier : public ShapeReifier {
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
       const std::optional<symbolic::Variable>& separating_margin,
-      PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
+      PlaneSide plane_side, GeometryType other_side_geometry_type,
+      std::vector<symbolic::RationalFunction>* rationals,
       std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) {
     ReifyData data(a, b, X_AB_multilinear, rational_forward_kin,
-                   separating_margin, plane_side, rationals,
-                   unit_length_vector);
+                   separating_margin, plane_side, other_side_geometry_type,
+                   geometry_id_, rationals, unit_length_vector);
     geometry_->Reify(this, &data);
   }
 
@@ -150,15 +198,16 @@ class OnPlaneSideReifier : public ShapeReifier {
     // The position of the vertices V in the geometry frame G.
     Eigen::Matrix<double, 3, 8> p_GV;
     // clang-format off
-  p_GV << 1, 1, 1, 1, -1, -1, -1, -1,
-          1, 1, -1, -1, 1, 1, -1, -1,
-          1, -1, 1, -1, 1, -1, 1, -1;
+    p_GV << 1, 1, 1, 1, -1, -1, -1, -1,
+            1, 1, -1, -1, 1, 1, -1, -1,
+            1, -1, 1, -1, 1, -1, 1, -1;
     // clang-format on
     p_GV.row(0) *= box.width() / 2;
     p_GV.row(1) *= box.depth() / 2;
     p_GV.row(2) *= box.height() / 2;
     ImplementPolytopeGeometry(p_GV, X_BG_, data);
   }
+
   void ImplementGeometry(const Convex& convex, void* data) {
     const Eigen::Matrix3Xd p_GV = GetVertices(convex);
     ImplementPolytopeGeometry(p_GV, X_BG_, data);
@@ -208,6 +257,7 @@ class OnPlaneSideReifier : public ShapeReifier {
 
   const Shape* geometry_;
   math::RigidTransformd X_BG_;
+  GeometryId geometry_id_;
 };
 
 class GeometryTypeReifier : public ShapeReifier {
@@ -252,8 +302,12 @@ class GeometryTypeReifier : public ShapeReifier {
 
 class NumRationalsPerPlaneSideReifier : public ShapeReifier {
  public:
-  explicit NumRationalsPerPlaneSideReifier(const Shape* shape)
-      : shape_{shape} {}
+  explicit NumRationalsPerPlaneSideReifier(
+      const Shape* shape, bool search_margin,
+      GeometryType other_side_geometry_type)
+      : shape_{shape},
+        search_margin_{search_margin},
+        other_side_geometry_type_{other_side_geometry_type} {}
 
   int ProcessData() {
     int ret;
@@ -266,13 +320,23 @@ class NumRationalsPerPlaneSideReifier : public ShapeReifier {
 
   void ImplementGeometry(const Box&, void* data) {
     auto* num = static_cast<int*>(data);
-    *num = 8;
+    if (!search_margin_ &&
+        other_side_geometry_type_ == GeometryType::kPolytope) {
+      *num = 8;
+    } else {
+      *num = 9;
+    }
   }
 
   void ImplementGeometry(const Convex& convex, void* data) {
     auto* num = static_cast<int*>(data);
     const Eigen::Matrix3Xd p_GV = GetVertices(convex);
-    *num = p_GV.cols();
+    if (!search_margin_ &&
+        other_side_geometry_type_ == GeometryType::kPolytope) {
+      *num = p_GV.cols();
+    } else {
+      *num = p_GV.cols() + 1;
+    }
   }
 
   void ImplementGeometry(const Sphere&, void* data) {
@@ -286,6 +350,8 @@ class NumRationalsPerPlaneSideReifier : public ShapeReifier {
   }
 
   const Shape* shape_;
+  const bool search_margin_;
+  const GeometryType other_side_geometry_type_;
 };
 
 /**
@@ -354,12 +420,13 @@ void CollisionGeometry::OnPlaneSide(
         X_AB_multilinear,
     const multibody::RationalForwardKinematics& rational_forward_kin,
     const std::optional<symbolic::Variable>& separating_margin,
-    PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
+    PlaneSide plane_side, GeometryType other_side_geometry_type,
+    std::vector<symbolic::RationalFunction>* rationals,
     std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const {
-  OnPlaneSideReifier reifier(geometry_, X_BG_);
+  OnPlaneSideReifier reifier(geometry_, X_BG_, id_);
   reifier.ProcessData(a, b, X_AB_multilinear, rational_forward_kin,
-                      separating_margin, plane_side, rationals,
-                      unit_length_vector);
+                      separating_margin, plane_side, other_side_geometry_type,
+                      rationals, unit_length_vector);
 }
 
 GeometryType CollisionGeometry::type() const {
@@ -367,8 +434,10 @@ GeometryType CollisionGeometry::type() const {
   return reifier.ProcessData();
 }
 
-int CollisionGeometry::num_rationals_per_side() const {
-  NumRationalsPerPlaneSideReifier reifier(geometry_);
+int CollisionGeometry::num_rationals_per_side(
+    bool search_margin, GeometryType other_side_geometry_type) const {
+  NumRationalsPerPlaneSideReifier reifier(geometry_, search_margin,
+                                          other_side_geometry_type);
   return reifier.ProcessData();
 }
 

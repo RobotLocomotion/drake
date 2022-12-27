@@ -382,6 +382,8 @@ std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
          {PlaneSide::kPositive, PlaneSide::kNegative}) {
       const CollisionGeometry* link_geometry =
           separating_plane.geometry(plane_side);
+      const CollisionGeometry* other_side_geometry =
+          separating_plane.geometry(OtherSide(plane_side));
 
       const BodyPair expressed_to_link(separating_plane.expressed_body,
                                        link_geometry->body_index());
@@ -399,10 +401,10 @@ std::vector<PlaneSeparatesGeometries> CspaceFreePolytope::GenerateRationals(
       auto& rationals = plane_side == PlaneSide::kPositive
                             ? positive_side_rationals
                             : negative_side_rationals;
-      link_geometry->OnPlaneSide(separating_plane.a, separating_plane.b,
-                                 X_AB_multilinear, rational_forward_kin_,
-                                 separating_margin, plane_side, &rationals,
-                                 &unit_length_vec);
+      link_geometry->OnPlaneSide(
+          separating_plane.a, separating_plane.b, X_AB_multilinear,
+          rational_forward_kin_, separating_margin, plane_side,
+          other_side_geometry->type(), &rationals, &unit_length_vec);
 
       if (unit_length_vec.has_value()) {
         if (unit_length_vectors.empty()) {
