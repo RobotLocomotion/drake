@@ -401,6 +401,18 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "rational_test",
+    data = [
+        ":models",
+    ],
+    deps = [
+        ":rational_py",
+        ":parsing_py",
+        "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
 add_pybind_coverage_data()
 
 add_lint_tests_pydrake()
