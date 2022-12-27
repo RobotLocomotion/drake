@@ -104,8 +104,7 @@ class CollisionGeometry {
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
       const std::optional<symbolic::Variable>& separating_margin,
-      PlaneSide plane_side, GeometryType other_side_geometry_type,
-      std::vector<symbolic::RationalFunction>* rationals,
+      PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
       std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const;
 
   [[nodiscard]] GeometryType type() const;
@@ -114,8 +113,7 @@ class CollisionGeometry {
    Returns the number of rationals in the condition "this geometry is on one
    side of the plane."
    */
-  [[nodiscard]] int num_rationals_per_side(
-      bool search_margin, GeometryType other_side_geometry_type) const;
+  [[nodiscard]] int num_rationals_per_side() const;
 
  private:
   const Shape* geometry_;
