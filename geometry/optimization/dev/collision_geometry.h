@@ -51,6 +51,18 @@ class CollisionGeometry {
   const math::RigidTransformd& X_BG() const { return X_BG_; }
 
   /**
+   When we constrain a polytope to be on one side of the plane (for example the
+   positive side), we impose the constraint
+   aᵀ*p_AVᵢ + b ≥ δ
+   aᵀ*p_AC  + b ≥ k * r
+   where Vᵢ being the i'th vertex of the polytope. C is the Chebyshev center of
+   the polytope, r is the radius (namely the distance from the Chebyshev center
+   to the boundary of the polytope), and k is a positive scalar. This function
+   returns the value of k.
+   */
+  static double PolytopeChebyshevRadiusMultiplier() { return 0.5; }
+
+  /**
    To impose the geometric constraint that this collision geometry is on one
    side of a plane {x|aᵀx+b=0} with a certain margin, we can equivalently write
    this constraint with the following conditions
@@ -104,8 +116,7 @@ class CollisionGeometry {
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
       const std::optional<symbolic::Variable>& separating_margin,
-      PlaneSide plane_side, GeometryType other_side_geometry_type,
-      std::vector<symbolic::RationalFunction>* rationals,
+      PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
       std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const;
 
   [[nodiscard]] GeometryType type() const;
@@ -114,8 +125,7 @@ class CollisionGeometry {
    Returns the number of rationals in the condition "this geometry is on one
    side of the plane."
    */
-  [[nodiscard]] int num_rationals_per_side(
-      bool search_margin, GeometryType other_side_geometry_type) const;
+  [[nodiscard]] int num_rationals_per_side() const;
 
  private:
   const Shape* geometry_;
