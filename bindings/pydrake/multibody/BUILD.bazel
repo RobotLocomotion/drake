@@ -407,8 +407,8 @@ drake_py_unittest(
         ":models",
     ],
     deps = [
-        ":rational_py",
         ":parsing_py",
+        ":rational_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )

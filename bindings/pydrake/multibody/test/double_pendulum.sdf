@@ -172,9 +172,5 @@
         </limit>
       </axis>
     </joint>
-    <joint name="base_weld" type="fixed">
-      <parent>world</parent>
-      <child>base</child>
-    </joint>
   </model>
 </sdf>

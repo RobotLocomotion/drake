@@ -24,14 +24,14 @@ void DoPoseDeclaration(py::module m, T) {
 }
 
 PYBIND11_MODULE(rational, m) {
-  using namespace drake::multibody;
+  using drake::multibody::MultibodyPlant;
   constexpr auto& doc = pydrake_doc.drake.multibody;
 
   m.doc() = "RationalForwardKinematics module";
   py::module::import("pydrake.math");
   py::module::import("pydrake.multibody.plant");
   {
-    using Class = RationalForwardKinematics;
+    using Class = drake::multibody::RationalForwardKinematics;
     constexpr auto& cls_doc = doc.RationalForwardKinematics;
     py::class_<Class>(m, "RationalForwardKinematics")
         .def(py::init<const MultibodyPlant<double>*>(), py::arg("plant"),
