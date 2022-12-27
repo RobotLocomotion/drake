@@ -79,8 +79,6 @@ class TestRationalForwardKinematics(unittest.TestCase):
         s = self.rat_forward.ComputeSValue(q_val=q, q_star_val=q_star)
         q_recomputed = self.rat_forward.ComputeQValue(s_val=s,
                                                       q_star_val=q_star)
-        print(q)
-        print(q_recomputed)
         q_expected = [Expression(x),
                       sym.atan2(2 * sym.tan(x / 2), 1 - (sym.tan(x / 2)) ** 2)]
         self.assertTrue(all([q_recomputed_elt.EqualTo(q_expected_elt)
