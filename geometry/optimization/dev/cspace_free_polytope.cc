@@ -12,6 +12,7 @@
 #include "drake/common/symbolic/monomial_util.h"
 #include "drake/common/symbolic/polynomial.h"
 #include "drake/geometry/optimization/dev/collision_geometry.h"
+#include "drake/geometry/optimization/dev/separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
@@ -25,6 +26,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 const double kInf = std::numeric_limits<double>::infinity();
+
 namespace {
 // Returns true if all the bodies on the kinematics chain from `start` to `end`
 // are welded together (namely all the mobilizer in between are welded).
@@ -202,16 +204,13 @@ bool IsFutureReady(const std::future<T>& future) {
 }
 
 [[nodiscard]] CspaceFreePolytope::SeparationCertificateResult GetSolution(
-    int plane_index, const Eigen::Ref<const Eigen::MatrixXd>& C,
-    const Eigen::Ref<const Eigen::VectorXd>& d,
+    int plane_index,
     const CspaceFreePolytope::SeparationCertificate& certificate,
     const std::optional<symbolic::Variable>& separating_margin,
     const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
     const solvers::MathematicalProgramResult& result) {
   CspaceFreePolytope::SeparationCertificateResult ret;
   ret.plane_index = plane_index;
-  ret.C = C;
-  ret.d = d;
   ret.positive_side_lagrangians.reserve(
       certificate.positive_side_lagrangians.size());
   for (const auto& lagrangians : certificate.positive_side_lagrangians) {
@@ -267,6 +266,18 @@ solvers::MathematicalProgramResult SolveWithBackoff(
     drake::log()->error("Failed before backoff.");
   }
   return result;
+}
+
+void AddSosPolynomial(
+    solvers::MathematicalProgram* prog,
+    const VectorX<symbolic::Monomial>& monomial_basis,
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& gram_lower,
+    symbolic::Polynomial* poly, MatrixX<symbolic::Variable>* gram) {
+  SymmetricMatrixFromLowerTriangularPart<symbolic::Variable>(
+      monomial_basis.rows(), gram_lower, gram);
+  prog->AddPositiveSemidefiniteConstraint(*gram);
+  *poly =
+      symbolic::CalcPolynomialWLowerTriangularPart(monomial_basis, gram_lower);
 }
 }  // namespace
 
@@ -640,13 +651,10 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
               lagrangians.s_upper.dot(this->s_upper_minus_s_);
           // Add the constraint that poly is sos.
           // Use the gram variable gram_vars that has been allocated.
-          SymmetricMatrixFromLowerTriangularPart<symbolic::Variable>(
-              monomial_basis.rows(),
-              gram_vars.segment(gram_var_count, gram_size), &gram);
-          prog->AddPositiveSemidefiniteConstraint(gram);
-          const symbolic::Polynomial poly_sos =
-              symbolic::CalcPolynomialWLowerTriangularPart(
-                  monomial_basis, gram_vars.segment(gram_var_count, gram_size));
+          symbolic::Polynomial poly_sos;
+          AddSosPolynomial(prog, monomial_basis,
+                           gram_vars.segment(gram_var_count, gram_size),
+                           &poly_sos, &gram);
           gram_var_count += gram_size;
           prog->AddEqualityConstraintBetweenPolynomials(poly, poly_sos);
         }
@@ -663,7 +671,7 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
     for (const auto& vec : plane_geometries.unit_length_vectors) {
       ret.unit_length_lagrangians.push_back(AddUnitLengthConstraint(
           ret.prog.get(), vec, d_minus_Cs, C_redundant_indices,
-          s_lower_redundant_indices, s_upper_redundant_indices));
+          s_lower_redundant_indices, s_upper_redundant_indices, std::nullopt));
     }
   }
 
@@ -685,9 +693,11 @@ CspaceFreePolytope::AddUnitLengthConstraint(
     const VectorX<symbolic::Polynomial>& d_minus_Cs,
     const std::unordered_set<int>& C_redundant_indices,
     const std::unordered_set<int>& s_lower_redundant_indices,
-    const std::unordered_set<int>& s_upper_redundant_indices) const {
-  CspaceFreePolytope::UnitLengthLagrangians ret(d_minus_Cs.rows(),
-                                                this->s_minus_s_lower_.rows());
+    const std::unordered_set<int>& s_upper_redundant_indices,
+    const std::optional<VectorX<symbolic::Polynomial>>& polytope_lagrangians)
+    const {
+  const int s_size = rational_forward_kin_.s().rows();
+  CspaceFreePolytope::UnitLengthLagrangians ret(d_minus_Cs.rows(), s_size);
   // Currently we only handle unit_length_vec.rows() == 3, and each polynomial
   // in unit_length_vec has degree <= 1.
   // TODO(hongkai.dai): handle unit_length_vec.rows() != 3.
@@ -715,8 +725,10 @@ CspaceFreePolytope::AddUnitLengthConstraint(
     p += 2 * unit_length_vec(i) *
          symbolic::Polynomial(symbolic::Monomial(y_slack_(i + 1)));
   }
-  const int num_grams =
-      1 + d_minus_Cs.rows() + 2 * this->s_minus_s_lower_.rows();
+  int num_grams = 1 + 2 * s_size;
+  if (!polytope_lagrangians.has_value()) {
+    num_grams += d_minus_Cs.rows();
+  }
   // Since p(y, s) is quadratic in y and linear in s, with the highest-degree
   // monomial in the form yᵢ²sⱼ, we know that to make p(y, s) - λ₁(y, s)ᵀ(d−Cs)
   // − λ₂(y, s)ᵀ(s−s_lower) − λ₃(y, s)ᵀ(s_upper−s) - ν₄(y, s)(1−yᵀy) being sos,
@@ -735,11 +747,16 @@ CspaceFreePolytope::AddUnitLengthConstraint(
   int gram_var_count = 0;
   MatrixX<symbolic::Variable> gram(monomial_basis.rows(),
                                    monomial_basis.rows());
-  for (int i = 0; i < d_minus_Cs.rows(); ++i) {
-    AddLagrangian(prog, monomial_basis,
-                  gram_vars.segment(gram_var_count, gram_size),
-                  C_redundant_indices.count(i) > 0, &(ret.polytope(i)), &gram);
-    gram_var_count += gram_size;
+  if (polytope_lagrangians.has_value()) {
+    DRAKE_DEMAND(polytope_lagrangians->rows() == d_minus_Cs.rows());
+    ret.polytope = polytope_lagrangians.value();
+  } else {
+    for (int i = 0; i < d_minus_Cs.rows(); ++i) {
+      AddLagrangian(
+          prog, monomial_basis, gram_vars.segment(gram_var_count, gram_size),
+          C_redundant_indices.count(i) > 0, &(ret.polytope(i)), &gram);
+      gram_var_count += gram_size;
+    }
   }
   for (int i = 0; i < this->s_minus_s_lower_.rows(); ++i) {
     AddLagrangian(
@@ -815,36 +832,35 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   std::vector<std::optional<SeparationCertificateResult>> ret(
       active_plane_indices.size(), std::nullopt);
 
-  // This lambda function formulates and solves a smal SOS program for each pair
-  // of geometries.
-  auto solve_small_sos = [this, &C, &d, &d_minus_Cs, &C_redundant_indices,
-                          &s_lower_redundant_indices,
-                          &s_upper_redundant_indices, &active_plane_indices,
-                          search_separating_margin, &options, &is_success,
-                          &ret](int plane_count) {
-    const int plane_index = active_plane_indices[plane_count];
-    const auto& plane_geometries =
-        search_separating_margin
-            ? this->plane_geometries_w_margin_[plane_index]
-            : this->plane_geometries_wo_margin_[plane_index];
-    auto certificate = this->ConstructPlaneSearchProgram(
-        plane_geometries, d_minus_Cs, C_redundant_indices,
-        s_lower_redundant_indices, s_upper_redundant_indices);
-    const auto result =
-        SolveWithBackoff(certificate.prog.get(), options.backoff_scale,
-                         options.solver_options, options.solver_id);
-    if (result.is_success()) {
-      ret[plane_count].emplace(GetSolution(
-          plane_index, C, d, certificate, plane_geometries.separating_margin,
-          separating_planes_[plane_index].a, separating_planes_[plane_index].b,
-          result));
-      is_success[plane_count].emplace(true);
-    } else {
-      ret[plane_count].reset();
-      is_success[plane_count].emplace(false);
-    }
-    return plane_count;
-  };
+  // This lambda function formulates and solves a small SOS program for each
+  // pair of geometries.
+  auto solve_small_sos =
+      [this, &d_minus_Cs, &C_redundant_indices, &s_lower_redundant_indices,
+       &s_upper_redundant_indices, &active_plane_indices,
+       search_separating_margin, &options, &is_success, &ret](int plane_count) {
+        const int plane_index = active_plane_indices[plane_count];
+        const auto& plane_geometries =
+            search_separating_margin
+                ? this->plane_geometries_w_margin_[plane_index]
+                : this->plane_geometries_wo_margin_[plane_index];
+        auto certificate = this->ConstructPlaneSearchProgram(
+            plane_geometries, d_minus_Cs, C_redundant_indices,
+            s_lower_redundant_indices, s_upper_redundant_indices);
+        const auto result =
+            SolveWithBackoff(certificate.prog.get(), options.backoff_scale,
+                             options.solver_options, options.solver_id);
+        if (result.is_success()) {
+          ret[plane_count].emplace(GetSolution(
+              plane_index, certificate, plane_geometries.separating_margin,
+              separating_planes_[plane_index].a,
+              separating_planes_[plane_index].b, result));
+          is_success[plane_count].emplace(true);
+        } else {
+          ret[plane_count].reset();
+          is_success[plane_count].emplace(false);
+        }
+        return plane_count;
+      };
 
   const int num_threads =
       options.num_threads > 0
@@ -969,6 +985,325 @@ bool CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
     }
   }
   return is_success;
+}
+
+int CspaceFreePolytope::GetGramVarSizeForPolytopeSearchProgram(
+    const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs)
+    const {
+  int ret = 0;
+
+  auto count_gram_per_plane_side = [this, &ret](
+                                       int num_rationals,
+                                       multibody::BodyIndex expressed_body,
+                                       multibody::BodyIndex collision_body) {
+    const auto& monomial_basis = this->map_body_to_monomial_basis_.at(
+        SortedPair<multibody::BodyIndex>(expressed_body, collision_body));
+    // Each rational will add Lagrangian multipliers for s-s_lower and
+    // s_upper-s, together with one sos that rational.numerator() - λ(s)ᵀ * (d -
+    // C*s) - λ_lower(s)ᵀ * (s - s_lower) -λ_upper(s)ᵀ * (s_upper - s) is sos
+    const int s_size = this->rational_forward_kin_.s().rows();
+    const int num_sos = num_rationals * (1 + 2 * s_size);
+    ret += num_sos * (monomial_basis.rows() + 1) * monomial_basis.rows() / 2;
+  };
+  for (const auto& plane_geometries : plane_geometries_wo_margin_) {
+    const auto& plane = separating_planes_[plane_geometries.plane_index];
+    if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+            plane.positive_side_geometry->id(),
+            plane.negative_side_geometry->id())) == 0) {
+      count_gram_per_plane_side(plane_geometries.positive_side_rationals.size(),
+                                plane.expressed_body,
+                                plane.positive_side_geometry->body_index());
+      count_gram_per_plane_side(plane_geometries.negative_side_rationals.size(),
+                                plane.expressed_body,
+                                plane.negative_side_geometry->body_index());
+    }
+  }
+  return ret;
+}
+
+std::unique_ptr<solvers::MathematicalProgram>
+CspaceFreePolytope::InitializePolytopeSearchProgram(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const MatrixX<symbolic::Variable>& C, const VectorX<symbolic::Variable>& d,
+    const VectorX<symbolic::Polynomial>& d_minus_Cs,
+    const std::vector<std::optional<SeparationCertificateResult>>&
+        certificates_vec,
+    int gram_total_size) const {
+  auto prog = std::make_unique<solvers::MathematicalProgram>();
+  prog->AddIndeterminates(rational_forward_kin_.s());
+  // Add the indeterminates y if we need to impose unit length constraint.
+  if (std::any_of(plane_geometries_wo_margin_.begin(),
+                  plane_geometries_wo_margin_.end(),
+                  [](const PlaneSeparatesGeometries& plane_geometries) {
+                    return !plane_geometries.unit_length_vectors.empty();
+                  })) {
+    prog->AddIndeterminates(y_slack_);
+  }
+
+  prog->AddDecisionVariables(Eigen::Map<const VectorX<symbolic::Variable>>(
+      C.data(), C.rows() * C.cols()));
+  prog->AddDecisionVariables(d);
+  const auto gram_vars = prog->NewContinuousVariables(gram_total_size, "Gram");
+
+  // plane_to_certificate_map maps the plane index to the index of certificate
+  // in certificates_vec. Namely
+  // certificates_vec[plane_to_certificate_map[i]]->plane_index = i
+  std::unordered_map<int, int> plane_to_certificate_map;
+  for (int i = 0; i < static_cast<int>(certificates_vec.size()); ++i) {
+    plane_to_certificate_map.emplace(certificates_vec[i]->plane_index, i);
+  }
+  int gram_var_count = 0;
+  const int s_size = rational_forward_kin_.s().rows();
+  // Allocate memory for the Lagrangians for s-s_lower and s_upper-s.
+  VectorX<symbolic::Polynomial> s_upper_lagrangians(s_size);
+  VectorX<symbolic::Polynomial> s_lower_lagrangians(s_size);
+  // Add the sos constraints for each pair of geometries.
+  auto add_sos = [this, &prog, &d_minus_Cs, &gram_vars, &gram_var_count,
+                  &s_upper_lagrangians, &s_lower_lagrangians](
+                     const std::vector<symbolic::RationalFunction>& rationals,
+                     int plane_index, multibody::BodyIndex collision_body,
+                     const std::vector<SeparatingPlaneLagrangians>&
+                         plane_side_lagrangians) {
+    DRAKE_DEMAND(plane_side_lagrangians.size() == rationals.size());
+    const VectorX<symbolic::Monomial> monomial_basis =
+        this->map_body_to_monomial_basis_.at(SortedPair<multibody::BodyIndex>(
+            this->separating_planes_[plane_index].expressed_body,
+            collision_body));
+    const int gram_lower_size =
+        (monomial_basis.rows() + 1) * monomial_basis.rows() / 2;
+    MatrixX<symbolic::Variable> gram_mat(monomial_basis.rows(),
+                                         monomial_basis.rows());
+    // Add Lagrangians for joint limits.
+    for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
+      for (int j = 0; j < this->rational_forward_kin_.s().rows(); ++j) {
+        AddSosPolynomial(prog.get(), monomial_basis,
+                         gram_vars.segment(gram_var_count, gram_lower_size),
+                         &(s_lower_lagrangians(j)), &gram_mat);
+        gram_var_count += gram_lower_size;
+        AddSosPolynomial(prog.get(), monomial_basis,
+                         gram_vars.segment(gram_var_count, gram_lower_size),
+                         &(s_upper_lagrangians(j)), &gram_mat);
+        gram_var_count += gram_lower_size;
+      }
+      const symbolic::Polynomial poly =
+          rationals[i].numerator() -
+          plane_side_lagrangians[i].polytope.dot(d_minus_Cs) -
+          s_lower_lagrangians.dot(this->s_minus_s_lower_) -
+          s_upper_lagrangians.dot(this->s_upper_minus_s_);
+      // Constrain poly to be sos.
+      symbolic::Polynomial poly_sos;
+      AddSosPolynomial(prog.get(), monomial_basis,
+                       gram_vars.segment(gram_var_count, gram_lower_size),
+                       &poly_sos, &gram_mat);
+      gram_var_count += gram_lower_size;
+      prog->AddEqualityConstraintBetweenPolynomials(poly, poly_sos);
+    }
+  };
+  for (int plane_index = 0;
+       plane_index < static_cast<int>(separating_planes_.size());
+       ++plane_index) {
+    const auto& plane = separating_planes_[plane_index];
+    const SortedPair<geometry::GeometryId> geometry_pair(
+        plane.positive_side_geometry->id(), plane.negative_side_geometry->id());
+    if (ignored_collision_pairs.count(geometry_pair) == 0) {
+      prog->AddDecisionVariables(plane.decision_variables);
+      const auto& certificate =
+          certificates_vec[plane_to_certificate_map.at(plane_index)];
+      DRAKE_DEMAND(certificate.has_value());
+      add_sos(plane_geometries_wo_margin_[plane_index].positive_side_rationals,
+              plane_index, plane.positive_side_geometry->body_index(),
+              certificate->positive_side_lagrangians);
+      add_sos(plane_geometries_wo_margin_[plane_index].negative_side_rationals,
+              plane_index, plane.negative_side_geometry->body_index(),
+              certificate->negative_side_lagrangians);
+      // Add the unit length constraint.
+      for (int i = 0;
+           i < static_cast<int>(plane_geometries_wo_margin_[plane_index]
+                                    .unit_length_vectors.size());
+           ++i) {
+        const auto& unit_length_vec =
+            plane_geometries_wo_margin_[plane_index].unit_length_vectors[i];
+        this->AddUnitLengthConstraint(
+            prog.get(), unit_length_vec, d_minus_Cs,
+            std::unordered_set<int>{} /* C_redundant_indices */,
+            std::unordered_set<int>{} /* s_lower_redundant_indices */,
+            std::unordered_set<int>{} /* s_upper_redundant_indices */,
+            certificate->unit_length_lagrangians[i].polytope);
+      }
+    }
+  }
+  DRAKE_DEMAND(gram_var_count == gram_total_size);
+  return prog;
+}
+
+void CspaceFreePolytope::AddEllipsoidContainmentConstraint(
+    solvers::MathematicalProgram* prog, const Eigen::MatrixXd& Q,
+    const Eigen::VectorXd& s0, const MatrixX<symbolic::Variable>& C,
+    const VectorX<symbolic::Variable>& d,
+    const VectorX<symbolic::Variable>& ellipsoid_margins) const {
+  DRAKE_DEMAND(Q.rows() == Q.cols());
+  DRAKE_DEMAND((s0.array() <= s_upper_.array()).all());
+  DRAKE_DEMAND((s0.array() >= s_lower_.array()).all());
+  // Add the constraint |cᵢᵀQ|₂ ≤ dᵢ − cᵢᵀs0 − δᵢ as a Lorentz cone
+  // constraint, namely [dᵢ − cᵢᵀs0 − δᵢ, cᵢᵀQ] is in the Lorentz cone. [dᵢ
+  // − cᵢᵀs0 − δᵢ, cᵢᵀQ] = A_lorentz1 * [cᵢ, dᵢ, δᵢ] + b_lorentz1
+  Eigen::MatrixXd A_lorentz1(Q.rows() + 1, 2 + C.cols());
+  Eigen::VectorXd b_lorentz1(Q.rows() + 1);
+  VectorX<symbolic::Variable> lorentz1_vars(2 + C.cols());
+  for (int i = 0; i < C.rows(); ++i) {
+    A_lorentz1.setZero();
+    A_lorentz1.block(0, 0, 1, C.cols()) = -s0.transpose();
+    A_lorentz1(0, C.cols()) = 1;
+    A_lorentz1(0, C.cols() + 1) = -1;
+    A_lorentz1.block(1, 0, Q.rows(), Q.cols()) = Q;
+    b_lorentz1.setZero();
+    lorentz1_vars << C.row(i).transpose(), d(i), ellipsoid_margins(i);
+    prog->AddLorentzConeConstraint(A_lorentz1, b_lorentz1, lorentz1_vars);
+  }
+  // Add the constraint |cᵢ|₂ ≤ 1 as a Lorentz cone constraint that [1,
+  // cᵢ] is in the Lorentz cone. [1, cᵢ] = A_lorentz2 * cᵢ + b_lorentz2
+  Eigen::MatrixXd A_lorentz2 = Eigen::MatrixXd::Zero(1 + C.cols(), C.cols());
+  A_lorentz2.bottomRows(C.cols()) =
+      Eigen::MatrixXd::Identity(C.cols(), C.cols());
+  Eigen::VectorXd b_lorentz2 = Eigen::VectorXd::Zero(1 + C.cols());
+  b_lorentz2(0) = 1;
+  for (int i = 0; i < C.rows(); ++i) {
+    prog->AddLorentzConeConstraint(A_lorentz2, b_lorentz2,
+                                   C.row(i).transpose());
+  }
+}
+
+void CspaceFreePolytope::AddCspacePolytopeContainment(
+    solvers::MathematicalProgram* prog, const MatrixX<symbolic::Variable>& C,
+    const VectorX<symbolic::Variable>& d,
+    const Eigen::MatrixXd& s_inner_pts) const {
+  DRAKE_DEMAND(s_inner_pts.rows() == this->rational_forward_kin_.s().rows());
+  // Check that s_inner_pts is within [s_lower_, s_upper_].
+  for (int i = 0; i < s_inner_pts.rows(); ++i) {
+    for (int j = 0; j < s_inner_pts.cols(); ++j) {
+      if (s_inner_pts(i, j) > s_upper_(i)) {
+        throw std::runtime_error(
+            fmt::format("AddCspacePolytopeContainment(): s_inner_pts({}, "
+                        "{})={}, larger than s_upper({})={}",
+                        i, j, s_inner_pts(i, j), i, s_upper_(i)));
+      }
+      if (s_inner_pts(i, j) < s_lower_(i)) {
+        throw std::runtime_error(
+            fmt::format("AddCspacePolytopeContainment(): s_inner_pts({}, "
+                        "{})={}, smaller than s_lower({})={}",
+                        i, j, s_inner_pts(i, j), i, s_lower_(i)));
+      }
+    }
+  }
+  // We have the constraint C.row(i).dot(s_inner_pts.col(j)) <= d(i) for all i,
+  // j. We can write this as s_inner_ptsᵀ * C.row(i)ᵀ <= [d(i);...;d(i)] We
+  // repeat this constraint for each row and concantenate it into the matrix
+  // form blockdiag(s_inner_ptsᵀ, ..., s_inner_ptsᵀ) * [C.row(0)ᵀ;
+  // C.row(1)ᵀ;...;C.row(n-1)] - blockdiag(𝟏, 𝟏, ..., 𝟏) * d <= 0
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(
+      s_inner_pts.cols() * C.rows(), (s_inner_pts.rows() + 1) * C.rows());
+  VectorX<symbolic::Variable> vars(A.cols());
+  for (int i = 0; i < C.rows(); ++i) {
+    A.block(i * s_inner_pts.cols(), i * (s_inner_pts.rows() + 1),
+            s_inner_pts.cols(), s_inner_pts.rows()) = s_inner_pts.transpose();
+    A.block(i * s_inner_pts.cols(),
+            i * (s_inner_pts.rows() + 1) + s_inner_pts.rows(),
+            s_inner_pts.cols(), 1) = -Eigen::VectorXd::Ones(s_inner_pts.cols());
+    vars.segment((s_inner_pts.rows() + 1) * i, s_inner_pts.rows()) =
+        C.row(i).transpose();
+    vars((s_inner_pts.rows() + 1) * i + s_inner_pts.rows()) = d(i);
+  }
+  prog->AddLinearConstraint(A, Eigen::VectorXd::Constant(A.rows(), -kInf),
+                            Eigen::VectorXd::Zero(A.rows()), vars);
+}
+
+std::optional<CspaceFreePolytope::FindPolytopeGivenLagrangianResult>
+CspaceFreePolytope::FindPolytopeGivenLagrangian(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const MatrixX<symbolic::Variable>& C, const VectorX<symbolic::Variable>& d,
+    const VectorX<symbolic::Polynomial>& d_minus_Cs,
+    const std::vector<std::optional<SeparationCertificateResult>>&
+        certificates_vec,
+    const Eigen::MatrixXd& Q, const Eigen::VectorXd& s0,
+    const VectorX<symbolic::Variable>& ellipsoid_margins, int gram_total_size,
+    const FindPolytopeGivenLagrangianOptions& options) const {
+  auto prog = this->InitializePolytopeSearchProgram(
+      ignored_collision_pairs, C, d, d_minus_Cs, certificates_vec,
+      gram_total_size);
+  prog->AddDecisionVariables(ellipsoid_margins);
+  AddEllipsoidContainmentConstraint(prog.get(), Q, s0, C, d, ellipsoid_margins);
+  // We know that the verified polytope has to be contained in the box s_lower
+  // <= s <= s_upper. Hence there is no point to grow the polytope such that any
+  // of its halfspace C.row(i) * s <= d(i) contains the entire box s_lower <= s
+  // <= s_upper. Therefore an upper bound of the margin δ is the maximal
+  // distance from any vertices of the box s_lower <= s <= s_upper to the
+  // ellipsoid. Computing the distance from a point to the hyperellipsoid is
+  // non-trivial (there is not closed-form solution). Here we use an upper bound
+  // of this distance, which is the maximal distance between any two points
+  // within the box.
+  const double margin_upper_bound = (s_upper_ - s_lower_).norm();
+  prog->AddBoundingBoxConstraint(0, margin_upper_bound, ellipsoid_margins);
+  if (options.s_inner_pts.has_value()) {
+    for (int i = 0; i < options.s_inner_pts->cols(); ++i) {
+      DRAKE_DEMAND(
+          (options.s_inner_pts->col(i).array() <= s_upper_.array()).all());
+      DRAKE_DEMAND(
+          (options.s_inner_pts->col(i).array() >= s_lower_.array()).all());
+    }
+    // Add the constraint C * s_inner_pts <= d
+    AddCspacePolytopeContainment(prog.get(), C, d, options.s_inner_pts.value());
+  }
+
+  // Maximize ∏ᵢ (δᵢ + ε)
+  prog->AddMaximizeGeometricMeanCost(
+      Eigen::MatrixXd::Identity(ellipsoid_margins.rows(),
+                                ellipsoid_margins.rows()),
+      Eigen::VectorXd::Constant(ellipsoid_margins.rows(),
+                                options.ellipsoid_margin_epsilon),
+      ellipsoid_margins);
+
+  const solvers::MathematicalProgramResult result =
+      SolveWithBackoff(prog.get(), options.backoff_scale,
+                       options.solver_options, options.solver_id);
+  if (result.is_success()) {
+    CspaceFreePolytope::FindPolytopeGivenLagrangianResult ret;
+    ret.C = result.GetSolution(C);
+    ret.d = result.GetSolution(d);
+    for (int plane_index = 0;
+         plane_index < static_cast<int>(this->separating_planes_.size());
+         ++plane_index) {
+      const auto& plane = this->separating_planes_[plane_index];
+      const SortedPair<geometry::GeometryId> geometry_pair(
+          plane.positive_side_geometry->id(),
+          plane.negative_side_geometry->id());
+      if (ignored_collision_pairs.count(geometry_pair) == 0) {
+        Vector3<symbolic::Polynomial> a;
+        for (int i = 0; i < 3; ++i) {
+          a(i) = result.GetSolution(plane.a(i));
+        }
+        ret.a.emplace(plane_index, a);
+        ret.b.emplace(plane_index, result.GetSolution(plane.b));
+        ret.ellipsoid_margins = result.GetSolution(ellipsoid_margins);
+      }
+    }
+    return ret;
+  } else {
+    return std::nullopt;
+  }
+}
+
+HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(
+    const Eigen::MatrixXd& C, const Eigen::VectorXd& d) const {
+  const int s_size = rational_forward_kin_.s().rows();
+  Eigen::MatrixXd A(C.rows() + 2 * s_size, s_size);
+  Eigen::VectorXd b(A.rows());
+  A.topRows(C.rows()) = C;
+  b.head(C.rows()) = d;
+  A.middleRows(C.rows(), s_size) = Eigen::MatrixXd::Identity(s_size, s_size);
+  b.segment(C.rows(), s_size) = s_upper_;
+  A.bottomRows(s_size) = -Eigen::MatrixXd::Identity(s_size, s_size);
+  b.tail(s_size) = -s_lower_;
+  return HPolyhedron(A, b);
 }
 
 std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>
