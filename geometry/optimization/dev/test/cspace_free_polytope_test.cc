@@ -1320,6 +1320,103 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
     EXPECT_TRUE((polytope_result->C.rowwise().norm().array() <= 1).all());
   }
 }
+
+TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
+  const Eigen::Vector3d q_star(0, 0, 0);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine, q_star);
+  // Test with initial C and d that is collision-free.
+  Eigen::Matrix<double, 9, 3> C;
+  // clang-format off
+  C << 1, 1, 0,
+       -1, -1, 0,
+       -1, 0, 1,
+       1, 0, -1,
+       0, 1, 1,
+       0, -1, -1,
+       1, 0, 1,
+       1, 1, -1,
+       1, -1, 1;
+  // clang-format on
+  Eigen::Matrix<double, 9, 1> d;
+  d << 0.1, 0.1, 0.1, 0.02, 0.02, 0.2, 0.1, 0.1, 0.2;
+
+  CspaceFreePolytope::IgnoredCollisionPairs ignored_collision_pairs{
+      SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)};
+
+  CspaceFreePolytope::BilinearAlternationOptions bilinear_alternation_options;
+  bilinear_alternation_options.max_iter = 5;
+  bilinear_alternation_options.convergence_tol = 1E-5;
+
+  solvers::MosekSolver solver;
+  if (solver.available()) {
+    auto bilinear_alternation_result =
+        tester.cspace_free_polytope().SearchWithBilinearAlternation(
+            ignored_collision_pairs, C, d, true /* search_margin */,
+            bilinear_alternation_options);
+    ASSERT_TRUE(bilinear_alternation_result.has_value());
+    // Sample many s_values, project to {s | C*s <= d}. And then make sure that
+    // the corresponding configurations are collision free.
+    Eigen::Matrix<double, 10, 3> s_samples;
+    // clang-format off
+    s_samples << 1, 2, -1,
+               -0.5, 0.3, 0.2,
+               0.2, 0.9, 0.4,
+               0.5, -1.2, 0.3,
+               0.2, 2.5, -0.4,
+               -1.3, 1.5, 2,
+               0.5, 0.2, 1,
+               -0.4, 0.5, 1,
+               0, 0, 0,
+               0.2, -1.5, 1;
+    // clang-format on
+    auto diagram_context = diagram_->CreateDefaultContext();
+    auto& plant_context =
+        plant_->GetMyMutableContextFromRoot(diagram_context.get());
+
+    for (int i = 0; i < s_samples.rows(); ++i) {
+      const Eigen::Vector3d s_val = ProjectToPolytope(
+          s_samples.row(i).transpose(), bilinear_alternation_result->C,
+          bilinear_alternation_result->d, tester.s_lower(), tester.s_upper());
+      symbolic::Environment env;
+      env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
+                 s_val);
+      const Eigen::VectorXd q_val =
+          tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
+              s_val, q_star);
+      plant_->SetPositions(&plant_context, q_val);
+      for (int plane_index = 0;
+           plane_index <
+           static_cast<int>(
+               tester.cspace_free_polytope().separating_planes().size());
+           ++plane_index) {
+        const auto& plane =
+            tester.cspace_free_polytope().separating_planes()[plane_index];
+        if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+                plane.positive_side_geometry->id(),
+                plane.negative_side_geometry->id())) == 0) {
+          Eigen::Vector3d a_val;
+          for (int j = 0; j < 3; ++j) {
+            a_val(j) =
+                bilinear_alternation_result->a.at(plane_index)(j).Evaluate(env);
+          }
+          const double b_val =
+              bilinear_alternation_result->b.at(plane_index).Evaluate(env);
+          EXPECT_GE(
+              DistanceToHalfspace(*plane.positive_side_geometry, a_val, b_val,
+                                  plane.expressed_body, PlaneSide::kPositive,
+                                  *plant_, plant_context),
+              0);
+          EXPECT_GE(
+              DistanceToHalfspace(*plane.negative_side_geometry, a_val, b_val,
+                                  plane.expressed_body, PlaneSide::kNegative,
+                                  *plant_, plant_context),
+              0);
+        }
+      }
+    }
+  }
+}
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

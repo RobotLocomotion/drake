@@ -286,6 +286,47 @@ class CspaceFreePolytope {
     std::optional<Eigen::MatrixXd> s_inner_pts;
   };
 
+  struct BilinearAlternationResult {
+    Eigen::MatrixXd C;
+    Eigen::VectorXd d;
+    // a[i].dot(x) + b[i]=0 is the separation plane for separating_planes()[i].
+    std::unordered_map<int, Vector3<symbolic::Polynomial>> a;
+    std::unordered_map<int, symbolic::Polynomial> b;
+    // The number of iterations at termination.
+    int num_iter;
+  };
+
+  struct BilinearAlternationOptions {
+    int max_iter{10};
+    double convergence_tol{1E-3};
+    FindPolytopeGivenLagrangianOptions find_polytope_options;
+    FindSeparationCertificateGivenPolytopeOptions find_lagrangian_options;
+  };
+
+  /** Search for a collision-free C-space polytope.
+   {s | C*s<=d, s_lower<=s<=s_upper} through bilinear alternation.
+   The goal is to maximize the volume the C-space polytope. Since we can't
+   compute the polytope volume in the closed form, we use the volume of the
+   maximal inscribed ellipsoid as a surrogate function of the polytope volume.
+   @param ignored_collision_pairs The pairs of geometries that we ignore when
+   searching for separation certificates.
+   @param C_init The initial value of C.
+   @param d_init The initial value of d.
+   @param search_margin If set to true, then we also maximize the
+   margin between the separation plane and the separated geometries, when we fix
+   the polytope {s | C*s<=d, s_lower<=s<=s_upper} and search for the separating
+   planes and Lagrangian multipliers.
+   @param options The options for the bilinear alternation.
+   @retval result If we successfully find a collision-free C-space polytope,
+   then `result` contains the search result; otherwise result = std::nullopt.
+   */
+  [[nodiscard]] std::optional<BilinearAlternationResult>
+  SearchWithBilinearAlternation(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const Eigen::Ref<const Eigen::MatrixXd>& C_init,
+      const Eigen::Ref<const Eigen::VectorXd>& d_init, bool search_margin,
+      const BilinearAlternationOptions& options) const;
+
  private:
   // Forward declaration the tester class. This tester class will expose the
   // private members of CspaceFreePolytope for unit test.
