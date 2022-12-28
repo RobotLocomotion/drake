@@ -41,13 +41,14 @@ PYBIND11_MODULE(rational, m) {
         .def("CalcBodyPoseAsMultilinearPolynomial",
             &Class::CalcBodyPoseAsMultilinearPolynomial, py::arg("q_star"),
             py::arg("body_index"), py::arg("expressed_body_index"),
-            cls_doc.ctor.doc)
+            cls_doc.CalcBodyPoseAsMultilinearPolynomial.doc)
         .def("ConvertMultilinearPolynomialToRationalFunction",
             &Class::ConvertMultilinearPolynomialToRationalFunction,
-            py::arg("e"), cls_doc.ctor.doc)
+            py::arg("e"),
+            cls_doc.ConvertMultilinearPolynomialToRationalFunction.doc)
         .def("plant", &Class::plant, py_rvp::reference_internal,
-            cls_doc.ctor.doc)
-        .def("s", &Class::s, py_rvp::copy, cls_doc.ctor.doc)
+            cls_doc.plant.doc)
+        .def("s", &Class::s, py_rvp::copy, cls_doc.s.doc)
         .def(
             "ComputeSValue",
             [](const Class& self, const Eigen::VectorXd& q_val,
@@ -75,21 +76,21 @@ PYBIND11_MODULE(rational, m) {
                 const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
               return self.ComputeQValue(s_val, q_star_val);
             },
-            py::arg("s_val"), py::arg("q_star_val"), cls_doc.ComputeSValue.doc)
+            py::arg("s_val"), py::arg("q_star_val"), cls_doc.ComputeQValue.doc)
         .def(
             "ComputeQValue",
             [](const Class& self, const AutoDiffVecXd& s_val,
                 const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
               return self.ComputeQValue(s_val, q_star_val);
             },
-            py::arg("s_val"), py::arg("q_star_val"), cls_doc.ComputeSValue.doc)
+            py::arg("s_val"), py::arg("q_star_val"), cls_doc.ComputeQValue.doc)
         .def(
             "ComputeQValue",
             [](const Class& self, const VectorX<symbolic::Expression>& s_val,
                 const Eigen::Ref<const Eigen::VectorXd>& q_star_val) {
               return self.ComputeQValue(s_val, q_star_val);
             },
-            py::arg("s_val"), py::arg("q_star_val"), cls_doc.ComputeSValue.doc);
+            py::arg("s_val"), py::arg("q_star_val"), cls_doc.ComputeQValue.doc);
   }
 
   type_pack<symbolic::Polynomial, symbolic::RationalFunction> sym_pack;
