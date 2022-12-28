@@ -108,19 +108,19 @@ set(MINIMUM_GNU_VERSION 9.3)
 
 if(CMAKE_C_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
-    message(FATAL_ERROR
+    message(WARNING
       "Compilation with clang ${CMAKE_C_COMPILER_VERSION} is NOT supported"
     )
   endif()
 elseif(CMAKE_C_COMPILER_ID STREQUAL Clang)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_CLANG_VERSION})
-    message(FATAL_ERROR
+    message(WARNING
       "Compilation with clang ${CMAKE_C_COMPILER_VERSION} is NOT supported"
     )
   endif()
 elseif(CMAKE_C_COMPILER_ID STREQUAL GNU)
   if(CMAKE_C_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
-    message(FATAL_ERROR
+    message(WARNING
       "Compilation with gcc ${CMAKE_C_COMPILER_VERSION} is NOT supported"
     )
   endif()
@@ -133,19 +133,19 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL AppleClang)
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${MINIMUM_APPLE_CLANG_VERSION})
-    message(FATAL_ERROR
+    message(WARNING
       "Compilation with clang++ ${CMAKE_CXX_COMPILER_VERSION} is NOT supported"
     )
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL Clang)
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${MINIMUM_CLANG_VERSION})
-    message(FATAL_ERROR
+    message(WARNING
       "Compilation with clang++ ${CMAKE_CXX_COMPILER_VERSION} is NOT supported"
     )
   endif()
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL GNU)
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${MINIMUM_GNU_VERSION})
-    message(FATAL_ERROR
+    message(WARNING
       "Compilation with g++ ${CMAKE_CXX_COMPILER_VERSION} is NOT supported"
     )
   endif()
