@@ -1,0 +1,57 @@
+<sdf version="1.7">
+  <model name="pendulum_on_rail">
+    <link name="rail_base">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <iyy>0.001</iyy>
+          <izz>0.001</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <link name="pendulum">
+      <inertial>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <iyy>0.001</iyy>
+          <izz>0.001</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="pendulum_collision">
+        <geometry>
+          <sphere>
+            <radius>0.1</radius>
+          </sphere>
+        </geometry>
+      </collision>
+    </link>
+    <joint name="rail_joint" type="prismatic">
+      <parent>world</parent>
+      <child>rail_base</child>
+      <axis>
+        <xyz expressed_in="__model__">1 0 0</xyz>
+        <limit>
+          <effort>0.0</effort>
+        </limit>
+      </axis>
+    </joint>
+    <joint name="pendulum_joint" type="revolute">
+      <parent>rail_base</parent>
+      <child>pendulum</child>
+      <axis>
+        <xyz expressed_in="__model__">1 0 0</xyz>
+        <limit>
+          <effort>0.0</effort>
+        </limit>
+      </axis>
+    </joint>
+  </model>
+</sdf>

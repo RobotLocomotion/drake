@@ -151,6 +151,8 @@ class RationalForwardKinematics {
       // the mobilizer cannot be a weld joint since weld joint doesn't introduce
       // a variable into s_.
       const int q_index = mobilizer.position_start_in_q();
+      using std::pow;
+      using std::atan2;
       if (IsRevolute(mobilizer)) {
         q_val(q_index) =
             atan2(2 * s_val(i), 1 - pow(s_val(i), 2)) + q_star_val(q_index);
