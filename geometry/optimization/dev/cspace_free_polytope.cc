@@ -14,6 +14,7 @@
 #include "drake/geometry/optimization/dev/collision_geometry.h"
 #include "drake/geometry/optimization/dev/separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
+#include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -1304,6 +1305,130 @@ HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(
   A.bottomRows(s_size) = -Eigen::MatrixXd::Identity(s_size, s_size);
   b.tail(s_size) = -s_lower_;
   return HPolyhedron(A, b);
+}
+
+std::optional<CspaceFreePolytope::BilinearAlternationResult>
+CspaceFreePolytope::SearchWithBilinearAlternation(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const Eigen::Ref<const Eigen::MatrixXd>& C_init,
+    const Eigen::Ref<const Eigen::VectorXd>& d_init, bool search_margin,
+    const BilinearAlternationOptions& options) const {
+  DRAKE_DEMAND(C_init.rows() == d_init.rows());
+  DRAKE_DEMAND(C_init.cols() == this->rational_forward_kin_.s().rows());
+  std::optional<CspaceFreePolytope::BilinearAlternationResult> ret{
+      std::nullopt};
+  int iter = 0;
+  // When we search for the C-space polytope {s |C*s<=d, s_lower<=s<=s_upper},
+  // we will require that each row of C has length <= 1. Hence to start with a
+  // feasible solution, we normalize each row of C and d.
+  Eigen::MatrixXd C = C_init;
+  Eigen::VectorXd d = d_init;
+  for (int i = 0; i < C.rows(); ++i) {
+    const double C_row_norm = C.row(i).norm();
+    C.row(i) = C.row(i) / C_row_norm;
+    d(i) = d(i) / C_row_norm;
+  }
+  // Create symbolic variable for C and d
+  MatrixX<symbolic::Variable> C_var(C_init.rows(), C_init.cols());
+  VectorX<symbolic::Variable> d_var(d_init.rows());
+  // Create symbolic variable for ellipsoid margins.
+  VectorX<symbolic::Variable> ellipsoid_margins(C_init.rows());
+  for (int i = 0; i < C_init.rows(); ++i) {
+    d_var(i) = symbolic::Variable("d" + std::to_string(i));
+    ellipsoid_margins(i) =
+        symbolic::Variable("ellipsoid_margin" + std::to_string(i));
+    for (int j = 0; j < C_init.cols(); ++j) {
+      C_var(i, j) = symbolic::Variable(fmt::format("C({},{})", i, j));
+    }
+  }
+  const VectorX<symbolic::Polynomial> d_minus_Cs =
+      this->CalcDminusCs<symbolic::Variable>(C_var, d_var);
+  const int gram_total_size_in_polytope_program =
+      this->GetGramVarSizeForPolytopeSearchProgram(ignored_collision_pairs);
+  // Find the inscribed ellipsoid.
+  HPolyhedron cspace_polytope =
+      this->GetPolyhedronWithJointLimits(C_init, d_init);
+  Hyperellipsoid ellipsoid = cspace_polytope.MaximumVolumeInscribedEllipsoid();
+  Eigen::MatrixXd ellipsoid_Q = ellipsoid.A().inverse();
+  double prev_cost = ellipsoid_Q.determinant();
+  drake::log()->info("det(Q) at the beginning is {}", prev_cost);
+  while (iter < options.max_iter) {
+    const std::vector<std::optional<SeparationCertificateResult>>
+        certificates_result = this->FindSeparationCertificateGivenPolytope(
+            ignored_collision_pairs, C, d, search_margin,
+            options.find_lagrangian_options);
+    if (std::any_of(
+            certificates_result.begin(), certificates_result.end(),
+            [](const std::optional<SeparationCertificateResult>& certificate) {
+              return !certificate.has_value();
+            })) {
+      drake::log()->error(
+          "Cannot find the separation certificate at iteration {} given the "
+          "polytope.",
+          iter);
+      break;
+    } else {
+      if (!ret.has_value()) {
+        ret.emplace();
+      }
+      // Copy the result to ret.
+      ret->C = C;
+      ret->d = d;
+      for (const auto& certificate : certificates_result) {
+        ret->a.emplace(certificate->plane_index, std::move(certificate->a));
+        ret->b.emplace(certificate->plane_index, std::move(certificate->b));
+      }
+    }
+    // Now fix the Lagrangian and search for C-space polytope and separating
+    // planes.
+    const auto polytope_result = this->FindPolytopeGivenLagrangian(
+        ignored_collision_pairs, C_var, d_var, d_minus_Cs, certificates_result,
+        ellipsoid_Q, ellipsoid.center(), ellipsoid_margins,
+        gram_total_size_in_polytope_program, options.find_polytope_options);
+    if (polytope_result.has_value()) {
+      C = polytope_result->C;
+      d = polytope_result->d;
+      ret->C = polytope_result->C;
+      ret->d = polytope_result->d;
+      ret->a = std::move(polytope_result->a);
+      ret->b = std::move(polytope_result->b);
+      ret->num_iter = iter;
+      // Now find the inscribed ellipsoid.
+      // If a row of C is 0-vector, then our current code in HPolyhedron will
+      // cause an error. Hence we prune the 0-vector rows.
+      // TODO(hongkai.dai): fix HPolyhedron so that we don't need to prune the
+      // C, d matrices here.
+      Eigen::MatrixXd C_prune = ret->C;
+      Eigen::VectorXd d_prune = ret->d;
+      int C_prune_rows = 0;
+      for (int i = 0; i < ret->C.rows(); ++i) {
+        if ((ret->C.row(i).array() != 0).any()) {
+          C_prune.row(C_prune_rows) = ret->C.row(i);
+          d_prune(C_prune_rows) = ret->d(i);
+          ++C_prune_rows;
+        }
+      }
+      C_prune.conservativeResize(C_prune_rows, C_prune.cols());
+      d_prune.conservativeResize(C_prune_rows, 1);
+      cspace_polytope = this->GetPolyhedronWithJointLimits(C_prune, d_prune);
+      ellipsoid = cspace_polytope.MaximumVolumeInscribedEllipsoid();
+      ellipsoid_Q = ellipsoid.A().inverse();
+      const double cost = ellipsoid_Q.determinant();
+      drake::log()->info("Iteration {}: det(Q)={}", iter, cost);
+      if (cost - prev_cost < options.convergence_tol) {
+        break;
+      } else {
+        prev_cost = cost;
+      }
+    } else {
+      drake::log()->error(
+          "Cannot find the separation certificate at iteration {} given the "
+          "Lagrangians.",
+          iter);
+    }
+    ++iter;
+  }
+  return ret;
 }
 
 std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>
