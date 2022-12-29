@@ -1163,6 +1163,60 @@ TEST_F(CIrisToyRobotTest, AddCspacePolytopeContainment) {
   }
 }
 
+void CheckSeparationBySamples(
+    const CspaceFreePolytopeTester& tester,
+    const systems::Diagram<double>& diagram,
+    const Eigen::Ref<const Eigen::MatrixXd>& s_samples,
+    const Eigen::MatrixXd& C, const Eigen::VectorXd& d,
+    const std::unordered_map<int, Vector3<symbolic::Polynomial>>& a,
+    const std::unordered_map<int, symbolic::Polynomial>& b,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs) {
+  auto diagram_context = diagram.CreateDefaultContext();
+  const auto& plant =
+      tester.cspace_free_polytope().rational_forward_kin().plant();
+  auto& plant_context =
+      plant.GetMyMutableContextFromRoot(diagram_context.get());
+
+  for (int i = 0; i < s_samples.rows(); ++i) {
+    const Eigen::Vector3d s_val = ProjectToPolytope(
+        s_samples.row(i).transpose(), C, d, tester.s_lower(), tester.s_upper());
+    symbolic::Environment env;
+    env.insert(tester.cspace_free_polytope().rational_forward_kin().s(), s_val);
+    const Eigen::VectorXd q_val =
+        tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
+            s_val, q_star);
+    plant.SetPositions(&plant_context, q_val);
+    for (int plane_index = 0;
+         plane_index <
+         static_cast<int>(
+             tester.cspace_free_polytope().separating_planes().size());
+         ++plane_index) {
+      const auto& plane =
+          tester.cspace_free_polytope().separating_planes()[plane_index];
+      if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+              plane.positive_side_geometry->id(),
+              plane.negative_side_geometry->id())) == 0) {
+        Eigen::Vector3d a_val;
+        for (int j = 0; j < 3; ++j) {
+          a_val(j) = a.at(plane_index)(j).Evaluate(env);
+        }
+        const double b_val = b.at(plane_index).Evaluate(env);
+        EXPECT_GE(
+            DistanceToHalfspace(*plane.positive_side_geometry, a_val, b_val,
+                                plane.expressed_body, PlaneSide::kPositive,
+                                plant, plant_context),
+            0);
+        EXPECT_GE(
+            DistanceToHalfspace(*plane.negative_side_geometry, a_val, b_val,
+                                plane.expressed_body, PlaneSide::kNegative,
+                                plant, plant_context),
+            0);
+      }
+    }
+  }
+}
+
 TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
@@ -1254,49 +1308,10 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
                0, 0, 0,
                0.2, -1.5, 1;
     // clang-format on
-    auto diagram_context = diagram_->CreateDefaultContext();
-    auto& plant_context =
-        plant_->GetMyMutableContextFromRoot(diagram_context.get());
-
-    for (int i = 0; i < s_samples.rows(); ++i) {
-      const Eigen::Vector3d s_val = ProjectToPolytope(
-          s_samples.row(i).transpose(), polytope_result->C, polytope_result->d,
-          tester.s_lower(), tester.s_upper());
-      symbolic::Environment env;
-      env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
-                 s_val);
-      const Eigen::VectorXd q_val =
-          tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
-              s_val, q_star);
-      plant_->SetPositions(&plant_context, q_val);
-      for (int plane_index = 0;
-           plane_index <
-           static_cast<int>(
-               tester.cspace_free_polytope().separating_planes().size());
-           ++plane_index) {
-        const auto& plane =
-            tester.cspace_free_polytope().separating_planes()[plane_index];
-        if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
-                plane.positive_side_geometry->id(),
-                plane.negative_side_geometry->id())) == 0) {
-          Eigen::Vector3d a_val;
-          for (int j = 0; j < 3; ++j) {
-            a_val(j) = polytope_result->a.at(plane_index)(j).Evaluate(env);
-          }
-          const double b_val = polytope_result->b.at(plane_index).Evaluate(env);
-          EXPECT_GE(
-              DistanceToHalfspace(*plane.positive_side_geometry, a_val, b_val,
-                                  plane.expressed_body, PlaneSide::kPositive,
-                                  *plant_, plant_context),
-              0);
-          EXPECT_GE(
-              DistanceToHalfspace(*plane.negative_side_geometry, a_val, b_val,
-                                  plane.expressed_body, PlaneSide::kNegative,
-                                  *plant_, plant_context),
-              0);
-        }
-      }
-    }
+    CheckSeparationBySamples(tester, *diagram_, s_samples, polytope_result->C,
+                             polytope_result->d, polytope_result->a,
+                             polytope_result->b, q_star,
+                             ignored_collision_pairs);
 
     // Check the margin between the inscribed ellipsoid and the polytope faces.
     EXPECT_TRUE((polytope_result->ellipsoid_margins.array() >= 0).all());
@@ -1370,51 +1385,85 @@ TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
                0, 0, 0,
                0.2, -1.5, 1;
     // clang-format on
-    auto diagram_context = diagram_->CreateDefaultContext();
-    auto& plant_context =
-        plant_->GetMyMutableContextFromRoot(diagram_context.get());
+    CheckSeparationBySamples(
+        tester, *diagram_, s_samples, bilinear_alternation_result->C,
+        bilinear_alternation_result->d, bilinear_alternation_result->a,
+        bilinear_alternation_result->b, q_star, ignored_collision_pairs);
+  }
+}
 
-    for (int i = 0; i < s_samples.rows(); ++i) {
-      const Eigen::Vector3d s_val = ProjectToPolytope(
-          s_samples.row(i).transpose(), bilinear_alternation_result->C,
-          bilinear_alternation_result->d, tester.s_lower(), tester.s_upper());
-      symbolic::Environment env;
-      env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
-                 s_val);
-      const Eigen::VectorXd q_val =
-          tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
-              s_val, q_star);
-      plant_->SetPositions(&plant_context, q_val);
-      for (int plane_index = 0;
-           plane_index <
-           static_cast<int>(
-               tester.cspace_free_polytope().separating_planes().size());
-           ++plane_index) {
-        const auto& plane =
-            tester.cspace_free_polytope().separating_planes()[plane_index];
-        if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
-                plane.positive_side_geometry->id(),
-                plane.negative_side_geometry->id())) == 0) {
-          Eigen::Vector3d a_val;
-          for (int j = 0; j < 3; ++j) {
-            a_val(j) =
-                bilinear_alternation_result->a.at(plane_index)(j).Evaluate(env);
-          }
-          const double b_val =
-              bilinear_alternation_result->b.at(plane_index).Evaluate(env);
-          EXPECT_GE(
-              DistanceToHalfspace(*plane.positive_side_geometry, a_val, b_val,
-                                  plane.expressed_body, PlaneSide::kPositive,
-                                  *plant_, plant_context),
-              0);
-          EXPECT_GE(
-              DistanceToHalfspace(*plane.negative_side_geometry, a_val, b_val,
-                                  plane.expressed_body, PlaneSide::kNegative,
-                                  *plant_, plant_context),
-              0);
-        }
-      }
-    }
+TEST_F(CIrisToyRobotTest, BinarySearch) {
+  const Eigen::Vector3d q_star(0, 0, 0);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine, q_star);
+  // Test with initial C and d that is collision-free.
+  Eigen::Matrix<double, 9, 3> C;
+  // clang-format off
+  C << 1, 1, 0,
+       -1, -1, 0,
+       -1, 0, 1,
+       1, 0, -1,
+       0, 1, 1,
+       0, -1, -1,
+       1, 0, 1,
+       1, 1, -1,
+       1, -1, 1;
+  // clang-format on
+  Eigen::Matrix<double, 9, 1> d;
+  d << 0.1, 0.1, 0.1, 0.02, 0.02, 0.2, 0.1, 0.1, 0.2;
+
+  CspaceFreePolytope::IgnoredCollisionPairs ignored_collision_pairs{
+      SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)};
+
+  CspaceFreePolytope::BinarySearchOptions options;
+  options.scale_min = 1;
+  options.scale_max = 3;
+  solvers::MosekSolver solver;
+  if (solver.available()) {
+    const Eigen::Vector3d s_center(0.01, 0, 0.01);
+    auto result = tester.cspace_free_polytope().BinarySearch(
+        ignored_collision_pairs, C, d, s_center, options);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_GT(result->num_iter, 0);
+    Eigen::Matrix<double, 10, 3> s_samples;
+    // clang-format off
+    s_samples << 1, 2, -1,
+               -0.5, 0.3, 0.2,
+               0.2, 0.9, 0.4,
+               0.5, -1.2, 0.3,
+               0.2, 2.5, -0.4,
+               -1.3, 1.5, 2,
+               0.5, 0.2, 1,
+               -0.4, 0.5, 1,
+               0, 0, 0,
+               0.2, -1.5, 1;
+    // clang-format on
+    CheckSeparationBySamples(tester, *diagram_, s_samples, result->C, result->d,
+                             result->a, result->b, q_star,
+                             ignored_collision_pairs);
+
+    // Now test epsilon_max being feasible.
+    options.scale_max = 0.02;
+    options.scale_min = 0.01;
+    result = tester.cspace_free_polytope().BinarySearch(
+        ignored_collision_pairs, C, d, s_center, options);
+    ASSERT_TRUE(result.has_value());
+    EXPECT_EQ(result->num_iter, 0);
+    EXPECT_TRUE(CompareMatrices(result->C, C));
+    EXPECT_TRUE(CompareMatrices(
+        result->d,
+        options.scale_max * d + (1 - options.scale_max) * C * s_center, 1E-10));
+    CheckSeparationBySamples(tester, *diagram_, s_samples, result->C, result->d,
+                             result->a, result->b, q_star,
+                             ignored_collision_pairs);
+
+    // Now check infeasible epsilon_min
+    options.scale_min = 10;
+    options.scale_max = 20;
+    result = tester.cspace_free_polytope().BinarySearch(
+        ignored_collision_pairs, C, d, s_center, options);
+    ASSERT_FALSE(result.has_value());
+    EXPECT_EQ(result->num_iter, 0);
   }
 }
 }  // namespace optimization
