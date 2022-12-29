@@ -1307,7 +1307,18 @@ HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(
   return HPolyhedron(A, b);
 }
 
-std::optional<CspaceFreePolytope::BilinearAlternationResult>
+void CspaceFreePolytope::SearchResult::SetSeparationPlanes(
+    const std::vector<std::optional<SeparationCertificateResult>>&
+        certificates_result) {
+  a.clear();
+  b.clear();
+  for (const auto& certificate : certificates_result) {
+    a.emplace(certificate->plane_index, certificate->a);
+    b.emplace(certificate->plane_index, certificate->b);
+  }
+}
+
+std::optional<CspaceFreePolytope::SearchResult>
 CspaceFreePolytope::SearchWithBilinearAlternation(
     const IgnoredCollisionPairs& ignored_collision_pairs,
     const Eigen::Ref<const Eigen::MatrixXd>& C_init,
@@ -1315,7 +1326,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
     const BilinearAlternationOptions& options) const {
   DRAKE_DEMAND(C_init.rows() == d_init.rows());
   DRAKE_DEMAND(C_init.cols() == this->rational_forward_kin_.s().rows());
-  std::optional<CspaceFreePolytope::BilinearAlternationResult> ret{
+  std::optional<CspaceFreePolytope::SearchResult> ret{
       std::nullopt};
   int iter = 0;
   // When we search for the C-space polytope {s |C*s<=d, s_lower<=s<=s_upper},
@@ -1374,10 +1385,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       // Copy the result to ret.
       ret->C = C;
       ret->d = d;
-      for (const auto& certificate : certificates_result) {
-        ret->a.emplace(certificate->plane_index, std::move(certificate->a));
-        ret->b.emplace(certificate->plane_index, std::move(certificate->b));
-      }
+      ret->SetSeparationPlanes(certificates_result);
     }
     // Now fix the Lagrangian and search for C-space polytope and separating
     // planes.
@@ -1428,6 +1436,70 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
     }
     ++iter;
   }
+  return ret;
+}
+
+std::optional<CspaceFreePolytope::SearchResult>
+CspaceFreePolytope::BinarySearch(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const Eigen::Ref<const Eigen::MatrixXd>& C,
+    const Eigen::Ref<const Eigen::VectorXd>& d_init,
+    const BinarySearchOptions& options) const {
+  DRAKE_DEMAND(options.epsilon_max >= options.epsilon_min);
+  CspaceFreePolytope::SearchResult ret;
+
+  auto is_eps_feasible = [this, &ignored_collision_pairs, &C, &d_init,
+                          &options, &ret](double eps) {
+    const auto certificates_result =
+        this->FindSeparationCertificateGivenPolytope(
+            ignored_collision_pairs, C,
+            d_init + Eigen::VectorXd::Constant(d_init.rows(), eps),
+            false /* search_separating_margin */,
+            options.find_lagrangian_options);
+    if (std::any_of(
+            certificates_result.begin(), certificates_result.end(),
+            [](const std::optional<SeparationCertificateResult>& certificate) {
+              return !certificate.has_value();
+            })) {
+      return false;
+    } else {
+      ret.C = C;
+      ret.d = d_init + Eigen::VectorXd::Constant(d_init.size(), eps);
+      ret.SetSeparationPlanes(certificates_result);
+      return true;
+    }
+  };
+
+  if (!is_eps_feasible(options.epsilon_min)) {
+    drake::log()->error(
+        "CspaceFreePolytope::BinarySearch(): epsilon_min={} is infeasible.",
+        options.epsilon_min);
+    return std::nullopt;
+  }
+  if (is_eps_feasible(options.epsilon_max)) {
+    drake::log()->error(
+        "CspaceFreePolytope::BinarySearch(): epsilon_max={} is feasible.",
+        options.epsilon_max);
+    ret.num_iter = 0;
+    return ret;
+  }
+  double eps_min = options.epsilon_min;
+  double eps_max = options.epsilon_max;
+  int iter = 0;
+  while (eps_max - eps_min > options.convergence_tol) {
+    const double eps = (eps_max + eps_min) / 2;
+    if (is_eps_feasible(eps)) {
+      drake::log()->info(
+          "CspaceFreePolytope::BinarySearch(): epsilon={} is feasible", eps);
+      eps_min = eps;
+    } else {
+      drake::log()->info(
+          "CspaceFreePolytope::BinarySearch(): epsilon={} is infeasible", eps);
+      eps_max = eps;
+    }
+    ++iter;
+  }
+  ret.num_iter = iter;
   return ret;
 }
 

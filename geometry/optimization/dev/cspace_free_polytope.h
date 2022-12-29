@@ -286,7 +286,7 @@ class CspaceFreePolytope {
     std::optional<Eigen::MatrixXd> s_inner_pts;
   };
 
-  struct BilinearAlternationResult {
+  struct SearchResult {
     Eigen::MatrixXd C;
     Eigen::VectorXd d;
     // a[i].dot(x) + b[i]=0 is the separation plane for separating_planes()[i].
@@ -294,6 +294,10 @@ class CspaceFreePolytope {
     std::unordered_map<int, symbolic::Polynomial> b;
     // The number of iterations at termination.
     int num_iter;
+
+    void SetSeparationPlanes(
+        const std::vector<std::optional<SeparationCertificateResult>>&
+            certificates_result);
   };
 
   struct BilinearAlternationOptions {
@@ -320,12 +324,29 @@ class CspaceFreePolytope {
    @retval result If we successfully find a collision-free C-space polytope,
    then `result` contains the search result; otherwise result = std::nullopt.
    */
-  [[nodiscard]] std::optional<BilinearAlternationResult>
+  [[nodiscard]] std::optional<SearchResult>
   SearchWithBilinearAlternation(
       const IgnoredCollisionPairs& ignored_collision_pairs,
       const Eigen::Ref<const Eigen::MatrixXd>& C_init,
       const Eigen::Ref<const Eigen::VectorXd>& d_init, bool search_margin,
       const BilinearAlternationOptions& options) const;
+
+  struct BinarySearchOptions {
+    double epsilon_max{10};
+    double epsilon_min{0};
+    int max_iter{10};
+    double convergence_tol{1E-3};
+    FindSeparationCertificateGivenPolytopeOptions find_lagrangian_options;
+  };
+
+  /** Binary search on ε such that the C-space polytope {s | C*s<=d+ε,
+   * s_lower<=s<=s_upper} is collision free.
+   */
+  [[nodiscard]] std::optional<SearchResult> BinarySearch(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const Eigen::Ref<const Eigen::MatrixXd>& C,
+      const Eigen::Ref<const Eigen::VectorXd>& d_init,
+      const BinarySearchOptions& options) const;
 
  private:
   // Forward declaration the tester class. This tester class will expose the
