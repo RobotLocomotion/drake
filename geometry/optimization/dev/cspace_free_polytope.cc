@@ -286,13 +286,19 @@ CspaceFreePolytope::CspaceFreePolytope(
     const multibody::MultibodyPlant<double>* plant,
     const geometry::SceneGraph<double>* scene_graph,
     SeparatingPlaneOrder plane_order,
-    const Eigen::Ref<const Eigen::VectorXd>& q_star)
+    const Eigen::Ref<const Eigen::VectorXd>& q_star, const Options& options)
     : rational_forward_kin_(plant),
       scene_graph_{*scene_graph},
       link_geometries_{GetCollisionGeometries(*plant, *scene_graph)},
       plane_order_{plane_order},
       s_set_{rational_forward_kin_.s()},
       q_star_{q_star} {
+  for (const auto& [body, geometries] : link_geometries_) {
+    for (auto& geometry : geometries) {
+      geometry->set_polytope_chebyshev_radius_multiplier(
+          options.polytope_chebyshev_radius_multiplier);
+    }
+  }
   // Create separating planes.
   // collision_pairs maps each pair of body to the pair of collision geometries
   // on that pair of body.

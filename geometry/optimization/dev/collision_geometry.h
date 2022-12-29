@@ -60,7 +60,15 @@ class CollisionGeometry {
    to the boundary of the polytope), and k is a positive scalar. This function
    returns the value of k.
    */
-  static double PolytopeChebyshevRadiusMultiplier() { return 0.5; }
+  double polytope_chebyshev_radius_multiplier() const {
+    return polytope_chebyshev_radius_multiplier_;
+  }
+
+  /** Setter for polytope_chebyshev_radius_multiplier. */
+  void set_polytope_chebyshev_radius_multiplier(double value) {
+    DRAKE_DEMAND(value > 0 && value <= 1);
+    polytope_chebyshev_radius_multiplier_ = value;
+  }
 
   /**
    To impose the geometric constraint that this collision geometry is on one
@@ -132,6 +140,8 @@ class CollisionGeometry {
   multibody::BodyIndex body_index_;
   geometry::GeometryId id_;
   math::RigidTransformd X_BG_;
+
+  double polytope_chebyshev_radius_multiplier_{1E-3};
 };
 
 /** Computes the signed distance from `collision_geometry` to the halfspace ℋ,
