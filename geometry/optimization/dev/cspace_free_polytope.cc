@@ -1324,7 +1324,18 @@ HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(
   return HPolyhedron(A, b);
 }
 
-std::optional<CspaceFreePolytope::BilinearAlternationResult>
+void CspaceFreePolytope::SearchResult::SetSeparatingPlanes(
+    std::vector<std::optional<SeparationCertificateResult>>
+        certificates_result) {
+  a.clear();
+  b.clear();
+  for (const auto& certificate : certificates_result) {
+    a.emplace(certificate->plane_index, std::move(certificate->a));
+    b.emplace(certificate->plane_index, std::move(certificate->b));
+  }
+}
+
+std::optional<CspaceFreePolytope::SearchResult>
 CspaceFreePolytope::SearchWithBilinearAlternation(
     const IgnoredCollisionPairs& ignored_collision_pairs,
     const Eigen::Ref<const Eigen::MatrixXd>& C_init,
@@ -1332,7 +1343,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
     const BilinearAlternationOptions& options) const {
   DRAKE_DEMAND(C_init.rows() == d_init.rows());
   DRAKE_DEMAND(C_init.cols() == this->rational_forward_kin_.s().rows());
-  std::optional<CspaceFreePolytope::BilinearAlternationResult> ret{
+  std::optional<CspaceFreePolytope::SearchResult> ret{
       std::nullopt};
   int iter = 0;
   // When we search for the C-space polytope {s |C*s<=d, s_lower<=s<=s_upper},
@@ -1393,10 +1404,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       // Copy the result to ret.
       ret->C = C;
       ret->d = d;
-      for (const auto& certificate : certificates_result) {
-        ret->a.emplace(certificate->plane_index, std::move(certificate->a));
-        ret->b.emplace(certificate->plane_index, std::move(certificate->b));
-      }
+      ret->SetSeparatingPlanes(certificates_result);
     }
     // Now fix the Lagrangian and search for C-space polytope and separating
     // planes.
@@ -1431,6 +1439,86 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
     }
     ++iter;
   }
+  return ret;
+}
+
+std::optional<CspaceFreePolytope::SearchResult>
+CspaceFreePolytope::BinarySearch(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const Eigen::Ref<const Eigen::MatrixXd>& C,
+    const Eigen::Ref<const Eigen::VectorXd>& d_init,
+    const Eigen::Ref<const Eigen::VectorXd>& s_center,
+    const BinarySearchOptions& options) const {
+  DRAKE_DEMAND(options.scale_max >= options.scale_min &&
+               options.scale_min >= 0);
+  DRAKE_DEMAND(((C * s_center).array() <= d_init.array()).all());
+  DRAKE_DEMAND((s_center.array() >= s_lower_.array()).all());
+  DRAKE_DEMAND((s_center.array() <= s_upper_.array()).all());
+  CspaceFreePolytope::SearchResult ret;
+
+  const Eigen::ArrayXd C_row_norm = C.rowwise().norm().array();
+  if ((C_row_norm == 0).any()) {
+    throw std::runtime_error(
+        "C contains rows with all 0 entries. Please remove these rows.");
+  }
+
+  // Determines if we can certify the scaled C-space polytope {s |C*s<=d,
+  // s_lower<=s<=s_upper} is collision free or not. Also update `ret` if eps is
+  // feasible.
+  auto is_scale_feasible = [this, &ignored_collision_pairs, &C, &d_init,
+                            &s_center, &options, &ret](double scale) {
+    // (d - C*s_center) / |C| = scale * (d_init - C*s_center) / |C|, hence d =
+    // scale * d_init + (1-scale) * C * s_center.
+    const Eigen::VectorXd d = scale * d_init + (1 - scale) * C * s_center;
+    const auto certificates_result =
+        this->FindSeparationCertificateGivenPolytope(
+            ignored_collision_pairs, C, d, false /* search_separating_margin */,
+            options.find_lagrangian_options);
+    if (std::any_of(
+            certificates_result.begin(), certificates_result.end(),
+            [](const std::optional<SeparationCertificateResult>& certificate) {
+              return !certificate.has_value();
+            })) {
+      return false;
+    } else {
+      ret.C = C;
+      ret.d = d;
+      ret.SetSeparatingPlanes(std::move(certificates_result));
+      return true;
+    }
+  };
+
+  if (!is_scale_feasible(options.scale_min)) {
+    drake::log()->error(
+        "CspaceFreePolytope::BinarySearch(): scale_min={} is infeasible.",
+        options.scale_min);
+    return std::nullopt;
+  }
+  if (is_scale_feasible(options.scale_max)) {
+    drake::log()->error(
+        "CspaceFreePolytope::BinarySearch(): scale_max={} is feasible.",
+        options.scale_max);
+    ret.num_iter = 0;
+    return ret;
+  }
+  double scale_min = options.scale_min;
+  double scale_max = options.scale_max;
+  int iter = 0;
+  while (scale_max - scale_min > options.convergence_tol &&
+         iter < options.max_iter) {
+    const double scale = (scale_max + scale_min) / 2;
+    if (is_scale_feasible(scale)) {
+      drake::log()->info(
+          "CspaceFreePolytope::BinarySearch(): scale={} is feasible", scale);
+      scale_min = scale;
+    } else {
+      drake::log()->info(
+          "CspaceFreePolytope::BinarySearch(): scale={} is infeasible", scale);
+      scale_max = scale;
+    }
+    ++iter;
+  }
+  ret.num_iter = iter;
   return ret;
 }
 
