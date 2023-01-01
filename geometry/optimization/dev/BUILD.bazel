@@ -83,6 +83,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
         "//solvers:mosek_solver",
+        "//solvers:sos_basis_generator",
     ],
 )
 
