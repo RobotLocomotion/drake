@@ -76,13 +76,14 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cspace_free_polytope_test",
-    timeout = "moderate",
+    timeout = "long",
     deps = [
         ":c_iris_test_utilities",
         ":cspace_free_polytope",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
         "//solvers:mosek_solver",
+        "//solvers:sos_basis_generator",
     ],
 )
 

@@ -28,22 +28,19 @@ struct ReifyData {
       const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
           m_X_AB_multilinear,
       const multibody::RationalForwardKinematics& m_rational_forward_kin,
-      const std::optional<symbolic::Variable>& m_separating_margin,
       PlaneSide m_plane_side, GeometryId m_geometry_id,
-      double m_polytope_chebyshev_radius_multiplier,
-      std::vector<symbolic::RationalFunction>* m_rationals,
-      std::optional<VectorX<symbolic::Polynomial>>* m_unit_length_vector)
+      const VectorX<symbolic::Variable>& m_y_slack,
+      std::vector<symbolic::RationalFunction>* m_rationals_for_points,
+      std::vector<symbolic::RationalFunction>* m_rationals_for_matrix_sos)
       : a{&m_a},
         b{&m_b},
         X_AB_multilinear{&m_X_AB_multilinear},
         rational_forward_kin{&m_rational_forward_kin},
-        separating_margin{&m_separating_margin},
         plane_side{m_plane_side},
         geometry_id{m_geometry_id},
-        polytope_chebyshev_radius_multiplier{
-            m_polytope_chebyshev_radius_multiplier},
-        rationals{m_rationals},
-        unit_length_vector{m_unit_length_vector} {}
+        y_slack{&m_y_slack},
+        rationals_for_points{m_rationals_for_points},
+        rationals_for_matrix_sos{m_rationals_for_matrix_sos} {}
 
   // To avoid copying objects (which might be expensive), I store the
   // non-primitive-type objects with pointers.
@@ -52,24 +49,21 @@ struct ReifyData {
   const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>*
       X_AB_multilinear;
   const multibody::RationalForwardKinematics* rational_forward_kin;
-  const std::optional<symbolic::Variable>* separating_margin;
   const PlaneSide plane_side;
   const GeometryId geometry_id;
-  const double polytope_chebyshev_radius_multiplier;
-  std::vector<symbolic::RationalFunction>* rationals;
-  std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector;
+  const VectorX<symbolic::Variable>* y_slack;
+  std::vector<symbolic::RationalFunction>* rationals_for_points;
+  std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos;
 };
 
 // Compute the rational function
-//  (aᵀ*p_AQ + b) - (offset + separating_margin) if plane_side = kPositive
-// -(aᵀ*p_AQ + b) - (offset + separating_margin) if plane_side = kNegative
+//  (aᵀ*p_AQ + b) - offset if plane_side = kPositive
+// -(aᵀ*p_AQ + b) - offset if plane_side = kNegative
 // @param a_A The vector a measured in the frame A.
 // @param b The constant term in the separating plane.
 // @param p_GQ The position of the point Q in the geometry frame G.
 // @param X_BG The pose of the geometry frame G in the body frame B.
 // @param X_AB_multilinear The pose of body frame B expressed in frame A.
-// @param separating_margin If set to std::nullopt, then we ignore the
-// separating margin.
 // @param plane_side The side of the plane where Q lives.
 [[nodiscard]] symbolic::RationalFunction ComputePointOnPlaneSideRational(
     const Vector3<symbolic::Polynomial>& a_A, const symbolic::Polynomial& b,
@@ -77,8 +71,7 @@ struct ReifyData {
     const math::RigidTransformd& X_BG,
     const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
         X_AB_multilinear,
-    double offset, const std::optional<symbolic::Variable>& separating_margin,
-    PlaneSide plane_side,
+    double offset, PlaneSide plane_side,
     const multibody::RationalForwardKinematics& rational_forward_kin) {
   // First compute p_AQ.
   const Eigen::Vector3d p_BQ = X_BG * p_GQ;
@@ -86,95 +79,105 @@ struct ReifyData {
       X_AB_multilinear.position + X_AB_multilinear.rotation * p_BQ;
   // Compute lhs=aᵀ*p_AQ + b
   const symbolic::Polynomial lhs = a_A.dot(p_AQ) + b;
-  // Compute rhs=offset + separating_margin
-  // Note that separating_margin is NOT an indeterminates.
-  const symbolic::Polynomial rhs =
-      offset + (separating_margin.has_value()
-                    ? symbolic::Polynomial(
-                          {{symbolic::Monomial(), separating_margin.value()}})
-                    : symbolic::Polynomial(nullptr));
   if (plane_side == PlaneSide::kPositive) {
     return rational_forward_kin.ConvertMultilinearPolynomialToRationalFunction(
-        lhs - rhs);
+        lhs - offset);
   } else {
     return rational_forward_kin.ConvertMultilinearPolynomialToRationalFunction(
-        -rhs - lhs);
+        -offset - lhs);
   }
 }
 
-void ImplementPolytopeGeometry(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
-                               const math::RigidTransformd& X_BG, void* data) {
-  // For a polytope (including box) to be on one side of the separating plane
-  // (and the other side geometry is also a polytope), we impose the following
-  // constraint:
+void ImplementPointRationals(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
+                             const math::RigidTransformd& X_BG, void* data) {
+  // As part of the conditions that a geometry is on one side of the separating
+  // plane, we impose the following constraint:
   // if plane_side = kPositive
-  //   aᵀ*p_AV+b ≥ δ
-  //   aᵀ*p_AC+b ≥ k*r
+  //   aᵀ*p_AV+b ≥ 1
   // if plane_side = kNegative
-  //   aᵀ*p_AV+b ≤ -δ
-  //   aᵀ*p_AC+b ≤ -k*r
-  // where C is the Chebyshev center of the polytope, and r is the distance
-  // from C to the polytope boundary. k is a positive scalar between (0, 1),
-  // defined in polytope_chebyshev_radius_multiplier_
-  //
-  // We impose the condition aᵀ*p_AC+b ≥ k*r (or ≤ -k*r) to rule out the
-  // trivial solution a = 0, b=0, since the right hand side k*r (or -k*r) is
-  // strictly non-zero.
-  //
-  // If separating_margin has value, then we also impose the constraint |a|≤1.
+  //   aᵀ*p_AV+b ≤ -1
   auto* reify_data = static_cast<ReifyData*>(data);
 
-  const double offset{0};
-  const int num_rationals = p_GV.cols() + 1;
-  reify_data->rationals->reserve(num_rationals);
+  const double offset{1};
+  const int num_rationals_for_points = p_GV.cols();
+  reify_data->rationals_for_points->reserve(num_rationals_for_points);
   // The position of the vertices V in the geometry frame G.
   for (int i = 0; i < p_GV.cols(); ++i) {
-    reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
+    reify_data->rationals_for_points->push_back(ComputePointOnPlaneSideRational(
         *(reify_data->a), *(reify_data->b), p_GV.col(i), X_BG,
-        *(reify_data->X_AB_multilinear), offset,
-        *(reify_data->separating_margin), reify_data->plane_side,
+        *(reify_data->X_AB_multilinear), offset, reify_data->plane_side,
         *(reify_data->rational_forward_kin)));
   }
-  const HPolyhedron h_polyhedron{VPolytope(p_GV)};
-  const Eigen::Vector3d p_GC = h_polyhedron.ChebyshevCenter();
-  const double radius = ((h_polyhedron.b() - h_polyhedron.A() * p_GC).array() /
-                         h_polyhedron.A().rowwise().norm().array())
-                            .minCoeff();
-  reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
-      *(reify_data->a), *(reify_data->b), p_GC, X_BG,
-      *(reify_data->X_AB_multilinear),
-      reify_data->polytope_chebyshev_radius_multiplier * radius, std::nullopt,
-      reify_data->plane_side, *(reify_data->rational_forward_kin)));
-  if (reify_data->separating_margin->has_value()) {
-    reify_data->unit_length_vector->emplace(*(reify_data->a));
-  } else {
-    reify_data->unit_length_vector->reset();
-  }
+}
+
+void ImplementSpherePsdMatRational(const Eigen::Vector3d& p_GS,
+                                   const math::RigidTransformd& X_BG,
+                                   double radius, void* data) {
+  // As part of the condition that a sphere-based geometry (e.g., sphere,
+  // capsule) is on one side of the separating plane, we impose the constraint
+  // aᵀ*p_AS + b ≥ r|a|       if plane_side = kPositive   (1)
+  // aᵀ*p_AS + b ≤ -r|a|      if plane_side = kNegative   (2)
+  // (1) means that if plane_side = kPositive, the matrix
+  // ⌈aᵀp_AS + b                aᵀ⌉  is psd.           (3)
+  // ⌊ a        (aᵀp_AS + b)/r²*I₃⌋
+  // (3) is equivalent to the rational
+  // ⌈1⌉ᵀ⌈aᵀp_AS + b               aᵀ⌉⌈1⌉
+  // ⌊y⌋ ⌊ a        (aᵀp_AS+ b)/r²*I₃⌋⌊y⌋
+  // being non-negative.
+  // Likewise if plane_side = kNegative, the matrix
+  // ⌈-aᵀp_AS - b                aᵀ⌉  is psd.           (4)
+  // ⌊ a        -(aᵀp_AS + b)/r²*I₃⌋
+  // (4) is equivalent to the rational
+  // ⌈1⌉ᵀ⌈-aᵀp_AS - b               aᵀ⌉⌈1⌉
+  // ⌊y⌋ ⌊ a        -(aᵀp_AS+ b)/r²*I₃⌋⌊y⌋
+  // being non-negative.
+  auto* reify_data = static_cast<ReifyData*>(data);
+
+  const Eigen::Vector3d p_BS = X_BG * p_GS;
+  const Vector3<symbolic::Polynomial> p_AS =
+      reify_data->X_AB_multilinear->position +
+      reify_data->X_AB_multilinear->rotation * p_BS;
+  // Compute aᵀp_AS + b
+  const symbolic::RationalFunction a_dot_x_plus_b =
+      reify_data->rational_forward_kin
+          ->ConvertMultilinearPolynomialToRationalFunction(
+              reify_data->a->dot(p_AS) + *(reify_data->b));
+  const Vector3<symbolic::Polynomial> y_poly(
+      symbolic::Polynomial((*(reify_data->y_slack))(0)),
+      symbolic::Polynomial((*(reify_data->y_slack))(1)),
+      symbolic::Polynomial((*(reify_data->y_slack))(2)));
+  // Compute yᵀy
+  const symbolic::Polynomial y_squared{
+      {{symbolic::Monomial((*(reify_data->y_slack))(0), 2), 1},
+       {symbolic::Monomial((*(reify_data->y_slack))(1), 2), 1},
+       {symbolic::Monomial((*(reify_data->y_slack))(2), 2), 1}}};
+  const int sign = reify_data->plane_side == PlaneSide::kPositive ? 1 : -1;
+  reify_data->rationals_for_matrix_sos->emplace_back(
+      sign * a_dot_x_plus_b.numerator() +
+          2 * reify_data->a->dot(y_poly) * a_dot_x_plus_b.denominator() +
+          y_squared / (radius * radius) * sign * a_dot_x_plus_b.numerator(),
+      a_dot_x_plus_b.denominator());
 }
 
 class OnPlaneSideReifier : public ShapeReifier {
  public:
   OnPlaneSideReifier(const Shape* geometry, math::RigidTransformd X_BG,
-                     GeometryId geometry_id,
-                     double polytope_chebyshev_radius_multiplier)
+                     GeometryId geometry_id)
       : geometry_{geometry},
         X_BG_{std::move(X_BG)},
-        geometry_id_{geometry_id},
-        polytope_chebyshev_radius_multiplier_{
-            polytope_chebyshev_radius_multiplier} {}
+        geometry_id_{geometry_id} {}
 
   void ProcessData(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
       const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
-      const std::optional<symbolic::Variable>& separating_margin,
-      PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
-      std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) {
-    ReifyData data(a, b, X_AB_multilinear, rational_forward_kin,
-                   separating_margin, plane_side, geometry_id_,
-                   polytope_chebyshev_radius_multiplier_, rationals,
-                   unit_length_vector);
+      PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
+      std::vector<symbolic::RationalFunction>* rationals_for_points,
+      std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos) {
+    ReifyData data(a, b, X_AB_multilinear, rational_forward_kin, plane_side,
+                   geometry_id_, y_slack, rationals_for_points,
+                   rationals_for_matrix_sos);
     geometry_->Reify(this, &data);
   }
 
@@ -193,60 +196,64 @@ class OnPlaneSideReifier : public ShapeReifier {
     p_GV.row(0) *= box.width() / 2;
     p_GV.row(1) *= box.depth() / 2;
     p_GV.row(2) *= box.height() / 2;
-    ImplementPolytopeGeometry(p_GV, X_BG_, data);
+    ImplementPointRationals(p_GV, X_BG_, data);
   }
 
   void ImplementGeometry(const Convex& convex, void* data) {
     const Eigen::Matrix3Xd p_GV = GetVertices(convex);
-    ImplementPolytopeGeometry(p_GV, X_BG_, data);
+    ImplementPointRationals(p_GV, X_BG_, data);
   }
 
   void ImplementGeometry(const Sphere& sphere, void* data) {
-    // If the sphere with radius r is on one side of the plane with a margin δ,
+    // If the sphere with radius r is on one side of the plane
     // it is equivalent to the following condition
-    // aᵀ*p_AS + b ≥ r + δ       if plane_side = kPositive   (1a)
-    // aᵀ*p_AS + b ≤ -(r + δ)    if plane_side = kNegative   (1b)
-    // |a| ≤ 1 (2)
-    // where S is the center of the sphere.
-    auto* reify_data = static_cast<ReifyData*>(data);
+    // aᵀ*p_AS + b ≥ r|a|       if plane_side = kPositive   (1a)
+    // aᵀ*p_AS + b ≥ 1          if plane_side = kPositive   (1b)
+    //
+    // aᵀ*p_AS + b ≤ -r|a|      if plane_side = kNegative   (2a)
+    // aᵀ*p_AS + b ≤ -1         if plane_side = kNegative   (2b)
+    // where S is the center of the sphere. p_AS is the position of S expressed
+    // in the frame A where the separating plane is also expressed.
 
-    reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
-        *(reify_data->a), *(reify_data->b), Eigen::Vector3d::Zero(), X_BG_,
-        *(reify_data->X_AB_multilinear), sphere.radius(),
-        *(reify_data->separating_margin), reify_data->plane_side,
-        *(reify_data->rational_forward_kin)));
-    reify_data->unit_length_vector->emplace(*(reify_data->a));
+    // First add the psd matrix constraint.
+    ImplementSpherePsdMatRational(Eigen::Vector3d::Zero(), X_BG_,
+                                  sphere.radius(), data);
+    // Now add the rational constraint
+    // aᵀ*p_AS + b ≥ 1          if plane_side = kPositive   (1b)
+    // aᵀ*p_AS + b ≤ -1         if plane_side = kNegative   (2b)
+    ImplementPointRationals(Eigen::Vector3d::Zero(), X_BG_, data);
   }
 
   void ImplementGeometry(const Capsule& capsule, void* data) {
-    // If the capsule with radius r is on one side of the plane with a margin δ,
+    // If the capsule with radius r is on one side of the plane
     // it is equivalent to the following condition
-    // aᵀ*p_AS1 + b ≥ r + δ       if plane_side = kPositive   (1a)
-    // aᵀ*p_AS2 + b ≥ r + δ       if plane_side = kPositive   (2a)
-    // aᵀ*p_AS1 + b ≤ -(r + δ)    if plane_side = kNegative   (1b)
-    // aᵀ*p_AS2 + b ≤ -(r + δ)    if plane_side = kNegative   (2b)
-    // |a| ≤ 1                                                 (3)
-    // where S1 and S2 are the center of the two spheres on the two ends of the
-    // capsule.
-    auto* reify_data = static_cast<ReifyData*>(data);
-    Eigen::Matrix<double, 3, 2> p_GS;
-    p_GS.col(0) = Eigen::Vector3d(0, 0, capsule.length() / 2);
-    p_GS.col(1) = Eigen::Vector3d(0, 0, -capsule.length() / 2);
-    reify_data->rationals->reserve(reify_data->rationals->size() + 2);
-    for (int i = 0; i < 2; ++i) {
-      reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
-          *(reify_data->a), *(reify_data->b), p_GS.col(i), X_BG_,
-          *(reify_data->X_AB_multilinear), capsule.radius(),
-          *(reify_data->separating_margin), reify_data->plane_side,
-          *(reify_data->rational_forward_kin)));
-    }
-    reify_data->unit_length_vector->emplace(*(reify_data->a));
+    // If plane_side = kPositive
+    // aᵀ*p_AS1 + b ≥ r|a|        (1a)
+    // aᵀ*p_AS2 + b ≥ r|a|        (1b)
+    // aᵀ*p_AO + b ≥ 1            (1c)
+    //
+    // If plane_side = kNegative
+    // aᵀ*p_AS1 + b ≤ -r|a|       (2a)
+    // aᵀ*p_AS2 + b ≤ -r|a|       (2b)
+    // aᵀ*p_AO + b ≤ -1           (2c)
+    // where S1 and S2 are the center of the two spheres, O is the center of
+    // the capsule.
+    // Please refer to our implementation for sphere to understand how we
+    // impose conditions (1) and (2).
+    //
+    // Add the psd-mat constraints.
+    ImplementSpherePsdMatRational(Eigen::Vector3d(0, 0, capsule.length() / 2),
+                                  X_BG_, capsule.radius(), data);
+    ImplementSpherePsdMatRational(Eigen::Vector3d(0, 0, -capsule.length() / 2),
+                                  X_BG_, capsule.radius(), data);
+    // aᵀ*p_AO + b ≥ 1          if plane_side = kPositive
+    // aᵀ*p_AO + b ≤ -1         if plane_side = kNegative
+    ImplementPointRationals(Eigen::Vector3d::Zero(), X_BG_, data);
   }
 
   const Shape* geometry_;
   math::RigidTransformd X_BG_;
   GeometryId geometry_id_;
-  double polytope_chebyshev_radius_multiplier_;
 };
 
 class GeometryTypeReifier : public ShapeReifier {
@@ -289,9 +296,46 @@ class GeometryTypeReifier : public ShapeReifier {
   const Shape* shape_;
 };
 
-class NumRationalsPerPlaneSideReifier : public ShapeReifier {
+class NumRationalsForPointsReifier : public ShapeReifier {
  public:
-  explicit NumRationalsPerPlaneSideReifier(const Shape* shape)
+  explicit NumRationalsForPointsReifier(const Shape* shape) : shape_{shape} {}
+
+  int ProcessData() {
+    int ret;
+    shape_->Reify(this, &ret);
+    return ret;
+  }
+
+ private:
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Box&, void* data) {
+    auto* num = static_cast<int*>(data);
+    *num = 8;
+  }
+
+  void ImplementGeometry(const Convex& convex, void* data) {
+    auto* num = static_cast<int*>(data);
+    const Eigen::Matrix3Xd p_GV = GetVertices(convex);
+    *num = p_GV.cols();
+  }
+
+  void ImplementGeometry(const Sphere&, void* data) {
+    auto* num = static_cast<int*>(data);
+    *num = 1;
+  }
+
+  void ImplementGeometry(const Capsule&, void* data) {
+    auto* num = static_cast<int*>(data);
+    *num = 1;
+  }
+
+  const Shape* shape_;
+};
+
+class NumRationalsForMatrixSosReifier : public ShapeReifier {
+ public:
+  explicit NumRationalsForMatrixSosReifier(const Shape* shape)
       : shape_{shape} {}
 
   int ProcessData() {
@@ -305,13 +349,12 @@ class NumRationalsPerPlaneSideReifier : public ShapeReifier {
 
   void ImplementGeometry(const Box&, void* data) {
     auto* num = static_cast<int*>(data);
-    *num = 9;
+    *num = 0;
   }
 
-  void ImplementGeometry(const Convex& convex, void* data) {
+  void ImplementGeometry(const Convex&, void* data) {
     auto* num = static_cast<int*>(data);
-    const Eigen::Matrix3Xd p_GV = GetVertices(convex);
-    *num = p_GV.cols() + 1;
+    *num = 0;
   }
 
   void ImplementGeometry(const Sphere&, void* data) {
@@ -381,9 +424,60 @@ class DistanceToHalfspaceReifier : public ShapeReifier {
                 capsule.radius();
   }
 
+  void ImplementGeometry(const Cylinder& cylinder, void* data) {
+    // The distance from a point on the top rim [r*cosθ, r*sinθ, h/2] to the
+    // face {x | a.dot(x)+b=0} is (a(0)*r*cosθ + a(1)*r*sinθ + a(2)*h/2 + b) /
+    // |a|. Taking the minimum over θ, we get the distance from the top rim to
+    // the face as (-r * |[a(0), a(1)]| + a(2)*h/2 + b) / |a|. Similarly, the
+    // distance from the bottom rim [r*cosθ, r*sinθ, -h/2] to the face {x |
+    // a.dot(x)+b=0} is
+    // (-r * |[a(0), a(1)]| - a(2)*h/2 + b) / |a|.
+    double* distance = static_cast<double*>(data);
+    *distance =
+        (-cylinder.radius() * a_G_.head<2>().norm() +
+         (a_G_(2) >= 0 ? -a_G_(2) : a_G_(2)) * cylinder.length() / 2 + b_G_) /
+        a_G_.norm();
+  }
+
   const Shape* shape_;
   Eigen::Vector3d a_G_;
   double b_G_;
+};
+
+class YSlackSizeReifier : public ShapeReifier {
+ public:
+  explicit YSlackSizeReifier(const Shape* shape) : shape_{shape} {}
+
+  double ProcessData() {
+    int ret;
+    shape_->Reify(this, &ret);
+    return ret;
+  }
+
+ private:
+  using ShapeReifier::ImplementGeometry;
+
+  void ImplementGeometry(const Box&, void* data) {
+    int* y_slack_size = static_cast<int*>(data);
+    *y_slack_size = 0;
+  }
+
+  void ImplementGeometry(const Convex&, void* data) {
+    int* y_slack_size = static_cast<int*>(data);
+    *y_slack_size = 0;
+  }
+
+  void ImplementGeometry(const Sphere&, void* data) {
+    int* y_slack_size = static_cast<int*>(data);
+    *y_slack_size = 3;
+  }
+
+  void ImplementGeometry(const Capsule&, void* data) {
+    int* y_slack_size = static_cast<int*>(data);
+    *y_slack_size = 3;
+  }
+
+  const Shape* shape_;
 };
 }  // namespace
 
@@ -392,14 +486,12 @@ void CollisionGeometry::OnPlaneSide(
     const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
         X_AB_multilinear,
     const multibody::RationalForwardKinematics& rational_forward_kin,
-    const std::optional<symbolic::Variable>& separating_margin,
-    PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
-    std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const {
-  OnPlaneSideReifier reifier(geometry_, X_BG_, id_,
-                             polytope_chebyshev_radius_multiplier_);
-  reifier.ProcessData(a, b, X_AB_multilinear, rational_forward_kin,
-                      separating_margin, plane_side, rationals,
-                      unit_length_vector);
+    PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
+    std::vector<symbolic::RationalFunction>* rationals_for_points,
+    std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos) const {
+  OnPlaneSideReifier reifier(geometry_, X_BG_, id_);
+  reifier.ProcessData(a, b, X_AB_multilinear, rational_forward_kin, plane_side,
+                      y_slack, rationals_for_points, rationals_for_matrix_sos);
 }
 
 GeometryType CollisionGeometry::type() const {
@@ -407,8 +499,18 @@ GeometryType CollisionGeometry::type() const {
   return reifier.ProcessData();
 }
 
-int CollisionGeometry::num_rationals_per_side() const {
-  NumRationalsPerPlaneSideReifier reifier(geometry_);
+int CollisionGeometry::num_rationals_for_points() const {
+  NumRationalsForPointsReifier reifier(geometry_);
+  return reifier.ProcessData();
+}
+
+int CollisionGeometry::num_rationals_for_matrix_sos() const {
+  NumRationalsForMatrixSosReifier reifier(geometry_);
+  return reifier.ProcessData();
+}
+
+int CollisionGeometry::y_slack_size() const {
+  YSlackSizeReifier reifier(geometry_);
   return reifier.ProcessData();
 }
 
