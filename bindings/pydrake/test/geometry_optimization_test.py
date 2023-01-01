@@ -150,6 +150,12 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(h_empty.IsEmpty())
         self.assertFalse(h_l1_ball.IsEmpty())
 
+        vpoly = mut.VPolytope(np.array(
+            [[0., 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
+        hpoly = mut.HPolyhedron(vpoly=vpoly)
+        self.assertEqual(hpoly.ambient_dimension(), 3)
+        self.assertEqual(hpoly.A().shape, (4, 3))
+
     def test_hyper_ellipsoid(self):
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)

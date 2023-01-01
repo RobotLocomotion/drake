@@ -78,6 +78,16 @@ class CollisionGeometryTest : public CIrisToyRobotTest {
   Eigen::Vector3d q_val_;
 };
 
+void CheckRationalExpression(const symbolic::RationalFunction& rational,
+                             const symbolic::Environment& env,
+                             const symbolic::Expression& expr_expected) {
+  const symbolic::Expression expr =
+      rational.numerator().EvaluatePartial(env).ToExpression() /
+      rational.denominator().Evaluate(env);
+  EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
+               symbolic::Polynomial(expr_expected), 1E-7);
+}
+
 TEST_F(CollisionGeometryTest, Box) {
   // Test CollisionGeometry constructed from a box.
   const auto& model_inspector = scene_graph_->model_inspector();
@@ -98,8 +108,8 @@ TEST_F(CollisionGeometryTest, Box) {
   box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_, std::nullopt,
                   PlaneSide::kPositive, &rationals, &unit_length_vector);
   EXPECT_FALSE(unit_length_vector.has_value());
-  EXPECT_EQ(box.num_rationals_per_side(), 8);
-  EXPECT_EQ(rationals.size(), 8);
+  EXPECT_EQ(box.num_rationals_per_side(), 9);
+  EXPECT_EQ(rationals.size(), 9);
 
   // The order of the vertices should be the same in collision_geometry.cc
   Eigen::Matrix<double, 3, 8> p_GV;
@@ -112,11 +122,20 @@ TEST_F(CollisionGeometryTest, Box) {
   p_GV.row(0) *= box_geometry.width() / 2;
   p_GV.row(1) *= box_geometry.depth() / 2;
   p_GV.row(2) *= box_geometry.height() / 2;
+  // C is the Chebyshev center. The Chebyshev center of the box is not unique,
+  // we choose the one computed from HPolyhedron.
+  const HPolyhedron box_polyhedron{VPolytope(p_GV)};
+  const Eigen::Vector3d p_GC = box_polyhedron.ChebyshevCenter();
+  const double radius =
+      std::min(std::min(box_geometry.width(), box_geometry.depth()),
+               box_geometry.height()) /
+      2;
 
   const Eigen::Matrix<double, 3, 8> p_BV = box.X_BG() * p_GV;
+  const Eigen::Vector3d p_BC = box.X_BG() * p_GC;
 
   // Evaluate the rationals, and compare the evaluation result with a.dot(p_AV)
-  // + b - 1
+  // + b
   Eigen::Vector3d q_val(0.2, -0.1, 0.5);
   const Eigen::VectorXd s_val = SetQ(q_star, q_val);
 
@@ -126,20 +145,23 @@ TEST_F(CollisionGeometryTest, Box) {
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
+  Eigen::Vector3d p_AC;
+  plant_->CalcPointsPositions(
+      *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BC,
+      plant_->get_body(expressed_body).body_frame(), &p_AC);
   Vector3<symbolic::Expression> a_expr;
   for (int j = 0; j < 3; ++j) {
     a_expr(j) = a_(j).EvaluatePartial(env).ToExpression();
   }
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
   for (int i = 0; i < 8; ++i) {
-    const symbolic::Expression expr_expected =
-        a_expr.dot(p_AV.col(i)) + b_expr - 1;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    const symbolic::Expression expr_expected = a_expr.dot(p_AV.col(i)) + b_expr;
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
+  CheckRationalExpression(
+      rationals.back(), env,
+      a_expr.dot(p_AC) + b_expr -
+          CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius);
 
   // Negative side, with separating margin.
   rationals.clear();
@@ -152,18 +174,21 @@ TEST_F(CollisionGeometryTest, Box) {
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ((*unit_length_vector)(i), a_(i));
   }
-  EXPECT_EQ(rationals.size(), 8);
+  EXPECT_EQ(rationals.size(), 9);
+  EXPECT_EQ(box.num_rationals_per_side(), 9);
   for (int i = 0; i < 8; ++i) {
     const symbolic::Expression expr_expected =
         -separating_margin - a_expr.dot(p_AV.col(i)) - b_expr;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
     EXPECT_TRUE(rationals[i].numerator().decision_variables().include(
         separating_margin));
   }
+  CheckRationalExpression(
+      rationals.back(), env,
+      -CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius -
+          a_expr.dot(p_AC) - b_expr);
+  EXPECT_FALSE(rationals.back().numerator().decision_variables().include(
+      separating_margin));
 }
 
 TEST_F(CollisionGeometryTest, Convex) {
@@ -190,7 +215,9 @@ TEST_F(CollisionGeometryTest, Convex) {
 
   const VPolytope polytope(query_object, body1_convex_,
                            model_inspector.GetFrameId(body1_convex_));
-  EXPECT_EQ(convex.num_rationals_per_side(), polytope.vertices().cols());
+  // Compute the H-polyhedron in the geometry frame.
+  const HPolyhedron h_poly(
+      VPolytope(convex.X_BG().inverse() * polytope.vertices()));
 
   const Eigen::Vector3d q_val(0.2, -0.1, 0.4);
   const Eigen::VectorXd s_val = SetQ(q_star, q_val);
@@ -202,13 +229,23 @@ TEST_F(CollisionGeometryTest, Convex) {
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
+  const Eigen::Vector3d p_GC = h_poly.ChebyshevCenter();
+  const Eigen::Vector3d p_BC = convex.X_BG() * p_GC;
+  Eigen::Vector3d p_AC;
+  plant_->CalcPointsPositions(
+      *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BC,
+      plant_->get_body(expressed_body).body_frame(), &p_AC);
+  const double radius = ((h_poly.b() - h_poly.A() * p_GC).array() /
+                         h_poly.A().rowwise().norm().array())
+                            .minCoeff();
 
   // negative side, no separating margin.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
                      std::nullopt, PlaneSide::kNegative, &rationals,
                      &unit_length_vector);
   EXPECT_FALSE(unit_length_vector.has_value());
-  EXPECT_EQ(rationals.size(), polytope.vertices().cols());
+  EXPECT_EQ(rationals.size(), polytope.vertices().cols() + 1);
+  EXPECT_EQ(convex.num_rationals_per_side(), polytope.vertices().cols() + 1);
   symbolic::Environment env;
   env.insert(rational_forward_kin_.s(), s_val);
   Vector3<symbolic::Expression> a_expr;
@@ -218,14 +255,13 @@ TEST_F(CollisionGeometryTest, Convex) {
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
-        -1 - a_expr.dot(p_AV.col(i)) - b_expr;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual,
-                 symbolic::Polynomial(expr_expected),
-                 symbolic::Polynomial(expr), 1E-7);
+        -a_expr.dot(p_AV.col(i)) - b_expr;
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
+  CheckRationalExpression(
+      rationals.back(), env,
+      -CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius -
+          a_expr.dot(p_AC) - b_expr);
 
   // Positive side, with separating margin.
   const symbolic::Variable separating_margin("delta");
@@ -240,24 +276,22 @@ TEST_F(CollisionGeometryTest, Convex) {
     EXPECT_EQ((*unit_length_vector)(i), a_(i));
   }
   // The new rationals are appended to the existing ones.
-  EXPECT_EQ(rationals.size(), 2 * polytope.vertices().cols());
+  EXPECT_EQ(rationals.size(), 2 * polytope.vertices().cols() + 2);
+  EXPECT_EQ(convex.num_rationals_per_side(), 1 + polytope.vertices().cols());
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
         a_expr.dot(p_AV.col(i)) + b_expr - separating_margin;
-    const symbolic::Expression expr =
-        rationals[i + polytope.vertices().cols()]
-            .numerator()
-            .EvaluatePartial(env)
-            .ToExpression() /
-        rationals[i + polytope.vertices().cols()].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual,
-                 symbolic::Polynomial(expr_expected),
-                 symbolic::Polynomial(expr), 1E-7);
-    EXPECT_TRUE(rationals[i + polytope.vertices().cols()]
+    CheckRationalExpression(rationals[i + polytope.vertices().cols() + 1], env,
+                            expr_expected);
+    EXPECT_TRUE(rationals[i + polytope.vertices().cols() + 1]
                     .numerator()
                     .decision_variables()
                     .include(separating_margin));
   }
+  CheckRationalExpression(
+      rationals.back(), env,
+      a_expr.dot(p_AC) + b_expr -
+          CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius);
 }
 
 TEST_F(CollisionGeometryTest, Sphere) {
@@ -306,11 +340,7 @@ TEST_F(CollisionGeometryTest, Sphere) {
       static_cast<const Sphere&>(model_inspector.GetShape(world_sphere_))
           .radius();
   symbolic::Expression expr_expected = -radius - a_expr.dot(p_AS) - b_expr;
-  symbolic::Expression expr =
-      rationals[0].numerator().EvaluatePartial(env).ToExpression() /
-      rationals[0].denominator().Evaluate(env);
-  EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-               symbolic::Polynomial(expr_expected), 1E-7);
+  CheckRationalExpression(rationals[0], env, expr_expected);
 
   // Positive side, with margin.
   rationals.clear();
@@ -321,10 +351,7 @@ TEST_F(CollisionGeometryTest, Sphere) {
   EXPECT_TRUE(unit_length_vector.has_value());
   EXPECT_EQ(unit_length_vector->rows(), 3);
   expr_expected = a_expr.dot(p_AS) + b_expr - radius - separating_margin;
-  expr = rationals[0].numerator().EvaluatePartial(env).ToExpression() /
-         rationals[0].denominator().Evaluate(env);
-  EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-               symbolic::Polynomial(expr_expected), 1E-7);
+  CheckRationalExpression(rationals[0], env, expr_expected);
 }
 
 TEST_F(CollisionGeometryTest, Capsule) {
@@ -378,11 +405,7 @@ TEST_F(CollisionGeometryTest, Capsule) {
   for (int i = 0; i < 2; ++i) {
     symbolic::Expression expr_expected =
         -capsule_shape.radius() - a_expr.dot(p_AS.col(i)) - b_expr;
-    symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 
   // Positive side, with margin.
@@ -397,11 +420,7 @@ TEST_F(CollisionGeometryTest, Capsule) {
     const symbolic::Expression expr_expected = a_expr.dot(p_AS.col(i)) +
                                                b_expr - capsule_shape.radius() -
                                                separating_margin;
-    const symbolic::Expression expr =
-        rationals[i].numerator().EvaluatePartial(env).ToExpression() /
-        rationals[i].denominator().Evaluate(env);
-    EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
-                 symbolic::Polynomial(expr_expected), 1E-7);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 }
 
