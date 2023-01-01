@@ -50,52 +50,28 @@ class CollisionGeometry {
 
   const math::RigidTransformd& X_BG() const { return X_BG_; }
 
-  /**
-   When we constrain a polytope to be on one side of the plane (for example the
-   positive side), we impose the constraint
-   aᵀ*p_AVᵢ + b ≥ δ
-   aᵀ*p_AC  + b ≥ k * r
-   where Vᵢ being the i'th vertex of the polytope. C is the Chebyshev center of
-   the polytope, r is the radius (namely the distance from the Chebyshev center
-   to the boundary of the polytope), and k is a positive scalar. This function
-   returns the value of k.
-   */
-  double polytope_chebyshev_radius_multiplier() const {
-    return polytope_chebyshev_radius_multiplier_;
-  }
+  /** Impose the constraint that the geometry is on a given side of the plane {x
+   | aᵀx+b=0}.
 
-  /** Setter for polytope_chebyshev_radius_multiplier. */
-  void set_polytope_chebyshev_radius_multiplier(double value) {
-    DRAKE_DEMAND(value > 0 && value <= 1);
-    polytope_chebyshev_radius_multiplier_ = value;
-  }
+   For example, to impose the constraint that a polytope is on the positive
+   side of the plane, we consider the following constraints
+   aᵀp_AVᵢ + b ≥ 1      (1)
+   where Vᵢ is the i'th vertex of the polytope.
+   (1) says rational functions are non-negative.
 
-  /**
-   To impose the geometric constraint that this collision geometry is on one
-   side of a plane {x|aᵀx+b=0} with a certain margin, we can equivalently write
-   this constraint with the following conditions
-   1. Some rational functions are always non-negative.
-   2. A certain vector has length <= 1.
+   To impose the constraint that a sphere is on positive side of the
+   plane, we consider the following constraints
+   aᵀp_AS + b ≥ r*|a|         (2a)
+   aᵀp_AS + b ≥ 1             (2b)
+   where S is the sphere center, r is the sphere radius.
 
-   For example, if this geometry is a sphere with radius r, and we constrain
-   that the sphere is on the positive side of the plane with a margin δ, we can
-   impose the following constraint
-   aᵀ*p_AS(s) + b ≥ r + δ       (1)
-   |a| ≤ 1                      (2)
-   where p_AS(s) is the position of the sphere center S expressed in a frame A.
-   The left hand side of equation (1) is a rational function of indeterminate
-   s. Constraint (2) says the vector a has length <= 1.
-
-   Similarly we can write down the conditions for other geometry types,
-   including polytopes and capsules.
-
-   Note that when we don't require a separating margin δ, and both this
-   geometry and the geometry on the other side of the plane are polytopes, then
-   we consider the constraint
-   aᵀp_AVᵢ(s) + b ≥ 1 if the polytope is on the positive side of the plane, and
-   aᵀp_AVᵢ(s) + b ≤ -1 if the polytope is on the negative side of the plane.
-   Note that in this case we don't have the "vector with length <= 1 "
-   constraint.
+   We can reformulate (2a) as the following constraint
+   ⌈aᵀp_AS + b                aᵀ⌉  is psd.           (3)
+   ⌊ a        (aᵀp_AS + b)/r²*I₃⌋
+   (3) is equivalent to the rational
+   ⌈1⌉ᵀ*⌈aᵀp_AS + b               aᵀ⌉*⌈1⌉
+   ⌊y⌋  ⌊ a        (aᵀp_AS+ b)/r²*I₃⌋ ⌊y⌋
+   is positive.
 
    @param a The normal vector in the separating plane. a is expressed in frame
    A.
@@ -106,40 +82,49 @@ class CollisionGeometry {
    RationalForwardKinematics::CalcBodyPoseAsMultilinearPolynomial.
    @param rational_forward_kin This object is constructed with the
    MultibodyPlant containing this collision geometry.
-   @param separating_margin δ in the documentation above.
    @param plane_side Whether the geometry is on the positive or negative side of
    the plane.
-   @param other_side_geometry_type The type of the geometry on the other side of
-   the plane.
-   @param[out] rationals The rationals that should be positive when the geometry
-   is on the designated side of the plane.
-   @param[out] unit_length_vector The vector that should have length <= 1 when
-   the geometry is on the designated side of the plane.
+   @param y_slack The slack variable y in the documentation above, used for
+   non-polytopic geometries.
+   @param[out] rationals_for_points The rational functions that need to be
+   positive to represent a point is on a given side of the plane.
+   @param[out] rationals_for_matrix_sos The rationals (whose indeterminates are
+   y and s) that need to be positive. This is used for non-polytopic geometries.
    */
   void OnPlaneSide(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
       const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
-      const std::optional<symbolic::Variable>& separating_margin,
-      PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
-      std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const;
+      PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
+      std::vector<symbolic::RationalFunction>* rationals_for_points,
+      std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos) const;
 
   [[nodiscard]] GeometryType type() const;
 
   /**
-   Returns the number of rationals in the condition "this geometry is on one
-   side of the plane."
+   Returns the number of rationals for points in the condition "this geometry is
+   on one side of the plane."
    */
-  [[nodiscard]] int num_rationals_per_side() const;
+  [[nodiscard]] int num_rationals_for_points() const;
+
+  /**
+   Returns the number of rationals_for_matrix_sos in the condition "this
+   geometry is on one side of the plane."
+   */
+  [[nodiscard]] int num_rationals_for_matrix_sos() const;
+
+  /**
+   Returns the size of y used in the matrix-sos constraint to impose the
+   geometry on one side of a plane.
+   */
+  [[nodiscard]] int y_slack_size() const;
 
  private:
   const Shape* geometry_;
   multibody::BodyIndex body_index_;
   geometry::GeometryId id_;
   math::RigidTransformd X_BG_;
-
-  double polytope_chebyshev_radius_multiplier_{1E-3};
 };
 
 /** Computes the signed distance from `collision_geometry` to the halfspace ℋ,
