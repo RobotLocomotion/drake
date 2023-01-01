@@ -161,7 +161,7 @@ TEST_F(CollisionGeometryTest, Box) {
   CheckRationalExpression(
       rationals.back(), env,
       a_expr.dot(p_AC) + b_expr -
-          CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius);
+          box.polytope_chebyshev_radius_multiplier() * radius);
 
   // Negative side, with separating margin.
   rationals.clear();
@@ -183,10 +183,9 @@ TEST_F(CollisionGeometryTest, Box) {
     EXPECT_TRUE(rationals[i].numerator().decision_variables().include(
         separating_margin));
   }
-  CheckRationalExpression(
-      rationals.back(), env,
-      -CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius -
-          a_expr.dot(p_AC) - b_expr);
+  CheckRationalExpression(rationals.back(), env,
+                          -box.polytope_chebyshev_radius_multiplier() * radius -
+                              a_expr.dot(p_AC) - b_expr);
   EXPECT_FALSE(rationals.back().numerator().decision_variables().include(
       separating_margin));
 }
@@ -260,7 +259,7 @@ TEST_F(CollisionGeometryTest, Convex) {
   }
   CheckRationalExpression(
       rationals.back(), env,
-      -CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius -
+      -convex.polytope_chebyshev_radius_multiplier() * radius -
           a_expr.dot(p_AC) - b_expr);
 
   // Positive side, with separating margin.
@@ -291,7 +290,7 @@ TEST_F(CollisionGeometryTest, Convex) {
   CheckRationalExpression(
       rationals.back(), env,
       a_expr.dot(p_AC) + b_expr -
-          CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius);
+          convex.polytope_chebyshev_radius_multiplier() * radius);
 }
 
 TEST_F(CollisionGeometryTest, Sphere) {

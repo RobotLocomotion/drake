@@ -30,6 +30,7 @@ struct ReifyData {
       const multibody::RationalForwardKinematics& m_rational_forward_kin,
       const std::optional<symbolic::Variable>& m_separating_margin,
       PlaneSide m_plane_side, GeometryId m_geometry_id,
+      double m_polytope_chebyshev_radius_multiplier,
       std::vector<symbolic::RationalFunction>* m_rationals,
       std::optional<VectorX<symbolic::Polynomial>>* m_unit_length_vector)
       : a{&m_a},
@@ -39,6 +40,8 @@ struct ReifyData {
         separating_margin{&m_separating_margin},
         plane_side{m_plane_side},
         geometry_id{m_geometry_id},
+        polytope_chebyshev_radius_multiplier{
+            m_polytope_chebyshev_radius_multiplier},
         rationals{m_rationals},
         unit_length_vector{m_unit_length_vector} {}
 
@@ -52,6 +55,7 @@ struct ReifyData {
   const std::optional<symbolic::Variable>* separating_margin;
   const PlaneSide plane_side;
   const GeometryId geometry_id;
+  const double polytope_chebyshev_radius_multiplier;
   std::vector<symbolic::RationalFunction>* rationals;
   std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector;
 };
@@ -111,7 +115,7 @@ void ImplementPolytopeGeometry(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
   //   aᵀ*p_AC+b ≤ -k*r
   // where C is the Chebyshev center of the polytope, and r is the distance
   // from C to the polytope boundary. k is a positive scalar between (0, 1),
-  // defined in PolytopeChebyshevRadiusMultiplier()
+  // defined in polytope_chebyshev_radius_multiplier_
   //
   // We impose the condition aᵀ*p_AC+b ≥ k*r (or ≤ -k*r) to rule out the
   // trivial solution a = 0, b=0, since the right hand side k*r (or -k*r) is
@@ -139,9 +143,8 @@ void ImplementPolytopeGeometry(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
   reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
       *(reify_data->a), *(reify_data->b), p_GC, X_BG,
       *(reify_data->X_AB_multilinear),
-      CollisionGeometry::PolytopeChebyshevRadiusMultiplier() * radius,
-      std::nullopt, reify_data->plane_side,
-      *(reify_data->rational_forward_kin)));
+      reify_data->polytope_chebyshev_radius_multiplier * radius, std::nullopt,
+      reify_data->plane_side, *(reify_data->rational_forward_kin)));
   if (reify_data->separating_margin->has_value()) {
     reify_data->unit_length_vector->emplace(*(reify_data->a));
   } else {
@@ -152,10 +155,13 @@ void ImplementPolytopeGeometry(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
 class OnPlaneSideReifier : public ShapeReifier {
  public:
   OnPlaneSideReifier(const Shape* geometry, math::RigidTransformd X_BG,
-                     GeometryId geometry_id)
+                     GeometryId geometry_id,
+                     double polytope_chebyshev_radius_multiplier)
       : geometry_{geometry},
         X_BG_{std::move(X_BG)},
-        geometry_id_{geometry_id} {}
+        geometry_id_{geometry_id},
+        polytope_chebyshev_radius_multiplier_{
+            polytope_chebyshev_radius_multiplier} {}
 
   void ProcessData(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
@@ -166,7 +172,8 @@ class OnPlaneSideReifier : public ShapeReifier {
       PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
       std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) {
     ReifyData data(a, b, X_AB_multilinear, rational_forward_kin,
-                   separating_margin, plane_side, geometry_id_, rationals,
+                   separating_margin, plane_side, geometry_id_,
+                   polytope_chebyshev_radius_multiplier_, rationals,
                    unit_length_vector);
     geometry_->Reify(this, &data);
   }
@@ -239,6 +246,7 @@ class OnPlaneSideReifier : public ShapeReifier {
   const Shape* geometry_;
   math::RigidTransformd X_BG_;
   GeometryId geometry_id_;
+  double polytope_chebyshev_radius_multiplier_;
 };
 
 class GeometryTypeReifier : public ShapeReifier {
@@ -387,7 +395,8 @@ void CollisionGeometry::OnPlaneSide(
     const std::optional<symbolic::Variable>& separating_margin,
     PlaneSide plane_side, std::vector<symbolic::RationalFunction>* rationals,
     std::optional<VectorX<symbolic::Polynomial>>* unit_length_vector) const {
-  OnPlaneSideReifier reifier(geometry_, X_BG_, id_);
+  OnPlaneSideReifier reifier(geometry_, X_BG_, id_,
+                             polytope_chebyshev_radius_multiplier_);
   reifier.ProcessData(a, b, X_AB_multilinear, rational_forward_kin,
                       separating_margin, plane_side, rationals,
                       unit_length_vector);

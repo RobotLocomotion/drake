@@ -62,6 +62,14 @@ class CspaceFreePolytope {
 
   ~CspaceFreePolytope() {}
 
+  /** Optional argument for constructing CspaceFreePolytope */
+  struct Options {
+    Options() {}
+    /** Refer to CollisionGeometry::polytope_chebyshev_radius_multiplier().
+     */
+    double polytope_chebyshev_radius_multiplier{1E-3};
+  };
+
   /**
    @param plant The plant for which we compute the C-space free polytopes. It
    must outlive this CspaceFreePolytope object.
@@ -74,7 +82,8 @@ class CspaceFreePolytope {
   CspaceFreePolytope(const multibody::MultibodyPlant<double>* plant,
                      const geometry::SceneGraph<double>* scene_graph,
                      SeparatingPlaneOrder plane_order,
-                     const Eigen::Ref<const Eigen::VectorXd>& q_star);
+                     const Eigen::Ref<const Eigen::VectorXd>& q_star,
+                     const Options& options = Options{});
 
   [[nodiscard]] const multibody::RationalForwardKinematics&
   rational_forward_kin() const {
