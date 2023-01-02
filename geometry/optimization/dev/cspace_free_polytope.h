@@ -239,6 +239,11 @@ class CspaceFreePolytope {
 
     // The solver options used for the SOS program.
     std::optional<solvers::SolverOptions> solver_options{std::nullopt};
+
+    // If a row in C*s<=d is redundant (this row is implied by other rows in
+    // C*s<=d, s_lower<=s<=s_upper), then we don't search for the Lagrangian
+    // multiplier for this row.
+    bool ignore_redundant_C{false};
   };
 
   /** Finds the certificates that the C-space polytope {s | C*s<=d, s_lower <= s
@@ -293,6 +298,12 @@ class CspaceFreePolytope {
     // We can constrain the C-space polytope {s | C*s<=d, s_lower<=s<=s_upper}
     // to contain some sampled s. Each column of s_inner_pts is a sample of s.
     std::optional<Eigen::MatrixXd> s_inner_pts;
+
+    // If set to true, then we will also search for the Lagrangian multipliers
+    // for the constraint s_lower <= s <= s_upper; otherwise we fix the
+    // Lagrangian multiplier to the solution found when we fix the C-space
+    // polytope {s | C*s<=d, s_lower<=s<=s_upper}.
+    bool search_s_bounds_lagrangians{true};
   };
 
   struct BilinearAlternationResult {
@@ -469,7 +480,8 @@ class CspaceFreePolytope {
   matrices in the SOS program.
   */
   [[nodiscard]] int GetGramVarSizeForPolytopeSearchProgram(
-      const IgnoredCollisionPairs& ignored_collision_pairs) const;
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      bool search_s_bounds_lagrangians) const;
 
   /**
    Constructs a program to search for the C-space polytope {s | C*s<=d,
@@ -479,6 +491,8 @@ class CspaceFreePolytope {
    Note that this program doesn't contain any cost yet.
    @param certificates_vec The return of
    FindSeparationCertificateGivenPolytope().
+   @param search_s_bounds_lagrangians Set to true if we search for the
+   Lagrangian multiplier for the bounds s_lower <=s<=s_upper.
    @param gram_total_size The return of
    GetGramVarSizeForPolytopeSearchProgram().
    */
@@ -490,7 +504,7 @@ class CspaceFreePolytope {
       const VectorX<symbolic::Polynomial>& d_minus_Cs,
       const std::vector<std::optional<SeparationCertificateResult>>&
           certificates_vec,
-      int gram_total_size) const;
+      bool search_s_bounds_lagrangians, int gram_total_size) const;
 
   /** Adds the constraint that the ellipsoid {Q*u+s₀ | uᵀu≤1} is inside the
      polytope {s | C*s <= d} with margin δ. Namely for the i'th face cᵢᵀs≤dᵢ, we

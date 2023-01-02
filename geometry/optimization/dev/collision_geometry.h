@@ -116,8 +116,6 @@ class CollisionGeometry {
    @param[out] unit_length_vector The vector that should have length <= 1 when
    the geometry is on the designated side of the plane.
    */
-  // TODO(hongkai.dai): remove query_object from input when we can construct an
-  // HPolyhedron directly from vertices.
   void OnPlaneSide(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
       const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&

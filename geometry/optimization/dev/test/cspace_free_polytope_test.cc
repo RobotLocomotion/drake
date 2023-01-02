@@ -133,10 +133,10 @@ class CspaceFreePolytopeTester {
   }
 
   [[nodiscard]] int GetGramVarSizeForPolytopeSearchProgram(
-      const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs)
-      const {
+      const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs,
+      bool search_s_bounds_lagrangians) const {
     return cspace_free_polytope_->GetGramVarSizeForPolytopeSearchProgram(
-        ignored_collision_pairs);
+        ignored_collision_pairs, search_s_bounds_lagrangians);
   }
 
   [[nodiscard]] std::unique_ptr<solvers::MathematicalProgram>
@@ -148,10 +148,10 @@ class CspaceFreePolytopeTester {
       const std::vector<
           std::optional<CspaceFreePolytope::SeparationCertificateResult>>&
           certificates_vec,
-      int gram_total_size) const {
+      bool search_s_bounds_lagrangians, int gram_total_size) const {
     return cspace_free_polytope_->InitializePolytopeSearchProgram(
         ignored_collision_pairs, C, d, d_minus_Cs, certificates_vec,
-        gram_total_size);
+        search_s_bounds_lagrangians, gram_total_size);
   }
 
   void AddEllipsoidContainmentConstraint(
@@ -1196,53 +1196,56 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
   options.solver_id = solver.id();
   options.backoff_scale = 0.01;
   if (solver.available()) {
-    options.num_threads = -1;
+    for (bool search_s_bounds_lagrangians : {false, true}) {
+      options.num_threads = -1;
 
-    const auto certificates_result =
-        tester.FindSeparationCertificateGivenPolytope(
-            ignored_collision_pairs, C, d, true /* search_separating_margin */,
-            options);
-    const int gram_total_size =
-        tester.GetGramVarSizeForPolytopeSearchProgram(ignored_collision_pairs);
-    MatrixX<symbolic::Variable> C_var(C.rows(), C.cols());
-    VectorX<symbolic::Variable> d_var(d.rows());
-    for (int i = 0; i < C.rows(); ++i) {
-      d_var(i) = symbolic::Variable("d" + std::to_string(i));
-      for (int j = 0; j < C.cols(); ++j) {
-        C_var(i, j) = symbolic::Variable(fmt::format("C({},{})", i, j));
+      const auto certificates_result =
+          tester.FindSeparationCertificateGivenPolytope(
+              ignored_collision_pairs, C, d,
+              true /* search_separating_margin */, options);
+      const int gram_total_size = tester.GetGramVarSizeForPolytopeSearchProgram(
+          ignored_collision_pairs, search_s_bounds_lagrangians);
+      MatrixX<symbolic::Variable> C_var(C.rows(), C.cols());
+      VectorX<symbolic::Variable> d_var(d.rows());
+      for (int i = 0; i < C.rows(); ++i) {
+        d_var(i) = symbolic::Variable("d" + std::to_string(i));
+        for (int j = 0; j < C.cols(); ++j) {
+          C_var(i, j) = symbolic::Variable(fmt::format("C({},{})", i, j));
+        }
       }
-    }
-    const VectorX<symbolic::Polynomial> d_minus_Cs =
-        tester.CalcDminusCs<symbolic::Variable>(C_var, d_var);
+      const VectorX<symbolic::Polynomial> d_minus_Cs =
+          tester.CalcDminusCs<symbolic::Variable>(C_var, d_var);
 
-    VectorX<symbolic::Variable> ellipsoid_margins(C.rows());
-    for (int i = 0; i < ellipsoid_margins.rows(); ++i) {
-      ellipsoid_margins(i) =
-          symbolic::Variable("ellipsoid_margin" + std::to_string(i));
-    }
+      VectorX<symbolic::Variable> ellipsoid_margins(C.rows());
+      for (int i = 0; i < ellipsoid_margins.rows(); ++i) {
+        ellipsoid_margins(i) =
+            symbolic::Variable("ellipsoid_margin" + std::to_string(i));
+      }
 
-    CspaceFreePolytope::FindPolytopeGivenLagrangianOptions polytope_options;
-    polytope_options.solver_options.emplace(solvers::SolverOptions{});
-    polytope_options.solver_options->SetOption(
-        solvers::CommonSolverOption::kPrintToConsole, 0);
+      CspaceFreePolytope::FindPolytopeGivenLagrangianOptions polytope_options;
+      polytope_options.solver_options.emplace(solvers::SolverOptions{});
+      polytope_options.solver_options->SetOption(
+          solvers::CommonSolverOption::kPrintToConsole, 0);
+      polytope_options.search_s_bounds_lagrangians =
+          search_s_bounds_lagrangians;
 
-    const HPolyhedron cspace_h_polyhedron =
-        tester.GetPolyhedronWithJointLimits(C, d);
-    const auto ellipsoid =
-        cspace_h_polyhedron.MaximumVolumeInscribedEllipsoid();
-    const Eigen::MatrixXd ellipsoid_Q = ellipsoid.A().inverse();
-    const auto polytope_result = tester.FindPolytopeGivenLagrangian(
-        ignored_collision_pairs, C_var, d_var, d_minus_Cs, certificates_result,
-        ellipsoid_Q, ellipsoid.center(), ellipsoid_margins, gram_total_size,
-        polytope_options);
-    ASSERT_TRUE(polytope_result.has_value());
-    // Now check if the C-space polytope {s | C*s<=d, s_lower<=s<=s_upper} is
-    // collision free.
-    // First sample many s values, and project these values into the polytope {s
-    // | C*s<=d, s_lower<=s<=s_upper}, then check if the plane separates the
-    // geometries at the corresponding configurations.
-    Eigen::Matrix<double, 10, 3> s_samples;
-    // clang-format off
+      const HPolyhedron cspace_h_polyhedron =
+          tester.GetPolyhedronWithJointLimits(C, d);
+      const auto ellipsoid =
+          cspace_h_polyhedron.MaximumVolumeInscribedEllipsoid();
+      const Eigen::MatrixXd ellipsoid_Q = ellipsoid.A().inverse();
+      const auto polytope_result = tester.FindPolytopeGivenLagrangian(
+          ignored_collision_pairs, C_var, d_var, d_minus_Cs,
+          certificates_result, ellipsoid_Q, ellipsoid.center(),
+          ellipsoid_margins, gram_total_size, polytope_options);
+      ASSERT_TRUE(polytope_result.has_value());
+      // Now check if the C-space polytope {s | C*s<=d, s_lower<=s<=s_upper} is
+      // collision free.
+      // First sample many s values, and project these values into the polytope
+      // {s | C*s<=d, s_lower<=s<=s_upper}, then check if the plane separates
+      // the geometries at the corresponding configurations.
+      Eigen::Matrix<double, 10, 3> s_samples;
+      // clang-format off
     s_samples << 1, 2, -1,
                -0.5, 0.3, 0.2,
                0.2, 0.9, 0.4,
@@ -1253,71 +1256,74 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
                -0.4, 0.5, 1,
                0, 0, 0,
                0.2, -1.5, 1;
-    // clang-format on
-    auto diagram_context = diagram_->CreateDefaultContext();
-    auto& plant_context =
-        plant_->GetMyMutableContextFromRoot(diagram_context.get());
+      // clang-format on
+      auto diagram_context = diagram_->CreateDefaultContext();
+      auto& plant_context =
+          plant_->GetMyMutableContextFromRoot(diagram_context.get());
 
-    for (int i = 0; i < s_samples.rows(); ++i) {
-      const Eigen::Vector3d s_val = ProjectToPolytope(
-          s_samples.row(i).transpose(), polytope_result->C, polytope_result->d,
-          tester.s_lower(), tester.s_upper());
-      symbolic::Environment env;
-      env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
-                 s_val);
-      const Eigen::VectorXd q_val =
-          tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
-              s_val, q_star);
-      plant_->SetPositions(&plant_context, q_val);
-      for (int plane_index = 0;
-           plane_index <
-           static_cast<int>(
-               tester.cspace_free_polytope().separating_planes().size());
-           ++plane_index) {
-        const auto& plane =
-            tester.cspace_free_polytope().separating_planes()[plane_index];
-        if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
-                plane.positive_side_geometry->id(),
-                plane.negative_side_geometry->id())) == 0) {
-          Eigen::Vector3d a_val;
-          for (int j = 0; j < 3; ++j) {
-            a_val(j) = polytope_result->a.at(plane_index)(j).Evaluate(env);
+      for (int i = 0; i < s_samples.rows(); ++i) {
+        const Eigen::Vector3d s_val = ProjectToPolytope(
+            s_samples.row(i).transpose(), polytope_result->C,
+            polytope_result->d, tester.s_lower(), tester.s_upper());
+        symbolic::Environment env;
+        env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
+                   s_val);
+        const Eigen::VectorXd q_val =
+            tester.cspace_free_polytope().rational_forward_kin().ComputeQValue(
+                s_val, q_star);
+        plant_->SetPositions(&plant_context, q_val);
+        for (int plane_index = 0;
+             plane_index <
+             static_cast<int>(
+                 tester.cspace_free_polytope().separating_planes().size());
+             ++plane_index) {
+          const auto& plane =
+              tester.cspace_free_polytope().separating_planes()[plane_index];
+          if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+                  plane.positive_side_geometry->id(),
+                  plane.negative_side_geometry->id())) == 0) {
+            Eigen::Vector3d a_val;
+            for (int j = 0; j < 3; ++j) {
+              a_val(j) = polytope_result->a.at(plane_index)(j).Evaluate(env);
+            }
+            const double b_val =
+                polytope_result->b.at(plane_index).Evaluate(env);
+            EXPECT_GE(
+                DistanceToHalfspace(*plane.positive_side_geometry, a_val, b_val,
+                                    plane.expressed_body, PlaneSide::kPositive,
+                                    *plant_, plant_context),
+                0);
+            EXPECT_GE(
+                DistanceToHalfspace(*plane.negative_side_geometry, a_val, b_val,
+                                    plane.expressed_body, PlaneSide::kNegative,
+                                    *plant_, plant_context),
+                0);
           }
-          const double b_val = polytope_result->b.at(plane_index).Evaluate(env);
-          EXPECT_GE(
-              DistanceToHalfspace(*plane.positive_side_geometry, a_val, b_val,
-                                  plane.expressed_body, PlaneSide::kPositive,
-                                  *plant_, plant_context),
-              0);
-          EXPECT_GE(
-              DistanceToHalfspace(*plane.negative_side_geometry, a_val, b_val,
-                                  plane.expressed_body, PlaneSide::kNegative,
-                                  *plant_, plant_context),
-              0);
         }
       }
-    }
 
-    // Check the margin between the inscribed ellipsoid and the polytope faces.
-    EXPECT_TRUE((polytope_result->ellipsoid_margins.array() >= 0).all());
-    for (int i = 0; i < polytope_result->C.rows(); ++i) {
-      EXPECT_LE(polytope_result->C.row(i).norm(), 1);
-      EXPECT_GE((polytope_result->d(i) -
-                 polytope_result->C.row(i).dot(ellipsoid.center()) -
-                 (polytope_result->C.row(i) * ellipsoid_Q).norm()) /
-                    polytope_result->C.row(i).norm(),
-                polytope_result->ellipsoid_margins(i));
+      // Check the margin between the inscribed ellipsoid and the polytope
+      // faces.
+      EXPECT_TRUE((polytope_result->ellipsoid_margins.array() >= 0).all());
+      for (int i = 0; i < polytope_result->C.rows(); ++i) {
+        EXPECT_LE(polytope_result->C.row(i).norm(), 1);
+        EXPECT_GE((polytope_result->d(i) -
+                   polytope_result->C.row(i).dot(ellipsoid.center()) -
+                   (polytope_result->C.row(i) * ellipsoid_Q).norm()) /
+                      polytope_result->C.row(i).norm(),
+                  polytope_result->ellipsoid_margins(i));
+      }
+      // Check that the inequality constraint |Qcᵢ|₂ ≤ dᵢ − δᵢ − cᵢᵀs₀ is active
+      // at the optimal solution.
+      EXPECT_TRUE(CompareMatrices(
+          (ellipsoid_Q * polytope_result->C.transpose()).colwise().norm(),
+          (polytope_result->d - polytope_result->ellipsoid_margins -
+           polytope_result->C * ellipsoid.center())
+              .transpose(),
+          1E-5));
+      // Check that the norm of each row in C is <= 1.
+      EXPECT_TRUE((polytope_result->C.rowwise().norm().array() <= 1).all());
     }
-    // Check that the inequality constraint |Qcᵢ|₂ ≤ dᵢ − δᵢ − cᵢᵀs₀ is active
-    // at the optimal solution.
-    EXPECT_TRUE(CompareMatrices(
-        (ellipsoid_Q * polytope_result->C.transpose()).colwise().norm(),
-        (polytope_result->d - polytope_result->ellipsoid_margins -
-         polytope_result->C * ellipsoid.center())
-            .transpose(),
-        1E-5));
-    // Check that the norm of each row in C is <= 1.
-    EXPECT_TRUE((polytope_result->C.rowwise().norm().array() <= 1).all());
   }
 }
 
