@@ -821,6 +821,9 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   this->FindRedundantInequalities(
       C, d, this->s_lower_, this->s_upper_, 0., &C_redundant_indices,
       &s_lower_redundant_indices, &s_upper_redundant_indices);
+  if (!options.ignore_redundant_C) {
+    C_redundant_indices.clear();
+  }
 
   // Stores the indices in separating_planes_ that don't appear in
   // ignored_collision_pairs.
@@ -995,21 +998,23 @@ bool CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
 }
 
 int CspaceFreePolytope::GetGramVarSizeForPolytopeSearchProgram(
-    const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs)
-    const {
+    const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs,
+    bool search_s_bounds_lagrangians) const {
   int ret = 0;
 
-  auto count_gram_per_plane_side = [this, &ret](
+  auto count_gram_per_plane_side = [this, search_s_bounds_lagrangians, &ret](
                                        int num_rationals,
                                        multibody::BodyIndex expressed_body,
                                        multibody::BodyIndex collision_body) {
     const auto& monomial_basis = this->map_body_to_monomial_basis_.at(
         SortedPair<multibody::BodyIndex>(expressed_body, collision_body));
     // Each rational will add Lagrangian multipliers for s-s_lower and
-    // s_upper-s, together with one sos that rational.numerator() - λ(s)ᵀ * (d -
-    // C*s) - λ_lower(s)ᵀ * (s - s_lower) -λ_upper(s)ᵀ * (s_upper - s) is sos
+    // s_upper-s (if search_s_bounds_lagrangian=true), together with one sos
+    // that rational.numerator() - λ(s)ᵀ * (d - C*s) - λ_lower(s)ᵀ * (s -
+    // s_lower) -λ_upper(s)ᵀ * (s_upper - s) is sos
     const int s_size = this->rational_forward_kin_.s().rows();
-    const int num_sos = num_rationals * (1 + 2 * s_size);
+    const int num_sos =
+        num_rationals * (1 + (search_s_bounds_lagrangians ? 2 * s_size : 0));
     ret += num_sos * (monomial_basis.rows() + 1) * monomial_basis.rows() / 2;
   };
   for (const auto& plane_geometries : plane_geometries_wo_margin_) {
@@ -1035,7 +1040,7 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
     const VectorX<symbolic::Polynomial>& d_minus_Cs,
     const std::vector<std::optional<SeparationCertificateResult>>&
         certificates_vec,
-    int gram_total_size) const {
+    bool search_s_bounds_lagrangians, int gram_total_size) const {
   auto prog = std::make_unique<solvers::MathematicalProgram>();
   prog->AddIndeterminates(rational_forward_kin_.s());
   // Add the indeterminates y if we need to impose unit length constraint.
@@ -1066,7 +1071,8 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
   VectorX<symbolic::Polynomial> s_lower_lagrangians(s_size);
   // Add the sos constraints for each pair of geometries.
   auto add_sos = [this, &prog, &d_minus_Cs, &gram_vars, &gram_var_count,
-                  &s_upper_lagrangians, &s_lower_lagrangians](
+                  &s_upper_lagrangians, &s_lower_lagrangians,
+                  search_s_bounds_lagrangians](
                      const std::vector<symbolic::RationalFunction>& rationals,
                      int plane_index, multibody::BodyIndex collision_body,
                      const std::vector<SeparatingPlaneLagrangians>&
@@ -1080,17 +1086,22 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
         (monomial_basis.rows() + 1) * monomial_basis.rows() / 2;
     MatrixX<symbolic::Variable> gram_mat(monomial_basis.rows(),
                                          monomial_basis.rows());
-    // Add Lagrangians for joint limits.
     for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
-      for (int j = 0; j < this->rational_forward_kin_.s().rows(); ++j) {
-        AddSosPolynomial(prog.get(), monomial_basis,
-                         gram_vars.segment(gram_var_count, gram_lower_size),
-                         &(s_lower_lagrangians(j)), &gram_mat);
-        gram_var_count += gram_lower_size;
-        AddSosPolynomial(prog.get(), monomial_basis,
-                         gram_vars.segment(gram_var_count, gram_lower_size),
-                         &(s_upper_lagrangians(j)), &gram_mat);
-        gram_var_count += gram_lower_size;
+      // Add Lagrangian multipliers for joint limits.
+      if (search_s_bounds_lagrangians) {
+        for (int j = 0; j < this->rational_forward_kin_.s().rows(); ++j) {
+          AddSosPolynomial(prog.get(), monomial_basis,
+                           gram_vars.segment(gram_var_count, gram_lower_size),
+                           &(s_lower_lagrangians(j)), &gram_mat);
+          gram_var_count += gram_lower_size;
+          AddSosPolynomial(prog.get(), monomial_basis,
+                           gram_vars.segment(gram_var_count, gram_lower_size),
+                           &(s_upper_lagrangians(j)), &gram_mat);
+          gram_var_count += gram_lower_size;
+        }
+      } else {
+        s_lower_lagrangians = plane_side_lagrangians[i].s_lower;
+        s_upper_lagrangians = plane_side_lagrangians[i].s_upper;
       }
       const symbolic::Polynomial poly =
           rationals[i].numerator() -
@@ -1236,7 +1247,7 @@ CspaceFreePolytope::FindPolytopeGivenLagrangian(
     const FindPolytopeGivenLagrangianOptions& options) const {
   auto prog = this->InitializePolytopeSearchProgram(
       ignored_collision_pairs, C, d, d_minus_Cs, certificates_vec,
-      gram_total_size);
+      options.search_s_bounds_lagrangians, gram_total_size);
   prog->AddDecisionVariables(ellipsoid_margins);
   AddEllipsoidContainmentConstraint(prog.get(), Q, s0, C, d, ellipsoid_margins);
   // We know that the verified polytope has to be contained in the box s_lower
@@ -1350,7 +1361,9 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
   const VectorX<symbolic::Polynomial> d_minus_Cs =
       this->CalcDminusCs<symbolic::Variable>(C_var, d_var);
   const int gram_total_size_in_polytope_program =
-      this->GetGramVarSizeForPolytopeSearchProgram(ignored_collision_pairs);
+      this->GetGramVarSizeForPolytopeSearchProgram(
+          ignored_collision_pairs,
+          options.find_polytope_options.search_s_bounds_lagrangians);
   // Find the inscribed ellipsoid.
   HPolyhedron cspace_polytope =
       this->GetPolyhedronWithJointLimits(C_init, d_init);
