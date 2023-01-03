@@ -28,6 +28,13 @@ GTEST_TEST(BodyShapeDescriptionTest, Arbitrary) {
   EXPECT_TRUE(dut.pose_in_body().IsExactlyEqualTo(pose));
   EXPECT_EQ(dut.model_instance_name(), model);
   EXPECT_EQ(dut.body_name(), body);
+
+  // A moved-from object should reject any attempt at using it.
+  BodyShapeDescription other(std::move(dut));
+  EXPECT_THROW(dut.shape(), std::exception);
+  EXPECT_THROW(dut.pose_in_body(), std::exception);
+  EXPECT_THROW(dut.model_instance_name(), std::exception);
+  EXPECT_THROW(dut.body_name(), std::exception);
 }
 
 GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {

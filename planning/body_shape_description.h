@@ -17,7 +17,10 @@ the rigid pose of the shape S relative to the body B, X_BS.
 
 Most clients should use the factory method MakeBodyShapeDescription() to
 construct a valid %BodyShapeDescription; it will extract and verify the correct
-information from a multibody plant and its context. */
+information from a multibody plant and its context.
+
+When moved-from, this object models a "null" description and all of the getter
+functions will throw. */
 class BodyShapeDescription final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyShapeDescription)
@@ -29,25 +32,33 @@ class BodyShapeDescription final {
                        const math::RigidTransformd& X_BS,
                        std::string model_instance_name, std::string body_name);
 
-  /** @returns the shape passed at construction.
-      @throws std::exception if this instance has been moved from. */
+  /** @returns the shape passed at construction. */
   const geometry::Shape& shape() const {
-    DRAKE_THROW_UNLESS(shape_ != nullptr);
+    DRAKE_THROW_UNLESS(!is_moved_from());
     return *shape_;
   }
 
   /** @retval X_BS The pose passed at construction. */
-  const math::RigidTransformd& pose_in_body() const { return X_BS_; }
+  const math::RigidTransformd& pose_in_body() const {
+    DRAKE_THROW_UNLESS(!is_moved_from());
+    return X_BS_;
+  }
 
   /** @returns the model instance name passed at construction. */
   const std::string& model_instance_name() const {
+    DRAKE_THROW_UNLESS(!is_moved_from());
     return model_instance_name_;
   }
 
   /** @returns the body name passed at construction. */
-  const std::string& body_name() const { return body_name_; }
+  const std::string& body_name() const {
+    DRAKE_THROW_UNLESS(!is_moved_from());
+    return body_name_;
+  }
 
  private:
+  bool is_moved_from() const { return shape_ == nullptr; }
+
   copyable_unique_ptr<geometry::Shape> shape_;
   math::RigidTransformd X_BS_;
   std::string model_instance_name_;
