@@ -107,9 +107,13 @@ For any non-trivial changes (i.e., changes that go beyond changing version
 numbers, checksums, or trivial fixups to patch files or code spelling), do not
 attempt to fix the problems just because you are accountable for the routine
 upgrade procedure every month. As a rule of thumb, if you need to spend more
-than 5-10 minutes on an upgrade, you should defer the work to a separate issue:
+than 5-10 minutes on an upgrade, you should defer the work to a separate pull
+request:
 
-* open an issue about the need for an upgrade of that one specific external;
+* open a pull request with the WIP patch for that one specific external;
+
+* entire that the Jenkins output shows the problem (e.g., trigger any extra
+  non-default builds that failed);
 
 * assign it to the feature owner associated with that external (to find out who
   that is, ask for help in the drake developers ``#build`` slack channel); and
