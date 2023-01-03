@@ -1413,23 +1413,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       ret->b = std::move(polytope_result->b);
       ret->num_iter = iter;
       // Now find the inscribed ellipsoid.
-      // If a row of C is 0-vector, then our current code in HPolyhedron will
-      // cause an error. Hence we prune the 0-vector rows.
-      // TODO(hongkai.dai): fix HPolyhedron so that we don't need to prune the
-      // C, d matrices here.
-      Eigen::MatrixXd C_prune = ret->C;
-      Eigen::VectorXd d_prune = ret->d;
-      int C_prune_rows = 0;
-      for (int i = 0; i < ret->C.rows(); ++i) {
-        if ((ret->C.row(i).array() != 0).any()) {
-          C_prune.row(C_prune_rows) = ret->C.row(i);
-          d_prune(C_prune_rows) = ret->d(i);
-          ++C_prune_rows;
-        }
-      }
-      C_prune.conservativeResize(C_prune_rows, C_prune.cols());
-      d_prune.conservativeResize(C_prune_rows, 1);
-      cspace_polytope = this->GetPolyhedronWithJointLimits(C_prune, d_prune);
+      cspace_polytope = this->GetPolyhedronWithJointLimits(ret->C, ret->d);
       ellipsoid = cspace_polytope.MaximumVolumeInscribedEllipsoid();
       ellipsoid_Q = ellipsoid.A().inverse();
       const double cost = ellipsoid_Q.determinant();

@@ -168,15 +168,27 @@ Hyperellipsoid HPolyhedron::MaximumVolumeInscribedEllipsoid() const {
   // max log det (C).  This method also imposes C ≽ 0.
   prog.AddMaximizeLogDeterminantCost(C.cast<Expression>());
   // |aᵢC|₂ ≤ bᵢ - aᵢd, ∀i
-  // TODO(russt): We could potentially avoid Expression parsing here by using
-  // AddLorentzConeConstraint(A,b,vars), but it's nontrivial because of the
-  // duplicate entries in the symmetric matrix C.  E.g. the Lorentz cone A would
-  // not be simply block_diagonal(-A_.row(i), A_.row(i), ..., A_.row(i)).
-  VectorX<Expression> z(N + 1);
+  // Add this as A_lorentz * vars + b_lorentz in the Lorentz cone constraint.
+  // vars = [d; C.col(0); C.col(1); ...; C.col(n-1)]
+  // A_lorentz = block_diagonal(-A_.row(i), A_.row(i), ..., A_.row(i))
+  // b_lorentz = [b_(i); 0; ...; 0]
+  VectorX<symbolic::Variable> vars(C.rows() * C.cols() + d.rows());
+  vars.head(d.rows()) = d;
+  for (int i = 0; i < C.cols(); ++i) {
+    vars.segment(d.rows() + i * C.rows(), C.rows()) = C.col(i);
+  }
+
+  Eigen::MatrixXd A_lorentz =
+      Eigen::MatrixXd::Zero(1 + C.cols(), (1 + C.cols()) * C.rows());
+  Eigen::VectorXd b_lorentz = Eigen::VectorXd::Zero(1 + C.cols());
   for (int i = 0; i < b_.size(); ++i) {
-    z[0] = b_(i) - A_.row(i).dot(d);
-    z.tail(N) = C * A_.row(i).transpose();
-    prog.AddLorentzConeConstraint(z);
+    A_lorentz.setZero();
+    A_lorentz.block(0, 0, 1, A_.cols()) = -A_.row(i);
+    for (int j = 0; j < C.cols(); ++j) {
+      A_lorentz.block(j + 1, (j + 1) * C.cols(), 1, A_.cols()) = A_.row(i);
+    }
+    b_lorentz(0) = b_(i);
+    prog.AddLorentzConeConstraint(A_lorentz, b_lorentz, vars);
   }
   auto result = solvers::Solve(prog);
   if (!result.is_success()) {
