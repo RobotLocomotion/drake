@@ -25,6 +25,11 @@ const AbstractValue* DoEval(const ContextBase&) {
   return g_do_eval_result;
 }
 
+// We need to define this to compile, but it should never be invoked.
+std::unique_ptr<AbstractValue> DoAlloc() {
+  return nullptr;
+}
+
 GTEST_TEST(InputPortTest, VectorTest) {
   using T = double;
 
@@ -43,7 +48,7 @@ GTEST_TEST(InputPortTest, VectorTest) {
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
       system, system_interface, dummy_system.get_system_id(), name, index,
-      ticket, data_type, size, random_type, &DoEval);
+      ticket, data_type, size, random_type, &DoEval, &DoAlloc);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);
@@ -102,7 +107,7 @@ GTEST_TEST(InputPortTest, AbstractTest) {
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
       system, system_interface, dummy_system.get_system_id(), name, index,
-      ticket, data_type, size, random_type, &DoEval);
+      ticket, data_type, size, random_type, &DoEval, &DoAlloc);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);

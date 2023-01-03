@@ -1065,9 +1065,13 @@ InputPort<T>& System<T>::DeclareInputPort(
   auto eval = [this, port_index](const ContextBase& context_base) {
     return this->EvalAbstractInput(context_base, port_index);
   };
+  auto alloc = [this, port_index]() {
+    return this->AllocateInputAbstract(this->get_input_port(port_index));
+  };
   auto port = internal::FrameworkFactory::Make<InputPort<T>>(
       this, this, get_system_id(), NextInputPortName(std::move(name)),
-      port_index, port_ticket, type, size, random_type, std::move(eval));
+      port_index, port_ticket, type, size, random_type, std::move(eval),
+      std::move(alloc));
   InputPort<T>* port_ptr = port.get();
   this->AddInputPort(std::move(port));
   return *port_ptr;

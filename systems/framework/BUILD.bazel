@@ -301,6 +301,7 @@ drake_cc_library(
         ":context_base",
         ":framework_common",
         ":port_base",
+        ":value_producer",
         "//common:nice_type_name",
         "//common:random",
     ],
@@ -395,10 +396,11 @@ drake_cc_library(
     ],
 )
 
-# N.B. Because of source- and link-time interdependence for the translation
-# unit for `input_port.cc`, we defer its compilation to `:system`.
 drake_cc_library(
     name = "input_port",
+    srcs = [
+        "input_port.cc",
+    ],
     hdrs = [
         "input_port.h",
     ],
@@ -457,11 +459,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "system",
-    srcs = [
-        # See note above in `:input_port`.
-        "input_port.cc",
-        "system.cc",
-    ],
+    srcs = ["system.cc"],
     hdrs = ["system.h"],
     deps = [
         ":context",
