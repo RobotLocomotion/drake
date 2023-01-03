@@ -18,6 +18,13 @@
 namespace drake {
 namespace multibody {
 
+namespace internal {
+// This is a class used by MultibodyTree internals to create the implementation
+// for a particular joint object.
+template <typename T>
+class JointImplementationBuilder;
+}  // namespace internal
+
 /// A %Joint models the kinematical relationship which characterizes the
 /// possible relative motion between two bodies.
 /// The two bodies connected by this %Joint object are referred to as _parent_
