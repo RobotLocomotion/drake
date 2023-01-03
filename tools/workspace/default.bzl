@@ -28,7 +28,6 @@ load("@drake//tools/workspace/fcl:repository.bzl", "fcl_repository")
 load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("@drake//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
-load("@drake//tools/workspace/ghc_filesystem:repository.bzl", "ghc_filesystem_repository")  # noqa
 load("@drake//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
@@ -91,7 +90,6 @@ load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
-load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
 load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
 load("@drake//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
@@ -173,8 +171,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gflags_repository(name = "gflags")
     if "gfortran" not in excludes:
         gfortran_repository(name = "gfortran")
-    if "ghc_filesystem" not in excludes:
-        ghc_filesystem_repository(name = "ghc_filesystem", mirrors = mirrors)
     if "github3_py_internal" not in excludes:
         github3_py_internal_repository(name = "github3_py_internal", mirrors = mirrors)  # noqa
     if "glew" not in excludes:
@@ -305,8 +301,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         suitesparse_repository(name = "suitesparse")
     if "tinyobjloader" not in excludes:
         tinyobjloader_repository(name = "tinyobjloader", mirrors = mirrors)
-    if "tinyxml2" not in excludes:
-        tinyxml2_repository(name = "tinyxml2")
     if "tinyxml2_internal" not in excludes:
         tinyxml2_internal_repository(name = "tinyxml2_internal", mirrors = mirrors)  # noqa
     if "tomli_internal" not in excludes:
