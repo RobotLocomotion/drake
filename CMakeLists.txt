@@ -202,7 +202,7 @@ set(CMAKE_CXX_STANDARD 17)
 # The supported Python major/minor versions should match those listed in both
 # doc/_pages/from_source.md and tools/workspace/python/repository.bzl.
 if(APPLE)
-  set(SUPPORTED_PYTHON_VERSION 3.10)
+  set(SUPPORTED_PYTHON_VERSION 3.11)
 else()
   if(UNIX_DISTRIBUTION_CODENAME STREQUAL focal)
     set(SUPPORTED_PYTHON_VERSION 3.8)

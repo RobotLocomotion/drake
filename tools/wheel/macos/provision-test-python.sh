@@ -11,5 +11,5 @@ rm -rf /opt/drake-wheel-test
 
 # Prepare test environment.
 # NOTE: Xcode ships python3, make sure to use the one from brew.
-$(brew --prefix python@3.10)/bin/python3.10 \
+$(brew --prefix python@3.11)/bin/python3.11 \
     -m venv /opt/drake-wheel-test/python

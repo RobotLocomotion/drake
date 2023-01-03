@@ -18,7 +18,7 @@ officially supports:
 |------------------------------------|------------------|------------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | x86_64           | 3.8        |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64           | 3.10       |
-| macOS Monterey (12)                | x86_64 or arm64  | 3.10       |
+| macOS Monterey (12)                | x86_64 or arm64  | 3.11       |
 
 ⁽¹⁾ CPython is the only Python implementation supported.
 Drake does not support the Python environment supplied by Anaconda. Before
