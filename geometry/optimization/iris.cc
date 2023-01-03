@@ -699,8 +699,8 @@ struct GeometryPairWithDistance {
 //  @param E_ptr must have its ambient dimension be the same size as the nubmer
 //  of joints in the plant.
 //  @return
-HPolyhedron _DoIris_(const multibody::MultibodyPlant<double>& plant,
-                     const systems::Context<double>& context,
+HPolyhedron _DoIris_(const MultibodyPlant<double>& plant,
+                     const Context<double>& context,
                      const IrisOptions& options, const VectorXd& sample,
                      const std::shared_ptr<SamePointConstraintAbstractCSpace>&
                          same_point_constraint) {
@@ -808,7 +808,7 @@ HPolyhedron _DoIris_(const multibody::MultibodyPlant<double>& plant,
     }
     // Handle bounding box and linear constraints as a special case (extracting
     // them from the additional_constraint_bindings).
-    auto AddConstraint = [&](const Eigen::MatrixXd& new_A,
+    auto AddConstraint = [&](const MatrixXd& new_A,
                              const VectorXd& new_b,
                              const solvers::VectorXDecisionVariable& vars) {
       while (num_initial_constraints + new_A.rows() >= A.rows()) {
