@@ -8,8 +8,8 @@ def gym_py_repository(
     github_archive(
         name = name,
         repository = "openai/gym",
-        commit = "v0.21.0",
-        sha256 = "0efc4ca01fa0d0cd10391b37db0c52e09084fb7a3fd04cdc68e08081acbf4418",  # noqa
+        commit = "0.26.2",
+        sha256 = "96a5fc8345bd92b73a15fc25112d53a294f86fcace1c5e4ef7f0e052b5e1bdf4",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
