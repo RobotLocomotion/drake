@@ -13,13 +13,6 @@ namespace multibody {
 template <typename T>
 class MultibodyPlant;
 
-namespace internal {
-// This is a class used by MultibodyTree internals to create the implementation
-// for a particular joint object.
-template <typename T>
-class JointImplementationBuilder;
-}  // namespace internal
-
 /// A class representing an element (subcomponent) of a MultibodyPlant or
 /// (internally) a MultibodyTree. Examples of multibody elements are bodies,
 /// joints, force elements, and actuators. After a Finalize() call, multibody
