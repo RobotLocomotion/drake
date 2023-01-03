@@ -95,9 +95,9 @@ Fixes
 
 * TBD
 
-Newly bound
-
-* TBD
+Each release of Drake generally incorporates changes to the ``pydrake``
+bindings so that they better track the full C++ interface. We generally
+will not itemize those changes in the release notes.
 
 ## Build system
 
