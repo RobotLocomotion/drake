@@ -32,6 +32,13 @@ namespace solvers {
  * guide section "Options Reference"
  * http://www.coin-or.org/Ipopt/documentation/node40.html
  *
+ * "NLOPT" -- The user can specify "algorithm" using a string of the algorithm
+ * name. The complete set of algorithms is listed in
+ * "nlopt_algorithm_to_string()" function in
+ * github.com/stevengj/nlopt/blob/master/src/api/general.c. If you would like to
+ * use certain algorithm, for example NLOPT_LD_SLSQP, call
+ * `SetOption(NloptSolver::id(), "algorithm", "LD_SLSQP");`
+ *
  * "GUROBI" -- Parameter name and values as specified in Gurobi Reference
  * Manual, section 10.2 "Parameter Descriptions"
  * https://www.gurobi.com/documentation/9.5/refman/parameters.html
