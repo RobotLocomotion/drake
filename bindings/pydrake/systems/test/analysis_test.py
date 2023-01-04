@@ -134,17 +134,6 @@ class TestAnalysis(unittest.TestCase):
             ApplySimulatorConfig(config=config, simulator=simulator)
             self.assertEqual(simulator.get_target_realtime_rate(), 100.0)
 
-    # TODO(2022-11-01) Delete this entire test
-    def test_simulator_config_functions_deprecated(self):
-        for T in (float, AutoDiffXd):
-            source = ConstantVectorSource_[T]([2, 3])
-            simulator = Simulator_[T](source)
-            config = ExtractSimulatorConfig(simulator)
-            config.target_realtime_rate = 100.0
-            with catch_drake_warnings(expected_count=1):
-                ApplySimulatorConfig(simulator, config)
-            self.assertEqual(simulator.get_target_realtime_rate(), 100.0)
-
     def test_system_monitor(self):
         x = Variable("x")
         sys = SymbolicVectorSystem(state=[x], dynamics=[-x+x**3])
