@@ -41,7 +41,6 @@ load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_inter
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/intel_realsense_ros_internal:repository.bzl", "intel_realsense_ros_internal_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
-load("@drake//tools/workspace/json:repository.bzl", "json_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("@drake//tools/workspace/libblas:repository.bzl", "libblas_repository")
@@ -60,7 +59,6 @@ load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_ex
 load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("@drake//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
-load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/opencl:repository.bzl", "opencl_repository")
@@ -199,8 +197,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         intel_realsense_ros_internal_repository(name = "intel_realsense_ros_internal", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
-    if "json" not in excludes:
-        json_repository(name = "json", mirrors = mirrors)
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
     if "lcm" not in excludes:
@@ -237,10 +233,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
-    if "nlopt" not in excludes:
-        # The @nlopt external is being removed from Drake on 2020-09-01.
-        # TODO(jwnimmer-tri) When removing @nlopt, also update install_prereqs.
-        nlopt_repository(name = "nlopt")
     if "nlopt_internal" not in excludes:
         nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     if "openblas" not in excludes:
