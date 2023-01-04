@@ -95,10 +95,6 @@ Fixes
 
 * TBD
 
-Newly bound
-
-* TBD
-
 ## Build system
 
 <!-- <relnotes for cmake,doc,setup,third_party,tools go here> -->

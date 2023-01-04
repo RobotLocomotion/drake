@@ -67,11 +67,10 @@ the main body of the document:
   not the "Multibody" heading.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples. {% comment %}TODO(jwnimmer-tri) Explain how to check if something is installed.{% endcomment %}
-* In general you should mention new bindings and deprecated/removed classes and
-  methods using their exact name (for easier searching).
-   * In the pydrake and deprecation sections in fact you can just put the
-    fully-qualified name as the whole line item; the meaning is clear from
-    context.
+* In general you should mention deprecated/removed classes and methods using
+  their exact name (for easier searching).
+  * In the deprecation section you can provide the fully-qualified name as the
+    whole line item; the meaning is clear from context.
   * This may mean having a long list of items for a single commit.  That is
     fine.
 
