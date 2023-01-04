@@ -175,7 +175,7 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
     EXPECT_NO_THROW(CalcSpatialInertia(unit_scale, kDensity));
     DRAKE_EXPECT_THROWS_MESSAGE(
         CalcSpatialInertia(nonexistant, kDensity),
-        ".*only supports .obj .* given 'nonexistant.stl'.*");
+        ".*only supports .obj .* given '.*nonexistant.stl'.*");
   }
 
   {

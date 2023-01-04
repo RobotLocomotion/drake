@@ -323,8 +323,8 @@ class TestGeometryCore(unittest.TestCase):
             mut.Capsule(radius=1.0, length=2.0),
             mut.Ellipsoid(a=1.0, b=2.0, c=3.0),
             mut.HalfSpace(),
-            mut.Mesh(absolute_filename="arbitrary/path", scale=1.0),
-            mut.Convex(absolute_filename="arbitrary/path", scale=1.0),
+            mut.Mesh(filename="arbitrary/path", scale=1.0),
+            mut.Convex(filename="arbitrary/path", scale=1.0),
             mut.MeshcatCone(height=1.23, a=3.45, b=6.78)
         ]
         for shape in shapes:
@@ -333,6 +333,9 @@ class TestGeometryCore(unittest.TestCase):
             shape_copy = shape.Clone()
             self.assertIsInstance(shape_copy, shape_cls)
             self.assertIsNot(shape, shape_copy)
+        with catch_drake_warnings(expected_count=2):
+            mut.Mesh(absolute_filename="arbitrary/path", scale=1.0),
+            mut.Convex(absolute_filename="arbitrary/path", scale=1.0),
 
     def test_shapes(self):
         # We'll test some invariants on all shapes as inherited from the Shape
@@ -367,9 +370,9 @@ class TestGeometryCore(unittest.TestCase):
             self, capsule, lambda shape: [shape.radius(), shape.length()])
 
         junk_path = "arbitrary/path"
-        convex = mut.Convex(absolute_filename=junk_path, scale=1.0)
+        convex = mut.Convex(filename=junk_path, scale=1.0)
         assert_shape_api(convex)
-        self.assertEqual(convex.filename(), junk_path)
+        self.assertIn(junk_path, convex.filename())
         self.assertEqual(convex.scale(), 1.0)
         assert_pickle(
             self, convex, lambda shape: [shape.filename(), shape.scale()])
@@ -394,9 +397,9 @@ class TestGeometryCore(unittest.TestCase):
         X_FH = mut.HalfSpace.MakePose(Hz_dir_F=[0, 1, 0], p_FB=[1, 1, 1])
         self.assertIsInstance(X_FH, RigidTransform)
 
-        mesh = mut.Mesh(absolute_filename=junk_path, scale=1.0)
+        mesh = mut.Mesh(filename=junk_path, scale=1.0)
         assert_shape_api(mesh)
-        self.assertEqual(mesh.filename(), junk_path)
+        self.assertIn(junk_path, mesh.filename())
         self.assertEqual(mesh.scale(), 1.0)
         assert_pickle(
             self, mesh, lambda shape: [shape.filename(), shape.scale()])
