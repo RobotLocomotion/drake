@@ -89,6 +89,9 @@ class InternalGeometry {
   /* Returns the shape specification for this geometry.  */
   const Shape& shape() const { return *shape_spec_; }
 
+  /* Updates the shape associated with this geometry. */
+  void SetShape(const Shape& shape) { shape_spec_ = shape.Clone(); }
+
   /* Returns the globally unique identifier for this geometry.  */
   GeometryId id() const { return id_; }
 
@@ -115,6 +118,8 @@ class InternalGeometry {
     return frame_id == frame_id_;
   }
 
+  // 2023-04-01 X_PG() and related functionality should be removed with the
+  // completed deprecation of the public aspects of this API.
   /* Returns the pose of this geometry in the declared *parent* frame -- note
    if this geometry was registered as a child of another geometry it will *not*
    be the same as X_FG().  */
@@ -123,6 +128,17 @@ class InternalGeometry {
   /* Returns the pose of this geometry in the frame to which it is ultimately
    rigidly attached. This is in contrast to X_PG().  */
   const math::RigidTransform<double>& X_FG() const { return X_FG_; }
+
+  // 2023-04-01 Simply set X_FG when the deprecation of X_PG is complete.
+  /* Changes the geometry's pose with respect to its frame from the old pose to
+   `X_FG`. However that pose changes, the same change is applied to X_PG. */
+  void set_pose(const math::RigidTransform<double>& X_FG) {
+    const math::RigidTransform<double> X_GoldF = X_FG_.inverse();
+    const math::RigidTransform<double> X_GoldG = X_GoldF * X_FG;
+    X_FG_ = X_FG;
+    const math::RigidTransform<double>& x_PGold = X_PG_;
+    X_PG_ = x_PGold * X_GoldG;
+  }
 
   // TODO(SeanCurtis-TRI): Determine if tracking this parent geometry is
   // necessary for now or if that only exists to facilitate removal later on.

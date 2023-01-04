@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_sphere_mesh.h"
@@ -16,6 +17,7 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using math::RotationMatrixd;
 using std::make_unique;
 
 // Create two instances of the given Properties type with different properties:
@@ -79,6 +81,70 @@ GTEST_TEST(InternalGeometryTest, PropertyAssignment) {
         geometry.SetRole(PerceptionProperties()),
         "Geometry already has perception role assigned");
     EXPECT_TRUE(geometry.has_perception_role());
+  }
+}
+
+GTEST_TEST(InternalGeometryTest, SetShape) {
+  InternalGeometry geometry;
+
+  // Default constructor has no shape at all.
+  if constexpr (!kDrakeAssertIsArmed) {
+    // When assert is armed, the call to shape() throws because
+    // copyable_unique_ptr rejects dereferencing a null pointer.
+    ASSERT_EQ(&geometry.shape(), nullptr);
+  }
+
+  // Set it to a couple of arbitrary shapes to confirm the change registers.
+  const Sphere s(1.5);
+  geometry.SetShape(s);
+  EXPECT_EQ(ShapeName(s).name(), ShapeName(geometry.shape()).name());
+
+  const Box b(1, 2, 3);
+  geometry.SetShape(b);
+  EXPECT_EQ(ShapeName(b).name(), ShapeName(geometry.shape()).name());
+}
+
+// 2023-04-01 Simplify this test with removal of deprecated X_PG(). Only one
+// case and no calls to X_PG.
+GTEST_TEST(InternalGeometryTest, SetPose) {
+  // Expect a loss of four bits due to matrix inversion in updating X_PG.
+  constexpr double kTol = 16 * std::numeric_limits<double>::epsilon();
+  const SourceId source_id = SourceId::get_new_id();
+  const Sphere sphere(1.5);
+  const FrameId frame_id = FrameId::get_new_id();
+  const GeometryId geometry_id = GeometryId::get_new_id();
+  const std::string name("geometry");
+
+  const RigidTransformd X_FGold(RotationMatrixd::MakeXRotation(M_PI / 3),
+                                Vector3d(1, 2, 3));
+  const RigidTransformd X_PGold(RotationMatrixd::MakeYRotation(M_PI / 7),
+                                Vector3d(4, 5, 6));
+  const RigidTransformd X_GoldGnew(RotationMatrixd::MakeZRotation(M_PI / 5),
+                                   Vector3d(7, 8, 9));
+  const RigidTransformd X_FGNew = X_FGold * X_GoldGnew;
+
+  {
+    // Case where X_FG = X_PG.
+    InternalGeometry geometry(source_id, sphere.Clone(), frame_id, geometry_id,
+                              name, X_FGold);
+    geometry.set_pose(X_FGNew);
+    EXPECT_TRUE(CompareMatrices(geometry.X_FG().GetAsMatrix34(),
+                                X_FGNew.GetAsMatrix34()));
+    EXPECT_TRUE(CompareMatrices(geometry.X_PG().GetAsMatrix34(),
+                                X_FGNew.GetAsMatrix34(), kTol));
+  }
+
+  {
+    // Case where X_FG != X_PG.
+    InternalGeometry geometry(source_id, sphere.Clone(), frame_id, geometry_id,
+                              name, X_PGold);
+    // See the docs for this function to explain why we're passing X_FG here.
+    geometry.set_geometry_parent(GeometryId::get_new_id(), X_FGold);
+    geometry.set_pose(X_FGNew);
+    EXPECT_TRUE(CompareMatrices(geometry.X_FG().GetAsMatrix34(),
+                                X_FGNew.GetAsMatrix34()));
+    EXPECT_TRUE(CompareMatrices(geometry.X_PG().GetAsMatrix34(),
+                                (X_PGold * X_GoldGnew).GetAsMatrix34(), kTol));
   }
 }
 
