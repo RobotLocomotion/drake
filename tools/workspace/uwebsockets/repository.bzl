@@ -8,8 +8,8 @@ def uwebsockets_repository(
     github_archive(
         name = name,
         repository = "uNetworking/uWebSockets",
-        commit = "v20.14.0",
-        sha256 = "15cf995844a930c9a36747e8d714b94ff886b6814b5d4e3b3ee176f05681cccc",  # noqa
+        commit = "v20.35.0",
+        sha256 = "907431acec1d480f6e5d29d8c8cc7ace1c96b31e45aebaa18a7e9512fb2f17fc",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
