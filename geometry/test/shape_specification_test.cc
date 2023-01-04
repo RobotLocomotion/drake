@@ -1,5 +1,6 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <filesystem>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -634,6 +635,26 @@ GTEST_TEST(ShapeTest, Volume) {
                               ".*only supports .obj files.*");
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(non_obj, 1.0)),
                               ".*only supports .obj files.*");
+}
+
+GTEST_TEST(ShapeTest, Pathname) {
+  Mesh abspath_mesh("/absolute_path.obj");
+  EXPECT_TRUE(std::filesystem::path(relpath_mesh.filename()).is_absolute());
+  EXPECT_EQ(abspath_mesh.filename(), "/absolute_path.obj");
+
+  Convex abspath_convex("/absolute_path.obj");
+  EXPECT_TRUE(std::filesystem::path(abspath_convex.filename()).is_absolute());
+  EXPECT_EQ(abspath_convex.filename(), "/absolute_path.obj");
+
+  Mesh relpath_mesh("relative_path.obj");
+  EXPECT_TRUE(std::filesystem::path(relpath_mesh.filename()).is_absolute());
+  EXPECT_EQ(relpath_mesh.filename(),
+            std::filesystem::current_path() + "/relative_path.obj");
+
+  Convex relpath_convex("relative_path.obj");
+  EXPECT_TRUE(std::filesystem::path(relpath_convex.filename()).is_absolute());
+  EXPECT_EQ(relpath_convex.filename(),
+            std::filesystem::current_path() + "/relative_path.obj");
 }
 
 }  // namespace
