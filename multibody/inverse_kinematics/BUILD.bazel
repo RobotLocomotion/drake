@@ -23,17 +23,6 @@ drake_cc_package_library(
     ],
 )
 
-# A deprecation shim library, to be removed on or after 2022-11-01.
-drake_cc_library(
-    name = "kinematic_constraint",
-    deprecation = "The new name is 'kinematic_evaluators' instead of 'kinematic_constraint'.",  # noqa
-    tags = [
-        "exclude_from_package",
-        "manual",
-    ],
-    deps = [":kinematic_evaluators"],
-)
-
 drake_cc_library(
     name = "kinematic_evaluators",
     srcs = [
