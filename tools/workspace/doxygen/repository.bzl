@@ -17,7 +17,7 @@ def _impl(repo_ctx):
         "BUILD.bazel",
     )
 
-    if os_result.ubuntu_release == "20.04":
+    if os_result.is_ubuntu:
         # Download and extract Drake's pre-compiled Doxygen binary.
         archive = "doxygen-1.8.15-focal-x86_64.tar.gz"
         url = [
