@@ -561,7 +561,13 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("function_accuracy") = 1E-15, cls_doc.ctor.doc)
         .def("NumericalGradientMethod", &Class::method, cls_doc.method.doc)
         .def("perturbation_size", &Class::perturbation_size,
-            cls_doc.perturbation_size.doc);
+            cls_doc.perturbation_size.doc)
+        .def(
+            "__repr__", [](const NumericalGradientOption& self) -> std::string {
+              py::object method = py::cast(self.method());
+              return fmt::format(
+                  "<NumericalGradientOption({})>", py::repr(method));
+            });
   }
 
   m.def(

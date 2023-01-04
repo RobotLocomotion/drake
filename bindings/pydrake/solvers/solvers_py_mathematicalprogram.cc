@@ -522,7 +522,10 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .def("get_print_file_name", &SolverOptions::get_print_file_name,
           doc.SolverOptions.get_print_file_name.doc)
       .def("get_print_to_console", &SolverOptions::get_print_to_console,
-          doc.SolverOptions.get_print_to_console.doc);
+          doc.SolverOptions.get_print_to_console.doc)
+      .def("__repr__", [](const SolverOptions&) -> std::string {
+        return "<SolverOptions>";
+      });
 
   py::enum_<CommonSolverOption>(
       m, "CommonSolverOption", doc.CommonSolverOption.doc)
