@@ -44,5 +44,7 @@ std::string NloptSolver::XAbsoluteToleranceName() { return "xtol_abs"; }
 
 std::string NloptSolver::MaxEvalName() { return "max_eval"; }
 
+std::string NloptSolver::AlgorithmName() { return "algorithm"; }
+
 }  // namespace solvers
 }  // namespace drake
