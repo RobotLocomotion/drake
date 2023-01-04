@@ -524,6 +524,9 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .def("get_print_to_console", &SolverOptions::get_print_to_console,
           doc.SolverOptions.get_print_to_console.doc)
       .def("__repr__", [](const SolverOptions&) -> std::string {
+        // This is a minimal implementation that serves to avoid displaying
+        // memory addresses in pydrake docs and help strings. In the future,
+        // we should enhance this to provide more details.
         return "<SolverOptions>";
       });
 
