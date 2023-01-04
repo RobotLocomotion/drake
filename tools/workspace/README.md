@@ -112,7 +112,7 @@ request:
 
 * open a pull request with the WIP patch for that one specific external;
 
-* entire that the Jenkins output shows the problem (e.g., trigger any extra
+* ensure that the Jenkins output shows the problem (e.g., trigger any extra
   non-default builds that failed);
 
 * assign it to the feature owner associated with that external (to find out who
