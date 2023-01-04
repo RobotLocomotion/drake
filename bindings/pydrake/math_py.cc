@@ -565,6 +565,10 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def(
             "__repr__", [](const NumericalGradientOption& self) -> std::string {
               py::object method = py::cast(self.method());
+              // This is a minimal implementation that serves to avoid
+              // displaying memory addresses in pydrake docs and help strings.
+              // In the future, we should enhance this to display all of the
+              // information.
               return fmt::format(
                   "<NumericalGradientOption({})>", py::repr(method));
             });
