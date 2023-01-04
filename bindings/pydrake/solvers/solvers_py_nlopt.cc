@@ -19,7 +19,20 @@ void DefineSolversNlopt(py::module m) {
   py::class_<NloptSolver, SolverInterface>(
       m, "NloptSolver", doc.NloptSolver.doc)
       .def(py::init<>(), doc.NloptSolver.ctor.doc)
-      .def_static("id", &NloptSolver::id, doc.NloptSolver.id.doc);
+      .def_static("id", &NloptSolver::id, doc.NloptSolver.id.doc)
+      .def_static("ConstraintToleranceName",
+          &NloptSolver::ConstraintToleranceName,
+          doc.NloptSolver.ConstraintToleranceName.doc)
+      .def_static("XRelativeToleranceName",
+          &NloptSolver::XRelativeToleranceName,
+          doc.NloptSolver.XRelativeToleranceName.doc)
+      .def_static("XAbsoluteToleranceName",
+          &NloptSolver::XAbsoluteToleranceName,
+          doc.NloptSolver.XAbsoluteToleranceName.doc)
+      .def_static("MaxEvalName", &NloptSolver::MaxEvalName,
+          doc.NloptSolver.MaxEvalName.doc)
+      .def_static("AlgorithmName", &NloptSolver::AlgorithmName,
+          doc.NloptSolver.AlgorithmName.doc);
 
   py::class_<NloptSolverDetails>(
       m, "NloptSolverDetails", doc.NloptSolverDetails.doc)
