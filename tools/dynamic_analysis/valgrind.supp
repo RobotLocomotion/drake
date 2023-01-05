@@ -19,7 +19,20 @@
     MOSEK invalid memory access #3
     Memcheck:Leak
     match-leak-kinds: possible
-    ...
+    match-leak-kinds: possible
+    fun:calloc
+    fun:calloc
+    fun:allocate_dtv
+    fun:_dl_allocate_tls
+    fun:allocate_stack
+    fun:lc_checkout
+    fun:moseklicense_flexlmcheckout
+    fun:moseklicense_checkout
+    fun:MSKP_islicensed
+    fun:MSK_optimize
+    fun:MSK_optimizetrm
+    fun:_ZN5drake7solvers8internal38AddQuadraticCostAsLinearCost_Test_Test8TestBodyEv
+    fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
     fun:_ZN7testing4Test3RunEv
 }
 
