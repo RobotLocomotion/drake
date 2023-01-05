@@ -15,6 +15,14 @@
 }
 
 {
+    MOSEK invalid memory access #3
+    Memcheck:Leak
+    match-leak-kinds: possible
+    ...
+    fun:_ZN7testing4Test3RunEv
+}
+
+{
    MOSEK use of uninitialized CPU condition code #1
    Memcheck:Cond
    fun:internal_ascii_loop
