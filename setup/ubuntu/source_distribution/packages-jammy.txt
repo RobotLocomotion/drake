@@ -6,7 +6,6 @@ default-jdk
 file
 gfortran
 git
-libblas-dev
 libbz2-dev
 libclang-12-dev
 libdouble-conversion-dev
