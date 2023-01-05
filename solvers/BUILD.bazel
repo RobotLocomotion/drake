@@ -1458,6 +1458,9 @@ drake_cc_optional_googletest(
     name = "mosek_solver_internal_test",
     opt_in_condition = "//tools:with_mosek",
     use_default_main = False,
+    tags = [
+        "no_memcheck"
+    ],
     deps = [
         ":mosek_solver",
         ":mosek_solver_internal",
