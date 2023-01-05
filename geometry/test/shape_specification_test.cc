@@ -1,5 +1,6 @@
 #include "drake/geometry/shape_specification.h"
 
+#include <filesystem>
 #include <memory>
 
 #include <gtest/gtest.h>
@@ -406,7 +407,7 @@ GTEST_TEST(BoxTest, Cube) {
 // Simple test that exercises all constructors and confirms the construction
 // parameters are reflected in the getters.
 GTEST_TEST(ShapeTest, Constructors) {
-  const std::string kFilename = "fictitious_name.obj";
+  const std::string kFilename = "/fictitious_name.obj";
 
   const Box box{1, 2, 3};
   EXPECT_EQ(box.width(), 1);
@@ -634,6 +635,26 @@ GTEST_TEST(ShapeTest, Volume) {
                               ".*only supports .obj files.*");
   DRAKE_EXPECT_THROWS_MESSAGE(CalcVolume(Mesh(non_obj, 1.0)),
                               ".*only supports .obj files.*");
+}
+
+GTEST_TEST(ShapeTest, Pathname) {
+  const Mesh abspath_mesh("/absolute_path.obj");
+  EXPECT_TRUE(std::filesystem::path(abspath_mesh.filename()).is_absolute());
+  EXPECT_EQ(abspath_mesh.filename(), "/absolute_path.obj");
+
+  const Convex abspath_convex("/absolute_path.obj");
+  EXPECT_TRUE(std::filesystem::path(abspath_convex.filename()).is_absolute());
+  EXPECT_EQ(abspath_convex.filename(), "/absolute_path.obj");
+
+  const Mesh relpath_mesh("relative_path.obj");
+  EXPECT_TRUE(std::filesystem::path(relpath_mesh.filename()).is_absolute());
+  EXPECT_EQ(relpath_mesh.filename(),
+            std::filesystem::current_path() / "relative_path.obj");
+
+  const Convex relpath_convex("relative_path.obj");
+  EXPECT_TRUE(std::filesystem::path(relpath_convex.filename()).is_absolute());
+  EXPECT_EQ(relpath_convex.filename(),
+            std::filesystem::current_path() / "relative_path.obj");
 }
 
 }  // namespace
