@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -7,6 +8,7 @@
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/framework_common.h"
 #include "drake/systems/framework/port_base.h"
+#include "drake/systems/framework/value_producer.h"
 
 namespace drake {
 namespace systems {
@@ -37,6 +39,11 @@ class InputPortBase : public PortBase {
     return random_type_;
   }
 
+  /** Allocates a concrete object suitable for holding the value to be provided
+  by this input port, and returns that as an AbstractValue. The returned object
+  will never be null. */
+  std::unique_ptr<AbstractValue> Allocate() const;
+
   // A using-declaration adds these methods into our class's Doxygen.
   // (Placed in an order that makes sense for the class's table of contents.)
   using PortBase::get_name;
@@ -51,8 +58,8 @@ class InputPortBase : public PortBase {
   using EvalAbstractCallback =
       std::function<const AbstractValue*(const ContextBase&)>;
 
-  /** Provides derived classes the ability to set the base class members at
-  construction.
+  /** (Internal use only) Provides derived classes the ability to set the base
+  class members at construction.
 
   @param owning_system
     The System that owns this input port.
@@ -78,7 +85,7 @@ class InputPortBase : public PortBase {
       internal::SystemId owning_system_id, std::string name,
       InputPortIndex index, DependencyTicket ticket, PortDataType data_type,
       int size, const std::optional<RandomDistribution>& random_type,
-      EvalAbstractCallback eval);
+      EvalAbstractCallback eval, ValueProducer::AllocateCallback alloc);
 
   /** Evaluate this port; throws an exception if the port is not connected. */
   const AbstractValue& DoEvalRequired(const ContextBase& context) const {
@@ -98,6 +105,7 @@ class InputPortBase : public PortBase {
 
  private:
   const EvalAbstractCallback eval_;
+  const ValueProducer::AllocateCallback alloc_;
   const std::optional<RandomDistribution> random_type_;
 };
 
