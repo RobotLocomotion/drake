@@ -25,13 +25,20 @@ queries such as what set of bodies are welded together. */
 // of MBP, towards #11307.
 class MultibodyGraph {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MultibodyGraph)
-
   // Local classes.
   class Body;
   class Joint;
 
   MultibodyGraph();
+
+  // Because we use vectors of forward-declared classes (e.g., vector<Body>) as
+  // member fields, we can only _declare_ our default copyable functions here;
+  // we must _define_ them only after MbG::Body and MbG::Joint are defined,
+  // i.e., in our *.cc file.
+  MultibodyGraph(const MultibodyGraph&);
+  MultibodyGraph& operator=(const MultibodyGraph&);
+  MultibodyGraph(MultibodyGraph&&);
+  MultibodyGraph& operator=(MultibodyGraph&&);
 
   /* Add a new Body to the graph.
   @param[in] name
@@ -115,26 +122,20 @@ class MultibodyGraph {
   /* Returns the number of bodies, including all added bodies, and the world
   body.
   @see AddBody(), world_index(), world_body_name(). */
-  int num_bodies() const { return static_cast<int>(bodies_.size()); }
+  int num_bodies() const;
 
   /** Returns the number joints added with AddJoint(). */
-  int num_joints() const { return static_cast<int>(joints_.size()); }
+  int num_joints() const;
 
   /* Gets a Body by index. The world body has index world_index().
   @throws std::exception iff `index` does not correspond to a body in this
   graph. */
-  const Body& get_body(BodyIndex index) const {
-    DRAKE_THROW_UNLESS(index < num_bodies());
-    return bodies_[index];
-  }
+  const Body& get_body(BodyIndex index) const;
 
   /* Gets a Joint by index.
   @throws std::exception iff `index` does not correspond to a joint in this
   graph. */
-  const Joint& get_joint(JointIndex index) const {
-    DRAKE_THROW_UNLESS(index < num_joints());
-    return joints_[index];
-  }
+  const Joint& get_joint(JointIndex index) const;
 
   /* @returns `true` if a body named `name` was added to `model_instance`.
   @see AddBody().
@@ -182,7 +183,7 @@ class MultibodyGraph {
   // call to RegisterJointType().
   JointTypeIndex GetJointTypeIndex(const std::string& joint_type_name) const;
 
-  Body& get_mutable_body(BodyIndex body_index) { return bodies_[body_index]; }
+  Body& get_mutable_body(BodyIndex body_index);
 
   // Recursive helper method for FindSubgraphsOfWeldedBodies().
   // The first thing this helper does is to mark `parent_body` as "visited" in
