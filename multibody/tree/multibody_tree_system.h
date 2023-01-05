@@ -539,7 +539,7 @@ const MultibodyTree<T>& GetInternalTree(const MultibodyTreeSystem<T>& system) {
 namespace drake {
 namespace multibody {
 // Forward declaration of MultibodyElement for attorney-client.
-template <typename T, typename ElementIndexType>
+template <typename T>
 class MultibodyElement;
 
 namespace internal {
@@ -553,7 +553,7 @@ class MultibodyTreeSystemElementAttorney {
   MultibodyTreeSystemElementAttorney() = delete;
 
  private:
-  template <typename U, typename ElementIndexType>
+  template <typename U>
   friend class drake::multibody::MultibodyElement;
 
   static systems::NumericParameterIndex DeclareNumericParameter(

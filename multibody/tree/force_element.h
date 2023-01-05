@@ -35,13 +35,18 @@ namespace multibody {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class ForceElement : public MultibodyElement<T, ForceElementIndex> {
+class ForceElement : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ForceElement)
 
   /// Default constructor for a generic force element.
   explicit ForceElement(ModelInstanceIndex model_instance)
-      : MultibodyElement<T, ForceElementIndex>(model_instance) {}
+      : MultibodyElement<T>(model_instance) {}
+
+  /// Returns this element's unique index.
+  ForceElementIndex index() const {
+    return this->template index_impl<ForceElementIndex>();
+  }
 
   /// (Advanced) Computes the force contribution for `this` force element and
   /// **adds** it to the output arrays of forces. Depending on their model,
