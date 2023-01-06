@@ -46,7 +46,7 @@ def _bump_cpu_tag(kwargs, *, new_size):
     argument and returns a modified copy of it.
     """
     add_new_tag = True
-    tags = kwargs.get("tags", [])
+    tags = list(kwargs.get("tags", []))
     for tag in tags:
         if tag.startswith("cpu:"):
             existing_size = int(tag[4:])

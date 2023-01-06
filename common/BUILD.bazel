@@ -913,14 +913,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "openmp_test",
-    # TODO(jwnimmer-tri) Encapsulate unit test concurrency configuration into
-    # Drake's starlark macros, so that we don't have to repeat ourselves here.
-    env = {
-        "OMP_NUM_THREADS": "2",
-    },
-    tags = [
-        "cpu:2",
-    ],
+    num_threads = 2,
     deps = [
         "//common:essential",
     ],
