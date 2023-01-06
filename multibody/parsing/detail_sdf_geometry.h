@@ -31,7 +31,8 @@ using ResolveFilename = std::function<std::string (
  is recognized, but malformed, an exception is thrown.  */
 std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
     const SDFormatDiagnostic& diagnostic,
-    const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename);
+    const sdf::Geometry& sdf_geometry,
+    ResolveFilename resolve_filename);
 
 /* Given an sdf::Visual object representing a <visual> element from an SDF
  file, this method makes a new drake::geometry::GeometryInstance object from
@@ -210,6 +211,7 @@ geometry::ProximityProperties MakeProximityPropertiesForCollision(
  If mu or mu2 (or both) are not found, it returns the default coefficients of
  mu = mu2 = 1, consistent with the SDFormat specification. */
 CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
+    const SDFormatDiagnostic& diagnostic,
     const sdf::Collision& sdf_collision);
 
 }  // namespace internal

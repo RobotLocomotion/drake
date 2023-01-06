@@ -39,12 +39,12 @@ DiagnosticDetail SDFormatDiagnostic::MakeDetail(
 }
 
 void SDFormatDiagnostic::Warning(
-    sdf::ElementPtr element, const std::string& message) const {
+    sdf::ElementConstPtr element, const std::string& message) const {
   diagnostic_->Warning(MakeDetail(*element, message));
 }
 
 void SDFormatDiagnostic::Error(
-    sdf::ElementPtr element, const std::string& message) const {
+    sdf::ElementConstPtr element, const std::string& message) const {
   diagnostic_->Error(MakeDetail(*element, message));
 }
 
@@ -111,30 +111,9 @@ bool SDFormatDiagnostic::PropagateErrors(
   return result;
 }
 
-// void SDFormatDiagnostic::WarnUnsupportedElement(
-//     const sdf::ElementPtr element, const std::string& tag) const {
-//   const
-//   const XMLElement* subnode = node.FirstChildElement(tag.c_str());
-//   if (subnode) {
-//     Warning(*subnode, fmt::format(
-//                 "The tag '{}' found as a child of '{}' is currently"
-//                 " unsupported and will be ignored.", tag, node.Name()));
-//   }
-// }
-//
-// void SDFormatDiagnostic::WarnUnsupportedAttribute(
-//     const XMLElement& node, const std::string& attribute) const {
-//   if (node.Attribute(attribute.c_str())) {
-//     Warning(node, fmt::format(
-//                 "The attribute '{}' found in a '{}' tag is currently"
-//                 " unsupported and will be ignored.",
-//                  attribute, node.Name()));
-//   }
-// }
-
 void CheckSupportedElements(
     const SDFormatDiagnostic& diagnostic,
-    sdf::ElementPtr root_element,
+    sdf::ElementConstPtr root_element,
     const std::set<std::string>& supported_elements) {
   CheckSupportedElements(diagnostic, root_element.get(), supported_elements);
 }
@@ -145,7 +124,7 @@ void CheckSupportedElements(
     const std::set<std::string>& supported_elements) {
   DRAKE_DEMAND(root_element != nullptr);
 
-  sdf::ElementPtr element = root_element->GetFirstElement();
+  sdf::ElementConstPtr element = root_element->GetFirstElement();
   while (element) {
     const std::string& element_name = element->GetName();
     if ((supported_elements.find(element_name) == supported_elements.end()) &&
@@ -166,7 +145,7 @@ void CheckSupportedElements(
 
 void CheckSupportedElementValue(
     const SDFormatDiagnostic& diagnostic,
-    sdf::ElementPtr root_element,
+    sdf::ElementConstPtr root_element,
     const std::string& element_name,
     const std::string& expected) {
   DRAKE_DEMAND(root_element != nullptr);
@@ -175,7 +154,7 @@ void CheckSupportedElementValue(
     return;
   }
 
-  sdf::ElementPtr element = root_element->GetElement(element_name);
+  sdf::ElementConstPtr element = root_element->FindElement(element_name);
   if (!element->GetExplicitlySetInFile()) {
     return;
   }
@@ -183,7 +162,7 @@ void CheckSupportedElementValue(
   sdf::ParamPtr value = element->GetValue();
   if (value->GetAsString() != expected) {
     std::string message =
-std::string("Unsupported value for SDFormat element ") +
+      std::string("Unsupported value for SDFormat element ") +
         element->GetName() + std::string(": ") + value->GetAsString();
     diagnostic.Warning(element, message);
   }

@@ -26,12 +26,12 @@ class SDFormatDiagnostic {
       const DataSource* data_source,
       const std::string& file_extension = "sdf");
 
-  // Issues a warning for an ElementPtr.
-  void Warning(const sdf::ElementPtr element,
+  // Issues a warning for an ElementConstPtr.
+  void Warning(const sdf::ElementConstPtr element,
                const std::string& message) const;
 
-  // Issues an error for an ElementPtr.
-  void Error(const sdf::ElementPtr element,
+  // Issues an error for an ElementConstPtr.
+  void Error(const sdf::ElementConstPtr element,
              const std::string& message) const;
 
   // Make a temporary policy that can be passed to a node-unaware parsing
@@ -41,11 +41,11 @@ class SDFormatDiagnostic {
       const sdf::Element& element) const;
 
   // Warn about spec-documented elements ignored by Drake.
-  void WarnUnsupportedElement(const sdf::ElementPtr element,
+  void WarnUnsupportedElement(const sdf::ElementConstPtr element,
                               const std::string& tag) const;
 
   // Warn about spec-documented attributes ignored by Drake.
-  void WarnUnsupportedAttribute(const sdf::ElementPtr element,
+  void WarnUnsupportedAttribute(const sdf::ElementConstPtr element,
                                 const std::string& attribute) const;
 
   // Copies all `errors` into `diagnostic`.
@@ -53,7 +53,7 @@ class SDFormatDiagnostic {
   bool PropagateErrors(const sdf::Errors& errors) const;
 
  private:
-  // Makes a diagnostic detail record based on an ElementPtr.
+  // Makes a diagnostic detail record based on an ElementConstPtr.
   drake::internal::DiagnosticDetail MakeDetail(
       const sdf::Element& element,
       const std::string& message) const;
@@ -70,7 +70,7 @@ class SDFormatDiagnostic {
 /// some discussion of this rationale)
 void CheckSupportedElements(
     const SDFormatDiagnostic& diagnostic,
-    sdf::ElementPtr root_element,
+    sdf::ElementConstPtr root_element,
     const std::set<std::string>& supported_elements);
 
 void CheckSupportedElements(
@@ -82,7 +82,7 @@ void CheckSupportedElements(
 /// the element matches that value if it's present.
 void CheckSupportedElementValue(
     const SDFormatDiagnostic& diagnostic,
-    sdf::ElementPtr root_element,
+    sdf::ElementConstPtr root_element,
     const std::string& element_name,
     const std::string& expected);
 

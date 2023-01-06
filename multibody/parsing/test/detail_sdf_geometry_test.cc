@@ -198,8 +198,7 @@ class SceneGraphParserDetail : public ::testing::Test {
     // Don't let warnings leak into spdlog; tests should always specifically
     // handle any warnings that apppear.
     diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-    const std::string file_path("file.txt");
-    DataSource data_source(DataSource::kFilename, &file_path);
+    DataSource data_source(DataSource::kFilename, &dummy_file_path);
     SDFormatDiagnostic sdf_diagnostic(&diagnostic_, &data_source);
     sdf_diagnostic_ = std::make_shared<SDFormatDiagnostic>(sdf_diagnostic);
   }
@@ -222,6 +221,7 @@ class SceneGraphParserDetail : public ::testing::Test {
 
  protected:
   DiagnosticPolicy diagnostic_;
+  const std::string dummy_file_path{"dummy_test_file.sdf"};
   std::shared_ptr <SDFormatDiagnostic> sdf_diagnostic_;
 };
 
@@ -273,14 +273,14 @@ TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeShapeFromSdfGeometry(*no_radius_geometry),
-      "Element <radius> is required within element <drake:capsule>.");
+      ".*Element <radius> is required within element <drake:capsule>.");
   unique_ptr<sdf::Geometry> no_length_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "</drake:capsule>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeShapeFromSdfGeometry(*no_length_geometry),
-      "Element <length> is required within element <drake:capsule>.");
+      ".*Element <length> is required within element <drake:capsule>.");
 }
 
 // Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
@@ -341,7 +341,7 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeShapeFromSdfGeometry(*no_a_geometry),
-      "Element <a> is required within element <drake:ellipsoid>.");
+      ".*Element <a> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_b_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <a>0.5</a>"
@@ -349,7 +349,7 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeShapeFromSdfGeometry(*no_b_geometry),
-      "Element <b> is required within element <drake:ellipsoid>.");
+      ".*Element <b> is required within element <drake:ellipsoid>.");
   unique_ptr<sdf::Geometry> no_c_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <a>0.5</a>"
@@ -357,7 +357,7 @@ TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
       "</drake:ellipsoid>");
   DRAKE_EXPECT_THROWS_MESSAGE(
       MakeShapeFromSdfGeometry(*no_c_geometry),
-      "Element <c> is required within element <drake:ellipsoid>.");
+      ".*Element <c> is required within element <drake:ellipsoid>.");
 }
 
 
@@ -1029,7 +1029,7 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "</visual>");
     DRAKE_EXPECT_THROWS_MESSAGE(
       MakeVisualPropertiesFromSdfVisual(*sdf_visual),
-      "<drake:accepting_renderer> tag given without any name");
+      ".*<drake:accepting_renderer> tag given without any name");
 }
 
 // Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry
@@ -1203,7 +1203,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
         MakeProximityPropertiesForCollision(*sdf_diagnostic_, *sdf_collision),
-        "A <collision> geometry has defined the unsupported tag "
+        ".*A <collision> geometry has defined the unsupported tag "
         "<drake:soft_hydroelastic>. Please change it to "
         "<drake:compliant_hydroelastic>.");
   }
@@ -1217,8 +1217,8 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
         MakeProximityPropertiesForCollision(*sdf_diagnostic_, *sdf_collision),
-        "A <collision> geometry has defined mutually-exclusive tags .*rigid.* "
-        "and .*compliant.*");
+        ".*A <collision> geometry has defined mutually-exclusive tags "
+        ".*rigid.* and .*compliant.*");
   }
 
   // Case: has no drake coefficients, only mu & m2 in ode: contains mu, mu2
@@ -1294,7 +1294,7 @@ TEST_F(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
       "  </surface>"
       "</collision>");
   const CoulombFriction<double> friction =
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision);
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision);
   EXPECT_EQ(friction.static_friction(), 0.8);
   EXPECT_EQ(friction.dynamic_friction(), 0.3);
 }
@@ -1313,7 +1313,7 @@ TEST_F(SceneGraphParserDetail,
       "  </geometry>"
       "</collision>");
   const CoulombFriction<double> friction =
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision);
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision);
   const CoulombFriction<double> expected_friction = default_friction();
   EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
   EXPECT_EQ(friction.dynamic_friction(), expected_friction.dynamic_friction());
@@ -1351,7 +1351,7 @@ TEST_F(SceneGraphParserDetail,
       "  </surface>"
       "</collision>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
       "The given dynamic friction \\(.*\\) is greater than the given static "
       "friction \\(.*\\); dynamic friction must be less than or equal to "
       "static friction.");
@@ -1376,7 +1376,7 @@ TEST_F(SceneGraphParserDetail,
       "  </surface>"
       "</collision>");
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
       CoulombFriction<double>(default_friction().static_friction(), 0.8));
 }
 
@@ -1399,7 +1399,7 @@ TEST_F(SceneGraphParserDetail,
       "  </surface>"
       "</collision>");
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
       CoulombFriction<double>(1.1, default_friction().dynamic_friction()));
 }
 
@@ -1424,7 +1424,7 @@ TEST_F(SceneGraphParserDetail,
   // report a parsing error and/or raise an exception.  For now though, we
   // ignore it and use the defaults.
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
       default_friction());
 }
 
@@ -1449,7 +1449,7 @@ TEST_F(SceneGraphParserDetail,
   // report a parsing error and/or raise an exception.  For now though, we
   // ignore it and use the defaults.
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
       default_friction());
 }
 

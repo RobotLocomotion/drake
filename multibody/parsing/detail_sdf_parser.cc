@@ -499,8 +499,8 @@ void AddPrismaticSpringFromSpecification(const SDFormatDiagnostic& diagnostic,
 // Only available for "revolute" and "continuous" joints. The units for spring
 // reference is radians and the units for spring stiffness is N⋅m/rad.
 void AddRevoluteSpringFromSpecification(
-    const sdf::Joint &joint_spec, const RevoluteJoint<double>& joint,
-    MultibodyPlant<double>* plant) {
+    const SDFormatDiagnostic& diagnostic, const sdf::Joint &joint_spec,
+    const RevoluteJoint<double>& joint, MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
                      joint_spec.Type() == sdf::JointType::CONTINUOUS);
@@ -508,8 +508,9 @@ void AddRevoluteSpringFromSpecification(
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    throw std::runtime_error(
-      "An axis must be specified for joint '" + joint_spec.Name() + "'");
+    std::string message = "An axis must be specified for joint '"
+        + joint_spec.Name() + "'";
+    diagnostic.Error(joint_spec.Element(), std::move(message));
   }
 
   const double spring_reference = axis->SpringReference();
@@ -542,8 +543,9 @@ std::tuple<double, double, double, double> ParseJointLimits(
   // Axis specification.
   const sdf::JointAxis* axis = joint_spec.Axis();
   if (axis == nullptr) {
-    throw std::runtime_error(
-        "An axis must be specified for joint '" + joint_spec.Name() + "'");
+    std::string message = "An axis must be specified for joint '"
+        + joint_spec.Name() + "'";
+    diagnostic.Error(joint_spec.Element(), std::move(message));
   }
 
   // As of libsdformat13, ±∞ are used for axes with no position limits,
@@ -551,9 +553,9 @@ std::tuple<double, double, double, double> ParseJointLimits(
   const double lower_limit = axis->Lower();
   const double upper_limit = axis->Upper();
   if (lower_limit > upper_limit) {
-    throw std::runtime_error(
-        "The lower limit must be lower (or equal) than the upper limit for "
-        "joint '" + joint_spec.Name() + "'.");
+    std::string message = "The lower limit must be lower (or equal) than "
+        "the upper limit for joint '" + joint_spec.Name() + "'.";
+    diagnostic.Error(joint_spec.Element(), std::move(message));
   }
 
   // SDFormat internally interprets a negative velocity limit as infinite and
@@ -578,9 +580,10 @@ std::tuple<double, double, double, double> ParseJointLimits(
     if (limit_element->HasElement("drake:acceleration")) {
       acceleration_limit = limit_element->Get<double>("drake:acceleration");
       if (acceleration_limit < 0) {
-        throw std::runtime_error(
-          "Acceleration limit is negative for joint '" + joint_spec.Name() +
-              "'. Aceleration limit must be a non-negative number.");
+        std::string message = "Acceleration limit is negative for joint '"
+            + joint_spec.Name() + "'. Aceleration limit must be a non-negative"
+            " number.";
+        diagnostic.Error(limit_element, std::move(message));
       }
     }
   }
@@ -693,7 +696,7 @@ void AddJointFromSpecification(
       plant->get_mutable_joint(joint.index()).set_acceleration_limits(
           Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
-      AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
+      AddRevoluteSpringFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::UNIVERSAL: {
@@ -766,7 +769,7 @@ void AddJointFromSpecification(
           .set_acceleration_limits(Vector1d(-acceleration_limit),
                                    Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
-      AddRevoluteSpringFromSpecification(joint_spec, joint, plant);
+      AddRevoluteSpringFromSpecification(diagnostic, joint_spec, joint, plant);
       break;
     }
     case sdf::JointType::SCREW: {
@@ -1019,12 +1022,14 @@ const Frame<double>& AddFrameFromSpecification(
   return frame;
 }
 
-Eigen::Vector3d ParseVector3(const sdf::ElementPtr node,
+Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
+                             const sdf::ElementPtr node,
                              const char* element_name) {
   if (!node->HasElement(element_name)) {
-    throw std::runtime_error(
-        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
-                    element_name));
+    std::string message = fmt::format(
+        "<{}>: Unable to find the <{}> child tag.", node->GetName(),
+        element_name);
+    diagnostic.Error(node, message);
   }
 
   auto value = node->Get<gz::math::Vector3d>(element_name);
@@ -1032,22 +1037,25 @@ Eigen::Vector3d ParseVector3(const sdf::ElementPtr node,
   return ToVector3(value);
 }
 
-const Frame<double>& ParseFrame(const sdf::ElementPtr node,
+const Frame<double>& ParseFrame(const SDFormatDiagnostic& diagnostic,
+                                const sdf::ElementPtr node,
                                 ModelInstanceIndex model_instance,
                                 MultibodyPlant<double>* plant,
                                 const char* element_name) {
   if (!node->HasElement(element_name)) {
-    throw std::runtime_error(
-        fmt::format("<{}>: Unable to find the <{}> child tag.", node->GetName(),
-                    element_name));
+    std::string message = fmt::format(
+        "<{}>: Unable to find the <{}> child tag.",
+        node->GetName(), element_name);
+    diagnostic.Error(node, std::move(message));
   }
 
   const std::string frame_name = node->Get<std::string>(element_name);
 
   if (!plant->HasFrameNamed(frame_name, model_instance)) {
-    throw std::runtime_error(fmt::format(
-        "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
-        node->GetName(), frame_name, element_name));
+    std::string message = fmt::format(
+          "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
+          node->GetName(), frame_name, element_name);
+    diagnostic.Error(node, std::move(message));
   }
 
   return plant->GetFrameByName(frame_name, model_instance);
@@ -1067,36 +1075,39 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   CheckSupportedElements(diagnostic, node, supported_joint_elements);
 
   if (!node->HasAttribute("type")) {
-    throw std::runtime_error(
-        "<drake:joint>: Unable to find the 'type' attribute.");
+    std::string message =
+        "<drake:joint>: Unable to find the 'type' attribute.";
+    diagnostic.Error(node, std::move(message));
   }
   const std::string joint_type = node->Get<std::string>("type");
   if (!node->HasAttribute("name")) {
-    throw std::runtime_error(
-        "<drake:joint>: Unable to find the 'name' attribute.");
+    std::string message =
+        "<drake:joint>: Unable to find the 'name' attribute.";
+    diagnostic.Error(node, std::move(message));
   }
   const std::string joint_name = node->Get<std::string>("name");
 
   // TODO(eric.cousineau): Add support for parsing joint pose.
   if (node->HasElement("pose")) {
-    throw std::runtime_error(
-        "<drake:joint> does not yet support the <pose> child tag.");
+    std::string message =
+        "<drake:joint> does not yet support the <pose> child tag.";
+    diagnostic.Error(node, std::move(message));
   }
 
   const Frame<double>& parent_frame =
-      ParseFrame(node, model_instance, plant, "drake:parent");
+      ParseFrame(diagnostic, node, model_instance, plant, "drake:parent");
   const Frame<double>& child_frame =
-      ParseFrame(node, model_instance, plant, "drake:child");
+      ParseFrame(diagnostic, node, model_instance, plant, "drake:child");
 
   if (joint_type == "planar") {
     // TODO(eric.cousineau): Error out when there are unused tags.
-    Vector3d damping = ParseVector3(node, "drake:damping");
+    Vector3d damping = ParseVector3(diagnostic, node, "drake:damping");
     plant->AddJoint(std::make_unique<PlanarJoint<double>>(
         joint_name, parent_frame, child_frame, damping));
   } else {
-    throw std::runtime_error(
-        "ERROR: <drake:joint> '" + joint_name +
-        "' has unrecognized value for 'type' attribute: " + joint_type);
+    std::string message = "ERROR: <drake:joint> '" + joint_name +
+        "' has unrecognized value for 'type' attribute: " + joint_type;
+    diagnostic.Error(node, std::move(message));
   }
 }
 
@@ -1117,17 +1128,18 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
   // Functor to read a vector valued child tag with tag name: `element_name`
   // e.g. <element_name>0 0 0</element_name>
   // Throws an error if the tag does not exist.
-  auto read_vector = [node](const char* element_name) -> Eigen::Vector3d {
-    return ParseVector3(node, element_name);
+  auto read_vector = [&diagnostic, node](
+      const char* element_name) -> Eigen::Vector3d {
+    return ParseVector3(diagnostic, node, element_name);
   };
 
   // Functor to read a child tag with tag name: `element_name` that specifies a
   // frame name, e.g. <element_name>frame_name</element_name>
   // Throws an error if the tag does not exist or if the frame does not exist in
   // the plant.
-  auto read_frame = [node, model_instance, plant](const char* element_name)
-                    -> const Frame<double>* {
-    return &ParseFrame(node, model_instance, plant, element_name);
+  auto read_frame = [&diagnostic, node, model_instance, plant](
+      const char* element_name) -> const Frame<double>* {
+    return &ParseFrame(diagnostic, node, model_instance, plant, element_name);
   };
 
   auto result = ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
@@ -1345,8 +1357,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     // permissible in Bullet and DART via Gazebo (#12227).
     for (sdf::JointType joint_type : joint_types) {
       if (joint_type != sdf::JointType::FIXED) {
-        throw std::runtime_error(
-            "Only fixed joints are permitted in static models.");
+        std::string message =
+            "Only fixed joints are permitted in static models.";
+        diagnostic.Error(model.Element(), std::move(message));
       }
     }
     // Weld all links that have been added, but are not (yet) attached to the
@@ -1661,7 +1674,8 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   }
 
   if (root.Model() == nullptr) {
-    throw std::runtime_error("File must have a single <model> element.");
+    std::string message = "File must have a single <model> element.";
+    diagnostic.Error(root.Element(), std::move(message));
   }
   // Get the only model in the file.
   const sdf::Model& model = *root.Model();
@@ -1703,9 +1717,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 #pragma GCC diagnostic pop
   const uint64_t world_count = root.WorldCount();
   if ((model_count + world_count) != 1) {
-    throw std::runtime_error(fmt::format(
+    std::string message = fmt::format(
         "File must have exactly one <model> or exactly one <world>, but"
-        " instead has {} models and {} worlds", model_count, world_count));
+        " instead has {} models and {} worlds", model_count, world_count);
+    diagnostic.Error(root.Element(), std::move(message));
   }
 
   std::vector<ModelInstanceIndex> model_instances;
@@ -1777,8 +1792,9 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
     for (sdf::JointType joint_type : joint_types) {
       if (joint_type != sdf::JointType::FIXED) {
-        throw std::runtime_error(
-            "Only fixed joints are permitted in world joints.");
+        std::string message =
+            "Only fixed joints are permitted in world joints.";
+        diagnostic.Error(world.Element(), std::move(message));
       }
     }
   }
