@@ -79,10 +79,6 @@ class DifferentialInverseKinematicsParameters {
 
   /// @name Getters.
   /// @{
-  DRAKE_DEPRECATED("2023-01-01",
-                   "Use get_time_step() instead of get_timestep().")
-  double get_timestep() const { return dt_; }
-
   double get_time_step() const { return dt_; }
 
   int get_num_positions() const { return num_positions_; }
@@ -97,24 +93,8 @@ class DifferentialInverseKinematicsParameters {
     return joint_centering_gain_;
   }
 
-  DRAKE_DEPRECATED("2023-01-01",
-                    "Use get_end_effector_velocity_flag instead. (The gains "
-                    "before were actually only acting as a flag).")
-  Vector6<double> get_end_effector_velocity_gain() const {
-    return flag_E_.cast<double>();
-  }
-
   const Vector6<bool>& get_end_effector_velocity_flag() const {
     return flag_E_;
-  }
-
-  DRAKE_DEPRECATED("2023-01-01",
-                   "The unconstrained_degrees_of_freedom_velocity_limit is no "
-                   "longer used in the differential IK formulation and will be "
-                   "removed from this parameters class.")
-  const std::optional<double>&
-      get_unconstrained_degrees_of_freedom_velocity_limit() const {
-    return unconstrained_degrees_of_freedom_velocity_limit_;
   }
 
   const std::optional<std::pair<VectorX<double>, VectorX<double>>>&
@@ -160,27 +140,6 @@ class DifferentialInverseKinematicsParameters {
     dt_ = dt;
   }
 
-  DRAKE_DEPRECATED("2023-01-01",
-                   "Use set_time_step() instead of set_timestep().")
-  void set_timestep(double dt) {
-    DRAKE_THROW_UNLESS(dt > 0);
-    dt_ = dt;
-  }
-
-  /**
-   * Sets the max magnitude of the velocity in the unconstrained degree of
-   * freedom to @p limit.
-   * @throws std::exception if limit < 0.
-   */
-  DRAKE_DEPRECATED("2023-01-01",
-                   "The unconstrained_degrees_of_freedom_velocity_limit is no "
-                   "longer used in the differential IK formulation and will be "
-                   "removed from this parameters class.")
-  void set_unconstrained_degrees_of_freedom_velocity_limit(double limit) {
-    DRAKE_THROW_UNLESS(limit >= 0);
-    unconstrained_degrees_of_freedom_velocity_limit_ = limit;
-  }
-
   /**
    * Sets the nominal joint position.
    * @throws std::exception if @p nominal_joint_position's dimension differs.
@@ -189,15 +148,6 @@ class DifferentialInverseKinematicsParameters {
       const Eigen::Ref<const VectorX<double>>& nominal_joint_position) {
     DRAKE_THROW_UNLESS(nominal_joint_position.size() == get_num_positions());
     nominal_joint_position_ = nominal_joint_position;
-  }
-
-  DRAKE_DEPRECATED("2023-01-01",
-                    "Use set_end_effector_velocity_flag instead. (The gains "
-                    "before were actually only acting as a flag).")
-  void set_end_effector_velocity_gain(const Vector6<double>& gain_E) {
-    DRAKE_THROW_UNLESS((gain_E.array() >= 0).all() &&
-                       (gain_E.array() <= 1).all());
-    flag_E_ = gain_E.cast<bool>();
   }
 
   // TODO(russt): It's not clear that it is reasonable to enable/disable

@@ -65,10 +65,6 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     const int num_joints = plant_->num_positions();
     plant_->SetDefaultContext(context_);
     params_->set_nominal_joint_position(VectorX<double>::Zero(num_joints));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    params_->set_unconstrained_degrees_of_freedom_velocity_limit(0.6);
-#pragma GCC diagnostic pop
     params_->set_time_step(1e-3);
 
     // Get position and velocity limits.
@@ -276,21 +272,6 @@ TEST_F(DifferentialInverseKinematicsTest, EndEffectorVelocityLimits) {
 // Test various throw conditions.
 GTEST_TEST(DifferentialInverseKinematicsParametersTest, TestSetter) {
   DifferentialInverseKinematicsParameters dut(1, 1);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  dut.set_timestep(0.1);
-  EXPECT_EQ(dut.get_timestep(), 0.1);
-  EXPECT_EQ(dut.get_time_step(), 0.1);
-  dut.set_time_step(0.2);
-  EXPECT_EQ(dut.get_timestep(), 0.2);
-  EXPECT_EQ(dut.get_time_step(), 0.2);
-  EXPECT_THROW(dut.set_unconstrained_degrees_of_freedom_velocity_limit(-0.1),
-               std::exception);
-
-  Vector6<double> gain = (Vector6<double>() << 1, 2, 3, -4, 5, 6).finished();
-  EXPECT_THROW(dut.set_end_effector_velocity_gain(gain), std::exception);
-#pragma GCC diagnostic pop
 
   EXPECT_THROW(dut.set_time_step(0), std::exception);
   EXPECT_THROW(dut.set_time_step(-1), std::exception);
