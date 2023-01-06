@@ -32,7 +32,6 @@ drake_cc_package_library(
         ":linear_solve",
         ":matrix_util",
         ":quadratic_form",
-        ":saturate",
         ":vector3_util",
         ":wrap_to",
     ],
@@ -250,18 +249,6 @@ drake_cc_library(
         ":matrix_util",
         "//common:essential",
         "@eigen",
-    ],
-)
-
-drake_cc_library(
-    name = "saturate",
-    srcs = [],
-    hdrs = ["saturate.h"],
-    deps = [
-        "//common:essential",
-        # TODO(jwnimmer-tri) Remove once cond() no longer requires it.
-        "//common:autodiff",
-        "//common:cond",
     ],
 )
 
@@ -535,15 +522,6 @@ drake_cc_googletest(
         ":geometric_transform",
         ":gradient",
         "//common/test_utilities:eigen_matrix_compare",
-    ],
-)
-
-drake_cc_googletest(
-    name = "saturate_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":saturate",
-        "//common:default_scalars",
     ],
 )
 

@@ -62,19 +62,6 @@ class TestPlanner(unittest.TestCase):
             params.get_end_effector_translational_velocity_limits()[1],
             [1, 2, 3])
 
-        # The following methods are deprecated, to be removed on or after
-        # 2023-01-01.
-        with catch_drake_warnings(expected_count=7):
-            params.get_timestep()
-            params.set_timestep(0.2)
-            params.get_unconstrained_degrees_of_freedom_velocity_limit()
-            params.set_unconstrained_degrees_of_freedom_velocity_limit(0.1)
-            params.get_end_effector_velocity_gain()
-            params.set_end_effector_velocity_gain(np.ones(6))
-            # Deprecated default constructor
-            p2 = mut.DifferentialInverseKinematicsParameters()
-            self.assertEqual(p2.get_num_positions(), 1)
-
         # Test a basic call for the API. These values intentionally have no
         # physical meaning.
         result = mut.DoDifferentialInverseKinematics(
