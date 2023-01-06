@@ -183,5 +183,5 @@ else
   dpkg_install_from_wget \
     bazel 6.0.0 \
     https://releases.bazel.build/6.0.0/release/bazel_6.0.0-linux-x86_64.deb \
-    f03d44ecaac3878e3d19489e37caa4ca1dc57427b686a78a85065ea3c27ebe6
+    b27749e59d7d57d9cf6ca0edce7fbd26bb677797217429052d62ee0f2d008b35
 fi
