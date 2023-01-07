@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
+load("//tools/skylark:kwargs.bzl", "amend", "incorporate_num_threads")
 
 def drake_py_library(
         name,
@@ -174,12 +175,17 @@ def drake_py_unittest(
     that use the `unittest` framework.  Tests that use this macro should *not*
     contain a __main__ handler nor a shebang line.  By default, sets test size
     to "small" to indicate a unit test.
+
+    @param num_threads (optional, default is 1)
+        See drake/tools/skylark/README.md for details.
     """
     helper = "//common/test_utilities:drake_py_unittest_main.py"
     if kwargs.pop("srcs", None):
         fail("Changing srcs= is not allowed by drake_py_unittest." +
              " Use drake_py_test instead, if you need something weird.")
     srcs = ["test/%s.py" % name, helper]
+    num_threads = kwargs.pop("num_threads", 1)
+    kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     drake_py_test(
         name = name,
         srcs = srcs,
@@ -199,7 +205,7 @@ def drake_py_test(
         deps = None,
         isolate = True,
         allow_import_unittest = False,
-        tags = [],
+        num_threads = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
 
@@ -216,6 +222,9 @@ def drake_py_test(
         (thus disabling this interlock), but can override this parameter in
         case something unique is happening and the other macro can't be used.
 
+    @param num_threads (optional, default is 1)
+        See drake/tools/skylark/README.md for details.
+
     By default, sets test size to "small" to indicate a unit test. Adds the tag
     "py" if not already present.
 
@@ -229,14 +238,15 @@ def drake_py_test(
         fail("Only drake_py_unittest can use sharding")
     shard_count = kwargs.pop("_drake_py_unittest_shard_count", None)
 
+    kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
+    kwargs = amend(kwargs, "tags", append = ["py"])
+
     # Work around https://github.com/bazelbuild/bazel/issues/1567.
     deps = deps or []
     if "//:module_py" not in deps:
         deps += ["//:module_py"]
     if not allow_import_unittest:
         deps = deps + ["//common/test_utilities:disable_python_unittest"]
-    if "py" not in tags:
-        tags = tags + ["py"]
     _py_target_isolated(
         name = name,
         py_target = py_test,
@@ -245,7 +255,6 @@ def drake_py_test(
         shard_count = shard_count,
         srcs = srcs,
         deps = deps,
-        tags = tags,
         python_version = "PY3",
         srcs_version = "PY3",
         **kwargs

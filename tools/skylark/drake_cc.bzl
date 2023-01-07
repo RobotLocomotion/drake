@@ -1,6 +1,7 @@
 # -*- python -*-
 
 load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
+load("//tools/skylark:kwargs.bzl", "incorporate_num_threads")
 
 # The CXX_FLAGS will be enabled for all C++ rules in the project
 # building with any compiler.
@@ -490,6 +491,7 @@ def _maybe_add_pruned_private_hdrs_dep(
     new_srcs, private_hdrs = _prune_private_hdrs(srcs)
     if private_hdrs:
         name = "_" + base_name + "_private_headers_cc_impl"
+        kwargs.pop("env", "")
         kwargs.pop("linkshared", "")
         kwargs.pop("linkstatic", "")
         kwargs.pop("visibility", "")
@@ -765,11 +767,11 @@ def drake_cc_test(
         size = None,
         srcs = [],
         args = [],
-        tags = [],
         deps = [],
         copts = [],
         gcc_copts = [],
         clang_copts = [],
+        num_threads = None,
         **kwargs):
     """Creates a rule to declare a C++ unit test.  Note that for almost all
     cases, drake_cc_googletest should be used, instead of this rule.
@@ -777,12 +779,16 @@ def drake_cc_test(
     By default, sets size="small" because that indicates a unit test.
     By default, sets name="test/${name}.cc" per Drake's filename convention.
     Unconditionally forces testonly=1.
+
+    @param num_threads (optional, default is 1)
+        See drake/tools/skylark/README.md for details.
     """
     if size == None:
         size = "small"
     if not srcs:
         srcs = ["test/%s.cc" % name]
     kwargs["testonly"] = 1
+    kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     new_copts = _platform_copts(copts, gcc_copts, clang_copts, cc_test = 1)
     new_srcs, add_deps = _maybe_add_pruned_private_hdrs_dep(
         base_name = name,
@@ -796,7 +802,6 @@ def drake_cc_test(
         size = size,
         srcs = new_srcs,
         args = args,
-        tags = tags,
         deps = deps + add_deps,
         copts = new_copts,
         **kwargs
