@@ -8,9 +8,11 @@ namespace systems {
 template <typename T>
 ZeroOrderHold<T>::ZeroOrderHold(
     double period_sec, int vector_size,
-    std::unique_ptr<const AbstractValue> abstract_model_value)
+    std::unique_ptr<const AbstractValue> abstract_model_value,
+    bool initialize)
     : LeafSystem<T>(SystemTypeTag<ZeroOrderHold>()),
       period_sec_(period_sec),
+      initialize_(initialize),
       abstract_model_value_(std::move(abstract_model_value)) {
   if (!is_abstract()) {
     DRAKE_DEMAND(vector_size != -1);
@@ -22,6 +24,10 @@ ZeroOrderHold<T>::ZeroOrderHold(
     this->DeclarePeriodicDiscreteUpdateEvent(period_sec_, 0.,
         &ZeroOrderHold::LatchInputVectorToState);
     this->DeclareStateOutputPort("y", state_index);
+    if (initialize_) {
+        this->DeclareInitializationDiscreteUpdateEvent(
+            &ZeroOrderHold::InitializeVector);
+    }
   } else {
     DRAKE_DEMAND(vector_size == -1);
     // TODO(eric.cousineau): Remove value parameter from the constructor once
@@ -31,6 +37,10 @@ ZeroOrderHold<T>::ZeroOrderHold(
     this->DeclarePeriodicUnrestrictedUpdateEvent(period_sec_, 0.,
         &ZeroOrderHold::LatchInputAbstractValueToState);
     this->DeclareStateOutputPort("y", state_index);
+    if (initialize_) {
+        this->DeclareInitializationUnrestrictedUpdateEvent(
+            &ZeroOrderHold::InitializeAbstract);
+    }
   }
 }
 
@@ -40,7 +50,8 @@ ZeroOrderHold<T>::ZeroOrderHold(const ZeroOrderHold<U>& other)
     : ZeroOrderHold(other.period_sec_,
                     other.is_abstract() ? -1 : other.get_input_port().size(),
                     other.is_abstract() ? other.abstract_model_value_->Clone()
-                                        : nullptr) {}
+                                        : nullptr,
+                    other.initialize_) {}
 
 template <typename T>
 void ZeroOrderHold<T>::LatchInputVectorToState(

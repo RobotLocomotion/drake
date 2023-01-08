@@ -44,14 +44,22 @@ class Dut : public LeafSystem<double> {
 GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   DiagramBuilder<double> builder;
 
-  auto* dut = builder.AddSystem<Dut>();
   const double zoh_period_sec = 1.0;
-  auto* zoh_1 = builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1);
-  builder.Connect(dut->get_output_port(), zoh_1->get_input_port());
+  // Add Dut.
+  auto* dut = builder.AddSystem<Dut>();
   // Add cascade of ZOH.
-  auto* zoh_2 = builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1);
+  // N.B. Initializing has no effect on this sequence of events.
+  const bool initialize = true;
+  auto* zoh_1 =
+      builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
+  auto* zoh_2 =
+      builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
+  auto* zoh_3 =
+      builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
+
+  // Connect.
+  builder.Connect(dut->get_output_port(), zoh_1->get_input_port());
   builder.Connect(zoh_1->get_output_port(), zoh_2->get_input_port());
-  auto* zoh_3 = builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1);
   builder.Connect(zoh_2->get_output_port(), zoh_3->get_input_port());
 
   auto diagram = builder.Build();
