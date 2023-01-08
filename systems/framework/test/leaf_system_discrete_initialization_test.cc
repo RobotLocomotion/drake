@@ -96,24 +96,10 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   // indicates no initialization.
   EXPECT_FALSE(zoh_shows_initialized());
 
-  // Advance to exactly the boundary.
-  // No events have executed yet, so no changes will occur.
+  // Advance to exactly the boundary. Process all events with
+  // AdvancePendingEvents().
   simulator.AdvanceTo(zoh_period_sec);
-  EXPECT_TRUE(dut->IsInitialized(dut_context));
-  EXPECT_FALSE(zoh_shows_initialized());
-
-  // Advance to same time point.
-  simulator.AdvanceTo(zoh_period_sec);
-  EXPECT_TRUE(dut->IsInitialized(dut_context));
-  // WARNING: The ZOH discrete update has executed, and thus the state has
-  // changed.
-  EXPECT_TRUE(zoh_shows_initialized());
-
-  // Advance again to beyond event's execution boundary.
-  simulator.AdvanceTo(zoh_period_sec + kEps);
-  // Everything as expected, given that ZOH has executed against what is
-  // effectively the dut's y⁺(0).
-  // TODO(eric.cousineau): In this case, it's more concisely y⁻(Δt + ε)?
+  simulator.AdvancePendingEvents();
   EXPECT_TRUE(dut->IsInitialized(dut_context));
   EXPECT_TRUE(zoh_shows_initialized());
 }
