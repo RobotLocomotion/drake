@@ -1,6 +1,6 @@
 #pragma once
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** The measure of the distance of the edge from q1 to q2 and the portion of
@@ -17,8 +17,9 @@ namespace planning {
      free. This is the *only* time completely_free() reports `true`.
  - 0 ≤ α < 1:
      A collision was detected between q1 and q2. α is the *largest*
-     interpolation value such that (q, qα) can be considered collision free
-     (where qα = interpolate(q1, q2, α)). partially_free() reports `true`.
+     interpolation value such that an edge from q to qα can be considered
+     collision free (where qα = interpolate(q1, q2, α)). partially_free()
+     reports `true`.
  - α is undefined:
      q1 was found to be in collision. That means there exists no α for which the
      edge (q1, qα) can be collision free.
@@ -50,10 +51,10 @@ class EdgeMeasure {
    `true`, so will this. */
   bool partially_free() const { return alpha_ >= 0.0; }
 
-  /* Returns the edge distance. */
+  /** Returns the edge distance. */
   double distance() const { return distance_; }
 
-  /* Returns the value of alpha, if defined.
+  /** Returns the value of alpha, if defined.
 
    Note: Due to the sampling nature of the edge check, the edge (q1, qα) may not
    actually be collision free (due to a missed collision). There's a further
@@ -70,7 +71,7 @@ class EdgeMeasure {
     return alpha_;
   }
 
-  /* Returns the value of alpha, if defined, or the provided default value. */
+  /** Returns the value of alpha, if defined, or the provided default value. */
   double alpha_or(double default_value) const {
     if (partially_free()) {
       return alpha_;
@@ -85,4 +86,4 @@ class EdgeMeasure {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
