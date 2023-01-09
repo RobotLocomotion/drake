@@ -1,17 +1,12 @@
-#include "planning/unimplemented_collision_checker.h"
+#include "drake/planning/unimplemented_collision_checker.h"
 
 #include <stdexcept>
 #include <utility>
 
 #include <fmt/format.h>
 
-namespace anzu {
+namespace drake {
 namespace planning {
-
-using drake::planning::CollisionCheckerContext;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::RobotCollisionType;
-
 namespace {
 
 [[noreturn]] void ThrowNotImplemented(const char* func) {
@@ -19,8 +14,6 @@ namespace {
 }
 
 }  // namespace
-
-using drake::planning::RobotClearance;
 
 UnimplementedCollisionChecker::UnimplementedCollisionChecker(
     CollisionCheckerParams params, bool supports_parallel_checking)
@@ -46,10 +39,10 @@ bool UnimplementedCollisionChecker::DoCheckContextConfigCollisionFree(
   ThrowNotImplemented(__func__);
 }
 
-std::optional<drake::geometry::GeometryId>
+std::optional<geometry::GeometryId>
 UnimplementedCollisionChecker::DoAddCollisionShapeToBody(
-    const std::string&, const drake::multibody::Body<double>&,
-    const drake::geometry::Shape&, const drake::math::RigidTransform<double>&) {
+    const std::string&, const multibody::Body<double>&,
+    const geometry::Shape&, const math::RigidTransform<double>&) {
   ThrowNotImplemented(__func__);
 }
 
@@ -75,4 +68,4 @@ int UnimplementedCollisionChecker::DoMaxContextNumDistances(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

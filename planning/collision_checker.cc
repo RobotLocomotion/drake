@@ -1,7 +1,8 @@
-#include "planning/collision_checker.h"
+#include "drake/planning/collision_checker.h"
 
 #include <algorithm>
 #include <atomic>
+#include <limits>
 #include <map>
 #include <optional>
 #include <set>
@@ -21,32 +22,27 @@
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::log;
-using drake::geometry::GeometryId;
-using drake::geometry::QueryObject;
-using drake::geometry::Shape;
-using drake::math::RigidTransform;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Frame;
-using drake::multibody::Joint;
-using drake::multibody::JointIndex;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::world_model_instance;
-using drake::planning::BodyShapeDescription;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::ConfigurationDistanceFunction;
-using drake::planning::ConfigurationInterpolationFunction;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::systems::Context;
+using geometry::GeometryId;
+using geometry::QueryObject;
+using geometry::Shape;
+using math::RigidTransform;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::Frame;
+using multibody::Joint;
+using multibody::JointIndex;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::world_model_instance;
+using systems::Context;
 using std::move;
 
+// Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
+// LERP for everything else. See the documentation in CollisionChecker's
+// edge checking group.
 ConfigurationInterpolationFunction
 MakeDefaultConfigurationInterpolationFunction(
     const std::vector<int>& quaternion_dof_start_indices) {
@@ -70,6 +66,10 @@ MakeDefaultConfigurationInterpolationFunction(
 
 std::vector<int> GetQuaternionDofStartIndices(
     const MultibodyPlant<double>& plant) {
+  // TODO(SeanCurtis-TRI) Body::has_quaternion_dofs() is actually a misnomer for
+  // is_quaternion_floating(). The name implies general quaternion awareness but
+  // its documentation doesn't guarantee that. We should re-express this in
+  // terms of joints so that we can catch quaternions in any kind of joint.
   std::vector<int> quaternion_dof_start_indices;
   for (BodyIndex body_index(0); body_index < plant.num_bodies(); ++body_index) {
     const auto& body = plant.get_body(body_index);
@@ -86,14 +86,21 @@ namespace {
 // Returns the set of indices in `q` that kinematically affect the robot model
 // but that are not a part of the robot dofs (e.g., a floating or mobile base).
 // This pre-computed analysis will be used for RobotClearance calculations.
+// None of these indices are in qᵣ (the dofs controlled by the robot). It
+// doesn't include all dofs that aren't in qᵣ, only those inboard of the robot.
 std::vector<int> CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
     const MultibodyPlant<double>& plant,
     const std::vector<ModelInstanceIndex>& robot) {
+  // TODO(SeanCurtis-TRI): This algorithm was originally implemented to account
+  // for floating bodies (bodies that had dofs that weren't controlled by
+  // joints). Since #18390 all dofs are related to joints. We could rephrase
+  // to determine the inboard, non-robot dofs directly, possibly simplifying
+  // this function.
+
   // Our tactic in the loop below is to identify dofs that are either controlled
   // by one of our robot joints, or controlled by a non-robot joint but anyway
   // don't kinematically affect our robot. Then at the end, we'll return the
-  // complement of this set. This is important to cover the case where there
-  // are dofs without any associated joints.
+  // complement of this set.
   std::vector<const Joint<double>*> controlled_or_unaffecting;
   for (JointIndex joint_i{0}; joint_i < plant.num_joints(); ++joint_i) {
     const Joint<double>& joint = plant.get_joint(joint_i);
@@ -134,20 +141,6 @@ std::vector<int> CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
       controlled_or_unaffecting_array[start + i] = true;
     }
   }
-  // Floating robot bodies are "controlled" even with no joints.
-  for (const BodyIndex& body_i : plant.GetFloatingBaseBodies()) {
-    const Body<double>& body = plant.get_body(body_i);
-    DRAKE_DEMAND(body.is_floating());
-    auto iter = std::find(robot.begin(), robot.end(), body.model_instance());
-    if (iter != robot.end()) {
-      const int start = body.floating_positions_start();
-      const int nq = body.has_quaternion_dofs() ? 7 : 6;
-      for (int i = 0; i < nq; ++i) {
-        controlled_or_unaffecting_array[start + i] = true;
-      }
-      continue;
-    }
-  }
   // Now return the complement: the uncontrolled & affecting indices.
   std::vector<int> result;
   for (int i = 0; i < plant.num_positions(); ++i) {
@@ -183,13 +176,13 @@ bool CollisionChecker::IsPartOfRobot(BodyIndex body_index) const {
 }
 
 const CollisionCheckerContext& CollisionChecker::model_context() const {
-  return model_context_by_index(
+  return owned_contexts_.get_model_context(
       common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum());
 }
 
 std::shared_ptr<CollisionCheckerContext>
 CollisionChecker::MakeStandaloneModelContext() const {
-  // Make a shared clone of the special last "prototype" context.
+  // Make a shared clone of the special "prototype" context.
   std::shared_ptr<CollisionCheckerContext> standalone_context(
       owned_contexts_.prototype_context().Clone());
   // Save a weak reference to the shared standalone context.
@@ -201,6 +194,7 @@ void CollisionChecker::PerformOperationAgainstAllModelContexts(
     const std::function<void(
         const RobotDiagram<double>&,
         CollisionCheckerContext*)>& operation) {
+  DRAKE_THROW_UNLESS(operation != nullptr);
   owned_contexts_.PerformOperationAgainstAllOwnedContexts(
       model(), operation);
   standalone_contexts_.PerformOperationAgainstAllStandaloneContexts(
@@ -278,7 +272,7 @@ CollisionChecker::GetAllAddedCollisionShapes() const {
   return result;
 }
 
-void CollisionChecker::RemoveAllAddedCollisions(
+void CollisionChecker::RemoveAllAddedCollisionShapes(
     const std::string& group_name) {
   auto iter = geometry_groups_.find(group_name);
   if (iter != geometry_groups_.end()) {
@@ -288,7 +282,7 @@ void CollisionChecker::RemoveAllAddedCollisions(
   }
 }
 
-void CollisionChecker::RemoveAllAddedCollisions() {
+void CollisionChecker::RemoveAllAddedCollisionShapes() {
   drake::log()->debug("Removing all added geometries");
   for (const auto& [group_name, group_ids] : geometry_groups_) {
     DoRemoveAddedGeometries(group_ids);
@@ -298,16 +292,19 @@ void CollisionChecker::RemoveAllAddedCollisions() {
 
 std::optional<double>
 CollisionChecker::MaybeGetUniformRobotEnvironmentPadding() const {
+  // TODO(SeanCurtis-TRI): We have three functions that walk a triangular
+  // portion of the padding matrix. Consider unifying the logic for the
+  // triangular indices.
   std::optional<double> check_padding;
   for (BodyIndex body_index(0); body_index < plant().num_bodies();
-       body_index++) {
+       ++body_index) {
     for (BodyIndex other_body_index(body_index + 1);
-         other_body_index < plant().num_bodies(); other_body_index++) {
+         other_body_index < plant().num_bodies(); ++other_body_index) {
       if (IsPartOfRobot(get_body(body_index)) !=
           IsPartOfRobot(get_body(other_body_index))) {
         const double this_padding =
             GetPaddingBetween(body_index, other_body_index);
-        if (!check_padding) {
+        if (!check_padding.has_value()) {
           check_padding = this_padding;
         }
         if (check_padding.value() != this_padding) {
@@ -323,14 +320,14 @@ std::optional<double>
 CollisionChecker::MaybeGetUniformRobotRobotPadding() const {
   std::optional<double> check_padding;
   for (BodyIndex body_index(0); body_index < plant().num_bodies();
-       body_index++) {
+       ++body_index) {
     for (BodyIndex other_body_index(body_index + 1);
-         other_body_index < plant().num_bodies(); other_body_index++) {
+         other_body_index < plant().num_bodies(); ++other_body_index) {
       if (IsPartOfRobot(get_body(body_index)) &&
           IsPartOfRobot(get_body(other_body_index))) {
         const double this_padding =
             GetPaddingBetween(body_index, other_body_index);
-        if (!check_padding) {
+        if (!check_padding.has_value()) {
           check_padding = this_padding;
         }
         if (check_padding.value() != this_padding) {
@@ -359,19 +356,19 @@ void CollisionChecker::SetPaddingBetween(BodyIndex bodyA_index,
 }
 
 void CollisionChecker::SetPaddingMatrix(
-    const Eigen::MatrixXd& collision_padding) {
+    const Eigen::MatrixXd& requested_padding) {
   // First confirm it is of appropriate *size*.
-  if (collision_padding.rows() != collision_padding_.rows() ||
-      collision_padding.cols() != collision_padding_.cols()) {
+  if (requested_padding.rows() != collision_padding_.rows() ||
+      requested_padding.cols() != collision_padding_.cols()) {
     throw std::logic_error(
         fmt::format("CollisionChecker::SetPaddingMatrix(): The padding"
                     " matrix must be {}x{}. The given padding matrix is the"
                     " wrong size: {}x{}.",
                     collision_padding_.rows(), collision_padding_.cols(),
-                    collision_padding.rows(), collision_padding.cols()));
+                    requested_padding.rows(), requested_padding.cols()));
   }
-  ValidatePaddingMatrix(collision_padding, __func__);
-  collision_padding_ = collision_padding;
+  ValidatePaddingMatrix(requested_padding, __func__);
+  collision_padding_ = requested_padding;
   UpdateMaxCollisionPadding();
 }
 
@@ -380,7 +377,7 @@ void CollisionChecker::SetPaddingOneRobotBodyAllEnvironmentPairs(
   DRAKE_THROW_UNLESS(std::isfinite(padding));
   DRAKE_THROW_UNLESS(IsPartOfRobot(get_body(body_index)));
   for (BodyIndex other_body_index(0); other_body_index < plant().num_bodies();
-       other_body_index++) {
+       ++other_body_index) {
     if (!IsPartOfRobot(get_body(other_body_index))) {
       collision_padding_(int{body_index}, int{other_body_index}) = padding;
       collision_padding_(int{other_body_index}, int{body_index}) = padding;
@@ -393,9 +390,9 @@ void CollisionChecker::SetPaddingAllRobotEnvironmentPairs(
     const double padding) {
   DRAKE_THROW_UNLESS(std::isfinite(padding));
   for (BodyIndex body_index(0); body_index < plant().num_bodies();
-       body_index++) {
+       ++body_index) {
     for (BodyIndex other_body_index(body_index + 1);
-         other_body_index < plant().num_bodies(); other_body_index++) {
+         other_body_index < plant().num_bodies(); ++other_body_index) {
       if (IsPartOfRobot(get_body(body_index)) !=
           IsPartOfRobot(get_body(other_body_index))) {
         collision_padding_(int{body_index}, int{other_body_index}) = padding;
@@ -409,9 +406,9 @@ void CollisionChecker::SetPaddingAllRobotEnvironmentPairs(
 void CollisionChecker::SetPaddingAllRobotRobotPairs(const double padding) {
   DRAKE_THROW_UNLESS(std::isfinite(padding));
   for (BodyIndex body_index(0); body_index < plant().num_bodies();
-       body_index++) {
+       ++body_index) {
     for (BodyIndex other_body_index(body_index + 1);
-         other_body_index < plant().num_bodies(); other_body_index++) {
+         other_body_index < plant().num_bodies(); ++other_body_index) {
       if (IsPartOfRobot(get_body(body_index)) &&
           IsPartOfRobot(get_body(other_body_index))) {
         collision_padding_(int{body_index}, int{other_body_index}) = padding;
@@ -422,7 +419,6 @@ void CollisionChecker::SetPaddingAllRobotRobotPairs(const double padding) {
   UpdateMaxCollisionPadding();
 }
 
-
 void CollisionChecker::SetCollisionFilterMatrix(
     const Eigen::MatrixXi& filter_matrix) {
   // First confirm it is of appropriate *size*.
@@ -430,8 +426,8 @@ void CollisionChecker::SetCollisionFilterMatrix(
       filter_matrix.cols() != filtered_collisions_.cols()) {
     throw std::logic_error(
         fmt::format("CollisionChecker::SetCollisionFilterMatrix(): The filter "
-                    "matrix must be {}X{};. The given matrix is the wrong "
-                    "size: {}X{}.",
+                    "matrix must be {}x{};. The given matrix is the wrong "
+                    "size: {}x{}.",
                     filtered_collisions_.rows(), filtered_collisions_.cols(),
                     filter_matrix.rows(), filter_matrix.cols()));
   }
@@ -440,6 +436,7 @@ void CollisionChecker::SetCollisionFilterMatrix(
   filtered_collisions_ = filter_matrix;
   log()->debug(
       "Set collision filter matrix to:\n{}", filtered_collisions_);
+  UpdateMaxCollisionPadding();
 }
 
 bool CollisionChecker::IsCollisionFilteredBetween(
@@ -457,6 +454,7 @@ void CollisionChecker::SetCollisionFilteredBetween(BodyIndex bodyA_index,
   const int N = filtered_collisions_.rows();
   DRAKE_THROW_UNLESS(bodyA_index >= 0 && bodyA_index < N);
   DRAKE_THROW_UNLESS(bodyB_index >= 0 && bodyB_index < N);
+  DRAKE_THROW_UNLESS(bodyA_index != bodyB_index);
   if (!(IsPartOfRobot(bodyA_index) || IsPartOfRobot(bodyB_index))) {
     throw std::logic_error(
         fmt::format("CollisionChecker::SetCollisionFilteredBetween(): cannot "
@@ -464,6 +462,9 @@ void CollisionChecker::SetCollisionFilteredBetween(BodyIndex bodyA_index,
                     bodyA_index, bodyB_index));
   }
   const int encoded = filter_collision ? 1 : 0;
+  // The tests above should mean that we're not trying to write to an entry that
+  // is locked in a filtered state (-1); just in case, we'll add one more test.
+  DRAKE_ASSERT(filtered_collisions_(int{bodyA_index}, int{bodyB_index}) != -1);
   filtered_collisions_(int{bodyA_index}, int{bodyB_index}) = encoded;
   filtered_collisions_(int{bodyB_index}, int{bodyA_index}) = encoded;
 }
@@ -490,14 +491,14 @@ bool CollisionChecker::CheckContextConfigCollisionFree(
   return DoCheckContextConfigCollisionFree(*model_context);
 }
 
-std::vector<int8_t> CollisionChecker::CheckConfigsCollisionFree(
+std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
     const std::vector<Eigen::VectorXd>& configs, const bool parallelize) const {
-  // Note: vector<int8_t> is used since vector<bool> is not thread safe.
-  std::vector<int8_t> collision_checks(configs.size(), 0);
+  // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
+  std::vector<uint8_t> collision_checks(configs.size(), 0);
 
   const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
   CRU_OMP_PARALLEL_FOR_IF(check_in_parallel)
-  for (size_t idx = 0; idx < configs.size(); idx++) {
+  for (size_t idx = 0; idx < configs.size(); ++idx) {
     if (CheckConfigCollisionFree(configs.at(idx))) {
       collision_checks.at(idx) = 1;
     } else {
@@ -510,6 +511,7 @@ std::vector<int8_t> CollisionChecker::CheckConfigsCollisionFree(
 
 void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
+  DRAKE_THROW_UNLESS(distance_function != nullptr);
   const double test_distance =
       distance_function(GetZeroConfiguration(), GetZeroConfiguration());
   DRAKE_THROW_UNLESS(test_distance == 0.0);
@@ -518,8 +520,8 @@ void CollisionChecker::SetConfigurationDistanceFunction(
 
 ConfigurationDistanceFunction
 CollisionChecker::MakeStandaloneConfigurationDistanceFunction() const {
-  return [&] (const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2) {
-    return ComputeConfigurationDistance(q_1, q_2);
+  return [this] (const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2) {
+    return this->ComputeConfigurationDistance(q_1, q_2);
   };
 }
 
@@ -544,9 +546,9 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
 
 ConfigurationInterpolationFunction
 CollisionChecker::MakeStandaloneConfigurationInterpolationFunction() const {
-  return [&] (
+  return [this] (
       const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2, double ratio) {
-    return InterpolateBetweenConfigurations(q_1, q_2, ratio);
+    return this->InterpolateBetweenConfigurations(q_1, q_2, ratio);
   };
 }
 
@@ -575,7 +577,7 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
   const double distance = ComputeConfigurationDistance(q1, q2);
   const int num_steps = static_cast<int>(
       std::max(1.0, std::ceil(distance / edge_step_size())));
-  for (int step = 0; step < num_steps; step++) {
+  for (int step = 0; step < num_steps; ++step) {
     const double ratio =
         static_cast<double>(step) / static_cast<double>(num_steps);
     const Eigen::VectorXd qinterp =
@@ -611,10 +613,10 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
 #if defined(_OPENMP)
 #pragma omp parallel for
 #endif
-    for (int step = 0; step < num_steps; step++) {
-      const double ratio =
-          static_cast<double>(step) / static_cast<double>(num_steps);
+    for (int step = 0; step < num_steps; ++step) {
       if (edge_valid.load()) {
+        const double ratio =
+            static_cast<double>(step) / static_cast<double>(num_steps);
         const Eigen::VectorXd qinterp =
             InterpolateBetweenConfigurations(q1, q2, ratio);
         if (!CheckConfigCollisionFree(qinterp)) {
@@ -629,15 +631,15 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
   }
 }
 
-std::vector<int8_t> CollisionChecker::CheckEdgesCollisionFree(
+std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
     const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
     const bool parallelize) const {
-  // Note: vector<int8_t> is used since vector<bool> is not thread safe.
-  std::vector<int8_t> collision_checks(edges.size(), 0);
+  // Note: vector<uint8_t> is used since vector<bool> is not thread safe.
+  std::vector<uint8_t> collision_checks(edges.size(), 0);
 
   const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
   CRU_OMP_PARALLEL_FOR_IF(check_in_parallel)
-  for (size_t idx = 0; idx < edges.size(); idx++) {
+  for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
     if (CheckEdgeCollisionFree(edge.first, edge.second)) {
       collision_checks.at(idx) = 1;
@@ -696,7 +698,7 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
       const double ratio = step / static_cast<double>(num_steps);
       // If this step fails, this is the alpha which we would report.
       const double possible_alpha = (step - 1) / static_cast<double>(num_steps);
-      if (possible_alpha <= alpha.load()) {
+      if (possible_alpha < alpha.load()) {
         const Eigen::VectorXd qinterp =
             InterpolateBetweenConfigurations(q1, q2, ratio);
         if (!CheckConfigCollisionFree(qinterp)) {
@@ -725,7 +727,7 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
 
   const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
   CRU_OMP_PARALLEL_FOR_IF(check_in_parallel)
-  for (size_t idx = 0; idx < edges.size(); idx++) {
+  for (size_t idx = 0; idx < edges.size(); ++idx) {
     const std::pair<Eigen::VectorXd, Eigen::VectorXd>& edge = edges.at(idx);
     collision_checks.at(idx) =
         MeasureEdgeCollisionFree(edge.first, edge.second);
@@ -822,9 +824,9 @@ CollisionChecker::CollisionChecker(const CollisionChecker&) = default;
 
 void CollisionChecker::AllocateContexts() {
   DRAKE_THROW_UNLESS(IsInitialSetup());
-  // Move to a const model
+  // Move to a const model.
   model_ = move(setup_model_);
-  // Make a diagram & plant context for each thread
+  // Make a diagram & plant context for each thread.
   const int num_omp_threads =
       common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
   const int max_num_omp_threads =
@@ -839,7 +841,6 @@ void CollisionChecker::AllocateContexts() {
   // Make the prototype context.
   const std::unique_ptr<CollisionCheckerContext> prototype_context =
       CreatePrototypeContext();
-  // TODO(rpoyner): DRAKE_DEMAND() instead?
   DRAKE_THROW_UNLESS(prototype_context != nullptr);
   owned_contexts_.AllocateOwnedContexts(*prototype_context, num_threads);
 }
@@ -850,9 +851,13 @@ void CollisionChecker::OwnedContextKeeper::AllocateOwnedContexts(
   DRAKE_THROW_UNLESS(num_contexts >= 1);
   DRAKE_THROW_UNLESS(empty());
   for (int index = 0; index < num_contexts; ++index) {
-    model_contexts_.emplace_back(prototype_context.Clone());
+    auto cloned = prototype_context.Clone();
+    // Enforce the invariant that contexts are non-null.
+    DRAKE_THROW_UNLESS(cloned != nullptr);
+    model_contexts_.emplace_back(std::move(cloned));
   }
   prototype_context_ = prototype_context.Clone();
+  DRAKE_THROW_UNLESS(prototype_context_ != nullptr);
 }
 
 bool CollisionChecker::CanEvaluateInParallel() const {
@@ -865,7 +870,7 @@ std::string CollisionChecker::CriticizePaddingMatrix() const {
 }
 
 CollisionCheckerContext& CollisionChecker::mutable_model_context() const {
-  return mutable_model_context_by_index(
+  return owned_contexts_.get_mutable_model_context(
       common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum());
 }
 
@@ -960,16 +965,17 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
       if (geometries_i.size() > 0 && geometries_j.size() > 0) {
         collisions_filtered =
             inspector.CollisionFiltered(geometries_i.at(0), geometries_j.at(0));
-        // Ensure that the collision filtering is consistent
+        // Ensure that the collision filtering is homogeneous across all body
+        // geometries.
         for (const auto& id_i : geometries_i) {
           for (const auto& id_j : geometries_j) {
             const bool current_filtered =
                 inspector.CollisionFiltered(id_i, id_j);
             if (current_filtered != collisions_filtered) {
               throw std::runtime_error(fmt::format(
-                  "Collision filtering between body {} [{}] and body {} "
-                  "[{}] is inconsistent",
-                  GetScopedName(body_i), i, GetScopedName(body_j), j));
+                  "SceneGraph's collision filters on the geometries of bodies "
+                  " {} [{}] and {} [{}] are not homogeneous",
+                  i, GetScopedName(body_i), j, GetScopedName(body_j)));
             }
           }
         }
@@ -1018,6 +1024,29 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
     }
   }
   return filtered_collisions;
+}
+
+void CollisionChecker::UpdateMaxCollisionPadding() {
+  max_collision_padding_ = -std::numeric_limits<double>::infinity();
+  const int N = plant().num_bodies();
+  // We want to exclude the diagonal (which is always zero) so that the
+  // maximum padding can be negative. We accomplish this by walking the upper
+  // triangle of the padding matrix, relying on the symmetry invariant.
+  // We also need to exclude environment-environment pairs.
+  for (int r = 0; r < N - 1; ++r) {
+    const bool r_is_robot = IsPartOfRobot(BodyIndex(r));
+    for (int c = r + 1; c < N; ++c) {
+      const bool c_is_robot = IsPartOfRobot(BodyIndex(c));
+      if (r_is_robot || c_is_robot) {
+        max_collision_padding_ =
+            std::max(max_collision_padding_, collision_padding_(r, c));
+      }
+    }
+  }
+  if (!std::isfinite(max_collision_padding_)) {
+    // If there are *no* robot bodies, we'd end up returning -infinity.
+    max_collision_padding_ = 0;
+  }
 }
 
 void CollisionChecker::ValidatePaddingMatrix(
@@ -1080,17 +1109,35 @@ std::string CollisionChecker::CriticizePaddingMatrix(
   return {};
 }
 
+CollisionChecker::OwnedContextKeeper::~OwnedContextKeeper() = default;
+
+CollisionChecker::OwnedContextKeeper::OwnedContextKeeper(
+    const CollisionChecker::OwnedContextKeeper& other) {
+  AllocateOwnedContexts(other.prototype_context(), other.num_contexts());
+}
+
 void
 CollisionChecker::OwnedContextKeeper::PerformOperationAgainstAllOwnedContexts(
     const RobotDiagram<double>& model,
     const std::function<void(
         const RobotDiagram<double>&,
         CollisionCheckerContext*)>& operation) {
+  DRAKE_DEMAND(operation != nullptr);
   DRAKE_THROW_UNLESS(allocated());
   for (auto& model_context : model_contexts_) {
     operation(model, model_context.get());
   }
   operation(model, prototype_context_.get());
+}
+
+CollisionChecker::StandaloneContextReferenceKeeper::
+    ~StandaloneContextReferenceKeeper() = default;
+
+void CollisionChecker::StandaloneContextReferenceKeeper::AddStandaloneContext(
+    const std::shared_ptr<CollisionCheckerContext>& standalone_context) const {
+  std::lock_guard<std::mutex> lock(standalone_contexts_mutex_);
+  standalone_contexts_.push_back(
+      std::weak_ptr<CollisionCheckerContext>(standalone_context));
 }
 
 void CollisionChecker::StandaloneContextReferenceKeeper
@@ -1099,6 +1146,7 @@ void CollisionChecker::StandaloneContextReferenceKeeper
     const std::function<void(
         const RobotDiagram<double>&,
         CollisionCheckerContext*)>& operation) {
+  DRAKE_DEMAND(operation != nullptr);
   std::lock_guard<std::mutex> lock(standalone_contexts_mutex_);
   for (auto standalone_context = standalone_contexts_.begin();
         standalone_context != standalone_contexts_.end();) {
@@ -1116,4 +1164,4 @@ void CollisionChecker::StandaloneContextReferenceKeeper
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
