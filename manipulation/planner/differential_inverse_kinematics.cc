@@ -99,11 +99,6 @@ Vector6<double> ComputePoseDiffInCommonFrame(
   return diff;
 }
 
-// Deprecated constructor.
-DifferentialInverseKinematicsParameters::
-    DifferentialInverseKinematicsParameters()
-    : DifferentialInverseKinematicsParameters(1, 1) {}
-
 DifferentialInverseKinematicsParameters::
     DifferentialInverseKinematicsParameters(int num_positions,
                                             std::optional<int> num_velocities)
