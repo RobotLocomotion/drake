@@ -1,0 +1,45 @@
+Fix various vendor_cxx compatibility problems.
+
+For sysdep.hpp, the contents are too complicated to try to feed
+through vendor_cxx, so we've excluded in from the auto-vendoring
+tool. The only thing we need to do here is patch one #include.
+
+For cpp_config_decl.hpp, vendor_cxx gets a bit too greedy and tries to
+span its namespace changes across #ifdef branches. We can avoid that
+outcome by adding a redundant #include statement to help guide it.
+
+
+--- include/msgpack/sysdep.hpp.orig
++++ include/msgpack/sysdep.hpp
+@@ -97,7 +97,7 @@
+ #if !defined(MSGPACK_ENDIAN_LITTLE_BYTE) && !defined(MSGPACK_ENDIAN_BIG_BYTE)
+ 
+ #if defined(MSGPACK_NO_BOOST)
+-#include <msgpack/predef/other/endian.h>
++#include <drake_vendor/msgpack/predef/other/endian.h>
+ #else  // defined(MSGPACK_NO_BOOST)
+ #include <boost/predef/other/endian.h>
+ 
+
+--- include/msgpack/v2/cpp_config_decl.hpp.orig
++++ include/msgpack/v2/cpp_config_decl.hpp
+@@ -50,6 +50,8 @@
+ 
+ #else  // MSGPACK_USE_CPP03
+ 
++#include <memory>
++
+ namespace msgpack {
+ /// @cond
+ MSGPACK_API_VERSION_NAMESPACE(v2) {
+--- include/msgpack/v3/cpp_config_decl.hpp.orig
++++ include/msgpack/v3/cpp_config_decl.hpp
+@@ -50,6 +50,8 @@
+ 
+ #else  // MSGPACK_USE_CPP03
+ 
++#include <memory>
++
+ namespace msgpack {
+ /// @cond
+ MSGPACK_API_VERSION_NAMESPACE(v3) {
