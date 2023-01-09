@@ -1,4 +1,4 @@
-#include "planning/collision_checker.h"
+#include "drake/planning/collision_checker.h"
 
 #include <algorithm>
 #include <atomic>
@@ -21,30 +21,22 @@
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/parsing/scoped_names.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-using drake::log;
-using drake::geometry::GeometryId;
-using drake::geometry::QueryObject;
-using drake::geometry::Shape;
-using drake::math::RigidTransform;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Frame;
-using drake::multibody::Joint;
-using drake::multibody::JointIndex;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::world_model_instance;
-using drake::planning::BodyShapeDescription;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::ConfigurationDistanceFunction;
-using drake::planning::ConfigurationInterpolationFunction;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::systems::Context;
+using geometry::GeometryId;
+using geometry::QueryObject;
+using geometry::Shape;
+using math::RigidTransform;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::Frame;
+using multibody::Joint;
+using multibody::JointIndex;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::world_model_instance;
+using systems::Context;
 using std::move;
 
 ConfigurationInterpolationFunction
@@ -421,7 +413,6 @@ void CollisionChecker::SetPaddingAllRobotRobotPairs(const double padding) {
   }
   UpdateMaxCollisionPadding();
 }
-
 
 void CollisionChecker::SetCollisionFilterMatrix(
     const Eigen::MatrixXi& filter_matrix) {
@@ -1116,4 +1107,4 @@ void CollisionChecker::StandaloneContextReferenceKeeper
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
