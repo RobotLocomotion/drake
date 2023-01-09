@@ -14,12 +14,12 @@
 #include "drake/planning/body_shape_description.h"
 #include "drake/planning/collision_checker_context.h"
 #include "drake/planning/collision_checker_params.h"
+#include "drake/planning/edge_measure.h"
 #include "drake/planning/robot_clearance.h"
-#include "planning/edge_measure.h"
-#include "planning/robot_collision_type.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_collision_type.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Interface for collision checkers to use.
@@ -44,6 +44,9 @@ namespace planning {
       do I have to call `AllocateContexts()`? When should I not? etc.
     - Clear delineation of serial queries that can be performed in parallel and
       queries that themselves parallelize and guidance on not mixing them.
+
+  It's also important to partition the guidance between "user" documentation and
+  "implementer" documentation.
   -->
 
  This interface builds on the basic multi-threading idiom of Drake: one context
@@ -54,7 +57,7 @@ namespace planning {
  - using arbitrary threads and "explicit contexts" created by this object
 
  @anchor ccb_implicit_contexts
- <h4>Implicit Context Parallelism</h4>
+ <h5>Implicit Context Parallelism</h5>
 
  Many methods of this class aren't designed for entry from arbitrary threads
  (e.g. from std::async threads), but rather are designed for use with a main
@@ -85,10 +88,10 @@ namespace planning {
       supports OpenMP pragmas in docs.  -->
 
  @anchor ccb_explicit_contexts
- <h4>Explicit Context Parallelism</h4>
+ <h5>Explicit Context Parallelism</h5>
 
  It is also possible to use arbitrary thread models to perform collision
- checking in parallel using explicitly-created contexts from this class.
+ checking in parallel using explicitly created contexts from this class.
  Contexts returned from MakeStandaloneModelContext() may be used in any thread,
  using only `const` methods of this class, or "explicit context" methods.
 
@@ -127,14 +130,14 @@ namespace planning {
  const double edge_2_valid = future_q2.get();
  @endcode
 
- <h4>>Mixing Threading Models</h4>
+ <h5>Mixing Threading Models</h5>
 
- It is possible to support mixed threading models, i.e. using both OpenOMP
+ It is possible to support mixed threading models, i.e., using both OpenMP
  thread pools and arbitrary threads. In this case, each arbitrary thread (say,
  from std::async) should have its own instance of a collision checker made using
  Clone(). Then each arbitrary thread will have its own implicit context pool.
 
- <h4>Implementing Derived Classes</h4>
+ <h5>Implementing Derived Classes</h5>
 
  Collision checkers deriving from CollisionChecker *must* support parallel
  operations from both of the above parallelism models. This is generally
@@ -177,14 +180,14 @@ class CollisionChecker {
   }
 
   /** @returns a `const reference to the full model's plant. */
-  const drake::multibody::MultibodyPlant<double>& plant() const {
+  const multibody::MultibodyPlant<double>& plant() const {
     return model().plant();
   }
 
   /** @returns a `const` body reference to a body in the full model's plant for
    the given `body_index`. */
-  const drake::multibody::Body<double>& get_body(
-      drake::multibody::BodyIndex body_index) const {
+  const multibody::Body<double>& get_body(
+      multibody::BodyIndex body_index) const {
     return plant().get_body(body_index);
   }
 
@@ -193,21 +196,23 @@ class CollisionChecker {
   // that belongs with MbP sugar.
   // TODO(rpoyner-tri): reference to discussion of scoped names?
   /** Gets the scoped name for a frame within the full model. */
-  std::string GetScopedName(const drake::multibody::Frame<double>& frame) const;
+  std::string GetScopedName(const multibody::Frame<double>& frame) const;
 
   /** Gets the scoped name for a body within the full model. */
-  std::string GetScopedName(const drake::multibody::Body<double>& body) const;
+  std::string GetScopedName(const multibody::Body<double>& body) const;
 
   /** Gets the set of model instances belonging to the robot. The returned
    vector has no duplicates and is in sorted order. */
-  const std::vector<drake::multibody::ModelInstanceIndex>&
-  robot_model_instances() const { return robot_model_instances_; }
+  const std::vector<multibody::ModelInstanceIndex>& robot_model_instances()
+      const {
+    return robot_model_instances_;
+  }
 
   /** @returns true if the indicated body is part of the robot. */
-  bool IsPartOfRobot(const drake::multibody::Body<double>& body) const;
+  bool IsPartOfRobot(const multibody::Body<double>& body) const;
 
   /** @returns true if the indicated body is part of the robot. */
-  bool IsPartOfRobot(drake::multibody::BodyIndex body_index) const;
+  bool IsPartOfRobot(multibody::BodyIndex body_index) const;
 
   /** @returns a generalized position vector, sized according to the full model,
    whose values are all zero.
@@ -223,37 +228,34 @@ class CollisionChecker {
   //@{
 
   /** @returns the number of internal (not standalone) per-thread contexts. */
-  int num_allocated_contexts() const {
-    return owned_contexts_.num_contexts();
-  }
+  int num_allocated_contexts() const { return owned_contexts_.num_contexts(); }
 
   /** @returns a `const` reference to the collision checking context to be used
    with the current thread.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  const drake::planning::CollisionCheckerContext& model_context() const;
+  const CollisionCheckerContext& model_context() const;
 
   // TODO(jeremy.nimmer) This is only lightly used, maybe we should toss it?
   /** @returns a `const` reference to the multibody plant sub-context within
    the context for the current thread.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  const drake::systems::Context<double>& plant_context() const {
+  const systems::Context<double>& plant_context() const {
     return model_context().plant_context();
   }
 
   /** Updates the generalized positions `q` in the current thread's associated
    context, and returns a reference to the MultibodyPlant's now-updated context.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  const drake::systems::Context<double>&
-  UpdatePositions(const Eigen::VectorXd& q) const {
+  const systems::Context<double>& UpdatePositions(
+      const Eigen::VectorXd& q) const {
     return UpdateContextPositions(&mutable_model_context(), q);
   }
 
   /** Explicit Context-based version of UpdatePositions().
    @throws std::exception if `model_context` is `nullptr`.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
-  const drake::systems::Context<double>& UpdateContextPositions(
-      drake::planning::CollisionCheckerContext* model_context,
-      const Eigen::VectorXd& q) const {
+  const systems::Context<double>& UpdateContextPositions(
+      CollisionCheckerContext* model_context, const Eigen::VectorXd& q) const {
     DRAKE_THROW_UNLESS(model_context != nullptr);
     plant().SetPositions(&model_context->mutable_plant_context(), q);
     DoUpdateContextPositions(model_context);
@@ -263,16 +265,18 @@ class CollisionChecker {
   /** Make and track a CollisionCheckerContext. The returned context will
    participate in PerformOperationAgainstAllModelContexts() until it is
    destroyed. */
-  std::shared_ptr<drake::planning::CollisionCheckerContext>
-  MakeStandaloneModelContext() const;
+  std::shared_ptr<CollisionCheckerContext> MakeStandaloneModelContext() const;
 
   /** Allows externally-provided operations that must be performed against all
    contexts in the per-thread context pool, and any standalone contexts made
-   with MakeStandaloneModelContext(). */
+   with MakeStandaloneModelContext().
+
+   For any standalone contexts, note that it is illegal to mutate a context from
+   two different threads. No other threads should be mutating any of our
+   standalone contexts when this function is called. */
   void PerformOperationAgainstAllModelContexts(
       const std::function<void(const RobotDiagram<double>&,
-                               drake::planning::CollisionCheckerContext*)>&
-          operation);
+                               CollisionCheckerContext*)>& operation);
 
   //@}
 
@@ -317,9 +321,8 @@ class CollisionChecker {
    @param group_name    The name of the group to add the geometry to.
    @param description   The data describing the shape and target body.
    @returns `true` if the shape was added. */
-  bool AddCollisionShape(
-      const std::string& group_name,
-      const drake::planning::BodyShapeDescription& description);
+  bool AddCollisionShape(const std::string& group_name,
+                         const BodyShapeDescription& description);
 
   // TODO(sean.curtis): Convert this to a simple `bool` return; either all of
   //  the shapes were accepted or none were.
@@ -329,9 +332,8 @@ class CollisionChecker {
    @param group_name    The name of the group to add the geometry to.
    @param descriptions  The descriptions of N (shape, body) pairs.
    @returns The total number of shapes in `descriptions` that got added. */
-  int AddCollisionShapes(
-      const std::string& group_name,
-      const std::vector<drake::planning::BodyShapeDescription>& descriptions);
+  int AddCollisionShapes(const std::string& group_name,
+                         const std::vector<BodyShapeDescription>& descriptions);
 
   /** Requests the addition of a collection of shapes to bodies across multiple
    geometry groups. `geometry_groups` specifies a collection of (shape, body)
@@ -342,8 +344,7 @@ class CollisionChecker {
    @returns A map from input named geometry group to the *number* of geometries
             added to that group. */
   std::map<std::string, int> AddCollisionShapes(
-      const std::map<std::string,
-                     std::vector<drake::planning::BodyShapeDescription>>&
+      const std::map<std::string, std::vector<BodyShapeDescription>>&
           geometry_groups);
 
   /** Requests the addition of `shape` to the frame A in the checker's model.
@@ -354,11 +355,10 @@ class CollisionChecker {
    @param shape         The requested shape, defined in its canonical frame G.
    @param X_AG          The pose of the shape in the frame A.
    @returns `true` if the shape was added. */
-  bool AddCollisionShapeToFrame(
-      const std::string& group_name,
-      const drake::multibody::Frame<double>& frameA,
-      const drake::geometry::Shape& shape,
-      const drake::math::RigidTransform<double>& X_AG);
+  bool AddCollisionShapeToFrame(const std::string& group_name,
+                                const multibody::Frame<double>& frameA,
+                                const geometry::Shape& shape,
+                                const math::RigidTransform<double>& X_AG);
 
   /** Requests the addition of `shape` to the body A in the checker's model
    The added `shape` will belong to the named geometry group.
@@ -369,24 +369,24 @@ class CollisionChecker {
    @param X_AG          The pose of the shape in body A's frame.
    @returns `true` if the shape was added. */
   bool AddCollisionShapeToBody(const std::string& group_name,
-                               const drake::multibody::Body<double>& bodyA,
-                               const drake::geometry::Shape& shape,
-                               const drake::math::RigidTransform<double>& X_AG);
+                               const multibody::Body<double>& bodyA,
+                               const geometry::Shape& shape,
+                               const math::RigidTransform<double>& X_AG);
 
   /** Gets all checker geometries currently added across the whole checker.
    @returns A mapping from each geometry group name to the collection of
             (shape, body) descriptions in that group. */
-  std::map<std::string, std::vector<drake::planning::BodyShapeDescription>>
+  std::map<std::string, std::vector<BodyShapeDescription>>
   GetAllAddedCollisionShapes() const;
 
   // TODO(sean.curtis): Consider returning the total number of geometries
   //  deleted; here and for "remove all".
 
   /** Removes all added checker geometries which belong to the named group. */
-  void RemoveAllAddedCollisions(const std::string& group_name);
+  void RemoveAllAddedCollisionShapes(const std::string& group_name);
 
   /** Removes all added checker geometries from all geometry groups. */
-  void RemoveAllAddedCollisions();
+  void RemoveAllAddedCollisionShapes();
 
   //@}
 
@@ -397,8 +397,8 @@ class CollisionChecker {
    However, the exact distance between those geometries is not necessarily
    helpful in planning. For example,
 
-     - The disparity between simulation geometry and real world objects
-       may be such that the distance isn't sufficiently conservative.
+     - You may want to add padding when real-world objects differ from the
+       simulation geometry.
      - In some cases, limited penetration is expected, and possibly desirable,
        such as when grasping in clutter.
 
@@ -412,9 +412,13 @@ class CollisionChecker {
    Ultimately, the padding data is stored in an NxN matrix (where the underlying
    model has N total bodies). The matrix is symmetric and the entry at (i, j) --
    and (j, i) -- is the padding value to be applied to distance measurements
-   between bodies i and j.
+   between bodies i and j. It is meaningless to apply padding between a
+   body and itself. Furthermore, as %CollisionChecker is concerned with the
+   state of the *robot*, it is equally meaningless to apply padding between
+   *environment* bodies. To avoid the illusion of padding, those entries on
+   the diagonal and corresponding to environment body pairs are kept at zero.
 
-   <h3>Configuring padding</h3>
+   <u>Configuring padding</u>
 
    <!-- TODO(sean.curtis): We have a function for setting the padding between
     one robot body and *all* environment bodies, but not between a robot body
@@ -438,7 +442,8 @@ class CollisionChecker {
    erase the effect of the first invocation.
 
    @anchor collision_checker_padding_prereqs
-   <h4>Configuration prerequisites</h4>
+   <u>Configuration prerequisites</u>
+
    In all these configuration methods, there are some specific requirements:
 
      - The padding value must always be finite.
@@ -446,9 +451,8 @@ class CollisionChecker {
        total bodies).
      - If the parameters include one or more more body indices, at least one of
        them must reference a robot body.
-     - Padding values must be *finite* values.
 
-   <h3>Introspection</h3>
+   <u>Introspection</u>
 
    The current state of collision padding can be introspected via a number of
    methods:
@@ -459,12 +463,12 @@ class CollisionChecker {
        MaybeGetUniformRobotRobotPadding().
      - Query the specific padding value between a pair of bodies via
        GetPaddingBetween().
-     - Find out the maximum defined padding value via GetLargestPadding().
+     - Find out the maximum padding value via GetLargestPadding().
   */
   //@{
 
   /** If the padding between all robot bodies and environment bodies is the
-   same, return the common padding value. Returns nullopt otherwise. */
+   same, returns the common padding value. Returns nullopt otherwise. */
   std::optional<double> MaybeGetUniformRobotEnvironmentPadding() const;
 
   /** If the padding between all pairs of robot bodies is the same, returns
@@ -472,19 +476,20 @@ class CollisionChecker {
   std::optional<double> MaybeGetUniformRobotRobotPadding() const;
 
   /** Gets the padding value for the pair of bodies specified.
+   If the body indices are the same, zero will always be returned.
    @throws std::exception if either body index is out of range. */
-  double GetPaddingBetween(drake::multibody::BodyIndex bodyA_index,
-                           drake::multibody::BodyIndex bodyB_index) const {
-    DRAKE_THROW_UNLESS(
-        bodyA_index >= 0 && bodyA_index < collision_padding_.rows());
-    DRAKE_THROW_UNLESS(
-        bodyB_index >= 0 && bodyB_index < collision_padding_.rows());
+  double GetPaddingBetween(multibody::BodyIndex bodyA_index,
+                           multibody::BodyIndex bodyB_index) const {
+    DRAKE_THROW_UNLESS(bodyA_index >= 0 &&
+                       bodyA_index < collision_padding_.rows());
+    DRAKE_THROW_UNLESS(bodyB_index >= 0 &&
+                       bodyB_index < collision_padding_.rows());
     return collision_padding_(int{bodyA_index}, int{bodyB_index});
   }
 
   /** Overload that uses body references. */
-  double GetPaddingBetween(const drake::multibody::Body<double>& bodyA,
-                           const drake::multibody::Body<double>& bodyB) const {
+  double GetPaddingBetween(const multibody::Body<double>& bodyA,
+                           const multibody::Body<double>& bodyB) const {
     return GetPaddingBetween(bodyA.index(), bodyB.index());
   }
 
@@ -492,21 +497,17 @@ class CollisionChecker {
    @throws std::exception if the @ref collision_checker_padding_prereqs
            "configuration prerequisites" are not met or `bodyA_index ==
            bodyB_index`. */
-  void SetPaddingBetween(drake::multibody::BodyIndex bodyA_index,
-                         drake::multibody::BodyIndex bodyB_index,
-                         double padding);
+  void SetPaddingBetween(multibody::BodyIndex bodyA_index,
+                         multibody::BodyIndex bodyB_index, double padding);
 
   /** Overload that uses body references. */
-  void SetPaddingBetween(const drake::multibody::Body<double>& bodyA,
-                         const drake::multibody::Body<double>& bodyB,
-                         double padding) {
+  void SetPaddingBetween(const multibody::Body<double>& bodyA,
+                         const multibody::Body<double>& bodyB, double padding) {
     SetPaddingBetween(bodyA.index(), bodyB.index(), padding);
   }
 
   /** Gets the collision padding matrix. */
-  const Eigen::MatrixXd& GetPaddingMatrix() const {
-    return collision_padding_;
-  }
+  const Eigen::MatrixXd& GetPaddingMatrix() const { return collision_padding_; }
 
   /** Sets the collision padding matrix. Note that this matrix contains all
    padding data, both robot-robot "self" padding, and robot-environment padding.
@@ -523,17 +524,17 @@ class CollisionChecker {
            properties. */
   void SetPaddingMatrix(const Eigen::MatrixXd& collision_padding);
 
-  /** Gets the current largest collision padding across all body pairs. */
-  double GetLargestPadding() const {
-    return max_collision_padding_;
-  }
+  /** Gets the current largest collision padding across all (robot, *) body
+   pairs. This excludes the meaningless zeros on the diagonal and
+   environment-environment pairs; the return value *can* be negative. */
+  double GetLargestPadding() const { return max_collision_padding_; }
 
   /** Sets the environment collision padding for the provided robot body with
    respect to all environment bodies.
    @throws std::exception if the @ref collision_checker_padding_prereqs
            "configuration prerequisites" are not met. */
   void SetPaddingOneRobotBodyAllEnvironmentPairs(
-      drake::multibody::BodyIndex body_index, double padding);
+      multibody::BodyIndex body_index, double padding);
 
   /** Sets the padding for all (robot, environement) pairs.
    @throws std::exception if the @ref collision_checker_padding_prereqs
@@ -550,13 +551,13 @@ class CollisionChecker {
   /** @name Collision filtering
 
    The %CollisionChecker adapts the idea of "collision filtering" to *bodies*
-   (see drake::geometry::CollisionFilterManager). In addition to whatever
+   (see geometry::CollisionFilterManager). In addition to whatever
    collision filters have been declared within the underlying model,
    %CollisionChecker provides mechanisms to layer *additional* filters by
    specifying a pair of bodies as being "filtered". No collisions or
    distance measurements are reported on filtered body pairs.
 
-   The "filter" state of all possible body pairs are stored in an NxN
+   The "filter" state of all possible body pairs are stored in a symmetric NxN
    integer-valued matrix, where N is the number of bodies reported by the
    plant owned by this collision checker.
 
@@ -629,30 +630,29 @@ class CollisionChecker {
   /** Checks if collision is filtered between the two bodies specified.
    Note: collision between two environment bodies is *always* filtered.
    @throws std::exception if either body index is out of range. */
-  bool IsCollisionFilteredBetween(
-      drake::multibody::BodyIndex bodyA_index,
-      drake::multibody::BodyIndex bodyB_index) const;
+  bool IsCollisionFilteredBetween(multibody::BodyIndex bodyA_index,
+                                  multibody::BodyIndex bodyB_index) const;
 
   /** Overload that uses body references. */
-  bool IsCollisionFilteredBetween(
-      const drake::multibody::Body<double>& bodyA,
-      const drake::multibody::Body<double>& bodyB) const {
+  bool IsCollisionFilteredBetween(const multibody::Body<double>& bodyA,
+                                  const multibody::Body<double>& bodyB) const {
     return IsCollisionFilteredBetween(bodyA.index(), bodyB.index());
   }
 
-  /** Declares the body pair (bodyA, bodyB) to be filtered (nor not) based on
+  /** Declares the body pair (bodyA, bodyB) to be filtered (or not) based on
    `filter_collision`.
    @param filter_collision Sets the to body pair to be filtered if `true`.
    @throws std::exception if either body index is out of range.
+   @throws std::exception if both indices refer to the same body.
    @throws std::exception if both indices refer to environment bodies. */
-  void SetCollisionFilteredBetween(drake::multibody::BodyIndex bodyA_index,
-                                   drake::multibody::BodyIndex bodyB_index,
+  void SetCollisionFilteredBetween(multibody::BodyIndex bodyA_index,
+                                   multibody::BodyIndex bodyB_index,
                                    bool filter_collision);
 
   /** Overload that uses body references. */
-  void SetCollisionFilteredBetween(
-      const drake::multibody::Body<double>& bodyA,
-      const drake::multibody::Body<double>& bodyB, bool filter_collision) {
+  void SetCollisionFilteredBetween(const multibody::Body<double>& bodyA,
+                                   const multibody::Body<double>& bodyB,
+                                   bool filter_collision) {
     SetCollisionFilteredBetween(bodyA.index(), bodyB.index(), filter_collision);
   }
 
@@ -660,8 +660,7 @@ class CollisionChecker {
    checker's plant).
    @throws std::exception if `body_index` is out of range.
    @throws std::exception if `body_index` refers to an environment body. */
-  void SetCollisionFilteredWithAllBodies(
-      drake::multibody::BodyIndex body_index);
+  void SetCollisionFilteredWithAllBodies(multibody::BodyIndex body_index);
 
   //@}
 
@@ -678,10 +677,10 @@ class CollisionChecker {
   /** Explicit Context-based version of CheckConfigCollisionFree().
    @throws std::exception if model_context is nullptr.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
-  bool CheckContextConfigCollisionFree(
-      drake::planning::CollisionCheckerContext* model_context,
-      const Eigen::VectorXd& q) const;
+  bool CheckContextConfigCollisionFree(CollisionCheckerContext* model_context,
+                                       const Eigen::VectorXd& q) const;
 
+  // TODO(SeanCurtis-TRI): This isn't tested.
   /** Checks a vector of configurations for collision, evaluating in parallel
    when supported and enabled by `parallelize`. Parallelization in configuration
    collision checks is provided using OpenMP and is supported when both: (1) the
@@ -692,11 +691,13 @@ class CollisionChecker {
    method with `parallelize=true` from any thread that is not the main thread.
    @param configs       Configurations to check
    @param parallelize   Should configuration collision checks be parallelized?
-   @returns std::vector<int8_t>, one for each configuration in configs. For each
-   configuration, 1 if collision free, 0 if in collision. */
-  std::vector<int8_t> CheckConfigsCollisionFree(
+   @returns std::vector<uint8_t>, one for each configuration in configs. For
+   each configuration, 1 if collision free, 0 if in collision. */
+  std::vector<uint8_t> CheckConfigsCollisionFree(
       const std::vector<Eigen::VectorXd>& configs,
       bool parallelize = true) const;
+
+  //@}
 
   /** @name Edge collision checking
 
@@ -709,13 +710,13 @@ class CollisionChecker {
    and reporting the edge to be collision free if all samples are collision
    free. Otherwise, we report the fraction of samples (starting with the start
    configuration) that reported to be collision free. The tested samples include
-   the start and end configurations, q1 and q2, respecitvely.
+   the start and end configurations, q1 and q2, respectively.
 
    %CollisionChecker doesn't know how an edge is defined. An edge can be
-   anything from a simple line (e.g. a linear path in C-space) to an arbitrarily
-   complex path (e.g. a Reeds-Shepp path). The shape of the edge is defined
-   implicitly by the ConfigurationInterpolationFunction as an interpolation
-   between two configurations `q1` and `q2` (see
+   anything from a simple line segment (e.g. a linear path in C-space) to an
+   arbitrarily complex path (e.g. a Reeds-Shepp path). The shape of the edge is
+   defined implicitly by the ConfigurationInterpolationFunction as an
+   interpolation between two configurations `q1` and `q2` (see
    SetConfigurationDistanceFunction() and
    SetConfigurationInterpolationFunction()).
 
@@ -730,7 +731,7 @@ class CollisionChecker {
    edge step size must be coordinated to ensure that edge collision checking is
    sufficiently accurate for your application.
 
-   <h4>Default functions</h4>
+   <u>Default functions</u>
 
    The configuration distance function is defined at construction (from
    CollisionCheckerParams). It can be as simple as `|q1 - q2|` or could be
@@ -745,14 +746,14 @@ class CollisionChecker {
 
    If all joints are revolute joints, one reasonable distance function is the
    weighted function `|wᵀ⋅(q1 − q2)|` where the weights are based on joint
-   speed. For joint dofs `J = [J₀, J₁, ...]` with corresponding maximum speeds
-   `[q̇⁰ₘ, q̇¹ₘ, ...]`, we identify the speed of the fastest joint
-   `q̇ₘₐₓ = maxᵢ(q̇ⁱₘ)` and define the per-dof weights as `wᵢ = q̇ₘₐₓ / q̇ⁱₘ`.
+   speed. For joint dofs `J = [J₀, J₁, ...]` with corresponding positive maximum
+   speeds `[s₀, s₁, ...]`, we identify the speed of the fastest joint
+   `sₘₐₓ = maxᵢ(sᵢ)` and define the per-dof weights as `wᵢ = sₘₐₓ / sᵢ`.
    Intuitively, the more time a particular joint requires to cover an angular
    distance, the more significance we attribute to that distance -- it's a
-   *time*-biased weighting function. The weights are unitless so the reported
+   _time_-biased weighting function. The weights are unitless so the reported
    distance is in radians. For some common arms (IIWA, Panda, UR, Jaco, etc.),
-   we have found that an edge step size of 0.05 radians to produce reasonable
+   we have found that an edge step size of 0.05 radians produces reasonable
    results.
 
    %CollisionChecker has a default interpolation function, as defined by
@@ -762,7 +763,7 @@ class CollisionChecker {
    any non-holonomic robot). You will need to provide your own interpolation
    function in such cases.
 
-   <h4>Function-level parallelism</h4>
+   <u>Function-level parallelism</u>
 
    Parallelization in some edge collision checks is provided using OpenMP and is
    enabled when both: (1) the collision checker declares that parallelization is
@@ -770,10 +771,12 @@ class CollisionChecker {
    multiple OpenMP threads are available for execution.
 
    Due to this internal parallelism, special care must be paid when calling
-   these methods from any thread that is not the main thread.
+   these methods from any thread that is not the main thread; ensure that, for a
+   given collision checker instance, implicit context methods are only called
+   from one non-OpenMP thread at a given time.
 
-   <h4>Thoughts on configuring %CollisionChecker for edge collision
-       detection</h4>
+   <u>Thoughts on configuring %CollisionChecker for edge collision
+       detection</u>
 
    Because the edge collision check samples the edge, there is a perpetual
    trade off between the cost of evaluating the edge and the likelihood that
@@ -786,13 +789,13 @@ class CollisionChecker {
 
    There are two properties that will most directly contribute to the accuracy
    of the edge tests: edge step size and padding. Ultimately, any obstacle in
-   *C-space* whose measure is smaller than the edge step size is likely to be
+   _C-space_ whose measure is smaller than the edge step size is likely to be
    missed. The goal is to tune the parameters such that such features -- located
    in an area of interest (i.e., where you want your robot to operate) -- will
    have a low probability of being missed.
 
    Edge step size is very much a global parameter. It will increase the cost of
-   *every* collision check. If you are unable to anticipate where the small
+   _every_ collision check. If you are unable to anticipate where the small
    features are, a small edge step size will be robust to that uncertainty. As
    such, it serves as a good backstop. It comes at a cost of increasing the cost
    of *every* test, even for large geometries with nothing but coarse features.
@@ -817,7 +820,7 @@ class CollisionChecker {
    collision checker, so if the function has any lambda-captured data then
    that data must outlive this collision checker. */
   void SetConfigurationDistanceFunction(
-      const drake::planning::ConfigurationDistanceFunction& distance_function);
+      const ConfigurationDistanceFunction& distance_function);
 
   /** Computes configuration-space distance between the provided configurations
    `q_1` and `q_2`, using the distance function configured at construction-
@@ -834,8 +837,8 @@ class CollisionChecker {
    @warning do not pass this standalone function back into
    SetConfigurationDistanceFunction() function; doing so would create an
    infinite loop. */
-  drake::planning::ConfigurationDistanceFunction
-  MakeStandaloneConfigurationDistanceFunction() const;
+  ConfigurationDistanceFunction MakeStandaloneConfigurationDistanceFunction()
+      const;
 
   /** Sets the configuration interpolation function to `interpolation_function`.
 
@@ -849,16 +852,16 @@ class CollisionChecker {
    @note the default function uses linear interpolation for most variables,
    and uses slerp for quaternion valued variables.*/
   void SetConfigurationInterpolationFunction(
-      const drake::planning::ConfigurationInterpolationFunction&
-          interpolation_function);
+      const ConfigurationInterpolationFunction& interpolation_function);
 
   /** Interpolates between provided configurations `q_1` and `q_2`.
    @param ratio Interpolation ratio.
    @returns Interpolated configuration.
-   @throws std::exception if ratio is not in range [0, 1]. */
-  Eigen::VectorXd InterpolateBetweenConfigurations(
-      const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2,
-      double ratio) const {
+   @throws std::exception if ratio is not in range [0, 1].
+   @see ConfigurationInterpolationFunction for more. */
+  Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& q_1,
+                                                   const Eigen::VectorXd& q_2,
+                                                   double ratio) const {
     DRAKE_THROW_UNLESS(ratio >= 0.0 && ratio <= 1.0);
     return configuration_interpolation_function_(q_1, q_2, ratio);
   }
@@ -870,7 +873,7 @@ class CollisionChecker {
    @warning do not pass this standalone function back into our
    SetConfigurationInterpolationFunction() function; doing so would create
    an infinite loop. */
-  drake::planning::ConfigurationInterpolationFunction
+  ConfigurationInterpolationFunction
   MakeStandaloneConfigurationInterpolationFunction() const;
 
   /** Gets the current edge step size. */
@@ -895,9 +898,9 @@ class CollisionChecker {
   /** Explicit Context-based version of CheckEdgeCollisionFree().
    @throws std::exception if `model_context` is nullptr.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
-  bool CheckContextEdgeCollisionFree(
-      drake::planning::CollisionCheckerContext* model_context,
-      const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const;
+  bool CheckContextEdgeCollisionFree(CollisionCheckerContext* model_context,
+                                     const Eigen::VectorXd& q1,
+                                     const Eigen::VectorXd& q2) const;
 
   /** Checks a single configuration-to-configuration edge for collision.
    Collision check is parallelized via OpenMP when supported.
@@ -907,7 +910,7 @@ class CollisionChecker {
    @param q2 End configuration for edge.
    @returns true if collision free, false if in collision. */
   bool CheckEdgeCollisionFreeParallel(const Eigen::VectorXd& q1,
-                                   const Eigen::VectorXd& q2) const;
+                                      const Eigen::VectorXd& q2) const;
 
   /** Checks multiple configuration-to-configuration edges for collision.
    Collision checks are parallelized via OpenMP when supported and enabled by
@@ -916,9 +919,9 @@ class CollisionChecker {
    method with `parallelize=true` from any thread that is not the main thread.
    @param edges        Edges to check, each in the form of pair<q1, q2>.
    @param parallelize  Should edge collision checks be parallelized?
-   @returns std::vector<int8_t>, one for each edge in edges. For each edge, 1 if
-   collision free, 0 if in collision. */
-  std::vector<int8_t> CheckEdgesCollisionFree(
+   @returns std::vector<uint8_t>, one for each edge in edges. For each edge, 1
+   if collision free, 0 if in collision. */
+  std::vector<uint8_t> CheckEdgesCollisionFree(
       const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
       bool parallelize = true) const;
 
@@ -935,8 +938,8 @@ class CollisionChecker {
    @throws std::exception if `model_context` is nullptr.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   EdgeMeasure MeasureContextEdgeCollisionFree(
-      drake::planning::CollisionCheckerContext* model_context,
-      const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const;
+      CollisionCheckerContext* model_context, const Eigen::VectorXd& q1,
+      const Eigen::VectorXd& q2) const;
 
   /** Checks a single configuration-to-configuration edge for collision.
    Collision check is parallelized via OpenMP when supported.
@@ -945,8 +948,8 @@ class CollisionChecker {
    @param q1 Start configuration for edge.
    @param q2 End configuration for edge.
    @returns A measure of how much of the edge is collision free. */
-  EdgeMeasure MeasureEdgeCollisionFreeParallel(
-      const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const;
+  EdgeMeasure MeasureEdgeCollisionFreeParallel(const Eigen::VectorXd& q1,
+                                               const Eigen::VectorXd& q2) const;
 
   /** Checks multiple configuration-to-configuration edge for collision.
    Collision checks are parallelized via OpenMP when supported and enabled by
@@ -968,10 +971,13 @@ class CollisionChecker {
    These methods help characterize the robot's collision state with respect to
    a particular robot configuration.
 
-   The collision state includes its *clearance* -- a measure of how near to
-   collision the robot is -- as computed by CalcRobotClearance() and report
-   the boolean state of collision for each robot body as computed by
-   ClassifyBodyCollisions(). */
+   In this section, the "collision state" is characterized with two different
+   APIs:
+
+      - "clearance", a measure of how near to collision the robot as computed by
+         CalcRobotClearance(), and
+      - a boolean colliding state for each robot body as computed by
+        ClassifyBodyCollisions(). */
   //@{
 
   /** Calculates the distance, ϕ, and distance Jacobian, Jqᵣ_ϕ, for each
@@ -987,16 +993,18 @@ class CollisionChecker {
 
    The total number of rows can depend on how the model is defined and how a
    particular CollisionChecker instance is implemented (see MaxNumDistances()).
+   @see RobotClearance for details on the quantities ϕ and Jqᵣ_ϕ (and other
+   details).
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  drake::planning::RobotClearance CalcRobotClearance(
-      const Eigen::VectorXd& q, double influence_distance) const;
+  RobotClearance CalcRobotClearance(const Eigen::VectorXd& q,
+                                    double influence_distance) const;
 
   /** Explicit Context-based version of CalcRobotClearance().
    @throws std::exception if `model_context` is nullptr.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
-  drake::planning::RobotClearance CalcContextRobotClearance(
-      drake::planning::CollisionCheckerContext* model_context,
-      const Eigen::VectorXd& q, double influence_distance) const;
+  RobotClearance CalcContextRobotClearance(
+      CollisionCheckerContext* model_context, const Eigen::VectorXd& q,
+      double influence_distance) const;
 
   /** Returns an upper bound on the number of distances returned by
    CalcRobotClearance(), using the current thread's associated context.
@@ -1006,7 +1014,7 @@ class CollisionChecker {
   /** Explicit Context-based version of MaxNumDistances().
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
   int MaxContextNumDistances(
-      const drake::planning::CollisionCheckerContext& model_context) const;
+      const CollisionCheckerContext& model_context) const;
 
   /** Classifies which robot bodies are in collision (and which type of
    collision) for the provided configuration `q`, using the current thread's
@@ -1016,16 +1024,14 @@ class CollisionChecker {
    environment bodies are populated with kNoCollision, regardless of their
    actual status.
    @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  std::vector<drake::planning::RobotCollisionType> ClassifyBodyCollisions(
+  std::vector<RobotCollisionType> ClassifyBodyCollisions(
       const Eigen::VectorXd& q) const;
 
   /** Explicit Context-based version of ClassifyBodyCollisions().
    @throws std::exception if `model_context` is nullptr.
    @see @ref ccb_explicit_contexts "Explicit Context Parallelism". */
-  std::vector<drake::planning::RobotCollisionType>
-  ClassifyContextBodyCollisions(
-      drake::planning::CollisionCheckerContext* model_context,
-      const Eigen::VectorXd& q) const;
+  std::vector<RobotCollisionType> ClassifyContextBodyCollisions(
+      CollisionCheckerContext* model_context, const Eigen::VectorXd& q) const;
 
   //@}
 
@@ -1038,7 +1044,7 @@ class CollisionChecker {
    checking (see SupportsParallelChecking()).
    @throws std::exception if params is invalid. @see CollisionCheckerParams.
    */
-  CollisionChecker(drake::planning::CollisionCheckerParams params,
+  CollisionChecker(CollisionCheckerParams params,
                    bool supports_parallel_checking);
 
   /** To support Clone(), allow copying (but not move nor assign). */
@@ -1053,9 +1059,9 @@ class CollisionChecker {
 
   /** Collision checkers that use derived context types can override this
    implementation to allocate their context type instead. */
-  virtual std::unique_ptr<drake::planning::CollisionCheckerContext>
-  CreatePrototypeContext() const {
-    return std::make_unique<drake::planning::CollisionCheckerContext>(&model());
+  virtual std::unique_ptr<CollisionCheckerContext> CreatePrototypeContext()
+      const {
+    return std::make_unique<CollisionCheckerContext>(&model());
   }
 
   /** @returns true if called during initial setup (before AllocateContexts()
@@ -1081,23 +1087,22 @@ class CollisionChecker {
    guarantees that `model_context` will not be nullptr and that the new
    positions are present in model_context->plant_context(). */
   virtual void DoUpdateContextPositions(
-      drake::planning::CollisionCheckerContext* model_context) const = 0;
+      CollisionCheckerContext* model_context) const = 0;
 
   /** Derived collision checkers are responsible for reporting the collision
    status of the configuration. CollisionChecker guarantees that the passed
    `model_context` has been updated with the configuration `q` supplied to the
    public method. */
   virtual bool DoCheckContextConfigCollisionFree(
-      const drake::planning::CollisionCheckerContext& model_context) const = 0;
+      const CollisionCheckerContext& model_context) const = 0;
 
   /** Does the work of adding a shape to be rigidly affixed to the body. Derived
    checkers can choose to ignore the request, but must return `nullopt` if they
    do so. */
-  virtual std::optional<drake::geometry::GeometryId> DoAddCollisionShapeToBody(
-      const std::string& group_name,
-      const drake::multibody::Body<double>& bodyA,
-      const drake::geometry::Shape& shape,
-      const drake::math::RigidTransform<double>& X_AG) = 0;
+  virtual std::optional<geometry::GeometryId> DoAddCollisionShapeToBody(
+      const std::string& group_name, const multibody::Body<double>& bodyA,
+      const geometry::Shape& shape,
+      const math::RigidTransform<double>& X_AG) = 0;
 
   /** Representation of an "added" shape. These are shapes that get added to
    the model via the CollisionChecker's Shape API. They encode the id for the
@@ -1105,16 +1110,16 @@ class CollisionChecker {
    geometry is affixed. */
   struct AddedShape {
     /** The id of the geometry. */
-    drake::geometry::GeometryId geometry_id;
+    geometry::GeometryId geometry_id;
 
     /** The index of the body the shape was added; could be robot or
      environment. */
-    drake::multibody::BodyIndex body_index;
+    multibody::BodyIndex body_index;
 
     /** The full body description.
      We have the invariant that `body_index` has the body and model instance
      names recorded in the description. */
-    drake::planning::BodyShapeDescription description;
+    BodyShapeDescription description;
   };
 
   /** Removes all of the given added shapes (if they exist) from the checker. */
@@ -1125,8 +1130,8 @@ class CollisionChecker {
    measurements. But they must adhere to the characteristics documented on
    RobotClearance, e.g., one measurement per row. CollisionChecker guarantees
    that `influence_distance` is finite and non-negative. */
-  virtual drake::planning::RobotClearance DoCalcContextRobotClearance(
-      const drake::planning::CollisionCheckerContext& model_context,
+  virtual RobotClearance DoCalcContextRobotClearance(
+      const CollisionCheckerContext& model_context,
       double influence_distance) const = 0;
 
   /** Derived collision checkers are responsible for choosing a collision type
@@ -1134,14 +1139,13 @@ class CollisionChecker {
    for ClassifyBodyCollisions. CollisionChecker guarantees that the passed
    `model_context` has been updated with the configuration `q` supplied to the
    public method. */
-  virtual std::vector<drake::planning::RobotCollisionType>
-  DoClassifyContextBodyCollisions(
-      const drake::planning::CollisionCheckerContext& model_context) const = 0;
+  virtual std::vector<RobotCollisionType> DoClassifyContextBodyCollisions(
+      const CollisionCheckerContext& model_context) const = 0;
 
   /** Derived collision checkers must implement the semantics documented for
    MaxNumDistances. CollisionChecker does nothing; it just calls this method. */
   virtual int DoMaxContextNumDistances(
-      const drake::planning::CollisionCheckerContext& model_context) const = 0;
+      const CollisionCheckerContext& model_context) const = 0;
 
   //@}
 
@@ -1156,17 +1160,7 @@ class CollisionChecker {
 
  private:
   /* @see @ref ccb_implicit_contexts "Implicit Context Parallelism". */
-  drake::planning::CollisionCheckerContext& mutable_model_context() const;
-
-  drake::planning::CollisionCheckerContext& mutable_model_context_by_index(
-      int index) const {
-    return owned_contexts_.get_mutable_model_context(index);
-  }
-
-  const drake::planning::CollisionCheckerContext& model_context_by_index(
-      int index) const {
-    return owned_contexts_.get_model_context(index);
-  }
+  CollisionCheckerContext& mutable_model_context() const;
 
   /* Tests the given filtered collision matrix for several invariants, throwing
    if they are not satisfied:
@@ -1200,9 +1194,9 @@ class CollisionChecker {
         the matrix is set to 1. */
   Eigen::MatrixXi GenerateFilteredCollisionMatrix() const;
 
-  void UpdateMaxCollisionPadding() {
-    max_collision_padding_ = collision_padding_.maxCoeff();
-  }
+  /* Updates the stored value representing the largest value found in the
+   padding matrix -- this excludes the meaningless zeros on the diagonal. */
+  void UpdateMaxCollisionPadding();
 
   /* Tests the given collision padding matrix for several invariants, throwing
    if they are not satisfied:
@@ -1218,10 +1212,18 @@ class CollisionChecker {
   /* Checks the same conditions as ValidatePaddingMatrix, but instead of
    throwing, returns the error message, or an empty string if no errors were
    found. */
-  std::string CriticizePaddingMatrix(
-      const Eigen::MatrixXd& padding, const char* func) const;
+  std::string CriticizePaddingMatrix(const Eigen::MatrixXd& padding,
+                                     const char* func) const;
 
-  /* @note this class has two phases: `empty()` (before calling
+  /* This class allocates and maintains the contexts associated with OpenMP
+   threads. When the CollisionChecker is evaluated in its implicit mode, the
+   contexts used are drawn from this collection and each context is associated
+   explicitly with one available OpenMP thread.
+
+   In addition, this container takes ownership of a reference "prototype"
+   context (see below for details about the prototype context).
+
+   @note this class has two phases: `empty()` (before calling
    AllocateOwnedContexts()), and `allocated()`. In the `empty()` phase,
    `num_contexts()` returns 0, and all methods that access a context will
    throw. */
@@ -1229,10 +1231,10 @@ class CollisionChecker {
    public:
     OwnedContextKeeper() {}
 
+    ~OwnedContextKeeper();
+
     /* The copy constructor is used to implement our outer class's Clone(). */
-    explicit OwnedContextKeeper(const OwnedContextKeeper& other) {
-      AllocateOwnedContexts(other.prototype_context(), other.num_contexts());
-    }
+    explicit OwnedContextKeeper(const OwnedContextKeeper& other);
 
     /* Does not allow assignment. */
     void operator=(const OwnedContextKeeper&) = delete;
@@ -1243,9 +1245,8 @@ class CollisionChecker {
      CollisionChecker::AllocateContexts can't be called in the
      CollisionChecker constructor.
      @throws std::exception if called more than once. */
-    void AllocateOwnedContexts(
-        const drake::planning::CollisionCheckerContext& prototype_context,
-        int num_contexts);
+    void AllocateOwnedContexts(const CollisionCheckerContext& prototype_context,
+                               int num_contexts);
 
     /* @returns true if the keeper is empty. In the empty state, there are no
      contexts allocated and no prototype context is available. */
@@ -1262,19 +1263,17 @@ class CollisionChecker {
     int num_contexts() const { return model_contexts_.size(); }
 
     /* Gets the special "prototype" context used for copy & clone operations. */
-    const drake::planning::CollisionCheckerContext& prototype_context() const {
+    const CollisionCheckerContext& prototype_context() const {
       // The prototype context is only available in the allocated phase.
       DRAKE_THROW_UNLESS(allocated());
       return *prototype_context_;
     }
 
-    drake::planning::CollisionCheckerContext& get_mutable_model_context(
-        int index) const {
+    CollisionCheckerContext& get_mutable_model_context(int index) const {
       return *model_contexts_.at(index);
     }
 
-    const drake::planning::CollisionCheckerContext& get_model_context(
-        int index) const {
+    const CollisionCheckerContext& get_model_context(int index) const {
       return *model_contexts_.at(index);
     }
 
@@ -1282,12 +1281,10 @@ class CollisionChecker {
     void PerformOperationAgainstAllOwnedContexts(
         const RobotDiagram<double>& model,
         const std::function<void(const RobotDiagram<double>&,
-                                 drake::planning::CollisionCheckerContext*)>&
-            operation);
+                                 CollisionCheckerContext*)>& operation);
 
    private:
-    std::vector<std::unique_ptr<drake::planning::CollisionCheckerContext>>
-        model_contexts_;
+    std::vector<std::unique_ptr<CollisionCheckerContext>> model_contexts_;
 
     /* This prototype context plays an important role. The CollisionChecker is
      supposed to allow the execution of *any* const methods in parallel without
@@ -1306,13 +1303,21 @@ class CollisionChecker {
      this prototype context is bit-identical with all of the owned and
      standalone contexts for this CollisionChecker (except for those differences
      directly attributable to setting the qs in MbP). */
-    std::unique_ptr<drake::planning::CollisionCheckerContext>
-        prototype_context_;
+    std::unique_ptr<CollisionCheckerContext> prototype_context_;
   };
 
+  /* When a non-OpenMP threading system is used, users of CollisionChecker must
+   request "standalone" contexts. This keeps a *weak* reference to each of the
+   allocated standalone contexts so that they can be updated in lock step with
+   all other contexts in response to PerformOperationAgainstAllModelContexts().
+
+   The references are weak references so that the user has full control over
+   the lifespan of the standalone contexts. */
   class StandaloneContextReferenceKeeper {
    public:
     StandaloneContextReferenceKeeper() {}
+
+    ~StandaloneContextReferenceKeeper();
 
     /* The copy constructor is used to implement our outer class's Clone(). */
     explicit StandaloneContextReferenceKeeper(
@@ -1323,25 +1328,18 @@ class CollisionChecker {
     /* Does not allow assignment. */
     void operator=(const StandaloneContextReferenceKeeper&) = delete;
 
-    void AddStandaloneContext(
-        const std::shared_ptr<drake::planning::CollisionCheckerContext>&
-            standalone_context) const {
-      std::lock_guard<std::mutex> lock(standalone_contexts_mutex_);
-      standalone_contexts_.push_back(
-          std::weak_ptr<drake::planning::CollisionCheckerContext>(
-              standalone_context));
-    }
+    void AddStandaloneContext(const std::shared_ptr<CollisionCheckerContext>&
+                                  standalone_context) const;
 
     /* Performs the provided `operation` on all live referenced contexts, and
      removes any references to dead contexts. */
     void PerformOperationAgainstAllStandaloneContexts(
         const RobotDiagram<double>& model,
         const std::function<void(const RobotDiagram<double>&,
-                                 drake::planning::CollisionCheckerContext*)>&
-            operation);
+                                 CollisionCheckerContext*)>& operation);
 
    private:
-    mutable std::list<std::weak_ptr<drake::planning::CollisionCheckerContext>>
+    mutable std::list<std::weak_ptr<CollisionCheckerContext>>
         standalone_contexts_;
     mutable std::mutex standalone_contexts_mutex_;
   };
@@ -1362,8 +1360,7 @@ class CollisionChecker {
 
   /* We maintain a set of all robot model instances for lookups. This vector is
    already de-duplicated and sorted. */
-  const std::vector<drake::multibody::ModelInstanceIndex>
-      robot_model_instances_;
+  const std::vector<multibody::ModelInstanceIndex> robot_model_instances_;
 
   /* The set of indices in q that kinematically affect the robot_model_instances
    but which are not themselves part of robot_model_instances (e.g., a mobile
@@ -1371,12 +1368,10 @@ class CollisionChecker {
   const std::vector<int> uncontrolled_dofs_that_kinematically_affect_the_robot_;
 
   /* Function to compute distance between two configurations. */
-  drake::planning::ConfigurationDistanceFunction
-      configuration_distance_function_;
+  ConfigurationDistanceFunction configuration_distance_function_;
 
   /* Function to interpolate between two configurations. */
-  drake::planning::ConfigurationInterpolationFunction
-      configuration_interpolation_function_;
+  ConfigurationInterpolationFunction configuration_interpolation_function_;
 
   /* Step size for edge collision checking. */
   double edge_step_size_ = 0.0;
@@ -1406,4 +1401,4 @@ class CollisionChecker {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

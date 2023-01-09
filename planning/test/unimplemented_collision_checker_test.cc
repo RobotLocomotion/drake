@@ -1,16 +1,15 @@
-#include "planning/unimplemented_collision_checker.h"
+#include "drake/planning/unimplemented_collision_checker.h"
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace {
 
 using drake::multibody::default_model_instance;
-using drake::planning::CollisionCheckerParams;
 
 class MyUnimplementedCollisionChecker : public UnimplementedCollisionChecker {
  public:
@@ -34,4 +33,4 @@ GTEST_TEST(UnimplementedCollisionCheckerTest, SmokeTest) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
