@@ -1,6 +1,7 @@
 #include "planning/collision_checker.h"
 
 #include <chrono>
+#include <map>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -14,10 +15,9 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/planning/robot_diagram_builder.h"
-#include "planning/test/planning_test_helpers.h"
-#include "planning/unimplemented_collision_checker.h"
+#include "drake/planning/unimplemented_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 // Support for easily comparing EdgeMeasurements.
@@ -39,37 +39,33 @@ std::ostream& operator<<(std::ostream& out, const EdgeMeasure& r) {
 
 namespace {
 
-using drake::CompareMatrices;
-using drake::geometry::CollisionFilterDeclaration;
-using drake::geometry::FrameId;
-using drake::geometry::GeometryId;
-using drake::geometry::GeometrySet;
-using drake::geometry::Role;
-using drake::geometry::Shape;
-using drake::geometry::Sphere;
-using drake::math::RigidTransform;
-using drake::math::RigidTransformd;
-using drake::math::RotationMatrixd;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::CoulombFriction;
-using drake::multibody::default_model_instance;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::multibody::world_model_instance;
-using drake::planning::BodyShapeDescription;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::ConfigurationDistanceFunction;
-using drake::planning::ConfigurationInterpolationFunction;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::planning::RobotDiagram;
-using drake::planning::RobotDiagramBuilder;
-using drake::systems::Context;
+#if defined(_OPENMP)
+constexpr bool kHasOpenmp = true;
+#else
+constexpr bool kHasOpenmp = false;
+#endif
+
+using geometry::CollisionFilterDeclaration;
+using geometry::FrameId;
+using geometry::GeometryId;
+using geometry::GeometrySet;
+using geometry::Role;
+using geometry::Shape;
+using geometry::Sphere;
+using math::RigidTransform;
+using math::RigidTransformd;
+using math::RotationMatrixd;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::CoulombFriction;
+using multibody::default_model_instance;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::RevoluteJoint;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using multibody::world_model_instance;
+using systems::Context;
 using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -78,6 +74,32 @@ using std::optional;
 using std::pair;
 using std::vector;
 using testing::ElementsAre;
+
+// TODO(SeanCurtis-TRI): This was pulled out of
+// anzu/planning/planning_test_helpers. As more of planning gets pulled into
+// drake, rehome this in the drake equivalent file.
+ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n,
+                            int num_geo = 1) {
+  ModelInstanceIndex instance = plant->AddModelInstance(fmt::format("m{}", n));
+  std::vector<const RigidBody<double>*> bodies;
+  for (int k = 0; k < n; ++k) {
+    bodies.push_back(
+        &plant->AddRigidBody(fmt::format("b{}", k), instance,
+                             SpatialInertia<double>::MakeUnitary()));
+    if (plant->geometry_source_is_registered()) {
+      for (int i = 0; i < num_geo; ++i) {
+        plant->RegisterCollisionGeometry(
+            *bodies.back(), RigidTransformd::Identity(), Sphere(0.01),
+            fmt::format("g{}", i), CoulombFriction<double>());
+      }
+    }
+  }
+  for (int k = 1; k < n; ++k) {
+    plant->AddJoint<RevoluteJoint>(fmt::format("j{}", k), *bodies[k - 1], {},
+                                   *bodies[k], {}, Eigen::Vector3d::UnitY());
+  }
+  return instance;
+}
 
 // Adds a new model instance consisting of a non-zero number of floating bodies.
 ModelInstanceIndex AddEnvironmentModelInstance(MultibodyPlant<double>* plant,
@@ -138,6 +160,11 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
       const std::string&, const Body<double>&, const Shape&,
       const RigidTransform<double>&) override {
     return added_shape_id_;
+  }
+
+  void DoRemoveAddedGeometries(
+      const std::vector<CollisionChecker::AddedShape>& shapes) override {
+    // Don't need to do work; just don't throw.
   }
 
   RobotClearance DoCalcContextRobotClearance(
@@ -466,6 +493,9 @@ GTEST_TEST(CollisionCheckerTest, MutableSetupModel) {
 // Calling MaxNumDistance() simply defaults to the NVI implementation; we'll
 // confirm we get back the magic number: 13.
 GTEST_TEST(CollisionCheckerTest, RobotClearance) {
+  // These tests only call the *implicit* method; they assume that the implicit
+  // method always simply calls the explicit method, so that we're testing
+  // both in one fell swoop.
   auto [robot, robot_index] =
       MakeModel({.weld_robot = false, .on_env_base = true});
   std::unique_ptr<CollisionCheckerTester> checker =
@@ -544,29 +574,35 @@ class TrivialCollisionCheckerTest : public testing::Test {
 };
 
 TEST_F(TrivialCollisionCheckerTest, ClonesAndContexts) {
-  EXPECT_NE(dut_->Clone(), nullptr);
-
   const auto count_contexts =
-      [&]() {
+      [&](CollisionChecker* checker) {
         int count{0};
         auto op = [&count](const RobotDiagram<double>&,
                            CollisionCheckerContext*) { ++count; };
-        dut_->PerformOperationAgainstAllModelContexts(op);
+        checker->PerformOperationAgainstAllModelContexts(op);
         return count;
       };
-  EXPECT_EQ(count_contexts(),
+
+  EXPECT_EQ(count_contexts(dut_.get()),
             dut_->num_allocated_contexts()
             + 1);  // prototype context
 
   // Add one standalone context.
   auto context = dut_->MakeStandaloneModelContext();
-  EXPECT_EQ(count_contexts(),
+  EXPECT_EQ(count_contexts(dut_.get()),
             dut_->num_allocated_contexts()
             + 1  // prototype context
             + 1);  // our standalone context
 
+  auto cloned = dut_->Clone();
+  EXPECT_NE(cloned, nullptr);
+  EXPECT_EQ(count_contexts(cloned.get()),
+            dut_->num_allocated_contexts()  // Allocated context count matches.
+            + 1  // prototype context
+            + 0);  // standalone context has not been carried over.
+
   context.reset();  // Give up our standalone context.
-  EXPECT_EQ(count_contexts(),
+  EXPECT_EQ(count_contexts(dut_.get()),
             dut_->num_allocated_contexts()
             + 1);  // prototype context
 }
@@ -579,14 +615,21 @@ TEST_F(TrivialCollisionCheckerTest, Padding) {
 
   EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), 0);
   EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), 0);
+  EXPECT_EQ(dut_->GetLargestPadding(), 0);
 
-  EXPECT_NO_THROW(dut_->SetPaddingBetween(BodyIndex(2), BodyIndex(3), 0.1));
+  EXPECT_NO_THROW(dut_->SetPaddingBetween(BodyIndex(2), BodyIndex(3), -0.1));
+  EXPECT_EQ(dut_->GetLargestPadding(), 0);
   EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
-  EXPECT_EQ(dut_->GetPaddingBetween(BodyIndex(2), BodyIndex(3)), 0.1);
+  EXPECT_EQ(dut_->GetPaddingBetween(BodyIndex(2), BodyIndex(3)), -0.1);
   EXPECT_NO_THROW(dut_->SetPaddingBetween(b2, b3, 0.01));
+  EXPECT_EQ(dut_->GetLargestPadding(), 0.01);
   EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
   EXPECT_EQ(dut_->GetPaddingBetween(b2, b3), 0.01);
   EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), std::nullopt);
+
+  // Padding between an object and itself is always zero.
+  EXPECT_EQ(dut_->GetPaddingBetween(b2, b2), 0);
+  EXPECT_EQ(dut_->GetPaddingBetween(b3, b3), 0);
 
   EXPECT_NO_THROW(dut_->SetPaddingBetween(BodyIndex(0), BodyIndex(3), 0.1));
   EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
@@ -594,25 +637,41 @@ TEST_F(TrivialCollisionCheckerTest, Padding) {
 
   EXPECT_NO_THROW(
       dut_->SetPaddingMatrix(Eigen::MatrixXd::Zero(nbodies, nbodies)));
+  EXPECT_EQ(dut_->GetLargestPadding(), 0);
   EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
   EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), 0);
   EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), 0);
 
+  // Confirm negative values come through.
+  EXPECT_NO_THROW(dut_->SetPaddingAllRobotEnvironmentPairs(-1));
+  EXPECT_NO_THROW(dut_->SetPaddingAllRobotRobotPairs(-2));
+  EXPECT_EQ(dut_->GetLargestPadding(), -1);
+  EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
+  EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), -1);
+  EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), -2);
+
+  // Reset.
+  EXPECT_NO_THROW(
+      dut_->SetPaddingMatrix(Eigen::MatrixXd::Zero(nbodies, nbodies)));
+
   EXPECT_NO_THROW(
       dut_->SetPaddingOneRobotBodyAllEnvironmentPairs(BodyIndex(3), 0.01));
+  EXPECT_EQ(dut_->GetLargestPadding(), 0.01);
   EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
   EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), std::nullopt);
   EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), 0);
 
-  EXPECT_NO_THROW(dut_->SetPaddingAllRobotEnvironmentPairs(0.01));
+  EXPECT_NO_THROW(dut_->SetPaddingAllRobotEnvironmentPairs(0.02));
+  EXPECT_EQ(dut_->GetLargestPadding(), 0.02);
   EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
-  EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), 0.01);
+  EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), 0.02);
   EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), 0);
 
-  EXPECT_NO_THROW(dut_->SetPaddingAllRobotRobotPairs(0.02));
+  EXPECT_NO_THROW(dut_->SetPaddingAllRobotRobotPairs(0.03));
+  EXPECT_EQ(dut_->GetLargestPadding(), 0.03);
   EXPECT_EQ(dut_->CriticizePaddingMatrix(), "");
-  EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), 0.01);
-  EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), 0.02);
+  EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), 0.02);
+  EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), 0.03);
 }
 
 // Tests the ValidatePaddingMatrix() method by exercising SetPaddingMatrix() and
@@ -629,8 +688,8 @@ TEST_F(TrivialCollisionCheckerTest, SetPaddingMatrix) {
   EXPECT_EQ(dut_->MaybeGetUniformRobotEnvironmentPadding(), 0.0);
   EXPECT_EQ(dut_->MaybeGetUniformRobotRobotPadding(), 0.0);
   Eigen::MatrixXd padding = Eigen::MatrixXd::Zero(num_bodies, num_bodies);
-  padding(1, 2) = 1;
-  padding(2, 1) = 1;
+  padding(1, 2) = -1;
+  padding(2, 1) = -1;
   padding(1, 4) = 2;
   padding(4, 1) = 2;
   ASSERT_NO_THROW(dut_->SetPaddingMatrix(padding));
@@ -735,6 +794,7 @@ TEST_F(TrivialCollisionCheckerTest, Shapes) {
   const BodyShapeDescription body_shape{sphere, {}, "m3", "b0"};
   const auto& b1 = dut_->get_body(BodyIndex(1));
   for (bool can_add : {false, true}) {
+    SCOPED_TRACE(fmt::format("Can add shapes: {}", can_add));
     dut_->SetCanAddCollisionShapes(can_add);
 
     EXPECT_EQ(dut_->AddCollisionShape("test", body_shape), can_add);
@@ -748,9 +808,31 @@ TEST_F(TrivialCollisionCheckerTest, Shapes) {
                   {{"test", expected_count}, {"test2", expected_count}})));
 
     EXPECT_EQ(
-        dut_->AddCollisionShapeToFrame("test", b1.body_frame(), sphere, {}),
+        dut_->AddCollisionShapeToFrame("test3", b1.body_frame(), sphere, {}),
         can_add);
-    EXPECT_EQ(dut_->AddCollisionShapeToBody("test", b1, sphere, {}), can_add);
+    EXPECT_EQ(dut_->AddCollisionShapeToBody("test3", b1, sphere, {}), can_add);
+
+    const std::map<std::string, std::vector<BodyShapeDescription>> all_shapes =
+        dut_->GetAllAddedCollisionShapes();
+    if (can_add) {
+      // Three groups with a number of shapes added to each group.
+      EXPECT_EQ(all_shapes.size(), 3);
+      EXPECT_EQ(all_shapes.at("test").size(), 3);
+      EXPECT_EQ(all_shapes.at("test2").size(), 1);
+      EXPECT_EQ(all_shapes.at("test3").size(), 2);
+
+      // Remove a single group by name (with multiple shapes).
+      EXPECT_NO_THROW(dut_->RemoveAllAddedCollisionShapes("test"));
+      EXPECT_EQ(dut_->GetAllAddedCollisionShapes().size(), 2);
+      EXPECT_EQ(all_shapes.at("test2").size(), 1);
+      EXPECT_EQ(all_shapes.at("test3").size(), 2);
+
+      // Remove remaining groups entirely.
+      EXPECT_NO_THROW(dut_->RemoveAllAddedCollisionShapes());
+      EXPECT_EQ(dut_->GetAllAddedCollisionShapes().size(), 0);
+    } else {
+      EXPECT_EQ(all_shapes.size(), 0);
+    }
   }
 }
 
@@ -835,7 +917,8 @@ TEST_F(TrivialCollisionCheckerTest, CheckConfigCollisionFree) {
 
 // Tests the ValidateFilteredCollisionMatrix() method by exercising
 // SetCollisionFilterMatrix() and passing otherwise invalid filtered
-// specifications.
+// specifications. Other APIs that attempt to manipulate the matrix are covered
+// in their own tests (including their failure conditions).
 TEST_F(TrivialCollisionCheckerTest, SetCollisionFilterMatrix) {
   const int num_bodies = dut_->plant().num_bodies();
   // Bodies 1, 2, 3 are robot bodies and bodies 4 and 5 are environment (and
@@ -1007,7 +1090,7 @@ TEST_F(TrivialCollisionCheckerTest, CollisionFiltersNominal) {
 
   {
     // Underlying model has collision filters added, but nothing welded;
-    // should be -1s and 0, except for where the collision filter has been
+    // should be -1s and 0s, except for where the collision filter has been
     // specified.
     auto [robot, robot_index] = MakeModel({.weld_robot = false});
     auto& scene_graph = robot->mutable_scene_graph();
@@ -1052,7 +1135,7 @@ TEST_F(TrivialCollisionCheckerTest, CollisionFiltersNominal) {
 
     DRAKE_EXPECT_THROWS_MESSAGE(
         MakeUnallocatedChecker(move(robot), {robot_index}),
-        ".*filtering between body .+ is inconsistent");
+        ".*SceneGraph's collision filters .+ are not homogeneous.*");
   }
 }
 
@@ -1074,14 +1157,24 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilteredBetween) {
   // override delegates to it.
 
   {
-    // Trying to set collision filters between environment bodies. It always
-    // throws.
+    // Error conditions.
+    // Both bodies are environment bodies.
     DRAKE_EXPECT_THROWS_MESSAGE(
         dut_->SetCollisionFilteredBetween(b[0], b[4], true),
         ".* cannot be used on pairs of environment bodies.*");
     DRAKE_EXPECT_THROWS_MESSAGE(
         dut_->SetCollisionFilteredBetween(b[0], b[4], false),
         ".* cannot be used on pairs of environment bodies.*");
+
+    // Out of range indices.
+    EXPECT_THROW(dut_->SetCollisionFilteredBetween(b[0], BodyIndex(10), true),
+                 std::exception);
+    EXPECT_THROW(dut_->SetCollisionFilteredBetween(BodyIndex(10), b[0], true),
+                 std::exception);
+
+    // Trying to set filter on a robot body with itself.
+    EXPECT_THROW(dut_->SetCollisionFilteredBetween(b[1], b[1], true),
+                 std::exception);
   }
 
   {
@@ -1197,7 +1290,7 @@ TEST_F(TrivialCollisionCheckerTest, IsCollisionFilteredBetween) {
   // exploit the fact that the overload that takes bodies delegates to the
   // body index overload tested above.
   EXPECT_TRUE(dut_->IsCollisionFilteredBetween(dut_->get_body(BodyIndex(1)),
-                                              dut_->get_body(BodyIndex(3))));
+                                               dut_->get_body(BodyIndex(3))));
 }
 
 // Creates a checker on a plant with an N-link chain (optionally) welded to the
@@ -1374,8 +1467,7 @@ GTEST_TEST(EdgeCheckTest, DefaultInterpolation) {
   auto get_interpolated = [&](double s) {
     const Vector3d p_InitS = p_InitFinal * s;
     const RigidTransformd X_InitS(
-        RotationMatrixd(AngleAxisd(init_final_theta * s, rot_axis_W)),
-        p_InitFinal * s);
+        RotationMatrixd(AngleAxisd(init_final_theta * s, rot_axis_W)), p_InitS);
     const RigidTransformd X_WS = X_WB0_init * X_InitS;
     const double j12_s = j12_init + s * (j12_final - j12_init);
     return get_q(X_WS, j12_s);
@@ -1395,7 +1487,7 @@ GTEST_TEST(EdgeCheckTest, DefaultInterpolation) {
   }
 }
 
-// The configuration of a test case for the MeasureEdgeCollisionFree* APIS.
+// The configuration of a test case for the MeasureEdgeCollisionFree* APIs.
 struct EdgeTestConfig {
   // The expected interpolant value (in the range [0, 1]) returned by
   // MeasureEdgeCollisionFree(). If this is negative, we'll simply test for an
@@ -1411,6 +1503,8 @@ struct EdgeTestConfig {
 };
 
 std::ostream& operator<<(std::ostream& out, const EdgeTestConfig& c) {
+  // Note: no spaces because we are using this as a gtest parameterized test
+  // name.
   out << "EdgeTestWith" << c.alpha << "AlphaIn"
       << (c.parallel ? "Parallel" : "Serial");
   return out;
@@ -1438,7 +1532,9 @@ class ParameterizedEdgeCheckTest
 // end configuration. No geometry is required and we only need enough bodies in
 // the plant to provide sufficient robot dofs to hold the encoding.
 //
-// The collision check is based on the current plant configuration.
+// The collision check is based on the current plant configuration. The desired
+// outcome is encoded in the configuration values as:
+//
 //   q[0]: The largest interpolant value that is still "collision
 //         free". This is the expected return value. It is designed to be
 //         exactly equal to the value of alpha that would be computed by
@@ -1448,6 +1544,12 @@ class ParameterizedEdgeCheckTest
 //         configuration is in collision if q[0] < s <= q[1].
 //   q[2]: The interpolant value at which this configuration was generated. This
 //         is defined by the interpolating function.
+//
+// In other words, for interpolant 0 <= s <= 1 (where s is given in q[2]):
+//
+//     - s <= q[0]        --> collision free.
+//     - q[0] < s <= q[1] --> in collision.
+//     - q[1] < s         --> collision free.
 //
 // The configuration interpolator is responsible for providing the encoding to
 // the collision check. The "interpolation" simply copies q[0] and q[1] into the
@@ -1492,7 +1594,10 @@ class MockEdgeChecker : public UnimplementedCollisionChecker {
   // Force five samples based on the given `step_size`.
   static ConfigurationDistanceFunction MakeEdgeDistance(double step_size) {
     return [step_size](const VectorXd& q1, const VectorXd& q2) {
-      // f(q, q) = 0 is a requirement of CollisionChecker.
+      // f(q, q) = 0 is a requirement of CollisionChecker and gets validated
+      // when the function is set in the checker. That is the only time this
+      // function will be evaluated with |q1| = 0, so we'll game the system to
+      // convince the checker this is a valid distance function.
       if (q1.norm() == 0.0) return 0.0;
       // This *guarantees* four steps without recourse to numerical errors. Four
       // steps --> five samples.
@@ -1564,6 +1669,11 @@ std::vector<EdgeTestConfig> MakeEdgeTestCases() {
   const double divisor = static_cast<double>(MockEdgeChecker::kNumSamples - 1);
 
   for (const bool in_parallel : {true, false}) {
+    if (in_parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
+
     // Edges are 100% valid.
     configs.push_back({.alpha = 1.0,
                        .last_colliding_alpha = 2.0,
@@ -1706,9 +1816,12 @@ TEST_P(ParameterizedEdgeCheckTest, CheckEdgeCollisionFree) {
   EXPECT_EQ(result, expected_result);
   if (config.parallel) {
     if (config.alpha >= 0.5 && config.alpha < 1.0) {
-      // If 0.5 <= expected_result < 1.0, then the colliding range includes q2.
-      // For the parallel implementation, we should fail fast and never enter
-      // the parallel regime.
+      // If 0.5 <= expected_result < 1.0, then the colliding range includes q2
+      // (due to the fact that there are five samples, each 0.25 away from
+      // each other and that q[0] and q[1] are two samples away from each
+      // other).
+      // For the parallel implementation, we should fail fast on q2 and never
+      // enter the parallel regime.
       EXPECT_EQ(dut.thread_count(), 1);
     } else {
       EXPECT_GT(dut.thread_count(), 1);
@@ -1716,7 +1829,7 @@ TEST_P(ParameterizedEdgeCheckTest, CheckEdgeCollisionFree) {
   }
 }
 
-// The test for CheckEdgesCollisionFree() (plural) uses
+// The test for MeasureEdgesCollisionFree() (plural) uses
 // MeasureEdgeCollisionFree() (singular) to test individual edges. For this
 // function, we only need to test:
 //
@@ -1734,9 +1847,13 @@ GTEST_TEST(EdgeCheckTest, MeasureMultipleEdges) {
   // Garbage start configuration; the values are ignored.
   const VectorXd q_start = VectorXd::Constant(q_size, 0.75);
   // All edges start from the same configuration, q_start. The end configuration
-  // gets encoded by MockEdgeChecker. Note: we know that we're getting five
-  // samples so the distance between values of alpha is 0.25. So, to make sure
-  // *two* samples are in collision, the last colliding alpha should be the
+  // gets encoded by MockEdgeChecker.
+  // Note: we want to make sure that the parallel collision checker properly
+  // reconciles multiple internal colliding configurations, reporting the
+  // earliest. To test that, we need two colliding internal samples. We know
+  // that we're getting five samples (by design) so the distance between values
+  // of alpha is 0.25. So, to make sure *two* samples are in collision, the last
+  // *colliding* alpha should be *two* samples values beyond the last free, or
   // last free + 0.5.
   vector<std::pair<VectorXd, VectorXd>> edges;
   // 100% clear.
@@ -1756,6 +1873,10 @@ GTEST_TEST(EdgeCheckTest, MeasureMultipleEdges) {
       EdgeMeasure(edge_dist, edges[2].second(0))};
 
   for (const bool parallel : {false, true}) {
+    if (parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
     auto dut = MakeEdgeChecker<MockEdgeChecker>(calc_dist, step_size, interp,
                                                 true /* welded */, q_size + 1);
     ASSERT_EQ(dut.plant().num_positions(), q_size);
@@ -1807,11 +1928,15 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
   // Later collision.
   edges.emplace_back(q_start,
                      MockEdgeChecker::EncodeConfiguration(q_size, 0.75, 1.25));
-  const vector<int8_t> expected_results{edges[0].second(0) == 1.0,
-                                        edges[1].second(0) == 1.0,
-                                        edges[2].second(0) == 1.0};
+  const vector<uint8_t> expected_results{edges[0].second(0) == 1.0,
+                                         edges[1].second(0) == 1.0,
+                                         edges[2].second(0) == 1.0};
 
   for (const bool parallel : {false, true}) {
+    if (parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
     auto dut = MakeEdgeChecker<MockEdgeChecker>(calc_dist, step_size, interp,
                                                 true /* welded */, q_size + 1);
     ASSERT_EQ(dut.plant().num_positions(), q_size);
@@ -1823,8 +1948,7 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
       ASSERT_TRUE(dut.CanEvaluateInParallel());
     }
 
-    vector<int8_t> results =
-        dut.CheckEdgesCollisionFree(edges, parallel);
+    vector<uint8_t> results = dut.CheckEdgesCollisionFree(edges, parallel);
 
     // Confirm behavior (1). Results for every edge.
     EXPECT_EQ(results, expected_results);
@@ -1869,4 +1993,4 @@ GTEST_TEST(EdgeMeasureTest, Test) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
