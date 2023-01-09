@@ -1,6 +1,6 @@
 #pragma once
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** The measure of the distance of the edge from q1 to q2 and the portion of
@@ -85,4 +85,4 @@ class EdgeMeasure {
 };
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

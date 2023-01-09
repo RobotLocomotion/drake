@@ -14,10 +14,9 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/planning/robot_diagram_builder.h"
-#include "planning/test/planning_test_helpers.h"
-#include "planning/unimplemented_collision_checker.h"
+#include "drake/planning/unimplemented_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 // Support for easily comparing EdgeMeasurements.
@@ -39,37 +38,33 @@ std::ostream& operator<<(std::ostream& out, const EdgeMeasure& r) {
 
 namespace {
 
-using drake::CompareMatrices;
-using drake::geometry::CollisionFilterDeclaration;
-using drake::geometry::FrameId;
-using drake::geometry::GeometryId;
-using drake::geometry::GeometrySet;
-using drake::geometry::Role;
-using drake::geometry::Shape;
-using drake::geometry::Sphere;
-using drake::math::RigidTransform;
-using drake::math::RigidTransformd;
-using drake::math::RotationMatrixd;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::CoulombFriction;
-using drake::multibody::default_model_instance;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::multibody::world_model_instance;
-using drake::planning::BodyShapeDescription;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::ConfigurationDistanceFunction;
-using drake::planning::ConfigurationInterpolationFunction;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::planning::RobotDiagram;
-using drake::planning::RobotDiagramBuilder;
-using drake::systems::Context;
+#if defined(_OPENMP)
+constexpr bool kHasOpenmp = true;
+#else
+constexpr bool kHasOpenmp = false;
+#endif
+
+using geometry::CollisionFilterDeclaration;
+using geometry::FrameId;
+using geometry::GeometryId;
+using geometry::GeometrySet;
+using geometry::Role;
+using geometry::Shape;
+using geometry::Sphere;
+using math::RigidTransform;
+using math::RigidTransformd;
+using math::RotationMatrixd;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::CoulombFriction;
+using multibody::default_model_instance;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::RevoluteJoint;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using multibody::world_model_instance;
+using systems::Context;
 using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -78,6 +73,33 @@ using std::optional;
 using std::pair;
 using std::vector;
 using testing::ElementsAre;
+
+
+// TODO(SeanCurtis-TRI): This was pulled out of
+// anzu/planning/planning_test_helpers. As more of planning gets pulled into
+// drake, rehome this in the drake equivalent file.
+ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n,
+                            int num_geo = 1) {
+  ModelInstanceIndex instance = plant->AddModelInstance(fmt::format("m{}", n));
+  std::vector<const RigidBody<double>*> bodies;
+  for (int k = 0; k < n; ++k) {
+    bodies.push_back(
+        &plant->AddRigidBody(fmt::format("b{}", k), instance,
+                             SpatialInertia<double>::MakeUnitary()));
+    if (plant->geometry_source_is_registered()) {
+      for (int i = 0; i < num_geo; ++i) {
+        plant->RegisterCollisionGeometry(
+            *bodies.back(), RigidTransformd::Identity(), Sphere(0.01),
+            fmt::format("g{}", i), CoulombFriction<double>());
+      }
+    }
+  }
+  for (int k = 1; k < n; ++k) {
+    plant->AddJoint<RevoluteJoint>(fmt::format("j{}", k), *bodies[k - 1], {},
+                                   *bodies[k], {}, Eigen::Vector3d::UnitY());
+  }
+  return instance;
+}
 
 // Adds a new model instance consisting of a non-zero number of floating bodies.
 ModelInstanceIndex AddEnvironmentModelInstance(MultibodyPlant<double>* plant,
@@ -1374,8 +1396,7 @@ GTEST_TEST(EdgeCheckTest, DefaultInterpolation) {
   auto get_interpolated = [&](double s) {
     const Vector3d p_InitS = p_InitFinal * s;
     const RigidTransformd X_InitS(
-        RotationMatrixd(AngleAxisd(init_final_theta * s, rot_axis_W)),
-        p_InitFinal * s);
+        RotationMatrixd(AngleAxisd(init_final_theta * s, rot_axis_W)), p_InitS);
     const RigidTransformd X_WS = X_WB0_init * X_InitS;
     const double j12_s = j12_init + s * (j12_final - j12_init);
     return get_q(X_WS, j12_s);
@@ -1564,6 +1585,11 @@ std::vector<EdgeTestConfig> MakeEdgeTestCases() {
   const double divisor = static_cast<double>(MockEdgeChecker::kNumSamples - 1);
 
   for (const bool in_parallel : {true, false}) {
+    if (in_parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
+
     // Edges are 100% valid.
     configs.push_back({.alpha = 1.0,
                        .last_colliding_alpha = 2.0,
@@ -1756,6 +1782,10 @@ GTEST_TEST(EdgeCheckTest, MeasureMultipleEdges) {
       EdgeMeasure(edge_dist, edges[2].second(0))};
 
   for (const bool parallel : {false, true}) {
+    if (parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
     auto dut = MakeEdgeChecker<MockEdgeChecker>(calc_dist, step_size, interp,
                                                 true /* welded */, q_size + 1);
     ASSERT_EQ(dut.plant().num_positions(), q_size);
@@ -1812,6 +1842,10 @@ GTEST_TEST(EdgeCheckTest, CheckMultipleEdgesFree) {
                                         edges[2].second(0) == 1.0};
 
   for (const bool parallel : {false, true}) {
+    if (parallel & !kHasOpenmp) {
+      // We don't have OpenMP in all test configurations.
+      continue;
+    }
     auto dut = MakeEdgeChecker<MockEdgeChecker>(calc_dist, step_size, interp,
                                                 true /* welded */, q_size + 1);
     ASSERT_EQ(dut.plant().num_positions(), q_size);
@@ -1869,4 +1903,4 @@ GTEST_TEST(EdgeMeasureTest, Test) {
 
 }  // namespace
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
