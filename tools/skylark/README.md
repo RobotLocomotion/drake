@@ -23,13 +23,15 @@ Can either be None, or else an integer.
 
 When None or 1, adds `OMP_NUM_THREADS="1"` to `env` to disable OpenMP.
 
-When N>1, adds `OMP_NUM_THREADS="N"` to `env` to establish OpenMP's
-desired level of parallelism, and also adds "cpu:N" to `tags` to reserve
-sufficient CPUs for the test.
+When N>1, adds `OMP_NUM_THREADS="N"` to `env` to allow for the desired level of
+parallelism, and also adds "cpu:N" to `tags` to reserve sufficient CPUs for the
+test. Those changes are a *necessary* but not *sufficient* condition to enable
+actual CPU parallelism while running the test. In addition, the overall build
+must also have OpenMP enabled, via --config=omp or --config=everything.
 
-Note that setting N>1 will also be applied to any sub-processes that
-are launched by your test program.  Ask for help on Slack if you need
-this flag to work correctly in the presence of sub-processes.
+Note that setting N>1 will also be applied to any sub-processes that are
+launched by your test program.  Ask for help on Slack if you need this flag to
+work correctly in the presence of sub-processes.
 
 (Aside: Besides OMP_NUM_THREADS, the function also sets several other
 environment variables using alternative spellings of the same concept;
