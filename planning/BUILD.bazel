@@ -15,12 +15,14 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":body_shape_description",
+        ":collision_checker",
         ":collision_checker_context",
         ":collision_checker_params",
         ":robot_clearance",
         ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
+        ":unimplemented_collision_checker",
     ],
 )
 
@@ -32,6 +34,29 @@ drake_cc_library(
         "//common:essential",
         "//geometry",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_checker",
+    srcs = ["collision_checker.cc"],
+    hdrs = [
+        "collision_checker.h",
+        "edge_measure.h",
+    ],
+    interface_deps = [
+        ":body_shape_description",
+        ":collision_checker_context",
+        ":collision_checker_params",
+        ":robot_clearance",
+        ":robot_collision_type",
+        ":robot_diagram_builder",
+        "//common:essential",
+        "//geometry",
+        "//multibody/plant",
+    ],
+    deps = [
+        "@common_robotics_utilities",
     ],
 )
 
@@ -97,6 +122,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "unimplemented_collision_checker",
+    srcs = ["unimplemented_collision_checker.cc"],
+    hdrs = ["unimplemented_collision_checker.h"],
+    deps = [
+        ":collision_checker",
+        ":collision_checker_params",
+    ],
+)
+
 drake_cc_googletest(
     name = "body_shape_description_test",
     deps = [
@@ -104,6 +139,18 @@ drake_cc_googletest(
         ":robot_diagram_builder",
         "//multibody/parsing",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_googletest(
+    name = "collision_checker_test",
+    num_threads = 2,
+    deps = [
+        ":collision_checker",
+        ":unimplemented_collision_checker",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "@common_robotics_utilities",
     ],
 )
 
@@ -139,6 +186,14 @@ drake_cc_googletest(
     deps = [
         ":robot_diagram",
         ":robot_diagram_builder",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "unimplemented_collision_checker_test",
+    deps = [
+        ":unimplemented_collision_checker",
         "//common/test_utilities:expect_throws_message",
     ],
 )
