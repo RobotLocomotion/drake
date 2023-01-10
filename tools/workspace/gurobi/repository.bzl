@@ -17,7 +17,7 @@ def _find_latest(repo_ctx, path, prefix, subdir):
                 version = int(d.basename[len(prefix):])
                 if best_version == None or version > best_version:
                     best_version = version
-                    best_dir = full_dir.realpath
+                    best_dir = str(full_dir.realpath)
 
     return best_dir or (path + "/" + prefix + "-notfound/" + subdir)
 
