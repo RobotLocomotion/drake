@@ -150,7 +150,7 @@ class SpatialInertia {
   ///   an equal moment of inertia about any line that both passes through Bo
   ///   and is perpendicular to unit_vector.
   /// @throws std::exception if r or l is zero or negative.
-  /// @pre The magnitude of unit_vector should be nearly 1: ‖unit_vector‖ ≈ 1.
+  /// @pre ‖unit_vector‖ ≈ 1 (magnitude of unit_vector should be nearly 1.0).
   static SpatialInertia<T> SolidCapsuleWithDensity(
       const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
