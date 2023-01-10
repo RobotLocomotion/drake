@@ -64,7 +64,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
   }
   // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
   // UnitInertia::SolidCylinder() normalizes unit_vector before its use.
-  // TODO(Mitiguy) remove normalization in UnitInertia::SolidCapsule().
+  // TODO(Mitiguy) remove normalization in UnitInertia::SolidCylinder().
   using std::abs;
   constexpr double kTolerance = 128 * std::numeric_limits<double>::epsilon();
   if (abs(unit_vector.squaredNorm() - 1) > kTolerance) {
