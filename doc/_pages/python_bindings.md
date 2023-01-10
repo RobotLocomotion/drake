@@ -42,7 +42,7 @@ python3 -c 'import pydrake.all; print(pydrake.__file__)'
 ```
 
 <div class="note" markdown="1">
-If you are using Gurobi, you must either have it installed in the suggested location under `/opt/...` mentioned in Gurobi 9.5.1, or you must ensure that you define the `${GUROBI_HOME}` environment variable, or specify `${GUROBI_INCLUDE_DIR}` via CMake.
+If you are using Gurobi, you must either have it installed in the suggested location under `/opt/...` mentioned in Gurobi 9.5, or you must ensure that you define the `${GUROBI_HOME}` environment variable, or specify `${GUROBI_INCLUDE_DIR}` via CMake.
 </div>
 
 
