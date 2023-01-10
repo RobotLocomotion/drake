@@ -114,6 +114,14 @@ drake_cc_library(
     ],
 )
 
+drake_cc_googletest(
+    name = "detail_sdf_diagnostic_test",
+    deps = [
+        ":detail_sdf_diagnostic",
+        ":diagnostic_policy_test_base",
+    ],
+)
+
 drake_cc_library(
     name = "detail_sdf_geometry",
     srcs = ["detail_sdf_geometry.cc"],
