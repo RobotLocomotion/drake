@@ -83,18 +83,21 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
   // Ensure a negative or zero length, width, or height throws an exception.
+  // There is not an exhaustive test of each parameter being zero or negative.
+  // Instead, each parameter is tested with a single bad value and we assume a
+  // single value sufficiently tests the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, 0, ly, lz),
-      "[^]* A solid box's length lx = .* or width ly = .* or height lz = .* "
-      "is negative or zero.");
+      "[^]* A length dimension of a solid box is negative or zero: "
+      "(.*, .*, .*).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, ly, -0.1, lz),
-      "[^]* A solid box's length lx = .* or width ly = .* or height lz = .* "
-      "is negative or zero.");
+      "[^]* A length dimension of a solid box is negative or zero: "
+      "(.*, .*, .*).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, ly, ly, -1E-15),
-      "[^]* A solid box's length lx = .* or width ly = .* or height lz = .* "
-      "is negative or zero.");
+      "[^]* A length dimension of a solid box is negative or zero: "
+      "(.*, .*, .*).");
 }
 
 // Tests the static method for the spatial inertia of a solid capsule.
@@ -125,20 +128,17 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
   // Ensure a negative or zero radius or length throws an exception.
+  // There is not an exhaustive test of each parameter being zero or negative.
+  // Instead, each parameter is tested with a single bad value and we assume a
+  // single value sufficiently tests the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCapsuleWithDensity(density, 0, l, unit_vec),
-      "[^]* A solid capsule's radius r = .* or length l = .* "
+      "[^]* A solid capsule's radius = .* or length = .* "
       "is negative or zero.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCapsuleWithDensity(density, r, -2, unit_vec),
-      "[^]* A solid capsule's radius r = .* or length l = .* "
+      "[^]* A solid capsule's radius = .* or length = .* "
       "is negative or zero.");
-
-  // Ensure a bad unit vector throws an exception.
-  const Vector3<double> bad_vec(1, 0.1, 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCapsuleWithDensity(density, r, l, bad_vec),
-      "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
 // Tests the static method for the spatial inertia of a solid cylinder.
@@ -169,15 +169,18 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
   // Ensure a negative or zero radius or length throws an exception.
+  // There is not an exhaustive test of each parameter being zero or negative.
+  // Instead, each parameter is tested with a single bad value and we assume a
+  // single value sufficiently tests the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(density, 0, l, unit_vec),
-      "[^]* A solid cylinder's radius r = .* or length l = .* "
+      "[^]* A solid cylinder's radius = .* or length = .* "
       "is negative or zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(density,
           -0.1, l, unit_vec),
-      "[^]* A solid cylinder's radius r = .* or length l = .* "
+      "[^]* A solid cylinder's radius = .* or length = .* "
       "is negative or zero.");
 
   // Ensure a bad unit vector throws an exception.
@@ -203,18 +206,21 @@ GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
-  // Ensure a negative or zero semi-diameter (½ length) throws an exception.
+  // Ensure a negative or zero semi-axis length throws an exception.
+  // There is not an exhaustive test of each parameter being zero or negative.
+  // Instead, each parameter is tested with a single bad value and we assume a
+  // single value sufficiently tests the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, 0, b, c),
-      "[^]* A solid ellipsoid's semi-diameter a = .* or b = .* or c = .* "
+      "[^]* A solid ellipsoid's semi-axis a = .* or b = .* or c = .* "
       "is negative or zero.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, -2, c),
-      "[^]* A solid ellipsoid's semi-diameter a = .* or b = .* or c = .* "
+      "[^]* A solid ellipsoid's semi-axis a = .* or b = .* or c = .* "
       "is negative or zero.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, -0.01),
-      "[^]* A solid ellipsoid's semi-diameter a = .* or b = .* or c = .* "
+      "[^]* A solid ellipsoid's semi-axis a = .* or b = .* or c = .* "
       "is negative or zero.");
 }
 
@@ -232,13 +238,13 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
-  // Ensure a negative or zero semi-diameter (½ length) throws an exception.
+  // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithDensity(density, 0),
-      "[^]* A solid sphere's radius r = .* is negative or zero.");
+      "[^]* A solid sphere's radius = .* is negative or zero.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithDensity(density, -0.2),
-      "[^]* A solid sphere's radius r = .* is negative or zero.");
+      "[^]* A solid sphere's radius = .* is negative or zero.");
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a

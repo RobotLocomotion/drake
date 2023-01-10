@@ -20,11 +20,12 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
     const T& density, const T& lx, const T& ly, const T& lz) {
   // Ensure lx, ly, lz are positive.
   if (lx <= 0 || ly <= 0 || lz <= 0) {
-    std::string error_message = fmt::format("{}(): A solid box's length "
-      "lx = {} or width ly = {}, or height lz = {}  is negative or zero.",
+    std::string error_message = fmt::format("{}(): A length dimension of a "
+    "solid box is negative or zero: ({}, {}, {}).",
       __func__, lx, ly, lz);
     throw std::logic_error(error_message);
   }
+
   const T volume = lx * ly * lz;
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
@@ -38,17 +39,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
   // Ensure r and l are positive.
   if (r <= 0 || l <= 0) {
     std::string error_message = fmt::format("{}(): A solid capsule's "
-      "radius r = {} or length l = {} is negative or zero.", __func__, r, l);
-    throw std::logic_error(error_message);
-  }
-  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
-  // UnitInertia::SolidCapsule() normalizes unit_vector before its use.
-  using std::abs;
-  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
-  if (abs(unit_vector.norm() - 1) > kTolerance) {
-    // ‖unit_vector‖ is not within 6 bits of 1.0 (2^6 = 64).
-    std::string error_message = fmt::format("{}(): The unit_vector argument "
-      "{} is not a unit vector.", __func__, unit_vector.transpose());
+      "radius = {} or length = {} is negative or zero.", __func__, r, l);
     throw std::logic_error(error_message);
   }
 
@@ -68,15 +59,18 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
   // Ensure r and l are positive.
   if (r <= 0 || l <= 0) {
     std::string error_message = fmt::format("{}(): A solid cylinder's "
-      "radius r = {} or length l = {} is negative or zero.", __func__, r, l);
+      "radius = {} or length = {} is negative or zero.", __func__, r, l);
     throw std::logic_error(error_message);
   }
   // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
   // UnitInertia::SolidCylinder() normalizes unit_vector before its use.
+  // TODO(Mitiguy) remove normalization in UnitInertia::SolidCapsule().
   using std::abs;
-  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
-  if (abs(unit_vector.norm() - 1) > kTolerance) {
-    // ‖unit_vector‖ is not within 6 bits of 1.0 (2^6 = 64).
+  constexpr double kTolerance = 128 * std::numeric_limits<double>::epsilon();
+  if (abs(unit_vector.squaredNorm() - 1) > kTolerance) {
+    // If ‖unit_vector‖² is not within 7 bits of 1.0 (2^7 = 128), it means
+    //    ‖unit_vector‖  is not within 6 bits of 1.0 (2^6 = 64). This follows
+    // from the fact that for an arbitrary vector 𝐯, ‖𝐯‖ = √(𝐯⋅𝐯).
     std::string error_message = fmt::format("{}(): The unit_vector argument "
       "{} is not a unit vector.", __func__, unit_vector.transpose());
     throw std::logic_error(error_message);
@@ -95,7 +89,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
   // Ensure a, b, c are positive.
   if (a <= 0 || b <= 0 || c <= 0) {
     std::string error_message = fmt::format("{}(): A solid ellipsoid's "
-      "semi-diameter a = {} or b = {} or c = {} is negative or zero.",
+      "semi-axis a = {} or b = {} or c = {} is negative or zero.",
       __func__, a, b, c);
     throw std::logic_error(error_message);
   }
@@ -112,7 +106,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
   // Ensure r is positive.
   if (r <= 0) {
     std::string error_message = fmt::format("{}(): A solid sphere's "
-      "radius r = {} is negative or zero.", __func__, r);
+      "radius = {} is negative or zero.", __func__, r);
     throw std::logic_error(error_message);
   }
   const T volume = (4.0 / 3.0) * M_PI * r * r * r;  // 4/3 π r³
