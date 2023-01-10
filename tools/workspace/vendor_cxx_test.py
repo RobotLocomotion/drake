@@ -60,12 +60,16 @@ class TestVendorCxx(unittest.TestCase):
             '#define FOO \\',
             '   foo',          # This line looks like code, but it isn't.
             'int foo();',
+            '// A no-op preprocessor directive:',
+            '#',
         ], [
             '#define FOO \\',
             '   foo',
             self._open,
             'int foo();',
             self._close,
+            '// A no-op preprocessor directive:',
+            '#',
         ])
 
     def test_include_guard(self):
@@ -101,12 +105,12 @@ class TestVendorCxx(unittest.TestCase):
     def test_edit_include(self):
         self._check([
             '#include "somelib/somefile.h"',
-            '#include <somelib/otherfile.h>',
+            '#  include <somelib/otherfile.h>',
             '#include <unrelated/thing.h>',
             'int foo();',
         ], [
             '#include "drake_vendor/somelib/somefile.h"',
-            '#include <drake_vendor/somelib/otherfile.h>',
+            '#  include <drake_vendor/somelib/otherfile.h>',
             '#include <unrelated/thing.h>',
             self._open,
             'int foo();',

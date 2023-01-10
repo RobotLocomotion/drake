@@ -1,0 +1,61 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
+
+licenses(["notice"])  # BSL-1.0
+
+# These upstream headers should not have the vendoring namespace added. They
+# are too complicated for the vendor_cxx tool to process, and don't actually
+# contain any meaningful C++ code anyway.
+_HDRS_NO_VENDOR = [
+    "include/msgpack/sysdep.hpp",
+]
+
+cc_library(
+    name = "hdrs_no_vendor",
+    hdrs = _HDRS_NO_VENDOR,
+    strip_include_prefix = "include",
+    include_prefix = "drake_vendor",
+)
+
+# The upstream headers that we'll use.
+_HDRS = [
+    "include/msgpack.hpp",
+] + glob([
+    "include/msgpack/**/*.h",
+    "include/msgpack/**/*.hpp",
+], exclude = _HDRS_NO_VENDOR, allow_empty = False)
+
+cc_library_vendored(
+    name = "msgpack",
+    hdrs = _HDRS,
+    defines = ["MSGPACK_NO_BOOST"],
+    hdrs_vendored = [
+        x.replace("include/", "drake_src/drake_vendor/")
+        for x in _HDRS
+    ],
+    edit_include = {
+        "msgpack/": "drake_vendor/msgpack/",
+    },
+    includes = ["drake_src"],
+    linkstatic = 1,
+    deps = [":hdrs_no_vendor"],
+    visibility = ["//visibility:public"],
+)
+
+install(
+    name = "install",
+    docs = [
+        "COPYING",
+        "LICENSE_1_0.txt",
+        "NOTICE",
+    ],
+    visibility = ["//visibility:public"],
+)
