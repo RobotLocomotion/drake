@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
@@ -340,6 +341,12 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
                               I_capsule_expected.get_moments(), kEpsilon));
   EXPECT_TRUE(CompareMatrices(I_capsule.get_products(),
                               I_capsule_expected.get_products(), kEpsilon));
+
+  // Ensure a bad unit vector throws an exception.
+  const Vector3<double> bad_vec(1, 0.1, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      UnitInertia<double>::SolidCapsule(r, L, bad_vec),
+      "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
 // Tests a degenerate capsule (into sphere) has the same unit inertia as a

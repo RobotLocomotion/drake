@@ -20,13 +20,22 @@ UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
     const Vector3<T>& unit_vector) {
-  // Ensure r and L are non-negative and ‖unit_vector‖ is within 6 bits of 1.0.
-  // Note: UnitInertia::AxiallySymmetric() normalizes unit_vector before use.
-  using std::abs;
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
-  DRAKE_THROW_UNLESS(abs(unit_vector.norm() - 1) <=
-    64 * std::numeric_limits<double>::epsilon());
+
+  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
+  // UnitInertia::AxiallySymmetric() (below) normalizes unit_vector before use.
+  using std::abs;
+  constexpr double kTolerance = 128 * std::numeric_limits<double>::epsilon();
+  if (abs(unit_vector.squaredNorm() - 1) > kTolerance) {
+    // Ensure ‖unit_vector‖ is within 6 bits of 1.0.
+    // If ‖unit_vector‖² is not within 7 bits of 1.0 (2^7 = 128), it means
+    //    ‖unit_vector‖  is not within 6 bits of 1.0 (2^6 = 64). This follows
+    // from the fact that for an arbitrary vector 𝐯, ‖𝐯‖ = √(𝐯⋅𝐯).
+    std::string error_message = fmt::format("{}(): The unit_vector argument "
+      "{} is not a unit vector.", __func__, unit_vector.transpose());
+    throw std::logic_error(error_message);
+  }
 
   // A special case is required for r = 0 because r = 0 creates a zero volume
   // capsule (and we divide by volume later on). No special case for L = 0 is

@@ -31,9 +31,12 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
 // Asserts that the given spatial inertia is equivalent to the given mass
 // properties, i.e., mass, position vector, and unit inertia.
 ::testing::AssertionResult SpatialInertiasEqual(
-    const SpatialInertia<double>& dut, const double mass,
-    const Vector3d& p_SScm, const UnitInertia<double>& G_SScm_S,
+    const SpatialInertia<double>& dut,
+    const SpatialInertia<double>& M_expected,
     double tolerance = 0.0) {
+  const double mass = M_expected.get_mass();
+  const Vector3<double> p_BoBcm_B = M_expected.get_com();
+  const UnitInertia<double> G_BBo_B = M_expected.get_unit_inertia();
   if (std::abs(mass - dut.get_mass()) > tolerance) {
     return ::testing::AssertionFailure()
            << "Expected equal masses\n"
@@ -43,13 +46,13 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
            << "  is greater than tolerance: " << tolerance << "\n";
   }
   ::testing::AssertionResult result =
-      CompareMatrices(dut.get_com(), p_SScm, tolerance);
+      CompareMatrices(dut.get_com(), p_BoBcm_B, tolerance);
   if (!result) return result;
-  if (!dut.get_unit_inertia().IsNearlyEqualTo(G_SScm_S, tolerance)) {
+  if (!dut.get_unit_inertia().IsNearlyEqualTo(G_BBo_B, tolerance)) {
     return ::testing::AssertionFailure()
            << "Expected equal unit inertias\n"
            << "  expected\n"
-           << G_SScm_S << "\n"
+           << G_BBo_B << "\n"
            << "  tested\n"
            << dut.get_unit_inertia() << "\n"
            << "  with tolerance: " << tolerance << "\n"
@@ -59,16 +62,6 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
   return ::testing::AssertionSuccess();
 }
 
-// Asserts that the two spatial inertias are equivalent to within tolerance.
-::testing::AssertionResult SpatialInertiasEqual(
-    const SpatialInertia<double>& dut,
-    const SpatialInertia<double>& M_expected,
-    double tolerance) {
-  const double mass = M_expected.get_mass();
-  const Vector3<double> p_BoBcm = M_expected.get_com();
-  const UnitInertia<double> G_BBo = M_expected.get_unit_inertia();
-  return SpatialInertiasEqual(dut, mass, p_BoBcm, G_BBo, tolerance);
-}
 
 // Note: Some tests below validate using SpatialInertia::SolidFooWithDensity()
 // or UnitInertia::SolidFoo(). The *implementations* use similar logic, so,
@@ -85,7 +78,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Box) {
   const SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::SolidBoxWithDensity(kDensity, Lx, Ly, Lz);
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(box, kDensity),
-                                   M_BBo_B, kTol));
+                                   M_BBo_B, /* tolerance = */ 0.0));
 }
 
 GTEST_TEST(GeometrySpatialInertaTest, Capsule) {
@@ -96,7 +89,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Capsule) {
       SpatialInertia<double>::SolidCapsuleWithDensity(
           kDensity, r, L, Vector3<double>::UnitZ());
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(capsule, kDensity),
-                                   M_BBo_B, kTol));
+                                   M_BBo_B, /* tolerance = */ 0.0));
 }
 
 // Note: Convex can be found below in the MeshTypes test.
@@ -109,7 +102,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Cylinder) {
       SpatialInertia<double>::SolidCylinderWithDensity(
           kDensity, r, L, Vector3<double>::UnitZ());
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(cylinder, kDensity),
-                                   M_BBo_B, kTol));
+                                   M_BBo_B, /* tolerance = */ 0.0));
 }
 
 GTEST_TEST(GeometrySpatialInertaTest, Ellipsoid) {
@@ -120,7 +113,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Ellipsoid) {
   const SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::SolidEllipsoidWithDensity(kDensity, a, b, c);
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(ellipsoid, kDensity),
-                                   M_BBo_B, kTol));
+                                   M_BBo_B, /* tolerance = */ 0.0));
 }
 
 GTEST_TEST(GeometrySpatialInertaTest, HalfSpace) {
@@ -142,7 +135,7 @@ GTEST_TEST(GeometrySpatialInertaTest, Sphere) {
   const SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::SolidSphereWithDensity(kDensity, r);
   EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(sphere, kDensity),
-                                   M_BBo_B, kTol));
+                                   M_BBo_B, /* tolerance = */ 0.0));
 }
 
 // Exercises the common code paths for Mesh and Convex (i.e., "MeshTypes").
@@ -263,8 +256,9 @@ GTEST_TEST(TriangleSurfaceMassPropertiesTest, ExactPolyhedron) {
 
     // The vertex transformation introduces precision loss, requiring a larger
     // tolerance.
-    EXPECT_TRUE(SpatialInertiasEqual(CalcSpatialInertia(mesh, kDensity),
-                                     mass, p_BcmMcm, G_MMo_M, 8 * kTol));
+    EXPECT_TRUE(SpatialInertiasEqual(
+        CalcSpatialInertia(mesh, kDensity),
+        SpatialInertia<double>(mass, p_BcmMcm, G_MMo_M), 8 * kTol));
   }
 }
 

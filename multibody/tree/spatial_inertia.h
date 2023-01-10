@@ -149,7 +149,8 @@ class SpatialInertia {
   /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
   ///   an equal moment of inertia about any line that both passes through Bo
   ///   and is perpendicular to unit_vector.
-  /// @throws std::exception if r or l is zero or negative or ‖unit_vector‖ ≉ 1.
+  /// @throws std::exception if r or l is zero or negative.
+  /// @pre The magnitude of unit_vector should be nearly 1: ‖unit_vector‖ ≈ 1.
   static SpatialInertia<T> SolidCapsuleWithDensity(
       const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
@@ -173,9 +174,9 @@ class SpatialInertia {
   /// Creates a spatial inertia for a uniform density solid ellipsoid B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] a ellipsoid's semi-diameter (½ length) in the Bx direction.
-  /// @param[in] b ellipsoid's semi-diameter (½ length) in the By direction.
-  /// @param[in] c ellipsoid's semi-diameter (½ length) in the Bz direction.
+  /// @param[in] a length of ellipsoid semi-axis in the ellipsoid Bx direction.
+  /// @param[in] b length of ellipsoid semi-axis in the ellipsoid By direction.
+  /// @param[in] c length of ellipsoid semi-axis in the ellipsoid Bz direction.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @throws std::exception if any of a, b, c are zero or negative.
   static SpatialInertia<T> SolidEllipsoidWithDensity(
