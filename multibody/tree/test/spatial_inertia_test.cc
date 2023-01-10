@@ -88,15 +88,15 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
   // single value sufficiently tests the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, 0, ly, lz),
-      "[^]* A length dimension of a solid box is negative or zero: "
+      "[^]* One or more dimensions of a solid box is negative or zero: "
       "(.*, .*, .*).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, ly, -0.1, lz),
-      "[^]* A length dimension of a solid box is negative or zero: "
+      "[^]* One or more dimensions of a solid box is negative or zero: "
       "(.*, .*, .*).");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, ly, ly, -1E-15),
-      "[^]* A length dimension of a solid box is negative or zero: "
+      "[^]* One or more dimensions of a solid box is negative or zero: "
       "(.*, .*, .*).");
 }
 

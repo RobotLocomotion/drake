@@ -20,7 +20,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
     const T& density, const T& lx, const T& ly, const T& lz) {
   // Ensure lx, ly, lz are positive.
   if (lx <= 0 || ly <= 0 || lz <= 0) {
-    std::string error_message = fmt::format("{}(): A length dimension of a "
+    std::string error_message = fmt::format("{}(): One or more dimensions of a "
     "solid box is negative or zero: ({}, {}, {}).",
       __func__, lx, ly, lz);
     throw std::logic_error(error_message);
