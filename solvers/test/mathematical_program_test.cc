@@ -3328,6 +3328,42 @@ void CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial type) {
   EXPECT_TRUE(p2.EqualTo(p_expected));
 }
 
+GTEST_TEST(TestMathematicalProgram, NewSosPolynomialSmallGram) {
+  // Test NewSosPolynomial whose gram matrix has size 1x1 or 2x2.
+  MathematicalProgram prog;
+  auto gramian1 = prog.NewSymmetricContinuousVariables<1>();
+  auto x = prog.NewIndeterminates<1>();
+  const auto p1 = prog.NewSosPolynomial(
+      gramian1, Vector1<symbolic::Monomial>(symbolic::Monomial(x(0))));
+  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().front().variables().rows(), 1);
+  EXPECT_EQ(prog.bounding_box_constraints().front().variables()(0),
+            gramian1(0));
+  EXPECT_EQ(prog.bounding_box_constraints().front().evaluator()->lower_bound(),
+            Vector1d(0));
+  EXPECT_TRUE(std::isinf(
+      prog.bounding_box_constraints().front().evaluator()->upper_bound()(0)));
+
+  // Now check 2 x 2 matrix.
+  const auto gramian2 = prog.NewSymmetricContinuousVariables<2>();
+  const auto p2 = prog.NewSosPolynomial(
+      gramian2, Vector2<symbolic::Monomial>(symbolic::Monomial(),
+                                            symbolic::Monomial(x(0))));
+  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 1);
+  EXPECT_TRUE(CompareMatrices(
+      prog.rotated_lorentz_cone_constraints().front().evaluator()->A_dense(),
+      Eigen::Matrix3d::Identity()));
+  EXPECT_TRUE(CompareMatrices(
+      prog.rotated_lorentz_cone_constraints().front().evaluator()->b(),
+      Eigen::Vector3d::Zero()));
+  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(0),
+            gramian2(0, 0));
+  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(1),
+            gramian2(1, 1));
+  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(2),
+            gramian2(0, 1));
+}
+
 GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSos);
   CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial::kSdsos);
@@ -3371,7 +3407,7 @@ void CheckNewEvenDegreeNonnegativePolynomial(
   MathematicalProgram prog;
   auto t = prog.NewIndeterminates<2>();
   const symbolic::Variables t_vars(t);
-  const int degree{4};
+  const int degree{6};
   const auto m_e = symbolic::EvenDegreeMonomialBasis(t_vars, degree / 2);
   const auto m_o = symbolic::OddDegreeMonomialBasis(t_vars, degree / 2);
   symbolic::Polynomial p;
@@ -3645,11 +3681,11 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
 
   // p1 has both a and x as indeterminates. So we need to reparse the polynomial
   // to have only x as the indeterminates.
-  const symbolic::Polynomial p1(a + x * x);
-  const Vector2<symbolic::Monomial> monomial_basis(symbolic::Monomial{},
-                                                   symbolic::Monomial(x, 1));
+  const symbolic::Polynomial p1(a + x * x + pow(x, 4));
+  const Vector3<symbolic::Monomial> monomial_basis(
+      symbolic::Monomial{}, symbolic::Monomial(x, 1), symbolic::Monomial(x, 2));
 
-  const Matrix2<symbolic::Variable> Q_psd = prog.AddSosConstraint(
+  const Matrix3<symbolic::Variable> Q_psd = prog.AddSosConstraint(
       p1, monomial_basis, MathematicalProgram::NonnegativePolynomial::kSos,
       "Q");
   EXPECT_NE(Q_psd(0, 0).get_name().find("Q"), std::string::npos);

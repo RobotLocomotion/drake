@@ -221,11 +221,30 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
       ComputePolynomialFromMonomialBasisAndGramMatrix(monomial_basis, gramian);
   switch (type) {
     case MathematicalProgram::NonnegativePolynomial::kSos: {
-      AddPositiveSemidefiniteConstraint(gramian);
+      if (gramian.rows() == 1) {
+        // A 1x1 matrix being PSD is equivalent to its entry being non-negative.
+        AddBoundingBoxConstraint(0, kInf, gramian(0, 0));
+      } else if (gramian.rows() == 2) {
+        // A 2x2 matrix
+        // ⌈X(0, 0) X(0, 1)⌉
+        // ⌊X(0, 1) X(1, 1)⌋
+        // being psd is equivalent to [X(0, 0), X(1, 1), X(0, 1)] in the rotated
+        // lorentz cone.
+        AddRotatedLorentzConeConstraint(Vector3<symbolic::Variable>(
+            gramian(0, 0), gramian(1, 1), gramian(0, 1)));
+      } else {
+        AddPositiveSemidefiniteConstraint(gramian);
+      }
       return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kSdsos: {
-      AddScaledDiagonallyDominantMatrixConstraint(gramian);
+      if (gramian.rows() == 1) {
+        // A 1x1 matrix being scaled diagonally dominant is equivalent to its
+        // entry being non-negative.
+        AddBoundingBoxConstraint(0, kInf, gramian(0, 0));
+      } else {
+        AddScaledDiagonallyDominantMatrixConstraint(gramian);
+      }
       return p;
     }
     case MathematicalProgram::NonnegativePolynomial::kDsos: {
