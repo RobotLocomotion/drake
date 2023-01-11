@@ -143,22 +143,14 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         sdformat_plant.Finalize()
 
         # Compare plants
-        # Note: SDFormat will create an extra top level model instance
-        self.assertEqual(sdformat_plant.num_model_instances() - 1,
+        # The number of model instances should be the same
+        self.assertEqual(sdformat_plant.num_model_instances(),
                          directives_plant.num_model_instances())
 
-        # SDFormat will create an extra top level model instance with the
-        # name of the file
         file_name = os.path.splitext(os.path.basename(file_path))[0]
-        self.assertEqual(sdformat_plant.GetModelInstanceName(
-            ModelInstanceIndex(2)), file_name)
-        self.assertEqual(
-            len(get_bodies(sdformat_plant, [ModelInstanceIndex(2)])), 0)
 
         for i in range(2, directives_plant.num_model_instances()):
-            model_scoped_name = file_name \
-                + _SCOPE_DELIMITER \
-                + directives_plant.GetModelInstanceName(
+            model_scoped_name = directives_plant.GetModelInstanceName(
                     ModelInstanceIndex(i))
 
             sdformat_model_instances = get_model_instances_names(
@@ -305,11 +297,11 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
     def test_add_model_instance_add_directives(self):
         expected_xml = '<sdf version="1.9">'\
-            '<model name="add_directives"><model name="model_instance">'\
+            '<world name="add_directives"><model name="model_instance">'\
             '<include merge="true">'\
             '<uri>package://model_directives_to_sdformat_files/'\
             'hidden_frame.sdf</uri>'\
-            '</include></model></model></sdf>'
+            '</include></model></world></sdf>'
         result = convert_directive(
             'multibody/parsing/test/'
             'model_directives_to_sdformat_files/add_directives.yaml', True)
@@ -324,7 +316,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         root_model = root.getchildren()[0]
 
         # Check inject_frames model
-        self.assertEqual(root_model.tag, 'model')
+        self.assertEqual(root_model.tag, 'world')
         self.assertEqual(root.getchildren()[0].attrib['name'], 'inject_frames')
 
         # Check fixed joints

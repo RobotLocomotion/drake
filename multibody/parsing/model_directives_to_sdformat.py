@@ -424,13 +424,13 @@ def convert_directive(input_path: str,
 
     # Initialize the sdformat XML root
     root = ET.Element('sdf', version=_SDF_VERSION)
-    root_model_name = os.path.splitext(os.path.basename(input_path))[0]
-    root_model_elem = ET.SubElement(root, 'model', name=root_model_name)
+    root_world_name = os.path.splitext(os.path.basename(input_path))[0]
+    root_world_elem = ET.SubElement(root, 'world', name=root_world_name)
 
     # Note, we need to process the directives in the correct order
     for cls in [AddDirectives, AddModel, AddFrame, AddWeld]:
         for dir_obj in _filter_directives(all_directives, cls):
-            dir_obj.to_sdf(root_model_elem, all_directives)
+            dir_obj.to_sdf(root_world_elem, all_directives)
 
     # Check model validity by loading it through the SDFormat parser
     if check_sdf:
