@@ -383,7 +383,15 @@ unique_ptr<DistributionVector> ToDistributionVector(
           Eigen::VectorXd::Constant(1, arg.min),
           Eigen::VectorXd::Constant(1, arg.max));
     },
-    [](const internal::InvalidVariantSelection&)
+    [](const internal::InvalidVariantSelection<Deterministic>&)
+        -> unique_ptr<DistributionVector> {
+      DRAKE_UNREACHABLE();
+    },
+    [](const internal::InvalidVariantSelection<Gaussian>&)
+        -> unique_ptr<DistributionVector> {
+      DRAKE_UNREACHABLE();
+    },
+    [](const internal::InvalidVariantSelection<Uniform>&)
         -> unique_ptr<DistributionVector> {
       DRAKE_UNREACHABLE();
     },
@@ -414,7 +422,13 @@ bool IsDeterministic(const DistributionVectorVariant<Size>& vec) {
     [](const Uniform& arg) -> bool {
       return arg.min == arg.max;
     },
-    [](const internal::InvalidVariantSelection&) -> bool {
+    [](const internal::InvalidVariantSelection<Deterministic>&) -> bool {
+      DRAKE_UNREACHABLE();
+    },
+    [](const internal::InvalidVariantSelection<Gaussian>&) -> bool {
+      DRAKE_UNREACHABLE();
+    },
+    [](const internal::InvalidVariantSelection<Uniform>&) -> bool {
       DRAKE_UNREACHABLE();
     },
   }, vec);

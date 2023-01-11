@@ -447,6 +447,7 @@ class UniformVector final : public DistributionVector {
 };
 
 namespace internal {
+template <typename Singular>
 struct InvalidVariantSelection {
   template <typename Archive>
   void Serialize(Archive*) {
@@ -471,13 +472,13 @@ using DistributionVectorVariant = std::variant<
   UniformVector<Size>,
   std::conditional_t<(Size == Eigen::Dynamic || Size == 1),
     Deterministic,
-    internal::InvalidVariantSelection>,
+    internal::InvalidVariantSelection<Deterministic>>,
   std::conditional_t<(Size == Eigen::Dynamic || Size == 1),
     Gaussian,
-    internal::InvalidVariantSelection>,
+    internal::InvalidVariantSelection<Gaussian>>,
   std::conditional_t<(Size == Eigen::Dynamic || Size == 1),
     Uniform,
-    internal::InvalidVariantSelection>>;
+    internal::InvalidVariantSelection<Uniform>>>;
 
 /// DistributionVectorVariant that permits any vector size dynamically.
 using DistributionVectorVariantX = DistributionVectorVariant<Eigen::Dynamic>;
