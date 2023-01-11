@@ -504,6 +504,8 @@ class TestMath(unittest.TestCase):
             method=mut.NumericalGradientMethod.kCentral,
             function_accuracy=1E-15)
 
+        self.assertIn("kCentral", repr(option))
+
         def foo(x):
             return np.array([x[0] ** 2, x[0] * x[1]])
 

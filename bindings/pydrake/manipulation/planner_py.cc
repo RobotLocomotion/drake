@@ -112,44 +112,6 @@ PYBIND11_MODULE(planner, m) {
             &Class::set_end_effector_translational_velocity_limits,
             py::arg("lower"), py::arg("upper"),
             cls_doc.set_end_effector_translational_velocity_limits.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls.def(py_init_deprecated<Class>(cls_doc.ctor.doc_deprecated),
-           cls_doc.ctor.doc_deprecated)
-        .def("get_timestep",
-            WrapDeprecated(
-                cls_doc.get_timestep.doc_deprecated, &Class::get_timestep),
-            cls_doc.get_timestep.doc_deprecated)
-        .def("set_timestep",
-            WrapDeprecated(
-                cls_doc.set_timestep.doc_deprecated, &Class::set_timestep),
-            cls_doc.set_timestep.doc_deprecated)
-        .def("get_end_effector_velocity_gain",
-            WrapDeprecated(
-                cls_doc.get_end_effector_velocity_gain.doc_deprecated,
-                &Class::get_end_effector_velocity_gain),
-            cls_doc.get_end_effector_velocity_gain.doc_deprecated)
-        .def("set_end_effector_velocity_gain",
-            WrapDeprecated(
-                cls_doc.set_end_effector_velocity_gain.doc_deprecated,
-                &Class::set_end_effector_velocity_gain),
-            cls_doc.set_end_effector_velocity_gain.doc_deprecated)
-        .def("get_unconstrained_degrees_of_freedom_velocity_limit",
-            WrapDeprecated(
-                cls_doc.get_unconstrained_degrees_of_freedom_velocity_limit
-                    .doc_deprecated,
-                &Class::get_unconstrained_degrees_of_freedom_velocity_limit),
-            cls_doc.get_unconstrained_degrees_of_freedom_velocity_limit
-                .doc_deprecated)
-        .def("set_unconstrained_degrees_of_freedom_velocity_limit",
-            WrapDeprecated(
-                cls_doc.set_unconstrained_degrees_of_freedom_velocity_limit
-                    .doc_deprecated,
-                &Class::set_unconstrained_degrees_of_freedom_velocity_limit),
-            cls_doc.set_unconstrained_degrees_of_freedom_velocity_limit
-                .doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   m.def(

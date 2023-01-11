@@ -78,6 +78,25 @@ class TestGeometryRender(unittest.TestCase):
         # Confirm value instantiation.
         Value[mut.render.RenderLabel]
 
+    def test_render_label_repr(self):
+        RenderLabel = mut.render.RenderLabel
+
+        # Special labels should use a non-numeric spelling.
+        special_labels = [
+            RenderLabel.kEmpty,
+            RenderLabel.kDoNotRender,
+            RenderLabel.kDontCare,
+            RenderLabel.kUnspecified,
+        ]
+        for label in special_labels:
+            self.assertIn("RenderLabel.k", repr(label))
+
+        # Any label should round-trip via 'eval'.
+        all_labels = special_labels + [RenderLabel(10)]
+        for label in all_labels:
+            roundtrip = eval(repr(label), dict(RenderLabel=RenderLabel))
+            self.assertEqual(label, roundtrip)
+
     def test_render_engine_api(self):
         class DummyRenderEngine(mut.render.RenderEngine):
             """Mirror of C++ DummyRenderEngine."""

@@ -49,12 +49,14 @@ load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
+load("@drake//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("@drake//tools/workspace/models_internal:repository.bzl", "models_internal_repository")  # noqa
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
+load("@drake//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("@drake//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
@@ -213,6 +215,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         liblz4_repository(name = "liblz4")
     if "liblzma" not in excludes:
         liblzma_repository(name = "liblzma")
+    if "libpfm" not in excludes:
+        libpfm_repository(name = "libpfm")
     if "libpng" not in excludes:
         libpng_repository(name = "libpng")
     if "libtiff" not in excludes:
@@ -224,7 +228,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "mosek" not in excludes:
         mosek_repository(name = "mosek")
     if "msgpack" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-05-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18559.
+        # When this is removed (on 2023-05-01), we should also edit the
+        # setup/... package lists to remove msgpack.
         msgpack_repository(name = "msgpack")
+    if "msgpack_internal" not in excludes:
+        msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)  # noqa
     if "mypy_extensions_internal" not in excludes:
         mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     if "mypy_internal" not in excludes:

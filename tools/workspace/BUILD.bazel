@@ -51,6 +51,7 @@ drake_py_binary(
         # These should all be of the form "@foo_internal//:__pkg__".
         "@gz_math_internal//:__pkg__",
         "@gz_utils_internal//:__pkg__",
+        "@msgpack_internal//:__pkg__",
         "@nlopt_internal//:__pkg__",
         "@qhull_internal//:__pkg__",
         "@sdformat_internal//:__pkg__",
@@ -87,6 +88,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "gz_utils_internal",
     "lcm",
     "meshcat",
+    "msgpack_internal",
     "net_sf_jchart2d",
     "nanoflann_internal",
     "nlopt_internal",
