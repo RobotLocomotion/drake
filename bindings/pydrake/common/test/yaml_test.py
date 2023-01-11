@@ -11,6 +11,7 @@ from pydrake.common.yaml import (
 
 
 class TestYaml(unittest.TestCase):
+    """Tests for the untyped yaml_load / yaml_dump functions."""
 
     def test_via_file(self):
         filename = os.path.join(os.environ["TEST_TMPDIR"], "foo.yaml")
