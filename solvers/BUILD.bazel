@@ -1457,7 +1457,6 @@ drake_cc_googletest(
 drake_cc_optional_googletest(
     name = "mosek_solver_internal_test",
     opt_in_condition = "//tools:with_mosek",
-    tags = ["no_memcheck"],
     use_default_main = False,
     deps = [
         ":mosek_solver",
