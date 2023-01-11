@@ -813,6 +813,17 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "yaml_typed_test",
+    data = [
+        "//common/yaml:test/yaml_io_test_input_1.yaml",
+    ],
+    deps = [
+        ":yaml_py",
+        "//bindings/pydrake/common/test_utilities:meta_py",
+    ],
+)
+
 add_pybind_coverage_data()
 
 add_lint_tests_pydrake()
