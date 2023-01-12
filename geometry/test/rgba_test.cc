@@ -1,5 +1,7 @@
 #include "drake/geometry/rgba.h"
 
+#include <limits>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -19,21 +21,29 @@ GTEST_TEST(RgbaTest, Basic) {
   const double r = 0.75;
   const double g = 0.5;
   const double b = 0.25;
-  const double a = 1.;
+  const double a = 1.0;
   Rgba color(r, g, b);
   EXPECT_EQ(color.r(), r);
   EXPECT_EQ(color.g(), g);
   EXPECT_EQ(color.b(), b);
   EXPECT_EQ(color.a(), a);
+  EXPECT_EQ(color.rgba()[0], r);
+  EXPECT_EQ(color.rgba()[1], g);
+  EXPECT_EQ(color.rgba()[2], b);
+  EXPECT_EQ(color.rgba()[3], a);
   EXPECT_TRUE(color == Rgba(r, g, b, a));
-  EXPECT_TRUE(color != Rgba(r, g, b, 0.));
+  EXPECT_TRUE(color != Rgba(r, g, b, 0.0));
   const double kEps = 1e-8;
   const Rgba color_delta(color.r() + kEps, color.g() - kEps, color.b() + kEps,
                          color.a() - kEps);
   EXPECT_TRUE(color.AlmostEqual(color_delta, 1.001 * kEps));
   EXPECT_FALSE(color.AlmostEqual(color_delta, 0.999 * kEps));
-  color.set(1., 1., 1., 0.);
-  EXPECT_EQ(color, Rgba(1., 1., 1., 0.));
+  color.set(1.0, 1.0, 1.0, 0.0);
+  EXPECT_EQ(color, Rgba(1.0, 1.0, 1.0, 0.0));
+  color.set(Eigen::Vector4d{0.1, 0.2, 0.3, 0.4});
+  EXPECT_EQ(color, Rgba(0.1, 0.2, 0.3, 0.4));
+  color.set(Eigen::Vector3d{0.5, 0.6, 0.7});
+  EXPECT_EQ(color, Rgba(0.5, 0.6, 0.7, 1.0));
 }
 
 GTEST_TEST(RgbaTest, Errors) {
@@ -59,7 +69,7 @@ GTEST_TEST(RgbaTest, Errors) {
   const double r = 0.75;
   const double g = 0.5;
   const double b = 0.25;
-  const double a = 1.;
+  const double a = 1.0;
 
   expect_error(bad_low, g, b, a);
   expect_error(bad_high, g, b, a);
@@ -69,6 +79,8 @@ GTEST_TEST(RgbaTest, Errors) {
   expect_error(r, g, bad_high, a);
   expect_error(r, g, b, bad_low);
   expect_error(r, g, b, bad_high);
+
+  expect_error(r, g, b, std::numeric_limits<double>::quiet_NaN());
 }
 
 /** Confirm that this can be serialized appropriately. */
@@ -97,7 +109,7 @@ GTEST_TEST(RgbaTest, Serialization) {
                               "Rgba must contain either 3 or 4.+");
   DRAKE_EXPECT_THROWS_MESSAGE(
       yaml::LoadYamlString<Rgba>("rgba: [1, 1, 1, 1, 1]"),
-      "Rgba must contain either 3 or 4.+");
+      ".*maximum size is 4.*");
 
   // Values out of range likewise throw.
   DRAKE_EXPECT_THROWS_MESSAGE(yaml::LoadYamlString<Rgba>("rgba: [1, 1, 2]"),

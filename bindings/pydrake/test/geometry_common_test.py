@@ -10,6 +10,7 @@ from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
+from pydrake.common.yaml import yaml_load_typed
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import CoulombFriction
 
@@ -299,21 +300,71 @@ class TestGeometryCore(unittest.TestCase):
     def test_rgba_api(self):
         default_white = mut.Rgba()
         self.assertEqual(default_white, mut.Rgba(1, 1, 1, 1))
-        r, g, b, a = 0.75, 0.5, 0.25, 1.
+        r, g, b, a = 0.75, 0.5, 0.25, 1.0
         color = mut.Rgba(r=r, g=g, b=b)
         self.assertEqual(color.r(), r)
         self.assertEqual(color.g(), g)
         self.assertEqual(color.b(), b)
         self.assertEqual(color.a(), a)
         self.assertEqual(color, mut.Rgba(r, g, b, a))
-        self.assertNotEqual(color, mut.Rgba(r, g, b, 0.))
+        self.assertNotEqual(color, mut.Rgba(r, g, b, 0.0))
         self.assertEqual(
             repr(color),
             "Rgba(r=0.75, g=0.5, b=0.25, a=1.0)")
-        color.set(r=1., g=1., b=1., a=0.)
-        self.assertEqual(color, mut.Rgba(1., 1., 1., 0.))
+        color.set(r=1.0, g=1.0, b=1.0, a=0.0)
+        self.assertEqual(color, mut.Rgba(1.0, 1.0, 1.0, 0.0))
+
+        # Property read/write.
+        color.rgba = [0.1, 0.2, 0.3, 0.4]
+        self.assertEqual(color.r(), 0.1)
+        self.assertEqual(color.g(), 0.2)
+        self.assertEqual(color.b(), 0.3)
+        self.assertEqual(color.a(), 0.4)
+        color.rgba = [0.5, 0.6, 0.7]
+        self.assertEqual(color.r(), 0.5)
+        self.assertEqual(color.g(), 0.6)
+        self.assertEqual(color.b(), 0.7)
+        self.assertEqual(color.a(), 1.0)
+        self.assertEqual(color.rgba[0], 0.5)
+        self.assertEqual(color.rgba[1], 0.6)
+        self.assertEqual(color.rgba[2], 0.7)
+        self.assertEqual(color.rgba[3], 1.0)
+        with self.assertRaisesRegex(RuntimeError, ".*range.*"):
+            color.rgba = [-1.0] * 4
+        with self.assertRaisesRegex(RuntimeError, ".*3 or 4.*"):
+            color.rgba = [1.0] * 2
+        with self.assertRaisesRegex(RuntimeError, ".*3 or 4.*"):
+            color.rgba = [1.0] * 5
+
         # Confirm value instantiation.
         Value[mut.Rgba]
+
+    def test_rgba_yaml(self):
+        yaml = "rgba: [0.1, 0.2, 0.3, 0.4]"
+        dut = yaml_load_typed(schema=mut.Rgba, data=yaml)
+        self.assertEqual(dut.r(), 0.1)
+        self.assertEqual(dut.g(), 0.2)
+        self.assertEqual(dut.b(), 0.3)
+        self.assertEqual(dut.a(), 0.4)
+
+        yaml = "rgba: [0.1, 0.2, 0.3]"
+        dut = yaml_load_typed(schema=mut.Rgba, data=yaml)
+        self.assertEqual(dut.r(), 0.1)
+        self.assertEqual(dut.g(), 0.2)
+        self.assertEqual(dut.b(), 0.3)
+        self.assertEqual(dut.a(), 1.0)
+
+        yaml = "rgba: []"
+        with self.assertRaisesRegex(RuntimeError, ".*3 or 4.*"):
+            yaml_load_typed(schema=mut.Rgba, data=yaml)
+
+        yaml = "rgba: [0, 1, 2, 3, 4, 5]"
+        with self.assertRaisesRegex(RuntimeError, ".*3 or 4.*"):
+            yaml_load_typed(schema=mut.Rgba, data=yaml)
+
+        yaml = "rgba: [0, 0, 0, -1]"
+        with self.assertRaisesRegex(RuntimeError, ".*range.*"):
+            yaml_load_typed(schema=mut.Rgba, data=yaml)
 
     def test_shape_constructors(self):
         shapes = [
