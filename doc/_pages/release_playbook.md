@@ -158,7 +158,7 @@ the main body of the document:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 6. Merge the release notes PR
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
-   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-focal-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
+   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-jammy-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
 7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
    a new release".  Note that this page does has neither history nor undo.  Be
