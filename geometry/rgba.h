@@ -88,7 +88,7 @@ class Rgba {
     //  - rgba: [r, g, b, a]
     //
     // N.B. For the Python binding use of DefAttributesUsingSerialize, this
-    // must refer a member field; we cannot use a stack temporary here.
+    // must refer to a member field; we cannot use a stack temporary here.
     a->Visit(MakeNameValue("rgba", &value_));
 
     // In case the archive modified our data, we need to re-validate it now.
