@@ -186,7 +186,8 @@ class ClassCoverage:
                     doc_var_nodes, self.pybind_strings)
 
             row["ClassName"] = c.attrib["full_name"]
-            self.df = self.df.append(row, ignore_index=True)
+            self.df = pandas.concat([self.df, pandas.DataFrame([row])],
+                                    ignore_index=True, sort=False)
 
         self.df_pruned = CommonUtils.prune_dataframe(
                 self.df, ["ClassName", "Coverage"])
@@ -254,7 +255,8 @@ class FileCoverage:
             row = CommonUtils.get_node_coverage(doc_nodes, self.pybind_strings)
 
             row["FileName"] = FileName(fn)
-            self.df = self.df.append(row, ignore_index=True)
+            self.df = pandas.concat([self.df, pandas.DataFrame([row])],
+                                    ignore_index=True, sort=False)
 
     def make_tree(self, file_coverage, sep="/"):
         """Makes an XML tree from list of paths.
