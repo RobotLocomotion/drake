@@ -223,14 +223,57 @@ PYBIND11_MODULE(schema, m) {
   // Bindings for rotation.h.
 
   {
+    // To bind nested serializable structs without errors, we declare the outer
+    // struct first, then bind its inner structs, then bind the outer struct.
     using Class = Rotation;
     constexpr auto& cls_doc = doc.Rotation;
     py::class_<Class> cls(m, "Rotation", cls_doc.doc);
+
+    // Inner structs.
+    {
+      using Inner = Class::Identity;
+      py::class_<Inner> inner(cls, "Identity", cls_doc.Identity.doc);
+      inner.def(py::init<const Inner&>(), py::arg("other"));
+      inner.def(ParamInit<Inner>());
+      DefAttributesUsingSerialize(&inner, cls_doc.Identity);
+      DefReprUsingSerialize(&inner);
+      DefCopyAndDeepCopy(&inner);
+    }
+    {
+      using Inner = Class::Rpy;
+      py::class_<Inner> inner(cls, "Rpy", cls_doc.Rpy.doc);
+      inner.def(py::init<const Inner&>(), py::arg("other"));
+      inner.def(ParamInit<Inner>());
+      DefAttributesUsingSerialize(&inner, cls_doc.Rpy);
+      DefReprUsingSerialize(&inner);
+      DefCopyAndDeepCopy(&inner);
+    }
+    {
+      using Inner = Class::AngleAxis;
+      py::class_<Inner> inner(cls, "AngleAxis", cls_doc.AngleAxis.doc);
+      inner.def(py::init<const Inner&>(), py::arg("other"));
+      inner.def(ParamInit<Inner>());
+      DefAttributesUsingSerialize(&inner, cls_doc.AngleAxis);
+      DefReprUsingSerialize(&inner);
+      DefCopyAndDeepCopy(&inner);
+    }
+    {
+      using Inner = Class::Uniform;
+      py::class_<Inner> inner(cls, "Uniform", cls_doc.Uniform.doc);
+      inner.def(py::init<const Inner&>(), py::arg("other"));
+      inner.def(ParamInit<Inner>());
+      DefAttributesUsingSerialize(&inner, cls_doc.Uniform);
+      DefReprUsingSerialize(&inner);
+      DefCopyAndDeepCopy(&inner);
+    }
+
+    // Now we can finish binding the outermost struct (Rotation).
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const math::RotationMatrixd&>(), cls_doc.ctor.doc_1args)
         .def(py::init<const math::RollPitchYawd&>(), cls_doc.ctor.doc_1args)
+        .def(ParamInit<Class>())
         .def("IsDeterministic", &Class::IsDeterministic,
             cls_doc.IsDeterministic.doc)
         .def("GetDeterministicValue", &Class::GetDeterministicValue,
@@ -238,9 +281,8 @@ PYBIND11_MODULE(schema, m) {
         .def("ToSymbolic", &Class::ToSymbolic, cls_doc.ToSymbolic.doc)
         .def("set_rpy_deg", &Class::set_rpy_deg, py::arg("rpy_deg"),
             cls_doc.set_rpy_deg.doc);
-    // TODO(jwnimmer-tri) Bind the .value field.
-    // In the meantime, a work-around for read access is to call ToSymbolic or
-    // GetDeterministicValue.
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
 
@@ -254,6 +296,7 @@ PYBIND11_MODULE(schema, m) {
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Class&>(), py::arg("other"))
         .def(py::init<const math::RigidTransformd&>(), cls_doc.ctor.doc_1args)
+        .def(ParamInit<Class>())
         .def("set_rotation_rpy_deg", &Class::set_rotation_rpy_deg,
             py::arg("rpy_deg"), cls_doc.set_rotation_rpy_deg.doc)
         .def("IsDeterministic", &Class::IsDeterministic,
@@ -261,12 +304,16 @@ PYBIND11_MODULE(schema, m) {
         .def("GetDeterministicValue", &Class::GetDeterministicValue,
             cls_doc.GetDeterministicValue.doc)
         .def("ToSymbolic", &Class::ToSymbolic, cls_doc.ToSymbolic.doc)
-        .def("Sample", &Class::Sample, py::arg("generator"), cls_doc.Sample.doc)
-        .def_readwrite(
-            "base_frame", &Class::base_frame, cls_doc.base_frame.doc);
-    // TODO(jwnimmer-tri) Bind the .translation and .rotation fields.
-    // In the meantime, a work-around for read access is to call ToSymbolic or
-    // GetDeterministicValue.
+        .def("Mean", &Class::Mean, cls_doc.Mean.doc)
+        .def(
+            "Sample", &Class::Sample, py::arg("generator"), cls_doc.Sample.doc);
+    DefAttributesUsingSerialize(&cls);
+    // The Transform::Serialize does something sketchy for the "rotation" field.
+    // We'll undo that damage for the attribute getter and setter functions, but
+    // notably we must leave the __fields__ manifest unchanged to match the C++
+    // serialization convention.
+    cls.def_readwrite("rotation", &Class::rotation, cls_doc.rotation.doc);
+    DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }
 }
