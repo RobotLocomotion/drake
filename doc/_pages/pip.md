@@ -28,15 +28,6 @@ in [Source Installation](/from_source.html).
 ## Stable Releases
 
 <div class="warning" markdown="1">
-For users running on Apple's newer arm64 hardware, Drake does not yet provide
-native pypi wheels (follow
-[issue #17906](https://github.com/RobotLocomotion/drake/issues/17906)
-for updates). In the meantime, we recommend that you install from a
-[Direct Download](/from_binary.html#stable-releases) that includes both Python
-and C++ support, using a dedicated virtual environment.
-</div>
-
-<div class="warning" markdown="1">
 Drake does not support the Python environment supplied by Anaconda. Before
 installing or using Drake, please `conda deactivate` (repeatedly, until even
 the conda base environment has been deactivated) such that none of the paths
@@ -59,40 +50,14 @@ We recommend installing drake into a
 directory.  In the example below, we will name that directory ``env``, but you
 can choose any name.
 
-(1) Create a virtual environment and install Drake:
+For macOS, ensure that you're using Homebrew Python (not Apple's system Python).
+
+Create a virtual environment, install Drake, and activate the environment:
 
 ```bash
 python3 -m venv env
 env/bin/pip install --upgrade pip
 env/bin/pip install drake
-```
-
-(2) Drake requires certain basic runtime libraries
-from the host Linux distribution.
-
-<!-- TODO(mwoehlke-kitware)
-On or after 2022-12-01 (once Drake 1.10.0 is released),
-remove these instructions and point to INSTALLATION instead.
--->
-
-For Ubuntu 20.04, install these additional libraries:
-
-```bash
-sudo apt-get install --no-install-recommends \
-  libpython3.8 libx11-6 libsm6 libxt6 libglib2.0-0
-```
-
-For Ubuntu 22.04, install these additional libraries:
-```bash
-sudo apt-get install --no-install-recommends \
-  libx11-6 libsm6 libglib2.0-0
-```
-
-For macOS, ensure that you're using Homebrew Python (not Apple's system Python).
-
-(3) Activate the virtual environment:
-
-```bash
 source env/bin/activate
 ````
 
@@ -101,7 +66,7 @@ Refer to [Quickstart](/installation.html#quickstart) for next steps.
 ## Nightly Releases
 
 Binary packages of Drake for Ubuntu 20.04 (Focal), Ubuntu 22.04 (Jammy), and
-Mac x86_64 are generated nightly and are available to download at:
+macOS are generated nightly and are available to download at:
 
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl)
 * [https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl](https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp39-cp39-manylinux_2_31_x86_64.whl)
@@ -125,11 +90,10 @@ Nightly wheels are retained for 56 days from their date of creation.
 
 To install nightly wheel, install from the URL directly:
 
-  ```bash
-  # Example for python 3.8 (cp38-cp38).
-  python3 -m venv env
-  env/bin/pip install --upgrade pip
-  env/bin/pip install https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl
-  ```
-
-Make sure you have the required runtime libraries described above.
+```bash
+# Example for python 3.8 (cp38-cp38).
+python3 -m venv env
+env/bin/pip install --upgrade pip
+env/bin/pip install https://drake-packages.csail.mit.edu/drake/nightly/drake-latest-cp38-cp38-manylinux_2_31_x86_64.whl
+source env/bin/activate
+```
