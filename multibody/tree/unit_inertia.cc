@@ -23,15 +23,10 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
 
-  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
-  // UnitInertia::AxiallySymmetric() (below) normalizes unit_vector before use.
+  // Ensure ‖unit_vector‖  is within 6 bits of 1.0 (2^6 = 64).
   using std::abs;
-  constexpr double kTolerance = 128 * std::numeric_limits<double>::epsilon();
-  if (abs(unit_vector.squaredNorm() - 1) > kTolerance) {
-    // Ensure ‖unit_vector‖ is within 6 bits of 1.0.
-    // If ‖unit_vector‖² is not within 7 bits of 1.0 (2^7 = 128), it means
-    //    ‖unit_vector‖  is not within 6 bits of 1.0 (2^6 = 64). This follows
-    // from the fact that for an arbitrary vector 𝐯, ‖𝐯‖ = √(𝐯⋅𝐯).
+  constexpr double kTolerance = 65 * std::numeric_limits<double>::epsilon();
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
     std::string error_message = fmt::format("{}(): The unit_vector argument "
       "{} is not a unit vector.", __func__, unit_vector.transpose());
     throw std::logic_error(error_message);
@@ -43,6 +38,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   if (r == 0.0) {
     return UnitInertia<T>::ThinRod(L, unit_vector);
   }
+
   // The capsule is regarded as a cylinder C of length L and radius r and two
   // half-spheres (each of radius r). The first half-sphere H is rigidly fixed
   // to one end of cylinder C so that the intersection between H and C forms
@@ -95,6 +91,9 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   const T Ixx = mc * (L*L/12.0 + 0.25*r2) + mh * (0.51875*r2 + 2*dH*dH);
   const T Izz = (0.5*mc + 0.8*mh) * r2;  // Axial moment of inertia.
 
+  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
+  // UnitInertia::AxiallySymmetric() normalizes unit_vector before use.
+  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
   return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
 }
 
