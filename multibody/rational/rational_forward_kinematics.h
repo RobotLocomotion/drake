@@ -8,7 +8,7 @@
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -114,7 +114,7 @@ class RationalForwardKinematics {
                 const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
     VectorX<typename Derived::Scalar> s_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
-      const internal::Mobilizer<double>& mobilizer =
+      const internal::MobilizedBody<double>& mobilizer =
           GetInternalTree(plant_).get_mobilizer(
               map_s_to_mobilizer_.at(s_[i].get_id()));
       // the mobilizer cannot be a weld joint since weld joint doesn't introduce
@@ -145,7 +145,7 @@ class RationalForwardKinematics {
                 const Eigen::Ref<const Eigen::VectorXd>& q_star_val) const {
     VectorX<typename Derived::Scalar> q_val(s_.size());
     for (int i = 0; i < s_val.size(); ++i) {
-      const internal::Mobilizer<double>& mobilizer =
+      const internal::MobilizedBody<double>& mobilizer =
           GetInternalTree(plant_).get_mobilizer(
               map_s_to_mobilizer_.at(s_[i].get_id()));
       // the mobilizer cannot be a weld joint since weld joint doesn't introduce
@@ -255,20 +255,20 @@ class RationalForwardKinematics {
       BodyIndex child, const Pose<symbolic::Polynomial>& X_AP) const;
 
   /* Determines whether the current joint is revolute. */
-  bool IsRevolute(const internal::Mobilizer<double>& mobilizer) const;
+  bool IsRevolute(const internal::MobilizedBody<double>& mobilizer) const;
 
   /* Determines whether the current joint is a weld. */
-  bool IsWeld(const internal::Mobilizer<double>& mobilizer) const;
+  bool IsWeld(const internal::MobilizedBody<double>& mobilizer) const;
 
   /* Determines whether the current joint is prismatic. */
-  bool IsPrismatic(const internal::Mobilizer<double>& mobilizer) const;
+  bool IsPrismatic(const internal::MobilizedBody<double>& mobilizer) const;
 
   const MultibodyPlant<double>& plant_;
   // The variables used in computing the pose as rational functions. s_ are the
   // indeterminates in the rational functions.
   std::vector<symbolic::Variable> s_;
   // Each s(i) is associated with a mobilizer.
-  std::unordered_map<symbolic::Variable::Id, internal::MobilizerIndex>
+  std::unordered_map<symbolic::Variable::Id, internal::MobilizedBodyIndex>
       map_s_to_mobilizer_;
   // map_mobilizer_to_s_index_[mobilizer_index] returns the starting index of
   // the mobilizer's variable in s_ (the variable will be contiguous in s for

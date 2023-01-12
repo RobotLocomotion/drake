@@ -25,202 +25,207 @@ namespace internal {
 
 template<typename T> class BodyNode;
 
-// %Mobilizer is a fundamental object within Drake's multibody engine used to
-// specify the allowed motions between two Frame objects within a
-// MultibodyTree. Specifying the allowed motions between two Frame objects
-// effectively also specifies a kinematic relationship between the two bodies
-// associated with those two frames. Consider the following example to build a
-// simple pendulum system:
-//
-// @code
-// MultibodyTree<double> model;
-// // ... Code here to setup quantities below as mass, com, X_BP, etc. ...
-// const Body<double>& pendulum =
-//   model.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
-// // We will connect the pendulum body to the world frame using a
-// // RevoluteMobilizer. To do so we define a pin frame P rigidly attached to
-// // the pendulum body.
-// FixedOffsetFrame<double>& pin_frame =
-//   model.AddFrame<FixedOffsetFrame>(
-//     pendulum.body_frame(),
-//     X_BP /* pose of pin frame P in body frame B */);
-// // The mobilizer connects the world frame and the pin frame effectively
-// // adding the single degree of freedom describing this system. In this
-// // regard, the role of a mobilizer is equivalent but conceptually
-// // different than a set of constraints that effectively remove all degrees
-// // of freedom but the one permitting rotation about the z-axis.
-// const RevoluteMobilizer<double>& revolute_mobilizer =
-//   model.AddMobilizer<RevoluteMobilizer>(
-//     model.world_frame(), /* inboard frame */
-//     pin_frame, /* outboard frame */
-//     Vector3d::UnitZ() /* revolute axis in this case */));
-// @endcode
-//
-// <h3>Tree Structure</h3>
-//
-// A %Mobilizer induces a tree structure within a MultibodyTree
-// model, connecting an inboard (topologically closer to the world) frame to an
-// outboard (topologically further from the world) frame. Every time a
-// %Mobilizer is added to a MultibodyTree (using the
-// MultibodyTree::AddMobilizer() method), a number of degrees of
-// freedom associated with the particular type of %Mobilizer are added to the
-// multibody system. In the example above for the single pendulum, adding a
-// RevoluteMobilizer has two purposes:
-//
-// - It defines the tree structure of the model. World is the inboard body
-//   while "pendulum" is the outboard body in the MultibodyTree.
-// - It informs the MultibodyTree of the degrees of freedom granted by the
-//   revolute mobilizer between the two frames it connects.
-// - It defines a permissible motion space spanned by the generalized
-//   coordinates introduced by the mobilizer.
-//
-// <h3>Mathematical Description of a %Mobilizer</h3>
-//
-// A %Mobilizer describes the kinematics relationship between an inboard frame
-// F and an outboard frame M, introducing an nq-dimensional vector of
-// generalized coordinates q and an nv-dimensional vector of generalized
-// velocities v. Notice that in general `nq != nv`, though `nq == nv` is a very
-// common case. The kinematic relationships introduced by a %Mobilizer are
-// fully specified by, [Seth 2010]. The monogram notation used below for X_FM,
-// V_FM, F_Mo_F, etc., are described in @ref multibody_frames_and_bodies.
-//
-// - X_FM(q):
-//     The outboard frame M's pose as measured and expressed in the inboard
-//     frame F, as a function of the mobilizer's generalized positions `q`.
-//     This pose is computed by CalcAcrossMobilizerTransform().
-// - H_FM(q):
-//     The `6 x nv` mobilizer hinge matrix `H_FM` relates `V_FM` (outboard
-//     frame M's spatial velocity in its inboard frame F, expressed in F) to
-//     the mobilizer's `nv` generalized velocities (or mobilities) `v` as
-//     `V_FM = H_FM * v`.  The method CalcAcrossMobilizerSpatialVelocity()
-//     calculates `V_FM`.  Be aware that Drake's spatial velocities are not the
-//     Plücker vectors defined in [Featherstone 2008, Ch. 2].
-//     Note: `H_FM` is only a function of the `nq` generalized positions `q`.
-// - H_FMᵀ(q):
-//     H_FMᵀ is the `nv x 6` matrix transpose of `H_FM`.  It relates the `nv`
-//     generalized forces `tau` to `F_Mo_F` (the spatial force on frame M at
-//     point Mo, expressed in F) as `tau = H_FMᵀ ⋅ F_Mo_F`
-//     The %Mobilizer method ProjectSpatialForce() calculates `tau`.
-//     Be aware that Drake's spatial forces are not the Plücker vectors defined
-//     in [Featherstone 2008, Ch. 2].
-// - Hdot_FM(q, v):
-//     The time derivative of the mobilizer hinge matrix `H_FM` is used in the
-//     calculation of `A_FM(q, v, v̇)` (outboard frame M's spatial acceleration
-//     in its inboard frame F, expressed in F) as
-//     `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.  The %Mobilizer method
-//     CalcAcrossMobilizerSpatialAcceleration() calculates `A_FM`.
-// - N(q):
-//     This `nq x nv` kinematic coupling matrix relates q̇ (the time-derivative
-//     of the nq mobilizer's generalized positions) to `v` (the mobilizer's
-//     generalized velocities) as `q̇ = N(q) * v`, [Seth 2010].
-//     The %Mobilizer method MapVelocityToQDot() calculates `N(q)`.
-// - N⁺(q):
-//     The left pseudo-inverse of `N(q)`. `N⁺(q)` can be used to invert the
-//     relationship `q̇ = N(q) * v` without residual error, provided that `q̇` is
-//     in the range space of `N(q)` (that is, if it *could* have been produced
-//     as `q̇ = N(q) * v` for some `v`). The application `v = N⁺(q) * q̇` is
-//     implemented in MapQDotToVelocity().
-//
-// In general, `nv != nq`. As an example, consider a quaternion mobilizer that
-// would allow frame M to move freely with respect to frame F. For such a
-// mobilizer the generalized positions vector might contain a quaternion to
-// describe rotations plus a position vector to describe translations. However,
-// we might choose the angular velocity `w_FM` and the linear velocity `v_FM`
-// as the generalized velocities (or more generally, the spatial velocity
-// `V_FM`.) In such a case `nq = 7` (4 dofs for a quaternion plus 3 dofs for a
-// position vector) and `nv = 6` (3 dofs for an angular velocity and 3 dofs for
-// a linear velocity).
-//
-// For a detailed discussion on the concept of a mobilizer please refer to
-// [Seth 2010]. The mobilizer "hinge" matrix `H_FM(q)` is introduced in
-// [Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
-// the transpose of the mobilizer hinge matrix H_FM matrix here in Drake.
-// For details in the monogram notation used above please refer to
-// @ref multibody_spatial_algebra.
-//
-// %Mobilizer is an abstract base class defining the minimum functionality that
-// derived %Mobilizer objects must implement in order to fully define the
-// kinematic relationship between the two frames they connect.
-//
-// <h4>Relation between hinge matrix and Jacobians</h4>
-//
-// The relationship between the across-mobilizer spatial velocity `V_FM` and
-// the time derivative of the across-mobilizer transform `X_FM` is similar to
-// the relationship between the rigid transform Jacobian Jq_X_VM (partial
-// derivatives of rigid transform X_FM with respect to generalized positions q)
-// and the Drake mobilizer hinge matrix `H_FM` (partial derivatives of
-// across-mobilizer q̇ with respect to generalized velocities v).
-//
-// The translational velocity v_FM component of the spatial velocity `V_FM` is
-// defined as the time derivative of the position vector p_FM in `X_FM`. <pre>
-//   v_FM = dp_FM/dt = ∂p_FM/∂q * q̇ = ∂p_FM/∂q * N(q) * v = Hv_FM * v
-// </pre>
-// where `Hv_FM = ∂p_FM/∂q * N(q)` is the last three rows in `H_FM`.
-//
-// The angular velocity w_FM component of the spatial velocity `V_FM` can be
-// related to the time derivative of the rotation matrix R_FM in `X_FM`. This
-// complicated relationship can be written in terms of the skew symmetric
-// angular velocity matrix [w_FM] as <pre>
-//  [w_FM] = d(R_FM)/dt * (R_FM)ᵀ
-// </pre>
-// The ordinary time-derivative of the rotation matrix R_FM is <pre>
-//   d(R_FM)/dt = ∂R/∂q * q̇ = ∂R/∂q * N(q) * v
-// </pre>
-// Combining the previous two equations leads to <pre>
-//  [w_FM] = ∂R/∂q * N(q) * v * (R_FM)ᵀ
-// </pre>
-// Post-multiplying both sides of the previous equation by R_FM gives <pre>
-//  [w_FM] * R_FM = ∂R/∂q * N(q) * v
-// </pre>
-// `Hw_FM` is the first three rows in `H_FM`, defined by context as <pre>
-//  Hw_FM * R_FM = ∂R/∂q * N(q)
-// </pre>
-//
-// <h4>Active forces and power</h4>
-//
-// The power generated by a mobilizer can be computed in two equivalent ways.
-// That is, the power can be computed in terms of the spatial force `F_Mo` and
-// the spatial velocity `V_FM` as: <pre>
-//   P = F_Moᵀ * V_FM
-// </pre>
-// or in terms of the generalized forces `tau = H_FMᵀ(q) ⋅ F_Mo` and the
-// generalized velocities v as: <pre>
-//   P = tauᵀ * v
-// </pre>
-// Notice that spatial forces in the null space of `H_FM(q)` do not perform any
-// work.  Since the result from the previous two expressions must be equal, the
-// mobilizer hinge matrix `H_FM(q)` and its transpose `H_FMᵀ(q)` are
-// constrained by: <pre>
-//   (H_FMᵀ(q) * F) * v = Fᵀ * (H_FM(q) * v), ∀ v ∈ ℝⁿᵛ ∧ `F ∈ F⁶`
-// </pre>
-// Therefore, this enforces a relationship to the operations implemented by
-// CalcAcrossMobilizerSpatialVelocity() and ProjectSpatialForce() for any
-// %Mobilizer object.
-//
-// - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
-//               algorithms. Springer Science & Business Media.
-// - [Seth 2010] Seth, A., Sherman, M., Eastman, P. and Delp, S., 2010.
-//               Minimal formulation of joint motion for biomechanisms.
-//               Nonlinear dynamics, 62(1), pp.291-303.
-// - [Sciavicco 2000] Sciavicco, L. and Siciliano, B., 2000. Modelling and
-//               control of robot manipulators, 2nd Edn. Springer.
-// - [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
-//                       algorithms. Springer.
-//
-// @tparam_default_scalar
-template <typename T>
-class Mobilizer : public MultibodyElement<T> {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
+/* %MobilizedBody represents the mobility of an outboard body B with respect to
+its inboard (parent) body P in the multibody system's spanning tree. It
+consists of computationally-relevant information about a MultibodyPlant Body,
+and a Mobilizer that is the computational representation of one of the plant's
+Joints and provides mobility (degrees of freedom) for the Body.
 
-  // The minimum amount of information that we need to define a %Mobilizer is
-  // the knowledge of the inboard and outboard frames it connects.
-  // Subclasses of %Mobilizer are therefore required to provide this
+A Mobilizer connects a frame F ("fixed") on the inboard body to a frame M
+("moving") on the outboard body. Consider the following example to build a
+simple pendulum system:
+
+@code
+MultibodyTree<double> model;
+// ... Code here to setup quantities below as mass, com, X_BM, etc. ...
+const Body<double>& pendulum =
+  model.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
+// We will connect the pendulum (outboard) body B to the world frame W
+// (world is the inboard body here) using a RevoluteMobilizer. To do so we
+// define a pin frame M rigidly attached to the pendulum body.
+FixedOffsetFrame<double>& pin_frame =
+  model.AddFrame<FixedOffsetFrame>(
+    pendulum.body_frame(),
+    X_BM  // pose of pin frame M in body frame B
+    );
+// The mobilizer connects the world frame and the pin frame effectively
+// adding the single degree of freedom describing this system. In this
+// regard, the role of a mobilizer is equivalent but conceptually
+// different than a set of constraints that effectively remove all degrees
+// of freedom but the one permitting rotation about the z-axis.
+const RevoluteMobilizer<double>& revolute_mobilizer =
+  model.AddMobilizedBody<RevoluteMobilizer>(
+    model.world_frame(), // inboard frame F (= W)
+    pin_frame,           // outboard frame M
+    Vector3d::UnitZ()    // revolute axis in this case
+    ));
+@endcode
+
+<h3>Tree Structure</h3>
+
+A %MobilizedBody induces a tree structure within a MultibodyTree
+model, connecting an inboard (topologically closer to the world) frame to an
+outboard (topologically further from the world) frame. Every time a
+%MobilizedBody is added to a MultibodyTree (using the
+MultibodyTree::AddMobilizedBody() method), a number of degrees of
+freedom associated with the particular type of %MobilizedBody are added to
+the multibody system. In the example above for the single pendulum, adding a
+RevoluteMobilizer has two purposes:
+
+- It defines the tree structure of the model. World is the inboard body
+  while "pendulum" is the outboard body in the MultibodyTree.
+- It informs the MultibodyTree of the degrees of freedom granted by the
+  revolute mobilizer between the two frames it connects.
+- It defines a permissible motion space spanned by the generalized
+  coordinates introduced by the mobilizer.
+
+<h3>Mathematical Description of a %MobilizedBody</h3>
+
+A %MobilizedBody describes the kinematics relationship between an inboard
+frame F and an outboard frame M, introducing an nq-dimensional vector of
+generalized coordinates q and an nv-dimensional vector of generalized
+velocities v. Notice that in general `nq != nv`, though `nq == nv` is a very
+common case. The kinematic relationships introduced by a %MobilizedBody are
+fully specified by [Seth 2010]. The monogram notation used below for X_FM,
+V_FM, F_Mo_F, etc., are described in @ref multibody_frames_and_bodies.
+
+- X_FM(q):
+    The outboard frame M's pose as measured and expressed in the inboard
+    frame F, as a function of the mobilizer's generalized positions `q`.
+    This pose is computed by CalcAcrossMobilizerTransform().
+- H_FM(q):
+    The `6 x nv` mobilizer hinge matrix `H_FM` relates `V_FM` (outboard
+    frame M's spatial velocity in its inboard frame F, expressed in F) to
+    the mobilizer's `nv` generalized velocities (or mobilities) `v` as
+    `V_FM = H_FM * v`.  The method CalcAcrossMobilizerSpatialVelocity()
+    calculates `V_FM`.  Be aware that Drake's spatial velocities are not the
+    Plücker vectors defined in [Featherstone 2008, Ch. 2].
+    Note: `H_FM` is only a function of the `nq` generalized positions `q`.
+- H_FMᵀ(q):
+    H_FMᵀ is the `nv x 6` matrix transpose of `H_FM`.  It relates the `nv`
+    generalized forces `tau` to `F_Mo_F` (the spatial force on frame M at
+    point Mo, expressed in F) as `tau = H_FMᵀ ⋅ F_Mo_F`
+    The %MobilizedBody method ProjectSpatialForce() calculates `tau`.
+    Be aware that Drake's spatial forces are not the Plücker vectors defined
+    in [Featherstone 2008, Ch. 2].
+- Hdot_FM(q, v):
+    The time derivative of the mobilizer hinge matrix `H_FM` is used in the
+    calculation of `A_FM(q, v, v̇)` (outboard frame M's spatial acceleration
+    in its inboard frame F, expressed in F) as
+    `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.  The %MobilizedBody method
+    CalcAcrossMobilizerSpatialAcceleration() calculates `A_FM`.
+- N(q):
+    This `nq x nv` kinematic coupling matrix relates q̇ (the time-derivative
+    of the nq mobilizer's generalized positions) to `v` (the mobilizer's
+    generalized velocities) as `q̇ = N(q) * v`, [Seth 2010].
+    The %MobilizedBody method MapVelocityToQDot() performs this computation.
+- N⁺(q):
+    The left pseudo-inverse of `N(q)`. `N⁺(q)` can be used to invert the
+    relationship `q̇ = N(q) * v` without residual error, provided that `q̇` is
+    in the range space of `N(q)` (that is, if it _could_ have been produced
+    as `q̇ = N(q) * v` for some `v`). The application `v = N⁺(q) * q̇` is
+    implemented in MapQDotToVelocity().
+
+In general, `nv != nq`. As an example, consider a quaternion mobilizer that
+would allow frame M to move freely with respect to frame F. For such a
+mobilizer the generalized positions vector might contain a quaternion to
+describe rotations plus a position vector to describe translations. However,
+we might choose the angular velocity `w_FM` and the linear velocity `v_FM`
+as the generalized velocities (or more generally, the spatial velocity
+`V_FM`.) In such a case `nq = 7` (4 dofs for a quaternion plus 3 dofs for a
+position vector) and `nv = 6` (3 dofs for an angular velocity and 3 dofs for
+a linear velocity).
+
+For a detailed discussion on the concept of a mobilizer please refer to
+[Seth 2010]. The mobilizer "hinge" matrix `H_FM(q)` is introduced in
+[Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
+the transpose of the mobilizer hinge matrix H_FM matrix here in Drake.
+For details in the monogram notation used above please refer to
+@ref multibody_spatial_algebra.
+
+%MobilizedBody is an abstract base class defining the minimum functionality that
+derived %MobilizedBody objects must implement in order to fully define the
+kinematic relationship between the two frames they connect.
+
+<h4>Relation between hinge matrix and Jacobians</h4>
+
+The relationship between the across-mobilizer spatial velocity `V_FM` and
+the time derivative of the across-mobilizer transform `X_FM` is similar to
+the relationship between the rigid transform Jacobian Jq_X_VM (partial
+derivatives of rigid transform X_FM with respect to generalized positions q)
+and the Drake mobilizer hinge matrix `H_FM` (partial derivatives of
+across-mobilizer q̇ with respect to generalized velocities v).
+
+The translational velocity v_FM component of the spatial velocity `V_FM` is
+defined as the time derivative of the position vector p_FM in `X_FM`. <pre>
+  v_FM = dp_FM/dt = ∂p_FM/∂q * q̇ = ∂p_FM/∂q * N(q) * v = Hv_FM * v
+</pre>
+where `Hv_FM = ∂p_FM/∂q * N(q)` is the last three rows in `H_FM`.
+
+The angular velocity w_FM component of the spatial velocity `V_FM` can be
+related to the time derivative of the rotation matrix R_FM in `X_FM`. This
+complicated relationship can be written in terms of the skew symmetric
+angular velocity matrix [w_FM] as <pre>
+ [w_FM] = d(R_FM)/dt * (R_FM)ᵀ
+</pre>
+The ordinary time-derivative of the rotation matrix R_FM is <pre>
+  d(R_FM)/dt = ∂R/∂q * q̇ = ∂R/∂q * N(q) * v
+</pre>
+Combining the previous two equations leads to <pre>
+ [w_FM] = ∂R/∂q * N(q) * v * (R_FM)ᵀ
+</pre>
+Post-multiplying both sides of the previous equation by R_FM gives <pre>
+ [w_FM] * R_FM = ∂R/∂q * N(q) * v
+</pre>
+`Hw_FM` is the first three rows in `H_FM`, defined by context as <pre>
+ Hw_FM * R_FM = ∂R/∂q * N(q)
+</pre>
+
+<h4>Active forces and power</h4>
+
+The power generated by a mobilizer can be computed in two equivalent ways.
+That is, the power can be computed in terms of the spatial force `F_Mo` and
+the spatial velocity `V_FM` as: <pre>
+  P = F_Moᵀ * V_FM
+</pre>
+or in terms of the generalized forces `tau = H_FMᵀ(q) ⋅ F_Mo` and the
+generalized velocities v as: <pre>
+  P = tauᵀ * v
+</pre>
+Notice that spatial forces in the null space of `H_FM(q)` do not perform any
+work.  Since the result from the previous two expressions must be equal, the
+mobilizer hinge matrix `H_FM(q)` and its transpose `H_FMᵀ(q)` are
+constrained by: <pre>
+  (H_FMᵀ(q) * F) * v = Fᵀ * (H_FM(q) * v), ∀ v ∈ ℝⁿᵛ ∧ `F ∈ F⁶`
+</pre>
+Therefore, this enforces a relationship to the operations implemented by
+CalcAcrossMobilizerSpatialVelocity() and ProjectSpatialForce() for any
+%MobilizedBody object.
+
+- [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
+              algorithms. Springer Science & Business Media.
+- [Seth 2010] Seth, A., Sherman, M., Eastman, P. and Delp, S., 2010.
+              Minimal formulation of joint motion for biomechanisms.
+              Nonlinear dynamics, 62(1), pp.291-303.
+- [Sciavicco 2000] Sciavicco, L. and Siciliano, B., 2000. Modelling and
+              control of robot manipulators, 2nd Edn. Springer.
+- [Featherstone 2008] Featherstone, R., 2008. Rigid body dynamics
+                      algorithms. Springer.
+
+@tparam_default_scalar */
+template <typename T>
+class MobilizedBody : public MultibodyElement<T> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizedBody)
+
+  // The minimum amount of information that we need to define a %MobilizedBody
+  // is the inboard and outboard frames it connects.
+  // Subclasses of %MobilizedBody are therefore required to provide this
   // information in their respective constructors.
   // @throws std::exception if `inboard_frame` and `outboard_frame`
   // reference the same frame object.
-  Mobilizer(const Frame<T>& inboard_frame,
-            const Frame<T>& outboard_frame) :
+  MobilizedBody(const Frame<T>& inboard_frame,
+                const Frame<T>& outboard_frame) :
       inboard_frame_(inboard_frame), outboard_frame_(outboard_frame) {
     // Verify they are not the same frame.
     if (&inboard_frame == &outboard_frame) {
@@ -229,9 +234,11 @@ class Mobilizer : public MultibodyElement<T> {
     }
   }
 
+  virtual ~MobilizedBody() = default;
+
   /// Returns this element's unique index.
-  MobilizerIndex index() const {
-    return this->template index_impl<MobilizerIndex>();
+  MobilizedBodyIndex index() const {
+    return this->template index_impl<MobilizedBodyIndex>();
   }
 
   // Returns the number of generalized coordinates granted by this mobilizer.
@@ -336,7 +343,7 @@ class Mobilizer : public MultibodyElement<T> {
   // bookkeeping detail.
   const MobilizerTopology& get_topology() const { return topology_; }
 
-  // @name Methods that define a %Mobilizer
+  // @name Methods that define a %MobilizedBody
   // @{
 
   // Sets the `state` to what will be considered to be the _zero_ state
@@ -373,28 +380,27 @@ class Mobilizer : public MultibodyElement<T> {
   // the zero state (it is where our joint angles measure zero).  But we also
   // support a default state (perhaps a more comfortable initial configuration
   // of the IIWA), which need not be the zero state, that describes a state of
-  // the Mobilizer to be used in e.g. MultibodyPlant::SetDefaultContext().
+  // the MobilizedBody to be used in e.g. MultibodyPlant::SetDefaultContext().
   virtual void set_default_state(const systems::Context<T>& context,
                                  systems::State<T>* state) const = 0;
 
   // Sets the `state` to a (potentially) random position and velocity, by
   // evaluating any random distributions that were declared (via e.g.
-  // MobilizerImpl::set_random_position_distribution() and/or
-  // MobilizerImpl::set_random_velocity_distribution(), or calling
+  // MobilizedBodyImpl::set_random_position_distribution() and/or
+  // MobilizedBodyImpl::set_random_velocity_distribution(), or calling
   // set_zero_state() if none have been declared. Note that the intended
   // caller of this method is `MultibodyTree::SetRandomState()` which treats
-  // the independent samples returned from this sample as an initial guess,
-  // but may change the value in order to "project" it onto a constraint
-  // manifold.
+  // the independent samples returned from this sample as an initial guess, but
+  // may change the value in order to "project" it onto a constraint manifold.
   virtual void set_random_state(const systems::Context<T>& context,
                                 systems::State<T>* state,
                                 RandomGenerator* generator) const = 0;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
   // frame F and the outboard frame M as a function of the vector of
-  // generalized positions `q`.
-  // %Mobilizer subclasses implementing this method can retrieve the fixed-size
-  // vector of generalized positions for `this` mobilizer from `context` with:
+  // generalized positions `q`. %MobilizedBody subclasses implementing this
+  // method can retrieve the fixed-size vector of generalized positions for
+  // `this` mobilizer from `context` with:
   //
   // @code
   // auto q = this->get_positions(context);
@@ -628,7 +634,7 @@ class Mobilizer : public MultibodyElement<T> {
   // needed.
   // @sa MultibodyTree::CloneToScalar()
   template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> CloneToScalar(
+  std::unique_ptr<MobilizedBody<ToScalar>> CloneToScalar(
       const MultibodyTree<ToScalar>& cloned_tree) const {
     return DoCloneToScalar(cloned_tree);
   }
@@ -636,7 +642,7 @@ class Mobilizer : public MultibodyElement<T> {
   // For MultibodyTree internal use only.
   virtual std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
-      const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
+      const Body<T>* body, const MobilizedBody<T>* mobilizer) const = 0;
 
   /// Lock the mobilizer. Its generalized velocities will be 0 until it is
   /// unlocked. Locking is not yet supported for continuous-mode systems.
@@ -689,21 +695,21 @@ class Mobilizer : public MultibodyElement<T> {
   // inboard and outboard frames of the mobilizer being cloned.
   // @{
 
-  // Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  // Clones this %MobilizedBody (templated on T) to a mobilizer templated on
   // `double`.
   // @pre Inboard and outboard frames for this mobilizer already have a clone
   // in `tree_clone`.
-  virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+  virtual std::unique_ptr<MobilizedBody<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const = 0;
 
-  // Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  // Clones this %MobilizedBody (templated on T) to a mobilizer templated on
   // AutoDiffXd.
   // @pre Inboard and outboard frames for this mobilizer already have a clone
   // in `tree_clone`.
-  virtual std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+  virtual std::unique_ptr<MobilizedBody<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const = 0;
 
-  virtual std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+  virtual std::unique_ptr<MobilizedBody<symbolic::Expression>> DoCloneToScalar(
       const MultibodyTree<symbolic::Expression>& tree_clone) const = 0;
   // @}
 

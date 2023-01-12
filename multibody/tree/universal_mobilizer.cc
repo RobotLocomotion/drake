@@ -132,7 +132,7 @@ UniversalMobilizer<T>::CalcAcrossMobilizerSpatialAcceleration(
   DRAKE_ASSERT(vdot.size() == kNv);
   Vector3<T> Hw_dot_col1;
   const Eigen::Matrix<T, 3, 2> Hw = this->CalcHwMatrix(context, &Hw_dot_col1);
-  // Calculated using alpha_FM = Hw_FM⋅v̇ + Hwdot_FM⋅v. See Mobilizer class
+  // Calculated using alpha_FM = Hw_FM⋅v̇ + Hwdot_FM⋅v. See MobilizedBody class
   // documentation for derivation.
   return SpatialAcceleration<T>(Hw * vdot + Hw_dot_col1 * v[1],
                                 Vector3<T>::Zero());
@@ -183,7 +183,7 @@ void UniversalMobilizer<T>::MapQDotToVelocity(
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<Mobilizer<ToScalar>>
+std::unique_ptr<MobilizedBody<ToScalar>>
 UniversalMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
@@ -195,19 +195,20 @@ UniversalMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> UniversalMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<MobilizedBody<double>> UniversalMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>> UniversalMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<MobilizedBody<AutoDiffXd>>
+UniversalMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<symbolic::Expression>>
+std::unique_ptr<MobilizedBody<symbolic::Expression>>
 UniversalMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);

@@ -79,10 +79,11 @@ struct BodyTopology {
   // By default this is initialized to "invalid" so that we can detect
   // graph loops within add_mobilizer().
   // This will remain "invalid" for the world body.
-  MobilizerIndex inboard_mobilizer{};
+  MobilizedBodyIndex inboard_mobilizer{};
 
   // Within the tree structure of a MultibodyTree, the immediate inboard (or
-  // "parent") body connected by the Mobilizer indexed by `inboard_mobilizer`.
+  // "parent") body connected by the MobilizedBody indexed by
+  // `inboard_mobilizer`.
   // By default this is initialized to "invalid" so that we can assert
   // (from within add_mobilizer()) that each body can have only one parent
   // body. Also, this will remain "invalid" for the world body.
@@ -145,7 +146,7 @@ struct FrameTopology {
 };
 
 // Data structure to store the topological information associated with a
-// Mobilizer object. It stores:
+// MobilizedBody object. It stores:
 //
 // - Indexes to the inboard/outboard frames of this mobilizer.
 // - Indexes to the inboard/outboard bodies of this mobilizer.
@@ -163,14 +164,14 @@ struct MobilizerTopology {
 
   // Constructs a %MobilizerTopology by specifying the index `mobilizer_index`
   // for `this` new topology, the indexes to the inboard and outboard frames
-  // the Mobilizer will connect, given by `in_frame` and `out_frame`
+  // the MobilizedBody will connect, given by `in_frame` and `out_frame`
   // respectively, and similarly the inboard and outboard bodies being
   // connected, given by `in_body` and `out_body`, respectively.  The
-  // constructed topology will correspond to that of a Mobilizer with
+  // constructed topology will correspond to that of a MobilizedBody with
   // `num_positions_in` generalized positions and `num_velocities_in`
   // generalized velocities.
   MobilizerTopology(
-      MobilizerIndex mobilizer_index,
+      MobilizedBodyIndex mobilizer_index,
       FrameIndex in_frame, FrameIndex out_frame,
       BodyIndex in_body, BodyIndex out_body,
       int num_positions_in, int num_velocities_in) :
@@ -220,7 +221,7 @@ struct MobilizerTopology {
   }
 
   // Unique index in the set of mobilizers.
-  MobilizerIndex index;
+  MobilizedBodyIndex index;
   // Index to the inboard frame.
   FrameIndex inboard_frame;
   // Index to the outboard frame.
@@ -234,7 +235,7 @@ struct MobilizerTopology {
   // further details on how these computations are organized.
   BodyNodeIndex body_node;
 
-  // Mobilizer indexing info: Set at Finalize() time.
+  // MobilizedBody indexing info: Set at Finalize() time.
   // Number of generalized coordinates granted by this mobilizer.
   int num_positions{0};
   // First entry in the global array of states, `x = [q v z]`, for the parent
@@ -341,13 +342,15 @@ struct BodyNodeTopology {
   //                       `body_in`. In other words, `parent_body_in` is the
   //                       body associated with node `parent_node_in`.
   // @param mobilizer_in The index to the mobilizer associated with this node.
-  BodyNodeTopology(
-      BodyNodeIndex index_in, int level_in,
-      BodyNodeIndex parent_node_in,
-      BodyIndex body_in, BodyIndex parent_body_in, MobilizerIndex mobilizer_in)
-      : index(index_in), level(level_in),
-      parent_body_node(parent_node_in),
-      body(body_in), parent_body(parent_body_in), mobilizer(mobilizer_in) {}
+  BodyNodeTopology(BodyNodeIndex index_in, int level_in,
+                   BodyNodeIndex parent_node_in, BodyIndex body_in,
+                   BodyIndex parent_body_in, MobilizedBodyIndex mobilizer_in)
+      : index(index_in),
+        level(level_in),
+        parent_body_node(parent_node_in),
+        body(body_in),
+        parent_body(parent_body_in),
+        mobilizer(mobilizer_in) {}
 
   // Returns `true` if all members of `this` topology are exactly equal to the
   // members of `other`.
@@ -404,7 +407,7 @@ struct BodyNodeTopology {
   BodyIndex body;         // This node's body B.
   BodyIndex parent_body;  // This node's parent body P.
 
-  MobilizerIndex mobilizer;  // The mobilizer connecting bodies P and B.
+  MobilizedBodyIndex mobilizer;  // The mobilizer connecting bodies P and B.
 
   // The list of child body nodes to this node.
   std::vector<BodyNodeIndex> child_nodes;
@@ -523,7 +526,7 @@ class MultibodyTreeTopology {
 
   // Returns a constant reference to the corresponding BodyTopology given a
   // BodyIndex.
-  const MobilizerTopology& get_mobilizer(MobilizerIndex index) const {
+  const MobilizerTopology& get_mobilizer(MobilizedBodyIndex index) const {
     DRAKE_ASSERT(index < num_mobilizers());
     return mobilizers_[index];
   }
@@ -629,7 +632,7 @@ class MultibodyTreeTopology {
   // Creates and adds a new MobilizerTopology connecting the inboard and
   // outboard multibody frames identified by indexes `in_frame` and
   // `out_frame`, respectively. The created topology will correspond to that of
-  // a Mobilizer with `num_positions` and `num_velocities`.
+  // a MobilizedBody with `num_positions` and `num_velocities`.
   //
   // @throws std::exception if either `in_frame` or `out_frame` do not
   // index frame topologies in `this` %MultibodyTreeTopology.
@@ -640,8 +643,8 @@ class MultibodyTreeTopology {
   // @throws std::exception if Finalize() was already called on `this`
   // topology.
   //
-  // @returns The MobilizerIndex assigned to the new MobilizerTopology.
-  MobilizerIndex add_mobilizer(
+  // @returns The MobilizedBodyIndex assigned to the new MobilizerTopology.
+  MobilizedBodyIndex add_mobilizer(
       FrameIndex in_frame, FrameIndex out_frame,
       int num_positions, int num_velocities) {
     if (is_valid()) {
@@ -694,7 +697,7 @@ class MultibodyTreeTopology {
     // set within this method right after these checks.
     DRAKE_DEMAND(!bodies_[outboard_body].inboard_mobilizer.is_valid());
     DRAKE_DEMAND(!bodies_[outboard_body].parent_body.is_valid());
-    MobilizerIndex mobilizer_index(num_mobilizers());
+    MobilizedBodyIndex mobilizer_index(num_mobilizers());
 
     // Make note of the inboard mobilizer for the outboard body.
     bodies_[outboard_body].inboard_mobilizer = mobilizer_index;
@@ -802,7 +805,7 @@ class MultibodyTreeTopology {
       int level = 0;  // level = 0 for the world body.
       if (current != 0) {  // Not the world body.
         level = bodies_[parent].level + 1;
-        const MobilizerIndex mobilizer = bodies_[current].inboard_mobilizer;
+        const MobilizedBodyIndex mobilizer = bodies_[current].inboard_mobilizer;
         mobilizers_[mobilizer].body_node = node;
       }
       // Updates body levels.

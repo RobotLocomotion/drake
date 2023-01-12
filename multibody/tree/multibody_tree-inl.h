@@ -23,7 +23,7 @@
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/joint_actuator.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/model_instance.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree.h"
@@ -167,8 +167,8 @@ template <typename T>
 template <template<typename Scalar> class MobilizerType>
 const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
     std::unique_ptr<MobilizerType<T>> mobilizer) {
-  static_assert(std::is_convertible_v<MobilizerType<T>*, Mobilizer<T>*>,
-                "MobilizerType must be a sub-class of mobilizer<T>.");
+  static_assert(std::is_convertible_v<MobilizerType<T>*, MobilizedBody<T>*>,
+                "MobilizerType must be a sub-class of MobilizedBody<T>.");
   if (topology_is_valid()) {
     throw std::logic_error("This MultibodyTree is finalized already. "
                            "Therefore adding more mobilizers is not allowed. "
@@ -185,7 +185,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
   mobilizer->outboard_frame().HasThisParentTreeOrThrow(this);
   const int num_positions = mobilizer->num_positions();
   const int num_velocities = mobilizer->num_velocities();
-  MobilizerIndex mobilizer_index = topology_.add_mobilizer(
+  MobilizedBodyIndex mobilizer_index = topology_.add_mobilizer(
       mobilizer->inboard_frame().index(),
       mobilizer->outboard_frame().index(),
       num_positions, num_velocities);
@@ -225,8 +225,8 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
 template <typename T>
 template<template<typename Scalar> class MobilizerType, typename... Args>
 const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(Args&&... args) {
-  static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                "MobilizerType must be a sub-class of Mobilizer<T>.");
+  static_assert(std::is_base_of_v<MobilizedBody<T>, MobilizerType<T>>,
+                "MobilizerType must be a sub-class of MobilizedBody<T>.");
   return AddMobilizer(
       std::make_unique<MobilizerType<T>>(std::forward<Args>(args)...));
 }
@@ -446,13 +446,13 @@ Body<T>* MultibodyTree<T>::CloneBodyAndAdd(const Body<FromScalar>& body) {
 
 template <typename T>
 template <typename FromScalar>
-Mobilizer<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
-    const Mobilizer<FromScalar>& mobilizer) {
-  MobilizerIndex mobilizer_index = mobilizer.index();
+MobilizedBody<T>* MultibodyTree<T>::CloneMobilizerAndAdd(
+    const MobilizedBody<FromScalar>& mobilizer) {
+  MobilizedBodyIndex mobilizer_index = mobilizer.index();
   auto mobilizer_clone = mobilizer.CloneToScalar(*this);
   mobilizer_clone->set_parent_tree(this, mobilizer_index);
   mobilizer_clone->set_model_instance(mobilizer.model_instance());
-  Mobilizer<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
+  MobilizedBody<T>* raw_mobilizer_clone_ptr = mobilizer_clone.get();
   owned_mobilizers_.push_back(std::move(mobilizer_clone));
   return raw_mobilizer_clone_ptr;
 }

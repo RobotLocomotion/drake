@@ -5,7 +5,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/body_node.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 
 namespace drake {
@@ -38,11 +38,11 @@ class BodyNodeImpl : public BodyNode<T> {
   //   the owning MultibodyTree. It can be a `nullptr` only when `body` **is**
   //   the **world** body, otherwise the parent class constructor will abort.
   // @param[in] body The body B associated with `this` node.
-  // @param[in] mobilizer The mobilizer associated with this `node`. It can
-  //                      only be a `nullptr` for the **world** body.
+  // @param[in] mobilized_body The mobilizer associated with this `node`. It can
+  //                           only be a `nullptr` for the **world** body.
   BodyNodeImpl(const internal::BodyNode<T>* parent_node,
-               const Body<T>* body, const Mobilizer<T>* mobilizer) :
-      BodyNode<T>(parent_node, body, mobilizer) {}
+               const Body<T>* body, const MobilizedBody<T>* mobilized_body) :
+      BodyNode<T>(parent_node, body, mobilized_body) {}
 
   // TODO(amcastro-tri): Implement methods for computing velocity kinematics
   //  using fixed-size Eigen matrices.

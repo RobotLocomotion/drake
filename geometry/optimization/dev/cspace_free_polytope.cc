@@ -33,7 +33,7 @@ namespace {
 [[nodiscard]] bool ChainIsWeld(const multibody::MultibodyPlant<double>& plant,
                                multibody::BodyIndex start,
                                multibody::BodyIndex end) {
-  const std::vector<multibody::internal::MobilizerIndex> mobilizers =
+  const std::vector<multibody::internal::MobilizedBodyIndex> mobilizers =
       multibody::internal::FindMobilizersOnPath(plant, start, end);
   if (mobilizers.size() == 0) {
     return true;
@@ -124,7 +124,8 @@ void FindMonomialBasisArray(
     std::array<VectorX<symbolic::Monomial>, 4>* monomial_basis_array) {
   auto it = map_body_to_monomial_basis_array->find(body_pair);
   if (it == map_body_to_monomial_basis_array->end()) {
-    const std::vector<multibody::internal::MobilizerIndex> mobilizer_indices =
+    const std::vector<multibody::internal::MobilizedBodyIndex>
+        mobilizer_indices =
         multibody::internal::FindMobilizersOnPath(rational_forward_kin.plant(),
                                                   body_pair.first(),
                                                   body_pair.second());

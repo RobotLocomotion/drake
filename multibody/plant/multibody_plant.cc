@@ -2988,9 +2988,9 @@ void MultibodyPlant<T>::CalcReactionForces(
   // necessary frame conversions.
   for (JointIndex joint_index(0); joint_index < num_joints(); ++joint_index) {
     const Joint<T>& joint = get_joint(joint_index);
-    const internal::MobilizerIndex mobilizer_index =
+    const internal::MobilizedBodyIndex mobilizer_index =
         internal_tree().get_joint_mobilizer(joint_index);
-    const internal::Mobilizer<T>& mobilizer =
+    const internal::MobilizedBody<T>& mobilizer =
         internal_tree().get_mobilizer(mobilizer_index);
     const internal::BodyNodeIndex body_node_index =
         mobilizer.get_topology().body_node;

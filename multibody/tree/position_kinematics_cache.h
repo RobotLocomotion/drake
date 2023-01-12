@@ -24,7 +24,7 @@ namespace internal {
 // - Body frame B poses X_WB measured and expressed in the world frame W.
 // - Pose X_FM of a mobilizer's outboard frame M measured and expressed in the
 //   inboard frame F.
-// - Mobilizer's matrices H_FM (with F and M defined above) that map the
+// - MobilizedBody's matrices H_FM (with F and M defined above) that map the
 //   mobilizer's generalized velocities v to cross-joint spatial velocities
 //   V_FM = H_FM * v.
 //
