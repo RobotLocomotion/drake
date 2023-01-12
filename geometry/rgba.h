@@ -1,10 +1,5 @@
 #pragma once
 
-#include <stdexcept>
-
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
@@ -12,7 +7,7 @@
 namespace drake {
 namespace geometry {
 
-/** Defines RGBA (red, green, blue, alpha) values on the range [0, 1].  */
+/** Defines RGBA (red, green, blue, alpha) values on the range [0, 1]. */
 class Rgba {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Rgba);
@@ -21,54 +16,49 @@ class Rgba {
   Rgba() = default;
 
   /** Constructs with given (r, g, b, a) values.
-   @pre All values are within the range of [0, 1].  */
-  Rgba(double r, double g, double b, double a = 1.) {
+   @pre All values are within the range of [0, 1]. */
+  Rgba(double r, double g, double b, double a = 1.0) {
     set(r, g, b, a);
   }
 
-  /** Red.  */
-  double r() const { return r_; }
+  /** Red. */
+  double r() const { return value_[0]; }
 
-  /** Green.  */
-  double g() const { return g_; }
+  /** Green. */
+  double g() const { return value_[1]; }
 
-  /** Blue.  */
-  double b() const { return b_; }
+  /** Blue. */
+  double b() const { return value_[2]; }
 
-  /** Alpha.  */
-  double a() const { return a_; }
+  /** Alpha. */
+  double a() const { return value_[3]; }
+
+  /** Returns all four elements in order. */
+  Eigen::Vector4d rgba() const { return value_; }
 
   /** Sets (r, g, b, a) values.
-   @pre All values are within the range of [0, 1]. The values are not updated
-   if this precondition is not met.  */
-  void set(double r, double g, double b, double a = 1.) {
-    if ((r < 0 || r > 1) ||
-        (g < 0 || g > 1) ||
-        (b < 0 || b > 1) ||
-        (a < 0 || a > 1)) {
-      throw std::runtime_error(fmt::format(
-          "Rgba values must be within the range [0, 1]. Values provided: "
-          "(r={}, g={}, b={}, a={})", r, g, b, a));
-    }
-    r_ = r;
-    g_ = g;
-    b_ = b;
-    a_ = a;
+   @throws std::exception if any values are outside of the range [0, 1]. */
+  void set(double r, double g, double b, double a = 1.0) {
+    set(Eigen::Vector4d{r, g, b, a});
   }
 
-  /* Reports if two %Rgba values are equal within a given absolute `tolerance`.
+  /** Sets an (r, g, b, a) from a vector.
+   @throws std::exception if the vector is not size 3 or 4.
+   @throws std::exception if any values are outside of the range [0, 1]. */
+  void set(const Eigen::Ref<const Eigen::VectorXd>& rgba);
+
+  /** Reports if two %Rgba values are equal within a given absolute `tolerance`.
    They are "equal" so long as the difference in no single channel is larger
    than the specified `tolerance`. */
   bool AlmostEqual(const Rgba& other, double tolerance = 0.0) const {
-    return std::abs(r_ - other.r_) <= tolerance &&
-           std::abs(g_ - other.g_) <= tolerance &&
-           std::abs(b_ - other.b_) <= tolerance &&
-           std::abs(a_ - other.a_) <= tolerance;
+    return std::abs(r() - other.r()) <= tolerance &&
+           std::abs(g() - other.g()) <= tolerance &&
+           std::abs(b() - other.b()) <= tolerance &&
+           std::abs(a() - other.a()) <= tolerance;
   }
 
   bool operator==(const Rgba& other) const {
-    return
-        r_ == other.r_ && g_ == other.g_ && b_ == other.b_ && a_ == other.a_;
+    return value_ == other.value_;
   }
 
   bool operator!=(const Rgba& other) const {
@@ -92,32 +82,28 @@ class Rgba {
    Refer to @ref yaml_serialization "YAML Serialization" for background. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    /* N.B. This "strange" spelling is to enable the following in YAML:
-        - rgba: [r, g, b]
-      or
-        - rgba: [r, g, b, a]
-     Rather than enumerating the fields, we treat the Rgba like an array-like
-     construct. Validation is done *explicitly* here on the *size* of the array;
-     the validity of the individual values is handled by Rgba::set(). */
-    Eigen::VectorXd rgba = Eigen::Vector4d{r_, g_, b_, a_};
-    a->Visit(MakeNameValue("rgba", &rgba));
-    if (rgba.size() == 3) {
-      set(rgba[0], rgba[1], rgba[2]);
-    } else if (rgba.size() == 4) {
-      set(rgba[0], rgba[1], rgba[2], rgba[3]);
-    } else {
-      throw std::runtime_error(fmt::format(
-          "Rgba must contain either 3 or 4 elements (given [{}])",
-          rgba.transpose()));
-    }
+    // N.B. This spelling is to enable the following in YAML:
+    //  - rgba: [r, g, b]
+    // or
+    //  - rgba: [r, g, b, a]
+    a->Visit(MakeNameValue("rgba", &value_));
+
+    // In case the archive modified our data, we need to re-validate it now.
+    // We want to be sure that value_ remains well-formed even if set() throws,
+    // so we'll clear it and then reset it.
+    auto new_value = value_;
+    value_ = Eigen::Vector4d::Zero();
+    set(new_value);
   }
 
  private:
+  void ThrowIfOutOfRange() const;
+
+  // We maintain an invaiant that this vector is always exactly size 4, but we
+  // need to declare it as Eigen::Dynamic for compatibility with Serialize.
   // As documented above, default-constructed Rgba is opaque white.
-  double r_{1};
-  double g_{1};
-  double b_{1};
-  double a_{1};
+  Eigen::Matrix<double, Eigen::Dynamic, 1, 0, 4, 1> value_{
+      Eigen::Vector4d::Ones()};
 };
 
 }  // namespace geometry
