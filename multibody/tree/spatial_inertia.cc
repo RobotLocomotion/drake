@@ -62,22 +62,24 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
       "radius = {} or length = {} is negative or zero.", __func__, r, l);
     throw std::logic_error(error_message);
   }
-  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
-  // UnitInertia::SolidCylinder() normalizes unit_vector before its use.
-  // TODO(Mitiguy) remove normalization in UnitInertia::SolidCylinder().
+
+  // Ensure ‖unit_vector‖  is within 6 bits of 1.0 (2^6 = 64).
   using std::abs;
-  constexpr double kTolerance = 128 * std::numeric_limits<double>::epsilon();
-  if (abs(unit_vector.squaredNorm() - 1) > kTolerance) {
-    // If ‖unit_vector‖² is not within 7 bits of 1.0 (2^7 = 128), it means
-    //    ‖unit_vector‖  is not within 6 bits of 1.0 (2^6 = 64). This follows
-    // from the fact that for an arbitrary vector 𝐯, ‖𝐯‖ = √(𝐯⋅𝐯).
+  constexpr double kTolerance = 32 * std::numeric_limits<double>::epsilon();
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
     std::string error_message = fmt::format("{}(): The unit_vector argument "
       "{} is not a unit vector.", __func__, unit_vector.transpose());
     throw std::logic_error(error_message);
   }
+
   const T volume = M_PI * r * r * l;  // π r² l
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+
+  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
+  // UnitInertia::SolidCylinder() allows for a near zero-vector due to code in
+  // UnitInertia::AxiallySymmetric() which normalizes unit_vector before use.
+  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCylinder(r, l, unit_vector);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
