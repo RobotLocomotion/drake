@@ -299,7 +299,7 @@ class TreeTopologyTests : public ::testing::Test {
           Vector3d::UnitZ());
       joints_.push_back(joint);
     } else {
-      const Mobilizer<double> *mobilizer =
+      const MobilizedBody<double> *mobilizer =
           &model_->AddMobilizer<RevoluteMobilizer>(
               inboard.body_frame(), outboard.body_frame(),
               Vector3d::UnitZ());
@@ -309,9 +309,10 @@ class TreeTopologyTests : public ::testing::Test {
 
   void WeldBodies(const RigidBody<double>& inboard,
                   const RigidBody<double>& outboard) {
-    const Mobilizer<double>* mobilizer = &model_->AddMobilizer<WeldMobilizer>(
-        inboard.body_frame(), outboard.body_frame(),
-        math::RigidTransformd::Identity());
+    const MobilizedBody<double>* mobilizer =
+        &model_->AddMobilizer<WeldMobilizer>(inboard.body_frame(),
+                                             outboard.body_frame(),
+                                             math::RigidTransformd::Identity());
     mobilizers_.push_back(mobilizer);
   }
 
@@ -358,7 +359,8 @@ class TreeTopologyTests : public ::testing::Test {
                 topology.get_body(parent_body).body_node);
 
       // Verifies that BodyNode makes reference to the proper mobilizer index.
-      const MobilizerIndex mobilizer = topology.get_body_node(node).mobilizer;
+      const MobilizedBodyIndex mobilizer =
+          topology.get_body_node(node).mobilizer;
       EXPECT_EQ(mobilizer, topology.get_body(body).inboard_mobilizer);
 
       // Verifies the mobilizer makes reference to the appropriate node.
@@ -480,7 +482,7 @@ class TreeTopologyTests : public ::testing::Test {
   // Bodies:
   std::vector<const RigidBody<double>*> bodies_;
   // Mobilizers:
-  std::vector<const Mobilizer<double>*> mobilizers_;
+  std::vector<const MobilizedBody<double>*> mobilizers_;
   // Joints:
   std::vector<const RevoluteJoint<double>*> joints_;
 };
@@ -524,7 +526,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
        node_index < topology.get_num_body_nodes(); ++node_index) {
     const BodyNodeTopology& node = topology.get_body_node(node_index);
     const BodyIndex body_index = node.body;
-    const MobilizerIndex mobilizer_index = node.mobilizer;
+    const MobilizedBodyIndex mobilizer_index = node.mobilizer;
 
     const MobilizerTopology& mobilizer_topology =
         topology.get_mobilizer(mobilizer_index);

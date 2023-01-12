@@ -6,7 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/joint_actuator.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
@@ -43,7 +43,7 @@ namespace multibody {
 /// * Frame: Same as the associated Body
 /// * Joint: Same as the child frame
 /// * JointActuator: Same as the associated Joint
-/// * Mobilizer:
+/// * MobilizedBody:
 ///   * Same as the joint (if created from a joint)
 ///   * Same as the body (for free floating bodies)
 ///   * When creating mobilizers for other reasons (e.g. for unit tests) the
@@ -72,7 +72,7 @@ class ModelInstance : public MultibodyElement<T> {
   int num_states() const { return num_positions_ + num_velocities_; }
   int num_actuated_dofs() const { return num_actuated_dofs_; }
 
-  void add_mobilizer(const Mobilizer<T>* mobilizer) {
+  void add_mobilizer(const MobilizedBody<T>* mobilizer) {
     num_positions_ += mobilizer->num_positions();
     num_velocities_ += mobilizer->num_velocities();
     mobilizers_.push_back(mobilizer);
@@ -178,7 +178,7 @@ class ModelInstance : public MultibodyElement<T> {
   int num_velocities_{0};
   int num_actuated_dofs_{0};
 
-  std::vector<const Mobilizer<T>*> mobilizers_;
+  std::vector<const MobilizedBody<T>*> mobilizers_;
   std::vector<const JointActuator<T>*> joint_actuators_;
 };
 

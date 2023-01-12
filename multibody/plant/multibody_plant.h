@@ -2426,8 +2426,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// A %MultibodyPlant user adds sets of Body and Joint objects to `this` plant
   /// to build a physical representation of a mechanical model.
   /// At Finalize(), %MultibodyPlant builds a mathematical representation of
-  /// such system, consisting of a tree representation. In this
-  /// representation each body is assigned a Mobilizer, which grants a certain
+  /// such system, consisting of a tree representation. In this representation
+  /// each body is assigned a MobilizedBody, which grants a certain
   /// number of degrees of freedom in accordance to the physical specification.
   /// In this regard, the modeling representation can be seen as a forest of
   /// tree structures each of which contains a single body at the root of the
@@ -3169,7 +3169,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   or if it is not of size num_positions().
   ///
   /// @see MapQDotToVelocity()
-  /// @see Mobilizer::MapVelocityToQDot()
+  /// @see MobilizedBody::MapVelocityToQDot()
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
@@ -3203,7 +3203,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   is not of size num_velocities().
   ///
   /// @see MapVelocityToQDot()
-  /// @see Mobilizer::MapQDotToVelocity()
+  /// @see MobilizedBody::MapQDotToVelocity()
   void MapQDotToVelocity(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,

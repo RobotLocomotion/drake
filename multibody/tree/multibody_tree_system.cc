@@ -93,7 +93,7 @@ MultibodyTree<T>& MultibodyTreeSystem<T>::mutable_tree() const {
 template <typename T>
 void MultibodyTreeSystem<T>::DeclareMultibodyElementParameters() {
   // Mobilizers.
-  for (MobilizerIndex mobilizer_index(0);
+  for (MobilizedBodyIndex mobilizer_index(0);
        mobilizer_index < tree_->num_mobilizers(); ++mobilizer_index) {
     mutable_tree()
         .get_mutable_mobilizer(mobilizer_index)

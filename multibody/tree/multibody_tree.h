@@ -66,7 +66,7 @@ namespace internal {
 
 template <typename T> class BodyNode;
 template <typename T> class ModelInstance;
-template <typename T> class Mobilizer;
+template <typename T> class MobilizedBody;
 template <typename T> class QuaternionFloatingMobilizer;
 
 // %MultibodyTree provides a representation for a physical system consisting of
@@ -304,8 +304,8 @@ class MultibodyTree {
   //       Vector3d::UnitZ() /*revolute axis*/));
   // @endcode
   //
-  // A %Mobilizer effectively connects the two bodies to which the inboard and
-  // outboard frames belong.
+  // A %MobilizedBody effectively connects the two bodies to which the inboard
+  // and outboard frames belong.
   //
   // @throws std::exception if `mobilizer` is a nullptr.
   // @throws std::exception if Finalize() was already called on `this` tree.
@@ -325,8 +325,8 @@ class MultibodyTree {
   //          mobilizer. This reference which will remain valid for the
   //          lifetime of `this` %MultibodyTree.
   //
-  // @tparam MobilizerType The type of the specific sub-class of Mobilizer to
-  //                       add. The template needs to be specialized on the
+  // @tparam MobilizerType The type of the specific sub-class of MobilizedBody
+  //                       to add. The template needs to be specialized on the
   //                       same scalar type T of this %MultibodyTree.
   template <template<typename Scalar> class MobilizerType>
   const MobilizerType<T>& AddMobilizer(
@@ -359,16 +359,16 @@ class MultibodyTree {
   // @throws std::exception if attempting to connect two bodies with more
   // than one mobilizer between them.
   //
-  // @param[in] args The arguments needed to construct a valid Mobilizer of
+  // @param[in] args The arguments needed to construct a valid MobilizedBody of
   //                 type `MobilizerType`. `MobilizerType` must provide a
   //                 public constructor that takes these arguments.
   // @returns A constant reference of type `MobilizerType` to the created
   //          mobilizer. This reference which will remain valid for the
   //          lifetime of `this` %MultibodyTree.
   //
-  // @tparam MobilizerType A template for the type of Mobilizer to construct.
-  //                       The template will be specialized on the scalar type
-  //                       T of `this` %MultibodyTree.
+  // @tparam MobilizerType A template for the type of MobilizedBody to
+  //                       construct. The template will be specialized on the
+  //                       scalar type T of `this` %MultibodyTree.
   template<template<typename Scalar> class MobilizerType, typename... Args>
   const MobilizerType<T>& AddMobilizer(Args&&... args);
 
@@ -619,7 +619,7 @@ class MultibodyTree {
   // That is, the number of bodies in the longest kinematic path between the
   // world and any other leaf body. For a model that only contains the _world_
   // body, the height of the tree is one.
-  // Kinematic paths are created by Mobilizer objects connecting a chain of
+  // Kinematic paths are created by MobilizedBody objects connecting a chain of
   // frames. Therefore, this method does not count kinematic cycles, which
   // could only be considered in the model using constraints.
   int tree_height() const {
@@ -688,12 +688,13 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
-  const Mobilizer<T>& get_mobilizer(MobilizerIndex mobilizer_index) const {
+  const MobilizedBody<T>& get_mobilizer(
+      MobilizedBodyIndex mobilizer_index) const {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
   }
 
-  Mobilizer<T>& get_mutable_mobilizer(MobilizerIndex mobilizer_index) {
+  MobilizedBody<T>& get_mutable_mobilizer(MobilizedBodyIndex mobilizer_index) {
     DRAKE_THROW_UNLESS(mobilizer_index < num_mobilizers());
     return *owned_mobilizers_[mobilizer_index];
   }
@@ -901,7 +902,7 @@ class MultibodyTree {
 
   // Returns the mobilizer model for joint with index `joint_index`. The index
   // is invalid if the joint is not modeled with a mobilizer.
-  MobilizerIndex get_joint_mobilizer(JointIndex joint_index) const {
+  MobilizedBodyIndex get_joint_mobilizer(JointIndex joint_index) const {
     DRAKE_DEMAND(joint_index < num_joints());
     return joint_to_mobilizer_[joint_index];
   }
@@ -1484,7 +1485,7 @@ class MultibodyTree {
   // (Advanced) Given the state of `this` %MultibodyTree in `context` and a
   // known vector of generalized accelerations `vdot`, this method computes the
   // set of generalized forces `tau` that would need to be applied at each
-  // Mobilizer in order to attain the specified generalized accelerations.
+  // MobilizedBody in order to attain the specified generalized accelerations.
   // Mathematically, this method computes: <pre>
   //   tau = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
   // </pre>
@@ -1516,9 +1517,9 @@ class MultibodyTree {
   //   `context`.
   // @param[in] known_vdot
   //   A vector with the known generalized accelerations `vdot` for the full
-  //   %MultibodyTree model. Use Mobilizer::get_accelerations_from_array() to
-  //   access entries into this array for a particular Mobilizer. You can use
-  //   the mutable version of this method to write into this array.
+  //   %MultibodyTree model. Use MobilizedBody::get_accelerations_from_array()
+  //   to access entries into this array for a particular MobilizedBody. You
+  //   can use the mutable version of this method to write into this array.
   // @param[in] Fapplied_Bo_W_array
   //   A vector containing the spatial force `Fapplied_Bo_W` applied on each
   //   body at the body's frame origin `Bo` and expressed in the world frame W.
@@ -1532,8 +1533,8 @@ class MultibodyTree {
   // @param[in] tau_applied_array
   //   An array of applied generalized forces for the entire model. For a
   //   given mobilizer, entries in this array can be accessed using the method
-  //   Mobilizer::get_generalized_forces_from_array() while its mutable
-  //   counterpart, Mobilizer::get_mutable_generalized_forces_from_array(),
+  //   MobilizedBody::get_generalized_forces_from_array() while its mutable
+  //   counterpart, MobilizedBody::get_mutable_generalized_forces_from_array(),
   //   allows writing into this array.
   //   `tau_applied_array` can have zero size, which means there are no applied
   //   forces. To apply non-zero forces, `tau_applied_array` must be of size
@@ -1565,8 +1566,8 @@ class MultibodyTree {
   //   applied in order to achieve the desired generalized accelerations given
   //   by the input argument `known_vdot`. It must not be nullptr and it
   //   must be of size MultibodyTree::num_velocities(). Generalized forces
-  //   for each Mobilizer can be accessed with
-  //   Mobilizer::get_generalized_forces_from_array().
+  //   for each MobilizedBody can be accessed with
+  //   MobilizedBody::get_generalized_forces_from_array().
   //
   // @warning There is no mechanism to assert that either `A_WB_array` nor
   //   `F_BMo_W_array` are ordered by BodyNodeIndex. You can use
@@ -1598,7 +1599,7 @@ class MultibodyTree {
   // Given the state stored in `context` and a
   // known vector of generalized accelerations `vdot`, this method computes the
   // set of generalized forces `tau_id` that would need to be applied at each
-  // Mobilizer in order to attain the specified generalized accelerations.
+  // MobilizedBody in order to attain the specified generalized accelerations.
   // Mathematically, this method computes: <pre>
   //   tau_id = M(q)v̇ + C(q, v)v - tau_app - ∑ J_WBᵀ(q) Fapp_Bo_W
   // </pre>
@@ -2147,17 +2148,17 @@ class MultibodyTree {
     return get_body_variant(element);
   }
 
-  // SFINAE overload for Mobilizer<T> elements.
+  // SFINAE overload for MobilizedBody<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Mobilizer<T>, MultibodyElement<T>>,
+  std::enable_if_t<std::is_base_of_v<MobilizedBody<T>, MultibodyElement<T>>,
                    const MultibodyElement<T>&> get_variant(
       const MultibodyElement<Scalar>& element) const {
     return get_mobilizer_variant(element);
   }
 
-  // SFINAE overload for Mobilizer<T> elements.
+  // SFINAE overload for MobilizedBody<T> elements.
   template <template <typename> class MultibodyElement, typename Scalar>
-  std::enable_if_t<std::is_base_of_v<Mobilizer<T>, MultibodyElement<T>>,
+  std::enable_if_t<std::is_base_of_v<MobilizedBody<T>, MultibodyElement<T>>,
                    MultibodyElement<T>&> get_mutable_variant(
       const MultibodyElement<Scalar>& element) {
     return get_mutable_mobilizer_variant(element);
@@ -2193,7 +2194,7 @@ class MultibodyTree {
   //   - Frame objects.
   //   - If a Frame is attached to another frame, its parent frame is
   //     guaranteed to be created first.
-  //   - Mobilizer objects are created last and therefore clones of the
+  //   - MobilizedBody objects are created last and therefore clones of the
   //     original Frame objects are guaranteed to already be part of the cloned
   //     tree.
   //
@@ -2265,7 +2266,7 @@ class MultibodyTree {
     DRAKE_DEMAND(tree_clone->gravity_field_ != nullptr);
 
     // Since Joint<T> objects are implemented from basic element objects like
-    // Body, Mobilizer, ForceElement and Constraint, they are cloned last so
+    // Body, MobilizedBody, ForceElement and Constraint, they are cloned last so
     // that the clones of their dependencies are guaranteed to be available.
     // DO NOT change this order!!!
     for (const auto& joint : owned_joints_) {
@@ -2861,7 +2862,8 @@ class MultibodyTree {
 
   // Helper method to create a clone of `mobilizer` and add it to `this` tree.
   template <typename FromScalar>
-  Mobilizer<T>* CloneMobilizerAndAdd(const Mobilizer<FromScalar>& mobilizer);
+  MobilizedBody<T>* CloneMobilizerAndAdd(
+      const MobilizedBody<FromScalar>& mobilizer);
 
   // Helper method to create a clone of `force_element` and add it to `this`
   // tree.
@@ -2913,17 +2915,17 @@ class MultibodyTree {
     return *body_variant;
   }
 
-  // Helper method to retrieve the corresponding Mobilizer<T> variant to a Body
-  // in a MultibodyTree variant templated on Scalar.
+  // Helper method to retrieve the corresponding MobilizedBody<T> variant to a
+  // Body in a MultibodyTree variant templated on Scalar.
   template <template <typename> class MobilizerType, typename Scalar>
   const MobilizerType<T>& get_mobilizer_variant(
       const MobilizerType<Scalar>& mobilizer) const {
-    static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
+    static_assert(std::is_base_of_v<MobilizedBody<T>, MobilizerType<T>>,
+                  "MobilizerType<T> must be a sub-class of MobilizedBody<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    MobilizerIndex mobilizer_index = mobilizer.index();
+    MobilizedBodyIndex mobilizer_index = mobilizer.index();
     DRAKE_DEMAND(mobilizer_index < num_mobilizers());
     const MobilizerType<T>* mobilizer_variant =
         dynamic_cast<const MobilizerType<T>*>(
@@ -2936,12 +2938,12 @@ class MultibodyTree {
   template <template <typename> class MobilizerType, typename Scalar>
   MobilizerType<T>& get_mutable_mobilizer_variant(
       const MobilizerType<Scalar>& mobilizer) {
-    static_assert(std::is_base_of_v<Mobilizer<T>, MobilizerType<T>>,
-                  "MobilizerType<T> must be a sub-class of Mobilizer<T>.");
+    static_assert(std::is_base_of_v<MobilizedBody<T>, MobilizerType<T>>,
+                  "MobilizerType<T> must be a sub-class of MobilizedBody<T>.");
     // TODO(amcastro-tri):
     //   DRAKE_DEMAND the parent tree of the variant is indeed a variant of this
     //   MultibodyTree. That will require the tree to have some sort of id.
-    MobilizerIndex mobilizer_index = mobilizer.index();
+    MobilizedBodyIndex mobilizer_index = mobilizer.index();
     DRAKE_DEMAND(mobilizer_index < num_mobilizers());
     MobilizerType<T>* mobilizer_variant = dynamic_cast<MobilizerType<T>*>(
         owned_mobilizers_[mobilizer_index].get());
@@ -2992,7 +2994,7 @@ class MultibodyTree {
   const RigidBody<T>* world_body_{nullptr};
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
-  std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
+  std::vector<std::unique_ptr<MobilizedBody<T>>> owned_mobilizers_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<JointActuator<T>>> owned_actuators_;
   std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
@@ -3045,11 +3047,11 @@ class MultibodyTree {
   // in that level.
   std::vector<std::vector<BodyNodeIndex>> body_node_levels_;
 
-  // Joint to Mobilizer map, of size num_joints(). For a joint with index
+  // Joint to MobilizedBody map, of size num_joints(). For a joint with index
   // joint_index, mobilizer_index = joint_to_mobilizer_[joint_index] maps to the
   // mobilizer model of the joint, or an invalid index if the joint is modeled
   // with constraints instead.
-  std::vector<MobilizerIndex> joint_to_mobilizer_;
+  std::vector<MobilizedBodyIndex> joint_to_mobilizer_;
 
   MultibodyTreeTopology topology_;
 

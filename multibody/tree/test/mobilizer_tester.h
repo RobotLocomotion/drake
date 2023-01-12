@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/rigid_body.h"

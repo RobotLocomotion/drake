@@ -17,7 +17,7 @@
 #include "drake/multibody/benchmarks/free_body/free_body.h"
 #include "drake/multibody/test_utilities/floating_body_plant.h"
 #include "drake/multibody/tree/body.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 #include "drake/systems/analysis/runge_kutta3_integrator.h"
 #include "drake/systems/analysis/simulator.h"

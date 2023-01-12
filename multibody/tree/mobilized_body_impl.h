@@ -10,7 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/random.h"
 #include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
@@ -20,34 +20,34 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Base class for specific Mobilizer implementations with the number of
+// Base class for specific MobilizedBody implementations with the number of
 // generalized positions and velocities resolved at compile time as template
 // parameters. This allows specific mobilizer implementations to only work on
 // fixed-size Eigen expressions therefore allowing for optimized operations on
 // fixed-size matrices. In addition, this layer discourages the proliferation
 // of dynamic-sized Eigen matrices that would otherwise lead to run-time
 // dynamic memory allocations.
-// %MobilizerImpl also provides a number of size specific methods to retrieve
-// multibody quantities of interest from caching structures. These are common
-// to all mobilizer implementations and therefore they live in this class.
-// Users should not need to interact with this class directly unless they need
-// to implement a custom Mobilizer class.
+// %MobilizedBodyImpl also provides a number of size specific methods to
+// retrieve multibody quantities of interest from caching structures. These are
+// common to all mobilizer implementations and therefore they live in this
+// class. Users should not need to interact with this class directly unless they
+// need to implement a custom MobilizedBody class.
 //
 // @tparam_default_scalar
 template <typename T,
     int compile_time_num_positions, int compile_time_num_velocities>
-class MobilizerImpl : public Mobilizer<T> {
+class MobilizedBodyImpl : public MobilizedBody<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizerImpl)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MobilizedBodyImpl)
 
-  // As with Mobilizer this the only constructor available for this base class.
-  // The minimum amount of information that we need to define a mobilizer is
-  // the knowledge of the inboard and outboard frames it connects.
-  // Subclasses of %MobilizerImpl are therefore forced to provide this
+  // As with MobilizedBody this the only constructor available for this base
+  // class. The minimum amount of information that we need to define a mobilizer
+  // is the inboard and outboard frames it connects.
+  // Subclasses of %MobilizedBodyImpl are therefore forced to provide this
   // information in their respective constructors.
-  MobilizerImpl(const Frame<T>& inboard_frame,
-                const Frame<T>& outboard_frame) :
-      Mobilizer<T>(inboard_frame, outboard_frame) {}
+  MobilizedBodyImpl(const Frame<T>& inboard_frame,
+                    const Frame<T>& outboard_frame) :
+      MobilizedBody<T>(inboard_frame, outboard_frame) {}
 
   // Returns the number of generalized coordinates granted by this mobilizer.
   int num_positions() const final { return kNq;}
@@ -55,30 +55,30 @@ class MobilizerImpl : public Mobilizer<T> {
   // Returns the number of generalized velocities granted by this mobilizer.
   int num_velocities() const final { return kNv;}
 
-  // Sets the elements of the `state` associated with this Mobilizer to the
-  // _zero_ state.  See Mobilizer::set_zero_state().
+  // Sets the elements of the `state` associated with this MobilizedBody to the
+  // _zero_ state.  See MobilizedBody::set_zero_state().
   void set_zero_state(const systems::Context<T>&,
                       systems::State<T>* state) const final {
     get_mutable_positions(state) = get_zero_position();
     get_mutable_velocities(state).setZero();
   };
 
-  // Sets the elements of the `state` associated with this Mobilizer to the
-  // _default_ state.  See Mobilizer::set_default_state().
+  // Sets the elements of the `state` associated with this MobilizedBody to the
+  // _default_ state.  See MobilizedBody::set_default_state().
   void set_default_state(const systems::Context<T>&,
                          systems::State<T>* state) const final {
     get_mutable_positions(&*state) = get_default_position();
     get_mutable_velocities(&*state).setZero();
   };
 
-  // Sets the default position of this Mobilizer to be used in subsequent
+  // Sets the default position of this MobilizedBody to be used in subsequent
   // calls to set_default_state().
   void set_default_position(const Eigen::Ref<const Vector<double,
       compile_time_num_positions>>& position) {
     default_position_.emplace(position);
   }
 
-  // Sets the elements of the `state` associated with this Mobilizer to a
+  // Sets the elements of the `state` associated with this MobilizedBody to a
   // _random_ state.  If no random distribution has been set, then `state` is
   // set to the _default_ state.
   void set_random_state(const systems::Context<T>& context,
@@ -129,7 +129,7 @@ class MobilizerImpl : public Mobilizer<T> {
   // For MultibodyTree internal use only.
   std::unique_ptr<internal::BodyNode<T>> CreateBodyNode(
       const internal::BodyNode<T>* parent_node,
-      const Body<T>* body, const Mobilizer<T>* mobilizer) const final;
+      const Body<T>* body, const MobilizedBody<T>* mobilizer) const final;
 
  protected:
   // Handy enum to grant specific implementations compile time sizes.

@@ -8,7 +8,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/mobilizer_impl.h"
+#include "drake/multibody/tree/mobilized_body_impl.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
@@ -62,7 +62,7 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
+class SpaceXYZMobilizer final : public MobilizedBodyImpl<T, 3, 3> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpaceXYZMobilizer)
 
@@ -206,7 +206,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   // @param[in] context
   //   The context of the MultibodyTree this mobilizer belongs to.
   // @param[in] v
-  //   A vector of generalized velocities for this Mobilizer which should
+  //   A vector of generalized velocities for this MobilizedBody which should
   //   correspond to a vector in ℝ³ for an angular velocity `w_FM` of M in F.
   // @param[out] qdot
   //   A Vector3 packing of the time derivatives of the space x-y-z angles θ₁,
@@ -233,7 +233,7 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
   //   A vector containing the time derivatives of the space x-y-z angles
   //   θ₁, θ₂, θ₃ in `qdot(0)`, `qdot(1)` and `qdot(2)`, respectively.
   // @param[out] v
-  //   A vector of generalized velocities for this Mobilizer which should
+  //   A vector of generalized velocities for this MobilizedBody which should
   //   correspond to a vector in ℝ³ for an angular velocity `w_FM` of M in F.
   void MapQDotToVelocity(
       const systems::Context<T>& context,
@@ -249,29 +249,23 @@ class SpaceXYZMobilizer final : public MobilizerImpl<T, 3, 3> {
       const systems::Context<T>& context,
       EigenPtr<MatrixX<T>> Nplus) const final;
 
-  std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+  std::unique_ptr<MobilizedBody<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override;
 
-  std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+  std::unique_ptr<MobilizedBody<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override;
 
-  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+  std::unique_ptr<MobilizedBody<symbolic::Expression>> DoCloneToScalar(
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 3, 3> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
+  typedef MobilizedBodyImpl<T, 3, 3> MobilizerBase;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
+  std::unique_ptr<MobilizedBody<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const;
 };
 
