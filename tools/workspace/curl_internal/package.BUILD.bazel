@@ -133,10 +133,8 @@ _COPTS = [
 # The link flags for the library.
 _LINKOPTS = select({
     "@drake//tools/cc_toolchain:apple": [
-        "-Wl,-framework",
-        "-Wl,CoreFoundation",
-        "-Wl,-framework",
-        "-Wl,SystemConfiguration",
+        "-Wl,-framework,CoreFoundation",
+        "-Wl,-framework,SystemConfiguration",
     ],
     "//conditions:default": [],
 })
