@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/common/drake_deprecated.h"
@@ -321,20 +322,34 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<double, double, double, double>(), py::arg("r"),
-            py::arg("g"), py::arg("b"), py::arg("a") = 1.,
+            py::arg("g"), py::arg("b"), py::arg("a") = 1.0,
             cls_doc.ctor.doc_4args)
         .def("r", &Class::r, cls_doc.r.doc)
         .def("g", &Class::g, cls_doc.g.doc)
         .def("b", &Class::b, cls_doc.b.doc)
         .def("a", &Class::a, cls_doc.a.doc)
-        .def("set", &Class::set, py::arg("r"), py::arg("g"), py::arg("b"),
-            py::arg("a") = 1., cls_doc.set.doc)
+        .def("set",
+            py::overload_cast<double, double, double, double>(&Class::set),
+            py::arg("r"), py::arg("g"), py::arg("b"), py::arg("a") = 1.0,
+            cls_doc.set.doc_4args)
+        .def("set",
+            py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&>(
+                &Class::set),
+            py::arg("rgba"), cls_doc.set.doc_1args)
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__repr__", [](const Class& self) {
           return py::str("Rgba(r={}, g={}, b={}, a={})")
               .format(self.r(), self.g(), self.b(), self.a());
         });
+    DefAttributesUsingSerialize(&cls);
+    cls.def_property("rgba",
+        // The Serialize-based binding skips the validity checking; we'll
+        // add it back here by re-binding the property getter and setter.
+        &Class::rgba,
+        py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&>(
+            &Class::set),
+        "The RGBA value as a property (as np.ndarray).");
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Rgba>(m);
   }
