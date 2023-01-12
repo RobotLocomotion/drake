@@ -36,15 +36,14 @@ class ContactVisualizerTest : public ::testing::Test {
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
 
     // Add the point contact spheres and joints.
-    multibody::Parser parser(&plant);
     const std::string sdf = FindResourceOrThrow(
         "drake/examples/manipulation_station/models/sphere.sdf");
-    auto sphere1_model = parser.AddModelFromFile(sdf, "sphere1");
+    auto sphere1_model = Parser(&plant, "1").AddModels(sdf).at(0);
     const auto& sphere1 = plant.GetBodyByName("base_link", sphere1_model);
     plant.AddJoint<multibody::PrismaticJoint>(
         "sphere1_x", plant.world_body(), std::nullopt, sphere1, std::nullopt,
         Eigen::Vector3d::UnitX());
-    auto sphere2_model = parser.AddModelFromFile(sdf, "sphere2");
+    auto sphere2_model = Parser(&plant, "2").AddModels(sdf).at(0);
     const auto& sphere2 = plant.GetBodyByName("base_link", sphere2_model);
     plant.AddJoint<multibody::PrismaticJoint>(
         "sphere2_x", plant.world_body(), std::nullopt, sphere2, std::nullopt,
@@ -59,7 +58,8 @@ class ContactVisualizerTest : public ::testing::Test {
     // Add the hydroelastic spheres and joints between them.
     const std::string hydro_sdf = FindResourceOrThrow(
         "drake/multibody/meshcat/test/hydroelastic.sdf");
-    parser.AddModelFromFile(hydro_sdf);
+    multibody::Parser parser(&plant);
+    parser.AddModels(hydro_sdf);
     const auto& body1 = plant.GetBodyByName("body1");
     plant.AddJoint<multibody::PrismaticJoint>(
         "body1", plant.world_body(), std::nullopt, body1, std::nullopt,
@@ -112,10 +112,11 @@ class ContactVisualizerTest : public ::testing::Test {
     diagram_->ForcedPublish(*context_);
     if (expect_geometry_names) {
       EXPECT_TRUE(meshcat_->HasPath(
-          "contact_forces/point/sphere1.base_link+sphere2.base_link.bonus"));
+          "contact_forces/point/1::sphere.base_link+"
+          "2::sphere.base_link.bonus"));
     } else {
       EXPECT_TRUE(meshcat_->HasPath(
-          "contact_forces/point/sphere1.base_link+sphere2.base_link"));
+          "contact_forces/point/1::sphere.base_link+2::sphere.base_link"));
     }
 
     // If the query object port is not connected, the geometry names will

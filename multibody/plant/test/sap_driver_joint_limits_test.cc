@@ -261,15 +261,13 @@ class KukaIiwaArmTests : public ::testing::Test {
     const char kWsg50FilePath[] =
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
-    Parser parser(plant);
+    Parser parser(plant, std::to_string(robot_number));
     ModelInstanceIndex arm_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kArmFilePath),
-                                "robot_" + std::to_string(robot_number));
+        parser.AddModels(FindResourceOrThrow(kArmFilePath)).at(0);
 
     // Add the gripper.
     ModelInstanceIndex gripper_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kWsg50FilePath),
-                                "gripper_" + std::to_string(robot_number));
+        parser.AddModels(FindResourceOrThrow(kWsg50FilePath)).at(0);
 
     const auto& base_body = plant->GetBodyByName("base", arm_model);
     const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);
