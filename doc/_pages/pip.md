@@ -52,7 +52,7 @@ can choose any name.
 
 For macOS, ensure that you're using Homebrew Python (not Apple's system Python).
 
-Create a virtual environment, install Drake, and active the environment:
+Create a virtual environment, install Drake, and activate the environment:
 
 ```bash
 python3 -m venv env
