@@ -303,11 +303,12 @@ class UnitInertia : public RotationalInertia<T> {
 
   /// Computes the unit inertia for a uniform density unit-mass capsule C
   /// whose axis of revolution is along the z-axis.
-  /// @param[in] r The radius of the cylinder/half-sphere part of the capsule.
-  /// @param[in] L The length of the cylindrical part of the capsule.
-  /// @param[in] unit_vector unit vector defining the direction of the
-  ///   cylindrical part of the capsule. It defaults to `Vector3<T>::UnitZ()`.
-  /// @throws std::exception if r or L is negative or ‖unit_vector‖ ≉ 1.
+  /// @param[in] r radius of the cylinder/half-sphere part of the capsule.
+  /// @param[in] L length of the cylindrical part of the capsule.
+  /// @param[in] unit_vector direction of the cylindrical part of the capsule.
+  ///   It defaults to `Vector3<T>::UnitZ()`.
+  /// @throws std::exception if r or L is negative or if ‖unit_vector‖ ≉ 1,
+  ///   (the magnitude of unit_vector is more than 1.5E-14 away from 1.0).
   static UnitInertia<T> SolidCapsule(const T& r, const T& L,
       const Vector3<T>& unit_vector = Vector3<T>::UnitZ());
 
