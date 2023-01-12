@@ -8,10 +8,12 @@ import unittest
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test.serialize_test_util import MyData2
 from pydrake.common.test_utilities.meta import (
     ValueParameterizedTest,
     run_with_multiple_values,
 )
+from pydrake.common.value import Value
 from pydrake.common.yaml import yaml_load_typed
 
 
@@ -461,3 +463,41 @@ class TestYamlTypedReadAcceptance(unittest.TestCase):
             "drake/common/yaml/test/yaml_io_test_input_1.yaml")
         result = yaml_load_typed(schema=StringStruct, filename=filename)
         self.assertEqual(result.value, "some_value_1")
+
+
+class TestYamlTypedReadPybind11(unittest.TestCase):
+    """Tests for deserializing into pybind11 objects."""
+
+    def test_missing_serialize_binding(self):
+        with self.assertRaisesRegex(RuntimeError, ".*lacks.*__fields__.*"):
+            # For testing the error message in case of missing C++ bindings,
+            # we just need any bound C++ class that doesn't have a Serialize().
+            # We'll use Value to avoid dependencies on non-'common' code.
+            invalid_cxx_class = Value[str]
+            yaml_load_typed(schema=invalid_cxx_class, data="{}")
+
+    def test_mydata2(self):
+        data = dedent("""
+        some_bool: True
+        some_int: 1
+        some_uint64: 1
+        some_float: 1.0
+        some_double: 1.0
+        some_string: one
+        some_eigen: [1.0]
+        some_optional: 1.0
+        some_vector: [1.0]
+        some_map: { one: 1.0 }
+        """)
+        # TODO(jwnimmer-tri) Add "some_variant" once we support Union[].
+        x = yaml_load_typed(schema=MyData2, data=data)
+        self.assertEqual(x.some_bool, True)
+        self.assertEqual(x.some_int, 1)
+        self.assertEqual(x.some_uint64, 1)
+        self.assertEqual(x.some_float, 1.0)
+        self.assertEqual(x.some_double, 1.0)
+        self.assertEqual(x.some_string, "one")
+        self.assertEqual(x.some_eigen, [1.0])
+        self.assertEqual(x.some_optional, 1.0)
+        self.assertEqual(x.some_vector, [1.0])
+        self.assertEqual(x.some_map, dict(one=1.0))

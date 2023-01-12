@@ -148,6 +148,20 @@ def _enumerate_field_types(schema):
             (field.name, field.type)
             for field in dataclasses.fields(schema)])
 
+    # Drake's DefAttributesUsingSerialize offers (hidden) introspection.
+    fields = getattr(schema, "__fields__", None)
+    if fields is not None:
+        return dict([
+            (field.name, field.type)
+            for field in fields])
+
+    # Detect when the user forgot to use DefAttributesUsingSerialize.
+    if getattr(type(schema), "__name__", None) == "pybind11_type":
+        raise NotImplementedError(
+            f"The bound C++ type {schema} cannot be used as a schema because"
+            f" it lacks a __fields__ attribute."
+            f" Use DefAttributesUsingSerialize to add that attribute.")
+
     raise NotImplementedError(
         f"Schema objects of type {schema} are not yet supported")
 
