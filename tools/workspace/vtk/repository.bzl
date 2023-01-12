@@ -619,8 +619,9 @@ licenses([
     ]
 
     if os_result.is_manylinux or os_result.is_macos_wheel:
-        # Normally these would be private dependencies, but no such thing when
-        # VTK is built statically.
+        # When VTK is built as shared libraries these transitive dependencies
+        # would be loaded automatically, but when VTK is built statically we
+        # need to list them out ourselves.
         file_content += _vtk_cc_library(
             os_result,
             "vtkfreetype",
