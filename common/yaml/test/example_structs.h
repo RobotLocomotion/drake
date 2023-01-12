@@ -230,6 +230,7 @@ bool operator==(const EigenStruct<Rows, Cols>& a,
 
 using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
 using EigenVec3Struct = EigenStruct<3, 1>;
+using EigenVecUpTo3Struct = EigenStruct<Eigen::Dynamic, 1, 3, 1>;
 using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
 using EigenMatrix34Struct = EigenStruct<3, 4>;
 using EigenMatrix00Struct = EigenStruct<0, 0>;
