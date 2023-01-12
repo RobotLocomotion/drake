@@ -17,6 +17,10 @@ namespace drake {
 namespace yaml {
 namespace test {
 
+// These data structures are the C++ flavor of the Python test classes at
+//  drake/bindings/pydrake/common/test/yaml_typed_test.py
+// and should be roughly kept in sync with the code in that file.
+
 // A value used in the test data below to include a default (placeholder) value
 // when initializing struct data members.
 constexpr double kNominalDouble = 1.2345;
