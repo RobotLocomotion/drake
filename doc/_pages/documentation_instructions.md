@@ -81,7 +81,7 @@ If you would like to check Jenkins results on a pull request, you need to
 by posting a comment
 
 ```
-@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-documentation please
+@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-documentation please
 ```
 
 # Advanced Building
