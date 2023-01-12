@@ -16,7 +16,7 @@ The website infrastructure uses a combination of
 # Prerequisites
 
 Documentation generation and preview as described in this document are
-supported on Ubuntu **20.04** only.
+supported on Ubuntu **22.04** only.
 
 Before getting started, install Drake's prerequisites with the additional
 ``--with-doc-only`` command line option, i.e.:
