@@ -819,6 +819,8 @@ drake_py_unittest(
         "//common/yaml:test/yaml_io_test_input_1.yaml",
     ],
     deps = [
+        ":serialize_test_util_py",
+        ":value_py",
         ":yaml_py",
         "//bindings/pydrake/common/test_utilities:meta_py",
     ],
