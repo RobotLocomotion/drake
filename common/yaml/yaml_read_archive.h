@@ -375,6 +375,8 @@ class YamlReadArchive final {
     const std::vector<internal::Node>& elements = sub_node->GetSequence();
     const size_t size = elements.size();
     if (max_size.has_value() && size > *max_size) {
+      // This error message snippet looks odd in the source code, but turns
+      // out okay once ReportError tacks on some extra text.
       ReportError(fmt::format(
           "has too many array elements ({}); the maximum size is {} in the",
           size, *max_size));
