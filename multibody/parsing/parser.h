@@ -149,6 +149,7 @@ class Parser final {
   ///
   /// @sa http://sdformat.org/tutorials?tut=composition&ver=1.7 for details on
   /// nesting in SDFormat.
+  DRAKE_DEPRECATED("2023-04-01", "Use AddModels() instead.")
   ModelInstanceIndex AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name = {});
