@@ -188,6 +188,7 @@ drake_cc_googletest(
     deps = [
         ":eigen_matrix_compare",
         "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 

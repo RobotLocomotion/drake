@@ -113,4 +113,45 @@ template <typename DerivedA, typename DerivedB>
                                        << m2;
 }
 
+/** Specialization for comparing rotation matrices. The enabling criteria is
+ a shibboleth that should uniquely apply to rotation matrices. This allows us
+ to directly compare RotationMatrixes without explicitly pulling in drake::math
+ as a dependency. I.e.,
+
+ RotationMatrixd R_AB_dut = ...;
+ RotationMatrixd R_AB_expected = ...;
+ EXPECT_TRUE(CompareMatrices(R_AB_dut, R_AB_expected));
+ */
+template <template <typename> typename RotMatrixType, typename T>
+[[nodiscard]] std::enable_if_t<
+    std::is_same_v<decltype(RotMatrixType<T>::MakeXRotation(0)),
+                   RotMatrixType<T>>,
+    ::testing::AssertionResult>
+CompareMatrices(const RotMatrixType<T>& m1, const RotMatrixType<T>& m2,
+                double tolerance = 0.0,
+                MatrixCompareType compare_type = MatrixCompareType::absolute) {
+  return CompareMatrices(m1.matrix(), m2.matrix(), tolerance, compare_type);
+}
+
+/** Specialization for comparing rigid transforms. The enabling criteria is
+ a shibboleth that should uniquely apply to rigid transforms. This allows us
+ to directly compare RigidTransforms without explicitly pulling in drake::math
+ as a dependency. I.e.,
+
+ RigidTransformd X_AB_dut = ...;
+ RigidTransformd X_AB_expected = ...;
+ EXPECT_TRUE(CompareMatrices(X_AB_dut, X_AB_expected));
+ */
+template <template <typename> typename TransformType, typename T>
+[[nodiscard]] std::enable_if_t<
+    std::is_same_v<decltype(TransformType<T>().GetAsMatrix34()),
+                   Eigen::Matrix<T, 3, 4>>,
+    ::testing::AssertionResult>
+CompareMatrices(const TransformType<T>& m1, const TransformType<T>& m2,
+                double tolerance = 0.0,
+                MatrixCompareType compare_type = MatrixCompareType::absolute) {
+  return CompareMatrices(m1.GetAsMatrix34(), m2.GetAsMatrix34(), tolerance,
+                         compare_type);
+}
+
 }  // namespace drake
