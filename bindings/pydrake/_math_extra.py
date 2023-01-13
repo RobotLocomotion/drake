@@ -30,6 +30,7 @@ import operator
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd as _AutoDiffXd
+from pydrake.common import _pretty_class_name
 import pydrake.symbolic as _sym
 
 _sym_cls_list = (
@@ -108,16 +109,10 @@ def _indented_repr(o):
     return repr(o).replace("\n", "\n  ")
 
 
-def _remove_float_suffix(typename):
-    suffix = "_[float]"
-    if typename.endswith(suffix):
-        return typename[:-len(suffix)]
-    return typename
-
-
 def _roll_pitch_yaw_repr(rpy):
     return (
-        f"RollPitchYaw(roll={repr(rpy.roll_angle())}, "
+        f"{_pretty_class_name(type(rpy))}"
+        f"(roll={repr(rpy.roll_angle())}, "
         f"pitch={repr(rpy.pitch_angle())}, "
         f"yaw={repr(rpy.yaw_angle())})")
 
@@ -125,7 +120,7 @@ def _roll_pitch_yaw_repr(rpy):
 def _rotation_matrix_repr(R):
     M = R.matrix().tolist()
     return (
-        f"{_remove_float_suffix(type(R).__name__)}([\n"
+        f"{_pretty_class_name(type(R))}([\n"
         f"  {_indented_repr(M[0])},\n"
         f"  {_indented_repr(M[1])},\n"
         f"  {_indented_repr(M[2])},\n"
@@ -134,7 +129,7 @@ def _rotation_matrix_repr(R):
 
 def _rigid_transform_repr(X):
     return (
-        f"{_remove_float_suffix(type(X).__name__)}(\n"
+        f"{_pretty_class_name(type(X))}(\n"
         f"  R={_indented_repr(X.rotation())},\n"
         f"  p={_indented_repr(X.translation().tolist())},\n"
         f")")

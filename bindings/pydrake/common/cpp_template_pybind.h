@@ -31,15 +31,22 @@ inline py::object GetOrInitTemplate(  // BR
 }
 
 // Adds instantiation to a Python template.
-inline void AddInstantiation(
-    py::handle py_template, py::handle obj, py::tuple param) {
-  py_template.attr("add_instantiation")(param, obj);
+inline void AddInstantiation(py::handle py_template, py::handle obj,
+    py::tuple param, bool is_default = false) {
+  py_template.attr("add_instantiation")(param, obj, is_default);
 }
 
 // Gets name for a given instantiation.
 inline std::string GetInstantiationName(
     py::handle py_template, py::tuple param) {
   return py::cast<std::string>(py_template.attr("_instantiation_name")(param));
+}
+
+// C++ wrapper around pydrake.common._pretty_class_name.
+inline py::object PrettyClassName(py::handle cls, bool use_qualname = false) {
+  py::handle py_func =
+      py::module::import("pydrake.common").attr("_pretty_class_name");
+  return py_func(cls, py::arg("use_qualname") = use_qualname);
 }
 
 }  // namespace internal
@@ -53,18 +60,18 @@ std::string TemporaryClassName(const std::string& name = "TemporaryName") {
 
 /// Adds a template class instantiation.
 /// @param scope Parent scope of the template.
-/// @param name Name of the template.
+/// @param template_name Name of the template.
 /// @param py_class Class instantiation to be added.
 /// @note The class name should be *unique*. If you would like automatic unique
 /// names, consider constructing the class binding as
 /// `py::class_<Class, ...>(m, TemporaryClassName<Class>().c_str())`.
 /// @param param Parameters for the instantiation.
 inline py::object AddTemplateClass(  // BR
-    py::handle scope, const std::string& name, py::handle py_class,
-    py::tuple param) {
+    py::handle scope, const std::string& template_name, py::handle py_class,
+    py::tuple param, bool is_default = false) {
   py::object py_template =
-      internal::GetOrInitTemplate(scope, name, "TemplateClass");
-  internal::AddInstantiation(py_template, py_class, param);
+      internal::GetOrInitTemplate(scope, template_name, "TemplateClass");
+  internal::AddInstantiation(py_template, py_class, param, is_default);
   return py_template;
 }
 
@@ -77,16 +84,17 @@ template <typename Class, typename... Options>
 py::class_<Class, Options...> DefineTemplateClassWithDefault(  // BR
     py::handle scope, const std::string& default_name, py::tuple param,
     const char* doc_string = "", const std::string& template_suffix = "_") {
+  // The default instantiation is immediately assigned its correct class name.
+  // Other instantiations use a temporary name here that will be overwritten
+  // by the AddTemplateClass function during registration.
+  const bool is_default = !py::hasattr(scope, default_name.c_str());
+  const std::string class_name =
+      is_default ? default_name : TemporaryClassName<Class>();
+  // Define the class.
+  py::class_<Class, Options...> py_class(scope, class_name.c_str(), doc_string);
+  // Register it as a template instantiation.
   const std::string template_name = default_name + template_suffix;
-  // Define class with temporary name.
-  py::class_<Class, Options...> py_class(
-      scope, TemporaryClassName<Class>().c_str(), doc_string);
-  // Register instantiation.
-  AddTemplateClass(scope, template_name, py_class, param);
-  // Declare default instantiation if it does not already exist.
-  if (!py::hasattr(scope, default_name.c_str())) {
-    scope.attr(default_name.c_str()) = py_class;
-  }
+  AddTemplateClass(scope, template_name, py_class, param, is_default);
   return py_class;
 }
 

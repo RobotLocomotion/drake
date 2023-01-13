@@ -3,6 +3,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/text_logging_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -38,14 +39,6 @@ py::handle ResolvePyObject(const type_erased_ptr& ptr) {
   return py::detail::get_object_handle(ptr.raw, py_type_info);
 }
 
-// Gets a class's fully-qualified name.
-std::string GetPyClassName(py::handle obj) {
-  DRAKE_DEMAND(bool{obj});
-  py::handle cls = obj.get_type();
-  return py::str("{}.{}").format(
-      cls.attr("__module__"), cls.attr("__qualname__"));
-}
-
 // Override for SetNiceTypeNamePtrOverride, to ensure that instances that are
 // registered (along with their types) can use their Python class's name.
 std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
@@ -54,7 +47,10 @@ std::string PyNiceTypeNamePtrOverride(const type_erased_ptr& ptr) {
   if (cc_name.find("pydrake::") != std::string::npos) {
     py::handle obj = ResolvePyObject(ptr);
     if (obj) {
-      return GetPyClassName(obj);
+      py::handle cls = obj.get_type();
+      const bool use_qualname = true;
+      return py::str("{}.{}").format(
+          cls.attr("__module__"), internal::PrettyClassName(cls, use_qualname));
     }
   }
   return cc_name;
