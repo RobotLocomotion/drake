@@ -130,6 +130,23 @@ def _import_cc_module_vars(
     return var_list
 
 
+def __make_cached_is_building_documentation():
+    is_building_documentation = None
+
+    def check_with_latching():
+        nonlocal is_building_documentation
+        if is_building_documentation is None:
+            import os as _os
+            is_building_documentation = (
+                "DRAKE_IS_BUILDING_DOCUMENTATION" in _os.environ)
+        return is_building_documentation
+
+    return check_with_latching
+
+
+_is_building_documentation = __make_cached_is_building_documentation()
+
+
 class _DrakeImportWarning(Warning):
     pass
 
