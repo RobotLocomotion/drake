@@ -422,6 +422,7 @@ drake_py_library(
 drake_pybind_library(
     name = "schema_py",
     cc_deps = [
+        ":cpp_template_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:serialize_pybind",
