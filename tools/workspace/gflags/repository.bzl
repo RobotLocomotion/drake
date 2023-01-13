@@ -1,23 +1,15 @@
 # -*- mode: python -*-
 # vi: set ft=python :
 
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "pkg_config_repository",
-)
+load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def gflags_repository(
         name,
-        licenses = ["notice"],  # BSD-3-Clause
-        modname = "gflags",
-        pkg_config_paths = [],
-        homebrew_subdir = "opt/gflags/lib/pkgconfig",
-        **kwargs):
-    pkg_config_repository(
+        mirrors = None):
+    github_archive(
         name = name,
-        licenses = licenses,
-        modname = modname,
-        extra_deps = ["@drake//tools/workspace/gflags:pthread_iff_linux"],
-        pkg_config_paths = pkg_config_paths,
-        **kwargs
+        repository = "gflags/gflags",
+        commit = "v2.2.2",
+        sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",  # noqa
+        mirrors = mirrors,
     )
