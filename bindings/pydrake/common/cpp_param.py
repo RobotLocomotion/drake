@@ -80,6 +80,7 @@ class _ParamAliases:
                 origin_name, arg_names)
             return f"{origin_name}[{', '.join(arg_names)}]"
         elif isinstance(canonical, type):
+            # XXX pretty?
             return canonical.__name__
         else:
             # For literals.

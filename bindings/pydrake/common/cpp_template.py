@@ -4,6 +4,10 @@ import inspect
 import sys
 import types
 
+from pydrake.common import (
+    _UNICODE_TEMPLATE_OPENER,
+    _UNICODE_TEMPLATE_PARAM_SPLIT,
+)
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
 from pydrake.common.deprecation import _warn_deprecated
 
@@ -291,9 +295,14 @@ class TemplateBase:
                 param = tuple(param)
         return get_param_canonical(param)
 
-    def _instantiation_name(self, param):
+    def _instantiation_name(self, param, brackets=True):
         names = get_param_names(self._param_resolve(param))
-        return '{}[{}]'.format(self.name, ', '.join(names))
+        if brackets:
+            return '{}[{}]'.format(self.name, ', '.join(names))
+        else:
+            return '{}{}{}'.format(
+                self.name, _UNICODE_TEMPLATE_OPENER,
+                _UNICODE_TEMPLATE_PARAM_SPLIT.join(names))
 
     def _full_name(self):
         return "{}.{}".format(self._scope.__name__, self.name)
@@ -350,18 +359,22 @@ class TemplateBase:
 
 class TemplateClass(TemplateBase):
     """Extension of `TemplateBase` for classes."""
-    def __init__(self, name, override_meta=True, scope=None, **kwargs):
+    def __init__(self, name, *, scope=None, **kwargs):
         if scope is None:
             scope = _get_module_from_stack()
         TemplateBase.__init__(self, name, scope=scope, **kwargs)
-        self._override_meta = override_meta
 
     def _on_add(self, param, cls):
-        # Update class name for easier debugging.
-        if self._override_meta:
+        # Unless this class was a default template instantiation, we need to
+        # rename it now to describe its template arguments. (Most templated
+        # C++ classes are bound using the TemporaryClassName() fuction.)
+        is_default = getattr(cls, "_is_default_template_instantiation", False)
+        if is_default:
+            delattr(cls, "_is_default_template_instantiation")
+        if not is_default:
             cls._original_name = cls.__name__
             cls._original_qualname = getattr(cls, "__qualname__", cls.__name__)
-            cls.__name__ = self._instantiation_name(param)
+            cls.__name__ = self._instantiation_name(param, brackets=False)
             # Define `__qualname__` in Python2 because that's what `pybind11`
             # uses when showing function signatures when an overload cannot be
             # found.

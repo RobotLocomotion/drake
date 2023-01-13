@@ -41,9 +41,9 @@ class TestValue(unittest.TestCase):
         """Tests registered class types (passable by reference and value). Also
         tests a move-only class type."""
         obj = MoveOnlyType(10)
-        self.assertEqual(
+        self.assertRegex(
             str(Value[MoveOnlyType]),
-            "<class 'pydrake.common.value.Value[MoveOnlyType]'>")
+            "<class 'pydrake.*Value.*MoveOnlyType")
         # This *always* clones `obj`.
         value = Value[MoveOnlyType](obj)
         self.assertTrue(value.get_value() is not obj)
