@@ -2,6 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
+
 namespace drake {
 namespace {
 
@@ -104,6 +107,34 @@ GTEST_TEST(MatrixCompareTest, RelativeCompare) {
   // The difference between m1 and m4 is less than 20%.
   // They should be considered equal.
   EXPECT_TRUE(CompareMatrices(m1, m2, 0.2, MatrixCompareType::relative));
+}
+
+GTEST_TEST(MatrixCompareTest, RotationMatrix) {
+  const Vector3<double> Bx(1, 0, 0);
+  const Vector3<double> By(0, 0, -1);
+  const Vector3<double> Bz(0, 1, 0);
+  const math::RotationMatrix<double> R =
+      math::RotationMatrix<double>::MakeFromOrthonormalColumns(Bx, By, Bz);
+  const math::RotationMatrix<double> R_inv = R.inverse();
+  const math::RotationMatrix<double> R_inv_inv = R_inv.inverse();
+
+  EXPECT_TRUE(CompareMatrices(R, R_inv_inv));
+  EXPECT_FALSE(CompareMatrices(R, R_inv));
+}
+
+GTEST_TEST(MatrixCompareTest, RigidTransform) {
+  const Vector3<double> Bx(1, 0, 0);
+  const Vector3<double> By(0, 0, -1);
+  const Vector3<double> Bz(0, 1, 0);
+  const math::RotationMatrix<double> R =
+      math::RotationMatrix<double>::MakeFromOrthonormalColumns(Bx, By, Bz);
+
+  const math::RigidTransform<double> X(R, Vector3<double>(10, 20, 30));
+  const math::RigidTransform<double> X_inv = X.inverse();
+  const math::RigidTransform<double> X_inv_inv = X_inv.inverse();
+
+  EXPECT_TRUE(CompareMatrices(X, X_inv_inv));
+  EXPECT_FALSE(CompareMatrices(X, X_inv));
 }
 
 }  // namespace

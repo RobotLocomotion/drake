@@ -43,6 +43,7 @@ drake_cc_library(
     hdrs = ["eigen_matrix_compare.h"],
     deps = [
         "//common:essential",
+        "//math:geometric_transform",
         "@gtest//:without_main",
     ],
 )

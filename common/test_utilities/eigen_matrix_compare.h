@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/text_logging.h"
+#include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 
 namespace drake {
 
@@ -111,6 +113,25 @@ template <typename DerivedA, typename DerivedB>
                                        << m1
                                        << "\nis approximately equal to m2 =\n"
                                        << m2;
+}
+
+/** Specialization for comparing rotation matrices. */
+template <typename T>
+[[nodiscard]] ::testing::AssertionResult CompareMatrices(
+    const math::RotationMatrix<T>& m1, const math::RotationMatrix<T>& m2,
+    double tolerance = 0.0,
+    MatrixCompareType compare_type = MatrixCompareType::absolute) {
+  return CompareMatrices(m1.matrix(), m2.matrix(), tolerance, compare_type);
+}
+
+/** Specialization for comparing rigid transforms. */
+template <typename T>
+[[nodiscard]] ::testing::AssertionResult CompareMatrices(
+    const math::RigidTransform<T>& m1, const math::RigidTransform<T>& m2,
+    double tolerance = 0.0,
+    MatrixCompareType compare_type = MatrixCompareType::absolute) {
+  return CompareMatrices(m1.GetAsMatrix34(), m2.GetAsMatrix34(), tolerance,
+                         compare_type);
 }
 
 }  // namespace drake
