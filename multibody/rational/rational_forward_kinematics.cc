@@ -70,7 +70,7 @@ RationalForwardKinematics::RationalForwardKinematics(
     const internal::BodyTopology& body_topology =
         tree.get_topology().get_body(body_index);
     const internal::MobilizedBody<double>* mobilizer =
-        &(tree.get_mobilizer(body_topology.inboard_mobilizer));
+        &(tree.get_mobilizer(body_topology.mobilized_body));
     if (IsRevolute(*mobilizer)) {
       const symbolic::Variable s_angle(fmt::format("s[{}]", s_.size()));
       s_.push_back(s_angle);
@@ -237,14 +237,14 @@ RationalForwardKinematics::CalcChildBodyPoseAsMultilinearPolynomial(
       tree.get_topology().get_body(child);
   internal::MobilizedBodyIndex mobilizer_index;
   bool is_order_reversed;
-  if (parent_topology.parent_body.is_valid() &&
-      parent_topology.parent_body == child) {
+  if (parent_topology.inboard_body.is_valid() &&
+      parent_topology.inboard_body == child) {
     is_order_reversed = true;
-    mobilizer_index = parent_topology.inboard_mobilizer;
-  } else if (child_topology.parent_body.is_valid() &&
-             child_topology.parent_body == parent) {
+    mobilizer_index = parent_topology.mobilized_body;
+  } else if (child_topology.inboard_body.is_valid() &&
+             child_topology.inboard_body == parent) {
     is_order_reversed = false;
-    mobilizer_index = child_topology.inboard_mobilizer;
+    mobilizer_index = child_topology.mobilized_body;
   } else {
     throw std::invalid_argument(fmt::format(
         "CalcChildBodyPoseAsMultilinearPolynomial: the pair of body indices "

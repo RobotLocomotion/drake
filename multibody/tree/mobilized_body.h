@@ -339,9 +339,9 @@ class MobilizedBody : public MultibodyElement<T> {
   virtual bool has_quaternion_dofs() const { return false; }
 
   // Returns the topology information for this mobilizer. Users should not
-  // need to call this method since MobilizerTopology is an internal
+  // need to call this method since MobilizedBodyTopology is an internal
   // bookkeeping detail.
-  const MobilizerTopology& get_topology() const { return topology_; }
+  const MobilizedBodyTopology& get_topology() const { return topology_; }
 
   // @name Methods that define a %MobilizedBody
   // @{
@@ -728,12 +728,12 @@ class MobilizedBody : public MultibodyElement<T> {
   // At MultibodyTree::Finalize() time, each mobilizer retrieves its topology
   // from the parent MultibodyTree.
   void DoSetTopology(const MultibodyTreeTopology& tree_topology) final {
-    topology_ = tree_topology.get_mobilizer(this->index());
+    topology_ = tree_topology.get_mobilized_body(this->index());
   }
 
   const Frame<T>& inboard_frame_;
   const Frame<T>& outboard_frame_;
-  MobilizerTopology topology_;
+  MobilizedBodyTopology topology_;
 
   // System parameter index for `this` mobilizer's lock state stored in a
   // context.

@@ -656,7 +656,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const BodyTopology& body_topology = get_topology().get_body(body.index());
-    if (!body_topology.inboard_mobilizer.is_valid()) {
+    if (!body_topology.mobilized_body.is_valid()) {
       this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
                                               world_body(), {}, body, {});
     }
@@ -688,7 +688,7 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   const BodyTopology& body_topology = get_topology().get_body(body.index());
   const QuaternionFloatingMobilizer<T>* mobilizer =
       dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
-          &get_mobilizer(body_topology.inboard_mobilizer));
+          &get_mobilizer(body_topology.mobilized_body));
   if (mobilizer == nullptr) {
     throw std::logic_error(
         "Body '" + body.name() + "' is not a free floating body.");
@@ -816,7 +816,7 @@ void MultibodyTree<T>::CreateModelInstances() {
     if (body_node->get_num_mobilizer_positions() > 0 ||
         body_node->get_num_mobilizer_velocities() > 0) {
       model_instances_.at(body_node->model_instance())->add_mobilizer(
-          &body_node->get_mobilizer());
+          &body_node->get_mobilized_body());
     }
   }
 
@@ -3033,7 +3033,7 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     const BodyTopology& parent_body_topology =
         tree_topology.get_body(parent_body_index);
     const MobilizedBodyIndex& parent_mobilizer_index =
-        parent_body_topology.inboard_mobilizer;
+        parent_body_topology.mobilized_body;
     const MobilizedBody<T>& parent_mobilizer =
         get_mobilizer(parent_mobilizer_index);
 
@@ -3513,7 +3513,7 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   std::optional<BodyIndex> base_body_index{};
   for (const auto& body : owned_bodies_) {
     if (body->model_instance() == model_instance &&
-        (topology_.get_body(body->index()).parent_body == world_index())) {
+        (topology_.get_body(body->index()).inboard_body == world_index())) {
       if (base_body_index.has_value()) {
         // More than one base body associated with this model.
         return std::nullopt;
