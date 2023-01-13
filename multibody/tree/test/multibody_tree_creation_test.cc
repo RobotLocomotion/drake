@@ -528,7 +528,7 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
     const BodyIndex body_index = node.body;
     const MobilizedBodyIndex mobilizer_index = node.mobilizer;
 
-    const MobilizerTopology& mobilizer_topology =
+    const MobilizedBodyTopology& mobilizer_topology =
         topology.get_mobilizer(mobilizer_index);
 
     EXPECT_EQ(body_index, bodies_[body_index]->index());
