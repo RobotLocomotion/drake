@@ -5,6 +5,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -117,12 +118,16 @@ PYBIND11_MODULE(schema, m) {
             py::arg("var"), doc.GetDeterministicValue.doc_1args_var);
   }
 
-  // TODO(jwnimmer-tri) In the below, we hard-code the template argument `int
-  // Size` to be `Eigen::Dynamic`, i.e., we only bind one of the allowed
-  // values.  In the future, we should also bind Size == 1 through Size == 6
-  // (to match the C++ code).  When we do that, we'll replace the suffix X with
-  // the template pattern `[Size]` or `_[Size]`, e.g., `DeterministicVector[3]`
-  // or `DeterministicVector_[3]`.
+  {
+    // We need to bind these to placate some runtime type checks, but we should
+    // not expose them to users.
+    py::class_<schema::internal::InvalidVariantSelection<Deterministic>>(
+        m, "_InvalidVariantSelectionDeterministic");
+    py::class_<schema::internal::InvalidVariantSelection<Gaussian>>(
+        m, "_InvalidVariantSelectionGaussian");
+    py::class_<schema::internal::InvalidVariantSelection<Uniform>>(
+        m, "_InvalidVariantSelectionUniform");
+  }
 
   {
     using Class = DistributionVector;
@@ -133,70 +138,102 @@ PYBIND11_MODULE(schema, m) {
         .def("ToSymbolic", &Class::ToSymbolic, cls_doc.ToSymbolic.doc);
   }
 
-  {
-    constexpr int size = Eigen::Dynamic;
-    using Class = DeterministicVector<size>;
-    constexpr auto& cls_doc = doc.DeterministicVector;
-    py::class_<Class, DistributionVector> cls(
-        m, "DeterministicVectorX", cls_doc.doc);
-    cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
-        .def(py::init<const Class&>(), py::arg("other"))
-        .def(py::init<const drake::Vector<double, size>&>(), py::arg("value"),
-            cls_doc.ctor.doc);
-    DefAttributesUsingSerialize(&cls, cls_doc);
-    DefCopyAndDeepCopy(&cls);
-  }
+  // Here, we bind all supported values of the 'Size' template argument.
+  auto bind_distribution_vectors = [&]<int Size>(
+                                       std::integral_constant<int, Size>) {
+    // Prepare our python template argument (i.e., the Size).
+    // For Eigen::Dynamic, we use None (instead of the magical "-1").
+    py::tuple py_param;
+    if constexpr (Size == Eigen::Dynamic) {
+      py_param = py::make_tuple(py::none());
+    } else {
+      py_param = py::make_tuple(Size);
+    }
 
-  {
-    constexpr int size = Eigen::Dynamic;
-    using Class = GaussianVector<size>;
-    constexpr auto& cls_doc = doc.GaussianVector;
-    py::class_<Class, DistributionVector> cls(
-        m, "GaussianVectorX", cls_doc.doc);
-    cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
-        .def(py::init<const Class&>(), py::arg("other"))
-        .def(py::init<const drake::Vector<double, size>&,
-                 const drake::VectorX<double>&>(),
-            py::arg("mean"), py::arg("stddev"), cls_doc.ctor.doc);
-    DefAttributesUsingSerialize(&cls, cls_doc);
-    DefCopyAndDeepCopy(&cls);
-  }
+    {
+      using Class = DeterministicVector<Size>;
+      constexpr auto& cls_doc = doc.DeterministicVector;
+      py::class_<Class, DistributionVector> cls(
+          m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
+      AddTemplateClass(m, "DeterministicVector", cls, py_param);
+      if constexpr (Size == Eigen::Dynamic) {
+        m.attr("DeterministicVectorX") = cls;
+      }
+      cls  // BR
+          .def(py::init<>(), cls_doc.ctor.doc)
+          .def(py::init<const Class&>(), py::arg("other"))
+          .def(py::init<const drake::Vector<double, Size>&>(), py::arg("value"),
+              cls_doc.ctor.doc);
+      DefAttributesUsingSerialize(&cls, cls_doc);
+      DefCopyAndDeepCopy(&cls);
+    }
 
-  {
-    constexpr int size = Eigen::Dynamic;
-    using Class = UniformVector<size>;
-    constexpr auto& cls_doc = doc.UniformVector;
-    py::class_<Class, DistributionVector> cls(m, "UniformVectorX", cls_doc.doc);
-    cls  // BR
-        .def(py::init<>(), cls_doc.ctor.doc)
-        .def(py::init<const Class&>(), py::arg("other"))
-        .def(py::init<const drake::Vector<double, size>&,
-                 const drake::Vector<double, size>&>(),
-            py::arg("min"), py::arg("max"), cls_doc.ctor.doc);
-    DefAttributesUsingSerialize(&cls, cls_doc);
-    DefCopyAndDeepCopy(&cls);
-  }
+    {
+      using Class = GaussianVector<Size>;
+      constexpr auto& cls_doc = doc.GaussianVector;
+      py::class_<Class, DistributionVector> cls(
+          m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
+      AddTemplateClass(m, "GaussianVector", cls, py_param);
+      if constexpr (Size == Eigen::Dynamic) {
+        m.attr("GaussianVectorX") = cls;
+      }
+      cls  // BR
+          .def(py::init<>(), cls_doc.ctor.doc)
+          .def(py::init<const Class&>(), py::arg("other"))
+          .def(py::init<const drake::Vector<double, Size>&,
+                   const drake::VectorX<double>&>(),
+              py::arg("mean"), py::arg("stddev"), cls_doc.ctor.doc);
+      DefAttributesUsingSerialize(&cls, cls_doc);
+      DefCopyAndDeepCopy(&cls);
+    }
 
-  {
-    constexpr int size = Eigen::Dynamic;
-    m  // BR
-        .def("ToDistributionVector",
-            pydrake::overload_cast_explicit<std::unique_ptr<DistributionVector>,
-                const DistributionVectorVariant<size>&>(ToDistributionVector),
-            py::arg("vec"), doc.ToDistributionVector.doc)
-        .def("IsDeterministic",
-            pydrake::overload_cast_explicit<bool,
-                const DistributionVectorVariant<size>&>(IsDeterministic),
-            py::arg("vec"),
-            doc.IsDeterministic.doc_1args_constDistributionVectorVariant)
-        .def("GetDeterministicValue",
-            pydrake::overload_cast_explicit<Eigen::VectorXd,
-                const DistributionVectorVariant<size>&>(GetDeterministicValue),
-            py::arg("vec"),
-            doc.GetDeterministicValue.doc_1args_constDistributionVectorVariant);
-  }
+    {
+      using Class = UniformVector<Size>;
+      constexpr auto& cls_doc = doc.UniformVector;
+      py::class_<Class, DistributionVector> cls(
+          m, TemporaryClassName<Class>().c_str(), cls_doc.doc);
+      AddTemplateClass(m, "UniformVector", cls, py_param);
+      if constexpr (Size == Eigen::Dynamic) {
+        m.attr("UniformVectorX") = cls;
+      }
+      cls  // BR
+          .def(py::init<>(), cls_doc.ctor.doc)
+          .def(py::init<const Class&>(), py::arg("other"))
+          .def(py::init<const drake::Vector<double, Size>&,
+                   const drake::Vector<double, Size>&>(),
+              py::arg("min"), py::arg("max"), cls_doc.ctor.doc);
+      DefAttributesUsingSerialize(&cls, cls_doc);
+      DefCopyAndDeepCopy(&cls);
+    }
+
+    {
+      m  // BR
+          .def("ToDistributionVector",
+              pydrake::overload_cast_explicit<
+                  std::unique_ptr<DistributionVector>,
+                  const DistributionVectorVariant<Size>&>(ToDistributionVector),
+              py::arg("vec"), doc.ToDistributionVector.doc)
+          .def("IsDeterministic",
+              pydrake::overload_cast_explicit<bool,
+                  const DistributionVectorVariant<Size>&>(IsDeterministic),
+              py::arg("vec"),
+              doc.IsDeterministic.doc_1args_constDistributionVectorVariant)
+          .def("GetDeterministicValue",
+              pydrake::overload_cast_explicit<Eigen::VectorXd,
+                  const DistributionVectorVariant<Size>&>(
+                  GetDeterministicValue),
+              py::arg("vec"),
+              doc.GetDeterministicValue
+                  .doc_1args_constDistributionVectorVariant);
+    }
+  };  // NOLINT
+  bind_distribution_vectors(std::integral_constant<int, Eigen::Dynamic>{});
+  bind_distribution_vectors(std::integral_constant<int, 1>{});
+  bind_distribution_vectors(std::integral_constant<int, 2>{});
+  bind_distribution_vectors(std::integral_constant<int, 3>{});
+  bind_distribution_vectors(std::integral_constant<int, 4>{});
+  bind_distribution_vectors(std::integral_constant<int, 5>{});
+  bind_distribution_vectors(std::integral_constant<int, 6>{});
 
   // Bindings for rotation.h.
 
