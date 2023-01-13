@@ -218,20 +218,22 @@ class RigidBody : public Body<T> {
   /// @throws std::exception if context is null.
   void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
                                   const Vector3<T>& com) const {
-    DRAKE_THROW_UNLESS(context != nullptr);
-    const T& x = com(0);
-    const T& y = com(1);
-    const T& z = com(2);
-    systems::BasicVector<T>& spatial_inertia_parameter =
-        context->get_mutable_numeric_parameter(
-            spatial_inertia_parameter_index_);
-    spatial_inertia_parameter.SetAtIndex(
-        internal::parameter_conversion::SpatialInertiaIndex::k_com_x, x);
-    spatial_inertia_parameter.SetAtIndex(
-        internal::parameter_conversion::SpatialInertiaIndex::k_com_y, y);
-    spatial_inertia_parameter.SetAtIndex(
-        internal::parameter_conversion::SpatialInertiaIndex::k_com_z, z);
+    SetCenterOfMassInBodyFrameOnly(context, com);
   }
+
+  /// For `this` rigid body B, sets its center of mass position stored in
+  /// @p context to @p center_of_mass_position and modifies B's inertia about Bo
+  /// (B's origin) so B's inertia about Bcm (B's center of mass) is unchanged.
+  /// @param[out] context contains the state of the multibody system.
+  /// @param[in] center_of_mass_position position vector from Bo (B's origin) to
+  /// Bcm (B's center of mass), expressed in B.
+  /// @note G_BBo_B (this body B's rotational inertia about Bo, expressed in B)
+  /// is modified to ensure B's inertia about Bcm is unchanged.
+  /// @pre the context makes sense for use by `this` RigidBody.
+  /// @throws std::exception if context is null.
+  void SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
+      systems::Context<T>* context,
+      const Vector3<T>& center_of_mass_offset) const;
 
   /// For `this` rigid body B, sets its spatial inertia that is stored in
   /// @p context to @p M_Bo_B.
@@ -393,6 +395,30 @@ class RigidBody : public Body<T> {
   }
 
  private:
+  // For `this` rigid body B, only sets its center of mass position stored in
+  // @p context to @p center_of_mass_position (stored inertia is unchanged).
+  // @param[out] context contains the state of the multibody system.
+  // @param[in] center_of_mass_position position vector from Bo (B's origin) to
+  // Bcm (B's center of mass), expressed in B.
+  // @note G_BBo_B and I_BBo_B (this body B's unit inertia and rotational
+  // inertia about Bo, expressed in B) are _not_ changed_. Effectively, this
+  // mean G_BBcm_B and I_BBcm_B _are_ changed.
+  // @pre the context makes sense for use by `this` RigidBody.
+  // @throws std::exception if context is null.
+  void SetCenterOfMassInBodyFrameOnly(
+      systems::Context<T>* context,
+      const Vector3<T>& center_of_mass_position) const;
+
+  // For `this` rigid body B, sets the unit inertia about B's origin stored in
+  // @p context to @p G_BBo_B.
+  // @param[out] context contains the state of the multibody system.
+  // @param[in] G_BBo_B B's unit inertia about Bo (B's origin), expressed in B.
+  // @pre the context makes sense for use by `this` RigidBody.
+  // @throws std::exception if context is null.
+  void SetUnitInertiaAboutBodyOrigin(
+      systems::Context<T>* context,
+      const UnitInertia<T>& G_BBo_B) const;
+
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>
   std::unique_ptr<Body<ToScalar>> TemplatedDoCloneToScalar(

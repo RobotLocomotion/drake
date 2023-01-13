@@ -65,7 +65,7 @@ class UnitInertia : public RotationalInertia<T> {
   /// inertia. But the construction will nevertheless succeed, and the values of
   /// the input rotational inertia will henceforth be considered a valid unit
   /// inertia.
-  /// It is the responsibility of the user to pass a valid unit inertia.
+  /// @pre The user is responsible for passing a valid rotational inertia.
   explicit UnitInertia(const RotationalInertia<T>& I)
       : RotationalInertia<T>(I) {}
 
