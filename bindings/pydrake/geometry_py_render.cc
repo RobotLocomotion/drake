@@ -11,6 +11,7 @@
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/render_gl/factory.h"
+#include "drake/geometry/render_gltf_client/factory.h"
 #include "drake/geometry/render_vtk/factory.h"
 
 namespace drake {
@@ -361,6 +362,21 @@ void DoScalarIndependentDefinitions(py::module m) {
 
   m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
       py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
+
+  {
+    using Class = geometry::RenderEngineGltfClientParams;
+    constexpr auto& cls_doc = doc_geometry.RenderEngineGltfClientParams;
+    py::class_<Class> cls(m, "RenderEngineGltfClientParams", cls_doc.doc);
+    cls  // BR
+        .def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls, cls_doc);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+
+  m.def("MakeRenderEngineGltfClient", &geometry::MakeRenderEngineGltfClient,
+      py::arg("params") = RenderEngineGltfClientParams(),
+      doc_geometry.MakeRenderEngineGltfClient.doc);
 
   AddValueInstantiation<RenderLabel>(m);
 }
