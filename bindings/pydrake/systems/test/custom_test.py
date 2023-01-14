@@ -299,7 +299,7 @@ class TestCustom(unittest.TestCase):
 
         with self.assertRaises(TypeError) as cm:
             Oops()
-        self.assertIn("LeafSystem_[float].__init__", str(cm.exception))
+        self.assertIn("LeafSystem.__init__", str(cm.exception))
 
     def test_all_leaf_system_overrides(self):
         test = self
