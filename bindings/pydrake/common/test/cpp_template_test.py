@@ -139,10 +139,10 @@ class TestCppTemplate(unittest.TestCase):
         template.add_instantiation(float, DummyB)
 
         self.assertEqual(template[int], DummyA)
-        self.assertEqual(str(DummyA), "<class '{}.ClassTpl[int]'>".format(
+        self.assertEqual(str(DummyA), "<class '{}.ClassTpl𝓣int'>".format(
             _TEST_MODULE))
         self.assertEqual(template[float], DummyB)
-        self.assertEqual(str(DummyB), "<class '{}.ClassTpl[float]'>".format(
+        self.assertEqual(str(DummyB), "<class '{}.ClassTpl𝓣float'>".format(
             _TEST_MODULE))
 
         assert_pickle(self, template[int]())

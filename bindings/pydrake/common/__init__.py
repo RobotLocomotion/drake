@@ -122,3 +122,55 @@ def _wrap_to_match_input_shape(f):
             return out
 
     return wrapper
+
+
+# (This constant relates to cpp_template.py, but for dependency reasons we need
+# to lift it up into the common module.)
+#
+# When we need to create a well-formed Python class name that joins a template
+# name with its template arguments, we will use this unicode character to
+# partition the template name vs its arguments, as kind of "name mangling".
+#
+# For example, the template instantiation expression LeafSystem_[AutoDiffXd]
+# refers to Python class named LeafSystem_𝓣AutoDiffXd. (We cannot use square
+# brackets as a Python class names, or else we'd break many of Python's tools
+# such as Mypy.)
+#
+# See _pretty_class_name() below for a demangling function to help display the
+# template expression to the user, instead of the mangled name.
+#
+# This letter is 'U+1D4E3 MATHEMATICAL BOLD SCRIPT CAPITAL T'.
+_UNICODE_TEMPLATE_OPENER = "𝓣"
+
+# (This constant relates to cpp_template.py, but for dependency reasons we need
+# to lift it up into the common module.)
+#
+# Similarly, when we need to mangle multiple template arguments into a Python
+# class name, we will use this unicode character to separate the arguments.
+#
+# This letter is 'U+1D4FD MATHEMATICAL BOLD SCRIPT SMALL T'.
+_UNICODE_TEMPLATE_PARAM_SPLIT = "𝓽"
+
+
+def _pretty_class_name(cls: type, *, use_qualname: bool = False) -> str:
+    """Given a class, returns its ``cls.__name__`` respelled to be suitable for
+    display to a user, in particular by respelling C++ template arguments using
+    their conventional ``FooBar_[AutoDiffXd]`` expression spelling instead of
+    the mangled unicode name. Note that the returned name might not be a valid
+    Python identifier, though it should still be a valid Python expression.
+
+    If the class is not a template, simply returns ``cls.__name__`` unchanged.
+
+    When ``use_qualname`` is true, uses ``cls.__qualname__`` instead of
+    ``cls.__name__``.
+    """
+    if use_qualname:
+        name = cls.__qualname__
+    else:
+        name = cls.__name__
+    magic = _UNICODE_TEMPLATE_OPENER
+    if magic not in name:
+        return name
+    name = name.replace(magic, "[") + "]"
+    name = name.replace(_UNICODE_TEMPLATE_PARAM_SPLIT, ", ")
+    return name

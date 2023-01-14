@@ -4,6 +4,11 @@ import inspect
 import sys
 import types
 
+from pydrake import _is_building_documentation
+from pydrake.common import (
+    _UNICODE_TEMPLATE_OPENER,
+    _UNICODE_TEMPLATE_PARAM_SPLIT,
+)
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
 from pydrake.common.deprecation import _warn_deprecated
 
@@ -171,7 +176,8 @@ class TemplateBase:
         if instantiation is TemplateBase._deferred:
             assert self._instantiation_func is not None
             instantiation = self._instantiation_func(param)
-            self._add_instantiation_internal(param, instantiation)
+            self._add_instantiation_internal(param, instantiation,
+                                             is_default=False)
         elif instantiation is None and throw_error:
             raise RuntimeError("Invalid instantiation: {}".format(
                 self._instantiation_name(param)))
@@ -180,7 +186,7 @@ class TemplateBase:
             _warn_deprecated(deprecation.message, date=deprecation.date)
         return (instantiation, param)
 
-    def add_instantiation(self, param, instantiation):
+    def add_instantiation(self, param, instantiation, is_default=False):
         """Adds a unique instantiation.
 
         Note:
@@ -193,15 +199,15 @@ class TemplateBase:
                 "Parameter instantiation already registered: {}".format(param))
         # Register it.
         self.param_list.append(param)
-        self._add_instantiation_internal(param, instantiation)
+        self._add_instantiation_internal(param, instantiation, is_default)
         return param
 
-    def _add_instantiation_internal(self, param, instantiation):
+    def _add_instantiation_internal(self, param, instantiation, is_default):
         # Adds instantiation. Permits overwriting for deferred cases.
         assert instantiation is not None
         if instantiation is not TemplateBase._deferred:
             old = instantiation
-            instantiation = self._on_add(param, instantiation)
+            instantiation = self._on_add(param, instantiation, is_default)
             assert instantiation is not None, (self, param, old)
             if instantiation is not old:
                 self._instantiation_alias_map[old] = instantiation
@@ -291,9 +297,21 @@ class TemplateBase:
                 param = tuple(param)
         return get_param_canonical(param)
 
-    def _instantiation_name(self, param):
-        names = get_param_names(self._param_resolve(param))
-        return '{}[{}]'.format(self.name, ', '.join(names))
+    def _instantiation_name(self, param, *, mangle=False):
+        """When mangle=False (the common case), returns the human-readable
+        display name for an instantiation of the given ``param``s. This is
+        typically a Python expression like ``LeafSystem_[AutoDiffXd]``.
+
+        When mangle=True, returns the mangled name for an instantition, i.e.,
+        a valid Python identifier that will be used as __name__ of the class.
+        """
+        names = get_param_names(self._param_resolve(param), mangle=mangle)
+        if not mangle:
+            return '{}[{}]'.format(self.name, ', '.join(names))
+        else:
+            return '{}{}{}'.format(
+                self.name, _UNICODE_TEMPLATE_OPENER,
+                _UNICODE_TEMPLATE_PARAM_SPLIT.join(names))
 
     def _full_name(self):
         return "{}.{}".format(self._scope.__name__, self.name)
@@ -302,7 +320,7 @@ class TemplateBase:
         cls_name = type(self).__name__
         return "<{} {}>".format(cls_name, self._full_name())
 
-    def _on_add(self, param, instantiation):
+    def _on_add(self, param, instantiation, is_default):
         # To be overridden by child classes.
         return instantiation
 
@@ -350,18 +368,22 @@ class TemplateBase:
 
 class TemplateClass(TemplateBase):
     """Extension of `TemplateBase` for classes."""
-    def __init__(self, name, override_meta=True, scope=None, **kwargs):
+    def __init__(self, name, *, scope=None, **kwargs):
         if scope is None:
             scope = _get_module_from_stack()
         TemplateBase.__init__(self, name, scope=scope, **kwargs)
-        self._override_meta = override_meta
 
-    def _on_add(self, param, cls):
-        # Update class name for easier debugging.
-        if self._override_meta:
+    def _on_add(self, param, cls, is_default):
+        # Unless this class was a default template instantiation, we need to
+        # rename it now to describe its template arguments. (Most templated
+        # C++ classes are bound using the TemporaryClassName() fuction.)
+        if not is_default:
             cls._original_name = cls.__name__
             cls._original_qualname = getattr(cls, "__qualname__", cls.__name__)
-            cls.__name__ = self._instantiation_name(param)
+            # When we're building the website, the API docs should refer to the
+            # unmangled names. Otherwise, we must use the mangled name.
+            mangle = not _is_building_documentation()
+            cls.__name__ = self._instantiation_name(param, mangle=mangle)
             # Define `__qualname__` in Python2 because that's what `pybind11`
             # uses when showing function signatures when an overload cannot be
             # found.
@@ -421,7 +443,8 @@ def _rename_callable(f, scope, name, cls=None):
 
 class TemplateFunction(TemplateBase):
     """Extension of `TemplateBase` for functions."""
-    def _on_add(self, param, func):
+    def _on_add(self, param, func, is_default):
+        assert is_default is False
         func = _rename_callable(
             func, self._scope, self._instantiation_name(param))
         setattr(self._scope, func.__name__, func)
@@ -438,7 +461,8 @@ class TemplateMethod(TemplateBase):
         # only.
         self._cls = cls
 
-    def _on_add(self, param, func):
+    def _on_add(self, param, func, is_default):
+        assert is_default is False
         func = _rename_callable(
             func, self._scope, self._instantiation_name(param),
             self._cls)
