@@ -247,13 +247,13 @@ class SamePointConstraintAbstractCSpace : public Constraint {
   }
 
  public:
-  virtual VectorXd ExtractAbstractCspaceVariableFromQ(
+  virtual inline VectorXd ExtractAbstractCSpaceVariableFromQ(
       const Ref<const VectorXd>& q) const = 0;
-  virtual VectorXd ExtractQFromAbstractCspaceVariable(
+  virtual inline VectorXd ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorXd>& cspace_variable) const = 0;
-  virtual AutoDiffVecXd ExtractQFromAbstractCspaceVariable(
+  virtual inline AutoDiffVecXd ExtractQFromAbstractCSpaceVariable(
       const Ref<const AutoDiffVecXd>& cspace_variable) const = 0;
-  virtual VectorX<symbolic::Expression> ExtractQFromAbstractCspaceVariable(
+  virtual inline VectorX<symbolic::Expression> ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
       const = 0;
 
@@ -270,7 +270,7 @@ class SamePointConstraintAbstractCSpace : public Constraint {
     DRAKE_DEMAND(frameA_ != nullptr);
     DRAKE_DEMAND(frameB_ != nullptr);
     VectorXd cspace_variable = x.head(plant_->num_positions());
-    VectorXd q = ExtractQFromAbstractCspaceVariable(cspace_variable);
+    VectorXd q = ExtractQFromAbstractCSpaceVariable(cspace_variable);
     Vector3d p_AA = x.template segment<3>(plant_->num_positions()),
              p_BB = x.template tail<3>();
     Vector3d p_WA, p_WB;
@@ -283,14 +283,13 @@ class SamePointConstraintAbstractCSpace : public Constraint {
   }
 
   // p_WA = X_WA(cspace_variable)*p_AA
-  // dp_WA = Jcspace_variable_v_WA*dcspace_variable +
-  // X_WA(cspace_variable)*dp_AA
+  // dp_WA = Jcspace_variable_v_WA*dcspace_variable + X_WA(cspace_variable)*dp_AA
   void DoEval(const Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
     DRAKE_DEMAND(frameA_ != nullptr);
     DRAKE_DEMAND(frameB_ != nullptr);
     AutoDiffVecXd cspace_variable = x.head(plant_->num_positions());
-    AutoDiffVecXd q = ExtractQFromAbstractCspaceVariable(cspace_variable);
+    AutoDiffVecXd q = ExtractQFromAbstractCSpaceVariable(cspace_variable);
     Vector3<AutoDiffXd> p_AA = x.template segment<3>(plant_->num_positions()),
                         p_BB = x.template tail<3>();
 
@@ -312,13 +311,11 @@ class SamePointConstraintAbstractCSpace : public Constraint {
         *context_, JacobianWrtVariable::kQDot, *frameB_,
         ExtractDoubleOrThrow(p_BB), plant_->world_frame(),
         plant_->world_frame(), &Jq_v_WB);
+
     Eigen::Matrix3Xd Jcspace_variable_v_WA(3, plant_->num_positions()),
         Jcspace_variable_v_WB(3, plant_->num_positions());
-    for (int i = 0; i < plant_->num_positions(); i++) {
-      // dX_t_wa = J_q_WA * dq_dt
-      Jcspace_variable_v_WA.col(i) = Jq_v_WA.col(i) * q(i).derivatives()(i);
-      Jcspace_variable_v_WB.col(i) = Jq_v_WB.col(i) * q(i).derivatives()(i);
-    }
+    Compute_Jcspace_variable_v_WF(Jq_v_WA, q, &Jcspace_variable_v_WA);
+    Compute_Jcspace_variable_v_WF(Jq_v_WB, q, &Jcspace_variable_v_WB);
 
     const Eigen::Vector3d y_val =
         X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
@@ -339,7 +336,7 @@ class SamePointConstraintAbstractCSpace : public Constraint {
         symbolic_plant_->get_frame(frameB_->index());
 
     VectorX<Expression> cspace_variable = x.head(plant_->num_positions());
-    VectorX<Expression> q = ExtractQFromAbstractCspaceVariable(cspace_variable);
+    VectorX<Expression> q = ExtractQFromAbstractCSpaceVariable(cspace_variable);
     Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
                         p_BB = x.template tail<3>();
     Vector3<Expression> p_WA, p_WB;
@@ -350,6 +347,14 @@ class SamePointConstraintAbstractCSpace : public Constraint {
                                          symbolic_plant_->world_frame(), &p_WB);
     *y = p_WA - p_WB;
   }
+
+  virtual inline void Compute_Jcspace_variable_v_WF(const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
+                                            const Eigen::Ref<const AutoDiffVecXd> q,
+                                            EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const {
+    for (int i = 0; i < plant_->num_positions(); i++) {
+      Jcspace_variable_v_WF->col(i) = Jq_v_WF.col(i) * q(i).derivatives()(i);
+    }
+  }
 };
 
 // Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
@@ -359,23 +364,29 @@ class SamePointConstraint : public SamePointConstraintAbstractCSpace {
                       const Context<double>& context)
       : SamePointConstraintAbstractCSpace(plant, context) {}
 
-  VectorXd ExtractAbstractCspaceVariableFromQ(
+  VectorXd ExtractAbstractCSpaceVariableFromQ(
       const Ref<const VectorXd>& q) const override {
     return q;
   }
 
-  VectorXd ExtractQFromAbstractCspaceVariable(
+  VectorXd ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorXd>& cspace_variable) const override {
     return cspace_variable;
   }
-  AutoDiffVecXd ExtractQFromAbstractCspaceVariable(
+  AutoDiffVecXd ExtractQFromAbstractCSpaceVariable(
       const Ref<const AutoDiffVecXd>& cspace_variable) const override {
     return cspace_variable;
   }
-  VectorX<symbolic::Expression> ExtractQFromAbstractCspaceVariable(
+  VectorX<symbolic::Expression> ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
       const override {
     return cspace_variable;
+  }
+
+  inline void Compute_Jcspace_variable_v_WF(const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
+                                            const Eigen::Ref<const AutoDiffVecXd> q,
+                                            EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const override {
+    *Jcspace_variable_v_WF = Jq_v_WF;
   }
 };
 
@@ -391,21 +402,21 @@ class SamePointConstraintRational : public SamePointConstraintAbstractCSpace {
         rational_forward_kinematics_ptr_(rational_forward_kinematics_ptr),
         q_star_(q_star) {}
 
-  VectorXd ExtractAbstractCspaceVariableFromQ(
+  VectorXd ExtractAbstractCSpaceVariableFromQ(
       const Ref<const VectorXd>& q) const override {
     return rational_forward_kinematics_ptr_->ComputeSValue(q, q_star_);
   }
-  VectorXd ExtractQFromAbstractCspaceVariable(
+  VectorXd ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorXd>& cspace_variable) const override {
     return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
                                                            q_star_);
   }
-  AutoDiffVecXd ExtractQFromAbstractCspaceVariable(
+  AutoDiffVecXd ExtractQFromAbstractCSpaceVariable(
       const Ref<const AutoDiffVecXd>& cspace_variable) const override {
     return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
                                                            q_star_);
   }
-  VectorX<symbolic::Expression> ExtractQFromAbstractCspaceVariable(
+  VectorX<symbolic::Expression> ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
       const override {
     return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
@@ -708,7 +719,7 @@ HPolyhedron _DoIris_(const MultibodyPlant<double>& plant,
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
   const VectorXd q_sample =
-      same_point_constraint->ExtractQFromAbstractCspaceVariable(sample);
+      same_point_constraint->ExtractQFromAbstractCSpaceVariable(sample);
   const int nc = static_cast<int>(options.configuration_obstacles.size());
   // Note: We require finite joint limits to define the bounding box for the
   // IRIS algorithm.
@@ -730,9 +741,9 @@ HPolyhedron _DoIris_(const MultibodyPlant<double>& plant,
 
   // Make the polytope and ellipsoid.
   HPolyhedron P = HPolyhedron::MakeBox(
-      same_point_constraint->ExtractAbstractCspaceVariableFromQ(
+      same_point_constraint->ExtractAbstractCSpaceVariableFromQ(
           plant.GetPositionLowerLimits()),
-      same_point_constraint->ExtractAbstractCspaceVariableFromQ(
+      same_point_constraint->ExtractAbstractCSpaceVariableFromQ(
           plant.GetPositionUpperLimits()));
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
   const double kEpsilonEllipsoid = 1e-2;
