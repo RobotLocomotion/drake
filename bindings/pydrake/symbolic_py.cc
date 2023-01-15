@@ -577,8 +577,9 @@ PYBIND11_MODULE(symbolic, m) {
   {
     constexpr auto& cls_doc = doc.FormulaKind;
     py::enum_<FormulaKind>(m, "FormulaKind", doc.FormulaKind.doc)
-        .value("False", FormulaKind::False, cls_doc.False.doc)
-        .value("True", FormulaKind::True, cls_doc.True.doc)
+        // `True` and `False` are reserved keywords as of Python3.
+        .value("False_", FormulaKind::False, cls_doc.False.doc)
+        .value("True_", FormulaKind::True, cls_doc.True.doc)
         .value("Var", FormulaKind::Var, cls_doc.Var.doc)
         .value("Eq", FormulaKind::Eq, cls_doc.Eq.doc)
         .value("Neq", FormulaKind::Neq, cls_doc.Neq.doc)
@@ -649,9 +650,7 @@ PYBIND11_MODULE(symbolic, m) {
                          const Formula& other) { return !self.EqualTo(other); })
       .def("__hash__",
           [](const Formula& self) { return std::hash<Formula>{}(self); })
-      .def_static("True", &Formula::True, doc.FormulaTrue.doc)
-      .def_static("False", &Formula::False, doc.FormulaFalse.doc)
-      // `True` and `False` are reserved as of Python3
+      // `True` and `False` are reserved keywords as of Python3.
       .def_static("True_", &Formula::True, doc.FormulaTrue.doc)
       .def_static("False_", &Formula::False, doc.FormulaFalse.doc)
       .def("__nonzero__", [](const Formula&) {
