@@ -1433,13 +1433,34 @@ HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(
 }
 
 void CspaceFreePolytope::SearchResult::SetSeparatingPlanes(
-    std::vector<std::optional<SeparationCertificateResult>>
+    const std::vector<std::optional<SeparationCertificateResult>>&
         certificates_result) {
   a.clear();
   b.clear();
   for (const auto& certificate : certificates_result) {
-    a.emplace(certificate->plane_index, std::move(certificate->a));
-    b.emplace(certificate->plane_index, std::move(certificate->b));
+    a.emplace(certificate->plane_index, certificate->a);
+    b.emplace(certificate->plane_index, certificate->b);
+  }
+}
+
+void CspaceFreePolytope::SearchResult::UpdateSeparatingPlanes(
+    const std::vector<std::optional<SeparationCertificateResult>>&
+        certificates_result) {
+  for (const auto& certificate : certificates_result) {
+    if (certificate.has_value()) {
+      auto it_a = a.find(certificate->plane_index);
+      if (it_a == a.end()) {
+        a.emplace_hint(it_a, certificate->plane_index, certificate->a);
+      } else {
+        it_a->second = certificate->a;
+      }
+      auto it_b = b.find(certificate->plane_index);
+      if (it_b == b.end()) {
+        b.emplace_hint(it_b, certificate->plane_index, certificate->b);
+      } else {
+        it_b->second = certificate->b;
+      }
+    }
   }
 }
 
@@ -1571,27 +1592,70 @@ CspaceFreePolytope::BinarySearch(
         "C contains rows with all 0 entries. Please remove these rows.");
   }
 
+  // geometry_pair_scale_lower_bounds[i] stores the certified lower bound on
+  // the scaling factor for the i'th pair of geometries (the geometries in
+  // this->separating_planes_[i]).
+  std::vector<double> geometry_pair_scale_lower_bounds(
+      this->separating_planes_.size(), 0);
+
   // Determines if we can certify the scaled C-space polytope {s |C*s<=d,
   // s_lower<=s<=s_upper} is collision free or not. Also update `ret` if eps
   // is feasible.
   auto is_scale_feasible = [this, &ignored_collision_pairs, &C, &d_init,
-                            &s_center, &options, &ret](double scale) {
+                            &s_center, &options,
+                            &geometry_pair_scale_lower_bounds,
+                            &ret](double scale) {
     // (d - C*s_center) / |C| = scale * (d_init - C*s_center) / |C|, hence d =
     // scale * d_init + (1-scale) * C * s_center.
     const Eigen::VectorXd d = scale * d_init + (1 - scale) * C * s_center;
+
+    // If `scale` is smaller than geometry_pair_scale_lower_bounds[plane_index],
+    // then it means that in the previous iteration of the binary search, we
+    // have already certified this pair of geometry is separated for a larger
+    // scale (hence a larger C-space free region), and we don't need to certify
+    // the separation for this `scale` (hence we add the pair to
+    // `ignored_collision_pairs_for_scale`). Only attempt to certify the
+    // separating plane for this pair of geometry, if `scale` is larger than
+    // geometry_pair_scale_lower_bounds[plane_index].
+    CspaceFreePolytope::IgnoredCollisionPairs
+        ignored_collision_pairs_for_scale = ignored_collision_pairs;
+    for (int i = 0; i < static_cast<int>(separating_planes_.size()); ++i) {
+      const auto& plane = separating_planes_[i];
+      const SortedPair<geometry::GeometryId> geometry_pair(
+          plane.positive_side_geometry->id(),
+          plane.negative_side_geometry->id());
+      if (ignored_collision_pairs.count(geometry_pair) == 0 &&
+          geometry_pair_scale_lower_bounds[i] >= scale) {
+        ignored_collision_pairs_for_scale.insert(geometry_pair);
+      }
+    }
     const auto certificates_result =
         this->FindSeparationCertificateGivenPolytope(
-            ignored_collision_pairs, C, d, options.find_lagrangian_options);
+            ignored_collision_pairs_for_scale, C, d,
+            options.find_lagrangian_options);
+    for (const auto& certificate_result : certificates_result) {
+      if (certificate_result.has_value()) {
+        // If `scale` is feasible for this pair of geometry, then update the
+        // lower bound stored in geometry_pair_scale_lower_bounds.
+        geometry_pair_scale_lower_bounds[certificate_result->plane_index] =
+            scale;
+      }
+    }
+
     if (std::any_of(
             certificates_result.begin(), certificates_result.end(),
             [](const std::optional<SeparationCertificateResult>& certificate) {
               return !certificate.has_value();
             })) {
+      // We might have found the certificates for some (but not all) geometry
+      // pairs, so we still update the separation planes for these certified
+      // pairs.
+      ret.UpdateSeparatingPlanes(certificates_result);
       return false;
     } else {
       ret.C = C;
       ret.d = d;
-      ret.SetSeparatingPlanes(std::move(certificates_result));
+      ret.UpdateSeparatingPlanes(certificates_result);
       return true;
     }
   };
