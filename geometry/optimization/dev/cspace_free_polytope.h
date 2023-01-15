@@ -336,9 +336,15 @@ class CspaceFreePolytope {
     // The number of iterations at termination.
     int num_iter;
 
+    // Clear this->a and this->b and reset their values.
     void SetSeparatingPlanes(
-        std::vector<std::optional<SeparationCertificateResult>>
+        const std::vector<std::optional<SeparationCertificateResult>>&
             certificates_result);
+
+    // Update this->a and this->b with the values in certificates_result.
+    void UpdateSeparatingPlanes(
+        const std::vector<std::optional<SeparationCertificateResult>>&
+            certificates_results);
   };
 
   struct BilinearAlternationOptions {
