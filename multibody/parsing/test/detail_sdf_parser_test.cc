@@ -2742,6 +2742,70 @@ TEST_F(SdfParserTest, WorldJoint) {
                               X_CJc.GetAsMatrix4(), kEps));
 }
 
+// Tests the error handling for an unsupported visual geometry.
+TEST_F(SdfParserTest, TestUnsupportedVisualGeometry) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+  <model name="heightmap_model">
+    <link name="a">
+      <visual name="b">
+        <geometry>
+          <heightmap/>
+        </geometry>
+      </visual>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: heightmap.*"));
+  ClearDiagnostics();
+
+  ParseTestString(R"""(
+  <model name="polyline_model">
+    <link name="a">
+      <visual name="b">
+        <geometry>
+          <polyline/>
+        </geometry>
+      </visual>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: polyline.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an unsupported collision geometry.
+TEST_F(SdfParserTest, TestUnsupportedCollisionGeometry) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+  <model name="heightmap_model">
+    <link name="a">
+      <collision name="b">
+        <geometry>
+          <heightmap/>
+        </geometry>
+      </collision>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: heightmap.*"));
+  ClearDiagnostics();
+
+  ParseTestString(R"""(
+  <model name="polyline_model">
+    <link name="a">
+      <collision name="b">
+        <geometry>
+          <polyline/>
+        </geometry>
+      </collision>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: polyline.*"));
+  ClearDiagnostics();
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
