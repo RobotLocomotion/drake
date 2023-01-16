@@ -13,21 +13,26 @@ using Eigen::VectorXd;
 const double kEps = std::numeric_limits<double>::epsilon();
 class Dut : public LeafSystem<double> {
  public:
-  Dut() {
+  explicit Dut(double period_sec) {
+    // Initialization.
     initialized_index_ = DeclareDiscreteState(VectorXd::Zero(1));
     DeclareInitializationDiscreteUpdateEvent(&Dut::Initialize);
-    DeclareVectorOutputPort(
-        "initialized",
-        BasicVector<double>(1),
-        [this](const Context<double>& context, BasicVector<double>* output) {
-          (*output)[0] = IsInitialized(context);
-        });
+    DeclareStateOutputPort("initialized", initialized_index_);
+    // Discrete counter.
+    counter_index_ = DeclareDiscreteState(VectorXd::Zero(1));
+    DeclarePeriodicDiscreteUpdateEvent(period_sec, 0.0, &Dut::UpdateCounter);
   }
 
   bool IsInitialized(const Context<double>& context) const {
     const double initialized =
         context.get_discrete_state(initialized_index_)[0];
     return initialized != 0.0;
+  }
+
+  int GetCounter(const Context<double>& context) const {
+    const double counter =
+        context.get_discrete_state(counter_index_)[0];
+    return static_cast<int>(counter);
   }
 
  private:
@@ -38,24 +43,31 @@ class Dut : public LeafSystem<double> {
     return EventStatus::Succeeded();
   }
 
+  void UpdateCounter(
+      const Context<double>& context,
+      DiscreteValues<double>* state) const {
+    state->get_mutable_value(counter_index_)[0] += 1.0;
+  }
+
   DiscreteStateIndex initialized_index_;
+  DiscreteStateIndex counter_index_;
 };
 
 GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   DiagramBuilder<double> builder;
 
-  const double zoh_period_sec = 1.0;
+  const double period_sec = 1.0;
   // Add Dut.
-  auto* dut = builder.AddSystem<Dut>();
+  auto* dut = builder.AddSystem<Dut>(period_sec);
   // Add cascade of ZOH.
   // N.B. Initializing has no effect on this sequence of events.
   const bool initialize = true;
   auto* zoh_1 =
-      builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
+      builder.AddSystem<ZeroOrderHold>(period_sec, 1, initialize);
   auto* zoh_2 =
-      builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
+      builder.AddSystem<ZeroOrderHold>(period_sec, 1, initialize);
   auto* zoh_3 =
-      builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
+      builder.AddSystem<ZeroOrderHold>(period_sec, 1, initialize);
   // Connect 3 ZOH in series.
   const int zoh_cascade_order = 3;
   builder.Connect(dut->get_output_port(), zoh_1->get_input_port());
@@ -78,6 +90,7 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
 
   // Default context is as expected.
   EXPECT_FALSE(dut->IsInitialized(dut_context));
+  EXPECT_EQ(dut->GetCounter(dut_context), 0);
   EXPECT_FALSE(zoh_shows_initialized(zoh_1));
   EXPECT_FALSE(zoh_shows_initialized(zoh_2));
   EXPECT_FALSE(zoh_shows_initialized(zoh_3));
@@ -87,6 +100,7 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   // Our Dut initalization was processed. Note that the ZOH discrete update at
   // t=0 is *not* an initialization event, thus was not processed.
   EXPECT_TRUE(dut->IsInitialized(dut_context));
+  EXPECT_EQ(dut->GetCounter(dut_context), 0);
   EXPECT_FALSE(zoh_shows_initialized(zoh_1));
   EXPECT_FALSE(zoh_shows_initialized(zoh_2));
   EXPECT_FALSE(zoh_shows_initialized(zoh_3));
@@ -95,6 +109,8 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   simulator.AdvanceTo(0.0);
   // As before, we have processed the initialization event.
   EXPECT_TRUE(dut->IsInitialized(dut_context));
+  // We have also processed one discrete update.
+  EXPECT_EQ(dut->GetCounter(dut_context), 1);
   // The ZOH updated, and the dut's y⁻(0) was initialized, thus
   // indicates initialization.
   EXPECT_TRUE(zoh_shows_initialized(zoh_1));
@@ -104,17 +120,19 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
 
   // Advance to exactly the boundary. Process all events with
   // AdvancePendingEvents(). No change should occur.
-  simulator.AdvanceTo(zoh_period_sec);
+  simulator.AdvanceTo(period_sec);
   simulator.AdvancePendingEvents();
   EXPECT_TRUE(dut->IsInitialized(dut_context));
+  EXPECT_EQ(dut->GetCounter(dut_context), 2);
   EXPECT_TRUE(zoh_shows_initialized(zoh_1));
   EXPECT_TRUE(zoh_shows_initialized(zoh_2));
   EXPECT_FALSE(zoh_shows_initialized(zoh_3));
 
   // One more time, so that all are updated.
-  simulator.AdvanceTo(zoh_period_sec * 2);
+  simulator.AdvanceTo(period_sec * 2);
   simulator.AdvancePendingEvents();
   EXPECT_TRUE(dut->IsInitialized(dut_context));
+  EXPECT_EQ(dut->GetCounter(dut_context), 3);
   EXPECT_TRUE(zoh_shows_initialized(zoh_1));
   EXPECT_TRUE(zoh_shows_initialized(zoh_2));
   EXPECT_TRUE(zoh_shows_initialized(zoh_3));
@@ -122,6 +140,7 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   // Reset and show we're back to initial state.
   diagram_context.SetTimeStateAndParametersFrom(*diagram_context_init);
   EXPECT_FALSE(dut->IsInitialized(dut_context));
+  EXPECT_EQ(dut->GetCounter(dut_context), 0);
   EXPECT_FALSE(zoh_shows_initialized(zoh_1));
   EXPECT_FALSE(zoh_shows_initialized(zoh_2));
   EXPECT_FALSE(zoh_shows_initialized(zoh_3));
@@ -133,6 +152,7 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
     simulator.Initialize();
   }
   EXPECT_TRUE(dut->IsInitialized(dut_context));
+  EXPECT_EQ(dut->GetCounter(dut_context), 0);
   EXPECT_TRUE(zoh_shows_initialized(zoh_1));
   EXPECT_TRUE(zoh_shows_initialized(zoh_2));
   EXPECT_TRUE(zoh_shows_initialized(zoh_3));
