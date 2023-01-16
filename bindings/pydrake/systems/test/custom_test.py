@@ -297,9 +297,8 @@ class TestCustom(unittest.TestCase):
             def __init__(self):
                 pass
 
-        with self.assertRaises(TypeError) as cm:
+        with self.assertRaisesRegex(TypeError, "LeafSystem.*__init__"):
             Oops()
-        self.assertIn("LeafSystem_[float].__init__", str(cm.exception))
 
     def test_all_leaf_system_overrides(self):
         test = self

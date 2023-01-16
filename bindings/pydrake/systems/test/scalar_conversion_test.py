@@ -253,4 +253,4 @@ class TestScalarConversion(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             BadParenting_[float]
         self.assertIn("BadParenting_[float]", str(cm.exception))
-        self.assertIn("LeafSystem_[float]", str(cm.exception))
+        self.assertIn("LeafSystem", str(cm.exception))
