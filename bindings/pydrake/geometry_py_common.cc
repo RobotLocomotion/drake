@@ -531,10 +531,21 @@ void DoScalarIndependentDefinitions(py::module m) {
           const std::optional<double>&,
           const std::optional<multibody::CoulombFriction<double>>&,
           ProximityProperties*>(&AddContactMaterial),
-      py::arg("dissipation") = std::nullopt,
+      py::arg("dissipation"), py::arg("point_stiffness"), py::arg("friction"),
+      py::arg("properties"), doc.AddContactMaterial.doc);
+  // For convenience and backwards compatibility, add another overload
+  // with the properties first as well as defaulted arguments.
+  m.def(
+      "AddContactMaterial",
+      [](ProximityProperties* properties,
+          const std::optional<double>& dissipation,
+          const std::optional<double>& point_stiffness,
+          const std::optional<multibody::CoulombFriction<double>>& friction) {
+        AddContactMaterial(dissipation, point_stiffness, friction, properties);
+      },
+      py::arg("properties"), py::arg("dissipation") = std::nullopt,
       py::arg("point_stiffness") = std::nullopt,
-      py::arg("friction") = std::nullopt, py::arg("properties"),
-      doc.AddContactMaterial.doc);
+      py::arg("friction") = std::nullopt, doc.AddContactMaterial.doc);
 }
 
 // Test-only code.
