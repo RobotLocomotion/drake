@@ -14,16 +14,19 @@ namespace drake {
 namespace math {
 namespace {
 
+const double kEps = std::numeric_limits<double>::epsilon();
+
 using Eigen::MatrixXd;
 
 const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
 
 void SolveRealLyapunovEquationAndVerify(const Eigen::Ref<const MatrixXd>& A,
-                                        const Eigen::Ref<const MatrixXd>& Q) {
+                                        const Eigen::Ref<const MatrixXd>& Q,
+                                        double symmetry_tol = 0) {
   MatrixXd X{RealDiscreteLyapunovEquation(A, Q)};
   // Check that X is symmetric.
-  EXPECT_TRUE(
-      CompareMatrices(X, X.transpose(), 0, MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(X, X.transpose(), symmetry_tol,
+                              MatrixCompareType::absolute));
   // Check that X is the solution to the discrete time ARE.
   EXPECT_TRUE(CompareMatrices(A.transpose() * X * A - X, -Q,
                               5 * kTolerance * Q.norm(),
@@ -157,6 +160,19 @@ GTEST_TEST(RealDiscreteLyapunovEquation, Solve3by3Test2) {
   EXPECT_TRUE(CompareMatrices(RealDiscreteLyapunovEquation(A, Q), X, kTolerance,
                               MatrixCompareType::absolute));
   SolveRealLyapunovEquationAndVerify(A, Q);
+}
+
+GTEST_TEST(RealDiscreteLyapunovEquation, Solve3by3Test3) {
+  int n{3};
+  MatrixXd A(n, n);
+  A << 0.5, 1, -1, 1, 0, 0.5, 0, -0.5, 2;
+  MatrixXd Q(n, n);
+  // clang-format off
+  Q << 10, 2, 3,
+       2, 4, 1,
+       3, 1, 5;
+  // clang-format on
+  SolveRealLyapunovEquationAndVerify(A, Q, 100 * kEps);
 }
 
 GTEST_TEST(RealDiscreteLyapunovEquation, Solve4by4Test1) {
