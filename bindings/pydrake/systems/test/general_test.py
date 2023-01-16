@@ -1012,6 +1012,9 @@ class TestGeneral(unittest.TestCase):
         builder = DiagramBuilder()
         builder.AddNamedSystem("adder1", Adder(2, 2))
         builder.AddNamedSystem("adder2", Adder(2, 2))
+        sub_builder = DiagramBuilder()
+        sub_builder.AddNamedSystem("adder3", Adder(2, 2))
+        builder.AddNamedSystem("sub_diagram", sub_builder.Build())
         system = builder.Build()
         system.set_name("diagram")
 
@@ -1029,5 +1032,5 @@ class TestGeneral(unittest.TestCase):
 
         visitor = MyVisitor()
         system.Accept(v=visitor)
-        self.assertEqual(visited_systems, ["adder1", "adder2"])
-        self.assertEqual(visited_diagrams, ["diagram"])
+        self.assertEqual(visited_systems, ["adder1", "adder2", "adder3"])
+        self.assertEqual(visited_diagrams, ["diagram", "sub_diagram"])
