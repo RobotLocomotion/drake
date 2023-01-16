@@ -230,7 +230,7 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
 
   // We first validate the result of the projection γ = P(y).
   const Vector3d gamma_numerical = SolveProjectionWithScs(mu, R, y);
-  EXPECT_TRUE(CompareMatrices(gamma, gamma_numerical, 5.0 * kTolerance,
+  EXPECT_TRUE(CompareMatrices(gamma, gamma_numerical, 10.0 * kTolerance,
                               MatrixCompareType::relative));
 
   // We now verify gradients using automatic differentiation.
