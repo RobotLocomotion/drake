@@ -26,7 +26,7 @@ class Dut : public LeafSystem<double> {
   bool IsInitialized(const Context<double>& context) const {
     const double initialized =
         context.get_discrete_state(initialized_index_)[0];
-    return initialized != 0.0;
+    return initialized == 1.0;
   }
 
   int GetCounter(const Context<double>& context) const {
@@ -148,6 +148,8 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   // Show that simultaneous discrete updates can be handled by precisely
   // calling `simulator.Initialize)` by a value related to degree of cascade by
   // showing ultimate consistency.
+  // WARNING: This will only work if ZeroOrderHold(..., initialize=True).
+  // TODO(eric.cousineau): Make explicit test case for this.
   for (int i = 0; i < discrete_initialization_cascade_order; ++i) {
     simulator.Initialize();
   }
