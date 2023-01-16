@@ -177,8 +177,8 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     //
     //  S₁'x̅s₁₁ - x̅ =
     //
-    //  [ s₁₁(0,0)*S₁'x̅[0]+s₁₁(1,0)*S₁₁'x̅[1],
-    //            s₁₁(0,1)*S₁'x̅[0]+s₁₁(1,1)*S₁'x̅[1] ]
+    //  [ s₁₁(0,0)*S₁' - I,      s₁₁(1,0)*S₁₁] * [x̅[0]]
+    //  [ s₁₁(0,1)*S₁'    ,  s₁₁(1,1)*S₁' - I]   [x̅[1]]
     //
     //  This equation can be vectorized by stacking the columns of x̅.
     //
@@ -186,7 +186,7 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     //
     //  x_bar_vec = [x̅[0]' x̅[1]']' where [i] is the ith column
     //
-    //  lhs = [s₁(0,0)*S₁' s₁₁(1,0)*S₁'; s₁₁(0,1)*S₁' s₁₁(1,1)*S₁']
+    //  lhs = [s₁(0,0)*S₁' - I s₁₁(1,0)*S₁'; s₁₁(0,1)*S₁' s₁₁(1,1)*S₁' - I]
     //
     //  rhs = -[(q̅+sx̅₁₁s₁₁)[0]' (q̅+sx̅₁₁s₁₁)[1]']'
     //
@@ -197,8 +197,10 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     //
 
     MatrixXd lhs(2 * (m - 2), 2 * (m - 2));
-    lhs << s_11(0, 0) * S_1.transpose(), s_11(1, 0) * S_1.transpose(),
-        s_11(0, 1) * S_1.transpose(), s_11(1, 1) * S_1.transpose();
+    lhs << s_11(0, 0) * S_1.transpose() -
+               Eigen::MatrixXd::Identity(m - 2, m - 2),
+        s_11(1, 0) * S_1.transpose(), s_11(0, 1) * S_1.transpose(),
+        s_11(1, 1) * S_1.transpose() - Eigen::MatrixXd::Identity(m - 2, m - 2);
 
     VectorXd rhs(2 * (m - 2), 1);
     rhs << (-q_bar - s * x_bar_11 * s_11).col(0),
