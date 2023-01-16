@@ -160,7 +160,7 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     x_bar_11 << Solve2By2RealDiscreteLyapunovEquation(s_11, q_bar_11);
     // solving equation 4.2
     // The equation reads as S₁'x̅s₁₁ - x̅      = -q̅₁₁ - sx̅₁₁s₁,
-    // where S₁ ∈ ℝᵐ⁻²ˣᵐ⁻²; x̅, q̅, s ∈ ℝᵐ⁻²ˣ² and s₁₁, x̅₁₁ ∈ ℝ²ˣ².
+    // where S₁ ∈ ℝᵐ⁻²ˣᵐ⁻²; x̅, q̅₁₁, s ∈ ℝᵐ⁻²ˣ² and s₁₁, x̅₁₁ ∈ ℝ²ˣ².
     // We solve the linear equation by vectorization and feeding it into
     // colPivHouseHolderQr().
     //
@@ -173,20 +173,18 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     //  The ith column of a matrix is accessed by [i], i.e. the first column
     //  of x̅ is x̅[0].
     //
-    //  Writing out the rhs of equation 4.2 gives:
+    //  Writing out the lhs of equation 4.2 gives:
     //
     //  S₁'x̅s₁₁ - x̅ =
     //
-    //  [ s₁₁(0,0)*S₁'x̅[0]+s₁₁(1,0)*S₁₁'x̅[1],
-    //            s₁₁(0,1)*S₁'x̅[0]+s₁₁(1,1)*S₁'x̅[1] ]
-    //
-    //  This equation can be vectorized by stacking the columns of x̅.
+    //  [ s₁₁(0,0)*S₁' - I,      s₁₁(1,0)*S₁'] * [x̅[0]]
+    //  [ s₁₁(0,1)*S₁'    ,  s₁₁(1,1)*S₁' - I]   [x̅[1]]
     //
     //  Define:
     //
     //  x_bar_vec = [x̅[0]' x̅[1]']' where [i] is the ith column
     //
-    //  lhs = [s₁(0,0)*S₁' s₁₁(1,0)*S₁'; s₁₁(0,1)*S₁' s₁₁(1,1)*S₁']
+    //  lhs = [s₁(0,0)*S₁' - I s₁₁(1,0)*S₁'; s₁₁(0,1)*S₁' s₁₁(1,1)*S₁' - I]
     //
     //  rhs = -[(q̅+sx̅₁₁s₁₁)[0]' (q̅+sx̅₁₁s₁₁)[1]']'
     //
@@ -197,8 +195,10 @@ MatrixXd SolveReducedRealDiscreteLyapunovEquation(
     //
 
     MatrixXd lhs(2 * (m - 2), 2 * (m - 2));
-    lhs << s_11(0, 0) * S_1.transpose(), s_11(1, 0) * S_1.transpose(),
-        s_11(0, 1) * S_1.transpose(), s_11(1, 1) * S_1.transpose();
+    lhs << s_11(0, 0) * S_1.transpose() -
+               MatrixXd::Identity(m - 2, m - 2),
+        s_11(1, 0) * S_1.transpose(), s_11(0, 1) * S_1.transpose(),
+        s_11(1, 1) * S_1.transpose() - MatrixXd::Identity(m - 2, m - 2);
 
     VectorXd rhs(2 * (m - 2), 1);
     rhs << (-q_bar - s * x_bar_11 * s_11).col(0),
