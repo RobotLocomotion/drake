@@ -3,6 +3,7 @@
 import copy
 from functools import partial
 
+from pydrake.common import _pretty_class_name
 from pydrake.systems.framework import (
     LeafSystem_,
     SystemScalarConverter,
@@ -151,7 +152,8 @@ class TemplateSystem(TemplateClass):
         # `_construct` and `_construct_copy`.
         if not issubclass(cls, LeafSystem_[T]):
             raise RuntimeError(
-                "{} must inherit from {}".format(cls, LeafSystem_[T]))
+                "{} must inherit from {}".format(
+                    _pretty_class_name(cls), LeafSystem_[T]))
 
         # Use the immediate `__dict__`, rather than querying the attributes, so
         # that we don't get spillover from inheritance.
@@ -163,15 +165,15 @@ class TemplateSystem(TemplateClass):
             raise RuntimeError(
                 "{} defines `__init__`, but should not. Please implement "
                 "`_construct` and `_construct_copy` instead."
-                .format(cls.__name__))
+                .format(_pretty_class_name(cls)))
         if not has_construct:
             raise RuntimeError(
                 "{} does not define `_construct`. Please ensure this is "
-                "defined.".format(cls.__name__))
+                "defined.".format(_pretty_class_name(cls)))
         if not has_copy:
             raise RuntimeError(
                 "{} does not define `_construct_copy`. Please ensure this "
-                "is defined.".format(cls.__name__))
+                "is defined.".format(_pretty_class_name(cls)))
 
         # Patch `__init__`.
         template = self
