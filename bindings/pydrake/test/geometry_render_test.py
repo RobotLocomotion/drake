@@ -58,6 +58,26 @@ class TestGeometryRender(unittest.TestCase):
         self.assertIn("default_label", repr(params))
         copy.copy(params)
 
+    def test_render_engine_gltf_client_params(self):
+        # A default constructor exists.
+        mut.render.RenderEngineGltfClientParams()
+
+        # The kwarg constructor also works.
+        label = mut.render.RenderLabel(10)
+        base_url = "http://127.0.0.1:8888"
+        render_endpoint = "render"
+        params = mut.render.RenderEngineGltfClientParams(
+            default_label=label,
+            base_url=base_url,
+            render_endpoint=render_endpoint,
+        )
+        self.assertEqual(params.default_label, label)
+        self.assertEqual(params.render_endpoint, render_endpoint)
+        self.assertEqual(params.base_url, base_url)
+
+        self.assertIn("default_label", repr(params))
+        copy.copy(params)
+
     def test_render_label(self):
         RenderLabel = mut.render.RenderLabel
         value = 10
@@ -77,6 +97,25 @@ class TestGeometryRender(unittest.TestCase):
 
         # Confirm value instantiation.
         Value[mut.render.RenderLabel]
+
+    def test_render_label_repr(self):
+        RenderLabel = mut.render.RenderLabel
+
+        # Special labels should use a non-numeric spelling.
+        special_labels = [
+            RenderLabel.kEmpty,
+            RenderLabel.kDoNotRender,
+            RenderLabel.kDontCare,
+            RenderLabel.kUnspecified,
+        ]
+        for label in special_labels:
+            self.assertIn("RenderLabel.k", repr(label))
+
+        # Any label should round-trip via 'eval'.
+        all_labels = special_labels + [RenderLabel(10)]
+        for label in all_labels:
+            roundtrip = eval(repr(label), dict(RenderLabel=RenderLabel))
+            self.assertEqual(label, roundtrip)
 
     def test_render_engine_api(self):
         class DummyRenderEngine(mut.render.RenderEngine):
@@ -205,3 +244,12 @@ class TestGeometryRender(unittest.TestCase):
         self.assertEqual(current_engine.label_count, 1)
 
         # TODO(eric, duy): Test more properties.
+
+    def test_render_engine_gltf_client_api(self):
+        scene_graph = mut.SceneGraph()
+        params = mut.render.RenderEngineGltfClientParams()
+        scene_graph.AddRenderer("gltf_renderer",
+                                mut.render.MakeRenderEngineGltfClient(
+                                    params=params))
+        self.assertTrue(scene_graph.HasRenderer("gltf_renderer"))
+        self.assertEqual(scene_graph.RendererCount(), 1)

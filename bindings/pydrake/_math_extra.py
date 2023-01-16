@@ -117,7 +117,8 @@ def _remove_float_suffix(typename):
 
 def _roll_pitch_yaw_repr(rpy):
     return (
-        f"RollPitchYaw(roll={repr(rpy.roll_angle())}, "
+        f"{_remove_float_suffix(type(rpy).__name__)}("
+        f"roll={repr(rpy.roll_angle())}, "
         f"pitch={repr(rpy.pitch_angle())}, "
         f"yaw={repr(rpy.yaw_angle())})")
 

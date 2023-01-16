@@ -25,6 +25,9 @@ enum class PlaneSide {
   kNegative,
 };
 
+/** Returns the other side */
+[[nodiscard]] PlaneSide OtherSide(PlaneSide plane_side);
+
 class CollisionGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionGeometry)
@@ -48,6 +51,26 @@ class CollisionGeometry {
   const math::RigidTransformd& X_BG() const { return X_BG_; }
 
   /**
+   When we constrain a polytope to be on one side of the plane (for example the
+   positive side), we impose the constraint
+   aᵀ*p_AVᵢ + b ≥ δ
+   aᵀ*p_AC  + b ≥ k * r
+   where Vᵢ being the i'th vertex of the polytope. C is the Chebyshev center of
+   the polytope, r is the radius (namely the distance from the Chebyshev center
+   to the boundary of the polytope), and k is a positive scalar. This function
+   returns the value of k.
+   */
+  double polytope_chebyshev_radius_multiplier() const {
+    return polytope_chebyshev_radius_multiplier_;
+  }
+
+  /** Setter for polytope_chebyshev_radius_multiplier. */
+  void set_polytope_chebyshev_radius_multiplier(double value) {
+    DRAKE_DEMAND(value > 0 && value <= 1);
+    polytope_chebyshev_radius_multiplier_ = value;
+  }
+
+  /**
    To impose the geometric constraint that this collision geometry is on one
    side of a plane {x|aᵀx+b=0} with a certain margin, we can equivalently write
    this constraint with the following conditions
@@ -66,8 +89,9 @@ class CollisionGeometry {
    Similarly we can write down the conditions for other geometry types,
    including polytopes and capsules.
 
-   Note that when we don't require a separating margin δ, and the geometry is a
-   polytope, then we consider the constraint
+   Note that when we don't require a separating margin δ, and both this
+   geometry and the geometry on the other side of the plane are polytopes, then
+   we consider the constraint
    aᵀp_AVᵢ(s) + b ≥ 1 if the polytope is on the positive side of the plane, and
    aᵀp_AVᵢ(s) + b ≤ -1 if the polytope is on the negative side of the plane.
    Note that in this case we don't have the "vector with length <= 1 "
@@ -84,6 +108,8 @@ class CollisionGeometry {
    MultibodyPlant containing this collision geometry.
    @param separating_margin δ in the documentation above.
    @param plane_side Whether the geometry is on the positive or negative side of
+   the plane.
+   @param other_side_geometry_type The type of the geometry on the other side of
    the plane.
    @param[out] rationals The rationals that should be positive when the geometry
    is on the designated side of the plane.
@@ -112,7 +138,20 @@ class CollisionGeometry {
   multibody::BodyIndex body_index_;
   geometry::GeometryId id_;
   math::RigidTransformd X_BG_;
+
+  double polytope_chebyshev_radius_multiplier_{1E-3};
 };
+
+/** Computes the signed distance from `collision_geometry` to the halfspace ℋ,
+ where ℋ ={ x | aᵀx+b >= 0} if plane_side=PlaneSide::kPositive, and ℋ ={ x |
+ aᵀx+b <= 0} if plane_side=PlaneSide::kNegative.
+ The halfspace is expressed in the expressed_body's body frame.
+ */
+[[nodiscard]] double DistanceToHalfspace(
+    const CollisionGeometry& collision_geometry, const Eigen::Vector3d& a,
+    double b, multibody::BodyIndex expressed_body, PlaneSide plane_side,
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& plant_context);
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

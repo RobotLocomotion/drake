@@ -44,7 +44,7 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
       this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
           .get_index();
 
-  if (params_.enable_alpha_sliders) {
+  if (params_.enable_alpha_slider) {
     meshcat_->AddSlider(
       alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
   }
@@ -103,7 +103,7 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
     version_ = current_version;
   }
   SetTransforms(context, query_object);
-  if (params_.enable_alpha_sliders) {
+  if (params_.enable_alpha_slider) {
     double new_alpha_value = meshcat_->GetSliderValue(alpha_slider_name_);
     if (new_alpha_value != alpha_value_) {
       alpha_value_ = new_alpha_value;

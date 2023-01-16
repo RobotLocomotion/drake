@@ -39,6 +39,10 @@ By default, %MeshcatVisualizer visualizes geometries with the illustration role
 geometries with other roles. Only one role can be specified.  See
 DrakeVisualizer which uses the same mechanisms for more details.
 
+@warning MeshcatVisualizer does not support Context-per-thread parallelism.
+This is because of limitations in both Meshcat and MeshcatVisualizer.
+We may generalize this in the future if Meshcat limitations are removed.
+
 Instances of %MeshcatVisualizer created by scalar-conversion will publish to the
 same Meshcat instance.
 @tparam_nonsymbolic_scalar
@@ -198,6 +202,10 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /* A store of the original colors for the objects in geometries_. */
   mutable std::map<GeometryId, Rgba> colors_{};
 
+  /* The last alpha value applied to the objects in geometries_; used to avoid
+   * unnecessary updates to geometry colors. */
+  mutable double alpha_value_{1.0};
+
   /* The parameters for the visualizer.  */
   MeshcatVisualizerParams params_;
 
@@ -227,9 +235,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
 
   /* The name of the alpha slider, if any. */
   std::string alpha_slider_name_;
-
-  /* The last alpha value applied to geometry. */
-  mutable double alpha_value_{1.0};
 };
 
 /** A convenient alias for the MeshcatVisualizer class when using the `double`

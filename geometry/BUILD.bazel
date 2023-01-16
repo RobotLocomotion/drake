@@ -470,7 +470,7 @@ drake_cc_library(
         "//common:scope_exit",
         "//common:unused",
         "@common_robotics_utilities",
-        "@msgpack",
+        "@msgpack_internal//:msgpack",
         "@stduuid",
         "@uwebsockets",
     ],
@@ -518,7 +518,7 @@ drake_cc_googletest(
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "@msgpack",
+        "@msgpack_internal//:msgpack",
     ],
 )
 
@@ -759,6 +759,7 @@ drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_sphere_mesh",
@@ -769,6 +770,7 @@ drake_cc_googletest(
     name = "scene_graph_test",
     deps = [
         ":scene_graph",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/test_utilities:dummy_render_engine",

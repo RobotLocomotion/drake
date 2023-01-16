@@ -199,8 +199,12 @@ template <typename T>
 GeometryId SceneGraph<T>::RegisterGeometry(
     SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
   return model_.RegisterGeometryWithParent(source_id, geometry_id,
                                            std::move(geometry));
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -208,8 +212,12 @@ GeometryId SceneGraph<T>::RegisterGeometry(
     Context<T>* context, SourceId source_id, GeometryId geometry_id,
     std::unique_ptr<GeometryInstance> geometry) const {
   auto& g_state = mutable_geometry_state(context);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
   return g_state.RegisterGeometryWithParent(source_id, geometry_id,
                                             std::move(geometry));
+#pragma GCC diagnostic pop
 }
 
 template <typename T>
@@ -233,6 +241,21 @@ GeometryId SceneGraph<T>::RegisterDeformableGeometry(
   auto& g_state = mutable_geometry_state(context);
   return g_state.RegisterDeformableGeometry(
       source_id, frame_id, std::move(geometry), resolution_hint);
+}
+
+template <typename T>
+void SceneGraph<T>::ChangeShape(
+    SourceId source_id, GeometryId geometry_id, const Shape& shape,
+    std::optional<math::RigidTransform<double>> X_FG) {
+  return model_.ChangeShape(source_id, geometry_id, shape, X_FG);
+}
+
+template <typename T>
+void SceneGraph<T>::ChangeShape(
+    Context<T>* context, SourceId source_id, GeometryId geometry_id,
+    const Shape& shape, std::optional<math::RigidTransform<double>> X_FG) {
+  auto& g_state = mutable_geometry_state(context);
+  return g_state.ChangeShape(source_id, geometry_id, shape, X_FG);
 }
 
 template <typename T>

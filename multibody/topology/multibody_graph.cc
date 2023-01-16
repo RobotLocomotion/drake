@@ -9,6 +9,11 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+MultibodyGraph::MultibodyGraph(const MultibodyGraph&) = default;
+MultibodyGraph& MultibodyGraph::operator=(const MultibodyGraph&) = default;
+MultibodyGraph::MultibodyGraph(MultibodyGraph&&) = default;
+MultibodyGraph& MultibodyGraph::operator=(MultibodyGraph&&) = default;
+
 MultibodyGraph::MultibodyGraph() {
   RegisterJointType(weld_type_name());
   // Verify invariant promised to users in the documentation.
@@ -159,6 +164,28 @@ JointIndex MultibodyGraph::AddJoint(const std::string& name,
 
 int MultibodyGraph::num_joint_types() const {
   return static_cast<int>(joint_type_name_to_index_.size());
+}
+
+int MultibodyGraph::num_bodies() const {
+  return static_cast<int>(bodies_.size());
+}
+
+int MultibodyGraph::num_joints() const {
+  return static_cast<int>(joints_.size());
+}
+
+const MultibodyGraph::Body& MultibodyGraph::get_body(BodyIndex index) const {
+  DRAKE_THROW_UNLESS(index < num_bodies());
+  return bodies_[index];
+}
+
+MultibodyGraph::Body& MultibodyGraph::get_mutable_body(BodyIndex body_index) {
+  return bodies_[body_index];
+}
+
+const MultibodyGraph::Joint& MultibodyGraph::get_joint(JointIndex index) const {
+  DRAKE_THROW_UNLESS(index < num_joints());
+  return joints_[index];
 }
 
 JointTypeIndex MultibodyGraph::RegisterJointType(

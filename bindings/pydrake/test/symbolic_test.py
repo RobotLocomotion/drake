@@ -422,8 +422,6 @@ class TestSymbolicExpression(unittest.TestCase):
         unittest.TestCase.setUp(self)
         # For some reason, something in how `unittest` tries to scope warnings
         # causes the previous filters to be lost. Re-install here.
-        # TODO(eric.cousineau): This used to be necessary for PY3-only, but
-        # with NumPy 1.16, it became PY2 too. Figure out why.
         install_numpy_warning_filters(force=True)
 
     def test_constructor(self):

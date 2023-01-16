@@ -75,6 +75,13 @@ TEST_F(UnboundedLinearProgramTest0, TestIpopt) {
   }
 }
 
+TEST_F(DuplicatedVariableLinearProgramTest1, Test) {
+  IpoptSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver);
+  }
+}
+
 TEST_P(QuadraticProgramTest, TestQP) {
   IpoptSolver solver;
   prob()->RunProblem(&solver);

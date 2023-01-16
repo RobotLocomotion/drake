@@ -7,9 +7,12 @@
 #include "pybind11/operators.h"
 
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_frame.h"
@@ -319,20 +322,34 @@ void DoScalarIndependentDefinitions(py::module m) {
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<double, double, double, double>(), py::arg("r"),
-            py::arg("g"), py::arg("b"), py::arg("a") = 1.,
+            py::arg("g"), py::arg("b"), py::arg("a") = 1.0,
             cls_doc.ctor.doc_4args)
         .def("r", &Class::r, cls_doc.r.doc)
         .def("g", &Class::g, cls_doc.g.doc)
         .def("b", &Class::b, cls_doc.b.doc)
         .def("a", &Class::a, cls_doc.a.doc)
-        .def("set", &Class::set, py::arg("r"), py::arg("g"), py::arg("b"),
-            py::arg("a") = 1., cls_doc.set.doc)
+        .def("set",
+            py::overload_cast<double, double, double, double>(&Class::set),
+            py::arg("r"), py::arg("g"), py::arg("b"), py::arg("a") = 1.0,
+            cls_doc.set.doc_4args)
+        .def("set",
+            py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&>(
+                &Class::set),
+            py::arg("rgba"), cls_doc.set.doc_1args)
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__repr__", [](const Class& self) {
           return py::str("Rgba(r={}, g={}, b={}, a={})")
               .format(self.r(), self.g(), self.b(), self.a());
         });
+    DefAttributesUsingSerialize(&cls);
+    cls.def_property("rgba",
+        // The Serialize-based binding skips the validity checking; we'll
+        // add it back here by re-binding the property getter and setter.
+        &Class::rgba,
+        py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&>(
+            &Class::set),
+        "The RGBA value as a property (as np.ndarray).");
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<Rgba>(m);
   }
@@ -395,8 +412,9 @@ void DoScalarIndependentDefinitions(py::module m) {
               return Capsule(dims.first, dims.second);
             }));
 
-    py::class_<Convex, Shape>(m, "Convex", doc.Convex.doc)
-        .def(py::init<std::string, double>(), py::arg("absolute_filename"),
+    py::class_<Convex, Shape> convex_cls(m, "Convex", doc.Convex.doc);
+    convex_cls
+        .def(py::init<std::string, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Convex.ctor.doc)
         .def("filename", &Convex::filename, doc.Convex.filename.doc)
         .def("scale", &Convex::scale, doc.Convex.scale.doc)
@@ -407,6 +425,15 @@ void DoScalarIndependentDefinitions(py::module m) {
             [](std::pair<std::string, double> info) {
               return Convex(info.first, info.second);
             }));
+
+    constexpr char doc_ConvexInitWithArgumentNameAbsoluteFilename[] =
+        "Convex(absolute_filename=...) is deprecated, and will be removed on "
+        "or around 2023-05-01.  Please use Convex(filename=...) instead.";
+
+    convex_cls.def(py_init_deprecated<Convex, std::string, double>(
+                       doc_ConvexInitWithArgumentNameAbsoluteFilename),
+        py::arg("absolute_filename"), py::arg("scale") = 1.0,
+        doc_ConvexInitWithArgumentNameAbsoluteFilename);
 
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
@@ -445,8 +472,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def_static("MakePose", &HalfSpace::MakePose, py::arg("Hz_dir_F"),
             py::arg("p_FB"), doc.HalfSpace.MakePose.doc);
 
-    py::class_<Mesh, Shape>(m, "Mesh", doc.Mesh.doc)
-        .def(py::init<std::string, double>(), py::arg("absolute_filename"),
+    py::class_<Mesh, Shape> mesh_cls(m, "Mesh", doc.Mesh.doc);
+    mesh_cls
+        .def(py::init<std::string, double>(), py::arg("filename"),
             py::arg("scale") = 1.0, doc.Mesh.ctor.doc)
         .def("filename", &Mesh::filename, doc.Mesh.filename.doc)
         .def("scale", &Mesh::scale, doc.Mesh.scale.doc)
@@ -457,6 +485,15 @@ void DoScalarIndependentDefinitions(py::module m) {
             [](std::pair<std::string, double> info) {
               return Mesh(info.first, info.second);
             }));
+
+    constexpr char doc_MeshInitWithArgumentNameAbsoluteFilename[] =
+        "Mesh(absolute_filename=...) is deprecated, and will be removed on "
+        "or around 2023-05-01.  Please use Mesh(filename=...) instead.";
+
+    mesh_cls.def(py_init_deprecated<Mesh, std::string, double>(
+                     doc_MeshInitWithArgumentNameAbsoluteFilename),
+        py::arg("absolute_filename"), py::arg("scale") = 1.0,
+        doc_MeshInitWithArgumentNameAbsoluteFilename);
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)

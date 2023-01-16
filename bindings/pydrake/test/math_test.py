@@ -333,7 +333,8 @@ class TestMath(unittest.TestCase):
           [{z}, {z}, {i}],
         ])"""))
         self.assertEqual(repr(RollPitchYaw(rpy=[2, 1, 0])),
-                         f"RollPitchYaw(roll={t}, pitch={i}, yaw={z})")
+                         f"RollPitchYaw{type_suffix}("
+                         f"roll={t}, pitch={i}, yaw={z})")
         if T == float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
@@ -503,6 +504,8 @@ class TestMath(unittest.TestCase):
         option = mut.NumericalGradientOption(
             method=mut.NumericalGradientMethod.kCentral,
             function_accuracy=1E-15)
+
+        self.assertIn("kCentral", repr(option))
 
         def foo(x):
             return np.array([x[0] ** 2, x[0] * x[1]])

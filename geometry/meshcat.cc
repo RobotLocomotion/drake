@@ -20,8 +20,8 @@
 
 #include <App.h>
 #include <common_robotics_utilities/base64_helpers.hpp>
+#include <drake_vendor/msgpack.hpp>
 #include <fmt/format.h>
-#include <msgpack.hpp>
 #include <uuid.h>
 
 #include "drake/common/drake_throw.h"
@@ -1088,7 +1088,9 @@ class Meshcat::Impl {
     });
   }
 
-  // This function is public via the PIMPL.
+  // This function is public via the PIMPL. We'll set linker visibility to
+  // avoid a warning about our std::visit's lambda capture of a msgpack object.
+  __attribute__((visibility("hidden")))
   void SetAnimation(const MeshcatAnimation& animation) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 

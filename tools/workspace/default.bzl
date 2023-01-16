@@ -28,7 +28,6 @@ load("@drake//tools/workspace/fcl:repository.bzl", "fcl_repository")
 load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 load("@drake//tools/workspace/gfortran:repository.bzl", "gfortran_repository")
-load("@drake//tools/workspace/ghc_filesystem:repository.bzl", "ghc_filesystem_repository")  # noqa
 load("@drake//tools/workspace/github3_py_internal:repository.bzl", "github3_py_internal_repository")  # noqa
 load("@drake//tools/workspace/glew:repository.bzl", "glew_repository")
 load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
@@ -36,12 +35,12 @@ load("@drake//tools/workspace/glx:repository.bzl", "glx_repository")
 load("@drake//tools/workspace/googlebenchmark:repository.bzl", "googlebenchmark_repository")  # noqa
 load("@drake//tools/workspace/gtest:repository.bzl", "gtest_repository")
 load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
+load("@drake//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
 load("@drake//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
 load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/intel_realsense_ros_internal:repository.bzl", "intel_realsense_ros_internal_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
-load("@drake//tools/workspace/json:repository.bzl", "json_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
 load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
 load("@drake//tools/workspace/libblas:repository.bzl", "libblas_repository")
@@ -50,17 +49,18 @@ load("@drake//tools/workspace/libjpeg:repository.bzl", "libjpeg_repository")
 load("@drake//tools/workspace/liblapack:repository.bzl", "liblapack_repository")  # noqa
 load("@drake//tools/workspace/liblz4:repository.bzl", "liblz4_repository")
 load("@drake//tools/workspace/liblzma:repository.bzl", "liblzma_repository")
+load("@drake//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
 load("@drake//tools/workspace/models_internal:repository.bzl", "models_internal_repository")  # noqa
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
+load("@drake//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
 load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_extensions_internal_repository")  # noqa
 load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("@drake//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
-load("@drake//tools/workspace/nlopt:repository.bzl", "nlopt_repository")
 load("@drake//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/opencl:repository.bzl", "opencl_repository")
@@ -84,12 +84,12 @@ load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
 load("@drake//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
+load("@drake//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
-load("@drake//tools/workspace/tinyxml2:repository.bzl", "tinyxml2_repository")
 load("@drake//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
 load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
 load("@drake//tools/workspace/typing_extensions_internal:repository.bzl", "typing_extensions_internal_repository")  # noqa
@@ -171,8 +171,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gflags_repository(name = "gflags")
     if "gfortran" not in excludes:
         gfortran_repository(name = "gfortran")
-    if "ghc_filesystem" not in excludes:
-        ghc_filesystem_repository(name = "ghc_filesystem", mirrors = mirrors)
     if "github3_py_internal" not in excludes:
         github3_py_internal_repository(name = "github3_py_internal", mirrors = mirrors)  # noqa
     if "glew" not in excludes:
@@ -191,6 +189,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gz_math_internal_repository(name = "gz_math_internal", mirrors = mirrors)  # noqa
     if "gz_utils_internal" not in excludes:
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
+    if "gym_py" not in excludes:
+        gym_py_repository(name = "gym_py", mirrors = mirrors)
     if "ibex" not in excludes:
         # N.B. This repository is deprecated for removal on 2023-02-01.
         # For details see https://github.com/RobotLocomotion/drake/pull/18156.
@@ -199,8 +199,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         intel_realsense_ros_internal_repository(name = "intel_realsense_ros_internal", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
         ipopt_repository(name = "ipopt")
-    if "json" not in excludes:
-        json_repository(name = "json", mirrors = mirrors)
     if "lapack" not in excludes:
         lapack_repository(name = "lapack")
     if "lcm" not in excludes:
@@ -217,6 +215,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         liblz4_repository(name = "liblz4")
     if "liblzma" not in excludes:
         liblzma_repository(name = "liblzma")
+    if "libpfm" not in excludes:
+        libpfm_repository(name = "libpfm")
     if "libpng" not in excludes:
         libpng_repository(name = "libpng")
     if "libtiff" not in excludes:
@@ -228,7 +228,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "mosek" not in excludes:
         mosek_repository(name = "mosek")
     if "msgpack" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-05-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18559.
+        # When this is removed (on 2023-05-01), we should also edit the
+        # setup/... package lists to remove msgpack.
         msgpack_repository(name = "msgpack")
+    if "msgpack_internal" not in excludes:
+        msgpack_internal_repository(name = "msgpack_internal", mirrors = mirrors)  # noqa
     if "mypy_extensions_internal" not in excludes:
         mypy_extensions_internal_repository(name = "mypy_extensions_internal", mirrors = mirrors)  # noqa
     if "mypy_internal" not in excludes:
@@ -237,10 +243,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
-    if "nlopt" not in excludes:
-        # The @nlopt external is being removed from Drake on 2020-09-01.
-        # TODO(jwnimmer-tri) When removing @nlopt, also update install_prereqs.
-        nlopt_repository(name = "nlopt")
     if "nlopt_internal" not in excludes:
         nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     if "openblas" not in excludes:
@@ -289,6 +291,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         snopt_repository(name = "snopt")
     if "spdlog" not in excludes:
         spdlog_repository(name = "spdlog", mirrors = mirrors)
+    if "stable_baselines3_internal" not in excludes:
+        stable_baselines3_internal_repository(name = "stable_baselines3_internal", mirrors = mirrors)  # noqa
     if "statsjs" not in excludes:
         statsjs_repository(name = "statsjs", mirrors = mirrors)
     if "stduuid" not in excludes:
@@ -299,8 +303,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         suitesparse_repository(name = "suitesparse")
     if "tinyobjloader" not in excludes:
         tinyobjloader_repository(name = "tinyobjloader", mirrors = mirrors)
-    if "tinyxml2" not in excludes:
-        tinyxml2_repository(name = "tinyxml2")
     if "tinyxml2_internal" not in excludes:
         tinyxml2_internal_repository(name = "tinyxml2_internal", mirrors = mirrors)  # noqa
     if "tomli_internal" not in excludes:

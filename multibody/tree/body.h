@@ -181,9 +181,12 @@ class BodyAttorney {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Body : public MultibodyElement<Body, T, BodyIndex> {
+class Body : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Body)
+
+  /// Returns this element's unique index.
+  BodyIndex index() const { return this->template index_impl<BodyIndex>(); }
 
   /// Gets the `name` associated with `this` body. The name will never be empty.
   const std::string& name() const { return name_; }
@@ -469,7 +472,7 @@ class Body : public MultibodyElement<Body, T, BodyIndex> {
   /// Creates a %Body named `name` in model instance `model_instance`.
   /// The `name` must not be empty.
   Body(const std::string& name, ModelInstanceIndex model_instance)
-      : MultibodyElement<Body, T, BodyIndex>(model_instance),
+      : MultibodyElement<T>(model_instance),
         name_(internal::DeprecateWhenEmptyName(name, "Body")),
         body_frame_(*this) {}
 

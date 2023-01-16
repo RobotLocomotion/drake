@@ -497,6 +497,7 @@ drake_py_unittest(
     name = "geometry_common_test",
     deps = [
         ":geometry_py",
+        "//bindings/pydrake/common",
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",

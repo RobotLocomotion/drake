@@ -738,6 +738,60 @@ GeometryId GeometryState<T>::RegisterDeformableGeometry(
 }
 
 template <typename T>
+void GeometryState<T>::ChangeShape(SourceId source_id, GeometryId geometry_id,
+                                   const Shape& shape,
+                                   std::optional<RigidTransformd> X_FG) {
+  if (!BelongsToSource(geometry_id, source_id)) {
+    throw std::logic_error("Given geometry id " + to_string(geometry_id) +
+                           " does not belong to the given source id " +
+                           to_string(source_id));
+  }
+  InternalGeometry* geometry = GetMutableGeometry(geometry_id);
+  // Must be non-null, otherwise, we never would've gotten past the
+  // `BelongsToSource()` call.
+  DRAKE_DEMAND(geometry != nullptr);
+
+  // TODO(SeanCurtis-TRI) Allow changing deformable geometries after the fact;
+  // this would require coordination with MbP because the state of the
+  // deformable object  must be consistent between the two systems; the size of
+  // the data in the corresponding port would have to change on both sides.
+  if (geometry->is_deformable()) {
+    throw std::logic_error(
+        "Cannot use ChangeShape() to change the shape of deformable "
+        "geometries.");
+  }
+
+  geometry->SetShape(shape);
+  if (X_FG.has_value()) {
+    // As documented on SceneGraph::SetShape(); use the old pose unless
+    // explicitly changed.
+    geometry->set_pose(*X_FG);
+  }
+  // We've changed pose and shape; now we just need to notify the various
+  // engines to update themselves.
+  if (geometry->has_proximity_role()) {
+    // Proximity engine is best handled by removal and re-addition; we use the
+    // unchecked version because we just need the engine mechanism; no
+    // further GeometryState checking.
+    RemoveFromProximityEngineUnchecked(*geometry);
+    AddToProximityEngineUnchecked(*geometry);
+  }
+  if (geometry->has_illustration_role()) {
+    // Illustration has no "engine"; it's just the InternalGeometry. All
+    // reifications of illustration geometry happen outside of SceneGraph. We
+    // just need to let them know that the work is necessary.
+    geometry_version_.modify_illustration();
+  }
+  if (geometry->has_perception_role()) {
+    // Render engines are best handled by removal and re-addition; we use the
+    // unchecked version because we just need the engine mechanism; no
+    // further GeometryState checking.
+    RemoveFromAllRenderersUnchecked(geometry_id);
+    AddToCompatibleRenderersUnchecked(*geometry);
+  }
+}
+
+template <typename T>
 GeometryId GeometryState<T>::RegisterGeometryWithParent(
     SourceId source_id, GeometryId parent_id,
     std::unique_ptr<GeometryInstance> geometry) {
@@ -886,33 +940,15 @@ void GeometryState<T>::AssignRole(SourceId source_id, GeometryId geometry_id,
   // TODO(SeanCurtis-TRI): To support RoleAssign::kReplace, the render engines
   //  need to handle these changes.
 
-  auto accepting_renderers =
-      properties.GetPropertyOrDefault("renderer", "accepting", set<string>{});
-
   geometry.SetRole(std::move(properties));
 
-  const RigidTransformd& X_WG =
-      convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
-  bool added_to_renderer{false};
-  for (auto& [name, engine] : render_engines_) {
-    if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
-      added_to_renderer =
-          engine->RegisterVisual(
-              geometry_id, geometry.shape(), *geometry.perception_properties(),
-              X_WG, geometry.is_dynamic()) ||
-          added_to_renderer;
-    }
-  }
+  const bool added_to_renderer = AddToCompatibleRenderersUnchecked(geometry);
+
   if (!added_to_renderer && render_engines_.size() > 0) {
     // TODO(SeanCurtis-TRI): This message would be better with a geometry name.
     drake::log()->warn(
         "Perception role assigned to geometry {}, but no renderer accepted it",
         geometry_id);
-  }
-  if (added_to_renderer) {
-    // Increment version number only if some renderer picks up the role
-    // assignment.
-    geometry_version_.modify_perception();
   }
 }
 
@@ -1491,6 +1527,35 @@ bool GeometryState<T>::RemoveRoleUnchecked(GeometryId geometry_id, Role role) {
 }
 
 template <typename T>
+void GeometryState<T>::AddToProximityEngineUnchecked(
+    const InternalGeometry& geometry) {
+  const GeometryId geometry_id = geometry.id();
+  if (geometry.is_deformable()) {
+    DRAKE_DEMAND(geometry.reference_mesh() != nullptr);
+    geometry_engine_->AddDeformableGeometry(*geometry.reference_mesh(),
+                                            geometry_id);
+  } else if (geometry.is_dynamic()) {
+    // Pass the geometry to the engine.
+    const RigidTransformd& X_WG =
+        convert_to_double(kinematics_data_.X_WGs.at(geometry_id));
+    geometry_engine_->AddDynamicGeometry(geometry.shape(), X_WG, geometry_id,
+                                         *geometry.proximity_properties());
+  } else {
+    geometry_engine_->AddAnchoredGeometry(geometry.shape(), geometry.X_FG(),
+                                          geometry_id,
+                                          *geometry.proximity_properties());
+  }
+  geometry_version_.modify_proximity();
+}
+
+template <typename T>
+void GeometryState<T>::RemoveFromProximityEngineUnchecked(
+    const InternalGeometry& geometry) {
+  geometry_engine_->RemoveGeometry(geometry.id(), geometry.is_dynamic());
+  geometry_version_.modify_proximity();
+}
+
+template <typename T>
 bool GeometryState<T>::RemoveFromRendererUnchecked(
     const std::string& renderer_name, GeometryId id) {
   render::RenderEngine* engine = render_engines_[renderer_name].get_mutable();
@@ -1505,6 +1570,42 @@ bool GeometryState<T>::RemoveFromRendererUnchecked(
 }
 
 template <typename T>
+bool GeometryState<T>::AddToCompatibleRenderersUnchecked(
+    const internal::InternalGeometry& geometry) {
+  const PerceptionProperties& properties = *geometry.perception_properties();
+
+  const RigidTransformd& X_WG =
+      convert_to_double(kinematics_data_.X_WGs.at(geometry.id()));
+
+  auto accepting_renderers =
+      properties.GetPropertyOrDefault("renderer", "accepting", set<string>{});
+
+  bool added_to_renderer{false};
+  for (auto& [name, engine] : render_engines_) {
+    if (accepting_renderers.empty() || accepting_renderers.count(name) > 0) {
+      added_to_renderer =
+          engine->RegisterVisual(geometry.id(), geometry.shape(), properties,
+                                 X_WG, geometry.is_dynamic()) ||
+          added_to_renderer;
+    }
+  }
+  if (added_to_renderer) {
+    // Increment version number only if some renderer picks up the role
+    // assignment.
+    geometry_version_.modify_perception();
+  }
+  return added_to_renderer;
+}
+
+template <typename T>
+void GeometryState<T>::RemoveFromAllRenderersUnchecked(GeometryId id) {
+  for (auto& name_engine_pair : render_engines_) {
+    const std::string& engine_name = name_engine_pair.first;
+    RemoveFromRendererUnchecked(engine_name, id);
+  }
+}
+
+template <typename T>
 bool GeometryState<T>::RemoveProximityRole(GeometryId geometry_id) {
   internal::InternalGeometry* geometry = GetMutableGeometry(geometry_id);
   DRAKE_DEMAND(geometry != nullptr);
@@ -1513,9 +1614,11 @@ bool GeometryState<T>::RemoveProximityRole(GeometryId geometry_id) {
   if (!geometry->has_proximity_role()) return false;
 
   // Geometry *is* registered; do the work to remove it.
-  geometry_engine_->RemoveGeometry(geometry_id, geometry->is_dynamic());
+  RemoveFromProximityEngineUnchecked(*geometry);
   geometry->RemoveProximityRole();
-  geometry_version_.modify_proximity();
+
+  // TODO(SeanCurtis-TRI): This doesn't remove the geometry from collision
+  // filters; it should.
   return true;
 }
 
@@ -1542,10 +1645,7 @@ bool GeometryState<T>::RemovePerceptionRole(GeometryId geometry_id) {
 
   // Geometry has a perception role; do the work to remove it from whichever
   // render engines it happens to present in.
-  for (auto& name_engine_pair : render_engines_) {
-    const std::string& engine_name = name_engine_pair.first;
-    RemoveFromRendererUnchecked(engine_name, geometry_id);
-  }
+  RemoveFromAllRenderersUnchecked(geometry_id);
   geometry->RemovePerceptionRole();
   return true;
 }

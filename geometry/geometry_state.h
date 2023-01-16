@@ -285,6 +285,9 @@ class GeometryState {
       GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::X_PG().  */
+  DRAKE_DEPRECATED("2023-04-01",
+                   "Geometries are no longer posed with respect to other "
+                   "geometries -- only frames; use GetPoseInFrame().")
   const math::RigidTransform<double>& GetPoseInParent(
       GeometryId geometry_id) const;
 
@@ -369,6 +372,9 @@ class GeometryState {
    @ref SceneGraph::RegisterGeometry(SourceId,GeometryId,
    std::unique_ptr<GeometryInstance>) "SceneGraph::RegisterGeometry()" with
    parent GeometryId.  */
+  DRAKE_DEPRECATED("2023-04-01",
+                   "Geometries are no longer posed with respect to other "
+                   "geometries -- only frames.")
   GeometryId RegisterGeometryWithParent(
       SourceId source_id, GeometryId parent_id,
       std::unique_ptr<GeometryInstance> geometry);
@@ -383,6 +389,11 @@ class GeometryState {
   GeometryId RegisterDeformableGeometry(
       SourceId source_id, FrameId frame_id,
       std::unique_ptr<GeometryInstance> geometry, double resolution_hint);
+
+  /** Implementation of SceneGraph::ChangeShape().  */
+  void ChangeShape(
+      SourceId source_id, GeometryId geometry_id, const Shape& shape,
+      std::optional<math::RigidTransform<double>> X_FG);
 
   /** Implementation of SceneGraph::RemoveGeometry().  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
@@ -835,12 +846,37 @@ class GeometryState {
   // @pre geometry_id maps to a registered geometry.
   bool RemoveRoleUnchecked(GeometryId geometry_id, Role role);
 
+  // Handles adding the given geometry to the proximity engine. The only
+  // GeometryState-level data structure modified is the proximity version. All
+  // other changes to GeometryState data must happen elsewhere.
+  void AddToProximityEngineUnchecked(
+      const internal::InternalGeometry& geometry);
+
+  // Handles removing the given geometry from the proximity engine. The only
+  // GeometryState-level data structure modified is the proximity version. All
+  // other changes to GeometryState data must happen elsewhere.
+  void RemoveFromProximityEngineUnchecked(
+      const internal::InternalGeometry& geometry);
+
   // Attempts to remove the geometry with the given `id` from the named
   // renderer. Returns true if removed (false doesn't imply "failure", just
   // nothing to remove). This does no checking on ownership.
   // @pre geometry_id maps to a registered geometry.
   bool RemoveFromRendererUnchecked(const std::string& renderer_name,
                                    GeometryId id);
+
+  // Attempts to add the given `geometry` to all compatible render engines. The
+  // only GeometryState-level data structure modified is the perception version.
+  // All other changes to GeometryState data must happen elsewhere.
+  // @returns `true` if the geometry was added to *any* renderer.
+  bool AddToCompatibleRenderersUnchecked(
+      const internal::InternalGeometry& geometry);
+
+  // Attempts to remove the geometry with the given id from *all* render
+  // engines. The only GeometryState-level data structure modified is the
+  // perception version. All other changes to GeometryState data must happen
+  // elsewhere.
+  void RemoveFromAllRenderersUnchecked(GeometryId id);
 
   bool RemoveProximityRole(GeometryId geometry_id);
   bool RemoveIllustrationRole(GeometryId geometry_id);

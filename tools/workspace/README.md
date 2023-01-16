@@ -60,36 +60,33 @@ For each external in the report, add a commit that upgrades it, as follows:
 Run the script to perform one upgrade (for some external "foo"):
 
 ```
-  bazel-bin/tools/workspace/new_release --upgrade=foo
+  bazel-bin/tools/workspace/new_release --commit foo
 ```
 
 If the automated update doesn't succeed, then you'll need to make the edits
 manually.  Ask for help in drake developers slack channel for ``#build``.
 
-If the automated update succeeded, then inspect the diffs in your editor.
-Some diffs will have an instructive comment nearby, e.g., "If you change
-this commit, then you need to do X, Y, Z afterward."  Follow any advice
-that you find.
+If the automated update succeeded, then inspect the modified ``repository.bzl``
+in your editor.  Some diffs will have an instructive comment nearby, e.g.,
+"If you change this commit, then you need to do X, Y, Z afterward."
+Follow any advice that you find.
 
-Run ``bazel test --config lint //...`` as a sanity check of the edits.
+Run ``bazel test --config lint //...`` as a sanity check of the changes.
 
-Once all edits are complete, add the commit using the instructions that
-were printed by ``new_release``, e.g.:
-
-```
-  git add tools/workspace/rules_python/repository.bzl
-  git commit -m'[workspace] Upgrade rules_python to latest release A.B.C'
-```
-
-Be sure to add any extra files that you edited, too.
+If any edits are needed, stage the changes and amend the commit using
+``git commit --amend``.
 
 Repeat this process for all upgrades.  You can re-run the ``new_release``
-report anytime, to get the remaining items that need attention.
+report anytime, to get the remaining items that need attention.  You can also
+list several externals to try to update at once, although this will complicate
+making changes to those commits if needed.
 
 Each external being upgraded should have exactly one commit that does the
 upgrade, and each commit should only impact exactly one external.  If we
 find any problem with an upgrade, we need to be able to revert the commit
 for just that one external upgrade, leaving the other upgrades intact.
+(However, if multiple externals need to be upgraded together due to
+interdependency, a single commit should be used in such cases.)
 
 Once all upgrades are ready, open a Drake pull request and label it
 ``status: commits are properly curated``.  Open the Reviewable page and
@@ -107,9 +104,13 @@ For any non-trivial changes (i.e., changes that go beyond changing version
 numbers, checksums, or trivial fixups to patch files or code spelling), do not
 attempt to fix the problems just because you are accountable for the routine
 upgrade procedure every month. As a rule of thumb, if you need to spend more
-than 5-10 minutes on an upgrade, you should defer the work to a separate issue:
+than 5-10 minutes on an upgrade, you should defer the work to a separate pull
+request:
 
-* open an issue about the need for an upgrade of that one specific external;
+* open a pull request with the WIP patch for that one specific external;
+
+* ensure that the Jenkins output shows the problem (e.g., trigger any extra
+  non-default builds that failed);
 
 * assign it to the feature owner associated with that external (to find out who
   that is, ask for help in the drake developers ``#build`` slack channel); and

@@ -103,6 +103,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, PublishPeriod) {
 // Confirms that all geometry registered to iiwa_link_7 in the urdf (in all
 // three allowed roles) gets properly added.
 TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
+  // This also tests adding multiple MeshcatVisualizers to a single meshcat,
+  // which is a common workflow in Python notebooks.
   MeshcatVisualizerParams params;
   for (Role role : {Role::kProximity, Role::kIllustration, Role::kPerception}) {
     params.role = role;
@@ -118,12 +120,20 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Roles) {
           fmt::format("visualizer/iiwa14/iiwa_link_7/{}", geom_id)));
     }
     meshcat_->Delete();
-    meshcat_->DeleteAddedControls();
   }
 
   params.role = Role::kUnassigned;
   DRAKE_EXPECT_THROWS_MESSAGE(SetUpDiagram(params),
                               ".*Role::kUnassigned.*");
+}
+
+// Tests that adding multiple MeshcatVisualizers using the same role to a
+// single meshcat works, as this is a common workflow in Python notebooks.
+TEST_F(MeshcatVisualizerWithIiwaTest, DuplicateRole) {
+  MeshcatVisualizerParams params;
+  params.role = Role::kIllustration;
+  SetUpDiagram(params);
+  SetUpDiagram(params);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
@@ -149,7 +159,6 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
 TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   MeshcatVisualizerParams params;
   params.delete_on_initialization_event = true;
-  params.enable_alpha_sliders = false;
   SetUpDiagram(params);
   // Scribble a transform onto the scene tree beneath the visualizer prefix.
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
@@ -270,9 +279,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, RecordingWithoutSetTransform) {
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
-  MeshcatVisualizerParams params;
-  params.enable_alpha_sliders = false;
-  SetUpDiagram(params);
+  SetUpDiagram();
 
   auto ad_diagram = diagram_->ToAutoDiffXd();
   auto ad_context = ad_diagram->CreateDefaultContext();
@@ -284,7 +291,9 @@ TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, UpdateAlphaSliders) {
-  SetUpDiagram();
+  MeshcatVisualizerParams params;
+  params.enable_alpha_slider = true;
+  SetUpDiagram(params);
   systems::Simulator<double> simulator(*diagram_);
 
   // Simulate for a moment and publish to populate the visualizer.

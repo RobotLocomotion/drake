@@ -118,6 +118,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   distance_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.distance_constraints_specs_;
   }
+
+  static BodyIndex FindBodyByGeometryId(const MultibodyPlant<T>& plant,
+                                        geometry::GeometryId geometry_id) {
+    return plant.FindBodyByGeometryId(geometry_id);
+  }
 };
 }  // namespace internal
 }  // namespace multibody

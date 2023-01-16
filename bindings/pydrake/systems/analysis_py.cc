@@ -212,16 +212,6 @@ PYBIND11_MODULE(analysis, m) {
         .def("ExtractSimulatorConfig", &ExtractSimulatorConfig<T>,
             py::arg("simulator"),
             pydrake_doc.drake.systems.ExtractSimulatorConfig.doc);
-    m  // BR
-        .def("ApplySimulatorConfig",
-            WrapDeprecated(
-                pydrake_doc.drake.systems.ApplySimulatorConfig.doc_deprecated,
-                [](drake::systems::Simulator<T>* simulator,
-                    const SimulatorConfig& config) {
-                  ApplySimulatorConfig(config, simulator);
-                }),
-            py::arg("simulator"), py::arg("config"),
-            pydrake_doc.drake.systems.ApplySimulatorConfig.doc_deprecated);
   };
   type_visit(bind_nonsymbolic_scalar_types, NonSymbolicScalarPack{});
 

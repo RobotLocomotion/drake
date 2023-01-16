@@ -17,6 +17,10 @@ namespace drake {
 namespace yaml {
 namespace test {
 
+// These data structures are the C++ flavor of the Python test classes at
+//  drake/bindings/pydrake/common/test/yaml_typed_test.py
+// and should be roughly kept in sync with the code in that file.
+
 // A value used in the test data below to include a default (placeholder) value
 // when initializing struct data members.
 constexpr double kNominalDouble = 1.2345;
@@ -226,6 +230,7 @@ bool operator==(const EigenStruct<Rows, Cols>& a,
 
 using EigenVecStruct = EigenStruct<Eigen::Dynamic, 1>;
 using EigenVec3Struct = EigenStruct<3, 1>;
+using EigenVecUpTo3Struct = EigenStruct<Eigen::Dynamic, 1, 3, 1>;
 using EigenMatrixStruct = EigenStruct<Eigen::Dynamic, Eigen::Dynamic>;
 using EigenMatrix34Struct = EigenStruct<3, 4>;
 using EigenMatrix00Struct = EigenStruct<0, 0>;

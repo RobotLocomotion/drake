@@ -22,9 +22,9 @@ GTEST_TEST(ShapeToStringTest, Capsule) {
 
 GTEST_TEST(ShapeToStringTest, Convex) {
   ShapeToString reifier;
-  Convex m("path/to/file", 1.5);
+  Convex m("/path/to/file", 1.5);
   m.Reify(&reifier);
-  EXPECT_EQ(reifier.string(), "Convex(s: 1.5, path: path/to/file)");
+  EXPECT_EQ(reifier.string(), "Convex(s: 1.5, path: /path/to/file)");
 }
 
 GTEST_TEST(ShapeToStringTest, Cylinder) {
@@ -50,9 +50,9 @@ GTEST_TEST(ShapeToStringTest, Halfspace) {
 
 GTEST_TEST(ShapeToStringTest, Mesh) {
   ShapeToString reifier;
-  Mesh m("path/to/file", 1.5);
+  Mesh m("/path/to/file", 1.5);
   m.Reify(&reifier);
-  EXPECT_EQ(reifier.string(), "Mesh(s: 1.5, path: path/to/file)");
+  EXPECT_EQ(reifier.string(), "Mesh(s: 1.5, path: /path/to/file)");
 }
 
 GTEST_TEST(ShapeToStringTest, MeshcatCone) {

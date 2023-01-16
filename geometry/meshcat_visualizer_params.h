@@ -20,7 +20,7 @@ struct MeshcatVisualizerParams {
     a->Visit(DRAKE_NVP(default_color));
     a->Visit(DRAKE_NVP(prefix));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
-    a->Visit(DRAKE_NVP(enable_alpha_sliders));
+    a->Visit(DRAKE_NVP(enable_alpha_slider));
   }
 
   /** The duration (in simulation seconds) between attempts to update poses in
@@ -48,8 +48,8 @@ struct MeshcatVisualizerParams {
    events" for more information. */
   bool delete_on_initialization_event{true};
 
-  /** Determines whether to enable alpha sliders for geometry display. */
-  bool enable_alpha_sliders{true};
+  /** Determines whether to enable the alpha slider for geometry display. */
+  bool enable_alpha_slider{false};
 };
 
 }  // namespace geometry

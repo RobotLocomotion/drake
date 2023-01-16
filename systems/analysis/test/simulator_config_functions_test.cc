@@ -109,40 +109,6 @@ TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTest) {
   EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
 }
 
-// TODO(2022-11-01) Delete the full test.
-TYPED_TEST(SimulatorConfigFunctionsTest, RoundTripTestDeprecated) {
-  using T = TypeParam;
-  const std::string bespoke_str = "integration_scheme: runge_kutta5\n"
-                                  "max_step_size: 0.003\n"
-                                  "accuracy: 0.03\n"
-                                  "use_error_control: true\n"
-                                  "target_realtime_rate: 3.0\n"
-                                  "publish_every_time_step: true\n";
-
-  // Ensure that the string and the struct have the same fields.
-  const auto bespoke = LoadYamlString<SimulatorConfig>(bespoke_str);
-
-  // Ensure that a round trip through the archive process does not corrupt data.
-  const std::string readback_str = SaveYamlString(bespoke);
-  EXPECT_EQ(bespoke_str, readback_str);
-
-  // Ensure that a roundtrip through the Accept and Extract functions does not
-  // corrupt data.
-  const DummySystem<T> dummy;
-  Simulator<T> simulator(dummy);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  ApplySimulatorConfig(&simulator, bespoke);
-#pragma GCC diagnostic pop
-  const SimulatorConfig readback = ExtractSimulatorConfig(simulator);
-  EXPECT_EQ(readback.integration_scheme, bespoke.integration_scheme);
-  EXPECT_EQ(readback.max_step_size, bespoke.max_step_size);
-  EXPECT_EQ(readback.accuracy, bespoke.accuracy);
-  EXPECT_EQ(readback.use_error_control, bespoke.use_error_control);
-  EXPECT_EQ(readback.target_realtime_rate, bespoke.target_realtime_rate);
-  EXPECT_EQ(readback.publish_every_time_step, bespoke.publish_every_time_step);
-}
-
 }  // namespace
 }  // namespace systems
 }  // namespace drake

@@ -71,7 +71,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.default_illustration_color);
   EXPECT_EQ(meshcat_params.at(0).delete_on_initialization_event,
             config.delete_on_initialization_event);
-  EXPECT_EQ(meshcat_params.at(0).enable_alpha_sliders,
+  EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider,
             config.enable_alpha_sliders);
 
   EXPECT_EQ(meshcat_params.at(1).role, Role::kProximity);
@@ -80,7 +80,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.default_proximity_color);
   EXPECT_EQ(meshcat_params.at(1).delete_on_initialization_event,
             config.delete_on_initialization_event);
-  EXPECT_EQ(meshcat_params.at(1).enable_alpha_sliders,
+  EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
             config.enable_alpha_sliders);
 }
 
@@ -90,7 +90,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
   config.publish_period = 0.5;
   config.publish_proximity = false;
   config.default_illustration_color = Rgba(0.25, 0.25, 0.25, 0.25);
-  config.enable_alpha_sliders = false;
+  config.enable_alpha_sliders = true;
 
   const std::vector<DrakeVisualizerParams> drake_params =
       ConvertVisualizationConfigToDrakeParams(config);
@@ -106,7 +106,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
   EXPECT_EQ(meshcat_params.at(0).role, Role::kIllustration);
   EXPECT_EQ(meshcat_params.at(0).publish_period, 0.5);
   EXPECT_EQ(meshcat_params.at(0).default_color, Rgba(0.25, 0.25, 0.25, 0.25));
-  EXPECT_EQ(meshcat_params.at(0).enable_alpha_sliders, false);
+  EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider, true);
 }
 
 // Tests everything disabled.
@@ -158,9 +158,13 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
       "DRAKE_VIEWER_DRAW_PROXIMITY",
       "CONTACT_RESULTS"}));
 
-  // Check that alpha sliders exist.
-  meshcat->GetSliderValue("illustration α");
-  meshcat->GetSliderValue("proximity α");
+  // Check that alpha sliders don't exist by default.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    meshcat->GetSliderValue("illustration α"),
+    ".*does not have any slider named illustration.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+    meshcat->GetSliderValue("proximity α"),
+    ".*does not have any slider named proximity.*");
 }
 
 // Overall acceptance test with nothing enabled.
@@ -223,8 +227,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoMeshcat) {
   EXPECT_EQ(meshcat_count, 2);
 }
 
-// Check that turning off the alpha sliders functions as expected.
-GTEST_TEST(VisualizationConfigFunctionsTest, NoAlphaSliders) {
+// Check that turning on the alpha sliders functions as expected.
+GTEST_TEST(VisualizationConfigFunctionsTest, AlphaSliders) {
   DrakeLcm drake_lcm;
   LcmBuses lcm_buses;
   lcm_buses.Add("default", &drake_lcm);
@@ -235,17 +239,13 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoAlphaSliders) {
   plant.Finalize();
   std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
   VisualizationConfig config;
-  config.enable_alpha_sliders = false;
+  config.enable_alpha_sliders = true;
   ApplyVisualizationConfig(
     config, &builder, &lcm_buses, &plant, &scene_graph, meshcat);
 
-  // Check that alpha sliders don't exist.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    meshcat->GetSliderValue("illustration α"),
-    ".*does not have any slider named illustration.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    meshcat->GetSliderValue("proximity α"),
-    ".*does not have any slider named proximity.*");
+  // Check that alpha sliders exist.
+  meshcat->GetSliderValue("illustration α");
+  meshcat->GetSliderValue("proximity α");
 }
 
 // The AddDefault... sugar shouldn't crash.

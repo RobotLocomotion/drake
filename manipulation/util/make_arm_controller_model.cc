@@ -53,8 +53,9 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
 
   auto plant = std::make_unique<MultibodyPlant<double>>(0.0);
   Parser parser(plant.get());
-  const ModelInstanceIndex arm_model_index =
-      parser.AddModelFromFile(arm_info.model_path, arm_info.model_name);
+  const auto models = parser.AddModels(arm_info.model_path);
+  DRAKE_DEMAND(models.size() == 1);
+  const ModelInstanceIndex arm_model_index = models[0];
   // The arm must be anchored to the world.
   const Frame<double>& sim_arm_child_frame = simulation_plant.GetFrameByName(
       arm_info.child_frame_name, sim_arm_model_index);

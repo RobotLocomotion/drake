@@ -4,7 +4,7 @@ coinor-libipopt1v5
 default-jre
 jupyter-notebook
 libamd2
-libblas3
+libblas-dev
 libbz2-1.0
 libdouble-conversion3
 libeigen3-dev
@@ -40,8 +40,6 @@ libspdlog-dev
 libsqlite3-0
 libtheora0
 libtiff5
-libtinyxml2-dev
-libtinyxml2.6.2v5
 libvtk9.1
 libx11-6
 libxml2
@@ -52,6 +50,7 @@ python3
 python3-ipywidgets
 python3-lxml
 python3-matplotlib
+python3-munkres
 python3-numpy
 python3-pil
 python3-pydot

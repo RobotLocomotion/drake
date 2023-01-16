@@ -771,7 +771,7 @@ void DoScalarDependentDefinitions(py::module m) {
           py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc)
       .def("HasValue", &InputPort<T>::HasValue, py::arg("context"),
           doc.InputPort.HasValue.doc)
-      .def("Allocate", &InputPort<T>::Allocate, doc.InputPort.Allocate.doc)
+      .def("Allocate", &InputPort<T>::Allocate, doc.InputPortBase.Allocate.doc)
       .def("get_system", &InputPort<T>::get_system, py_rvp::reference,
           doc.InputPort.get_system.doc);
 

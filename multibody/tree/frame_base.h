@@ -43,7 +43,11 @@ namespace multibody {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class FrameBase : public MultibodyElement<FrameBase, T, FrameIndex> {
+class FrameBase : public MultibodyElement<T> {
+ public:
+  /// Returns this element's unique index.
+  FrameIndex index() const { return this->template index_impl<FrameIndex>(); }
+
   // TODO(amcastro-tri): Provide a method with the signature:
   // const math::RigidTransform<T>& get_pose_in_world_frame(
   //     const Context<T>& context) const;
@@ -58,7 +62,7 @@ class FrameBase : public MultibodyElement<FrameBase, T, FrameIndex> {
   // `measured_in_frame` frame.
  protected:
   explicit FrameBase(ModelInstanceIndex model_instance)
-      : MultibodyElement<FrameBase, T, FrameIndex>(model_instance) {}
+      : MultibodyElement<T>(model_instance) {}
 };
 
 }  // namespace multibody

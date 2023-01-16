@@ -21,11 +21,11 @@ browser to https://github.com/settings/tokens and create a new token (it does
 not need any extra permissions; the default "no checkboxes are set" is good),
 and save the plaintext hexadecimal token to that file.
 
-This program can also automatically prepare an upgrade for one of our GitHub
-externals via the --upgrade option:
+This program can also automatically prepare upgrades for our GitHub externals
+by passing the name(s) of package(s) to upgrade as additional arguments:
 
   bazel build //tools/workspace:new_release
-  bazel-bin/tools/workspace/new_release --upgrade=rules_python
+  bazel-bin/tools/workspace/new_release --lint --commit rules_python
 
 Note that this program runs `bazel` as a subprocess, without any special
 command line flags.  If you do need to use any flags when you run bazel,
@@ -35,6 +35,7 @@ command line.
 
 import argparse
 import getpass
+import git
 import glob
 import hashlib
 import json
@@ -55,6 +56,7 @@ from drake.tools.workspace.metadata import read_repository_metadata
 _IGNORED_REPOSITORIES = [
     # We don't know how to check non-default branches yet.
     "clang_cindex_python3_internal",
+    "gym_py",  # Pinned at 0.21; see tools/workspace/gym_py/README.md.
     "pybind11",
 ]
 
@@ -207,13 +209,39 @@ def _check_for_upgrades(gh, args, metadata):
                 workspace_name, old_commit))
 
 
-def _do_upgrade(temp_dir, gh, workspace_name, metadata):
+def _is_modified(repo, path):
+    """Returns true iff the given `path` is modified in the working tree of the
+    given `git.Repo`, `repo`.
+    """
+    for other in [None, 'HEAD']:
+        if path in [item.b_path for item in repo.index.diff(other)]:
+            return True
+    return False
+
+
+def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     if workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
     data = metadata[workspace_name]
     if data["repository_rule_type"] != "github":
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
     repository = data["repository"]
+
+    # Slurp the file we're supposed to modify.
+    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+    with open(bzl_filename, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    # Determine if we should and can commit the changes made.
+    if local_drake_checkout is not None:
+        if _is_modified(local_drake_checkout, bzl_filename):
+            print(f"{bzl_filename} has local changes.")
+            print(f"Changes made for {workspace_name} will NOT be committed.")
+            commit = False
+        else:
+            commit = True
+    else:
+        commit = False
 
     # Figure out what to upgrade.
     old_commit, new_commit = _handle_github(workspace_name, gh, data)
@@ -223,11 +251,6 @@ def _do_upgrade(temp_dir, gh, workspace_name, metadata):
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
     print("Upgrading {} from {} to {}".format(
         workspace_name, old_commit, new_commit))
-
-    # Slurp the file we're supposed to modify.
-    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
-    with open(bzl_filename, "r", encoding="utf-8") as f:
-        lines = f.readlines()
 
     # Locate the two hexadecimal lines we need to edit.
     commit_line_re = re.compile(
@@ -278,20 +301,37 @@ def _do_upgrade(temp_dir, gh, workspace_name, metadata):
     print("Populating repository cache ...")
     subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
 
-    print("Done.  Be sure to review and commit the changes:")
     message = f"[workspace] Upgrade {workspace_name}"
     if _smells_like_a_git_commit(new_commit):
         message += " to latest commit"
     else:
         message += f" to latest release {new_commit}"
-    print(f"  git add {bzl_filename}")
-    print(f"  git commit -m'{message}'")
+
+    if commit:
+        local_drake_checkout.git.commit('-o', bzl_filename, '-m', message)
+        print("\n" + ("*" * 72))
+        print(f"Done.  Changes for {workspace_name} were committed.")
+        print("Be sure to review the changes and amend the commit if needed.")
+        print(("*" * 72) + "\n")
+    else:
+        print("\n" + ("*" * 72))
+        print("Done.  Be sure to review and commit the changes:")
+        print(f"  git add {bzl_filename}")
+        print(f"  git commit -m'{message}'")
+        print(("*" * 72) + "\n")
 
 
 def main():
     parser = argparse.ArgumentParser(
         prog="new_release", description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--commit", action="store_true", default=False,
+        help="When upgrading repositories, automatically commit the changes.")
+    parser.add_argument(
+        "--lint", action="store_true", default=False,
+        help="Also run some sanity tests on the repository, after all other"
+             " operations have completed successfully.")
     parser.add_argument(
         "--use_password", action="store_true", default=False,
         help="Prompt for the GitHub password, instead of using an API token.")
@@ -305,11 +345,16 @@ def main():
     parser.add_argument(
         "--verbose", action="store_true", default=False)
     parser.add_argument(
-        "--upgrade", metavar="REPOSITORY_NAME", type=str,
-        help="(Optional) Instead of reporting on possible upgrades, download"
-             " a new archive for the given repository and edit its bzl rules"
-             " to match.")
+        "workspace", nargs="*", metavar="WORKSPACES_NAME", type=str,
+        help="(Optional) Instead of reporting on possible upgrades,"
+             " download new archives for the given externals"
+             " and edit their bzl rules to match.")
     args = parser.parse_args()
+
+    if not os.path.exists('WORKSPACE'):
+        parser.error("Couldn't find WORKSPACE; this script must be run"
+                     " from the root of your Drake checkout.")
+
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG)
     if args.use_password and not args.user:
@@ -327,25 +372,37 @@ def main():
         gh = github3.login(token=token)
 
     # Are we operating on all repositories, or just one?
-    if args.upgrade:
-        repositories = [args.upgrade]
+    if len(args.workspace):
+        workspaces = args.workspace
     else:
+        if args.commit:
+            parser.error("--commit requires one or more workspaces.")
         # (None denotes "all".)
-        repositories = None
+        workspaces = None
+
+    if args.commit:
+        local_drake_checkout = git.Repo(os.path.realpath("."))
+    else:
+        local_drake_checkout = None
 
     # Grab the workspace metadata.
     print("Collecting bazel repository details...")
-    metadata = read_repository_metadata(repositories=repositories)
+    metadata = read_repository_metadata(repositories=workspaces)
     if args.verbose:
         print(json.dumps(metadata, sort_keys=True, indent=2))
 
-    if args.upgrade:
-        with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
-            _do_upgrade(temp_dir, gh, args.upgrade, metadata)
+    if workspaces is not None:
+        for workspace in workspaces:
+            with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
+                _do_upgrade(temp_dir, gh, local_drake_checkout,
+                            workspace, metadata)
     else:
         # Run our report of what's available.
         print("Checking for new releases...")
         _check_for_upgrades(gh, args, metadata)
+
+    if args.lint:
+        subprocess.check_call(["bazel", "test", "--config=lint", "//..."])
 
 
 if __name__ == '__main__':

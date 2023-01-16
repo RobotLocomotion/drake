@@ -178,12 +178,14 @@ class Convex final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Convex)
 
   /** Constructs a convex shape specification from the file located at the
-   given _absolute_ file path. Optionally uniformly scaled by the given scale
-   factor.
-   @param absolute_filename     The file name with absolute path. We only
-                                support an .obj file with only one polyhedron.
-                                We assume that the polyhedron is convex.
-   @param scale                 An optional scale to coordinates.
+   given file path. Optionally uniformly scaled by the given scale factor.
+
+   * We only support an .obj file with only one polyhedron.
+   * We assume that the polyhedron is convex.
+
+   @param filename     The file name; if it is not absolute, it will be
+                       interpreted relative to the current working directory.
+   @param scale        An optional scale to coordinates.
 
    @throws std::exception       if the .obj file doesn't define a single object.
                                 This can happen if it is empty, if there are
@@ -196,7 +198,7 @@ class Convex final : public Shape {
                                 convenience tool for "tweaking" models. 8 orders
                                 of magnitude should be plenty without
                                 considering revisiting the model itself. */
-  explicit Convex(const std::string& absolute_filename, double scale = 1.0);
+  explicit Convex(const std::string& filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
   double scale() const { return scale_; }
@@ -308,12 +310,14 @@ class Mesh final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Mesh)
 
   /** Constructs a mesh specification from the mesh file located at the given
-   _absolute_ file path. Optionally uniformly scaled by the given scale factor.
+   file path; if the path is not absolute, it will be interpreted relative to
+   the current working directory.
+   Optionally uniformly scaled by the given scale factor.
    @throws std::exception if |scale| < 1e-8. Note that a negative scale is
    considered valid. We want to preclude scales near zero but recognise that
    scale is a convenience tool for "tweaking" models. 8 orders of magnitude
    should be plenty without considering revisiting the model itself. */
-  explicit Mesh(const std::string& absolute_filename, double scale = 1.0);
+  explicit Mesh(const std::string& filename, double scale = 1.0);
 
   const std::string& filename() const { return filename_; }
   double scale() const { return scale_; }

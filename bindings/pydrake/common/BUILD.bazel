@@ -422,6 +422,7 @@ drake_py_library(
 drake_pybind_library(
     name = "schema_py",
     cc_deps = [
+        ":cpp_template_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -810,6 +811,19 @@ drake_py_unittest(
     name = "yaml_test",
     deps = [
         ":yaml_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "yaml_typed_test",
+    data = [
+        "//common/yaml:test/yaml_io_test_input_1.yaml",
+    ],
+    deps = [
+        ":serialize_test_util_py",
+        ":value_py",
+        ":yaml_py",
+        "//bindings/pydrake/common/test_utilities:meta_py",
     ],
 )
 

@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -236,8 +237,12 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
       scene_graph_.RegisterFrame(id, parent_frame_id, GeometryFrame("child"));
   GeometryId parent_geometry_id = scene_graph_.RegisterGeometry(
       id, parent_frame_id, make_sphere_instance());
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal; delete all references to child_geometry_id.
   GeometryId child_geometry_id = scene_graph_.RegisterGeometry(
       id, parent_geometry_id, make_sphere_instance());
+#pragma GCC diagnostic pop
   GeometryId anchored_id =
       scene_graph_.RegisterAnchoredGeometry(id, make_sphere_instance());
   scene_graph_.RemoveGeometry(id, old_geometry_id);
@@ -540,6 +545,70 @@ TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
   EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
 }
 
+// For SceneGraph::ChangeShape to be correct, we need to make sure it invokes
+// GeometryState correctly. So, we'll invoke it and look for minimum evidence
+// that the change has happened (i.e., we report a different shape) and rely
+// on GeometryState tests to confirm that all other ancillary details are also
+// taken care of.
+TEST_F(SceneGraphTest, ChangeShape) {
+  const SourceId source_id = scene_graph_.RegisterSource();
+  const Sphere sphere(1.0);
+  const RigidTransformd X_WG_original(Eigen::Vector3d(1, 2, 3));
+  GeometryId g_id = scene_graph_.RegisterAnchoredGeometry(
+      source_id, make_unique<GeometryInstance>(
+                     X_WG_original, make_unique<Sphere>(sphere), "sphere"));
+  CreateDefaultContext();
+
+  const SceneGraphInspector<double>& model_inspector =
+      scene_graph_.model_inspector();
+  const SceneGraphInspector<double>& context_inspector =
+      query_object().inspector();
+
+  // Confirm the shape in the model and context is of the expected type.
+  ASSERT_EQ(ShapeName(sphere).name(),
+            ShapeName(model_inspector.GetShape(g_id)).name());
+  ASSERT_EQ(ShapeName(sphere).name(),
+            ShapeName(context_inspector.GetShape(g_id)).name());
+
+  // Change shape without changing pose.
+  const Box box(1.5, 2.5, 3.5);
+
+  scene_graph_.ChangeShape(source_id, g_id, box);
+  EXPECT_EQ(ShapeName(box).name(),
+            ShapeName(model_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_original.GetAsMatrix34(),
+                      model_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
+
+  scene_graph_.ChangeShape(context_.get(), source_id, g_id, box);
+  EXPECT_EQ(ShapeName(box).name(),
+            ShapeName(context_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_original.GetAsMatrix34(),
+                      context_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
+
+  // Change shape and pose.
+  const Cylinder cylinder(1.5, 2.5);
+  // We just need *some* different transformation that isn't the identity. So,
+  // we'll transform the original non-identity pose by itself to get something
+  // unique. The apparent frame anarchy is unimportant.
+  const RigidTransformd X_WG_new = X_WG_original * X_WG_original;
+
+  scene_graph_.ChangeShape(source_id, g_id, cylinder, X_WG_new);
+  EXPECT_EQ(ShapeName(cylinder).name(),
+            ShapeName(model_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_new.GetAsMatrix34(),
+                      model_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
+
+  scene_graph_.ChangeShape(context_.get(), source_id, g_id, cylinder, X_WG_new);
+  EXPECT_EQ(ShapeName(cylinder).name(),
+            ShapeName(context_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_new.GetAsMatrix34(),
+                      context_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
+}
+
 // Dummy system to serve as geometry source.
 class GeometrySourceSystem : public systems::LeafSystem<double> {
  public:
@@ -754,12 +823,17 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
   EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_1));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // 2023-04-01 Deprecation removal.
   // Test registration of geometry onto _geometry_.
   GeometryId sphere_id_2 = scene_graph.RegisterGeometry(
       context.get(), source_id, sphere_id_1, make_sphere_instance());
   EXPECT_EQ(2, inspector.NumGeometriesForFrame(frame_id));
   EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_2));
+#pragma GCC diagnostic pop
 
+  // 2023-04-01 Change from sphere_id_2 to sphere_id_1.
   // Remove the geometry.
   DRAKE_EXPECT_NO_THROW(
       scene_graph.RemoveGeometry(context.get(), source_id, sphere_id_2));

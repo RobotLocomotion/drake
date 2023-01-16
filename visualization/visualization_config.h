@@ -70,7 +70,7 @@ struct VisualizationConfig {
   bool delete_on_initialization_event{true};
 
   /** Determines whether to enable alpha sliders for geometry display. */
-  bool enable_alpha_sliders{true};
+  bool enable_alpha_sliders{false};
 };
 
 }  // namespace visualization

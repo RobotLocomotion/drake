@@ -166,6 +166,7 @@ drake_cc_library(
     deps = [
         ":multibody_plant_core",
         "//common:essential",
+        "//geometry:geometry_ids",
     ],
 )
 
@@ -445,6 +446,7 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
+        "//multibody/plant/test_utilities:rigid_body_on_compliant_ground",
         "//systems/primitives:pass_through",
         "//systems/primitives:zero_order_hold",
     ],
@@ -496,11 +498,8 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "tamsi_driver_test",
-    data = ["test/square_surface.obj"],
     deps = [
-        ":compliant_contact_manager_tester",
-        ":plant",
-        "//common:find_resource",
+        "//multibody/plant/test_utilities:rigid_body_on_compliant_ground",
     ],
 )
 

@@ -399,7 +399,7 @@ class IntensityMap(ColorMap):
         """Returns the color for highest intensity."""
         # For the auto contrasting color, make sure this color is always full
         # contrast (e.g., one channel must be zero).
-        return np.array((1.0, 0.6, 0.0), dtype=np.float)
+        return np.array((1.0, 0.6, 0.0), dtype=float)
 
     def _do_get_color(self, norm_data):
         # TODO(drum) Make the color configurable.

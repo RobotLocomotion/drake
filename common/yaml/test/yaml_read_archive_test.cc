@@ -11,6 +11,10 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/yaml/test/example_structs.h"
 
+// This test suite is the C++ flavor of the Python test suite at
+//  drake/bindings/pydrake/common/test/yaml_typed_test.py
+// and should be roughly kept in sync with the test cases in that file.
+
 // TODO(jwnimmer-tri) All of these regexps would be better off using the
 // std::regex::basic grammar, where () and {} are not special characters.
 
@@ -532,8 +536,11 @@ TEST_P(YamlReadArchiveTest, EigenVector) {
                        const Eigen::VectorXd& expected) {
     const auto& vec = AcceptNoThrow<EigenVecStruct>(LoadSingleValue(value));
     const auto& vec3 = AcceptNoThrow<EigenVec3Struct>(LoadSingleValue(value));
+    const auto& upto3 =
+        AcceptNoThrow<EigenVecUpTo3Struct>(LoadSingleValue(value));
     EXPECT_TRUE(drake::CompareMatrices(vec.value, expected));
     EXPECT_TRUE(drake::CompareMatrices(vec3.value, expected));
+    EXPECT_TRUE(drake::CompareMatrices(upto3.value, expected));
   };
 
   test("[1.0, 2.0, 3.0]", Eigen::Vector3d(1.0, 2.0, 3.0));
@@ -544,10 +551,22 @@ TEST_P(YamlReadArchiveTest, EigenVectorX) {
                        const Eigen::VectorXd& expected) {
     const auto& x = AcceptNoThrow<EigenVecStruct>(LoadSingleValue(value));
     EXPECT_TRUE(drake::CompareMatrices(x.value, expected));
+    const auto& upto3 =
+        AcceptNoThrow<EigenVecUpTo3Struct>(LoadSingleValue(value));
+    EXPECT_TRUE(drake::CompareMatrices(upto3.value, expected));
   };
 
   test("[]", Eigen::VectorXd());
   test("[1.0]", Eigen::Matrix<double, 1, 1>(1.0));
+}
+
+TEST_P(YamlReadArchiveTest, EigenVectorOverflow) {
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AcceptIntoDummy<EigenVecUpTo3Struct>(Load(R"""(
+doc:
+  value: [0, 0, 0, 0]
+)""")),
+      ".*maximum size is 3.*");
 }
 
 TEST_P(YamlReadArchiveTest, EigenMatrix) {
