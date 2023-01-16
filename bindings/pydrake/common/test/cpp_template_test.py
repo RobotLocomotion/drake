@@ -139,10 +139,10 @@ class TestCppTemplate(unittest.TestCase):
         template.add_instantiation(float, DummyB)
 
         self.assertEqual(template[int], DummyA)
-        self.assertEqual(str(DummyA), "<class '{}.ClassTpl[int]'>".format(
+        self.assertEqual(str(DummyA), "<class '{}.ClassTpl𝓣int𝓤'>".format(
             _TEST_MODULE))
         self.assertEqual(template[float], DummyB)
-        self.assertEqual(str(DummyB), "<class '{}.ClassTpl[float]'>".format(
+        self.assertEqual(str(DummyB), "<class '{}.ClassTpl𝓣float𝓤'>".format(
             _TEST_MODULE))
 
         assert_pickle(self, template[int]())
@@ -207,7 +207,7 @@ class TestCppTemplate(unittest.TestCase):
         template.add_instantiation(float, dummy_b)
 
         self.assertEqual(template[int](), 1)
-        self.assertIn("<function func[int] ", str(template[int]))
+        self.assertIn("<function func𝓣int𝓤 ", str(template[int]))
         self.assertEqual(template[float](), 2)
         self.assertEqual(str(template), "<TemplateFunction {}.func>".format(
             _TEST_MODULE))
@@ -224,7 +224,7 @@ class TestCppTemplate(unittest.TestCase):
         self.assertTrue(DummyC.method.is_instantiation(DummyC.dummy_c))
         self.assertTrue(
             str(DummyC.method[int]).startswith(
-                "<function DummyC.method[int] at "),
+                "<function DummyC.method𝓣int𝓤 at "),
             str(DummyC.method[int]))
 
         obj = DummyC()
@@ -232,7 +232,7 @@ class TestCppTemplate(unittest.TestCase):
             str(obj.method).startswith(
                 "<bound TemplateMethod DummyC.method of "))
         self.assertIn(
-            "<bound method DummyC.method[int] of ",
+            "<bound method DummyC.method𝓣int𝓤 of ",
             str(obj.method[int]))
         self.assertEqual(obj.method[int](), (obj, 3))
         self.assertEqual(DummyC.method[int](obj), (obj, 3))

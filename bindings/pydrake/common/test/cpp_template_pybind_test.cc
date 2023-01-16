@@ -71,7 +71,7 @@ GTEST_TEST(CppTemplateTest, TemplateClass) {
   // Python re's DOTALL flag. `[\s\S]` *should* work, but Apple LLVM 10.0.0
   // does not work with it.
   DRAKE_EXPECT_THROWS_MESSAGE(py::eval("simple_func('incorrect value')"),
-      R"([^\0]*incompatible function arguments[^\0]*\(arg0: __main__\.SimpleTemplate\[int\]\)[^\0]*)");  // NOLINT
+      R"([^\0]*incompatible function arguments[^\0]*\(arg0: __main__\.SimpleTemplate𝓣int𝓤\)[^\0]*)");  // NOLINT
 
   // Add dummy constructors to check __call__ pseudo-deduction.
   cls_1.def(py::init([](int) { return SimpleTemplate<int>(); }));

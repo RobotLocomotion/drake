@@ -74,7 +74,7 @@ class TestCppParam(unittest.TestCase):
         self._check_names("CustomPyType", [CustomPyType])
         self._check_names("1", [1])
         self._check_names(
-            "dict[str, CustomPyType]", [mut.Dict[str, CustomPyType]])
+            "dict[str,CustomPyType]", [mut.Dict[str, CustomPyType]])
         self._check_names(
             "list[CustomPyType]", [mut.List[CustomPyType]])
         self._check_names(
@@ -82,7 +82,7 @@ class TestCppParam(unittest.TestCase):
         self._check_names(
             "typing.Optional[CustomPyType]", [mut.Optional[CustomPyType]])
         self._check_names(
-            "typing.Union[str, CustomPyType]", [mut.Union[str, CustomPyType]])
+            "typing.Union[str,CustomPyType]", [mut.Union[str, CustomPyType]])
 
     def assert_equal_but_not_aliased(self, a, b):
         self.assertEqual(a, b)
