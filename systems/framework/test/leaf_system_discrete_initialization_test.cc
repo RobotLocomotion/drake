@@ -56,16 +56,19 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
       builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
   auto* zoh_3 =
       builder.AddSystem<ZeroOrderHold>(zoh_period_sec, 1, initialize);
-
-  // Connect.
+  // Connect 3 ZOH in series.
+  const int zoh_cascade_order = 3;
   builder.Connect(dut->get_output_port(), zoh_1->get_input_port());
   builder.Connect(zoh_1->get_output_port(), zoh_2->get_input_port());
   builder.Connect(zoh_2->get_output_port(), zoh_3->get_input_port());
+  // Discrete cascade order is one more due to our dut's initialization event.
+  const int discrete_initialization_cascade_order = zoh_cascade_order + 1;
 
   auto diagram = builder.Build();
   Simulator<double> simulator(*diagram);
 
-  const auto& diagram_context = simulator.get_context();
+  auto& diagram_context = simulator.get_mutable_context();
+  const auto diagram_context_init = diagram_context.Clone();
   const auto& dut_context = dut->GetMyContextFromRoot(diagram_context);
 
   auto zoh_shows_initialized = [&](const System<double>* zoh) {
@@ -111,6 +114,24 @@ GTEST_TEST(LeafSystemDiscreteInitializationTest, Behavior) {
   // One more time, so that all are updated.
   simulator.AdvanceTo(zoh_period_sec * 2);
   simulator.AdvancePendingEvents();
+  EXPECT_TRUE(dut->IsInitialized(dut_context));
+  EXPECT_TRUE(zoh_shows_initialized(zoh_1));
+  EXPECT_TRUE(zoh_shows_initialized(zoh_2));
+  EXPECT_TRUE(zoh_shows_initialized(zoh_3));
+
+  // Reset and show we're back to initial state.
+  diagram_context.SetTimeStateAndParametersFrom(*diagram_context_init);
+  EXPECT_FALSE(dut->IsInitialized(dut_context));
+  EXPECT_FALSE(zoh_shows_initialized(zoh_1));
+  EXPECT_FALSE(zoh_shows_initialized(zoh_2));
+  EXPECT_FALSE(zoh_shows_initialized(zoh_3));
+
+  // Show that simultaneous discrete updates can be handled by precisely
+  // calling `simulator.Initialize)` by a value related to degree of cascade by
+  // showing ultimate consistency.
+  for (int i = 0; i < discrete_initialization_cascade_order; ++i) {
+    simulator.Initialize();
+  }
   EXPECT_TRUE(dut->IsInitialized(dut_context));
   EXPECT_TRUE(zoh_shows_initialized(zoh_1));
   EXPECT_TRUE(zoh_shows_initialized(zoh_2));
