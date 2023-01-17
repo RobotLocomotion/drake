@@ -279,11 +279,11 @@ TEST_F(CIrisToyRobotTest, GetCollisionGeometries) {
       };
 
   check_link_geometries(plant_->world_body().index(),
-                        {world_box_, world_sphere_});
+                        {world_box_, world_cylinder_});
   check_link_geometries(body_indices_[0], {body0_box_, body0_sphere_});
   check_link_geometries(body_indices_[1], {body1_convex_, body1_capsule_});
   check_link_geometries(body_indices_[2], {body2_sphere_, body2_capsule_});
-  check_link_geometries(body_indices_[3], {body3_box_, body3_sphere_});
+  check_link_geometries(body_indices_[3], {body3_box_, body3_cylinder_});
 }
 
 TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
@@ -348,11 +348,6 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
   for (const auto& plane_geometries : tester.plane_geometries()) {
     const auto& plane = tester.cspace_free_polytope()
                             .separating_planes()[plane_geometries.plane_index];
-    if (plane.positive_side_geometry->type() == GeometryType::kCylinder ||
-        plane.negative_side_geometry->type() == GeometryType::kCylinder) {
-      throw std::runtime_error(
-          "Cylinder has not been implemented yet for C-IRIS.");
-    }
     if (plane.positive_side_geometry->type() == GeometryType::kPolytope &&
         plane.negative_side_geometry->type() == GeometryType::kPolytope) {
       EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
@@ -787,7 +782,7 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram2) {
   for (bool with_cross_y : {false, true}) {
     TestConstructPlaneSearchProgram(
         *diagram_, *plant_, *scene_graph_,
-        SortedPair<geometry::GeometryId>(world_sphere_, body2_capsule_),
+        SortedPair<geometry::GeometryId>(world_box_, body2_capsule_),
         with_cross_y);
   }
 }
@@ -798,7 +793,7 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram3) {
   for (bool with_cross_y : {false, true}) {
     TestConstructPlaneSearchProgram(
         *diagram_, *plant_, *scene_graph_,
-        SortedPair<geometry::GeometryId>(body1_convex_, body3_sphere_),
+        SortedPair<geometry::GeometryId>(body1_convex_, body3_cylinder_),
         with_cross_y);
   }
 }
@@ -885,7 +880,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
             certificate->negative_side_rational_lagrangians,
             plane.decision_variables, certificate->plane_decision_var_vals, C,
             d, tester, 0);
-        const double small_coeff_tol = 2E-5;
+        const double small_coeff_tol = 1E-4;
         CheckRationalsPositiveInCspacePolytope(
             plane_geometries.positive_side_psd_mat,
             certificate->positive_side_psd_mat_lagrangians,
@@ -984,7 +979,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeFailure) {
     inseparable_geometries.emplace(body0_box_, body2_capsule_);
     inseparable_geometries.emplace(body0_box_, body2_sphere_);
     inseparable_geometries.emplace(body1_convex_, body3_box_);
-    inseparable_geometries.emplace(body1_convex_, body3_sphere_);
+    inseparable_geometries.emplace(body1_convex_, body3_cylinder_);
     inseparable_geometries.emplace(body2_capsule_, body3_box_);
     inseparable_geometries.emplace(body2_sphere_, body3_box_);
     for (const auto& certificate : certificates_result) {

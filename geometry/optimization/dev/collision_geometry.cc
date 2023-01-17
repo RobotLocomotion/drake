@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "drake/common/drake_assert.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
@@ -251,6 +252,121 @@ class OnPlaneSideReifier : public ShapeReifier {
     ImplementPointRationals(Eigen::Vector3d::Zero(), X_BG_, data);
   }
 
+  void ImplementGeometry(const Cylinder& cylinder, void* data) {
+    // Consider a cylinder with radius r and length l, if this cylinder is on
+    // the positive side of a plane {x | aᵀx + b=0}, we first write out the
+    // condition on the plane parameter in the cylinder geometry frame G, and
+    // then derive the condition on the plane parameter in the "expressed frame"
+    // A, where A can be any frame.
+    //
+    // In the cylinder's geometry frame G, the cylinder center is at the frame
+    // origin, and the cylinder axis is along the frame z axis. This cylinder is
+    // on the positive side of the plane { p_GQ | a_Gᵀ*p_GQ + b_G = 0} if and
+    // only if the top and bottom rims of the cylinder are on the positive side
+    // of the plane, namely a_G.dot([r*cosθ, r*sinθ, ±l/2]) + b_G ≥ 0 for any θ,
+    // which is equivalent to
+    //  a_G(2) * l/2 + b_G ≥ r * |[a_G(0), a_G(1)]|    (1a)
+    // -a_G(2) * l/2 + b_G ≥ r * |[a_G(0), a_G(1)]|    (1b)
+    // We also impose the constraint a_G.dot(p_GO) + b_G >= 1 to exclude the
+    // trivial solution a_G=0, b_G=0, where O is the center of the cylinder,
+    // namely G's frame origin. This is equivalent to
+    // b_G ≥ 1       (2)
+    //
+    // Similarly if the cylinder is on the negative side of the plane, we
+    // impose the constraint
+    //  a_G(2) * l/2 + b_G ≤ -r * |[a_G(0), a_G(1)]|    (3a)
+    // -a_G(2) * l/2 + b_G ≤ -r * |[a_G(0), a_G(1)]|    (3b)
+    // and
+    // b_G ≤ -1      (4)
+    //
+    // Notice that (1a) is equivalent to the following matrix being psd.
+    // ⌈a_G(2)*l/2+b_G     a_G(0)                a_G(1) ⌉
+    // |a_G(0)      (a_G(2)*l/2+b_G)/r²               0 |  ≽ 0  (5a)
+    // ⌊a_G(1)              0        (a_G(2)*l/2+b_G)/r²⌋
+    // Likewise we can formulate (1b) as another matrix being psd.
+    //
+    // The matrix in (5a) is psd if and only if the following rational function
+    // is always positive
+    // ⌈  1 ⌉ᵀ⌈a_G(2)*l/2+b_G   a_G(0)              a_G(1) ⌉⌈  1 ⌉
+    // |y(0)| |a_G(0)    (a_G(2)*l/2+b_G)/r²             0 ||y(0)| ≥ 0 (6a)
+    // ⌊y(1)⌋ ⌊a_G(1)            0      (a_G(2)*l/2+b_G)/r²⌋⌊y(1)⌋
+    //
+    // We derived the condition (6a) and (2) using the plane expressed in
+    // cylinder geometry frame (with parameter a_G, b_G). We next derive the
+    // condition using the plane expressed in an arbitrary frame A (with
+    // parameter a_A, b_A), and the SE(3) transformation between the two frames
+    // as X_AG, X_GA.
+    //
+    // For a point Q on the plane, it satisfies the condition
+    // a_Gᵀ * p_GQ + b_G = 0            (7)
+    // and also we can write the condition in the A's frame.
+    // a_Aᵀ * p_AQ + b_A = 0            (8)
+    // Since we know that
+    // p_AQ = R_AG * p_GQ + p_AG          (9)
+    // Substitute (9) into (8) we have
+    // a_Aᵀ * R_AG * p_GQ + a_Aᵀ * p_AG + b_A = 0  (10)
+    // Comparing (5) and (8), we have
+    // a_G = R_GA * a_A                   (11a)
+    // b_G = b_A + a_Aᵀ * p_AG            (11b)
+    // Hence we can write the pair (a_G, b_G) as a function of (a_A, b_A) and
+    // the SE(3) transform X_AG.
+    auto* reify_data = static_cast<ReifyData*>(data);
+
+    // a_G = R_GA * a_A
+    //     = (R_AB * R_BG)ᵀ * a_A
+    const Vector3<symbolic::Polynomial> a_G =
+        (reify_data->X_AB_multilinear->rotation * X_BG_.rotation().matrix())
+            .transpose() *
+        (*reify_data->a);
+    // p_AG = R_AB * p_BG + p_AB
+    const Vector3<symbolic::Polynomial> p_AG =
+        reify_data->X_AB_multilinear->rotation * X_BG_.translation() +
+        reify_data->X_AB_multilinear->position;
+    const symbolic::Polynomial b_G = *reify_data->b + reify_data->a->dot(p_AG);
+    switch (reify_data->plane_side) {
+      case PlaneSide::kPositive: {
+        // impose the constraint b_G >= 1
+        reify_data->rationals_for_points->push_back(
+            reify_data->rational_forward_kin
+                ->ConvertMultilinearPolynomialToRationalFunction(b_G - 1));
+        break;
+      }
+      case PlaneSide::kNegative: {
+        // Impose the constraint b_G <= -1
+        reify_data->rationals_for_points->push_back(
+            reify_data->rational_forward_kin
+                ->ConvertMultilinearPolynomialToRationalFunction(-1 - b_G));
+        break;
+      }
+    }
+
+    // Now compute the polynomial
+    // ⌈  1 ⌉ᵀ⌈a_G(2)*l/2+b_G   a_G(0)              a_G(1) ⌉⌈  1 ⌉
+    // |y(0)| |a_G(0)    (a_G(2)*l/2+b_G)/r²             0 ||y(0)|
+    // ⌊y(1)⌋ ⌊a_G(1)            0      (a_G(2)*l/2+b_G)/r²⌋⌊y(1)⌋
+    const Vector2<symbolic::Polynomial> y_poly(
+        symbolic::Polynomial(symbolic::Monomial((*reify_data->y_slack)(0))),
+        symbolic::Polynomial(symbolic::Monomial((*reify_data->y_slack)(1))));
+    // Compute y(0)*y(0) + y(1)*y(1)
+    const symbolic::Polynomial y_squared{
+        {{symbolic::Monomial((*reify_data->y_slack)(0), 2), 1},
+         {symbolic::Monomial((*reify_data->y_slack)(1), 2), 1}}};
+    const double plane_sign =
+        reify_data->plane_side == PlaneSide::kPositive ? 1 : -1;
+    for (double scalar : {1, -1}) {
+      // scalar = 1 for the top rim, and scalar = -1 for the bottom rim.
+      // Compute plane_sign * (±l/2 * a_G(2) + b_G)
+      const symbolic::Polynomial a2_plus_b =
+          plane_sign * (scalar * cylinder.length() / 2 * a_G(2) + b_G);
+      reify_data->rationals_for_matrix_sos->push_back(
+          reify_data->rational_forward_kin
+              ->ConvertMultilinearPolynomialToRationalFunction(
+                  a2_plus_b + 2 * y_poly(0) * a_G(0) + 2 * y_poly(1) * a_G(1) +
+                  a2_plus_b / (cylinder.radius() * cylinder.radius()) *
+                      y_squared));
+    }
+  }
+
   const Shape* geometry_;
   math::RigidTransformd X_BG_;
   GeometryId geometry_id_;
@@ -330,41 +446,9 @@ class NumRationalsForPointsReifier : public ShapeReifier {
     *num = 1;
   }
 
-  const Shape* shape_;
-};
-
-class NumRationalsForMatrixSosReifier : public ShapeReifier {
- public:
-  explicit NumRationalsForMatrixSosReifier(const Shape* shape)
-      : shape_{shape} {}
-
-  int ProcessData() {
-    int ret;
-    shape_->Reify(this, &ret);
-    return ret;
-  }
-
- private:
-  using ShapeReifier::ImplementGeometry;
-
-  void ImplementGeometry(const Box&, void* data) {
-    auto* num = static_cast<int*>(data);
-    *num = 0;
-  }
-
-  void ImplementGeometry(const Convex&, void* data) {
-    auto* num = static_cast<int*>(data);
-    *num = 0;
-  }
-
-  void ImplementGeometry(const Sphere&, void* data) {
+  void ImplementGeometry(const Cylinder&, void* data) {
     auto* num = static_cast<int*>(data);
     *num = 1;
-  }
-
-  void ImplementGeometry(const Capsule&, void* data) {
-    auto* num = static_cast<int*>(data);
-    *num = 2;
   }
 
   const Shape* shape_;
@@ -443,42 +527,6 @@ class DistanceToHalfspaceReifier : public ShapeReifier {
   Eigen::Vector3d a_G_;
   double b_G_;
 };
-
-class YSlackSizeReifier : public ShapeReifier {
- public:
-  explicit YSlackSizeReifier(const Shape* shape) : shape_{shape} {}
-
-  double ProcessData() {
-    int ret;
-    shape_->Reify(this, &ret);
-    return ret;
-  }
-
- private:
-  using ShapeReifier::ImplementGeometry;
-
-  void ImplementGeometry(const Box&, void* data) {
-    int* y_slack_size = static_cast<int*>(data);
-    *y_slack_size = 0;
-  }
-
-  void ImplementGeometry(const Convex&, void* data) {
-    int* y_slack_size = static_cast<int*>(data);
-    *y_slack_size = 0;
-  }
-
-  void ImplementGeometry(const Sphere&, void* data) {
-    int* y_slack_size = static_cast<int*>(data);
-    *y_slack_size = 3;
-  }
-
-  void ImplementGeometry(const Capsule&, void* data) {
-    int* y_slack_size = static_cast<int*>(data);
-    *y_slack_size = 3;
-  }
-
-  const Shape* shape_;
-};
 }  // namespace
 
 void CollisionGeometry::OnPlaneSide(
@@ -505,13 +553,30 @@ int CollisionGeometry::num_rationals_for_points() const {
 }
 
 int CollisionGeometry::num_rationals_for_matrix_sos() const {
-  NumRationalsForMatrixSosReifier reifier(geometry_);
-  return reifier.ProcessData();
+  switch (this->type()) {
+    case GeometryType::kPolytope:
+      return 0;
+    case GeometryType::kSphere:
+      return 1;
+    case GeometryType::kCapsule:
+      return 2;
+    case GeometryType::kCylinder:
+      return 2;
+  }
+  DRAKE_UNREACHABLE();
 }
 
 int CollisionGeometry::y_slack_size() const {
-  YSlackSizeReifier reifier(geometry_);
-  return reifier.ProcessData();
+  switch (this->type()) {
+    case GeometryType::kPolytope:
+      return 0;
+    case GeometryType::kSphere:
+    case GeometryType::kCapsule:
+      return 3;
+    case GeometryType::kCylinder:
+      return 2;
+  }
+  DRAKE_UNREACHABLE();
 }
 
 double DistanceToHalfspace(const CollisionGeometry& collision_geometry,
