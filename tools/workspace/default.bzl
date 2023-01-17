@@ -168,7 +168,7 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "fmt" not in excludes:
         fmt_repository(name = "fmt", mirrors = mirrors)
     if "gflags" not in excludes:
-        gflags_repository(name = "gflags")
+        gflags_repository(name = "gflags", mirrors = mirrors)
     if "gfortran" not in excludes:
         gfortran_repository(name = "gfortran")
     if "github3_py_internal" not in excludes:

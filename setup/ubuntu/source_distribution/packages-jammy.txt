@@ -10,7 +10,6 @@ libbz2-dev
 libclang-12-dev
 libdouble-conversion-dev
 libexpat1-dev
-libgflags-dev
 libgl-dev
 libglew-dev
 libglib2.0-dev
