@@ -258,6 +258,21 @@ class Polynomial {
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
+  /// Substitute the monomials of this polynomial with new polynomial
+  /// expressions and expand the polynomial to the monomial basis. For example,
+  /// consider the substitution x = a(1-y) + by into the polynomial x¹⁴ +
+  /// (x−1)². Repeatedly expanding the powers of x can take a long time using
+  /// factory methods, so we store intermediate computations in the substitution
+  /// map to avoid recomputing very high powers.
+  /// @out substitution will change as the substituted monomials are expanded.
+  ///
+  /// Note that this function is NOT responsible for ensuring that @param
+  /// substitution is consistent i.e. this method will not throw an error if
+  /// subsitution = {x: y, x²: 2y}. To ensure correct results, ensure that the
+  /// passed substitution map is consistent.
+  [[nodiscard]] Polynomial SubstituteAndExpand(
+      std::unordered_map<Monomial, Polynomial>* substitution);
+
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term
   /// from the returned polynomial.
@@ -427,15 +442,16 @@ typename std::enable_if_t<
         // {Polynomial, Monomial, double} x {Polynomial, Monomial, double}
         (std::is_same_v<typename MatrixL::Scalar, Polynomial> ||
          std::is_same_v<typename MatrixL::Scalar, Monomial> ||
-         std::is_same_v<typename MatrixL::Scalar, double>) &&
-        (std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
-         std::is_same_v<typename MatrixR::Scalar, Monomial> ||
-         std::is_same_v<typename MatrixR::Scalar, double>) &&
+         std::is_same_v<
+             typename MatrixL::Scalar,
+             double>)&&(std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
+                        std::is_same_v<typename MatrixR::Scalar, Monomial> ||
+                        std::is_same_v<typename MatrixR::Scalar, double>)&&
         // Exclude Polynomial x Polynomial case (because the other seven
         // operations call this case. If we include this case here, we will have
         // self-recursion).
         !(std::is_same_v<typename MatrixL::Scalar, Polynomial> &&
-          std::is_same_v<typename MatrixR::Scalar, Polynomial>) &&
+          std::is_same_v<typename MatrixR::Scalar, Polynomial>)&&
         // Exclude double x double case.
         !(std::is_same_v<typename MatrixL::Scalar, double> &&
           std::is_same_v<typename MatrixR::Scalar, double>),
