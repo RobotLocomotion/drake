@@ -12,6 +12,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 #include <vtkOpenGLTexture.h>
+#include <vtkPNGReader.h>
 #include <vtkProperty.h>
 
 #include "drake/common/drake_copyable.h"
@@ -964,6 +965,52 @@ TEST_F(RenderEngineVtkTest, ImpliedTextureMeshTest) {
 
   expected_color_ = RgbaColor(kTextureColor, 255);
   PerformCenterShapeTest(renderer_.get(), "Implied textured mesh test");
+}
+
+// Performs the test to cast textures to uchar channels. It depends on the image
+// with non-uchar channels being converted to uchar channels losslessly. An
+// uint16 image is loaded to prove the existence of the conversion, but this
+// test doesn't guarantee universal conversion success.
+TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
+  const ColorRenderCamera camera(depth_camera_.core(), kShowWindow);
+  const auto& intrinsics = camera.core().intrinsics();
+  const Box box(1.999, 0.55, 0.75);
+  expected_label_ = RenderLabel(1);
+
+  // Ensure the texture has non-uchar channels.
+  vtkNew<vtkPNGReader> reader;
+  const std::string file_path =
+      FindResourceOrThrow("drake/geometry/render/test/meshes/box16u.png");
+  reader->SetFileName(file_path.c_str());
+  reader->Update();
+  ASSERT_NE(reader->GetOutput()->GetScalarType(), VTK_UNSIGNED_CHAR);
+
+  // Render a box with an uchar-channel PNG texture.
+  ImageRgba8U color_uchar_texture(intrinsics.width(), intrinsics.height());
+  {
+    RenderEngineVtk renderer;
+    InitializeRenderer(X_WC_, false /* add terrain */, &renderer);
+
+    const GeometryId id = GeometryId::get_new_id();
+    PerceptionProperties props = simple_material(true);
+    renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
+    renderer.RenderColorImage(camera, &color_uchar_texture);
+  }
+
+  // Render a box with an uint16-channel PNG texture.
+  ImageRgba8U color_uint16_texture(intrinsics.width(), intrinsics.height());
+  {
+    RenderEngineVtk renderer;
+    InitializeRenderer(X_WC_, false /* add terrain */, &renderer);
+
+    const GeometryId id = GeometryId::get_new_id();
+    PerceptionProperties props = simple_material(false);
+    props.AddProperty("phong", "diffuse_map", file_path);
+    renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
+    renderer.RenderColorImage(camera, &color_uint16_texture);
+  }
+
+  EXPECT_EQ(color_uchar_texture, color_uint16_texture);
 }
 
 // This confirms that geometries are correctly removed from the render engine.
