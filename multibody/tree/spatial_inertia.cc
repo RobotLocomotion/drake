@@ -63,7 +63,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
     throw std::logic_error(error_message);
   }
 
-  // Ensure ‖unit_vector‖  is within ≈ 5.5 bits of 1.0 (2^5.5 = 1E-14).
+  // Ensure ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+  // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
   using std::abs;
   constexpr double kTolerance = 1E-14;
   if (abs(unit_vector.norm() - 1) > kTolerance) {
