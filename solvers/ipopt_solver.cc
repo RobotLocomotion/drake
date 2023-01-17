@@ -187,9 +187,8 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 /// @return number of gradient entries populated.
 size_t EvaluateConstraint(const MathematicalProgram& prog,
                           const Eigen::VectorXd& xvec,
-                          const Binding<Constraint>& binding,
-                          const VectorXDecisionVariable& variables,
-                          Number* result, Number* grad) {
+                          const Binding<Constraint>& binding, Number* result,
+                          Number* grad) {
   Constraint* c = binding.evaluator().get();
 
   // For constraints which don't use all of the variables in the X
@@ -199,10 +198,10 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // the correct geometry (e.g. the constraint uses all decision
   // variables in the same order they appear in xvec), but this is not
   // currently done).
-  int num_v_variables = variables.rows();
+  int num_v_variables = binding.variables().rows();
   Eigen::VectorXd this_x(num_v_variables);
   for (int i = 0; i < num_v_variables; ++i) {
-    this_x(i) = xvec(prog.FindDecisionVariableIndex(variables(i)));
+    this_x(i) = xvec(prog.FindDecisionVariableIndex(binding.variables()(i)));
   }
 
   if (!grad) {
@@ -236,7 +235,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   if (linear) {
     // Verify that A has the proper size.
     DRAKE_ASSERT(A.rows() == c->num_constraints());
-    DRAKE_ASSERT(A.cols() == variables.rows());
+    DRAKE_ASSERT(A.cols() == binding.variables().rows());
     // Evaluate the constraint.
     Eigen::VectorXd ty(c->num_constraints());
     c->Eval(this_x, &ty);
@@ -244,7 +243,7 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
     size_t grad_idx = 0;
     for (int i = 0; i < ty.rows(); i++) {
       result[i] = ty(i);
-      for (int j = 0; j < variables.rows(); j++) {
+      for (int j = 0; j < binding.variables().rows(); j++) {
         grad[grad_idx++] = A.coeff(i, j);
       }
     }
@@ -268,11 +267,11 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   DRAKE_ASSERT(ty.rows() == c->num_constraints());
   for (int i = 0; i < ty.rows(); i++) {
     if (ty(i).derivatives().size() > 0) {
-      for (int j = 0; j < variables.rows(); j++) {
+      for (int j = 0; j < binding.variables().rows(); j++) {
         grad[grad_idx++] = ty(i).derivatives()(j);
       }
     } else {
-      for (int j = 0; j < variables.rows(); j++) {
+      for (int j = 0; j < binding.variables().rows(); j++) {
         grad[grad_idx++] = 0;
       }
     }
@@ -696,28 +695,23 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     Number* grad = eval_gradient ? constraint_cache_->grad.data() : nullptr;
 
     for (const auto& c : problem_->generic_constraints()) {
-      grad +=
-          EvaluateConstraint(*problem_, xvec, c, c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->lorentz_cone_constraints()) {
-      grad +=
-          EvaluateConstraint(*problem_, xvec, c, c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
-      grad +=
-          EvaluateConstraint(*problem_, xvec, c, c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->linear_constraints()) {
-      grad +=
-          EvaluateConstraint(*problem_, xvec, c, c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->linear_equality_constraints()) {
-      grad +=
-          EvaluateConstraint(*problem_, xvec, c, c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
 
