@@ -49,13 +49,6 @@ set(libtiff_url "http://download.osgeo.org/libtiff/tiff-${libtiff_version}.tar.g
 set(libtiff_md5 "2165e7aba557463acc0664e71a3ed424")
 list(APPEND ALL_PROJECTS libtiff)
 
-# gflags
-set(gflags_version 2.2.1)
-set(gflags_url "https://github.com/gflags/gflags/archive/v${gflags_version}.tar.gz")
-set(gflags_md5 "b98e772b4490c84fc5a87681973f75d1")
-set(gflags_dlname "gflags-${gflags_version}.tar.gz")
-list(APPEND ALL_PROJECTS gflags)
-
 # eigen
 if(APPLE)
     # This version mimics homebrew.

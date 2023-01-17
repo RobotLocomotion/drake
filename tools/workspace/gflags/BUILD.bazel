@@ -1,14 +1,18 @@
 # -*- python -*-
 
+load("@drake//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-cc_library(
-    name = "pthread_iff_linux",
-    linkopts = select({
-        "//tools/cc_toolchain:linux": ["-pthread"],
-        "//conditions:default": [],
-    }),
-    visibility = ["@gflags//:__pkg__"],
+install_files(
+    name = "install",
+    dest = "share/doc/gflags",
+    files = [
+        "@gflags//:COPYING.txt",
+    ],
+    allowed_externals = [
+        "@gflags//:COPYING.txt",
+    ],
+    visibility = ["//tools/workspace:__pkg__"],
 )
 
 add_lint_tests()
