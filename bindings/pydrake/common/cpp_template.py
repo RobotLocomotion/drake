@@ -4,6 +4,8 @@ import inspect
 import sys
 import types
 
+from pydrake import _is_building_documentation
+from pydrake.common import _MangledName, _pretty_class_name
 from pydrake.common.cpp_param import get_param_names, get_param_canonical
 from pydrake.common.deprecation import _warn_deprecated
 
@@ -291,15 +293,29 @@ class TemplateBase:
                 param = tuple(param)
         return get_param_canonical(param)
 
-    def _instantiation_name(self, param):
-        names = get_param_names(self._param_resolve(param))
-        return '{}[{}]'.format(self.name, ', '.join(names))
+    def _instantiation_name(self, param, *, mangle=False):
+        """When mangle=False (the common case), returns the human-readable
+        display name for an instantiation of the given ``param``s. This is
+        typically a Python expression like ``LeafSystem_[AutoDiffXd]``.
+
+        When mangle=True, returns the mangled name for an instantition, i.e.,
+        a valid Python identifier that will be used as __name__ of the class.
+        """
+        if _is_building_documentation():
+            # When we're building the website, the API docs should always use
+            # the unmangled names.
+            mangle = False
+        names = get_param_names(self._param_resolve(param), mangle=mangle)
+        result = '{}[{}]'.format(self.name, ','.join(names))
+        if mangle:
+            result = _MangledName.mangle(result)
+        return result
 
     def _full_name(self):
         return "{}.{}".format(self._scope.__name__, self.name)
 
     def __str__(self):
-        cls_name = type(self).__name__
+        cls_name = _pretty_class_name(type(self))
         return "<{} {}>".format(cls_name, self._full_name())
 
     def _on_add(self, param, instantiation):
@@ -357,11 +373,14 @@ class TemplateClass(TemplateBase):
         self._override_meta = override_meta
 
     def _on_add(self, param, cls):
-        # Update class name for easier debugging.
         if self._override_meta:
+            # Rename the class now to reflect its `template_name` and `param`.
+            # C++ templates are initially bound using a `TemporaryClassName()`
+            # which we overwrite here. Python templates are usually declared a
+            # a nested class helper, which likewise we need to replace.
             cls._original_name = cls.__name__
             cls._original_qualname = getattr(cls, "__qualname__", cls.__name__)
-            cls.__name__ = self._instantiation_name(param)
+            cls.__name__ = self._instantiation_name(param, mangle=True)
             # Define `__qualname__` in Python2 because that's what `pybind11`
             # uses when showing function signatures when an overload cannot be
             # found.
@@ -422,8 +441,8 @@ def _rename_callable(f, scope, name, cls=None):
 class TemplateFunction(TemplateBase):
     """Extension of `TemplateBase` for functions."""
     def _on_add(self, param, func):
-        func = _rename_callable(
-            func, self._scope, self._instantiation_name(param))
+        new_name = self._instantiation_name(param, mangle=True)
+        func = _rename_callable(func, self._scope, new_name)
         setattr(self._scope, func.__name__, func)
         return func
 
@@ -439,9 +458,8 @@ class TemplateMethod(TemplateBase):
         self._cls = cls
 
     def _on_add(self, param, func):
-        func = _rename_callable(
-            func, self._scope, self._instantiation_name(param),
-            self._cls)
+        new_name = self._instantiation_name(param, mangle=True)
+        func = _rename_callable(func, self._scope, new_name, self._cls)
         setattr(self._cls, func.__name__, func)
         return func
 
