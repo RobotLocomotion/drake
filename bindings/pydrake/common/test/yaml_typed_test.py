@@ -78,6 +78,17 @@ class NumpyStruct:
 
 
 @dc.dataclass
+class VariantStruct:
+    value: typing.Union[str, float, FloatStruct, NumpyStruct] = nan
+
+
+@dc.dataclass
+class ListVariantStruct:
+    value: typing.List[typing.Union[str, float, FloatStruct, NumpyStruct]] = (
+        dc.field(default_factory=lambda: list([nan])))
+
+
+@dc.dataclass
 class OuterStruct:
     outer_value: float = nan
     inner_struct: InnerStruct = dc.field(
@@ -306,8 +317,76 @@ class TestYamlTypedRead(unittest.TestCase,
                         schema=schema, data=amended_data, **options)
                     self.assertEqual(actual, schema(expected))
 
-    # TODO(jwnimmer-tri) Add test cases similar to Variant and VariantMissing
-    # from the C++ YAML test suite.
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_variant(self, *, options):
+        data = "value: foo"
+        x = yaml_load_typed(schema=VariantStruct, data=data, **options)
+        self.assertEqual(x, VariantStruct("foo"))
+        self.assertEqual(type(x.value), str)
+
+        data = "value: !!str bar"
+        x = yaml_load_typed(schema=VariantStruct, data=data, **options)
+        self.assertEqual(x, VariantStruct("bar"))
+        self.assertEqual(type(x.value), str)
+
+        data = "value: !!float 1.0"
+        x = yaml_load_typed(schema=VariantStruct, data=data, **options)
+        self.assertEqual(x, VariantStruct(1.0))
+        self.assertEqual(type(x.value), float)
+
+        data = "value: !FloatStruct { value: 1.0 }"
+        x = yaml_load_typed(schema=VariantStruct, data=data, **options)
+        self.assertEqual(x, VariantStruct(FloatStruct(1.0)))
+
+        data = "value: !NumpyStruct { value: [1.0, 2.0] }"
+        x = yaml_load_typed(schema=VariantStruct, data=data, **options)
+        self.assertEqual(type(x.value), NumpyStruct)
+        actual = x.value.value
+        expected = np.array([1.0, 2.0])
+        np.testing.assert_equal(actual, expected, verbose=True)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_variant_missing(self, *, options):
+        if options["allow_schema_with_no_yaml"]:
+            x = yaml_load_typed(schema=VariantStruct, data="{}", **options)
+            self.assertTrue(math.isnan(x.value), msg=repr(x.value))
+        else:
+            with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
+                yaml_load_typed(schema=VariantStruct, data="{}", **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_variant_found_no_tag(self, *, options):
+        data = "value:"
+        with self.assertRaisesRegex(RuntimeError, "one of.*FloatStruct.*"):
+            yaml_load_typed(schema=VariantStruct, data=data, **options)
+        data = "value: [1.0, 2.0]"
+        with self.assertRaisesRegex(RuntimeError, "str.*got.*list"):
+            yaml_load_typed(schema=VariantStruct, data=data, **options)
+        data = "value: { foo: bar }"
+        with self.assertRaisesRegex(RuntimeError, "str.*got.*dict"):
+            yaml_load_typed(schema=VariantStruct, data=data, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_variant_found_unknown_tag(self, *, options):
+        data = "value: !UnknownTag { foo: bar }"
+        with self.assertRaisesRegex(RuntimeError, "UnknownTag.*match"):
+            yaml_load_typed(schema=VariantStruct, data=data, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_list_variant(self, *, options):
+        data = dedent("""
+        value:
+        - foo
+        - !!float 1.0
+        - !FloatStruct { value: 2.0 }
+        - !NumpyStruct { value: [3.0, 4.0] }
+        """)
+        x = yaml_load_typed(schema=ListVariantStruct, data=data, **options)
+        self.assertEqual(len(x.value), 4)
+        self.assertEqual(x.value[0], "foo")
+        self.assertEqual(x.value[1], 1.0)
+        self.assertEqual(x.value[2], FloatStruct(2.0))
+        self.assertEqual(type(x.value[3]), NumpyStruct)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_np_vector(self, *, options):
@@ -383,8 +462,6 @@ class TestYamlTypedRead(unittest.TestCase,
     # - VisitVectorFoundScalar
     # - VisitVectorFoundStruct
     # - VisitOptionalScalarFoundSequence
-    # - VisitVariantFoundNoTag
-    # - VisitVariantFoundUnknownTag
     # - VisitEigenFoundNothing
     # - VisitEigenFoundScalar
     # - VisitEigenMatrixFoundOneDimensional
@@ -488,8 +565,8 @@ class TestYamlTypedReadPybind11(unittest.TestCase):
         some_optional: 1.0
         some_vector: [1.0]
         some_map: { one: 1.0 }
+        some_variant: !MyData1 { quux: 1.0 }
         """)
-        # TODO(jwnimmer-tri) Add "some_variant" once we support Union[].
         x = yaml_load_typed(schema=MyData2, data=data)
         self.assertEqual(x.some_bool, True)
         self.assertEqual(x.some_int, 1)
@@ -501,3 +578,4 @@ class TestYamlTypedReadPybind11(unittest.TestCase):
         self.assertEqual(x.some_optional, 1.0)
         self.assertEqual(x.some_vector, [1.0])
         self.assertEqual(x.some_map, dict(one=1.0))
+        self.assertEqual(x.some_variant.quux, 1.0)
