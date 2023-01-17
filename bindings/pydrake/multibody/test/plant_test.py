@@ -430,9 +430,9 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body.get_num_flexible_velocities(), int)
         self.assertIsInstance(body.is_floating(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
-        self.assertIsInstance(body.floating_positions_start(), int)
-        self.assertIsInstance(body.floating_velocities_start(), int)
         self.assertIsInstance(body.default_mass(), float)
+        # Other APIs can't be called on a Body that isn't part of
+        # a multibody system.
 
     @numpy_compare.check_all_types
     def test_body_context_methods(self, T):
