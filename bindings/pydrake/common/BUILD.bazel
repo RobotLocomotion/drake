@@ -808,6 +808,14 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "schema_serialization_test",
+    deps = [
+        ":schema_py",
+        ":yaml_py",
+    ],
+)
+
+drake_py_unittest(
     name = "yaml_test",
     deps = [
         ":yaml_py",
