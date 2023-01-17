@@ -199,8 +199,7 @@ def tpl_attrgetter(obj, name, *defargs):
     """
     # N.B. Rather than try to evaluate parameters from the string, we instead
     # match based on instantiation name.
-    if "[" in name:
-        assert name.endswith(']'), name
+    if isinstance(obj, TemplateBase) and name[0] != "_":
         for param in obj.param_list:
             inst = obj[param]
             if inst.__name__ == name:

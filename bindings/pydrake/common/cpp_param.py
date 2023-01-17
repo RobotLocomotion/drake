@@ -9,6 +9,8 @@ import typing
 
 import numpy as np
 
+from pydrake.common import (_MangledName, _pretty_class_name)
+
 
 class _StrictMap:
     # Provides a map which may only add a key once.
@@ -68,22 +70,31 @@ class _ParamAliases:
             arg_names = arg_names[:1]
         return origin_name, arg_names
 
-    def get_name(self, alias):
+    def get_name(self, alias, *, mangle):
         # Gets string for an alias.
         canonical = self.get_canonical(alias)
         if typing.get_origin(alias) is not None:
             origin = typing.get_origin(alias)
             args = typing.get_args(alias)
-            origin_name = self.get_name(origin)
-            arg_names = [self.get_name(x) for x in args]
+            origin_name = self.get_name(origin, mangle=mangle)
+            arg_names = [self.get_name(x, mangle=mangle) for x in args]
             origin_name, arg_names = self._resugar_typing_shortcuts(
                 origin_name, arg_names)
-            return f"{origin_name}[{', '.join(arg_names)}]"
+            result = f"{origin_name}[{','.join(arg_names)}]"
+            if mangle:
+                result = _MangledName.mangle(result)
+            return result
         elif isinstance(canonical, type):
-            return canonical.__name__
+            if mangle:
+                return canonical.__name__
+            else:
+                return _pretty_class_name(canonical)
         else:
             # For literals.
-            return str(canonical)
+            result = str(canonical)
+            if mangle:
+                result = _MangledName.mangle(result)
+            return result
 
 
 # Create singleton instance.
@@ -97,11 +108,14 @@ def get_param_canonical(param):
     return tuple(map(_param_aliases.get_canonical, param))
 
 
-def get_param_names(param):
+def get_param_names(param, *, mangle=False):
     """Gets the canonical type names for a set of Python types (canonical as
     in how they relate to C++ types).
+
+    The ``mangle`` controls whether we use the nice name or the mangled name;
+    see cpp_template.TemplateBase._instantiation_name for details.
     """
-    return tuple(map(_param_aliases.get_name, param))
+    return tuple(_param_aliases.get_name(x, mangle=mangle) for x in param)
 
 
 class _Generic:

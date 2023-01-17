@@ -173,18 +173,24 @@ To illustrate, you can print out the string representations of ``Adder``,
 ```python
 >>> from pydrake.systems.primitives import Adder, Adder_
 >>> print(Adder)
-<class 'pydrake.systems.primitives.Adder_[float]'>
+<class 'pydrake.systems.primitives.Adder_𝓣float𝓤'>
 >>> print(Adder_)
 <TemplateClass pydrake.systems.primitives.Adder_>
 >>> from pydrake.autodiffutils import AutoDiffXd
 >>> from pydrake.symbolic import Expression
 >>> print(Adder_[float])
-<class 'pydrake.systems.primitives.Adder_[float]'>
+<class 'pydrake.systems.primitives.Adder_𝓣float𝓤'>
 >>> print(Adder_[AutoDiffXd])
-<class 'pydrake.systems.primitives.Adder_[AutoDiffXd]'>
+<class 'pydrake.systems.primitives.Adder_𝓣AutoDiffXd𝓤'>
 >>> print(Adder_[Expression])
-<class 'pydrake.systems.primitives.Adder_[Expression]'>
+<class 'pydrake.systems.primitives.Adder_𝓣Expression𝓤'>
 ```
+
+In debugging output like the class ``repr`` shown above, you might encouter
+the unicode letters 𝓣 and 𝓤. These are used for "name mangling" of template
+types into valid identifiers. A ``𝓣`` stands for an open bracket (``[``),
+a ``𝓤`` stands for a close bracket (``]``), a ``𝓬`` stands for a comma (``,``),
+and a ``𝓹`` stands for a dot (``.``).
 
 Additionally, you may convert an instance (if the conversion is available) using
 ``System_[T].ToAutoDiffXd`` and ``System_[T].ToSymbolic``:
@@ -192,11 +198,11 @@ Additionally, you may convert an instance (if the conversion is available) using
 ```python
 >>> adder = Adder(num_inputs=1, size=1)
 >>> print(adder)
-<pydrake.systems.primitives.Adder_[float] object at 0x...>
+<pydrake.systems.primitives.Adder_𝓣float𝓤 object at 0x...>
 >>> print(adder.ToAutoDiffXd())
-<pydrake.systems.primitives.Adder_[AutoDiffXd] object at 0x...>
+<pydrake.systems.primitives.Adder_𝓣AutoDiffXd𝓤 object at 0x...>
 >>> print(adder.ToSymbolic())
-<pydrake.systems.primitives.Adder_[Expression] object at 0x...>
+<pydrake.systems.primitives.Adder_𝓣Expression𝓤 object at 0x...>
 ```
 
 ## C++ Function and Method Template Instantiations in Python
