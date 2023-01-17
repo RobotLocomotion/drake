@@ -1,6 +1,7 @@
 import collections.abc
 import copy
 import dataclasses
+import math
 import functools
 import typing
 
@@ -180,6 +181,30 @@ def _get_nested_optional_type(schema):
     return None
 
 
+def _create_from_schema(*, schema, forthcoming_value):
+    """Given a schema (i.e., a type), returns a default-constructed instance
+    of that schema type, modulo a few exceptional cases that are specific to
+    our parsing semantics as detailed below.
+
+    When schema is a sum type (e.g., typing.Union[...]), returns None.
+
+    When schema is a numpy type, returns a 1-d ndarray with the same size as
+    the ``forthcoming_value`` if provided, otherwise an empty array.
+    """
+    if typing.get_origin(schema) is typing.Union:
+        return None
+    if schema == np.ndarray:
+        size = len(forthcoming_value)
+        return np.array([math.nan] * size)
+    return schema()
+
+
+# For details, see:
+#  https://yaml.org/spec/1.2.2/#scalars
+#  https://yaml.org/spec/1.2.2/#json-schema
+_PRIMITIVE_YAML_TYPES = (bool, int, float, str)
+
+
 def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
                                       target, value_schema):
     """Parses the given `yaml_value` into an object of type `value_schema`,
@@ -196,7 +221,11 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
     # Handle all of the plain YAML scalars:
     #  https://yaml.org/spec/1.2.2/#scalars
     #  https://yaml.org/spec/1.2.2/#json-schema
-    if value_schema in (bool, int, float, str):
+    if value_schema in _PRIMITIVE_YAML_TYPES:
+        if type(yaml_value) in (list, dict):
+            raise RuntimeError(
+                f"Expected a {value_schema} value for '{name}' but instead got"
+                f" non-scalar yaml data of type {type(yaml_value)}")
         new_value = value_schema(yaml_value)
         setter(new_value)
         return
@@ -210,7 +239,9 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             return
         # Create a non-null default value, if necessary.
         if old_value is None:
-            setter(nested_optional_type())
+            setter(_create_from_schema(
+                schema=nested_optional_type,
+                forthcoming_value=yaml_value))
         # Now we can parse Optional[Foo] like a plain Foo.
         _merge_yaml_dict_item_into_target(
             options=options, name=name, yaml_value=yaml_value, target=target,
@@ -237,7 +268,9 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         (value_type,) = generic_args
         new_value = []
         for sub_yaml_value in yaml_value:
-            sub_target = {"_": value_type()}
+            sub_target = {"_": _create_from_schema(
+                schema=value_type,
+                forthcoming_value=sub_yaml_value)}
             _merge_yaml_dict_item_into_target(
                 options=options, name="_", yaml_value=sub_yaml_value,
                 target=sub_target, value_schema=value_type)
@@ -258,8 +291,11 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         else:
             new_value = dict()
         for sub_key, sub_yaml_value in yaml_value.items():
+            # In case the sub_key does not exist in the map, insert it.
             if sub_key not in new_value:
-                new_value[sub_key] = value_type()
+                new_value[sub_key] = _create_from_schema(
+                    schema=value_type,
+                    forthcoming_value=sub_yaml_value)
             _merge_yaml_dict_item_into_target(
                 options=options, name=sub_key, yaml_value=sub_yaml_value,
                 target=new_value, value_schema=value_type)
@@ -268,8 +304,50 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
 
     # Handle schema sum types (std::variant<...> or typing.Union[...]).
     if generic_base is typing.Union:
-        # TODO(jwnimmer-tri) Implement me.
-        raise NotImplementedError("Union[] types are not yet supported")
+        # The YAML data might be a scalar value (as opposed to a mapping).
+        yaml_value_type = type(yaml_value)
+        if yaml_value_type in list(_PRIMITIVE_YAML_TYPES) + [type(None)]:
+            if yaml_value_type not in generic_args:
+                raise RuntimeError(
+                    f"The schema sum type for '{name}' cannot accept a yaml "
+                    f"value '{yaml_value}' of type {yaml_value_type}; only "
+                    f"one of {generic_args} are acceptable")
+            setter(yaml_value)
+            return
+        # A mapping can optionally specify a type tag to choose which Union[]
+        # type to parse into. When none is provided, the default is to use the
+        # first option listed in the sum type (to match what C++ does).
+        if yaml_value is not None and "_tag" in yaml_value:
+            # Pop the type tag out of the yaml_value dictionary.
+            refined_yaml_value = copy.copy(yaml_value)
+            _tag = refined_yaml_value.pop("_tag")
+            assert _tag.startswith("!"), yaml_value
+            tag = _tag[1:]
+            # Find which Union[] type argument matches the tag.
+            refined_value_schema = None
+            for candidate in generic_args:
+                candidate_name = candidate.__name__
+                if "[" in candidate_name:
+                    # When matching vs template type, compare the base name.
+                    candidate_name = candidate_name.split("[", 1)[0]
+                if candidate_name == tag:
+                    refined_value_schema = candidate
+                    break
+            else:
+                raise RuntimeError(
+                    f"The yaml type tag value '{tag}' did not match any of the"
+                    f" allowed type options for '{name}' ({generic_args})")
+        else:
+            refined_yaml_value = yaml_value
+            refined_value_schema = generic_args[0]
+        # Self-call, but now with an updated value and type.
+        setter(_create_from_schema(
+            schema=refined_value_schema,
+            forthcoming_value=yaml_value))
+        _merge_yaml_dict_item_into_target(
+            options=options, name=name, yaml_value=refined_yaml_value,
+            target=target, value_schema=refined_value_schema)
+        return
 
     # By this point, we've handled all known cases of generic types.
     if generic_base is not None:
@@ -294,9 +372,6 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict,
     raw strings, dictionaries, lists, etc.).
     """
     assert isinstance(yaml_dict, collections.abc.Mapping), yaml_dict
-    if "_tag" in yaml_dict:
-        # TODO(jwnimmer-tri) Implement me.
-        raise NotImplementedError("Union[] type tags are not yet supported")
     static_field_map = _enumerate_field_types(target_schema)
     schema_names = list(static_field_map.keys())
     schema_optionals = set([
