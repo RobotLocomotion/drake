@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+#include <iostream>
+
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/convex_set.h"
@@ -253,9 +255,12 @@ class SamePointConstraintAbstractCSpace : public Constraint {
       const Ref<const VectorXd>& cspace_variable) const = 0;
   virtual inline AutoDiffVecXd ExtractQFromAbstractCSpaceVariable(
       const Ref<const AutoDiffVecXd>& cspace_variable) const = 0;
-  virtual inline VectorX<symbolic::Expression> ExtractQFromAbstractCSpaceVariable(
+  virtual inline VectorX<symbolic::Expression>
+  ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
       const = 0;
+  virtual inline MatrixXd Compute_dcspace_variable_dq_inv(
+      const Ref<const VectorXd>& q) const = 0;
 
   const MultibodyPlant<double>* const plant_;
   const multibody::Frame<double>* frameA_{nullptr};
@@ -283,7 +288,8 @@ class SamePointConstraintAbstractCSpace : public Constraint {
   }
 
   // p_WA = X_WA(cspace_variable)*p_AA
-  // dp_WA = Jcspace_variable_v_WA*dcspace_variable + X_WA(cspace_variable)*dp_AA
+  // dp_WA = Jcspace_variable_v_WA*dcspace_variable +
+  // X_WA(cspace_variable)*dp_AA
   void DoEval(const Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
     DRAKE_DEMAND(frameA_ != nullptr);
@@ -312,10 +318,14 @@ class SamePointConstraintAbstractCSpace : public Constraint {
         ExtractDoubleOrThrow(p_BB), plant_->world_frame(),
         plant_->world_frame(), &Jq_v_WB);
 
+    // Jq_v_WA = d/dq X_WA(cspace_variable) =
+    // dX_WA(cspace_variable)/dcspace_variable * dcspace_variable/dq and so
+    // Jcspace_variable_v_WA = dX_WA(cspace_variable)/dcspace_variable = Jq_v_WA
+    // * (dcspace_variable/dq)^(-1)
     Eigen::Matrix3Xd Jcspace_variable_v_WA(3, plant_->num_positions()),
         Jcspace_variable_v_WB(3, plant_->num_positions());
-    Compute_Jcspace_variable_v_WF(Jq_v_WA, q, &Jcspace_variable_v_WA);
-    Compute_Jcspace_variable_v_WF(Jq_v_WB, q, &Jcspace_variable_v_WB);
+    Jcspace_variable_v_WA = Jq_v_WA * Compute_dcspace_variable_dq_inv(q);
+    Jcspace_variable_v_WB = Jq_v_WB * Compute_dcspace_variable_dq_inv(q);
 
     const Eigen::Vector3d y_val =
         X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
@@ -348,13 +358,14 @@ class SamePointConstraintAbstractCSpace : public Constraint {
     *y = p_WA - p_WB;
   }
 
-  virtual inline void Compute_Jcspace_variable_v_WF(const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
-                                            const Eigen::Ref<const AutoDiffVecXd> q,
-                                            EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const {
-    for (int i = 0; i < plant_->num_positions(); i++) {
-      Jcspace_variable_v_WF->col(i) = Jq_v_WF.col(i) * q(i).derivatives()(i);
-    }
-  }
+//  virtual inline void Compute_Jcspace_variable_v_WF(
+//      const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
+//      const Eigen::Ref<const AutoDiffVecXd> q,
+//      EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const {
+//    for (int i = 0; i < plant_->num_positions(); i++) {
+//      Jcspace_variable_v_WF->col(i) = Jq_v_WF.col(i) * q(i).derivatives()(i);
+//    }
+//  }
 };
 
 // Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
@@ -383,11 +394,16 @@ class SamePointConstraint : public SamePointConstraintAbstractCSpace {
     return cspace_variable;
   }
 
-  inline void Compute_Jcspace_variable_v_WF(const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
-                                            const Eigen::Ref<const AutoDiffVecXd> q,
-                                            EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const override {
-    *Jcspace_variable_v_WF = Jq_v_WF;
+  MatrixXd Compute_dcspace_variable_dq_inv(const Ref<const VectorXd>& q) const override {
+    std::cout << q << std::endl;
+    return MatrixXd<q.rows(), q.rows()>::Identity();
   }
+//  inline void Compute_Jcspace_variable_v_WF(
+//      const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
+//      const Eigen::Ref<const AutoDiffVecXd> q,
+//      EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const override {
+//    *Jcspace_variable_v_WF = Jq_v_WF;
+//  }
 };
 
 // takes s, p_AA,and p_BB and enforces that p_WA == p_WB
@@ -711,8 +727,8 @@ struct GeometryPairWithDistance {
 //  of joints in the plant.
 //  @return
 HPolyhedron _DoIris_(const MultibodyPlant<double>& plant,
-                     const Context<double>& context,
-                     const IrisOptions& options, const VectorXd& sample,
+                     const Context<double>& context, const IrisOptions& options,
+                     const VectorXd& sample,
                      const std::shared_ptr<SamePointConstraintAbstractCSpace>&
                          same_point_constraint) {
   // Check the inputs.
@@ -819,8 +835,7 @@ HPolyhedron _DoIris_(const MultibodyPlant<double>& plant,
     }
     // Handle bounding box and linear constraints as a special case (extracting
     // them from the additional_constraint_bindings).
-    auto AddConstraint = [&](const MatrixXd& new_A,
-                             const VectorXd& new_b,
+    auto AddConstraint = [&](const MatrixXd& new_A, const VectorXd& new_b,
                              const solvers::VectorXDecisionVariable& vars) {
       while (num_initial_constraints + new_A.rows() >= A.rows()) {
         // Increase pre-allocated polytope size.
