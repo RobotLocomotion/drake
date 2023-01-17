@@ -63,9 +63,9 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
     throw std::logic_error(error_message);
   }
 
-  // Ensure ‖unit_vector‖  is within 6 bits of 1.0 (2^6 = 64).
+  // Ensure ‖unit_vector‖  is within ≈ 5.5 bits of 1.0 (2^5.5 = 1E-14).
   using std::abs;
-  constexpr double kTolerance = 32 * std::numeric_limits<double>::epsilon();
+  constexpr double kTolerance = 1E-14;
   if (abs(unit_vector.norm() - 1) > kTolerance) {
     std::string error_message = fmt::format("{}(): The unit_vector argument "
       "{} is not a unit vector.", __func__, unit_vector.transpose());
