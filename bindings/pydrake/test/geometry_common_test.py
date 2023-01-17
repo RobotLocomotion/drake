@@ -231,6 +231,8 @@ class TestGeometryCore(unittest.TestCase):
         proximity_properties.h).
         """
         props = mut.ProximityProperties()
+        mut.AddContactMaterial(properties=props)
+        props = mut.ProximityProperties()
         reference_friction = CoulombFriction(0.25, 0.125)
         mut.AddContactMaterial(dissipation=2.7,
                                point_stiffness=3.9,
