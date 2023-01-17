@@ -821,6 +821,12 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   return *this;
 }
 
+Polynomial Polynomial::SubstituteAndExpand(
+      std::unordered_map<Monomial, Polynomial>* substitution) {
+  MapType new_polynomial_coeff_map;
+
+}
+
 Polynomial Polynomial::Expand() const {
   Polynomial::MapType expanded_poly_map;
   for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
