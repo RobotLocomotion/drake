@@ -80,6 +80,7 @@ PYBIND11_MODULE(serialize_test_util, m) {
       .def(ParamInit<MyData1>());
   DefAttributesUsingSerialize(&cls1);
   DefReprUsingSerialize(&cls1);
+  DefCopyAndDeepCopy(&cls1);
 
   // Bind MyData2 along with its documentation.
   constexpr MyData2Docs cls2_doc;
@@ -89,6 +90,7 @@ PYBIND11_MODULE(serialize_test_util, m) {
       .def(ParamInit<MyData2>());
   DefAttributesUsingSerialize(&cls2, cls2_doc);
   DefReprUsingSerialize(&cls2);
+  DefCopyAndDeepCopy(&cls2);
 }
 
 }  // namespace pydrake
