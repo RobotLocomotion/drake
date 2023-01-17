@@ -27,7 +27,7 @@ class CIrisToyRobotTest : public ::testing::Test {
   geometry::SceneGraph<double>* scene_graph_;
   std::vector<multibody::BodyIndex> body_indices_;
   geometry::GeometryId world_box_;
-  geometry::GeometryId world_sphere_;
+  geometry::GeometryId world_cylinder_;
   geometry::GeometryId body0_box_;
   geometry::GeometryId body0_sphere_;
   geometry::GeometryId body1_convex_;
@@ -35,7 +35,7 @@ class CIrisToyRobotTest : public ::testing::Test {
   geometry::GeometryId body2_capsule_;
   geometry::GeometryId body2_sphere_;
   geometry::GeometryId body3_box_;
-  geometry::GeometryId body3_sphere_;
+  geometry::GeometryId body3_cylinder_;
 };
 
 // Create a robot with only polytopic collision geometry.

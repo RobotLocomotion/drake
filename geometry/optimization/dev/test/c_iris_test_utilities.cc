@@ -38,10 +38,10 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       math::RigidTransform(math::RollPitchYawd(0.5, 0.2, -0.3),
                            Eigen::Vector3d(0.2, -0.5, 0.1)),
       geometry::Box(0.02, 0.03, 0.01), "world_box", proximity_properties);
-  world_sphere_ = plant_->RegisterCollisionGeometry(
+  world_cylinder_ = plant_->RegisterCollisionGeometry(
       plant_->world_body(),
-      math::RigidTransform(Eigen::Vector3d(-0.1, -0.5, 0.2)), Sphere(0.04),
-      "world_sphere", proximity_properties);
+      math::RigidTransform(Eigen::Vector3d(-0.1, -0.5, 0.2)),
+      Cylinder(0.02, 0.05), "world_cylinder", proximity_properties);
 
   // C-IRIS only considers robot kinematics, not dynamics. So we use an
   // arbitrary inertia.
@@ -122,9 +122,9 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
   body3_box_ = plant_->RegisterCollisionGeometry(
       body3, math::RigidTransformd(Eigen::Vector3d(-0.1, -0.1, 0.02)),
       Box(0.02, 0.05, 0.02), "body3_box", proximity_properties);
-  body3_sphere_ = plant_->RegisterCollisionGeometry(
+  body3_cylinder_ = plant_->RegisterCollisionGeometry(
       body3, math::RigidTransformd(Eigen::Vector3d(0.1, 0.02, 0.2)),
-      Sphere(0.04), "body3_sphere", proximity_properties);
+      Cylinder(0.04, 0.05), "body3_cylinder", proximity_properties);
 
   plant_->Finalize();
   diagram_ = builder.Build();
