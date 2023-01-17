@@ -21,6 +21,7 @@ import pydrake.examples  # The examples are not part of "pydrake.all".
 from pydrake.common import (
     cpp_param,
     cpp_template,
+    _MangledName,
 )
 import pydrake.tutorials
 
@@ -102,6 +103,18 @@ def _write_module(name, f_name):
         f.write("    :show-inheritance:\n")
 
 
+def _sanity_check_output(*, out_dir):
+    for root, dirs, files in os.walk(out_dir):
+        for name in files:
+            if name.endswith(".html"):
+                with open(join(root, name), "r", encoding="utf-8") as f:
+                    content = f.read()
+                if _MangledName.UNICODE_LEFT_BRACKET in content:
+                    # If this happens, then something with template name
+                    # mangling has gone awry and we need to investigate.
+                    raise RuntimeError(f"{name} has a mangled template name")
+
+
 def _build(*, out_dir, temp_dir, modules):
     """Generates into out_dir; writes scratch files into temp_dir.
     As a precondition, both directories must already exist and be empty.
@@ -166,6 +179,9 @@ def _build(*, out_dir, temp_dir, modules):
 
     # Tidy up.
     perl_cleanup_html_output(out_dir=out_dir)
+
+    # Check for regressions.
+    _sanity_check_output(out_dir=out_dir)
 
     # The filename to suggest as the starting point for preview; in this case,
     # it's an empty filename (i.e., the index page).

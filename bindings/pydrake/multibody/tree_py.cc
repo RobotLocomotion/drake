@@ -79,7 +79,8 @@ void BindMultibodyElementMixin(PyClass* pcls) {
             return self.GetParentPlant();
           })
       .def("__repr__", [](const Class& self) {
-        py::str cls_name = py::cast(&self).get_type().attr("__name__");
+        py::str cls_name =
+            internal::PrettyClassName(py::cast(&self).get_type());
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
