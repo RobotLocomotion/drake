@@ -2,14 +2,14 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def ccd_repository(
+def fcl_internal_repository(
         name,
         mirrors = None):
     github_archive(
         name = name,
-        repository = "danfis/libccd",
-        commit = "7931e764a19ef6b21b443376c699bbc9c6d4fba8",
-        sha256 = "479994a86d32e2effcaad64204142000ee6b6b291fd1859ac6710aee8d00a482",  # noqa
+        repository = "flexible-collision-library/fcl",
+        commit = "df2702ca5e703dec98ebd725782ce13862e87fc8",
+        sha256 = "3ebcf2470a3ee372440cdec4cb78d1723411c3cf84f419679c2c85317c4c2dae",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

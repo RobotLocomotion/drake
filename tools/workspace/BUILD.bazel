@@ -77,12 +77,12 @@ drake_py_binary(
 )
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
-    "ccd",
+    "ccd_internal",
     "com_jidesoft_jide_oss",
     "common_robotics_utilities",
     "commons_io",
     "curl_internal",
-    "fcl",
+    "fcl_internal",
     "fmt",
     "gz_math_internal",
     "gz_utils_internal",

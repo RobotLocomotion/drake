@@ -35,14 +35,14 @@ genrule(
     name = "version-from-xml.cmake_genrule",
     srcs = [
         "package.xml",
-        "@drake//tools/workspace/fcl:version-from-xml.sed",
+        "@drake//tools/workspace/fcl_internal:version-from-xml.sed",
     ],
     outs = [
         "version-from-xml.cmake",
     ],
     cmd = " ".join([
         "sed",
-        "-f $(execpath @drake//tools/workspace/fcl:version-from-xml.sed)",
+        "-f $(execpath @drake//tools/workspace/fcl_internal:version-from-xml.sed)",  # noqa
         "-n $(execpath package.xml) > $@",
         "&&",
         "test -s $@",
@@ -133,7 +133,7 @@ cc_library(
     includes = ["include"],
     linkstatic = 1,
     deps = [
-        "@ccd",
+        "@ccd_internal//:ccd",
         "@eigen",
     ],
 )
