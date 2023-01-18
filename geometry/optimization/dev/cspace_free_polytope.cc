@@ -241,11 +241,6 @@ solvers::MathematicalProgramResult SolveWithBackoff(
   return result;
 }
 
-int GetYSize(const CollisionGeometry& collision_geometry,
-             bool using_matrix_sos) {
-  return using_matrix_sos ? collision_geometry.y_slack_size() : 0;
-}
-
 // Return the total size of the lower triangular variables in the Gram
 // matrices.
 int GetGramVarSize(
@@ -356,7 +351,7 @@ struct GramAndMonomialBasis {
   // zero.
   void AddSos(solvers::MathematicalProgram* prog,
               const Eigen::Ref<const VectorX<symbolic::Variable>>& gram_lower,
-              bool is_zero_poly, symbolic::Polynomial* poly) {
+              symbolic::Polynomial* poly) {
     int gram_var_count = 0;
     for (auto& gram : this->grams) {
       const int gram_lower_size = gram.rows() * (gram.rows() + 1) / 2;
@@ -365,10 +360,6 @@ struct GramAndMonomialBasis {
           &gram);
       gram_var_count += gram_lower_size;
     }
-    if (is_zero_poly) {
-      prog->AddBoundingBoxConstraint(0, 0, gram_lower);
-      *poly = symbolic::Polynomial();
-    } else {
       *poly = symbolic::Polynomial();
       gram_var_count = 0;
       for (int i = 0; i < static_cast<int>(this->grams.size()); ++i) {
@@ -380,13 +371,25 @@ struct GramAndMonomialBasis {
             gram_lower.segment(gram_var_count, gram_lower_size));
         gram_var_count += gram_lower_size;
       }
-    }
   }
 
   int gram_var_size;
   std::vector<MatrixX<symbolic::Variable>> grams;
   std::vector<VectorX<symbolic::Monomial>> monomial_basis;
 };
+
+// Returns the number of y_slack variables in `rational`.
+int GetNumY(const symbolic::RationalFunction& rational,
+            const Vector3<symbolic::Variable>& y_slack) {
+  int count = 0;
+  for (int i = 0; i < 3; ++i) {
+    if (rational.numerator().indeterminates().find(y_slack(i)) !=
+        rational.numerator().indeterminates().end()) {
+      ++count;
+    }
+  }
+  return count;
+}
 }  // namespace
 
 CspaceFreePolytope::CspaceFreePolytope(
@@ -488,8 +491,6 @@ void CspaceFreePolytope::GenerateRationals() {
     // Compute X_AB for both side of the geometries.
     std::vector<symbolic::RationalFunction> positive_side_rationals;
     std::vector<symbolic::RationalFunction> negative_side_rationals;
-    std::vector<symbolic::RationalFunction> positive_side_psd_mat;
-    std::vector<symbolic::RationalFunction> negative_side_psd_mat;
     for (const PlaneSide plane_side :
          {PlaneSide::kPositive, PlaneSide::kNegative}) {
       const CollisionGeometry* link_geometry =
@@ -510,12 +511,9 @@ void CspaceFreePolytope::GenerateRationals() {
       auto& rationals = plane_side == PlaneSide::kPositive
                             ? positive_side_rationals
                             : negative_side_rationals;
-      auto& psd_mat = plane_side == PlaneSide::kPositive
-                          ? positive_side_psd_mat
-                          : negative_side_psd_mat;
       link_geometry->OnPlaneSide(separating_plane.a, separating_plane.b,
                                  X_AB_multilinear, rational_forward_kin_,
-                                 plane_side, y_slack_, &rationals, &psd_mat);
+                                 plane_side, y_slack_, &rationals);
     }
     // For a non-polytopic geometry (sphere, capsule, etc) to be on the positive
     // side of the plane, we require that aᵀ*p_AS + b ≥ r|a|. To avoid a trivial
@@ -524,36 +522,58 @@ void CspaceFreePolytope::GenerateRationals() {
     // redundant if the negative side geometry is a polytope or if the negative
     // side geometry is also non-polytopic, and we have included the constraint
     // aᵀ*p_AS2 + b ≤ -1. We avoid adding the redundant constraint to reduce the
-    // program size.
+    // program size. We know that the redundant constraints can only be the
+    // rationals without y_slack variable in non-polytopic geometries.
     if (separating_plane.positive_side_geometry->type() ==
             GeometryType::kPolytope &&
         separating_plane.negative_side_geometry->type() ==
             GeometryType::kPolytope) {
-      plane_geometries_.emplace_back(
-          positive_side_rationals, negative_side_rationals,
-          positive_side_psd_mat, negative_side_psd_mat, plane_index);
+      plane_geometries_.emplace_back(positive_side_rationals,
+                                     negative_side_rationals, plane_index);
     } else if (separating_plane.positive_side_geometry->type() ==
                    GeometryType::kPolytope &&
                separating_plane.negative_side_geometry->type() !=
                    GeometryType::kPolytope) {
-      // Do not add the negative side rationals.
+      // Do not add the negative side rationals that have no y_slack variable.
+      std::vector<symbolic::RationalFunction> negative_side_rationals_with_y;
+      for (int i = 0; i < static_cast<int>(negative_side_rationals.size());
+           ++i) {
+        if (GetNumY(negative_side_rationals[i], y_slack_) > 0) {
+          negative_side_rationals_with_y.push_back(
+              std::move(negative_side_rationals[i]));
+        }
+      }
       plane_geometries_.emplace_back(
-          positive_side_rationals, std::vector<symbolic::RationalFunction>(),
-          positive_side_psd_mat, negative_side_psd_mat, plane_index);
+          positive_side_rationals, negative_side_rationals_with_y, plane_index);
     } else if (separating_plane.positive_side_geometry->type() !=
                    GeometryType::kPolytope &&
                separating_plane.negative_side_geometry->type() ==
                    GeometryType::kPolytope) {
-      // Do not add the positive side rationals.
-      plane_geometries_.emplace_back(
-          std::vector<symbolic::RationalFunction>(), negative_side_rationals,
-          positive_side_psd_mat, negative_side_psd_mat, plane_index);
+      // Do not add the positive side rationals that have no y_slack variables.
+      std::vector<symbolic::RationalFunction> positive_side_rationals_with_y;
+      for (int i = 0; i < static_cast<int>(positive_side_rationals.size());
+           ++i) {
+        if (GetNumY(positive_side_rationals[i], y_slack_) > 0) {
+          positive_side_rationals_with_y.push_back(
+              std::move(positive_side_rationals[i]));
+        }
+      }
+      plane_geometries_.emplace_back(positive_side_rationals_with_y,
+                                     negative_side_rationals, plane_index);
     } else {
-      // Both sides are non-polytopic, we only need the rationals from one side,
-      // we choose the positive side.
+      // Both sides are non-polytopic, we only need the rationals without y from
+      // one side, we choose the positive side. For the negative side, we only
+      // add the rationals that contain y as indeterminates.
+      std::vector<symbolic::RationalFunction> negative_side_rationals_with_y;
+      for (int i = 0; i < static_cast<int>(negative_side_rationals.size());
+           ++i) {
+        if (GetNumY(negative_side_rationals[i], y_slack_) > 0) {
+          negative_side_rationals_with_y.push_back(
+              std::move(negative_side_rationals[i]));
+        }
+      }
       plane_geometries_.emplace_back(
-          positive_side_rationals, std::vector<symbolic::RationalFunction>(),
-          positive_side_psd_mat, negative_side_psd_mat, plane_index);
+          positive_side_rationals, negative_side_rationals_with_y, plane_index);
     }
     DRAKE_DEMAND(plane_geometries_[plane_index].plane_index == plane_index);
   }
@@ -687,105 +707,125 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
   const auto& plane = separating_planes_[plane_geometries.plane_index];
   ret.prog->AddDecisionVariables(plane.decision_variables);
 
-  auto add_rationals_nonnegative =
-      [this, &plane, &d_minus_Cs, &C_redundant_indices,
-       &s_lower_redundant_indices, &s_upper_redundant_indices](
-          solvers::MathematicalProgram* prog,
-          const std::vector<symbolic::RationalFunction>& rationals,
-          bool is_matrix_sos_condition,
-          const CollisionGeometry& collision_geometry,
-          std::vector<SeparatingPlaneLagrangians>* lagrangians_vec) {
-        if (!rationals.empty()) {
-          const SortedPair<multibody::BodyIndex> body_pair(
-              plane.expressed_body, collision_geometry.body_index());
-          const auto& monomial_basis_array =
-              this->map_body_to_monomial_basis_array_.at(body_pair);
-          const int s_size = this->rational_forward_kin_.s().rows();
-          const int num_lagrangians =
-              rationals.size() * (1 + d_minus_Cs.rows() + 2 * s_size);
-          const int y_size =
-              GetYSize(collision_geometry, is_matrix_sos_condition);
-          GramAndMonomialBasis gram_and_monomial_basis(
-              monomial_basis_array, this->with_cross_y_, y_size);
-          const int num_gram_vars_per_lagrangian =
-              gram_and_monomial_basis.gram_var_size;
-          const int num_gram_vars =
-              num_lagrangians * num_gram_vars_per_lagrangian;
-          auto gram_vars = prog->NewContinuousVariables(num_gram_vars, "Gram");
-
-          int gram_var_count = 0;
-          lagrangians_vec->reserve(rationals.size());
-
-          for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
-            lagrangians_vec->emplace_back(d_minus_Cs.rows(), s_size);
-            auto& lagrangians = lagrangians_vec->back();
-            // TODO(hongkai.dai): instead of adding the Lagrangian for
-            // redundant constraint and then setting these Lagrangians to zero,
-            // we could avoid allocating variables for these Lagrangians.
-            //
-            // Set lagrangians.polytope, add sos constraints.
-            for (int j = 0; j < d_minus_Cs.rows(); ++j) {
-              gram_and_monomial_basis.AddSos(
-                  prog,
-                  gram_vars.segment(gram_var_count,
-                                    num_gram_vars_per_lagrangian),
-                  C_redundant_indices.count(j) > 0, &(lagrangians.polytope(j)));
-              gram_var_count += num_gram_vars_per_lagrangian;
-            }
-            // Set lagrangians.s_lower and lagrangians.s_upper, add sos
-            // constraints.
-            for (int j = 0; j < s_size; ++j) {
-              gram_and_monomial_basis.AddSos(
-                  prog,
-                  gram_vars.segment(gram_var_count,
-                                    num_gram_vars_per_lagrangian),
-                  s_lower_redundant_indices.count(j),
-                  &(lagrangians.s_lower(j)));
-              gram_var_count += num_gram_vars_per_lagrangian;
-              gram_and_monomial_basis.AddSos(
-                  prog,
-                  gram_vars.segment(gram_var_count,
-                                    num_gram_vars_per_lagrangian),
-                  s_upper_redundant_indices.count(j),
-                  &(lagrangians.s_upper(j)));
-              gram_var_count += num_gram_vars_per_lagrangian;
-            }
-            const symbolic::Polynomial poly =
-                rationals[i].numerator() -
-                lagrangians.polytope.dot(d_minus_Cs) -
-                lagrangians.s_lower.dot(this->s_minus_s_lower_) -
-                lagrangians.s_upper.dot(this->s_upper_minus_s_);
-            symbolic::Polynomial poly_sos;
-            gram_and_monomial_basis.AddSos(
-                prog,
-                gram_vars.segment(gram_var_count, num_gram_vars_per_lagrangian),
-                false /* is_zero_poly */, &poly_sos);
-            prog->AddEqualityConstraintBetweenPolynomials(poly, poly_sos);
-          }
-        }
-      };
-
-  add_rationals_nonnegative(
-      ret.prog.get(), plane_geometries.positive_side_rationals,
-      false /* is_matrix_sos_condition */, *(plane.positive_side_geometry),
-      &ret.certificate.positive_side_rational_lagrangians);
-  add_rationals_nonnegative(
-      ret.prog.get(), plane_geometries.negative_side_rationals,
-      false /* is_matrix_sos_condition */, *(plane.negative_side_geometry),
-      &ret.certificate.negative_side_rational_lagrangians);
-  if (!plane_geometries.positive_side_psd_mat.empty() ||
-      !plane_geometries.negative_side_psd_mat.empty()) {
-    ret.prog->AddIndeterminates(y_slack_);
-
-    add_rationals_nonnegative(
-        ret.prog.get(), plane_geometries.positive_side_psd_mat,
-        true /* is_matrix_sos_condition */, *(plane.positive_side_geometry),
-        &ret.certificate.positive_side_psd_mat_lagrangians);
-    add_rationals_nonnegative(
-        ret.prog.get(), plane_geometries.negative_side_psd_mat,
-        true /* is_matrix_sos_condition */, *(plane.negative_side_geometry),
-        &ret.certificate.negative_side_psd_mat_lagrangians);
+  // First count the total size of the gram matrix variables.
+  int gram_var_count = 0;
+  auto count_gram = [this, &d_minus_Cs, &gram_var_count, &C_redundant_indices,
+                     &s_lower_redundant_indices, &s_upper_redundant_indices](
+                        const symbolic::RationalFunction& rational,
+                        const std::array<VectorX<symbolic::Monomial>, 4>&
+                            monomial_basis_array) {
+    // Each rational >= 0 requires the Lagrangian multiplier for d-C*s,
+    // s-s_lower and s_upper-s.
+    const int s_size = this->rational_forward_kin_.s().rows();
+    const int num_sos =
+        1 + d_minus_Cs.rows() + 2 * s_size - C_redundant_indices.size() -
+        s_lower_redundant_indices.size() - s_upper_redundant_indices.size();
+    const int y_size = GetNumY(rational, this->y_slack_);
+    const int num_gram_vars_per_sos =
+        GetGramVarSize(monomial_basis_array, this->with_cross_y_, y_size);
+    gram_var_count += num_gram_vars_per_sos * num_sos;
+  };
+  const SortedPair<multibody::BodyIndex> positive_body_pair(
+      plane.expressed_body, plane.positive_side_geometry->body_index());
+  const auto& monomial_basis_array_positive_side =
+      this->map_body_to_monomial_basis_array_.at(positive_body_pair);
+  for (const auto& rational : plane_geometries.positive_side_rationals) {
+    count_gram(rational, monomial_basis_array_positive_side);
   }
+  const SortedPair<multibody::BodyIndex> negative_body_pair(
+      plane.expressed_body, plane.negative_side_geometry->body_index());
+  const auto& monomial_basis_array_negative_side =
+      this->map_body_to_monomial_basis_array_.at(negative_body_pair);
+  for (const auto& rational : plane_geometries.negative_side_rationals) {
+    count_gram(rational, monomial_basis_array_negative_side);
+  }
+  const auto gram_vars =
+      ret.prog->NewContinuousVariables(gram_var_count, "Gram");
+
+  gram_var_count = 0;
+  auto add_rational_nonnegative =
+      [this, &d_minus_Cs, &C_redundant_indices, &s_lower_redundant_indices,
+       &s_upper_redundant_indices, &gram_vars, &gram_var_count](
+          solvers::MathematicalProgram* prog,
+          const symbolic::RationalFunction& rational,
+          const std::array<VectorX<symbolic::Monomial>, 4>&
+              monomial_basis_array) -> SeparatingPlaneLagrangians {
+    const int y_size = GetNumY(rational, this->y_slack_);
+    GramAndMonomialBasis gram_and_monomial_basis(monomial_basis_array,
+                                                 this->with_cross_y_, y_size);
+    const int num_gram_vars_per_sos = gram_and_monomial_basis.gram_var_size;
+    const int s_size = this->rational_forward_kin_.s().rows();
+    SeparatingPlaneLagrangians lagrangians(d_minus_Cs.rows(), s_size);
+
+    // TODO(hongkai.dai): instead of adding the Lagrangian for
+    // redundant constraint and then setting these Lagrangians to zero,
+    // we could avoid allocating variables for these Lagrangians.
+    //
+    // Set lagrangians.polytope, add sos constraints.
+    for (int j = 0; j < d_minus_Cs.rows(); ++j) {
+      if (C_redundant_indices.count(j) == 0) {
+        gram_and_monomial_basis.AddSos(
+            prog, gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
+            &(lagrangians.polytope(j)));
+        gram_var_count += num_gram_vars_per_sos;
+      } else {
+        lagrangians.polytope(j) = symbolic::Polynomial();
+      }
+    }
+    // Set lagrangians.s_lower and lagrangians.s_upper, add sos
+    // constraints.
+    for (int j = 0; j < s_size; ++j) {
+      if (s_lower_redundant_indices.count(j) == 0) {
+        gram_and_monomial_basis.AddSos(
+            prog, gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
+            &(lagrangians.s_lower(j)));
+        gram_var_count += num_gram_vars_per_sos;
+      } else {
+        lagrangians.s_lower(j) = symbolic::Polynomial();
+      }
+      if (s_upper_redundant_indices.count(j) == 0) {
+        gram_and_monomial_basis.AddSos(
+            prog, gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
+            &(lagrangians.s_upper(j)));
+        gram_var_count += num_gram_vars_per_sos;
+      } else {
+        lagrangians.s_upper(j) = symbolic::Polynomial();
+      }
+    }
+    const symbolic::Polynomial poly =
+        rational.numerator() - lagrangians.polytope.dot(d_minus_Cs) -
+        lagrangians.s_lower.dot(this->s_minus_s_lower_) -
+        lagrangians.s_upper.dot(this->s_upper_minus_s_);
+    symbolic::Polynomial poly_sos;
+    gram_and_monomial_basis.AddSos(
+        prog, gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
+        &poly_sos);
+    gram_var_count += num_gram_vars_per_sos;
+    prog->AddEqualityConstraintBetweenPolynomials(poly, poly_sos);
+    return lagrangians;
+  };
+
+  if (plane.positive_side_geometry->type() != GeometryType::kPolytope ||
+      plane.negative_side_geometry->type() != GeometryType::kPolytope) {
+    ret.prog->AddIndeterminates(y_slack_);
+  }
+
+  ret.certificate.positive_side_rational_lagrangians.reserve(
+      plane_geometries.positive_side_rationals.size());
+  for (const auto& rational : plane_geometries.positive_side_rationals) {
+    ret.certificate.positive_side_rational_lagrangians.push_back(
+        add_rational_nonnegative(ret.prog.get(), rational,
+                                 monomial_basis_array_positive_side));
+  }
+
+  ret.certificate.negative_side_rational_lagrangians.reserve(
+      plane_geometries.negative_side_rationals.size());
+  for (const auto& rational : plane_geometries.negative_side_rationals) {
+    ret.certificate.negative_side_rational_lagrangians.push_back(
+        add_rational_nonnegative(ret.prog.get(), rational,
+                                 monomial_basis_array_negative_side));
+  }
+  DRAKE_DEMAND(gram_var_count == gram_vars.rows());
 
   return ret;
 }
@@ -814,10 +854,6 @@ CspaceFreePolytope::SeparationCertificate::GetSolution(
                   &ret.positive_side_rational_lagrangians);
   set_lagrangians(this->negative_side_rational_lagrangians,
                   &ret.negative_side_rational_lagrangians);
-  set_lagrangians(this->positive_side_psd_mat_lagrangians,
-                  &ret.positive_side_psd_mat_lagrangians);
-  set_lagrangians(this->negative_side_psd_mat_lagrangians,
-                  &ret.negative_side_psd_mat_lagrangians);
   for (int i = 0; i < 3; ++i) {
     ret.a(i) = result.GetSolution(a(i));
   }
@@ -1020,46 +1056,44 @@ int CspaceFreePolytope::GetGramVarSizeForPolytopeSearchProgram(
     const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs,
     bool search_s_bounds_lagrangians) const {
   int ret = 0;
-
-  // Count the gram size for rational >= 0 in C-space polytope.
-  auto count_gram_per_plane_side = [this, search_s_bounds_lagrangians, &ret](
-                                       int num_rationals,
-                                       multibody::BodyIndex expressed_body,
-                                       multibody::BodyIndex collision_body,
-                                       int num_y) {
-    const auto& monomial_basis_array =
-        this->map_body_to_monomial_basis_array_.at(
-            SortedPair<multibody::BodyIndex>(expressed_body, collision_body));
-    const int s_size = this->rational_forward_kin_.s().rows();
-    // Each rational will add Lagrangian multipliers for s-s_lower and
-    // s_upper-s (if search_s_bounds_lagrangian=true), together with one
-    // sos that rational.numerator() - λ(s)ᵀ * (d - C*s) - λ_lower(s)ᵀ *
-    // (s - s_lower) -λ_upper(s)ᵀ * (s_upper - s) is sos
-    const int num_sos =
-        num_rationals * (1 + (search_s_bounds_lagrangians ? 2 * s_size : 0));
-    ret += num_sos *
-           GetGramVarSize(monomial_basis_array, this->with_cross_y_, num_y);
-  };
+  auto count_gram_per_rational =
+      [this, search_s_bounds_lagrangians, &ret](
+          const symbolic::RationalFunction& rational,
+          const std::array<VectorX<symbolic::Monomial>, 4>&
+              monomial_basis_array) {
+        // Each rational will add Lagrangian multipliers for s-s_lower and
+        // s_upper-s (if search_s_bounds_lagrangian=true), together with one
+        // sos that rational.numerator() - λ(s)ᵀ * (d - C*s) - λ_lower(s)ᵀ *
+        // (s - s_lower) -λ_upper(s)ᵀ * (s_upper - s) is sos
+        const int s_size = this->rational_forward_kin_.s().rows();
+        const int num_sos =
+            (1 + (search_s_bounds_lagrangians ? 2 * s_size : 0));
+        const int num_y = GetNumY(rational, this->y_slack_);
+        ret += num_sos *
+               GetGramVarSize(monomial_basis_array, this->with_cross_y_, num_y);
+      };
 
   for (const auto& plane_geometries : plane_geometries_) {
     const auto& plane = separating_planes_[plane_geometries.plane_index];
     if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
             plane.positive_side_geometry->id(),
             plane.negative_side_geometry->id())) == 0) {
-      count_gram_per_plane_side(
-          plane_geometries.positive_side_rationals.size(), plane.expressed_body,
-          plane.positive_side_geometry->body_index(), 0 /* y_size */);
-      count_gram_per_plane_side(
-          plane_geometries.negative_side_rationals.size(), plane.expressed_body,
-          plane.negative_side_geometry->body_index(), 0 /* y_size */);
-      count_gram_per_plane_side(plane_geometries.positive_side_psd_mat.size(),
-                                plane.expressed_body,
-                                plane.positive_side_geometry->body_index(),
-                                plane.positive_side_geometry->y_slack_size());
-      count_gram_per_plane_side(plane_geometries.negative_side_psd_mat.size(),
-                                plane.expressed_body,
-                                plane.negative_side_geometry->body_index(),
-                                plane.negative_side_geometry->y_slack_size());
+      const auto& monomial_basis_array_positive_side =
+          this->map_body_to_monomial_basis_array_.at(
+              SortedPair<multibody::BodyIndex>(
+                  plane.expressed_body,
+                  plane.positive_side_geometry->body_index()));
+      for (const auto& rational : plane_geometries.positive_side_rationals) {
+        count_gram_per_rational(rational, monomial_basis_array_positive_side);
+      }
+      const auto& monomial_basis_array_negative_side =
+          this->map_body_to_monomial_basis_array_.at(
+              SortedPair<multibody::BodyIndex>(
+                  plane.expressed_body,
+                  plane.negative_side_geometry->body_index()));
+      for (const auto& rational : plane_geometries.negative_side_rationals) {
+        count_gram_per_rational(rational, monomial_basis_array_negative_side);
+      }
     }
   }
   return ret;
@@ -1077,13 +1111,18 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
     const {
   auto prog = std::make_unique<solvers::MathematicalProgram>();
   prog->AddIndeterminates(rational_forward_kin_.s());
-  // Add the indeterminates y if we need to impose matrix sos constraints.
-  if (std::any_of(plane_geometries_.begin(), plane_geometries_.end(),
-                  [](const PlaneSeparatesGeometries& plane_geometries) {
-                    return !plane_geometries.positive_side_psd_mat.empty() ||
-                           !plane_geometries.negative_side_psd_mat.empty();
-                  })) {
-    prog->AddIndeterminates(y_slack_);
+  // Add the indeterminates y if we need to certify non-polytopic collision
+  // geometry
+  for (const auto& plane : separating_planes_) {
+    if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
+            plane.positive_side_geometry->id(),
+            plane.negative_side_geometry->id())) == 0) {
+      if (plane.positive_side_geometry->type() != GeometryType::kPolytope ||
+          plane.negative_side_geometry->type() != GeometryType::kPolytope) {
+        prog->AddIndeterminates(y_slack_);
+        break;
+      }
+    }
   }
 
   prog->AddDecisionVariables(Eigen::Map<const VectorX<symbolic::Variable>>(
@@ -1118,110 +1157,96 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
             new_certificates_map->emplace(plane_index, SeparationCertificate());
         new_certificate = &(insertion_pair.first->second);
       }
-      const multibody::BodyIndex expressed_body = plane.expressed_body;
+      VectorX<symbolic::Polynomial> s_lower_lagrangians(s_size);
+      VectorX<symbolic::Polynomial> s_upper_lagrangians(s_size);
 
       auto add_rationals_nonnegative_given_lagrangians =
           [this, &prog, &d_minus_Cs, &gram_vars, s_size,
-           search_s_bounds_lagrangians, &expressed_body, &gram_var_count](
+           search_s_bounds_lagrangians, &gram_var_count, &s_lower_lagrangians,
+           &s_upper_lagrangians](
               const std::vector<symbolic::RationalFunction>& rationals,
-              bool is_matrix_sos_condition,
-              const CollisionGeometry& collision_geometry,
+              const std::array<VectorX<symbolic::Monomial>, 4>&
+                  monomial_basis_array,
               const std::vector<SeparatingPlaneLagrangians>& lagrangians_vec,
               std::vector<SeparatingPlaneLagrangians>* new_lagrangians_vec) {
-            DRAKE_DEMAND(lagrangians_vec.size() == rationals.size());
-            if (!rationals.empty()) {
-              const auto& monomial_basis_array =
-                  this->map_body_to_monomial_basis_array_.at(
-                      SortedPair<multibody::BodyIndex>(
-                          expressed_body, collision_geometry.body_index()));
-              const int num_y =
-                  GetYSize(collision_geometry, is_matrix_sos_condition);
-              const int num_gram_vars_per_lagrangian = GetGramVarSize(
+            DRAKE_DEMAND(rationals.size() == lagrangians_vec.size());
+            for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
+              const int num_y = GetNumY(rationals[i], this->y_slack_);
+              const int num_gram_vars_per_sos = GetGramVarSize(
                   monomial_basis_array, this->with_cross_y_, num_y);
               GramAndMonomialBasis gram_and_monomial_basis(
                   monomial_basis_array, this->with_cross_y_, num_y);
-              VectorX<symbolic::Polynomial> s_lower_lagrangians(s_size);
-              VectorX<symbolic::Polynomial> s_upper_lagrangians(s_size);
               // Add Lagrangian multipliers for joint limits.
-              for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
-                if (search_s_bounds_lagrangians) {
-                  for (int j = 0; j < s_size; ++j) {
-                    gram_and_monomial_basis.AddSos(
-                        prog.get(),
-                        gram_vars.segment(gram_var_count,
-                                          num_gram_vars_per_lagrangian),
-                        false /* is_zero_poly */, &(s_lower_lagrangians(j)));
-                    gram_var_count += num_gram_vars_per_lagrangian;
-                    gram_and_monomial_basis.AddSos(
-                        prog.get(),
-                        gram_vars.segment(gram_var_count,
-                                          num_gram_vars_per_lagrangian),
-                        false /* is_zero_poly */, &(s_upper_lagrangians(j)));
-                    gram_var_count += num_gram_vars_per_lagrangian;
-                  }
-                } else {
-                  s_lower_lagrangians = lagrangians_vec[i].s_lower;
-                  s_upper_lagrangians = lagrangians_vec[i].s_upper;
+              if (search_s_bounds_lagrangians) {
+                for (int j = 0; j < s_size; ++j) {
+                  gram_and_monomial_basis.AddSos(
+                      prog.get(),
+                      gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
+                      &(s_lower_lagrangians(j)));
+                  gram_var_count += num_gram_vars_per_sos;
+                  gram_and_monomial_basis.AddSos(
+                      prog.get(),
+                      gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
+                      &(s_upper_lagrangians(j)));
+                  gram_var_count += num_gram_vars_per_sos;
                 }
-
-                if (new_lagrangians_vec != nullptr) {
-                  new_lagrangians_vec->emplace_back(d_minus_Cs.rows(), s_size);
-                  (*new_lagrangians_vec)[i].polytope =
-                      lagrangians_vec[i].polytope;
-                  (*new_lagrangians_vec)[i].s_lower = s_lower_lagrangians;
-                  (*new_lagrangians_vec)[i].s_upper = s_upper_lagrangians;
-                }
-
-                const symbolic::Polynomial poly =
-                    rationals[i].numerator() -
-                    lagrangians_vec[i].polytope.dot(d_minus_Cs) -
-                    s_lower_lagrangians.dot(this->s_minus_s_lower_) -
-                    s_upper_lagrangians.dot(this->s_upper_minus_s_);
-                symbolic::Polynomial poly_sos;
-                gram_and_monomial_basis.AddSos(
-                    prog.get(),
-                    gram_vars.segment(gram_var_count,
-                                      num_gram_vars_per_lagrangian),
-                    false /* is_zero_poly */, &poly_sos);
-                gram_var_count += num_gram_vars_per_lagrangian;
-                prog->AddEqualityConstraintBetweenPolynomials(poly, poly_sos);
+              } else {
+                s_lower_lagrangians = lagrangians_vec[i].s_lower;
+                s_upper_lagrangians = lagrangians_vec[i].s_upper;
               }
+
+              if (new_lagrangians_vec != nullptr) {
+                new_lagrangians_vec->emplace_back(d_minus_Cs.rows(), s_size);
+                new_lagrangians_vec->back().polytope =
+                    lagrangians_vec[i].polytope;
+                new_lagrangians_vec->back().s_lower = s_lower_lagrangians;
+                new_lagrangians_vec->back().s_upper = s_upper_lagrangians;
+              }
+
+              const symbolic::Polynomial poly =
+                  rationals[i].numerator() -
+                  lagrangians_vec[i].polytope.dot(d_minus_Cs) -
+                  s_lower_lagrangians.dot(this->s_minus_s_lower_) -
+                  s_upper_lagrangians.dot(this->s_upper_minus_s_);
+              symbolic::Polynomial poly_sos;
+              gram_and_monomial_basis.AddSos(
+                  prog.get(),
+                  gram_vars.segment(gram_var_count, num_gram_vars_per_sos),
+                  &poly_sos);
+              gram_var_count += num_gram_vars_per_sos;
+              prog->AddEqualityConstraintBetweenPolynomials(poly, poly_sos);
             }
           };
 
       // Add the constraint that positive_side_rationals are nonnegative in
       // C-space polytope.
+      const auto& monomial_basis_array_positive_side =
+          this->map_body_to_monomial_basis_array_.at(
+              SortedPair<multibody::BodyIndex>(
+                  plane.expressed_body,
+                  plane.positive_side_geometry->body_index()));
       add_rationals_nonnegative_given_lagrangians(
           plane_geometries_[plane_index].positive_side_rationals,
-          false /* is_matrix_sos_condition */, *(plane.positive_side_geometry),
+          monomial_basis_array_positive_side,
           certificate->positive_side_rational_lagrangians,
           new_certificate == nullptr
               ? nullptr
               : &(new_certificate->positive_side_rational_lagrangians));
+
       // Add the constraint that negative_side_rationals are nonnegative in
       // C-space polytope.
+      const auto& monomial_basis_array_negative_side =
+          this->map_body_to_monomial_basis_array_.at(
+              SortedPair<multibody::BodyIndex>(
+                  plane.expressed_body,
+                  plane.negative_side_geometry->body_index()));
       add_rationals_nonnegative_given_lagrangians(
           plane_geometries_[plane_index].negative_side_rationals,
-          false /* is_matrix_sos_condition */, *(plane.negative_side_geometry),
+          monomial_basis_array_negative_side,
           certificate->negative_side_rational_lagrangians,
           new_certificate == nullptr
               ? nullptr
               : &(new_certificate->negative_side_rational_lagrangians));
-
-      add_rationals_nonnegative_given_lagrangians(
-          plane_geometries_[plane_index].positive_side_psd_mat,
-          true /* is_matrix_sos_condition */, *(plane.positive_side_geometry),
-          certificate->positive_side_psd_mat_lagrangians,
-          new_certificate == nullptr
-              ? nullptr
-              : &(new_certificate->positive_side_psd_mat_lagrangians));
-      add_rationals_nonnegative_given_lagrangians(
-          plane_geometries_[plane_index].negative_side_psd_mat,
-          true /* is_matrix_sos_condition */, *(plane.negative_side_geometry),
-          certificate->negative_side_psd_mat_lagrangians,
-          new_certificate == nullptr
-              ? nullptr
-              : &(new_certificate->negative_side_psd_mat_lagrangians));
     }
   }
   DRAKE_DEMAND(gram_var_count == gram_total_size);

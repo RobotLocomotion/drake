@@ -31,8 +31,7 @@ struct ReifyData {
       const multibody::RationalForwardKinematics& m_rational_forward_kin,
       PlaneSide m_plane_side, GeometryId m_geometry_id,
       const VectorX<symbolic::Variable>& m_y_slack,
-      std::vector<symbolic::RationalFunction>* m_rationals_for_points,
-      std::vector<symbolic::RationalFunction>* m_rationals_for_matrix_sos)
+      std::vector<symbolic::RationalFunction>* m_rationals)
       : a{&m_a},
         b{&m_b},
         X_AB_multilinear{&m_X_AB_multilinear},
@@ -40,8 +39,7 @@ struct ReifyData {
         plane_side{m_plane_side},
         geometry_id{m_geometry_id},
         y_slack{&m_y_slack},
-        rationals_for_points{m_rationals_for_points},
-        rationals_for_matrix_sos{m_rationals_for_matrix_sos} {}
+        rationals{m_rationals} {}
 
   // To avoid copying objects (which might be expensive), I store the
   // non-primitive-type objects with pointers.
@@ -53,8 +51,7 @@ struct ReifyData {
   const PlaneSide plane_side;
   const GeometryId geometry_id;
   const VectorX<symbolic::Variable>* y_slack;
-  std::vector<symbolic::RationalFunction>* rationals_for_points;
-  std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos;
+  std::vector<symbolic::RationalFunction>* rationals;
 };
 
 // Compute the rational function
@@ -101,10 +98,11 @@ void ImplementPointRationals(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
 
   const double offset{1};
   const int num_rationals_for_points = p_GV.cols();
-  reify_data->rationals_for_points->reserve(num_rationals_for_points);
+  reify_data->rationals->reserve(reify_data->rationals->size() +
+                                 num_rationals_for_points);
   // The position of the vertices V in the geometry frame G.
   for (int i = 0; i < p_GV.cols(); ++i) {
-    reify_data->rationals_for_points->push_back(ComputePointOnPlaneSideRational(
+    reify_data->rationals->push_back(ComputePointOnPlaneSideRational(
         *(reify_data->a), *(reify_data->b), p_GV.col(i), X_BG,
         *(reify_data->X_AB_multilinear), offset, reify_data->plane_side,
         *(reify_data->rational_forward_kin)));
@@ -153,7 +151,7 @@ void ImplementSpherePsdMatRational(const Eigen::Vector3d& p_GS,
        {symbolic::Monomial((*(reify_data->y_slack))(1), 2), 1},
        {symbolic::Monomial((*(reify_data->y_slack))(2), 2), 1}}};
   const int sign = reify_data->plane_side == PlaneSide::kPositive ? 1 : -1;
-  reify_data->rationals_for_matrix_sos->emplace_back(
+  reify_data->rationals->emplace_back(
       sign * a_dot_x_plus_b.numerator() +
           2 * reify_data->a->dot(y_poly) * a_dot_x_plus_b.denominator() +
           y_squared / (radius * radius) * sign * a_dot_x_plus_b.numerator(),
@@ -174,11 +172,9 @@ class OnPlaneSideReifier : public ShapeReifier {
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
       PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
-      std::vector<symbolic::RationalFunction>* rationals_for_points,
-      std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos) {
+      std::vector<symbolic::RationalFunction>* rationals) {
     ReifyData data(a, b, X_AB_multilinear, rational_forward_kin, plane_side,
-                   geometry_id_, y_slack, rationals_for_points,
-                   rationals_for_matrix_sos);
+                   geometry_id_, y_slack, rationals);
     geometry_->Reify(this, &data);
   }
 
@@ -329,14 +325,14 @@ class OnPlaneSideReifier : public ShapeReifier {
     switch (reify_data->plane_side) {
       case PlaneSide::kPositive: {
         // impose the constraint b_G >= 1
-        reify_data->rationals_for_points->push_back(
+        reify_data->rationals->push_back(
             reify_data->rational_forward_kin
                 ->ConvertMultilinearPolynomialToRationalFunction(b_G - 1));
         break;
       }
       case PlaneSide::kNegative: {
         // Impose the constraint b_G <= -1
-        reify_data->rationals_for_points->push_back(
+        reify_data->rationals->push_back(
             reify_data->rational_forward_kin
                 ->ConvertMultilinearPolynomialToRationalFunction(-1 - b_G));
         break;
@@ -361,7 +357,7 @@ class OnPlaneSideReifier : public ShapeReifier {
       // Compute plane_sign * (±l/2 * a_G(2) + b_G)
       const symbolic::Polynomial a2_plus_b =
           plane_sign * (scalar * cylinder.length() / 2 * a_G(2) + b_G);
-      reify_data->rationals_for_matrix_sos->push_back(
+      reify_data->rationals->push_back(
           reify_data->rational_forward_kin
               ->ConvertMultilinearPolynomialToRationalFunction(
                   a2_plus_b + 2 * y_poly(0) * a_G(0) + 2 * y_poly(1) * a_G(1) +
@@ -415,9 +411,9 @@ class GeometryTypeReifier : public ShapeReifier {
   const Shape* shape_;
 };
 
-class NumRationalsForPointsReifier : public ShapeReifier {
+class NumRationalsReifier : public ShapeReifier {
  public:
-  explicit NumRationalsForPointsReifier(const Shape* shape) : shape_{shape} {}
+  explicit NumRationalsReifier(const Shape* shape) : shape_{shape} {}
 
   int ProcessData() {
     int ret;
@@ -429,29 +425,43 @@ class NumRationalsForPointsReifier : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Box&, void* data) {
+    // We implement a.dot(p_AVᵢ) + b >= 1 (or <= -1) where Vᵢ is the vertex of
+    // the box. The box has 8 vertices.
     auto* num = static_cast<int*>(data);
     *num = 8;
   }
 
   void ImplementGeometry(const Convex& convex, void* data) {
+    // One rational for each vertex of the polytope.
     auto* num = static_cast<int*>(data);
     const Eigen::Matrix3Xd p_GV = GetVertices(convex);
     *num = p_GV.cols();
   }
 
   void ImplementGeometry(const Sphere&, void* data) {
+    // Two rationals:
+    // a.dot(p_AS) + b >= r * |a|  (or <= -r * |a|)
+    // a.dot(p_AS) + b >= 1        (or <= -1)
     auto* num = static_cast<int*>(data);
-    *num = 1;
+    *num = 2;
   }
 
   void ImplementGeometry(const Capsule&, void* data) {
+    // Three rationals
+    // a.dot(p_AS1) + b >= r * |a|  (or <= -r * |a|)
+    // a.dot(p_AS2) + b >= r * |a|  (or <= -r * |a|)
+    // a.dot(p_AO) + b >= 1        (or <= -1)
     auto* num = static_cast<int*>(data);
-    *num = 1;
+    *num = 3;
   }
 
   void ImplementGeometry(const Cylinder&, void* data) {
+    // Three rationals
+    //  a_G(2)*h/2+b_G >= r*|[a_G(0) a_G(1)]| (or <= -r*|[a_G(0) a_G(1)]|)
+    // -a_G(2)*h/2+b_G >= r*|[a_G(0) a_G(1)]| (or <= -r*|[a_G(0) a_G(1)]|)
+    //  b_G >= 1 (or <= -1).
     auto* num = static_cast<int*>(data);
-    *num = 1;
+    *num = 3;
   }
 
   const Shape* shape_;
@@ -538,11 +548,10 @@ void CollisionGeometry::OnPlaneSide(
         X_AB_multilinear,
     const multibody::RationalForwardKinematics& rational_forward_kin,
     PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
-    std::vector<symbolic::RationalFunction>* rationals_for_points,
-    std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos) const {
+    std::vector<symbolic::RationalFunction>* rationals) const {
   OnPlaneSideReifier reifier(geometry_, X_BG_, id_);
   reifier.ProcessData(a, b, X_AB_multilinear, rational_forward_kin, plane_side,
-                      y_slack, rationals_for_points, rationals_for_matrix_sos);
+                      y_slack, rationals);
 }
 
 GeometryType CollisionGeometry::type() const {
@@ -550,36 +559,9 @@ GeometryType CollisionGeometry::type() const {
   return reifier.ProcessData();
 }
 
-int CollisionGeometry::num_rationals_for_points() const {
-  NumRationalsForPointsReifier reifier(geometry_);
+int CollisionGeometry::num_rationals() const {
+  NumRationalsReifier reifier(geometry_);
   return reifier.ProcessData();
-}
-
-int CollisionGeometry::num_rationals_for_matrix_sos() const {
-  switch (this->type()) {
-    case GeometryType::kPolytope:
-      return 0;
-    case GeometryType::kSphere:
-      return 1;
-    case GeometryType::kCapsule:
-      return 2;
-    case GeometryType::kCylinder:
-      return 2;
-  }
-  DRAKE_UNREACHABLE();
-}
-
-int CollisionGeometry::y_slack_size() const {
-  switch (this->type()) {
-    case GeometryType::kPolytope:
-      return 0;
-    case GeometryType::kSphere:
-    case GeometryType::kCapsule:
-      return 3;
-    case GeometryType::kCylinder:
-      return 2;
-  }
-  DRAKE_UNREACHABLE();
 }
 
 double DistanceToHalfspace(const CollisionGeometry& collision_geometry,
