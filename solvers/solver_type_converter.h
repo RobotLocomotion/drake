@@ -10,7 +10,7 @@ namespace drake {
 namespace solvers {
 
 /// Converts between SolverType and SolverId.  This class only exists for
-/// backwards compatiblity, and should not be used in new code.
+/// backwards compatibility, and should not be used in new code.
 class SolverTypeConverter {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SolverTypeConverter);

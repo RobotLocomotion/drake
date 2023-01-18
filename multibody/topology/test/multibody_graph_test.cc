@@ -146,7 +146,7 @@ GTEST_TEST(MultibodyGraph, SerialChain) {
 //  - RevoluteJoint(3, 13): connects body 3 to subgraph A.
 //  - PrimaticJoint(1, 10): connects subgraph A and B.
 //
-// Therefore we expect the following subgraphs, in no particular oder, but with
+// Therefore we expect the following subgraphs, in no particular order, but with
 // the "world" subgraph first:
 //   {0, 5, 7, 12}, {1, 4, 13}, {6, 8, 10}, {3}, {9}, {2}, {11}.
 GTEST_TEST(MultibodyGraph, Weldedsubgraphs) {

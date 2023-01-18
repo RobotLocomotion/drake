@@ -22,7 +22,7 @@ PartialPermutation::PartialPermutation(std::vector<int> permutation)
   if (permuted_domain_size > domain_size) {
     throw std::logic_error(fmt::format(
         "The size of the permuted domain must be smaller or equal than that of "
-        "the original domian. Index {}, larger or equal than the domain size, "
+        "the original domain. Index {}, larger or equal than the domain size, "
         "appears in the input permutation.",
         permuted_domain_size - 1));
   }

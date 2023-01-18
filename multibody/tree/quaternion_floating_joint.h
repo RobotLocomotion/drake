@@ -144,7 +144,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   }
 
   /// Returns the pose `X_FM` of the outboard frame M as measured and expressed
-  /// in the inboard frame F. Refer to the documetation for this class for
+  /// in the inboard frame F. Refer to the documentation for this class for
   /// details.
   /// @param[in] context
   ///   The context of the model this joint belongs to.

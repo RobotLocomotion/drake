@@ -131,7 +131,7 @@ class GeometryState;
      of realizing that declaration. If a pair is *declared* to be in C, the
      result of the declaration is that the pair is in C (assuming that the pair
      *can* be in C). If we allowed modifying the persistent configuration with
-     an active transient history, there might be no discernable change in the
+     an active transient history, there might be no discernible change in the
      resultant configuration state because a subsequent transient declaration
      may supplant it. This would lead to inscrutable bugs. Therefore, it's
      simply not allowed.

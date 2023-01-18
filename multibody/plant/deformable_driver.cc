@@ -134,7 +134,7 @@ void DeformableDriver<T>::DeclareCacheEntries(
     cache_indexes_.next_fem_states.emplace_back(
         next_fem_state_cache_entry.cache_index());
 
-    /* Scatch data for FEM solver. */
+    /* Scratch data for FEM solver. */
     FemSolverScratchData scratch(fem_model);
     const auto& scratch_entry = manager->DeclareCacheEntry(
         fmt::format("FEM solver scratch workspace for body with index {}", i),

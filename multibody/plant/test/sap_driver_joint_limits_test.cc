@@ -461,7 +461,7 @@ TEST_F(KukaIiwaArmTests, LimitConstraints) {
 
   int num_constraints = 0;  // count number of constraints visited.
   // The manager adds limit constraints in the order joints are specified.
-  // Therefore we verify the limit constrant for each joint.
+  // Therefore we verify the limit constraint for each joint.
   for (JointIndex joint_index(0); joint_index < plant_.num_joints();
        ++joint_index) {
     const Joint<double>& joint = plant_.get_joint(joint_index);

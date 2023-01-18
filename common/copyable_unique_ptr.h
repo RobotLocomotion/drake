@@ -47,7 +47,7 @@ namespace drake {
  3. To allow for future copy-on-write optimizations, there is a distinction
     between writable and const access, the get() method is modified to return
     only a const pointer, with get_mutable() added to return a writable pointer.
-    Furthermore, derefencing (operator*()) a mutable pointer will give a mutable
+    Furthermore, dereferencing (operator*()) a mutable pointer will give a mutable
     reference (in so far as T is not declared const), and dereferencing a
     const pointer will give a const reference.
 

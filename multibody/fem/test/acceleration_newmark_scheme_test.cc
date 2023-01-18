@@ -103,7 +103,7 @@ TEST_F(AccelerationNewmarkSchemeTest, EquivalenceWithVelocityNewmark) {
   const VelocityNewmarkScheme<double> velocity_scheme{kDt, kGamma, kBeta};
   FemState<double> state_v(fem_state_system_.get());
   velocity_scheme.AdvanceOneTimeStep(state0, state_a.GetVelocities(), &state_v);
-  /* Set a larger error tolerance to accomodate the division by `dt` used in
+  /* Set a larger error tolerance to accommodate the division by `dt` used in
    the VelocityNewmarkScheme. */
   EXPECT_TRUE(CompareMatrices(state_v.GetAccelerations(),
                               state_a.GetAccelerations(), kTolerance / kDt));

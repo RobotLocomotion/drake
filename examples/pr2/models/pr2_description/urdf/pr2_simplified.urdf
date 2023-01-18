@@ -827,7 +827,7 @@
       <interface:position name="imu_position"/>
     </controller:gazebo_ros_imu>
   </gazebo>
-  <!-- The xacro preprocesser will replace the parameters below, such as ${cal_head_x}, with
+  <!-- The xacro preprocessor will replace the parameters below, such as ${cal_head_x}, with
        numerical values that were specified in common.xacro which was included above -->
   <joint name="head_pan_joint" type="revolute">
     <axis xyz="0 0 1"/>

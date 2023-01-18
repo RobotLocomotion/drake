@@ -450,7 +450,7 @@ GTEST_TEST(ParseConstraintTest, TrueFormula) {
   EXPECT_EQ(binding1.variables().rows(), 0);
 
   // Call ParseConstraint with a vector of formulas, some of the formulas being
-  // alwyas True.
+  // always True.
   symbolic::Variable x("x");
   auto binding2 = internal::ParseConstraint(
       Vector2<symbolic::Formula>(x >= 1, symbolic::Expression(1) >= 0));

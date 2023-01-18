@@ -327,7 +327,7 @@ TEST_F(TwoDofPlanarPendulumTest, CalcSpatialInertia) {
       plant_.CalcSpatialInertia(*context_, frame_A, body_indexes),
       "CalcSpatialInertia\\(\\): contains an invalid BodyIndex.");
 
-  // Verify an exception is thrown if body_indexes has two occurences of body A.
+  // Verify an exception is thrown if body_indexes has two occurrences of body A.
   body_indexes.push_back(body_A.index());
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant_.CalcSpatialInertia(*context_, frame_A, body_indexes),

@@ -135,7 +135,7 @@ values given by @p context.
 @param options is the optional FiniteHorizonLinearQuadraticRegulatorOptions.
 
 @pre @p system must be a System<double> with (only) n continuous state variables
-and m inputs.  It must be convertable to System<AutoDiffXd>.
+and m inputs.  It must be convertible to System<AutoDiffXd>.
 
 @note Support for difference-equation systems (@see
 System<T>::IsDifferenceEquationSystem()) by solving the differential Riccati

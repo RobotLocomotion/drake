@@ -273,7 +273,7 @@ Eigen::VectorXd JointSliders<T>::Run(const Diagram<T>& diagram,
     meshcat_->DeleteButton(kButtonName);
   });
 
-  // Grab the current time, to implement the timout.
+  // Grab the current time, to implement the timeout.
   using Clock = std::chrono::steady_clock;
   using Duration = std::chrono::duration<double>;
   const auto start_time = Clock::now();

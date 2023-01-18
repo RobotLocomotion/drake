@@ -461,7 +461,7 @@ GTEST_TEST(SupernodalSolver, DifferentTreeSizes) {
   EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
 }
 
-// Unit test for the sparsity pattern occuring on a problem with four stacks of
+// Unit test for the sparsity pattern occurring on a problem with four stacks of
 // two objects each. Patches and trees are provided in some arbitrary
 // permutation.
 GTEST_TEST(SupernodalSolver, FourStacks) {

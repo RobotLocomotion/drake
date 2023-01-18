@@ -498,7 +498,7 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
 // Verifies the operator*(const SpatialVelocity&) by computing the kinetic
 // energy of a cylindrical body B with spatial velocity V_WBp, where P is a
 // point that is fixed in the body frame B.
-// The computation involves the product ot the body's spatial inertia M_Bp_W
+// The computation involves the product of the body's spatial inertia M_Bp_W
 // with its spatial velocity V_WBp: ke_WB = 0.5 * V_WBp.dot(M_Bp_W * V_WBp).
 // This result is verified against a calculation invoving quantities about the
 // bodies COM: ke_WB = 0.5 * mass * v_WBcm² + 0.5 * w_WBᵀ * I_Bcm_W * w_WB.

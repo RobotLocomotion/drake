@@ -117,7 +117,7 @@ struct OpenGlInstance {
     DRAKE_DEMAND(geometry.is_defined());
   }
 
-  // TODO(SeanCurtis-TRI) Chanage these quantities to be float-valued so they
+  // TODO(SeanCurtis-TRI) Change these quantities to be float-valued so they
   //  can go directly into the shader without casting.
   OpenGlGeometry geometry;
   math::RigidTransformd X_WG;

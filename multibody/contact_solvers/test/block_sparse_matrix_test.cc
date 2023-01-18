@@ -104,7 +104,7 @@ TEST_F(BlockSparseMatrixTest, EmptyRow) {
                               "No block was specified for row 1.");
 }
 
-// Verifies the builder throws an excpetion when a column is left empty.
+// Verifies the builder throws an exception when a column is left empty.
 TEST_F(BlockSparseMatrixTest, EmptyColumn) {
   BlockSparseMatrixBuilder<double> builder(3, 4, 5);
   builder.PushBlock(0, 0, J_.block(0, 0, 3, 2));

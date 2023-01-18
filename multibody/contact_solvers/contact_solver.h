@@ -259,7 +259,7 @@ class ContactSolver {
   // @param dynamics_data Provides pointers to the dynamics data of the system.
   // @param contact_data Provides pointers to the discrete contact set.
   // @param v_guess Initial guess for the solver.  Some solvers might decide to
-  // ingore this guess, refer to each solver specific documentation to find out
+  // ignore this guess, refer to each solver specific documentation to find out
   // how this gets used.
   // @param results On output it must store the solution to the contact problem.
   virtual ContactSolverStatus SolveWithGuess(

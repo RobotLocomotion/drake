@@ -439,7 +439,7 @@ GTEST_TEST(GeometryProperties, GloballyCounted) {
     EXPECT_TRUE(GloballyCounted::get_stats_and_reset().Equal({0, 1}));
   }
 
-  // Move assigment.
+  // Move assignment.
   {
     GloballyCounted moved_from;
     GloballyCounted moved_to;

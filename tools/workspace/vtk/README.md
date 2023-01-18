@@ -255,7 +255,7 @@ $ bazel test //:py/install_test
 
 ## Bisecting VTK
 
-During the upgrade, you may have failing tests particulary from
+During the upgrade, you may have failing tests particularly from
 `bazel test //geometry/render/...` that may not be obvious to fix.  Since you
 will likely be upgrading against a significant amount of changes within VTK, the
 best approach will be to bisect VTK by temporarily manipulating the build system

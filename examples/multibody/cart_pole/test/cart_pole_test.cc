@@ -93,7 +93,7 @@ class CartPoleTest : public ::testing::Test {
     Matrix2<double> C = Matrix2<double>::Zero();
     C(0, 1) = -mp * l * theta_dot * s;
 
-    // Vector of genralized forces due to gravity.
+    // Vector of generalized forces due to gravity.
     Vector2<double> tau_g = Vector2<double>(0.0, -mp * g * l * s);
 
     // Compute the dynamics of the system.

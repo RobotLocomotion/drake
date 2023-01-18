@@ -436,7 +436,7 @@ GTEST_TEST(AlignPlanes, Correctness) {
    - We have to have at least one result with the expected error.
    - We don't want that result first or last (to make sure the algorithm isn't
      accidentally saving the first or last values).
-   - It needs to support an aribtrary number of invocations (although we'll
+   - It needs to support an arbitrary number of invocations (although we'll
      require at least two).
 
  So, fortunately, we don't have to guess. In the tests we run, we know exactly

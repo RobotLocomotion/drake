@@ -55,7 +55,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    with the scalar type `ScalarType`. This method is meant to be called only by
    MultibodyPlant. MultibodyPlant guarantees the call to ExtactModelInfo() after
    this object is scalar converted. Therefore this clone method is only
-   resposible for deep copying to a state *before* the call to
+   responsible for deep copying to a state *before* the call to
    ExtactModelInfo().
    @tparam_default_scalar */
   template <typename ScalarType>

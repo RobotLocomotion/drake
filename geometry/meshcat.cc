@@ -1795,7 +1795,7 @@ class Meshcat::Impl {
       // Quietly ignore messages that don't match our expected message type.
       // This violates the style guide, but msgpack does not provide any other
       // mechanism for checking the message type.
-      drake::log()->debug("Meshcat ignored an unparseable message");
+      drake::log()->debug("Meshcat ignored an unparsable message");
       return;
     }
     std::lock_guard<std::mutex> lock(controls_mutex_);

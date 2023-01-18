@@ -395,7 +395,7 @@ class Polynomial {
 /// Returns `p / v`.
 [[nodiscard]] Polynomial operator/(Polynomial p, double v);
 
-/// Returns polynomial @p rasied to @p n.
+/// Returns polynomial @p raised to @p n.
 [[nodiscard]] Polynomial pow(const Polynomial& p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
@@ -520,7 +520,7 @@ DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
 //
 // Note that we inform Eigen that the return type of Monomial op Monomial is
 // Polynomial, not Monomial, while Monomial * Monomial gets a Monomial in our
-// implementation. This discrepency is due to the implementation of Eigen's
+// implementation. This discrepancy is due to the implementation of Eigen's
 // dot() method whose return type is scalar_product_op::ReturnType. For more
 // information, check line 67 of Eigen/src/Core/Dot.h and line 767 of
 // Eigen/src/Core/util/XprHelper.h.

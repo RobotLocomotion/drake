@@ -6,7 +6,7 @@ import unittest
 class HeaderDependencyTest(unittest.TestCase):
 
     def setUp(self):
-        # Matches C/C++ #include statment.
+        # Matches C/C++ #include statement.
         self._include = re.compile(r'^\s*#\s*include\s*["<](.*?)[>"].*$')
 
         # C system headers; copied from drake/.clang-format.

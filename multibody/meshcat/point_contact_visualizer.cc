@@ -83,7 +83,7 @@ void PointContactVisualizer::Update(
             Vector3d{0, 0, height + arrowhead_height}));
   }
 
-  // Update meshcat visiblity to match the active status.
+  // Update meshcat visibility to match the active status.
   for (auto& [path, status] : path_visibility_status_) {
     if (status.visible != status.active) {
       meshcat_->SetProperty(path, "visible", status.active);

@@ -482,7 +482,7 @@ TEST_F(SpringMassSystemTest, IntegrateConservativePower) {
 
     // Due to a quirk of semi-explicit Euler, this integral was evaluated
     // using the previous step's q's rather than the ones current now so
-    // there is a larger discrepency than would be expected from accuracy
+    // there is a larger discrepancy than would be expected from accuracy
     // alone.
     const double w = system_->get_conservative_work(*context);
     EXPECT_NEAR(ke, ke0 + w, 1e-2);

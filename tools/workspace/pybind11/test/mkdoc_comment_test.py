@@ -526,7 +526,7 @@ ullamco laboris nisi ut aliquip ex ea commodo consequat.
  * @internal
  * Begin ignored internal section. Est ante in nibh mauris cursus mattis
  * molestie. Morbi tristique senectus et netus et malesuada. Magnis dis
- * parturient montes nascetur ridiculus mus mauris. End ignored internal
+ * parturient montes nascetur ridiculous mus mauris. End ignored internal
  * section.
  * @endinternal
 */""".rstrip()

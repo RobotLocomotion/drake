@@ -102,7 +102,7 @@ DEFINE_string(discrete_solver, "sap",
               "Discrete contact solver. Options are: 'tamsi', 'sap'.");
 DEFINE_double(
     coupler_gear_ratio, -1.0,
-    "When using SAP, the left finger's position qₗ is constrainted to qₗ = "
+    "When using SAP, the left finger's position qₗ is constrained to qₗ = "
     "ρ⋅qᵣ, where qᵣ is the right finger's position and ρ is this "
     "coupler_gear_ration parameter (dimensionless). If TAMSI used, "
     "then the right finger is locked, only the left finger moves and this "

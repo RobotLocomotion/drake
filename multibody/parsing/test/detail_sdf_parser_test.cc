@@ -1900,7 +1900,7 @@ TEST_F(SdfParserTest, LoadDirectlyNestedModelsInWorld) {
 }
 
 // Same test as LoadDirectlyNestedModelsInWorld, but where a model file contains
-// direclty nested models.
+// directly nested models.
 TEST_F(SdfParserTest, LoadDirectlyNestedModelsInModel) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"

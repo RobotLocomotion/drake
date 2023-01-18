@@ -396,8 +396,8 @@ std::pair<T, int> SapSolver<T>::PerformBackTrackingLineSearch(
   // N.B. SAP checks that the cost decreases monotonically using a slop to avoid
   // false negatives due to round-off errors. Therefore if we are going to exit
   // when the gradient is near zero, we want to ensure the error introduced by a
-  // gradient close to zero (though not exaclty zero) is much smaller than the
-  // slop. Thefore we use a relative slop much smaller than the one used to
+  // gradient close to zero (though not exactly zero) is much smaller than the
+  // slop. Therefore we use a relative slop much smaller than the one used to
   // verify monotonic convergence.
   const double ell_slop =
       parameters_.relative_slop / 10.0 * std::max(1.0, ell_scale);
@@ -503,7 +503,7 @@ std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
   // If the cost is still decreasing at alpha_max, we accept this value.
   if (dell <= 0) return std::make_pair(alpha_max, 0);
 
-  // If the user requests very tight tolerances (say, samller than 10⁻¹⁰) then
+  // If the user requests very tight tolerances (say, smaller than 10⁻¹⁰) then
   // we might enter the line search with a very small gradient. If close to
   // machine epsilon, the Newton method below might return inaccurate results.
   // Therefore return early if we detect this situation.

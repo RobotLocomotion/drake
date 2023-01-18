@@ -50,7 +50,7 @@ const System<T>& DiagramBuilder<T>::GetSubsystemByName(
       if (result != nullptr) {
         throw std::logic_error(fmt::format(
             "DiagramBuilder contains multiple subsystems named {} so cannot "
-            "provide a unqiue answer to a lookup by name",
+            "provide a unique answer to a lookup by name",
             name));
       }
       result = child.get();

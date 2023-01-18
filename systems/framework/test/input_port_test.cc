@@ -196,7 +196,7 @@ struct SystemWithInputPorts final : public LeafSystem<double> {
 // Test the FixValue() method. Note that the conversion of its value argument
 // to an AbstractValue is handled by internal::ValueToAbstractValue which has
 // its own unit tests. Here we need just check the input-port specific
-// behavior for vector and abstract intput ports.
+// behavior for vector and abstract input ports.
 // Also for sanity, make sure the returned FixedInputPortValue object works,
 // although its API is so awful no one should use it.
 GTEST_TEST(InputPortTest, FixValueTests) {

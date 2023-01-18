@@ -68,7 +68,7 @@ INSTANTIATE_TEST_SUITE_P(CapsuleField, MakeCapsuleFieldTest, testing::Values(
 TEST_P(MakeCapsuleFieldTest, CheckMinMaxBoundaryValue) {
   const double radius = 0.5;
   const double length = 2.0;
-  // Number of vertices per circluar rim of the capsule.
+  // Number of vertices per circular rim of the capsule.
   const int n = GetParam();
   const double resolution_hint = 2.0 * M_PI * radius / n;
 

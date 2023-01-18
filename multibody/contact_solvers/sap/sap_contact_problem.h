@@ -78,7 +78,7 @@ class SapContactProblem {
      is A[c].rows() (or A[c].cols() since each block is square). The total
      number of generalized velocities of the system is nv = ∑A[c].rows().
      This class does not check for the positive definiteness of each block in
-     A, it is the responsability of the calling code to enforce this
+     A, it is the responsibility of the calling code to enforce this
      invariant. Ultimately, the SAP solver can fail to converge if this
      requirement is not satisfied.
    @param[in] v_star
@@ -103,7 +103,7 @@ class SapContactProblem {
      is A[c].rows() (or A[c].cols() since each block is square). The total
      number of generalized velocities of the system is nv = ∑A[c].rows().
      This class does not check for the positive definiteness of each block in
-     A, it is the responsability of the calling code to enforce this
+     A, it is the responsibility of the calling code to enforce this
      invariant. Ultimately, the SAP solver can fail to converge if this
      requirement is not satisfied.
    @param[in] v_star

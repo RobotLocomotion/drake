@@ -21,7 +21,7 @@
       The homecart_origin to "homecart_base_link" frames are zero translation
       and identity rotation transforms to easily connect the models.
       +z up, +x along the short axis of the table, +y along the long table axis
-      Positive origin axes eminate "forward" for X and "left" for Y, with
+      Positive origin axes emanate "forward" for X and "left" for Y, with
       respect to the robot arm origins.
   -->
   <link name="homecart_base_link">
@@ -209,7 +209,7 @@
   <xacro:property name="base_plate_thickness" value="0.0065"/>
   <!-- This block contains the upper aluminum beam structures, along with
         their angle connectors. There is a single link (and mesh) to
-        to encapsulate the struture, but several basic geometry collision
+        to encapsulate the structure, but several basic geometry collision
         shapes for individual beams and connectors. -->
   <xacro:property name="upper_structure_lower_z_origin"
     value="${-upper_structure_height+

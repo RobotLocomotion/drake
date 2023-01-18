@@ -1318,7 +1318,7 @@ class TextureSetterEngine : public RenderEngineVtk {
   TextureSetterEngine() = default;
 
   // Reports if the color actor for the geometry with the given `id` has the
-  // property texture append by this class's DoRegisterVisual() implementaiton.
+  // property texture append by this class's DoRegisterVisual() implementation.
   bool GeometryHasColorTexture(GeometryId id,
                                const std::string& texture_name) const {
     const auto color_actor = actors().at(id)[0];

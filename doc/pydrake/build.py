@@ -138,7 +138,7 @@ def _build(*, out_dir, temp_dir, modules):
             while tokens:
                 modules_to_document.add(".".join(tokens))
                 tokens.pop()
-            # Add the requsted module's children.
+            # Add the requested module's children.
             for y in all_modules:
                 if y.startswith(x + "."):
                     modules_to_document.add(y)
