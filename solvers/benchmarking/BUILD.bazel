@@ -7,6 +7,8 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+package(default_visibility = ["//visibility:public"])
+
 drake_cc_googlebench_binary(
     name = "benchmark_mathematical_program",
     srcs = ["benchmark_mathematical_program.cc"],
@@ -20,11 +22,28 @@ drake_cc_googlebench_binary(
     ],
 )
 
-package(default_visibility = ["//visibility:public"])
-
 drake_py_experiment_binary(
     name = "mathematical_program_experiment",
     googlebench_binary = ":benchmark_mathematical_program",
+)
+
+drake_cc_googlebench_binary(
+    name = "benchmark_ipopt_solver",
+    srcs = ["benchmark_ipopt_solver.cc"],
+    add_test_rule = True,
+    test_timeout = "moderate",
+    deps = [
+        "//common:add_text_logging_gflags",
+        "//solvers:ipopt_solver",
+        "//solvers:mathematical_program",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
+    ],
+)
+
+drake_py_experiment_binary(
+    name = "ipopt_solver_experiment",
+    googlebench_binary = ":benchmark_ipopt_solver",
 )
 
 add_lint_tests()
