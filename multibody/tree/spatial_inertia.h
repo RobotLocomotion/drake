@@ -124,8 +124,6 @@ class SpatialInertia {
   /// moments of inertia of 1 and products of inertia of 0.
   static SpatialInertia<T> MakeUnitary();
 
-  // TODO(Mitiguy) Python-bind this and related functions when they are done.
-  /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid box B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
@@ -137,7 +135,6 @@ class SpatialInertia {
   static SpatialInertia<T> SolidBoxWithDensity(
       const T& density, const T& lx, const T& ly, const T& lz);
 
-  /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid capsule B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
@@ -154,7 +151,6 @@ class SpatialInertia {
   static SpatialInertia<T> SolidCapsuleWithDensity(
       const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
-  /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid cylinder B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
@@ -171,7 +167,6 @@ class SpatialInertia {
   static SpatialInertia<T> SolidCylinderWithDensity(
       const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
-  /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid ellipsoid B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
@@ -183,7 +178,6 @@ class SpatialInertia {
   static SpatialInertia<T> SolidEllipsoidWithDensity(
       const T& density, const T& a, const T& b, const T& c);
 
-  /// (Internal use only)
   /// Creates a spatial inertia for a uniform density solid sphere B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
