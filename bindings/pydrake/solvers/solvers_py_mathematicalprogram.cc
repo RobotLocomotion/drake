@@ -636,7 +636,7 @@ void BindMathematicalProgram(py::module m) {
           },
           doc.MathematicalProgramResult.GetSuboptimalSolution
               .doc_2args_constEigenMatrixBase_int)
-      .def("num_suboptimal_solution()",
+      .def("num_suboptimal_solution",
           &MathematicalProgramResult::num_suboptimal_solution,
           doc.MathematicalProgramResult.num_suboptimal_solution.doc)
       .def("get_suboptimal_objective",
