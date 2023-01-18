@@ -214,6 +214,7 @@ class TestMathematicalProgram(unittest.TestCase):
         m = np.array([sym.Expression(qp.x[0]), sym.Expression(qp.x[1])])
         self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
             result.GetSolution(qp.x[1])))
+        self.assertEqual(result.num_suboptimal_solution(), 0)
 
         x_val_new = np.array([1, 2])
         result.set_x_val(x_val_new)
