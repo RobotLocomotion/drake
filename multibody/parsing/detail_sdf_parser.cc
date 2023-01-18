@@ -906,6 +906,18 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     // floating).
     plant->SetDefaultFreeBodyPose(body, X_WL);
 
+    const std::set<std::string> supported_geometry_elements{
+      "box",
+      "capsule",
+      "cylinder",
+      "drake:capsule",
+      "drake:ellipsoid",
+      "ellipsoid",
+      "empty",
+      "mesh",
+      "plane",
+      "sphere"};
+
     if (plant->geometry_source_is_registered()) {
       ResolveFilename resolve_filename =
         [&package_map, &root_dir, &link_element](
@@ -917,6 +929,12 @@ std::vector<LinkInfo> AddLinksFromSpecification(
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
         const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
+        const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
+
+        sdf::ElementPtr geometry_element = sdf_geometry.Element();
+        CheckSupportedElements(
+            diagnostic, geometry_element, supported_geometry_elements);
+
         const RigidTransformd X_LG = ResolveRigidTransform(
             diagnostic, sdf_visual.SemanticPose());
         unique_ptr<GeometryInstance> geometry_instance =
@@ -942,6 +960,10 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         const sdf::Collision& sdf_collision =
             *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+
+        sdf::ElementPtr geometry_element = sdf_geometry.Element();
+        CheckSupportedElements(
+            diagnostic, geometry_element, supported_geometry_elements);
 
         std::unique_ptr<geometry::Shape> shape =
             MakeShapeFromSdfGeometry(
