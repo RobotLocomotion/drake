@@ -353,6 +353,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
 
+  // TODO(eric.cousineau): Add other query functions.
+  m.def(
+      "isnan", [](const T& x) { return isnan(x); }, py::arg("x"));
+
   // Cross product
   m.def(
       "VectorToSkewSymmetric",

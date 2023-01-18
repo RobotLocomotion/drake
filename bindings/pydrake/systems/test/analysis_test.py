@@ -2,23 +2,26 @@ import copy
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
+from pydrake.math import isnan
 from pydrake.symbolic import Variable, Expression
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.systems.primitives import (
     ConstantVectorSource,
     ConstantVectorSource_,
+    FirstOrderLowPassFilter_,
     SymbolicVectorSystem,
     SymbolicVectorSystem_,
 )
-from pydrake.systems.framework import EventStatus
+from pydrake.systems.framework import Context_, EventStatus
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
     ExtractSimulatorConfig,
+    InitializeParams,
+    IntegratorBase_,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
-    RungeKutta2Integrator_,
-    RungeKutta2Integrator, RungeKutta3Integrator,
+    RungeKutta2Integrator, RungeKutta2Integrator_,
+    RungeKutta3Integrator, RungeKutta3Integrator_,
     RegionOfAttraction,
     RegionOfAttractionOptions,
     Simulator,
@@ -26,7 +29,7 @@ from pydrake.systems.analysis import (
     SimulatorConfig,
     SimulatorStatus,
 )
-from pydrake.trajectories import PiecewisePolynomial
+from pydrake.trajectories import PiecewisePolynomial, PiecewisePolynomial_
 
 
 class TestAnalysis(unittest.TestCase):
@@ -40,6 +43,7 @@ class TestAnalysis(unittest.TestCase):
         numpy_compare.assert_equal(options.state_variables, [x])
         options.use_implicit_dynamics = False
         V = RegionOfAttraction(system=sys, context=context, options=options)
+        self.assertIsInstance(V, Expression)
         self.assertEqual(repr(options), "".join([
             "RegionOfAttractionOptions(",
             "lyapunov_candidate=pow(x, 2), ",
@@ -48,12 +52,70 @@ class TestAnalysis(unittest.TestCase):
 
     def test_integrator_constructors(self):
         """Test all constructors for all integrator types."""
-        sys = ConstantVectorSource([1])
-        con = sys.CreateDefaultContext()
-        RungeKutta2Integrator(system=sys, max_step_size=0.01)
-        RungeKutta2Integrator(system=sys, max_step_size=0.01, context=con)
-        RungeKutta3Integrator(system=sys)
-        RungeKutta3Integrator(system=sys, context=con)
+        system = ConstantVectorSource([1])
+        context = system.CreateDefaultContext()
+        RungeKutta2Integrator(system=system, max_step_size=0.01)
+        RungeKutta2Integrator(
+            system=system, max_step_size=0.01, context=context)
+        RungeKutta3Integrator(system=system)
+        RungeKutta3Integrator(system=system, context=context)
+
+    @numpy_compare.check_nonsymbolic_types
+    def test_integrator_api(self, T):
+        system = FirstOrderLowPassFilter_[T](time_constant=1.0, size=1)
+        context = system.CreateDefaultContext()
+        system.get_input_port().FixValue(context, [1.0])
+
+        integrator = RungeKutta3Integrator_[T](system=system)
+        self.assertIsInstance(integrator, IntegratorBase_[T])
+
+        # WARNING: IntegratorBase.get_context() could segfault if context is
+        # not set.
+        integrator.reset_context(context=context)
+        self.assertIs(integrator.get_context(), context)
+        self.assertIs(integrator.get_mutable_context(), context)
+
+        target_accuracy = 1E-6
+        integrator.set_target_accuracy(accuracy=target_accuracy)
+        self.assertEqual(integrator.get_target_accuracy(), target_accuracy)
+
+        maximum_step_size = 0.2
+        integrator.set_maximum_step_size(max_step_size=maximum_step_size)
+        self.assertEqual(integrator.get_maximum_step_size(), maximum_step_size)
+
+        minimum_step_size = 2E-2
+        integrator.set_requested_minimum_step_size(
+            min_step_size=minimum_step_size)
+        self.assertEqual(
+            integrator.get_requested_minimum_step_size(), minimum_step_size)
+
+        integrator.set_throw_on_minimum_step_size_violation(throws=True)
+        self.assertTrue(integrator.get_throw_on_minimum_step_size_violation())
+
+        integrator.set_fixed_step_mode(flag=True)
+        self.assertTrue(integrator.get_fixed_step_mode())
+
+        integrator.Initialize()
+
+        integrator.StartDenseIntegration()
+        dense_output = integrator.get_dense_output()
+        self.assertIsInstance(dense_output, PiecewisePolynomial_[T])
+        self.assertIs(integrator.StopDenseIntegration(), dense_output)
+
+        self.assertEqual(integrator.get_num_substep_failures(), 0)
+        self.assertEqual(
+            integrator.get_num_step_shrinkages_from_substep_failures(), 0)
+        self.assertEqual(
+            integrator.get_num_step_shrinkages_from_error_control(), 0)
+        self.assertEqual(integrator.get_num_derivative_evaluations(), 0)
+        self.assertTrue(isnan(integrator.get_actual_initial_step_size_taken()))
+        self.assertTrue(
+            isnan(integrator.get_smallest_adapted_step_size_taken()))
+        self.assertTrue(isnan(integrator.get_largest_step_size_taken()))
+        self.assertEqual(integrator.get_num_steps_taken(), 0)
+        integrator.ResetStatistics()
+
+        integrator.Reset()
 
     def test_symbolic_integrators(self):
         x = Variable("x")
@@ -78,15 +140,67 @@ class TestAnalysis(unittest.TestCase):
         self.assertEqual(pp.end_time(), 1.0)
         self.assertIsNone(integrator.get_dense_output())
 
-    def test_simulator_api(self):
+    @numpy_compare.check_nonsymbolic_types
+    def test_simulator_api(self, T):
         """Tests basic Simulator API."""
         # TODO(eric.cousineau): Migrate tests from `general_test.py` to here.
-        system = ConstantVectorSource([1.])
-        simulator = Simulator(system)
-        self.assertIs(simulator.get_system(), system)
+        system = ConstantVectorSource_[T]([1.])
+        simulator = Simulator_[T](system=system)
+        simulator = Simulator_[T](
+            system=system, context=system.CreateDefaultContext())
+
+        simulator.Initialize()
+        initialize_params = InitializeParams(
+            suppress_initialization_events=True)
+        self.assertEqual(
+            repr(initialize_params),
+            "InitializeParams(suppress_initialization_events=True)")
+        copy.copy(initialize_params)
+        simulator.Initialize(params=initialize_params)
+
+        simulator.AdvanceTo(boundary_time=0.0)
+        simulator.AdvancePendingEvents()
+
+        monitor_called_count = 0
+
+        def monitor(root_context):
+            nonlocal monitor_called_count
+            monitor_called_count += 1
+            return EventStatus.DidNothing()
+
+        simulator.set_monitor(monitor=monitor)
+        # N.B. This will be round-trip wrapped via pybind11, but should be the
+        # same function underneath.w
+        monitor_from_pybind = simulator.get_monitor()
+        self.assertIsNot(monitor_from_pybind, monitor)
+        self.assertEqual(monitor_called_count, 0)
+        monitor_from_pybind(simulator.get_context())
+        self.assertEqual(monitor_called_count, 1)
+        simulator.clear_monitor()
+
+        self.assertIsInstance(simulator.get_context(), Context_[T])
+        self.assertIs(simulator.get_context(), simulator.get_mutable_context())
+        self.assertTrue(simulator.has_context())
+
+        self.assertIsInstance(
+            simulator.get_integrator(), RungeKutta3Integrator_[T])
+        self.assertIs(
+            simulator.get_integrator(), simulator.get_mutable_integrator())
+        simulator.reset_context(context=simulator.get_context().Clone())
+
         simulator.set_publish_every_time_step(publish=True)
         simulator.set_publish_at_initialization(publish=True)
-        simulator.set_target_realtime_rate(realtime_rate=1.0)
+        simulator.set_target_realtime_rate(realtime_rate=0.0)
+        self.assertEqual(simulator.get_target_realtime_rate(), 0.0)
+        self.assertIsInstance(simulator.get_actual_realtime_rate(), float)
+        simulator.ResetStatistics()
+
+        self.assertEqual(simulator.get_num_publishes(), 0)
+        self.assertEqual(simulator.get_num_steps_taken(), 0)
+        self.assertEqual(simulator.get_num_discrete_updates(), 0)
+        self.assertEqual(simulator.get_num_unrestricted_updates(), 0)
+
+        self.assertIs(simulator.get_system(), system)
 
     def test_simulator_status(self):
         SimulatorStatus.ReturnReason.kReachedBoundaryTime
@@ -114,9 +228,10 @@ class TestAnalysis(unittest.TestCase):
         for T in (float, AutoDiffXd):
             source = ConstantVectorSource_[T]([2, 3])
             simulator = Simulator_[T](source)
-            result = ResetIntegratorFromFlags(
+            new_integrator = ResetIntegratorFromFlags(
                 simulator=simulator, scheme="runge_kutta2",
                 max_step_size=0.001)
+            self.assertIsInstance(new_integrator, RungeKutta2Integrator_[T])
 
     def test_simulator_config(self):
         SimulatorConfig()
