@@ -1,10 +1,5 @@
 # -*- python -*-
 
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-
 licenses(["notice"])  # MIT
 
 package(default_visibility = ["//visibility:public"])
@@ -14,10 +9,5 @@ cc_library(
     hdrs = glob(["include/uuid.h", "gsl/*"]),
     includes = ["include", "."],
     linkstatic = 1,
-)
-
-# Install the license file.
-install(
-    name = "install",
-    docs = ["LICENSE"],
+    deprecation = "DRAKE DEPRECATED: The @stduuid external is deprecated. The deprecated code will be removed from Drake on or after 2023-05-01.",  # noqa,
 )
