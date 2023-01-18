@@ -21,7 +21,7 @@ RigidBody<T>::RigidBody(const std::string& body_name,
       default_spatial_inertia_(M) {}
 
 template <typename T>
-void RigidBody<T>::SetCenterOfMassInBodyFrameOnly(
+void RigidBody<T>::SetCenterOfMassInBodyFrameNoModifyInertia(
     systems::Context<T>* context,
     const Vector3<T>& center_of_mass_position) const {
   DRAKE_THROW_UNLESS(context != nullptr);
@@ -87,7 +87,7 @@ void RigidBody<T>::SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
   SetUnitInertiaAboutBodyOrigin(context, UnitInertia<T>(I_BBo_B));
 
   // Modify the context -- update B's center of mass position from Bo.
-  SetCenterOfMassInBodyFrameOnly(context, center_of_mass_offset);
+  SetCenterOfMassInBodyFrameNoModifyInertia(context, center_of_mass_offset);
 }
 
 }  // namespace multibody
