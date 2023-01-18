@@ -399,9 +399,9 @@ class RigidBody : public Body<T> {
                          default_spatial_inertia_.template cast<T>()));
   }
 
-private:
+ private:
   /// For `this` rigid body B, set its center of mass position stored in context
-  /// to center_of_mass_position, but does not modify unit or rotational inertia.
+  /// to center_of_mass_position, but does not modify other inertia properties..
   /// @param[out] context contains the state of the multibody system.
   /// @param[in] center_of_mass_position position vector from Bo (B's origin) to
   /// Bcm (B's center of mass), expressed in B.
