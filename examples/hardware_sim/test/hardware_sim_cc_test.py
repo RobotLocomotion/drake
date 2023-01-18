@@ -12,7 +12,12 @@ from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
 
 
 class HardwareSimTest(unittest.TestCase):
-    """Smoke test for our hardware_sim program and its sample config files."""
+    """Smoke test for our hardware_sim program and its sample config files.
+
+    The device-under-test's implementation language ("cc" or "py") is supplied
+    via the environment variable "EXE_LANG". We run the exact same acceptance
+    tests against both implementations.
+    """
 
     def _find_resource(self, respath):
         runfiles = CreateRunfiles()
@@ -22,8 +27,9 @@ class HardwareSimTest(unittest.TestCase):
         return result
 
     def setUp(self):
+        exe_lang = os.environ["EXE_LANG"]
         self._simulator = self._find_resource(
-            "drake/examples/hardware_sim/hardware_sim")
+            f"drake/examples/hardware_sim/hardware_sim_{exe_lang}")
         self._example_scenarios = self._find_resource(
             "drake/examples/hardware_sim/example_scenarios.yaml")
         self._test_scenarios = self._find_resource(
