@@ -547,8 +547,8 @@ TEST_F(MultibodyPlantReflectedInertiaTests, CalcForwardDynamics) {
       CompareMatrices(vdot_ABA, vdot, kTolerance, MatrixCompareType::relative));
 }
 
-// This test verifies that reflected inertia values are propagated through system
-// scalar conversion.
+// This test verifies that reflected inertia values are propagated through
+// system scalar conversion.
 TEST_F(MultibodyPlantReflectedInertiaTests, ScalarConversion) {
   // Arbitrary reflected inertia values.
   VectorX<double> rotor_inertias(kNumJoints);
