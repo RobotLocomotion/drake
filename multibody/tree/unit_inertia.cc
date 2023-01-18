@@ -18,15 +18,28 @@ UnitInertia<T> UnitInertia<T>::SolidBox(const T& Lx, const T& Ly, const T& Lz) {
 }
 
 template <typename T>
-UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
+UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
+    const Vector3<T>& unit_vector) {
   DRAKE_THROW_UNLESS(r >= 0);
   DRAKE_THROW_UNLESS(L >= 0);
+
+  // Ensure ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+  // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+  using std::abs;
+  constexpr double kTolerance = 1E-14;
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
+    std::string error_message = fmt::format("{}(): The unit_vector argument "
+      "{} is not a unit vector.", __func__, unit_vector.transpose());
+    throw std::logic_error(error_message);
+  }
+
   // A special case is required for r = 0 because r = 0 creates a zero volume
   // capsule (and we divide by volume later on). No special case for L = 0 is
   // needed because the capsule degenerates into a sphere (non-zero volume).
   if (r == 0.0) {
-    return UnitInertia<T>::ThinRod(L, Vector3<T>::UnitZ());
+    return UnitInertia<T>::ThinRod(L, unit_vector);
   }
+
   // The capsule is regarded as a cylinder C of length L and radius r and two
   // half-spheres (each of radius r). The first half-sphere H is rigidly fixed
   // to one end of cylinder C so that the intersection between H and C forms
@@ -55,6 +68,8 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // dH = 3.0 / 8.0 * r + L / 2.0;
   const T dH = 0.375 * r + 0.5 * L;
 
+  // The discussion that follows assumes Ic_zz is the axial moment of inertia
+  // and Ix_xx = Ic_yy is the transverse moment of inertia.
   // Form cylinder C's moments of inertia about Ccm (C's center of mass).
   // Ic_xx = Ic_yy = mc(L²/12 + r²/4)  From [Kane, Figure A20, pg. 368].
   // Ic_zz = mc r²/2                   From [Kane, Figure A20, pg. 368].
@@ -75,8 +90,12 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L) {
   // The previous algorithm for Ixx and Izz is algebraically manipulated to a
   // more efficient result by factoring on mh and mc and computing numbers as
   const T Ixx = mc * (L*L/12.0 + 0.25*r2) + mh * (0.51875*r2 + 2*dH*dH);
-  const T Izz = (0.5*mc + 0.8*mh) * r2;
-  return UnitInertia(Ixx, Ixx, Izz);
+  const T Izz = (0.5*mc + 0.8*mh) * r2;  // Axial moment of inertia.
+
+  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
+  // UnitInertia::AxiallySymmetric() normalizes unit_vector before use.
+  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
+  return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
 }
 
 }  // namespace multibody
