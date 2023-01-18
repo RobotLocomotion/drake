@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "pybind11/eigen.h"
+#include "pybind11/eval.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
@@ -299,6 +300,47 @@ PYBIND11_MODULE(schema, m) {
     DefAttributesUsingSerialize(&cls, cls_doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
+
+    // To support the atypical C++ implementation of Transform::Serialize, we
+    // need to support attribute operations on Rotation that should actually
+    // apply to the Rotation::value member field instead. We'll achieve that by
+    // adding special-cases to getattr and setattr.
+    cls.def("__getattr__", [](const Class& self, py::str name) -> py::object {
+      if (std::holds_alternative<Rotation::Rpy>(self.value)) {
+        const std::string name_cxx = name;
+        if (name_cxx == "deg") {
+          py::object self_py = py::cast(self, py_rvp::reference);
+          return self_py.attr("value").attr(name);
+        }
+      }
+      if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
+        const std::string name_cxx = name;
+        if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
+          py::object self_py = py::cast(self, py_rvp::reference);
+          return self_py.attr("value").attr(name);
+        }
+      }
+      return py::eval("object.__getattr__")(self, name);
+    });
+    cls.def("__setattr__", [](Class& self, py::str name, py::object value) {
+      if (std::holds_alternative<Rotation::Rpy>(self.value)) {
+        const std::string name_cxx = name;
+        if (name_cxx == "deg") {
+          py::object self_py = py::cast(self, py_rvp::reference);
+          self_py.attr("value").attr(name) = value;
+          return;
+        }
+      }
+      if (std::holds_alternative<Rotation::AngleAxis>(self.value)) {
+        const std::string name_cxx = name;
+        if ((name_cxx == "angle_deg") || (name_cxx == "axis")) {
+          py::object self_py = py::cast(self, py_rvp::reference);
+          self_py.attr("value").attr(name) = value;
+          return;
+        }
+      }
+      py::eval("object.__setattr__")(self, name, value);
+    });
   }
 
   // Bindings for transform.h.
@@ -326,8 +368,31 @@ PYBIND11_MODULE(schema, m) {
     // The Transform::Serialize does something sketchy for the "rotation" field.
     // We'll undo that damage for the attribute getter and setter functions, but
     // notably we must leave the __fields__ manifest unchanged to match the C++
-    // serialization convention.
-    cls.def_readwrite("rotation", &Class::rotation, cls_doc.rotation.doc);
+    // serialization convention and the setter needs to accept either a Rotation
+    // (the actual type of the property) or any of the allowed Rotation::Variant
+    // types (which will occur during YAML deserialization).
+    using RotationOrNestedValue = std::variant<Rotation, Rotation::Identity,
+        Rotation::Rpy, Rotation::AngleAxis, Rotation::Uniform>;
+    static_assert(
+        std::variant_size_v<RotationOrNestedValue> ==
+        1 /* for Rotation */ + std::variant_size_v<Rotation::Variant>);
+    cls.def_property(
+        "rotation",
+        // The getter is just the usual, no special magic.
+        [](const Class& self) { return &self.rotation; },
+        // The setter accepts a more generous allowed set of argument types.
+        [](Class& self, RotationOrNestedValue value_variant) {
+          std::visit(
+              [&self]<typename T>(const T& new_value) {
+                if constexpr (std::is_same_v<T, Rotation>) {
+                  self.rotation = new_value;
+                } else {
+                  self.rotation.value = new_value;
+                }
+              },
+              value_variant);
+        },
+        py_rvp::reference_internal, cls_doc.rotation.doc);
     DefReprUsingSerialize(&cls);
     DefCopyAndDeepCopy(&cls);
   }

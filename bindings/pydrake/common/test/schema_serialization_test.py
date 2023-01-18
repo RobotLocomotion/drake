@@ -5,6 +5,7 @@ import typing
 import unittest
 
 import numpy as np
+from numpy.testing import assert_allclose
 
 import pydrake.common.schema as mut
 from pydrake.common.yaml import yaml_load_typed
@@ -68,7 +69,7 @@ class TestRotationSerialization(unittest.TestCase):
         rpy = RollPitchYaw(x.GetDeterministicValue())
         rpy_deg = np.array([math.degrees(z) for z in rpy.vector()])
         expected = np.array([10.0, 20.0, 30.0])
-        np.testing.assert_allclose(rpy_deg, expected)
+        assert_allclose(rpy_deg, expected)
 
     def test_angle_axis(self):
         data = "value: !AngleAxis { angle_deg: 10.0, axis: [0, 1, 0] }"
@@ -76,7 +77,7 @@ class TestRotationSerialization(unittest.TestCase):
         self.assertTrue(x.IsDeterministic())
         aa = x.GetDeterministicValue().ToAngleAxis()
         self.assertAlmostEqual(math.degrees(aa.angle()), 10.0)
-        np.testing.assert_allclose(aa.axis(), [0.0, 1.0, 0.0])
+        assert_allclose(aa.axis(), [0.0, 1.0, 0.0])
 
     def test_uniform(self):
         data = "value: !Uniform {}"
@@ -95,6 +96,66 @@ class TestRotationSerialization(unittest.TestCase):
         self.assertFalse(x.IsDeterministic())
 
 
-# TODO(jwnimmer-tri) Add serialization tests for schema.Translation. For now,
-# the weird C++ `MakeNameValue("rotation", &rotation.value)` is incompatible
-# with how our Python deserialization works.
+class TestTransformSerialization(unittest.TestCase):
+    """Serialization tests related to schema/transform.h"""
+
+    def test_deterministic(self):
+        data = dedent("""
+        base_frame: foo
+        translation: [1.0, 2.0, 3.0]
+        rotation: !Rpy { deg: [10, 20, 30] }
+        """)
+        x = yaml_load_typed(schema=mut.Transform, data=data)
+        self.assertEqual(x.base_frame, "foo")
+        assert_allclose(x.translation, [1.0, 2.0, 3.0])
+        assert_allclose(x.rotation.value.deg, [10, 20, 30])
+
+    def test_random(self):
+        data = dedent("""
+        base_frame: bar
+        translation: !UniformVector
+          min: [1.0, 2.0, 3.0]
+          max: [4.0, 5.0, 6.0]
+        rotation: !Uniform {}
+        """)
+        x = yaml_load_typed(schema=mut.Transform, data=data)
+        self.assertEqual(x.base_frame, "bar")
+        assert_allclose(x.translation.min, [1.0, 2.0, 3.0])
+        assert_allclose(x.translation.max, [4.0, 5.0, 6.0])
+        self.assertEqual(type(x.rotation.value), mut.Rotation.Uniform)
+
+    def test_random_bounded(self):
+        data = dedent("""
+        base_frame: baz
+        translation: !UniformVector
+          min: [1.0, 2.0, 3.0]
+          max: [4.0, 5.0, 6.0]
+        rotation: !Rpy
+          deg: !UniformVector
+            min: [380, -0.25, -1.0]
+            max: [400,  0.25,  1.0]
+        """)
+        x = yaml_load_typed(schema=mut.Transform, data=data)
+        self.assertEqual(x.base_frame, "baz")
+        assert_allclose(x.translation.min, [1.0, 2.0, 3.0])
+        assert_allclose(x.translation.max, [4.0, 5.0, 6.0])
+        assert_allclose(x.rotation.value.deg.min, [380, -0.25, -1.0])
+        assert_allclose(x.rotation.value.deg.max, [400,  0.25,  1.0])
+
+    def test_random_angle_axis(self):
+        data = dedent("""
+        base_frame: quux
+        rotation: !AngleAxis
+          angle_deg: !Uniform
+            min: 10
+            max: 20
+          axis: !UniformVector
+            min: [1, 2, 3]
+            max: [4, 5, 6]
+        """)
+        x = yaml_load_typed(schema=mut.Transform, data=data)
+        self.assertEqual(x.base_frame, "quux")
+        self.assertEqual(x.rotation.value.angle_deg.min, 10)
+        self.assertEqual(x.rotation.value.angle_deg.max, 20)
+        assert_allclose(x.rotation.value.axis.min, [1, 2, 3])
+        assert_allclose(x.rotation.value.axis.max, [4, 5, 6])
