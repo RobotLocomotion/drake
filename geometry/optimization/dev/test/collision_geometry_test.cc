@@ -108,17 +108,12 @@ TEST_F(CollisionGeometryTest, Box) {
       rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
           q_star, geometry_body, expressed_body);
 
-  std::vector<symbolic::RationalFunction> rationals_for_points;
-  std::vector<symbolic::RationalFunction> rationals_for_matrix_sos;
+  std::vector<symbolic::RationalFunction> rationals;
   // Positive side.
   box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                  PlaneSide::kPositive, y_slack_, &rationals_for_points,
-                  &rationals_for_matrix_sos);
-  EXPECT_EQ(box.num_rationals_for_points(), 8);
-  EXPECT_EQ(rationals_for_points.size(), 8);
-  EXPECT_TRUE(rationals_for_matrix_sos.empty());
-  EXPECT_EQ(box.num_rationals_for_matrix_sos(), 0);
-  EXPECT_EQ(box.y_slack_size(), 0);
+                  PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(box.num_rationals(), 8);
+  EXPECT_EQ(rationals.size(), 8);
 
   // The order of the vertices should be the same in collision_geometry.cc
   Eigen::Matrix<double, 3, 8> p_GV;
@@ -153,22 +148,20 @@ TEST_F(CollisionGeometryTest, Box) {
   for (int i = 0; i < 8; ++i) {
     const symbolic::Expression expr_expected =
         a_expr.dot(p_AV.col(i)) + b_expr - 1;
-    CheckRationalExpression(rationals_for_points[i], env, expr_expected);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 
   // Negative side.
-  rationals_for_points.clear();
+  rationals.clear();
   box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                  PlaneSide::kNegative, y_slack_, &rationals_for_points,
-                  &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_points.size(), 8);
-  EXPECT_EQ(box.num_rationals_for_points(), 8);
+                  PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 8);
+  EXPECT_EQ(box.num_rationals(), 8);
   for (int i = 0; i < 8; ++i) {
     const symbolic::Expression expr_expected =
         -1 - a_expr.dot(p_AV.col(i)) - b_expr;
-    CheckRationalExpression(rationals_for_points[i], env, expr_expected);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
-  EXPECT_TRUE(rationals_for_matrix_sos.empty());
 }
 
 TEST_F(CollisionGeometryTest, Convex) {
@@ -179,7 +172,6 @@ TEST_F(CollisionGeometryTest, Convex) {
                            geometry_body, body1_convex_,
                            model_inspector.GetPoseInFrame(body1_convex_));
   EXPECT_EQ(convex.type(), GeometryType::kPolytope);
-  EXPECT_EQ(convex.y_slack_size(), 0);
 
   const multibody::BodyIndex expressed_body = body_indices_[3];
   const Eigen::Vector3d q_star(0, 0, 0);
@@ -187,8 +179,7 @@ TEST_F(CollisionGeometryTest, Convex) {
       rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
           q_star, geometry_body, expressed_body);
 
-  std::vector<symbolic::RationalFunction> rationals_for_points;
-  std::vector<symbolic::RationalFunction> rationals_for_matrix_sos;
+  std::vector<symbolic::RationalFunction> rationals;
 
   auto query_object =
       scene_graph_->get_query_output_port().Eval<QueryObject<double>>(
@@ -213,12 +204,9 @@ TEST_F(CollisionGeometryTest, Convex) {
 
   // negative side.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     PlaneSide::kNegative, y_slack_, &rationals_for_points,
-                     &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_points.size(), polytope.vertices().cols());
-  EXPECT_EQ(convex.num_rationals_for_points(), polytope.vertices().cols());
-  EXPECT_TRUE(rationals_for_matrix_sos.empty());
-  EXPECT_EQ(convex.num_rationals_for_matrix_sos(), 0);
+                     PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), polytope.vertices().cols());
+  EXPECT_EQ(convex.num_rationals(), polytope.vertices().cols());
   symbolic::Environment env;
   env.insert(rational_forward_kin_.s(), s_val);
   Vector3<symbolic::Expression> a_expr;
@@ -229,33 +217,31 @@ TEST_F(CollisionGeometryTest, Convex) {
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
         -1 - a_expr.dot(p_AV.col(i)) - b_expr;
-    CheckRationalExpression(rationals_for_points[i], env, expr_expected);
+    CheckRationalExpression(rationals[i], env, expr_expected);
   }
 
   // Positive side.
   // Note that here I didn't clear rationals_for_points, so that I can test that
   // the new rationals_for_points are appended to the existing ones.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     PlaneSide::kPositive, y_slack_, &rationals_for_points,
-                     &rationals_for_matrix_sos);
+                     PlaneSide::kPositive, y_slack_, &rationals);
   // The new rationals_for_points are appended to the existing ones.
-  EXPECT_EQ(rationals_for_points.size(), 2 * polytope.vertices().cols());
-  EXPECT_EQ(convex.num_rationals_for_points(), polytope.vertices().cols());
+  EXPECT_EQ(rationals.size(), 2 * polytope.vertices().cols());
+  EXPECT_EQ(convex.num_rationals(), polytope.vertices().cols());
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
         a_expr.dot(p_AV.col(i)) + b_expr - 1;
-    CheckRationalExpression(
-        rationals_for_points[i + polytope.vertices().cols()], env,
-        expr_expected);
+    CheckRationalExpression(rationals[i + polytope.vertices().cols()], env,
+                            expr_expected);
   }
 }
 
-// Assume the rationals_for_matrix_sos is obtained by requiring
+// Assume the rational is obtained by requiring
 // lhs_expr >= r * |P * a|
 // @param env contains the value of s.
 // @param lhs_expr has been evaluated at env.
 // @param a_expr has been evaluated at env.
-void CheckPolynomialWSlack(const symbolic::RationalFunction& psd_mat_rational,
+void CheckPolynomialWSlack(const symbolic::RationalFunction& rational,
                            const symbolic::Environment& env,
                            const symbolic::Expression lhs_expr,
                            const Eigen::Ref<const Eigen::MatrixX3d>& P,
@@ -263,22 +249,21 @@ void CheckPolynomialWSlack(const symbolic::RationalFunction& psd_mat_rational,
                            const VectorX<symbolic::Variable>& y,
                            double radius) {
   for (int i = 0; i < y.rows(); ++i) {
-    EXPECT_TRUE(psd_mat_rational.numerator().indeterminates().include(y(i)));
+    EXPECT_TRUE(rational.numerator().indeterminates().include(y(i)));
   }
 
-  const double denominator_val = psd_mat_rational.denominator().Evaluate(env);
+  const double denominator_val = rational.denominator().Evaluate(env);
 
   const symbolic::Expression expr_expected =
       (lhs_expr + 2 * (P * a_expr).dot(y) +
        lhs_expr / (radius * radius) * y.cast<symbolic::Expression>().dot(y));
 
-  EXPECT_PRED3(
-      symbolic::test::PolynomialEqual,
-      symbolic::Polynomial(
-          psd_mat_rational.numerator().EvaluatePartial(env).ToExpression())
-              .Expand() /
-          denominator_val,
-      symbolic::Polynomial(expr_expected), 1E-10);
+  EXPECT_PRED3(symbolic::test::PolynomialEqual,
+               symbolic::Polynomial(
+                   rational.numerator().EvaluatePartial(env).ToExpression())
+                       .Expand() /
+                   denominator_val,
+               symbolic::Polynomial(expr_expected), 1E-10);
 }
 
 TEST_F(CollisionGeometryTest, Sphere) {
@@ -288,9 +273,7 @@ TEST_F(CollisionGeometryTest, Sphere) {
                            body_indices_[2], body2_sphere_,
                            model_inspector.GetPoseInFrame(body2_sphere_));
   EXPECT_EQ(sphere.type(), GeometryType::kSphere);
-  EXPECT_EQ(sphere.num_rationals_for_points(), 1);
-  EXPECT_EQ(sphere.num_rationals_for_matrix_sos(), 1);
-  EXPECT_EQ(sphere.y_slack_size(), 3);
+  EXPECT_EQ(sphere.num_rationals(), 2);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[3];
@@ -309,12 +292,10 @@ TEST_F(CollisionGeometryTest, Sphere) {
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
 
   // Negative side.
-  std::vector<symbolic::RationalFunction> rationals_for_points;
-  std::vector<symbolic::RationalFunction> rationals_for_matrix_sos;
+  std::vector<symbolic::RationalFunction> rationals;
   sphere.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     PlaneSide::kNegative, y_slack_, &rationals_for_points,
-                     &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_points.size(), 1);
+                     PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 2);
   const Eigen::Vector3d p_BS = sphere.X_BG().translation();
   Eigen::Vector3d p_AS;
   plant_->CalcPointsPositions(
@@ -323,28 +304,19 @@ TEST_F(CollisionGeometryTest, Sphere) {
   const double radius =
       static_cast<const Sphere&>(model_inspector.GetShape(body2_sphere_))
           .radius();
-  EXPECT_EQ(rationals_for_matrix_sos.size(), 1);
 
-  CheckPolynomialWSlack(rationals_for_matrix_sos[0], env,
-                        -a_expr.dot(p_AS) - b_expr, Eigen::Matrix3d::Identity(),
-                        a_expr, y_slack_, radius);
-  CheckRationalExpression(rationals_for_points[0], env,
-                          -1 - a_expr.dot(p_AS) - b_expr);
+  CheckPolynomialWSlack(rationals[0], env, -a_expr.dot(p_AS) - b_expr,
+                        Eigen::Matrix3d::Identity(), a_expr, y_slack_, radius);
+  CheckRationalExpression(rationals[1], env, -1 - a_expr.dot(p_AS) - b_expr);
 
   // Positive side.
-  rationals_for_points.clear();
+  rationals.clear();
   sphere.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     PlaneSide::kPositive, y_slack_, &rationals_for_points,
-                     &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_points.size(), 1);
-  // We append a new polynomial to polynomials_w_slack, hence it should have
-  // size 2.
-  EXPECT_EQ(rationals_for_matrix_sos.size(), 2);
-  CheckPolynomialWSlack(rationals_for_matrix_sos.back(), env,
-                        a_expr.dot(p_AS) + b_expr, Eigen::Matrix3d::Identity(),
-                        a_expr, y_slack_, radius);
-  CheckRationalExpression(rationals_for_points[0], env,
-                          a_expr.dot(p_AS) + b_expr - 1);
+                     PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 2);
+  CheckPolynomialWSlack(rationals[0], env, a_expr.dot(p_AS) + b_expr,
+                        Eigen::Matrix3d::Identity(), a_expr, y_slack_, radius);
+  CheckRationalExpression(rationals[1], env, a_expr.dot(p_AS) + b_expr - 1);
 }
 
 TEST_F(CollisionGeometryTest, Capsule) {
@@ -355,9 +327,7 @@ TEST_F(CollisionGeometryTest, Capsule) {
                             geometry_body, body2_capsule_,
                             model_inspector.GetPoseInFrame(body2_capsule_));
   EXPECT_EQ(capsule.type(), GeometryType::kCapsule);
-  EXPECT_EQ(capsule.num_rationals_for_points(), 1);
-  EXPECT_EQ(capsule.num_rationals_for_matrix_sos(), 2);
-  EXPECT_EQ(capsule.y_slack_size(), 3);
+  EXPECT_EQ(capsule.num_rationals(), 3);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[0];
@@ -376,12 +346,10 @@ TEST_F(CollisionGeometryTest, Capsule) {
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
 
   // Negative side
-  std::vector<symbolic::RationalFunction> rationals_for_points;
-  std::vector<symbolic::RationalFunction> rationals_for_matrix_sos;
+  std::vector<symbolic::RationalFunction> rationals;
   capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                      PlaneSide::kNegative, y_slack_, &rationals_for_points,
-                      &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_points.size(), 1);
+                      PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
   const Capsule& capsule_shape =
       static_cast<const Capsule&>(model_inspector.GetShape(body2_capsule_));
   Eigen::Matrix<double, 3, 2> p_GS;
@@ -398,30 +366,24 @@ TEST_F(CollisionGeometryTest, Capsule) {
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BO,
       plant_->get_body(expressed_body).body_frame(), &p_AO);
-  EXPECT_EQ(rationals_for_matrix_sos.size(), 2);
   for (int i = 0; i < 2; ++i) {
-    CheckPolynomialWSlack(
-        rationals_for_matrix_sos[i], env, -a_expr.dot(p_AS.col(i)) - b_expr,
-        Eigen::Matrix3d::Identity(), a_expr, y_slack_, capsule_shape.radius());
+    CheckPolynomialWSlack(rationals[i], env, -a_expr.dot(p_AS.col(i)) - b_expr,
+                          Eigen::Matrix3d::Identity(), a_expr, y_slack_,
+                          capsule_shape.radius());
   }
-  CheckRationalExpression(rationals_for_points[0], env,
-                          -a_expr.dot(p_AO) - b_expr - 1);
+  CheckRationalExpression(rationals[2], env, -a_expr.dot(p_AO) - b_expr - 1);
 
   // Positive side
-  rationals_for_points.clear();
-  rationals_for_matrix_sos.clear();
+  rationals.clear();
   capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                      PlaneSide::kPositive, y_slack_, &rationals_for_points,
-                      &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_matrix_sos.size(), 2);
+                      PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
   for (int i = 0; i < 2; ++i) {
-    CheckPolynomialWSlack(
-        rationals_for_matrix_sos[i], env, a_expr.dot(p_AS.col(i)) + b_expr,
-        Eigen::Matrix3d::Identity(), a_expr, y_slack_, capsule_shape.radius());
+    CheckPolynomialWSlack(rationals[i], env, a_expr.dot(p_AS.col(i)) + b_expr,
+                          Eigen::Matrix3d::Identity(), a_expr, y_slack_,
+                          capsule_shape.radius());
   }
-  EXPECT_EQ(rationals_for_points.size(), 1);
-  CheckRationalExpression(rationals_for_points[0], env,
-                          a_expr.dot(p_AO) + b_expr - 1);
+  CheckRationalExpression(rationals[2], env, a_expr.dot(p_AO) + b_expr - 1);
 }
 
 TEST_F(CollisionGeometryTest, Cylinder) {
@@ -432,9 +394,7 @@ TEST_F(CollisionGeometryTest, Cylinder) {
                              geometry_body, body3_cylinder_,
                              model_inspector.GetPoseInFrame(body3_cylinder_));
   EXPECT_EQ(cylinder.type(), GeometryType::kCylinder);
-  EXPECT_EQ(cylinder.num_rationals_for_points(), 1);
-  EXPECT_EQ(cylinder.num_rationals_for_matrix_sos(), 2);
-  EXPECT_EQ(cylinder.y_slack_size(), 2);
+  EXPECT_EQ(cylinder.num_rationals(), 3);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[2];
@@ -453,12 +413,10 @@ TEST_F(CollisionGeometryTest, Cylinder) {
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
 
   // Positive side.
-  std::vector<symbolic::RationalFunction> rationals_for_points;
-  std::vector<symbolic::RationalFunction> rationals_for_matrix_sos;
+  std::vector<symbolic::RationalFunction> rationals;
   cylinder.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                       PlaneSide::kPositive, y_slack_, &rationals_for_points,
-                       &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_points.size(), 1);
+                       PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
 
   const Cylinder& cylinder_shape =
       static_cast<const Cylinder&>(model_inspector.GetShape(body3_cylinder_));
@@ -471,9 +429,8 @@ TEST_F(CollisionGeometryTest, Cylinder) {
       X_GA.rotation().matrix() * a_expr;
   const symbolic::Expression b_G_expr =
       b_expr + a_expr.dot(X_GA.inverse().translation());
-  CheckRationalExpression(rationals_for_points[0], env, b_G_expr - 1);
+  CheckRationalExpression(rationals[0], env, b_G_expr - 1);
 
-  EXPECT_EQ(rationals_for_matrix_sos.size(), 2);
   const double radius = cylinder_shape.radius();
   const std::array<double, 2> height = {cylinder_shape.length() / 2,
                                         -cylinder_shape.length() / 2};
@@ -483,22 +440,19 @@ TEST_F(CollisionGeometryTest, Cylinder) {
        0, 1, 0;
   // clang-format on
   for (int i = 0; i < 2; ++i) {
-    CheckPolynomialWSlack(rationals_for_matrix_sos[i], env,
+    CheckPolynomialWSlack(rationals[i + 1], env,
                           a_G_expr(2) * height[i] + b_G_expr, P, a_G_expr,
                           y_slack_.head<2>(), radius);
   }
 
   // Negative side.
-  rationals_for_points.clear();
-  rationals_for_matrix_sos.clear();
+  rationals.clear();
   cylinder.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                       PlaneSide::kNegative, y_slack_, &rationals_for_points,
-                       &rationals_for_matrix_sos);
-  EXPECT_EQ(rationals_for_points.size(), 1);
-  CheckRationalExpression(rationals_for_points[0], env, -1 - b_G_expr);
-  EXPECT_EQ(rationals_for_matrix_sos.size(), 2);
+                       PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
+  CheckRationalExpression(rationals[0], env, -1 - b_G_expr);
   for (int i = 0; i < 2; ++i) {
-    CheckPolynomialWSlack(rationals_for_matrix_sos[i], env,
+    CheckPolynomialWSlack(rationals[i + 1], env,
                           -a_G_expr(2) * height[i] - b_G_expr, P, a_G_expr,
                           y_slack_.head<2>(), radius);
   }
