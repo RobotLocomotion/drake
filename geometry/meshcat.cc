@@ -21,8 +21,8 @@
 #include <App.h>
 #include <common_robotics_utilities/base64_helpers.hpp>
 #include <drake_vendor/msgpack.hpp>
+#include <drake_vendor/uuid.h>
 #include <fmt/format.h>
-#include <uuid.h>
 
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"

@@ -1,0 +1,34 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # MIT
+
+package(default_visibility = ["//visibility:public"])
+
+# TODO(jwnimmer-tri) Once we require >= C++20, i.e., once we drop support for
+# Ubuntu 20.04 Focal, then we should remove the thus-unused gsl cc_library.
+cc_library(
+    name = "gsl",
+    hdrs = glob(["gsl/*"], allow_empty = False),
+    includes = ["."],
+    linkstatic = 1,
+)
+
+cc_library(
+    name = "stduuid",
+    hdrs = ["include/uuid.h"],
+    strip_include_prefix = "include",
+    include_prefix = "drake_vendor",
+    linkstatic = 1,
+    deps = [":gsl"],
+)
+
+# Install the license file.
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

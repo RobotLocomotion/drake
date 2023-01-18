@@ -1,0 +1,31 @@
+Add vendoring namespace and disable std::hash
+
+This prevents ODR violations in case downstream code also links to stduuid.
+
+--- include/uuid.h
++++ include/uuid.h
+@@ -49,6 +49,7 @@
+ 
+ #endif
+ 
++inline namespace drake_vendor __attribute__ ((visibility ("hidden"))) {
+ namespace uuids
+ {
+ #ifdef __cpp_lib_span
+@@ -900,7 +901,9 @@
+    };
+ #endif
+ }
++}  // namespace drake_vendor
+ 
++#if 0  // Disable std::hash<> specialization.
+ namespace std
+ {
+    template <>
+@@ -947,5 +950,6 @@
+       }
+    };
+ }
++#endif
+ 
+ #endif /* STDUUID_H */

@@ -471,7 +471,7 @@ drake_cc_library(
         "//common:unused",
         "@common_robotics_utilities",
         "@msgpack_internal//:msgpack",
-        "@stduuid",
+        "@stduuid_internal//:stduuid",
         "@uwebsockets",
     ],
 )
