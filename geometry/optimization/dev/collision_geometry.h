@@ -86,10 +86,8 @@ class CollisionGeometry {
    the plane.
    @param y_slack The slack variable y in the documentation above, used for
    non-polytopic geometries.
-   @param[out] rationals_for_points The rational functions that need to be
-   positive to represent a point is on a given side of the plane.
-   @param[out] rationals_for_matrix_sos The rationals (whose indeterminates are
-   y and s) that need to be positive. This is used for non-polytopic geometries.
+   @param[out] rationals The rational functions that need to be
+   positive to represent that the geometry is on a given side of the plane.
    */
   void OnPlaneSide(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
@@ -97,28 +95,15 @@ class CollisionGeometry {
           X_AB_multilinear,
       const multibody::RationalForwardKinematics& rational_forward_kin,
       PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
-      std::vector<symbolic::RationalFunction>* rationals_for_points,
-      std::vector<symbolic::RationalFunction>* rationals_for_matrix_sos) const;
+      std::vector<symbolic::RationalFunction>* rationals) const;
 
   [[nodiscard]] GeometryType type() const;
 
   /**
-   Returns the number of rationals for points in the condition "this geometry is
+   Returns the number of rationals in the condition "this geometry is
    on one side of the plane."
    */
-  [[nodiscard]] int num_rationals_for_points() const;
-
-  /**
-   Returns the number of rationals_for_matrix_sos in the condition "this
-   geometry is on one side of the plane."
-   */
-  [[nodiscard]] int num_rationals_for_matrix_sos() const;
-
-  /**
-   Returns the size of y used in the matrix-sos constraint to impose the
-   geometry on one side of a plane.
-   */
-  [[nodiscard]] int y_slack_size() const;
+  [[nodiscard]] int num_rationals() const;
 
  private:
   const Shape* geometry_;

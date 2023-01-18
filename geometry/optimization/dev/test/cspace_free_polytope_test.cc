@@ -351,32 +351,31 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
     if (plane.positive_side_geometry->type() == GeometryType::kPolytope &&
         plane.negative_side_geometry->type() == GeometryType::kPolytope) {
       EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
-                plane.positive_side_geometry->num_rationals_for_points());
+                plane.positive_side_geometry->num_rationals());
       EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
-                plane.negative_side_geometry->num_rationals_for_points());
+                plane.negative_side_geometry->num_rationals());
     } else if (plane.positive_side_geometry->type() ==
                    GeometryType::kPolytope &&
                plane.negative_side_geometry->type() !=
                    GeometryType::kPolytope) {
       EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
-                plane.positive_side_geometry->num_rationals_for_points());
-      EXPECT_TRUE(plane_geometries.negative_side_rationals.empty());
+                plane.positive_side_geometry->num_rationals());
+      EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
+                plane.negative_side_geometry->num_rationals() - 1);
     } else if (plane.positive_side_geometry->type() !=
                    GeometryType::kPolytope &&
                plane.negative_side_geometry->type() ==
                    GeometryType::kPolytope) {
-      EXPECT_TRUE(plane_geometries.positive_side_rationals.empty());
+      EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
+                plane.positive_side_geometry->num_rationals() - 1);
       EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
-                plane.negative_side_geometry->num_rationals_for_points());
+                plane.negative_side_geometry->num_rationals());
     } else {
       EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
-                plane.positive_side_geometry->num_rationals_for_points());
-      EXPECT_TRUE(plane_geometries.negative_side_rationals.empty());
+                plane.positive_side_geometry->num_rationals());
+      EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
+                plane.negative_side_geometry->num_rationals() - 1);
     }
-    EXPECT_EQ(plane_geometries.positive_side_psd_mat.size(),
-              plane.positive_side_geometry->num_rationals_for_matrix_sos());
-    EXPECT_EQ(plane_geometries.negative_side_psd_mat.size(),
-              plane.negative_side_geometry->num_rationals_for_matrix_sos());
   }
 }
 
@@ -687,10 +686,6 @@ void TestConstructPlaneSearchProgram(
             plane_geometries.positive_side_rationals.size());
   EXPECT_EQ(ret.certificate.negative_side_rational_lagrangians.size(),
             plane_geometries.negative_side_rationals.size());
-  EXPECT_EQ(ret.certificate.positive_side_psd_mat_lagrangians.size(),
-            plane_geometries.positive_side_psd_mat.size());
-  EXPECT_EQ(ret.certificate.negative_side_psd_mat_lagrangians.size(),
-            plane_geometries.negative_side_psd_mat.size());
 
   solvers::MosekSolver solver;
   if (solver.available()) {
@@ -716,10 +711,6 @@ void TestConstructPlaneSearchProgram(
     const auto negative_side_rational_lagrangians_result =
         get_lagrangian_result(
             result, ret.certificate.negative_side_rational_lagrangians);
-    const auto positive_side_psd_mat_lagrangians_result = get_lagrangian_result(
-        result, ret.certificate.positive_side_psd_mat_lagrangians);
-    const auto negative_side_psd_mat_lagrangians_result = get_lagrangian_result(
-        result, ret.certificate.negative_side_psd_mat_lagrangians);
 
     Vector3<symbolic::Polynomial> a_result;
     for (int i = 0; i < 3; ++i) {
@@ -732,20 +723,11 @@ void TestConstructPlaneSearchProgram(
     CheckRationalsPositiveInCspacePolytope(
         plane_geometries.positive_side_rationals,
         positive_side_rational_lagrangians_result, plane.decision_variables,
-        plane_decision_var_vals, C, d, tester, 0);
+        plane_decision_var_vals, C, d, tester, 1E-5);
     CheckRationalsPositiveInCspacePolytope(
         plane_geometries.negative_side_rationals,
         negative_side_rational_lagrangians_result, plane.decision_variables,
-        plane_decision_var_vals, C, d, tester, 0);
-    const double small_coeff_tol = 1E-5;
-    CheckRationalsPositiveInCspacePolytope(
-        plane_geometries.positive_side_psd_mat,
-        positive_side_psd_mat_lagrangians_result, plane.decision_variables,
-        plane_decision_var_vals, C, d, tester, small_coeff_tol);
-    CheckRationalsPositiveInCspacePolytope(
-        plane_geometries.negative_side_psd_mat,
-        negative_side_psd_mat_lagrangians_result, plane.decision_variables,
-        plane_decision_var_vals, C, d, tester, small_coeff_tol);
+        plane_decision_var_vals, C, d, tester, 1E-5);
 
     Eigen::Matrix<double, 10, 3> s_samples;
     // clang-format off
@@ -874,23 +856,12 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
             plane_geometries.positive_side_rationals,
             certificate->positive_side_rational_lagrangians,
             plane.decision_variables, certificate->plane_decision_var_vals, C,
-            d, tester, 0);
+            d, tester, 1E-4);
         CheckRationalsPositiveInCspacePolytope(
             plane_geometries.negative_side_rationals,
             certificate->negative_side_rational_lagrangians,
             plane.decision_variables, certificate->plane_decision_var_vals, C,
-            d, tester, 0);
-        const double small_coeff_tol = 1E-4;
-        CheckRationalsPositiveInCspacePolytope(
-            plane_geometries.positive_side_psd_mat,
-            certificate->positive_side_psd_mat_lagrangians,
-            plane.decision_variables, certificate->plane_decision_var_vals, C,
-            d, tester, small_coeff_tol);
-        CheckRationalsPositiveInCspacePolytope(
-            plane_geometries.negative_side_psd_mat,
-            certificate->negative_side_psd_mat_lagrangians,
-            plane.decision_variables, certificate->plane_decision_var_vals, C,
-            d, tester, small_coeff_tol);
+            d, tester, 1E-4);
       }
     }
     std::unordered_map<SortedPair<geometry::GeometryId>,
@@ -1134,18 +1105,6 @@ void CheckPolytopeSearchResult(
         plane.decision_variables,
         new_certificate_result.plane_decision_var_vals, C_sol, d_sol, tester,
         tol);
-    CheckRationalsPositiveInCspacePolytope(
-        plane_geometries.positive_side_psd_mat,
-        new_certificate_result.positive_side_psd_mat_lagrangians,
-        plane.decision_variables,
-        new_certificate_result.plane_decision_var_vals, C_sol, d_sol, tester,
-        tol);
-    CheckRationalsPositiveInCspacePolytope(
-        plane_geometries.negative_side_psd_mat,
-        new_certificate_result.negative_side_psd_mat_lagrangians,
-        plane.decision_variables,
-        new_certificate_result.plane_decision_var_vals, C_sol, d_sol, tester,
-        tol);
   }
   // Check if the Lagrangians are set correctly.
   for (const auto& old_certificate : certificates_result) {
@@ -1160,12 +1119,6 @@ void CheckPolytopeSearchResult(
         old_certificate->negative_side_rational_lagrangians,
         new_certificate_result.negative_side_rational_lagrangians,
         !search_s_bounds_lagrangians);
-    CompareLagrangians(old_certificate->positive_side_psd_mat_lagrangians,
-                       new_certificate_result.positive_side_psd_mat_lagrangians,
-                       !search_s_bounds_lagrangians);
-    CompareLagrangians(old_certificate->negative_side_psd_mat_lagrangians,
-                       new_certificate_result.negative_side_psd_mat_lagrangians,
-                       !search_s_bounds_lagrangians);
   }
 }
 
@@ -1444,22 +1397,10 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
             certificate_result.positive_side_rational_lagrangians,
             plane.decision_variables,
             certificate_result.plane_decision_var_vals, polytope_result->C,
-            polytope_result->d, tester, 0);
+            polytope_result->d, tester, 2E-4);
         CheckRationalsPositiveInCspacePolytope(
             plane_geometries.negative_side_rationals,
             certificate_result.negative_side_rational_lagrangians,
-            plane.decision_variables,
-            certificate_result.plane_decision_var_vals, polytope_result->C,
-            polytope_result->d, tester, 0);
-        CheckRationalsPositiveInCspacePolytope(
-            plane_geometries.positive_side_psd_mat,
-            certificate_result.positive_side_psd_mat_lagrangians,
-            plane.decision_variables,
-            certificate_result.plane_decision_var_vals, polytope_result->C,
-            polytope_result->d, tester, 2E-4);
-        CheckRationalsPositiveInCspacePolytope(
-            plane_geometries.negative_side_psd_mat,
-            certificate_result.negative_side_psd_mat_lagrangians,
             plane.decision_variables,
             certificate_result.plane_decision_var_vals, polytope_result->C,
             polytope_result->d, tester, 2E-4);
