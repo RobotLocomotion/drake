@@ -80,6 +80,7 @@ class TestMath(unittest.TestCase):
             (mut.tanh, math.tanh),
             (mut.ceil, math.ceil),
             (mut.floor, math.floor),
+            (mut.isnan, math.isnan),
         ]
         binary = [
             (mut.min, min),
