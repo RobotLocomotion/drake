@@ -32,13 +32,16 @@ void CheckSupportedElements(
         detail.filename = element->FilePath();
       }
       detail.line = element->LineNumber();
-      detail.message =
-          std::string("Unsupported SDFormat element in ") +
-          root_element->GetName() + std::string(": ") + element_name;
       // Unsupported elements in the drake namespace are errors.
       if (element_name.find("drake:") == 0) {
+        detail.message =
+            std::string("Unsupported SDFormat element in ") +
+            root_element->GetName() + std::string(": ") + element_name;
         diagnostic.Error(detail);
       } else {
+        detail.message =
+            std::string("Ignoring unsupported SDFormat element in ") +
+            root_element->GetName() + std::string(": ") + element_name;
         diagnostic.Warning(detail);
       }
     }
