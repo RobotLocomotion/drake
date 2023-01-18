@@ -2,7 +2,7 @@
 
 #include "drake/planning/collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
 /** Computes a displacement in configuration space, Δq, that moves the provided
@@ -52,9 +52,9 @@ namespace planning {
  @pre max_clearance > max_penetration.
  @pre if context != nullptr, it is a context managed by checker. */
 Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
-    const drake::planning::CollisionChecker& checker, const Eigen::VectorXd& q,
+    const CollisionChecker& checker, const Eigen::VectorXd& q,
     double max_penetration, double max_clearance,
-    drake::planning::CollisionCheckerContext* context = nullptr);
+    CollisionCheckerContext* context = nullptr);
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
