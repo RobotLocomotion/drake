@@ -200,6 +200,16 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.get_actual_realtime_rate.doc)
         .def("ResetStatistics", &Simulator<T>::ResetStatistics,
             doc.Simulator.ResetStatistics.doc)
+        .def("get_num_publishes", &Simulator<T>::get_num_publishes,
+            doc.Simulator.get_num_publishes.doc)
+        .def("get_num_steps_taken", &Simulator<T>::get_num_steps_taken,
+            doc.Simulator.get_num_steps_taken.doc)
+        .def("get_num_discrete_updates",
+            &Simulator<T>::get_num_discrete_updates,
+            doc.Simulator.get_num_discrete_updates.doc)
+        .def("get_num_unrestricted_updates",
+            &Simulator<T>::get_num_unrestricted_updates,
+            doc.Simulator.get_num_unrestricted_updates.doc)
         .def("get_system", &Simulator<T>::get_system, py_rvp::reference,
             doc.Simulator.get_system.doc);
 
