@@ -38,7 +38,7 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("__repr__",
           [](const VectorBase<T>& self) {
             py::handle cls = py::cast(&self, py_rvp::reference).get_type();
-            return py::str("{}({})").format(cls.attr("__name__"),
+            return py::str("{}({})").format(internal::PrettyClassName(cls),
                 py::cast(self.CopyToVector()).attr("tolist")());
           })
       .def("__getitem__",
