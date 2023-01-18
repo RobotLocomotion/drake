@@ -18,11 +18,12 @@ def parse_command_line(argv):
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('verb', type=str, help='coverage.py verb')
-    parser.add_argument('exe', type=str, help='target executable')
-    parser.add_argument('-a', action='store_true', default=False,
-                        help='coverage.py -a')
+    parser.add_argument('-a', '--append', action='store_true', default=False,
+                        help='coverage.py --append')
     parser.add_argument('--branch', action='store_true', default=False,
                         help='coverage.py --branch')
+    parser.add_argument('--rcfile', type=str, help='coverage.py rcfile')
+    parser.add_argument('-o', type=str, help='coverage.py outfile')
 
     return parser.parse_known_args(argv)
 
@@ -49,7 +50,9 @@ def exec_with_kcov(exe, exe_args):
 
 def main():
     args, extra = parse_command_line(sys.argv[1:])
-    exec_with_kcov(args.exe, extra)
+    if args.verb != 'run':
+        return
+    exec_with_kcov(extra[0], extra[1:])
 
 
 if __name__ == "__main__":
