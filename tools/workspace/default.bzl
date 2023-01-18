@@ -87,6 +87,7 @@ load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
 load("@drake//tools/workspace/stable_baselines3_internal:repository.bzl", "stable_baselines3_internal_repository")  # noqa
 load("@drake//tools/workspace/statsjs:repository.bzl", "statsjs_repository")
 load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
+load("@drake//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
@@ -297,6 +298,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         statsjs_repository(name = "statsjs", mirrors = mirrors)
     if "stduuid" not in excludes:
         stduuid_repository(name = "stduuid", mirrors = mirrors)
+    if "stduuid_internal" not in excludes:
+        stduuid_internal_repository(name = "stduuid_internal", mirrors = mirrors)  # noqa
     if "styleguide" not in excludes:
         styleguide_repository(name = "styleguide", mirrors = mirrors)
     if "suitesparse" not in excludes:
