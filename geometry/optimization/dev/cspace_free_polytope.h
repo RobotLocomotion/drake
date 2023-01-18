@@ -24,29 +24,19 @@ namespace geometry {
 namespace optimization {
 /**
  Contains the information to enforce a pair of geometries are separated by a
- plane.
- The conditions are that certain rational functions should be always positive,
- and certain polynomials (coming from matrix-sos conditions) should always be
+ plane. The conditions are that certain rational functions should be always
  positive.
  */
 struct PlaneSeparatesGeometries {
   PlaneSeparatesGeometries(
       std::vector<symbolic::RationalFunction> m_positive_side_rationals,
       std::vector<symbolic::RationalFunction> m_negative_side_rationals,
-      std::vector<symbolic::RationalFunction> m_positive_side_psd_mat,
-      std::vector<symbolic::RationalFunction> m_negative_side_psd_mat,
       int m_plane_index)
       : positive_side_rationals{std::move(m_positive_side_rationals)},
         negative_side_rationals{std::move(m_negative_side_rationals)},
-        positive_side_psd_mat(std::move(m_positive_side_psd_mat)),
-        negative_side_psd_mat(std::move(m_negative_side_psd_mat)),
         plane_index{m_plane_index} {}
-  // TODO(hongkai.dai): only save positive_side_rationals and
-  // negative_side_rationals.
   const std::vector<symbolic::RationalFunction> positive_side_rationals;
   const std::vector<symbolic::RationalFunction> negative_side_rationals;
-  const std::vector<symbolic::RationalFunction> positive_side_psd_mat;
-  const std::vector<symbolic::RationalFunction> negative_side_psd_mat;
   int plane_index;
 };
 
@@ -176,8 +166,6 @@ class CspaceFreePolytope {
     int plane_index;
     std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
     std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
-    std::vector<SeparatingPlaneLagrangians> positive_side_psd_mat_lagrangians;
-    std::vector<SeparatingPlaneLagrangians> negative_side_psd_mat_lagrangians;
     // The separating plane is { x | aᵀx+b=0 }
     Vector3<symbolic::Polynomial> a;
     symbolic::Polynomial b;
@@ -212,13 +200,6 @@ class CspaceFreePolytope {
     // negative_side_rational_lagrangians[i] is the Lagrangian multipliers for
     // PlaneSeparatesGeometries::negative_side_rationals[i].
     std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
-
-    // positive_side_psd_mat_lagrangians[i] is the Lagrangian multipliers for
-    // PlaneSeparatesGeometries::positive_side_psd_mat[i].
-    std::vector<SeparatingPlaneLagrangians> positive_side_psd_mat_lagrangians;
-    // negative_side_psd_mat_lagrangians[i] is the Lagrangian multipliers for
-    // PlaneSeparatesGeometries::negative_side_psd_mat[i].
-    std::vector<SeparatingPlaneLagrangians> negative_side_psd_mat_lagrangians;
   };
 
   struct SeparationCertificateProgram {
