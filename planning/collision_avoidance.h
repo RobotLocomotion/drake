@@ -2,11 +2,12 @@
 
 #include "drake/planning/collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 
-/** Computes a displacement in configuration space, Δq, that moves the provided
- configuration `q` into a "clearer" state, reducing the likelihood of collision.
+/** (Advanced) Computes a displacement in configuration space, Δq, that moves
+ the provided configuration `q` into a "clearer" state, reducing the likelihood
+ of collision.
 
  The displacement vector Δq = Σᵢ(wᵢ⋅Jqᵣ_ϕᵢ), where
 
@@ -14,10 +15,11 @@ namespace planning {
      measure the clearance between robot and environment or robot and robot.
    - The number of measurements depends on how the robot is represented
      geometrically in `checker`.
-   - ϕᵢ is the iᵗʰ measured distance and Jq_ϕᵢ is the partial derivative of ϕᵢ
+   - ϕᵢ is the iᵗʰ measured distance and Jqᵣ_ϕᵢ is the partial derivative of ϕᵢ
      with respect to qᵣ, the robot state.
    - wᵢ is the weight for iᵗʰ measurement, defined as wᵢ = (c - ϕᵢ) / (c - p),
-     where c = `max_clearance` and p = `max_penetration` and c > p.
+     where c = `max_clearance` and p = `max_penetration` and c > p, and is
+     clamped to be within the range [0..1].
 
  Intuitively, the displacement vector Δq tries to reconcile multiple
  simultaneous potential collisions via a penalty method. The closer to
@@ -52,9 +54,9 @@ namespace planning {
  @pre max_clearance > max_penetration.
  @pre if context != nullptr, it is a context managed by checker. */
 Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
-    const drake::planning::CollisionChecker& checker, const Eigen::VectorXd& q,
+    const CollisionChecker& checker, const Eigen::VectorXd& q,
     double max_penetration, double max_clearance,
-    drake::planning::CollisionCheckerContext* context = nullptr);
+    CollisionCheckerContext* context = nullptr);
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

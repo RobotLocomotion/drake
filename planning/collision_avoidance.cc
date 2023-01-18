@@ -1,14 +1,10 @@
-#include "planning/collision_avoidance.h"
+#include "drake/planning/collision_avoidance.h"
 
 #include <algorithm>
 #include <cmath>
 
-namespace anzu {
+namespace drake {
 namespace planning {
-
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::RobotClearance;
 
 Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
     const CollisionChecker& checker, const Eigen::VectorXd& q,
@@ -45,4 +41,4 @@ Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
   return robot_clearance.jacobians().transpose() * weights;
 }
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
