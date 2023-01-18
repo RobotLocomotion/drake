@@ -4,6 +4,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/name_value.h"
@@ -70,6 +71,15 @@ struct MyData2Docs {
   }
 };
 
+template <typename T>
+struct MyData3 {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(quux));
+  }
+  T quux{0};
+};
+
 }  // namespace
 
 PYBIND11_MODULE(serialize_test_util, m) {
@@ -91,6 +101,26 @@ PYBIND11_MODULE(serialize_test_util, m) {
   DefAttributesUsingSerialize(&cls2, cls2_doc);
   DefReprUsingSerialize(&cls2);
   DefCopyAndDeepCopy(&cls2);
+
+  // Bind MyData3 with two instantiations.
+  {
+    using Class = MyData3<double>;
+    py::class_<Class> cls(m, TemporaryClassName<Class>().c_str());
+    AddTemplateClass(m, "MyData3", cls, GetPyParam<double>());
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
+  {
+    using Class = MyData3<int>;
+    py::class_<Class> cls(m, TemporaryClassName<Class>().c_str());
+    AddTemplateClass(m, "MyData3", cls, GetPyParam<int>());
+    cls.def(ParamInit<Class>());
+    DefAttributesUsingSerialize(&cls);
+    DefReprUsingSerialize(&cls);
+    DefCopyAndDeepCopy(&cls);
+  }
 }
 
 }  // namespace pydrake
