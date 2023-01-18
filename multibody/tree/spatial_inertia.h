@@ -190,6 +190,21 @@ class SpatialInertia {
   /// @throws std::exception if r is zero or negative.
   static SpatialInertia<T> SolidSphereWithDensity(const T& density, const T& r);
 
+  /// Creates a spatial inertia for a uniform density solid tetrahedron B about
+  /// its vertex Bo (from which the other 3 vertices P, Q, R are located).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] p position vector from vertex Bo to vertex P, expressed in E.
+  /// @param[in] q position vector from vertex Bo to vertex Q, expressed in E.
+  /// @param[in] r position vector from vertex Bo to vertex R, expressed in E.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in E, were E is
+  /// the right-handed orthogonal unit basis (frame) used to express p, q, r.
+  /// @throws std::exception if B's volume is very close to zero˜as compared
+  /// to the magnitudes (lengths) of p, q, r.
+  /// @note A negative volume (and mass) occurs if p.cross(q).dot(r) < 0.
+  static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
+      const T& density,
+      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r);
+
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
   /// uninitialized values.

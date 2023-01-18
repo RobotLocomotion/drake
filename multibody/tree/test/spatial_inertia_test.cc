@@ -247,6 +247,78 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
       "[^]* A solid sphere's radius = .* is negative or zero.");
 }
 
+// Helper function to test the spatial inertia of a tetrahedron.
+SpatialInertia<double> CalcSolidTetrahedronSpatialInertia(const double density,
+    const Vector3<double>& p,
+    const Vector3<double>& q,
+    const Vector3<double>& r) {
+  const double volume = p.cross(q).dot(r) / 6.0;
+  const double mass = density * volume;
+  const Vector3<double> p_GoGcm = (p + q + r) / 4.0;
+
+  // The code below if from Sean Curtis and uses the algorithms:
+  // https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
+  // http://number-none.com/blow/inertia/bb_inertia.doc
+  // The co-variance matrix of a canonical tetrahedron with vertices at
+  // (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1) with assumed *unit* density.
+  Matrix3<double> C_canonical;
+  // clang-format off
+  C_canonical << 1 / 60.0,  1 / 120.0, 1 / 120.0,
+                 1 / 120.0, 1 / 60.0,  1 / 120.0,
+                 1 / 120.0, 1 / 120.0, 1 / 60.0;
+  // clang-format on
+
+  // The *transpose* of the affine transformation takes us from the
+  // canonical co-variance matrix to the matrix for the particular tet.
+  Matrix3<double> A_T = Matrix3<double>::Zero();
+  A_T.row(0) = p;
+  A_T.row(1) = q;
+  A_T.row(2) = r;
+  // We're computing C += det(A)·ACA?. Fortunately, det(A) is equal to 6V.
+  const Matrix3<double> C = 6 * A_T.transpose() * C_canonical * A_T;
+
+  // We can compute I = C.trace * 13 - C. Two key points:
+  //  1. We don't want I, we want G, the unit inertia. Our computation of C is
+  //     *mass* weighted with an implicit assumption of unit density. So, to
+  //     make it a *unit* inertia, we must divide by mass = ?V = 1 * V = V.
+  //  2. G is symmetric, so we'll forego doing the full matrix multiplication
+  //     and go get the six terms we actually care about.
+  const double trace_C = C.trace();
+  const double Ixx = trace_C - C(0, 0);
+  const double Iyy = trace_C - C(1, 1);
+  const double Izz = trace_C - C(2, 2);
+  const double Ixy = -C(1, 0);
+  const double Ixz = -C(2, 0);
+  const double Iyz = -C(2, 1);
+  const UnitInertia G_GGo_G(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+  return SpatialInertia<double>{mass, p_GoGcm, G_GGo_G};
+}
+
+// Tests the static method for the spatial inertia of a solid tetrahedron.
+GTEST_TEST(SpatialInertia, SolidTetrahedronWithDensity) {
+  const double density = 0.12345;
+  const Vector3<double> p(1, 0, 0);
+  const Vector3<double> q(0, 2, 0);
+  const Vector3<double> r(0, 0, 3);
+
+  const SpatialInertia<double> M_Sean_Curtis =
+      CalcSolidTetrahedronSpatialInertia(density, p, q, r);
+  const SpatialInertia<double> M_Mitiguy =
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p, q, r);
+
+  // An empirical tolerance: two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M_Sean_Curtis.CopyToFullMatrix6(),
+                                  M_Mitiguy.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure that if two vertices are coincident, an exception is thrown.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, Vector3<double>::Zero(), q, r),
+      "[^]* A solid tetrahedron's volume is zero or near zero.");
+}
+
 // Test the construction from the mass, center of mass, and unit inertia of a
 // body. Also tests:
 //   - Getters.

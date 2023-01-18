@@ -98,6 +98,51 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
 }
 
+// Returns a 3x3 matrix whose upper-triangular part contains the outer product
+// of vector a * vector b [i.e., a * b.transpose()] and whose lower-triangular
+// part is uninitialized.
+// @param[in] a vector expressed in a frame E.
+// @param[in] b vector expressed in a frame E.
+// @note This function is an efficient way to calculate outer-products that
+//   contribute via a sum to a symmetric matrix.
+template <typename T>
+static Matrix3<T> UpperTriangularOuterProduct(
+    const Eigen::Ref<const Vector3<T>>& a,
+    const Eigen::Ref<const Vector3<T>>& b) {
+  Matrix3<T> M;
+  M(0, 0) = a(0) * b(0);  M(0, 1) = a(0) * b(1);  M(0, 2) = a(0) * b(2);
+                          M(1, 1) = a(1) * b(1);  M(1, 2) = a(1) * b(2);
+                                                  M(2, 2) = a(2) * b(2);
+  return M;
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
+      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
+  // Note: Tetrahedon volume, mass, center of mass, and inertia formulas are
+  // from the mass/inertia appendix in
+  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
+  //                   For professional engineers and scientists,"
+  const Vector3<T> q_plus_r = q + r;
+  const T p_dot_pqr = p.dot(p + q_plus_r);
+  const T q_dot_qr  = q.dot(q_plus_r);
+  const T r_dot_r   = r.dot(r);
+  const T scalar = 0.1 * (p_dot_pqr + q_dot_qr + r_dot_r);
+  const Vector3<T> p_half = 0.5 * p;
+  const Vector3<T> q_half = 0.5 * q;
+  const Vector3<T> r_half = 0.5 * r;
+  const Matrix3<T> G = UpperTriangularOuterProduct<T>(p, p + q_half + r_half)
+                     + UpperTriangularOuterProduct<T>(q, p_half + q + r_half)
+                     + UpperTriangularOuterProduct<T>(r, p_half + q_half + r);
+  const T Ixx = scalar - 0.1 * G(0, 0);
+  const T Iyy = scalar - 0.1 * G(1, 1);
+  const T Izz = scalar - 0.1 * G(2, 2);
+  const T Ixy = -0.1 * G(0, 1);
+  const T Ixz = -0.1 * G(0, 2);
+  const T Iyz = -0.1 * G(1, 2);
+  return UnitInertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+}
+
 }  // namespace multibody
 }  // namespace drake
 
