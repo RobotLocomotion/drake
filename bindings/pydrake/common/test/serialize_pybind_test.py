@@ -6,7 +6,8 @@ import numpy as np
 
 from pydrake.common.test.serialize_test_util import (
     MyData1,
-    MyData2
+    MyData2,
+    MyData3,
 )
 
 
@@ -146,3 +147,9 @@ class TestSerializePybind(unittest.TestCase):
                          "some_vector=[5.0, 6.0], "
                          "some_map={'key': 7.0}, "
                          "some_variant=8.0)")
+
+    def test_repr_with_templates(self):
+        """Tests the automatically generated repr() of a templated class.
+        """
+        self.assertEqual(repr(MyData3[float]()), "MyData3[float](quux=0.0)")
+        self.assertEqual(repr(MyData3[int]()), "MyData3[int](quux=0)")
