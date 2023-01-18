@@ -21,7 +21,7 @@
       The homecart_origin to "homecart_base_link" frames are zero translation
       and identity rotation transforms to easily connect the models.
       +z up, +x along the short axis of the table, +y along the long table axis
-      Positive origin axes emanate "forward" for X and "left" for Y, with
+      Positive origin axes extend "forward" for X and "left" for Y, with
       respect to the robot arm origins.
   -->
   <link name="homecart_base_link">
