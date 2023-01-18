@@ -211,6 +211,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
     writing the result to the field named `name` of the given `target` object.
     """
     # The target can be either a dictionary or a dataclass.
+    assert target is not None
     if isinstance(target, collections.abc.Mapping):
         old_value = target[name]
         setter = functools.partial(target.__setitem__, name)
@@ -372,6 +373,7 @@ def _merge_yaml_dict_into_target(*, options, yaml_dict,
     raw strings, dictionaries, lists, etc.).
     """
     assert isinstance(yaml_dict, collections.abc.Mapping), yaml_dict
+    assert target is not None
     static_field_map = _enumerate_field_types(target_schema)
     schema_names = list(static_field_map.keys())
     schema_optionals = set([

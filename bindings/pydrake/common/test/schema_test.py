@@ -211,6 +211,8 @@ class TestSchema(unittest.TestCase):
 
         dut.set_rotation_rpy_deg([0.1, 0.2, 0.3])
         np.testing.assert_equal(dut.rotation.value.deg, [0.1, 0.2, 0.3])
+        dut.rotation.value.deg = [0.4, 0.5, 0.6]
+        np.testing.assert_equal(dut.rotation.value.deg, [0.4, 0.5, 0.6])
 
         # Attributes.
         self.assertEqual(mut.Transform(base_frame="base").base_frame, "base")
