@@ -415,6 +415,7 @@ drake_cc_googletest(
     deps = [
         ":unit_inertia",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
         "//math:gradient",
     ],
