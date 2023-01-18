@@ -229,7 +229,11 @@ class RigidBody : public Body<T> {
   /// @param[in] center_of_mass_position position vector from Bo (B's origin) to
   /// Bcm (B's center of mass), expressed in B.
   /// @note G_BBo_B (this body B's rotational inertia about Bo, expressed in B)
-  /// is modified to ensure B's inertia about Bcm is unchanged.
+  /// is modified to ensure B's inertia about Bcm is unchanged. Although this
+  /// function can work well when a rigid body's mass is concentrated at a
+  /// single point (or mostly concentrated near a single point), its general
+  /// utility for properly accounting for inertia changes due to center of mass
+  /// changes questionable. If needed, use SetSpatialInertiaInBodyFrame().
   /// @pre the context makes sense for use by `this` RigidBody.
   /// @throws std::exception if context is null.
   void SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
@@ -395,17 +399,17 @@ class RigidBody : public Body<T> {
                          default_spatial_inertia_.template cast<T>()));
   }
 
- private:
-  // For `this` rigid body B, set its center of mass position stored in context
-  // to center_of_mass_position, but does not modify unit or rotational inertia.
-  // @param[out] context contains the state of the multibody system.
-  // @param[in] center_of_mass_position position vector from Bo (B's origin) to
-  // Bcm (B's center of mass), expressed in B.
-  // @note G_BBo_B and I_BBo_B (this body B's unit inertia and rotational
-  // inertia about Bo, expressed in B) are _not_ changed_. In generaly, this
-  // mean G_BBcm_B and I_BBcm_B _are_ changed.
-  // @pre the context makes sense for use by `this` RigidBody.
-  // @throws std::exception if context is null.
+private:
+  /// For `this` rigid body B, set its center of mass position stored in context
+  /// to center_of_mass_position, but does not modify unit or rotational inertia.
+  /// @param[out] context contains the state of the multibody system.
+  /// @param[in] center_of_mass_position position vector from Bo (B's origin) to
+  /// Bcm (B's center of mass), expressed in B.
+  /// @note G_BBo_B and I_BBo_B (this body B's unit inertia and rotational
+  /// inertia about Bo, expressed in B) are **not** changed. In general, this
+  /// means G_BBcm_B and I_BBcm_B **are** changed.
+  /// @pre the context makes sense for use by `this` RigidBody.
+  /// @throws std::exception if context is null.
   void SetCenterOfMassInBodyFrameNoModifyInertia(
       systems::Context<T>* context,
       const Vector3<T>& center_of_mass_position) const;
