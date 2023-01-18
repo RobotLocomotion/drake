@@ -999,7 +999,8 @@ TYPED_TEST(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
   if constexpr (std::is_same_v<
                     typename MeshBuilder::MeshType,
                     TriangleSurfaceMesh<typename MeshBuilder::ScalarType>>) {
-    // Two triangles tessellate around centroids into six in TriangleSurfaceMesh.
+    // Two triangles tessellate around centroids into six in
+    // TriangleSurfaceMesh.
     EXPECT_EQ(6, surface_S.num_elements());
   } else {
     // Two triangles added directly in PolygonSurfaceMesh.
