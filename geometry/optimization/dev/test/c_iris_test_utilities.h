@@ -38,6 +38,23 @@ class CIrisToyRobotTest : public ::testing::Test {
   geometry::GeometryId body3_sphere_;
 };
 
+// Create a robot with only polytopic collision geometry.
+// world - revolute - body0 - revolute - body1 - revolute - body2 - revolute -
+// body3
+class CIrisRobotPolytopicGeometryTest : public ::testing::Test {
+ public:
+  CIrisRobotPolytopicGeometryTest();
+
+ protected:
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+  multibody::MultibodyPlant<double>* plant_;
+  geometry::SceneGraph<double>* scene_graph_;
+  std::vector<multibody::BodyIndex> body_indices_;
+  std::vector<geometry::GeometryId> world_boxes_;
+  geometry::GeometryId world_convex_;
+  std::vector<geometry::GeometryId> body_boxes_;
+};
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
