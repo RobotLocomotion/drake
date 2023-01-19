@@ -18,7 +18,7 @@ enum class SinCosSubstitutionType {
   /** Substitutes s <=> sin(q/2), c <=> cos(q/2), and prefers sin when the
    choice is ambiguous; e.g. cos(q) => 1 - 2s². */
   kHalfAnglePreferSin,
-  /** Subsitutes s <=> sin(q/2), c <=> cos(q/2), and prefers cos when the
+  /** Substitutes s <=> sin(q/2), c <=> cos(q/2), and prefers cos when the
    choice is ambiguous; e.g. cos(q) => 2c² - 1. */
   kHalfAnglePreferCos,
 };

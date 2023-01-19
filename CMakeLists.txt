@@ -186,7 +186,7 @@ else()
   endif()
 
   # To allow the build type to be case-insensitive,
-  # use this variable for any string comparisions
+  # use this variable for any string comparisons
   string(TOLOWER "${CMAKE_BUILD_TYPE}" BUILD_TYPE_LOWER)
 
   string(TOLOWER "${SUPPORTED_BUILD_TYPES}" SUPPORTED_BUILD_TYPES_LOWER)

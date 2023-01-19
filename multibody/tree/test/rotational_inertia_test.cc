@@ -128,7 +128,7 @@ GTEST_TEST(RotationalInertia, MakeFromMomentsAndProductsOfInertia) {
     expected_message += fmt::format(
         "\nThe associated principal moments of inertia:"
         "\n4.70955263953\\d+  17.66953281\\d+  34.6209145475\\d+"
-        "\ndo not satisify the triangle inequality.");
+        "\ndo not satisfy the triangle inequality.");
     // Note: The principal moments of inertia (with more significant digits)
     // are:  4.709552639531104  17.66953281292159  34.620914547547315.
     DRAKE_EXPECT_THROWS_MESSAGE(

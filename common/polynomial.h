@@ -25,7 +25,7 @@ namespace drake {
  * number of distinct Terms (variables raised to positive integer powers).
  *
  * Variables are identified by integer indices rather than symbolic names, but
- * an automatic facility is provided to covert variable names up to four
+ * an automatic facility is provided to convert variable names up to four
  * characters into unique integers, provided those variables are named using
  * only lowercase letters and the "@#_." characters followed by a number.  For
  * example, valid names include "dx4" and "m_x".

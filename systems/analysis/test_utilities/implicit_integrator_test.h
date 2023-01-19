@@ -714,13 +714,13 @@ class ImplicitIntegratorTest : public ::testing::Test {
   // Default spring constant for a semi-stiff spring. Corresponds to a
   // frequency of 35.588 cycles per second without damping, assuming that mass
   // = 2 (using formula f = sqrt(k/mass)/(2*pi), where k is the spring
-  // constant, and f is the requency in cycles per second).
+  // constant, and f is the frequency in cycles per second).
   const double semistiff_spring_k_ = 1e5;
 
   // Default spring constant for a stiff spring. Corresponds to a frequency
   // of 11,254 cycles per second without damping, assuming that mass = 2
   // (using formula f = sqrt(k/mass)/(2*pi), where k is the spring constant,
-  // and f is the requency in cycles per second).
+  // and f is the frequency in cycles per second).
   const double stiff_spring_k_ = 1e10;
 
   // Default semi-stiff (in the computational sense) damping coefficient.

@@ -33,8 +33,8 @@ namespace systems {
  * is to use `AddRandomInputs()`.
  *
  * @warning The code cannot verify that the distribution type of w_in matches
- * between where w_in comes from and the w_in input port of this sytem. This
- * class will quitely produce incorrect behavior if the distribution types don't
+ * between where w_in comes from and the w_in input port of this system. This
+ * class will quietly produce incorrect behavior if the distribution types don't
  * match.
  *
  * @see @ref stochastic_systems

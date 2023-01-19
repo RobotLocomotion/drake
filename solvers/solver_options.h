@@ -32,7 +32,7 @@ namespace solvers {
  * guide section "Options Reference"
  * http://www.coin-or.org/Ipopt/documentation/node40.html
  *
- * "NLOPT" -- Parameter names and values are specifed in
+ * "NLOPT" -- Parameter names and values are specified in
  * https://nlopt.readthedocs.io/en/latest/NLopt_C-plus-plus_Reference/ (in the
  * Stopping criteria section). Besides these parameters, the user can specify
  * "algorithm" using a string of the algorithm name. The complete set of

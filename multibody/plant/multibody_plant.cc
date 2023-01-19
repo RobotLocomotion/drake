@@ -433,7 +433,7 @@ ConstraintIndex MultibodyPlant<T>::AddCouplerConstraint(const Joint<T>& joint0,
   }
 
   // TAMSI does not support coupler constraints. For all other solvers, we let
-  // the discrete update manger to throw an exception at finalize time.
+  // the discrete update manager to throw an exception at finalize time.
   if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
@@ -475,7 +475,7 @@ ConstraintIndex MultibodyPlant<T>::AddDistanceConstraint(
   }
 
   // TAMSI does not support distance constraints. For all other solvers, we let
-  // the discrete update manger throw an exception at finalize time.
+  // the discrete update manager throw an exception at finalize time.
   if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
     throw std::runtime_error(
         "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "

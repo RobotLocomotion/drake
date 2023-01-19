@@ -275,7 +275,7 @@ void SolvePendulumTrajectory(bool continuous_time) {
   // Only solve under SNOPT (IPOPT is unreliable here).
   solvers::SnoptSolver snopt_solver;
   if (!snopt_solver.is_available()) {
-    drake::log()->warn("SNOPT is unavaible; this test shall be skipped.");
+    drake::log()->warn("SNOPT is unavailable; this test shall be skipped.");
     return;
   }
 

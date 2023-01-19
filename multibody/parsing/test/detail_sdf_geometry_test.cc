@@ -194,7 +194,7 @@ class SceneGraphParserDetail : public ::testing::Test {
  public:
   SceneGraphParserDetail() {
     // Don't let warnings leak into spdlog; tests should always specifically
-    // handle any warnings that apppear.
+    // handle any warnings that appear.
     diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
   }
 

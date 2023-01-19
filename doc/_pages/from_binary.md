@@ -68,7 +68,7 @@ Download the binary release ``*.tar.gz`` file, using one of the links above.
 In the example below, we'll use ``drake.tar.gz`` to refer to it, but your
 download will have a more version-specific filename.
 
-Create and activate the envionment:
+Create and activate the environment:
 
 ```bash
 mkdir -p env

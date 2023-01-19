@@ -50,7 +50,7 @@ also involve only a single clique. Examples include a coupler constraint between
 DOFs in a single clique or a contact constraint with the world (the world has no
 DOFs and therefore has no clique.) For the case of a single clique constraint,
 only one clique and a single block J₁ needs to be provided at construction. For
-details, refer to the documention for this class's constructors.
+details, refer to the documentation for this class's constructors.
 
 TODO(amcastro-tri): consider extension to support constraints among more than
 two cliques, see issue #16575.

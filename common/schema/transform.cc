@@ -51,7 +51,7 @@ math::RigidTransformd Transform::Mean() const {
     env.insert(var, 0.5);
   }
 
-  // Extract the underlying matrix of the transform, subsitute the env so
+  // Extract the underlying matrix of the transform, substitute the env so
   // that the expressions are now all constants, and then re-create the
   // RigidTransform wrapper around the matrix.
   const auto to_double = [&env](const auto& x) { return x.Evaluate(env); };
@@ -65,7 +65,7 @@ math::RigidTransformd Transform::Sample(
   // We convert to symbolic, convert the symbolic to a vector and matrix of
   // symbolic, `Evaluate` those, convert the result back to a
   // `RigidTransform<double>`, and build the resulting values into a new
-  // fully determinstic `Transform`.
+  // fully deterministic `Transform`.
   //
   // This is *much* prettier written with `auto` but please do not be
   // tempted to use it here: I have left the long type names in because it

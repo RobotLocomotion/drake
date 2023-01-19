@@ -62,7 +62,7 @@ cmake_configure_file(
     visibility = ["//visibility:private"],
 )
 
-# Provide all headers (except octomap-related ones) for simplicitly, even
+# Provide all headers (except octomap-related ones) for simplicity, even
 # though many of these will not have their '*.cpp' mate compiled.
 _HDRS = glob(
     include = [

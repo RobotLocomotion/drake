@@ -536,7 +536,7 @@ class CollisionChecker {
   void SetPaddingOneRobotBodyAllEnvironmentPairs(
       multibody::BodyIndex body_index, double padding);
 
-  /** Sets the padding for all (robot, environement) pairs.
+  /** Sets the padding for all (robot, environment) pairs.
    @throws std::exception if the @ref collision_checker_padding_prereqs
            "configuration prerequisites" are not met. */
   void SetPaddingAllRobotEnvironmentPairs(double padding);

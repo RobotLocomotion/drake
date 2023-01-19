@@ -52,7 +52,7 @@ bool CheckAttributes(
     if (explanation) {
       *explanation =
           "OsqpSolver is unable to solve because a QuadraticCost is required"
-          " but has not beed declared; OSQP works best with a quadratic cost."
+          " but has not been declared; OSQP works best with a quadratic cost."
           " Please use a different solver such as CLP (for linear programming)"
           " or IPOPT/SNOPT (for nonlinear programming) if you don't want to add"
           " a quadratic cost to this program.";

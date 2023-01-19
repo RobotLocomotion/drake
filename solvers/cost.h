@@ -387,7 +387,7 @@ class LInfNormCost : public Cost {
 /**
  * If z = Ax + b, implements a cost of the form:
  * (z_1^2 + z_2^2 + ... + z_{n-1}^2) / z_0.
- * Note that this cost is convex when we additonally constrain z_0 > 0. It is
+ * Note that this cost is convex when we additionally constrain z_0 > 0. It is
  * treated as a generic nonlinear objective by most solvers.
  *
  * @ingroup solver_evaluators

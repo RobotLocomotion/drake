@@ -98,7 +98,7 @@ Toppra::Toppra(const Trajectory<double>& path,
           "degrees of freedom.");
     }
   }
-  // Add constraint on path velocity to ensure reachable set caluclated in
+  // Add constraint on path velocity to ensure reachable set calculated in
   // backward pass is always bounded. Maximum path velocity selected such that
   // trajectories with zero velocity segments do not cause the backward pass to
   // fail.
@@ -532,11 +532,11 @@ std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization() {
 
   const std::optional<Eigen::Matrix2Xd> K =
       ComputeBackwardPass(s_dot_0, s_dot_N, *solver);
-  if (!K) {  // Error ocurred in backpass, return nothing
+  if (!K) {  // Error occurred in backpass, return nothing
     return std::nullopt;
   }
   const auto forward_results = ComputeForwardPass(s_dot_0, K.value(), *solver);
-  if (!forward_results) {  // Error ocurred in forward pass, return nothing
+  if (!forward_results) {  // Error occurred in forward pass, return nothing
     return std::nullopt;
   }
   const Eigen::VectorXd x_star = forward_results.value().first;

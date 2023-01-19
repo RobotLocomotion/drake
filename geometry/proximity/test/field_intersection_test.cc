@@ -354,7 +354,7 @@ TEST_F(FieldIntersectionHighLevelTest, IntersectFields) {
 
     // The hydroelastic modulus is in the order of 100 kPa, and the size of
     // the geometries are in the order of centimeters. Therefore, the
-    // pressure gradient is in the oder of 100 kPa / 1 cm = 10 MPa/meter
+    // pressure gradient is in the order of 100 kPa / 1 cm = 10 MPa/meter
     // = 1e7 Pa/m.
     const double kExpectGradientOrderOfMagnitude = 1e7;
     const double kGradientTolerance =

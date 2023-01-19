@@ -76,7 +76,7 @@ Listing 3.2 fplib license.
 === {fmt} ===
 
 MOSEK uses the formatting library {fmt} developed by Victor Zverovich obtained
-form github/fmt and distributed under the MIT license. The license agreement fot
+form github/fmt and distributed under the MIT license. The license agreement for
 {fmt} is shown in Listing 3.3.
 
 Listing 3.3 {fmt} license.

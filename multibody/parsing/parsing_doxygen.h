@@ -64,7 +64,7 @@ scoped names.
 Scoped names allow referring to an element of a model nested within the current
 model. They take the form of some number of nested model names, plus the
 element name, all joined by the delimiter `::`. Names not using the `::`
-delimeter are not considered scoped names; they are used to define or refer to
+delimiter are not considered scoped names; they are used to define or refer to
 elements of the current model. For example, suppose that model A contains model
 B, which in turn contains model C. Here are some valid scoped names:
 
@@ -98,7 +98,7 @@ Drake's parser does not implement all of the features of URDF. Here is a list
 of known URDF features that Drake does not use. For each, the parser applies
 one of several treaments:
 
-- Issue a warning that the tag is unsued.
+- Issue a warning that the tag is unused.
 - Ignore silently, as documented below.
 - Apply special treatment, as documented below.
 

@@ -8,7 +8,7 @@ Note on Upgrading
 =================
 
 `stable_baselines3` lags `gym` by more than `gym`'s deprecation window and
-does not document its compatiblity limit correctly (claims to support `gym`
+does not document its compatibility limit correctly (claims to support `gym`
 <0.24 but in fact uses classes removed in 0.22, for example).
 
 Because of this, it is unlikely that upgrading this package beyond 0.21 will

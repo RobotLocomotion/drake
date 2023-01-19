@@ -15,7 +15,7 @@
        geometry but not contact geometry, allowing the demo in
        simple_gripper.cc to add contact geometry programmatically.
 
-       simple_gripper.cc adds pads to the model programatically. Including the
+       simple_gripper.cc adds pads to the model programmatically. Including the
        thickness of these pads, 6 mm, and the offset from the center of the
        corresponding finger, 4.6 mm, each finger is positioned along the x-axis
        such that at q=0 the pads from each finger barely touch. This is 6 mm +

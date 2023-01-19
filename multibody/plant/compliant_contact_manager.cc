@@ -514,7 +514,7 @@ void CompliantContactManager<T>::
         // For a triangle, its centroid has the fixed barycentric
         // coordinates independent of the shape of the triangle. Using
         // barycentric coordinates to evaluate field value could be
-        // faster than using Cartesian coordiantes, especially if the
+        // faster than using Cartesian coordinates, especially if the
         // TriangleSurfaceMeshFieldLinear<> does not store gradients and
         // has to solve linear equations to convert Cartesian to
         // barycentric coordinates.

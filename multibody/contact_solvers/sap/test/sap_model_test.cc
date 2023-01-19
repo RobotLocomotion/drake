@@ -174,7 +174,7 @@ TEST_F(SpringMassTest, VelocitiesPermutation) {
 // correspond to that of the first spring only.
 TEST_F(SpringMassTest, ProblemData) {
   // We setup the problem with two distinct initial velocities so that v* for
-  // each clique is also distinct and we can tell them appart.
+  // each clique is also distinct and we can tell them apart.
   const Vector3d v1(1., 2., 3.);
   const Vector3d v2(4., 5., 6.);
   const Vector6d v = (Vector6d() << v1, v2).finished();
@@ -436,7 +436,7 @@ class DummyModel {
 // allows us to test the case of partial DOFs permutations in the model.
 // In this new DummyModelTest fixture, we introduce non-trivial numeric values
 // of the Jacobian matrices, bias terms and regularization. This allows us to
-// perform tests on operatations such as cost and gradients using non-trivial
+// perform tests on operations such as cost and gradients using non-trivial
 // numerical values.
 class DummyModelTest : public ::testing::Test {
  public:

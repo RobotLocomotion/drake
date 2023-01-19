@@ -137,7 +137,7 @@ class TestMeshcat(unittest.TestCase):
         dut.SetPositions(q=[1, 2])
 
     def test_internal_point_contact_visualizer(self):
-        """A very basic existance test, since this class is internal use only.
+        """A very basic existence test, since this class is internal use only.
         The pydrake-internal user (meldis) has additional acceptance tests.
         """
         meshcat = Meshcat()
@@ -145,7 +145,7 @@ class TestMeshcat(unittest.TestCase):
         dut = _PointContactVisualizer(meshcat=meshcat, params=params)
 
     def test_internal_hydroelastic_contact_visualizer(self):
-        """A very basic existance test, since this class is internal use only.
+        """A very basic existence test, since this class is internal use only.
         The pydrake-internal user (meldis) has additional acceptance tests.
         """
         meshcat = Meshcat()

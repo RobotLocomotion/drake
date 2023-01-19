@@ -264,7 +264,7 @@ class TestCustom(unittest.TestCase):
         self.assertIsInstance(cache_entry_value, CacheEntryValue)
         data = cache_entry_value.GetMutableValueOrThrow()
         self.assertIsInstance(data, SimpleNamespace)
-        # This has not yet been upated.
+        # This has not yet been updated.
         self.assertFalse(hasattr(data, "updated"))
         # Const flavor access.
         cache_entry_value_const = cache_entry.get_cache_entry_value(context)

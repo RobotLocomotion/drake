@@ -2180,7 +2180,7 @@ class MathematicalProgram {
    * matrices.
    * @param A A matrix whose number of columns equals to the size of the
    * decision variables.
-   * @param b A vector whose number of rows equals to the size fo the decision
+   * @param b A vector whose number of rows equals to the size of the decision
    * variables.
    * @param vars The decision variables on which the constraint is imposed.
    */
@@ -2206,7 +2206,7 @@ class MathematicalProgram {
    * matrices.
    * @param A A matrix whose number of columns equals to the size of the
    * decision variables.
-   * @param b A vector whose number of rows equals to the size fo the decision
+   * @param b A vector whose number of rows equals to the size of the decision
    * variables.
    * @param vars The decision variables on which the constraint is imposed.
    */
@@ -2261,7 +2261,7 @@ class MathematicalProgram {
   /** Add the convex quadratic constraint 0.5xᵀQx + bᵀx + c <= 0 as a
    * rotated Lorentz cone constraint [rᵀx+s, 1, Px+q] is in the rotated Lorentz
    * cone. When solving the optimization problem using conic solvers (like
-   * Mosek, Gurobi, SCS, etc), it is numerically preferrable to impose the
+   * Mosek, Gurobi, SCS, etc), it is numerically preferable to impose the
    * convex quadratic constraint as rotated Lorentz cone constraint. See
    * https://docs.mosek.com/latest/capi/prob-def-quadratic.html#a-recommendation
    * @throw exception if this quadratic constraint is not convex (Q is not

@@ -484,7 +484,7 @@ GTEST_TEST(PrimitiveMeshTests, NormalCone) {
     const float cos_theta_expected = std::cos(theta);
     // Note: We're not using RotationMatrix because it cannot support `float`;
     // RotationMatrix::ThrowIfInvalid calls ExtractDoubleOrThrow which throws
-    // for T = float. It's not worthing supporting float just to support this
+    // for T = float. It's not worth supporting float just to support this
     // bizarre corner of computation.
     const AngleAxisf R(theta, Vector3f(-2, 1, 0).normalized());
     const Vector3f n0 = R * expected_ray;

@@ -266,7 +266,7 @@ HydroelasticTractionCalculator<T>::CalcTractionAtQHelper(
   // Finally we make the substitution x = ‖vₜ‖/vₛ and group together the terms
   // in x to get:
   //   fₜ =−μ 2/π vₜ/vₛ fₙ (atan(x)/x)
-  // We then make the observation that the function atan(x)/x is continuosly
+  // We then make the observation that the function atan(x)/x is continuously
   // differentiable (that is the limits from both sides are exist and are
   // unique) and therefore we can write a custom implementation that avoids
   // division by zero at x = 0. This custom implementation is provided by

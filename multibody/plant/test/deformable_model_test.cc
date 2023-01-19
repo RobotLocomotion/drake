@@ -97,7 +97,7 @@ TEST_F(DeformableModelTest, SetWallBoundaryCondition) {
       deformable_model_ptr_->SetWallBoundaryCondition(fake_body_id, p_WQ2, n_W),
       fmt::format(".*No.*id.*{}.*registered.*", fake_body_id));
 
-  /* Setting boudnary condition must be done pre-finalize. */
+  /* Setting boundary condition must be done pre-finalize. */
   plant_->Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
       deformable_model_ptr_->SetWallBoundaryCondition(body_id, p_WQ2, n_W),

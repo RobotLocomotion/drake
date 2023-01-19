@@ -113,7 +113,7 @@ TEST_F(MathematicalProgramResultTest, GetSolutionPolynomial) {
   const symbolic::Polynomial p1(2 * t1 * t1 + t2, {t1, t2});
   EXPECT_PRED2(symbolic::test::PolyEqual, p1, result.GetSolution(p1));
 
-  // p2's coeffcients are expressions of x0 and x1
+  // p2's coefficients are expressions of x0 and x1
   const symbolic::Polynomial p2(
       (1 + x0_ * x1_) * t1 * t1 + 2 * sin(x1_) * t1 * t2 + 3 * x0_, {t1, t2});
   EXPECT_PRED2(

@@ -805,7 +805,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
 }
 
 // Verifies that a triangle with one vertex inside the half space and two
-// vertices outside of the half space produces an interesected polygon that
+// vertices outside of the half space produces an intersected polygon that
 // is a triangle. This test covers Case 3.
 TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
   using MeshType = TypeParam;
