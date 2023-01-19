@@ -87,7 +87,7 @@ drake_cc_library(
         "//geometry/proximity:hydroelastic_callback",
         "//geometry/proximity:obj_to_surface_mesh",
         "//geometry/proximity:penetration_as_point_pair_callback",
-        "@fcl",
+        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -668,7 +668,7 @@ drake_cc_googletest(
         "//geometry/proximity:hydroelastic_callback",
         "//geometry/proximity:make_sphere_mesh",
         "//math",
-        "@fcl",
+        "@fcl_internal//:fcl",
     ],
 )
 

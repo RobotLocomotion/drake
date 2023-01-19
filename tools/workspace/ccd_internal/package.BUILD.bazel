@@ -4,6 +4,10 @@ load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
 
 licenses(["notice"])  # BSD-3-Clause
 
@@ -54,5 +58,9 @@ cc_library(
     defines = ["CCD_STATIC_DEFINE"],
     includes = ["src"],
     linkstatic = 1,
-    deprecation = "DRAKE DEPRECATED: The @ccd external is deprecated. The deprecated code will be removed from Drake on or after 2023-05-01.",  # noqa,
+)
+
+install(
+    name = "install",
+    docs = ["BSD-LICENSE"],
 )
