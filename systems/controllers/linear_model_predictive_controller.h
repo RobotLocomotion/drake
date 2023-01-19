@@ -105,7 +105,7 @@ class LinearModelPredictiveController : public LeafSystem<T> {
   const double time_period_{};
   const double time_horizon_{};
 
-  // Descrption of the linearized plant model.
+  // Description of the linearized plant model.
   std::unique_ptr<LinearSystem<double>> linear_model_;
 };
 

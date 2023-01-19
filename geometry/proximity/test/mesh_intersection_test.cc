@@ -97,7 +97,7 @@ GTEST_TEST(MeshIntersectionTest, CalcIntersection) {
 
   // These are different points on the same testing line. The term "distance"
   // here is the distance along the testing line, which has the same sign as
-  // the signed distance from the half space (but not neccessarily the same
+  // the signed distance from the half space (but not necessarily the same
   // magnitude).
   // "Positive" point at unit distance along the line from the plane.
   const Vector3d p_HP1 = p_HI + 1.0 * unit_tangent_H;
@@ -999,7 +999,8 @@ TYPED_TEST(MeshIntersectionFixture, SampleVolumeFieldOnSurface) {
   if constexpr (std::is_same_v<
                     typename MeshBuilder::MeshType,
                     TriangleSurfaceMesh<typename MeshBuilder::ScalarType>>) {
-    // Two triangles tesselate around centroids into six in TriangleSurfaceMesh.
+    // Two triangles tessellate around centroids into six in
+    // TriangleSurfaceMesh.
     EXPECT_EQ(6, surface_S.num_elements());
   } else {
     // Two triangles added directly in PolygonSurfaceMesh.

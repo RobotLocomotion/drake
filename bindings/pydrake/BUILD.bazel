@@ -343,7 +343,7 @@ drake_py_library(
     deps = [":all_py"],
 )
 
-# Roll-up for publicly acccessible testing utilities (for development with
+# Roll-up for publicly accessible testing utilities (for development with
 # workflows like drake-external-examples/drake_bazel_external).
 drake_py_library(
     name = "test_utilities_py",

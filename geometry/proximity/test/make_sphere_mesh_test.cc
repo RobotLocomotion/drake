@@ -368,7 +368,7 @@ int CountSurfaceVertices(const VolumeMesh<double>& mesh, double radius = 1.0) {
 
 // Refines with single interior vertex. We confirm that only a single vertex is
 // not radius distance from the origin. We also confirm the implication of this
-// that each level of refinment has 4X the previous number of tets.
+// that each level of refinement has 4X the previous number of tets.
 GTEST_TEST(SparseSphereTest, RefinesWithSingleInteriorVertex) {
   const TessellationStrategy strategy =
       TessellationStrategy::kSingleInteriorVertex;
@@ -390,7 +390,7 @@ GTEST_TEST(SparseSphereTest, RefinesWithSingleInteriorVertex) {
 
 // Simply confirms that calling MakeSphereVolumeMesh respects the
 // strategy parameter. All other aspects of that function  (e.g., limits on
-// refinment level and effect of resolution_hint has been tested elsewhere).
+// refinement level and effect of resolution_hint has been tested elsewhere).
 GTEST_TEST(SparseSphereTest, SparseSphereOfArbitraryRadius) {
   const double r = 1.5;
   Sphere sphere(r);

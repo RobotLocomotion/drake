@@ -99,7 +99,7 @@ class PackageMap final {
   /// paths.
   /// If a package already known by the PackageMap is found again with a
   /// conflicting path, a warning is logged and the original path is kept. This
-  /// accomodates the expected behavior using ROS_PACKAGE_PATH, where a package
+  /// accommodates the expected behavior using ROS_PACKAGE_PATH, where a package
   /// path corresponds to the "highest" overlay in which that package is found.
   /// If a path does not exist or is unreadable, a warning is logged.
   /// This function should not be used when populating manifests from the

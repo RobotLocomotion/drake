@@ -71,7 +71,7 @@ VolumeMesh<T> MakeConvexVolumeMesh(const Convex& convex) {
   std::vector<VolumeElement> volume_mesh_elements;
   volume_mesh_elements.reserve(surface_mesh.num_elements());
 
-  // Partition the volume encompased by `surface_mesh` into tetrahedra
+  // Partition the volume encompassed by `surface_mesh` into tetrahedra
   // that all share the interior vertex, `centroid`.
   // TODO(joemasterjohn): Add verification checks in debug builds for the
   //   input meshes.

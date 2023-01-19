@@ -27,7 +27,7 @@ struct PgsSolverStats {
 };
 
 /* Implement the Projected Gauss-Seidel contact solver described in Algorithm 1
- in [Duriez, 2005]. The implementated algorithm differs from that
+ in [Duriez, 2005]. The implemented algorithm differs from that
  described in the paper in two major aspects.
   1. [Duriez, 2005] uses the pair displacement δ and force f. The implemented
  algorithm uses the pair velocity v and impulse γ. As a result, the Delassus

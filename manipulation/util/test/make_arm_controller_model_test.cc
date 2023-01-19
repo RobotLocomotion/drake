@@ -78,7 +78,7 @@ class MakeArmControllerModelTest : public ::testing::Test {
   const std::string wsg_model_path_;
 };
 
-// A helper funtion that uses plant.GetBodyIndices() internally to aggregate
+// A helper function that uses plant.GetBodyIndices() internally to aggregate
 // `BodyIndex`s across multiple `ModelInstanceIndex`s.
 std::vector<BodyIndex> GetBodyIndices(
     const MultibodyPlant<double>& plant,

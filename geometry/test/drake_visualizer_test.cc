@@ -219,7 +219,7 @@ class DrakeVisualizerTest : public ::testing::Test {
                             {proximity_frame_id_, RigidTransform<T>{}}});
   }
 
-  /* Processes the message queue, reporting the number of load and draw messges
+  /* Processes the message queue, reporting the number of load and draw messages
    and, if that number is non-zero, the last message of each type received.  */
   MessageResults ProcessMessages(std::optional<Role> role = std::nullopt) {
     lcm_.HandleSubscriptions(0);

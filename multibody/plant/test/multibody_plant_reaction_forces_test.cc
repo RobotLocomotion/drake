@@ -411,7 +411,7 @@ class LadderTest : public ::testing::Test {
 
     // TODO(#17720): As articulated in the issue, baking a query object when
     // cloning scene graph context is thread-unsafe. In particular, updating the
-    // proxy cache entry for pose/configuration (instead of simply grabing the
+    // proxy cache entry for pose/configuration (instead of simply grabbing the
     // up-to-date cache value) is a race condition. Therefore, we call
     // `ComputeDeformableContact` below to explicitly bring the
     // pose/configuration proxy cache entries up-to-date to circumvent the race

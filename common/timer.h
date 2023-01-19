@@ -17,7 +17,7 @@ class Timer {
   Timer() = default;
   virtual ~Timer() = default;
 
-  /// Begins timing. Call Start everytime you want to reset the timer to zero.
+  /// Begins timing. Call Start every time you want to reset the timer to zero.
   virtual void Start() = 0;
 
   /// Obtains a timer measurement in seconds.

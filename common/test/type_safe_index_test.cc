@@ -518,7 +518,7 @@ GTEST_TEST(IntegralComparisons, CompareSizeT) {
 }
 
 // Confirms that comparisons with unsigned types that have fewer bits than
-// TypeSafeIndex's underlying int report propertly.
+// TypeSafeIndex's underlying int report property.
 GTEST_TEST(TypeSafeIndex, CompareUnsignedShort) {
   TestScalarComparisons<uint16_t>();
   TestScalarIncrement<uint16_t>();

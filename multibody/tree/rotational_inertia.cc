@@ -27,7 +27,7 @@ void RotationalInertia<T>::ThrowNotPhysicallyValid(const char* func_name)
         if (p(0) < 0 || p(1) < 0 || p(2) < 0) {
           error_message += "\nare invalid since at least one is negative.";
         } else {
-          error_message += "\ndo not satisify the triangle inequality.";
+          error_message += "\ndo not satisfy the triangle inequality.";
         }
       }
     }

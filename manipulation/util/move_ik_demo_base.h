@@ -51,7 +51,7 @@ class MoveIkDemoBase {
   /// @return a reference to the internal plant.
   const multibody::MultibodyPlant<double>& plant() const { return plant_; }
 
-  /// Set the joint velocity limts when building the plan.  The default
+  /// Set the joint velocity limits when building the plan.  The default
   /// velocity limits from the robot description will be used if this isn't
   /// set.
   ///

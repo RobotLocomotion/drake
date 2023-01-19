@@ -562,7 +562,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed2) {
   // The node is fathomed.
   EXPECT_TRUE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
-  // The solution ot the right node is not integral, with optimal cost -4.9. The
+  // The solution to the right node is not integral, with optimal cost -4.9. The
   // node is not fathomed.
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));

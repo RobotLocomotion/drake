@@ -114,7 +114,7 @@ std::string ToAlphaNumeric(double value) {
   return result;
 }
 
-// The test case name must be alpha-numeric only (a-z0-9_).
+// The test case name must be alphanumeric only (a-z0-9_).
 std::string CalcTestName(const testing::TestParamInfo<PowCase>& info) {
   return fmt::format("{}__{}",
       ToAlphaNumeric(info.param.base),

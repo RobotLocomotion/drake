@@ -226,7 +226,7 @@ TEST_F(PrismaticJointTest, DefaultTranslation) {
   const double out_of_bounds_low_translation = kPositionLowerLimit - 1;
   const double out_of_bounds_high_translation = kPositionUpperLimit + 1;
 
-  // Constructor should set the default tranlation to 0.0
+  // Constructor should set the default translation to 0.0
   EXPECT_EQ(joint1_->get_default_translation(), default_translation);
 
   // Setting a new default translation should propagate so that

@@ -79,7 +79,7 @@ class MultibodyGraph {
   @throws std::exception iff `type` has not been registered with
   RegisterJointType().
   @throws std::exception iff `parent_body_index` or `child_body_index` are
-  not valide body indexes for `this` graph. */
+  not valid body indexes for `this` graph. */
   JointIndex AddJoint(const std::string& name,
                       ModelInstanceIndex model_instance,
                       const std::string& type, BodyIndex parent_body_index,

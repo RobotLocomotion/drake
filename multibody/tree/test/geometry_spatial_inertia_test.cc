@@ -160,19 +160,19 @@ TYPED_TEST_P(MeshTypeSpatialInertaTest, Administrivia) {
       "drake/multibody/parsing/test/box_package/meshes/box.obj");
   const MeshType unit_scale(valid_path, 1.0);
   const MeshType double_scale(valid_path, 2.0);
-  const MeshType nonexistant("nonexistant.stl", 1.0);
+  const MeshType nonexistent("nonexistent.stl", 1.0);
 
   {
     // Extension test; .obj doesn't throw, everything else does.
-    // Note: this should be case-insensitve; .OBJ should also work. However,
+    // Note: this should be case-insensitive; .OBJ should also work. However,
     // we need *another* valid OBJ with the different capitalization of the
     // extension to test this. Rather than creating/copying such a file, we're
     // foregoing the test. The case insensitivity is *not* documented.
 
     EXPECT_NO_THROW(CalcSpatialInertia(unit_scale, kDensity));
     DRAKE_EXPECT_THROWS_MESSAGE(
-        CalcSpatialInertia(nonexistant, kDensity),
-        ".*only supports .obj .* given '.*nonexistant.stl'.*");
+        CalcSpatialInertia(nonexistent, kDensity),
+        ".*only supports .obj .* given '.*nonexistent.stl'.*");
   }
 
   {

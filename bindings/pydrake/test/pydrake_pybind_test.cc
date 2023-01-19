@@ -1,6 +1,6 @@
 /// @file
 /// Test binding helper methods in `pydrake_pybind_test`.
-/// @note `check_copy` is defind and documented in
+/// @note `check_copy` is defined and documented in
 /// `_pydrake_pybind_test_extra.py`.
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 

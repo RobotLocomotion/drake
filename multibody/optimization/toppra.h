@@ -28,7 +28,7 @@ using trajectories::Trajectory;
 /**
  * Selects how linear constraints are enforced for TOPPRA's optimization.
  * kCollocation - enforces constraints only at each gridpoint.
- * kInterpolation - enforces constrants at each gridpoint and at the following
+ * kInterpolation - enforces constraints at each gridpoint and at the following
  * gridpoint using forward integration. Yields higher accuracy at minor
  * computational cost.
  */

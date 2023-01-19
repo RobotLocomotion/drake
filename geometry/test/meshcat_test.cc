@@ -185,11 +185,11 @@ GTEST_TEST(MeshcatTest, MalformedCustom) {
       ".*web_url_pattern.*http.*");
 }
 
-// Checks that unparseable messages are ignored.
+// Checks that unparsable messages are ignored.
 GTEST_TEST(MeshcatTest, UnparseableMessageIgnored) {
   auto dut = std::make_unique<Meshcat>();
 
-  // Send an unparseable message; don't expect a reply.
+  // Send an unparsable message; don't expect a reply.
   const char* const message = "0";
   const bool expect_success = false;
   CheckWebsocketCommand(*dut, message, {}, {}, expect_success);

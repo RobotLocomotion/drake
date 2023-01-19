@@ -438,7 +438,7 @@ GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
   drake::test::LimitMalloc dummy;
 
   // Check the HasX versions first. Note that functions that take no model
-  // instance argument delgate to model instance argument versions.
+  // instance argument delegate to model instance argument versions.
   EXPECT_TRUE(plant->HasModelInstanceNamed("iiwa"));
   EXPECT_TRUE(plant->HasBodyNamed(kLinkName, iiwa_instance));
   EXPECT_TRUE(plant->HasFrameNamed(kLinkName, iiwa_instance));

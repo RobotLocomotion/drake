@@ -14,7 +14,7 @@ namespace geometry {
 namespace internal {
 
 // TODO(xuchenhan-tri) Move the contents of this file outside of the internal
-// namespace when the API stablize.
+// namespace when the API stabilize.
 
 /* For any vertex in a deformable geometry, we say that it is participating in
  contact (or in contact for short) if it is incident to a tetrahedron containing

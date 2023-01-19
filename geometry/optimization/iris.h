@@ -36,7 +36,7 @@ struct IrisOptions {
   double termination_threshold{2e-2};  // from rdeits/iris-distro.
 
   /** IRIS will terminate if the change in the *volume* of the hyperellipsoid
-  between iterations is less that this percent of the previouse best volume.
+  between iterations is less that this percent of the previous best volume.
   This termination condition can be disabled by setting to a negative value. */
   double relative_termination_threshold{1e-3};  // from rdeits/iris-distro.
 

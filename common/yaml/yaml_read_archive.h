@@ -285,7 +285,7 @@ class YamlReadArchive final {
   void VariantHelper(
       const std::string& tag, const char* name, Variant<Types...>* storage) {
     if (tag == internal::Node::kTagNull) {
-      // Our varaint parsing does not yet support nulls.  When the tag indicates
+      // Our variant parsing does not yet support nulls.  When the tag indicates
       // null, don't try to match it to a variant type; instead, just parse into
       // the first variant type in order to generate a useful error message.
       // TODO(jwnimmer-tri) Allow for std::monostate as one of the Types...,

@@ -22,7 +22,7 @@ constexpr int kMaxIterations = 50;
 
 /* A test against analytic solution for a simple contact problem:
  A single point in 3D is in contact with velocity (-1, -1, -1) in the contact
- space without contact force, where the first two components are in arbtrary
+ space without contact force, where the first two components are in arbitrary
  orthogonal directions in the contact plane and the last component is the in the
  normal direction to the contact plane. The friction coefficient is set to be
  large enough to prevent any slipping. Hence, the expected post-solve contact
@@ -132,7 +132,7 @@ class PgsTest : public ::testing::Test {
 TEST_F(PgsTest, Stiction) {
   // Set up a large friction coefficient to ensure stiction.
   SetSinglePointContactData(1000);
-  // Abitrary initial guess.
+  // Arbitrary initial guess.
   Vector3<double> v_guess(0.12, 0.34, 0.56);
   // dt is unused in PGS and is thus set to NAN.
   const double dt = NAN;
@@ -157,7 +157,7 @@ TEST_F(PgsTest, Stiction) {
  velocity and impulse for a sliding contact. */
 TEST_F(PgsTest, Sliding) {
   SetSinglePointContactData(0);
-  // Abitrary initial guess.
+  // Arbitrary initial guess.
   Vector3<double> v_guess(0.12, 0.34, 0.56);
   // dt is unused in PGS and is thus set to NAN.
   const double dt = NAN;

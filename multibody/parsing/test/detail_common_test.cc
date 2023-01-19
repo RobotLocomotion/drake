@@ -103,7 +103,7 @@ class ParseProximityPropertiesTest : public ::testing::Test {
  public:
   ParseProximityPropertiesTest() {
     // Don't let warnings leak into spdlog; tests should always specifically
-    // handle any warnings that apppear.
+    // handle any warnings that appear.
     diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
   }
 

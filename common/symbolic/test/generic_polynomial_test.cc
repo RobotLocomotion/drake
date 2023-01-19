@@ -1746,7 +1746,7 @@ TEST_F(SymbolicGenericPolynomialTest, SetIndeterminates) {
 
   {
     // {x} -> {x, a}
-    // Grow the indeterminates with a varible moves from decision variables
+    // Grow the indeterminates with a variable moves from decision variables
     // to indeterminates.
     GenericPolynomial<MonomialBasisElement> p{e, {var_x_}};
     const Variables new_indeterminates{var_x_, var_a_};

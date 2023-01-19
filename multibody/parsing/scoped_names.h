@@ -12,7 +12,7 @@ namespace drake {
 namespace multibody {
 namespace parsing {
 namespace internal {
-// Expose the delimeter string for reference, especially in tests.
+// Expose the delimiter string for reference, especially in tests.
 constexpr char kScopedNameDelim[] = "::";
 }  // namespace internal
 

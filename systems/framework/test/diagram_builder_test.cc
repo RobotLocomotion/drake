@@ -750,7 +750,7 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
   EXPECT_EQ(&builder.GetSubsystemByName("adder"), adder);
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.GetMutableSubsystemByName("pass"),
-      ".*multiple subsystems.*pass.*unqiue.*");
+      ".*multiple subsystems.*pass.*unique.*");
 
   // Once the system is reset to use unique name, both lookups succeed.
   bonus_pass->set_name("bonus_pass");

@@ -45,7 +45,7 @@ class ComPositionConstraint final : public solvers::Constraint {
   /**
    * Overloaded constructor with MultibodyPlant<AutoDiffXd> and
    * Context<AutoDiffXd>.
-   * It is preferrable to use the constructor with MBP<double> and
+   * It is preferable to use the constructor with MBP<double> and
    * Context<double>. But if you only have MBP<AutoDiffXd> and
    * Context<AutoDiffXd>, then use this constructor.
    * @pydrake_mkdoc_identifier{autodiff}

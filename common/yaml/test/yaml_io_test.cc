@@ -162,7 +162,7 @@ GTEST_TEST(YamlIoTest, SaveStringDefaults) {
   EXPECT_EQ(result, "value:\n  save_string_defaults: 1.0\n");
 }
 
-// The implemenation of SaveYamlFile calls SaveYamlString, so we only need
+// The implementation of SaveYamlFile calls SaveYamlString, so we only need
 // to lightly test it (specifically the file-writing function).  We'll do
 // one test case with minimal arguments (just the filename) and one test
 // case with all arguments (to confirm that they are all forwarded).

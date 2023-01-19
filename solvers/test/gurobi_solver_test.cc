@@ -383,7 +383,7 @@ GTEST_TEST(GurobiTest, GurobiErrorCode) {
     DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, solver_options1),
                                 ".* 'Foo' is an unknown parameter in Gurobi.*");
 
-    // Report error when we pass an incorect value to a valid Gurobi parameter
+    // Report error when we pass an incorrect value to a valid Gurobi parameter
     SolverOptions solver_options2;
     solver_options2.SetOption(solver.solver_id(), "FeasibilityTol", 1E10);
     DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog, {}, solver_options2),
@@ -654,7 +654,7 @@ GTEST_TEST(GurobiTest, SOCPDualSolution2) {
     SolverOptions options;
     options.SetOption(GurobiSolver::id(), "QCPDual", 1);
     const auto result = solver.Solve(prog, {}, options);
-    // By pertubing the constraint1 as x^2 <= 2x + 3 + eps, the optimal cost
+    // By perturbing the constraint1 as x^2 <= 2x + 3 + eps, the optimal cost
     // becomes -1 - sqrt(4+eps). The gradient of the cost w.r.t eps is -1/4.
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1),
                                 Vector1d(-1.0 / 4), 1e-8));

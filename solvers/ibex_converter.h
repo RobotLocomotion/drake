@@ -61,7 +61,7 @@ class IbexConverter {
   // @throws std::exception if `f` includes a variable which is not included in
   // the converter's variables.
   // @throws std::exception if `f` is of the following unsupported formula
-  // types, {True, False, (Boolean) Variable, Non-Equality, Conjuntion,
+  // types, {True, False, (Boolean) Variable, Non-Equality, Conjunction,
   // Disjunction, Forall, Isnan, PositiveSemidefinite}.
   UniquePtrToExprCtr Convert(const symbolic::Formula& f);
 

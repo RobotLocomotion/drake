@@ -221,7 +221,7 @@ class DefAttributesArchive {
   const Docs* const cls_docs_;
 
   // As we visit each field, we'll accumulate a list of [{name=, type=}, ...]
-  // to bind later as the `__fields__` static propery.
+  // to bind later as the `__fields__` static property.
   py::list fields_;
 };
 

@@ -353,7 +353,7 @@ GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         ProcessModelDirectives(directives, &plant, nullptr,
                                make_parser(&plant).get()),
-        ".*unknown package 'nonexistant'.*");
+        ".*unknown package 'nonexistent'.*");
   }
 }
 

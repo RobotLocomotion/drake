@@ -774,7 +774,7 @@ class System : public SystemBase {
       the result of applying the discrete update event handlers to the current
       discrete variable values.
 
-  @note The referenced cache entry is recalcuated if anything in the
+  @note The referenced cache entry is recalculated if anything in the
       given Context has changed since last calculation. Subsequent calls just
       return the already-calculated value.
 

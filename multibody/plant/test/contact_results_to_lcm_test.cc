@@ -176,7 +176,7 @@ template <typename T>
 vector<HydroelasticQuadraturePointData<T>> MakeQuadratureData(
     const Vector3<T>& offset) {
   /* We'll pick *three* quadrature points per triangle, to make sure we get
-   proper loop iteration. For simplicitly, we'll explicitly define the first
+   proper loop iteration. For simplicity, we'll explicitly define the first
    quadrature point and then express the others in terms of the first. */
   constexpr int kNumPoints = kNumFaces * kNumPointPerTri;
   vector<HydroelasticQuadraturePointData<T>> quadrature_point_data(kNumPoints);

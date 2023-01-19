@@ -453,7 +453,7 @@ internal::EigenLinearSolver<LinearSolverType, DerivedA> GetLinearSolver(
  * Eigen::LLT. Notice that this is just specifies the solver type (such as
  * Eigen::LLT), not the matrix type (like Eigen::LLT<Eigen::Matrix2d>).
  * All Eigen solvers we care about are templated on the matrix type. Some are
- * further templated on configuration ints. The int... will acount for zero or
+ * further templated on configuration ints. The int... will account for zero or
  * more of these ints, providing a common interface for both types of solvers.
  * @tparam DerivedA An Eigen Matrix.
  * @tparam DerivedB An Eigen Vector.
@@ -565,7 +565,7 @@ class LinearSolver {
    * Decomposition::solve() function in Eigen. This avoids unnecessary copies
    * and heap memory allocations if we were to evaluate
    * Eigen::Solve<Decomposition, DerivedB> to a concrete Eigen::Matrix type.
-   * Othewise we return an Eigen::Matrix with the same size as DerivedB
+   * Otherwise we return an Eigen::Matrix with the same size as DerivedB
    * and proper scalar type.
    */
   template <typename DerivedB>
