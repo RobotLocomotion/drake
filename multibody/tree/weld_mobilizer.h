@@ -22,9 +22,14 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
+class WeldMobilizer final : public MobilizerImpl<T, 0, 0, WeldMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(WeldMobilizer)
+
+  static constexpr bool kCanRotate = false;
+  static constexpr bool kCanTranslate = false;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
 
   // Constructor for a %WeldMobilizer between the `inboard_frame_F` and
   // `outboard_frame_M`.
@@ -39,8 +44,17 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
 
   // Computes the across-mobilizer transform `X_FM`, which for this mobilizer
   // is independent of the state stored in `context`.
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const final;
+  math::RigidTransform<T> CalcX_FM(const Vector<T, 0>&) const {
+    return get_X_FM().template cast<T>();
+  }
+
+  // @param[in] dummy generalized coordinates (there are none for a Weld)
+  // @param[in,out] X_FM transform already set to our X_FM value
+  void FillX_FM(const Vector<T, 0>&,
+                math::RigidTransform<T>* X_FM) const {
+    unused(X_FM);  // except in Debug
+    DRAKE_ASSERT(X_FM->IsExactlyEqualTo(get_X_FM().template cast<T>()));
+  }
 
   // Computes the across-mobilizer velocity `V_FM` which for this mobilizer is
   // always zero since the outboard frame M is fixed to the inboard frame F.
@@ -75,9 +89,6 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const final;
 
-  bool can_rotate() const final    { return false; }
-  bool can_translate() const final { return false; }
-
  protected:
   void DoCalcNMatrix(const systems::Context<T>& context,
                      EigenPtr<MatrixX<T>> N) const final;
@@ -96,13 +107,7 @@ class WeldMobilizer final : public MobilizerImpl<T, 0, 0> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const final;
 
  private:
-  typedef MobilizerImpl<T, 0, 0> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
+  using MobilizerBase = MobilizerImpl<T, 0, 0, WeldMobilizer>;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 

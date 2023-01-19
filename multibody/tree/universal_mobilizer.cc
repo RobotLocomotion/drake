@@ -75,10 +75,8 @@ const UniversalMobilizer<T>& UniversalMobilizer<T>::set_angular_rates(
 }
 
 template <typename T>
-math::RigidTransform<T> UniversalMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
+math::RigidTransform<T> UniversalMobilizer<T>::CalcX_FM(
+    const Vector<T, 2>& q) const {
   const T s1 = sin(q[0]);
   const T c1 = cos(q[0]);
   const T s2 = sin(q[1]);

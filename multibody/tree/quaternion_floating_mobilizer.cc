@@ -135,7 +135,7 @@ void QuaternionFloatingMobilizer<T>::set_random_position_distribution(
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
   } else {
-    positions = get_zero_position().template cast<symbolic::Expression>();
+    positions = this->get_zero_position().template cast<symbolic::Expression>();
   }
   positions.template segment<3>(4) = position;
   MobilizerBase::set_random_position_distribution(positions);
@@ -149,7 +149,7 @@ void QuaternionFloatingMobilizer<
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
   } else {
-    positions = get_zero_position().template cast<symbolic::Expression>();
+    positions = this->get_zero_position().template cast<symbolic::Expression>();
   }
   positions[0] = q_FM.w();
   positions.template segment<3>(1) = q_FM.vec();
@@ -212,22 +212,8 @@ QuaternionFloatingMobilizer<T>::set_translational_velocity(
 }
 
 template <typename T>
-Vector<double, 7> QuaternionFloatingMobilizer<T>::get_zero_position()
-    const {
-  Vector<double, 7> q = Vector<double, 7>::Zero();
-  const Quaternion<double> quaternion = Quaternion<double>::Identity();
-  q[0] = quaternion.w();
-  q.template segment<3>(1) = quaternion.vec();
-  return q;
-}
-
-template <typename T>
 math::RigidTransform<T>
-QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto& q = this->get_positions(context);
-  DRAKE_ASSERT(q.size() == kNq);
-
+QuaternionFloatingMobilizer<T>::CalcX_FM(const Vector<T, 7>& q) const {
   // The first 4 elements in q contain a quaternion, ordered as w, x, y, z.
   // The last 3 elements in q contain position from Fo to Mo.
   const Vector4<T> wxyz(q.template head<4>());

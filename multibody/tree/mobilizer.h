@@ -25,7 +25,7 @@ namespace internal {
 
 template<typename T> class BodyNode;
 
-// %Mobilizer is a fundamental object within Drake's multibody engine used to
+// Mobilizer is a fundamental object within Drake's multibody engine used to
 // specify the allowed motions between two Frame objects within a
 // MultibodyTree. Specifying the allowed motions between two Frame objects
 // effectively also specifies a kinematic relationship between the two bodies
@@ -58,12 +58,12 @@ template<typename T> class BodyNode;
 //
 // <h3>Tree Structure</h3>
 //
-// A %Mobilizer induces a tree structure within a MultibodyTree
+// A Mobilizer induces a tree structure within a MultibodyTree
 // model, connecting an inboard (topologically closer to the world) frame to an
 // outboard (topologically further from the world) frame. Every time a
-// %Mobilizer is added to a MultibodyTree (using the
+// Mobilizer is added to a MultibodyTree (using the
 // MultibodyTree::AddMobilizer() method), a number of degrees of
-// freedom associated with the particular type of %Mobilizer are added to the
+// freedom associated with the particular type of Mobilizer are added to the
 // multibody system. In the example above for the single pendulum, adding a
 // RevoluteMobilizer has two purposes:
 //
@@ -74,13 +74,13 @@ template<typename T> class BodyNode;
 // - It defines a permissible motion space spanned by the generalized
 //   coordinates introduced by the mobilizer.
 //
-// <h3>Mathematical Description of a %Mobilizer</h3>
+// <h3>Mathematical Description of a Mobilizer</h3>
 //
-// A %Mobilizer describes the kinematics relationship between an inboard frame
+// A Mobilizer describes the kinematics relationship between an inboard frame
 // F and an outboard frame M, introducing an nq-dimensional vector of
 // generalized coordinates q and an nv-dimensional vector of generalized
 // velocities v. Notice that in general `nq != nv`, though `nq == nv` is a very
-// common case. The kinematic relationships introduced by a %Mobilizer are
+// common case. The kinematic relationships introduced by a Mobilizer are
 // fully specified by, [Seth 2010]. The monogram notation used below for X_FM,
 // V_FM, F_Mo_F, etc., are described in @ref multibody_frames_and_bodies.
 //
@@ -100,20 +100,20 @@ template<typename T> class BodyNode;
 //     H_FMᵀ is the `nv x 6` matrix transpose of `H_FM`.  It relates the `nv`
 //     generalized forces `tau` to `F_Mo_F` (the spatial force on frame M at
 //     point Mo, expressed in F) as `tau = H_FMᵀ ⋅ F_Mo_F`
-//     The %Mobilizer method ProjectSpatialForce() calculates `tau`.
+//     The Mobilizer method ProjectSpatialForce() calculates `tau`.
 //     Be aware that Drake's spatial forces are not the Plücker vectors defined
 //     in [Featherstone 2008, Ch. 2].
 // - Hdot_FM(q, v):
 //     The time derivative of the mobilizer hinge matrix `H_FM` is used in the
 //     calculation of `A_FM(q, v, v̇)` (outboard frame M's spatial acceleration
 //     in its inboard frame F, expressed in F) as
-//     `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.  The %Mobilizer method
+//     `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.  The Mobilizer method
 //     CalcAcrossMobilizerSpatialAcceleration() calculates `A_FM`.
 // - N(q):
 //     This `nq x nv` kinematic coupling matrix relates q̇ (the time-derivative
 //     of the nq mobilizer's generalized positions) to `v` (the mobilizer's
 //     generalized velocities) as `q̇ = N(q) * v`, [Seth 2010].
-//     The %Mobilizer method MapVelocityToQDot() calculates `N(q)`.
+//     The Mobilizer method MapVelocityToQDot() calculates `N(q)`.
 // - N⁺(q):
 //     The left pseudo-inverse of `N(q)`. `N⁺(q)` can be used to invert the
 //     relationship `q̇ = N(q) * v` without residual error, provided that `q̇` is
@@ -123,13 +123,15 @@ template<typename T> class BodyNode;
 //
 // In general, `nv != nq`. As an example, consider a quaternion mobilizer that
 // would allow frame M to move freely with respect to frame F. For such a
-// mobilizer the generalized positions vector might contain a quaternion to
+// mobilizer the generalized position vector might contain a quaternion to
 // describe rotations plus a position vector to describe translations. However,
 // we might choose the angular velocity `w_FM` and the linear velocity `v_FM`
 // as the generalized velocities (or more generally, the spatial velocity
-// `V_FM`.) In such a case `nq = 7` (4 dofs for a quaternion plus 3 dofs for a
-// position vector) and `nv = 6` (3 dofs for an angular velocity and 3 dofs for
-// a linear velocity).
+// `V_FM`.) For a 6 dof joint with a quaternion we have `nq = 7` (4 dofs for a
+// quaternion plus 3 dofs for a position vector) and `nv = 6` (3 dofs for an
+// angular velocity and 3 dofs for a linear velocity).
+// NOTE: for any mobilizer with a quaternion, we require that the quaternion
+// come first in the q's in the order [w xyz] where w is the scalar element.
 //
 // For a detailed discussion on the concept of a mobilizer please refer to
 // [Seth 2010]. The mobilizer "hinge" matrix `H_FM(q)` is introduced in
@@ -138,9 +140,11 @@ template<typename T> class BodyNode;
 // For details in the monogram notation used above please refer to
 // @ref multibody_spatial_algebra.
 //
-// %Mobilizer is an abstract base class defining the minimum functionality that
-// derived %Mobilizer objects must implement in order to fully define the
-// kinematic relationship between the two frames they connect.
+// Mobilizer is an abstract base class defining the minimum functionality that
+// derived Mobilizer objects must implement in order to fully define the
+// kinematic relationship between the two frames they connect. You should
+// not use this class to implement performance-critical algorithms. Instead,
+// use its derived MobilizerImpl template class.
 //
 // <h4>Relation between hinge matrix and Jacobians</h4>
 //
@@ -195,7 +199,7 @@ template<typename T> class BodyNode;
 // </pre>
 // Therefore, this enforces a relationship to the operations implemented by
 // CalcAcrossMobilizerSpatialVelocity() and ProjectSpatialForce() for any
-// %Mobilizer object.
+// Mobilizer object.
 //
 // - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
 //               algorithms. Springer Science & Business Media.
@@ -213,9 +217,9 @@ class Mobilizer : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
 
-  // The minimum amount of information that we need to define a %Mobilizer is
+  // The minimum amount of information that we need to define a Mobilizer is
   // the knowledge of the inboard and outboard frames it connects.
-  // Subclasses of %Mobilizer are therefore required to provide this
+  // Subclasses of Mobilizer are therefore required to provide this
   // information in their respective constructors.
   // @throws std::exception if `inboard_frame` and `outboard_frame`
   // reference the same frame object.
@@ -273,8 +277,8 @@ class Mobilizer : public MultibodyElement<T> {
     return topology_.velocities_start_in_v;
   }
 
-  /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th position in this mobilizer. Mobilizers with more than one
+  // Returns a string suffix (e.g. to be appended to the name()) to identify
+  // the `k`th position in this mobilizer. Mobilizers with more than one
   // position or that don't want to use the default `q`, must override this
   // method.
   virtual std::string position_suffix(int position_index_in_mobilizer) const {
@@ -285,8 +289,8 @@ class Mobilizer : public MultibodyElement<T> {
     return "q";
   }
 
-  /// Returns a string suffix (e.g. to be appended to the name()) to identify
-  /// the `k`th velocity in this mobilizer. Mobilizers with more than one
+  // Returns a string suffix (e.g. to be appended to the name()) to identify
+  // the `k`th velocity in this mobilizer. Mobilizers with more than one
   // velocity or that don't want to use the default 'v' must override this
   // method.
   virtual std::string velocity_suffix(int velocity_index_in_mobilizer) const {
@@ -302,6 +306,14 @@ class Mobilizer : public MultibodyElement<T> {
 
   // Returns true if this mobilizer can translate.
   virtual bool can_translate() const = 0;
+
+  // Returns `true` if `this` mobilizer grants 6-dofs to the outboard frame.
+  virtual bool is_floating() const = 0;
+
+  // Returns `true` if `this` uses a quaternion parametrization of rotations.
+  // Note: if it does, then the quaternion comes first in the q's in [w xyz]
+  // order (that is, the scalar element is first).
+  virtual bool has_quaternion_dofs() const = 0;
 
   // Returns a constant reference to the inboard frame.
   const Frame<T>& inboard_frame() const {
@@ -325,18 +337,12 @@ class Mobilizer : public MultibodyElement<T> {
     return outboard_frame().body();
   }
 
-  // Returns `true` if `this` mobilizer grants 6-dofs to the outboard frame.
-  virtual bool is_floating() const { return false; }
-
-  // Returns `true` if `this` uses a quaternion parametrization of rotations.
-  virtual bool has_quaternion_dofs() const { return false; }
-
   // Returns the topology information for this mobilizer. Users should not
   // need to call this method since MobilizerTopology is an internal
   // bookkeeping detail.
   const MobilizerTopology& get_topology() const { return topology_; }
 
-  // @name Methods that define a %Mobilizer
+  // @name Methods that define a Mobilizer
   // @{
 
   // Sets the `state` to what will be considered to be the _zero_ state
@@ -393,7 +399,7 @@ class Mobilizer : public MultibodyElement<T> {
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
   // frame F and the outboard frame M as a function of the vector of
   // generalized positions `q`.
-  // %Mobilizer subclasses implementing this method can retrieve the fixed-size
+  // Mobilizer subclasses implementing this method can retrieve the fixed-size
   // vector of generalized positions for `this` mobilizer from `context` with:
   //
   // @code
@@ -689,14 +695,14 @@ class Mobilizer : public MultibodyElement<T> {
   // inboard and outboard frames of the mobilizer being cloned.
   // @{
 
-  // Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  // Clones this Mobilizer (templated on T) to a mobilizer templated on
   // `double`.
   // @pre Inboard and outboard frames for this mobilizer already have a clone
   // in `tree_clone`.
   virtual std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const = 0;
 
-  // Clones this %Mobilizer (templated on T) to a mobilizer templated on
+  // Clones this Mobilizer (templated on T) to a mobilizer templated on
   // AutoDiffXd.
   // @pre Inboard and outboard frames for this mobilizer already have a clone
   // in `tree_clone`.

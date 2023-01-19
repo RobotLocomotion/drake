@@ -95,10 +95,10 @@ SpaceXYZFloatingMobilizer<T>::SetFromRigidTransform(
 
 template <typename T>
 math::RigidTransform<T>
-SpaceXYZFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
-    const systems::Context<T>& context) const {
-  const auto rpy = this->get_angles(context);
-  const auto p_FM = this->get_translation(context);
+SpaceXYZFloatingMobilizer<T>::CalcX_FM(const Vector<T, 6>& q) const {
+  const auto rpy = q.template head<3>();
+  const auto p_FM = q.template tail<3>();
+
   const math::RollPitchYaw<T> roll_pitch_yaw(rpy(0), rpy(1), rpy(2));
   return math::RigidTransform<T>(roll_pitch_yaw, p_FM);
 }

@@ -34,9 +34,15 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
+class RevoluteMobilizer final
+    : public MobilizerImpl<T, 1, 1, RevoluteMobilizer> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RevoluteMobilizer)
+
+  static constexpr bool kCanRotate = true;
+  static constexpr bool kCanTranslate = false;
+  static constexpr bool kIsFloating = false;
+  static constexpr bool kHasQuaternion = false;
 
   // Constructor for a %RevoluteMobilizer between the inboard frame F
   // `inboard_frame_F` and the outboard frame M `outboard_frame_F` granting a
@@ -58,9 +64,6 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   // elements.
   std::string position_suffix(int position_index_in_mobilizer) const final;
   std::string velocity_suffix(int velocity_index_in_mobilizer) const final;
-
-  bool can_rotate() const final    { return true; }
-  bool can_translate() const final { return false; }
 
   // @retval axis_F The rotation axis as a unit vector expressed in the inboard
   //                frame F.
@@ -105,11 +108,28 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
   // frame F and the outboard frame M as a function of the rotation angle
   // about this mobilizer's axis (@see revolute_axis().)
-  // The generalized coordinate q for `this` mobilizer (the rotation angle) is
-  // stored in `context`.
-  // This method aborts in Debug builds if `v.size()` is not one.
-  math::RigidTransform<T> CalcAcrossMobilizerTransform(
-      const systems::Context<T>& context) const override;
+  //
+  // Note: this generates a full rigid transform from scratch. Since only
+  // the rotation matrix can change, you can update an existing rigid transform
+  // faster using FillX_FM().
+  //
+  // @param[in] q the rotation angle as a 1-vector
+  // @param[out] X_FM transform
+  math::RigidTransform<T> CalcX_FM(const Vector<T, 1>& q) const {
+    const Eigen::AngleAxis<T> angle_axis(q[0], revolute_axis());
+    const math::RigidTransform<T> X_FM(angle_axis, Vector<T, 3>::Zero());
+    return X_FM;
+  }
+
+  // @param[in] q the rotation angle as a 1-vector
+  // @param[in,out] X_FM transform with already-zero translation
+  void FillX_FM(const Vector<T, 1>& q,
+                math::RigidTransform<T>* X_FM) const {
+    using Vector3T = Vector<T, 3>;
+    DRAKE_ASSERT(X_FM->translation() == Vector3T::Zero());
+    const Eigen::AngleAxis<T> angle_axis(q[0], revolute_axis());
+    X_FM->set_rotation(angle_axis);
+  }
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame
   // M measured and expressed in frame F as a function of the rotation angle
@@ -175,13 +195,7 @@ class RevoluteMobilizer final : public MobilizerImpl<T, 1, 1> {
       const MultibodyTree<symbolic::Expression>& tree_clone) const override;
 
  private:
-  typedef MobilizerImpl<T, 1, 1> MobilizerBase;
-  // Bring the handy number of position and velocities MobilizerImpl enums into
-  // this class' scope. This is useful when writing mathematical expressions
-  // with fixed-sized vectors since we can do things like Vector<T, nq>.
-  // Operations with fixed-sized quantities can be optimized at compile time
-  // and therefore they are highly preferred compared to the very slow dynamic
-  // sized quantities.
+  using MobilizerBase = MobilizerImpl<T, 1, 1, RevoluteMobilizer>;
   using MobilizerBase::kNq;
   using MobilizerBase::kNv;
 
