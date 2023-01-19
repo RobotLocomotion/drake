@@ -353,6 +353,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
 
+  // Add in query functions that we don't want to bind directly onto
+  // the scalar type classes, as mentioned below.
+  // TODO(eric.cousineau): Add other query functions.
+  // tODO(eric.cousineau): Should these belong on the class for NumPy UFuncs?
+  m.def(
+      "isnan", [](const T& x) { return isnan(x); }, py::arg("x"));
+
   // Cross product
   m.def(
       "VectorToSkewSymmetric",
@@ -510,10 +517,15 @@ void DoScalarIndependentDefinitions(py::module m) {
           py::arg("A"), py::arg("Q"), doc.RealDiscreteLyapunovEquation.doc);
 
   // General scalar math overloads.
-  // N.B. Additional overloads will be added for autodiff, symbolic, etc, by
-  // those respective modules.
-  // TODO(eric.cousineau): If possible, delegate these to NumPy UFuncs,
-  // either using __array_ufunc__ or user dtypes.
+  // N.B. Additional overloads will be added for AutoDiffXd and Expression
+  // via:
+  // - `BindAutoDiffMathOverloads` and `BindSymbolicMathOverloads` for
+  //   functions that should exist as both overloads in this module *and* as
+  //   class members so that NumPy UFuncs for dtype=object can use them, and
+  // - `DoScalarDependentDefinitions` defined above, for functions that should
+  //   only exist as module-level overloads.
+  // TODO(eric.cousineau): If possible, delegate these to explicit NumPy
+  // UFuncs, either using __array_ufunc__ or user dtypes.
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   m  // BR
       .def("log", [](double x) { return log(x); })
