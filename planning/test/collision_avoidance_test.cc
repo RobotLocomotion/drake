@@ -9,20 +9,14 @@
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/unimplemented_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+namespace internal {
 namespace {
 
-using drake::CompareMatrices;
 using drake::multibody::BodyIndex;
 using drake::multibody::default_model_instance;
 using drake::multibody::SpatialInertia;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::planning::RobotDiagram;
-using drake::planning::RobotDiagramBuilder;
-using drake::planning::UnimplementedCollisionChecker;
 using Eigen::VectorXd;
 using std::move;
 using std::unique_ptr;
@@ -209,5 +203,6 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
 }
 
 }  // namespace
+}  // namespace internal
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
