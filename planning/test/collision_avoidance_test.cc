@@ -9,20 +9,14 @@
 #include "drake/planning/robot_diagram_builder.h"
 #include "drake/planning/unimplemented_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+namespace internal {
 namespace {
 
-using drake::CompareMatrices;
 using drake::multibody::BodyIndex;
 using drake::multibody::default_model_instance;
 using drake::multibody::SpatialInertia;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::planning::RobotDiagram;
-using drake::planning::RobotDiagramBuilder;
-using drake::planning::UnimplementedCollisionChecker;
 using Eigen::VectorXd;
 using std::move;
 using std::unique_ptr;
@@ -38,6 +32,9 @@ unique_ptr<RobotDiagram<double>> MakeRobot() {
                                        SpatialInertia<double>::MakeUnitary());
   return builder.BuildDiagram();
 }
+
+/* Has to match the 7 dofs in the robot. */
+constexpr int kQSize = 7;
 
 /* A minimum implementation of the CollisionChecker, but one that allows us to
  explicitly specify the result of CalcRobotClearance(). */
@@ -90,8 +87,6 @@ Each of those gets us own unit test case in the below. */
 
 GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, ContextProvenance) {
   DummyCollisionChecker checker;
-  /* Has to match the 7 dofs in the robot. */
-  constexpr int kQSize = 7;
   const VectorXd q1 = (VectorXd(kQSize) << 1, 2, 3, 4, 5, 6, 7).finished();
   const VectorXd q2 = (VectorXd(kQSize) << 9, 8, 7, 6, 5, 4, 3).finished();
 
@@ -117,8 +112,6 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, ContextProvenance) {
 
 GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, NoDistanceMeasurements) {
   DummyCollisionChecker checker;
-  /* Has to match the 7 dofs in the robot. */
-  constexpr int kQSize = 7;
   const VectorXd q = (VectorXd(kQSize) << 1, 2, 3, 4, 5, 6, 7).finished();
 
   /* The checker returns an empty RobotClearance by default. This should lead to
@@ -131,8 +124,6 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, NoDistanceMeasurements) {
 
 GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
   DummyCollisionChecker checker;
-  /* Has to match the 7 dofs in the robot. */
-  constexpr int kQSize = 7;
   const VectorXd q0 = VectorXd::Zero(kQSize);
   const VectorXd q1 = (VectorXd(kQSize) << 1, 2, 3, 4, 5, 6, 7).finished();
   const VectorXd q2 = (VectorXd(kQSize) << 9, 8, 7, 6, 5, 4, 3).finished();
@@ -162,9 +153,9 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     clearance.Append(robot_body, env_body, env_type, kMin - 0.1,
                      q1.transpose());
     checker.set_robot_clearance(move(clearance));
-    const VectorXd delta_q =
+    const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
-    EXPECT_TRUE(CompareMatrices(delta_q, q1));
+    EXPECT_TRUE(CompareMatrices(grad, q1));
   }
 
   {
@@ -173,9 +164,9 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     clearance.Append(robot_body, env_body, env_type, kMax + 0.1,
                      q1.transpose());
     checker.set_robot_clearance(move(clearance));
-    const VectorXd delta_q =
+    const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
-    EXPECT_TRUE(CompareMatrices(delta_q, q0));
+    EXPECT_TRUE(CompareMatrices(grad, q0));
   }
 
   {
@@ -185,10 +176,10 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     clearance.Append(robot_body, env_body, env_type, kMax - kRange * kWeight,
                      q1.transpose());
     checker.set_robot_clearance(move(clearance));
-    const VectorXd delta_q =
+    const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
-    EXPECT_EQ(delta_q.size(), kQSize);
-    EXPECT_TRUE(CompareMatrices(delta_q, kWeight * q1));
+    EXPECT_EQ(grad.size(), kQSize);
+    EXPECT_TRUE(CompareMatrices(grad, kWeight * q1));
   }
 
   {
@@ -201,13 +192,34 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     clearance.Append(robot_body, env_body, env_type, kMax - kRange * kWeight2,
                      q2.transpose());
     checker.set_robot_clearance(move(clearance));
-    const VectorXd delta_q =
+    const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
-    EXPECT_EQ(delta_q.size(), kQSize);
-    EXPECT_TRUE(CompareMatrices(delta_q, kWeight1 * q1 + kWeight2 * q2));
+    EXPECT_EQ(grad.size(), kQSize);
+    EXPECT_TRUE(CompareMatrices(grad, kWeight1 * q1 + kWeight2 * q2));
   }
 }
 
+GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, Errors) {
+  DummyCollisionChecker checker;
+  const VectorXd q = VectorXd::Zero(kQSize);
+
+  // The max_penetration cannot be positive.
+  EXPECT_THROW(
+      ComputeCollisionAvoidanceDisplacement(checker, q, 0.1, 1),
+      std::exception);
+
+  // The max_clearance cannot be negative.
+  EXPECT_THROW(
+      ComputeCollisionAvoidanceDisplacement(checker, q, -1, -0.1),
+      std::exception);
+
+  // They cannot be both zero.
+  EXPECT_THROW(
+      ComputeCollisionAvoidanceDisplacement(checker, q, 0, 0),
+      std::exception);
+}
+
 }  // namespace
+}  // namespace internal
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

@@ -2,32 +2,24 @@
 
 #include "drake/planning/collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+namespace internal {
 
-/** Computes a displacement in configuration space, Δq, that moves the provided
- configuration `q` into a "clearer" state, reducing the likelihood of collision.
+/* Computes the gradient ∇f = (∂f/∂q)ᵀ of an unspecifed distance function "f".
 
- The displacement vector Δq = Σᵢ(wᵢ⋅Jqᵣ_ϕᵢ), where
+ "f" combines the distances ϕᵢ of the given collision checker's RobotClearance
+ data, reconciling multiple simultaneous potential collisions via a penalty
+ method. The closer to penetration, the more weight that potential collision
+ has. No measurements greater than `max_clearance` contribute to the
+ calculation, and any distances less than `max_penetration` are all treated
+ equally, regardless of the degree of penetration.
 
-   - The iᵗʰ term comes from the iᵗʰ clearance measurement on the robot. It may
-     measure the clearance between robot and environment or robot and robot.
-   - The number of measurements depends on how the robot is represented
-     geometrically in `checker`.
-   - ϕᵢ is the iᵗʰ measured distance and Jq_ϕᵢ is the partial derivative of ϕᵢ
-     with respect to qᵣ, the robot state.
-   - wᵢ is the weight for iᵗʰ measurement, defined as wᵢ = (c - ϕᵢ) / (c - p),
-     where c = `max_clearance` and p = `max_penetration` and c > p.
+ Therefore, the gradient ∇f points `q` into a "clearer" state, reducing the
+ likelihood of collision.
 
- Intuitively, the displacement vector Δq tries to reconcile multiple
- simultaneous potential collisions via a penalty method. The closer to
- penetration, the more weight that potential collision has. No measurements
- greater than `max_clearance` contribute to the calculation, and any distances
- less than `max_penetration` are all treated equally, regardless of the degree
- of penetration.
-
- @param checker             The checker used to define ϕᵢ and Jqᵣ_ϕᵢ.
- @param q                   The robot configuration at which we compute Δq.
+ @param checker             The checker used to calculate clearance data.
+ @param q                   The robot configuration at which we compute ∂f/∂q.
  @param max_penetration     The bottom of the range; a non-positive value
                             representing the level of penetration that saturates
                             the weight. Penetration occurs inside an object
@@ -45,16 +37,25 @@ namespace planning {
  @param context             An optional collision checker context. If none is
                             provided, the checker's context for the current
                             thread is used.
- @retval Δq the configuration displacement to increase robot clearance.
  @pre q.size() == checker.GetZeroConfiguration().size().
  @pre max_penetration <= 0.
  @pre max_clearance >= 0.
  @pre max_clearance > max_penetration.
  @pre if context != nullptr, it is a context managed by checker. */
 Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
-    const drake::planning::CollisionChecker& checker, const Eigen::VectorXd& q,
+    const CollisionChecker& checker, const Eigen::VectorXd& q,
     double max_penetration, double max_clearance,
-    drake::planning::CollisionCheckerContext* context = nullptr);
+    CollisionCheckerContext* context = nullptr);
 
+// TODO(jwnimmer-tri) Before we promote the above function out of the internal
+// namespace, consider renaming "Displacement" to "Gradient" to better reflect
+// the units on the return type.
+
+// TODO(jwnimmer-tri) Before we promote the above function out of the internal
+// namespace, consider changing its optional `context` parameter above into a
+// distinct function named ComputeContextCollisionAvoidanceDisplacement, for
+// consistency with how CollisionChecker names its member functions.
+
+}  // namespace internal
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
