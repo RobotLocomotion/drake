@@ -43,6 +43,7 @@ class FloatOverloads(Overloads):
         import pydrake.math as m
         self.m = m
         self.T = float
+        self.T_logical = bool
 
     def supports(self, func):
         return True
@@ -61,6 +62,7 @@ class AutoDiffOverloads(Overloads):
         import pydrake.autodiffutils as m
         self.m = m
         self.T = m.AutoDiffXd
+        self.T_logical = bool
 
     def supports(self, func):
         backwards_compat = [
@@ -91,6 +93,7 @@ class SymbolicOverloads(Overloads):
         import pydrake.symbolic as m
         self.m = m
         self.T = m.Expression
+        self.T_logical = bool
 
     def supports(self, func):
         backwards_compat = [
@@ -142,6 +145,9 @@ class MathOverloadsTest(unittest.TestCase):
             (drake_math.ceil, math.ceil),
             (drake_math.floor, math.floor),
         ]
+        unary_logical = [
+            (drake_math.isnan, math.isnan),
+        ]
         binary = [
             (drake_math.min, min),
             (drake_math.max, max),
@@ -152,7 +158,7 @@ class MathOverloadsTest(unittest.TestCase):
         # Arbitrary values to test overloads with.
         args_float_all = [0.1, 0.2]
 
-        def check_eval(functions, nargs):
+        def check_eval(functions, nargs, *, logical=False):
             # Generate arguments.
             args_float = args_float_all[:nargs]
             args_T = list(map(overload.to_type, args_float))
@@ -174,7 +180,10 @@ class MathOverloadsTest(unittest.TestCase):
                         repr(y_float),
                     )
                     self.assertEqual(y_float, y_builtin)
-                    self.assertIsInstance(y_float, float)
+                    if logical:
+                        self.assertIsInstance(y_float, bool)
+                    else:
+                        self.assertIsInstance(y_float, float)
                     # Test method current overload, and ensure value is
                     # accurate.
                     y_T = f_drake(*args_T)
@@ -184,7 +193,10 @@ class MathOverloadsTest(unittest.TestCase):
                         repr(y_T),
                         repr(y_T_float),
                     )
-                    self.assertIsInstance(y_T, overload.T)
+                    if logical:
+                        self.assertIsInstance(y_T, overload.T_logical)
+                    else:
+                        self.assertIsInstance(y_T, overload.T)
                     # - Ensure the translated value is accurate.
                     self.assertEqual(y_T_float, y_float)
 
@@ -193,6 +205,8 @@ class MathOverloadsTest(unittest.TestCase):
         # Check each number of arguments.
         debug_print("Unary:")
         check_eval(unary, 1)
+        debug_print("Unary Logical:")
+        check_eval(unary_logical, 1, logical=True)
         debug_print("Binary:")
         check_eval(binary, 2)
 
