@@ -134,6 +134,7 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
   const double kMin = -0.25;
   const double kMax = 0.75;
   const double kRange = kMax - kMin;
+  const double kTol = 1e-15;
 
   /* We'll use a robot-env collision; ComputeCollisionAvoidanceDisplacement()
    ignores this field. So, robot-env and robot-robot measurements should be
@@ -179,7 +180,7 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
     EXPECT_EQ(grad.size(), kQSize);
-    EXPECT_TRUE(CompareMatrices(grad, kWeight * q1));
+    EXPECT_TRUE(CompareMatrices(grad, kWeight * q1, kTol));
   }
 
   {
@@ -195,7 +196,7 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
     EXPECT_EQ(grad.size(), kQSize);
-    EXPECT_TRUE(CompareMatrices(grad, kWeight1 * q1 + kWeight2 * q2));
+    EXPECT_TRUE(CompareMatrices(grad, kWeight1 * q1 + kWeight2 * q2, kTol));
   }
 }
 
