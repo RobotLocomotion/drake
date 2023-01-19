@@ -173,10 +173,15 @@ HPolyhedron IrisInConfigurationSpace(
     const systems::Context<double>& context,
     const IrisOptions& options = IrisOptions());
 
-/** A variation of the Iris (Iterative Region Inflation by Semidefinite
-programming) algorithm which finds collision-free regions in the *rational
-parametrization of the configuration space* of @p plant. @see Iris for details
-on the original algorithm.
+/** A variation of the IrisInConfigurationSpace (Iterative Region Inflation by
+Semidefinite programming) algorithm which finds collision-free regions in the
+*rational parametrization of the configuration space* of @p plant.  @see
+IrisInConfigurationSpace for details on the original algorithm. Similar to
+IrisInConfigurationSpace, this code uses non-linear optimization (rather than
+convex optimization) to generate regions in rational configuration space which
+are *largely* collision-free, but may contain some collisions. If rigorous
+certificates of non-collision are desired, these regions can be certified as
+collision free using the C-IRIS algorithm implemented in cspace_free_polytope.h
 
 @param plant describes the kinematics of configuration space.  It must be
 connected to a SceneGraph in a systems::Diagram.
