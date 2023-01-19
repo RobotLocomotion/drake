@@ -7,6 +7,7 @@ load("@drake//tools/workspace/bazel_skylib:repository.bzl", "bazel_skylib_reposi
 load("@drake//tools/workspace/blas:repository.bzl", "blas_repository")
 load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository")  # noqa
 load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
+load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
 load("@drake//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
 load("@drake//tools/workspace/cds:repository.bzl", "cds_repository")
 load("@drake//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
@@ -24,6 +25,7 @@ load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualize
 load("@drake//tools/workspace/dreal:repository.bzl", "dreal_repository")
 load("@drake//tools/workspace/eigen:repository.bzl", "eigen_repository")
 load("@drake//tools/workspace/expat:repository.bzl", "expat_repository")
+load("@drake//tools/workspace/fcl:repository.bzl", "fcl_repository")  # noqa
 load("@drake//tools/workspace/fcl_internal:repository.bzl", "fcl_internal_repository")  # noqa
 load("@drake//tools/workspace/fmt:repository.bzl", "fmt_repository")
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
@@ -124,6 +126,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         buildifier_repository(name = "buildifier", mirrors = mirrors)
     if "cc" not in excludes:
         cc_repository(name = "cc")
+    if "ccd" not in excludes:
+        ccd_repository(name = "ccd", mirrors = mirrors)
     if "ccd_internal" not in excludes:
         ccd_internal_repository(name = "ccd_internal", mirrors = mirrors)
     if "cds" not in excludes:
@@ -164,6 +168,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         eigen_repository(name = "eigen")
     if "expat" not in excludes:
         expat_repository(name = "expat")
+    if "fcl" not in excludes:
+        fcl_repository(name = "fcl", mirrors = mirrors)
     if "fcl_internal" not in excludes:
         fcl_internal_repository(name = "fcl_internal", mirrors = mirrors)
     if "fmt" not in excludes:
