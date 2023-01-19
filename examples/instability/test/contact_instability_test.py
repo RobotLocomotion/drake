@@ -11,6 +11,7 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.math import RigidTransform, RollPitchYaw
 from pydrake.multibody.math import SpatialVelocity
 from pydrake.systems.analysis import Simulator
+from pydrake.visualization import AddDefaultVisualization
 
 from drake.examples.instability.test.instability_common import (
     TestBase,
@@ -18,7 +19,7 @@ from drake.examples.instability.test.instability_common import (
     monitor_large_energy_delta,
 )
 
-VISUALIZE = False
+VISUALIZE = True
 
 
 def add_floating_contact_sim(ns):
@@ -33,6 +34,7 @@ def add_floating_contact_sim(ns):
     ns.model_a = ns.parser.AddModelFromFile(a_file, "a")
     ns.model_b = ns.parser.AddModelFromFile(b_file, "b")
     ns.plant.Finalize()
+    AddDefaultVisualization(builder=ns.builder)
     ns.frame_W = ns.plant.world_frame()
     ns.frame_A = ns.plant.GetFrameByName("__model__", ns.model_a)
     ns.frame_B = ns.plant.GetFrameByName("__model__", ns.model_b)

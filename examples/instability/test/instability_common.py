@@ -33,11 +33,6 @@ def add_basic_simulation_components(ns, time_step, solver=None):
         assert time_step == 0.0
     ns.plant, ns.scene_graph = AddMultibodyPlant(config, ns.builder)
     ns.parser = Parser(ns.plant)
-    DrakeVisualizer.AddToBuilder(
-        ns.builder,
-        ns.scene_graph,
-        params=DrakeVisualizerParams(role=Role.kIllustration),
-    )
     # Disable gravity so that we do not need to worry about gravity feedforward
     # control terms.
     ns.plant.mutable_gravity_field().set_gravity_vector([0.0, 0.0, 0.0])
