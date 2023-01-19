@@ -88,6 +88,8 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), True)
         self.assertEqual(meshcat.HasPath(link_path), True)
 
+        # XXX test no-op reloading here
+
     def test_hydroelastic_geometry(self):
         """Check that _ViewerApplet doesn't crash when receiving
         hydroelastic geometry.
