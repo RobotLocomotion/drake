@@ -77,6 +77,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cspace_free_polytope_test",
     timeout = "long",
+    # This test launches 2 threads to test both serial and parallel code paths
+    # in CspaceFreePolytope.
+    tags = ["cpu:2"],
     deps = [
         ":c_iris_test_utilities",
         ":cspace_free_polytope",

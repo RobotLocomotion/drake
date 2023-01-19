@@ -21,6 +21,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 const double kInf = std::numeric_limits<double>::infinity();
+const int kTestConcurrency = 2;
 
 // This is a friend class of CspaceFreePolytope, we use it to expose the private
 // functions in CspaceFreePolytope for unit testing.
@@ -848,7 +849,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
   solvers::MosekSolver solver;
   options.solver_id = solver.id();
   if (solver.available()) {
-    for (int num_threads : {-1, 1, 5}) {
+    for (int num_threads : {1, kTestConcurrency}) {
       options.num_threads = num_threads;
 
       const auto certificates_result =
@@ -946,7 +947,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeFailure) {
   solvers::MosekSolver solver;
   options.solver_id = solver.id();
   if (solver.available()) {
-    for (int num_threads : {-1, 1, 5}) {
+    for (int num_threads : {1, kTestConcurrency}) {
       options.num_threads = num_threads;
 
       const auto certificates_result =
@@ -1206,6 +1207,7 @@ TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
   options.verbose = false;
   solvers::MosekSolver solver;
   options.solver_id = solver.id();
+  options.num_threads = kTestConcurrency;
   if (solver.available()) {
     const auto certificates_result =
         tester.FindSeparationCertificateGivenPolytope(ignored_collision_pairs,
@@ -1287,6 +1289,7 @@ class CIrisToyRobotInitializePolytopeSearchProgramTest
     options.verbose = false;
     solvers::MosekSolver solver;
     options.solver_id = solver.id();
+    options.num_threads = kTestConcurrency;
     options.solver_options = solvers::SolverOptions();
     options.solver_options->SetOption(
         solvers::CommonSolverOption::kPrintToConsole, 0);
@@ -1380,11 +1383,10 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
 
   CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions options;
   options.verbose = false;
+  options.num_threads = kTestConcurrency;
   solvers::MosekSolver solver;
   options.solver_id = solver.id();
   if (solver.available()) {
-    options.num_threads = -1;
-
     const auto certificates_result =
         tester.FindSeparationCertificateGivenPolytope(ignored_collision_pairs,
                                                       C, d, options);
@@ -1563,6 +1565,8 @@ TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
   CspaceFreePolytope::BilinearAlternationOptions bilinear_alternation_options;
   bilinear_alternation_options.max_iter = 5;
   bilinear_alternation_options.convergence_tol = 1E-5;
+  bilinear_alternation_options.find_lagrangian_options.num_threads =
+      kTestConcurrency;
   bilinear_alternation_options.find_polytope_options.solver_options =
       solvers::SolverOptions();
   bilinear_alternation_options.find_polytope_options.solver_options->SetOption(
@@ -1645,6 +1649,7 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
   options.scale_min = 1;
   options.scale_max = 10;
   options.convergence_tol = 1E-1;
+  options.find_lagrangian_options.num_threads = kTestConcurrency;
   solvers::MosekSolver solver;
   if (solver.available()) {
     const Eigen::Vector3d s_center(0.01, 0, 0.01);
