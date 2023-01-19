@@ -1,18 +1,25 @@
+"""This file contains smoke tests for our hardware_sim program and its sample
+config files. The tests are reused for both the C++ and Python regression
+tests.
+
+Note that this file is only ever imported; it is never run as a unittest
+program itself; we'll use wrapper files named hardware_sim_cc_test and
+hardware_sim_py_test to actually run it.
+"""
+
 import copy
 import os.path
 import re
 import shlex
 import subprocess
 import sys
-import unittest
 
 import yaml
 
 from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
 
 
-class HardwareSimTest(unittest.TestCase):
-    """Smoke test for our hardware_sim program and its sample config files."""
+class HardwareSimTest:
 
     def _find_resource(self, respath):
         runfiles = CreateRunfiles()
@@ -22,8 +29,12 @@ class HardwareSimTest(unittest.TestCase):
         return result
 
     def setUp(self):
+        """Prior to anything calling this function, our subclass must set our
+        self._sim_lang to either "cc" or "py".
+        """
+        lang = self._sim_lang
         self._simulator = self._find_resource(
-            "drake/examples/hardware_sim/hardware_sim")
+            f"drake/examples/hardware_sim/hardware_sim_{lang}")
         self._example_scenarios = self._find_resource(
             "drake/examples/hardware_sim/example_scenarios.yaml")
         self._test_scenarios = self._find_resource(
