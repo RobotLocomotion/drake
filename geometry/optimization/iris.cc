@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/iris.h"
 
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <tuple>
@@ -8,8 +9,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
-#include <iostream>
 
 #include "drake/common/symbolic/expression.h"
 #include "drake/geometry/optimization/cartesian_product.h"
@@ -219,6 +218,8 @@ ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
 
 namespace {
 
+// Takes an abstract cspace variable s, p_AA, and p_BB and enforces that
+// p_WA(s) == p_WB(s). We assume that s = f(q) where f is an invertible map.
 class SamePointConstraintAbstractCSpace : public Constraint {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraintAbstractCSpace)
@@ -248,7 +249,6 @@ class SamePointConstraintAbstractCSpace : public Constraint {
     symbolic_context_->SetTimeStateAndParametersFrom(*context_);
   }
 
- public:
   virtual inline VectorXd ExtractAbstractCSpaceVariableFromQ(
       const Ref<const VectorXd>& q) const = 0;
   virtual inline VectorXd ExtractQFromAbstractCSpaceVariable(
@@ -259,8 +259,6 @@ class SamePointConstraintAbstractCSpace : public Constraint {
   ExtractQFromAbstractCSpaceVariable(
       const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
       const = 0;
-  virtual inline MatrixXd Compute_dcspace_variable_dq_inv(
-      const Ref<const VectorXd>& q) const = 0;
 
   const MultibodyPlant<double>* const plant_;
   const multibody::Frame<double>* frameA_{nullptr};
@@ -269,6 +267,10 @@ class SamePointConstraintAbstractCSpace : public Constraint {
 
   std::unique_ptr<MultibodyPlant<Expression>> symbolic_plant_{nullptr};
   std::unique_ptr<Context<Expression>> symbolic_context_{nullptr};
+
+ protected:
+  virtual inline void Compute_dqdot_ds(const Ref<const AutoDiffVecXd>& q,
+                                    EigenPtr<MatrixXd> dqdot_ds) const = 0;
 
  private:
   void DoEval(const Ref<const VectorXd>& x, VectorXd* y) const override {
@@ -287,15 +289,14 @@ class SamePointConstraintAbstractCSpace : public Constraint {
     *y = p_WA - p_WB;
   }
 
-  // p_WA = X_WA(cspace_variable)*p_AA
-  // dp_WA = Jcspace_variable_v_WA*dcspace_variable +
-  // X_WA(cspace_variable)*dp_AA
+  // p_WA = X_WA(s)*p_AA
+  // dp_WA = Js_v_WA*ds + X_WA(s)*dp_AA
   void DoEval(const Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
     DRAKE_DEMAND(frameA_ != nullptr);
     DRAKE_DEMAND(frameB_ != nullptr);
-    AutoDiffVecXd cspace_variable = x.head(plant_->num_positions());
-    AutoDiffVecXd q = ExtractQFromAbstractCSpaceVariable(cspace_variable);
+    AutoDiffVecXd s = x.head(plant_->num_positions());
+    AutoDiffVecXd q = ExtractQFromAbstractCSpaceVariable(s);
     Vector3<AutoDiffXd> p_AA = x.template segment<3>(plant_->num_positions()),
                         p_BB = x.template tail<3>();
 
@@ -308,7 +309,6 @@ class SamePointConstraintAbstractCSpace : public Constraint {
 
     Eigen::Matrix3Xd Jq_v_WA(3, plant_->num_positions()),
         Jq_v_WB(3, plant_->num_positions());
-
     plant_->CalcJacobianTranslationalVelocity(
         *context_, JacobianWrtVariable::kQDot, *frameA_,
         ExtractDoubleOrThrow(p_AA), plant_->world_frame(),
@@ -318,20 +318,20 @@ class SamePointConstraintAbstractCSpace : public Constraint {
         ExtractDoubleOrThrow(p_BB), plant_->world_frame(),
         plant_->world_frame(), &Jq_v_WB);
 
-    // Jq_v_WA = d/dq X_WA(cspace_variable) =
-    // dX_WA(cspace_variable)/dcspace_variable * dcspace_variable/dq and so
-    // Jcspace_variable_v_WA = dX_WA(cspace_variable)/dcspace_variable = Jq_v_WA
-    // * (dcspace_variable/dq)^(-1)
-    Eigen::Matrix3Xd Jcspace_variable_v_WA(3, plant_->num_positions()),
-        Jcspace_variable_v_WB(3, plant_->num_positions());
-    Jcspace_variable_v_WA = Jq_v_WA * Compute_dcspace_variable_dq_inv(q);
-    Jcspace_variable_v_WB = Jq_v_WB * Compute_dcspace_variable_dq_inv(q);
+    Eigen::Matrix3Xd Js_v_WA(3, plant_->num_positions()),
+        Js_v_WB(3, plant_->num_positions());
+    Eigen::MatrixXd dqdot_ds =
+        MatrixXd::Identity(plant_->num_positions(), plant_->num_positions());
+    // Js_v_WA_ = Jq_v_WA_ * dqdot/dsdot = dp_WA/dqdot * dqdot/dsdot
+    Compute_dqdot_ds(q, &dqdot_ds);
+    Js_v_WA = Jq_v_WA * dqdot_ds;
+    Js_v_WB = Jq_v_WB * dqdot_ds;
 
     const Eigen::Vector3d y_val =
         X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
     Eigen::Matrix3Xd dy(3, plant_->num_positions() + 6);
-    dy << Jcspace_variable_v_WA - Jcspace_variable_v_WB,
-        X_WA.rotation().matrix(), -X_WB.rotation().matrix();
+    dy << Js_v_WA - Js_v_WB, X_WA.rotation().matrix(),
+        -X_WB.rotation().matrix();
     *y = math::InitializeAutoDiff(y_val, dy * math::ExtractGradient(x));
   }
 
@@ -345,8 +345,8 @@ class SamePointConstraintAbstractCSpace : public Constraint {
     const Frame<Expression>& frameB =
         symbolic_plant_->get_frame(frameB_->index());
 
-    VectorX<Expression> cspace_variable = x.head(plant_->num_positions());
-    VectorX<Expression> q = ExtractQFromAbstractCSpaceVariable(cspace_variable);
+    VectorX<Expression> s = x.head(plant_->num_positions());
+    VectorX<Expression> q = ExtractQFromAbstractCSpaceVariable(s);
     Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
                         p_BB = x.template tail<3>();
     Vector3<Expression> p_WA, p_WB;
@@ -357,15 +357,6 @@ class SamePointConstraintAbstractCSpace : public Constraint {
                                          symbolic_plant_->world_frame(), &p_WB);
     *y = p_WA - p_WB;
   }
-
-//  virtual inline void Compute_Jcspace_variable_v_WF(
-//      const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
-//      const Eigen::Ref<const AutoDiffVecXd> q,
-//      EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const {
-//    for (int i = 0; i < plant_->num_positions(); i++) {
-//      Jcspace_variable_v_WF->col(i) = Jq_v_WF.col(i) * q(i).derivatives()(i);
-//    }
-//  }
 };
 
 // Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
@@ -394,16 +385,11 @@ class SamePointConstraint : public SamePointConstraintAbstractCSpace {
     return cspace_variable;
   }
 
-  MatrixXd Compute_dcspace_variable_dq_inv(const Ref<const VectorXd>& q) const override {
-    std::cout << q << std::endl;
-    return MatrixXd<q.rows(), q.rows()>::Identity();
+ protected:
+  inline void Compute_dqdot_ds(const Ref<const AutoDiffVecXd>&,
+                            EigenPtr<MatrixXd>) const override {
+    // since s = q then dqdot_ds = I
   }
-//  inline void Compute_Jcspace_variable_v_WF(
-//      const Eigen::Ref<const Eigen::Matrix3Xd> Jq_v_WF,
-//      const Eigen::Ref<const AutoDiffVecXd> q,
-//      EigenPtr<Eigen::Matrix3Xd> Jcspace_variable_v_WF) const override {
-//    *Jcspace_variable_v_WF = Jq_v_WF;
-//  }
 };
 
 // takes s, p_AA,and p_BB and enforces that p_WA == p_WB
@@ -437,6 +423,15 @@ class SamePointConstraintRational : public SamePointConstraintAbstractCSpace {
       const override {
     return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
                                                            q_star_);
+  }
+
+ protected:
+  void Compute_dqdot_ds(const Ref<const AutoDiffVecXd>& q,
+                     EigenPtr<MatrixXd> dqdot_ds) const override {
+    // since sᵢ = f(qᵢ) then we only need to operate on the diagonal.
+    for (int i = 0; i < static_cast<int>((*dqdot_ds).rows()); ++i) {
+      (*dqdot_ds)(i, i) = q(i).derivatives()(i);
+    }
   }
 
  private:
