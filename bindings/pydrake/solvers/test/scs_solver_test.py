@@ -36,8 +36,7 @@ class TestScsSolver(unittest.TestCase):
             result.get_solver_details().primal_residue, np.array([0.]),
             atol=atol)
         numpy_compare.assert_float_allclose(
-            result.get_solver_details().y,
-            np.array([1., 1., 1.5, 0.5, -1., -1]), atol=atol)
+            result.get_solver_details().y, np.array([1., 1.]), atol=atol)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when SCS is disabled."""
