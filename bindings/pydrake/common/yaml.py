@@ -8,6 +8,8 @@ import typing
 import numpy as np
 import yaml
 
+from pydrake.common import pretty_class_name
+
 
 class _SchemaLoader(yaml.loader.SafeLoader):
     """Customizes SafeLoader for the purposes of this module."""
@@ -327,7 +329,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             # Find which Union[] type argument matches the tag.
             refined_value_schema = None
             for candidate in generic_args:
-                candidate_name = candidate.__name__
+                candidate_name = pretty_class_name(candidate)
                 if "[" in candidate_name:
                     # When matching vs template type, compare the base name.
                     candidate_name = candidate_name.split("[", 1)[0]
