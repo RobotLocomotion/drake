@@ -1,4 +1,4 @@
-#include "planning/robot_collision_type.h"
+#include "drake/planning/robot_collision_type.h"
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>

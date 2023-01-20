@@ -1,4 +1,4 @@
-#include "planning/body_shape_description.h"
+#include "drake/planning/body_shape_description.h"
 
 #include <gtest/gtest.h>
 
