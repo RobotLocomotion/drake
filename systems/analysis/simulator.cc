@@ -57,22 +57,6 @@ Simulator<T>::Simulator(const System<T>* system,
 
 template <typename T>
 SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
-  const int count = 1;
-  const bool allow_suppress_initialization_events = true;
-  return DoInitialize(params, count, allow_suppress_initialization_events);
-}
-
-template <typename T>
-SimulatorStatus Simulator<T>::InitializeRepeatedly(int count) {
-  const bool allow_suppress_initialization_events = false;
-  return DoInitialize(
-      InitializeParams{}, count, allow_suppress_initialization_events);
-}
-
-template <typename T>
-SimulatorStatus Simulator<T>::DoInitialize(
-    const InitializeParams& params, int count,
-    bool allow_suppress_initialization_events) {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
   if (!context_)
@@ -98,11 +82,11 @@ SimulatorStatus Simulator<T>::DoInitialize(
   witnessed_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(witnessed_events_ != nullptr);
 
-  for (int i = 0; i < count; ++i) {
+  for (int i = 0; i < params.initialization_count; ++i) {
     // Restore default values.
     ResetStatistics();
 
-    const bool is_initialization_warm_up = i + 1 < count;
+    const bool is_initialization_warm_up = i + 1 < params.initialization_count;
     context_->SetInitializationWarmUp(is_initialization_warm_up);
 
     // N.B. We purposefully clear our events to ensure we do not process
@@ -115,8 +99,6 @@ SimulatorStatus Simulator<T>::DoInitialize(
     // Process all the initialization events.
     if (!params.suppress_initialization_events) {
       system_.GetInitializationEvents(*context_, merged_events_.get());
-    } else {
-      DRAKE_THROW_UNLESS(allow_suppress_initialization_events);
     }
 
     // Do unrestricted updates first.

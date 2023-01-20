@@ -33,11 +33,15 @@ struct InitializeParams {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(suppress_initialization_events));
+    a->Visit(DRAKE_NVP(initialization_count));
   }
 
   /// Whether to trigger initialization events. Events are triggered by
   /// default; it may be useful to suppress them when reusing a simulator.
   bool suppress_initialization_events{false};
+
+  // TODO: expand on this plz.
+  int initialization_count{1};
 };
 
 /** @ingroup simulation
@@ -324,7 +328,8 @@ class Simulator {
     DoAnyPublishes(t₀, x⁻(t₀))
     CallMonitor(t₀, x⁻(t₀))
   */
-  SimulatorStatus InitializeRepeatedly(int count);
+  // InitailizeRepeatedly(...)
+  // TODO: Fold docs into InitializeParams::initialization_count.
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
@@ -727,10 +732,6 @@ class Simulator {
       const System<T>* system,
       std::unique_ptr<const System<T>> owned_system,
       std::unique_ptr<Context<T>> context);
-
-  SimulatorStatus DoInitialize(
-      const InitializeParams& params, int count,
-      bool allow_suppress_initialization_events);
 
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);

@@ -221,7 +221,7 @@ TEST_F(LeafSystemDiscreteInitializationTest, RepeatedInitialize) {
   const int zoh_cascade_order = 3;
   const int discrete_initialization_cascade_order = zoh_cascade_order + 1;
   // We should repeat this many times.
-  const int initialize_count = discrete_initialization_cascade_order;
+  const int initialization_count = discrete_initialization_cascade_order;
 
   // Show that this does *not* work for zoh_initialize = false.
   {
@@ -230,9 +230,9 @@ TEST_F(LeafSystemDiscreteInitializationTest, RepeatedInitialize) {
     BuildDiagram(zoh_initialize);
     CheckDefaultContext();
 
-    simulator_->InitializeRepeatedly(initialize_count);
+    simulator_->Initialize({.initialization_count = initialization_count});
     EXPECT_TRUE(dut_->IsInitialized(*dut_context_));
-    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), initialize_count);
+    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), initialization_count);
     EXPECT_FALSE(IsZohInitialized(zoh_1_));
     EXPECT_FALSE(IsZohInitialized(zoh_2_));
     EXPECT_FALSE(IsZohInitialized(zoh_3_));
@@ -247,9 +247,9 @@ TEST_F(LeafSystemDiscreteInitializationTest, RepeatedInitialize) {
     BuildDiagram(zoh_initialize);
     CheckDefaultContext();
 
-    simulator_->InitializeRepeatedly(initialize_count);
+    simulator_->Initialize({.initialization_count = initialization_count});
     EXPECT_TRUE(dut_->IsInitialized(*dut_context_));
-    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), initialize_count);
+    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), initialization_count);
     EXPECT_EQ(dut_->GetPeriodicCounter(*dut_context_), 0);
     EXPECT_TRUE(IsZohInitialized(zoh_1_));
     EXPECT_TRUE(IsZohInitialized(zoh_2_));
@@ -266,17 +266,17 @@ TEST_F(LeafSystemDiscreteInitializationTest, RepeatedInitialize) {
     BuildDiagram(zoh_initialize);
     CheckDefaultContext();
 
-    for (int i = 0; i < initialize_count; ++i) {
+    for (int i = 0; i < initialization_count; ++i) {
       simulator_->Initialize();
     }
     EXPECT_TRUE(dut_->IsInitialized(*dut_context_));
-    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), initialize_count);
+    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), initialization_count);
     EXPECT_TRUE(IsZohInitialized(zoh_1_));
     EXPECT_TRUE(IsZohInitialized(zoh_2_));
     EXPECT_TRUE(IsZohInitialized(zoh_3_));
     // We don't want this.
-    EXPECT_EQ(dut_->GetInitializeFinalCounter(*dut_context_), initialize_count);
-    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), initialize_count);
+    EXPECT_EQ(dut_->GetInitializeFinalCounter(*dut_context_), initialization_count);
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), initialization_count);
   }
 }
 
