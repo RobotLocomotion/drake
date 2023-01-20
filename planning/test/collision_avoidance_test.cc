@@ -1,4 +1,4 @@
-#include "planning/collision_avoidance.h"
+#include "drake/planning/collision_avoidance.h"
 
 #include <memory>
 #include <string>

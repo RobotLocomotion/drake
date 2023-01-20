@@ -1,4 +1,4 @@
-#include "planning/collision_checker.h"
+#include "drake/planning/collision_checker.h"
 
 #include <chrono>
 #include <map>
