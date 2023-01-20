@@ -1,45 +1,40 @@
-#include "planning/test/collision_checker_abstract_test_suite.h"
+#include "drake/planning/test_utilities/collision_checker_abstract_test_suite.h"
 
 #include <unordered_map>
 
 #include <common_robotics_utilities/openmp_helpers.hpp>
 #include <common_robotics_utilities/print.hpp>
 
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/planning/collision_avoidance.h"
-#include "planning/sphere_robot_model_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace test {
 
-using drake::geometry::GeometryId;
-using drake::multibody::BodyIndex;
-using drake::planning::EdgeMeasure;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::planning::internal::ComputeCollisionAvoidanceDisplacement;
+using geometry::GeometryId;
+using multibody::BodyIndex;
+using internal::ComputeCollisionAvoidanceDisplacement;
 
-drake::multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
+multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
   // Assemble model directives.
-  drake::multibody::parsing::ModelDirective add_env_model;
-  add_env_model.add_model = drake::multibody::parsing::AddModel{
-      "package://anzu/models/test/collision_ground_plane.sdf",
+  multibody::parsing::ModelDirective add_env_model;
+  add_env_model.add_model = multibody::parsing::AddModel{
+      "package://drake/planning/test_utilities/collision_ground_plane.sdf",
       "ground_plane_box"};
-  drake::multibody::parsing::ModelDirective add_env_weld;
-  add_env_weld.add_weld = drake::multibody::parsing::AddWeld{
+  multibody::parsing::ModelDirective add_env_weld;
+  add_env_weld.add_weld = multibody::parsing::AddWeld{
       "world", "ground_plane_box::ground_plane_box"};
 
-  drake::multibody::parsing::ModelDirective add_robot_model;
-  add_robot_model.add_model = drake::multibody::parsing::AddModel{
+  multibody::parsing::ModelDirective add_robot_model;
+  add_robot_model.add_model = multibody::parsing::AddModel{
       "package://drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_spheres_dense_collision.urdf", "iiwa"};
-  drake::multibody::parsing::ModelDirective add_robot_weld;
-  add_robot_weld.add_weld = drake::multibody::parsing::AddWeld{
+  multibody::parsing::ModelDirective add_robot_weld;
+  add_robot_weld.add_weld = multibody::parsing::AddWeld{
       "world", "iiwa::base"};
 
-  const drake::multibody::parsing::ModelDirectives directives{.directives = {
+  const multibody::parsing::ModelDirectives directives{.directives = {
       add_env_model, add_env_weld, add_robot_model, add_robot_weld}};
   return directives;
 }
@@ -89,8 +84,8 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddSpheres) {
   const auto& dut_frame = checker.plant().GetFrameByName("iiwa_link_2");
   // Add a really big ball so that collision will definitely happen.
   checker.AddCollisionShapeToFrame("test", dut_frame,
-                                   drake::geometry::Sphere(1.0),
-                                   drake::math::RigidTransform<double>());
+                                   geometry::Sphere(1.0),
+                                   math::RigidTransform<double>());
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
   EXPECT_NE(checker.GetAllAddedCollisionShapes().size(), 0);
 
@@ -117,8 +112,8 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddSpheres) {
 
   // Re-add a shape to test removal of everything.
   checker.AddCollisionShapeToFrame("test", dut_frame,
-                                   drake::geometry::Sphere(1.0),
-                                   drake::math::RigidTransform<double>());
+                                   geometry::Sphere(1.0),
+                                   math::RigidTransform<double>());
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
   EXPECT_NE(checker.GetAllAddedCollisionShapes().size(), 0);
 
@@ -133,8 +128,8 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddObstacles) {
   // Add a really big cylinder so that collision will definitely happen.
   const bool added =
       checker.AddCollisionShapeToFrame("test", checker.plant().world_frame(),
-                                       drake::geometry::Cylinder(1.0, 1.0),
-                                       drake::math::RigidTransform<double>());
+                                       geometry::Cylinder(1.0, 1.0),
+                                       math::RigidTransform<double>());
   EXPECT_EQ(params.supports_added_world_obstacles, added);
   if (added) {
     EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
@@ -154,7 +149,7 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q3));
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q4));
 
-  // TODO(sean.curtis) These edge tests are more properly tested in the base
+  // TODO(SeanCurtis-TRI) These edge tests are more properly tested in the base
   // class's tests. The test here does *one* thing that that test doesn't do:
   // Stress test: the base class unit tests uses edges with just a few samples
   // and doesn't repeatedly invoke it like is done here. (How many samples are
@@ -229,7 +224,6 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
 
 TEST_P(CollisionCheckerAbstractTestSuite, StressParallelDiscreteQueries) {
   auto params = GetParam();
-  ASSERT_GT(common_robotics_utilities::openmp_helpers::GetNumOmpThreads(), 1);
   // Since there are parallel query options, we test repeatedly to ensure that
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
@@ -276,8 +270,8 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
   qtest << 0.0, M_PI_2, 0.0, -M_PI_4 * 1.25, 0.0, 0.0, 0.0;
   const Eigen::VectorXd qtest_initial = qtest;
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qtest));
-  drake::log()->info("Starting q: {}",
-                     common_robotics_utilities::print::Print(qtest));
+  log()->info("Starting q: {}",
+              common_robotics_utilities::print::Print(qtest));
   int current_iteration = 0;
   while (current_iteration < max_iterations &&
          !checker.CheckConfigCollisionFree(qtest)) {
@@ -286,7 +280,7 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
     const Eigen::VectorXd scaled_delta_qtest =
         delta_qtest.stableNormalized() * 0.05;
     qtest = qtest + scaled_delta_qtest;
-    drake::log()->info(
+    log()->info(
         "Iteration {}; raw delta_q: {}; scaled_delta_q: {}; new q: {}",
         current_iteration,
         common_robotics_utilities::print::Print(delta_qtest),
@@ -295,7 +289,7 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
     current_iteration++;
   }
   EXPECT_TRUE(checker.CheckConfigCollisionFree(qtest));
-  drake::log()->info(
+  log()->info(
       "Modified qtest {} to collision-free {} in {} iterations",
       common_robotics_utilities::print::Print(qtest_initial),
       common_robotics_utilities::print::Print(qtest),
@@ -304,7 +298,6 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
 
 TEST_P(CollisionCheckerAbstractTestSuite, StressParallelGradientQueries) {
   auto params = GetParam();
-  ASSERT_GT(common_robotics_utilities::openmp_helpers::GetNumOmpThreads(), 1);
   // Since there are parallel query options, we test repeatedly to ensure that
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
@@ -322,4 +315,4 @@ TEST_P(CollisionCheckerAbstractTestSuite, ForceSerializeGradientQueries) {
 
 }  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
