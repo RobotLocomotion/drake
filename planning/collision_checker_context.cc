@@ -1,4 +1,4 @@
-#include "planning/collision_checker_context.h"
+#include "drake/planning/collision_checker_context.h"
 
 #include <memory>
 #include <utility>
