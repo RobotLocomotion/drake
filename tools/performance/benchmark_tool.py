@@ -2,7 +2,7 @@
 
 If necessary, installs software for CPU speed adjustment. Runs a bazel target,
 with CPU speed control disabled. Copies result data to a user selected output
-directory. Only supported on Ubuntu 20.04.
+directory. Only supported on Ubuntu 22.04.
 
 The purpose of CPU speed control for benchmarking is to disable automatic CPU
 speed scaling, so that results of similar experiments will be more repeatable,
@@ -24,12 +24,12 @@ import time
 
 
 def is_default_ubuntu():
-    """Return True iff platform is Ubuntu 20.04."""
+    """Return True iff platform is Ubuntu 22.04."""
     if os.uname().sysname != "Linux":
         return False
     release_info = subprocess.check_output(
                 ["lsb_release", "-irs"], encoding='utf-8')
-    return ("Ubuntu\n20.04" in release_info)
+    return ("Ubuntu\n22.04" in release_info)
 
 
 def get_installed_version(package_name):
@@ -41,7 +41,10 @@ def get_installed_version(package_name):
         encoding='utf-8')
     if result.returncode != 0:
         return None
-    status, version = result.stdout.split()
+    words = result.stdout.split()
+    if len(words) < 2:
+        return None
+    status, version = words[:2]
     if status != "ii":
         return None
     return version
