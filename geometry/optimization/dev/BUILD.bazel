@@ -77,6 +77,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cspace_free_polytope_test",
     timeout = "long",
+    tags = ["no_memcheck"],
     deps = [
         ":c_iris_test_utilities",
         ":cspace_free_polytope",
