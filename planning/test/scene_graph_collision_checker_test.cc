@@ -1,28 +1,22 @@
-#include "planning/scene_graph_collision_checker.h"
+#include "drake/planning/scene_graph_collision_checker.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/planning/robot_diagram_builder.h"
-#include "common/anzu_model_directives.h"
-#include "planning/test/collision_checker_abstract_test_suite.h"
-#include "planning/test/planning_test_helpers.h"
+#include "drake/planning/test/collision_checker_abstract_test_suite.h"
+#include "drake/planning/test/planning_test_helpers.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace test {
 namespace {
 
-using drake::CompareMatrices;
-using drake::multibody::BodyIndex;
-using drake::planning::CollisionCheckerParams;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::planning::RobotDiagramBuilder;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using multibody::BodyIndex;
 using testing::ElementsAre;
 
 CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams() {
@@ -220,13 +214,11 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
 GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceFloatingBase) {
   // Build a dut with a ground plane + floating chassis with welded arm.
   RobotDiagramBuilder<double> builder;
-  builder.mutable_parser().package_map().AddMap(
-      common::MakeDefaultAnzuPackageMap());
   builder.mutable_parser().AddModelsFromString(R"""(
 directives:
 - add_model:
     name: ground
-    file: package://anzu/models/test/collision_ground_plane.sdf
+    file: package://drake/planning/test/collision_ground_plane.sdf
 - add_weld:
     parent: world
     child: ground::ground_plane_box
@@ -289,4 +281,4 @@ directives:
 
 }  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":robot_collision_type",
         ":robot_diagram",
         ":robot_diagram_builder",
+        ":scene_graph_collision_checker",
         ":unimplemented_collision_checker",
     ],
 )
@@ -133,12 +134,58 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "scene_graph_collision_checker",
+    srcs = ["scene_graph_collision_checker.cc"],
+    hdrs = ["scene_graph_collision_checker.h"],
+    interface_deps = [
+        ":collision_checker",
+        ":collision_checker_params",
+    ],
+    deps = [
+        ":robot_diagram",
+        "//geometry",
+        "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
     name = "unimplemented_collision_checker",
     srcs = ["unimplemented_collision_checker.cc"],
     hdrs = ["unimplemented_collision_checker.h"],
     deps = [
         ":collision_checker",
         ":collision_checker_params",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_checker_abstract_test_suite",
+    testonly = True,
+    srcs = ["test/collision_checker_abstract_test_suite.cc"],
+    hdrs = ["test/collision_checker_abstract_test_suite.h"],
+    data = [
+        "test/collision_ground_plane.sdf",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":collision_avoidance",
+        ":collision_checker",
+        "@common_robotics_utilities",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_library(
+    name = "planning_test_helpers",
+    testonly = True,
+    srcs = ["test/planning_test_helpers.cc"],
+    hdrs = ["test/planning_test_helpers.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":collision_checker",
+        ":robot_diagram",
+        "//multibody/parsing",
     ],
 )
 
@@ -164,9 +211,11 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "collision_checker_test",
+    # Be sure to exercise OpenMP-related features.
     num_threads = 2,
     deps = [
         ":collision_checker",
+        ":planning_test_helpers",
         ":unimplemented_collision_checker",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -207,6 +256,22 @@ drake_cc_googletest(
         ":robot_diagram",
         ":robot_diagram_builder",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scene_graph_collision_checker_test",
+    timeout = "moderate",
+    data = [
+        "//manipulation/models/ycb:models",
+    ],
+    # Be sure to exercise OpenMP-related features.
+    num_threads = 2,
+    deps = [
+        ":collision_checker_abstract_test_suite",
+        ":planning_test_helpers",
+        ":scene_graph_collision_checker",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
