@@ -11,20 +11,17 @@ import subprocess
 import sys
 
 
-def parse_command_line(argv):
-    """Absorb the coverage.py command line. We may ignore most of it.  Returns
-    a pair of an argparse.Namespace object, and a list of un-parsed arguments
-    to the target executable.
+def parse_run_command(argv):
+    """Absorb the coverage.py 'run' command line. Drake will ignore most of it.
+    Returns a list of un-parsed arguments to the target executable.
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('verb', type=str, help='coverage.py verb')
-    parser.add_argument('exe', type=str, help='target executable')
-    parser.add_argument('-a', action='store_true', default=False,
-                        help='coverage.py -a')
-    parser.add_argument('--branch', action='store_true', default=False,
-                        help='coverage.py --branch')
+    parser = argparse.ArgumentParser(prog='kcoverage.py run')
+    ignore = "Drake will ignore this coverage.py argument."
+    parser.add_argument('-a', '--append', action='store_true', help=ignore)
+    parser.add_argument('--branch', action='store_true', help=ignore)
+    parser.add_argument('--rcfile', type=str, help=ignore)
 
-    return parser.parse_known_args(argv)
+    return parser.parse_known_args(argv)[1]
 
 
 def exec_with_kcov(exe, exe_args):
@@ -48,8 +45,15 @@ def exec_with_kcov(exe, exe_args):
 
 
 def main():
-    args, extra = parse_command_line(sys.argv[1:])
-    exec_with_kcov(args.exe, extra)
+    verb = sys.argv[1]
+    if verb == 'lcov':
+        # Bazel 6 invokes 'lcov', but drake/kcov don't need to do anything.
+        return
+    # Drake/kcov support only needs to implement 'run'; anything else that
+    # reached here is an error.
+    assert verb == 'run', f"Command '{verb}' not implemented."
+    extra = parse_run_command(sys.argv[2:])
+    exec_with_kcov(extra[0], extra[1:])
 
 
 if __name__ == "__main__":
