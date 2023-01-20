@@ -184,6 +184,8 @@ class DiagramContext final : public Context<T> {
       const ContextBase& source,
       const DependencyTracker::PointerMap& tracker_map) final;
 
+  void DoPropagateSetInitializationWarmUp(bool value) final;
+
   // The contexts are stored in SubsystemIndex order, and contexts_ is equal in
   // length to the number of subsystems specified at construction time.
   std::vector<std::unique_ptr<Context<T>>> contexts_;

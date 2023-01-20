@@ -327,6 +327,14 @@ void DiagramContext<T>::DoPropagateFixContextPointers(
   }
 }
 
+template <typename T>
+void DiagramContext<T>::DoPropagateSetInitializationWarmUp(bool value) {
+  for (auto& subcontext : contexts_) {
+    DRAKE_ASSERT(subcontext != nullptr);
+    subcontext->SetInitializationWarmUp(value);
+  }
+}
+
 }  // namespace systems
 }  // namespace drake
 

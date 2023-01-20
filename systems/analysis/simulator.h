@@ -302,6 +302,30 @@ class Simulator {
   /// @see AdvanceTo(), AdvancePendingEvents(), SimulatorStatus
   SimulatorStatus Initialize(const InitializeParams& params = {});
 
+  /**
+  Repeatedly dispatches initialization events @p count times. Use this
+  if you have a system where initialization of discrete state (numeric or
+  abstract) may depend on other discrete state being properly updated.
+  Note that this should be called *instead of* Initialize().
+
+  This will not accumulate statistics across the number of repeats.
+
+  @pre count Number of times to dispatch initialization events. Must be >= 1.
+
+  This modifies the above Initialize() procedure to the following:
+
+  procedure InitializeRepeatedly(t₀, x₀, num_repeat) → status
+    // Initialization events should not and can *not* be suppressed.
+
+    for i in range(count)
+      x⁺(t₀) ← DoAnyInitializationUpdates as in Step()
+      x⁻(t₀) ← x⁺(t₀)
+
+    DoAnyPublishes(t₀, x⁻(t₀))
+    CallMonitor(t₀, x⁻(t₀))
+  */
+  SimulatorStatus InitializeRepeatedly(int count);
+
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of
   /// `std::runtime_error` conditions are possible here, as well as error
@@ -703,6 +727,10 @@ class Simulator {
       const System<T>* system,
       std::unique_ptr<const System<T>> owned_system,
       std::unique_ptr<Context<T>> context);
+
+  SimulatorStatus DoInitialize(
+      const InitializeParams& params, int count,
+      bool allow_suppress_initialization_events);
 
   void HandleUnrestrictedUpdate(
       const EventCollection<UnrestrictedUpdateEvent<T>>& events);

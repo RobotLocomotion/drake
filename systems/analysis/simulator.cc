@@ -57,6 +57,22 @@ Simulator<T>::Simulator(const System<T>* system,
 
 template <typename T>
 SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
+  const int count = 1;
+  const bool allow_suppress_initialization_events = true;
+  return DoInitialize(params, count, allow_suppress_initialization_events);
+}
+
+template <typename T>
+SimulatorStatus Simulator<T>::InitializeRepeatedly(int count) {
+  const bool allow_suppress_initialization_events = false;
+  return DoInitialize(
+      InitializeParams{}, count, allow_suppress_initialization_events);
+}
+
+template <typename T>
+SimulatorStatus Simulator<T>::DoInitialize(
+    const InitializeParams& params, int count,
+    bool allow_suppress_initialization_events) {
   // TODO(sherm1) Modify Context to satisfy constraints.
   // TODO(sherm1) Invoke System's initial conditions computation.
   if (!context_)
@@ -72,31 +88,49 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
   // Initialize the integrator.
   integrator_->Initialize();
 
-  // Restore default values.
-  ResetStatistics();
-
-  // Process all the initialization events.
+  // Allocate events.
   merged_events_ = system_.AllocateCompositeEventCollection();
-  if (!params.suppress_initialization_events) {
-    system_.GetInitializationEvents(*context_, merged_events_.get());
-  }
-
-  // Do unrestricted updates first.
-  HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
-  // Do restricted (discrete variable) updates next.
-  HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
-
-  // Gets all per-step events to be handled.
+  DRAKE_DEMAND(merged_events_ != nullptr);
   per_step_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(per_step_events_ != nullptr);
-  system_.GetPerStepEvents(*context_, per_step_events_.get());
-
-  // Allocate timed events collection.
   timed_events_ = system_.AllocateCompositeEventCollection();
   DRAKE_DEMAND(timed_events_ != nullptr);
+  witnessed_events_ = system_.AllocateCompositeEventCollection();
+  DRAKE_DEMAND(witnessed_events_ != nullptr);
 
-  // Ensure that CalcNextUpdateTime() can return the current time by perturbing
-  // current time as slightly toward negative infinity as we can allow.
+  for (int i = 0; i < count; ++i) {
+    // Restore default values.
+    ResetStatistics();
+
+    const bool is_initialization_warm_up = i + 1 < count;
+    context_->SetInitializationWarmUp(is_initialization_warm_up);
+
+    // N.B. We purposefully clear our events to ensure we do not process
+    // stale or repeated events.
+    const bool clear_events = i > 0;
+    if (clear_events) {
+      merged_events_->Clear();
+    }
+
+    // Process all the initialization events.
+    if (!params.suppress_initialization_events) {
+      system_.GetInitializationEvents(*context_, merged_events_.get());
+    } else {
+      DRAKE_THROW_UNLESS(allow_suppress_initialization_events);
+    }
+
+    // Do unrestricted updates first.
+    HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
+    // Do restricted (discrete variable) updates next.
+    HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+  }
+
+  // Gets all per-step events to be handled.
+  system_.GetPerStepEvents(*context_, per_step_events_.get());
+
+  // Ensure that CalcNextUpdateTime() can return the current time by
+  // perturbing current time as slightly toward negative infinity as we can
+  // allow.
   const T slightly_before_current_time =
       internal::GetPreviousNormalizedValue(current_time);
   context_->PerturbTime(slightly_before_current_time, current_time);
@@ -115,17 +149,18 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
     time_or_witness_triggered_ = kNothingTriggered;
   }
 
-  // Allocate the witness function collection.
-  witnessed_events_ = system_.AllocateCompositeEventCollection();
-
   // Do any publishes last. Merge the initialization events with per-step
-  // events and current_time timed events (if any). We expect all initialization
-  // events to precede any per-step or timed events in the merged collection.
-  // Note that per-step and timed discrete/unrestricted update events are *not*
-  // processed here; just publish events.
+  // events and current_time timed events (if any). We expect all
+  // initialization events to precede any per-step or timed events in the
+  // merged collection.
+  // Note that per-step and timed discrete/unrestricted update events are
+  // *not* processed here; just publish events.
   merged_events_->AddToEnd(*per_step_events_);
   if (time_or_witness_triggered_ & kTimeTriggered)
     merged_events_->AddToEnd(*timed_events_);
+
+  DRAKE_DEMAND(!context_->is_initialization_warm_up());
+
   HandlePublish(merged_events_->get_publish_events());
 
   // TODO(siyuan): transfer publish entirely to individual systems.

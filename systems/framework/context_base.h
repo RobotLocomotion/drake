@@ -255,6 +255,19 @@ class ContextBase : public internal::ContextMessageInterface {
   /** Returns true if this context has no parent. */
   bool is_root_context() const { return parent_ == nullptr; }
 
+  /** (Internal use only) Denotes that the events being processed are "warm-up"
+  events, i.e., not the final initialization event. See
+  is_initialization_warm_up(). */
+  void SetInitializationWarmUp(bool value) {
+    is_initialization_warm_up_ = value;
+    DoPropagateSetInitializationWarmUp(value);
+  }
+
+  /** Returns true if current event being processed should not be considered a
+  "final" initialization event. During this phase, system events should avoid
+  making *any* side effects (e.g. publishing to middleware). */
+  bool is_initialization_warm_up() const { return is_initialization_warm_up_; }
+
  protected:
   /** Default constructor creates an empty ContextBase but initializes all the
   built-in dependency trackers that are the same in every System (like time,
@@ -570,6 +583,11 @@ class ContextBase : public internal::ContextMessageInterface {
     unused(change_event, note_bulk_change);
   }
 
+  /** DiagramContext must haz this. */
+  virtual void DoPropagateSetInitializationWarmUp(bool value) {
+    unused(value);
+  }
+
  private:
   friend class internal::SystemBaseContextBaseAttorney;
 
@@ -669,6 +687,8 @@ class ContextBase : public internal::ContextMessageInterface {
   // Used to validate that System-derived classes didn't forget to invoke the
   // SystemBase method that properly sets up the ContextBase.
   bool is_context_base_initialized_{false};
+
+  bool is_initialization_warm_up_{false};
 };
 
 #ifndef DRAKE_DOXYGEN_CXX
