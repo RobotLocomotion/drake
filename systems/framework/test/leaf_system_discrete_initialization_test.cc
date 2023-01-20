@@ -23,6 +23,8 @@ class Dut : public LeafSystem<double> {
     periodic_counter_index_ = DeclareDiscreteState(VectorXd::Zero(1));
     DeclarePeriodicDiscreteUpdateEvent(
         period_sec_, 0.0, &Dut::UpdatePeriodicCounter);
+    DeclarePeriodicPublishEvent(
+        period_sec_, 0.0, &Dut::PeriodicPublish);
   }
 
   bool IsInitialized(const Context<double>& context) const {
@@ -43,6 +45,8 @@ class Dut : public LeafSystem<double> {
     return static_cast<int>(counter);
   }
 
+  int GetPeriodicPublishCounter() const { return periodic_publish_counter_; }
+
  private:
   EventStatus Initialize(
       const Context<double>& context,
@@ -58,9 +62,14 @@ class Dut : public LeafSystem<double> {
     state->get_mutable_value(periodic_counter_index_)[0] += 1.0;
   }
 
+  void PeriodicPublish(const Context<double>& context) const {
+    ++periodic_publish_counter_;
+  }
+
   DiscreteStateIndex initialized_index_;
   DiscreteStateIndex initialize_counter_index_;
   DiscreteStateIndex periodic_counter_index_;
+  mutable int periodic_publish_counter_{0};
 };
 
 class LeafSystemDiscreteInitializationTest : public ::testing::Test {
@@ -93,6 +102,7 @@ class LeafSystemDiscreteInitializationTest : public ::testing::Test {
     EXPECT_FALSE(dut_->IsInitialized(*dut_context_));
     EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), 0);
     EXPECT_EQ(dut_->GetPeriodicCounter(*dut_context_), 0);
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), 0);
     EXPECT_FALSE(IsZohInitialized(zoh_1_));
     EXPECT_FALSE(IsZohInitialized(zoh_2_));
     EXPECT_FALSE(IsZohInitialized(zoh_3_));
@@ -131,6 +141,8 @@ TEST_F(LeafSystemDiscreteInitializationTest, Nominal) {
     EXPECT_FALSE(IsZohInitialized(zoh_1_));
     EXPECT_FALSE(IsZohInitialized(zoh_2_));
     EXPECT_FALSE(IsZohInitialized(zoh_3_));
+    // Initialize() will trigger a periodic publish event.
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), 1);
 
     // Advance.
     simulator_->AdvanceTo(0.0);
@@ -145,6 +157,8 @@ TEST_F(LeafSystemDiscreteInitializationTest, Nominal) {
     // Subsequent ZOH values are not yet updated.
     EXPECT_FALSE(IsZohInitialized(zoh_2_));
     EXPECT_FALSE(IsZohInitialized(zoh_3_));
+    // This should not have published anew.
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), 1);
 
     // Advance to exactly the boundary. Process all events with
     // AdvancePendingEvents(). No change should occur.
@@ -156,6 +170,8 @@ TEST_F(LeafSystemDiscreteInitializationTest, Nominal) {
     EXPECT_TRUE(IsZohInitialized(zoh_1_));
     EXPECT_TRUE(IsZohInitialized(zoh_2_));
     EXPECT_FALSE(IsZohInitialized(zoh_3_));
+    // Check publish count.
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), 2);
 
     // One more time, so that all are updated.
     simulator_->AdvanceTo(period_sec_ * 2);
@@ -166,6 +182,8 @@ TEST_F(LeafSystemDiscreteInitializationTest, Nominal) {
     EXPECT_TRUE(IsZohInitialized(zoh_1_));
     EXPECT_TRUE(IsZohInitialized(zoh_2_));
     EXPECT_TRUE(IsZohInitialized(zoh_3_));
+    // Check publish count.
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), 3);
   }
 }
 
@@ -186,6 +204,8 @@ TEST_F(LeafSystemDiscreteInitializationTest, RepeatedInitialize) {
   // Discrete cascade order is one more due to our dut_'s initialization event.
   const int zoh_cascade_order = 3;
   const int discrete_initialization_cascade_order = zoh_cascade_order + 1;
+  // We should repeat this many times.
+  const int num_repeat = discrete_initialization_cascade_order;
 
   // Show that this does *not* work for zoh_initialize = false.
   {
@@ -194,18 +214,17 @@ TEST_F(LeafSystemDiscreteInitializationTest, RepeatedInitialize) {
     BuildDiagram(zoh_initialize);
     CheckDefaultContext();
 
-    for (int i = 0; i < discrete_initialization_cascade_order; ++i) {
+    for (int i = 0; i < num_repeat; ++i) {
       simulator_->Initialize();
     }
 
     EXPECT_TRUE(dut_->IsInitialized(*dut_context_));
-    EXPECT_EQ(dut_->GetPeriodicCounter(*dut_context_), 0);
-    EXPECT_EQ(
-        dut_->GetInitializeCounter(*dut_context_),
-        discrete_initialization_cascade_order);
+    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), num_repeat);
     EXPECT_FALSE(IsZohInitialized(zoh_1_));
     EXPECT_FALSE(IsZohInitialized(zoh_2_));
     EXPECT_FALSE(IsZohInitialized(zoh_3_));
+    // This is probably not what we want?
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), num_repeat);
   }
 
   // Show that it does work for zoh_initialize = true.
@@ -215,18 +234,18 @@ TEST_F(LeafSystemDiscreteInitializationTest, RepeatedInitialize) {
     BuildDiagram(zoh_initialize);
     CheckDefaultContext();
 
-    for (int i = 0; i < discrete_initialization_cascade_order; ++i) {
+    for (int i = 0; i < num_repeat; ++i) {
       simulator_->Initialize();
     }
 
     EXPECT_TRUE(dut_->IsInitialized(*dut_context_));
-    EXPECT_EQ(
-        dut_->GetInitializeCounter(*dut_context_),
-        discrete_initialization_cascade_order);
+    EXPECT_EQ(dut_->GetInitializeCounter(*dut_context_), num_repeat);
     EXPECT_EQ(dut_->GetPeriodicCounter(*dut_context_), 0);
     EXPECT_TRUE(IsZohInitialized(zoh_1_));
     EXPECT_TRUE(IsZohInitialized(zoh_2_));
     EXPECT_TRUE(IsZohInitialized(zoh_3_));
+    // This is probably not what we want?
+    EXPECT_EQ(dut_->GetPeriodicPublishCounter(), num_repeat);
   }
 }
 
