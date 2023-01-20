@@ -804,6 +804,7 @@ def drake_cc_test(
         args = args,
         deps = deps + add_deps,
         copts = new_copts,
+        features = ["-no_deduplicate"],
         **kwargs
     )
 
