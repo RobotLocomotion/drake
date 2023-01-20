@@ -119,8 +119,7 @@ static Matrix3<T> UpperTriangularOuterProduct(
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
       const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
-  // Note: Tetrahedon volume, mass, center of mass, and inertia formulas are
-  // from the mass/inertia appendix in
+  // Note: Tetrahedon inertia formulas are from the mass/inertia appendix in
   // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
   //                   For professional engineers and scientists,"
   const Vector3<T> q_plus_r = q + r;
@@ -141,6 +140,29 @@ UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
   const T Ixz = -0.1 * G(0, 2);
   const T Iyz = -0.1 * G(1, 2);
   return UnitInertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
+}
+
+template <typename T>
+UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutPoint(
+      const Vector3<T>& p, const Vector3<T>& q,
+      const Vector3<T>& r, const Vector3<T>& s) {
+  // This method calculates a tetrahedron B's unit inertia G_BA about a point A
+  // by first calculating B's unit inertia G_BS about point S, where S is the
+  // vertex of B associated with position vector s = p_AS.  To calculate G_BS,
+  // three new position vectors are formed, namely the position vectors from
+  // vertex S to vertices P, Q, R (the tetrahedron's other three vertices).
+  const Vector3<T> p_SP = p - s;  // Position vector from vertex S to vertex P.
+  const Vector3<T> p_SQ = q - s;  // Position vector from vertex S to vertex Q.
+  const Vector3<T> p_SR = r - s;  // Position vector from vertex S to vertex R.
+  UnitInertia<T> G_BS =
+      UnitInertia<T>::SolidTetrahedronAboutVertex(p_SP, p_SQ, p_SR);
+
+  // Shift unit inertia from about point S to about point A.
+  const Vector3<T> p_SBcm = 0.25 * (p_SP + p_SQ + p_SR);
+  const Vector3<T> p_ABcm = s + p_SBcm;  // since s = p_AS.
+  RotationalInertia<T>& G_BA = G_BS.ShiftToThenAwayFromCenterOfMassInPlace(
+      /* mass = */ 1, p_SBcm, p_ABcm);  // Returns G_BA;
+  return UnitInertia<T>(G_BA);
 }
 
 }  // namespace multibody

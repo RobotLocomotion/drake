@@ -127,16 +127,13 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
 
   // Ensure volume is sufficiently far from zero. For a given p, q, r,
   // the maximum volume = |p| |q| |r| / 6 occurs when p, q, r are orthogonal.
+  // TODO(Mitiguy) Improve this test. If |p| = 0, volume = 0 (test is useless).
   constexpr double kTolerance = 0.25 * std::numeric_limits<double>::epsilon();
   if (volume * volume <= kTolerance * p.dot(p) * q.dot(q) * r.dot(r)) {
     std::string error_message = fmt::format("{}(): A solid tetrahedron's "
       "volume is zero or near zero.", __func__);
     throw std::logic_error(error_message);
   }
-  // Note: Tetrahedon volume, mass, center of mass, and inertia formulas are
-  // from the mass/inertia appendix in
-  // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
-  //                   For professional engineers and scientists,"
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = 0.25 * (p + q + r);
   UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidTetrahedronAboutVertex(p, q, r);

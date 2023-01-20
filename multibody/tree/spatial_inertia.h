@@ -191,19 +191,32 @@ class SpatialInertia {
   static SpatialInertia<T> SolidSphereWithDensity(const T& density, const T& r);
 
   /// Creates a spatial inertia for a uniform density solid tetrahedron B about
-  /// its vertex Bo (from which the other 3 vertices P, Q, R are located).
+  /// its vertex Bo, from which position vectors to B's other 3 vertices P, Q, R
+  /// are measured (position vectors are all expressed in a common frame E).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] p position vector from vertex Bo to vertex P, expressed in E.
   /// @param[in] q position vector from vertex Bo to vertex Q, expressed in E.
   /// @param[in] r position vector from vertex Bo to vertex R, expressed in E.
-  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in E, were E is
-  /// the right-handed orthogonal unit basis (frame) used to express p, q, r.
+  /// @retval M_BBo_E B's spatial inertia about vertex Bo, expressed in E.
   /// @throws std::exception if B's volume is very close to zero˜as compared
   /// to the magnitudes (lengths) of p, q, r.
   /// @note A negative volume (and mass) occurs if p.cross(q).dot(r) < 0.
   static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
       const T& density,
       const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r);
+
+  /// Creates a spatial inertia for a uniform density solid tetrahedron B about
+  /// a point A, from which position vectors to B's 4 vertices P, Q, R, S are
+  /// measured (position vectors are all expressed in a common frame E).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] p position vector from point A to vertex P, expressed in E.
+  /// @param[in] q position vector from point A to vertex Q, expressed in E.
+  /// @param[in] r position vector from point A to vertex R, expressed in E.
+  /// @param[in] s position vector from point A to vertex S, expressed in E.
+  /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
+  static UnitInertia<T> SolidTetrahedronAboutPoint(
+      const Vector3<T>& p, const Vector3<T>& q,
+      const Vector3<T>& r, const Vector3<T>& s);
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
