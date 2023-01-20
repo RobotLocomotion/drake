@@ -1,14 +1,15 @@
-#include "planning/test/planning_test_helpers.h"
+#include "drake/planning/test/planning_test_helpers.h"
 
 #include <memory>
 #include <vector>
 
+#include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "common/anzu_model_directives.h"
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+
 using drake::geometry::Sphere;
 using drake::math::RigidTransformd;
 using drake::multibody::CoulombFriction;
@@ -17,12 +18,14 @@ using drake::multibody::MultibodyPlant;
 using drake::multibody::RevoluteJoint;
 using drake::multibody::RigidBody;
 using drake::multibody::SpatialInertia;
-using drake::planning::ConfigurationDistanceFunction;
+using drake::multibody::parsing::ModelDirectives;
+using drake::multibody::parsing::ProcessModelDirectives;
 
 std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
-    const drake::multibody::parsing::ModelDirectives& directives) {
-  auto builder = common::MakeRobotDiagramBuilderFromAnzuModelDirectives(
-      directives);
+    const ModelDirectives& directives) {
+  auto builder = std::make_unique<RobotDiagramBuilder<double>>();
+  auto& parser = builder->mutable_parser();
+  ProcessModelDirectives(directives, &parser);
   return builder->BuildDiagram();
 }
 
@@ -62,5 +65,6 @@ ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n, int num_geo) {
   }
   return instance;
 }
+
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

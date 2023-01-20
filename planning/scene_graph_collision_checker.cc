@@ -1,4 +1,4 @@
-#include "planning/scene_graph_collision_checker.h"
+#include "drake/planning/scene_graph_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
@@ -8,10 +8,8 @@
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
-using drake::log;
-using drake::Matrix3X;
 using drake::geometry::CollisionFilterDeclaration;
 using drake::geometry::FrameId;
 using drake::geometry::GeometryId;
@@ -29,18 +27,15 @@ using drake::multibody::BodyIndex;
 using drake::multibody::Frame;
 using drake::multibody::JacobianWrtVariable;
 using drake::multibody::MultibodyPlant;
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
 using drake::systems::Context;
 using Eigen::RowVectorXd;
 using Eigen::Vector3d;
 
-namespace anzu {
+namespace drake {
 namespace planning {
+
 SceneGraphCollisionChecker::SceneGraphCollisionChecker(
-    drake::planning::CollisionCheckerParams params)
+    CollisionCheckerParams params)
     : CollisionChecker(std::move(params), true /* supports parallel */) {
   AllocateContexts();
 }
@@ -356,4 +351,4 @@ int SceneGraphCollisionChecker::DoMaxContextNumDistances(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

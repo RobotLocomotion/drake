@@ -4,10 +4,11 @@
 
 #include "drake/multibody/parsing/model_directives.h"
 #include "drake/planning/collision_checker.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
+
 std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
     const drake::multibody::parsing::ModelDirectives& directives);
 
@@ -24,4 +25,4 @@ AddChain(drake::multibody::MultibodyPlant<double>* plant, int n,
          int num_geo = 1);
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake

@@ -1,4 +1,4 @@
-#include "planning/test/collision_checker_abstract_test_suite.h"
+#include "drake/planning/test/collision_checker_abstract_test_suite.h"
 
 #include <unordered_map>
 
@@ -8,24 +8,20 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/planning/collision_avoidance.h"
-#include "planning/sphere_robot_model_collision_checker.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
 namespace test {
 
 using drake::geometry::GeometryId;
 using drake::multibody::BodyIndex;
-using drake::planning::EdgeMeasure;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
 using drake::planning::internal::ComputeCollisionAvoidanceDisplacement;
 
 drake::multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
   // Assemble model directives.
   drake::multibody::parsing::ModelDirective add_env_model;
   add_env_model.add_model = drake::multibody::parsing::AddModel{
-      "package://anzu/models/test/collision_ground_plane.sdf",
+      "package://drake/planning/test/collision_ground_plane.sdf",
       "ground_plane_box"};
   drake::multibody::parsing::ModelDirective add_env_weld;
   add_env_weld.add_weld = drake::multibody::parsing::AddWeld{
@@ -229,7 +225,6 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableDiscreteQueries(
 
 TEST_P(CollisionCheckerAbstractTestSuite, StressParallelDiscreteQueries) {
   auto params = GetParam();
-  ASSERT_GT(common_robotics_utilities::openmp_helpers::GetNumOmpThreads(), 1);
   // Since there are parallel query options, we test repeatedly to ensure that
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
@@ -304,7 +299,6 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
 
 TEST_P(CollisionCheckerAbstractTestSuite, StressParallelGradientQueries) {
   auto params = GetParam();
-  ASSERT_GT(common_robotics_utilities::openmp_helpers::GetNumOmpThreads(), 1);
   // Since there are parallel query options, we test repeatedly to ensure that
   // tests are not flaky.
   const int iterations = params.thread_stress_iterations;
@@ -322,4 +316,4 @@ TEST_P(CollisionCheckerAbstractTestSuite, ForceSerializeGradientQueries) {
 
 }  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
