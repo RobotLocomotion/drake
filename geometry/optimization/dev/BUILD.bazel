@@ -6,6 +6,10 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "@drake//tools/skylark:test_tags.bzl",
+    "mosek_test_tags",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
@@ -58,6 +62,7 @@ drake_cc_library(
         "test/convex.obj",
     ],
     deps = [
+        ":cspace_free_polytope",
         "//geometry:scene_graph",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
@@ -76,8 +81,21 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "cspace_free_polytope_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_polytope",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_polytope_with_mosek_test",
     timeout = "long",
-    tags = ["no_memcheck"],
+    # This test launches 2 threads to test both serial and parallel code paths
+    # in CspaceFreePolytope.
+    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
+    use_default_main = False,
     deps = [
         ":c_iris_test_utilities",
         ":cspace_free_polytope",
