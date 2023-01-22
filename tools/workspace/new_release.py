@@ -1,7 +1,7 @@
 """Reports on which of Drake's external dependencies can be updated to a more
 recent version.  This is intended for use by Drake maintainers (only).
 
-This program is only supported on Ubuntu Focal 20.04.
+This program is only supported on Ubuntu Jammy 22.04.
 
 To query GitHub APIs, you'll need to authenticate yourself first.  There are
 two ways to do this:
