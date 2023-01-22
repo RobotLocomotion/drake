@@ -35,6 +35,12 @@ class _SchemaLoader(yaml.loader.SafeLoader):
 _SchemaLoader.add_multi_constructor("", _SchemaLoader._handle_multi_variant)
 
 
+def _is_maybe_file_like(f):
+    # N.B. `isinstance(f, typing.IO)` does not seem to work, at least on
+    # CPython 3.10.
+    return hasattr(f, "read")
+
+
 def yaml_load_data(data, *, private=False):
     """Loads and returns the given `data` str as a yaml object, while also
     accounting for variant-like type tags.  Any tags are reported as an
@@ -50,6 +56,8 @@ def yaml_load_data(data, *, private=False):
     without any schema checking nor default values. To load with respect to
     a schema with defaults, see ``yaml_load_typed()``.
     """
+    if not isinstance(data, str) and not _is_maybe_file_like(data):
+        raise RuntimeError("Must specify str or file-like object")
     result = yaml.load(data, Loader=_SchemaLoader)
     if not private:
         keys_to_remove = [
@@ -83,7 +91,7 @@ def yaml_load(*, data=None, filename=None, private=False):
     without any schema checking nor default values. To load with respect to
     a schema with defaults, see ``yaml_load_typed()``.
     """
-    if sum(bool(x) for x in [data, filename]) != 1:
+    if data is None and filename is None:
         raise RuntimeError("Must specify exactly one of data= and filename=")
     if data:
         return yaml_load_data(data, private=private)

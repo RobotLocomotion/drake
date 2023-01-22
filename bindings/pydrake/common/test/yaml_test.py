@@ -26,6 +26,15 @@ class TestYaml(unittest.TestCase):
             actual = func(data="{foo: bar}")
             self.assertDictEqual(actual, {"foo": "bar"})
 
+    def test_negative(self):
+        with self.assertRaises(RuntimeError) as cm:
+            yaml_load()
+        self.assertIn(str(cm.exception), "exactly one of")
+        not_str_or_file = {"foo": 1.0}
+        with self.assertRaises(RuntimeError):
+            yaml_load(data=not_str_or_file)
+        self.assertIn(str(cm.exception), "str or file-like")
+
     def test_load_merge_keys(self):
         """Sanity check support for merge keys."""
         # See https://yaml.org/type/merge.html for details; pyyaml already
