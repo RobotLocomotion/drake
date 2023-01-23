@@ -19,6 +19,7 @@ def dreal_repository(
             ":patches/platforms.patch",
             ":patches/pull283.patch",
             ":patches/warnings.patch",
+            ":patches/pull18545.patch",
         ],
         repo_mapping = {
             "@nlopt": "@nlopt_internal",
