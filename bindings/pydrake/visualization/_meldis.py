@@ -93,6 +93,16 @@ class _ViewerApplet:
 
     def on_viewer_load(self, message):
         """Handler for lcmt_viewer_load."""
+        # Ignore duplicate load messages. This is important for visualization
+        # performance when the user is repeatedly viewing the same simulation
+        # over and over again, since reloading a scene into Meshcat has high
+        # latency.
+        if self._load_message is not None:
+            if (message.num_links == self._load_message.num_links
+                    and message.encode() == self._load_message.encode()):
+                _logger.info("Ignoring duplicate load message")
+                return
+
         # The semantics of a load message is to reset the entire scene.
         self._meshcat.Delete(path=self._path)
 

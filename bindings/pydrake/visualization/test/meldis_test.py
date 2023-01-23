@@ -12,7 +12,9 @@ You can also visualize the LCM test data like so:
 
 import pydrake.visualization as mut
 
+import functools
 import unittest
+
 from drake import (
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
@@ -28,6 +30,9 @@ from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
     Role,
+)
+from pydrake.lcm import (
+    DrakeLcm,
 )
 from pydrake.multibody.parsing import (
     Parser,
@@ -58,7 +63,7 @@ class TestMeldis(unittest.TestCase):
         return diagram
 
     def test_viewer_applet(self):
-        """Check that _ViewerApplet doesn't crash when receiving messages.
+        """Checks that _ViewerApplet doesn't crash when receiving messages.
         Note that many geometry types are not yet covered by this test.
         """
         # Create the device under test.
@@ -87,6 +92,62 @@ class TestMeldis(unittest.TestCase):
         dut._invoke_subscriptions()
         self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), True)
         self.assertEqual(meshcat.HasPath(link_path), True)
+
+    def test_viewer_applet_reload_optimization(self):
+        """Checks that loading the identical scene twice is efficient.
+        """
+        # Create the device under test.
+        dut = mut.Meldis()
+        meshcat = dut.meshcat
+
+        # Initialize an identical simulation twice in a row. The second time
+        # around should be more efficient.
+        for i in range(2):
+            # To parcel out messages one at a time, we'll have the Diagram send
+            # its messages to a temporary location and then forward them along
+            # one at a time to Meldis.
+            temp_lcm = DrakeLcm()
+            temp_lcm_queue = []   # Tuples of (channel, buffer).
+            for name in ["DRAKE_VIEWER_LOAD_ROBOT", "DRAKE_VIEWER_DRAW"]:
+                def _on_message(channel, data):
+                    temp_lcm_queue.append((channel, data))
+                temp_lcm.Subscribe(channel=name, handler=functools.partial(
+                    _on_message, name))
+
+            # Create the plant + visualizer.
+            diagram = self._make_diagram(
+                sdf_filename="drake/multibody/benchmarks/acrobot/acrobot.sdf",
+                visualizer_params=DrakeVisualizerParams(),
+                lcm=temp_lcm)
+
+            # Capture the LOAD and DRAW messages via temp_lcm.
+            diagram.ForcedPublish(diagram.CreateDefaultContext())
+            temp_lcm.HandleSubscriptions(timeout_millis=0)
+            load, draw = temp_lcm_queue
+            assert load[0] == "DRAKE_VIEWER_LOAD_ROBOT"
+            assert draw[0] == "DRAKE_VIEWER_DRAW"
+
+            # Forward the LOAD message to Meldis.
+            dut._lcm.Publish(*load)
+            dut._lcm.HandleSubscriptions(timeout_millis=0)
+            dut._invoke_subscriptions()
+
+            # The first time around, the link won't be added until the DRAW
+            # message arrives. The second time around, the link should still
+            # be intact from the first time (i.e., no `Delete` occurred).
+            link_path = "/DRAKE_VIEWER/2/plant/acrobot/Link2/0"
+            if i == 0:
+                self.assertFalse(meshcat.HasPath(link_path))
+            else:
+                self.assertTrue(meshcat.HasPath(link_path))
+
+            # Forward the DRAW message to Meldis.
+            dut._lcm.Publish(*draw)
+            dut._lcm.HandleSubscriptions(timeout_millis=0)
+            dut._invoke_subscriptions()
+
+            # The link always exists after a DRAW.
+            self.assertTrue(meshcat.HasPath(link_path))
 
     def test_hydroelastic_geometry(self):
         """Check that _ViewerApplet doesn't crash when receiving
