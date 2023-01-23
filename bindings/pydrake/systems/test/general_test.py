@@ -873,9 +873,13 @@ class TestGeneral(unittest.TestCase):
     def test_diagram_api(self):
         def make_diagram():
             builder = DiagramBuilder()
+            self.assertTrue(builder.empty())
+            self.assertFalse(builder.already_built())
             adder1 = builder.AddNamedSystem("adder1", Adder(2, 2))
             adder2 = builder.AddNamedSystem("adder2", Adder(1, 2))
             builder.Connect(adder1.get_output_port(), adder2.get_input_port())
+            self.assertTrue(
+                builder.IsConnectedOrExported(port=adder2.get_input_port()))
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
