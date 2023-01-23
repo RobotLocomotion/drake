@@ -133,7 +133,7 @@ GTEST_TEST(CentroidalMomentumConstraintTest, TestDualIiwas) {
         plant_context_autodiff.get(), angular_only, q, v, momentum_val);
     // Now test with non-empty model_instances
     std::vector<ModelInstanceIndex> model_instances{
-        {ModelInstanceIndex{plant->GetModelInstanceByName("iiwa0")}}};
+        {ModelInstanceIndex{plant->GetModelInstanceByName("0::iiwa14")}}};
     CentroidalMomentumConstraintTester(
         plant_autodiff.get(), plant_autodiff.get(), model_instances,
         plant_context_autodiff.get(), plant_context_autodiff.get(),
