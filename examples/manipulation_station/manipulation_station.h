@@ -20,34 +20,35 @@ namespace manipulation_station {
 
 template<typename T> class ManipulationStation;
 
+// This system computes the generalized forces on the IIWA arm of the
+// manipulation result of externally applied spatial forces.
+//
+// @system
+// name: ExternalGeneralizedForcesComputer
+// input_ports:
+// - multibody_state
+// - applied_spatial_force
+// output_ports:
+// - applied_generalized_force
+// @endsystem
 class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternalGeneralizedForcesComputer)
 
   ExternalGeneralizedForcesComputer(
-      multibody::MultibodyPlant<double>* plant,
-      ManipulationStation<double>* station,
-      int num_iiwa_positions,
-      systems::System<double>* input_force_system);
+      const multibody::MultibodyPlant<double>* plant, int iiwa_num_dofs);
 
-  void SetRootContext(systems::Context<double>* root_context);
-  VectorX<double> CalcExternalGeneralizedForces(
-      const drake::systems::Context<double>& context) const;
-
-  void CalcGeneralizedForceOutput(
+ private:
+  void CalcGeneralizedForcesOutput(
       const drake::systems::Context<double>& context,
       drake::systems::BasicVector<double>* output_vector) const;
 
-  const systems::OutputPort<double>&
-      get_external_generalized_force_output_port() const;
-
- private:
-  multibody::MultibodyPlant<double>* plant_;
-  systems::Context<double>* root_context_;
-  ManipulationStation<double>* station_;
-  const int num_iiwa_joints_;
-  systems::System<double>* applied_spatial_force_system_;
-  systems::OutputPortIndex external_generalized_force_output_port_{};
+  const multibody::MultibodyPlant<double>* plant_{nullptr};
+  int iiwa_num_velocities_{0};
+  int iiwa_velocity_start_{0};
+  systems::InputPortIndex multibody_state_;
+  systems::InputPortIndex applied_spatial_force_input_port_;
+  systems::OutputPortIndex applied_generalized_force_output_port_;
 };
 
 /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
@@ -184,13 +185,6 @@ class ManipulationStation : public systems::Diagram<T> {
   ///   discrete derivative used to approximate velocity from the position
   ///   command inputs.
   explicit ManipulationStation(double time_step = 0.002);
-
-  // insane hack
-  std::unique_ptr<systems::Context<T>> CreateDefaultContext() const {
-    auto root_context = systems::Diagram<T>::CreateDefaultContext();
-    computer_->SetRootContext(root_context.get());
-    return root_context;
-  }
 
   /// Adds a default iiwa, wsg, two bins, and a camera, then calls
   /// RegisterIiwaControllerModel() and RegisterWsgControllerModel() with
@@ -586,7 +580,6 @@ class ManipulationStation : public systems::Diagram<T> {
   // SetupManipulationClassStation()), and informs how SetDefaultState()
   // initializes the sim.
   Setup setup_{Setup::kNone};
-  ExternalGeneralizedForcesComputer* computer_;
 };
 
 }  // namespace manipulation_station
