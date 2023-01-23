@@ -728,7 +728,7 @@ def drake_cc_binary(
         linkopts = linkopts,
         features = [
             # We should deduplicate symbols while linking (for a ~6% reduction
-            # in disk use), to conserse space in CI; see #18545 for details.
+            # in disk use), to conserve space in CI; see #18545 for details.
             "-no_deduplicate",
         ],
         **kwargs
@@ -811,7 +811,7 @@ def drake_cc_test(
         copts = new_copts,
         features = [
             # We should deduplicate symbols while linking (for a ~6% reduction
-            # in disk use), to conserse space in CI; see #18545 for details.
+            # in disk use), to conserve space in CI; see #18545 for details.
             "-no_deduplicate",
         ],
         **kwargs
