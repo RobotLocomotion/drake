@@ -105,6 +105,31 @@ TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
       kTolerance, MatrixCompareType::relative));
 }
 
+TEST_F(SpaceXYZMobilizerTest, MapUsesN){
+  const Vector3<double> v = (Vector3<double>() << 1, 2, 3).finished();
+  Vector3<double> qdot;
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Compute N.
+  MatrixX<double> N(3, 3);
+  mobilizer_->CalcNMatrix(*context_, &N);
+
+  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  EXPECT_TRUE(CompareMatrices(qdot,N * v ,kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(SpaceXYZMobilizerTest, MapUsesNplus){
+  const Vector3<double> qdot = (Vector3<double>() << 1, 2, 3, 4, 5, 6).finished();
+  Vector3<double> v;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
+
+  // Compute Nplus.
+  MatrixX<double> Nplus(3,3);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+
+  //Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_TRUE(CompareMatrices(v,Nplus * qdot ,kTolerance, MatrixCompareType::relative));
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

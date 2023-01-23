@@ -282,6 +282,32 @@ TEST_F(PlanarMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus, Matrix3d::Identity());
 }
 
+TEST_F(PlanarMobilizerTest, MapUsesN){
+  Vector3d v(1.5, 2.5, 3.5);
+  Vector3d qdot;
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Compute N.
+  MatrixX<double> N(3, 3);
+  mobilizer_->CalcNMatrix(*context_, &N);
+
+  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  EXPECT_EQ(qdot, N * v);
+}
+
+TEST_F(PlanarMobilizerTest, MapUsesNplus){
+  Vector3d v(1.5, 2.5, 3.5);
+  Vector3d qdot;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
+
+  // Compute Nplus.
+  MatrixX<double> Nplus(3, 3);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+
+  //Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_EQ(v, Nplus * qdot);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
