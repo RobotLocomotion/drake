@@ -106,8 +106,6 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddModels", &Class::AddModelsFromString, py::kw_only(),
             py::arg("file_contents"), py::arg("file_type"),
             cls_doc.AddModelsFromString.doc)
-        .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
-            py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("SetStrictParsing", &Class::SetStrictParsing,
             cls_doc.SetStrictParsing.doc)
         .def("SetAutoRenaming", &Class::SetAutoRenaming, py::arg("value"),
@@ -118,6 +116,11 @@ PYBIND11_MODULE(parsing, m) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     cls  // BR
+        .def("AddModelFromFile",
+            WrapDeprecated(cls_doc.AddModelFromFile.doc_deprecated,
+                &Class::AddModelFromFile),
+            py::arg("file_name"), py::arg("model_name") = "",
+            cls_doc.AddModelFromFile.doc_deprecated)
         .def("AddModelFromString",
             WrapDeprecated(cls_doc.AddModelFromString.doc_deprecated,
                 &Class::AddModelFromString),
