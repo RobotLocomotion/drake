@@ -138,7 +138,7 @@ GTEST_TEST(DualIiwaTest, ComPositionConstraint_model_instance) {
   q << 0.1, 0.2, 0.4, 0.3, 0.5, -0.2, 0.6, 0.2, 0.5, 0.1, -1.2, 0.4, 0.3, 0.7;
   Eigen::Vector3d p_EC(0.9, 1.2, 0.8);
   std::vector<ModelInstanceIndex> model_instances{
-      {plant->GetModelInstanceByName("iiwa0")}};
+      {plant->GetModelInstanceByName("0::iiwa14")}};
   TestComPositionConstraint(
       plant_autodiff.get(), plant_autodiff.get(), model_instances,
       plant_autodiff->world_frame().index(), plant_context_autodiff.get(),
