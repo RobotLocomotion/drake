@@ -726,6 +726,11 @@ def drake_cc_binary(
         linkshared = linkshared,
         linkstatic = linkstatic,
         linkopts = linkopts,
+        features = [
+            # We should deduplicate symbols while linking (for a ~6% reduction
+            # in disk use), to conserse space in CI; see #18545 for details.
+            "-no_deduplicate",
+        ],
         **kwargs
     )
 
@@ -804,7 +809,11 @@ def drake_cc_test(
         args = args,
         deps = deps + add_deps,
         copts = new_copts,
-        features = ["-no_deduplicate"],
+        features = [
+            # We should deduplicate symbols while linking (for a ~6% reduction
+            # in disk use), to conserse space in CI; see #18545 for details.
+            "-no_deduplicate",
+        ],
         **kwargs
     )
 
