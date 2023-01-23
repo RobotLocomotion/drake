@@ -76,31 +76,35 @@ class TestParsing(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         urdf_file = FindResourceOrThrow(
             "drake/multibody/benchmarks/acrobot/acrobot.urdf")
-        for dut, file_name, model_name, result_dim in (
-                (Parser.AddModelFromFile, sdf_file, None, int),
-                (Parser.AddModelFromFile, sdf_file, "", int),
-                (Parser.AddModelFromFile, sdf_file, "a", int),
-                (Parser.AddModelFromFile, urdf_file, None, int),
-                (Parser.AddModelFromFile, urdf_file, "", int),
-                (Parser.AddModelFromFile, urdf_file, "a", int),
-                (Parser.AddAllModelsFromFile, sdf_file, None, list),
-                (Parser.AddAllModelsFromFile, urdf_file, None, list),
-                (Parser.AddModels, sdf_file, None, list),
-                (Parser.AddModels, urdf_file, None, list),
+        for dut, file_name, deprecated_count in (
+                (Parser.AddAllModelsFromFile, sdf_file, 1),
+                (Parser.AddAllModelsFromFile, urdf_file, 1),
+                (Parser.AddModels, sdf_file, 0),
+                (Parser.AddModels, urdf_file, 0),
                 ):
             plant = MultibodyPlant(time_step=0.01)
             parser = Parser(plant=plant)
-            if model_name is None:
+            with catch_drake_warnings(expected_count=deprecated_count):
                 result = dut(parser, file_name=file_name)
-            else:
-                result = dut(parser, file_name=file_name,
-                             model_name=model_name)
-            if result_dim is int:
-                self.assertIsInstance(result, ModelInstanceIndex)
-            else:
-                assert result_dim is list
-                self.assertIsInstance(result, list)
-                self.assertIsInstance(result[0], ModelInstanceIndex)
+            self.assertIsInstance(result, list)
+            self.assertIsInstance(result[0], ModelInstanceIndex)
+        for file_name, model_name in (
+                (sdf_file, None),
+                (sdf_file, ""),
+                (sdf_file, "a"),
+                (urdf_file, None),
+                (urdf_file, ""),
+                (urdf_file, "a"),
+                ):
+            plant = MultibodyPlant(time_step=0.01)
+            parser = Parser(plant=plant)
+            with catch_drake_warnings(expected_count=1):
+                if model_name is not None:
+                    result = parser.AddModelFromFile(file_name=file_name,
+                                                     model_name=model_name)
+                else:
+                    result = parser.AddModelFromFile(file_name=file_name)
+            self.assertIsInstance(result, ModelInstanceIndex)
 
     def test_parser_string(self):
         """Checks parsing from a string (not file_name)."""
