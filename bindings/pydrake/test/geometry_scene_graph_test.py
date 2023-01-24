@@ -297,12 +297,31 @@ class TestGeometrySceneGraph(unittest.TestCase):
             mut.Role.kPerception,
             mut.Role.kIllustration,
         ]
-        for role in roles:
+        for i, role in enumerate(roles):
+            # Check GeometryId SceneGraph mutating variant.
             self.assertEqual(
                 scene_graph.RemoveRole(
                     source_id=global_source, geometry_id=global_geometry,
                     role=role),
                 1)
+            # Check GeometryId Context mutating variant.
+            self.assertEqual(
+                scene_graph.RemoveRole(
+                    context=context, source_id=global_source,
+                    geometry_id=global_geometry, role=role),
+                1)
+            # Check FrameId SceneGraph mutating variant.
+            self.assertEqual(
+                scene_graph.RemoveRole(
+                    source_id=global_source, frame_id=global_frame,
+                    role=role),
+                1 if i == 0 else 0)
+            # Check FrameId Context mutating variant.
+            self.assertEqual(
+                scene_graph.RemoveRole(
+                    context=context, source_id=global_source,
+                    frame_id=global_frame, role=role),
+                1 if i == 0 else 0)
 
     @numpy_compare.check_all_types
     def test_scene_graph_register_geometry(self, T):
