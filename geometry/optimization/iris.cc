@@ -33,9 +33,9 @@ using multibody::Body;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;
+using solvers::MathematicalProgram;
 using solvers::Binding;
 using solvers::Constraint;
-using solvers::MathematicalProgram;
 using symbolic::Expression;
 using systems::Context;
 

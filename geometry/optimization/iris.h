@@ -14,10 +14,6 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-using multibody::MultibodyPlant;
-using symbolic::Expression;
-using systems::Context;
-
 /** Configuration options for the IRIS algorithm.
 
 @ingroup geometry_optimization

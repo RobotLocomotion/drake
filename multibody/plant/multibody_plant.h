@@ -3551,8 +3551,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// </pre>
   /// Note: Each partial derivative of p_AoBi is taken in frame A.
   /// @see CalcJacobianPositionVector() for details on Jq_p_AoBi.
-  void
-  CalcJacobianTranslationalVelocity(
+  void CalcJacobianTranslationalVelocity(
       const systems::Context<T>& context, JacobianWrtVariable with_respect_to,
       const Frame<T>& frame_B, const Eigen::Ref<const Matrix3X<T>>& p_BoBi_B,
       const Frame<T>& frame_A, const Frame<T>& frame_E,
