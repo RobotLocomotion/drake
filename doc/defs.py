@@ -76,6 +76,7 @@ def check_call(args, *, cwd=None):
     """
     env = dict(os.environ)
     env["LC_ALL"] = "en_US.UTF-8"
+    env["DRAKE_IS_BUILDING_DOCUMENTATION"] = "1"
     echo = "+ " + " ".join([shlex.quote(x) for x in args])
     if verbose():
         print(echo, flush=True)
