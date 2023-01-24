@@ -12,6 +12,7 @@ talents to help make Drake successful.  Here's an alphabetical list: (note to co
 this is modeled directly, and shamelessly, on: http://eigen.tuxfamily.org/index.php?title=Main_Page#Credits
 {% endcomment %}
 
+* Alexandre Amice
 * Andy Barry
 * Alejandro Castro
 * John Carter
