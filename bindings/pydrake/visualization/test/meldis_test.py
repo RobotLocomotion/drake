@@ -181,9 +181,8 @@ class TestMeldis(unittest.TestCase):
             "drake/examples/manipulation_station/models/sphere.sdf")
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.001)
-        parser = Parser(plant=plant)
-        sphere1_model = parser.AddModelFromFile(sdf_file, "sphere1")
-        sphere2_model = parser.AddModelFromFile(sdf_file, "sphere2")
+        sphere1_model, = Parser(plant, "sphere1").AddModels(sdf_file)
+        sphere2_model, = Parser(plant, "sphere2").AddModels(sdf_file)
         body1 = plant.GetBodyByName("base_link", sphere1_model)
         body2 = plant.GetBodyByName("base_link", sphere2_model)
         plant.AddJoint(PrismaticJoint(
