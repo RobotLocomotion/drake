@@ -248,6 +248,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs() const;
 
+  const std::vector<internal::BallConstraintSpecs>& ball_constraints_specs()
+      const;
+
   BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
   /* @} */
 

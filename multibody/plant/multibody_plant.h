@@ -1195,7 +1195,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the total number of constraints specified by the user.
   int num_constraints() const {
     return static_cast<int>(coupler_constraints_specs_.size() +
-           distance_constraints_specs_.size());
+                            distance_constraints_specs_.size() +
+                            ball_constraints_specs_.size());
   }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
@@ -1276,6 +1277,23 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const Vector3<double>& p_BQ, double distance,
       double stiffness = std::numeric_limits<double>::infinity(),
       double damping = 0.0);
+
+  /// Defines a constraint such that point P affixed to body A is coincident at
+  /// all times with point Q affixed to body B, effectively modeling a
+  /// ball-and-socket joint.
+  ///
+  /// @param[in] body_A Body to which point P is rigidly attached.
+  /// @param[in] p_AP Position of point P in body A's frame.
+  /// @param[in] body_B Body to which point Q is rigidly attached.
+  /// @param[in] p_BQ Position of point Q in body B's frame.
+  /// @returns the index to the newly added constraint.
+  ///
+  /// @throws std::exception if bodies A and B are the same body.
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  ConstraintIndex AddBallConstraint(const Body<T>& body_A,
+                                    const Vector3<double>& p_AP,
+                                    const Body<T>& body_B,
+                                    const Vector3<double>& p_BQ);
 
   /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
   /// -->
@@ -5246,6 +5264,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Vector of distance constraints specifications.
   std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
+
+  // Vector of ball constraint specifications.
+  std::vector<internal::BallConstraintSpecs> ball_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
