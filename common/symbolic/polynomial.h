@@ -151,7 +151,7 @@ class Polynomial {
 
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
-  /// We maintain the invariance that for ancy [monomial, coeff] pair in
+  /// We maintain the invariance that for any [monomial, coeff] pair in
   /// monomial_to_coefficient_map(), symbolic:is_zero(coeff) is false.
   [[nodiscard]] const MapType& monomial_to_coefficient_map() const;
 
