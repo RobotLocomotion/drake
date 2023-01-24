@@ -30,6 +30,10 @@ import operator
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd as _AutoDiffXd
+from pydrake.common import (
+    _MangledName,
+    pretty_class_name as _pretty_class_name,
+)
 import pydrake.symbolic as _sym
 
 _sym_cls_list = (
@@ -116,17 +120,19 @@ def _remove_float_suffix(typename):
 
 
 def _roll_pitch_yaw_repr(rpy):
+    cls_name = _remove_float_suffix(_pretty_class_name(type(rpy)))
     return (
-        f"{_remove_float_suffix(type(rpy).__name__)}("
+        f"{cls_name}("
         f"roll={repr(rpy.roll_angle())}, "
         f"pitch={repr(rpy.pitch_angle())}, "
         f"yaw={repr(rpy.yaw_angle())})")
 
 
 def _rotation_matrix_repr(R):
+    cls_name = _remove_float_suffix(_pretty_class_name(type(R)))
     M = R.matrix().tolist()
     return (
-        f"{_remove_float_suffix(type(R).__name__)}([\n"
+        f"{cls_name}([\n"
         f"  {_indented_repr(M[0])},\n"
         f"  {_indented_repr(M[1])},\n"
         f"  {_indented_repr(M[2])},\n"
@@ -134,8 +140,9 @@ def _rotation_matrix_repr(R):
 
 
 def _rigid_transform_repr(X):
+    cls_name = _remove_float_suffix(_pretty_class_name(type(X)))
     return (
-        f"{_remove_float_suffix(type(X).__name__)}(\n"
+        f"{cls_name}(\n"
         f"  R={_indented_repr(X.rotation())},\n"
         f"  p={_indented_repr(X.translation().tolist())},\n"
         f")")
@@ -149,3 +156,11 @@ def _add_repr_functions():
 
 
 _add_repr_functions()
+
+
+def __getattr__(name):
+    """Rewrites requests for Foo[bar] into their mangled form, for backwards
+    compatibility with unpickling.
+    """
+    return _MangledName.module_getattr(
+        module_name=__name__, module_globals=globals(), name=name)

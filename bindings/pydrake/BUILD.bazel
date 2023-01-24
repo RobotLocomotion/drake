@@ -24,6 +24,7 @@ load(
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//bindings/pydrake:stubgen.bzl", "generate_python_stubs")
+load("//tools/workspace:generate_file.bzl", "generate_file")
 
 package(default_visibility = [
     "//bindings:__subpackages__",
@@ -282,6 +283,9 @@ drake_pybind_library(
         "//bindings/pydrake:polynomial_py",
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:value_py",
+    ],
+    py_srcs = [
+        "_trajectories_extra.py",
     ],
 )
 
@@ -802,6 +806,25 @@ genrule(
     cmd = "echo '# Marker file for PEP 561.' > $@",
 )
 
+generate_file(
+    name = "_pyi_files",
+    content = "\n".join(PYI_FILES),
+    visibility = ["//visibility:private"],
+)
+
+drake_py_unittest(
+    name = "stubgen_test",
+    data = [
+        ":_pyi_files",
+        ":pydrake_pyi",
+        ":pydrake_typed",
+    ],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+        "@mypy_internal//:mypy",
+    ],
+)
+
 install(
     name = "install",
     install_tests = [
@@ -817,12 +840,6 @@ install(
     data_dest = "@PYTHON_SITE_PACKAGES@",
     visibility = ["//visibility:public"],
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
-)
-
-drake_py_unittest(
-    name = "pyi_sanity_test",
-    data = [":pydrake_pyi"],
-    deps = ["@bazel_tools//tools/python/runfiles"],
 )
 
 add_lint_tests_pydrake(
