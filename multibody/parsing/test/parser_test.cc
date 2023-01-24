@@ -36,33 +36,49 @@ GTEST_TEST(FileParserTest, BasicTest) {
 
   // Load from SDF using plural method.
   // Add a second one with an overridden model_name.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(&dut.plant(), &plant);
     EXPECT_EQ(dut.AddModels(sdf_name).size(), 1);
     dut.AddModelFromFile(sdf_name, "foo");
+    const auto prefix_ids = Parser(&plant, "prefix").AddModels(sdf_name);
+    EXPECT_EQ(prefix_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(prefix_ids[0]), "prefix::acrobot");
   }
 
   // Load from URDF using plural method.
   // Add a second one with an overridden model_name.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     EXPECT_EQ(dut.AddModels(urdf_name).size(), 1);
     dut.AddModelFromFile(urdf_name, "foo");
+    const auto prefix_ids = Parser(&plant, "prefix").AddModels(urdf_name);
+    EXPECT_EQ(prefix_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(prefix_ids[0]), "prefix::acrobot");
   }
 
   // Load an SDF then a URDF.
+  // Load an SDF then a URDF with name prefixes.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
     dut.AddModelFromFile(sdf_name, "foo");
     dut.AddModelFromFile(urdf_name, "bar");
+    const auto foo_ids = Parser(&plant, "foo").AddModels(sdf_name);
+    EXPECT_EQ(foo_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(foo_ids[0]), "foo::acrobot");
+    const auto bar_ids = Parser(&plant, "bar").AddModels(urdf_name);
+    EXPECT_EQ(bar_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(bar_ids[0]), "bar::acrobot");
   }
 
   // Load from XML using plural method.
   // Add a second one with an overridden model_name.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
@@ -71,10 +87,14 @@ GTEST_TEST(FileParserTest, BasicTest) {
     EXPECT_EQ(plant.GetModelInstanceName(ids[0]), "acrobot");
     const ModelInstanceIndex id = dut.AddModelFromFile(xml_name, "foo");
     EXPECT_EQ(plant.GetModelInstanceName(id), "foo");
+    const auto prefix_ids = Parser(&plant, "prefix").AddModels(xml_name);
+    EXPECT_EQ(prefix_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(prefix_ids[0]), "prefix::acrobot");
   }
 
   // Load from DMD using plural method.
   // Using the singular method is always an error.
+  // Add one with a name prefix.
   {
     MultibodyPlant<double> plant(0.0);
     Parser dut(&plant);
@@ -84,6 +104,9 @@ GTEST_TEST(FileParserTest, BasicTest) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         dut.AddModelFromFile(dmd_name, "foo"),
         ".* always an error.*");
+    const auto prefix_ids = Parser(&plant, "prefix").AddModels(dmd_name);
+    EXPECT_EQ(prefix_ids.size(), 1);
+    EXPECT_EQ(plant.GetModelInstanceName(prefix_ids[0]), "prefix::acrobot");
   }
 }
 
@@ -297,6 +320,28 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelsFromString("<bad/>", "weird-ext"),
       ".*file.*\\.weird-ext.* is not.*recognized.*");
+}
+
+// Internally, all of the constructors forward to the same implementation. This
+// test just confirms support for the various call signatures involving a model
+// name prefix.
+GTEST_TEST(FileParserTest, PrefixConstructors) {
+  std::string model = "<robot name='r'><link name='a'/></robot>";
+  MultibodyPlant<double> plant(0.0);
+  geometry::SceneGraph<double> scene_graph;
+
+  EXPECT_NO_THROW(Parser(&plant).AddModelsFromString(model, "urdf"));
+
+  // Reload the same model via a different parser constructor. Catch the name
+  // collision.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      Parser(&plant, &scene_graph).AddModelsFromString(model, "urdf"),
+      ".*names must be unique.*");
+
+  // Reload the same model, but use model_name_prefix to avoid name collisions.
+  EXPECT_NO_THROW(Parser(&plant, "prefix1").AddModelsFromString(model, "urdf"));
+  EXPECT_NO_THROW(Parser(&plant, &scene_graph, "prefix2")
+                  .AddModelsFromString(model, "urdf"));
 }
 
 // If a non-Drake URDF or SDF file uses package URIs, this confirms that it is
