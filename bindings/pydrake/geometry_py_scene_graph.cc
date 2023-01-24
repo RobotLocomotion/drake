@@ -330,6 +330,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.AssignRole.doc_illustration_context)
         // - End: AssignRole Overloads.
         // - Begin: RemoveRole Overloads
+        // - - FrameId.
+        .def(
+            "RemoveRole",
+            [](Class& self, SourceId source_id, FrameId frame_id, Role role) {
+              return self.RemoveRole(source_id, frame_id, role);
+            },
+            py::arg("source_id"), py::arg("frame_id"), py::arg("role"),
+            cls_doc.RemoveRole.doc_frame_direct)
+        .def(
+            "RemoveRole",
+            [](Class& self, Context<T>* context, SourceId source_id,
+                FrameId frame_id, Role role) {
+              return self.RemoveRole(context, source_id, frame_id, role);
+            },
+            py::arg("context"), py::arg("source_id"), py::arg("frame_id"),
+            py::arg("role"), cls_doc.RemoveRole.doc_frame_context)
+        // - - GeometryId.
         .def(
             "RemoveRole",
             [](Class& self, SourceId source_id, GeometryId geometry_id,
@@ -338,6 +355,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("source_id"), py::arg("geometry_id"), py::arg("role"),
             cls_doc.RemoveRole.doc_geometry_direct)
+        .def(
+            "RemoveRole",
+            [](Class& self, Context<T>* context, SourceId source_id,
+                GeometryId geometry_id, Role role) {
+              return self.RemoveRole(context, source_id, geometry_id, role);
+            },
+            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
+            py::arg("role"), cls_doc.RemoveRole.doc_geometry_context)
         // - End: RemoveRole Overloads.
         .def_static("world_frame_id", &Class::world_frame_id,
             cls_doc.world_frame_id.doc);
@@ -581,7 +606,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("Equal", &Class::Equal, py::arg("surface"), cls_doc.Equal.doc);
     DefCopyAndDeepCopy(&cls);
   }
-}
+}  // NOLINT(readability/fn_size)
 }  // namespace
 
 void DefineGeometrySceneGraph(py::module m) {
