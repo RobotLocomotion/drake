@@ -269,8 +269,11 @@ class SamePointConstraintAbstractCSpace : public Constraint {
   std::unique_ptr<Context<Expression>> symbolic_context_{nullptr};
 
  protected:
-  virtual inline void Compute_dqdot_ds(const Ref<const AutoDiffVecXd>& q,
-                                    EigenPtr<MatrixXd> dqdot_ds) const = 0;
+//  virtual inline void Compute_dqdot_dsdot(const Ref<const AutoDiffVecXd>& q,
+//                                       EigenPtr<MatrixXd> dqdot_ds) const = 0;
+  virtual inline void Compute_Js_v_WF(const Ref<const AutoDiffVecXd>& q,
+                                       const Ref<MatrixXd>& Jq_v_WF,
+                                       EigenPtr<MatrixXd> Js_v_WF) const = 0;
 
  private:
   void DoEval(const Ref<const VectorXd>& x, VectorXd* y) const override {
@@ -296,7 +299,10 @@ class SamePointConstraintAbstractCSpace : public Constraint {
     DRAKE_DEMAND(frameA_ != nullptr);
     DRAKE_DEMAND(frameB_ != nullptr);
     AutoDiffVecXd s = x.head(plant_->num_positions());
-    AutoDiffVecXd q = ExtractQFromAbstractCSpaceVariable(s);
+    // discard the gradient as the gradients of s are not needed to compute
+    // Js_v_WA, Js_v_WB
+    AutoDiffVecXd q =
+        ExtractQFromAbstractCSpaceVariable(math::DiscardGradient(s));
     Vector3<AutoDiffXd> p_AA = x.template segment<3>(plant_->num_positions()),
                         p_BB = x.template tail<3>();
 
@@ -323,9 +329,8 @@ class SamePointConstraintAbstractCSpace : public Constraint {
     Eigen::MatrixXd dqdot_ds =
         MatrixXd::Identity(plant_->num_positions(), plant_->num_positions());
     // Js_v_WA_ = Jq_v_WA_ * dqdot/dsdot = dp_WA/dqdot * dqdot/dsdot
-    Compute_dqdot_ds(q, &dqdot_ds);
-    Js_v_WA = Jq_v_WA * dqdot_ds;
-    Js_v_WB = Jq_v_WB * dqdot_ds;
+    Compute_Js_v_WF(q, Jq_v_WA, &Js_v_WA);
+    Compute_Js_v_WF(q, Jq_v_WB, &Js_v_WB);
 
     const Eigen::Vector3d y_val =
         X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
@@ -386,9 +391,10 @@ class SamePointConstraint : public SamePointConstraintAbstractCSpace {
   }
 
  protected:
-  inline void Compute_dqdot_ds(const Ref<const AutoDiffVecXd>&,
-                            EigenPtr<MatrixXd>) const override {
-    // since s = q then dqdot_ds = I
+  inline void Compute_Js_v_WF(const Ref<const AutoDiffVecXd>&,
+                                       const Ref<MatrixXd>& Jq_v_WF,
+                                       EigenPtr<MatrixXd> Js_v_WF)  const override {
+    Js_v_WF = &Jq_v_WF;
   }
 };
 
@@ -426,12 +432,16 @@ class SamePointConstraintRational : public SamePointConstraintAbstractCSpace {
   }
 
  protected:
-  void Compute_dqdot_ds(const Ref<const AutoDiffVecXd>& q,
-                     EigenPtr<MatrixXd> dqdot_ds) const override {
+  inline void Compute_Js_v_WF(const Ref<const AutoDiffVecXd>& q,
+                               const Ref<MatrixXd>& Jq_v_WF,
+                               EigenPtr<MatrixXd> Js_v_WF)  const override {
+    Eigen::MatrixXd dqdot_dsdot =
+        MatrixXd::Identity(plant_->num_positions(), plant_->num_positions());
     // since sᵢ = f(qᵢ) then we only need to operate on the diagonal.
-    for (int i = 0; i < static_cast<int>((*dqdot_ds).rows()); ++i) {
-      (*dqdot_ds)(i, i) = q(i).derivatives()(i);
+    for (int i = 0; i < static_cast<int>(dqdot_dsdot.rows()); ++i) {
+          dqdot_dsdot(i, i) = q(i).derivatives()(i);
     }
+    *Js_v_WF = Jq_v_WF * dqdot_dsdot;
   }
 
  private:
