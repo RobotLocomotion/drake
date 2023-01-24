@@ -526,6 +526,7 @@ PYBIND11_MODULE(trajectories, m) {
     Impl<T>::DoScalarDependentDefinitions(m);
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});
+  ExecuteExtraPythonCode(m);
 }
 }  // namespace pydrake
 }  // namespace drake

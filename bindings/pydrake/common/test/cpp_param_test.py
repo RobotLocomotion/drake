@@ -12,11 +12,22 @@ import unittest
 
 import numpy as np
 
+from pydrake.common import _MangledName
 import pydrake.common.cpp_param as mut
 
 
 class CustomPyType:
     pass
+
+
+class TemplateOnFloat:
+    """Pretends to be a class template instanation named Template[float]."""
+
+
+setattr(TemplateOnFloat, "__name__", "Template{}float{}".format(
+    _MangledName.UNICODE_LEFT_BRACKET,
+    _MangledName.UNICODE_RIGHT_BRACKET))
+globals()[TemplateOnFloat.__name__] = TemplateOnFloat
 
 
 class TestCppParam(unittest.TestCase):
@@ -74,7 +85,7 @@ class TestCppParam(unittest.TestCase):
         self._check_names("CustomPyType", [CustomPyType])
         self._check_names("1", [1])
         self._check_names(
-            "dict[str, CustomPyType]", [mut.Dict[str, CustomPyType]])
+            "dict[str,CustomPyType]", [mut.Dict[str, CustomPyType]])
         self._check_names(
             "list[CustomPyType]", [mut.List[CustomPyType]])
         self._check_names(
@@ -82,7 +93,25 @@ class TestCppParam(unittest.TestCase):
         self._check_names(
             "typing.Optional[CustomPyType]", [mut.Optional[CustomPyType]])
         self._check_names(
-            "typing.Union[str, CustomPyType]", [mut.Union[str, CustomPyType]])
+            "typing.Union[str,CustomPyType]", [mut.Union[str, CustomPyType]])
+        self._check_names("Template[float]", [TemplateOnFloat])
+
+    def test_mangled_names(self):
+        # Nested generic types.
+        param = [mut.Dict[str, CustomPyType]]
+        self.assertEqual(
+            mut.get_param_names(param=param, mangle=True)[0],
+            "dict𝓣str𝓬CustomPyType𝓤")
+        # Drake template types.
+        param = [TemplateOnFloat]
+        self.assertEqual(
+            mut.get_param_names(param=param, mangle=True)[0],
+            "Template𝓣float𝓤")
+        # Literals.
+        param = [0.0]
+        self.assertEqual(
+            mut.get_param_names(param=param, mangle=True)[0],
+            "0𝓹0")
 
     def assert_equal_but_not_aliased(self, a, b):
         self.assertEqual(a, b)
@@ -118,3 +147,42 @@ class TestCppParam(unittest.TestCase):
         self.assertEqual(
             str(cm.exception),
             "Optional[] requires exactly 1 type parameter(s)")
+
+    def test_identifier_mangling(self):
+        for pretty in ["Value[object]",
+                       "LeafSystem[AutoDiff[float,7]]",
+                       "SizedImage[PixelType.kConstant,640,480]",
+                       ]:
+            with self.subTest(pretty=pretty):
+                mangled = _MangledName.mangle(pretty)
+                roundtrip = _MangledName.demangle(mangled)
+                self.assertEqual(roundtrip, pretty)
+
+        # Demonstrate and sanity-check mangling the param name separately,
+        # ahead of mangling the full type name.
+        pretty_param = "AutoDiff[float,7]"
+        mangled_param = _MangledName.mangle(pretty_param)
+        self.assertNotEqual(pretty_param, mangled_param)
+        heterogenous = f"LeafSystem[{mangled_param}]"
+        mangled = _MangledName.mangle(heterogenous)
+        pretty = _MangledName.demangle(mangled)
+        self.assertNotEqual(mangled, heterogenous)
+        self.assertNotEqual(pretty, mangled)
+        self.assertNotEqual(pretty, heterogenous)
+        self.assertEqual(_MangledName.demangle(heterogenous),
+                         _MangledName.demangle(mangled))
+
+    def test_mangling_module_lookup(self):
+        # Looking up a pretty name should find the mangled class.
+        self.assertIs(_MangledName.module_getattr(
+            module_name=__name__,
+            module_globals=globals(),
+            name="Template[float]"), TemplateOnFloat)
+
+        # Unknown names raise the conventional error.
+        message = "module 'cpp_param_test' has no attribute 'NoSuchClass'"
+        with self.assertRaisesRegex(AttributeError, message):
+            _MangledName.module_getattr(
+                module_name=__name__,
+                module_globals=globals(),
+                name="NoSuchClass")

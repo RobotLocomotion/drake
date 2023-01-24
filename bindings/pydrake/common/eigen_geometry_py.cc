@@ -269,8 +269,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("__str__",
             [py_class_obj](const Class* self) {
               return py::str("{}(w={}, x={}, y={}, z={})")
-                  .format(py_class_obj.attr("__name__"), self->w(), self->x(),
-                      self->y(), self->z());
+                  .format(internal::PrettyClassName(py_class_obj), self->w(),
+                      self->x(), self->y(), self->z());
             })
         .def(
             "multiply",
@@ -388,8 +388,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("__str__",
             [py_class_obj](const Class* self) {
               return py::str("{}(angle={}, axis={})")
-                  .format(py_class_obj.attr("__name__"), self->angle(),
-                      self->axis());
+                  .format(internal::PrettyClassName(py_class_obj),
+                      self->angle(), self->axis());
             })
         .def(
             "multiply",
@@ -419,6 +419,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
   py::module::import("pydrake.symbolic");
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

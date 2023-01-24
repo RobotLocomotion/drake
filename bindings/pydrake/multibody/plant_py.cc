@@ -1449,6 +1449,8 @@ PYBIND11_MODULE(plant, m) {
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
+
+  ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

@@ -1,4 +1,5 @@
 import copy
+import pickle
 import textwrap
 import unittest
 
@@ -136,6 +137,17 @@ class TestMultibodyTreeMath(unittest.TestCase):
         self.check_spatial_vector(
             T=T, cls=SpatialForce_[T], base_name="SpatialForce",
             coeffs_name="F", rotation_name="tau", translation_name="f")
+
+    def test_legacy_unpickle(self):
+        """Checks that data pickled as SpatialVelocity_[float] in Drake v1.12.0
+        can be unpickled as SpatialVelocity_𝓣float𝓤 in newer versions of Drake.
+        """
+        legacy_data = b"\x80\x04\x95\xf1\x00\x00\x00\x00\x00\x00\x00\x8c\x16pydrake.multibody.math\x94\x8c\x17SpatialVelocity_[float]\x94\x93\x94)\x81\x94\x8c\x15numpy.core.multiarray\x94\x8c\x0c_reconstruct\x94\x93\x94\x8c\x05numpy\x94\x8c\x07ndarray\x94\x93\x94K\x00\x85\x94C\x01b\x94\x87\x94R\x94(K\x01K\x06\x85\x94h\x07\x8c\x05dtype\x94\x93\x94\x8c\x02f8\x94\x89\x88\x87\x94R\x94(K\x03\x8c\x01<\x94NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK\x00t\x94b\x89C0\x9a\x99\x99\x99\x99\x99\xb9?333333\xd3?\x00\x00\x00\x00\x00\x00\xe0?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00@\x94t\x94bb."  # noqa
+        obj = pickle.loads(legacy_data)
+        expected_rot = np.array([0.1, 0.3, 0.5])
+        expected_trans = np.array([0.0, 1.0, 2.0])
+        numpy_compare.assert_float_equal(obj.rotational(), expected_rot)
+        numpy_compare.assert_float_equal(obj.translational(), expected_trans)
 
     @numpy_compare.check_all_types
     def test_value_instantiations(self, T):
