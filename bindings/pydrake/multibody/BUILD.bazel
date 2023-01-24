@@ -115,6 +115,9 @@ drake_pybind_library(
         "//bindings/pydrake/common:eigen_geometry_py",
         "//bindings/pydrake/systems:framework_py",
     ],
+    py_srcs = [
+        "_tree_extra.py",
+    ],
 )
 
 drake_pybind_library(
@@ -140,6 +143,9 @@ drake_pybind_library(
         ":tree_py",
         "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common:cpp_template_py",
+    ],
+    py_srcs = [
+        "_plant_extra.py",
     ],
 )
 

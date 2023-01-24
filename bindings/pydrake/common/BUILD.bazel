@@ -231,6 +231,7 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
+    py_srcs = ["_eigen_geometry_extra.py"],
 )
 
 # ODR does not matter, because the singleton will be stored in Python.

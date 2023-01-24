@@ -284,6 +284,9 @@ drake_pybind_library(
         "//bindings/pydrake:symbolic_py",
         "//bindings/pydrake/common:value_py",
     ],
+    py_srcs = [
+        "_trajectories_extra.py",
+    ],
 )
 
 drake_py_library(

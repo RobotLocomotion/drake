@@ -419,6 +419,8 @@ PYBIND11_MODULE(eigen_geometry, m) {
   py::module::import("pydrake.symbolic");
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

@@ -1,5 +1,8 @@
 import pydrake.autodiffutils as _ad
-from pydrake.common import pretty_class_name as _pretty_class_name
+from pydrake.common import (
+    _MangledName,
+    pretty_class_name as _pretty_class_name,
+)
 import pydrake.symbolic as _sym
 
 
@@ -39,3 +42,13 @@ def _add_repr_functions():
 
 
 _add_repr_functions()
+
+
+def __getattr__(name):
+    """Rewrites requests for Foo[bar] into their mangled form, for backwards
+    compatibility with unpickling.
+    """
+    name = _MangledName.mangle(name)
+    if name in globals():
+        return globals()[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
