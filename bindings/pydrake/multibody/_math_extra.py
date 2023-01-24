@@ -1,4 +1,8 @@
 import pydrake.autodiffutils as _ad
+from pydrake.common import (
+    _MangledName,
+    pretty_class_name as _pretty_class_name,
+)
 import pydrake.symbolic as _sym
 
 
@@ -17,8 +21,7 @@ def _remove_float_suffix(typename):
 def _spatial_vector_repr(rotation_name, translation_name):
 
     def repr_with_closure(self):
-        cls = type(self)
-        cls_name = _remove_float_suffix(cls.__name__)
+        cls_name = _remove_float_suffix(_pretty_class_name(type(self)))
         rotation = self.rotational().tolist()
         translation = self.translational().tolist()
         return (
@@ -39,3 +42,11 @@ def _add_repr_functions():
 
 
 _add_repr_functions()
+
+
+def __getattr__(name):
+    """Rewrites requests for Foo[bar] into their mangled form, for backwards
+    compatibility with unpickling.
+    """
+    return _MangledName.module_getattr(
+        module_name=__name__, module_globals=globals(), name=name)
