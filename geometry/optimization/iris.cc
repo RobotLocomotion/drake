@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/iris.h"
 
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <optional>
 #include <tuple>
@@ -16,6 +17,7 @@
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/choose_best_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/snopt_solver.h"
@@ -215,6 +217,238 @@ ConvexSets MakeIrisObstacles(const QueryObject<double>& query_object,
 }
 
 namespace {
+
+// Takes an abstract cspace variable s, p_AA, and p_BB and enforces that
+// p_WA(s) == p_WB(s). We assume that s = f(q) where f is an invertible map.
+class SamePointConstraintAbstractCSpace : public Constraint {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SamePointConstraintAbstractCSpace)
+
+  SamePointConstraintAbstractCSpace(const MultibodyPlant<double>* plant,
+                                    const Context<double>& context)
+      : Constraint(3, plant->num_positions() + 6, Vector3d::Zero(),
+                   Vector3d::Zero()),
+        plant_(plant),
+        context_(plant->CreateDefaultContext()) {
+    DRAKE_DEMAND(plant_ != nullptr);
+    context_->SetTimeStateAndParametersFrom(context);
+  }
+
+  ~SamePointConstraintAbstractCSpace() override {}
+
+  void set_frameA(const multibody::Frame<double>* frame) { frameA_ = frame; }
+
+  void set_frameB(const multibody::Frame<double>* frame) { frameB_ = frame; }
+
+  void EnableSymbolic() {
+    if (symbolic_plant_ != nullptr) {
+      return;
+    }
+    symbolic_plant_ = systems::System<double>::ToSymbolic(*plant_);
+    symbolic_context_ = symbolic_plant_->CreateDefaultContext();
+    symbolic_context_->SetTimeStateAndParametersFrom(*context_);
+  }
+
+  virtual inline VectorXd ExtractAbstractCSpaceVariableFromQ(
+      const Ref<const VectorXd>& q) const = 0;
+  virtual inline VectorXd ExtractQFromAbstractCSpaceVariable(
+      const Ref<const VectorXd>& cspace_variable) const = 0;
+  virtual inline AutoDiffVecXd ExtractQFromAbstractCSpaceVariable(
+      const Ref<const AutoDiffVecXd>& cspace_variable) const = 0;
+  virtual inline VectorX<symbolic::Expression>
+  ExtractQFromAbstractCSpaceVariable(
+      const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
+      const = 0;
+
+  const MultibodyPlant<double>* const plant_;
+  const multibody::Frame<double>* frameA_{nullptr};
+  const multibody::Frame<double>* frameB_{nullptr};
+  std::unique_ptr<Context<double>> context_;
+
+  std::unique_ptr<MultibodyPlant<Expression>> symbolic_plant_{nullptr};
+  std::unique_ptr<Context<Expression>> symbolic_context_{nullptr};
+
+ protected:
+//  virtual inline void Compute_dqdot_dsdot(const Ref<const AutoDiffVecXd>& q,
+//                                       EigenPtr<MatrixXd> dqdot_ds) const = 0;
+  virtual inline void Compute_Js_v_WF(const Ref<const AutoDiffVecXd>& q,
+                                       const Ref<MatrixXd>& Jq_v_WF,
+                                       EigenPtr<MatrixXd> Js_v_WF) const = 0;
+
+ private:
+  void DoEval(const Ref<const VectorXd>& x, VectorXd* y) const override {
+    DRAKE_DEMAND(frameA_ != nullptr);
+    DRAKE_DEMAND(frameB_ != nullptr);
+    VectorXd cspace_variable = x.head(plant_->num_positions());
+    VectorXd q = ExtractQFromAbstractCSpaceVariable(cspace_variable);
+    Vector3d p_AA = x.template segment<3>(plant_->num_positions()),
+             p_BB = x.template tail<3>();
+    Vector3d p_WA, p_WB;
+    plant_->SetPositions(context_.get(), q);
+    plant_->CalcPointsPositions(*context_, *frameA_, p_AA,
+                                plant_->world_frame(), &p_WA);
+    plant_->CalcPointsPositions(*context_, *frameB_, p_BB,
+                                plant_->world_frame(), &p_WB);
+    *y = p_WA - p_WB;
+  }
+
+  // p_WA = X_WA(s)*p_AA
+  // dp_WA = Js_v_WA*ds + X_WA(s)*dp_AA
+  void DoEval(const Ref<const AutoDiffVecXd>& x,
+              AutoDiffVecXd* y) const override {
+    DRAKE_DEMAND(frameA_ != nullptr);
+    DRAKE_DEMAND(frameB_ != nullptr);
+    AutoDiffVecXd s = x.head(plant_->num_positions());
+    // discard the gradient as the gradients of s are not needed to compute
+    // Js_v_WA, Js_v_WB
+    AutoDiffVecXd q =
+        ExtractQFromAbstractCSpaceVariable(math::DiscardGradient(s));
+    Vector3<AutoDiffXd> p_AA = x.template segment<3>(plant_->num_positions()),
+                        p_BB = x.template tail<3>();
+
+    plant_->SetPositions(context_.get(), ExtractDoubleOrThrow(q));
+
+    const RigidTransform<double>& X_WA =
+        plant_->EvalBodyPoseInWorld(*context_, frameA_->body());
+    const RigidTransform<double>& X_WB =
+        plant_->EvalBodyPoseInWorld(*context_, frameB_->body());
+
+    Eigen::Matrix3Xd Jq_v_WA(3, plant_->num_positions()),
+        Jq_v_WB(3, plant_->num_positions());
+    plant_->CalcJacobianTranslationalVelocity(
+        *context_, JacobianWrtVariable::kQDot, *frameA_,
+        ExtractDoubleOrThrow(p_AA), plant_->world_frame(),
+        plant_->world_frame(), &Jq_v_WA);
+    plant_->CalcJacobianTranslationalVelocity(
+        *context_, JacobianWrtVariable::kQDot, *frameB_,
+        ExtractDoubleOrThrow(p_BB), plant_->world_frame(),
+        plant_->world_frame(), &Jq_v_WB);
+
+    Eigen::Matrix3Xd Js_v_WA(3, plant_->num_positions()),
+        Js_v_WB(3, plant_->num_positions());
+    Eigen::MatrixXd dqdot_ds =
+        MatrixXd::Identity(plant_->num_positions(), plant_->num_positions());
+    // Js_v_WA_ = Jq_v_WA_ * dqdot/dsdot = dp_WA/dqdot * dqdot/dsdot
+    Compute_Js_v_WF(q, Jq_v_WA, &Js_v_WA);
+    Compute_Js_v_WF(q, Jq_v_WB, &Js_v_WB);
+
+    const Eigen::Vector3d y_val =
+        X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
+    Eigen::Matrix3Xd dy(3, plant_->num_positions() + 6);
+    dy << Js_v_WA - Js_v_WB, X_WA.rotation().matrix(),
+        -X_WB.rotation().matrix();
+    *y = math::InitializeAutoDiff(y_val, dy * math::ExtractGradient(x));
+  }
+
+  void DoEval(const Ref<const VectorX<symbolic::Variable>>& x,
+              VectorX<symbolic::Expression>* y) const override {
+    DRAKE_DEMAND(symbolic_plant_ != nullptr);
+    DRAKE_DEMAND(frameA_ != nullptr);
+    DRAKE_DEMAND(frameB_ != nullptr);
+    const Frame<Expression>& frameA =
+        symbolic_plant_->get_frame(frameA_->index());
+    const Frame<Expression>& frameB =
+        symbolic_plant_->get_frame(frameB_->index());
+
+    VectorX<Expression> s = x.head(plant_->num_positions());
+    VectorX<Expression> q = ExtractQFromAbstractCSpaceVariable(s);
+    Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
+                        p_BB = x.template tail<3>();
+    Vector3<Expression> p_WA, p_WB;
+    symbolic_plant_->SetPositions(symbolic_context_.get(), q);
+    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameA, p_AA,
+                                         symbolic_plant_->world_frame(), &p_WA);
+    symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameB, p_BB,
+                                         symbolic_plant_->world_frame(), &p_WB);
+    *y = p_WA - p_WB;
+  }
+};
+
+// Takes q, p_AA, and p_BB and enforces that p_WA == p_WB.
+class SamePointConstraint : public SamePointConstraintAbstractCSpace {
+ public:
+  SamePointConstraint(const MultibodyPlant<double>* plant,
+                      const Context<double>& context)
+      : SamePointConstraintAbstractCSpace(plant, context) {}
+
+  VectorXd ExtractAbstractCSpaceVariableFromQ(
+      const Ref<const VectorXd>& q) const override {
+    return q;
+  }
+
+  VectorXd ExtractQFromAbstractCSpaceVariable(
+      const Ref<const VectorXd>& cspace_variable) const override {
+    return cspace_variable;
+  }
+  AutoDiffVecXd ExtractQFromAbstractCSpaceVariable(
+      const Ref<const AutoDiffVecXd>& cspace_variable) const override {
+    return cspace_variable;
+  }
+  VectorX<symbolic::Expression> ExtractQFromAbstractCSpaceVariable(
+      const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
+      const override {
+    return cspace_variable;
+  }
+
+ protected:
+  inline void Compute_Js_v_WF(const Ref<const AutoDiffVecXd>&,
+                                       const Ref<MatrixXd>& Jq_v_WF,
+                                       EigenPtr<MatrixXd> Js_v_WF)  const override {
+    Js_v_WF = &Jq_v_WF;
+  }
+};
+
+// takes s, p_AA,and p_BB and enforces that p_WA == p_WB
+class SamePointConstraintRational : public SamePointConstraintAbstractCSpace {
+ public:
+  SamePointConstraintRational(const multibody::RationalForwardKinematics*
+                                  rational_forward_kinematics_ptr,
+                              const Ref<const VectorXd>& q_star,
+                              const Context<double>& context)
+      : SamePointConstraintAbstractCSpace(
+            &rational_forward_kinematics_ptr->plant(), context),
+        rational_forward_kinematics_ptr_(rational_forward_kinematics_ptr),
+        q_star_(q_star) {}
+
+  VectorXd ExtractAbstractCSpaceVariableFromQ(
+      const Ref<const VectorXd>& q) const override {
+    return rational_forward_kinematics_ptr_->ComputeSValue(q, q_star_);
+  }
+  VectorXd ExtractQFromAbstractCSpaceVariable(
+      const Ref<const VectorXd>& cspace_variable) const override {
+    return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
+                                                           q_star_);
+  }
+  AutoDiffVecXd ExtractQFromAbstractCSpaceVariable(
+      const Ref<const AutoDiffVecXd>& cspace_variable) const override {
+    return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
+                                                           q_star_);
+  }
+  VectorX<symbolic::Expression> ExtractQFromAbstractCSpaceVariable(
+      const Ref<const VectorX<symbolic::Expression>>& cspace_variable)
+      const override {
+    return rational_forward_kinematics_ptr_->ComputeQValue(cspace_variable,
+                                                           q_star_);
+  }
+
+ protected:
+  inline void Compute_Js_v_WF(const Ref<const AutoDiffVecXd>& q,
+                               const Ref<MatrixXd>& Jq_v_WF,
+                               EigenPtr<MatrixXd> Js_v_WF)  const override {
+    Eigen::MatrixXd dqdot_dsdot =
+        MatrixXd::Identity(plant_->num_positions(), plant_->num_positions());
+    // since sᵢ = f(qᵢ) then we only need to operate on the diagonal.
+    for (int i = 0; i < static_cast<int>(dqdot_dsdot.rows()); ++i) {
+          dqdot_dsdot(i, i) = q(i).derivatives()(i);
+    }
+    *Js_v_WF = Jq_v_WF * dqdot_dsdot;
+  }
+
+ private:
+  const multibody::RationalForwardKinematics* rational_forward_kinematics_ptr_;
+  const VectorXd q_star_;
+};
+
 // Defines a MathematicalProgram to solve the problem
 // min_q (q-d) CᵀC (q-d)
 // s.t. setA in frameA and setB in frameB are in collision in q.
@@ -226,12 +460,11 @@ namespace {
 class ClosestCollisionProgram {
  public:
   ClosestCollisionProgram(
-      std::shared_ptr<SamePointConstraint> same_point_constraint,
+      std::shared_ptr<SamePointConstraintAbstractCSpace> same_point_constraint,
       const multibody::Frame<double>& frameA,
       const multibody::Frame<double>& frameB, const ConvexSet& setA,
       const ConvexSet& setB, const Hyperellipsoid& E,
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b) {
+      const Ref<const Eigen::MatrixXd>& A, const Ref<const VectorXd>& b) {
     q_ = prog_.NewContinuousVariables(A.cols(), "q");
 
     P_constraint_ = prog_.AddLinearConstraint(
@@ -262,8 +495,8 @@ class ClosestCollisionProgram {
     prog_.SetInitialGuess(p_BB, Vector3d::Constant(.01));
   }
 
-  void UpdatePolytope(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                      const Eigen::Ref<const Eigen::VectorXd>& b) {
+  void UpdatePolytope(const Ref<const Eigen::MatrixXd>& A,
+                      const Ref<const VectorXd>& b) {
     P_constraint_->evaluator()->UpdateCoefficients(
         A,
         VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
@@ -273,8 +506,7 @@ class ClosestCollisionProgram {
   // Returns true iff a collision is found.
   // Sets `closest` to an optimizing solution q*, if a solution is found.
   bool Solve(const solvers::SolverInterface& solver,
-             const Eigen::Ref<const Eigen::VectorXd>& q_guess,
-             VectorXd* closest) {
+             const Ref<const VectorXd>& q_guess, VectorXd* closest) {
     prog_.SetInitialGuess(q_, q_guess);
     solvers::MathematicalProgramResult result;
     solver.Solve(prog_, std::nullopt, std::nullopt, &result);
@@ -322,8 +554,7 @@ class CounterExampleConstraint : public Constraint {
   }
 
  private:
-  void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-              Eigen::VectorXd* y) const override {
+  void DoEval(const Ref<const VectorXd>& x, VectorXd* y) const override {
     DRAKE_DEMAND(binding_ != nullptr);
     const double val = prog_->EvalBinding(*binding_, x)[index_];
     if (falsify_lower_bound_) {
@@ -335,7 +566,7 @@ class CounterExampleConstraint : public Constraint {
     }
   }
 
-  void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+  void DoEval(const Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
     DRAKE_DEMAND(binding_ != nullptr);
     const AutoDiffXd val = prog_->EvalBinding(*binding_, x)[index_];
@@ -386,8 +617,8 @@ class CounterExampleProgram {
  public:
   CounterExampleProgram(
       std::shared_ptr<CounterExampleConstraint> counter_example_constraint,
-      const Hyperellipsoid& E, const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::VectorXd>& b) {
+      const Hyperellipsoid& E, const Ref<const Eigen::MatrixXd>& A,
+      const Ref<const VectorXd>& b) {
     q_ = prog_.NewContinuousVariables(A.cols(), "q");
 
     P_constraint_ = prog_.AddLinearConstraint(
@@ -405,8 +636,8 @@ class CounterExampleProgram {
     prog_.AddConstraint(counter_example_constraint, q_);
   }
 
-  void UpdatePolytope(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                      const Eigen::Ref<const Eigen::VectorXd>& b) {
+  void UpdatePolytope(const Ref<const Eigen::MatrixXd>& A,
+                      const Ref<const VectorXd>& b) {
     P_constraint_->evaluator()->UpdateCoefficients(
         A,
         VectorXd::Constant(b.size(), -std::numeric_limits<double>::infinity()),
@@ -416,8 +647,7 @@ class CounterExampleProgram {
   // Returns true iff a counter-example is found.
   // Sets `closest` to an optimizing solution q*, if a solution is found.
   bool Solve(const solvers::SolverInterface& solver,
-             const Eigen::Ref<const Eigen::VectorXd>& q_guess,
-             VectorXd* closest) {
+             const Ref<const VectorXd>& q_guess, VectorXd* closest) {
     prog_.SetInitialGuess(q_, q_guess);
     solvers::MathematicalProgramResult result;
     solver.Solve(prog_, std::nullopt, std::nullopt, &result);
@@ -437,10 +667,10 @@ class CounterExampleProgram {
 // Add the tangent to the (scaled) ellipsoid at @p point as a
 // constraint.
 void AddTangentToPolytope(
-    const Hyperellipsoid& E, const Eigen::Ref<const Eigen::VectorXd>& point,
+    const Hyperellipsoid& E, const Ref<const VectorXd>& point,
     double configuration_space_margin,
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>* A,
-    Eigen::VectorXd* b, int* num_constraints) {
+    VectorXd* b, int* num_constraints) {
   while (*num_constraints >= A->rows()) {
     // Increase pre-allocated polytope size.
     A->conservativeResize(A->rows() * 2, A->cols());
@@ -463,7 +693,7 @@ void AddTangentToPolytope(
 }
 
 void MakeGuessFeasible(const HPolyhedron& P, const IrisOptions& options,
-                       const VectorXd& closest, Eigen::VectorXd* guess) {
+                       const VectorXd& closest, VectorXd* guess) {
   const auto& A = P.A();
   const auto& b = P.b();
   const int N = A.rows();
@@ -493,15 +723,24 @@ struct GeometryPairWithDistance {
   }
 };
 
-}  // namespace
-
-HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
-                                     const Context<double>& context,
-                                     const IrisOptions& options) {
+//  Method for actually running Iris. We assume that the HPolyhedron in
+//  P_ptr has been set to a finite bounding box defining the joint limits of the
+//  plant.
+//  @param P_ptr must have its ambient dimension be the same size as the number
+//  of joints in the plant.
+//  @param E_ptr must have its ambient dimension be the same size as the nubmer
+//  of joints in the plant.
+//  @return
+HPolyhedron _DoIris_(const MultibodyPlant<double>& plant,
+                     const Context<double>& context, const IrisOptions& options,
+                     const VectorXd& sample,
+                     const std::shared_ptr<SamePointConstraintAbstractCSpace>&
+                         same_point_constraint) {
   // Check the inputs.
   plant.ValidateContext(context);
   const int nq = plant.num_positions();
-  const Eigen::VectorXd sample = plant.GetPositions(context);
+  const VectorXd q_sample =
+      same_point_constraint->ExtractQFromAbstractCSpaceVariable(sample);
   const int nc = static_cast<int>(options.configuration_obstacles.size());
   // Note: We require finite joint limits to define the bounding box for the
   // IRIS algorithm.
@@ -522,8 +761,11 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
 
   // Make the polytope and ellipsoid.
-  HPolyhedron P = HPolyhedron::MakeBox(plant.GetPositionLowerLimits(),
-                                       plant.GetPositionUpperLimits());
+  HPolyhedron P = HPolyhedron::MakeBox(
+      same_point_constraint->ExtractAbstractCSpaceVariableFromQ(
+          plant.GetPositionLowerLimits()),
+      same_point_constraint->ExtractAbstractCSpaceVariableFromQ(
+          plant.GetPositionUpperLimits()));
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
   const double kEpsilonEllipsoid = 1e-2;
   Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample);
@@ -550,8 +792,6 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
   auto pairs = inspector.GetCollisionCandidates();
   const int n = static_cast<int>(pairs.size());
-  auto same_point_constraint =
-      std::make_shared<SamePointConstraint>(&plant, context);
 
   // As a surrogate for the true objective, the pairs are sorted by the distance
   // between each collision pair from the sample point configuration. This could
@@ -600,8 +840,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
     }
     // Handle bounding box and linear constraints as a special case (extracting
     // them from the additional_constraint_bindings).
-    auto AddConstraint = [&](const Eigen::MatrixXd& new_A,
-                             const Eigen::VectorXd& new_b,
+    auto AddConstraint = [&](const MatrixXd& new_A, const VectorXd& new_b,
                              const solvers::VectorXDecisionVariable& vars) {
       while (num_initial_constraints + new_A.rows() >= A.rows()) {
         // Increase pre-allocated polytope size.
@@ -797,158 +1036,32 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   }
   return P;
 }
+}  // namespace
 
-void SamePointConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                 Eigen::VectorXd* y) const {
-  DRAKE_DEMAND(frameA_ != nullptr);
-  DRAKE_DEMAND(frameB_ != nullptr);
-  VectorXd q = x.head(plant_->num_positions());
-  Vector3d p_AA = x.template segment<3>(plant_->num_positions()),
-           p_BB = x.template tail<3>();
-  Vector3d p_WA, p_WB;
-  plant_->SetPositions(context_.get(), q);
-  plant_->CalcPointsPositions(*context_, *frameA_, p_AA, plant_->world_frame(),
-                              &p_WA);
-  plant_->CalcPointsPositions(*context_, *frameB_, p_BB, plant_->world_frame(),
-                              &p_WB);
-  *y = p_WA - p_WB;
+HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
+                                     const Context<double>& context,
+                                     const IrisOptions& options) {
+  plant.ValidateContext(context);
+  const VectorXd sample = plant.GetPositions(context);
+  auto same_point_constraint =
+      std::make_shared<SamePointConstraint>(&plant, context);
+  return _DoIris_(plant, context, options, sample, same_point_constraint);
 }
 
-// p_WA = X_WA(q)*p_AA
-// dp_WA = Jq_v_WA*dq + X_WA(q)*dp_AA
-void SamePointConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
-                                 AutoDiffVecXd* y) const {
-  DRAKE_DEMAND(frameA_ != nullptr);
-  DRAKE_DEMAND(frameB_ != nullptr);
-  VectorX<AutoDiffXd> q = x.head(plant_->num_positions());
-  Vector3<AutoDiffXd> p_AA = x.template segment<3>(plant_->num_positions()),
-                      p_BB = x.template tail<3>();
-  plant_->SetPositions(context_.get(), ExtractDoubleOrThrow(q));
-  const RigidTransform<double>& X_WA =
-      plant_->EvalBodyPoseInWorld(*context_, frameA_->body());
-  const RigidTransform<double>& X_WB =
-      plant_->EvalBodyPoseInWorld(*context_, frameB_->body());
-  Eigen::Matrix3Xd Jq_v_WA(3, plant_->num_positions()),
-      Jq_v_WB(3, plant_->num_positions());
-  plant_->CalcJacobianTranslationalVelocity(
-      *context_, JacobianWrtVariable::kQDot, *frameA_,
-      ExtractDoubleOrThrow(p_AA), plant_->world_frame(), plant_->world_frame(),
-      &Jq_v_WA);
-  plant_->CalcJacobianTranslationalVelocity(
-      *context_, JacobianWrtVariable::kQDot, *frameB_,
-      ExtractDoubleOrThrow(p_BB), plant_->world_frame(), plant_->world_frame(),
-      &Jq_v_WB);
+HPolyhedron IrisInRationalConfigurationSpace(
+    const multibody::MultibodyPlant<double>& plant,
+    const systems::Context<double>& context,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const IrisOptions& options) {
+  plant.ValidateContext(context);
+  multibody::RationalForwardKinematics rational_forward_kinematics{&plant};
 
-  const Eigen::Vector3d y_val =
-      X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
-  Eigen::Matrix3Xd dy(3, plant_->num_positions() + 6);
-  dy << Jq_v_WA - Jq_v_WB, X_WA.rotation().matrix(), -X_WB.rotation().matrix();
-  *y = math::InitializeAutoDiff(y_val, dy * math::ExtractGradient(x));
-}
-
-void SamePointConstraint::DoEval(
-    const Ref<const VectorX<symbolic::Variable>>& x,
-    VectorX<symbolic::Expression>* y) const {
-  DRAKE_DEMAND(symbolic_plant_ != nullptr);
-  DRAKE_DEMAND(frameA_ != nullptr);
-  DRAKE_DEMAND(frameB_ != nullptr);
-  const Frame<Expression>& frameA =
-      symbolic_plant_->get_frame(frameA_->index());
-  const Frame<Expression>& frameB =
-      symbolic_plant_->get_frame(frameB_->index());
-  VectorX<Expression> q = x.head(plant_->num_positions());
-  Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
-                      p_BB = x.template tail<3>();
-  Vector3<Expression> p_WA, p_WB;
-  symbolic_plant_->SetPositions(symbolic_context_.get(), q);
-  symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameA, p_AA,
-                                       symbolic_plant_->world_frame(), &p_WA);
-  symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameB, p_BB,
-                                       symbolic_plant_->world_frame(), &p_WB);
-  *y = p_WA - p_WB;
-}
-
-void SamePointConstraintRational::DoEval(
-    const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
-  DRAKE_DEMAND(frameA_ != nullptr);
-  DRAKE_DEMAND(frameB_ != nullptr);
-  VectorXd t = x.head(plant_->num_positions());
-  VectorXd q = rational_forward_kinematics_ptr_->ComputeQValue(t, q_star_);
-  Vector3d p_AA = x.template segment<3>(plant_->num_positions()),
-           p_BB = x.template tail<3>();
-  Vector3d p_WA, p_WB;
-  plant_->SetPositions(context_.get(), q);
-  plant_->CalcPointsPositions(*context_, *frameA_,
-                              p_AA, plant_->world_frame(),
-                              &p_WA);
-  plant_->CalcPointsPositions(*context_, *frameB_,
-                              p_BB, plant_->world_frame(),
-                              &p_WB);
-  *y = p_WA - p_WB;
-}
-
-void SamePointConstraintRational::DoEval(
-    const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
-  DRAKE_DEMAND(frameA_ != nullptr);
-  DRAKE_DEMAND(frameB_ != nullptr);
-  VectorX<AutoDiffXd> t = x.head(plant_->num_positions());
-  VectorX<AutoDiffXd> q =
-      rational_forward_kinematics_ptr_->ComputeQValue(t, q_star_);
-
-  Vector3<AutoDiffXd> p_AA = x.template segment<3>(plant_->num_positions()),
-                      p_BB = x.template tail<3>();
-  plant_->SetPositions(context_.get(), ExtractDoubleOrThrow(q));
-  const RigidTransform<double>& X_WA =
-      plant_->EvalBodyPoseInWorld(*context_, frameA_->body());
-  const RigidTransform<double>& X_WB =
-      plant_->EvalBodyPoseInWorld(*context_, frameB_->body());
-  Eigen::Matrix3Xd Jq_v_WA(3, plant_->num_positions()),
-      Jq_v_WB(3, plant_->num_positions());
-  plant_->CalcJacobianTranslationalVelocity(
-      *context_, JacobianWrtVariable::kQDot, *frameA_,
-      ExtractDoubleOrThrow(p_AA), plant_->world_frame(), plant_->world_frame(),
-      &Jq_v_WA);
-  plant_->CalcJacobianTranslationalVelocity(
-      *context_, JacobianWrtVariable::kQDot, *frameB_,
-      ExtractDoubleOrThrow(p_BB), plant_->world_frame(), plant_->world_frame(),
-      &Jq_v_WB);
-  Eigen::Matrix3Xd Jt_v_WA(3, plant_->num_positions()),
-      Jt_v_WB(3, plant_->num_positions());
-  for (int i = 0; i < plant_->num_positions(); i++) {
-    // dX_t_wa = J_q_WA * dq_dt
-    Jt_v_WA.col(i) = Jq_v_WA.col(i) * q(i).derivatives()(i);
-    Jt_v_WB.col(i) = Jq_v_WB.col(i) * q(i).derivatives()(i);
-  }
-
-  const Eigen::Vector3d y_val =
-      X_WA * math::ExtractValue(p_AA) - X_WB * math::ExtractValue(p_BB);
-  Eigen::Matrix3Xd dy(3, plant_->num_positions() + 6);
-  dy << Jt_v_WA - Jt_v_WB, X_WA.rotation().matrix(), -X_WB.rotation().matrix();
-  *y = math::InitializeAutoDiff(y_val, dy * math::ExtractGradient(x));
-}
-
-void SamePointConstraintRational::DoEval(
-    const Ref<const VectorX<symbolic::Variable>>& x,
-    VectorX<symbolic::Expression>* y) const {
-  DRAKE_DEMAND(symbolic_plant_ != nullptr);
-  DRAKE_DEMAND(frameA_ != nullptr);
-  DRAKE_DEMAND(frameB_ != nullptr);
-  const Frame<Expression>& frameA =
-      symbolic_plant_->get_frame(frameA_->index());
-  const Frame<Expression>& frameB =
-      symbolic_plant_->get_frame(frameB_->index());
-  VectorX<Expression> t = x.head(plant_->num_positions());
-  VectorX<Expression> q =
-      rational_forward_kinematics_ptr_->ComputeQValue(t, q_star_);
-  Vector3<Expression> p_AA = x.template segment<3>(plant_->num_positions()),
-                      p_BB = x.template tail<3>();
-  Vector3<Expression> p_WA, p_WB;
-  symbolic_plant_->SetPositions(symbolic_context_.get(), q);
-  symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameA, p_AA,
-                                       symbolic_plant_->world_frame(), &p_WA);
-  symbolic_plant_->CalcPointsPositions(*symbolic_context_, frameB, p_BB,
-                                       symbolic_plant_->world_frame(), &p_WB);
-  *y = p_WA - p_WB;
+  const VectorXd q_sample = plant.GetPositions(context);
+  const VectorXd sample =
+      rational_forward_kinematics.ComputeSValue(q_sample, q_star);
+  auto same_point_constraint = std::make_shared<SamePointConstraintRational>(
+      &rational_forward_kinematics, q_star, context);
+  return _DoIris_(plant, context, options, sample, same_point_constraint);
 }
 
 }  // namespace optimization
