@@ -22,7 +22,6 @@
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/constraint_specs.h"
-#include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/discrete_contact_pair.h"
@@ -4442,7 +4441,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // when the plant declares its cache entries.
   struct CacheIndexes {
     systems::CacheIndex contact_info_and_body_spatial_forces;
-    systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_contact_forces_continuous;
@@ -4739,13 +4737,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;
 
-  // Helper method to fill in contact_results with point contact information
-  // for the given state stored in context, when the model is discrete.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsDiscretePointPair(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
-
   // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const {
@@ -4972,49 +4963,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
       MatrixX<T>* Jn, MatrixX<T>* Jt,
       std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
-
-  // Populates the ContactJacobians cache struct via EvalDiscreteContactPairs
-  // and CalcNormalAndTangentContactJacobians.
-  void CalcContactJacobiansCache(
-      const systems::Context<T>& context,
-      internal::ContactJacobians<T>* contact_jacobians) const;
-
-  // Evaluates the contact Jacobians for the given state of the plant stored in
-  // `context`.
-  // This method first evaluates the point pair penetrations in the system for
-  // the given `context`, see EvalPointPairPenetrations(). For each penetration
-  // pair involving bodies A and B, a contact frame C is defined by the
-  // rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W`
-  // equals the normal vector pointing from body B into body A, expressed in
-  // the world frame W. See PenetrationAsPointPair for further details on the
-  // definition of each contact pair. Versors `Cx_W` and `Cy_W` constitute a
-  // basis of the plane normal to `Cz_W` and are arbitrarily chosen. The
-  // contact frame basis can be accessed in the results, see
-  // ContactJacobians::R_WC_list. Further, for each contact pair evaluated,
-  // this method computes the Jacobians `Jn` and `Jt`. With the vector of
-  // generalized velocities v of size `nv` and `nc` the number of contact
-  // pairs;
-  //   - `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the
-  //     separation speed for each contact point, defined to be positive when
-  //     bodies are moving away at the contact.
-  //   - `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v`
-  //     concatenates the tangential components of the relative velocity vector
-  //     `v_AcBc` in the frame C of contact. That is, for the k-th contact
-  //     pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
-  //     `Cx` and `Cy` directions.
-  //
-  // If no geometry was registered or if `nc = 0`, ContactJacobians holds empty
-  // results.
-  //
-  // See ContactJacobians for specifics on the returned data storage.
-  // This method throws std::exception if called pre-finalize. See Finalize().
-  const internal::ContactJacobians<T>& EvalContactJacobians(
-      const systems::Context<T>& context) const {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    this->ValidateContext(context);
-    return this->get_cache_entry(cache_indexes_.contact_jacobians)
-        .template Eval<internal::ContactJacobians<T>>(context);
-  }
 
   // Given a GeometryId, return the corresponding BodyIndex or throw if the
   // GeometryId is invalid or unknown to this plant.

@@ -48,11 +48,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalContactSolverResults(context);
   }
 
-  static const internal::ContactJacobians<T>& EvalContactJacobians(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalContactJacobians(context);
-  }
-
   static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalContactSurfaces(context);

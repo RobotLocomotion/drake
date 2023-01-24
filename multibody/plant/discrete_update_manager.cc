@@ -91,14 +91,6 @@ DiscreteUpdateManager<T>::EvalContactSolverResults(
 }
 
 template <typename T>
-const internal::ContactJacobians<T>&
-DiscreteUpdateManager<T>::EvalContactJacobians(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalContactJacobians(
-      plant(), context);
-}
-
-template <typename T>
 const std::vector<geometry::ContactSurface<T>>&
 DiscreteUpdateManager<T>::EvalContactSurfaces(
     const systems::Context<T>& context) const {
