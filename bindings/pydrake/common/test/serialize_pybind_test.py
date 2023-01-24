@@ -29,7 +29,8 @@ class TestSerializePybind(unittest.TestCase):
             some_optional=None,
             some_vector=[5.0, 6.0],
             some_map={'key': 7},
-            some_variant=8.0)
+            some_variant=8.0,
+            some_pointer=None)
 
     def test_attributes_using_serialize_no_docs(self):
         """Tests the DefAttributesUsingSerialize overload WITHOUT docstrings.
@@ -72,6 +73,10 @@ class TestSerializePybind(unittest.TestCase):
         """
         dut = self._make_data2()
 
+        # Check default.
+        self.assertIs(dut.some_pointer, None)
+        data1 = self._make_data1()
+
         # Reset all fields.
         dut.some_bool = True
         dut.some_int = 10
@@ -84,6 +89,7 @@ class TestSerializePybind(unittest.TestCase):
         dut.some_vector = [50.0, 60.0]
         dut.some_map = {'new_key': 70}
         dut.some_variant = 80.0
+        dut.some_pointer = data1
 
         # Read back all fields.
         self.assertEqual(dut.some_bool, True)
@@ -97,6 +103,7 @@ class TestSerializePybind(unittest.TestCase):
         self.assertEqual(dut.some_vector, [50.0, 60.0])
         self.assertEqual(dut.some_map, {'new_key': 70})
         self.assertEqual(dut.some_variant, 80.0)
+        self.assertIs(dut.some_pointer, data1)
 
         try:
             # Use the PEP-585 types if supported (Python >= 3.9).
@@ -120,7 +127,8 @@ class TestSerializePybind(unittest.TestCase):
             ("some_optional", typing.Optional[float]),
             ("some_vector", expected_vector_type),
             ("some_map", expected_dict_type),
-            ("some_variant", typing.Union[float, MyData1])))
+            ("some_variant", typing.Union[float, MyData1]),
+            ("some_pointer", MyData1)))
 
     def test_repr_using_serialize_no_docs(self):
         """Tests the repr() for a class bound WITHOUT docstrings.
@@ -145,4 +153,5 @@ class TestSerializePybind(unittest.TestCase):
                          "some_optional=None, "
                          "some_vector=[5.0, 6.0], "
                          "some_map={'key': 7.0}, "
-                         "some_variant=8.0)")
+                         "some_variant=8.0, "
+                         "some_pointer=None)")
