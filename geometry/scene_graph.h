@@ -891,13 +891,15 @@ class SceneGraph final : public systems::LeafSystem<T> {
                           b) `frame_id` does not map to a registered frame,
                           c) `frame_id` does not belong to `source_id`
                           (unless `frame_id` is the world frame id), or
-                          d) the context has already been allocated.  */
+                          d) the context has already been allocated.
+   @pydrake_mkdoc_identifier{frame_direct}  */
   int RemoveRole(SourceId source_id, FrameId frame_id, Role role);
 
   /** systems::Context-modifying variant of
    @ref RemoveRole(SourceId,FrameId,Role) "RemoveRole()" for frames.
    Rather than modifying %SceneGraph's model, it modifies the copy of the model
-   stored in the provided context.  */
+   stored in the provided context.
+   @pydrake_mkdoc_identifier{frame_context}  */
   int RemoveRole(systems::Context<T>* context, SourceId source_id,
                  FrameId frame_id, Role role) const;
 
@@ -919,7 +921,8 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** systems::Context-modifying variant of
    @ref RemoveRole(SourceId,GeometryId,Role) "RemoveRole()" for individual
    geometries. Rather than modifying %SceneGraph's model, it modifies the copy
-   of the model stored in the provided context.  */
+   of the model stored in the provided context.
+   @pydrake_mkdoc_identifier{geometry_context}  */
   int RemoveRole(systems::Context<T>* context, SourceId source_id,
                  GeometryId geometry_id, Role role) const;
 
