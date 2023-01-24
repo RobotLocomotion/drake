@@ -4,7 +4,9 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
+#include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/tamsi_solver.h"
+#include "drake/multibody/tree/multibody_tree_topology.h"
 #include "drake/systems/framework/context.h"
 
 namespace drake {
@@ -47,9 +49,20 @@ class TamsiDriver {
   // Returns a reference to the manager provided at construction.
   const CompliantContactManager<T>& manager() const { return *manager_; }
 
+  // Returns a reference to the underlying tree topology of the multibody
+  // system.
+  const MultibodyTreeTopology& tree_topology() const {
+    return manager().tree_topology();
+  }
+
   // Returns a reference to the MultibodyPlant model held by the manager
   // provided at construction.
   const MultibodyPlant<T>& plant() const { return manager().plant(); }
+
+  // Computes a dense contact Jacobian matrix for the configuration currently
+  // stored in `context`.
+  internal::ContactJacobians<T> CalcContactJacobians(
+      const systems::Context<T>& context) const;
 
   // Helper method used within CallTamsiSolver() to update generalized
   // velocities from previous step value v0 to next step value v. This helper
