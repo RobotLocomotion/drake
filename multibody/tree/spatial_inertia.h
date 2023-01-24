@@ -191,32 +191,44 @@ class SpatialInertia {
   static SpatialInertia<T> SolidSphereWithDensity(const T& density, const T& r);
 
   /// Creates a spatial inertia for a uniform density solid tetrahedron B about
-  /// its vertex Bo, from which position vectors to B's other 3 vertices P, Q, R
+  /// a point A, from which position vectors to B's 4 vertices B0, B1, B2, B3
   /// are measured (position vectors are all expressed in a common frame E).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] p position vector from vertex Bo to vertex P, expressed in E.
-  /// @param[in] q position vector from vertex Bo to vertex Q, expressed in E.
-  /// @param[in] r position vector from vertex Bo to vertex R, expressed in E.
-  /// @retval M_BBo_E B's spatial inertia about vertex Bo, expressed in E.
-  /// @throws std::exception if B's volume is very close to zero˜as compared
-  /// to the magnitudes (lengths) of p, q, r.
-  /// @note A negative volume (and mass) occurs if p.cross(q).dot(r) < 0.
-  static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
+  /// @param[in] p0 position vector from point A to vertex B0, expressed in E.
+  /// @param[in] p1 position vector from point A to vertex B1, expressed in E.
+  /// @param[in] p2 position vector from point A to vertex B2, expressed in E.
+  /// @param[in] p3 position vector from point A to vertex B3, expressed in E.
+  /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
+  /// @note A negative volume (and mass) occurs if vertices B0, B1, B2 define a
+  /// triangle with its right-handed normal pointing inward (toward vertex B3).
+  /// A zero volume means B is a triangle, line, or point (not a tetrahedron).
+  /// @see SolidTetrahedronAboutVertexWithDensity() to efficiently calculate a
+  /// spatial inertia about a vertex of B.
+  static SpatialInertia<T> SolidTetrahedronAboutPointWithDensity(
       const T& density,
-      const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r);
+      const Vector3<T>& p0,
+      const Vector3<T>& p1,
+      const Vector3<T>& p2,
+      const Vector3<T>& p3);
 
   /// Creates a spatial inertia for a uniform density solid tetrahedron B about
-  /// a point A, from which position vectors to B's 4 vertices P, Q, R, S are
-  /// measured (position vectors are all expressed in a common frame E).
+  /// its vertex B0, from which position vectors to B's other 3 vertices B1, B2,
+  /// B3 are measured (position vectors are all expressed in a common frame E).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] p position vector from point A to vertex P, expressed in E.
-  /// @param[in] q position vector from point A to vertex Q, expressed in E.
-  /// @param[in] r position vector from point A to vertex R, expressed in E.
-  /// @param[in] s position vector from point A to vertex S, expressed in E.
-  /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
-  static UnitInertia<T> SolidTetrahedronAboutPoint(
-      const Vector3<T>& p, const Vector3<T>& q,
-      const Vector3<T>& r, const Vector3<T>& s);
+  /// @param[in] p1 position vector from vertex B0 to vertex B1, expressed in E.
+  /// @param[in] p2 position vector from vertex B0 to vertex B2, expressed in E.
+  /// @param[in] p3 position vector from vertex B0 to vertex B3, expressed in E.
+  /// @retval M_BB0_E B's spatial inertia about its vertex B0, expressed in E.
+  /// @note A negative volume (and mass) occur if p1.cross(p2).dot(p3) < 0.
+  /// A zero volume occurs if p1.cross(p2).dot(p3) = 0, which means B is a
+  /// triangle, line, or point (not a tetrahedron).
+  /// @see SolidTetrahedronAboutPointWithDensity() to calculate a spatial
+  /// inertia about an arbitrary point.
+  static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
+      const T& density,
+      const Vector3<T>& p1,
+      const Vector3<T>& p2,
+      const Vector3<T>& p3);
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of

@@ -248,7 +248,8 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
 }
 
 // Helper function to test the spatial inertia of a tetrahedron.
-SpatialInertia<double> CalcSolidTetrahedronSpatialInertia(const double density,
+SpatialInertia<double> CalcTetrahedronSpatialInertiaAboutVertex(
+    const double density,
     const Vector3<double>& p,
     const Vector3<double>& q,
     const Vector3<double>& r) {
@@ -294,30 +295,65 @@ SpatialInertia<double> CalcSolidTetrahedronSpatialInertia(const double density,
   return SpatialInertia<double>{mass, p_GoGcm, G_GGo_G};
 }
 
-// Tests the static method for the spatial inertia of a solid tetrahedron.
-GTEST_TEST(SpatialInertia, SolidTetrahedronWithDensity) {
+// Test spatial inertia of a solid tetrahedron about its vertex.
+GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   const double density = 0.12345;
   const Vector3<double> p(1, 0, 0);
   const Vector3<double> q(0, 2, 0);
   const Vector3<double> r(0, 0, 3);
 
-  const SpatialInertia<double> M_Sean_Curtis =
-      CalcSolidTetrahedronSpatialInertia(density, p, q, r);
-  const SpatialInertia<double> M_Mitiguy =
+  const SpatialInertia<double> M_BB0_expected =
+      CalcTetrahedronSpatialInertiaAboutVertex(density, p, q, r);
+  const SpatialInertia<double> M_BB0 =
       SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           density, p, q, r);
 
   // An empirical tolerance: two bits = 2^2 times machine epsilon.
   const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
-  EXPECT_TRUE(CompareMatrices(M_Sean_Curtis.CopyToFullMatrix6(),
-                                  M_Mitiguy.CopyToFullMatrix6(), kTolerance));
-
-  // Ensure that if two vertices are coincident, an exception is thrown.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          density, Vector3<double>::Zero(), q, r),
-      "[^]* A solid tetrahedron's volume is zero or near zero.");
+  EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
+                              M_BB0.CopyToFullMatrix6(), kTolerance));
 }
+
+// Test spatial inertia of a solid tetrahedron about an arbitrary point A.
+GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
+  const double density = 0.54321;
+  Vector3<double> p_AB0(0, 0, 0);
+  Vector3<double> p_AB1(1, 1, 0);
+  Vector3<double> p_AB2(0, 2, 0);
+  Vector3<double> p_AB3(0, 3, 3);
+
+  // Check a degenerate case in which p_AB0 is the zero vector.
+  SpatialInertia<double> M_BA_expected =
+      CalcTetrahedronSpatialInertiaAboutVertex(density, p_AB1, p_AB2, p_AB3);
+  SpatialInertia<double> M_BA =
+      SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+          density, p_AB0, p_AB1, p_AB2, p_AB3);
+
+  // An empirical tolerance: two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
+                              M_BA.CopyToFullMatrix6(), kTolerance));
+
+  // Check a more general case in which p_AB0 is a non-zero vector.
+  p_AB0 = Vector3<double>(0.1, 0.4, 0.5);
+  p_AB1 += p_AB0;
+  p_AB2 += p_AB0;
+  p_AB3 += p_AB0;
+  M_BA_expected.ShiftInPlace(-p_AB0);
+  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+          density, p_AB0, p_AB1, p_AB2, p_AB3);
+
+  // Compare M_BA and M_BA_expected (field-by-field and in totality).
+  EXPECT_EQ(M_BA_expected.get_mass(), M_BA.get_mass());
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.get_com(),
+                              M_BA.get_com(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(
+      M_BA_expected.get_unit_inertia().CopyToFullMatrix3(),
+      M_BA.get_unit_inertia().CopyToFullMatrix3(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
+                              M_BA.CopyToFullMatrix6(), kTolerance));
+}
+
 
 // Test the construction from the mass, center of mass, and unit inertia of a
 // body. Also tests:

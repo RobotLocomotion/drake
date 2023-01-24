@@ -120,23 +120,47 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
+    const T& density,
+    const Vector3<T>& p0,
+    const Vector3<T>& p1,
+    const Vector3<T>& p2,
+    const Vector3<T>& p3) {
+  // This method calculates a tetrahedron B's spatial inertia M_BA about a point
+  // A by forming 3 new position vectors, namely the position vectors from
+  // B's vertex B0 to vertices B1, B2, B3 (B's other three vertices).
+  const Vector3<T> p_B0B1 = p1 - p0;  // Position from vertex B0 to vertex B1.
+  const Vector3<T> p_B0B2 = p2 - p0;  // Position from vertex B0 to vertex B2.
+  const Vector3<T> p_B0B3 = p3 - p0;  // Position from vertex B0 to vertex B3.
+
+  // Calculate B's volume and mass.
+  const T volume = (1.0 / 6.0) * p_B0B1.cross(p_B0B2).dot(p_B0B3);
+  const T mass = density * volume;
+
+  // Calculate B's center of mass position from point A.
+  const Vector3<T> p_B0Bcm = 0.25 * (p_B0B1 + p_B0B2 + p_B0B3);
+  const Vector3<T>& p_AB0 = p0;  // Alias with monogram notation to clarify.
+  const Vector3<T> p_ABcm = p_AB0 + p_B0Bcm;
+
+  // Calculate B's unit inertia about point A.
+  const UnitInertia<T> G_BA =
+      UnitInertia<T>::SolidTetrahedronAboutPoint(p0, p1, p2, p3);
+
+  // Form and return B's spatial inertia about point A.
+  return SpatialInertia<T>(mass, p_ABcm, G_BA);
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
     const T& density,
-    const Vector3<T>& p, const Vector3<T>& q, const Vector3<T>& r) {
-  const T volume = (1.0 / 6.0) * p.cross(q).dot(r);
-
-  // Ensure volume is sufficiently far from zero. For a given p, q, r,
-  // the maximum volume = |p| |q| |r| / 6 occurs when p, q, r are orthogonal.
-  // TODO(Mitiguy) Improve this test. If |p| = 0, volume = 0 (test is useless).
-  constexpr double kTolerance = 0.25 * std::numeric_limits<double>::epsilon();
-  if (volume * volume <= kTolerance * p.dot(p) * q.dot(q) * r.dot(r)) {
-    std::string error_message = fmt::format("{}(): A solid tetrahedron's "
-      "volume is zero or near zero.", __func__);
-    throw std::logic_error(error_message);
-  }
+    const Vector3<T>& p1,
+    const Vector3<T>& p2,
+    const Vector3<T>& p3) {
+  const T volume = (1.0 / 6.0) * p1.cross(p2).dot(p3);
   const T mass = density * volume;
-  const Vector3<T> p_BoBcm_B = 0.25 * (p + q + r);
-  UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidTetrahedronAboutVertex(p, q, r);
+  const Vector3<T> p_BoBcm_B = 0.25 * (p1 + p2 + p3);
+  const UnitInertia<T> G_BBo_B =
+      UnitInertia<T>::SolidTetrahedronAboutVertex(p1, p2, p3);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 
