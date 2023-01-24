@@ -10,6 +10,7 @@
 #include <variant>
 #include <vector>
 
+#include "bindings/pydrake/common/cpp_template_pybind.h"
 #include "bindings/pydrake/pydrake_pybind.h"
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
@@ -291,7 +292,7 @@ void DefReprUsingSerialize(PyClass* ppy_class) {
   ppy_class->def("__repr__",
       [names = std::move(archive.property_names())](py::object self) {
         std::ostringstream result;
-        result << py::str(self.attr("__class__").attr("__name__"));
+        result << py::str(internal::PrettyClassName(self.attr("__class__")));
         result << "(";
         bool first = true;
         for (const std::string& name : names) {

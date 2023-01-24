@@ -122,3 +122,95 @@ def _wrap_to_match_input_shape(f):
             return out
 
     return wrapper
+
+
+class _MangledName:
+    """Provides recipes for mangling and demangling names for templated code.
+
+    For example, the template instantiation expression LeafSystem_[AutoDiffXd]
+    refers to Python class named LeafSystem_𝓣AutoDiffXd𝓤. We refer to the
+    former as the "pretty" name and the latter as the "mangled" name.
+
+    We need to use name mangling because Python class and function names must
+    be valid identifiers (i.e., alphanumeric characters, with underscores).
+    The pretty name LeafSystem_[AutoDiffXd] is a valid *expression* but it is
+    not a valid *identifier*. In cases where an expression is allowed, we'll
+    prefer to use the pretty name, but in cases where we must use an identifer
+    (e.g., when declaring a class), we must use the mangled name.
+
+    To make code transformations easier, we'll create a bijection between
+    pretty names and mangled names. Any disallowed charcter that might appear
+    in a pretty name is mapped to an arcane unicode character in the mangled
+    name. (Refer to the constants below for details.)
+
+    See pretty_class_name() below for a demangling function to help display
+    "pretty" class names to the user.
+    """
+
+    # This is the mangled substition for "[" in a pretty name.
+    # This letter is 'U+1D4E3 MATHEMATICAL BOLD SCRIPT CAPITAL T'.
+    UNICODE_LEFT_BRACKET = "𝓣"
+
+    # This is the mangled substition for "]" in a pretty name.
+    # This letter is 'U+1D4E4 MATHEMATICAL BOLD SCRIPT CAPITAL U'.
+    UNICODE_RIGHT_BRACKET = "𝓤"
+
+    # This is the mangled substition for "," in a pretty name.
+    # This letter is 'U+1D4EC MATHEMATICAL BOLD SCRIPT SMALL C'.
+    UNICODE_COMMA = "𝓬"
+
+    # This is the mangled substition for "." in a pretty name.
+    # This letter is 'U+1D4F9 MATHEMATICAL BOLD SCRIPT SMALL P'.
+    UNICODE_PERIOD = "𝓹"
+
+    @staticmethod
+    def mangle(name: str) -> str:
+        """Given a pretty name (or partially-mangled name), returns the
+        corresponding fully-mangled name.
+
+        For example, ``LeafSystem_[AutoDiffXd]`` as input becomes
+        ``LeafSystem_𝓣AutoDiffXd𝓤`` as the return value.
+
+        Names that do not need mangling (i.e., are already valid identifiers)
+        are returned unchanged.
+
+        If part of the name is already partially-mangled, it will remain so.
+        For example, ``Image[PixelType𝓹kRgba8U]`` as input becomes
+        ``Image𝓣PixelType𝓹kRgba8U𝓤`` as the return value. This implies
+        that `demangle(mangle(name)) == name` does not always hold true.
+        """
+        name = name.replace("[", _MangledName.UNICODE_LEFT_BRACKET)
+        name = name.replace("]", _MangledName.UNICODE_RIGHT_BRACKET)
+        name = name.replace(",", _MangledName.UNICODE_COMMA)
+        name = name.replace(".", _MangledName.UNICODE_PERIOD)
+        assert ("_" + name).isidentifier(), name
+        return name
+
+    @staticmethod
+    def demangle(name: str) -> str:
+        """Given a mangled name, returns the pretty name.
+        """
+        name = name.replace(_MangledName.UNICODE_LEFT_BRACKET, "[")
+        name = name.replace(_MangledName.UNICODE_RIGHT_BRACKET, "]")
+        name = name.replace(_MangledName.UNICODE_COMMA, ",")
+        name = name.replace(_MangledName.UNICODE_PERIOD, ".")
+        return name
+
+
+def pretty_class_name(cls: type, *, use_qualname: bool = False) -> str:
+    """Given a class, returns its ``cls.__name__`` respelled to be suitable for
+    display to a user, in particular by respelling C++ template arguments using
+    their conventional ``FooBar_[AutoDiffXd]`` expression spelling instead of
+    the mangled unicode name. Note that the returned name might not be a valid
+    Python identifier, though it should still be a valid Python expression.
+
+    If the class is not a template, simply returns ``cls.__name__`` unchanged.
+
+    When ``use_qualname`` is true, uses ``cls.__qualname__`` instead of
+    ``cls.__name__``.
+    """
+    if use_qualname:
+        name = cls.__qualname__
+    else:
+        name = cls.__name__
+    return _MangledName.demangle(name)

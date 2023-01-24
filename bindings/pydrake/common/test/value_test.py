@@ -1,6 +1,7 @@
 import copy
 import unittest
 
+from pydrake.common import pretty_class_name
 from pydrake.common.cpp_param import List
 from pydrake.common.value import AbstractValue, Value
 
@@ -42,8 +43,11 @@ class TestValue(unittest.TestCase):
         tests a move-only class type."""
         obj = MoveOnlyType(10)
         self.assertEqual(
+            pretty_class_name(Value[MoveOnlyType]),
+            "Value[MoveOnlyType]")
+        self.assertRegex(
             str(Value[MoveOnlyType]),
-            "<class 'pydrake.common.value.Value[MoveOnlyType]'>")
+            "<class 'pydrake.*Value.*MoveOnlyType")
         # This *always* clones `obj`.
         value = Value[MoveOnlyType](obj)
         self.assertTrue(value.get_value() is not obj)

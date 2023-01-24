@@ -1,4 +1,5 @@
 import pydrake.autodiffutils as _ad
+from pydrake.common import pretty_class_name as _pretty_class_name
 import pydrake.symbolic as _sym
 
 
@@ -17,8 +18,7 @@ def _remove_float_suffix(typename):
 def _spatial_vector_repr(rotation_name, translation_name):
 
     def repr_with_closure(self):
-        cls = type(self)
-        cls_name = _remove_float_suffix(cls.__name__)
+        cls_name = _remove_float_suffix(_pretty_class_name(type(self)))
         rotation = self.rotational().tolist()
         translation = self.translational().tolist()
         return (
