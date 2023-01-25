@@ -80,6 +80,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "separating_plane_test",
+    deps = [
+        ":separating_plane",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
     name = "cspace_free_polytope_test",
     deps = [
         ":c_iris_test_utilities",

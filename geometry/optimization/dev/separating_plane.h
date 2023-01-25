@@ -95,11 +95,13 @@ void CalcPlane(const VectorX<T>& decision_variables,
       }
       const Vector3<T> a_constant =
           decision_variables.template segment<3>(var_count);
+      var_count += 3;
       const VectorX<T> b_coeff =
           decision_variables.segment(var_count, s_for_plane.rows());
       var_count += s_for_plane.rows();
       const T& b_constant = decision_variables(var_count);
       var_count++;
+      DRAKE_DEMAND(var_count == decision_variables.rows());
       if constexpr (std::is_same_v<T, double> && std::is_same_v<U, double> &&
                     std::is_same_v<V, double>) {
         *a_val = a_coeff * s_for_plane + a_constant;
