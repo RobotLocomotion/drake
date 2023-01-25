@@ -34,6 +34,7 @@ drake_cc_package_library(
         ":make_arm_controller_model",
         ":move_ik_demo_base",
         ":moving_average_filter",
+        ":robot_plan_interpolator",
         ":robot_plan_utils",
         ":zero_force_driver",
         ":zero_force_driver_functions",
@@ -51,7 +52,7 @@ drake_cc_library(
     deps = [
         ":robot_plan_utils",
         "//lcmtypes:robot_plan",
-        "//manipulation/planner:constraint_relaxing_ik",
+        "//multibody/inverse_kinematics:constraint_relaxing_ik",
         "//multibody/parsing",
         "//multibody/plant",
     ],
@@ -117,6 +118,18 @@ drake_cc_library(
         "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",
+    ],
+)
+
+drake_cc_library(
+    name = "robot_plan_interpolator",
+    srcs = ["robot_plan_interpolator.cc"],
+    hdrs = ["robot_plan_interpolator.h"],
+    deps = [
+        "//common/trajectories:piecewise_polynomial",
+        "//lcmtypes:robot_plan",
+        "//multibody/parsing",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -208,6 +221,19 @@ drake_cc_googletest(
         "//multibody/plant",
         "//systems/framework:diagram_builder",
         "//systems/primitives:shared_pointer_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "robot_plan_interpolator_test",
+    data = [
+        "//examples/kuka_iiwa_arm:models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":robot_plan_interpolator",
+        "//common:find_resource",
+        "//systems/framework",
     ],
 )
 

@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/multibody/inverse_kinematics/constraint_relaxing_ik.h"
 
 #include <memory>
 #include <stdexcept>
@@ -9,9 +9,9 @@
 #include "drake/solvers/solve.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 namespace {
+
 constexpr int kDefaultRandomSeed = 1234;
 }  // namespace
 
@@ -20,7 +20,7 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
     const std::string& end_effector_link_name)
     : rand_generator_(kDefaultRandomSeed),
       plant_(0) {
-  const auto models = multibody::Parser(&plant_).AddModels(model_path);
+  const auto models = Parser(&plant_).AddModels(model_path);
   DRAKE_THROW_UNLESS(models.size() == 1);
   const auto model_instance = models[0];
 
@@ -28,7 +28,7 @@ ConstraintRelaxingIk::ConstraintRelaxingIk(
   // Check if our robot is welded to the world.  If not, try welding the first
   // link.
   if (plant_.GetBodiesWeldedTo(plant_.world_body()).size() <= 1) {
-    const std::vector<multibody::BodyIndex> bodies =
+    const std::vector<BodyIndex> bodies =
         plant_.GetBodyIndices(model_instance);
     plant_.WeldFrames(plant_.world_frame(),
                       plant_.get_body(bodies[0]).body_frame());
@@ -167,7 +167,7 @@ bool ConstraintRelaxingIk::SolveIk(
     VectorX<double>* q_res) {
   DRAKE_DEMAND(q_res != nullptr);
 
-  multibody::InverseKinematics ik(plant_);
+  InverseKinematics ik(plant_);
 
   // Adds a position constraint.
   Vector3<double> pos_lb = waypoint.pose.translation() - pos_tol;
@@ -194,6 +194,5 @@ bool ConstraintRelaxingIk::SolveIk(
   return true;
 }
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

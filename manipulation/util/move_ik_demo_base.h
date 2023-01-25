@@ -8,8 +8,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/lcmt_robot_plan.hpp"
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/inverse_kinematics/constraint_relaxing_ik.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
@@ -86,7 +86,7 @@ class MoveIkDemoBase {
   std::vector<std::string> joint_names_;
   Eigen::VectorXd joint_velocity_limits_;
   int status_count_{0};
-  planner::ConstraintRelaxingIk constraint_relaxing_ik_;
+  multibody::ConstraintRelaxingIk constraint_relaxing_ik_;
 };
 
 }  // namespace util
