@@ -505,7 +505,6 @@ class MathematicalProgram {
   /**
    * Overloads NewSosPolynomial, except the Gramian matrix Q is an
    * input instead of an output.
-   * @pre `gramian` is a symmetric matrix.
    */
   symbolic::Polynomial NewSosPolynomial(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
