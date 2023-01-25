@@ -1,28 +1,32 @@
-#include "planning/test/planning_test_helpers.h"
+#include "drake/planning/test/planning_test_helpers.h"
 
 #include <memory>
 #include <vector>
 
+#include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/tree/revolute_joint.h"
-#include "common/anzu_model_directives.h"
-#include "planning/robot_diagram_builder.h"
+#include "drake/planning/robot_diagram_builder.h"
 
-namespace anzu {
+namespace drake {
 namespace planning {
-using drake::geometry::Sphere;
-using drake::math::RigidTransformd;
-using drake::multibody::CoulombFriction;
-using drake::multibody::ModelInstanceIndex;
-using drake::multibody::MultibodyPlant;
-using drake::multibody::RevoluteJoint;
-using drake::multibody::RigidBody;
-using drake::multibody::SpatialInertia;
-using drake::planning::ConfigurationDistanceFunction;
+namespace test {
+
+using geometry::Sphere;
+using math::RigidTransformd;
+using multibody::CoulombFriction;
+using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
+using multibody::RevoluteJoint;
+using multibody::RigidBody;
+using multibody::SpatialInertia;
+using multibody::parsing::ModelDirectives;
+using multibody::parsing::ProcessModelDirectives;
 
 std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
-    const drake::multibody::parsing::ModelDirectives& directives) {
-  auto builder = common::MakeRobotDiagramBuilderFromAnzuModelDirectives(
-      directives);
+    const ModelDirectives& directives) {
+  auto builder = std::make_unique<RobotDiagramBuilder<double>>();
+  auto& parser = builder->mutable_parser();
+  ProcessModelDirectives(directives, &parser);
   return builder->BuildDiagram();
 }
 
@@ -48,12 +52,11 @@ ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n, int num_geo) {
     bodies.push_back(
         &plant->AddRigidBody(fmt::format("b{}", k), instance,
                              SpatialInertia<double>::MakeUnitary()));
-    if (plant->geometry_source_is_registered()) {
-      for (int i = 0; i < num_geo; ++i) {
-        plant->RegisterCollisionGeometry(
-            *bodies.back(), RigidTransformd::Identity(), Sphere(0.01),
-            fmt::format("g{}", i), CoulombFriction<double>());
-      }
+    DRAKE_DEMAND(plant->geometry_source_is_registered());
+    for (int i = 0; i < num_geo; ++i) {
+      plant->RegisterCollisionGeometry(
+          *bodies.back(), RigidTransformd::Identity(), Sphere(0.01),
+          fmt::format("g{}", i), CoulombFriction<double>());
     }
   }
   for (int k = 1; k < n; ++k) {
@@ -62,5 +65,7 @@ ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n, int num_geo) {
   }
   return instance;
 }
+
+}  // namespace test
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
