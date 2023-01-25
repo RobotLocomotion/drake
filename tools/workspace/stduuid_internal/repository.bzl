@@ -9,8 +9,8 @@ def stduuid_internal_repository(
     github_archive(
         name = name,
         repository = "mariusbancila/stduuid",
-        commit = "3afe7193facd5d674de709fccc44d5055e144d7a",
-        sha256 = "e11f9bf30c7f9c03d8e9a3a3fd7fe016eb5d8d9b89a2fe2c11b5f049e1d97916",  # noqa
+        commit = "v1.2.3",
+        sha256 = "b1176597e789531c38481acbbed2a6894ad419aab0979c10410d59eb0ebf40d3",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/vendor.patch",
