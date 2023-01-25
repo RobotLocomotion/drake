@@ -1374,27 +1374,35 @@ GTEST_TEST(MultibodyPlantTest, AutoBodySceneGraphRegistration) {
 // collision because the `expected_pairs` only accounts for collision
 // geometries.
 GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
-  SphereChainScenario scenario(3);
-  scenario.Finalize();
-  std::vector<geometry::PenetrationAsPointPair<double>> contacts =
-      scenario.ComputePointPairPenetration();
+  for (bool do_filters : {false, true}) {
+    SphereChainScenario scenario(3);
+    scenario.mutable_plant()->set_adjacent_bodies_collision_filters(do_filters);
+    scenario.Finalize();
+    std::vector<geometry::PenetrationAsPointPair<double>> contacts =
+        scenario.ComputePointPairPenetration();
 
-  // The expected collisions.
-  const std::set<std::pair<GeometryId, GeometryId>>& expected_pairs =
-      scenario.unfiltered_collisions();
-  ASSERT_EQ(contacts.size(), expected_pairs.size());
-
-  auto expect_pair_in_set = [&expected_pairs](GeometryId id1, GeometryId id2) {
-    auto pair1 = std::make_pair(id1, id2);
-    auto pair2 = std::make_pair(id2, id1);
-    if (expected_pairs.count(pair1) == 0 && expected_pairs.count(pair2) == 0) {
-      GTEST_FAIL() << "The pair " << id1 << ", " << id2
-                   << " is not in the expected set";
+    // The expected collisions.
+    const std::set<std::pair<GeometryId, GeometryId>>& expected_pairs =
+        scenario.unfiltered_collisions();
+    if (do_filters) {
+      ASSERT_EQ(contacts.size(), expected_pairs.size());
+      auto expect_pair_in_set = [&expected_pairs](
+          GeometryId id1, GeometryId id2) {
+        auto pair1 = std::make_pair(id1, id2);
+        auto pair2 = std::make_pair(id2, id1);
+        if (expected_pairs.count(pair1) == 0 &&
+            expected_pairs.count(pair2) == 0) {
+          GTEST_FAIL() << "The pair " << id1 << ", " << id2
+                       << " is not in the expected set";
+        }
+      };
+      for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
+        const auto& point_pair = contacts[i];
+        expect_pair_in_set(point_pair.id_A, point_pair.id_B);
+      }
+    } else {
+      ASSERT_GT(contacts.size(), expected_pairs.size());
     }
-  };
-  for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-    const auto& point_pair = contacts[i];
-    expect_pair_in_set(point_pair.id_A, point_pair.id_B);
   }
 }
 

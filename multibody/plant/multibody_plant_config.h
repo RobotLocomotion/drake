@@ -22,6 +22,7 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(contact_model));
     a->Visit(DRAKE_NVP(discrete_contact_solver));
     a->Visit(DRAKE_NVP(contact_surface_representation));
+    a->Visit(DRAKE_NVP(adjacent_bodies_collision_filters));
   }
 
   /// Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
@@ -62,6 +63,9 @@ struct MultibodyPlantConfig {
   /// chosen above; keep this consistent with
   /// MultibodyPlant::GetDefaultContactSurfaceRepresentation().
   std::string contact_surface_representation{"polygon"};
+
+  /// Configures the MultibodyPlant::set_adjacent_bodies_collision_filters().
+  bool adjacent_bodies_collision_filters{true};
 };
 
 }  // namespace multibody

@@ -19,6 +19,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, BasicTest) {
   config.stiction_tolerance = 0.004;
   config.contact_model = "hydroelastic";
   config.contact_surface_representation = "polygon";
+  config.adjacent_bodies_collision_filters = false;
 
   drake::systems::DiagramBuilder<double> builder;
   auto result = AddMultibodyPlant(config, &builder);
@@ -27,6 +28,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, BasicTest) {
             ContactModel::kHydroelasticsOnly);
   EXPECT_EQ(result.plant.get_contact_surface_representation(),
             geometry::HydroelasticContactRepresentation::kPolygon);
+  EXPECT_EQ(result.plant.get_adjacent_bodies_collision_filters(), false);
   // There is no getter for penetration_allowance nor stiction_tolerance, so we
   // can't test them.
 }
@@ -38,6 +40,7 @@ stiction_tolerance: 0.004
 contact_model: hydroelastic
 discrete_contact_solver: sap
 contact_surface_representation: triangle
+adjacent_bodies_collision_filters: false
 )""";
 
 GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
@@ -51,6 +54,7 @@ GTEST_TEST(MultibodyPlantConfigFunctionsTest, YamlTest) {
             geometry::HydroelasticContactRepresentation::kTriangle);
   EXPECT_EQ(result.plant.get_discrete_contact_solver(),
             DiscreteContactSolver::kSap);
+  EXPECT_EQ(result.plant.get_adjacent_bodies_collision_filters(), false);
   // There is no getter for penetration_allowance nor stiction_tolerance, so we
   // can't test them.
 }
