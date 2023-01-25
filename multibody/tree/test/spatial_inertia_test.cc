@@ -247,69 +247,33 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
       "[^]* A solid sphere's radius = .* is negative or zero.");
 }
 
-// Helper function to test the spatial inertia of a tetrahedron.
-SpatialInertia<double> CalcTetrahedronSpatialInertiaAboutVertex(
-    const double density,
-    const Vector3<double>& p,
-    const Vector3<double>& q,
-    const Vector3<double>& r) {
-  const double volume = p.cross(q).dot(r) / 6.0;
-  const double mass = density * volume;
-  const Vector3<double> p_GoGcm = (p + q + r) / 4.0;
-
-  // The code below if from Sean Curtis and uses the algorithms:
-  // https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
-  // http://number-none.com/blow/inertia/bb_inertia.doc
-  // The co-variance matrix of a canonical tetrahedron with vertices at
-  // (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1) with assumed *unit* density.
-  Matrix3<double> C_canonical;
-  // clang-format off
-  C_canonical << 1 / 60.0,  1 / 120.0, 1 / 120.0,
-                 1 / 120.0, 1 / 60.0,  1 / 120.0,
-                 1 / 120.0, 1 / 120.0, 1 / 60.0;
-  // clang-format on
-
-  // The *transpose* of the affine transformation takes us from the
-  // canonical co-variance matrix to the matrix for the particular tet.
-  Matrix3<double> A_T = Matrix3<double>::Zero();
-  A_T.row(0) = p;
-  A_T.row(1) = q;
-  A_T.row(2) = r;
-  // We're computing C += det(A)·ACA?. Fortunately, det(A) is equal to 6V.
-  const Matrix3<double> C = 6 * A_T.transpose() * C_canonical * A_T;
-
-  // We can compute I = C.trace * 13 - C. Two key points:
-  //  1. We don't want I, we want G, the unit inertia. Our computation of C is
-  //     *mass* weighted with an implicit assumption of unit density. So, to
-  //     make it a *unit* inertia, we must divide by mass = ?V = 1 * V = V.
-  //  2. G is symmetric, so we'll forego doing the full matrix multiplication
-  //     and go get the six terms we actually care about.
-  const double trace_C = C.trace();
-  const double Ixx = trace_C - C(0, 0);
-  const double Iyy = trace_C - C(1, 1);
-  const double Izz = trace_C - C(2, 2);
-  const double Ixy = -C(1, 0);
-  const double Ixz = -C(2, 0);
-  const double Iyz = -C(2, 1);
-  const UnitInertia G_GGo_G(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
-  return SpatialInertia<double>{mass, p_GoGcm, G_GGo_G};
-}
-
-// Test spatial inertia of a solid tetrahedron about its vertex.
+// Test spatial inertia of a solid tetrahedron B about its vertex B0.
 GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   const double density = 0.12345;
-  const Vector3<double> p(1, 0, 0);
-  const Vector3<double> q(0, 2, 0);
-  const Vector3<double> r(0, 0, 3);
+  const Vector3<double> p1(1, 0, 0);  // Position vector from B0 to vertex B1.
+  const Vector3<double> p2(0, 2, 0);  // Position vector from B0 to vertex B2.
+  const Vector3<double> p3(0, 0, 3);  // Position vector from B0 to vertex B3.
 
-  const SpatialInertia<double> M_BB0_expected =
-      CalcTetrahedronSpatialInertiaAboutVertex(density, p, q, r);
-  const SpatialInertia<double> M_BB0 =
+  const double volume = 1.0 / 6.0 * p1.cross(p2).dot(p3);
+  const double mass = density * volume;
+  const Vector3<double> p_B0Bcm = 0.25 * (p1 + p2 + p3);
+  const UnitInertia<double> G_BB0 =
+      UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p2, p3);
+  SpatialInertia<double> M_BB0_expected(mass, p_B0Bcm, G_BB0);
+  SpatialInertia<double> M_BB0 =
       SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          density, p, q, r);
+          density, p1, p2, p3);
 
   // An empirical tolerance: two bits = 2^2 times machine epsilon.
   const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
+                              M_BB0.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure mass becomes negative if the first two arguments are switched.
+  M_BB0_expected = SpatialInertia<double>(-mass, p_B0Bcm, G_BB0,
+      /* skip_validity_check = */ true);
+  M_BB0 = SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p2, p1, p3, /* skip_validity_check = */ true);
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
 }
@@ -324,7 +288,8 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
 
   // Check a degenerate case in which p_AB0 is the zero vector.
   SpatialInertia<double> M_BA_expected =
-      CalcTetrahedronSpatialInertiaAboutVertex(density, p_AB1, p_AB2, p_AB3);
+     SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p_AB1, p_AB2, p_AB3);
   SpatialInertia<double> M_BA =
       SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
           density, p_AB0, p_AB1, p_AB2, p_AB3);
@@ -342,18 +307,20 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   M_BA_expected.ShiftInPlace(-p_AB0);
   M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
           density, p_AB0, p_AB1, p_AB2, p_AB3);
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
+                              M_BA.CopyToFullMatrix6(), kTolerance));
 
-  // Compare M_BA and M_BA_expected (field-by-field and in totality).
-  EXPECT_EQ(M_BA_expected.get_mass(), M_BA.get_mass());
-  EXPECT_TRUE(CompareMatrices(M_BA_expected.get_com(),
-                              M_BA.get_com(), kTolerance));
-  EXPECT_TRUE(CompareMatrices(
-      M_BA_expected.get_unit_inertia().CopyToFullMatrix3(),
-      M_BA.get_unit_inertia().CopyToFullMatrix3(), kTolerance));
+  // Ensure mass becomes negative if the two arguments are switched.
+  const double mass = M_BA_expected.get_mass();
+  const Vector3<double> p_ABcm = M_BA_expected.get_com();
+  const UnitInertia<double> G_BA = M_BA_expected.get_unit_inertia();
+  M_BA_expected = SpatialInertia<double>(-mass, p_ABcm, G_BA,
+                                         /* skip_validity_check = */ true);
+  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(density,
+      p_AB0, p_AB1, p_AB3, p_AB2, /* skip_validity_check = */ true);
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
 }
-
 
 // Test the construction from the mass, center of mass, and unit inertia of a
 // body. Also tests:

@@ -121,47 +121,33 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
 
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
-    const T& density,
-    const Vector3<T>& p0,
-    const Vector3<T>& p1,
-    const Vector3<T>& p2,
-    const Vector3<T>& p3) {
-  // This method calculates a tetrahedron B's spatial inertia M_BA about a point
-  // A by forming 3 new position vectors, namely the position vectors from
-  // B's vertex B0 to vertices B1, B2, B3 (B's other three vertices).
+    const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
+    const Vector3<T>& p2, const Vector3<T>& p3,
+    const bool skip_validity_check) {
+  // This method calculates a tetrahedron B's spatial inertia M_BA about a
+  // point A by forming 3 new position vectors, namely the position vectors
+  // from B's vertex B0 to vertices B1, B2, B3 (B's other three vertices).
   const Vector3<T> p_B0B1 = p1 - p0;  // Position from vertex B0 to vertex B1.
   const Vector3<T> p_B0B2 = p2 - p0;  // Position from vertex B0 to vertex B2.
   const Vector3<T> p_B0B3 = p3 - p0;  // Position from vertex B0 to vertex B3.
 
-  // Calculate B's volume and mass.
-  const T volume = (1.0 / 6.0) * p_B0B1.cross(p_B0B2).dot(p_B0B3);
-  const T mass = density * volume;
-
-  // Calculate B's center of mass position from point A.
-  const Vector3<T> p_B0Bcm = 0.25 * (p_B0B1 + p_B0B2 + p_B0B3);
-  const Vector3<T>& p_AB0 = p0;  // Alias with monogram notation to clarify.
-  const Vector3<T> p_ABcm = p_AB0 + p_B0Bcm;
-
-  // Calculate B's unit inertia about point A.
-  const UnitInertia<T> G_BA =
-      UnitInertia<T>::SolidTetrahedronAboutPoint(p0, p1, p2, p3);
-
-  // Form and return B's spatial inertia about point A.
-  return SpatialInertia<T>(mass, p_ABcm, G_BA);
+  // Form B's spatial inertia about vertex B0 and then shifts to point A.
+  SpatialInertia<T> M_BB0 =
+      SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
+          density, p_B0B1, p_B0B2, p_B0B3, skip_validity_check);
+  return M_BB0.ShiftInPlace(-p0, skip_validity_check);  // Returns M_BA.
 }
 
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
-    const T& density,
-    const Vector3<T>& p1,
-    const Vector3<T>& p2,
-    const Vector3<T>& p3) {
+    const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
+    const Vector3<T>& p3, const bool skip_validity_check) {
   const T volume = (1.0 / 6.0) * p1.cross(p2).dot(p3);
   const T mass = density * volume;
-  const Vector3<T> p_BoBcm_B = 0.25 * (p1 + p2 + p3);
-  const UnitInertia<T> G_BBo_B =
+  const Vector3<T> p_BoBcm = 0.25 * (p1 + p2 + p3);
+  const UnitInertia<T> G_BBo =
       UnitInertia<T>::SolidTetrahedronAboutVertex(p1, p2, p3);
-  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+  return SpatialInertia<T>(mass, p_BoBcm, G_BBo, skip_validity_check);
 }
 
 template <typename T>

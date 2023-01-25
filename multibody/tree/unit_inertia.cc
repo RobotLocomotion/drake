@@ -98,6 +98,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   return UnitInertia<T>::AxiallySymmetric(Izz, Ixx, unit_vector);
 }
 
+namespace {
 // Returns a 3x3 matrix whose upper-triangular part contains the outer product
 // of vector a * vector b [i.e., a * b.transpose()] and whose lower-triangular
 // part is uninitialized.
@@ -106,7 +107,7 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
 // @note This function is an efficient way to calculate outer-products that
 //   contribute via a sum to a symmetric matrix.
 template <typename T>
-static Matrix3<T> UpperTriangularOuterProduct(
+Matrix3<T> UpperTriangularOuterProduct(
     const Eigen::Ref<const Vector3<T>>& a,
     const Eigen::Ref<const Vector3<T>>& b) {
   Matrix3<T> M;
@@ -115,13 +116,12 @@ static Matrix3<T> UpperTriangularOuterProduct(
                                                   M(2, 2) = a(2) * b(2);
   return M;
 }
+}  // namespace
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutPoint(
-      const Vector3<T>& p0,
-      const Vector3<T>& p1,
-      const Vector3<T>& p2,
-      const Vector3<T>& p3) {
+    const Vector3<T>& p0, const Vector3<T>& p1, const Vector3<T>& p2,
+    const Vector3<T>& p3) {
   // This method calculates a tetrahedron B's unit inertia G_BA about a point A
   // by first calculating G_BB0 (B's unit inertia about vertex B0 of B).
   // To calculate G_BB0, 3 new position vectors are formed, namely the position
@@ -136,19 +136,17 @@ UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutPoint(
   const Vector3<T> p_B0Bcm = 0.25 * (p_B0B1 + p_B0B2 + p_B0B3);
   const Vector3<T>& p_AB0 = p0;  // Alias with monogram notation to clarify.
   const Vector3<T> p_ABcm = p_AB0 + p_B0Bcm;
-  RotationalInertia<T>& G_BA = G_BB0.ShiftToThenAwayFromCenterOfMassInPlace(
-      /* mass = */ 1, p_B0Bcm, p_ABcm);  // Returns G_BA;
-  return UnitInertia<T>(G_BA);
+  RotationalInertia<T>& I_BA = G_BB0.ShiftToThenAwayFromCenterOfMassInPlace(
+      /* mass = */ 1, p_B0Bcm, p_ABcm);
+  return UnitInertia<T>(I_BA);  // Returns G_BA (B's unit inertia about A).
 }
 
 template <typename T>
 UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
-      const Vector3<T>& p1,
-      const Vector3<T>& p2,
-      const Vector3<T>& p3) {
-  // This method calculates G_BB0 (a tetrahedron B's unit inertia about a vertex
-  // B0 of B) using the position vectors from vertex B0 to B's three other
-  // vertices, herein named P, Q, R to be consistent with the
+    const Vector3<T>& p1, const Vector3<T>& p2, const Vector3<T>& p3) {
+  // This method calculates G_BB0 (a tetrahedron B's unit inertia about a
+  // vertex B0 of B) using the position vectors from vertex B0 to B's three
+  // other vertices, herein named P, Q, R to be consistent with the
   // tetrahedon inertia formulas from the mass/inertia appendix in
   // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
   //                   For professional engineers and scientists,"

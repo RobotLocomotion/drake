@@ -194,41 +194,66 @@ class SpatialInertia {
   /// a point A, from which position vectors to B's 4 vertices B0, B1, B2, B3
   /// are measured (position vectors are all expressed in a common frame E).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] p0 position vector from point A to vertex B0, expressed in E.
-  /// @param[in] p1 position vector from point A to vertex B1, expressed in E.
-  /// @param[in] p2 position vector from point A to vertex B2, expressed in E.
-  /// @param[in] p3 position vector from point A to vertex B3, expressed in E.
+  /// @param[in] p0 position vector p_AB0_E from point A to B0, expressed in E.
+  /// @param[in] p1 position vector p_AB1_E from point A to B1, expressed in E.
+  /// @param[in] p2 position vector p_AB2_E from point A to B2, expressed in E.
+  /// @param[in] p3 position vector p_AB3_E from point A to B3, expressed in E.
+  /// @param[in] skip_validity_check If true, the returned spatial inertia is
+  /// not checked for valid mass and inertia properties. If false, the returned
+  /// spatial inertia must be valid or otherwise an exception is thrown.
+  /// The default value of skip_validity_check is false.
   /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
-  /// @note A negative volume (and mass) occurs if vertices B0, B1, B2 define a
+  /// @note In the common case, point A is Eo (the origin of the expressed-in
+  /// frame E). The example below has point A as Wo (origin of world frame W).
+  /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
   /// triangle with its right-handed normal pointing inward (toward vertex B3).
   /// A zero volume means B is a triangle, line, or point (not a tetrahedron).
+  /// A negative volume occurs if the triangle defined by B0, B1, B2 has its
+  /// right-handed normal pointing outward (away from vertex B3).
   /// @see SolidTetrahedronAboutVertexWithDensity() to efficiently calculate a
   /// spatial inertia about a vertex of B.
+  /// @code{.cc}
+  /// // Example: For a tetrahedon whose vertices are measured and expressed in
+  /// // the world frame W, form B's spatial inertia about Wo, expressed in W.
+  /// double density = 1000;
+  /// Vector3<double> p_WoB0_W(1, 0, 0);
+  /// Vector3<double> p_WoB1_W(2, 0, 0);
+  /// Vector3<double> p_WoB2_W(1, 1, 0);
+  /// Vector3<double> p_WoB3_W(1, 0, 1);
+  /// SpatialInertia<double> M_BWo_W =
+  ///     SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+  ///         density, p_WoB0_W, p_WoB1_W, p_WoB2_W, p_WoB3_W);
+  /// @endcode
   static SpatialInertia<T> SolidTetrahedronAboutPointWithDensity(
-      const T& density,
-      const Vector3<T>& p0,
-      const Vector3<T>& p1,
-      const Vector3<T>& p2,
-      const Vector3<T>& p3);
+      const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
+      const Vector3<T>& p2, const Vector3<T>& p3,
+      const bool skip_validity_check = false);
 
   /// Creates a spatial inertia for a uniform density solid tetrahedron B about
   /// its vertex B0, from which position vectors to B's other 3 vertices B1, B2,
   /// B3 are measured (position vectors are all expressed in a common frame E).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] p1 position vector from vertex B0 to vertex B1, expressed in E.
-  /// @param[in] p2 position vector from vertex B0 to vertex B2, expressed in E.
-  /// @param[in] p3 position vector from vertex B0 to vertex B3, expressed in E.
+  /// @param[in] p1 position vector p_B0B1_E from B0 to B1, expressed in E.
+  /// @param[in] p2 position vector p_B0B2_E from B0 to B2, expressed in E.
+  /// @param[in] p3 position vector p_B0B3_E from B0 to B3, expressed in E.
+  /// @param[in] skip_validity_check If true, the returned spatial inertia is
+  /// not checked for valid mass and inertia properties. If false, the returned
+  /// spatial inertia must be valid or otherwise an exception is thrown.
+  /// The default value of skip_validity_check is false.
   /// @retval M_BB0_E B's spatial inertia about its vertex B0, expressed in E.
-  /// @note A negative volume (and mass) occur if p1.cross(p2).dot(p3) < 0.
-  /// A zero volume occurs if p1.cross(p2).dot(p3) = 0, which means B is a
-  /// triangle, line, or point (not a tetrahedron).
+  /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
+  /// triangle with its right-handed normal pointing inward (toward vertex B3).
+  /// In other words the volume is positive if  p1.cross(p2).dot(p3) > 0.
+  /// A zero volume means B is a triangle, line, or point (not a tetrahedron).
+  /// In other words the volume is zero if p1.cross(p2).dot(p3) = 0.
+  /// A negative volume occurs if the triangle defined by B0, B1, B2 has its
+  /// right-handed normal pointing outward (away from vertex B3).
+  /// In other words the volume is negative if p1.cross(p2).dot(p3) < 0.
   /// @see SolidTetrahedronAboutPointWithDensity() to calculate a spatial
   /// inertia about an arbitrary point.
   static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
-      const T& density,
-      const Vector3<T>& p1,
-      const Vector3<T>& p2,
-      const Vector3<T>& p3);
+      const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
+      const Vector3<T>& p3, const bool skip_validity_check = false);
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
@@ -450,12 +475,17 @@ class SpatialInertia {
   ///
   /// For details see Section 2.1.2, p. 20 of [Jain 2010].
   ///
-  /// @param[in] p_PQ_E Vector from the original about point P to the new
-  ///                   about point Q, expressed in the same frame E `this`
-  ///                   spatial inertia is expressed in.
+  /// @param[in] p_PQ_E position vector from the original about-point P to the
+  ///                   new about-point Q, expressed in the same frame E that
+  ///                   `this` spatial inertia is expressed in.
+  /// @param[in] skip_validity_check If true, the returned spatial inertia is
+  /// not checked for valid mass and inertia properties. If false, the returned
+  /// spatial inertia must be valid or otherwise an exception is thrown.
+  /// The default value of skip_validity_check is false.
   /// @returns A reference to `this` spatial inertia for body or composite body
   ///          S but now computed about a new point Q.
-  SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E) {
+  SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E,
+      const bool skip_validity_check = false) {
     const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
     // The following two lines apply the parallel axis theorem (in place) so
     // that:
@@ -465,7 +495,9 @@ class SpatialInertia {
     p_PScm_E_ = p_QScm_E;
     // This would only mean a bug in the implementation. The Shift operation
     // should always lead to a valid spatial inertia.
-    DRAKE_ASSERT_VOID(CheckInvariants());
+    if (!skip_validity_check) {
+      DRAKE_ASSERT_VOID(CheckInvariants());
+    }
     return *this;
   }
 
