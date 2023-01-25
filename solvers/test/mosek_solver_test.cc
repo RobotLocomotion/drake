@@ -396,7 +396,7 @@ GTEST_TEST(MosekTest, SimpleSos1) {
   MosekSolver solver;
   if (solver.available()) {
     const auto result = solver.Solve(dut.prog());
-    dut.CheckResult(result, 1E-8);
+    dut.CheckResult(result, 2E-9);
   }
 }
 
