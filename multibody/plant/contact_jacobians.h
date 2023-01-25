@@ -18,6 +18,7 @@ namespace internal {
 // A, expressed in the world frame W. See DiscreteContactPair for further
 // details on the definition of each contact pair. Versors `Cx_W` and `Cy_W`
 // constitute a basis of the plane normal to `Cz_W` and are arbitrarily chosen.
+// Below, v denotes the vector of generalized velocities, of size `nv`.
 template <class T>
 struct ContactJacobians {
   // Normal contact Jacobian.
