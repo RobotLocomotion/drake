@@ -798,7 +798,12 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   DRAKE_DEMAND(vn.size() == num_contacts);
   DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
-  int num_point_contacts = plant().EvalPointPairPenetrations(context).size();
+  // If the point contact model is used, hydroelastic contact pairs are appended
+  // after point contact pairs.
+  const int num_point_contacts =
+      plant().get_contact_model() == ContactModel::kHydroelastic
+          ? 0
+          : plant().EvalPointPairPenetrations(context).size();
   const int num_surfaces = all_surfaces.size();
 
   std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
