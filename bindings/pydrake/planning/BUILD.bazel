@@ -1,0 +1,77 @@
+# -*- python -*-
+
+load("@drake//tools/install:install.bzl", "install")
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "add_pybind_coverage_data",
+    "drake_pybind_library",
+    "get_drake_py_installs",
+    "get_pybind_package_info",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
+
+package(default_visibility = [
+    "//bindings/pydrake:__subpackages__",
+])
+
+# This determines how `PYTHONPATH` is configured, and how to install the
+# bindings.
+# TODO(eric.cousineau): address
+# https://github.com/RobotLocomotion/drake/issues/12055
+PACKAGE_INFO = get_pybind_package_info("//bindings")
+
+drake_pybind_library(
+    name = "planning",
+    cc_deps = [
+        #"//bindings/pydrake:autodiff_types_pybind",
+        "//bindings/pydrake:documentation_pybind",
+        #"//bindings/pydrake:symbolic_types_pybind",
+        #"//bindings/pydrake/common:cpp_param_pybind",
+        "//bindings/pydrake/common:cpp_template_pybind",
+        "//bindings/pydrake/common:default_scalars_pybind",
+        #"//bindings/pydrake/common:deprecation_pybind",
+        #"//bindings/pydrake/common:eigen_pybind",
+        #"//bindings/pydrake/common:value_pybind",
+    ],
+    cc_so_name = "__init__",
+    cc_srcs = [
+        "planning_py.h",
+        "planning_py.cc",
+        "planning_py_robot_diagram.cc",
+    ],
+    package_info = PACKAGE_INFO,
+    py_deps = [
+        #"//bindings/pydrake:autodiffutils_py",
+        #"//bindings/pydrake:symbolic_py",
+        #"//bindings/pydrake/common:cpp_param_py",
+        "//bindings/pydrake/common:cpp_template_py",
+        #"//bindings/pydrake/common:value_py",
+    ],
+    py_srcs = [
+        "all.py",
+    ],
+)
+
+install(
+    name = "install",
+    targets = [":planning"],
+    py_dest = PACKAGE_INFO.py_dest,
+    deps = get_drake_py_installs([":planning"]),
+)
+
+drake_py_unittest(
+    name = "robot_diagram_test",
+    deps = [
+        ":planning",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+add_pybind_coverage_data()
+
+add_lint_tests_pydrake()
