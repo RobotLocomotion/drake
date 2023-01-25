@@ -273,7 +273,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   M_BB0_expected = SpatialInertia<double>(-mass, p_B0Bcm, G_BB0,
       /* skip_validity_check = */ true);
   M_BB0 = SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          density, p2, p1, p3, /* skip_validity_check = */ true);
+          density, p2, p1, p3);
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
 }
@@ -286,7 +286,8 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   Vector3<double> p_AB2(0, 2, 0);
   Vector3<double> p_AB3(0, 3, 3);
 
-  // Check a degenerate case in which p_AB0 is the zero vector.
+  // Do a sanity check that SolidTetrahedronAboutPointWithDensity() simplifies
+  // to SolidTetrahedronAboutVertexWithDensity() when p_AB0 is the zero vector.
   SpatialInertia<double> M_BA_expected =
      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           density, p_AB1, p_AB2, p_AB3);
@@ -317,7 +318,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   M_BA_expected = SpatialInertia<double>(-mass, p_ABcm, G_BA,
                                          /* skip_validity_check = */ true);
   M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(density,
-      p_AB0, p_AB1, p_AB3, p_AB2, /* skip_validity_check = */ true);
+      p_AB0, p_AB1, p_AB3, p_AB2);
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
 }

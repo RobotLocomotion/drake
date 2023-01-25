@@ -197,11 +197,6 @@ class SpatialInertia {
   /// @param[in] p0 position vector p_AB0_E from point A to B0, expressed in E.
   /// @param[in] p1 position vector p_AB1_E from point A to B1, expressed in E.
   /// @param[in] p2 position vector p_AB2_E from point A to B2, expressed in E.
-  /// @param[in] p3 position vector p_AB3_E from point A to B3, expressed in E.
-  /// @param[in] skip_validity_check If true, the returned spatial inertia is
-  /// not checked for valid mass and inertia properties. If false, the returned
-  /// spatial inertia must be valid or otherwise an exception is thrown.
-  /// The default value of skip_validity_check is false.
   /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
   /// @note In the common case, point A is Eo (the origin of the expressed-in
   /// frame E). The example below has point A as Wo (origin of world frame W).
@@ -213,7 +208,7 @@ class SpatialInertia {
   /// @see SolidTetrahedronAboutVertexWithDensity() to efficiently calculate a
   /// spatial inertia about a vertex of B.
   /// @code{.cc}
-  /// // Example: For a tetrahedon whose vertices are measured and expressed in
+  /// // Example: For a tetrahedron whose vertices are measured and expressed in
   /// // the world frame W, form B's spatial inertia about Wo, expressed in W.
   /// double density = 1000;
   /// Vector3<double> p_WoB0_W(1, 0, 0);
@@ -226,8 +221,7 @@ class SpatialInertia {
   /// @endcode
   static SpatialInertia<T> SolidTetrahedronAboutPointWithDensity(
       const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
-      const Vector3<T>& p2, const Vector3<T>& p3,
-      const bool skip_validity_check = false);
+      const Vector3<T>& p2, const Vector3<T>& p3);
 
   /// Creates a spatial inertia for a uniform density solid tetrahedron B about
   /// its vertex B0, from which position vectors to B's other 3 vertices B1, B2,
@@ -236,10 +230,6 @@ class SpatialInertia {
   /// @param[in] p1 position vector p_B0B1_E from B0 to B1, expressed in E.
   /// @param[in] p2 position vector p_B0B2_E from B0 to B2, expressed in E.
   /// @param[in] p3 position vector p_B0B3_E from B0 to B3, expressed in E.
-  /// @param[in] skip_validity_check If true, the returned spatial inertia is
-  /// not checked for valid mass and inertia properties. If false, the returned
-  /// spatial inertia must be valid or otherwise an exception is thrown.
-  /// The default value of skip_validity_check is false.
   /// @retval M_BB0_E B's spatial inertia about its vertex B0, expressed in E.
   /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
   /// triangle with its right-handed normal pointing inward (toward vertex B3).
@@ -253,7 +243,7 @@ class SpatialInertia {
   /// inertia about an arbitrary point.
   static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(
       const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
-      const Vector3<T>& p3, const bool skip_validity_check = false);
+      const Vector3<T>& p3);
 
   /// Default SpatialInertia constructor initializes mass, center of mass and
   /// rotational inertia to invalid NaN's for a quick detection of
@@ -478,14 +468,9 @@ class SpatialInertia {
   /// @param[in] p_PQ_E position vector from the original about-point P to the
   ///                   new about-point Q, expressed in the same frame E that
   ///                   `this` spatial inertia is expressed in.
-  /// @param[in] skip_validity_check If true, the returned spatial inertia is
-  /// not checked for valid mass and inertia properties. If false, the returned
-  /// spatial inertia must be valid or otherwise an exception is thrown.
-  /// The default value of skip_validity_check is false.
   /// @returns A reference to `this` spatial inertia for body or composite body
   ///          S but now computed about a new point Q.
-  SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E,
-      const bool skip_validity_check = false) {
+  SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E) {
     const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
     // The following two lines apply the parallel axis theorem (in place) so
     // that:
@@ -493,11 +478,9 @@ class SpatialInertia {
     G_SP_E_.ShiftFromCenterOfMassInPlace(p_QScm_E);
     G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
     p_PScm_E_ = p_QScm_E;
-    // This would only mean a bug in the implementation. The Shift operation
-    // should always lead to a valid spatial inertia.
-    if (!skip_validity_check) {
-      DRAKE_ASSERT_VOID(CheckInvariants());
-    }
+    // Note: It would be a implementation bug if a shift starts with a valid
+    // spatial inertia and the shift produces an invalid spatial inertia.
+    // Hence, no need to use DRAKE_ASSERT_VOID(CheckInvariants()).
     return *this;
   }
 

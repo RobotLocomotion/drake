@@ -147,7 +147,7 @@ UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
   // This method calculates G_BB0 (a tetrahedron B's unit inertia about a
   // vertex B0 of B) using the position vectors from vertex B0 to B's three
   // other vertices, herein named P, Q, R to be consistent with the
-  // tetrahedon inertia formulas from the mass/inertia appendix in
+  // tetrahedron inertia formulas from the mass/inertia appendix in
   // [Mitiguy, 2017]: "Advanced Dynamics and Motion Simulation,
   //                   For professional engineers and scientists,"
   const Vector3<T>& p = p1;  // Position from vertex B0 to vertex P.

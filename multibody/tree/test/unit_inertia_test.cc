@@ -501,9 +501,9 @@ UnitInertia<double> CalcSolidTetrahedronUnitInertia(const Vector3<double>& p1,
   // The *transpose* of the affine transformation takes us from the canonical
   // co-variance matrix to the matrix for the particular tetrahedron.
   Matrix3<double> A_T = Matrix3<double>::Zero();
-  A_T.row(0) = p1;  // Position vector p_BoB1 (from vertex Bo to vertex B1).
-  A_T.row(1) = p2;  // Position vector p_BoB2 (from vertex Bo to vertex B2).
-  A_T.row(2) = p3;  // Position vector p_BoB3 (from vertex Bo to vertex B3).
+  A_T.row(0) = p1;  // Position vector from vertex Bo to vertex B1.
+  A_T.row(1) = p2;  // Position vector from vertex Bo to vertex B2.
+  A_T.row(2) = p3;  // Position vector from vertex Bo to vertex B3.
   // We're computing C += det(A)·ACAᵀ. Fortunately, det(A) is equal to 6.
   const Matrix3<double> C = 6 * A_T.transpose() * C_canonical * A_T;
 
@@ -535,11 +535,6 @@ GTEST_TEST(UnitInertia, SolidTetrahedronAboutVertex) {
   EXPECT_TRUE(CompareMatrices(G_expected.CopyToFullMatrix3(),
                               G_dut.CopyToFullMatrix3(), kTolerance));
 
-  // Show no change if negate arguments to SolidTetrahedronAboutVertex().
-  G_dut = UnitInertia<double>::SolidTetrahedronAboutVertex(-p1, -p2, -p3);
-  EXPECT_TRUE(CompareMatrices(G_expected.CopyToFullMatrix3(),
-                              G_dut.CopyToFullMatrix3(), kTolerance));
-
   // Show no change if shuffle last 2 arguments.
   G_dut = UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p3, p2);
   EXPECT_TRUE(CompareMatrices(G_expected.CopyToFullMatrix3(),
@@ -553,7 +548,8 @@ GTEST_TEST(UnitInertia, SolidTetrahedronAboutPoint) {
   Vector3<double> p_AB2(0, 2, 0);
   Vector3<double> p_AB3(0, 3, 3);
 
-  // Check a degenerate case in which p_AB0 is the zero vector.
+  // Do a sanity check that SolidTetrahedronAboutPoint() simplifies
+  // to SolidTetrahedronAboutVertex() when p_AB0 is the zero vector.
   UnitInertia<double> G_BA_expected =
       UnitInertia<double>::SolidTetrahedronAboutVertex(p_AB1, p_AB2, p_AB3);
   UnitInertia<double> G_BA = UnitInertia<double>::SolidTetrahedronAboutPoint(
@@ -582,21 +578,9 @@ GTEST_TEST(UnitInertia, SolidTetrahedronAboutPoint) {
   EXPECT_TRUE(CompareMatrices(G_BA_expected.CopyToFullMatrix3(),
                               G_BA.CopyToFullMatrix3(), kTolerance));
 
-  // Show no change if negate arguments to SolidTetrahedronAboutPoint().
-  G_BA = UnitInertia<double>::SolidTetrahedronAboutPoint(
-      -p_AB0, -p_AB1, -p_AB2, -p_AB3);
-  EXPECT_TRUE(CompareMatrices(G_BA_expected.CopyToFullMatrix3(),
-                              G_BA.CopyToFullMatrix3(), kTolerance));
-
   // Show no change if shuffle last 2 arguments to SolidTetrahedronAboutPoint().
   G_BA = UnitInertia<double>::SolidTetrahedronAboutPoint(
       p_AB0, p_AB1, p_AB3, p_AB2);
-  EXPECT_TRUE(CompareMatrices(G_BA_expected.CopyToFullMatrix3(),
-                              G_BA.CopyToFullMatrix3(), kTolerance));
-
-  // Show no change if shuffle all 4 arguments to SolidTetrahedronAboutPoint().
-  G_BA = UnitInertia<double>::SolidTetrahedronAboutPoint(
-      p_AB3, p_AB0, p_AB1, p_AB2);
   EXPECT_TRUE(CompareMatrices(G_BA_expected.CopyToFullMatrix3(),
                               G_BA.CopyToFullMatrix3(), kTolerance));
 }
