@@ -339,9 +339,10 @@ class UnitInertia : public RotationalInertia<T> {
                                                    const Vector3<T>& p2,
                                                    const Vector3<T>& p3);
 
-  /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
-  /// about its vertex B0, from which position vectors to B's other 3 vertices
-  /// B1, B2, B3 are measured (vectors are all expressed in a common frame E).
+  /// (Advanced) Creates a unit inertia for a unit-mass uniform density solid
+  /// tetrahedron B about its vertex B0, from which position vectors to B's
+  /// other 3 vertices B1, B2, B3 are measured (vectors are all expressed
+  /// in a common frame E).
   /// @param[in] p1 position vector p_B0B1_E from B0 to B1, expressed in E.
   /// @param[in] p2 position vector p_B0B2_E from B0 to B2, expressed in E.
   /// @param[in] p3 position vector p_B0B3_E from B0 to B3, expressed in E.

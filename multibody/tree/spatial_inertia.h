@@ -200,16 +200,7 @@ class SpatialInertia {
   /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
   /// @note In the common case, point A is Eo (the origin of the expressed-in
   /// frame E). The example below has point A as Wo (origin of world frame W).
-  /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
-  /// triangle with its right-handed normal pointing inward (toward vertex B3).
-  /// A zero volume means B is a triangle, line, or point (not a tetrahedron).
-  /// A negative volume occurs if the triangle defined by B0, B1, B2 has its
-  /// right-handed normal pointing outward (away from vertex B3).
-  /// @see SolidTetrahedronAboutVertexWithDensity() to efficiently calculate a
-  /// spatial inertia about a vertex of B.
   /// @code{.cc}
-  /// // Example: For a tetrahedron whose vertices are measured and expressed in
-  /// // the world frame W, form B's spatial inertia about Wo, expressed in W.
   /// double density = 1000;
   /// Vector3<double> p_WoB0_W(1, 0, 0);
   /// Vector3<double> p_WoB1_W(2, 0, 0);
@@ -219,13 +210,21 @@ class SpatialInertia {
   ///     SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
   ///         density, p_WoB0_W, p_WoB1_W, p_WoB2_W, p_WoB3_W);
   /// @endcode
+  /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
+  /// triangle with its right-handed normal pointing inward (toward vertex B3).
+  /// A zero volume means B is a triangle, line, or point (not a tetrahedron).
+  /// A negative volume occurs if the triangle defined by B0, B1, B2 has its
+  /// right-handed normal pointing outward (away from vertex B3).
+  /// @see SolidTetrahedronAboutVertexWithDensity() to efficiently calculate a
+  /// spatial inertia about a vertex of B.
   static SpatialInertia<T> SolidTetrahedronAboutPointWithDensity(
       const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
       const Vector3<T>& p2, const Vector3<T>& p3);
 
-  /// Creates a spatial inertia for a uniform density solid tetrahedron B about
-  /// its vertex B0, from which position vectors to B's other 3 vertices B1, B2,
-  /// B3 are measured (position vectors are all expressed in a common frame E).
+  /// (Advanced) Creates a spatial inertia for a uniform density solid
+  /// tetrahedron B about its vertex B0, from which position vectors to B's
+  /// other 3 vertices B1, B2, B3 are measured (position vectors are all
+  /// expressed in a common frame E).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] p1 position vector p_B0B1_E from B0 to B1, expressed in E.
   /// @param[in] p2 position vector p_B0B2_E from B0 to B2, expressed in E.
