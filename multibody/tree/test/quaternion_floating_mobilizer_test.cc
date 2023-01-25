@@ -179,6 +179,37 @@ TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
       " All the elements in a quaternion are zero\\.");
 }
 
+TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
+  const Vector6<double> v =
+      (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
+  VectorX<double> qdot(7);
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Compute N.
+  MatrixX<double> N(7, 6);
+  mobilizer_->CalcNMatrix(*context_, &N);
+
+  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  EXPECT_TRUE(CompareMatrices(qdot, N * v, kTolerance,
+                              MatrixCompareType::relative));
+}
+
+TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
+  VectorX<double> qdot(7);
+  qdot << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
+
+  Vector6<double> v;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
+
+  // Compute Nplus.
+  MatrixX<double> Nplus(6, 7);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
+                              MatrixCompareType::relative));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

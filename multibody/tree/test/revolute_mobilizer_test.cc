@@ -222,7 +222,7 @@ TEST_F(RevoluteMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 
-TEST_F(RevoluteMobilizerTest, MapUsesN){
+TEST_F(RevoluteMobilizerTest, MapUsesN) {
   Vector1d v(1.5);
   Vector1d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
@@ -235,7 +235,7 @@ TEST_F(RevoluteMobilizerTest, MapUsesN){
   EXPECT_EQ(qdot, N * v);
 }
 
-TEST_F(RevoluteMobilizerTest, MapUsesNplus){
+TEST_F(RevoluteMobilizerTest, MapUsesNplus) {
   Vector1d qdot(1.5);
   Vector1d v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
@@ -244,7 +244,7 @@ TEST_F(RevoluteMobilizerTest, MapUsesNplus){
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  //Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
   EXPECT_EQ(v, Nplus * qdot);
 }
 }  // namespace

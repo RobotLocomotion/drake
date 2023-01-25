@@ -255,7 +255,7 @@ TEST_F(UniversalMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus, Matrix2d::Identity());
 }
 
-TEST_F(UniversalMobilizerTest, MapUsesN){
+TEST_F(UniversalMobilizerTest, MapUsesN) {
   Vector2d v(1.5, 2.5);
   Vector2d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
@@ -265,10 +265,11 @@ TEST_F(UniversalMobilizerTest, MapUsesN){
   mobilizer_->CalcNMatrix(*context_, &N);
 
   // Ensure N(q) is used in `q̇ = N(q)⋅v`
-  EXPECT_TRUE(CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(UniversalMobilizerTest, MapUsesNplus){
+TEST_F(UniversalMobilizerTest, MapUsesNplus) {
   Vector2d qdot(1.5, 2.5);
   Vector2d v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
@@ -277,8 +278,9 @@ TEST_F(UniversalMobilizerTest, MapUsesNplus){
   MatrixX<double> Nplus(2, 2);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  //Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
-  EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance, MatrixCompareType::relative));
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
+                              MatrixCompareType::relative));
 }
 }  // namespace
 }  // namespace internal

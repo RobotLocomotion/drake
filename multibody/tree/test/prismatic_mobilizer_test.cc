@@ -173,7 +173,7 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 
-TEST_F(PrismaticMobilizerTest, MapUsesN){
+TEST_F(PrismaticMobilizerTest, MapUsesN) {
   Vector1d v(1.5);
   Vector1d qdot;
   slider_->MapVelocityToQDot(*context_, v, &qdot);

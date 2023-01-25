@@ -183,7 +183,7 @@ TEST_F(SpaceXYZFloatingMobilizerTest, KinematicMapping) {
                               kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesN){
+TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesN) {
   SetArbitraryNonZeroState();
   const Vector6<double> v = (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
   Vector6<double> qdot;
@@ -194,12 +194,14 @@ TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesN){
   mobilizer_->CalcNMatrix(*context_, &N);
 
   // Ensure N(q) is used in `q̇ = N(q)⋅v`
-  EXPECT_TRUE(CompareMatrices(qdot,N * v ,kTolerance, MatrixCompareType::relative));
+  EXPECT_TRUE(
+      CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
 }
 
-TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesNplus){
+TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesNplus) {
   SetArbitraryNonZeroState();
-  const Vector6<double> qdot = (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
+  const Vector6<double> qdot =
+      (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
   Vector6<double> v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
 
@@ -207,8 +209,9 @@ TEST_F(SpaceXYZFloatingMobilizerTest, MapUsesNplus){
   Matrix6<double> Nplus;
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  //Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
-  EXPECT_TRUE(CompareMatrices(v,Nplus * qdot ,kTolerance, MatrixCompareType::relative));
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
+                              MatrixCompareType::relative));
 }
 
 }  // namespace

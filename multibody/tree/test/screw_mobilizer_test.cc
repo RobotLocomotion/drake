@@ -308,7 +308,7 @@ TEST_F(ScrewMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus, Matrix1d::Identity().eval());
 }
 
-TEST_F(ScrewMobilizerTest, MapUsesN){
+TEST_F(ScrewMobilizerTest, MapUsesN) {
   Vector1d v(1.5);
   Vector1d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
@@ -321,7 +321,7 @@ TEST_F(ScrewMobilizerTest, MapUsesN){
   EXPECT_EQ(qdot, N * v);
 }
 
-TEST_F(ScrewMobilizerTest, MapUsesNplus){
+TEST_F(ScrewMobilizerTest, MapUsesNplus) {
   Vector1d qdot(1.5);
   Vector1d v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
@@ -330,7 +330,7 @@ TEST_F(ScrewMobilizerTest, MapUsesNplus){
   MatrixX<double> Nplus(1, 1);
   mobilizer_->CalcNplusMatrix(*context_, &Nplus);
 
-  //Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
   EXPECT_EQ(v, Nplus * qdot);
 }
 }  // namespace
