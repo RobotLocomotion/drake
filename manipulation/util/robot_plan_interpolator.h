@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace manipulation {
-namespace planner {
+namespace util {
 
 /// This enum specifies the type of interpolator to use in constructing
 /// the piece-wise polynomial.
@@ -113,6 +113,6 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
   const InterpolatorType interp_type_;
 };
 
-}  // namespace planner
+}  // namespace util
 }  // namespace manipulation
 }  // namespace drake
