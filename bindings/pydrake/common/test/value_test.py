@@ -65,19 +65,24 @@ class TestValue(unittest.TestCase):
         expected = {"x": 10}
         value = Value[object](expected)
         # Value is by reference, *not* by copy.
-        self.assertTrue(value.get_value() is expected)
+        self.assertIs(value.get_value(), expected)
         # Update mutable version.
         value.get_mutable_value()["y"] = 30
         self.assertEqual(value.get_value(), expected)
         # Cloning the value should perform a deep copy of the Python object.
         value_clone = copy.deepcopy(value)
-        self.assertEqual(value_clone.get_value(), expected)
-        self.assertTrue(value_clone.get_value() is not expected)
-        # Using `set_value` on the original value changes object reference.
+        expected_clone = value_clone.get_value()
+        self.assert_equal_but_not_aliased(expected_clone, expected)
+        # Using `set_value` on the original Value[] should update the object
+        # reference to the new value.
         expected_new = {"a": 20}
         value.set_value(expected_new)
-        self.assertEqual(value.get_value(), expected_new)
-        self.assertTrue(value.get_value() is not expected)
+        self.assertIs(value.get_value(), expected_new)
+        self.assertIsNot(value.get_value(), expected)
+        # Using `SetFrom` should produce a new object (#18653).
+        value.SetFrom(value_clone)
+        self.assert_equal_but_not_aliased(value.get_value(), expected)
+        self.assert_equal_but_not_aliased(value.get_value(), expected_clone)
 
     def assert_equal_but_not_aliased(self, a, b):
         self.assertEqual(a, b)

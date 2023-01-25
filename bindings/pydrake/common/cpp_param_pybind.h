@@ -62,6 +62,9 @@ class Object {
     return Object(h.ptr());
   }
 
+  /// Provides a deep copy of the referred-to object.
+  Object Clone() const;
+
  private:
   // Increments reference count. See `py::handle::inc_ref()` for more details.
   void inc_ref();
