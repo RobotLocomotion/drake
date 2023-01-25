@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/multibody/inverse_kinematics/constraint_relaxing_ik.h"
 
 #include <gtest/gtest.h>
 
@@ -7,8 +7,7 @@
 #include "drake/multibody/parsing/parser.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 // N random samples are taken from the configuration space (q), and
 // the corresponding end effector poses are computed with forward
@@ -20,14 +19,14 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
   const std::string kModelPath = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_polytope_collision.urdf");
-  multibody::MultibodyPlant<double> iiwa(0);
-  multibody::Parser(&iiwa).AddModels(kModelPath);
+  MultibodyPlant<double> iiwa(0);
+  Parser(&iiwa).AddModels(kModelPath);
   iiwa.WeldFrames(iiwa.world_frame(),
                   iiwa.GetBodyByName("base").body_frame());
   iiwa.Finalize();
 
   const std::string kEndEffectorLinkName = "iiwa_link_ee";
-  const multibody::Body<double>& end_effector =
+  const Body<double>& end_effector =
       iiwa.GetBodyByName(kEndEffectorLinkName);
 
   ConstraintRelaxingIk ik_planner(kModelPath, kEndEffectorLinkName);
@@ -108,6 +107,5 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
       waypoints, kQcurrent, &q_sol, never_stop));
 }
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

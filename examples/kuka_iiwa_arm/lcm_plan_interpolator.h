@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "drake/manipulation/planner/robot_plan_interpolator.h"
+#include "drake/manipulation/util/robot_plan_interpolator.h"
 #include "drake/systems/framework/diagram.h"
 
 namespace drake {
@@ -27,7 +27,7 @@ class LcmPlanInterpolator : public systems::Diagram<double> {
  public:
   LcmPlanInterpolator(
       const std::string& model_path,
-      manipulation::planner::InterpolatorType interpolator_type);
+      manipulation::util::InterpolatorType interpolator_type);
 
   const systems::InputPort<double>& get_input_port_iiwa_status()
       const {
@@ -60,7 +60,7 @@ class LcmPlanInterpolator : public systems::Diagram<double> {
   // Output ports.
   int output_port_iiwa_command_{-1};
 
-  manipulation::planner::RobotPlanInterpolator* robot_plan_interpolator_{};
+  manipulation::util::RobotPlanInterpolator* robot_plan_interpolator_{};
   int num_joints_{};
 };
 }  // namespace kuka_iiwa_arm

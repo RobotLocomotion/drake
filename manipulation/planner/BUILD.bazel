@@ -16,23 +16,8 @@ drake_cc_package_library(
     name = "planner",
     visibility = ["//visibility:public"],
     deps = [
-        ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
         ":differential_inverse_kinematics_integrator",
-        ":robot_plan_interpolator",
-    ],
-)
-
-drake_cc_library(
-    name = "constraint_relaxing_ik",
-    srcs = ["constraint_relaxing_ik.cc"],
-    hdrs = ["constraint_relaxing_ik.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//multibody/inverse_kinematics",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//solvers:solve",
     ],
 )
 
@@ -58,32 +43,7 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "robot_plan_interpolator",
-    srcs = ["robot_plan_interpolator.cc"],
-    hdrs = ["robot_plan_interpolator.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//lcmtypes:robot_plan",
-        "//multibody/parsing",
-        "//systems/framework:leaf_system",
-    ],
-)
-
 # === test/ ===
-
-drake_cc_googletest(
-    name = "constraint_relaxing_ik_test",
-    srcs = ["test/constraint_relaxing_ik_test.cc"],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    tags = ["snopt"],
-    deps = [
-        ":constraint_relaxing_ik",
-        "//common:find_resource",
-    ],
-)
 
 drake_cc_googletest(
     name = "differential_inverse_kinematics_test",
@@ -109,19 +69,6 @@ drake_cc_googletest(
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
         "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "robot_plan_interpolator_test",
-    data = [
-        "//examples/kuka_iiwa_arm:models",
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":robot_plan_interpolator",
-        "//common:find_resource",
-        "//systems/framework",
     ],
 )
 

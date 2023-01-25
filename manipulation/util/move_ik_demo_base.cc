@@ -10,7 +10,7 @@ namespace drake {
 namespace manipulation {
 namespace util {
 
-using planner::ConstraintRelaxingIk;
+using multibody::ConstraintRelaxingIk;
 
 MoveIkDemoBase::MoveIkDemoBase(std::string robot_description,
                                std::string base_link,
