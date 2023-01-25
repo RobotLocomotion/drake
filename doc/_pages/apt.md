@@ -29,12 +29,6 @@ in [Source Installation](/from_source.html).
 
 ## Stable Releases
 
-<div class="warning" markdown="1">
-Drake does not yet publish stable APT packages for Ubuntu 22.04. See
-[#17736](https://github.com/RobotLocomotion/drake/issues/17736) for updates.
-In the meantime, you could manually install the Nightly Releases (see below).
-</div>
-
 To add the Drake APT repository to your machine and install the `drake-dev` package,
 please do the following in order:
 
