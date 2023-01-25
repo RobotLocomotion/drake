@@ -37,8 +37,13 @@ using systems::Simulator;
 struct ContactTestConfig {
   // This is a gtest test suffix; no underscores or spaces.
   std::string description;
-  // Model with point contact if `true` or with hydroelastic contact if `false`.
+  // Contact is modeled with point contact if `true` or with hydroelastic
+  // contact if `false`.
   bool point_contact{};
+  // Option to allow changing the default contact model. This allows unit
+  // testing of cases using the hydroelastic contact model, whether point
+  // contact is used or not.
+  ContactModel contact_model{ContactModel::kHydroelasticWithFallback};
   DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
 };
 
@@ -135,6 +140,8 @@ class RigidBodyOnCompliantGround
         plant_->world_body(),
         geometry::HalfSpace::MakePose(Vector3d::UnitZ(), Vector3d::Zero()),
         geometry::HalfSpace(), "ground_collision", ground_props);
+
+    plant_->set_contact_model(config.contact_model);
 
     plant_->Finalize();
 
