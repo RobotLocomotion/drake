@@ -502,7 +502,7 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeFailure) {
        1, 0, -1;
   // clang-format on
   Eigen::Matrix<double, 4, 1> d;
-  d << 0.8, 1.3, 2.4, 2.2;
+  d << 10.8, 20, 34, 22;
 
   const CspaceFreePolytope::IgnoredCollisionPairs ignored_collision_pairs{
       SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)};
@@ -543,13 +543,11 @@ TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeFailure) {
           C, d, ignored_collision_pairs, options, &certificates_map);
   EXPECT_FALSE(is_success);
 
+  // These are the geometries that currently we can't certify being separable. I
+  // haven't searched for a configuration that the geometries are in collision
+  // yet.
   std::unordered_set<SortedPair<geometry::GeometryId>> inseparable_geometries;
-  inseparable_geometries.emplace(body0_box_, body2_capsule_);
   inseparable_geometries.emplace(body0_box_, body2_sphere_);
-  inseparable_geometries.emplace(body1_convex_, body3_box_);
-  inseparable_geometries.emplace(body1_convex_, body3_cylinder_);
-  inseparable_geometries.emplace(body2_capsule_, body3_box_);
-  inseparable_geometries.emplace(body2_sphere_, body3_box_);
   for (const auto& certificate : certificates_result) {
     if (certificate.has_value()) {
       const auto& plane = tester.cspace_free_polytope()
@@ -908,12 +906,12 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
           plane_geometries.positive_side_rationals,
           certificate_result.positive_side_rational_lagrangians,
           plane.decision_variables, certificate_result.plane_decision_var_vals,
-          polytope_result->C, polytope_result->d, tester, 2E-4);
+          polytope_result->C, polytope_result->d, tester, 3E-4);
       CheckRationalsPositiveInCspacePolytope(
           plane_geometries.negative_side_rationals,
           certificate_result.negative_side_rational_lagrangians,
           plane.decision_variables, certificate_result.plane_decision_var_vals,
-          polytope_result->C, polytope_result->d, tester, 2E-4);
+          polytope_result->C, polytope_result->d, tester, 3E-4);
     }
 
     // Now check if the C-space polytope {s | C*s<=d, s_lower<=s<=s_upper} is
@@ -1088,7 +1086,7 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
 
   CspaceFreePolytope::BinarySearchOptions options;
   options.scale_min = 1;
-  options.scale_max = 10;
+  options.scale_max = 100;
   options.convergence_tol = 1E-1;
   options.find_lagrangian_options.num_threads = kTestConcurrency;
   solvers::MosekSolver solver;
@@ -1099,16 +1097,16 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
   EXPECT_GT(result->num_iter, 0);
   Eigen::Matrix<double, 10, 3> s_samples;
   // clang-format off
-    s_samples << 1, 2, -1,
-               -0.5, 0.3, 0.2,
-               0.2, 0.9, 0.4,
-               0.5, -1.2, 0.3,
-               0.2, 2.5, -0.4,
-               -1.3, 1.5, 2,
-               0.5, 0.2, 1,
-               -0.4, 0.5, 1,
-               0, 0, 0,
-               0.2, -1.5, 1;
+  s_samples << 1, 2, -1,
+             -0.5, 0.3, 0.2,
+             0.2, 0.9, 0.4,
+             0.5, -1.2, 0.3,
+             0.2, 2.5, -0.4,
+             -1.3, 1.5, 2,
+             0.5, 0.2, 1,
+             -0.4, 0.5, 1,
+             0, 0, 0,
+             0.2, -1.5, 1;
   // clang-format on
   EXPECT_EQ(result->a.size(),
             tester.cspace_free_polytope().separating_planes().size() -
@@ -1142,8 +1140,8 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
                            ignored_collision_pairs);
 
   // Now check infeasible epsilon_min
-  options.scale_min = 20;
-  options.scale_max = 30;
+  options.scale_min = 100;
+  options.scale_max = 200;
   result = tester.cspace_free_polytope().BinarySearch(ignored_collision_pairs,
                                                       C, d, s_center, options);
   ASSERT_FALSE(result.has_value());

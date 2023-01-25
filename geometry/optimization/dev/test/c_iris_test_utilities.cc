@@ -40,8 +40,8 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       geometry::Box(0.02, 0.03, 0.01), "world_box", proximity_properties);
   world_cylinder_ = plant_->RegisterCollisionGeometry(
       plant_->world_body(),
-      math::RigidTransform(Eigen::Vector3d(-0.1, -0.5, 0.2)),
-      Cylinder(0.02, 0.05), "world_cylinder", proximity_properties);
+      math::RigidTransform(Eigen::Vector3d(-0.1, -0.1, 0.2)),
+      Cylinder(0.02, 0.1), "world_cylinder", proximity_properties);
 
   // C-IRIS only considers robot kinematics, not dynamics. So we use an
   // arbitrary inertia.
@@ -61,10 +61,10 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       math::RigidTransformd(Eigen::Vector3d(0.05, 0.1, 0.05)));
   body0_box_ = plant_->RegisterCollisionGeometry(
       body0, math::RigidTransform(Eigen::Vector3d(0.1, 0.05, -0.05)),
-      Box(0.05, 0.03, 0.04), "body0_box", proximity_properties);
+      Box(0.05, 0.1, 0.04), "body0_box", proximity_properties);
   body0_sphere_ = plant_->RegisterCollisionGeometry(
-      body0, math::RigidTransform(Eigen::Vector3d(0.2, -0.02, 0)), Sphere(0.04),
-      "body0_sphere", proximity_properties);
+      body0, math::RigidTransform(Eigen::Vector3d(0.01, -0.02, 0)),
+      Sphere(0.08), "body0_sphere", proximity_properties);
 
   // body1
   body_indices_.push_back(
@@ -77,10 +77,10 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       body1, math::RigidTransformd(Eigen::Vector3d(0.1, 0.2, -0.05)),
       Eigen::Vector3d::UnitY());
   plant_->get_mutable_joint(joint1.index())
-      .set_position_limits(Vector1d(-0.5 * M_PI), Vector1d(0.7 * M_PI));
+      .set_position_limits(Vector1d(-0.8 * M_PI), Vector1d(0.7 * M_PI));
   body1_capsule_ = plant_->RegisterCollisionGeometry(
-      body1, math::RigidTransformd(Eigen::Vector3d(0.2, -0.1, 0.05)),
-      Capsule(0.04, 0.2), "body1_capsule", proximity_properties);
+      body1, math::RigidTransformd(Eigen::Vector3d(0.02, -0.1, 0.05)),
+      Capsule(0.08, 0.2), "body1_capsule", proximity_properties);
   const std::string convex_obj =
       FindResourceOrThrow("drake/geometry/optimization/dev/test/convex.obj");
   body1_convex_ = plant_->RegisterCollisionGeometry(
@@ -96,16 +96,16 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
   const auto& joint2 = plant_->AddJoint<multibody::PrismaticJoint>(
       "joint2", body1, math::RigidTransformd(Eigen::Vector3d(0.2, 0, 0)), body2,
       math::RigidTransformd(math::RollPitchYawd(0.1, -0.2, 0.1),
-                            Eigen::Vector3d(0.2, 0.1, 0.03)),
+                            Eigen::Vector3d(0.02, 0.1, 0.03)),
       Eigen::Vector3d::UnitX());
   plant_->get_mutable_joint(joint2.index())
-      .set_position_limits(Vector1d(-0.2), Vector1d(0.3));
+      .set_position_limits(Vector1d(-2.4), Vector1d(2.9));
   body2_capsule_ = plant_->RegisterCollisionGeometry(
       body2, math::RigidTransform(Eigen::Vector3d(0.02, 0.05, 0)),
-      Capsule(0.03, 0.05), "body2_capsule", proximity_properties);
+      Capsule(0.06, 0.1), "body2_capsule", proximity_properties);
   body2_sphere_ = plant_->RegisterCollisionGeometry(
       body2, math::RigidTransform(Eigen::Vector3d(0.01, 0.04, 0.02)),
-      Sphere(0.04), "body2_sphere", proximity_properties);
+      Sphere(0.07), "body2_sphere", proximity_properties);
 
   // body3
   body_indices_.push_back(
