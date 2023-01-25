@@ -1,46 +1,41 @@
-#include "planning/scene_graph_collision_checker.h"
+#include "drake/planning/scene_graph_collision_checker.h"
 
 #include <algorithm>
 #include <functional>
+#include <set>
 #include <utility>
 
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
-#include "planning/robot_diagram.h"
+#include "drake/planning/robot_diagram.h"
 
-using drake::log;
-using drake::Matrix3X;
-using drake::geometry::CollisionFilterDeclaration;
-using drake::geometry::FrameId;
-using drake::geometry::GeometryId;
-using drake::geometry::GeometryInstance;
-using drake::geometry::GeometrySet;
-using drake::geometry::ProximityProperties;
-using drake::geometry::QueryObject;
-using drake::geometry::SceneGraph;
-using drake::geometry::SceneGraphInspector;
-using drake::geometry::Shape;
-using drake::geometry::SignedDistancePair;
-using drake::math::RigidTransform;
-using drake::multibody::Body;
-using drake::multibody::BodyIndex;
-using drake::multibody::Frame;
-using drake::multibody::JacobianWrtVariable;
-using drake::multibody::MultibodyPlant;
-using drake::planning::CollisionChecker;
-using drake::planning::CollisionCheckerContext;
-using drake::planning::RobotClearance;
-using drake::planning::RobotCollisionType;
-using drake::systems::Context;
+namespace drake {
+namespace planning {
+
 using Eigen::RowVectorXd;
 using Eigen::Vector3d;
+using geometry::CollisionFilterDeclaration;
+using geometry::FrameId;
+using geometry::GeometryId;
+using geometry::GeometryInstance;
+using geometry::GeometrySet;
+using geometry::QueryObject;
+using geometry::SceneGraph;
+using geometry::SceneGraphInspector;
+using geometry::Shape;
+using geometry::SignedDistancePair;
+using math::RigidTransform;
+using multibody::Body;
+using multibody::BodyIndex;
+using multibody::Frame;
+using multibody::JacobianWrtVariable;
+using multibody::MultibodyPlant;
+using systems::Context;
 
-namespace anzu {
-namespace planning {
 SceneGraphCollisionChecker::SceneGraphCollisionChecker(
-    drake::planning::CollisionCheckerParams params)
+    CollisionCheckerParams params)
     : CollisionChecker(std::move(params), true /* supports parallel */) {
   AllocateContexts();
 }
@@ -62,8 +57,7 @@ void SceneGraphCollisionChecker::DoUpdateContextPositions(
 std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
     const std::string& group_name, const Body<double>& bodyA,
     const Shape& shape, const RigidTransform<double>& X_AG) {
-  const FrameId body_frame_id =
-      plant().GetBodyFrameIdOrThrow(bodyA.index());
+  const FrameId body_frame_id = plant().GetBodyFrameIdOrThrow(bodyA.index());
 
   const GeometrySet bodyA_geometries =
       plant().CollectRegisteredGeometries(plant().GetBodiesWeldedTo(bodyA));
@@ -78,16 +72,16 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
   geometry_template.set_name(fmt::format("Added collision geometry on {} ({})",
                                          GetScopedName(bodyA),
                                          geometry_template.id()));
+  // Set proximity properties in order for this geometry to actually collide.
   geometry_template.set_proximity_properties({});
 
-  using Operation = std::function<void(
-      const RobotDiagram<double>&, CollisionCheckerContext*)>;
+  using Operation = std::function<void(const RobotDiagram<double>&,
+                                       CollisionCheckerContext*)>;
   const Operation operation = [&](const RobotDiagram<double>& model,
                                   CollisionCheckerContext* model_context) {
     auto& sg_context = model_context->mutable_scene_graph_context();
     const GeometryId added_geometry_id = model.scene_graph().RegisterGeometry(
-        &sg_context, model.plant().get_source_id().value(),
-        body_frame_id,
+        &sg_context, model.plant().get_source_id().value(), body_frame_id,
         std::make_unique<GeometryInstance>(geometry_template));
     model.scene_graph()
         .collision_filter_manager(&sg_context)
@@ -108,7 +102,9 @@ void SceneGraphCollisionChecker::DoRemoveAddedGeometries(
                                   CollisionCheckerContext* model_context) {
     for (const auto& checker_shape : shapes) {
       const GeometryId geometry_id = checker_shape.geometry_id;
-      drake::log()->debug("  Removing geometry {}.", geometry_id);
+      // Our public NVI wrapper logs "Removing geometries from group..." with
+      // no indentation; we'll whitespace-indent our detail logging under it.
+      log()->debug("  Removing geometry {}.", geometry_id);
       model.scene_graph().RemoveGeometry(
           &model_context->mutable_scene_graph_context(),
           model.plant().get_source_id().value(), geometry_id);
@@ -123,12 +119,12 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
   const QueryObject<double>& query_object = model_context.GetQueryObject();
   const SceneGraphInspector<double>& inspector = query_object.inspector();
 
-  const auto& distance_pairs =
+  const std::vector<SignedDistancePair<double>>& distance_pairs =
       query_object.ComputeSignedDistancePairwiseClosestPoints(
           GetLargestPadding());
 
   for (const auto& distance_pair : distance_pairs) {
-    // Get the bodies corresponding to the distance pair
+    // Get the bodies corresponding to the distance pair.
     const FrameId frame_id_A = inspector.GetFrameId(distance_pair.id_A);
     const FrameId frame_id_B = inspector.GetFrameId(distance_pair.id_B);
     const Body<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
@@ -157,7 +153,7 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
       return false;
     }
   }
-  // No relevant collisions found
+  // No relevant collisions found.
   return true;
 }
 
@@ -217,6 +213,7 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
     }
 
     // Adjust pair-specific padding, and skip now-unnecessary distances.
+    // Two geometries must be >= padding apart to be treated as non-colliding.
     const double padding = GetPaddingBetween(body_A, body_B);
     const double distance = unpadded_distance - padding;
     if (distance > influence_distance) {
@@ -236,14 +233,16 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
             ? RobotCollisionType::kSelfCollision
             : RobotCollisionType::kEnvironmentCollision;
 
-    // Convert the witness points from geometry frame to body frame.
+    // Convert the witness points from geometry frame to body frame. (Note
+    // that the monogram frame names are somewhat unhelpful here because
+    // "A" and "B" are overloaded for frame points vs body points.)
     const Vector3d p_ACa =
         inspector.GetPoseInFrame(geometry_id_A) * signed_distance_pair.p_ACa;
     const Vector3d p_BCb =
         inspector.GetPoseInFrame(geometry_id_B) * signed_distance_pair.p_BCb;
 
     // Convert the witness points from body frame to world frame.
-    // TODO(jeremy.nimmer) Instead of CalcPointsPositions, try either
+    // TODO(jwnimmer-tri) Instead of CalcPointsPositions, try either
     // Body::EvalPoseInWorld or QueryObject::GetPoseInWorld.
     Vector3d p_WCa;
     plant().CalcPointsPositions(plant_context, frame_A, p_ACa, frame_W, &p_WCa);
@@ -264,16 +263,16 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
     // our ∂p_BA_W/∂qᵣ may include additional non-zero columns; we rely on the
     // parent class to zero those columns out and make the result truly ∂ϕ/∂qᵣ.
     if (body_A_part_of_robot) {
-      plant().CalcJacobianTranslationalVelocity(
-          plant_context, JacobianWrtVariable::kQDot, frame_A, p_ACa, frame_W,
-          frame_W, &dp_BA_dq /* ∂p_WA/∂q after this invocation */);
+      plant().CalcJacobianPositionVector(
+          plant_context, frame_A, p_ACa, frame_W, frame_W,
+          &dp_BA_dq /* ∂p_WA/∂q after this invocation */);
     } else {
       dp_BA_dq.setZero();
     }
     if (body_B_part_of_robot) {
-      plant().CalcJacobianTranslationalVelocity(
-          plant_context, JacobianWrtVariable::kQDot, frame_B, p_BCb, frame_W,
-          frame_W, &partial_temp /* ∂p_WB/∂q */);
+      plant().CalcJacobianPositionVector(
+          plant_context, frame_B, p_BCb, frame_W, frame_W,
+          &partial_temp /* ∂p_WB/∂q */);
       dp_BA_dq -= partial_temp;  // ∂p_WA/∂qᵣ - ∂p_WB/∂qᵣ.
     }
     ddist_dq.noalias() = ddist_dp_BA.transpose() * dp_BA_dq;
@@ -286,11 +285,11 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
 std::vector<RobotCollisionType>
 SceneGraphCollisionChecker::DoClassifyContextBodyCollisions(
     const CollisionCheckerContext& model_context) const {
-  // Collision check to get colliding geometry
+  // Collision check to get colliding geometry.
   const QueryObject<double>& query_object = model_context.GetQueryObject();
   const SceneGraphInspector<double>& inspector = query_object.inspector();
 
-  const auto distance_pairs =
+  const std::vector<SignedDistancePair<double>>& distance_pairs =
       query_object.ComputeSignedDistancePairwiseClosestPoints(
           GetLargestPadding());
 
@@ -298,7 +297,7 @@ SceneGraphCollisionChecker::DoClassifyContextBodyCollisions(
       plant().num_bodies(), RobotCollisionType::kNoCollision);
 
   for (const auto& distance_pair : distance_pairs) {
-    // Get the bodies corresponding to the distance pair
+    // Get the bodies corresponding to the distance pair.
     const FrameId frame_id_A = inspector.GetFrameId(distance_pair.id_A);
     const FrameId frame_id_B = inspector.GetFrameId(distance_pair.id_B);
     const Body<double>* body_A = plant().GetBodyFromFrameId(frame_id_A);
@@ -338,7 +337,8 @@ int SceneGraphCollisionChecker::DoMaxContextNumDistances(
   const SceneGraphInspector<double>& inspector = query_object.inspector();
   // Maximum number of SignedDistancePairs returned by calls to
   // ComputeSignedDistancePairwiseClosestPoints().
-  const auto collision_candidates = inspector.GetCollisionCandidates();
+  const std::set<std::pair<GeometryId, GeometryId>>& collision_candidates =
+      inspector.GetCollisionCandidates();
   int valid_candidate_count = 0;
   for (const auto& candidate : collision_candidates) {
     const FrameId frame_id_A = inspector.GetFrameId(candidate.first);
@@ -356,4 +356,4 @@ int SceneGraphCollisionChecker::DoMaxContextNumDistances(
 }
 
 }  // namespace planning
-}  // namespace anzu
+}  // namespace drake
