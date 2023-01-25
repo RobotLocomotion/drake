@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/multibody/inverse_kinematics/constraint_relaxing_ik.h"
 
 #include <memory>
 #include <stdexcept>
@@ -9,9 +9,9 @@
 #include "drake/solvers/solve.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 namespace {
+
 constexpr int kDefaultRandomSeed = 1234;
 }  // namespace
 
@@ -194,6 +194,5 @@ bool ConstraintRelaxingIk::SolveIk(
   return true;
 }
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

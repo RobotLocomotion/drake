@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/constraint_relaxing_ik.h"
+#include "drake/multibody/inverse_kinematics/constraint_relaxing_ik.h"
 
 #include <gtest/gtest.h>
 
@@ -7,8 +7,7 @@
 #include "drake/multibody/parsing/parser.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 // N random samples are taken from the configuration space (q), and
 // the corresponding end effector poses are computed with forward
@@ -108,6 +107,5 @@ GTEST_TEST(ConstraintRelaxingIkTest, SolveIkFromFk) {
       waypoints, kQcurrent, &q_sol, never_stop));
 }
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

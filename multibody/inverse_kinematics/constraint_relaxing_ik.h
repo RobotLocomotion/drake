@@ -10,8 +10,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 /**
  * A wrapper class around the IK planner. This class improves IK's usability by
@@ -89,6 +88,5 @@ class ConstraintRelaxingIk {
   multibody::BodyIndex end_effector_body_idx_{};
 };
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake
