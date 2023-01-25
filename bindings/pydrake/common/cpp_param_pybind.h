@@ -62,6 +62,8 @@ class Object {
     return Object(h.ptr());
   }
 
+  Object Clone() const;
+
  private:
   // Increments reference count. See `py::handle::inc_ref()` for more details.
   void inc_ref();

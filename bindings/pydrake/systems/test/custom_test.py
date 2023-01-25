@@ -300,6 +300,13 @@ class TestCustom(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "LeafSystem.*__init__"):
             Oops()
 
+    def test_leaf_system_state_and_cache_issue18653(self):
+        """
+        Checks behavior of Value[object] across context clones and
+        Context.SetTimeStateAndParametersFrom.
+        """
+        pass
+
     def test_all_leaf_system_overrides(self):
         test = self
 
@@ -949,3 +956,62 @@ class TestCustom(unittest.TestCase):
             system.CalcOutput(context, output)
             value = output.get_data(0)
             self.assertEqual(value.get_value(), expected_output_value)
+
+    def assert_equal_but_not_aliased(self, a, b):
+        self.assertEqual(a, b)
+        self.assertIsNot(a, b)
+
+    def test_context_and_value_object_set_from(self):
+        """
+        Shows how `Value[object]` behaves in a context, especially in
+        connection to `Context.SetTimeStateAndParametersFrom()`.
+
+        Helps to highlight failure mode illustrated in #18653.
+        """
+        arbitrary_object = {"key": "value"}
+
+        class SystemWithCacheAndState(LeafSystem):
+            def __init__(self):
+                super().__init__()
+                model_value = AbstractValue.Make(arbitrary_object)
+                self.state_index = self.DeclareAbstractState(model_value)
+
+                def calc_cache_noop(context, abstract_value):
+                    pass
+
+                self.cache_entry = self.DeclareCacheEntry(
+                    description="test",
+                    value_producer=ValueProducer(
+                        allocate=model_value.Clone,
+                        calc=calc_cache_noop,
+                    ),
+                )
+
+            def eval_state(self, context):
+                return context.get_abstract_state(self.state_index).get_value()
+
+        system = SystemWithCacheAndState()
+        context = system.CreateDefaultContext()
+        context_init = context.Clone()
+
+        cache = system.cache_entry.Eval(context)
+        self.assert_equal_but_not_aliased(cache, arbitrary_object)
+        state = system.eval_state(context)
+        self.assert_equal_but_not_aliased(state, arbitrary_object)
+
+        def check_set_from():
+            nonlocal cache, state
+            context.SetTimeStateAndParametersFrom(context_init)
+            # Ensure that we have cloned the object.
+            old_state = state
+            state = system.eval_state(context)
+            self.assert_equal_but_not_aliased(state, old_state)
+            # Warning: Cache objects are not cloned!
+            old_cache = cache
+            cache = system.cache_entry.Eval(context)
+            self.assertIs(cache, old_cache)
+
+        # Check twice. Per #18653, if we did not implement
+        # Value[object].SetFrom() correctly, this would fail the second time.
+        check_set_from()
+        check_set_from()
