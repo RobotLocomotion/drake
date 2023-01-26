@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/kinematic_trajectory_optimization.h"
+#include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 #include <algorithm>
 #include <limits>
@@ -19,7 +19,7 @@ using std::nullopt;
 using std::optional;
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 using math::BsplineBasis;
@@ -450,5 +450,5 @@ void KinematicTrajectoryOptimization::AddPathLengthCost(
 }
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

@@ -3,7 +3,7 @@
 #include "drake/solvers/constraint.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 /**
  * Implements the midpoint integration
@@ -62,5 +62,5 @@ class MidPointIntegrationConstraint : public solvers::Constraint {
   int dim_;
 };
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

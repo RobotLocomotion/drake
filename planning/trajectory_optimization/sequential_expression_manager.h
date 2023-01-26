@@ -10,7 +10,7 @@
 #include "drake/common/symbolic/expression.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 namespace internal {
 /*
@@ -126,5 +126,5 @@ class SequentialExpressionManager {
 };
 }  // namespace internal
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake
