@@ -62,27 +62,44 @@ class TestValue(unittest.TestCase):
         self.assertTrue("unique_ptr" in value.set_value.__doc__)
 
     def test_abstract_value_py_object(self):
-        expected = {"x": 10}
-        value = Value[object](expected)
-        # Value is by reference, *not* by copy.
-        self.assertIs(value.get_value(), expected)
-        # Update mutable version.
-        value.get_mutable_value()["y"] = 30
-        self.assertEqual(value.get_value(), expected)
+        # The Value constructor operates by taking a reference, not by copying.
+        initial_dict = {"x": 10}
+        value = Value[object](initial_dict)
+        self.assertIs(value.get_value(), initial_dict)
+        self.assertIs(value.get_mutable_value(), initial_dict)
+
+        # Therefore, mutating via the accessor will also mutate the original.
+        value.get_mutable_value()["y"] = 20
+        self.assertEqual(value.get_value(), {"x": 10, "y": 20})
+        self.assertEqual(initial_dict, {"x": 10, "y": 20})
+
         # Cloning the value should perform a deep copy of the Python object.
-        value_clone = copy.deepcopy(value)
-        expected_clone = value_clone.get_value()
-        self.assert_equal_but_not_aliased(expected_clone, expected)
+        cloned_value = copy.deepcopy(value)
+        cloned_dict = cloned_value.get_value()
+        self.assert_equal_but_not_aliased(cloned_dict, initial_dict)
+
+        # For both the original Value[] and the cloned Value[], mutating via
+        # the accessor should not influence the other one.
+        value.get_mutable_value()["y"] = 55
+        cloned_value.get_mutable_value()["y"] = 99
+        self.assertEqual(value.get_value(), {"x": 10, "y": 55})
+        self.assertEqual(initial_dict, {"x": 10, "y": 55})
+        self.assertEqual(cloned_value.get_value(), {"x": 10, "y": 99})
+        self.assertEqual(cloned_dict, {"x": 10, "y": 99})
+
         # Using `set_value` on the original Value[] should update the object
-        # reference to the new value.
-        expected_new = {"a": 20}
-        value.set_value(expected_new)
-        self.assertIs(value.get_value(), expected_new)
-        self.assertIsNot(value.get_value(), expected)
-        # Using `SetFrom` should produce a new object (#18653).
-        value.SetFrom(value_clone)
-        self.assert_equal_but_not_aliased(value.get_value(), expected)
-        self.assert_equal_but_not_aliased(value.get_value(), expected_clone)
+        # reference to the new value. The clone is unchanged.
+        new_dict = {"a": 444}
+        value.set_value(new_dict)
+        self.assertEqual(new_dict, {"a": 444})
+        self.assertIs(value.get_value(), new_dict)
+        self.assertIs(value.get_mutable_value(), new_dict)
+        self.assertEqual(cloned_value.get_value(), {"x": 10, "y": 99})
+
+        # Using `SetFrom` should perform a deep copy, not just alias (#18653).
+        value.SetFrom(cloned_value)
+        self.assertIs(cloned_value.get_value(), cloned_dict)
+        self.assert_equal_but_not_aliased(value.get_value(), cloned_dict)
 
     def assert_equal_but_not_aliased(self, a, b):
         self.assertEqual(a, b)
