@@ -407,6 +407,81 @@ int GeometryState<T>::GetFrameGroup(FrameId frame_id) const {
 }
 
 template <typename T>
+const std::string& GeometryState<T>::GetFrameGroupName(
+    SourceId source_id, int frame_group) const {
+  static const std::string empty;
+  auto source_it = source_to_frame_group_names_.find(source_id);
+  if (source_it == source_to_frame_group_names_.end()) {
+    return empty;
+  }
+  auto group_it = source_it->second.find(frame_group);
+  if (group_it == source_it->second.end()) {
+    return empty;
+  }
+  return group_it->second;
+}
+
+template <typename T>
+const std::string& GeometryState<T>::GetFrameGroupName(
+    FrameId frame_id) const {
+  return GetFrameGroupName(get_source_id(frame_id), GetFrameGroup(frame_id));
+}
+
+template <typename T>
+template <typename ID>
+std::string GeometryState<T>::BuildQualifiedName(
+    ID id, NameQualifiers qualifiers, std::string_view delimiter) const {
+  FrameId frame_id;
+  if constexpr (std::is_same_v<ID, FrameId>) {
+    frame_id = id;
+  } else {
+    frame_id = GetFrameId(id);
+  }
+
+  const int group_num = GetFrameGroup(frame_id);
+  const SourceId source_id = get_source_id(frame_id);
+  std::vector<std::string_view> names;
+  if (qualifiers & kQualifierSource) {
+    const std::string& source = GetName(source_id);
+    if (!source.empty()) {
+      names.push_back(source);
+    }
+  }
+  if (qualifiers & kQualifierFrameGroup) {
+    const std::string& group = GetFrameGroupName(source_id, group_num);
+    if (!group.empty()) {
+      names.push_back(group);
+    }
+  }
+  if constexpr (!std::is_same_v<ID, FrameId>) {
+    if (qualifiers & kQualifierFrame) {
+      const std::string& frame = GetName(frame_id);
+      if (!frame.empty()) {
+        names.push_back(frame);
+      }
+    }
+  }
+  names.push_back(GetName(id));
+  return fmt::format("{}", fmt::join(names, delimiter));
+}
+
+template <typename T>
+std::string GeometryState<T>::GetQualifiedName(
+    GeometryId id,
+    NameQualifiers qualifiers,
+    std::string_view delimiter) const {
+  return BuildQualifiedName<GeometryId>(id, qualifiers, delimiter);
+}
+
+template <typename T>
+std::string GeometryState<T>::GetQualifiedName(
+    FrameId id,
+    NameQualifiers qualifiers,
+    std::string_view delimiter) const {
+  return BuildQualifiedName<FrameId>(id, qualifiers, delimiter);
+}
+
+template <typename T>
 int GeometryState<T>::NumGeometriesForFrame(FrameId frame_id) const {
   const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
   return static_cast<int>(frame.child_geometries().size());
@@ -740,6 +815,12 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
 }
 
 template <typename T>
+void GeometryState<T>::NameFrameGroup(
+    SourceId source_id, int frame_group, std::string_view name) {
+  source_to_frame_group_names_[source_id][frame_group] = name;
+}
+
+template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
                                         const GeometryFrame& frame) {
   return RegisterFrame(source_id, InternalFrame::world_frame_id(), frame);
@@ -768,7 +849,23 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
     source_root_frame_map_[source_id].insert(frame_id);
   }
   FrameNameSet& f_name_set = source_frame_name_map_[source_id];
-  const auto& [iterator, was_inserted] = f_name_set.insert(frame.name());
+
+  // Since we want to be able to load the same model twice within the same
+  // source, we can only require that frame names are unique with an
+  // instance/frame group. Use a synthetic prefix to achieve that effect.
+
+  // TODO(rpoyner-tri): do we want to instead restructure the frame name set
+  // data structures by (source_id, frame_group)?
+  std::string group_prefix;
+  // Frames in the world instance/frame group don't get prefixes; this flows
+  // from internal choices about how to name the "world" frame. If we prefix
+  // world frame names here, we won't notice a second erroneous frame named
+  // "world". See GeometryStateTest::ManyWorldsRefuted.
+  if (frame.frame_group() != 0) {
+    group_prefix = std::to_string(frame.frame_group()) + "::";
+  }
+  const auto& [iterator, was_inserted] = f_name_set.insert(
+      group_prefix + frame.name());
   if (!was_inserted) {
     throw std::logic_error(
         fmt::format("Registering frame for source '{}'"

@@ -20,6 +20,7 @@
 #include "drake/geometry/internal_frame.h"
 #include "drake/geometry/internal_geometry.h"
 #include "drake/geometry/kinematics_vector.h"
+#include "drake/geometry/name_qualifiers.h"
 #include "drake/geometry/proximity_engine.h"
 #include "drake/geometry/render/render_camera.h"
 #include "drake/geometry/render/render_engine.h"
@@ -234,6 +235,22 @@ class GeometryState {
   /** Implementation of SceneGraphInspector::GetFrameGroup().  */
   int GetFrameGroup(FrameId frame_id) const;
 
+  /** XXX */
+  /** XXX */
+  const std::string& GetFrameGroupName(
+      SourceId Source_id, int frame_group) const;
+  const std::string& GetFrameGroupName(FrameId frame_id) const;
+
+  /** XXX */
+  std::string GetQualifiedName(
+      GeometryId id,
+      NameQualifiers qualifiers,
+      std::string_view delimiter) const;
+  std::string GetQualifiedName(
+      FrameId id,
+      NameQualifiers qualifiers,
+      std::string_view delimiter) const;
+
   /** Implementation of SceneGraphInspector::NumGeometriesForFrame().  */
   int NumGeometriesForFrame(FrameId frame_id) const;
 
@@ -342,6 +359,10 @@ class GeometryState {
    The default logic is to define name as "Source_##" where the number is the
    value of the returned SourceId.  */
   SourceId RegisterNewSource(const std::string& name = "");
+
+  // XXX
+  void NameFrameGroup(SourceId source_id, int frame_group,
+                      std::string_view name);
 
   /** Implementation of SceneGraph::RegisterFrame().  */
   FrameId RegisterFrame(SourceId source_id, const GeometryFrame& frame);
@@ -845,6 +866,10 @@ class GeometryState {
   }
   //@}
 
+  template <typename ID>
+  std::string BuildQualifiedName(
+    ID id, NameQualifiers qualifiers, std::string_view delimiter) const;
+
   // NOTE: If adding a member it is important that it be _explicitly_ copied
   // in the converting copy constructor and likewise tested in the unit test
   // for that constructor.
@@ -881,6 +906,10 @@ class GeometryState {
   // this map should be identical to those in source_frame_id_map_ and
   // source_root_frame_map_.
   std::unordered_map<SourceId, std::string> source_names_;
+
+  // XXX
+  using FrameGroupNames = std::unordered_map<int, std::string>;
+  std::unordered_map<SourceId, FrameGroupNames> source_to_frame_group_names_;
 
   // The registered geometry sources and the _anchored_ geometries that have
   // been registered on them. These don't fit in the frame hierarchy because

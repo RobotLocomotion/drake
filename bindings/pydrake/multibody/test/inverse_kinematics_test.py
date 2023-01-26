@@ -428,11 +428,11 @@ class TestInverseKinematics(unittest.TestCase):
         frame_id1 = inspector.GetGeometryIdByName(
             self.plant.GetBodyFrameIdOrThrow(
                 self.plant.GetBodyByName("body1").index()),
-            pydrake.geometry.Role.kProximity, "two_bodies::body1_collision")
+            pydrake.geometry.Role.kProximity, "body1_collision")
         frame_id2 = inspector.GetGeometryIdByName(
             self.plant.GetBodyFrameIdOrThrow(
                 self.plant.GetBodyByName("body2").index()),
-            pydrake.geometry.Role.kProximity, "two_bodies::body2_collision")
+            pydrake.geometry.Role.kProximity, "body2_collision")
         ik.AddDistanceConstraint(
             geometry_pair=(frame_id1, frame_id2),
             distance_lower=distance_lower, distance_upper=distance_upper)
@@ -690,11 +690,11 @@ class TestConstraints(unittest.TestCase):
         frame_id1 = inspector.GetGeometryIdByName(
             self.plant_f.GetBodyFrameIdOrThrow(
                 self.plant_f.GetBodyByName("body1").index()),
-            pydrake.geometry.Role.kProximity, "two_bodies::body1_collision")
+            pydrake.geometry.Role.kProximity, "body1_collision")
         frame_id2 = inspector.GetGeometryIdByName(
             self.plant_f.GetBodyFrameIdOrThrow(
                 self.plant_f.GetBodyByName("body2").index()),
-            pydrake.geometry.Role.kProximity, "two_bodies::body2_collision")
+            pydrake.geometry.Role.kProximity, "body2_collision")
         constraint = ik.DistanceConstraint(
             plant=variables.plant, geometry_pair=(frame_id1, frame_id2),
             distance_lower=0.1, distance_upper=0.2,

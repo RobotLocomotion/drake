@@ -343,6 +343,11 @@ class SceneGraph final : public systems::LeafSystem<T> {
    @throws std::exception if the name is not unique.  */
   SourceId RegisterSource(const std::string& name = "");
 
+
+  // XXX
+  void NameFrameGroup(SourceId source_id, int frame_group,
+                      std::string_view name);
+
   /** Reports if the given source id is registered.
    @param id       The id of the source to query.  */
   bool SourceIsRegistered(SourceId id) const;

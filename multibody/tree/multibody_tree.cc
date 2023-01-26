@@ -116,12 +116,12 @@ const Body<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
       MaybeGetUniqueBaseBodyIndex(model_instance);
   if (!base_body_index.has_value()) {
     throw std::logic_error("Model " +
-                           instance_index_to_name_.at(model_instance) +
+                           GetModelInstanceName(model_instance) +
                            " does not have a unique base body.");
   }
   if (!owned_bodies_[base_body_index.value()]->is_floating()) {
     throw std::logic_error("Model " +
-                           instance_index_to_name_.at(model_instance) +
+                           GetModelInstanceName(model_instance) +
                            " has a unique base body, but it is not free.");
   }
   return *owned_bodies_[base_body_index.value()];
@@ -465,7 +465,7 @@ const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
   if (body == nullptr) {
     throw std::logic_error(
         fmt::format("Body '{}' in model instance '{}' is not a RigidBody.",
-                    name, instance_index_to_name_.at(model_instance)));
+                    name, GetModelInstanceName(model_instance)));
   }
   return *body;
 }
@@ -483,7 +483,7 @@ void MultibodyTree<T>::ThrowJointSubtypeMismatch(
   throw std::logic_error(fmt::format(
       "GetJointByName(): Joint '{}' in model instance '{}' is not of type {} "
       "but of type {}.",
-      joint.name(), instance_index_to_name_.at(joint.model_instance()),
+      joint.name(), GetModelInstanceName(joint.model_instance()),
       desired_type, NiceTypeName::Get(joint)));
 }
 

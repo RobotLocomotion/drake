@@ -101,7 +101,7 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
 
   if (HasBodyNamed(name, model_instance)) {
     throw std::logic_error(
-        "Model instance '" + instance_index_to_name_.at(model_instance) +
+        "Model instance '" + this->GetModelInstanceName(model_instance) +
             "' already contains a body named '" + name + "'. " +
             "Body names must be unique within a given model.");
   }
@@ -298,7 +298,7 @@ const JointType<T>& MultibodyTree<T>::AddJoint(
   if (HasJointNamed(joint->name(), joint->model_instance())) {
     throw std::logic_error(
         "Model instance '" +
-            instance_index_to_name_.at(joint->model_instance()) +
+            GetModelInstanceName(joint->model_instance()) +
             "' already contains a joint named '" + joint->name() + "'. " +
             "Joint names must be unique within a given model.");
   }
@@ -351,7 +351,7 @@ const JointActuator<T>& MultibodyTree<T>::AddJointActuator(
   if (HasJointActuatorNamed(name, joint.model_instance())) {
     throw std::logic_error(
         "Model instance '" +
-            instance_index_to_name_.at(joint.model_instance()) +
+            GetModelInstanceName(joint.model_instance()) +
             "' already contains a joint actuator named '" + name + "'. " +
             "Joint actuator names must be unique within a given model.");
   }
@@ -390,6 +390,30 @@ ModelInstanceIndex MultibodyTree<T>::AddModelInstance(const std::string& name) {
   this->SetElementIndex(name, index, &instance_name_to_index_);
   instance_index_to_name_[index] = name;
   return index;
+}
+
+template <typename T>
+void MultibodyTree<T>::RenameModelInstance(ModelInstanceIndex model_instance,
+                                           const std::string& name) {
+  const auto old_name = this->GetModelInstanceName(model_instance);
+  if (old_name == name) {
+    return;
+  }
+  if (HasModelInstanceNamed(name)) {
+    throw std::logic_error(
+        "This model already contains a model instance named '" + name +
+            "'. Model instance names must be unique within a given model.");
+  }
+
+  if (topology_is_valid()) {
+    throw std::logic_error("This MultibodyTree is finalized already. "
+                           "Therefore renaming model instances is not "
+                           "allowed. See documentation for Finalize() for "
+                           "details.");
+  }
+  instance_name_to_index_.erase(old_name);
+  this->SetElementIndex(name, model_instance, &instance_name_to_index_);
+  instance_index_to_name_[model_instance] = {name, false};
 }
 
 template <typename T>

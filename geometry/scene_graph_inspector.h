@@ -15,6 +15,7 @@
 #include "drake/geometry/geometry_set.h"
 #include "drake/geometry/geometry_version.h"
 #include "drake/geometry/internal_frame.h"
+#include "drake/geometry/name_qualifiers.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
@@ -215,6 +216,21 @@ class SceneGraphInspector {
    @throws std::exception if `frame_id` does not map to a registered frame.
    @internal This value is equivalent to the old "model instance id".  */
   int GetFrameGroup(FrameId frame_id) const;
+
+  /** XXX */
+  const std::string& GetFrameGroupName(
+      SourceId Source_id, int frame_group) const;
+  const std::string& GetFrameGroupName(FrameId frame_id) const;
+
+  /** XXX */
+  std::string GetQualifiedName(
+      GeometryId id,
+      NameQualifiers qualifiers = kQualifierFrameGroup,
+      std::string_view delimiter = "::") const;
+  std::string GetQualifiedName(
+      FrameId id,
+      NameQualifiers qualifiers = kQualifierFrameGroup,
+      std::string_view delimiter = "::") const;
 
   /** Reports the number of geometries affixed to the frame with the given
    `frame_id`. This count does _not_ include geometries attached to frames that

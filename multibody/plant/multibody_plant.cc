@@ -241,27 +241,6 @@ struct JointLimitsPenaltyParametersEstimator {
 };
 }  // namespace internal
 
-namespace {
-
-// Hack to fully qualify frame names, pending resolution of #9128. Used by
-// geometry registration routines. When this hack is removed, also undo the
-// de-hacking step within internal_geometry_names.cc. Note that unlike the
-// ScopedName convention, here the world and default model instances do not
-// use any scoping.
-template <typename T>
-std::string GetScopedName(
-    const MultibodyPlant<T>& plant,
-    ModelInstanceIndex model_instance, const std::string& name) {
-  if (model_instance != world_model_instance() &&
-      model_instance != default_model_instance()) {
-    return plant.GetModelInstanceName(model_instance) + "::" + name;
-  } else {
-    return name;
-  }
-}
-
-}  // namespace
-
 template <typename T>
 MultibodyPlant<T>::MultibodyPlant(double time_step)
     : MultibodyPlant(nullptr, time_step) {
@@ -709,9 +688,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id =
-      RegisterGeometry(body, X_BG, shape,
-                       GetScopedName(*this, body.model_instance(), name));
+  GeometryId id = RegisterGeometry(body, X_BG, shape, name);
   scene_graph_->AssignRole(*source_id_, id, properties);
 
   // TODO(SeanCurtis-TRI): Eliminate the automatic assignment of perception
@@ -760,8 +737,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
-  GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+  GeometryId id = RegisterGeometry(body, X_BG, shape, name);
 
   scene_graph_->AssignRole(*source_id_, id, std::move(properties));
   DRAKE_ASSERT(ssize(collision_geometries_) == num_bodies());
@@ -882,8 +858,7 @@ void MultibodyPlant<T>::RegisterRigidBodyWithSceneGraph(
     if (!body_has_registered_frame(body)) {
       FrameId frame_id = scene_graph_->RegisterFrame(
           source_id_.value(),
-          GeometryFrame(
-              GetScopedName(*this, body.model_instance(), body.name()),
+          GeometryFrame(body.name(),
               /* TODO(@SeanCurtis-TRI): Add test coverage for this
                * model-instance support as requested in #9390. */
               body.model_instance()));

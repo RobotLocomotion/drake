@@ -1067,7 +1067,7 @@ TEST_F(MujocoParserTest, GeomAutoName) {
   auto geom_ids = inspector.GetAllGeometryIds();
   EXPECT_EQ(geom_ids.size(), 2);
   for (auto geom_id : geom_ids) {
-    EXPECT_EQ(inspector.GetName(geom_id), fmt::format("test::geom0"));
+    EXPECT_EQ(inspector.GetName(geom_id), fmt::format("geom0"));
   }
 }
 
