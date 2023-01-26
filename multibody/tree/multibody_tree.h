@@ -36,6 +36,17 @@
 namespace drake {
 namespace multibody {
 
+namespace internal {
+struct InstanceName {
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(InstanceName);
+  InstanceName() {}
+  InstanceName(const std::string& _name, bool _frozen)
+      : name(_name), frozen(_frozen) {}
+  std::string name;
+  mutable bool frozen{false};
+};
+}  // namespace internal
+
 template <typename T> class Body;
 template <typename T> class BodyFrame;
 template <typename T> class Frame;
@@ -536,6 +547,18 @@ class MultibodyTree {
   // @throws std::exception if Finalize() was already called on `this` tree.
   ModelInstanceIndex AddModelInstance(const std::string& name);
 
+  // Renames an existing model instance.
+  //
+  // @param[in] model_instance
+  //   The instance to rename.
+  // @param[in] name
+  //   A string that uniquely identifies the instance within `this`
+  //   model. An exception is thrown if an instance with the same name
+  //   already exists in the model. See HasModelInstanceNamed().
+  // @throws std::exception if Finalize() was already called on `this` tree.
+  void RenameModelInstance(ModelInstanceIndex model_instance,
+                           const std::string& name);
+
   // @}
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
@@ -757,7 +780,7 @@ class MultibodyTree {
 
   // See MultibodyPlant method.
   const std::string& GetModelInstanceName(
-      ModelInstanceIndex model_instance) const;
+      ModelInstanceIndex model_instance, bool freeze = true) const;
 
   // Implements MultibodyPlant::HasUniqueFreeBaseBody.
   bool HasUniqueFreeBaseBodyImpl(ModelInstanceIndex model_instance) const;
@@ -3069,7 +3092,8 @@ class MultibodyTree {
       instance_name_to_index_;
 
   // Map used to find a model instance name by its model instance index.
-  std::unordered_map<ModelInstanceIndex, std::string> instance_index_to_name_;
+  std::unordered_map<ModelInstanceIndex, internal::InstanceName>
+      instance_index_to_name_;
 
   // Body node indexes ordered by level (a.k.a depth). Therefore for the
   // i-th level body_node_levels_[i] contains the list of all body node indexes

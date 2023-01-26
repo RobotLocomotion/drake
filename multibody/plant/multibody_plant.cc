@@ -254,7 +254,10 @@ std::string GetScopedName(
     ModelInstanceIndex model_instance, const std::string& name) {
   if (model_instance != world_model_instance() &&
       model_instance != default_model_instance()) {
-    return plant.GetModelInstanceName(model_instance) + "::" + name;
+    // XXX probably don't want to unfreeze here, but rather nuke the whole
+    // thing.
+    unused(plant);
+    return std::to_string(model_instance) + "::" + name;
   } else {
     return name;
   }

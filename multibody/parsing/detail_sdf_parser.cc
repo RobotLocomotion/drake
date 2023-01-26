@@ -129,8 +129,9 @@ std::string GetRelativeBodyName(
     const Body<double>& body,
     ModelInstanceIndex relative_to_model_instance,
     const MultibodyPlant<double>& plant) {
+  // XXX does this count as a name copy?
   const std::string& relative_to_model_absolute_name =
-      plant.GetModelInstanceName(relative_to_model_instance);
+      plant.GetModelInstanceName(relative_to_model_instance, false);
   // If the relative_to_model instance is the world_model_instance, we need to
   // prefix the body name with the model name
   if (relative_to_model_instance == world_model_instance()) {

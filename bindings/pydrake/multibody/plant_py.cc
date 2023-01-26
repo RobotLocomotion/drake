@@ -713,10 +713,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetActuatedJointIndices", &Class::GetActuatedJointIndices,
             py::arg("model_instance"), cls_doc.GetActuatedJointIndices.doc)
         .def("GetModelInstanceName",
-            overload_cast_explicit<const string&, ModelInstanceIndex>(
+            overload_cast_explicit<const string&, ModelInstanceIndex, bool>(
                 &Class::GetModelInstanceName),
-            py::arg("model_instance"), py_rvp::reference_internal,
-            cls_doc.GetModelInstanceName.doc)
+            py::arg("model_instance"), py::arg("freeze") = false,
+            py_rvp::reference_internal, cls_doc.GetModelInstanceName.doc)
         .def("HasModelInstanceNamed", &Class::HasModelInstanceNamed,
             py::arg("name"), cls_doc.HasModelInstanceNamed.doc)
         .def("HasBodyNamed",
