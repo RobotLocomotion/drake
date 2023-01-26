@@ -67,8 +67,17 @@ def _gurobi_impl(repo_ctx):
         executable = False,
     )
 
+    # Capture whether or not Gurobi tests can run in parallel.
+    exclusive_int = repo_ctx.os.environ.get("GUROBI_EXCLUSIVE", "1")
+    is_exclusive = bool(int(exclusive_int) != 0)
+    repo_ctx.file(
+        "defs.bzl",
+        content = "GUROBI_EXCLUSIVE = {}".format(is_exclusive),
+        executable = False,
+    )
+
 gurobi_repository = repository_rule(
-    environ = ["GUROBI_HOME"],
+    environ = ["GUROBI_HOME", "GUROBI_EXCLUSIVE"],
     local = True,
     implementation = _gurobi_impl,
 )
