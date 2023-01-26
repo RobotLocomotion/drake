@@ -216,9 +216,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
-  const internal::ContactJacobians<T>& EvalContactJacobians(
-      const systems::Context<T>& context) const;
-
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
 

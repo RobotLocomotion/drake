@@ -22,7 +22,6 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sparse_linear_operator.h"
 #include "drake/multibody/hydroelastics/hydroelastic_engine.h"
-#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
@@ -1186,133 +1185,6 @@ void MultibodyPlant<T>::ExcludeCollisionGeometriesWithCollisionFilterGroupPair(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcNormalAndTangentContactJacobians(
-    const systems::Context<T>& context,
-    const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
-    MatrixX<T>* Jn_ptr, MatrixX<T>* Jt_ptr,
-    std::vector<RotationMatrix<T>>* R_WC_set) const {
-  this->ValidateContext(context);
-  DRAKE_DEMAND(Jn_ptr != nullptr);
-  DRAKE_DEMAND(Jt_ptr != nullptr);
-
-  const int num_contacts = contact_pairs.size();
-
-  // Jn is defined such that vn = Jn * v, with vn of size nc.
-  auto& Jn = *Jn_ptr;
-  Jn.resize(num_contacts, num_velocities());
-
-  // Jt is defined such that vt = Jt * v, with vt of size 2nc.
-  auto& Jt = *Jt_ptr;
-  Jt.resize(2 * num_contacts, num_velocities());
-
-  if (R_WC_set != nullptr) R_WC_set->clear();
-
-  // Quick no-op exit. Notice we did resize Jn, Jt and R_WC_set to be zero
-  // sized.
-  if (num_contacts == 0) return;
-
-  const Frame<T>& frame_W = world_frame();
-  for (int icontact = 0; icontact < num_contacts; ++icontact) {
-    const auto& point_pair = contact_pairs[icontact];
-
-    const GeometryId geometryA_id = point_pair.id_A;
-    const GeometryId geometryB_id = point_pair.id_B;
-
-    const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
-    const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
-    const Body<T>& bodyA = get_body(bodyA_index);
-    const Body<T>& bodyB = get_body(bodyB_index);
-
-    // Penetration depth > 0 if bodies interpenetrate.
-    const Vector3<T>& nhat_BA_W = point_pair.nhat_BA_W;
-    const Vector3<T>& p_WC = point_pair.p_WC;
-
-    // For point Ac (origin of frame A shifted to C), calculate Jv_v_WAc (Ac's
-    // translational velocity Jacobian in the world frame W with respect to
-    // generalized velocities v).  Note: Ac's translational velocity in W can
-    // be written in terms of this Jacobian as v_WAc = Jv_v_WAc * v.
-    Matrix3X<T> Jv_WAc(3, this->num_velocities());
-    internal_tree().CalcJacobianTranslationalVelocity(context,
-                                                      JacobianWrtVariable::kV,
-                                                      bodyA.body_frame(),
-                                                      frame_W,
-                                                      p_WC,
-                                                      frame_W,
-                                                      frame_W,
-                                                      &Jv_WAc);
-
-    // Similarly, for point Bc (origin of frame B shifted to C), calculate
-    // Jv_v_WBc (Bc's translational velocity Jacobian in W with respect to v).
-    Matrix3X<T> Jv_WBc(3, this->num_velocities());
-    internal_tree().CalcJacobianTranslationalVelocity(context,
-                                                      JacobianWrtVariable::kV,
-                                                      bodyB.body_frame(),
-                                                      frame_W,
-                                                      p_WC,
-                                                      frame_W,
-                                                      frame_W,
-                                                      &Jv_WBc);
-
-    // Computation of the normal separation velocities Jacobian Jn:
-    //
-    // The velocity of Bc relative to Ac is
-    //   v_AcBc_W = v_WBc - v_WAc.
-    // From where the separation velocity is computed as
-    //   vn = -v_AcBc_W.dot(nhat_BA_W) = -nhat_BA_Wᵀ⋅v_AcBc_W
-    // where the negative sign stems from the sign convention for vn and xdot.
-    // This can be written in terms of the Jacobians as
-    //   vn = -nhat_BA_Wᵀ⋅(Jv_WBc - Jv_WAc)⋅v
-    Jn.row(icontact) = nhat_BA_W.transpose() * (Jv_WAc - Jv_WBc);
-
-    // Computation of the tangential velocities Jacobian Jt:
-    //
-    // Compute the orientation of a contact frame C at the contact point such
-    // that the z-axis Cz equals to nhat_BA_W. The tangent vectors are
-    // arbitrary, with the only requirement being that they form a valid right
-    // handed basis with nhat_BA.
-    const math::RotationMatrix<T> R_WC =
-        math::RotationMatrix<T>::MakeFromOneVector(nhat_BA_W, 2);
-    if (R_WC_set != nullptr) {
-      R_WC_set->push_back(R_WC);
-    }
-
-    const Vector3<T> that1_W = R_WC.matrix().col(0);  // that1 = Cx.
-    const Vector3<T> that2_W = R_WC.matrix().col(1);  // that2 = Cy.
-
-    // The velocity of Bc relative to Ac is
-    //   v_AcBc_W = v_WBc - v_WAc.
-    // The first two components of this velocity in C corresponds to the
-    // tangential velocities in a plane normal to nhat_BA.
-    //   vx_AcBc_C = that1⋅v_AcBc = that1ᵀ⋅(Jv_WBc - Jv_WAc)⋅v
-    //   vy_AcBc_C = that2⋅v_AcBc = that2ᵀ⋅(Jv_WBc - Jv_WAc)⋅v
-    Jt.row(2 * icontact)     = that1_W.transpose() * (Jv_WBc - Jv_WAc);
-    Jt.row(2 * icontact + 1) = that2_W.transpose() * (Jv_WBc - Jv_WAc);
-  }
-}
-
-// TODO(amcastro-tri): Move this method to TamsiDriver when #16955 is
-// resolved.
-template <typename T>
-void MultibodyPlant<T>::CalcContactJacobiansCache(
-    const systems::Context<T>& context,
-    internal::ContactJacobians<T>* contact_jacobians) const {
-  auto& Jn = contact_jacobians->Jn;
-  auto& Jt = contact_jacobians->Jt;
-  auto& Jc = contact_jacobians->Jc;
-  auto& R_WC_list = contact_jacobians->R_WC_list;
-
-  this->CalcNormalAndTangentContactJacobians(
-      context, EvalDiscreteContactPairs(context), &Jn, &Jt, &R_WC_list);
-
-  Jc.resize(3 * Jn.rows(), num_velocities());
-  for (int i = 0; i < Jn.rows(); ++i) {
-    Jc.row(3 * i) = Jt.row(2 * i);
-    Jc.row(3 * i + 1) = Jt.row(2 * i + 1);
-    Jc.row(3 * i + 2) = Jn.row(i);
-  }
-}
-
-template <typename T>
 BodyIndex MultibodyPlant<T>::FindBodyByGeometryId(
     GeometryId geometry_id) const {
   if (!geometry_id.is_valid()) {
@@ -1714,118 +1586,12 @@ void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
   }
 }
 
-// TODO(amcastro-tri): Remove this method with the resolution of #16955.
 template <typename T>
 void MultibodyPlant<T>::CalcContactResultsDiscrete(
     const systems::Context<T>& context,
     ContactResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  contact_results->Clear();
-  contact_results->set_plant(this);
-  if (num_collision_geometries() == 0) return;
-
-  switch (contact_model_) {
-    case ContactModel::kPoint:
-      AppendContactResultsDiscretePointPair(context, contact_results);
-      break;
-
-    case ContactModel::kHydroelastic:
-      // N.B. We are simply computing the hydro force as function of the state,
-      // not the actual discrete approximation used by the contact solver.
-      AppendContactResultsContinuousHydroelastic(context, contact_results);
-      break;
-
-    case ContactModel::kHydroelasticWithFallback:
-      // Simply merge the contributions of each contact representation.
-      AppendContactResultsDiscretePointPair(context, contact_results);
-
-      // N.B. We are simply computing the hydro force as function of the state,
-      // not the actual discrete approximation used by the contact solver.
-      AppendContactResultsContinuousHydroelastic(context, contact_results);
-      break;
-  }
-}
-
-// TODO(amcastro-tri): Remove this method with the resolution of #16955.
-template <typename T>
-void MultibodyPlant<T>::AppendContactResultsDiscretePointPair(
-    const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
-  this->ValidateContext(context);
-  DRAKE_DEMAND(contact_results != nullptr);
-  DRAKE_DEMAND(contact_results->plant() == this);
-  if (num_collision_geometries() == 0) return;
-
-  const std::vector<PenetrationAsPointPair<T>>& point_pairs =
-      EvalPointPairPenetrations(context);
-  const std::vector<RotationMatrix<T>>& R_WC_set =
-      EvalContactJacobians(context).R_WC_list;
-  const contact_solvers::internal::ContactSolverResults<T>& solver_results =
-      EvalContactSolverResults(context);
-
-  const VectorX<T>& fn = solver_results.fn;
-  const VectorX<T>& ft = solver_results.ft;
-  const VectorX<T>& vt = solver_results.vt;
-  const VectorX<T>& vn = solver_results.vn;
-
-  // The strict equality is true only when point contact is used alone.
-  // Otherwise there are quadrature points in addition to the point pairs.
-  const int num_contacts = point_pairs.size();
-  DRAKE_DEMAND(fn.size() >= num_contacts);
-  DRAKE_DEMAND(ft.size() >= 2 * num_contacts);
-  DRAKE_DEMAND(vn.size() >= num_contacts);
-  DRAKE_DEMAND(vt.size() >= 2 * num_contacts);
-
-  for (size_t icontact = 0; icontact < point_pairs.size(); ++icontact) {
-    const auto& pair = point_pairs[icontact];
-    const GeometryId geometryA_id = pair.id_A;
-    const GeometryId geometryB_id = pair.id_B;
-
-    const BodyIndex bodyA_index = FindBodyByGeometryId(geometryA_id);
-    const BodyIndex bodyB_index = FindBodyByGeometryId(geometryB_id);
-
-    const Vector3<T> p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
-
-    const RotationMatrix<T>& R_WC = R_WC_set[icontact];
-
-    // Contact forces applied on B at contact point C.
-    const Vector3<T> f_Bc_C(ft(2 * icontact), ft(2 * icontact + 1),
-                            -fn(icontact));
-    const Vector3<T> f_Bc_W = R_WC * f_Bc_C;
-
-    // Slip velocity.
-    const T slip = vt.template segment<2>(2 * icontact).norm();
-
-    // Separation velocity in the normal direction.
-    const T separation_velocity = vn(icontact);
-
-    // TODO(SeanCurtis-TRI) It is distinctly possible to report two contacts
-    //  between bodyA and bodyB such that sometimes it gets reported (A, B) and
-    //  sometimes (B, A). The example below illustrates a simple scenario in
-    //  which that would occur:
-    //    1. Geometry A (or B) has *multiple* collision geometries.
-    //    2. Assume that the collision geometries (called 1, 2, & 3) are added
-    //       in order as 1 added to A, 2 added to B, and 3 added to A.
-    //       Therefore collision geometries (1 and 3) would belong to A and 2
-    //       to B.
-    //    3. We generate contact pairs (1, 2), (2, 3) (i.e., *both* geometries
-    //       of A collide with the *single* geometry of B).
-    //    4. The pairs will be reported as (1, 2) and (2, 3) (and not (3, 2))
-    //       because SceneGraph guarantees that the geometry ids in the
-    //       point pair results will be ordered consistently.
-    //    5. So, for the first contact (1, 2), we'd get body pair (A, B). But
-    //       for the second contact (2, 3), we'd get body pair (B, A).
-    //  This means that any processing of contact results has to recognize that
-    //  interactions between bodies can be characterized as (A, B) or (B, A) and
-    //  to "combine" them, the associated quantities would have to be reversed.
-    //  It would be better if MBP made the guarantee that all body pairs (A, B)
-    //  are always presented as (A, B) and not (B, A). (Both in this contact as
-    //  well as hydro contact). This also applies to continuous point pairs.
-
-    // Add pair info to the contact results.
-    contact_results->AddContactInfo({bodyA_index, bodyB_index, f_Bc_W, p_WC,
-                                     separation_velocity, slip, pair});
-  }
+  discrete_update_manager_->CalcContactResults(context, contact_results);
 }
 
 template <typename T>
@@ -2838,14 +2604,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       &MultibodyPlant<T>::CalcContactSurfaces,
       {this->configuration_ticket()});
   cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
-
-  // Cache contact Jacobians.
-  auto& contact_jacobians_cache_entry = this->DeclareCacheEntry(
-      std::string("Contact Jacobians Jn(q), Jt(q), Jc(q) and frames R_WC."),
-      &MultibodyPlant<T>::CalcContactJacobiansCache,
-      {this->configuration_ticket(), this->all_parameters_ticket()});
-  cache_indexes_.contact_jacobians =
-      contact_jacobians_cache_entry.cache_index();
 
   if (is_discrete()) {
     // Cache discrete solver computations.
