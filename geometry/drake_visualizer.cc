@@ -824,9 +824,9 @@ void DrakeVisualizer<T>::PopulateDynamicFrameData(
     const int count =
         inspector.NumGeometriesForFrameWithRole(frame_id, params.role);
     if (count > 0) {
-      dynamic_frames.push_back({frame_id, count,
-                                inspector.GetOwningSourceName(frame_id) +
-                                    "::" + inspector.GetName(frame_id)});
+      std::string name = inspector.GetQualifiedName(
+          frame_id, kQualifierSource|kQualifierFrameGroup);
+      dynamic_frames.push_back({frame_id, count, name});
     }
   }
 }

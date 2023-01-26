@@ -39,6 +39,7 @@ drake_cc_package_library(
         ":meshcat_point_cloud_visualizer",
         ":meshcat_visualizer",
         ":meshcat_visualizer_params",
+        ":name_qualifiers",
         ":proximity_engine",
         ":proximity_properties",
         ":read_obj",
@@ -230,6 +231,11 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "name_qualifiers",
+    hdrs = ["name_qualifiers.h"],
+)
+
+drake_cc_library(
     name = "geometry_state",
     srcs = ["geometry_state.cc"],
     hdrs = ["geometry_state.h"],
@@ -243,6 +249,7 @@ drake_cc_library(
         ":internal_frame",
         ":internal_geometry",
         ":kinematics_vector",
+        ":name_qualifiers",
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
