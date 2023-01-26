@@ -791,6 +791,14 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
   CompliantContactManagerTester::DoCalcContactResults(
       *manager_, *plant_context_, contact_results.get());
 
+  // For this case the friction force must be on the friction cone. For TAMSI
+  // accuracy of this prediction depends on the accuracy of the slip speed,
+  // which in turn depends on the convergence tolerance of the solver. For SAP,
+  // projections onto the friction cone are accurate to machine epsilon and
+  // therefore no error is expected.
+  const double kRelativeSlipTolerance =
+      config.contact_solver == DiscreteContactSolver::kTamsi ? 2.0e-6 : 0.0;
+
   if (config.point_contact) {
     // Test point contact.
     EXPECT_EQ(contact_results->num_point_pair_contacts(), 1);
@@ -808,7 +816,9 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
 
     // Verify that the contact force lies exactly on the boundary of the
     // friction cone. i.e. |fₜ| = μ|fₙ|
-    EXPECT_EQ(-f_Bc_W.x(), kMu_ * f_Bc_W.z());
+    const double tolerance = kRelativeSlipTolerance * kMu_ * f_Bc_W.z();
+    EXPECT_NEAR(-f_Bc_W.x(), kMu_ * f_Bc_W.z(), tolerance);
+
     // Should be slipping but still at equilibrium penetration.
     EXPECT_GT(contact_info.slip_speed(), 0);
   } else {
@@ -828,7 +838,10 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
 
     // Verify that the contact force lies exactly on the boundary of the
     // friction cone. i.e. |fₜ| = μ|fₙ|
-    EXPECT_EQ(-F_Ac_W.translational().x(), kMu_ * F_Ac_W.translational().z());
+    const double tolerance =
+        kRelativeSlipTolerance * kMu_ * F_Ac_W.translational().z();
+    EXPECT_NEAR(-F_Ac_W.translational().x(), kMu_ * F_Ac_W.translational().z(),
+                tolerance);
 
     for (const HydroelasticQuadraturePointData<double>& data :
          contact_info.quadrature_point_data()) {
@@ -841,12 +854,28 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
 // Setup test cases using point and hydroelastic contact.
 std::vector<ContactTestConfig> MakeTestCases() {
   return std::vector<ContactTestConfig>{
-      {.description = "HydroelasticContact_SAP",
+      {.description = "HydroelasticContactOnly_SAP",
+       .point_contact = false,
+       // We verify that the test passes with hydroelastic only.
+       .contact_model = ContactModel::kHydroelastic,
+       .contact_solver = DiscreteContactSolver::kSap},
+      {.description = "HydroelasticContactWithFallback_SAP",
        .point_contact = false,
        .contact_solver = DiscreteContactSolver::kSap},
       {.description = "PointContact_SAP",
        .point_contact = true,
        .contact_solver = DiscreteContactSolver::kSap},
+      {.description = "HydroelasticContactWithFallback_TAMSI",
+       .point_contact = false,
+       .contact_solver = DiscreteContactSolver::kTamsi},
+      {.description = "HydroelasticContactOnly_TAMSI",
+       .point_contact = false,
+       // We verify that the test passes with hydroelastic only.
+       .contact_model = ContactModel::kHydroelastic,
+       .contact_solver = DiscreteContactSolver::kTamsi},
+      {.description = "PointContact_TAMSI",
+       .point_contact = true,
+       .contact_solver = DiscreteContactSolver::kTamsi},
   };
 }
 
