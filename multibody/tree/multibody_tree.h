@@ -531,6 +531,18 @@ class MultibodyTree {
   // @throws std::exception if Finalize() was already called on `this` tree.
   ModelInstanceIndex AddModelInstance(const std::string& name);
 
+  // Renames an existing model instance.
+  //
+  // @param[in] model_instance
+  //   The instance to rename.
+  // @param[in] name
+  //   A string that uniquely identifies the instance within `this`
+  //   model. An exception is thrown if an instance with the same name
+  //   already exists in the model. See HasModelInstanceNamed().
+  // @throws std::exception if Finalize() was already called on `this` tree.
+  void RenameModelInstance(ModelInstanceIndex model_instance,
+                           const std::string& name);
+
   // @}
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
 
