@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/kinematic_trajectory_optimization.h"
+#include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 #include <optional>
 
@@ -17,7 +17,7 @@ using Eigen::VectorXd;
 using std::nullopt;
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 using solvers::ExpressionConstraint;
@@ -403,5 +403,5 @@ TEST_F(KinematicTrajectoryOptimizationTest, SolveWithAlmostEverything) {
 
 }  // namespace
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

@@ -278,12 +278,12 @@ drake_cc_binary(
         ":acrobot_plant",
         "//common:is_approx_equal_abstol",
         "//geometry:drake_visualizer",
+        "//planning/trajectory_optimization:direct_collocation",
         "//solvers:snopt_solver",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:finite_horizon_linear_quadratic_regulator",
         "//systems/primitives:trajectory_source",
-        "//systems/trajectory_optimization:direct_collocation",
         "@gflags",
     ],
 )

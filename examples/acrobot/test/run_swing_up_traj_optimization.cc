@@ -12,13 +12,13 @@
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/planning/trajectory_optimization/direct_collocation.h"
 #include "drake/solvers/snopt_solver.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/finite_horizon_linear_quadratic_regulator.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
-#include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 using drake::solvers::SolutionResult;
 
@@ -27,6 +27,7 @@ namespace examples {
 namespace acrobot {
 
 typedef trajectories::PiecewisePolynomial<double> PiecewisePolynomialType;
+using planning::trajectory_optimization::DirectCollocation;
 
 namespace {
 DEFINE_double(realtime_factor, 1.0,
@@ -46,8 +47,8 @@ int do_main() {
   const int kNumTimeSamples = 21;
   const double kMinimumTimeStep = 0.05;
   const double kMaximumTimeStep = 0.2;
-  systems::trajectory_optimization::DirectCollocation dircol(
-      &acrobot, *context, kNumTimeSamples, kMinimumTimeStep, kMaximumTimeStep);
+  DirectCollocation dircol(&acrobot, *context, kNumTimeSamples,
+                           kMinimumTimeStep, kMaximumTimeStep);
   auto& prog = dircol.prog();
 
   dircol.AddEqualTimeIntervalsConstraints();

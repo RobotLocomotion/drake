@@ -5,14 +5,14 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/planning/trajectory_optimization/multiple_shooting.h"
 #include "drake/systems/analysis/integrator_base.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
 #include "drake/systems/primitives/linear_system.h"
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 // Helper struct holding a time-step value for continuous-time
@@ -53,10 +53,11 @@ class DirectTranscription : public MultipleShooting {
   /// to their current values (if they are connected/fixed in @p context).
   /// @default kUseFirstInputIfItExists.
   DirectTranscription(
-      const System<double>* system, const Context<double>& context,
-      int num_time_samples,
-      const std::variant<InputPortSelection, InputPortIndex>& input_port_index =
-          InputPortSelection::kUseFirstInputIfItExists);
+      const systems::System<double>* system,
+      const systems::Context<double>& context, int num_time_samples,
+      const std::variant<systems::InputPortSelection, systems::InputPortIndex>&
+          input_port_index =
+              systems::InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt): Generalize the symbolic short-cutting to handle this case,
   //  and remove the special-purpose constructor (unless we want it for
@@ -86,10 +87,11 @@ class DirectTranscription : public MultipleShooting {
   /// similar, so that kwargs determine which overload is suggested, instead of
   /// hoping that type checking does the right thing.}
   DirectTranscription(
-      const TimeVaryingLinearSystem<double>* system,
-      const Context<double>& context, int num_time_samples,
-      const std::variant<InputPortSelection, InputPortIndex>& input_port_index =
-          InputPortSelection::kUseFirstInputIfItExists);
+      const systems::TimeVaryingLinearSystem<double>* system,
+      const systems::Context<double>& context, int num_time_samples,
+      const std::variant<systems::InputPortSelection, systems::InputPortIndex>&
+          input_port_index =
+              systems::InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt): Support more than just forward Euler integration
   //  (perhaps by taking IntegratorBase as an optional parameter?).
@@ -113,10 +115,12 @@ class DirectTranscription : public MultipleShooting {
   /// to their current values (if they are connected/fixed in @p context).
   /// @default kUseFirstInputIfItExists.
   DirectTranscription(
-      const System<double>* system, const Context<double>& context,
-      int num_time_samples, TimeStep fixed_timestep,
-      const std::variant<InputPortSelection, InputPortIndex>& input_port_index =
-          InputPortSelection::kUseFirstInputIfItExists);
+      const systems::System<double>* system,
+      const systems::Context<double>& context, int num_time_samples,
+      TimeStep fixed_timestep,
+      const std::variant<systems::InputPortSelection, systems::InputPortIndex>&
+          input_port_index =
+              systems::InputPortSelection::kUseFirstInputIfItExists);
 
   // TODO(russt):  Implement constructor for continuous time systems with
   // time as a decision variable; and perhaps add support for mixed
@@ -144,15 +148,19 @@ class DirectTranscription : public MultipleShooting {
   // constraints to impose the dynamics if possible.  Returns true iff the
   // constraints are added.
   bool AddSymbolicDynamicConstraints(
-      const System<double>* system, const Context<double>& context,
-      const std::variant<InputPortSelection, InputPortIndex>& input_port_index);
+      const systems::System<double>* system,
+      const systems::Context<double>& context,
+      const std::variant<systems::InputPortSelection, systems::InputPortIndex>&
+          input_port_index);
 
   // Attempts to create an autodiff version of the plant, and to impose
   // the generic (nonlinear) constraints to impose the dynamics.
   // Aborts if the conversion ToAutoDiffXd fails.
   void AddAutodiffDynamicConstraints(
-      const System<double>* system, const Context<double>& context,
-      const std::variant<InputPortSelection, InputPortIndex>& input_port_index);
+      const systems::System<double>* system,
+      const systems::Context<double>& context,
+      const std::variant<systems::InputPortSelection, systems::InputPortIndex>&
+          input_port_index);
 
   // Constrain the final input to match the penultimate, otherwise the final
   // input is unconstrained.
@@ -167,21 +175,24 @@ class DirectTranscription : public MultipleShooting {
   // provided @p system and @p context have only one group of discrete states
   // and only one (possibly multidimensional) input.
   void ValidateSystem(
-      const System<double>& system, const Context<double>& context,
-      const std::variant<InputPortSelection, InputPortIndex>& input_port_index);
+      const systems::System<double>& system,
+      const systems::Context<double>& context,
+      const std::variant<systems::InputPortSelection, systems::InputPortIndex>&
+          input_port_index);
 
   // AutoDiff versions of the System components (for the constraints).
   // These values are allocated iff the dynamic constraints are allocated
   // as DirectTranscriptionConstraint, otherwise they are nullptr.
-  std::unique_ptr<const System<AutoDiffXd>> system_;
-  std::unique_ptr<Context<AutoDiffXd>> context_;
-  std::unique_ptr<IntegratorBase<AutoDiffXd>> integrator_;
-  const InputPort<AutoDiffXd>* input_port_{nullptr};
-  FixedInputPortValue* input_port_value_{nullptr};  // Owned by the context.
+  std::unique_ptr<const systems::System<AutoDiffXd>> system_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> context_;
+  std::unique_ptr<systems::IntegratorBase<AutoDiffXd>> integrator_;
+  const systems::InputPort<AutoDiffXd>* input_port_{nullptr};
+  // Owned by the context.
+  systems::FixedInputPortValue* input_port_value_{nullptr};
 
   const bool discrete_time_system_{false};
 };
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

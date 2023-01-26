@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
+#include "drake/planning/trajectory_optimization/multiple_shooting.h"
 
 #include <cmath>
 #include <cstddef>
@@ -13,7 +13,7 @@
 #include "drake/solvers/solve.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 namespace {
 
@@ -636,5 +636,5 @@ GTEST_TEST(MultipleShootingTest, NewSequentialVariableTest) {
 
 }  // anonymous namespace
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

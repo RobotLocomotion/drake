@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
+#include "drake/planning/trajectory_optimization/multiple_shooting.h"
 
 #include <algorithm>
 #include <cmath>
@@ -13,7 +13,7 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 using internal::SequentialExpressionManager;
@@ -396,5 +396,5 @@ solvers::MathematicalProgramResult Solve(
 }
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

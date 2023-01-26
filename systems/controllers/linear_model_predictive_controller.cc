@@ -4,15 +4,15 @@
 #include <utility>
 
 #include "drake/common/eigen_types.h"
+#include "drake/planning/trajectory_optimization/direct_transcription.h"
 #include "drake/solvers/solve.h"
-#include "drake/systems/trajectory_optimization/direct_transcription.h"
 
 namespace drake {
 namespace systems {
 namespace controllers {
 
+using planning::trajectory_optimization::DirectTranscription;
 using solvers::VectorXDecisionVariable;
-using trajectory_optimization::DirectTranscription;
 
 template <typename T>
 LinearModelPredictiveController<T>::LinearModelPredictiveController(

@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/direct_transcription.h"
+#include "drake/planning/trajectory_optimization/direct_transcription.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -16,9 +16,22 @@
 #include "drake/systems/framework/system_symbolic_inspector.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
+using systems::Context;
+using systems::DiscreteValues;
+using systems::ExplicitEulerIntegrator;
+using systems::FixedInputPortValue;
+using systems::InputPort;
+using systems::InputPortIndex;
+using systems::InputPortSelection;
+using systems::IntegratorBase;
+using systems::PeriodicEventData;
+using systems::PortDataType;
+using systems::System;
+using systems::SystemSymbolicInspector;
+using systems::TimeVaryingLinearSystem;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -374,5 +387,5 @@ void DirectTranscription::ValidateSystem(
 }
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

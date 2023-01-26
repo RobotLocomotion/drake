@@ -6,18 +6,19 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/systems/trajectory_optimization/direct_collocation.h"
-#include "drake/systems/trajectory_optimization/direct_transcription.h"
-#include "drake/systems/trajectory_optimization/kinematic_trajectory_optimization.h"
+#include "drake/planning/trajectory_optimization/direct_collocation.h"
+#include "drake/planning/trajectory_optimization/direct_transcription.h"
+#include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
 template <typename C>
 void RegisterAddConstraintToAllKnotPoints(
-    py::class_<systems::trajectory_optimization::MultipleShooting>* cls) {
-  using drake::systems::trajectory_optimization::MultipleShooting;
-  constexpr auto& doc = pydrake_doc.drake.systems.trajectory_optimization;
+    py::class_<planning::trajectory_optimization::MultipleShooting>* cls) {
+  using drake::planning::trajectory_optimization::MultipleShooting;
+  constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
   cls->def(
       "AddConstraintToAllKnotPoints",
       [](MultipleShooting* self, std::shared_ptr<C> constraint,
@@ -29,15 +30,18 @@ void RegisterAddConstraintToAllKnotPoints(
       doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_shared_ptr);
 }
 
-PYBIND11_MODULE(trajectory_optimization, m) {
+void DefinePlanningTrajectoryOptimization(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
-  using namespace drake::systems::trajectory_optimization;
-  constexpr auto& doc = pydrake_doc.drake.systems.trajectory_optimization;
+  using namespace drake::planning::trajectory_optimization;
+  constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
 
   using solvers::MathematicalProgram;
   using solvers::MatrixXDecisionVariable;
   using solvers::VectorXDecisionVariable;
 
+  // TODO(jwnimmer-tri) We should probably do all importing in our
+  // planning_py.cc rather than in our helper functions. That will probably be
+  // easier to topo-sort.
   py::module::import("pydrake.symbolic");
   py::module::import("pydrake.systems.framework");
   py::module::import("pydrake.systems.primitives");
@@ -240,16 +244,19 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       py::arg("next_state"), py::arg("input"), py::arg("next_input"),
       py::arg("prog"), doc.AddDirectCollocationConstraint.doc);
 
-  // TimeStep
-  py::class_<TimeStep>(m, "TimeStep", doc.TimeStep.doc)
-      .def(py::init<double>(), py::arg("value"))
-      .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
-
   {
     using Class = DirectTranscription;
     constexpr auto& cls_doc = doc.DirectTranscription;
     py::class_<Class, MultipleShooting> cls(
         m, "DirectTranscription", doc.DirectTranscription.doc);
+
+    // Inject the nested TimeStep so it's already bound when we bind the
+    // constructor that depends on it. In C++ it's *not* nested. Nesting makes
+    // things a bit more pythonic -- better would be kwonly named arg.
+    py::class_<TimeStep>(cls, "TimeStep", doc.TimeStep.doc)
+        .def(py::init<double>(), py::arg("value"))
+        .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
+
     cls  // BR
         .def(py::init<const systems::System<double>*,
                  const systems::Context<double>&, int,
@@ -342,5 +349,6 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake
