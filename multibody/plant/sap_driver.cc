@@ -512,6 +512,13 @@ void SapDriver<T>::AddBallConstraints(
     manager().internal_tree().CalcJacobianTranslationalVelocity(
         context, JacobianWrtVariable::kV, body_B.body_frame(), frame_W, p_WQ,
         frame_W, frame_W, &Jv_WBq_W);
+
+    // TODO(amcastro-tri): Per conversation with Sherm. Consider using the same
+    // point here, affixed to each corresponding body. That is, we could for
+    // instance use the middle point M and write:
+    //   p_WM = 0.5 * (p_WP + p_WQ)
+    //   Compute Jacobian Jv_AmBm_W instead.
+    // Consider conservation of energy and momentum.
     Jv_ApBq_W = (Jv_WBq_W - Jv_WAp_W);
 
     // TODO(amcastro-tri): consider exposing this parameter.
