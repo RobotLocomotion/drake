@@ -179,23 +179,6 @@ drake_pybind_library(
     ],
 )
 
-drake_pybind_library(
-    name = "trajectory_optimization_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake:symbolic_types_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
-    ],
-    cc_srcs = ["trajectory_optimization_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":framework_py",
-        ":module_py",
-        "//bindings/pydrake/solvers",
-        "//bindings/pydrake:trajectories_py",
-    ],
-)
-
 # TODO(eric.cousineau): Put this under test once `pydot` is in
 # `install_prereqs.sh`.
 drake_py_library(
@@ -312,7 +295,6 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":primitives_py",
     ":rendering_py",
     ":sensors_py",
-    ":trajectory_optimization_py",
 ]
 
 PY_LIBRARIES = [
@@ -564,14 +546,6 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody:plant_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "trajectory_optimization_test",
-    deps = [
-        ":trajectory_optimization_py",
-        "//bindings/pydrake/examples",
     ],
 )
 

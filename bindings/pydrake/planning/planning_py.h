@@ -15,6 +15,9 @@ namespace internal {
 /* Defines bindings per planning_py_robot_diagram.cc. */
 void DefinePlanningRobotDiagram(py::module m);
 
+/* Defines bindings per planning_py_traj_optimization.cc. */
+void DefinePlanningTrajectoryOptimization(py::module m);
+
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

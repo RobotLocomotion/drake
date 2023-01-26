@@ -36,6 +36,7 @@ drake_pybind_library(
         "planning_py.h",
         "planning_py.cc",
         "planning_py_robot_diagram.cc",
+        "planning_py_traj_optimization.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -43,6 +44,11 @@ drake_pybind_library(
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/systems:framework_py",
+        "//bindings/pydrake/systems:module_py",
+        "//bindings/pydrake/solvers",
+        "//bindings/pydrake/systems:primitives_py",
+        "//bindings/pydrake:trajectories_py",
     ],
 )
 
@@ -61,6 +67,14 @@ drake_py_unittest(
     deps = [
         ":planning",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "trajectory_optimization_test",
+    deps = [
+        ":planning",
+        "//bindings/pydrake/examples",
     ],
 )
 
