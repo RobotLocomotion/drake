@@ -643,7 +643,7 @@ void DoScalarDependentDefinitions(py::module m) {
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
       .def("Build", &DiagramBuilder<T>::Build,
-          // Keep alive, ownership (tr.): `return` keeps `self` alive.
+          // Keep alive, ownership (tr.): `self` keeps `return` alive.
           py::keep_alive<1, 0>(), doc.DiagramBuilder.Build.doc)
       .def("BuildInto", &DiagramBuilder<T>::BuildInto, py::arg("target"),
           // Keep alive, ownership (tr.): `target` keeps `self` alive.
