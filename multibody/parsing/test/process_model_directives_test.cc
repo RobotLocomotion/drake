@@ -57,9 +57,9 @@ void VerifyCollisionFilters(
                               collision_id_set.end());
   const int num_links = ids.size();
   for (int m = 0; m < num_links; ++m) {
-    const std::string& m_name = inspector.GetName(ids[m]);
+    const std::string& m_name = inspector.GetQualifiedName(ids[m], 2);
     for (int n = m + 1; n < num_links; ++n) {
-      const std::string& n_name = inspector.GetName(ids[n]);
+      const std::string& n_name = inspector.GetQualifiedName(ids[n], 2);
       CollisionPair names{m_name, n_name};
       SCOPED_TRACE(fmt::format("{} vs {}", names.first(), names.second()));
       auto contains =

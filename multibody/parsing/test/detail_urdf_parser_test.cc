@@ -1030,10 +1030,9 @@ template <typename ShapeType>
   const auto& inspector = scene_graph.model_inspector();
   const std::string name = geometry::ShapeName(shape).name();
   try {
-    // Note: MBP prepends the model index to the geometry name; in this case
-    // that model instance name is "test_robot".
+    // XXX change behavior
     const geometry::GeometryId geometry_id =
-        inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
+        inspector.GetGeometryIdByName(frame_id, role, name);
     const std::string shape_type =
         geometry::ShapeName(inspector.GetShape(geometry_id)).name();
     if (shape_type != name) {
@@ -1510,7 +1509,7 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
         plant_.GetBodyFrameIdOrThrow(
             plant_.GetBodyByName(fmt::format("link{}", k)).index()),
         geometry::Role::kProximity,
-        fmt::format("collision_filter_group_parsing_test::link{}_sphere", k));
+        fmt::format("link{}_sphere", k));
     ids[k] = geometry_id;
   }
 

@@ -232,17 +232,14 @@ multibody::ModelInstanceIndex AddAndWeldModelFrom(
     const RigidTransform<double>& X_PC, MultibodyPlant<T>* plant) {
   DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
 
-  // Since we need to force the model name here, exploit the fact that model
-  // directives processing can do that.
+  // Since we need to force the model name here, exploit auto-renaming to avoid
+  // name collision errors, and then rename after parsing.
   multibody::Parser parser(plant);
-  multibody::parsing::ModelDirectives directives;
-  multibody::parsing::ModelDirective directive;
-  directive.add_model = multibody::parsing::AddModel{
-      model_url, model_name, {}, {}};
-  directives.directives.push_back(directive);
-  const auto models = ProcessModelDirectives(directives, &parser);
+  parser.SetAutoRenaming(true);
+  const auto models = parser.AddModelsFromUrl(model_url);
   DRAKE_THROW_UNLESS(models.size() == 1);
-  const multibody::ModelInstanceIndex new_model = models[0].model_instance;
+  plant->RenameModelInstance(models[0], model_name);
+  const multibody::ModelInstanceIndex new_model = models[0];
 
   const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
   plant->WeldFrames(parent, child_frame, X_PC);
