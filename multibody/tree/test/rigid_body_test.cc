@@ -157,9 +157,13 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
   rigid_body_->SetCenterOfMassInBodyFrame(context_ptr, p_BoBcm_B);
 
   // CalcSpatialInertiaInBodyFrame() does not check whether B's inertia
-  // properties make sense. However, Shift() does (whether to Bcm or elsewhere).
+  // properties make sense. However, the spatial inertia constructor does.
   M_BBo_B = rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);
-  DRAKE_EXPECT_THROWS_MESSAGE(M_BBo_B.Shift(p_BoBcm_B),  // M_BBcm_B is invalid.
+  const double m = M_BBo_B.get_mass();
+  const Vector3d com = M_BBo_B.get_com();
+  const UnitInertia<double> G = M_BBo_B.get_unit_inertia();
+  // Ensure M_BBcm_B is invalid via the spatial inertia constructor.
+  DRAKE_EXPECT_THROWS_MESSAGE(SpatialInertia<double>(m, com, G),
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid[^]*");
 #endif
 }
