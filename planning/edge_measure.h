@@ -1,5 +1,7 @@
 #pragma once
 
+#include "drake/common/drake_copyable.h"
+
 namespace drake {
 namespace planning {
 
@@ -35,6 +37,8 @@ namespace planning {
  the same checker instance would satisfy that requirement. */
 class EdgeMeasure {
  public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EdgeMeasure)
+
   /** @pre `0 ≤ distance`
    @pre `0 ≤ alpha ≤ 1` to indicate defined `alpha`, negative otherwise. */
   EdgeMeasure(double distance, double alpha)
