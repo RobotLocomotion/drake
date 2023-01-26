@@ -6,8 +6,8 @@ implementation. Developers can parameterize it to run against a specific
 concrete checker implementation, e.g., scene_graph_collision_checker_test.
 */
 
-#include <ostream>
 #include <memory>
+#include <ostream>
 #include <utility>
 #include <vector>
 
