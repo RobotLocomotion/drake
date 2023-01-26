@@ -14,6 +14,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/math/spatial_force.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -116,6 +117,9 @@ void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
                         Vector3d(0.786258, -0.048422, 1.043315)));
 }
 
+// TODO(rpoyner-tri): Consider alternatives to forcing the model name: either a
+// breaking change to some other naming scheme, decoupling of renaming from
+// parsing, etc.
 // Load a SDF model and weld it to the MultibodyPlant.
 // @param model_path Full path to the sdf model file. i.e. with
 // FindResourceOrThrow
@@ -132,9 +136,18 @@ multibody::ModelInstanceIndex AddAndWeldModelFrom(
     const RigidTransform<double>& X_PC, MultibodyPlant<T>* plant) {
   DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
 
+  // Since we need to force the model name here, exploit the fact that model
+  // directives processing can do that.
   multibody::Parser parser(plant);
-  const multibody::ModelInstanceIndex new_model =
-      parser.AddModelFromFile(model_path, model_name);
+  multibody::parsing::ModelDirectives directives;
+  multibody::parsing::ModelDirective directive;
+  directive.add_model = multibody::parsing::AddModel{
+      std::string("file://") + model_path, model_name, {}, {}};
+  directives.directives.push_back(directive);
+  const auto models = ProcessModelDirectives(directives, &parser);
+  DRAKE_THROW_UNLESS(models.size() == 1);
+  const multibody::ModelInstanceIndex new_model = models[0].model_instance;
+
   const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
   plant->WeldFrames(parent, child_frame, X_PC);
   return new_model;
@@ -275,8 +288,9 @@ template <typename T>
 void ManipulationStation<T>::AddManipulandFromFile(
     const std::string& model_file, const RigidTransform<double>& X_WObject) {
   multibody::Parser parser(plant_);
-  const auto model_index =
-      parser.AddModelFromFile(FindResourceOrThrow(model_file));
+  const auto models = parser.AddModels(FindResourceOrThrow(model_file));
+  DRAKE_THROW_UNLESS(models.size() == 1);
+  const auto model_index = models[0];
   const auto indices = plant_->GetBodyIndices(model_index);
   // Only support single-body objects for now.
   // Note: this could be generalized fairly easily... would just want to
@@ -496,8 +510,9 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
   multibody::Parser parser(owned_controller_plant_.get());
-  const auto controller_iiwa_model =
-      parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
+  const auto models = parser.AddModels(iiwa_model_.model_path);
+  DRAKE_THROW_UNLESS(models.size() == 1);
+  const auto controller_iiwa_model = models[0];
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),
