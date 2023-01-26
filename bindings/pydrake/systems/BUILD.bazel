@@ -179,6 +179,14 @@ drake_pybind_library(
     ],
 )
 
+# 2023-05-01 Remove this target upon completion of deprecation.
+drake_py_library(
+    name = "trajectory_optimization_py",
+    srcs = ["trajectory_optimization.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = ["//bindings/pydrake/planning"],
+)
+
 # TODO(eric.cousineau): Put this under test once `pydot` is in
 # `install_prereqs.sh`.
 drake_py_library(
@@ -306,6 +314,7 @@ PY_LIBRARIES = [
     ":perception_py",
     ":planar_scenegraph_visualizer_py",
     ":pyplot_visualizer_py",
+    ":trajectory_optimization_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -546,6 +555,14 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities",
         "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody:plant_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "trajectory_optimization_dep_test",
+    deps = [
+        ":trajectory_optimization_py",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
