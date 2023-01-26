@@ -7,6 +7,7 @@ concrete checker implementation, e.g., scene_graph_collision_checker_test.
 */
 
 #include <memory>
+#include <ostream>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,9 @@ struct CollisionCheckerTestParams {
   // others; the default here provides relatively light stress.
   int thread_stress_iterations{10};
 };
+
+std::ostream& operator<<(std::ostream& out,
+                         const CollisionCheckerTestParams& p);
 
 class CollisionCheckerAbstractTestSuite
     : public testing::TestWithParam<CollisionCheckerTestParams> {
