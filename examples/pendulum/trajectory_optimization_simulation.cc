@@ -7,13 +7,13 @@
 #include "drake/examples/pendulum/pendulum_geometry.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/geometry/drake_visualizer.h"
+#include "drake/planning/trajectory_optimization/direct_collocation.h"
 #include "drake/solvers/solve.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controlled_system.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/trajectory_source.h"
-#include "drake/systems/trajectory_optimization/direct_collocation.h"
 
 using drake::solvers::SolutionResult;
 
@@ -21,6 +21,7 @@ namespace drake {
 namespace examples {
 namespace pendulum {
 
+using planning::trajectory_optimization::DirectCollocation;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -38,9 +39,8 @@ int DoMain() {
   const int kNumTimeSamples = 21;
   const double kMinimumTimeStep = 0.2;
   const double kMaximumTimeStep = 0.5;
-  systems::trajectory_optimization::DirectCollocation dircol(
-      pendulum.get(), *context, kNumTimeSamples, kMinimumTimeStep,
-      kMaximumTimeStep);
+  DirectCollocation dircol(pendulum.get(), *context, kNumTimeSamples,
+                           kMinimumTimeStep, kMaximumTimeStep);
   auto& prog = dircol.prog();
 
   dircol.AddEqualTimeIntervalsConstraints();

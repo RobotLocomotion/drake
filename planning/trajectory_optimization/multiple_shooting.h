@@ -12,12 +12,12 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
+#include "drake/planning/trajectory_optimization/sequential_expression_manager.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
-#include "drake/systems/trajectory_optimization/sequential_expression_manager.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 /// MultipleShooting is an abstract class for trajectory optimization that
@@ -515,5 +515,5 @@ class MultipleShooting {
 };
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

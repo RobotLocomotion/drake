@@ -6,19 +6,22 @@ import numpy as np
 
 from pydrake.examples import PendulumPlant
 from pydrake.math import eq, BsplineBasis
-from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
-import pydrake.solvers as mp
-from pydrake.symbolic import Variable
-from pydrake.systems.framework import InputPortSelection
-from pydrake.systems.primitives import LinearSystem
-from pydrake.systems.trajectory_optimization import (
+from pydrake.planning import (
     AddDirectCollocationConstraint,
     DirectCollocation,
     DirectCollocationConstraint,
     DirectTranscription,
     KinematicTrajectoryOptimization,
-    TimeStep,
 )
+from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
+import pydrake.solvers as mp
+from pydrake.symbolic import Variable
+from pydrake.systems.framework import InputPortSelection
+from pydrake.systems.primitives import LinearSystem
+from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
+from pydrake.symbolic import Variable
+from pydrake.systems.framework import InputPortSelection
+from pydrake.systems.primitives import LinearSystem
 
 
 class TestTrajectoryOptimization(unittest.TestCase):
@@ -61,12 +64,12 @@ class TestTrajectoryOptimization(unittest.TestCase):
         equal_time_con = dircol.AddEqualTimeIntervalsConstraints()
         self.assertEqual(len(equal_time_con), 19)
         duration_bound = dircol.AddDurationBounds(
-            lower_bound=.3*21, upper_bound=0.4*21)
+            lower_bound=0.3*21, upper_bound=0.4*21)
         self.assertIsInstance(duration_bound.evaluator(), mp.LinearConstraint)
         final_cost = dircol.AddFinalCost(2*x.dot(x))
         self.assertIsInstance(final_cost.evaluator(), mp.Cost)
 
-        initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
+        initial_u = PiecewisePolynomial.ZeroOrderHold([0, 0.3*21],
                                                       np.zeros((1, 2)))
         initial_x = PiecewisePolynomial()
         dircol.SetInitialTrajectory(traj_init_u=initial_u,
@@ -137,9 +140,11 @@ class TestTrajectoryOptimization(unittest.TestCase):
 
     def test_direct_transcription(self):
         # Integrator.
-        plant = LinearSystem(A=[0.], B=[1.], C=[1.], D=[0.], time_period=0.1)
+        plant = LinearSystem(
+            A=[0.0], B=[1.0], C=[1.0], D=[0.0], time_period=0.1)
         context = plant.CreateDefaultContext()
 
+        # Constructor for discrete systems.
         dirtran = DirectTranscription(plant, context, num_time_samples=21)
 
         # Spell out most of the methods, regardless of whether they make sense
@@ -158,7 +163,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
         dirtran.AddConstraintToAllKnotPoints(u[0] == 0)
         dirtran.AddFinalCost(2*x.dot(x))
 
-        initial_u = PiecewisePolynomial.ZeroOrderHold([0, .3*21],
+        initial_u = PiecewisePolynomial.ZeroOrderHold([0, 0.3*21],
                                                       np.zeros((1, 2)))
         initial_x = PiecewisePolynomial()
         dirtran.SetInitialTrajectory(initial_u, initial_x)
@@ -169,6 +174,15 @@ class TestTrajectoryOptimization(unittest.TestCase):
         states = dirtran.GetStateSamples(result)
         input_traj = dirtran.ReconstructInputTrajectory(result)
         state_traj = dirtran.ReconstructStateTrajectory(result)
+
+        # Confirm that the constructor for continuous systems works (and
+        # confirm binding of nested TimeStep).
+        plant = LinearSystem(
+            A=[0.0], B=[1.0], C=[1.0], D=[0.0], time_period=0.0)
+        context = plant.CreateDefaultContext()
+        dirtran = DirectTranscription(
+            plant, context, num_time_samples=21,
+            fixed_timestep=DirectTranscription.TimeStep(0.1))
 
     def test_kinematic_trajectory_optimization(self):
         trajopt = KinematicTrajectoryOptimization(num_positions=2,

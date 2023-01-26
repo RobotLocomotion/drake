@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/integration_constraint.h"
+#include "drake/planning/trajectory_optimization/integration_constraint.h"
 
 #include <gtest/gtest.h>
 
@@ -6,7 +6,7 @@
 #include "drake/math/autodiff_gradient.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 GTEST_TEST(MidPointIntegrationConstraintTest, Test) {
   const int dim{3};
@@ -58,5 +58,5 @@ GTEST_TEST(MidPointIntegrationConstraintTest, Test) {
   EXPECT_TRUE(CompareMatrices(y_grad, y_grad_expected, 1E-14));
 }
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

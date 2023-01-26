@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/sequential_expression_manager.h"
+#include "drake/planning/trajectory_optimization/sequential_expression_manager.h"
 
 #include <fmt/format.h>
 #include <gtest/gtest.h>
@@ -8,7 +8,7 @@
 #include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 namespace internal {
 
@@ -188,5 +188,5 @@ TEST_F(SequentialExpressionManagerTests, GetVariables) {
 
 }  // namespace internal
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

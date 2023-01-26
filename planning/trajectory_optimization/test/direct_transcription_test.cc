@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/direct_transcription.h"
+#include "drake/planning/trajectory_optimization/direct_transcription.h"
 
 #include <cmath>
 #include <cstddef>
@@ -20,13 +20,23 @@
 #include "drake/systems/primitives/trajectory_linear_system.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 namespace {
 
 using solvers::Solve;
 using symbolic::Expression;
 using symbolic::Variable;
+using systems::AffineSystem;
+using systems::BasicVector;
+using systems::Context;
+using systems::DiscreteUpdateEvent;
+using systems::DiscreteValues;
+using systems::InputPortIndex;
+using systems::LinearSystem;
+using systems::SymbolicVectorSystem;
+using systems::TimeVaryingLinearSystem;
+using systems::TrajectoryLinearSystem;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -526,5 +536,5 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
 
 }  // anonymous namespace
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

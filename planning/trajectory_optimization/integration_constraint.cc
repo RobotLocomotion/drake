@@ -1,10 +1,10 @@
-#include "drake/systems/trajectory_optimization/integration_constraint.h"
+#include "drake/planning/trajectory_optimization/integration_constraint.h"
 
 #include <utility>
 #include <vector>
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 MidPointIntegrationConstraint::MidPointIntegrationConstraint(int dim)
@@ -53,5 +53,5 @@ void MidPointIntegrationConstraint::DoEval(
 }
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

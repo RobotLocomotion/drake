@@ -4,13 +4,13 @@
 #include <variant>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/planning/trajectory_optimization/multiple_shooting.h"
 #include "drake/solvers/constraint.h"
 #include "drake/systems/framework/context.h"
 #include "drake/systems/framework/system.h"
-#include "drake/systems/trajectory_optimization/multiple_shooting.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 /// DirectCollocation implements the approach to trajectory optimization as
@@ -55,13 +55,14 @@ class DirectCollocation : public MultipleShooting {
   ///
   /// @throws std::exception if `system` is not supported by this direct
   /// collocation method.
-  DirectCollocation(const System<double>* system,
-                    const Context<double>& context, int num_time_samples,
-                    double minimum_timestep, double maximum_timestep,
-                    std::variant<InputPortSelection, InputPortIndex>
-                        input_port_index =
-                    InputPortSelection::kUseFirstInputIfItExists,
-                    bool assume_non_continuous_states_are_fixed = false);
+  DirectCollocation(
+      const systems::System<double>* system,
+      const systems::Context<double>& context, int num_time_samples,
+      double minimum_timestep, double maximum_timestep,
+      std::variant<systems::InputPortSelection, systems::InputPortIndex>
+          input_port_index =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+      bool assume_non_continuous_states_are_fixed = false);
 
   // NOTE: The fixed timestep constructor, which would avoid adding h as
   // decision variables, has been removed since it complicates the API and code.
@@ -84,11 +85,11 @@ class DirectCollocation : public MultipleShooting {
 
   // Store system-relevant data for e.g. computing the derivatives during
   // trajectory reconstruction.
-  const System<double>* system_{nullptr};
-  const std::unique_ptr<Context<double>> context_;
-  const std::unique_ptr<ContinuousState<double>> continuous_state_;
-  const InputPort<double>* input_port_{nullptr};
-  FixedInputPortValue* input_port_value_{nullptr};
+  const systems::System<double>* system_{nullptr};
+  const std::unique_ptr<systems::Context<double>> context_;
+  const std::unique_ptr<systems::ContinuousState<double>> continuous_state_;
+  const systems::InputPort<double>* input_port_{nullptr};
+  systems::FixedInputPortValue* input_port_value_{nullptr};
 };
 
 /// Implements the direct collocation constraints for a first-order hold on
@@ -107,9 +108,11 @@ class DirectCollocationConstraint : public solvers::Constraint {
   /// @throws std::exception if `system` is not supported by this direct
   /// collocation method.
   DirectCollocationConstraint(
-      const System<double>& system, const Context<double>& context,
-      std::variant<InputPortSelection, InputPortIndex> input_port_index =
-          InputPortSelection::kUseFirstInputIfItExists,
+      const systems::System<double>& system,
+      const systems::Context<double>& context,
+      std::variant<systems::InputPortSelection, systems::InputPortIndex>
+          input_port_index =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
       bool assume_non_continuous_states_are_fixed = false);
 
   ~DirectCollocationConstraint() override = default;
@@ -119,11 +122,11 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
  protected:
   DirectCollocationConstraint(
-      const System<double>& system, const Context<double>& context,
-      int num_states, int num_inputs,
-      std::variant<InputPortSelection, InputPortIndex> input_port_index,
+      const systems::System<double>& system,
+      const systems::Context<double>& context, int num_states, int num_inputs,
+      std::variant<systems::InputPortSelection, systems::InputPortIndex>
+          input_port_index,
       bool assume_non_continuous_states_are_fixed);
-
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override;
@@ -138,11 +141,11 @@ class DirectCollocationConstraint : public solvers::Constraint {
   void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
                 AutoDiffVecXd* xdot) const;
 
-  const std::unique_ptr<System<AutoDiffXd>> system_;
-  std::unique_ptr<Context<AutoDiffXd>> context_;
-  const InputPort<AutoDiffXd>* input_port_{nullptr};
-  FixedInputPortValue* input_port_value_{nullptr};
-  std::unique_ptr<ContinuousState<AutoDiffXd>> derivatives_;
+  const std::unique_ptr<systems::System<AutoDiffXd>> system_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> context_;
+  const systems::InputPort<AutoDiffXd>* input_port_{nullptr};
+  systems::FixedInputPortValue* input_port_value_{nullptr};
+  std::unique_ptr<systems::ContinuousState<AutoDiffXd>> derivatives_;
 
   const int num_states_{0};
   const int num_inputs_{0};
@@ -163,5 +166,5 @@ solvers::Binding<solvers::Constraint> AddDirectCollocationConstraint(
     solvers::MathematicalProgram* prog);
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

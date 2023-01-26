@@ -1,11 +1,11 @@
-#include "drake/systems/trajectory_optimization/sequential_expression_manager.h"
+#include "drake/planning/trajectory_optimization/sequential_expression_manager.h"
 
 #include <fmt/format.h>
 
 #include "drake/common/unused.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 namespace internal {
 
@@ -114,5 +114,5 @@ vector<string> SequentialExpressionManager::GetSequentialExpressionNames()
 
 }  // namespace internal
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake
