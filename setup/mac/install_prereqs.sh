@@ -10,10 +10,9 @@ source_distribution_args=()
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
-    # Install prerequisites that are only needed to run select maintainer
-    # scripts. Most developers will not need to install these dependencies.
+    # Maintainer-only tools are only supported on Ubuntu
     --with-maintainer-only)
-      source_distribution_args+=(--with-maintainer-only)
+      echo 'Warning: Maintainer-only tools are only supported on Ubuntu.  The "--with-maintainer-only" flag will do nothing.'
       ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
