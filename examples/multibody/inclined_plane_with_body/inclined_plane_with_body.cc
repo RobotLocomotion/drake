@@ -8,6 +8,7 @@
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/benchmarks/inclined_plane/inclined_plane_plant.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
@@ -58,14 +59,21 @@ DEFINE_bool(is_inclined_plane_half_space, true,
             "Is inclined plane a half-space (true) or box (false).");
 DEFINE_string(bodyB_type, "sphere", "Valid body types are "
               "'sphere', 'block', or 'block_with_4Spheres'");
+DEFINE_string(contact_solver, "tamsi", "Options are: "
+              "'tamsi', 'sap'");
 
 using drake::multibody::MultibodyPlant;
 
 int do_main() {
   // Build a generic multibody plant.
   systems::DiagramBuilder<double> builder;
-  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(
-      &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_time_step));
+
+  MultibodyPlantConfig plant_config;
+  plant_config.time_step = FLAGS_time_step;
+  plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
+  plant_config.discrete_contact_solver = FLAGS_contact_solver;
+  auto [plant, scene_graph] =
+      multibody::AddMultibodyPlant(plant_config, &builder);
 
   // Set constants that are relevant whether body B is a sphere or block.
   const double massB = 0.1;       // Body B's mass (kg).

@@ -23,6 +23,37 @@ TamsiDriver<T>::TamsiDriver(const CompliantContactManager<T>* manager)
 }
 
 template <typename T>
+internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
+    const systems::Context<T>& context) const {
+  const std::vector<ContactPairKinematics<T>> contact_kinematics =
+      manager().CalcContactKinematics(context);
+
+  const int nc = contact_kinematics.size();
+  const int nv = manager().plant().num_velocities();
+  internal::ContactJacobians<T> contact_jacobians;
+  contact_jacobians.Jc = MatrixX<T>::Zero(3 * nc, nv);
+  contact_jacobians.Jn = MatrixX<T>::Zero(nc, nv);
+  contact_jacobians.Jt = MatrixX<T>::Zero(2 * nc, nv);
+
+  const auto& topology = tree_topology();
+  for (int i = 0; i < nc; ++i) {
+    const int row_offset = 3 * i;
+    const ContactPairKinematics<T>& pair_kinematics = contact_kinematics[i];
+    for (const typename ContactPairKinematics<T>::JacobianTreeBlock&
+             tree_jacobian : pair_kinematics.jacobian) {
+      const int col_offset = topology.tree_velocities_start(tree_jacobian.tree);
+      const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
+      contact_jacobians.Jc.block(row_offset, col_offset, 3, tree_nv) =
+          tree_jacobian.J;
+    }
+    contact_jacobians.Jt.middleRows(2 * i, 2) =
+        contact_jacobians.Jc.middleRows(3 * i, 2);
+    contact_jacobians.Jn.row(i) = contact_jacobians.Jc.row(3 * i + 2);
+  }
+  return contact_jacobians;
+}
+
+template <typename T>
 void TamsiDriver<T>::CalcContactSolverResults(
     const systems::Context<T>& context,
     contact_solvers::internal::ContactSolverResults<T>* results) const {
@@ -76,8 +107,8 @@ void TamsiDriver<T>::CalcContactSolverResults(
   const int num_contacts = contact_pairs.size();
 
   // Compute normal and tangential velocity Jacobians at t0.
-  const internal::ContactJacobians<T>& contact_jacobians =
-      manager().EvalContactJacobians(context);
+  const internal::ContactJacobians<T> contact_jacobians =
+      CalcContactJacobians(context);
 
   // Get friction coefficient into a single vector.
   VectorX<T> mu(num_contacts);
