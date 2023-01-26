@@ -1,0 +1,154 @@
+# -*- python -*-
+
+# TODO(SeanCurtis-TRI): 2023-05-01 this entire directory tree gets removed
+# upon completion of deprecation period.
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_googletest",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "trajectory_optimization",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":direct_collocation",
+        ":direct_transcription",
+        ":integration_constraint",
+        ":kinematic_trajectory_optimization",
+        ":multiple_shooting",
+        ":sequential_expression_manager",
+    ],
+)
+
+_STUB_HDRS = [
+    "direct_collocation.h",
+    "direct_transcription.h",
+    "integration_constraint.h",
+    "kinematic_trajectory_optimization.h",
+    "multiple_shooting.h",
+    "sequential_expression_manager.h",
+]
+
+[
+    genrule(
+        name = "_cp_" + hdr,
+        srcs = ["stub/" + hdr],
+        outs = [hdr],
+        cmd = "cp $< $@",
+        tags = ["nolint"],
+        visibility = ["//visibility:private"],
+    )
+    for hdr in _STUB_HDRS
+]
+
+drake_cc_library(
+    name = "sequential_expression_manager",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:sequential_expression_manager instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        "//common:essential",
+        "//planning/trajectory_optimization:sequential_expression_manager",
+    ],
+)
+
+drake_cc_library(
+    name = "multiple_shooting",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:multiple_shooting instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        ":sequential_expression_manager",
+        "//common:essential",
+        "//planning/trajectory_optimization:multiple_shooting",
+    ],
+)
+
+drake_cc_library(
+    name = "direct_collocation",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:direct_collocation instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        ":multiple_shooting",
+        "//common:essential",
+        "//planning/trajectory_optimization:direct_collocation",
+    ],
+)
+
+drake_cc_library(
+    name = "direct_transcription",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:direct_transcription instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        ":multiple_shooting",
+        "//common:essential",
+        "//planning/trajectory_optimization:direct_transcription",
+    ],
+)
+
+drake_cc_library(
+    name = "kinematic_trajectory_optimization",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:kinematic_trajectory_optimization instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        "//common:essential",
+        "//planning/trajectory_optimization:kinematic_trajectory_optimization",
+    ],
+)
+
+drake_cc_library(
+    name = "integration_constraint",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:integration_constraint instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        "//common:essential",
+        "//planning/trajectory_optimization:integration_constraint",
+    ],
+)
+
+# === test/ ===
+
+# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
+drake_cc_googletest(
+    name = "deprecation_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":trajectory_optimization",
+        "//common/trajectories:piecewise_polynomial",
+        "//systems/primitives:linear_system",
+    ],
+)
