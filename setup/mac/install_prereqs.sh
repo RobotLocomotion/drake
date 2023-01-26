@@ -12,7 +12,7 @@ while [ "${1:-}" != "" ]; do
   case "$1" in
     # Maintainer-only tools are only supported on Ubuntu
     --with-maintainer-only)
-      echo 'Warning: Maintainer-only tools are only supported on Ubuntu.  The "--with-maintainer-only" flag will do nothing.'
+      echo 'Warning: Maintainer-only tools are only supported on Ubuntu.  The "--with-maintainer-only" flag will do nothing.  This flag will be removed from Drake on or after 2023-05-01.'
       ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
