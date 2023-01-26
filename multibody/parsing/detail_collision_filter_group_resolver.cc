@@ -121,7 +121,9 @@ std::string CollisionFilterGroupResolver::FullyQualify(
     // Names found in global scope are just themselves.
     return name;
   }
-  const std::string& model_name = plant_->GetModelInstanceName(*model_instance);
+  // XXX This seems like a name leak -- is it?
+  const std::string& model_name =
+      plant_->GetModelInstanceName(*model_instance, false);
   return ScopedName::Join(model_name, name).to_string();
 }
 

@@ -90,14 +90,17 @@ MultibodyTree<T>::MultibodyTree() {
 
 template <typename T>
 const std::string& MultibodyTree<T>::GetModelInstanceName(
-    ModelInstanceIndex model_instance) const {
+    ModelInstanceIndex model_instance, bool freeze) const {
   const auto it = instance_index_to_name_.find(model_instance);
   if (it == instance_index_to_name_.end()) {
     throw std::logic_error(
         fmt::format("There is no model instance id {} in the model.",
                     std::to_string(model_instance)));
   }
-  return it->second;
+  if (freeze) {
+    it->second.frozen = true;
+  }
+  return it->second.name;
 }
 
 template <typename T>
@@ -116,12 +119,12 @@ const Body<T>& MultibodyTree<T>::GetUniqueFreeBaseBodyOrThrowImpl(
       MaybeGetUniqueBaseBodyIndex(model_instance);
   if (!base_body_index.has_value()) {
     throw std::logic_error("Model " +
-                           instance_index_to_name_.at(model_instance) +
+                           GetModelInstanceName(model_instance) +
                            " does not have a unique base body.");
   }
   if (!owned_bodies_[base_body_index.value()]->is_floating()) {
     throw std::logic_error("Model " +
-                           instance_index_to_name_.at(model_instance) +
+                           GetModelInstanceName(model_instance) +
                            " has a unique base body, but it is not free.");
   }
   return *owned_bodies_[base_body_index.value()];
@@ -209,7 +212,7 @@ bool HasElementNamed(
   // Filter for the requested model_instance, if one was provided.
   if (model_instance) {
     // Use the name lookup for its side-effect of throwing on an invalid index.
-    unused(tree.GetModelInstanceName(*model_instance));
+    unused(tree.GetModelInstanceName(*model_instance, false));
     // Search linearly on the assumption that we won't often have lots of
     // elements with the same name in different model instances.  If this
     // turns out to be incorrect, we can switch to a different data structure.
@@ -255,7 +258,7 @@ const auto& GetElementByName(
   // exception when the model_instance index is invalid.
   const std::string empty_name;
   const std::string& model_instance_name =
-      model_instance ? tree.GetModelInstanceName(*model_instance)
+      model_instance ? tree.GetModelInstanceName(*model_instance, false)
                      : empty_name;
   const std::string_view element_classname =
       GetElementClassname<ElementIndex>();
@@ -506,7 +509,7 @@ const RigidBody<T>& MultibodyTree<T>::GetRigidBodyByName(
   if (body == nullptr) {
     throw std::logic_error(
         fmt::format("Body '{}' in model instance '{}' is not a RigidBody.",
-                    name, instance_index_to_name_.at(model_instance)));
+                    name, GetModelInstanceName(model_instance)));
   }
   return *body;
 }
@@ -524,7 +527,7 @@ void MultibodyTree<T>::ThrowJointSubtypeMismatch(
   throw std::logic_error(fmt::format(
       "GetJointByName(): Joint '{}' in model instance '{}' is not of type {} "
       "but of type {}.",
-      joint.name(), instance_index_to_name_.at(joint.model_instance()),
+      joint.name(), GetModelInstanceName(joint.model_instance()),
       desired_type, NiceTypeName::Get(joint)));
 }
 
