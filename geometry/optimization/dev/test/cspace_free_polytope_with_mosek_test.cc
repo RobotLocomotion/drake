@@ -1024,6 +1024,9 @@ TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
   ASSERT_FALSE(bilinear_alternation_results.empty());
   ASSERT_EQ(bilinear_alternation_results.size(),
             bilinear_alternation_results.back().num_iter + 1);
+  EXPECT_EQ(bilinear_alternation_results.back()
+                .certified_polytope.ambient_dimension(),
+            C.cols());
   // Sample many s_values, project to {s | C*s <= d}. And then make sure that
   // the corresponding configurations are collision free.
   Eigen::Matrix<double, 10, 3> s_samples;
@@ -1094,6 +1097,7 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
   auto result = tester.cspace_free_polytope().BinarySearch(
       ignored_collision_pairs, C, d, s_center, options);
   ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(result->certified_polytope.ambient_dimension(), C.cols());
   EXPECT_GT(result->num_iter, 0);
   Eigen::Matrix<double, 10, 3> s_samples;
   // clang-format off
