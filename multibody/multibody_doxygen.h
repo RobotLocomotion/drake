@@ -48,7 +48,7 @@ correct implementation.
 
 In addition, we need developers to provide good local documentation for our
 mathematical algorithms in the form of
-<a href=http://www.stack.nl/~dimitri/doxygen>Doxygen</a> comments. That
+<a href="https://www.doxygen.nl/">Doxygen</a> comments. That
 documentation will be best viewed after formatting by Doxygen, which employs
 other tools like LaTeX and Markdown for beautification. However, for effective
 development we need that documentation to be understandable and easily modified
