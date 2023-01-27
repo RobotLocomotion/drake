@@ -77,6 +77,14 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "sdformat_internal": "",
 }
 
+# Packages in these cohorts should be upgraded together (in a single commit).
+_COHORTS = (
+    # The uwebsockets depends on usockets; be sure to keep them in alignment.
+    ("uwebsockets", "usockets"),
+    # The sdformat depends on both gz libraries; be sure to keep them in alignment.
+    ("sdformat_internal", "gz_math_internal", "gz_utils_internal"),
+)
+
 
 def _check_output(args):
     return subprocess.check_output(args).decode("utf8")
@@ -392,6 +400,23 @@ def main():
         print(json.dumps(metadata, sort_keys=True, indent=2))
 
     if workspaces is not None:
+        for workspace in workspaces:
+            for cohort in _COHORTS:
+                if workspace in cohort:
+                    # Make sure an entire cohort is being updated together
+                    for cohort_item in cohort:
+                        if cohort_item not in workspaces:
+                            parser.error(f"Cohort {cohort} must be"
+                                          " upgraded together")
+
+                    # Make sure entire cohort can be updated
+                    for cohort_item in cohort:
+                        old_commit, new_commit = \
+                            _handle_github(workspace, gh, metadata[workspace])
+                        if old_commit == new_commit or new_commit is None:
+                            parser.error("Updates not available for all"
+                                        f" members of cohort {cohort}.")
+
         for workspace in workspaces:
             with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
                 _do_upgrade(temp_dir, gh, local_drake_checkout,
