@@ -31,6 +31,13 @@ Object& Object::operator=(Object&& other) {
   other.ptr_ = nullptr;
   return *this;
 }
+
+Object Object::Clone() const {
+  py::object py_copy = py::module::import("copy").attr("deepcopy");
+  py::object copied = py_copy(to_pyobject<py::object>());
+  return from_pyobject(copied);
+}
+
 void Object::inc_ref() {
   py::handle(ptr_).inc_ref();
 }
