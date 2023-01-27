@@ -223,7 +223,7 @@ class _ViewerApplet:
             (scale_x, scale_y, scale_z) = geom.float_data
             filename = geom.string_data
             assert scale_x == scale_y and scale_y == scale_z
-            shape = Mesh(absolute_filename=filename, scale=scale_x)
+            shape = Mesh(filename=filename, scale=scale_x)
         elif geom.type == lcmt_viewer_geometry_data.MESH:
             assert not geom.string_data
             # A mesh with the data inline, i.e.,
