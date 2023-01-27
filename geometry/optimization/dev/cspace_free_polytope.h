@@ -311,6 +311,9 @@ class CspaceFreePolytope {
   struct SearchResult {
     Eigen::MatrixXd C;
     Eigen::VectorXd d;
+    // This is the certified C-space polytope {s | C * s <= d, s_lower <= s <=
+    // s_upper}.
+    HPolyhedron certified_polytope;
     // a[i].dot(x) + b[i]=0 is the separation plane for separating_planes()[i].
     std::unordered_map<int, Vector3<symbolic::Polynomial>> a;
     std::unordered_map<int, symbolic::Polynomial> b;
