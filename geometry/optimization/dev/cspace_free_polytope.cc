@@ -1552,6 +1552,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       ret.back().C = C;
       ret.back().d = d;
       ret.back().num_iter = iter;
+      ret.back().certified_polytope = GetPolyhedronWithJointLimits(C, d);
       ret.back().SetSeparatingPlanes(certificates_result);
     }
     // Now fix the Lagrangian and search for C-space polytope and separating
@@ -1566,13 +1567,14 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       d = polytope_result->d;
       ret.back().C = polytope_result->C;
       ret.back().d = polytope_result->d;
+      ret.back().certified_polytope =
+          GetPolyhedronWithJointLimits(polytope_result->C, polytope_result->d);
       ret.back().a = std::move(polytope_result->a);
       ret.back().b = std::move(polytope_result->b);
       ret.back().num_iter = iter;
       // Now find the inscribed ellipsoid.
-      cspace_polytope =
-          this->GetPolyhedronWithJointLimits(ret.back().C, ret.back().d);
-      ellipsoid = cspace_polytope.MaximumVolumeInscribedEllipsoid();
+      ellipsoid =
+          ret.back().certified_polytope.MaximumVolumeInscribedEllipsoid();
       ellipsoid_Q = options.ellipsoid_scaling * (ellipsoid.A().inverse());
       const double cost = ellipsoid_Q.determinant();
       drake::log()->info("Iteration {}: det(Q)={}", iter, cost);
@@ -1676,6 +1678,7 @@ CspaceFreePolytope::BinarySearch(
     } else {
       ret.C = C;
       ret.d = d;
+      ret.certified_polytope = this->GetPolyhedronWithJointLimits(C, d);
       ret.UpdateSeparatingPlanes(certificates_result);
       return true;
     }
