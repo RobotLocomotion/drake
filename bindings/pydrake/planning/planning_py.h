@@ -12,6 +12,12 @@ namespace drake {
 namespace pydrake {
 namespace internal {
 
+/* Defines bindings per planning_py_collision_checker_accoutrements.cc. */
+void DefinePlanningCollisionCheckerAccoutrements(py::module m);
+
+/* Defines bindings per planning_py_collision_checker.cc. */
+void DefinePlanningCollisionChecker(py::module m);
+
 /* Defines bindings per planning_py_robot_diagram.cc. */
 void DefinePlanningRobotDiagram(py::module m);
 
