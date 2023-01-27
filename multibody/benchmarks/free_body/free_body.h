@@ -31,7 +31,7 @@ namespace free_body {
 ///
 /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York, 1983.
 ///   (with P. W. Likins and D. A. Levinson).  Available for free .pdf download:
-///   https:///ecommons.cornell.edu/handle/1813/637
+///   https://ecommons.cornell.edu/handle/1813/637
 class FreeBody {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FreeBody)
@@ -143,7 +143,7 @@ class FreeBody {
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
   ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
-  ///   download: https:///ecommons.cornell.edu/handle/1813/637
+  ///   download: https://ecommons.cornell.edu/handle/1813/637
   std::tuple<Eigen::Quaterniond, Eigen::Vector4d, Eigen::Vector3d,
              Eigen::Vector3d>
   CalculateExactRotationalSolutionNB(const double t) const;
@@ -178,7 +178,7 @@ class FreeBody {
   ///
   /// - [Kane, 1983] "Spacecraft Dynamics," McGraw-Hill Book Co., New York,
   ///   1983. (with P. W. Likins and D. A. Levinson).  Available for free .pdf
-  ///   download: https:///ecommons.cornell.edu/handle/1813/637
+  ///   download: https://ecommons.cornell.edu/handle/1813/637
   std::pair<double, double> CalcAngularRates_s_p() const {
     const double I = get_I();
     const double J = get_J();

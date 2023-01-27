@@ -29,7 +29,7 @@ If you want to make your own Doxygen locally, see
 <a href="https://drake.mit.edu/documentation_instructions.html">Documentation
 Generation Instructions</a></p>
 
-<p><a href="https://www.stack.nl/~dimitri/doxygen/manual/docblocks.html">Check
+<p><a href="https://www.doxygen.nl/manual/docblocks.html">Check
 out the Doxygen C++ documentation</a></p>
 
 <p>Drake's Doxygen documentation is
@@ -214,10 +214,7 @@ namespace solvers {
 
  <p>Drake's C++ libraries use a small amount of template metaprogramming to
   enable more advanced features (autodiff, symbolic computation, etc).  We
-  have tried to avoid users having to be expert template programmers, but this
-  is a good reference if you'd like to
-  <a href="http://www.generic-programming.org/languages/cpp/techniques.php">
-  learn more about generic programming</a>.</p>
+  have tried to avoid users having to be expert template programmers.</p>
 
  @}
 */
