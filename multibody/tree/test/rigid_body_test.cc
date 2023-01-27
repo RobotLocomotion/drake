@@ -165,8 +165,8 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrame) {
 }
 
 TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
-  // Construct a multibody plant having a cube B of dimension 2*L whose spatial
-  // inertia correspondds to all mass concentrated at Bcm (B's center of mass).
+  // Create a rigid body B that is a line-segment of length 2*L whose spatial
+  // inertia corresponds to all mass concentrated at Bcm (B's center of mass).
   double mass = 3;     // mass of body B in kilograms.
   const double L = 2;  // x-measure of Bcm's position from Bo in meters.
   Vector3d p_BoBcm_B(L, 0, 0);  // Position from Bo to Bcm, expressed in B.
@@ -175,7 +175,7 @@ TEST_F(RigidBodyTest, SetCenterOfMassInBodyFrameAndPreserveCentralInertia) {
   systems::Context<double>* context_ptr = context_.get();
   rigid_body_->SetSpatialInertiaInBodyFrame(context_ptr, M_BBo_B);
 
-  // Verify cube B has the proper mass, center of mass, inertia properties.
+  // Verify body B has the proper mass, center of mass, inertia properties.
   constexpr double kTolerance = 4 * std::numeric_limits<double>::epsilon();
   const SpatialInertia<double> M_BBo_B_test =
       rigid_body_->CalcSpatialInertiaInBodyFrame(*context_);

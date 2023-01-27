@@ -68,26 +68,32 @@ void RigidBody<T>::SetUnitInertiaAboutBodyOrigin(
 template <typename T>
 void RigidBody<T>::SetCenterOfMassInBodyFrameAndPreserveCentralInertia(
     systems::Context<T>* context,
-    const Vector3<T>& center_of_mass_offset) const {
+    const Vector3<T>& center_of_mass_position) const {
   DRAKE_THROW_UNLESS(context != nullptr);
-  // Get initial position vector from Bo to Bcm (before Bcm changes location).
-  const Vector3<T>& pi_BoBcm_B = CalcCenterOfMassInBodyFrame(*context);
 
   // Get B's initial spatial inertia about Bo (before Bcm changes location).
-  const SpatialInertia<T>& Mi_BBo_B =
+  // Get pi_BoBcm_B position from Bo to Bcm before Bcm changes location.
+  // Get Gi_BBo_B (B's initial unit inertia about Bo, before Bcm changes).
+  const SpatialInertia<T> Mi_BBo_B =
       CalcSpatialInertiaInBodyFrame(*context);
-
-  // Use Gi_BBo_B (B's initial unit inertia about Bo, before Bcm changes) to
-  // calculate Gf_BBo_B (B's final unit inertia about Bo, after Bcm changes).
+  const Vector3<T>& pi_BoBcm_B = Mi_BBo_B.get_com();
   const UnitInertia<T>& Gi_BBo_B = Mi_BBo_B.get_unit_inertia();
+
+  // Calculate Gf_BBo_B (B's final unit inertia about Bo, after Bcm changes).
+  const Vector3<T>& pf_BoBcm_B = center_of_mass_position;  // Alias for clarity.
   const RotationalInertia<T> I_BBo_B = Gi_BBo_B.ShiftToThenAwayFromCenterOfMass(
-      /* mass = */ 1, pi_BoBcm_B, center_of_mass_offset);
+      /* mass = */ 1, pi_BoBcm_B, pf_BoBcm_B);
+  const UnitInertia<T> Gf_BBo_B = UnitInertia<T>(I_BBo_B);
+  // Note: One way to conceptualize this calculation is that B's origin Bo moves
+  // from its initial location Boi to an intermediate location Bof and it only
+  // returns to its initial location Boi with the final call below to:
+  // SetCenterOfMassInBodyFrameNoModifyInertia(context, pf_BoBcm_B);
+  // Hint: Drawing a picture can help speed making sense of this.
 
-  // Modify the context -- update B's uint inertia about Bo.
-  SetUnitInertiaAboutBodyOrigin(context, UnitInertia<T>(I_BBo_B));
-
-  // Modify the context -- update B's center of mass position from Bo.
-  SetCenterOfMassInBodyFrameNoModifyInertia(context, center_of_mass_offset);
+  // Modify the context. Update B's unit inertia about Bo.
+  // Modify the context. Update B's center of mass position from Bo.
+  SetUnitInertiaAboutBodyOrigin(context, Gf_BBo_B);
+  SetCenterOfMassInBodyFrameNoModifyInertia(context, pf_BoBcm_B);
 }
 
 }  // namespace multibody
