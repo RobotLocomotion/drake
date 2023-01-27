@@ -1578,7 +1578,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       ellipsoid_Q = options.ellipsoid_scaling * (ellipsoid.A().inverse());
       const double cost = ellipsoid_Q.determinant();
       drake::log()->info("Iteration {}: det(Q)={}", iter, cost);
-      if (cost - prev_cost < options.convergence_tol) {
+      if ((cost - prev_cost)/prev_cost < options.convergence_tol) {
         break;
       } else {
         prev_cost = cost;
