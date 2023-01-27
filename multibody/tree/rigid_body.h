@@ -209,7 +209,7 @@ class RigidBody : public Body<T> {
   /// Sets this body's center of mass position while preserving its inertia
   /// about its body origin.
   /// @param[in, out] context contains the state of the multibody system. It is
-  /// modified to store the updated center of_mass position.
+  /// modified to store the updated com (center of mass position).
   /// @param[in] com position vector from Bo (this body B's origin) to Bcm
   /// (B's center of mass), expressed in B.
   /// @note This function changes B's center of mass position without modifying
@@ -233,8 +233,8 @@ class RigidBody : public Body<T> {
   /// (B's center of mass), expressed in B.
   /// @note G_BBo_B is modified to ensure B's inertia about Bcm is unchanged.
   /// Although this function can work well when B's mass is concentrated at (or
-  /// mostly near) a single point, its general utility for properly accounting
-  /// for inertia changes due to arbitrary center of mass changes questionable.
+  /// mostly near) a single point, it has **questionable** utility to generally
+  /// account for inertia changes due to arbitrary center of mass changes.
   /// Consider using SetSpatialInertiaInBodyFrame() instead.
   /// @pre the context makes sense for use by `this` RigidBody.
   /// @throws std::exception if context is null.
