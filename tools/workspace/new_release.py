@@ -79,9 +79,11 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
 
 # Packages in these cohorts should be upgraded together (in a single commit).
 _COHORTS = (
-    # The uwebsockets depends on usockets; be sure to keep them in alignment.
+    # The uwebsockets depends on usockets;
+    # be sure to keep them in alignment.
     ("uwebsockets", "usockets"),
-    # The sdformat depends on both gz libraries; be sure to keep them in alignment.
+    # The sdformat depends on both gz libraries;
+    # be sure to keep them in alignment.
     ("sdformat_internal", "gz_math_internal", "gz_utils_internal"),
 )
 
@@ -407,7 +409,7 @@ def main():
                     for cohort_item in cohort:
                         if cohort_item not in workspaces:
                             parser.error(f"Cohort {cohort} must be"
-                                          " upgraded together")
+                                         " upgraded together")
 
                     # Make sure entire cohort can be updated
                     for cohort_item in cohort:
@@ -415,7 +417,7 @@ def main():
                             _handle_github(workspace, gh, metadata[workspace])
                         if old_commit == new_commit or new_commit is None:
                             parser.error("Updates not available for all"
-                                        f" members of cohort {cohort}.")
+                                         f" members of cohort {cohort}.")
 
         for workspace in workspaces:
             with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
