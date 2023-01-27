@@ -741,7 +741,7 @@ PYI_FILES = [
     "pydrake/multibody/plant.pyi",
     "pydrake/multibody/tree.pyi",
     "pydrake/perception.pyi",
-    "pydrake/planning/__init__.pyi",
+    "pydrake/planning.pyi",
     "pydrake/polynomial.pyi",
     "pydrake/solvers/__init__.pyi",
     "pydrake/solvers/_extra.pyi",

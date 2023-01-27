@@ -142,6 +142,8 @@ class TestAll(unittest.TestCase):
             "MultibodyForces",
             # perception
             "PointCloud",
+            # planning
+            "RobotDiagram",
             # solvers
             # - agumented_lagrangian
             "AugmentedLagrangianSmooth",

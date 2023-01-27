@@ -44,9 +44,6 @@ drake_pybind_library(
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
-    py_srcs = [
-        "all.py",
-    ],
 )
 
 install(

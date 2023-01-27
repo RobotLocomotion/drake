@@ -41,6 +41,7 @@ from .forwarddiff import *
 from .lcm import *
 from .math import *
 from .perception import *
+from .planning import *
 from .polynomial import *
 from .symbolic import *
 from .trajectories import *
