@@ -16,9 +16,16 @@ To cover this, we create our toy dataclass format, and denote the (parse,
 operate) steps among the two modes as is currently done (via resolution
 callbacks).
 
+
+Issues:
+1. Poses of Drake frames cannot be relative to ther frames without requiring
+   attachment.
 """
 
+import os
+from collections import defaultdict
 import dataclasses as dc
+from typing import Union
 import unittest
 
 import numpy as np
@@ -34,9 +41,22 @@ class PoseSchema:
         self.position = np.asarray(self.position)
 
 
+def prefix_pose(prefix: str, pose: PoseSchema):
+    return PoseSchema(
+        relative_to=scope(prefix, pose.relative_to), position=pose.position
+    )
+
+
+@dc.dataclass
+class LinkSchema:
+    name: str
+    pose: PoseSchema
+
+
 @dc.dataclass
 class FrameSchema:
     name: str
+    attached_to: str
     pose: PoseSchema
 
 
@@ -44,89 +64,68 @@ class FrameSchema:
 class IncludeSchema:
     name: str
     file: str
-    placement_frame: str
     pose: PoseSchema
 
 
 MOCK_FILESYSTEM = {
     "top.model": [
-        FrameSchema(
-            name="base",
+        LinkSchema(
+            name="L1",
             pose=PoseSchema(
-                relative_to="world",
+                relative_to="__model__",
+                position=[0.0, 0.0, 10.0],
+            ),
+        ),
+        LinkSchema(
+            name="L2",
+            pose=PoseSchema(
+                relative_to="__model__",
+                position=[1.0, 2.0, 3.0],
+            ),
+        ),
+        FrameSchema(
+            name="F1",
+            attached_to="L2",
+            pose=PoseSchema(
+                relative_to="L1",
                 position=[1.0, 2.0, 3.0],
             ),
         ),
         IncludeSchema(
             name="included",
-            file="sub.model",
-            placement_frame="included_frame",
+            file="sub.drake_model",
             pose=PoseSchema(
-                relative_to="base",
+                relative_to="L1",
                 position=[0, 0, 0],
             ),
         ),
         FrameSchema(
             name="top_frame",
+            attached_to="__model__",
             pose=PoseSchema(
                 relative_to="included::included_frame",
                 position=[10.0, 20.0, 30.0],
             ),
         ),
     ],
-    "sub.model": [
-        FrameSchema(
-            name="included_frame",
+    "sub.drake_model": [
+        LinkSchema(
+            name="base",
             pose=PoseSchema(
                 relative_to="__model__",
+                position=[0.0, 0.0, 0.0],
+            ),
+        ),
+        FrameSchema(
+            name="included_frame",
+            attached_to="base",
+            pose=PoseSchema(
+                relative_to="base",
                 position=[0.5, 0.25, 0.125],
             ),
         ),
     ],
 }
-
-EXPECTED_POSITION_W_MAP = {
-    "world": [0, 0, 0],
-    "top::__model__": [0, 0, 0],
-    "top::base": [1.0, 2.0, 3.0],
-    "top::included::__model__": [0.5, 1.75, 2.875],
-    "top::included::included_frame": [1.0, 2.0, 3.0],
-    "top::top_frame": [11, 22, 33],
-
-}
-
-
-class Model:
-    def __init__(self):
-        # Denotes frames, stored w.r.t. "world".
-        # We do this to exacerbate the parsing phases for posturing models, at
-        # least as of drake==v1.10.0.
-        self.position_W_map = {
-            "world": np.zeros(3),
-        }
-
-    def add_frame(self, name, position):
-        # N.B. We don't need cycle checks since we're greedily consuming frames
-        # as they're added (vs libsdformat parsing them in separate pass).
-        assert name not in self.position_W_map
-        self.position_W_map[name] = position
-
-    def resolve_position_W(self, relative_to, position):
-        return self.position_W_map[relative_to] + position
-
-    def reposture_frame(self, name, position):
-        assert name in self.position_W_map
-        originial_position = self.position_W_map[name].copy()
-        position_adjustment = position - originial_position
-
-        for frame, pos in self.position_W_map.items():
-            if frame != "world":
-                pos += position_adjustment
-
-    def add_nested(self, model):
-        for frame, pos in model.position_W_map.items():
-            if frame != "world":
-                self.position_W_map[frame] = pos
 
 
 def scope(prefix, name):
@@ -138,42 +137,299 @@ def scope(prefix, name):
         return f"{prefix}::{name}"
 
 
-def mock_parse(model, schema, model_name, model_position_W):
-    model.add_frame(scope(model_name, "__model__"), model_position_W)
+# This is a lightweight Model used by libsdformat when interfacing with custom
+# parsers. Only frame bearing elements (models, links, frames, and joints) are
+# contained in libsdformat's InterfaceModel. Here, for simplicity, we only use
+# links and frames.
+class InterfaceModel:
+    def __init__(self, model_name, schema, pose):
+        self.name = model_name
+        self.pose = pose
+        self.interface_links = []
+        self.interface_frames = []
 
-    def resolve_position_W(pose):
-        return model.resolve_position_W(
-            relative_to=scope(model_name, pose.relative_to),
-            position=pose.position,
+        for directive in schema:
+            if isinstance(directive, FrameSchema):
+                assert directive.name != "world"
+                self.interface_frames.append(directive)
+            elif isinstance(directive, LinkSchema):
+                self.interface_links.append(directive)
+
+
+# This class emulates libsdformat's sdf::Model class.
+class SdfModel:
+    def __init__(self, name, schema, pose, custom_parser_cb=None):
+        """
+        Load model from a given schema
+
+        Args:
+            model_name: Name of model, since schema doesn't contain model name.
+            schema: Schema to load.
+            pose: Pose of model.
+            custom_parser_cb: Callback function for custom parser
+        """
+        self.name = name
+        self.pose = pose
+
+        self.links = []
+        self.frames = []
+        self.models = []
+
+        for directive in schema:
+            if isinstance(directive, FrameSchema):
+                assert directive.name != "world"
+                self.frames.append(directive)
+            elif isinstance(directive, LinkSchema):
+                self.links.append(directive)
+            elif isinstance(directive, IncludeSchema):
+                extension = os.path.splitext(directive.file)[1]
+                if extension == ".model":
+                    sub_model = SdfModel(
+                        directive.name, directive.file, directive.pose
+                    )
+                elif extension == ".drake_model":
+                    if custom_parser_cb is None:
+                        raise RuntimeError("Custom parser not set")
+                    # Simulate the custom parser callback used in the
+                    # Interface API of libsdformat.
+                    sub_model = custom_parser_cb(
+                        directive.name, directive.file, directive.pose
+                    )
+                else:
+                    raise RuntimeError(f"Unknown file extension {extension}")
+
+                self.models.append(sub_model)
+
+
+# Emulates libsdformat's pose graph functionality as found in
+# https://github.com/gazebosim/sdformat/blob/6af4be6b2dbd13271ef88b2088ac91cea695dfa6/src/FrameSemantics.cc
+class PoseGraph:
+    def __init__(self, model: SdfModel):
+        self.graph = {}
+        self.graph[model.name] = PoseSchema(
+            relative_to="__root__", position=[0, 0, 0]
+        )
+        self.add_model(model, model.name)
+
+    def add_model(self, model: Union[SdfModel, InterfaceModel], prefix: str):
+
+        self._add_to_graph(
+            scope(prefix, "__model__"),
+            PoseSchema(relative_to=prefix, position=[0, 0, 0]),
         )
 
-    for directive in schema:
-        if isinstance(directive, FrameSchema):
-            assert directive.name != "world"
-            name = scope(model_name, directive.name)
-            position_W = resolve_position_W(directive.pose)
-            model.add_frame(name, position_W)
-        elif isinstance(directive, IncludeSchema):
-            # Using a separate schema at this level (rather than distinct
-            # schemas) *kinda of* simulates the separation between libsdformat,
-            # separate formats, and how they are rendered upon MultibodyPlant.
-            sub_schema = MOCK_FILESYSTEM[directive.file]
-            sub_position_W = resolve_position_W(directive.pose)
-            sub_name = scope(model_name, directive.name)
-            sub_model = Model()
-            mock_parse(sub_model, sub_schema, sub_name, sub_position_W)
-            # adjust for placement frame
-            sub_model.reposture_frame(
-                scope(sub_name, directive.placement_frame), sub_position_W)
-            model.add_nested(sub_model)
+        if isinstance(model, SdfModel):
+            for link in model.links:
+                self._add_to_graph(
+                    scope(prefix, link.name), prefix_pose(prefix, link.pose)
+                )
+
+            for frame in model.frames:
+                self._add_to_graph(
+                    scope(prefix, frame.name), prefix_pose(prefix, frame.pose)
+                )
+
+            for nested_model in model.models:
+                self._add_to_graph(
+                    scope(prefix, nested_model.name),
+                    prefix_pose(prefix, nested_model.pose),
+                )
+                self.add_model(nested_model, scope(prefix, nested_model.name))
+
+        elif isinstance(model, InterfaceModel):
+            for link in model.interface_links:
+                self._add_to_graph(
+                    scope(prefix, link.name), prefix_pose(prefix, link.pose)
+                )
+
+            for frame in model.interface_frames:
+                self._add_to_graph(
+                    scope(prefix, frame.name), prefix_pose(prefix, frame.pose)
+                )
+
+    def resolve_pose(self, frame, relative_to):
+        # 1. Resolve `frame` relative_to `__model__`: X_MF
+        # 2. Resolve `relative_to` relative_to `__model`: X_MR
+        # 3. Compute X_RF = X_MR^-1 * X_MF
+
+        X_MF = self._resolve_to_root(frame)
+        X_MR = self._resolve_to_root(relative_to)
+        return X_MF - X_MR
+
+    def _add_to_graph(self, key, val):
+        if key in self.graph:
+            raise RuntimeError(f"Frame {key} is already in graph")
+        self.graph[key] = val
+
+    def _resolve_to_root(self, frame):
+        pose = self.graph[frame]
+        if pose.relative_to == "__root__":
+            return pose.position
+        else:
+            return self._resolve_to_root(pose.relative_to) + pose.position
+
+    def __str__(self):
+        return str(self.graph)
+
+    def to_dot(self):
+        out = "digraph {\n"
+        for key in self.graph.keys():
+            out += f'  "{key}"\n'
+
+        for key, val in self.graph.items():
+            out += f'  "{val.relative_to}" -> "{key}"'
+            out += f' [label="{val.position}"]\n'
+        out += "}"
+        return out
+
+
+# Emulates sdf::Root in libsdformat.
+class SdfRoot:
+    def __init__(self, filepath, custom_parser=None):
+        self.model = SdfModel(
+            "top",
+            MOCK_FILESYSTEM[filepath],
+            PoseSchema("", [0, 0, 0]),
+            custom_parser_cb=custom_parser,
+        )
+        self._pose_graph = PoseGraph(self.model)
+
+    # In libsdformat, each DOM element has a `SemanticPose` member function
+    # that can be used to resolve poses. We're simplifying the API here by
+    # providing a single function for resolving poses. The main difference in
+    # functionality is here we have to pass fully scoped names whereas in
+    # libsdformat, the frame lookup happens relative to the element's own
+    # scope.
+    def resolve_pose(self, frame, relative_to):
+        return self._pose_graph.resolve_pose(frame, relative_to)
+
+
+# Emulates Drake's MultibodyPlant. Methods for adding model instances, bodies,
+# and frames are defined here to reflect the API available in MultibodyPlant,
+# but their functionality is limited to simple bookkeeping.
+class MockMultibodyPlant:
+
+    _id_counter = 0
+
+    def __init__(self):
+        self._model_instances = {}
+
+    def _next_id(self):
+        self._id_counter += 1
+        return self._id_counter
+
+    def add_model_instance(self, name):
+        model_instance = self._next_id()
+        self._model_instances[model_instance] = defaultdict(list)
+        self._model_instances[model_instance]["name"] = name
+        return model_instance
+
+    # Drake MBP's add_body equivalent doesn't take X_WB as an argument, but it
+    # is used here to emulate the function of calling SetDefaultFreeBodyPose
+    # after a body has been added to the MBP
+    def add_body(self, name, model_instance, X_WB):
+        model = self._model_instances[model_instance]
+        model["bodies"].append([name, X_WB])
+        self.add_frame("", model_instance, name, [0, 0, 0])
+
+    def add_frame(self, name, model_instance, parent_frame, X_PF):
+        model = self._model_instances[model_instance]
+        model["frames"].append([name, parent_frame, X_PF])
+
+    def __str__(self):
+        return f"{self._model_instances}"
+
+    def num_bodies(self):
+        count = 0
+        for _, model in self._model_instances.items():
+            count += len(model["bodies"])
+        return count
+
+    def num_frames(self):
+        count = 0
+        for _, model in self._model_instances.items():
+            count += len(model["frames"])
+        return count
+
+
+# Emulates the functionality of //multibody/parsing:parser and
+# //multibody/parsing:detail_sdf_parser
+def mock_drake_sdf_parser(model_name, sdf_file):
+
+    plant = MockMultibodyPlant()
+    model_instance = plant.add_model_instance(model_name)
+
+    # We make assumptions about poses encountered in the custom parser such
+    # that we don't need pose resolution. This assumption holds, for example,
+    # in Drake's URDF parser as all the poses there are expressed relative to
+    # the parent body of a joint. Thus, they can be added into the
+    # MultibodyPlant without having to be resolved relative to some other
+    # frame.
+    def custom_parser(nested_model_name, file_name, pose):
+        nested_model_instance = plant.add_model_instance(
+            scope(model_name, nested_model_name)
+        )
+        schema = MOCK_FILESYSTEM[file_name]
+
+        for directive in schema:
+            if isinstance(directive, FrameSchema):
+                # We'll assume that all poses of frames parsed the custom
+                # parser are expressed relative to the parent frame. This is
+                # similar to how the Drake URDF parser is used as a custom
+                # parser via libsdformat's Interface API.
+                plant.add_frame(
+                    directive.name,
+                    nested_model_instance,
+                    directive.attached_to,
+                    directive.pose.position,
+                )
+            elif isinstance(directive, LinkSchema):
+                # We'll assume that all poses of bodies parsed the custom
+                # parser are expressed relative to the world or root model
+                # frame.
+                plant.add_body(
+                    directive.name,
+                    nested_model_instance,
+                    directive.pose.position,
+                )
+
+        return InterfaceModel(nested_model_name, schema, pose)
+
+    root = SdfRoot(sdf_file, custom_parser=custom_parser)
+    model = root.model
+
+    for link in model.links:
+        X_WB = root.resolve_pose(scope(model.name, link.name), model.name)
+        plant.add_body(link.name, model_instance, X_WB)
+
+    for frame in model.frames:
+        # NOTE: It is necessary to resolve the pose of the frame relative to
+        # the parent (attached_to) frame because the pose given in the schema
+        # might be relative to some other frame. This resolution capability is
+        # missing in Drake, thus, we rely on libsdformat to do it for us. But
+        # for libsdformat to have this capability, it needs to know about all
+        # the frames in the model including nested and custom parsed models.
+        # This is why callbacks are needed for implementing custom parsers in
+        # libsdformat.
+        # The frame resolution capability is emulated here in the `PoseGraph`
+        # class.
+        X_PF = root.resolve_pose(
+            scope(model.name, frame.name), scope(model.name, frame.attached_to)
+        )
+        plant.add_frame(link.name, model_instance, frame.attached_to, X_PF)
+
+    # We'll assume that nested models have already been parsed through the
+    # custom parser. There's an extra Reposture step that happens in
+    # libsdformat, but it is not included here for now.
+
+    return plant
 
 
 class Test(unittest.TestCase):
     def test_expected(self):
-        model = Model()
-        top_schema = MOCK_FILESYSTEM["top.model"]
-        mock_parse(model, top_schema, "top", [0, 0, 0])
-        np.testing.assert_equal(model.position_W_map, EXPECTED_POSITION_W_MAP)
+        plant = mock_drake_sdf_parser("top", "top.model")
+        self.assertEqual(plant.num_bodies(), 3)
+        self.assertEqual(plant.num_frames(), 6)
 
 
 if __name__ == "__main__":
