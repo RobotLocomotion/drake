@@ -4329,7 +4329,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionLowerLimits();
   }
 
-  /// Upper limit analog of GetPositionsLowerLimits(), where any unbounded or
+  /// Upper limit analog of GetPositionLowerLimits(), where any unbounded or
   /// unspecified limits will be +infinity.
   /// @see GetPositionLowerLimits() for more information.
   VectorX<double> GetPositionUpperLimits() const {
