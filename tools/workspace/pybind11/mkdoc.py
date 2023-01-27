@@ -824,8 +824,10 @@ def main():
                 except Exception:
                     pass
                 raise RuntimeError(
-                    ("The operating system's C++ standard library is not "
-                     "installed correctly."))
+                    "The operating system's C++ standard library is not "
+                    "installed correctly or is only partially installed. For "
+                    "example, libgcc-??-dev is installed but libstdc++-??-dev "
+                    "is not installed (the ?? indicates a version number).")
         severities = [
             diagnostic.severity for diagnostic in translation_unit.diagnostics
             if diagnostic.severity >= cindex.Diagnostic.Error
