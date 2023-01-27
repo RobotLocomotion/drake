@@ -112,9 +112,9 @@
 ///   <li> Connections to <a
 ///        href="https://github.com/rdeits/meshcat">MeshCat</a>
 ///        are available (via the Python bindings) <a
-///        href="https://github.com/RussTedrake/underactuated/tree/master/src/underactuated">here</a>.
+///        href="https://github.com/RussTedrake/underactuated/tree/master/underactuated">here</a>.
 ///   </li>
-///   <li> <a href="https://github.com/RussTedrake/underactuated/tree/master/src/underactuated">
+///   <li> <a href="https://github.com/RussTedrake/underactuated/tree/master/underactuated">
 ///        A matplotlib visualization for planar rigid body systems</a>.</li>
 /// </ul>
 /// @}

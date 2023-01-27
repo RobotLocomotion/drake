@@ -30,7 +30,7 @@ namespace solvers {
  *
  * "IPOPT" -- Parameter names and values as specified in IPOPT users
  * guide section "Options Reference"
- * http://www.coin-or.org/Ipopt/documentation/node40.html
+ * https://coin-or.github.io/Ipopt/OPTIONS.html
  *
  * "NLOPT" -- Parameter names and values are specified in
  * https://nlopt.readthedocs.io/en/latest/NLopt_C-plus-plus_Reference/ (in the
