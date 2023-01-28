@@ -309,6 +309,13 @@ TEST_F(ScrewMobilizerTest, KinematicMapping) {
 }
 
 TEST_F(ScrewMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  const double angle_z{1. * 180. / M_PI};
+  const double translation_z{angle_z * kScrewPitch / (2. * M_PI)};
+  mobilizer_->set_angle(context_.get(), angle_z);
+  mobilizer_->set_translation(context_.get(), translation_z);
+
+  // Set arbitrary v and MapVelocityToQDot.
   Vector1d v(1.5);
   Vector1d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
@@ -322,6 +329,13 @@ TEST_F(ScrewMobilizerTest, MapUsesN) {
 }
 
 TEST_F(ScrewMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  const double angle_z{1. * 180. / M_PI};
+  const double translation_z{angle_z * kScrewPitch / (2. * M_PI)};
+  mobilizer_->set_angle(context_.get(), angle_z);
+  mobilizer_->set_translation(context_.get(), translation_z);
+
+  // Set arbitrary qdot and MapQDotToVelocity.
   Vector1d qdot(1.5);
   Vector1d v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);

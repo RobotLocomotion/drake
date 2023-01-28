@@ -256,6 +256,11 @@ TEST_F(UniversalMobilizerTest, KinematicMapping) {
 }
 
 TEST_F(UniversalMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  const Vector2d some_values(1.5, 2.5);
+  mobilizer_->set_angles(context_.get(), some_values);
+
+  // Set arbitrary v and MapVelocityToQDot.
   Vector2d v(1.5, 2.5);
   Vector2d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
@@ -270,6 +275,11 @@ TEST_F(UniversalMobilizerTest, MapUsesN) {
 }
 
 TEST_F(UniversalMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  const Vector2d some_values(1.5, 2.5);
+  mobilizer_->set_angles(context_.get(), some_values);
+
+  // Set arbitrary qdot and MapQDotToVelocity.
   Vector2d qdot(1.5, 2.5);
   Vector2d v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);

@@ -106,6 +106,11 @@ TEST_F(SpaceXYZMobilizerTest, KinematicMapping) {
 }
 
 TEST_F(SpaceXYZMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
+  mobilizer_->set_angles(context_.get(), rpy_value);
+
+  // Set arbitrary v and MapVelocityToQDot.
   const Vector3<double> v = (Vector3<double>() << 1, 2, 3).finished();
   Vector3<double> qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
@@ -120,6 +125,11 @@ TEST_F(SpaceXYZMobilizerTest, MapUsesN) {
 }
 
 TEST_F(SpaceXYZMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
+  mobilizer_->set_angles(context_.get(), rpy_value);
+
+  // Set arbitrary qdot and MapQDotToVelocity.
   const Vector3<double> qdot = (Vector3<double>() << 1, 2, 3).finished();
   Vector3<double> v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);

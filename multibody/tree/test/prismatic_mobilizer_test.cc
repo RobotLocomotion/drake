@@ -174,6 +174,10 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
 }
 
 TEST_F(PrismaticMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  slider_->set_translation(context_.get(), 1.5);
+
+  // Set arbitrary v and MapVelocityToQDot.
   Vector1d v(1.5);
   Vector1d qdot;
   slider_->MapVelocityToQDot(*context_, v, &qdot);
@@ -187,7 +191,10 @@ TEST_F(PrismaticMobilizerTest, MapUsesN) {
 }
 
 TEST_F(PrismaticMobilizerTest, MapUsesNplus) {
-  // Compute Map
+  // Set an arbitrary "non-zero" state.
+  slider_->set_translation(context_.get(), 1.5);
+
+  // Set arbitrary qdot and MapQDotToVelocity.
   Vector1d qdot(1.5);
   Vector1d v;
   slider_->MapQDotToVelocity(*context_, qdot, &v);

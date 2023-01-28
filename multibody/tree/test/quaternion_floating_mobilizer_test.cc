@@ -180,6 +180,15 @@ TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  const Quaterniond Q_WB(
+      RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
+  mobilizer_->set_quaternion(context_.get(), Q_WB);
+
+  const Vector3d p_WB(1.0, 2.0, 3.0);
+  mobilizer_->set_position(context_.get(), p_WB);
+
+  // Set arbitrary v and MapVelocityToQDot
   const Vector6<double> v =
       (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
   VectorX<double> qdot(7);
@@ -195,6 +204,15 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
 }
 
 TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  const Quaterniond Q_WB(
+      RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
+  mobilizer_->set_quaternion(context_.get(), Q_WB);
+
+  const Vector3d p_WB(1.0, 2.0, 3.0);
+  mobilizer_->set_position(context_.get(), p_WB);
+
+  // Set arbitrary qdot and MapQDotToVelocity
   VectorX<double> qdot(7);
   qdot << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
 
