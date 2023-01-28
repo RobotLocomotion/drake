@@ -4,6 +4,7 @@
 load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_library",
+    "drake_py_test",
     "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
@@ -38,6 +39,11 @@ drake_py_unittest(
         ":instability_common_py",
         "//bindings/pydrake",
     ],
+)
+
+drake_py_test(
+    name = "plant_hidden_state_test",
+    deps = ["//bindings/pydrake"],
 )
 
 add_lint_tests()
