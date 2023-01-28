@@ -59,9 +59,7 @@ drake_pybind_library(
         "solvers_py_branch_and_bound.cc",
         "solvers_py_clp.cc",
         "solvers_py_csdp.cc",
-        "solvers_py_dreal.cc",
         "solvers_py_gurobi.cc",
-        "solvers_py_ibex.cc",
         "solvers_py_ipopt.cc",
         "solvers_py_mathematicalprogram.cc",
         "solvers_py_mixed_integer_optimization_util.cc",
@@ -88,9 +86,7 @@ drake_pybind_library(
         "branch_and_bound.py",
         "clp.py",
         "csdp.py",
-        "dreal.py",
         "gurobi.py",
-        "ibex.py",
         "ipopt.py",
         "mathematicalprogram.py",
         "mixed_integer_optimization_util.py",
@@ -146,35 +142,10 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "dreal_solver_test",
-    args = select({
-        "//tools:no_dreal": ["TestDrealSolver.unavailable"],
-        "//conditions:default": [],
-    }),
-    deps = [
-        ":solvers",
-        "//bindings/pydrake/common:containers_py",
-        "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
     name = "gurobi_solver_test",
     tags = gurobi_test_tags(),
     deps = [
         ":solvers",
-    ],
-)
-
-drake_py_unittest(
-    name = "ibex_solver_test",
-    args = select({
-        "//tools:no_dreal": ["TestIbexSolver.unavailable"],
-        "//conditions:default": [],
-    }),
-    deps = [
-        ":solvers",
-        "//bindings/pydrake/common/test_utilities",
     ],
 )
 

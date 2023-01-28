@@ -475,13 +475,6 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kScs", SolverType::kScs, doc.SolverType.kScs.doc)
       .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  solver_type  // BR
-      .value("kDReal", SolverType::kDReal, "(Deprecated.)")
-      .value("kIbex", SolverType::kIbex, "(Deprecated.)");
-#pragma GCC diagnostic pop
-
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
       .def(py::init<>(), doc.SolverOptions.ctor.doc)

@@ -151,8 +151,6 @@ class TestAll(unittest.TestCase):
             "ClpSolver",
             # - csdp
             "CsdpSolver",
-            # - dreal
-            "DrealSolver",
             # - gurobi
             "GurobiSolver",
             # - sdpa_free_format

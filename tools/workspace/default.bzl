@@ -9,7 +9,6 @@ load("@drake//tools/workspace/buildifier:repository.bzl", "buildifier_repository
 load("@drake//tools/workspace/cc:repository.bzl", "cc_repository")
 load("@drake//tools/workspace/ccd:repository.bzl", "ccd_repository")
 load("@drake//tools/workspace/ccd_internal:repository.bzl", "ccd_internal_repository")  # noqa
-load("@drake//tools/workspace/cds:repository.bzl", "cds_repository")
 load("@drake//tools/workspace/clang_cindex_python3_internal:repository.bzl", "clang_cindex_python3_internal_repository")  # noqa
 load("@drake//tools/workspace/clp:repository.bzl", "clp_repository")
 load("@drake//tools/workspace/com_jidesoft_jide_oss:repository.bzl", "com_jidesoft_jide_oss_repository")  # noqa
@@ -22,7 +21,6 @@ load("@drake//tools/workspace/double_conversion:repository.bzl", "double_convers
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("@drake//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
 load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
-load("@drake//tools/workspace/dreal:repository.bzl", "dreal_repository")
 load("@drake//tools/workspace/eigen:repository.bzl", "eigen_repository")
 load("@drake//tools/workspace/expat:repository.bzl", "expat_repository")
 load("@drake//tools/workspace/fcl:repository.bzl", "fcl_repository")  # noqa
@@ -40,7 +38,6 @@ load("@drake//tools/workspace/gurobi:repository.bzl", "gurobi_repository")
 load("@drake//tools/workspace/gym_py:repository.bzl", "gym_py_repository")
 load("@drake//tools/workspace/gz_math_internal:repository.bzl", "gz_math_internal_repository")  # noqa
 load("@drake//tools/workspace/gz_utils_internal:repository.bzl", "gz_utils_internal_repository")  # noqa
-load("@drake//tools/workspace/ibex:repository.bzl", "ibex_repository")
 load("@drake//tools/workspace/intel_realsense_ros_internal:repository.bzl", "intel_realsense_ros_internal_repository")  # noqa
 load("@drake//tools/workspace/ipopt:repository.bzl", "ipopt_repository")
 load("@drake//tools/workspace/lapack:repository.bzl", "lapack_repository")
@@ -71,7 +68,6 @@ load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_drive
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
 load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
 load("@drake//tools/workspace/petsc:repository.bzl", "petsc_repository")
-load("@drake//tools/workspace/picosat:repository.bzl", "picosat_repository")
 load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
 load("@drake//tools/workspace/platforms:repository.bzl", "platforms_repository")  # noqa
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
@@ -130,10 +126,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         ccd_repository(name = "ccd", mirrors = mirrors)
     if "ccd_internal" not in excludes:
         ccd_internal_repository(name = "ccd_internal", mirrors = mirrors)
-    if "cds" not in excludes:
-        # N.B. This repository is deprecated for removal on 2023-02-01.
-        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
-        cds_repository(name = "cds", mirrors = mirrors)
     if "clang_cindex_python3_internal" not in excludes:
         clang_cindex_python3_internal_repository(name = "clang_cindex_python3_internal", mirrors = mirrors)  # noqa
     if "clp" not in excludes:
@@ -160,10 +152,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         os_repository(name = "drake_detected_os")
     if "drake_visualizer" not in excludes:
         drake_visualizer_repository(name = "drake_visualizer", mirrors = mirrors)  # noqa
-    if "dreal" not in excludes:
-        # N.B. This repository is deprecated for removal on 2023-02-01.
-        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
-        dreal_repository(name = "dreal", mirrors = mirrors)
     if "eigen" not in excludes:
         eigen_repository(name = "eigen")
     if "expat" not in excludes:
@@ -198,10 +186,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         gz_utils_internal_repository(name = "gz_utils_internal", mirrors = mirrors)  # noqa
     if "gym_py" not in excludes:
         gym_py_repository(name = "gym_py", mirrors = mirrors)
-    if "ibex" not in excludes:
-        # N.B. This repository is deprecated for removal on 2023-02-01.
-        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
-        ibex_repository(name = "ibex", mirrors = mirrors)
     if "intel_realsense_ros_internal" not in excludes:
         intel_realsense_ros_internal_repository(name = "intel_realsense_ros_internal", mirrors = mirrors)  # noqa
     if "ipopt" not in excludes:
@@ -266,10 +250,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         osqp_repository(name = "osqp", mirrors = mirrors)
     if "petsc" not in excludes:
         petsc_repository(name = "petsc", mirrors = mirrors)
-    if "picosat" not in excludes:
-        # N.B. This repository is deprecated for removal on 2023-02-01.
-        # For details see https://github.com/RobotLocomotion/drake/pull/18156.
-        picosat_repository(name = "picosat", mirrors = mirrors)
     if "picosha2" not in excludes:
         picosha2_repository(name = "picosha2", mirrors = mirrors)
     if "platforms" not in excludes:
