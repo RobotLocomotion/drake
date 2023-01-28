@@ -1,13 +1,18 @@
 import unittest
+
 import numpy as np
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers import branch_and_bound as bnb
-from pydrake.solvers.osqp import OsqpSolver
+
+from pydrake.solvers import (
+    MathematicalProgram,
+    MixedIntegerBranchAndBound,
+    OsqpSolver,
+    SolutionResult,
+)
 
 
 class TestMixedIntegerBranchAndBound(unittest.TestCase):
     def test(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2)
         b = prog.NewBinaryVariables(2)
 
@@ -16,9 +21,9 @@ class TestMixedIntegerBranchAndBound(unittest.TestCase):
         prog.AddLinearConstraint(b[1] + 1.2 * x[1] - b[0] <= 5)
         prog.AddQuadraticCost(x[0] * x[0])
 
-        dut = bnb.MixedIntegerBranchAndBound(prog, OsqpSolver().solver_id())
+        dut = MixedIntegerBranchAndBound(prog, OsqpSolver().solver_id())
         solution_result = dut.Solve()
-        self.assertEqual(solution_result, mp.SolutionResult.kSolutionFound)
+        self.assertEqual(solution_result, SolutionResult.kSolutionFound)
         self.assertAlmostEqual(dut.GetOptimalCost(), 1.)
         self.assertAlmostEqual(dut.GetSubOptimalCost(0), 1.)
         self.assertAlmostEqual(dut.GetSolution(x[0], 0), 1.)

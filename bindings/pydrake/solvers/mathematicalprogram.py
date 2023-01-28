@@ -2,9 +2,9 @@
 
 Prefer not to use this import path in new code; all of the code in
 this module can be imported from pydrake.solvers directly.
-
-This module will be deprecated at some point in the future.
 """
+
+from pydrake.common.deprecation import _warn_deprecated
 
 from pydrake.solvers import (
     Binding,
@@ -45,3 +45,8 @@ from pydrake.solvers import (
     SolverType,
     VisualizationCallback,
 )
+
+_warn_deprecated(
+    "Please import from the pydrake.solvers module directly, instead of the "
+    f"deprecated {__name__} submodule.",
+    date="2023-05-01", stacklevel=3)

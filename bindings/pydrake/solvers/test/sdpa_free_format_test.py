@@ -1,13 +1,16 @@
-import unittest
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers.sdpa_free_format import GenerateSDPA
-from pydrake.common import temp_directory
 import os
+import unittest
+
+from pydrake.common import temp_directory
+from pydrake.solvers import (
+    GenerateSDPA,
+    MathematicalProgram,
+)
 
 
 class TestSdpaFreeFormat(unittest.TestCase):
     def test_GenerateSDPA(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
         X = prog.NewSymmetricContinuousVariables(2)
         prog.AddPositiveSemidefiniteConstraint(X)
         prog.AddLinearCost(X[0, 0] + X[1, 1])

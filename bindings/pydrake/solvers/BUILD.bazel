@@ -83,7 +83,6 @@ drake_pybind_library(
     ],
     py_srcs = [
         "_extra.py",
-        "all.py",
         "augmented_lagrangian.py",
         "branch_and_bound.py",
         "clp.py",

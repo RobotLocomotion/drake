@@ -1,17 +1,21 @@
 import unittest
+
 import numpy as np
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers import mixed_integer_optimization_util as mip_util
-from pydrake.solvers import mixed_integer_rotation_constraint as mip_rot
+
+from pydrake.solvers import (
+    IntervalBinning,
+    MathematicalProgram,
+    MixedIntegerRotationConstraintGenerator,
+)
 
 
 class TestMixedIntegerRotationConstraint(unittest.TestCase):
     def test_MixedIntegerRotationConstraintGenerator(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
 
         R = prog.NewContinuousVariables(3, 3, "R")
-        Generator = mip_rot.MixedIntegerRotationConstraintGenerator
-        binning = mip_util.IntervalBinning.kLogarithmic
+        Generator = MixedIntegerRotationConstraintGenerator
+        binning = IntervalBinning.kLogarithmic
         approach = Generator.Approach.kBoth
         n_intervals = 2
         so3_generator = Generator(

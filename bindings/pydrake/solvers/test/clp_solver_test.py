@@ -3,13 +3,16 @@ import warnings
 
 import numpy as np
 
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers.clp import ClpSolver
+from pydrake.solvers import (
+    ClpSolver,
+    MathematicalProgram,
+    SolverType,
+)
 
 
 class TestClpSolver(unittest.TestCase):
     def _make_prog(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
         x = prog.NewContinuousVariables(4, "x")
         prog.AddLinearCost(-3*x[0] - 2*x[1])
         prog.AddLinearCost(x[1] - 5 * x[2] - x[3] + 2)
@@ -30,7 +33,7 @@ class TestClpSolver(unittest.TestCase):
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "CLP")
         self.assertEqual(solver.SolverName(), "CLP")
-        self.assertEqual(solver.solver_type(), mp.SolverType.kClp)
+        self.assertEqual(solver.solver_type(), SolverType.kClp)
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))
