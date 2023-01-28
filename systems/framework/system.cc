@@ -25,6 +25,35 @@ void System<T>::Accept(SystemVisitor<T>* v) const {
 }
 
 template <typename T>
+std::unique_ptr<System<T>> System<T>::Clone() const {
+  std::unique_ptr<System<T>> result;
+
+  // To implement cloning, we'll scalar convert back and forth through some
+  // intermediate scalar type "U". When T=double, we'll use U=AutoDiffXd since
+  // its the scalar type most likely to exist. When T={AutoDiffXd,Expression}
+  // we'll use U=double.
+  using U = std::conditional_t<std::is_same_v<T, double>, AutoDiffXd, double>;
+
+  // Convert T -> U -> T, stopping as soon as we hit a nullptr.
+  auto intermediate = this->template ToScalarTypeMaybe<U>();
+  if (intermediate != nullptr) {
+    result = intermediate->template ToScalarTypeMaybe<T>();
+    if (result != nullptr) {
+      result->ResetSystemId();
+    }
+  }
+
+  // In any anything went wrong, throw exception.
+  if (result == nullptr) {
+    throw std::logic_error(
+        fmt::format("System::Clone(): {} system '{}' does not support Cloning",
+                    this->GetSystemType(), this->GetSystemPathname()));
+  }
+
+  return result;
+}
+
+template <typename T>
 std::unique_ptr<Context<T>> System<T>::AllocateContext() const {
   return dynamic_pointer_cast_or_throw<Context<T>>(
       SystemBase::AllocateContext());

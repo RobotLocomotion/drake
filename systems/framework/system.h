@@ -52,6 +52,54 @@ class System : public SystemBase {
   virtual void Accept(SystemVisitor<T>* v) const;
 
   //----------------------------------------------------------------------------
+  /** @name           Cloning
+  These functions make a deep copy of a system. */
+  //@{
+
+  /** Creates a deep copy of this system.
+
+  Even though the cloned system is functionally identical, any contexts created
+  for this system are not compatible with the cloned system, and vice versa.
+
+  @warning This implementation is somewhat incomplete at the moment. Many
+  systems will not be able to be cloned, and will throw an exception instead.
+  To be cloned, at minimum a system must support scalar conversion.
+  See @ref system_scalar_conversion.
+
+  The result is never nullptr. */
+  std::unique_ptr<System<T>> Clone() const;
+
+  /** Creates a deep copy of this system.
+
+  In contrast with the instance member function `sys.Clone()`, this static
+  member function `Clone(sys)` is useful for C++ users to preserve the static
+  type of the system being cloned.
+
+  Even though the cloned system is functionally identical, any contexts created
+  for this system are not compatible with the cloned system, and vice versa.
+
+  @warning This implementation is somewhat incomplete at the moment. Many
+  systems will not be able to be cloned, and will throw an exception instead.
+  To be cloned, at minimum a system must support scalar conversion.
+  See @ref system_scalar_conversion.
+
+  The result is never nullptr.
+
+  Usage: @code
+    MySystem<double> plant;
+    unique_ptr<MySystem<double>> copy = System<double>::Clone(plant);
+  @endcode
+
+  @tparam S The specific System type to accept and return. */
+  template <template <typename> class S = ::drake::systems::System>
+  static std::unique_ptr<S<T>> Clone(const S<T>& from) {
+    static_assert(std::is_base_of_v<System<T>, S<T>>);
+    return dynamic_pointer_cast_or_throw<S<T>>(from.Clone());
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /** @name           Resource allocation and initialization
   These methods are used to allocate and initialize Context resources. */
   //@{
@@ -1364,6 +1412,7 @@ class System : public SystemBase {
   related to scalar-type conversion support. */
   template <typename U, template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<U>> ToScalarType(const S<T>& from) {
+    static_assert(std::is_base_of_v<System<T>, S<T>>);
     auto base_result = from.template ToScalarTypeMaybe<U>();
     if (!base_result) {
       const System<T>& upcast_from = from;
