@@ -8,7 +8,7 @@ import argparse
 import numpy as np
 
 from pydrake.common import FindResourceOrThrow, temp_directory
-from pydrake.examples.manipulation_station import ManipulationStation
+from pydrake.examples import ManipulationStation
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.analysis import Simulator
