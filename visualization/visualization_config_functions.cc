@@ -26,13 +26,12 @@ using systems::DiagramBuilder;
 using systems::System;
 using systems::lcm::LcmBuses;
 
-void ApplyVisualizationConfigImpl(
-    const VisualizationConfig& config,
-    DrakeLcmInterface* lcm,
-    std::shared_ptr<geometry::Meshcat> meshcat,
-    const MultibodyPlant<double>& plant,
-    const SceneGraph<double>& scene_graph,
-    DiagramBuilder<double>* builder) {
+void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
+                                  DrakeLcmInterface* lcm,
+                                  std::shared_ptr<geometry::Meshcat> meshcat,
+                                  const MultibodyPlant<double>& plant,
+                                  const SceneGraph<double>& scene_graph,
+                                  DiagramBuilder<double>* builder) {
   // This is required due to ConnectContactResultsToDrakeVisualizer().
   DRAKE_THROW_UNLESS(plant.is_finalized());
 
@@ -59,25 +58,24 @@ void ApplyVisualizationConfigImpl(
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
         internal::ConvertVisualizationConfigToMeshcatParams(config);
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      MeshcatVisualizer<double>::AddToBuilder(
-        builder, scene_graph, meshcat, params);
+      MeshcatVisualizer<double>::AddToBuilder(builder, scene_graph, meshcat,
+                                              params);
     }
   }
 }
 
 }  // namespace
 
-void ApplyVisualizationConfig(
-    const VisualizationConfig& config,
-    DiagramBuilder<double>* builder,
-    const LcmBuses* lcm_buses,
-    const MultibodyPlant<double>* plant,
-    const SceneGraph<double>* scene_graph,
-    std::shared_ptr<geometry::Meshcat> meshcat,
-    DrakeLcmInterface* lcm) {
+void ApplyVisualizationConfig(const VisualizationConfig& config,
+                              DiagramBuilder<double>* builder,
+                              const LcmBuses* lcm_buses,
+                              const MultibodyPlant<double>* plant,
+                              const SceneGraph<double>* scene_graph,
+                              std::shared_ptr<geometry::Meshcat> meshcat,
+                              DrakeLcmInterface* lcm) {
   DRAKE_THROW_UNLESS(builder != nullptr);
-  lcm = FindOrCreateLcmBus(
-      lcm, lcm_buses, builder, "ApplyVisualizationConfig", config.lcm_bus);
+  lcm = FindOrCreateLcmBus(lcm, lcm_buses, builder, "ApplyVisualizationConfig",
+                           config.lcm_bus);
   DRAKE_DEMAND(lcm != nullptr);
   // N.B. The "a plant is required" precondition for ApplyVisualizationConfig
   // stems from the fact that we need to future-proof ourselves in case we
@@ -89,11 +87,11 @@ void ApplyVisualizationConfig(
     plant = &builder->GetDowncastSubsystemByName<MultibodyPlant>("plant");
   }
   if (scene_graph == nullptr) {
-    scene_graph = &builder->GetDowncastSubsystemByName<SceneGraph>(
-        "scene_graph");
+    scene_graph =
+        &builder->GetDowncastSubsystemByName<SceneGraph>("scene_graph");
   }
-  ApplyVisualizationConfigImpl(
-    config, lcm, meshcat, *plant, *scene_graph, builder);
+  ApplyVisualizationConfigImpl(config, lcm, meshcat, *plant, *scene_graph,
+                               builder);
 }
 
 void AddDefaultVisualization(DiagramBuilder<double>* builder) {
@@ -102,8 +100,7 @@ void AddDefaultVisualization(DiagramBuilder<double>* builder) {
 
 namespace internal {
 
-std::vector<DrakeVisualizerParams>
-ConvertVisualizationConfigToDrakeParams(
+std::vector<DrakeVisualizerParams> ConvertVisualizationConfigToDrakeParams(
     const VisualizationConfig& config) {
   std::vector<DrakeVisualizerParams> result;
 
@@ -128,8 +125,7 @@ ConvertVisualizationConfigToDrakeParams(
   return result;
 }
 
-std::vector<MeshcatVisualizerParams>
-ConvertVisualizationConfigToMeshcatParams(
+std::vector<MeshcatVisualizerParams> ConvertVisualizationConfigToMeshcatParams(
     const VisualizationConfig& config) {
   std::vector<MeshcatVisualizerParams> result;
 

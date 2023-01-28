@@ -56,7 +56,9 @@ class DrakeLcm : public DrakeLcmInterface {
    */
   ::lcm::LCM* get_lcm_instance();
 
-  void Publish(const std::string&, const void*, int,
+  void Publish(const std::string&,
+               const void*,
+               int,
                std::optional<double>) override;
   std::string get_lcm_url() const override;
   std::shared_ptr<DrakeSubscriptionInterface> Subscribe(

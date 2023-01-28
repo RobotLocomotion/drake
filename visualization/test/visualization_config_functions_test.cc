@@ -76,8 +76,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
 
   EXPECT_EQ(meshcat_params.at(1).role, Role::kProximity);
   EXPECT_EQ(meshcat_params.at(1).publish_period, config.publish_period);
-  EXPECT_EQ(meshcat_params.at(1).default_color,
-            config.default_proximity_color);
+  EXPECT_EQ(meshcat_params.at(1).default_color, config.default_proximity_color);
   EXPECT_EQ(meshcat_params.at(1).delete_on_initialization_event,
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
@@ -129,11 +128,11 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   // We'll monitor which LCM channel names appear.
   DrakeLcm drake_lcm;
   std::set<std::string> observed_channels;
-  drake_lcm.SubscribeAllChannels(
-      [&observed_channels](std::string_view channel, const void* /* buffer */,
-                           int /* size */) {
-        observed_channels.emplace(channel);
-      });
+  drake_lcm.SubscribeAllChannels([&observed_channels](std::string_view channel,
+                                                      const void* /* buffer */,
+                                                      int /* size */) {
+    observed_channels.emplace(channel);
+  });
   LcmBuses lcm_buses;
   lcm_buses.Add("default", &drake_lcm);
 
@@ -144,27 +143,26 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   // Check that we can pass an existing meshcat.
   std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
   const VisualizationConfig config;
-  ApplyVisualizationConfig(
-    config, &builder, &lcm_buses, &plant, &scene_graph, meshcat);
+  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
+                           meshcat);
   Simulator<double> simulator(builder.Build());
 
   // Simulate for a moment and make sure everything showed up.
   simulator.AdvanceTo(0.25);
-  while (drake_lcm.HandleSubscriptions(1) > 0) {}
-  EXPECT_THAT(observed_channels, testing::IsSupersetOf({
-      "DRAKE_VIEWER_LOAD_ROBOT",
-      "DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY",
-      "DRAKE_VIEWER_DRAW",
-      "DRAKE_VIEWER_DRAW_PROXIMITY",
-      "CONTACT_RESULTS"}));
+  while (drake_lcm.HandleSubscriptions(1) > 0) {
+  }
+  EXPECT_THAT(observed_channels,
+              testing::IsSupersetOf(
+                  {"DRAKE_VIEWER_LOAD_ROBOT",
+                   "DRAKE_VIEWER_LOAD_ROBOT_PROXIMITY", "DRAKE_VIEWER_DRAW",
+                   "DRAKE_VIEWER_DRAW_PROXIMITY", "CONTACT_RESULTS"}));
 
   // Check that alpha sliders don't exist by default.
   DRAKE_EXPECT_THROWS_MESSAGE(
-    meshcat->GetSliderValue("illustration α"),
-    ".*does not have any slider named illustration.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    meshcat->GetSliderValue("proximity α"),
-    ".*does not have any slider named proximity.*");
+      meshcat->GetSliderValue("illustration α"),
+      ".*does not have any slider named illustration.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(meshcat->GetSliderValue("proximity α"),
+                              ".*does not have any slider named proximity.*");
 }
 
 // Overall acceptance test with nothing enabled.
@@ -177,7 +175,9 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
 
   // We'll fail in case any message is transmitted.
   DrakeLcm drake_lcm;
-  drake_lcm.SubscribeAllChannels([](auto...) { GTEST_FAIL(); });
+  drake_lcm.SubscribeAllChannels([](auto...) {
+    GTEST_FAIL();
+  });
   LcmBuses lcm_buses;
   lcm_buses.Add("default", &drake_lcm);
 
@@ -192,7 +192,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   for (const auto* system : builder.GetSystems()) {
     const std::string& name = system->get_name();
     if (name.find("MeshcatVisualizer") != std::string::npos) {
-        ++meshcat_count;
+      ++meshcat_count;
     }
   }
   EXPECT_EQ(meshcat_count, 0);
@@ -221,7 +221,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoMeshcat) {
   for (const auto* system : builder.GetSystems()) {
     const std::string& name = system->get_name();
     if (name.find("MeshcatVisualizer") != std::string::npos) {
-        ++meshcat_count;
+      ++meshcat_count;
     }
   }
   EXPECT_EQ(meshcat_count, 2);
@@ -240,8 +240,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AlphaSliders) {
   std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
   VisualizationConfig config;
   config.enable_alpha_sliders = true;
-  ApplyVisualizationConfig(
-    config, &builder, &lcm_buses, &plant, &scene_graph, meshcat);
+  ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
+                           meshcat);
 
   // Check that alpha sliders exist.
   meshcat->GetSliderValue("illustration α");
@@ -261,9 +261,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
 // A missing plant causes an exception.
 GTEST_TEST(VisualizationConfigFunctionsTest, NoPlant) {
   DiagramBuilder<double> builder;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder),
-      ".*does not contain.*plant.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddDefaultVisualization(&builder),
+                              ".*does not contain.*plant.*");
 }
 
 // A missing scene_graph causes an exception.
@@ -272,9 +271,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoSceneGraph) {
   auto* plant = builder.AddSystem<MultibodyPlant<double>>(0.0);
   plant->set_name("plant");
   plant->Finalize();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder),
-      ".*does not contain.*scene_graph.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddDefaultVisualization(&builder),
+                              ".*does not contain.*scene_graph.*");
 }
 
 // Type confusion causes an exception.
@@ -283,9 +281,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, WrongSystemTypes) {
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.set_name("scene_graph");
   scene_graph.set_name("plant");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddDefaultVisualization(&builder),
-      ".*not cast.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddDefaultVisualization(&builder),
+                              ".*not cast.*");
 }
 
 }  // namespace
