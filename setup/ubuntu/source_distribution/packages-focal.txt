@@ -24,7 +24,6 @@ libmumps-seq-dev
 libnlopt-cxx-dev
 libopengl-dev
 libpng-dev
-libsuitesparse-dev
 libtiff-dev
 libtinyxml-dev
 libtool

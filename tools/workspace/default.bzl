@@ -1,5 +1,6 @@
 # -*- python -*-
 
+load("@drake//tools/workspace:deprecation.bzl", "add_deprecation")
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("@drake//tools/workspace:os.bzl", "os_repository")
 load("@drake//tools/workspace/abseil_cpp_internal:repository.bzl", "abseil_cpp_internal_repository")  # noqa
@@ -69,7 +70,7 @@ load("@drake//tools/workspace/opencl:repository.bzl", "opencl_repository")
 load("@drake//tools/workspace/opengl:repository.bzl", "opengl_repository")
 load("@drake//tools/workspace/optitrack_driver:repository.bzl", "optitrack_driver_repository")  # noqa
 load("@drake//tools/workspace/org_apache_xmlgraphics_commons:repository.bzl", "org_apache_xmlgraphics_commons_repository")  # noqa
-load("@drake//tools/workspace/osqp:repository.bzl", "osqp_repository")
+load("@drake//tools/workspace/osqp_internal:repository.bzl", "osqp_internal_repository")  # noqa
 load("@drake//tools/workspace/petsc:repository.bzl", "petsc_repository")
 load("@drake//tools/workspace/picosat:repository.bzl", "picosat_repository")
 load("@drake//tools/workspace/picosha2:repository.bzl", "picosha2_repository")
@@ -77,12 +78,12 @@ load("@drake//tools/workspace/platforms:repository.bzl", "platforms_repository")
 load("@drake//tools/workspace/pybind11:repository.bzl", "pybind11_repository")
 load("@drake//tools/workspace/pycodestyle:repository.bzl", "pycodestyle_repository")  # noqa
 load("@drake//tools/workspace/python:repository.bzl", "python_repository")
-load("@drake//tools/workspace/qdldl:repository.bzl", "qdldl_repository")
+load("@drake//tools/workspace/qdldl_internal:repository.bzl", "qdldl_internal_repository")  # noqa
 load("@drake//tools/workspace/qhull_internal:repository.bzl", "qhull_internal_repository")  # noqa
 load("@drake//tools/workspace/ros_xacro_internal:repository.bzl", "ros_xacro_internal_repository")  # noqa
 load("@drake//tools/workspace/rules_pkg:repository.bzl", "rules_pkg_repository")  # noqa
 load("@drake//tools/workspace/rules_python:repository.bzl", "rules_python_repository")  # noqa
-load("@drake//tools/workspace/scs:repository.bzl", "scs_repository")
+load("@drake//tools/workspace/scs_internal:repository.bzl", "scs_internal_repository")  # noqa
 load("@drake//tools/workspace/sdformat_internal:repository.bzl", "sdformat_internal_repository")  # noqa
 load("@drake//tools/workspace/snopt:repository.bzl", "snopt_repository")
 load("@drake//tools/workspace/spdlog:repository.bzl", "spdlog_repository")
@@ -92,6 +93,7 @@ load("@drake//tools/workspace/stduuid:repository.bzl", "stduuid_repository")
 load("@drake//tools/workspace/stduuid_internal:repository.bzl", "stduuid_internal_repository")  # noqa
 load("@drake//tools/workspace/styleguide:repository.bzl", "styleguide_repository")  # noqa
 load("@drake//tools/workspace/suitesparse:repository.bzl", "suitesparse_repository")  # noqa
+load("@drake//tools/workspace/suitesparse_internal:repository.bzl", "suitesparse_internal_repository")  # noqa
 load("@drake//tools/workspace/tinyobjloader:repository.bzl", "tinyobjloader_repository")  # noqa
 load("@drake//tools/workspace/tinyxml2_internal:repository.bzl", "tinyxml2_internal_repository")  # noqa
 load("@drake//tools/workspace/tomli_internal:repository.bzl", "tomli_internal_repository")  # noqa
@@ -263,7 +265,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "org_apache_xmlgraphics_commons" not in excludes:
         org_apache_xmlgraphics_commons_repository(name = "org_apache_xmlgraphics_commons", mirrors = mirrors)  # noqa
     if "osqp" not in excludes:
-        osqp_repository(name = "osqp", mirrors = mirrors)
+        add_deprecation(
+            name = "osqp",
+            date = "2023-05-01",
+            cc_aliases = {"osqp": "@osqp_internal//:osqp"},
+        )
+    if "osqp_internal" not in excludes:
+        osqp_internal_repository(name = "osqp_internal", mirrors = mirrors)
     if "petsc" not in excludes:
         petsc_repository(name = "petsc", mirrors = mirrors)
     if "picosat" not in excludes:
@@ -281,7 +289,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "python" not in excludes:
         python_repository(name = "python")
     if "qdldl" not in excludes:
-        qdldl_repository(name = "qdldl", mirrors = mirrors)
+        add_deprecation(
+            name = "qdldl",
+            date = "2023-05-01",
+            cc_aliases = {"qdldl": "@qdldl_internal//:qdldl"},
+        )
+    if "qdldl_internal" not in excludes:
+        qdldl_internal_repository(name = "qdldl_internal", mirrors = mirrors)
     if "qhull_internal" not in excludes:
         qhull_internal_repository(name = "qhull_internal", mirrors = mirrors)
     if "ros_xacro_internal" not in excludes:
@@ -291,7 +305,13 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "rules_python" not in excludes:
         rules_python_repository(name = "rules_python", mirrors = mirrors)
     if "scs" not in excludes:
-        scs_repository(name = "scs", mirrors = mirrors)
+        add_deprecation(
+            name = "scs",
+            date = "2023-05-01",
+            cc_aliases = {"scsdir": "@scs_internal//:scsdir"},
+        )
+    if "scs_internal" not in excludes:
+        scs_internal_repository(name = "scs_internal", mirrors = mirrors)
     if "sdformat_internal" not in excludes:
         sdformat_internal_repository(name = "sdformat_internal", mirrors = mirrors)  # noqa
     if "snopt" not in excludes:
@@ -309,7 +329,10 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "styleguide" not in excludes:
         styleguide_repository(name = "styleguide", mirrors = mirrors)
     if "suitesparse" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-05-01.
         suitesparse_repository(name = "suitesparse")
+    if "suitesparse_internal" not in excludes:
+        suitesparse_internal_repository(name = "suitesparse_internal", mirrors = mirrors)  # noqa
     if "tinyobjloader" not in excludes:
         tinyobjloader_repository(name = "tinyobjloader", mirrors = mirrors)
     if "tinyxml2_internal" not in excludes:
