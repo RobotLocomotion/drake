@@ -17,6 +17,7 @@ deriving your own collision checker without providing for the full suite of
 operations. */
 class UnimplementedCollisionChecker : public CollisionChecker {
  public:
+  /** Constructs a checker with the given settings. */
   UnimplementedCollisionChecker(CollisionCheckerParams params,
                                 bool supports_parallel_checking);
 
