@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 from drake.tools.lint.formatter import IncludeFormatter
@@ -124,6 +125,40 @@ def _check_shebang(filename, disallow_executable):
     return 0
 
 
+def _check_iostream(filename):
+    """Forbids using <iostream> unless you're using std::cout or similar.
+
+    See https://en.cppreference.com/w/cpp/header/iostream. Including <iostream>
+    inserts non-trivial global constructors and destructors into our code,
+    which violates the Google Style Guide.
+    """
+    # Checks if we're using <iostream>.
+    with open(filename, mode='r', encoding='utf-8') as file:
+        lines = file.readlines()
+    line_num = None
+    for i, line in enumerate(lines):
+        if line.startswith("#include <iostream>"):
+            line_num = i
+            break
+    if line_num is None:
+        return 0
+
+    # We're using <iostream>. Check if it's necessary.
+    stream_constant = re.compile("std::c(in|out|err)")
+    for line in lines:
+        if stream_constant.search(line) is not None:
+            # It's necessary.
+            return 0
+
+    # It's unnecessary.
+    print(f"ERROR: {filename}:{line_num + 1}: "
+          "Do not include <iostream> unless you need std::cin, std::cout, or "
+          "std::cerr. If you need std::ostream then include <ostream>, or "
+          "likewise for std::istream; for std::ifstream include <fstream>. "
+          "If no streams are needed, remove the include statement entirely.")
+    return 1
+
+
 def main():
     """Run Drake lint checks on each path specified as a command-line argument.
     Exit 1 if any of the paths are invalid or any lint checks fail.
@@ -146,6 +181,7 @@ def main():
         if not filename.endswith(".py"):
             total_errors += _check_includes(filename)
             total_errors += _check_unguarded_openmp_uses(filename)
+            total_errors += _check_iostream(filename)
 
     if total_errors == 0:
         sys.exit(0)
