@@ -27,8 +27,7 @@ from pydrake.multibody.tree import (
     SpatialInertia,
 )
 import pydrake.multibody.inverse_kinematics as ik
-import pydrake.solvers.mathematicalprogram as mp
-from pydrake.solvers import SnoptSolver
+import pydrake.solvers as mp
 from pydrake.systems.framework import DiagramBuilder, DiagramBuilder_
 from pydrake.geometry import (
     Box,
@@ -119,7 +118,7 @@ def split_se3(q_se3):
 
 class TestStaticEquilibriumProblem(unittest.TestCase):
 
-    @unittest.skipUnless(SnoptSolver().available(), "Requires Snopt")
+    @unittest.skipUnless(mp.SnoptSolver().available(), "Requires Snopt")
     def test_one_box(self):
         # Test with a single box.
         masses = [1.]
@@ -147,7 +146,7 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
 
         # Now set the complementarity tolerance.
         dut.UpdateComplementarityTolerance(0.002)
-        solver = SnoptSolver()
+        solver = mp.SnoptSolver()
         result = solver.Solve(dut.prog())
         self.assertTrue(result.is_success())
         q_sol = result.GetSolution(dut.q_vars())
