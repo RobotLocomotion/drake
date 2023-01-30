@@ -285,7 +285,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout,
 
         # Download the new source archive.
         print("Downloading new archive...")
-        new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
+        new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"  # noqa: E501
         hasher = hashlib.sha256()
         with open(f"{temp_dir}/{new_commit}.tar.gz", "wb") as temp:
             with urllib.request.urlopen(new_url) as response:
@@ -310,7 +310,8 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout,
 
         # Copy the downloaded tarball into the repository cache.
         print("Populating repository cache ...")
-        subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
+        subprocess.check_call(["bazel", "fetch",
+                               "//...", f"--distdir={temp_dir}"])
 
         message = f"[workspace] Upgrade {workspace_name}"
         if _smells_like_a_git_commit(new_commit):
@@ -456,7 +457,6 @@ def main():
                     workspaces_to_commit.add(workspace)
             else:
                 workspaces_dont_commit.add(workspace)
-
 
         with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
             _do_upgrade(temp_dir, gh, local_drake_checkout,
