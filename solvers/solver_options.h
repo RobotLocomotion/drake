@@ -55,18 +55,6 @@ namespace solvers {
  *
  * "OSQP" -- Parameter name and values as specified in OSQP Reference
  * https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
- *
- * "dReal" -- Parameter name and values as specified in dReal Reference
- * https://github.com/dreal/dreal4/blob/master/README.md#command-line-options.
- * Note that Drake only supports a subset of the options listed in the
- * reference. @see DrealSolver for the subset of these options supported by the
- * solver interface.
- *
- * "IBEX" -- Parameter name and values as specified in IBEX Reference
- * http://www.ibex-lib.org/doc/optim.html?highlight=eps#options.
- * Note that Drake only supports a subset of the options listed in the
- * reference. @see IbexSolver for the subset of these options supported by the
- * solver interface.
  */
 class SolverOptions {
  public:

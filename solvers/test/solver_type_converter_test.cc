@@ -40,13 +40,6 @@ std::optional<SolverType> successor(std::optional<SolverType> solver_type) {
     case SolverType::kSnopt:
       return SolverType::kUnrevisedLemke;
     case SolverType::kUnrevisedLemke:
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      return SolverType::kDReal;
-    case SolverType::kDReal:
-      return SolverType::kIbex;
-    case SolverType::kIbex:
-#pragma GCC diagnostic pop
       return std::nullopt;
   }
   DRAKE_UNREACHABLE();
@@ -72,7 +65,7 @@ GTEST_TEST(SolverId, RoundTrip) {
   }
 
   // This should track the number of SolverType values, if we add any.
-  EXPECT_EQ(iterations, 15);
+  EXPECT_EQ(iterations, 13);
 }
 
 }  // namespace

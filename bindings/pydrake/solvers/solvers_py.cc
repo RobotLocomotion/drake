@@ -26,9 +26,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   internal::DefineSolversSdpaFreeFormat(m);
   internal::DefineSolversClp(m);
   internal::DefineSolversCsdp(m);
-  internal::DefineSolversDreal(m);
   internal::DefineSolversGurobi(m);
-  internal::DefineSolversIbex(m);
   internal::DefineSolversIpopt(m);
   internal::DefineSolversMosek(m);
   internal::DefineSolversNlopt(m);
