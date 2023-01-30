@@ -18,6 +18,8 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":constraint_relaxing_ik",
+        ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":global_inverse_kinematics",
         ":inverse_kinematics_core",
         ":kinematic_evaluators",
@@ -34,6 +36,28 @@ drake_cc_library(
         "//multibody/parsing",
         "//multibody/plant",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics",
+    srcs = ["differential_inverse_kinematics.cc"],
+    hdrs = ["differential_inverse_kinematics.h"],
+    deps = [
+        "//multibody/plant",
+        "//solvers:clp_solver",
+        "//solvers:mathematical_program",
+        "//solvers:osqp_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_integrator",
+    srcs = ["differential_inverse_kinematics_integrator.cc"],
+    hdrs = ["differential_inverse_kinematics_integrator.h"],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -133,6 +157,33 @@ drake_cc_googletest(
     deps = [
         ":constraint_relaxing_ik",
         "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_integrator_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":differential_inverse_kinematics_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
     ],
 )
 

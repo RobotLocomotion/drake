@@ -49,7 +49,7 @@ LIBDRAKE_COMPONENTS = [
     "//lcm",
     "//manipulation/kinova_jaco",
     "//manipulation/kuka_iiwa",
-    "//manipulation/planner",
+    "//manipulation/planner",  # 2023-05-01 Remove this with completed deprecation  # noqa
     "//manipulation/schunk_wsg",
     "//manipulation/util",
     "//math",

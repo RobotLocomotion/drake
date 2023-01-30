@@ -1,19 +1,18 @@
-#include "drake/manipulation/planner/differential_inverse_kinematics_integrator.h"  // noqa
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h"  // noqa
 
 #include "drake/common/text_logging.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/systems/framework/basic_vector.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 using systems::Context;
 
 DifferentialInverseKinematicsIntegrator::
     DifferentialInverseKinematicsIntegrator(
-        const multibody::MultibodyPlant<double>& robot,
-        const multibody::Frame<double>& frame_E, double time_step,
+        const MultibodyPlant<double>& robot,
+        const Frame<double>& frame_E, double time_step,
         const DifferentialInverseKinematicsParameters& parameters,
         const Context<double>* context, bool log_only_when_result_state_changes)
     : robot_(robot),
@@ -187,6 +186,5 @@ systems::EventStatus DifferentialInverseKinematicsIntegrator::Initialize(
   return systems::EventStatus::DidNothing();
 }
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

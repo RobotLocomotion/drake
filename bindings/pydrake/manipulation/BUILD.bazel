@@ -47,20 +47,6 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
-    name = "planner_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:eigen_pybind",
-    ],
-    cc_srcs = ["planner_py.cc"],
-    package_info = PACKAGE_INFO,
-    py_deps = [
-        ":module_py",
-    ],
-)
-
-drake_pybind_library(
     name = "schunk_wsg_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -90,7 +76,6 @@ drake_pybind_library(
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":kuka_iiwa_py",
-    ":planner_py",
     ":schunk_wsg_py",
     ":util_py",
 ]
@@ -109,18 +94,6 @@ drake_py_unittest(
         ":kuka_iiwa_py",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
-    ],
-)
-
-drake_py_unittest(
-    name = "planner_test",
-    data = [
-        "//multibody/benchmarks/acrobot:models",
-    ],
-    deps = [
-        ":planner_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/multibody",
     ],
 )
 
