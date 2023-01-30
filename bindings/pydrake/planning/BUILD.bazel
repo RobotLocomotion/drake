@@ -30,11 +30,14 @@ drake_pybind_library(
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
+        "//bindings/pydrake/common:wrap_pybind",
     ],
     cc_so_name = "__init__",
     cc_srcs = [
         "planning_py.h",
         "planning_py.cc",
+        "planning_py_collision_checker.cc",
+        "planning_py_collision_checker_interface_types.cc",
         "planning_py_robot_diagram.cc",
     ],
     package_info = PACKAGE_INFO,
@@ -51,6 +54,18 @@ install(
     targets = [":planning"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs([":planning"]),
+)
+
+drake_py_unittest(
+    name = "collision_checker_test",
+    data = [
+        "//multibody:models",
+        "//planning/test_utilities:collision_ground_plane.sdf",
+    ],
+    deps = [
+        ":planning",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
 )
 
 drake_py_unittest(

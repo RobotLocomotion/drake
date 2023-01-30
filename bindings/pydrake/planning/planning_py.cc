@@ -18,6 +18,8 @@ and/or trajectories of dynamical systems.
 
   // The order of these calls matters. Some modules rely on prior definitions.
   internal::DefinePlanningRobotDiagram(m);
+  internal::DefinePlanningCollisionCheckerInterfaceTypes(m);
+  internal::DefinePlanningCollisionChecker(m);
 }
 
 }  // namespace pydrake
