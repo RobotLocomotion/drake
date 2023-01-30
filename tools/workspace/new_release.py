@@ -229,105 +229,117 @@ def _is_modified(repo, path):
     return False
 
 
-def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
-    if workspace_name not in metadata:
-        raise RuntimeError(f"Unknown repository {workspace_name}")
-    data = metadata[workspace_name]
-    if data["repository_rule_type"] != "github":
-        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-    repository = data["repository"]
+def _do_upgrade(temp_dir, gh, local_drake_checkout,
+                workspace_names, metadata, commit_changes):
 
-    # Slurp the file we're supposed to modify.
-    bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
-    with open(bzl_filename, "r", encoding="utf-8") as f:
-        lines = f.readlines()
+    # Make sure there are workspaces to update.
+    if len(workspace_names) == 0:
+        return
 
-    # Determine if we should and can commit the changes made.
-    if local_drake_checkout is not None:
-        if _is_modified(local_drake_checkout, bzl_filename):
-            print(f"{bzl_filename} has local changes.")
-            print(f"Changes made for {workspace_name} will NOT be committed.")
-            commit = False
+    for workspace_name in workspace_names:
+        if workspace_name not in metadata:
+            raise RuntimeError(f"Unknown repository {workspace_name}")
+        if metadata[workspace_name]["repository_rule_type"] != "github":
+            raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+
+    messages = []
+    bzl_filenames = []
+    for workspace_name in workspace_names:
+        data = metadata[workspace_name]
+        repository = data["repository"]
+
+        # Slurp the file we're supposed to modify.
+        bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
+        with open(bzl_filename, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        # Figure out what to upgrade.
+        old_commit, new_commit = _handle_github(workspace_name, gh, data)
+        if old_commit == new_commit:
+            raise RuntimeError(f"No upgrade needed for {workspace_name}")
+        elif new_commit is None:
+            raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
+        print("Upgrading {} from {} to {}".format(
+            workspace_name, old_commit, new_commit))
+
+        # Locate the two hexadecimal lines we need to edit.
+        commit_line_re = re.compile(
+            r'(?<=    commit = ")(' + re.escape(old_commit) + r')(?=",)')
+        checksum_line_re = re.compile(
+            r'(?<=    sha256 = ")([0-9a-f]{64})(?=",)')
+        commit_line_num = None
+        checksum_line_num = None
+        for i, line in enumerate(lines):
+            match = commit_line_re.search(line)
+            if match:
+                assert commit_line_num is None
+                commit_line_num = i
+                commit_line_match = match
+            match = checksum_line_re.search(line)
+            if match:
+                assert checksum_line_num is None
+                checksum_line_num = i
+                checksum_line_match = match
+        assert commit_line_num is not None
+        assert checksum_line_num is not None
+
+        # Download the new source archive.
+        print("Downloading new archive...")
+        new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
+        hasher = hashlib.sha256()
+        with open(f"{temp_dir}/{new_commit}.tar.gz", "wb") as temp:
+            with urllib.request.urlopen(new_url) as response:
+                while True:
+                    data = response.read(4096)
+                    if not data:
+                        break
+                    hasher.update(data)
+                    temp.write(data)
+                new_checksum = hasher.hexdigest()
+
+        # Update the repository.bzl contents and then write it out.
+        lines[commit_line_num] = commit_line_re.sub(
+            new_commit, lines[commit_line_num])
+        lines[checksum_line_num] = checksum_line_re.sub(
+            new_checksum, lines[checksum_line_num])
+        with open(bzl_filename + ".new", "w", encoding="utf-8") as f:
+            for line in lines:
+                f.write(line)
+        os.rename(bzl_filename + ".new", bzl_filename)
+        bzl_filenames.append(bzl_filename)
+
+        # Copy the downloaded tarball into the repository cache.
+        print("Populating repository cache ...")
+        subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
+
+        message = f"[workspace] Upgrade {workspace_name}"
+        if _smells_like_a_git_commit(new_commit):
+            message += " to latest commit"
         else:
-            commit = True
-    else:
-        commit = False
+            message += f" to latest release {new_commit}"
+        messages.append(message)
 
-    # Figure out what to upgrade.
-    old_commit, new_commit = _handle_github(workspace_name, gh, data)
-    if old_commit == new_commit:
-        raise RuntimeError(f"No upgrade needed for {workspace_name}")
-    elif new_commit is None:
-        raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
-    print("Upgrading {} from {} to {}".format(
-        workspace_name, old_commit, new_commit))
-
-    # Locate the two hexadecimal lines we need to edit.
-    commit_line_re = re.compile(
-        r'(?<=    commit = ")(' + re.escape(old_commit) + r')(?=",)')
-    checksum_line_re = re.compile(
-        r'(?<=    sha256 = ")([0-9a-f]{64})(?=",)')
-    commit_line_num = None
-    checksum_line_num = None
-    for i, line in enumerate(lines):
-        match = commit_line_re.search(line)
-        if match:
-            assert commit_line_num is None
-            commit_line_num = i
-            commit_line_match = match
-        match = checksum_line_re.search(line)
-        if match:
-            assert checksum_line_num is None
-            checksum_line_num = i
-            checksum_line_match = match
-    assert commit_line_num is not None
-    assert checksum_line_num is not None
-
-    # Download the new source archive.
-    print("Downloading new archive...")
-    new_url = f"https://github.com/{repository}/archive/{new_commit}.tar.gz"
-    hasher = hashlib.sha256()
-    with open(f"{temp_dir}/{new_commit}.tar.gz", "wb") as temp:
-        with urllib.request.urlopen(new_url) as response:
-            while True:
-                data = response.read(4096)
-                if not data:
-                    break
-                hasher.update(data)
-                temp.write(data)
-            new_checksum = hasher.hexdigest()
-
-    # Update the repository.bzl contents and then write it out.
-    lines[commit_line_num] = commit_line_re.sub(
-        new_commit, lines[commit_line_num])
-    lines[checksum_line_num] = checksum_line_re.sub(
-        new_checksum, lines[checksum_line_num])
-    with open(bzl_filename + ".new", "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line)
-    os.rename(bzl_filename + ".new", bzl_filename)
-
-    # Copy the downloaded tarball into the repository cache.
-    print("Populating repository cache ...")
-    subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
-
-    message = f"[workspace] Upgrade {workspace_name}"
-    if _smells_like_a_git_commit(new_commit):
-        message += " to latest commit"
-    else:
-        message += f" to latest release {new_commit}"
-
-    if commit:
-        local_drake_checkout.git.commit('-o', bzl_filename, '-m', message)
+    if commit_changes:
+        msg_string = "\n".join(messages)
+        local_drake_checkout.git.commit('-o', bzl_filenames, '-m', msg_string)
         print("\n" + ("*" * 72))
-        print(f"Done.  Changes for {workspace_name} were committed.")
+        workspace_names = list(workspace_names)
+        if len(workspace_names) == 1:
+            wn_string = workspace_names[0]
+        elif len(workspace_names) == 2:
+            wn_string = workspace_names[0] + " and " + workspace_names[1]
+        else:
+            wn_string = ", ".join(workspace_names[:-1])\
+                        + "and " + workspace_names[-1]
+        print(f"Done.  Changes for {wn_string} were committed.")
         print("Be sure to review the changes and amend the commit if needed.")
         print(("*" * 72) + "\n")
     else:
         print("\n" + ("*" * 72))
         print("Done.  Be sure to review and commit the changes:")
-        print(f"  git add {bzl_filename}")
-        print(f"  git commit -m'{message}'")
+        print(f"  git add {' '.join(bzl_filenames)}")
+        msg_string = '\\\n'.join(messages)
+        print(f"  git commit -m '{msg_string}'")
         print(("*" * 72) + "\n")
 
 
@@ -402,27 +414,55 @@ def main():
         print(json.dumps(metadata, sort_keys=True, indent=2))
 
     if workspaces is not None:
+        # Generate a set of workspaces which are members of a cohort and
+        # need to be updated.
+        available_updates = set()
+        for cohort in _COHORTS:
+            for workspace in cohort:
+                data = read_repository_metadata(repositories=[workspace])
+                old_commit, new_commit = \
+                    _handle_github(workspace, gh, data[workspace])
+                if old_commit != new_commit and new_commit is not None:
+                    available_updates.add(workspace)
+
         for workspace in workspaces:
             for cohort in _COHORTS:
                 if workspace in cohort:
-                    # Make sure an entire cohort is being updated together
+                    # Make sure all members of a cohort are being updated
+                    # together if possible.
                     for cohort_item in cohort:
-                        if cohort_item not in workspaces:
-                            parser.error(f"Cohort {cohort} must be"
-                                         " upgraded together")
+                        if cohort_item not in workspaces \
+                           and cohort_item in available_updates:
+                            parser.error(f"Members of cohort {cohort} must be"
+                                         " upgraded together if possible")
 
-                    # Make sure entire cohort can be updated
-                    for cohort_item in cohort:
-                        old_commit, new_commit = \
-                            _handle_github(workspace, gh, metadata[workspace])
-                        if old_commit == new_commit or new_commit is None:
-                            parser.error("Updates not available for all"
-                                         f" members of cohort {cohort}.")
-
+        workspaces_to_commit = set()
+        workspaces_dont_commit = set()
         for workspace in workspaces:
-            with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
-                _do_upgrade(temp_dir, gh, local_drake_checkout,
-                            workspace, metadata)
+            # Don't try to update things which have no available updates
+            if workspace not in available_updates:
+                raise RuntimeError(f"No upgrade needed for {workspace}")
+                continue
+
+            # Determine if we should and can commit the changes made.
+            if local_drake_checkout is not None:
+                bzl_filename = f"tools/workspace/{workspace}/repository.bzl"
+                if _is_modified(local_drake_checkout, bzl_filename):
+                    print(f"{bzl_filename} has local changes.")
+                    print(f"Changes made for {workspace}"
+                          " will NOT be committed.")
+                    workspaces_dont_commit.add(workspace)
+                else:
+                    workspaces_to_commit.add(workspace)
+            else:
+                workspaces_dont_commit.add(workspace)
+
+
+        with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
+            _do_upgrade(temp_dir, gh, local_drake_checkout,
+                        workspaces_to_commit, metadata, commit_changes=True)
+            _do_upgrade(temp_dir, gh, local_drake_checkout,
+                        workspaces_dont_commit, metadata, commit_changes=False)
     else:
         # Run our report of what's available.
         print("Checking for new releases...")
