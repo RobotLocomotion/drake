@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/differential_inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
 
 #include <memory>
 #include <stdexcept>
@@ -10,8 +10,7 @@
 #include "drake/solvers/osqp_solver.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 namespace internal {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
@@ -19,10 +18,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& v_current,
     const math::RigidTransform<double>& X_WE,
     const Eigen::Ref<const Matrix6X<double>>& J_WE_W,
-    const multibody::SpatialVelocity<double>& V_WE_desired,
+    const SpatialVelocity<double>& V_WE_desired,
     const DifferentialInverseKinematicsParameters& parameters) {
   const math::RotationMatrix<double> R_EW = X_WE.rotation().transpose();
-  const multibody::SpatialVelocity<double> V_WE_E = R_EW * V_WE_desired;
+  const SpatialVelocity<double> V_WE_E = R_EW * V_WE_desired;
 
   // Rotate the 6 x n Jacobian from the world frame W to the E frame.
   // TODO(Mitiguy) Switch to direct application of RotationMatrix multiplied by
@@ -224,30 +223,30 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyPlant<double>& plant,
+    const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
-    const multibody::Frame<double>& frame_E,
+    const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const math::RigidTransform<double> X_WE =
       plant.CalcRelativeTransform(context, plant.world_frame(), frame_E);
   MatrixX<double> J_WE(6, plant.num_velocities());
-  const multibody::Frame<double>& frame_W = plant.world_frame();
+  const Frame<double>& frame_W = plant.world_frame();
   plant.CalcJacobianSpatialVelocity(context,
-                                    multibody::JacobianWrtVariable::kV,
+                                    JacobianWrtVariable::kV,
                                     frame_E, Vector3<double>::Zero(),
                                     frame_W, frame_W, &J_WE);
 
   return internal::DoDifferentialInverseKinematics(
       plant.GetPositions(context), plant.GetVelocities(context),
-      X_WE, J_WE, multibody::SpatialVelocity<double>(V_WE_desired), parameters);
+      X_WE, J_WE, SpatialVelocity<double>(V_WE_desired), parameters);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyPlant<double>& plant,
+    const MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
     const math::RigidTransform<double>& X_WE_desired,
-    const multibody::Frame<double>& frame_E,
+    const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters) {
   const math::RigidTransform<double> X_WE =
       plant.EvalBodyPoseInWorld(context, frame_E.body()) *
@@ -275,6 +274,5 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
                                          parameters);
 }
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

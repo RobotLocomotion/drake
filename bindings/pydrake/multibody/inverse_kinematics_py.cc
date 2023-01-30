@@ -1,3 +1,5 @@
+#include "drake/bindings/pydrake/multibody/inverse_kinematics_py.h"
+
 #include "pybind11/eigen.h"
 #include "pybind11/pybind11.h"
 
@@ -816,6 +818,11 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             cls_doc.SetInitialGuess.doc);
     // TODO(russt): Add bindings for Polytope3D struct and related methods
     // (or convert those methods to use ConvexSets).
+
+    // TODO(SeanCurtis-TRI): Refactor this into its own stand-alone .cc file and
+    // re-introduce the inverse_kinematics_py.cc that just assembles the full
+    // module.
+    internal::DefineIkDifferential(m);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }
