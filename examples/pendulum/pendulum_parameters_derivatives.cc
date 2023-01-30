@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "fmt/ostream.h"
 
 #include "drake/common/eigen_types.h"
