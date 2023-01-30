@@ -4,13 +4,16 @@ import warnings
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers.nlopt import NloptSolver
+from pydrake.solvers import (
+    MathematicalProgram,
+    NloptSolver,
+    SolverType,
+)
 
 
 class TestNloptSolver(unittest.TestCase):
     def test_nlopt_solver(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
@@ -22,7 +25,7 @@ class TestNloptSolver(unittest.TestCase):
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "NLopt")
         self.assertEqual(solver.SolverName(), "NLopt")
-        self.assertEqual(solver.solver_type(), mp.SolverType.kNlopt)
+        self.assertEqual(solver.solver_type(), SolverType.kNlopt)
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         numpy_compare.assert_float_allclose(
