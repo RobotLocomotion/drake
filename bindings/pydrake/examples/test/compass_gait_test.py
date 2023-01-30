@@ -1,8 +1,10 @@
 import unittest
 
-from pydrake.examples.compass_gait import (
-    CompassGait, CompassGaitContinuousState,
-    CompassGaitGeometry, CompassGaitParams
+from pydrake.examples import (
+    CompassGait,
+    CompassGaitContinuousState,
+    CompassGaitGeometry,
+    CompassGaitParams,
 )
 from pydrake.geometry import SceneGraph
 from pydrake.systems.analysis import Simulator

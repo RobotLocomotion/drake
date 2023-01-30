@@ -1,10 +1,13 @@
-import numpy as np
 import unittest
 
-from pydrake.examples.rimless_wheel import (
-    RimlessWheel, RimlessWheelContinuousState,
-    RimlessWheelGeometry, RimlessWheelParams
-    )
+import numpy as np
+
+from pydrake.examples import (
+    RimlessWheel,
+    RimlessWheelContinuousState,
+    RimlessWheelGeometry,
+    RimlessWheelParams,
+)
 from pydrake.geometry import SceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
