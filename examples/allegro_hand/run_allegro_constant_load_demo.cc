@@ -8,7 +8,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/multibody/parsing/parser.h"
@@ -56,15 +55,15 @@ void DoMain() {
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_max_time_step);
 
-  std::string full_name;
-  if (FLAGS_use_right_hand)
-    full_name = FindResourceOrThrow("drake/manipulation/models/"
-      "allegro_hand_description/sdf/allegro_hand_description_right.sdf");
-  else
-    full_name = FindResourceOrThrow("drake/manipulation/models/"
-      "allegro_hand_description/sdf/allegro_hand_description_left.sdf");
-
-  multibody::Parser(&plant).AddModels(full_name);
+  std::string hand_url;
+  if (FLAGS_use_right_hand) {
+    hand_url = "package://drake/manipulation/models/"
+      "allegro_hand_description/sdf/allegro_hand_description_right.sdf";
+  } else {
+    hand_url = "package://drake/manipulation/models/"
+      "allegro_hand_description/sdf/allegro_hand_description_left.sdf";
+  }
+  multibody::Parser(&plant).AddModels(hand_url);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");

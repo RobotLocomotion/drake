@@ -10,7 +10,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/examples/allegro_hand/allegro_common.h"
 #include "drake/examples/allegro_hand/allegro_lcm.h"
 #include "drake/geometry/drake_visualizer.h"
@@ -88,22 +87,22 @@ void DoMain() {
   auto [plant, scene_graph] = multibody::AddMultibodyPlantSceneGraph(
       &builder, FLAGS_mbp_discrete_update_period);
 
-  std::string hand_model_path;
+  std::string hand_model_url;
   if (FLAGS_use_right_hand) {
-    hand_model_path = FindResourceOrThrow(
-        "drake/manipulation/models/"
-        "allegro_hand_description/sdf/allegro_hand_description_right.sdf");
+    hand_model_url =
+        "package://drake/manipulation/models/"
+        "allegro_hand_description/sdf/allegro_hand_description_right.sdf";
   } else {
-    hand_model_path = FindResourceOrThrow(
-        "drake/manipulation/models/"
-        "allegro_hand_description/sdf/allegro_hand_description_left.sdf");
+    hand_model_url =
+        "package://drake/manipulation/models/"
+        "allegro_hand_description/sdf/allegro_hand_description_left.sdf";
   }
 
-  const std::string object_model_path = FindResourceOrThrow(
-      "drake/examples/allegro_hand/joint_control/simple_mug.sdf");
+  const std::string object_model_url =
+      "package://drake/examples/allegro_hand/joint_control/simple_mug.sdf";
   multibody::Parser parser(&plant);
-  parser.AddModels(hand_model_path);
-  parser.AddModels(object_model_path);
+  parser.AddModelsFromUrl(hand_model_url);
+  parser.AddModelsFromUrl(object_model_url);
 
   // Weld the hand to the world frame
   const auto& joint_hand_root = plant.GetBodyByName("hand_root");

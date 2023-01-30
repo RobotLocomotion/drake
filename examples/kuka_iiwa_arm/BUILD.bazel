@@ -128,7 +128,6 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
-        "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
         "//lcmtypes:robot_plan",

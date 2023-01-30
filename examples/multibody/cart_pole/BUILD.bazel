@@ -32,7 +32,6 @@ drake_cc_binary(
     ],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -47,7 +46,6 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":cart_pole_params",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
         "//multibody/parsing",
