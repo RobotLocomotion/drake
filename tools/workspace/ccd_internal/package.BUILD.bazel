@@ -8,59 +8,65 @@ load(
     "@drake//tools/install:install.bzl",
     "install",
 )
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_linkonly_library",
+)
 
 licenses(["notice"])  # BSD-3-Clause
 
-package(
-    default_visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:private"])
 
-# Generates config.h based on the defines= we want in Drake.
+# Generate config.h based on the defines= we want in Drake.
 cmake_configure_file(
     name = "config",
     src = "src/ccd/config.h.cmake.in",
     out = "src/ccd/config.h",
+    strict = True,
     defines = ["CCD_DOUBLE"],
-    visibility = ["//visibility:private"],
+    undefines = ["CCD_SINGLE"],
 )
 
-# Guessing headers with
-#       install(...
-#          guess_hdrs = "PACKAGE",
-#         )
-# fails and lists internal headers in addition to the public headers.
-CCD_PUBLIC_HEADERS = [
-    "src/ccd/ccd.h",
-    "src/ccd/config.h",
-    "src/ccd/compiler.h",
-    "src/ccd/quat.h",
-    "src/ccd/vec3.h",
-    "src/ccd/ccd_export.h",
-]
-
-# Options used when building the ccd code. Handled by cmake in upstream code
-CCD_COPTS = [
-    "-Wno-all",
-    "-fvisibility=hidden",
-]
-
-# Generates the library exported to users.  Upstream's CMake code lists out all
-# sources instead of globbing, but conveniently puts the public headers in one
-# place and private sources and headers in another; we'll use globbing here.
+# Group the headers exported by this library.
 cc_library(
-    name = "ccd",
-    srcs = glob([
-        "src/*.c",
-        "src/*.h",
-    ]),
-    hdrs = CCD_PUBLIC_HEADERS,
-    copts = CCD_COPTS,
+    name = "_hdrs",
+    hdrs = [":config"] + glob(["src/ccd/*.h"], allow_empty = False),
     defines = ["CCD_STATIC_DEFINE"],
     includes = ["src"],
+)
+
+# Compile the code (using both its exported headres and its private headers).
+cc_library(
+    name = "_srcs",
+    srcs = glob(["src/*.c", "src/*.h"], allow_empty = False),
+    copts = [
+        "-Wno-all",
+        "-fvisibility=hidden",
+    ],
+    includes = ["src"],
     linkstatic = 1,
+    deps = [":_hdrs"],
+)
+
+# Strip the private headers out; we just want the object code.
+cc_linkonly_library(
+    name = "_archive",
+    deps = [":_srcs"],
+)
+
+# Combine the public headers with the object code.
+cc_library(
+    name = "ccd",
+    linkstatic = 1,
+    deps = [
+        ":_archive",
+        ":_hdrs",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 install(
     name = "install",
     docs = ["BSD-LICENSE"],
+    visibility = ["//visibility:public"],
 )

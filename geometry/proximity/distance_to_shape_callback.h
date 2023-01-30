@@ -3,8 +3,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/geometry_ids.h"
@@ -19,7 +20,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-namespace shape_distance {
+namespace shape_distance DRAKE_NO_EXPORT {
 
 /* Supporting data for the shape-to-shape signed distance callback (see
  Callback below). It includes:

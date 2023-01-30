@@ -15,10 +15,11 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/shape_specification.h"
@@ -217,7 +218,7 @@ class ShapeConfigurations : public ShapeReifier {
 };
 
 /* @name Fcl geometry from drake shape specifications. */
-class MakeFclShape : public ShapeReifier {
+class DRAKE_NO_EXPORT MakeFclShape : public ShapeReifier {
  public:
   explicit MakeFclShape(const Shape& shape);
 
