@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/differential_inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
 
 #include <memory>
 #include <optional>
@@ -16,8 +16,7 @@
 #include "drake/solvers/constraint.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 namespace {
 
@@ -403,6 +402,5 @@ GTEST_TEST(AdditionalDifferentialInverseKinematicsTests, TestLinearObjective) {
 }
 
 }  // namespace
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake
