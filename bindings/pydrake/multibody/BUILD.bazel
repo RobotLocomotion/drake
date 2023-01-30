@@ -141,7 +141,7 @@ drake_pybind_library(
         ":math_py",
         ":module_py",
         ":tree_py",
-        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/geometry",
         "//bindings/pydrake/common:cpp_template_py",
     ],
     py_srcs = [
@@ -296,7 +296,7 @@ drake_jupyter_py_binary(
         ":jupyter_widgets_py",
         ":parsing_py",
         ":plant_py",
-        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/geometry",
         "//bindings/pydrake/systems:analysis_py",
         "//bindings/pydrake/systems:framework_py",
         "//bindings/pydrake/systems:rendering_py",

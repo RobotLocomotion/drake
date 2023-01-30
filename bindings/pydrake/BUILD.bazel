@@ -119,43 +119,6 @@ drake_pybind_library(
 )
 
 drake_pybind_library(
-    name = "geometry_py",
-    cc_deps = [
-        "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
-        "//bindings/pydrake/common:identifier_pybind",
-        "//bindings/pydrake/common:monostate_pybind",
-        "//bindings/pydrake/common:serialize_pybind",
-        "//bindings/pydrake/common:type_pack",
-        "//bindings/pydrake/common:type_safe_index_pybind",
-        "//bindings/pydrake/common:value_pybind",
-    ],
-    cc_srcs = [
-        "geometry_py.cc",
-        "geometry_py.h",
-        "geometry_py_common.cc",
-        "geometry_py_hydro.cc",
-        "geometry_py_optimization.cc",
-        "geometry_py_render.cc",
-        "geometry_py_scene_graph.cc",
-        "geometry_py_visualizers.cc",
-    ],
-    package_info = PACKAGE_INFO,
-    py_data = [
-        "//setup:deepnote",
-    ],
-    py_deps = [
-        ":math_py",
-        ":module_py",
-        "//bindings/pydrake/solvers",
-        "//bindings/pydrake/systems:framework_py",
-        "//bindings/pydrake/systems:lcm_py",
-    ],
-    py_srcs = ["_geometry_extra.py"],
-)
-
-drake_pybind_library(
     name = "lcm_py",
     cc_deps = [
         "//bindings/pydrake:documentation_pybind",
@@ -301,6 +264,7 @@ drake_py_library(
 
 PYBIND_SUBPACKAGES_FOR_COVERAGE = [
     "//bindings/pydrake/common",
+    "//bindings/pydrake/geometry",
     "//bindings/pydrake/manipulation",
     "//bindings/pydrake/multibody",
     "//bindings/pydrake/planning",
@@ -311,7 +275,6 @@ PYBIND_SUBPACKAGES_FOR_COVERAGE = [
 
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
-    ":geometry_py",
     ":lcm_py",
     ":math_py",
     ":perception_py",
@@ -492,98 +455,6 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
-    name = "frame_id_test",
-    deps = [
-        ":geometry_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_common_test",
-    deps = [
-        ":geometry_py",
-        "//bindings/pydrake/common",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_hydro_test",
-    data = [
-        "//geometry:test_obj_files",
-    ],
-    deps = [
-        ":geometry_py",
-        "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_optimization_test",
-    deps = [
-        ":geometry_py",
-        ":math_py",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
-        "//bindings/pydrake/common/test_utilities:pickle_compare_py",
-        "//bindings/pydrake/multibody:inverse_kinematics_py",
-        "//bindings/pydrake/multibody:parsing_py",
-        "//bindings/pydrake/multibody:plant_py",
-        "//bindings/pydrake/solvers",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_render_test",
-    deps = [
-        ":geometry_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/systems:sensors_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_render_engine_gl_test",
-    deps = [
-        ":geometry_py",
-        "//bindings/pydrake/common/test_utilities",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_render_engine_subclass_test",
-    flaky = True,
-    deps = [
-        ":geometry_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/systems:sensors_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_scene_graph_test",
-    deps = [
-        ":geometry_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/systems:sensors_py",
-    ],
-)
-
-drake_py_unittest(
-    name = "geometry_visualizers_test",
-    deps = [
-        ":geometry_py",
-        ":lcm_py",
-        ":perception_py",
-        "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/multibody:plant_py",
-        "//bindings/pydrake/systems:analysis_py",
-        "//bindings/pydrake/systems:lcm_py",
-    ],
-)
-
-drake_py_unittest(
     name = "lcm_test",
     deps = [
         ":lcm_py",
@@ -720,7 +591,7 @@ PYI_FILES = [
     "pydrake/examples/rimless_wheel.pyi",
     "pydrake/examples/van_der_pol.pyi",
     "pydrake/forwarddiff.pyi",
-    "pydrake/geometry.pyi",
+    "pydrake/geometry/__init__.pyi",
     "pydrake/lcm.pyi",
     "pydrake/manipulation/__init__.pyi",
     "pydrake/manipulation/all.pyi",
