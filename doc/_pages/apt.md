@@ -6,8 +6,6 @@ title: Installation via APT (Ubuntu)
 
 Drake publishes pre-compiled binaries as APT packages (``*.deb``) for the
 Ubuntu 20.04 (Focal) and Ubuntu 22.04 (Jammy) operating systems.
-(At the moment, the Ubuntu 22.04 packages are only provided for nightly builds,
-not stable releases.)
 Refer to
 [Supported Configurations](/installation.html#supported-configurations)
 for additional compatibility details.
