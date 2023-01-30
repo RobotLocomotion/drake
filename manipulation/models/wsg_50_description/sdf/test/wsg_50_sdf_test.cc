@@ -1,4 +1,3 @@
-#include <iostream>
 #include <string>
 
 #include <gmock/gmock.h>

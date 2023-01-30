@@ -1,6 +1,6 @@
 #include "drake/multibody/tree/body_node.h"
 
-#include <iostream>
+#include <sstream>
 #include <string>
 
 namespace drake {

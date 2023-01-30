@@ -1,7 +1,5 @@
 #include "drake/common/symbolic/trigonometric_polynomial.h"
 
-#include <iostream>
-#include <sstream>
 #include <vector>
 
 #include <fmt/format.h>
