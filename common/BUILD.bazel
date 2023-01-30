@@ -30,6 +30,7 @@ drake_cc_package_library(
         ":diagnostic_policy",
         ":double",
         ":drake_bool",
+        ":drake_export",
         ":drake_path",
         ":dummy_value",
         ":essential",
@@ -189,6 +190,11 @@ drake_cc_library(
 )
 
 # Miscellaneous utilities.
+
+drake_cc_library(
+    name = "drake_export",
+    hdrs = ["drake_export.h"],
+)
 
 drake_cc_library(
     name = "identifier",
