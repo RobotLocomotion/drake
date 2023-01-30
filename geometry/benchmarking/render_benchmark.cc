@@ -1,7 +1,6 @@
 #include <unistd.h>
 
 #include <filesystem>
-#include <iostream>
 
 #include "fmt/format.h"
 #include <benchmark/benchmark.h>

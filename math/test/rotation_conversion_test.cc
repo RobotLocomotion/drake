@@ -2,7 +2,6 @@
 /// Tests that rotation conversion functions are inverses.
 
 #include <cmath>
-#include <iostream>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
