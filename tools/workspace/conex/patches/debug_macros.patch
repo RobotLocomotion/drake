@@ -1,12 +1,13 @@
-Add a missing #include statement
+Add a missing #include statements
 
-See https://github.com/ToyotaResearchInstitute/conex/pull/3
+See https://github.com/ToyotaResearchInstitute/conex/pull/4
 
 --- conex/debug_macros.h
 +++ conex/debug_macros.h
-@@ -1,4 +1,5 @@
+@@ -1,4 +1,6 @@
  #pragma once
 +#include <array>
++#include <cassert>
  #include <chrono>
  #include <iomanip>
  #include <iostream>
