@@ -7,6 +7,7 @@ load("//tools/skylark:kwargs.bzl", "incorporate_num_threads")
 # building with any compiler.
 CXX_FLAGS = [
     "-Werror=all",
+    "-Werror=attributes",
     "-Werror=cpp",
     "-Werror=deprecated",
     "-Werror=deprecated-declarations",
