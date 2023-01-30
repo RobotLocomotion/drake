@@ -1,0 +1,26 @@
+Fix mis-parsing of double colon ("::")
+
+When parsing the docstrings of a function to find its set of overloads,
+C++ code samples that mention the function name were at risk of matching
+the C++ scoping operator "::" as a type annotation, leading to malformed
+output. For example "MyFunc(foo: int) -> bool" is a valid signature, but
+the sample code "MyFunc(Eigen::Lower)" was being mis-parsed. Fix this by
+patching stubgen to reset in case it sees a double colon.
+
+--- mypy/stubdoc.py
++++ mypy/stubdoc.py
+@@ -139,6 +139,14 @@
+ 
+         elif (
+             token.type == tokenize.OP
++            and token.string == ":"
++            and self.state[-1] == STATE_ARGUMENT_TYPE
++        ):
++            self.reset()
++            return
++
++        elif (
++            token.type == tokenize.OP
+             and token.string == "="
+             and self.state[-1] in (STATE_ARGUMENT_LIST, STATE_ARGUMENT_TYPE)
+         ):
