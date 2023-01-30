@@ -6,7 +6,7 @@
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/bindings/pydrake/geometry_py.h"
+#include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
