@@ -1171,6 +1171,10 @@ class SystemBase : public internal::SystemMessageInterface {
   system. See @ref system_compatibility. */
   internal::SystemId get_system_id() const { return system_id_; }
 
+  /** (Internal) Assigns a new id used to tag context data as being created by
+  this system. See @ref system_compatibility. */
+  void ResetSystemId();
+
  private:
   void CreateSourceTrackers(ContextBase*) const;
 
@@ -1254,7 +1258,7 @@ class SystemBase : public internal::SystemMessageInterface {
   std::string name_;
 
   // Unique id of this system.
-  const internal::SystemId system_id_{get_next_id()};
+  internal::SystemId system_id_{get_next_id()};
 
   // Records the total sizes of Context resources as they will appear
   // in a Context allocated by this System. Starts at zero, counts up during
