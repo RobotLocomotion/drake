@@ -96,6 +96,9 @@ FindResourceResult FindResource(const std::string& resource_path);
 
 /// Convenient wrapper for querying FindResource(resource_path) followed by
 /// FindResourceResult::get_absolute_path_or_throw().
+///
+/// Do NOT use this function to feed into a drake::multibody::parsing::Parser;
+/// instead, use parser.AddModelsFromUrl along with its PackageMap.
 std::string FindResourceOrThrow(const std::string& resource_path);
 
 /// The name of the environment variable that provides the first place where

@@ -37,7 +37,6 @@ drake_cc_binary(
     test_rule_timeout = "moderate",
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//math:geometric_transform",
         "//multibody/parsing",
         "//multibody/plant",

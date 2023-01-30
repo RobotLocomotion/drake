@@ -12,6 +12,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/parser.h"
+#include "drake/multibody/parsing/process_model_directives.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
@@ -47,6 +48,7 @@ using multibody::RevoluteJoint;
 using multibody::SpatialInertia;
 
 namespace internal {
+namespace {
 
 // Calculate the spatial inertia of the set S of bodies that make up the gripper
 // about Go (the gripper frame's origin), expressed in the gripper frame G.
@@ -108,9 +110,11 @@ void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
                         Vector3d(0.786258, -0.048422, 1.043315)));
 }
 
+// TODO(rpoyner-tri): Consider alternatives to forcing the model name: either a
+// breaking change to some other naming scheme, decoupling of renaming from
+// parsing, etc.
 // Load a SDF model and weld it to the MultibodyPlant.
-// @param model_path Full path to the sdf model file. i.e. with
-// FindResourceOrThrow
+// @param model_url URL to the model file.
 // @param model_name Name of the added model instance.
 // @param parent Frame P from the MultibodyPlant to which the new model is
 // welded to.
@@ -119,14 +123,23 @@ void get_camera_poses(std::map<std::string, RigidTransform<double>>* pose_map) {
 // @param X_PC Transformation of frame C relative to frame P.
 template <typename T>
 multibody::ModelInstanceIndex AddAndWeldModelFrom(
-    const std::string& model_path, const std::string& model_name,
+    const std::string& model_url, const std::string& model_name,
     const multibody::Frame<T>& parent, const std::string& child_frame_name,
     const RigidTransform<double>& X_PC, MultibodyPlant<T>* plant) {
   DRAKE_THROW_UNLESS(!plant->HasModelInstanceNamed(model_name));
 
+  // Since we need to force the model name here, exploit the fact that model
+  // directives processing can do that.
   multibody::Parser parser(plant);
-  const multibody::ModelInstanceIndex new_model =
-      parser.AddModelFromFile(model_path, model_name);
+  multibody::parsing::ModelDirectives directives;
+  multibody::parsing::ModelDirective directive;
+  directive.add_model = multibody::parsing::AddModel{
+      model_url, model_name, {}, {}};
+  directives.directives.push_back(directive);
+  const auto models = ProcessModelDirectives(directives, &parser);
+  DRAKE_THROW_UNLESS(models.size() == 1);
+  const multibody::ModelInstanceIndex new_model = models[0].model_instance;
+
   const auto& child_frame = plant->GetFrameByName(child_frame_name, new_model);
   plant->WeldFrames(parent, child_frame, X_PC);
   return new_model;
@@ -172,6 +185,7 @@ MakeD415CameraModel(const std::string& renderer_name) {
   return {color_camera, depth_camera};
 }
 
+}  // namespace
 }  // namespace internal
 
 template <typename T>
@@ -219,17 +233,17 @@ void ManipulationStation<T>::SetupClutterClearingStation(
 
   // Add the bins.
   {
-    const std::string sdf_path = FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/bin.sdf");
+    const std::string sdf_url =
+        "package://drake/examples/manipulation_station/models/bin.sdf";
 
     RigidTransform<double> X_WC(RotationMatrix<double>::MakeZRotation(M_PI_2),
                                 Vector3d(-0.145, -0.63, 0.075));
-    internal::AddAndWeldModelFrom(sdf_path, "bin1", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_url, "bin1", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
 
     X_WC = RigidTransform<double>(RotationMatrix<double>::MakeZRotation(M_PI),
                                   Vector3d(0.5, -0.1, 0.075));
-    internal::AddAndWeldModelFrom(sdf_path, "bin2", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_url, "bin2", plant_->world_frame(),
                                   "bin_base", X_WC, plant_);
   }
 
@@ -260,13 +274,13 @@ void ManipulationStation<T>::SetupManipulationClassStation(
   {
     const double dx_table_center_to_robot_base = 0.3257;
     const double dz_table_top_robot_base = 0.0127;
-    const std::string sdf_path = FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/"
-        "amazon_table_simplified.sdf");
+    const std::string sdf_url =
+        "package://drake/examples/manipulation_station/models/"
+        "amazon_table_simplified.sdf";
 
     RigidTransform<double> X_WT(
         Vector3d(dx_table_center_to_robot_base, 0, -dz_table_top_robot_base));
-    internal::AddAndWeldModelFrom(sdf_path, "table", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_url, "table", plant_->world_frame(),
                                   "amazon_table", X_WT, plant_);
   }
 
@@ -278,15 +292,15 @@ void ManipulationStation<T>::SetupManipulationClassStation(
     const double dz_cupboard_to_table_center = 0.02;
     const double cupboard_height = 0.815;
 
-    const std::string sdf_path = FindResourceOrThrow(
-        "drake/examples/manipulation_station/models/cupboard.sdf");
+    const std::string sdf_url =
+        "package://drake/examples/manipulation_station/models/cupboard.sdf";
 
     RigidTransform<double> X_WC(
         RotationMatrix<double>::MakeZRotation(M_PI),
         Vector3d(dx_table_center_to_robot_base + dx_cupboard_to_table_center, 0,
                  dz_cupboard_to_table_center + cupboard_height / 2.0 -
                      dz_table_top_robot_base));
-    internal::AddAndWeldModelFrom(sdf_path, "cupboard", plant_->world_frame(),
+    internal::AddAndWeldModelFrom(sdf_url, "cupboard", plant_->world_frame(),
                                   "cupboard_body", X_WC, plant_);
   }
 
@@ -315,29 +329,30 @@ void ManipulationStation<T>::SetupPlanarIiwaStation(
 
   // Add the tables.
   {
-    const std::string sdf_path = FindResourceOrThrow(
-        "drake/examples/kuka_iiwa_arm/models/table/"
-        "extra_heavy_duty_table_surface_only_collision.sdf");
+    const std::string sdf_url =
+        "package://drake/examples/kuka_iiwa_arm/models/table/"
+        "extra_heavy_duty_table_surface_only_collision.sdf";
 
     const double table_height = 0.7645;
     internal::AddAndWeldModelFrom(
-        sdf_path, "robot_table", plant_->world_frame(), "link",
+        sdf_url, "robot_table", plant_->world_frame(), "link",
         RigidTransform<double>(Vector3d(0, 0, -table_height)), plant_);
     internal::AddAndWeldModelFrom(
-        sdf_path, "work_table", plant_->world_frame(), "link",
+        sdf_url, "work_table", plant_->world_frame(), "link",
         RigidTransform<double>(Vector3d(0.75, 0, -table_height)), plant_);
   }
 
   // Add planar iiwa model.
   {
-    std::string sdf_path = FindResourceOrThrow(
+    std::string sdf_path =
         "drake/manipulation/models/iiwa_description/urdf/"
-        "planar_iiwa14_spheres_dense_elbow_collision.urdf");
+        "planar_iiwa14_spheres_dense_elbow_collision.urdf";
+    std::string sdf_url = "package://" + sdf_path;
     const auto X_WI = RigidTransform<double>::Identity();
     auto iiwa_instance = internal::AddAndWeldModelFrom(
-        sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
+        sdf_url, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
     RegisterIiwaControllerModel(
-        sdf_path, iiwa_instance, plant_->world_frame(),
+        FindResourceOrThrow(sdf_path), iiwa_instance, plant_->world_frame(),
         plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
   }
 
@@ -915,10 +930,11 @@ void ManipulationStation<T>::RegisterRgbdSensor(
 
   camera_information_[name] = info;
 
-  const std::string urdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/realsense2_description/urdf/d415.urdf");
+  const std::string urdf_url =
+      "package://drake/manipulation/models/realsense2_description/urdf/"
+      "d415.urdf";
   multibody::ModelInstanceIndex model_index = internal::AddAndWeldModelFrom(
-      urdf_path, name, parent_frame, "base_link", X_PC, plant_);
+      urdf_url, name, parent_frame, "base_link", X_PC, plant_);
 
   // Remove the perception properties -- the camera should not be visible to
   // itself or else it obscures its own view. We only want the illustration
@@ -968,21 +984,22 @@ void ManipulationStation<T>::AddDefaultIiwa(
   std::string sdf_path;
   switch (collision_model) {
     case IiwaCollisionModel::kNoCollision:
-      sdf_path = FindResourceOrThrow(
+      sdf_path =
           "drake/manipulation/models/iiwa_description/iiwa7/"
-          "iiwa7_no_collision.sdf");
+          "iiwa7_no_collision.sdf";
       break;
     case IiwaCollisionModel::kBoxCollision:
-      sdf_path = FindResourceOrThrow(
+      sdf_path =
           "drake/manipulation/models/iiwa_description/iiwa7/"
-          "iiwa7_with_box_collision.sdf");
+          "iiwa7_with_box_collision.sdf";
       break;
   }
+  std::string sdf_url = "package://" + sdf_path;
   const auto X_WI = RigidTransform<double>::Identity();
   auto iiwa_instance = internal::AddAndWeldModelFrom(
-      sdf_path, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
+      sdf_url, "iiwa", plant_->world_frame(), "iiwa_link_0", X_WI, plant_);
   RegisterIiwaControllerModel(
-      sdf_path, iiwa_instance, plant_->world_frame(),
+      FindResourceOrThrow(sdf_path), iiwa_instance, plant_->world_frame(),
       plant_->GetFrameByName("iiwa_link_0", iiwa_instance), X_WI);
 }
 
@@ -993,23 +1010,24 @@ void ManipulationStation<T>::AddDefaultWsg(
   std::string sdf_path;
   switch (schunk_model) {
     case SchunkCollisionModel::kBox:
-      sdf_path = FindResourceOrThrow(
+      sdf_path =
           "drake/manipulation/models/wsg_50_description/sdf"
-          "/schunk_wsg_50_no_tip.sdf");
+          "/schunk_wsg_50_no_tip.sdf";
       break;
     case SchunkCollisionModel::kBoxPlusFingertipSpheres:
-      sdf_path = FindResourceOrThrow(
+      sdf_path =
           "drake/manipulation/models/wsg_50_description/sdf"
-          "/schunk_wsg_50_with_tip.sdf");
+          "/schunk_wsg_50_with_tip.sdf";
       break;
   }
+  std::string sdf_url = "package://" + sdf_path;
   const multibody::Frame<T>& link7 =
       plant_->GetFrameByName("iiwa_link_7", iiwa_model_.model_instance);
   const RigidTransform<double> X_7G(RollPitchYaw<double>(M_PI_2, 0, M_PI_2),
                                     Vector3d(0, 0, 0.114));
-  auto wsg_instance = internal::AddAndWeldModelFrom(sdf_path, "gripper", link7,
+  auto wsg_instance = internal::AddAndWeldModelFrom(sdf_url, "gripper", link7,
                                                     "body", X_7G, plant_);
-  RegisterWsgControllerModel(sdf_path, wsg_instance, link7,
+  RegisterWsgControllerModel(FindResourceOrThrow(sdf_path), wsg_instance, link7,
                              plant_->GetFrameByName("body", wsg_instance),
                              X_7G);
 }

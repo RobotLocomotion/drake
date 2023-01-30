@@ -4,7 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/test_utilities/dummy_render_engine.h"
@@ -40,10 +39,9 @@ multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
   // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
   multibody::MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
-  const std::string& wsg_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/wsg_50_description/sdf/"
+  parser.AddModelsFromUrl(
+      "package://drake/manipulation/models/wsg_50_description/sdf/"
       "schunk_wsg_50_no_tip.sdf");
-  parser.AddModels(wsg_sdf_path);
   plant.Finalize();
   const std::string gripper_body_frame_name = "body";
   const auto& frame = plant.GetFrameByName(gripper_body_frame_name);
@@ -108,8 +106,9 @@ GTEST_TEST(ManipulationStationTest, CheckPlantBasics) {
   station.SetupManipulationClassStation();
   multibody::Parser parser(&station.get_mutable_multibody_plant(),
                            &station.get_mutable_scene_graph());
-  parser.AddModels(FindResourceOrThrow(
-      "drake/examples/manipulation_station/models/061_foam_brick.sdf"));
+  parser.AddModelsFromUrl(
+      "package://drake/examples/manipulation_station/models/"
+      "061_foam_brick.sdf");
   station.Finalize();
 
   auto& plant = station.get_multibody_plant();

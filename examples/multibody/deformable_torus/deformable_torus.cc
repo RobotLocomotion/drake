@@ -175,9 +175,8 @@ int do_main() {
   // station instead.
   /* Set up a simple gripper. */
   Parser parser(&plant);
-  const std::string gripper_path = FindResourceOrThrow(
-      "drake/examples/multibody/deformable_torus/simple_gripper.sdf");
-  parser.AddModels(gripper_path);
+  parser.AddModelsFromUrl(
+      "package://drake/examples/multibody/deformable_torus/simple_gripper.sdf");
   /* Add collision geometries. */
   const RigidTransformd X_BG = RigidTransformd::Identity();
   const Body<double>& left_finger = plant.GetBodyByName("left_finger");

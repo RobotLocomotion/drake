@@ -147,6 +147,18 @@ class Parser final {
   std::vector<ModelInstanceIndex> AddModels(
       const std::filesystem::path& file_name);
 
+  /// Parses the input file named in @p url and adds all of its model(s) to
+  /// @p plant. The allowed URL schemes are either `file://` for local files
+  /// or `package://` (or `model://`) to use this Parser's `package_map()`.
+  ///
+  /// @param url The file to be parsed. The file type will be inferred from
+  /// the extension.
+  /// @returns The set of model instance indices for the newly added models,
+  /// including nested models.
+  /// @throws std::exception in case of errors.
+  std::vector<ModelInstanceIndex> AddModelsFromUrl(
+      const std::string& url);
+
   // TODO(rpoyner-tri): deprecate on or after 2023-01.
   /// Legacy spelling of AddModels.
   std::vector<ModelInstanceIndex> AddAllModelsFromFile(

@@ -17,7 +17,6 @@
 #include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -180,9 +179,9 @@ class RobotPlanRunner {
 
 int do_main() {
   multibody::MultibodyPlant<double> plant(0.0);
-  multibody::Parser(&plant).AddModels(
-      FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
-                          "iiwa14_no_collision.urdf"));
+  multibody::Parser(&plant).AddModelsFromUrl(
+      "package://drake/manipulation/models/iiwa_description/urdf/"
+      "iiwa14_no_collision.urdf");
   plant.WeldFrames(plant.world_frame(),
                    plant.GetBodyByName("base").body_frame());
   plant.Finalize();

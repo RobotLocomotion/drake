@@ -7,7 +7,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/quadrotor/quadrotor_geometry.h"
 #include "drake/examples/quadrotor/quadrotor_plant.h"

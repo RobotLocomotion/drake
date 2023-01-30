@@ -17,7 +17,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/examples/planar_gripper/planar_gripper_lcm.h"
 #include "drake/lcm/drake_lcm.h"
@@ -54,10 +53,10 @@ int DoMain() {
 
   // Create the controlled plant. Contains only the fingers (no brick). Used
   // (only) to extract joint velocity ordering.
-  const std::string full_name =
-      FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
+  const std::string gripper_url =
+      "package://drake/examples/planar_gripper/planar_gripper.sdf";
   MultibodyPlant<double> control_plant(0.0);
-  multibody::Parser(&control_plant).AddModels(full_name);
+  multibody::Parser(&control_plant).AddModelsFromUrl(gripper_url);
   WeldGripperFrames<double>(&control_plant);
   control_plant.Finalize();
 
