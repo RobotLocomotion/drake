@@ -528,6 +528,7 @@ drake_cc_googletest(
     deps = [
         ":package_map",
         "//common:find_resource",
+        "//common:scope_exit",
         "//common/test_utilities:expect_throws_message",
     ],
 )
