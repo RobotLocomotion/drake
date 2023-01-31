@@ -175,7 +175,7 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_py",
         "//bindings/pydrake/common:eigen_geometry_py",
         "//bindings/pydrake/common:schema_py",
-        "//bindings/pydrake/geometry",
+        "//bindings/pydrake:geometry_py",
     ],
 )
 
@@ -386,7 +386,7 @@ drake_jupyter_py_binary(
         ":analysis_py",
         ":framework_py",
         ":jupyter_widgets_py",
-        "//bindings/pydrake/geometry",
+        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/multibody:parsing_py",
         "//bindings/pydrake/multibody:plant_py",
     ],
@@ -509,8 +509,8 @@ drake_py_unittest(
         ":analysis_py",
         ":framework_py",
         ":planar_scenegraph_visualizer_py",
+        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody",
     ],
 )
@@ -561,8 +561,8 @@ drake_py_unittest(
     tags = vtk_test_tags(),
     deps = [
         ":sensors_py",
+        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake/common/test_utilities",
-        "//bindings/pydrake/geometry",
         "//bindings/pydrake/multibody:plant_py",
     ],
 )
