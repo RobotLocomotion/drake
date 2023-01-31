@@ -62,12 +62,3 @@ git clang-format-12 --binary=/usr/bin/clang-format-12 -- [file name]
 # For development on Ubuntu: format a file that has been modified but not staged
 git clang-format-12 --binary=/usr/bin/clang-format-12 -f -- [file name]
 ```
-
-### IDE integration
-
-Most IDEs can run ``clang-format`` automatically.
-We have some tips for specific IDEs:
-
-* [CLion](/clion.html#formatting-files)
-* [Emacs](/emacs.html#c-code-formatting)
-* [VS Code](/vscode.html#c-code-formatting)
