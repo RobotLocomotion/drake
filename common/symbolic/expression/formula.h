@@ -1347,10 +1347,6 @@ namespace numext {
 // the optimization. Therefore, we tweak these guards to special-case the
 // result when either of the operands is a literal zero, with no throwing
 // even if the other operand has unbound variables.
-//
-// These functions were only added in Eigen 3.3.5, but the minimum
-// Eigen version used by drake is 3.3.4, so a version check is needed.
-#if EIGEN_VERSION_AT_LEAST(3, 3, 5)
 template <>
 EIGEN_STRONG_INLINE bool equal_strict(
     const drake::symbolic::Expression& x,
@@ -1365,7 +1361,6 @@ EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Expression& y) {
   return !Eigen::numext::equal_strict(x, y);
 }
-#endif
 
 // Provides specialization of Eigen::numext::isfinite, numext::isnan, and
 // numext::isinf for Expression. The default template relies on an implicit
