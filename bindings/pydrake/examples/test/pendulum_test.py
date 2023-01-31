@@ -1,9 +1,12 @@
 import unittest
 
-from pydrake.examples.pendulum import (
-    PendulumGeometry, PendulumInput, PendulumParams, PendulumPlant,
-    PendulumState
-    )
+from pydrake.examples import (
+    PendulumGeometry,
+    PendulumInput,
+    PendulumParams,
+    PendulumPlant,
+    PendulumState,
+)
 from pydrake.geometry import SceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder

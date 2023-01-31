@@ -1,9 +1,14 @@
 import unittest
 
-from pydrake.examples.acrobot import (
-    AcrobotGeometry, AcrobotInput, AcrobotParams, AcrobotPlant,
-    AcrobotSpongController, AcrobotState, SpongControllerParams
-    )
+from pydrake.examples import (
+    AcrobotGeometry,
+    AcrobotInput,
+    AcrobotParams,
+    AcrobotPlant,
+    AcrobotSpongController,
+    AcrobotState,
+    SpongControllerParams,
+)
 from pydrake.geometry import SceneGraph
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
