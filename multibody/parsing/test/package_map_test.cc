@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
 
@@ -264,6 +265,10 @@ GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
 
   // Test an empty environment.
   ::setenv("ROS_PACKAGE_PATH", "", 1);
+  ScopeExit guard([]() {
+    ::unsetenv("ROS_PACKAGE_PATH");
+  });
+
   package_map.PopulateFromRosPackagePath();
   EXPECT_EQ(package_map.size(), 0);
 
@@ -286,6 +291,10 @@ GTEST_TEST(PackageMapTest, TestPopulateFromRosPackagePath) {
         "package_map_test_package_set/package_map_test_package_d/"},
   };
   VerifyMatch(package_map, expected_packages);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      package_map.PopulateFromEnvironment("ROS_PACKAGE_PATH"),
+      ".*use PopulateFromRosPackagePath.*");
 }
 
 // Tests that PackageMap's streaming to-string operator works.

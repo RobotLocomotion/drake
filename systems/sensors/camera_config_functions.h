@@ -1,6 +1,5 @@
 #pragma once
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm_interface.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -66,13 +65,6 @@ void ApplyCameraConfig(const CameraConfig& config,
                        const multibody::MultibodyPlant<double>* plant = nullptr,
                        geometry::SceneGraph<double>* scene_graph = nullptr,
                        drake::lcm::DrakeLcmInterface* lcm = nullptr);
-
-DRAKE_DEPRECATED("2023-02-01", "Use the LcmBuses-related overload instead.")
-void ApplyCameraConfig(const CameraConfig& config,
-                       multibody::MultibodyPlant<double>* plant,
-                       DiagramBuilder<double>* builder,
-                       geometry::SceneGraph<double>* scene_graph,
-                       drake::lcm::DrakeLcmInterface* lcm);
 
 }  // namespace sensors
 }  // namespace systems

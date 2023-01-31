@@ -639,7 +639,6 @@ PYI_FILES = [
     "pydrake/visualization/__init__.pyi",
     "pydrake/visualization/meldis.pyi",
     "pydrake/visualization/model_visualizer.pyi",
-    "pydrake/visualization/plotting.pyi",
 ]
 
 # TODO(mwoehlke-kitware): genrule inappropriately gives execute permission to

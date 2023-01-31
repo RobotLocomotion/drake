@@ -159,18 +159,6 @@ void ApplyCameraConfig(const CameraConfig& config,
                                config.do_compress, builder, lcm);
 }
 
-void ApplyCameraConfig(const CameraConfig& config,
-                       MultibodyPlant<double>* plant,
-                       DiagramBuilder<double>* builder,
-                       SceneGraph<double>* scene_graph,
-                       DrakeLcmInterface* lcm) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(builder != nullptr);
-  DRAKE_THROW_UNLESS(scene_graph != nullptr);
-  DRAKE_THROW_UNLESS(lcm != nullptr);
-  ApplyCameraConfig(config, builder, nullptr, plant, scene_graph, lcm);
-}
-
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
