@@ -833,11 +833,15 @@ void CollisionChecker::AllocateContexts() {
       common_robotics_utilities::openmp_helpers::GetMaxNumOmpThreads();
   const int omp_thread_limit =
       common_robotics_utilities::openmp_helpers::GetOmpThreadLimit();
+  const bool omp_enabled_in_build =
+      common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild();
   const int num_threads = std::max(num_omp_threads, max_num_omp_threads);
   log()->info(
       "Allocating contexts to support {} parallel queries given "
-      "omp_num_threads {} omp_max_threads {} and omp_thread_limit {}",
-      num_threads, num_omp_threads, max_num_omp_threads, omp_thread_limit);
+      "omp_num_threads {} omp_max_threads {} and omp_thread_limit {} "
+      "OpenMP enabled in build? {}",
+      num_threads, num_omp_threads, max_num_omp_threads, omp_thread_limit,
+      omp_enabled_in_build);
   // Make the prototype context.
   const std::unique_ptr<CollisionCheckerContext> prototype_context =
       CreatePrototypeContext();
