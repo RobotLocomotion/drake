@@ -47,10 +47,7 @@ drake_cc_library(
     name = "constraint_relaxing_ik",
     hdrs = _STUB_HDRS,
     deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //multibody/inverse_kinematics:constraint_relaxing_ik instead.",  # noqa
-    tags = [
-        "manual",
-        "nolint",
-    ],
+    tags = ["nolint"],
     deps = [
         "//multibody/inverse_kinematics:constraint_relaxing_ik",
     ],
@@ -61,10 +58,7 @@ drake_cc_library(
     name = "robot_plan_interpolator",
     hdrs = _STUB_HDRS,
     deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //manipulation/util:robot_plan_interpolator instead.",  # noqa
-    tags = [
-        "manual",
-        "nolint",
-    ],
+    tags = ["nolint"],
     deps = [
         "//manipulation/util:robot_plan_interpolator",
     ],
