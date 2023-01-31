@@ -247,6 +247,82 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
       "[^]* A solid sphere's radius = .* is negative or zero.");
 }
 
+// Test spatial inertia of a solid tetrahedron B about its vertex B0.
+GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
+  const double density = 0.12345;
+  const Vector3<double> p1(1, 0, 0);  // Position vector from B0 to vertex B1.
+  const Vector3<double> p2(0, 2, 0);  // Position vector from B0 to vertex B2.
+  const Vector3<double> p3(0, 0, 3);  // Position vector from B0 to vertex B3.
+
+  const double volume = 1.0 / 6.0 * p1.cross(p2).dot(p3);
+  const double mass = density * volume;
+  const Vector3<double> p_B0Bcm = 0.25 * (p1 + p2 + p3);
+  const UnitInertia<double> G_BB0 =
+      UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p2, p3);
+  SpatialInertia<double> M_BB0_expected(mass, p_B0Bcm, G_BB0);
+  SpatialInertia<double> M_BB0 =
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p1, p2, p3);
+
+  // An empirical tolerance: two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
+                              M_BB0.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure mass becomes negative if the first two arguments are switched.
+  M_BB0_expected = SpatialInertia<double>(-mass, p_B0Bcm, G_BB0,
+      /* skip_validity_check = */ true);
+  M_BB0 = SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p2, p1, p3);
+  EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
+                              M_BB0.CopyToFullMatrix6(), kTolerance));
+}
+
+// Test spatial inertia of a solid tetrahedron about an arbitrary point A.
+GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
+  const double density = 0.54321;
+  Vector3<double> p_AB0(0, 0, 0);
+  Vector3<double> p_AB1(1, 1, 0);
+  Vector3<double> p_AB2(0, 2, 0);
+  Vector3<double> p_AB3(0, 3, 3);
+
+  // Do a sanity check that SolidTetrahedronAboutPointWithDensity() simplifies
+  // to SolidTetrahedronAboutVertexWithDensity() when p_AB0 is the zero vector.
+  SpatialInertia<double> M_BA_expected =
+     SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p_AB1, p_AB2, p_AB3);
+  SpatialInertia<double> M_BA =
+      SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+          density, p_AB0, p_AB1, p_AB2, p_AB3);
+
+  // An empirical tolerance: two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
+                              M_BA.CopyToFullMatrix6(), kTolerance));
+
+  // Check a more general case in which p_AB0 is a non-zero vector.
+  p_AB0 = Vector3<double>(0.1, 0.4, 0.5);
+  p_AB1 += p_AB0;
+  p_AB2 += p_AB0;
+  p_AB3 += p_AB0;
+  M_BA_expected.ShiftInPlace(-p_AB0);
+  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+          density, p_AB0, p_AB1, p_AB2, p_AB3);
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
+                              M_BA.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure mass becomes negative if the two arguments are switched.
+  const double mass = M_BA_expected.get_mass();
+  const Vector3<double> p_ABcm = M_BA_expected.get_com();
+  const UnitInertia<double> G_BA = M_BA_expected.get_unit_inertia();
+  M_BA_expected = SpatialInertia<double>(-mass, p_ABcm, G_BA,
+                                         /* skip_validity_check = */ true);
+  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(density,
+      p_AB0, p_AB1, p_AB3, p_AB2);
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
+                              M_BA.CopyToFullMatrix6(), kTolerance));
+}
+
 // Test the construction from the mass, center of mass, and unit inertia of a
 // body. Also tests:
 //   - Getters.

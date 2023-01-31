@@ -120,6 +120,49 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
+    const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
+    const Vector3<T>& p2, const Vector3<T>& p3) {
+  DRAKE_THROW_UNLESS(density >= 0);
+  // This method calculates a tetrahedron B's spatial inertia M_BA about a
+  // point A by forming 3 new position vectors, namely the position vectors
+  // from B's vertex B0 to vertices B1, B2, B3 (B's other three vertices).
+  const Vector3<T> p_B0B1 = p1 - p0;  // Position from vertex B0 to vertex B1.
+  const Vector3<T> p_B0B2 = p2 - p0;  // Position from vertex B0 to vertex B2.
+  const Vector3<T> p_B0B3 = p3 - p0;  // Position from vertex B0 to vertex B3.
+
+  // Form B's spatial inertia about vertex B0 and then shifts to point A.
+  SpatialInertia<T> M_BB0 =
+      SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
+          density, p_B0B1, p_B0B2, p_B0B3);
+  const Vector3<T>& p_AB0 = p0;  // Alias for position from point A to B0.
+  M_BB0.ShiftInPlace(-p_AB0);
+  return M_BB0;  // Since M_BB0 was shifted, this actually returns M_BA.
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
+    const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
+    const Vector3<T>& p3) {
+  DRAKE_THROW_UNLESS(density >= 0);
+  // The calculations of the volume and mass of a general shape sometimes rely
+  // on decomposing the general shape into many tetrahedrons.  Some of those
+  // tetrahedrons may have negative volume (and mass) due to intentional
+  // ordering p1, p2, p3 (i.e., negative mass is not necessarily a mistake).
+  const T volume = (1.0 / 6.0) * p1.cross(p2).dot(p3);
+  const T mass = density * volume;
+
+  // Form position vector from tetrahedron B's vertex at Bo to Bcm (B's center
+  // of mass).
+  const Vector3<T> p_BoBcm = 0.25 * (p1 + p2 + p3);
+  const UnitInertia<T> G_BBo =
+      UnitInertia<T>::SolidTetrahedronAboutVertex(p1, p2, p3);
+  // Ensure negative mass, etc. can be a valid possibility for this function.
+  return SpatialInertia<T>(mass, p_BoBcm, G_BBo,
+      /* skip_validity_check = */ true);
+}
+
+template <typename T>
 void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   std::string error_message = fmt::format(
           "Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
