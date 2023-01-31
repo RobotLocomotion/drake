@@ -110,7 +110,7 @@ class SpatialInertia {
   ///                     (S's center of mass), expressed in a frame E.
   /// @param[in] I_SScm_E S's RotationalInertia about Scm, expressed in frame E.
   /// @retval M_SP_E S's spatial inertia about point P, expressed in frame E.
-  static SpatialInertia MakeFromCentralInertia(const T& mass,
+  static SpatialInertia<T> MakeFromCentralInertia(const T& mass,
       const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E) {
     const RotationalInertia<T> I_SP_E =
         I_SScm_E.ShiftFromCenterOfMass(mass, p_PScm_E);
@@ -415,7 +415,7 @@ class SpatialInertia {
   /// composite body S, about some point P, the supplied spatial inertia
   /// `M_BP_E` must be for some other body or composite body B about the _same_
   /// point P; B's inertia is then included in S.
-  SpatialInertia& operator+=(const SpatialInertia<T>& M_BP_E) {
+  SpatialInertia<T>& operator+=(const SpatialInertia<T>& M_BP_E) {
     const T total_mass = get_mass() + M_BP_E.get_mass();
     if (total_mass != 0) {
       p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
@@ -440,7 +440,7 @@ class SpatialInertia {
   /// @param[in] R_AE Rotation matrix from frame E to frame A.
   /// @returns A reference to `this` rotational inertia about the same point P
   ///          but now re-expressed in frame A, that is, `M_SP_A`.
-  SpatialInertia& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
+  SpatialInertia<T>& ReExpressInPlace(const math::RotationMatrix<T>& R_AE) {
     p_PScm_E_ = R_AE * p_PScm_E_;    // Now p_PScm_A
     G_SP_E_.ReExpressInPlace(R_AE);  // Now I_SP_A
     return *this;                    // Now M_SP_A
@@ -453,7 +453,7 @@ class SpatialInertia {
   /// @retval M_SP_A The same spatial inertia of S about P but now
   ///                re-expressed in frame A.
   /// @see ReExpressInPlace() for details.
-  SpatialInertia ReExpress(const math::RotationMatrix<T>& R_AE) const {
+  SpatialInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const {
     return SpatialInertia(*this).ReExpressInPlace(R_AE);
   }
 
@@ -472,7 +472,7 @@ class SpatialInertia {
   ///                   `this` spatial inertia is expressed in.
   /// @returns A reference to `this` spatial inertia for body or composite body
   ///          S but now computed about a new point Q.
-  SpatialInertia& ShiftInPlace(const Vector3<T>& p_PQ_E) {
+  SpatialInertia<T>& ShiftInPlace(const Vector3<T>& p_PQ_E) {
     const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
     // The following two lines apply the parallel axis theorem (in place) so
     // that:
@@ -498,7 +498,7 @@ class SpatialInertia {
   ///                   spatial inertia is expressed in.
   /// @retval M_SQ_E    This same spatial inertia for body or composite body S
   ///                   but computed about a new point Q.
-  SpatialInertia Shift(const Vector3<T>& p_PQ_E) const {
+  SpatialInertia<T> Shift(const Vector3<T>& p_PQ_E) const {
     return SpatialInertia(*this).ShiftInPlace(p_PQ_E);
   }
 

@@ -136,8 +136,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
       SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
           density, p_B0B1, p_B0B2, p_B0B3);
   const Vector3<T>& p_AB0 = p0;  // Alias for position from point A to B0.
-  const SpatialInertia<T>& M_BA = M_BB0.ShiftInPlace(-p_AB0);
-  return M_BA;
+  M_BB0.ShiftInPlace(-p_AB0);
+  return M_BB0;  // Since M_BB0 was shifted, this actually returns M_BA.
 }
 
 template <typename T>
