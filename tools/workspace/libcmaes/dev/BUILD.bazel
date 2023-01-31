@@ -5,7 +5,11 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 cc_test(
     name = "sample_code",
     srcs = ["sample_code.cc"],
-    tags = ["nolint"],
+    tags = [
+        "nolint",
+        # Upstream is broken w.r.t. Eigen >= 3.5.0.
+        "manual",
+    ],
     deps = ["@libcmaes"],
 )
 
