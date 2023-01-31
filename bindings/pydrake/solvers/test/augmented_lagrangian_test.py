@@ -2,27 +2,22 @@ import unittest
 
 import numpy as np
 
-from pydrake.autodiffutils import (
-    AutoDiffXd,
-    InitializeAutoDiff,
-)
-from pydrake.solvers import (
-    AugmentedLagrangianNonsmooth,
-    AugmentedLagrangianSmooth,
-    MathematicalProgram,
-)
+from pydrake.solvers import mathematicalprogram as mp
+
+from pydrake.solvers import augmented_lagrangian as al
+from pydrake.autodiffutils import InitializeAutoDiff, AutoDiffXd
 
 
 class TestAugmentedLagrangian(unittest.TestCase):
     def setUp(self):
-        self.prog = MathematicalProgram()
+        self.prog = mp.MathematicalProgram()
         x = self.prog.NewContinuousVariables(2)
         self.prog.AddQuadraticCost(x[0] * x[0] + 2 * x[1] * x[1])
         self.prog.AddLinearConstraint(x[0] + x[1] <= 3)
 
     def test_eval_double_nonsmooth(self):
-        dut = AugmentedLagrangianNonsmooth(prog=self.prog,
-                                           include_x_bounds=True)
+        dut = al.AugmentedLagrangianNonsmooth(prog=self.prog,
+                                              include_x_bounds=True)
         x_val = np.array([1., 3])
         lambda_val = np.array([0.5])
         al_val, constraint_residue, cost = dut.Eval(x=x_val,
@@ -33,8 +28,8 @@ class TestAugmentedLagrangian(unittest.TestCase):
         self.assertIsInstance(cost, float)
 
     def test_eval_double_smooth(self):
-        dut = AugmentedLagrangianSmooth(prog=self.prog,
-                                        include_x_bounds=True)
+        dut = al.AugmentedLagrangianSmooth(prog=self.prog,
+                                           include_x_bounds=True)
         self.assertEqual(dut.s_size(), 1)
         x_val = np.array([1., 3])
         s_val = np.array([3.])
@@ -48,8 +43,8 @@ class TestAugmentedLagrangian(unittest.TestCase):
         self.assertIsInstance(cost, float)
 
     def test_eval_ad_nonsmooth(self):
-        dut = AugmentedLagrangianNonsmooth(prog=self.prog,
-                                           include_x_bounds=True)
+        dut = al.AugmentedLagrangianNonsmooth(prog=self.prog,
+                                              include_x_bounds=True)
         x_val = InitializeAutoDiff(np.array([1., 3]))
         al_val, constraint_residue, cost = dut.Eval(x=x_val,
                                                     lambda_val=np.array([0.5]),
@@ -59,8 +54,8 @@ class TestAugmentedLagrangian(unittest.TestCase):
         self.assertIsInstance(cost, AutoDiffXd)
 
     def test_eval_ad_smooth(self):
-        dut = AugmentedLagrangianSmooth(prog=self.prog,
-                                        include_x_bounds=True)
+        dut = al.AugmentedLagrangianSmooth(prog=self.prog,
+                                           include_x_bounds=True)
         x_val = InitializeAutoDiff(np.array([1., 3]))
         s_val = np.array([AutoDiffXd(1.)])
         al_val, constraint_residue, cost = dut.Eval(x=x_val,
@@ -73,22 +68,22 @@ class TestAugmentedLagrangian(unittest.TestCase):
 
     def test_lagrangian_size(self):
         self.assertEqual(
-            AugmentedLagrangianNonsmooth(
+            al.AugmentedLagrangianNonsmooth(
                 prog=self.prog, include_x_bounds=True).lagrangian_size(), 1)
         self.assertEqual(
-            AugmentedLagrangianNonsmooth(
+            al.AugmentedLagrangianNonsmooth(
                 prog=self.prog, include_x_bounds=False).lagrangian_size(), 1)
         self.assertEqual(
-            AugmentedLagrangianSmooth(
+            al.AugmentedLagrangianSmooth(
                 prog=self.prog, include_x_bounds=True).lagrangian_size(), 1)
         self.assertEqual(
-            AugmentedLagrangianSmooth(
+            al.AugmentedLagrangianSmooth(
                 prog=self.prog, include_x_bounds=False).lagrangian_size(), 1)
 
     def test_is_equality(self):
         self.assertEqual(
-            AugmentedLagrangianNonsmooth(
+            al.AugmentedLagrangianNonsmooth(
                 prog=self.prog, include_x_bounds=True).is_equality(), [False])
         self.assertEqual(
-            AugmentedLagrangianSmooth(
+            al.AugmentedLagrangianSmooth(
                 prog=self.prog, include_x_bounds=True).is_equality(), [False])

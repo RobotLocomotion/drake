@@ -42,7 +42,6 @@ from .lcm import *
 from .math import *
 from .perception import *
 from .polynomial import *
-from .solvers import *
 from .symbolic import *
 from .trajectories import *
 
@@ -52,6 +51,7 @@ from .geometry.all import *
 # - `examples` does not offer public Drake library symbols.
 from .manipulation.all import *
 from .multibody.all import *
+from .solvers.all import *
 from .systems.all import *
 from .visualization import *
 

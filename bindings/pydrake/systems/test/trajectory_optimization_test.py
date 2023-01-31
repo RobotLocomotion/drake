@@ -7,7 +7,7 @@ import numpy as np
 from pydrake.examples import PendulumPlant
 from pydrake.math import eq, BsplineBasis
 from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
-import pydrake.solvers as mp
+from pydrake.solvers import mathematicalprogram as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem

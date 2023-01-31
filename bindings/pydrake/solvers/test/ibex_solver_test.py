@@ -4,7 +4,7 @@ import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-import pydrake.solvers as mp
+from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.ibex import IbexSolver
 
 

@@ -1,17 +1,12 @@
 import unittest
-
 import numpy as np
-
-from pydrake.solvers import (
-    MathematicalProgram,
-    OsqpSolver,
-    SolverType,
-)
+from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.osqp import OsqpSolver
 
 
 class TestOsqpSolver(unittest.TestCase):
     def test_osqp_solver(self):
-        prog = MathematicalProgram()
+        prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         constraint1 = prog.AddLinearConstraint(x[0] >= 1)
         constraint2 = prog.AddLinearConstraint(x[1] >= 1)
@@ -19,7 +14,7 @@ class TestOsqpSolver(unittest.TestCase):
         solver = OsqpSolver()
         self.assertEqual(solver.solver_id(), OsqpSolver.id())
         self.assertTrue(solver.available())
-        self.assertEqual(solver.solver_type(), SolverType.kOsqp)
+        self.assertEqual(solver.solver_type(), mp.SolverType.kOsqp)
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])

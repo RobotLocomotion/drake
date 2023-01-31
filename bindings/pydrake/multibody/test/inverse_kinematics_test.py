@@ -15,7 +15,10 @@ from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import (
     MultibodyPlant, AddMultibodyPlantSceneGraph)
 from pydrake.multibody.tree import BodyIndex
-import pydrake.solvers as mp
+from pydrake.solvers.gurobi import GurobiSolver
+import pydrake.solvers.mathematicalprogram as mp
+import pydrake.solvers.mixed_integer_optimization_util as mip_util
+import pydrake.solvers.mixed_integer_rotation_constraint as mip_rot
 from pydrake.systems.framework import DiagramBuilder
 
 # TODO(eric.cousineau): Replace manual coordinate indexing with more semantic
@@ -671,10 +674,10 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             "linear_constraint_only=False)"]))
         self.assertEqual(options.num_intervals_per_half_axis, 2)
         self.assertEqual(
-            options.approach, mp.MixedIntegerRotationConstraintGenerator.
+            options.approach, mip_rot.MixedIntegerRotationConstraintGenerator.
             Approach.kBilinearMcCormick)
         self.assertEqual(options.interval_binning,
-                         mp.IntervalBinning.kLogarithmic)
+                         mip_util.IntervalBinning.kLogarithmic)
         self.assertFalse(options.linear_constraint_only)
 
     def test_api(self):
@@ -717,7 +720,7 @@ class TestGlobalInverseKinematics(unittest.TestCase):
             q_desired=plant.GetPositions(context),
             body_position_cost=[1] * plant.num_bodies(),
             body_orientation_cost=[1] * plant.num_bodies())
-        gurobi_solver = mp.GurobiSolver()
+        gurobi_solver = GurobiSolver()
         if gurobi_solver.available():
             global_ik.SetInitialGuess(q=plant.GetPositions(context))
             result = gurobi_solver.Solve(global_ik.prog())

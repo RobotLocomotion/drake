@@ -3,16 +3,13 @@ import warnings
 
 import numpy as np
 
-from pydrake.solvers import (
-    IpoptSolver,
-    MathematicalProgram,
-    SolverType,
-)
+from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.ipopt import IpoptSolver
 
 
 class TestIpoptSolver(unittest.TestCase):
     def _make_prog(self):
-        prog = MathematicalProgram()
+        prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
@@ -28,7 +25,7 @@ class TestIpoptSolver(unittest.TestCase):
         self.assertTrue(solver.enabled())
         self.assertEqual(solver.solver_id().name(), "IPOPT")
         self.assertEqual(solver.SolverName(), "IPOPT")
-        self.assertEqual(solver.solver_type(), SolverType.kIpopt)
+        self.assertEqual(solver.solver_type(), mp.SolverType.kIpopt)
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(x), x_expected))

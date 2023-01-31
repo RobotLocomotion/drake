@@ -5,7 +5,7 @@ import numpy as np
 
 from pydrake.common.containers import EqualToDict
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-import pydrake.solvers as mp
+from pydrake.solvers import mathematicalprogram as mp
 from pydrake.solvers.dreal import DrealSolver
 from pydrake.symbolic import Variable, logical_and, logical_or
 

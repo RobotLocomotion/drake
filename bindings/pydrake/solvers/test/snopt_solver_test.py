@@ -3,16 +3,13 @@ import unittest
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.solvers import (
-    MathematicalProgram,
-    SnoptSolver,
-    SolverType,
-)
+from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.snopt import SnoptSolver
 
 
 class TestSnoptSolver(unittest.TestCase):
     def test_snopt_solver(self):
-        prog = MathematicalProgram()
+        prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] + x[1] == 1)
         prog.AddBoundingBoxConstraint(0, 1, x[1])
@@ -22,7 +19,7 @@ class TestSnoptSolver(unittest.TestCase):
         self.assertEqual(solver.solver_id(), SnoptSolver.id())
         if solver.available():
             self.assertTrue(solver.enabled())
-            self.assertEqual(solver.solver_type(), SolverType.kSnopt)
+            self.assertEqual(solver.solver_type(), mp.SolverType.kSnopt)
 
             result = solver.Solve(prog, None, None)
             self.assertTrue(result.is_success())

@@ -1,19 +1,12 @@
 import unittest
-
 import numpy as np
-
-from pydrake.solvers import (
-    CommonSolverOption,
-    MathematicalProgram,
-    MosekSolver,
-    SolverOptions,
-    SolverType,
-)
+from pydrake.solvers import mathematicalprogram as mp
+from pydrake.solvers.mosek import MosekSolver
 
 
 class TestMathematicalProgram(unittest.TestCase):
     def test_mosek_solver(self):
-        prog = MathematicalProgram()
+        prog = mp.MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
@@ -21,10 +14,10 @@ class TestMathematicalProgram(unittest.TestCase):
         solver = MosekSolver()
         self.assertEqual(solver.solver_id(), MosekSolver.id())
         # Mosek prints output to the terminal.
-        solver_options = SolverOptions()
-        solver_options.SetOption(CommonSolverOption.kPrintToConsole, 1)
+        solver_options = mp.SolverOptions()
+        solver_options.SetOption(mp.CommonSolverOption.kPrintToConsole, 1)
         self.assertTrue(solver.available())
-        self.assertEqual(solver.solver_type(), SolverType.kMosek)
+        self.assertEqual(solver.solver_type(), mp.SolverType.kMosek)
         result = solver.Solve(prog, None, solver_options)
         self.assertTrue(result.is_success())
         x_expected = np.array([1, 1])

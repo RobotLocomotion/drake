@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 
-from pydrake.solvers import (
+from pydrake.solvers.mathematicalprogram import (
     LinearConstraint,
 )
 
