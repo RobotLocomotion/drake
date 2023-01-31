@@ -991,3 +991,16 @@ ostream& operator<<(ostream& os, const Polynomial& p) {
 }
 }  // namespace symbolic
 }  // namespace drake
+
+// We must define this in the cc file so that symbolic_formula.h is fully
+// defined (not just forward declared) when comparing.
+namespace Eigen {
+namespace numext {
+template <>
+bool equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y) {
+  return static_cast<bool>(x == y);
+}
+}  // namespace numext
+}  // namespace Eigen
