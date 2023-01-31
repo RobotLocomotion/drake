@@ -1252,6 +1252,28 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
   }
 };
 
+#if EIGEN_VERSION_AT_LEAST(3, 4, 90)
+// Provides specialization for minmax_compare to handle the case "Expr < Expr".
+// This is needed for the trunk versions of Eigen (i.e., anticipating 3.5.x).
+template <int NaNPropagation>
+struct minmax_compare<drake::symbolic::Expression, NaNPropagation, true> {
+  using Scalar = drake::symbolic::Expression;
+  static EIGEN_DEVICE_FUNC inline bool compare(Scalar a, Scalar b) {
+    return static_cast<bool>(a < b);
+  }
+};
+
+// Provides specialization for minmax_compare to handle the case "Expr > Expr".
+// This is needed for the trunk versions of Eigen (i.e., anticipating 3.5.x).
+template <int NaNPropagation>
+struct minmax_compare<drake::symbolic::Expression, NaNPropagation, false> {
+  using Scalar = drake::symbolic::Expression;
+  static EIGEN_DEVICE_FUNC inline bool compare(Scalar a, Scalar b) {
+    return static_cast<bool>(a > b);
+  }
+};
+#endif  // EIGEN_VERSION_AT_LEAST
+
 /// Provides specialization for scalar_cmp_op to handle the case "Var == Var".
 template <>
 struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
