@@ -2678,14 +2678,6 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     const int mobilizer_num_positions =
         node_topology.num_mobilizer_positions;
 
-    const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
-    const int mobilizer_jacobian_ncols =
-        is_wrt_qdot ? mobilizer_num_positions : mobilizer_num_velocities;
-
-    // No contribution to the Jacobian from this mobilizer. We skip it.
-    // N.B. This avoids working with zero sized Eigen blocks; see drake#17113.
-    if (mobilizer_jacobian_ncols == 0) continue;
-
     // "Hinge matrix" H for across-node Jacobian.
     // Herein P designates the inboard (parent) body frame P.
     // B designates the current outboard body in this outward sweep.
@@ -2695,6 +2687,10 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     // Aliases to angular and translational components in H_PB_W.
     const auto Hw_PB_W = H_PB_W.template topRows<3>();
     const auto Hv_PB_W = H_PB_W.template bottomRows<3>();
+
+    const int start_index = is_wrt_qdot ? start_index_in_q : start_index_in_v;
+    const int mobilizer_jacobian_ncols =
+        is_wrt_qdot ? mobilizer_num_positions : mobilizer_num_velocities;
 
     // Mapping defined by v = N⁺(q)⋅q̇.
     if (is_wrt_qdot) {
