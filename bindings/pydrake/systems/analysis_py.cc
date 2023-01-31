@@ -195,10 +195,6 @@ PYBIND11_MODULE(analysis, m) {
             // Keep alive, reference: `self` keeps `context` alive.
             py::keep_alive<1, 3>(), doc.RungeKutta3Integrator.ctor.doc);
 
-    // See equivalent note about EventCallback in `framework_py_systems.cc`.
-    using MonitorCallback =
-        std::function<std::optional<EventStatus>(const Context<T>&)>;
-
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
@@ -215,12 +211,7 @@ PYBIND11_MODULE(analysis, m) {
             doc.Simulator.AdvanceTo.doc)
         .def("AdvancePendingEvents", &Simulator<T>::AdvancePendingEvents,
             doc.Simulator.AdvancePendingEvents.doc)
-        .def("set_monitor",
-            WrapCallbacks([](Simulator<T>* self, MonitorCallback monitor) {
-              self->set_monitor([monitor](const Context<T>& context) {
-                return monitor(context).value_or(EventStatus::DidNothing());
-              });
-            }),
+        .def("set_monitor", WrapCallbacks(&Simulator<T>::set_monitor),
             py::arg("monitor"), doc.Simulator.set_monitor.doc)
         .def("clear_monitor", &Simulator<T>::clear_monitor,
             doc.Simulator.clear_monitor.doc)

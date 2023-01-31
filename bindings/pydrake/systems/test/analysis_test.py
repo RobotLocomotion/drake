@@ -170,25 +170,12 @@ class TestAnalysis(unittest.TestCase):
 
         simulator.set_monitor(monitor=monitor)
         # N.B. This will be round-trip wrapped via pybind11, but should be the
-        # same function underneath.
+        # same function underneath.w
         monitor_from_pybind = simulator.get_monitor()
         self.assertIsNot(monitor_from_pybind, monitor)
         self.assertEqual(monitor_called_count, 0)
         monitor_from_pybind(simulator.get_context())
         self.assertEqual(monitor_called_count, 1)
-        simulator.clear_monitor()
-
-        monitor_no_return_called_count = 0
-
-        def monitor_no_return(root_context):
-            nonlocal monitor_no_return_called_count
-            monitor_no_return_called_count += 1
-
-        simulator.set_monitor(monitor_no_return)
-        monitor_from_pybind = simulator.get_monitor()
-        status = monitor_from_pybind(simulator.get_context())
-        self.assertEqual(status.severity(), EventStatus.Severity.kDidNothing)
-        self.assertEqual(monitor_no_return_called_count, 1)
         simulator.clear_monitor()
 
         self.assertIsInstance(simulator.get_context(), Context_[T])
@@ -271,8 +258,8 @@ class TestAnalysis(unittest.TestCase):
             context = sys.GetMyContextFromRoot(root_context)
             if context.get_time() >= 1.:
                 return EventStatus.ReachedTermination(sys, "Time reached")
-            # N.B. We suppress returning anything to test the binding's ability
-            # to handle `None` return type.
+            else:
+                return EventStatus.DidNothing()
 
         self.assertIsNone(simulator.get_monitor())
         simulator.set_monitor(monitor)
