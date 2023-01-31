@@ -1711,14 +1711,7 @@ class TestPlant(unittest.TestCase):
             )
 
         def make_screw_joint(plant, P, C):
-            # First, check that the deprecated overload works.
-            with catch_drake_warnings(expected_count=1):
-                ScrewJoint_[T](
-                    name="screw",
-                    frame_on_parent=P,
-                    frame_on_child=C,
-                )
-            # Then, check that the no-axis overload works.
+            # First, check that the no-axis overload works.
             ScrewJoint_[T](
                 name="screw",
                 frame_on_parent=P,

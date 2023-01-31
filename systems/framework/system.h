@@ -882,19 +882,6 @@ class System : public SystemBase {
            PeriodicEventDataComparator>
   MapPeriodicEventsByTiming(const Context<T>* context = nullptr) const;
 
-  /** (Deprecated) See MapPeriodicEventsByTiming(). If you are looking for
-  the EventCollection of periodic events (analogous to GetPerStepEvents()
-  and GetInitializationEvents()), see
-  GetPeriodicEvents(Context, EventCollection). */
-  DRAKE_DEPRECATED("2023-02-01",
-      "Use MapPeriodicEventsByTiming() or "
-      "GetPeriodicEvents(Context, EventCollection) instead")
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
-  GetPeriodicEvents() const {
-    return MapPeriodicEventsByTiming();
-  }
-
   /** Utility method that computes for _every_ output port i the value y(i) that
   should result from the current contents of the given Context. Note that
   individual output port values can be calculated using
