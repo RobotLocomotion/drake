@@ -323,6 +323,36 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia(Ix, Ix, Iz);
   }
 
+  /// Creates a unit inertia for a unit-mass uniform density solid tetrahedron B
+  /// about a point A, from which position vectors to B's 4 vertices B0, B1, B2,
+  /// B3 are measured (position vectors are all expressed in a common frame E).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] p0 position vector p_AB0_E from point A to B0, expressed in E.
+  /// @param[in] p1 position vector p_AB1_E from point A to B1, expressed in E.
+  /// @param[in] p2 position vector p_AB2_E from point A to B2, expressed in E.
+  /// @param[in] p3 position vector p_AB3_E from point A to B3, expressed in E.
+  /// @retval G_BA_E B's unit inertia about point A, expressed in E.
+  /// @see SolidTetrahedronAboutVertex() to efficiently calculate a unit inertia
+  /// about a vertex of B.
+  static UnitInertia<T> SolidTetrahedronAboutPoint(const Vector3<T>& p0,
+                                                   const Vector3<T>& p1,
+                                                   const Vector3<T>& p2,
+                                                   const Vector3<T>& p3);
+
+  /// (Advanced) Creates a unit inertia for a unit-mass uniform density solid
+  /// tetrahedron B about its vertex B0, from which position vectors to B's
+  /// other 3 vertices B1, B2, B3 are measured (vectors are all expressed
+  /// in a common frame E).
+  /// @param[in] p1 position vector p_B0B1_E from B0 to B1, expressed in E.
+  /// @param[in] p2 position vector p_B0B2_E from B0 to B2, expressed in E.
+  /// @param[in] p3 position vector p_B0B3_E from B0 to B3, expressed in E.
+  /// @retval G_BB0_E B's unit inertia about its vertex B0, expressed in E.
+  /// @see SolidTetrahedronAboutPoint() to calculate a unit inertia about an
+  /// arbitrary point.
+  static UnitInertia<T> SolidTetrahedronAboutVertex(const Vector3<T>& p1,
+                                                    const Vector3<T>& p2,
+                                                    const Vector3<T>& p3);
+
   /// Returns the unit inertia for a unit-mass body B for which there exists a
   /// line L passing through the body's center of mass `Bcm` having the property
   /// that the body's moment of inertia about all lines perpendicular to L are

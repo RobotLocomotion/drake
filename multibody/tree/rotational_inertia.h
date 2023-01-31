@@ -884,8 +884,8 @@ class RotationalInertia {
       const Vector3<T>& p_PBcm_E, const Vector3<T>& p_QBcm_E) {
     // Concept: Shift towards then away from the center of mass.
     // Math: Shift away from then towards the center of mass.
-    RotationalInertia shift_away(p_QBcm_E, p_QBcm_E);
-    RotationalInertia shift_towards(p_PBcm_E, p_PBcm_E);
+    RotationalInertia<T> shift_away(p_QBcm_E, p_QBcm_E);
+    RotationalInertia<T> shift_towards(p_PBcm_E, p_PBcm_E);
     return shift_away.MinusEqualsUnchecked(shift_towards);
   }
 
