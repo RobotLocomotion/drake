@@ -29,6 +29,7 @@ def _actually_find_packages():
     result = find_packages()
     result.extend([
         "pydrake.examples",
+        "pydrake.geometry",
         "pydrake.solvers",
         "pydrake.visualization",
     ])
