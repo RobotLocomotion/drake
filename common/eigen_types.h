@@ -13,9 +13,8 @@
 
 #include <Eigen/Dense>
 
-// Keep this version in sync with drake/tools/workspace/repository.bzl.
-static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 4),
-              "Drake requires Eigen >= v3.3.4.");
+static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 5),
+              "Drake requires Eigen >= v3.3.5.");
 
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
