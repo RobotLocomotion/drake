@@ -206,18 +206,19 @@ class RigidBody : public Body<T> {
         internal::parameter_conversion::SpatialInertiaIndex::k_mass, mass);
   }
 
-  /// Sets this body's center of mass position while preserving its inertia
-  /// about its body origin.
+  /// (Advanced) Sets this body's center of mass position while preserving its
+  /// inertia about its body origin.
   /// @param[in, out] context contains the state of the multibody system. It is
   /// modified to store the updated com (center of mass position).
   /// @param[in] com position vector from Bo (this body B's origin) to Bcm
   /// (B's center of mass), expressed in B.
-  /// @note This function changes B's center of mass position without modifying
-  /// G_BBo_B (B's unit inertia about Bo, expressed in B).
-  /// Consider using SetSpatialInertiaInBodyFrame() or
-  /// SetCenterOfMassInBodyFrameAndPreserveCentralInertia().
+  /// @note This function changes B's center of mass position **without**
+  /// modifying G_BBo_B (B's unit inertia about Bo, expressed in B). Since this
+  /// use case is very unlikely, consider using SetSpatialInertiaInBodyFrame()
+  /// or SetCenterOfMassInBodyFrameAndPreserveCentralInertia().
   /// @pre the context makes sense for use by `this` RigidBody.
   /// @throws std::exception if context is null.
+  /// @warning Do not use this function unless it is needed (think twice).
   // TODO(Mitiguy) Consider deprecating this function.
   void SetCenterOfMassInBodyFrame(systems::Context<T>* context,
                                   const Vector3<T>& com) const {
