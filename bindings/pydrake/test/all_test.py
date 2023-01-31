@@ -142,8 +142,6 @@ class TestAll(unittest.TestCase):
             "MultibodyForces",
             # perception
             "PointCloud",
-            # planning
-            "RobotDiagram",
             # solvers
             "MathematicalProgram",
             "SnoptSolver",
