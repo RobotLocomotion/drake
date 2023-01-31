@@ -147,7 +147,6 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
   DRAKE_THROW_UNLESS(density >= 0);
   // Note: During mass/inertia property calculations, it can be helpful to order
   // p1, p2, p3 to intentionally calculate negative mass.
-  // . Prevent the validity checker from rejecting that.
   const T volume = (1.0 / 6.0) * p1.cross(p2).dot(p3);
   const T mass = density * volume;
 
