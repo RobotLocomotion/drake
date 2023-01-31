@@ -1,6 +1,7 @@
 #include "drake/geometry/proximity/mesh_to_vtk.h"
 
 #include <fstream>
+#include <iostream>
 
 #include <fmt/format.h>
 

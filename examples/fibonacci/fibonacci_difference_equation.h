@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <iostream>
 
 #include "drake/systems/framework/event.h"
 #include "drake/systems/framework/leaf_system.h"

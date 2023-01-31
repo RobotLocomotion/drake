@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <gflags/gflags.h>
 
 #include "drake/examples/fibonacci/fibonacci_difference_equation.h"
