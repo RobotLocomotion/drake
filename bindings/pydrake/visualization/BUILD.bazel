@@ -41,7 +41,7 @@ drake_pybind_library(
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/solvers",
         "//bindings/pydrake/systems",
-        "//bindings/pydrake/geometry",
+        "//bindings/pydrake:geometry_py",
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake:symbolic_py",
         "//lcmtypes:lcmtypes_drake_py",

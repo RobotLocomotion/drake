@@ -1,4 +1,4 @@
-#include "drake/bindings/pydrake/geometry/geometry_py.h"
+#include "drake/bindings/pydrake/geometry_py.h"
 
 #include "pybind11/eval.h"
 
@@ -31,7 +31,7 @@ PYBIND11_MODULE(geometry, m) {
   DefineGeometryOptimization(m.def_submodule("optimization"));
   DefineGeometryVisualizers(m);
 
-  ExecuteExtraPythonCode(m, true);
+  ExecuteExtraPythonCode(m);
 
   def_geometry_all(m.def_submodule("all"));
 }
