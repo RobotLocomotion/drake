@@ -16,6 +16,7 @@ LICENSE_LITERALS = [
 LICENSE_PREFIXES = [
     "COPYING.",
     "LICENSE.",
+    "License.",
 ]
 
 #------------------------------------------------------------------------------

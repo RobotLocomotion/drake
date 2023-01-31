@@ -76,12 +76,6 @@ set(lapack_url "https://github.com/Reference-LAPACK/lapack/archive/v${lapack_ver
 set(lapack_md5 "d70fc27a8bdebe00481c97c728184f09")
 list(APPEND ALL_PROJECTS lapack)
 
-# suitesparse
-set(suitesparse_version 4.4.5)
-set(suitesparse_url "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-${suitesparse_version}.tar.gz")
-set(SuiteSparse_md5 "a2926c27f8a5285e4a10265cc68bbc18")
-list(APPEND ALL_PROJECTS suitesparse)
-
 # coinutils
 set(coinutils_version 2.11.4)
 set(coinutils_url "https://github.com/coin-or/CoinUtils/archive/refs/tags/releases/${coinutils_version}.tar.gz")

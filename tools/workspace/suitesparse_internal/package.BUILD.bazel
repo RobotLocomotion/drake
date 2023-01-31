@@ -1,0 +1,76 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "config",
+    srcs = ["SuiteSparse_config/SuiteSparse_config.c"],
+    hdrs = ["SuiteSparse_config/SuiteSparse_config.h"],
+    strip_include_prefix = "SuiteSparse_config",
+    copts = ["-fvisibility=hidden"],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+)
+
+# The header for libamd.
+cc_library(
+    name = "amd_hdrs",
+    hdrs = [
+        "AMD/Include/amd_internal.h",
+        "AMD/Include/amd.h",
+    ],
+    strip_include_prefix = "AMD/Include",
+    linkstatic = True,
+    deps = [
+        ":config",
+    ],
+)
+
+# The libamd sources are compiled twice, once as 32-bit and once as 64-bit.
+_AMD_SRCS = glob(
+    ["AMD/Source/amd_*.c"],
+    exclude = ["AMD/Source/amd_l*.c"],
+    allow_empty = False,
+)
+
+cc_library(
+    name = "amd_32bit",
+    srcs = _AMD_SRCS,
+    copts = ["-fvisibility=hidden"],
+    linkstatic = True,
+    deps = [":amd_hdrs"],
+)
+
+cc_library(
+    name = "amd_64bit",
+    srcs = _AMD_SRCS,
+    copts = ["-fvisibility=hidden", "-DDLONG=1"],
+    linkstatic = True,
+    deps = [":amd_hdrs"],
+)
+
+cc_library(
+    name = "amd",
+    linkstatic = True,
+    deps = [
+        ":amd_32bit",
+        ":amd_64bit",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# N.B. Most of SuiteSparse is GPL/LGPL licensed. Do NOT add any of those
+# libraries here. We must only use the BSD components of SuiteSparse.
+
+install(
+    name = "install",
+    docs = ["AMD/Doc/License.txt"],
+    visibility = ["//visibility:public"],
+)

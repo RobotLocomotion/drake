@@ -24,8 +24,9 @@ cmake_configure_file(
         "PRINTING",
         "PROFILING",
         # Keep the default primitive size of `double` and `int`.  Don't define
-        # 'DFLOAT' nor 'DLONG' unless @qdldl and @scs are also changed to use
-        # those primitive sizes.  See drake/tools/workspace/qdldl/README.md.
+        # 'DFLOAT' nor 'DLONG' unless @qdldl_internal and @scs_internal are
+        # also changed to use those primitive sizes.
+        # See drake/tools/workspace/qdldl_internal/README.md.
     ] + select({
         "@drake//tools/cc_toolchain:apple": [
             "IS_MAC",
@@ -99,8 +100,8 @@ cc_library(
     ],
     linkstatic = 1,
     deps = [
-        "@qdldl",
-        "@suitesparse//:amd",
+        "@qdldl_internal//:qdldl",
+        "@suitesparse_internal//:amd",
     ],
 )
 

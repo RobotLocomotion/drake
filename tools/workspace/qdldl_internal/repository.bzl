@@ -2,7 +2,7 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def qdldl_repository(
+def qdldl_internal_repository(
         name,
         mirrors = None):
     github_archive(

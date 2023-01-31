@@ -2,7 +2,7 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def scs_repository(
+def scs_internal_repository(
         name,
         mirrors = None):
     github_archive(
@@ -16,7 +16,7 @@ def scs_repository(
             # Fix some include paths for our build of QDLDL.
             # TODO(jwnimmer-tri) We should upstream these options under a
             # config switch.
-            "@drake//tools/workspace/scs:private.h.diff",
+            ":private.h.diff",
         ],
         mirrors = mirrors,
     )
