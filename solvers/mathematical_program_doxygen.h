@@ -237,10 +237,6 @@
  *    <td></td>
  *    <td align="center">♦</td>
  *    <td></td>
- * <tr><td><a href="https://dreal.github.io/">dReal</a></td>
- *    <td></td>
- *    <td></td>
- *    <td align="center">♦</td>
  * </tr>
  * </table>
  *
