@@ -305,3 +305,16 @@ void RationalFunction::SetIndeterminates(const Variables& new_indeterminates) {
 }
 }  // namespace symbolic
 }  // namespace drake
+
+// We must define this in the cc file so that symbolic_formula.h is fully
+// defined (not just forward declared) when comparing.
+namespace Eigen {
+namespace numext {
+template <>
+bool equal_strict(
+    const drake::symbolic::RationalFunction& x,
+    const drake::symbolic::RationalFunction& y) {
+  return static_cast<bool>(x == y);
+}
+}  // namespace numext
+}  // namespace Eigen
