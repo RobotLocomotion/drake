@@ -466,7 +466,6 @@ drake_cc_library(
         "//perception:point_cloud",
     ],
     deps = [
-        "//common:drake_export",
         "//common:find_resource",
         "//common:scope_exit",
         "//common:unused",

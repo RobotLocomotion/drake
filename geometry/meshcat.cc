@@ -24,7 +24,6 @@
 #include <drake_vendor/uuid.h>
 #include <fmt/format.h>
 
-#include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
@@ -1089,8 +1088,10 @@ class Meshcat::Impl {
     });
   }
 
-  // This function is public via the PIMPL.
-  DRAKE_NO_EXPORT void SetAnimation(const MeshcatAnimation& animation) {
+  // This function is public via the PIMPL. We'll set linker visibility to
+  // avoid a warning about our std::visit's lambda capture of a msgpack object.
+  __attribute__((visibility("hidden")))
+  void SetAnimation(const MeshcatAnimation& animation) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     std::stringstream message_stream;
