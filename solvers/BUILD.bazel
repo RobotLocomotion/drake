@@ -39,13 +39,11 @@ drake_cc_package_library(
         ":create_cost",
         ":csdp_solver",
         ":decision_variable",
-        ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":evaluator_base",
         ":function",
         ":get_program_type",
         ":gurobi_solver",
-        ":ibex_solver",
         ":indeterminate",
         ":integer_inequality_solver",
         ":integer_optimization_util",
@@ -331,10 +329,8 @@ drake_cc_library(
     deps = [
         ":clp_solver",
         ":csdp_solver",
-        ":dreal_solver",
         ":equality_constrained_qp_solver",
         ":gurobi_solver",
-        ":ibex_solver",
         ":ipopt_solver",
         ":linear_system_solver",
         ":moby_lcp_solver",
@@ -753,64 +749,6 @@ drake_cc_library(
         "//common:essential",
     ],
     deps = [],
-)
-
-drake_cc_variant_library(
-    name = "dreal_solver",
-    opt_out_condition = "//tools:no_dreal",
-    srcs_always = ["dreal_solver_common.cc"],
-    srcs_enabled = ["dreal_solver.cc"],
-    srcs_disabled = ["no_dreal.cc"],
-    hdrs = ["dreal_solver.h"],
-    interface_deps = [
-        ":solver_base",
-        "//common:essential",
-    ],
-    deps_always = [
-        ":mathematical_program",
-    ],
-    deps_enabled = [
-        "@dreal//dreal/api",
-    ],
-)
-
-# Ibex is a dependency of dReal; disabling dReal disables Ibex.  We could
-# consider supporting Ibex w/o dReal, but have no use cases that need that
-# support yet.
-drake_cc_optional_library(
-    name = "ibex_converter",
-    opt_out_condition = "//tools:no_dreal",
-    srcs = ["ibex_converter.cc"],
-    hdrs = ["ibex_converter.h"],
-    interface_deps = [
-        "//common/symbolic:expression",
-        "@ibex//:ibex",
-    ],
-    deps = [],
-)
-
-# Ibex is a dependency of dReal; disabling dReal disables Ibex.  We could
-# consider supporting Ibex w/o dReal, but have no use cases that need that
-# support yet.
-drake_cc_variant_library(
-    name = "ibex_solver",
-    opt_out_condition = "//tools:no_dreal",
-    srcs_always = ["ibex_solver_common.cc"],
-    srcs_enabled = ["ibex_solver.cc"],
-    srcs_disabled = ["no_ibex.cc"],
-    hdrs = ["ibex_solver.h"],
-    interface_deps = [
-        ":mathematical_program",
-        ":mathematical_program_result",
-        ":solver_base",
-        ":solver_options",
-        "//common:essential",
-    ],
-    deps_always = [],
-    deps_enabled = [
-        ":ibex_converter",
-        "@ibex//:ibex",
-    ],
 )
 
 # External Solvers.
@@ -1271,26 +1209,6 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "dreal_solver_test",
-    timeout = "moderate",
-    copts = ["-Wno-deprecated-declarations"],
-    # For most of floating-point operations, Valgrind core only supports the
-    # IEEE default mode (round to nearest) while dReal uses to +infinity
-    # and to -infinity rounding modes intensively to maintain conservative
-    # interval approximations. This causes some of the assertions to fail
-    # in the test. So we disable memcheck for this test. See
-    # http://valgrind.org/docs/manual/manual-core.html#manual-core.limits
-    # for more information.
-    tags = ["no_valgrind_tools"],
-    deps = [
-        ":dreal_solver",
-        ":generic_trivial_constraint",
-        ":generic_trivial_cost",
-        ":mathematical_program",
-    ],
-)
-
-drake_cc_googletest(
     name = "get_program_type_test",
     deps = [
         ":get_program_type",
@@ -1323,26 +1241,6 @@ drake_cc_googletest(
         ":mathematical_program",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_googletest(
-    name = "ibex_solver_test",
-    copts = ["-Wno-deprecated-declarations"],
-    deps = [
-        ":generic_trivial_constraint",
-        ":generic_trivial_cost",
-        ":ibex_solver",
-        ":mathematical_program",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
-drake_cc_optional_googletest(
-    name = "ibex_converter_test",
-    opt_out_condition = "//tools:no_dreal",
-    deps = [
-        ":ibex_converter",
     ],
 )
 

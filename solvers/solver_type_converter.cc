@@ -3,10 +3,8 @@
 #include "drake/common/drake_assert.h"
 #include "drake/solvers/clp_solver.h"
 #include "drake/solvers/csdp_solver.h"
-#include "drake/solvers/dreal_solver.h"
 #include "drake/solvers/equality_constrained_qp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
-#include "drake/solvers/ibex_solver.h"
 #include "drake/solvers/ipopt_solver.h"
 #include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/moby_lcp_solver.h"
@@ -48,13 +46,6 @@ SolverId SolverTypeConverter::TypeToId(SolverType solver_type) {
       return ScsSolver::id();
     case SolverType::kUnrevisedLemke:
       return UnrevisedLemkeSolverId::id();
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    case SolverType::kDReal:
-      return DrealSolver::id();
-    case SolverType::kIbex:
-      return IbexSolver::id();
-#pragma GCC diagnostic pop
   }
   DRAKE_UNREACHABLE();
 }
@@ -86,13 +77,6 @@ std::optional<SolverType> SolverTypeConverter::IdToType(SolverId solver_id) {
     return SolverType::kScs;
   } else if (solver_id == UnrevisedLemkeSolverId::id()) {
     return SolverType::kUnrevisedLemke;
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  } else if (solver_id == DrealSolver::id()) {
-    return SolverType::kDReal;
-  } else if (solver_id == IbexSolver::id()) {
-    return SolverType::kIbex;
-#pragma GCC diagnostic pop
   } else {
     return std::nullopt;
   }

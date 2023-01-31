@@ -102,16 +102,6 @@ config_setting(
     values = {"define": "NO_CSDP=ON"},
 )
 
-# dReal is an open-source solver, and is included in the Drake build by
-# default. The dReal solver is irrelevant to some users of MathematicalProgram,
-# so we provide a hidden switch to shut it off for developers who don't
-# actually need it.  This is not a supported configuration. Use at your own
-# risk: --define=NO_DREAL=ON
-config_setting(
-    name = "no_dreal",
-    values = {"define": "NO_DREAL=ON"},
-)
-
 # IPOPT is an open-source solver, and is included in the Drake build by
 # default. The IPOPT solver is irrelevant to some users of MathematicalProgram,
 # so we provide a hidden switch to shut it off for developers who don't
