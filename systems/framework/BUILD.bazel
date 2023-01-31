@@ -961,7 +961,9 @@ drake_cc_googletest(
     deps = [
         ":diagram_builder",
         ":system_html",
-        "//systems/primitives",
+        "//systems/primitives:adder",
+        "//systems/primitives:discrete_derivative",
+        "//systems/primitives:pass_through",
     ],
 )
 

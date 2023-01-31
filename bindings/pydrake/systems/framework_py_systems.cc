@@ -548,7 +548,16 @@ Note: The above is for the C++ documentation. For Python, use
             (string(doc.System.DoGetWitnessFunctions.doc) + R""(
 Note: The above is for the C++ documentation. For Python, use
 `witnesses = GetWitnessFunctions(context)`)"")
-                .c_str());
+                .c_str())
+        // TODO(jwnimmer-tri) Use DefClone here, once it has support for
+        // docstrings and overload resolution.
+        .def(
+            "Clone", [](const System<T>* self) { return self->Clone(); },
+            doc.System.Clone.doc_0args)
+        .def("__copy__", [](const System<T>* self) { return self->Clone(); })
+        .def("__deepcopy__", [](const System<T>* self, py::dict /* memo */) {
+          return self->Clone();
+        });
 
 // Deprecated; remove 2023-03-01
 #pragma GCC diagnostic push
