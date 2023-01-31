@@ -1,0 +1,67 @@
+diff --git a/Eigen/src/Core/Block.h b/Eigen/src/Core/Block.h
+index 19c4b6893..8986ceb69 100644
+--- Eigen/src/Core/Block.h
++++ Eigen/src/Core/Block.h
+@@ -336,6 +336,17 @@ class BlockImpl_dense<XprType,BlockRows,BlockCols, InnerPanel,true>
+     enum {
+       XprTypeIsRowMajor = (int(traits<XprType>::Flags)&RowMajorBit) != 0
+     };
++
++    /** \internal Returns base+offset (unless base is null, in which case returns null).
++      * Adding an offset to nullptr is undefined behavior, so we must avoid it.
++      */
++    template <typename Scalar>
++    EIGEN_DEVICE_FUNC EIGEN_CONSTEXPR EIGEN_ALWAYS_INLINE
++    static Scalar* add_to_nullable_pointer(Scalar* base, Index offset)
++    {
++      return base ? base+offset : nullptr;
++    }
++
+   public:
+ 
+     typedef MapBase<BlockType> Base;
+@@ -346,8 +357,9 @@ class BlockImpl_dense<XprType,BlockRows,BlockCols, InnerPanel,true>
+       */
+     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+     BlockImpl_dense(XprType& xpr, Index i)
+-      : Base(xpr.data() + i * (    ((BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) && (!XprTypeIsRowMajor))
+-                                || ((BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) && ( XprTypeIsRowMajor)) ? xpr.innerStride() : xpr.outerStride()),
++      : Base(add_to_nullable_pointer(xpr.data(),
++                 i * (    ((BlockRows==1) && (BlockCols==XprType::ColsAtCompileTime) && (!XprTypeIsRowMajor))
++                       || ((BlockRows==XprType::RowsAtCompileTime) && (BlockCols==1) && ( XprTypeIsRowMajor)) ? xpr.innerStride() : xpr.outerStride())),
+              BlockRows==1 ? 1 : xpr.rows(),
+              BlockCols==1 ? 1 : xpr.cols()),
+         m_xpr(xpr),
+@@ -361,7 +373,8 @@ class BlockImpl_dense<XprType,BlockRows,BlockCols, InnerPanel,true>
+       */
+     EIGEN_DEVICE_FUNC EIGEN_STRONG_INLINE
+     BlockImpl_dense(XprType& xpr, Index startRow, Index startCol)
+-      : Base(xpr.data()+xpr.innerStride()*(XprTypeIsRowMajor?startCol:startRow) + xpr.outerStride()*(XprTypeIsRowMajor?startRow:startCol)),
++      : Base(add_to_nullable_pointer(xpr.data(),
++                 xpr.innerStride()*(XprTypeIsRowMajor?startCol:startRow) + xpr.outerStride()*(XprTypeIsRowMajor?startRow:startCol))),
+         m_xpr(xpr), m_startRow(startRow), m_startCol(startCol)
+     {
+       init();
+@@ -373,7 +386,9 @@ class BlockImpl_dense<XprType,BlockRows,BlockCols, InnerPanel,true>
+     BlockImpl_dense(XprType& xpr,
+           Index startRow, Index startCol,
+           Index blockRows, Index blockCols)
+-      : Base(xpr.data()+xpr.innerStride()*(XprTypeIsRowMajor?startCol:startRow) + xpr.outerStride()*(XprTypeIsRowMajor?startRow:startCol), blockRows, blockCols),
++      : Base(add_to_nullable_pointer(xpr.data(),
++                 xpr.innerStride()*(XprTypeIsRowMajor?startCol:startRow) + xpr.outerStride()*(XprTypeIsRowMajor?startRow:startCol)),
++             blockRows, blockCols),
+         m_xpr(xpr), m_startRow(startRow), m_startCol(startCol)
+     {
+       init();
+diff --git a/Eigen/src/Core/StlIterators.h b/Eigen/src/Core/StlIterators.h
+index d5d3971f6..3fefc87be 100644
+--- Eigen/src/Core/StlIterators.h
++++ Eigen/src/Core/StlIterators.h
+@@ -198,6 +198,7 @@ public:
+   pointer_based_stl_iterator() EIGEN_NO_THROW : m_ptr(0) {}
+   pointer_based_stl_iterator(XprType& xpr, Index index) EIGEN_NO_THROW : m_incr(xpr.innerStride())
+   {
++    eigen_assert(xpr.data() != 0 || index == 0 || m_incr.value() == 0);
+     m_ptr = xpr.data() + index * m_incr.value();
+   }
+ 

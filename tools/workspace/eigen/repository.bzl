@@ -16,6 +16,9 @@ def eigen_repository(
         ),
         sha256 = "7c224d88a90e02595eb75ab1105e788ff6655718bab694fd2c8707734a407933",  # noqa
         strip_prefix = "eigen-{}".format(commit),
+        patches = [
+            "@drake//tools/workspace/eigen:issue2482.patch",
+        ],
         build_file_content = """
 cc_library(
     name = "eigen",
