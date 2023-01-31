@@ -17,6 +17,9 @@ deriving your own collision checker without providing for the full suite of
 operations. */
 class UnimplementedCollisionChecker : public CollisionChecker {
  public:
+  /** Constructs a checker.
+  @param supports_parallel_checking will serve as the return value of the
+  CollisionChecker::SupportsParallelChecking() function. */
   UnimplementedCollisionChecker(CollisionCheckerParams params,
                                 bool supports_parallel_checking);
 
