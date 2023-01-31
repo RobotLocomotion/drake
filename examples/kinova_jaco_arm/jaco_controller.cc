@@ -16,7 +16,7 @@
 #include "drake/manipulation/kinova_jaco/jaco_command_sender.h"
 #include "drake/manipulation/kinova_jaco/jaco_constants.h"
 #include "drake/manipulation/kinova_jaco/jaco_status_receiver.h"
-#include "drake/manipulation/util/robot_plan_interpolator.h"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/controllers/pid_controller.h"
 #include "drake/systems/framework/context.h"
@@ -46,7 +46,7 @@ using manipulation::kinova_jaco::JacoCommandSender;
 using manipulation::kinova_jaco::kJacoDefaultArmNumJoints;
 using manipulation::kinova_jaco::kJacoDefaultArmNumFingers;
 using manipulation::kinova_jaco::JacoStatusReceiver;
-using manipulation::util::RobotPlanInterpolator;
+using manipulation::planner::RobotPlanInterpolator;
 
 const char* const kJacoUrdf =
     "drake/manipulation/models/jaco_description/urdf/"

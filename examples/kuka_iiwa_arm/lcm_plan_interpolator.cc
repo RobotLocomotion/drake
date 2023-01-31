@@ -8,8 +8,8 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 
-using manipulation::util::InterpolatorType;
-using manipulation::util::RobotPlanInterpolator;
+using manipulation::planner::InterpolatorType;
+using manipulation::planner::RobotPlanInterpolator;
 using systems::DiagramBuilder;
 
 LcmPlanInterpolator::LcmPlanInterpolator(const std::string& model_path,

@@ -36,8 +36,8 @@ namespace drake {
 namespace examples {
 namespace kuka_iiwa_arm {
 namespace {
-using manipulation::util::InterpolatorType;
-using manipulation::util::RobotPlanInterpolator;
+using manipulation::planner::RobotPlanInterpolator;
+using manipulation::planner::InterpolatorType;
 
 const char kIiwaUrdf[] =
     "drake/manipulation/models/iiwa_description/urdf/"

@@ -1,4 +1,4 @@
-#include "drake/manipulation/util/robot_plan_interpolator.h"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 
 #include <map>
 #include <memory>
@@ -15,7 +15,7 @@
 
 namespace drake {
 namespace manipulation {
-namespace util {
+namespace planner {
 
 using multibody::BodyIndex;
 using multibody::JointIndex;
@@ -235,6 +235,6 @@ systems::EventStatus RobotPlanInterpolator::UpdatePlanOnNewMessage(
   return systems::EventStatus::Succeeded();
 }
 
-}  // namespace util
+}  // namespace planner
 }  // namespace manipulation
 }  // namespace drake

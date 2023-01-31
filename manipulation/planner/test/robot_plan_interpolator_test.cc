@@ -1,4 +1,4 @@
-#include "drake/manipulation/util/robot_plan_interpolator.h"
+#include "drake/manipulation/planner/robot_plan_interpolator.h"
 
 #include <gtest/gtest.h>
 
@@ -7,7 +7,7 @@
 
 namespace drake {
 namespace manipulation {
-namespace util {
+namespace planner {
 namespace {
 
 static const int kNumJoints = 7;
@@ -232,6 +232,6 @@ TEST_P(TrajectoryTestClass, TrajectoryTest) {
 }
 
 }  // namespace
-}  // namespace util
+}  // namespace planner
 }  // namespace manipulation
 }  // namespace drake
