@@ -18,9 +18,8 @@ namespace multibody {
  (and, therefore, Bo). These are the shapes that have symmetry across So along
  each of the axes Sx, Sy, Sz (e.g., geometry::Box, geometry::Sphere, etc.) For
  meshes, it depends on how the mesh is defined. For more discussion on the
- nuances of geometry::Mesh and geometry::Convex calculations
- @ref CalcSpatialInertia(const geometry::TriangleSurfaceMesh<double>&,double)
- "see below".
+ nuances of geometry::Mesh and geometry::Convex calculations refer to the
+ `mesh` overload, below.
 
  Note: Spatial inertia calculations for the geometry::Convex type do not
  currently require that the underlying mesh actually be convex. Although certain
@@ -29,8 +28,7 @@ namespace multibody {
 
  @retval M_BBo_B The spatial inertia of the hypothetical body implied by the
                  given `shape`.
- @throws std::exception if `shape` is an instance of geometry::HalfSpace or
-                        geometry::MeshcatCone.
+ @throws std::exception if `shape` is not supported (e.g., a half space)
  @pydrake_mkdoc_identifier{shape} */
 SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
                                           double density);
