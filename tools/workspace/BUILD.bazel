@@ -100,6 +100,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "spdlog",
     "statsjs",
     "stduuid_internal",
+    "suitesparse_internal",
     "tinyobjloader",
     "tinyxml2_internal",
     "usockets",
@@ -126,12 +127,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": [],
 }) + select({
     "//conditions:default": [
-        "@osqp//:install",
-        "@qdldl//:install",
+        "@osqp_internal//:install",
+        "@qdldl_internal//:install",
     ],
     "//tools:no_osqp": [],
 }) + select({
-    "//conditions:default": ["@scs//:install"],
+    "//conditions:default": ["@scs_internal//:install"],
     "//tools:no_scs": [],
 })
 

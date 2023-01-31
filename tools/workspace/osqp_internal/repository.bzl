@@ -2,7 +2,7 @@
 
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def osqp_repository(
+def osqp_internal_repository(
         name,
         mirrors = None):
     github_archive(

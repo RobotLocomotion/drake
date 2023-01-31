@@ -30,8 +30,8 @@ cc_library(
     defines = [
         "USE_LAPACK=1",
         # Keep the default primitive size of `double` and `int`.  Don't define
-        # 'SFLOAT' nor 'DLONG' unless @qdldl and @osqp are also changed to use
-        # those primitive sizes.
+        # 'SFLOAT' nor 'DLONG' unless @qdldl_internal and @osqp_internal are
+        # also changed to use those primitive sizes.
     ],
     includes = [
         "include",
@@ -51,8 +51,8 @@ cc_library(
     deps = [
         "@blas",
         "@lapack",
-        "@qdldl",
-        "@suitesparse//:amd",
+        "@qdldl_internal//:qdldl",
+        "@suitesparse_internal//:amd",
     ],
 )
 

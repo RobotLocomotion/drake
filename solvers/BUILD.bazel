@@ -918,7 +918,7 @@ drake_cc_variant_library(
     ],
     deps_enabled = [
         "//math:eigen_sparse_triplet",
-        "@osqp",
+        "@osqp_internal//:osqp",
     ],
 )
 
@@ -941,7 +941,7 @@ drake_cc_variant_library(
     deps_enabled = [
         "//common:scope_exit",
         "//math:eigen_sparse_triplet",
-        "@scs//:scsdir",
+        "@scs_internal//:scsdir",
     ],
 )
 

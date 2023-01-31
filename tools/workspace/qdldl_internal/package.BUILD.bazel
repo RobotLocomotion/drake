@@ -22,12 +22,12 @@ cmake_configure_file(
     # https://github.com/osqp/qdldl/blob/v0.1.6/README.md#custom-types-for-integer-floats-and-booleans
     defines = [
         "QDLDL_BOOL_TYPE=unsigned char",
-        # Keep the `int` type sync'd with the @osqp and @scs build.
-        # See drake/tools/workspace/qdldl/README.md.
+        # Keep the `int` type sync'd with the build of @osqp_internal and
+        # @scs_internal. See drake/tools/workspace/qdldl_internal/README.md.
         "QDLDL_INT_TYPE=int",
         "QDLDL_LONG=0",
-        # Keep the `double` type sync'd with the @osqp and @scs build.
-        # See drake/tools/workspace/qdldl/README.md.
+        # Keep the `int` type sync'd with the build of @osqp_internal and
+        # @scs_internal. See drake/tools/workspace/qdldl_internal/README.md.
         "QDLDL_FLOAT_TYPE=double",
         "QDLDL_FLOAT=0",
         # Match this to QDLDL_INT_TYPE above.
