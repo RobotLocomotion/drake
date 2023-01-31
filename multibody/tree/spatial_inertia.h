@@ -197,9 +197,11 @@ class SpatialInertia {
   /// @param[in] p0 position vector p_AB0_E from point A to B0, expressed in E.
   /// @param[in] p1 position vector p_AB1_E from point A to B1, expressed in E.
   /// @param[in] p2 position vector p_AB2_E from point A to B2, expressed in E.
+  /// @param[in] p3 position vector p_AB3_E from point A to B3, expressed in E.
   /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
   /// @note In the common case, point A is Eo (the origin of the expressed-in
   /// frame E). The example below has point A as Wo (origin of world frame W).
+  /// @pre density ≥ 0.
   /// @code{.cc}
   /// double density = 1000;
   /// Vector3<double> p_WoB0_W(1, 0, 0);
@@ -230,6 +232,7 @@ class SpatialInertia {
   /// @param[in] p2 position vector p_B0B2_E from B0 to B2, expressed in E.
   /// @param[in] p3 position vector p_B0B3_E from B0 to B3, expressed in E.
   /// @retval M_BB0_E B's spatial inertia about its vertex B0, expressed in E.
+  /// @pre density ≥ 0.
   /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
   /// triangle with its right-handed normal pointing inward (toward vertex B3).
   /// In other words the volume is positive if  p1.cross(p2).dot(p3) > 0.

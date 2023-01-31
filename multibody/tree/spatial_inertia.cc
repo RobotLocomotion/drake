@@ -123,6 +123,7 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
     const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
     const Vector3<T>& p2, const Vector3<T>& p3) {
+  DRAKE_THROW_UNLESS(density >= 0);
   // This method calculates a tetrahedron B's spatial inertia M_BA about a
   // point A by forming 3 new position vectors, namely the position vectors
   // from B's vertex B0 to vertices B1, B2, B3 (B's other three vertices).
@@ -144,6 +145,9 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
     const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
     const Vector3<T>& p3) {
   DRAKE_THROW_UNLESS(density >= 0);
+  // Note: During mass/inertia property calculations, it can be helpful to order
+  // p1, p2, p3 to intentionally calculate negative mass.
+  // . Prevent the validity checker from rejecting that.
   const T volume = (1.0 / 6.0) * p1.cross(p2).dot(p3);
   const T mass = density * volume;
 
@@ -152,6 +156,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
   const Vector3<T> p_BoBcm = 0.25 * (p1 + p2 + p3);
   const UnitInertia<T> G_BBo =
       UnitInertia<T>::SolidTetrahedronAboutVertex(p1, p2, p3);
+  // Since negative mass is valid for this function, skip_validity_check = true.
   return SpatialInertia<T>(mass, p_BoBcm, G_BBo,
       /* skip_validity_check = */ true);
 }
