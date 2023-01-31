@@ -10,7 +10,7 @@ CXX_FLAGS = [
     "-Werror=attributes",
     "-Werror=cpp",
     "-Werror=deprecated",
-    "-Werror=deprecated-declarations",
+    "-Wno-deprecated-declarations",
     "-Werror=ignored-qualifiers",
     "-Werror=old-style-cast",
     "-Werror=overloaded-virtual",
