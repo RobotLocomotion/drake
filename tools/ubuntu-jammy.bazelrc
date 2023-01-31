@@ -34,3 +34,11 @@ build:clang --action_env=CC=clang-12
 build:clang --action_env=CXX=clang++-12
 build:clang --host_action_env=CC=clang-12
 build:clang --host_action_env=CXX=clang++-12
+
+# Disable unknown build failures unable to get X started in CI.
+# See: https://drakedevelopers.slack.com/archives/C270MN28G/p1675172012911669
+# And: https://github.com/Sentdex/Carla-RL/issues/6
+build --action_env=QT_X11_NO_MITSHM=1
+build --test_env=QT_X11_NO_MITSHM=1
+test --action_env=QT_X11_NO_MITSHM=1
+test --test_env=QT_X11_NO_MITSHM=1
