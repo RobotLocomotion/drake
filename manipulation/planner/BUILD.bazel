@@ -16,51 +16,8 @@ drake_cc_package_library(
     name = "planner",
     visibility = ["//visibility:public"],
     deps = [
-        ":constraint_relaxing_ik",
         ":differential_inverse_kinematics",
         ":differential_inverse_kinematics_integrator",
-        ":robot_plan_interpolator",
-    ],
-)
-
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
-_STUB_HDRS = [
-    "constraint_relaxing_ik.h",
-    "robot_plan_interpolator.h",
-]
-
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
-[
-    genrule(
-        name = "_cp_" + hdr,
-        srcs = ["stub/" + hdr],
-        outs = [hdr],
-        cmd = "cp $< $@",
-        tags = ["nolint"],
-        visibility = ["//visibility:private"],
-    )
-    for hdr in _STUB_HDRS
-]
-
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
-drake_cc_library(
-    name = "constraint_relaxing_ik",
-    hdrs = _STUB_HDRS,
-    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //multibody/inverse_kinematics:constraint_relaxing_ik instead.",  # noqa
-    tags = ["nolint"],
-    deps = [
-        "//multibody/inverse_kinematics:constraint_relaxing_ik",
-    ],
-)
-
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
-drake_cc_library(
-    name = "robot_plan_interpolator",
-    hdrs = _STUB_HDRS,
-    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //manipulation/util:robot_plan_interpolator instead.",  # noqa
-    tags = ["nolint"],
-    deps = [
-        "//manipulation/util:robot_plan_interpolator",
     ],
 )
 
@@ -87,23 +44,6 @@ drake_cc_library(
 )
 
 # === test/ ===
-
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
-drake_cc_googletest(
-    name = "deprecation_test",
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    data = [
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":constraint_relaxing_ik",
-        ":robot_plan_interpolator",
-        "//common:find_resource",
-    ],
-)
 
 drake_cc_googletest(
     name = "differential_inverse_kinematics_test",
