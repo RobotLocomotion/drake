@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 

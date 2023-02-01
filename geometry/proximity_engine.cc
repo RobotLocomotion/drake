@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <fmt/format.h>
 
 #include "drake/common/default_scalars.h"
@@ -51,6 +51,16 @@ using std::vector;
 using symbolic::Expression;
 
 namespace {
+
+// Drake compiles FCL using hidden symbol visibility. To avoid visibility
+// complaints from the compiler, we need to use hidden subclasses for any
+// FCL data types used as member fields of ProximityEngine::Impl. Note
+// that FCL Objects on the stack are fine without worrying about hidden;
+// it's only Impl member fields that cause trouble.
+class FclDynamicAABBTreeCollisionManager
+    : public fcl::DynamicAABBTreeCollisionManager<double> {};
+class MapGeometryIdToFclCollisionObject
+    : public unordered_map<GeometryId, unique_ptr<CollisionObjectd>> {};
 
 // Returns a copy of the given fcl collision geometry; throws an exception for
 // unsupported collision geometry types. This supplements the *missing* cloning
@@ -907,16 +917,16 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   // The BVH of all dynamic geometries; this depends on *all* inputs.
   // TODO(SeanCurtis-TRI): Ultimately, this should probably be a cache entry.
-  fcl::DynamicAABBTreeCollisionManager<double> dynamic_tree_;
+  FclDynamicAABBTreeCollisionManager dynamic_tree_;
 
   // All of the *dynamic* collision elements (spanning all sources).
-  unordered_map<GeometryId, unique_ptr<CollisionObjectd>> dynamic_objects_;
+  MapGeometryIdToFclCollisionObject dynamic_objects_;
 
   // The tree containing all of the anchored geometry.
-  fcl::DynamicAABBTreeCollisionManager<double> anchored_tree_;
+  FclDynamicAABBTreeCollisionManager anchored_tree_;
 
   // All of the *anchored* collision elements (spanning *all* sources).
-  unordered_map<GeometryId, unique_ptr<CollisionObjectd>> anchored_objects_;
+  MapGeometryIdToFclCollisionObject anchored_objects_;
 
   // The mechanism for dictating collision filtering.
   CollisionFilter collision_filter_;

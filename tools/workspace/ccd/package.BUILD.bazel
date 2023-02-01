@@ -37,6 +37,8 @@ CCD_PUBLIC_HEADERS = [
 # Options used when building the ccd code. Handled by cmake in upstream code
 CCD_COPTS = [
     "-Wno-all",
+    # N.B. Because ccd is C code (not C++ code), we can set hidden visibility
+    # globally, rather than laundering it though our vendor_cxx tool.
     "-fvisibility=hidden",
 ]
 
