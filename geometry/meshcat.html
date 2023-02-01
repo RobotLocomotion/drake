@@ -40,7 +40,16 @@
 
     // See https://beej.us/blog/data/javascript-gamepad/ for a tutorial.
     var last_gamepad = {};
+    var gamepads_supported = true;
     function handle_gamepads() {
+      // Check if this browser supports the required API
+      if (navigator.getGamepads === undefined) {
+        if (gamepads_supported) {
+          gamepads_supported = false;
+          console.warn("Gamepads not supported in this browser");
+        }
+        return;
+      }
       let gamepads = navigator.getGamepads();
       let gamepad = {};
       for (let i = 0; i < gamepads.length; i++) {
