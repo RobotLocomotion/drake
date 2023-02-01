@@ -167,6 +167,17 @@ GTEST_TEST(RobotDiagramTest, ContextGetters) {
   EXPECT_NO_THROW(dut->scene_graph().ValidateContext(scene_graph_context));
 }
 
+GTEST_TEST(RobotDiagramTest, Clone) {
+  std::unique_ptr<RobotDiagram<double>> dut = MakeSampleDut()->BuildDiagram();
+  std::unique_ptr<RobotDiagram<double>> copy = System<double>::Clone(*dut);
+
+  // Sanity check: the new plant is part of the new diagram.
+  EXPECT_THAT(copy->GetSystems(), ::testing::Contains(&copy->plant()));
+
+  // The new plant is distinct from the old plant.
+  EXPECT_NE(&copy->plant(), &dut->plant());
+}
+
 }  // namespace
 }  // namespace planning
 }  // namespace drake
