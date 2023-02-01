@@ -11,6 +11,13 @@ Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
 
+# Compress functions onto a single line (when they fit) iff they are defined
+# inline (inside a of class).
+AllowShortFunctionsOnASingleLine: InlineOnly
+
+# Compress lambdas onto a single line iff they are empty.
+AllowShortLambdasOnASingleLine: Empty
+
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
 # headers, and finally the project headers.
@@ -49,9 +56,7 @@ IncludeCategories:
 # Hereafter are the pydrake-specific override settings.
 # -----------------------------------------------------------------------------
 
-# When a function signature's parameters or a function call's arguments need to
-# wrap onto another line, indent by four spaces -- do not whitespace castle all
-# the way over to the open-paren.
+# Avoid widening out code horizontally a lot.
 AlignAfterOpenBracket: DontAlign
 
 # Try to fit onto a single line:
@@ -59,3 +64,6 @@ AlignAfterOpenBracket: DontAlign
 # - member functions defined inside a class;
 # everything else (e.g., free functions) are forced onto multiple lines.
 AllowShortFunctionsOnASingleLine: Inline
+
+# Compress lambdas as much as possible.
+AllowShortLambdasOnASingleLine: All
