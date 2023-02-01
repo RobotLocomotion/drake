@@ -139,9 +139,8 @@ void DrakeLcmLog::DispatchMessageAndAdvanceLog(double current_time) {
     const HandlerFunction& handler = iter->second;
     handler(next_event.data, next_event.datalen);
   }
-  for (const MultichannelHandlerFunction& handler :
-           impl_->multichannel_subscriptions_) {
-    handler(next_event.channel, next_event.data, next_event.datalen);
+  for (const auto& multi_handler : impl_->multichannel_subscriptions_) {
+    multi_handler(next_event.channel, next_event.data, next_event.datalen);
   }
 
   // Advance log.
