@@ -945,6 +945,13 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
     const bool i_is_robot = IsPartOfRobot(BodyIndex(i));
 
     const Body<double>& body_i = get_body(BodyIndex(i));
+
+    // Cache the welded bodies for each body, for use in the inner loop below.
+    std::unordered_set<int> bodies_welded_to_body_i;
+    for (const auto* welded_body : plant().GetBodiesWeldedTo(body_i)) {
+      bodies_welded_to_body_i.insert(welded_body->index());
+    }
+
     const std::vector<GeometryId>& geometries_i =
         plant().GetCollisionGeometriesForBody(body_i);
 
@@ -995,13 +1002,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
       //  and be done.
 
       // If the body pair has a welded path between them, it should be filtered.
-      bool bodies_welded_together = false;
-      for (const auto* welded_body : plant().GetBodiesWeldedTo(body_j)) {
-        if (welded_body->index() == i) {
-          bodies_welded_together = true;
-          break;
-        }
-      }
+      const bool bodies_welded_together = bodies_welded_to_body_i.count(j) > 0;
 
       // Add the filter accordingly.
       if (collisions_filtered) {
