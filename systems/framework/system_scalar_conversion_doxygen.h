@@ -327,6 +327,10 @@ class SpecialDiagram<T> final : public Diagram<T> {
     builder.ExportOutput(integrator->get_output_port());
     builder.BuildInto(this);
   }
+  // Scalar-converting copy constructor.  See @ref system_scalar_conversion.
+  template <typename U>
+  explicit SpecialDiagram(const SpecialDiagram<U>& other)
+      : SpecialDiagram<T>(SystemTypeTag<SpecialDiagram>{}, other) {}
 };
 @endcode
 

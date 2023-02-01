@@ -304,8 +304,7 @@ class SceneGraph final : public systems::LeafSystem<T> {
   /** Constructs a default (empty) scene graph. */
   SceneGraph();
 
-  /** Constructor used for scalar conversions. It should only be used to convert
-   _from_ double _to_ other scalar types.  */
+  /** Constructor used for scalar conversions. */
   template <typename U>
   explicit SceneGraph(const SceneGraph<U>& other);
 

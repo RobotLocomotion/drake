@@ -561,13 +561,6 @@ const GeometryState<T>& SceneGraph<T>::geometry_state(
 }
 
 }  // namespace geometry
-
-namespace systems {
-namespace scalar_conversion {
-template <> struct Traits<geometry::SceneGraph> : public FromDoubleTraits {};
-}  // namespace scalar_conversion
-}  // namespace systems
-
 }  // namespace drake
 
 DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
