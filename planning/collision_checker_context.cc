@@ -20,7 +20,8 @@ T* NonNull(T* pointer) {
 
 CollisionCheckerContext::CollisionCheckerContext(
     const RobotDiagram<double>* model)
-    : CollisionCheckerContext(NonNull(model), model->CreateDefaultContext()) {}
+    : CollisionCheckerContext(NonNull(model), model->CreateDefaultContext()) {
+}
 
 CollisionCheckerContext::~CollisionCheckerContext() = default;
 
@@ -32,7 +33,8 @@ const QueryObject<double>& CollisionCheckerContext::GetQueryObject() const {
 
 CollisionCheckerContext::CollisionCheckerContext(
     const CollisionCheckerContext& other)
-    : CollisionCheckerContext(&other.model_, other.model_context_->Clone()) {}
+    : CollisionCheckerContext(&other.model_, other.model_context_->Clone()) {
+}
 
 unique_ptr<CollisionCheckerContext> CollisionCheckerContext::DoClone() const {
   return unique_ptr<CollisionCheckerContext>(
@@ -46,7 +48,8 @@ CollisionCheckerContext::CollisionCheckerContext(
       model_context_(std::move(model_context)),
       plant_context_(&model_.mutable_plant_context(model_context_.get())),
       scene_graph_context_(
-          &model_.mutable_scene_graph_context(model_context_.get())) {}
+          &model_.mutable_scene_graph_context(model_context_.get())) {
+}
 
 }  // namespace planning
 }  // namespace drake

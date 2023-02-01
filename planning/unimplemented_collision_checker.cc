@@ -17,12 +17,14 @@ namespace {
 
 UnimplementedCollisionChecker::UnimplementedCollisionChecker(
     CollisionCheckerParams params, bool supports_parallel_checking)
-    : CollisionChecker(std::move(params), supports_parallel_checking) {}
+    : CollisionChecker(std::move(params), supports_parallel_checking) {
+}
 
 UnimplementedCollisionChecker::UnimplementedCollisionChecker(
     const UnimplementedCollisionChecker&) = default;
 
-UnimplementedCollisionChecker::~UnimplementedCollisionChecker() {}
+UnimplementedCollisionChecker::~UnimplementedCollisionChecker() {
+}
 
 std::unique_ptr<CollisionChecker> UnimplementedCollisionChecker::DoClone()
     const {
@@ -41,8 +43,8 @@ bool UnimplementedCollisionChecker::DoCheckContextConfigCollisionFree(
 
 std::optional<geometry::GeometryId>
 UnimplementedCollisionChecker::DoAddCollisionShapeToBody(
-    const std::string&, const multibody::Body<double>&,
-    const geometry::Shape&, const math::RigidTransform<double>&) {
+    const std::string&, const multibody::Body<double>&, const geometry::Shape&,
+    const math::RigidTransform<double>&) {
   ThrowNotImplemented(__func__);
 }
 

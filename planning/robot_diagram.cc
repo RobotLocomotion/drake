@@ -26,12 +26,10 @@ constexpr size_t kSceneGraphIndex = 1;
 // @tparam_default_scalar
 // @tparam ChildSystem the subsystem class to extract, e.g., MultibodyPlant.
 // @tparam DiagramOrDiagramBuilder duck type for either a diagram or a builder.
-template <
-  typename T,
-  template <typename> class ChildSystem,
-  template <typename> class DiagramOrDiagramBuilder>
-ChildSystem<T>& DowncastSubsystem(
-    DiagramOrDiagramBuilder<T>* diagram, size_t index) {
+template <typename T, template <typename> class ChildSystem,
+          template <typename> class DiagramOrDiagramBuilder>
+ChildSystem<T>& DowncastSubsystem(DiagramOrDiagramBuilder<T>* diagram,
+                                  size_t index) {
   DRAKE_DEMAND(diagram != nullptr);
   const std::vector<const System<T>*>& items = diagram->GetSystems();
   const auto* child = dynamic_cast<const ChildSystem<T>*>(items.at(index));
@@ -43,10 +41,10 @@ template <typename T>
 RobotDiagram<T>::RobotDiagram(
     std::unique_ptr<DiagramBuilder<T>> diagram_builder)
     : Diagram<T>(SystemTypeTag<RobotDiagram>{}),
-      plant_(DowncastSubsystem<T, MultibodyPlant>(
-          diagram_builder.get(), kPlantIndex)),
-      scene_graph_(DowncastSubsystem<T, SceneGraph>(
-          diagram_builder.get(), kSceneGraphIndex)) {
+      plant_(DowncastSubsystem<T, MultibodyPlant>(diagram_builder.get(),
+                                                  kPlantIndex)),
+      scene_graph_(DowncastSubsystem<T, SceneGraph>(diagram_builder.get(),
+                                                    kSceneGraphIndex)) {
   diagram_builder->BuildInto(this);
   // TODO(jeremy.nimmer) For convenience, we should probably re-export most (or
   // all) of the the subsytems' input and output ports here.
@@ -60,7 +58,8 @@ template <typename U>
 RobotDiagram<T>::RobotDiagram(const RobotDiagram<U>& other)
     : Diagram<T>(other),
       plant_(DowncastSubsystem<T, MultibodyPlant>(this, kPlantIndex)),
-      scene_graph_(DowncastSubsystem<T, SceneGraph>(this, kSceneGraphIndex)) {}
+      scene_graph_(DowncastSubsystem<T, SceneGraph>(this, kSceneGraphIndex)) {
+}
 
 }  // namespace planning
 }  // namespace drake

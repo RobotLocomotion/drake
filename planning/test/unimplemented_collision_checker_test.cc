@@ -25,10 +25,13 @@ class MyUnimplementedCollisionChecker : public UnimplementedCollisionChecker {
 
 GTEST_TEST(UnimplementedCollisionCheckerTest, SmokeTest) {
   CollisionCheckerParams params{
-    .model = RobotDiagramBuilder<double>{}.BuildDiagram(),
-    .robot_model_instances = {default_model_instance()},
-    .configuration_distance_function = [](auto...) { return 0; },
-    .edge_step_size = 0.1,
+      .model = RobotDiagramBuilder<double>{}.BuildDiagram(),
+      .robot_model_instances = {default_model_instance()},
+      .configuration_distance_function =
+          [](auto...) {
+            return 0;
+          },
+      .edge_step_size = 0.1,
   };
 
   // Prove that the class is concrete (no missing overrides).

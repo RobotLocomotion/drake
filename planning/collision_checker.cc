@@ -37,8 +37,8 @@ using multibody::JointIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::world_model_instance;
-using systems::Context;
 using std::move;
+using systems::Context;
 
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
 // LERP for everything else. See the documentation in CollisionChecker's
@@ -46,8 +46,9 @@ using std::move;
 ConfigurationInterpolationFunction
 MakeDefaultConfigurationInterpolationFunction(
     const std::vector<int>& quaternion_dof_start_indices) {
-  return [quaternion_dof_start_indices](
-      const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2, double ratio) {
+  return [quaternion_dof_start_indices](const Eigen::VectorXd& q_1,
+                                        const Eigen::VectorXd& q_2,
+                                        double ratio) {
     // Start with linear interpolation between q_1 and q_2.
     Eigen::VectorXd interpolated_q =
         common_robotics_utilities::math::InterpolateXd(q_1, q_2, ratio);
@@ -74,8 +75,7 @@ std::vector<int> GetQuaternionDofStartIndices(
   for (BodyIndex body_index(0); body_index < plant.num_bodies(); ++body_index) {
     const auto& body = plant.get_body(body_index);
     if (body.has_quaternion_dofs()) {
-      quaternion_dof_start_indices.push_back(
-          body.floating_positions_start());
+      quaternion_dof_start_indices.push_back(body.floating_positions_start());
     }
   }
   return quaternion_dof_start_indices;
@@ -191,13 +191,11 @@ CollisionChecker::MakeStandaloneModelContext() const {
 }
 
 void CollisionChecker::PerformOperationAgainstAllModelContexts(
-    const std::function<void(
-        const RobotDiagram<double>&,
-        CollisionCheckerContext*)>& operation) {
+    const std::function<void(const RobotDiagram<double>&,
+                             CollisionCheckerContext*)>& operation) {
   DRAKE_THROW_UNLESS(operation != nullptr);
-  owned_contexts_.PerformOperationAgainstAllOwnedContexts(
-      model(), operation);
-  standalone_contexts_.PerformOperationAgainstAllStandaloneContexts(
+  owned_contexts_.PerformOperationAgainstAllOwnedContexts(model(), operation);
+  standalone_contexts_.PerformOperationAgainstAllStandaloneContexts(  // BR
       model(), operation);
 }
 
@@ -234,13 +232,10 @@ std::map<std::string, int> CollisionChecker::AddCollisionShapes(
 }
 
 bool CollisionChecker::AddCollisionShapeToFrame(
-    const std::string& group_name,
-    const Frame<double>& frameA,
-    const Shape& shape,
-    const RigidTransform<double>& X_AG) {
+    const std::string& group_name, const Frame<double>& frameA,
+    const Shape& shape, const RigidTransform<double>& X_AG) {
   const Body<double>& bodyA = frameA.body();
-  const RigidTransform<double>& X_BA =
-      frameA.GetFixedPoseInBodyFrame();
+  const RigidTransform<double>& X_BA = frameA.GetFixedPoseInBodyFrame();
   const RigidTransform<double> X_BG = X_BA * X_AG;
   return AddCollisionShapeToBody(group_name, bodyA, shape, X_BG);
 }
@@ -290,8 +285,8 @@ void CollisionChecker::RemoveAllAddedCollisionShapes() {
   geometry_groups_.clear();
 }
 
-std::optional<double>
-CollisionChecker::MaybeGetUniformRobotEnvironmentPadding() const {
+std::optional<double> CollisionChecker::MaybeGetUniformRobotEnvironmentPadding()
+    const {
   // TODO(SeanCurtis-TRI): We have three functions that walk a triangular
   // portion of the padding matrix. Consider unifying the logic for the
   // triangular indices.
@@ -316,8 +311,8 @@ CollisionChecker::MaybeGetUniformRobotEnvironmentPadding() const {
   return check_padding;
 }
 
-std::optional<double>
-CollisionChecker::MaybeGetUniformRobotRobotPadding() const {
+std::optional<double> CollisionChecker::MaybeGetUniformRobotRobotPadding()
+    const {
   std::optional<double> check_padding;
   for (BodyIndex body_index(0); body_index < plant().num_bodies();
        ++body_index) {
@@ -342,10 +337,10 @@ CollisionChecker::MaybeGetUniformRobotRobotPadding() const {
 void CollisionChecker::SetPaddingBetween(BodyIndex bodyA_index,
                                          BodyIndex bodyB_index,
                                          double padding) {
-  DRAKE_THROW_UNLESS(
-      bodyA_index >= 0 && bodyA_index < collision_padding_.rows());
-  DRAKE_THROW_UNLESS(
-      bodyB_index >= 0 && bodyB_index < collision_padding_.rows());
+  DRAKE_THROW_UNLESS(bodyA_index >= 0 &&
+                     bodyA_index < collision_padding_.rows());
+  DRAKE_THROW_UNLESS(bodyB_index >= 0 &&
+                     bodyB_index < collision_padding_.rows());
   DRAKE_THROW_UNLESS(bodyA_index != bodyB_index);
   DRAKE_THROW_UNLESS(std::isfinite(padding));
   DRAKE_THROW_UNLESS(IsPartOfRobot(get_body(bodyA_index)) ||
@@ -434,13 +429,12 @@ void CollisionChecker::SetCollisionFilterMatrix(
   // Now test for consistency.
   ValidateFilteredCollisionMatrix(filter_matrix, __func__);
   filtered_collisions_ = filter_matrix;
-  log()->debug(
-      "Set collision filter matrix to:\n{}", filtered_collisions_);
+  log()->debug("Set collision filter matrix to:\n{}", filtered_collisions_);
   UpdateMaxCollisionPadding();
 }
 
-bool CollisionChecker::IsCollisionFilteredBetween(
-    BodyIndex bodyA_index, BodyIndex bodyB_index) const {
+bool CollisionChecker::IsCollisionFilteredBetween(BodyIndex bodyA_index,
+                                                  BodyIndex bodyB_index) const {
   DRAKE_THROW_UNLESS(bodyA_index >= 0 &&
                      bodyA_index < filtered_collisions_.rows());
   DRAKE_THROW_UNLESS(bodyB_index >= 0 &&
@@ -470,8 +464,8 @@ void CollisionChecker::SetCollisionFilteredBetween(BodyIndex bodyA_index,
 }
 
 void CollisionChecker::SetCollisionFilteredWithAllBodies(BodyIndex body_index) {
-  DRAKE_THROW_UNLESS(
-      body_index >= 0 && body_index < filtered_collisions_.rows());
+  DRAKE_THROW_UNLESS(body_index >= 0 &&
+                     body_index < filtered_collisions_.rows());
   DRAKE_THROW_UNLESS(IsPartOfRobot(body_index));
   filtered_collisions_.row(body_index).setConstant(1);
   filtered_collisions_.col(body_index).setConstant(1);
@@ -520,7 +514,7 @@ void CollisionChecker::SetConfigurationDistanceFunction(
 
 ConfigurationDistanceFunction
 CollisionChecker::MakeStandaloneConfigurationDistanceFunction() const {
-  return [this] (const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2) {
+  return [this](const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2) {
     return this->ComputeConfigurationDistance(q_1, q_2);
   };
 }
@@ -535,25 +529,25 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
   }
   const Eigen::VectorXd test_interpolated_q = interpolation_function(
       GetZeroConfiguration(), GetZeroConfiguration(), 0.0);
-  DRAKE_THROW_UNLESS(
-      test_interpolated_q.size() == GetZeroConfiguration().size());
+  DRAKE_THROW_UNLESS(test_interpolated_q.size() ==
+                     GetZeroConfiguration().size());
   for (int index = 0; index < test_interpolated_q.size(); ++index) {
-    DRAKE_THROW_UNLESS(
-        test_interpolated_q(index) == GetZeroConfiguration()(index));
+    DRAKE_THROW_UNLESS(test_interpolated_q(index) ==
+                       GetZeroConfiguration()(index));
   }
   configuration_interpolation_function_ = interpolation_function;
 }
 
 ConfigurationInterpolationFunction
 CollisionChecker::MakeStandaloneConfigurationInterpolationFunction() const {
-  return [this] (
-      const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2, double ratio) {
+  return [this](const Eigen::VectorXd& q_1, const Eigen::VectorXd& q_2,
+                double ratio) {
     return this->InterpolateBetweenConfigurations(q_1, q_2, ratio);
   };
 }
 
-bool CollisionChecker::CheckEdgeCollisionFree(
-    const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const {
+bool CollisionChecker::CheckEdgeCollisionFree(const Eigen::VectorXd& q1,
+                                              const Eigen::VectorXd& q2) const {
   return CheckContextEdgeCollisionFree(&mutable_model_context(), q1, q2);
 }
 
@@ -575,8 +569,8 @@ bool CollisionChecker::CheckContextEdgeCollisionFree(
   }
 
   const double distance = ComputeConfigurationDistance(q1, q2);
-  const int num_steps = static_cast<int>(
-      std::max(1.0, std::ceil(distance / edge_step_size())));
+  const int num_steps =
+      static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
   for (int step = 0; step < num_steps; ++step) {
     const double ratio =
         static_cast<double>(step) / static_cast<double>(num_steps);
@@ -607,8 +601,8 @@ bool CollisionChecker::CheckEdgeCollisionFreeParallel(
     }
 
     const double distance = ComputeConfigurationDistance(q1, q2);
-    const int num_steps = static_cast<int>(
-        std::max(1.0, std::ceil(distance / edge_step_size())));
+    const int num_steps =
+        static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
     std::atomic<bool> edge_valid(true);
 #if defined(_OPENMP)
 #pragma omp parallel for
@@ -653,8 +647,7 @@ std::vector<uint8_t> CollisionChecker::CheckEdgesCollisionFree(
 
 EdgeMeasure CollisionChecker::MeasureEdgeCollisionFree(
     const Eigen::VectorXd& q1, const Eigen::VectorXd& q2) const {
-  return MeasureContextEdgeCollisionFree(
-      &mutable_model_context(), q1, q2);
+  return MeasureContextEdgeCollisionFree(&mutable_model_context(), q1, q2);
 }
 
 EdgeMeasure CollisionChecker::MeasureContextEdgeCollisionFree(
@@ -662,8 +655,8 @@ EdgeMeasure CollisionChecker::MeasureContextEdgeCollisionFree(
     const Eigen::VectorXd& q2) const {
   DRAKE_THROW_UNLESS(model_context != nullptr);
   const double distance = ComputeConfigurationDistance(q1, q2);
-  const int num_steps = static_cast<int>(
-      std::max(1.0, std::ceil(distance / edge_step_size())));
+  const int num_steps =
+      static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
   double last_valid_ratio = -1.0;
   for (int step = 0; step <= num_steps; ++step) {
     const double ratio =
@@ -683,8 +676,8 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
   // Only perform parallel operations if omp parallel for will use >1 thread.
   if (CanEvaluateInParallel()) {
     const double distance = ComputeConfigurationDistance(q1, q2);
-    const int num_steps = static_cast<int>(
-        std::max(1.0, std::ceil(distance / edge_step_size())));
+    const int num_steps =
+        static_cast<int>(std::max(1.0, std::ceil(distance / edge_step_size())));
     // The "highest" interpolant value, alpha, (uninterrupted from q1) for
     // which there is no collision.
     std::atomic<double> alpha;
@@ -722,8 +715,8 @@ EdgeMeasure CollisionChecker::MeasureEdgeCollisionFreeParallel(
 std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
     const std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>& edges,
     const bool parallelize) const {
-  std::vector<EdgeMeasure> collision_checks(
-      edges.size(), EdgeMeasure(0.0, -1.0));
+  std::vector<EdgeMeasure> collision_checks(edges.size(),
+                                            EdgeMeasure(0.0, -1.0));
 
   const bool check_in_parallel = CanEvaluateInParallel() && parallelize;
   CRU_OMP_PARALLEL_FOR_IF(check_in_parallel)
@@ -739,7 +732,7 @@ std::vector<EdgeMeasure> CollisionChecker::MeasureEdgesCollisionFree(
 RobotClearance CollisionChecker::CalcRobotClearance(
     const Eigen::VectorXd& q, const double influence_distance) const {
   return CalcContextRobotClearance(&mutable_model_context(), q,
-                                      influence_distance);
+                                   influence_distance);
 }
 
 RobotClearance CollisionChecker::CalcContextRobotClearance(
@@ -786,8 +779,8 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
         const std::set<ModelInstanceIndex> sorted_set(
             params.robot_model_instances.begin(),
             params.robot_model_instances.end());
-        const std::vector<ModelInstanceIndex> sorted_vec(
-            sorted_set.begin(), sorted_set.end());
+        const std::vector<ModelInstanceIndex> sorted_vec(sorted_set.begin(),
+                                                         sorted_set.end());
         const ModelInstanceIndex world = world_model_instance();
         for (const auto& robot_model_instance : sorted_vec) {
           DRAKE_THROW_UNLESS(robot_model_instance != world);
@@ -816,8 +809,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
   // Generate the filtered collision matrix.
   nominal_filtered_collisions_ = GenerateFilteredCollisionMatrix();
   filtered_collisions_ = nominal_filtered_collisions_;
-  log()->debug(
-      "Collision filter matrix:\n{}", filtered_collisions_);
+  log()->debug("Collision filter matrix:\n{}", filtered_collisions_);
 }
 
 CollisionChecker::CollisionChecker(const CollisionChecker&) = default;
@@ -850,8 +842,7 @@ void CollisionChecker::AllocateContexts() {
 }
 
 void CollisionChecker::OwnedContextKeeper::AllocateOwnedContexts(
-    const CollisionCheckerContext& prototype_context,
-    const int num_contexts) {
+    const CollisionCheckerContext& prototype_context, const int num_contexts) {
   DRAKE_THROW_UNLESS(num_contexts >= 1);
   DRAKE_THROW_UNLESS(empty());
   for (int index = 0; index < num_contexts; ++index) {
@@ -866,7 +857,7 @@ void CollisionChecker::OwnedContextKeeper::AllocateOwnedContexts(
 
 bool CollisionChecker::CanEvaluateInParallel() const {
   return SupportsParallelChecking() &&
-      common_robotics_utilities::openmp_helpers::GetNumOmpThreads() > 1;
+         common_robotics_utilities::openmp_helpers::GetNumOmpThreads() > 1;
 }
 
 std::string CollisionChecker::CriticizePaddingMatrix() const {
@@ -1053,8 +1044,8 @@ void CollisionChecker::UpdateMaxCollisionPadding() {
   }
 }
 
-void CollisionChecker::ValidatePaddingMatrix(
-    const Eigen::MatrixXd& padding, const char* func) const {
+void CollisionChecker::ValidatePaddingMatrix(const Eigen::MatrixXd& padding,
+                                             const char* func) const {
   const std::string criticism = CriticizePaddingMatrix(padding, func);
   if (!criticism.empty()) {
     throw std::logic_error(criticism);
@@ -1120,12 +1111,11 @@ CollisionChecker::OwnedContextKeeper::OwnedContextKeeper(
   AllocateOwnedContexts(other.prototype_context(), other.num_contexts());
 }
 
-void
-CollisionChecker::OwnedContextKeeper::PerformOperationAgainstAllOwnedContexts(
-    const RobotDiagram<double>& model,
-    const std::function<void(
-        const RobotDiagram<double>&,
-        CollisionCheckerContext*)>& operation) {
+void CollisionChecker::OwnedContextKeeper::
+    PerformOperationAgainstAllOwnedContexts(
+        const RobotDiagram<double>& model,
+        const std::function<void(const RobotDiagram<double>&,
+                                 CollisionCheckerContext*)>& operation) {
   DRAKE_DEMAND(operation != nullptr);
   DRAKE_THROW_UNLESS(allocated());
   for (auto& model_context : model_contexts_) {
@@ -1144,16 +1134,15 @@ void CollisionChecker::StandaloneContextReferenceKeeper::AddStandaloneContext(
       std::weak_ptr<CollisionCheckerContext>(standalone_context));
 }
 
-void CollisionChecker::StandaloneContextReferenceKeeper
-        ::PerformOperationAgainstAllStandaloneContexts(
-    const RobotDiagram<double>& model,
-    const std::function<void(
-        const RobotDiagram<double>&,
-        CollisionCheckerContext*)>& operation) {
+void CollisionChecker::StandaloneContextReferenceKeeper::
+    PerformOperationAgainstAllStandaloneContexts(
+        const RobotDiagram<double>& model,
+        const std::function<void(const RobotDiagram<double>&,
+                                 CollisionCheckerContext*)>& operation) {
   DRAKE_DEMAND(operation != nullptr);
   std::lock_guard<std::mutex> lock(standalone_contexts_mutex_);
   for (auto standalone_context = standalone_contexts_.begin();
-        standalone_context != standalone_contexts_.end();) {
+       standalone_context != standalone_contexts_.end();) {
     auto maybe_context = standalone_context->lock();
     if (maybe_context != nullptr) {
       operation(model, maybe_context.get());
