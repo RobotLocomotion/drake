@@ -938,6 +938,9 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
 
   const auto& inspector = model().scene_graph().model_inspector();
 
+  // Cache the welded bodies for each body, for use in the inner loop below.
+  std::unordered_set<int> bodies_welded_to_body_cache;
+
   // For consistency, (B, B) is always filtered.
   // Loop variables below use `int` for Eigen indexing compatibility.
   for (int i = 0; i < num_bodies; ++i) {
@@ -946,10 +949,14 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
 
     const Body<double>& body_i = get_body(BodyIndex(i));
 
-    // Cache the welded bodies for each body, for use in the inner loop below.
-    std::unordered_set<int> bodies_welded_to_body_i;
-    for (const auto* welded_body : plant().GetBodiesWeldedTo(body_i)) {
-      bodies_welded_to_body_i.insert(welded_body->index());
+    // Update the cache of welded bodies if necessary.
+    // Note: if body i is welded to body i-1, we don't need to update the cache.
+    if (bodies_welded_to_body_cache.count(i) == 0) {
+      bodies_welded_to_body_cache.clear();
+
+      for (const auto* welded_body : plant().GetBodiesWeldedTo(body_i)) {
+        bodies_welded_to_body_cache.insert(welded_body->index());
+      }
     }
 
     const std::vector<GeometryId>& geometries_i =
@@ -965,9 +972,6 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
       }
 
       const Body<double>& body_j = get_body(BodyIndex(j));
-      log()->debug(
-          "Checking if collision is filtered between {} [{}] and {} [{}]",
-          GetScopedName(body_i), i, GetScopedName(body_j), j);
 
       // Check if collisions between the geometries_i are already filtered.
       bool collisions_filtered = false;
@@ -992,17 +996,14 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
         }
       }
 
-      // TODO(sean.curtis) Since #16920 MbP has introduced collision filters
-      //  for welded sub-graphs. This is possibly redundant. Currently, this
-      //  will *replace* collision filters even if SceneGraph erases them
-      //  post finalize. Presumably, that's not the *intent*. This probably
-      //  exists because these welded subgraphs weren't previously handled.
-      //  We can probably remove this logic and simply say, "the nominal
-      //  filters" merely reflect the state of SceneGraph's collision filters
-      //  and be done.
+      // While MbP already filters collisions in SceneGraph between welded
+      // bodies, this is only recorded if both bodies have collision geometries
+      // when this filter is applied. Since we want to handle collision
+      // geometries added later, we must record if bodies are welded together.
 
       // If the body pair has a welded path between them, it should be filtered.
-      const bool bodies_welded_together = bodies_welded_to_body_i.count(j) > 0;
+      const bool bodies_welded_together =
+          bodies_welded_to_body_cache.count(j) > 0;
 
       // Add the filter accordingly.
       if (collisions_filtered) {
