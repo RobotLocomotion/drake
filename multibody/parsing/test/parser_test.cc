@@ -110,6 +110,21 @@ GTEST_TEST(FileParserTest, BasicTest) {
   }
 }
 
+// Load from SDF using a PackageMap URL.
+GTEST_TEST(FileParserTest, UrlTest) {
+  MultibodyPlant<double> plant(0.0);
+  Parser dut(&plant);
+  auto models = dut.AddModelsFromUrl(
+      "package://drake/multibody/benchmarks/acrobot/acrobot.sdf");
+  EXPECT_EQ(models.size(), 1);
+  EXPECT_EQ(plant.GetModelInstanceName(models.at(0)), "acrobot");
+
+  // Check the error message for unsupported schemes.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      dut.AddModelsFromUrl("ftp://l33t.w4r3z/acrobotz.sdf"),
+      ".*unsupported scheme.*");
+}
+
 GTEST_TEST(FileParserTest, LegacyFunctionTest) {
   // Just make sure the legacy spelling "AddAllModelsFromFile" still
   // works. This test can go away when the function is deprecated.

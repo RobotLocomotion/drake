@@ -3,7 +3,6 @@
 #include <string>
 #include <utility>
 
-#include "drake/common/find_resource.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
@@ -92,14 +91,12 @@ void AddBallPlateBodies(
 
   // Add the dinner plate.
   drake::multibody::Parser parser(plant);
-  std::string plate_file_name = FindResourceOrThrow(
-      "drake/examples/hydroelastic/ball_plate/plate_8in.sdf");
-  parser.AddModels(plate_file_name);
+  parser.AddModelsFromUrl(
+      "package://drake/examples/hydroelastic/ball_plate/plate_8in.sdf");
 
   // Add the floor. Assume the frame named "Floor" is in the SDFormat file.
-  std::string floor_file_name =
-      FindResourceOrThrow("drake/examples/hydroelastic/ball_plate/floor.sdf");
-  parser.AddModels(floor_file_name);
+  parser.AddModelsFromUrl(
+      "package://drake/examples/hydroelastic/ball_plate/floor.sdf");
   plant->WeldFrames(plant->world_frame(), plant->GetFrameByName("Floor"),
                     RigidTransformd::Identity());
 

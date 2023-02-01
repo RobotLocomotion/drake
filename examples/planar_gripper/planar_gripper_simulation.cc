@@ -52,7 +52,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/examples/planar_gripper/planar_gripper_lcm.h"
@@ -240,16 +239,16 @@ int DoMain() {
       multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
 
   // Make and add the planar_gripper model.
-  const std::string full_name =
-      FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
+  const std::string gripper_url =
+      "package://drake/examples/planar_gripper/planar_gripper.sdf";
   const ModelInstanceIndex gripper_index =
-      Parser(&plant).AddModels(full_name).at(0);
+      Parser(&plant).AddModelsFromUrl(gripper_url).at(0);
   WeldGripperFrames<double>(&plant);
 
   // Adds the brick to be manipulated.
-  const std::string brick_file_name =
-      FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
-  Parser(&plant).AddModels(brick_file_name);
+  const std::string brick_url =
+      "package://drake/examples/planar_gripper/planar_brick.sdf";
+  Parser(&plant).AddModelsFromUrl(brick_url);
 
   // When the planar-gripper is welded via WeldGripperFrames(), motion always
   // lies in the world Y-Z plane (because the planar-gripper frame is aligned
@@ -276,7 +275,7 @@ int DoMain() {
 
   // Create the controlled plant. Contains only the fingers (no bricks).
   MultibodyPlant<double> control_plant(FLAGS_time_step);
-  Parser(&control_plant).AddModels(full_name);
+  Parser(&control_plant).AddModelsFromUrl(gripper_url);
   WeldGripperFrames<double>(&control_plant);
 
   // Adds a thin floor that can provide friction against the brick.

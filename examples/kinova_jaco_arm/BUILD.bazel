@@ -46,7 +46,6 @@ drake_cc_binary(
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//manipulation/kinova_jaco",

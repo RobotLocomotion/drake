@@ -42,7 +42,6 @@ drake_cc_binary(
     ],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//lcm",
         "//multibody/parsing",
         "//multibody/plant",
