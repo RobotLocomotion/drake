@@ -4434,6 +4434,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
   /// @} <!-- Introspection -->
 
+  // MultibodyGraph is exposed for internal use only.
+  const internal::MultibodyGraph& multibody_graph() const {
+    return multibody_graph_;
+  }
+
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
   using internal::MultibodyTreeSystem<T>::EvalVelocityKinematics;
