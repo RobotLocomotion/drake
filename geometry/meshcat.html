@@ -38,6 +38,17 @@
 
     const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
+    // Gamepad support - first check if the gamepad feature is available
+    const gamepads_supported = !!navigator.getGamepads;
+    if (!gamepads_supported) {
+      if(!window.isSecureContext) {
+        console.warn("Gamepads are not supported outside of a secure context. "
+        + "See https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts"
+        + " for details. Some browsers support localhost and allowlists.");
+      } else {
+        console.warn("Gamepads are not supported in this browser session.");
+      }
+    }
     // See https://beej.us/blog/data/javascript-gamepad/ for a tutorial.
     var last_gamepad = {};
     function handle_gamepads() {
@@ -54,15 +65,15 @@
         // user. We truncate the floating point values to two significant
         // digits to reject this noise.
         gamepad = {
-          'index': gamepads[i].index, 
+          'index': gamepads[i].index,
           'button_values': gamepads[i].buttons.map(
-            a => clamp(Math.round(a.value * 100) / 100, 0, 1)), 
+            a => clamp(Math.round(a.value * 100) / 100, 0, 1)),
           'axes': gamepads[i].axes.map(
             a => clamp(Math.round(a * 100) / 100, -1, 1)),
         };
         break;  // Just take the first connected gamepad.
       }
-      if (this.connection && this.connection.readyState == WebSocket.OPEN && 
+      if (this.connection && this.connection.readyState == WebSocket.OPEN &&
         JSON.stringify(gamepad) !== JSON.stringify(last_gamepad)) {
         this.connection.send(MeshCat.msgpack.encode(
           { 'type': 'gamepad', 'name': '', 'gamepad': gamepad }));
@@ -76,7 +87,9 @@
       realtimeRatePanel.update(latestRealtimeRate*100, 100);
       viewer.animate()
       stats.end();
-      handle_gamepads();
+      if (gamepads_supported) {
+        handle_gamepads();
+      }
       requestAnimationFrame(animate);
     }
 
