@@ -24,9 +24,8 @@ class DrakeSubscriptionInterface;
 
 namespace internal {
 // Used by the drake::lcm::Subscribe() free function to report errors.
-void OnHandleSubscriptionsError(
-    DrakeLcmInterface* lcm,
-    const std::string& error_message);
+void OnHandleSubscriptionsError(DrakeLcmInterface* lcm,
+                                const std::string& error_message);
 }  // namespace internal
 
 /**
@@ -257,7 +256,7 @@ std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
         // throw once it's safe (i.e., once C code is no longer on the stack).
         internal::OnHandleSubscriptionsError(
             lcm, fmt::format("Error from message handler callback on {}: {}",
-                channel, e.what()));
+                             channel, e.what()));
       }
     } else if (on_error) {
       on_error();
@@ -295,10 +294,12 @@ class Subscriber final {
   Subscriber(DrakeLcmInterface* lcm, const std::string& channel,
              std::function<void()> on_error = {}) {
     subscription_ = drake::lcm::Subscribe<Message>(
-        lcm, channel, [data = data_](const Message& message) {
+        lcm, channel,
+        [data = data_](const Message& message) {
           data->message = message;
           data->count++;
-        }, std::move(on_error));
+        },
+        std::move(on_error));
     if (subscription_) {
       subscription_->set_unsubscribe_on_delete(true);
     }
@@ -338,10 +339,9 @@ class Subscriber final {
 /// Convenience function that repeatedly calls `lcm->HandleSubscriptions()`
 /// with a timeout value of `timeout_millis`, until `finished()` returns true.
 /// Returns the total number of messages handled.
-int LcmHandleSubscriptionsUntil(
-    DrakeLcmInterface* lcm,
-    const std::function<bool(void)>& finished,
-    int timeout_millis = 100);
+int LcmHandleSubscriptionsUntil(DrakeLcmInterface* lcm,
+                                const std::function<bool(void)>& finished,
+                                int timeout_millis = 100);
 
 }  // namespace lcm
 }  // namespace drake

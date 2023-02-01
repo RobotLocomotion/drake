@@ -53,11 +53,12 @@ class DrakeLcm::Impl {
 
   // Housekeeping: scrub any deallocated subscriptions.
   void CleanUpOldSubscriptions() {
-    subscriptions_.erase(std::remove_if(
-        subscriptions_.begin(), subscriptions_.end(),
-        [](const auto& weak_subscription) {
-          return weak_subscription.expired();
-        }), subscriptions_.end());
+    subscriptions_.erase(
+        std::remove_if(subscriptions_.begin(), subscriptions_.end(),
+                       [](const auto& weak_subscription) {
+                         return weak_subscription.expired();
+                       }),
+        subscriptions_.end());
   }
 
   const std::string requested_lcm_url_;
@@ -69,10 +70,12 @@ class DrakeLcm::Impl {
   std::string handle_subscriptions_error_message_;
 };
 
-DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
+DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {
+}
 
 DrakeLcm::DrakeLcm(std::string lcm_url)
-    : DrakeLcm(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {}
+    : DrakeLcm(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {
+}
 
 DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
     : impl_(std::make_unique<Impl>(params)) {
@@ -123,7 +126,9 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
     // The argument to subscribeFunction is regex (not a string literal), so
     // we'll need to escape the channel name before calling subscribeFunction.
     char* const channel_regex = g_regex_escape_string(channel.c_str(), -1);
-    ScopeExit guard([channel_regex](){ g_free(channel_regex); });
+    ScopeExit guard([channel_regex]() {
+      g_free(channel_regex);
+    });
 
     return Create(native_instance, channel_regex,
                   [handler = std::move(single_channel_handler)](
@@ -218,10 +223,9 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
   }
 
   // The native LCM stack calls into here.
-  static void NativeCallback(
-      const ::lcm::ReceiveBuffer* buffer,
-      const std::string& channel,
-      DrakeSubscription* self) {
+  static void NativeCallback(const ::lcm::ReceiveBuffer* buffer,
+                             const std::string& channel,
+                             DrakeSubscription* self) {
     DRAKE_DEMAND(buffer != nullptr);
     DRAKE_DEMAND(self != nullptr);
     self->InstanceCallback(channel, buffer);
@@ -284,25 +288,25 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
   impl_->CleanUpOldSubscriptions();
   const std::string& suffix = impl_->channel_suffix_;
   if (!suffix.empty()) {
-    handler =
-        [&suffix, handler](std::string_view channel,
-                           const void* data, int length) {
-          // TODO(ggould-tri) Use string_view::ends_with() once we have C++20.
-          if (channel.length() >= suffix.length() &&
-              channel.substr(channel.length() - suffix.length()) == suffix) {
-            channel.remove_suffix(suffix.length());
-            handler(channel, data, length);
-          } else {
-            drake::log()->debug("DrakeLcm with suffix {} received message on"
-                                " channel {}, which lacks the suffix.",
-                                suffix, channel);
-          }
-        };
+    handler = [&suffix, handler](std::string_view channel, const void* data,
+                                 int length) {
+      // TODO(ggould-tri) Use string_view::ends_with() once we have C++20.
+      if (channel.length() >= suffix.length() &&
+          channel.substr(channel.length() - suffix.length()) == suffix) {
+        channel.remove_suffix(suffix.length());
+        handler(channel, data, length);
+      } else {
+        drake::log()->debug(
+            "DrakeLcm with suffix {} received message on channel {}, which "
+            "lacks the suffix.",
+            suffix, channel);
+      }
+    };
   }
 
   // Add the new subscriber.
-  auto result = DrakeSubscription::CreateMultichannel(
-      &(impl_->lcm_), std::move(handler));
+  auto result =
+      DrakeSubscription::CreateMultichannel(&(impl_->lcm_), std::move(handler));
   if (!impl_->deferred_initialization_) {
     result->AttachIfNeeded();
   }
