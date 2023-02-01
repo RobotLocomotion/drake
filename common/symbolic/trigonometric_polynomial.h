@@ -155,12 +155,5 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
     const symbolic::Polynomial& e, const std::vector<SinCos>& sin_cos,
     const VectorX<symbolic::Variable>& t);
 
-DRAKE_DEPRECATED("2023-02-01",
-                 "Use the other SubstituteStereographicProjection which passes "
-                 "e as a symbolic::Polynomial")
-[[nodiscard]] symbolic::RationalFunction SubstituteStereographicProjection(
-    const symbolic::Expression& e,
-    const std::unordered_map<symbolic::Variable, symbolic::Variable>& subs);
-
 }  // namespace symbolic
 }  // namespace drake

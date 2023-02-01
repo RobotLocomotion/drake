@@ -2296,10 +2296,6 @@ class TestStereographicSubstitution(unittest.TestCase):
             sym.Polynomial((1+ty*ty)*(1+tx*tx)).Expand()))
 
         e = 2 * np.sin(x) + np.sin(y) * np.cos(x)
-        # The following method is deprecated, to be removed on or after
-        # 2023-02-01.
-        with catch_drake_warnings(expected_count=1):
-            r = sym.SubstituteStereographicProjection(e=e, subs={x: tx, y: ty})
         self.assertTrue(r.numerator().Expand().EqualTo(
             sym.Polynomial(4*tx*(1+ty*ty) + 2*ty * (1-tx*tx)).Expand()))
         self.assertTrue(r.denominator().Expand().EqualTo(
