@@ -429,13 +429,35 @@ TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyContext) {
   DRAKE_EXPECT_NO_THROW(context_U->SetTimeStateAndParametersFrom(context_T));
 }
 
+// Tests Clone for a non-double SceneGraph.
+// We'll rely on the lack of any exceptions as the success criterion;
+// the cloning and conversion code has enough fail-fast checks built in.
+TYPED_TEST_P(TypedSceneGraphTest, NonDoubleClone) {
+  using U = TypeParam;
+  std::unique_ptr<SceneGraph<U>> scene_graph_U =
+      System<double>::ToScalarType<U>(this->scene_graph_);
+  std::unique_ptr<SceneGraph<U>> copy;
+  EXPECT_NO_THROW(copy = System<U>::Clone(*scene_graph_U));
+  ASSERT_NE(copy, nullptr);
+}
+
 REGISTER_TYPED_TEST_SUITE_P(TypedSceneGraphTest,
     TransmogrifyWithoutAllocation,
     TransmogrifyPorts,
-    TransmogrifyContext);
+    TransmogrifyContext,
+    NonDoubleClone);
 
 using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, TypedSceneGraphTest, NonDoubleScalarTypes);
+
+// Tests Clone for a non-double SceneGraph.
+// We'll rely on the lack of any exceptions as the success criterion;
+// the cloning and conversion code has enough fail-fast checks built in.
+TEST_F(SceneGraphTest, DoubleClone) {
+  std::unique_ptr<SceneGraph<double>> copy;
+  EXPECT_NO_THROW(copy = System<double>::Clone(scene_graph_));
+  ASSERT_NE(copy, nullptr);
+}
 
 // Tests the model inspector. Exercises a token piece of functionality. The
 // inspector is a wrapper on the GeometryState. It is assumed that GeometryState

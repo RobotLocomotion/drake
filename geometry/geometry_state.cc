@@ -19,6 +19,7 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/utilities.h"
+#include "drake/math/autodiff_gradient.h"
 
 namespace drake {
 namespace geometry {
@@ -135,6 +136,98 @@ GeometryState<T>::GeometryState()
   source_deformable_geometry_id_map_[self_source_] = {};
   source_frame_name_map_[self_source_] = {"world"};
   source_root_frame_map_[self_source_] = {world};
+}
+
+namespace {
+
+// Helper for the scalar-converting copy constructor.
+// Copies the argument to use a different scalar type U => T.
+// See #13618 and related for a possible generic replacement.
+template <typename T, typename U>
+static VectorX<T> ChangeScalarType(const VectorX<U>& other) {
+  if constexpr (std::is_same_v<T, U>) {
+    return other;
+  } else if constexpr (std::is_same_v<U, AutoDiffXd>) {
+    return math::DiscardZeroGradient(other);
+  } else {
+    return ExtractDoubleOrThrow(other);
+  }
+}
+
+// Helper for the scalar-converting copy constructor.
+// Copies the argument to use a different scalar type U => T.
+// See #13618 and related for a possible generic replacement.
+template <typename T, typename U>
+static RigidTransform<T> ChangeScalarType(const RigidTransform<U>& other) {
+  if constexpr (std::is_same_v<T, U>) {
+    return other;
+  } else if constexpr (std::is_same_v<U, AutoDiffXd>) {
+    return RigidTransform<T>(math::DiscardZeroGradient(other.GetAsMatrix34()));
+  } else {
+    return RigidTransform<T>(ExtractDoubleOrThrow(other.GetAsMatrix34()));
+  }
+}
+
+}  // namespace
+
+// It is _vitally_ important that all members are _explicitly_ accounted for
+// (either in the initialization list or in the body). Failure to do so will
+// lead to errors in the converted GeometryState instance.
+template <typename T>
+template <typename U>
+GeometryState<T>::GeometryState(const GeometryState<U>& source)
+    : self_source_(source.self_source_),
+      source_frame_id_map_(source.source_frame_id_map_),
+      source_deformable_geometry_id_map_(
+          source.source_deformable_geometry_id_map_),
+      source_frame_name_map_(source.source_frame_name_map_),
+      source_root_frame_map_(source.source_root_frame_map_),
+      source_names_(source.source_names_),
+      source_anchored_geometry_map_(source.source_anchored_geometry_map_),
+      frames_(source.frames_),
+      geometries_(source.geometries_),
+      frame_index_to_id_map_(source.frame_index_to_id_map_),
+      geometry_engine_(
+          std::move(source.geometry_engine_->template ToScalarType<T>())),
+      render_engines_(source.render_engines_),
+      geometry_version_(source.geometry_version_) {
+  auto convert_pose_vector = [](const std::vector<RigidTransform<U>>& s,
+                                std::vector<RigidTransform<T>>* d) {
+    std::vector<RigidTransform<T>>& dest = *d;
+    dest.resize(s.size());
+    for (size_t i = 0; i < s.size(); ++i) {
+      dest[i] = ChangeScalarType<T>(s[i]);
+    }
+  };
+  // TODO(xuchenhan-tri): The scalar conversion of KinematicsData should be
+  // handled by the KinematicsData class.
+  convert_pose_vector(source.kinematics_data_.X_PFs, &kinematics_data_.X_PFs);
+  convert_pose_vector(source.kinematics_data_.X_WFs, &kinematics_data_.X_WFs);
+
+  // Now convert the id -> pose map.
+  {
+    std::unordered_map<GeometryId, RigidTransform<T>>& dest =
+        kinematics_data_.X_WGs;
+    const std::unordered_map<GeometryId, RigidTransform<U>>& s =
+        source.kinematics_data_.X_WGs;
+    for (const auto& id_pose_pair : s) {
+      const GeometryId id = id_pose_pair.first;
+      const RigidTransform<U>& X_WG_source = id_pose_pair.second;
+      dest.insert({id, ChangeScalarType<T>(X_WG_source)});
+    }
+  }
+
+  // Now convert the id -> configuration map.
+  {
+    std::unordered_map<GeometryId, VectorX<T>>& dest = kinematics_data_.q_WGs;
+    const std::unordered_map<GeometryId, VectorX<U>>& s =
+        source.kinematics_data_.q_WGs;
+    for (const auto& id_configuration_pair : s) {
+      const GeometryId id = id_configuration_pair.first;
+      const VectorX<U>& q_WG_source = id_configuration_pair.second;
+      dest.insert({id, ChangeScalarType<T>(q_WG_source)});
+    }
+  }
 }
 
 template <typename T>
@@ -1176,9 +1269,7 @@ void GeometryState<T>::RenderLabelImage(const ColorRenderCamera& camera,
 }
 
 template <typename T>
-template <typename T1>
-typename std::enable_if_t<!std::is_same_v<T1, symbolic::Expression>,
-                          std::unique_ptr<GeometryState<AutoDiffXd>>>
+std::unique_ptr<GeometryState<AutoDiffXd>>
 GeometryState<T>::ToAutoDiffXd() const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(
       new GeometryState<AutoDiffXd>(*this));
@@ -1693,11 +1784,14 @@ RigidTransformd GeometryState<T>::GetDoubleWorldPose(FrameId frame_id) const {
   return internal::convert_to_double(kinematics_data_.X_WFs[frame.index()]);
 }
 
-// Explicit instantiations.
-template std::unique_ptr<GeometryState<AutoDiffXd>>
-    GeometryState<double>::ToAutoDiffXd<double>() const;
-template std::unique_ptr<GeometryState<AutoDiffXd>>
-    GeometryState<AutoDiffXd>::ToAutoDiffXd<AutoDiffXd>() const;
+// Explicitly instantiate all variations of the scalar-converting constructor.
+using symbolic::Expression;
+template GeometryState<double>::GeometryState(const GeometryState<AutoDiffXd>&);
+template GeometryState<double>::GeometryState(const GeometryState<Expression>&);
+template GeometryState<AutoDiffXd>::GeometryState(const GeometryState<double>&);
+template GeometryState<AutoDiffXd>::GeometryState(const GeometryState<Expression>&);  // NOLINT
+template GeometryState<Expression>::GeometryState(const GeometryState<double>&);
+template GeometryState<Expression>::GeometryState(const GeometryState<AutoDiffXd>&);  // NOLINT
 
 }  // namespace geometry
 }  // namespace drake
