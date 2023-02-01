@@ -1,5 +1,7 @@
 # -*- python -*-
 
+# 2023-06-01 Remove this entire file upon deprecation completion.
+
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -17,17 +19,19 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":constraint_relaxing_ik",
+        ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":robot_plan_interpolator",
     ],
 )
 
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 _STUB_HDRS = [
     "constraint_relaxing_ik.h",
+    "differential_inverse_kinematics.h",
+    "differential_inverse_kinematics_integrator.h",
     "robot_plan_interpolator.h",
 ]
 
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 [
     genrule(
         name = "_cp_" + hdr,
@@ -40,37 +44,65 @@ _STUB_HDRS = [
     for hdr in _STUB_HDRS
 ]
 
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 drake_cc_library(
     name = "constraint_relaxing_ik",
     hdrs = _STUB_HDRS,
-    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //multibody/inverse_kinematics:constraint_relaxing_ik instead.",  # noqa
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-06-01; as a replacement, use //multibody/inverse_kinematics:constraint_relaxing_ik instead.",  # noqa
     tags = [
         "manual",
         "nolint",
     ],
     deps = [
+        "//common:essential",
         "//multibody/inverse_kinematics:constraint_relaxing_ik",
     ],
 )
 
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 drake_cc_library(
-    name = "robot_plan_interpolator",
+    name = "differential_inverse_kinematics",
     hdrs = _STUB_HDRS,
-    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //manipulation/util:robot_plan_interpolator instead.",  # noqa
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-06-01; as a replacement, use //multibody/inverse_kinematics:differential_inverse_kinematics instead.",  # noqa
     tags = [
         "manual",
         "nolint",
     ],
     deps = [
+        "//common:essential",
+        "//multibody/inverse_kinematics:differential_inverse_kinematics",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_integrator",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-06-01; as a replacement, use //multibody/inverse_kinematics:differential_inverse_kinematics_integrator instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//common:essential",
+        "//multibody/inverse_kinematics:differential_inverse_kinematics_integrator",  # noqa
+    ],
+)
+
+drake_cc_library(
+    name = "robot_plan_interpolator",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-06-01; as a replacement, use //manipulation/util:robot_plan_interpolator instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        "//common:essential",
         "//manipulation/util:robot_plan_interpolator",
     ],
 )
 
 # === test/ ===
 
-# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 drake_cc_googletest(
     name = "deprecation_test",
     copts = [
@@ -82,8 +114,13 @@ drake_cc_googletest(
     ],
     deps = [
         ":constraint_relaxing_ik",
+        ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":robot_plan_interpolator",
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
     ],
 )
 
