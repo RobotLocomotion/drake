@@ -145,21 +145,15 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
     const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
     const Vector3<T>& p3) {
   DRAKE_THROW_UNLESS(density >= 0);
-  // The calculations of the volume and mass of a general shape sometimes rely
-  // on decomposing the general shape into many tetrahedrons.  Some of those
-  // tetrahedrons may have negative volume (and mass) due to intentional
-  // ordering p1, p2, p3 (i.e., negative mass is not necessarily a mistake).
-  const T volume = (1.0 / 6.0) * p1.cross(p2).dot(p3);
+  using std::abs;
+  const T volume = (1.0 / 6.0) * abs(p1.cross(p2).dot(p3));
   const T mass = density * volume;
 
-  // Form position vector from tetrahedron B's vertex at Bo to Bcm (B's center
-  // of mass).
+  // Get position from tetrahedron B's vertex at Bo to Bcm (B's center of mass).
   const Vector3<T> p_BoBcm = 0.25 * (p1 + p2 + p3);
   const UnitInertia<T> G_BBo =
       UnitInertia<T>::SolidTetrahedronAboutVertex(p1, p2, p3);
-  // Ensure negative mass, etc. can be a valid possibility for this function.
-  return SpatialInertia<T>(mass, p_BoBcm, G_BBo,
-      /* skip_validity_check = */ true);
+  return SpatialInertia<T>(mass, p_BoBcm, G_BBo);
 }
 
 template <typename T>
