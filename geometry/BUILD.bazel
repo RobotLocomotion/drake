@@ -248,6 +248,7 @@ drake_cc_library(
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
+        "//math:gradient",
     ],
 )
 
