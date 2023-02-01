@@ -58,7 +58,7 @@ RobotDiagram<T>::~RobotDiagram() = default;
 template <typename T>
 template <typename U>
 RobotDiagram<T>::RobotDiagram(const RobotDiagram<U>& other)
-    : Diagram<T>(other),
+    : Diagram<T>(SystemTypeTag<RobotDiagram>{}, other),
       plant_(DowncastSubsystem<T, MultibodyPlant>(this, kPlantIndex)),
       scene_graph_(DowncastSubsystem<T, SceneGraph>(this, kSceneGraphIndex)) {}
 

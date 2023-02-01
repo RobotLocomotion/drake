@@ -257,6 +257,18 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
   /// related to scalar-type conversion support.
   explicit Diagram(SystemScalarConverter converter);
 
+  /// (Advanced) Scalar-converting constructor, for used by derived classes
+  /// that are performing a conversion and also need to supply a `converter`
+  /// that preserves subtypes for additional conversions.
+  ///
+  /// See @ref system_scalar_conversion for detailed background and examples
+  /// related to scalar-type conversion support.
+  template <typename U>
+  Diagram(SystemScalarConverter converter, const Diagram<U>& other)
+      : Diagram(std::move(converter)) {
+    Initialize(other.template ConvertScalarType<T>());
+  }
+
   /// For the subsystem associated with @p witness_func, gets its subcontext
   /// from @p context, passes the subcontext to @p witness_func' Evaluate
   /// method and returns the result. Aborts if the subsystem is not part of
