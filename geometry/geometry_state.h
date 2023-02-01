@@ -625,10 +625,7 @@ class GeometryState {
    scalar values initialized from the current values. If this is invoked on an
    instance already instantiated on AutoDiffXd, it is equivalent to cloning
    the instance.  */
-  template <typename T1 = T>
-  typename std::enable_if_t<!std::is_same_v<T1, symbolic::Expression>,
-                            std::unique_ptr<GeometryState<AutoDiffXd>>>
-  ToAutoDiffXd() const;
+  std::unique_ptr<GeometryState<AutoDiffXd>> ToAutoDiffXd() const;
 
   //@}
 
@@ -637,14 +634,34 @@ class GeometryState {
   template <typename>
   friend class GeometryState;
 
+  // Helper for the scalar-conversion constructor.
+  template <typename U>
+  static math::RigidTransform<T> ConvertScalar(
+      const math::RigidTransform<U>& other) {
+    if constexpr (std::is_same_v<T, U>) {
+      return other;
+    } else {
+      return math::RigidTransform<T>(
+          ExtractDoubleOrThrow(other.GetAsMatrix34()));
+    }
+  }
+
+  // Helper for the scalar-conversion constructor.
+  template <typename U>
+  static Eigen::VectorX<T> ConvertScalar(const Eigen::VectorX<U>& other) {
+    if constexpr (std::is_same_v<T, U>) {
+      return other;
+    } else {
+      return ExtractDoubleOrThrow(other);
+    }
+  }
+
   // Conversion constructor.
   // It is _vitally_ important that all members are _explicitly_ accounted for
   // (either in the initialization list or in the body). Failure to do so will
   // lead to errors in the converted GeometryState instance.
   //
-  // TODO(russt): Move this to the .cc file, support
-  // (T=AutoDiffXd,U=Expression), and remove the enable_if restriction on
-  // ToAutoDiffXd().
+  // TODO(russt): Move this to the .cc file.
   template <typename U>
   explicit GeometryState(const GeometryState<U>& source)
       : self_source_(source.self_source_),
@@ -667,7 +684,7 @@ class GeometryState {
       std::vector<math::RigidTransform<T>>& dest = *d;
       dest.resize(s.size());
       for (size_t i = 0; i < s.size(); ++i) {
-        dest[i] = s[i].template cast<T>();
+        dest[i] = ConvertScalar(s[i]);
       }
     };
     // TODO(xuchenhan-tri): The scalar conversion of KinematicsData should be
@@ -684,7 +701,7 @@ class GeometryState {
       for (const auto& id_pose_pair : s) {
         const GeometryId id = id_pose_pair.first;
         const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
-        dest.insert({id, X_WG_source.template cast<T>()});
+        dest.insert({id, ConvertScalar(X_WG_source)});
       }
     }
 
@@ -696,7 +713,7 @@ class GeometryState {
       for (const auto& id_configuration_pair : s) {
         const GeometryId id = id_configuration_pair.first;
         const VectorX<U>& q_WG_source = id_configuration_pair.second;
-        dest.insert({id, q_WG_source.template cast<T>()});
+        dest.insert({id, ConvertScalar(q_WG_source)});
       }
     }
   }

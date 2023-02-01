@@ -179,6 +179,13 @@ class GeometryStateTester {
       return state_->geometry_version_;
   }
 
+  // Provides acesss to the scalar-converting copy constructor.
+  template <typename U>
+  static std::unique_ptr<GeometryState<T>> CopyGeometryState(
+      const GeometryState<U>& other) {
+    return std::unique_ptr<GeometryState<T>>(new GeometryState<T>(other));
+  }
+
  private:
   GeometryState<T>* state_;
 };
@@ -1011,6 +1018,46 @@ TEST_F(GeometryStateTest, AssignDoubleToScalarType) {
   GeometryStateTester<symbolic::Expression> sym_tester;
   sym_tester.set_state(&sym_state);
   ExpectSuccessfulTransmogrification(sym_tester, gs_tester_);
+}
+
+// This tests the ability to copy a GeometryState<AutoDiffXd> to a
+// GeometryState<double>.
+TEST_F(GeometryStateTest, CopyAutoDiffIntoDouble) {
+  // Prepare the non-double copies of the state.
+  SetUpWithRigidAndDeformableGeometries();
+  GeometryState<AutoDiffXd> ad_state;
+  ad_state = geometry_state_;
+  GeometryStateTester<AutoDiffXd> ad_tester;
+  ad_tester.set_state(&ad_state);
+
+  // Convert.
+  std::unique_ptr<GeometryState<double>> dut =
+    GeometryStateTester<double>::CopyGeometryState(ad_state);
+
+  // Check for equality.
+  GeometryStateTester<double> d_tester;
+  d_tester.set_state(dut.get());
+  ExpectSuccessfulTransmogrification(ad_tester, d_tester);
+}
+
+// This tests the ability to copy a GeometryState<Expression> to a
+// GeometryState<double>.
+TEST_F(GeometryStateTest, CopySymbolicIntoDouble) {
+  // Prepare the non-double copies of the state.
+  SetUpWithRigidAndDeformableGeometries();
+  GeometryState<symbolic::Expression> sym_state;
+  sym_state = geometry_state_;
+  GeometryStateTester<symbolic::Expression> sym_tester;
+  sym_tester.set_state(&sym_state);
+
+  // Convert.
+  std::unique_ptr<GeometryState<double>> dut =
+    GeometryStateTester<double>::CopyGeometryState(sym_state);
+
+  // Check for equality.
+  GeometryStateTester<double> d_tester;
+  d_tester.set_state(dut.get());
+  ExpectSuccessfulTransmogrification(sym_tester, d_tester);
 }
 
 // Uses the single source tree to confirm that the data has migrated properly.

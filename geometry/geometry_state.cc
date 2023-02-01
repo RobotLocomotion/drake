@@ -1176,9 +1176,7 @@ void GeometryState<T>::RenderLabelImage(const ColorRenderCamera& camera,
 }
 
 template <typename T>
-template <typename T1>
-typename std::enable_if_t<!std::is_same_v<T1, symbolic::Expression>,
-                          std::unique_ptr<GeometryState<AutoDiffXd>>>
+std::unique_ptr<GeometryState<AutoDiffXd>>
 GeometryState<T>::ToAutoDiffXd() const {
   return std::unique_ptr<GeometryState<AutoDiffXd>>(
       new GeometryState<AutoDiffXd>(*this));
@@ -1692,12 +1690,6 @@ RigidTransformd GeometryState<T>::GetDoubleWorldPose(FrameId frame_id) const {
   const internal::InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
   return internal::convert_to_double(kinematics_data_.X_WFs[frame.index()]);
 }
-
-// Explicit instantiations.
-template std::unique_ptr<GeometryState<AutoDiffXd>>
-    GeometryState<double>::ToAutoDiffXd<double>() const;
-template std::unique_ptr<GeometryState<AutoDiffXd>>
-    GeometryState<AutoDiffXd>::ToAutoDiffXd<AutoDiffXd>() const;
 
 }  // namespace geometry
 }  // namespace drake
