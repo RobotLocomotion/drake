@@ -43,194 +43,197 @@ PYBIND11_MODULE(trajectory_optimization, m) {
   py::module::import("pydrake.systems.primitives");
   py::module::import("pydrake.solvers");
 
-  py::class_<MultipleShooting> cls(
-      m, "MultipleShooting", doc.MultipleShooting.doc);
-  cls.def("time", &MultipleShooting::time, doc.MultipleShooting.time.doc)
-      .def("prog",
-          overload_cast_explicit<MathematicalProgram&>(&MultipleShooting::prog),
-          py_rvp::reference_internal, doc.MultipleShooting.prog.doc)
-      .def("timestep", &MultipleShooting::timestep, py::arg("index"),
-          doc.MultipleShooting.timestep.doc)
-      .def("fixed_timestep", &MultipleShooting::fixed_timestep,
-          doc.MultipleShooting.fixed_timestep.doc)
-      // TODO(eric.cousineau): The original bindings returned references
-      // instead of copies using VectorXBlock. Restore this once dtype=custom
-      // is resolved.
-      .def(
-          "state",
-          [](const MultipleShooting& self) -> VectorXDecisionVariable {
-            return self.state();
-          },
-          doc.MultipleShooting.state.doc_0args)
-      .def(
-          "state",
-          [](const MultipleShooting& self, int index)
-              -> VectorXDecisionVariable { return self.state(index); },
-          py::arg("index"), doc.MultipleShooting.state.doc_1args)
-      .def(
-          "initial_state",
-          [](const MultipleShooting& self) -> VectorXDecisionVariable {
-            return self.initial_state();
-          },
-          doc.MultipleShooting.initial_state.doc)
-      .def(
-          "final_state",
-          [](const MultipleShooting& self) -> VectorXDecisionVariable {
-            return self.final_state();
-          },
-          doc.MultipleShooting.final_state.doc)
-      .def(
-          "input",
-          [](const MultipleShooting& self) -> VectorXDecisionVariable {
-            return self.input();
-          },
-          doc.MultipleShooting.input.doc_0args)
-      .def(
-          "input",
-          [](const MultipleShooting& self, int index)
-              -> VectorXDecisionVariable { return self.input(index); },
-          py::arg("index"), doc.MultipleShooting.input.doc_1args)
-      .def(
-          "NewSequentialVariable",
-          [](MultipleShooting& self, int rows,
-              const std::string& name) -> VectorXDecisionVariable {
-            return self.NewSequentialVariable(rows, name);
-          },
-          py::arg("rows"), py::arg("name"),
-          doc.MultipleShooting.NewSequentialVariable.doc)
-      .def(
-          "GetSequentialVariableAtIndex",
-          [](const MultipleShooting& self, const std::string& name,
-              int index) -> VectorXDecisionVariable {
-            return self.GetSequentialVariableAtIndex(name, index);
-          },
-          py::arg("name"), py::arg("index"),
-          doc.MultipleShooting.GetSequentialVariableAtIndex.doc)
-      .def(
-          "AddRunningCost",
-          [](MultipleShooting& prog, const symbolic::Expression& g) {
-            prog.AddRunningCost(g);
-          },
-          py::arg("g"), doc.MultipleShooting.AddRunningCost.doc_1args_g)
-      .def(
-          "AddRunningCost",
-          [](MultipleShooting& prog,
-              const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
-            prog.AddRunningCost(g);
-          },
-          py::arg("g"),
-          doc.MultipleShooting.AddRunningCost.doc_1args_constEigenMatrixBase)
-      .def(
-          "AddConstraintToAllKnotPoints",
-          [](MultipleShooting* self, const symbolic::Formula& f) {
-            return self->AddConstraintToAllKnotPoints(f);
-          },
-          py::arg("f"), doc.MultipleShooting.AddConstraintToAllKnotPoints.doc)
-      .def(
-          "AddConstraintToAllKnotPoints",
-          [](MultipleShooting* self,
-              const Eigen::Ref<const VectorX<symbolic::Formula>>& f) {
-            return self->AddConstraintToAllKnotPoints(f);
-          },
-          py::arg("f"),
-          doc.MultipleShooting.AddConstraintToAllKnotPoints.doc_formulas)
-      .def("AddTimeIntervalBounds", &MultipleShooting::AddTimeIntervalBounds,
-          py::arg("lower_bound"), py::arg("upper_bound"),
-          doc.MultipleShooting.AddTimeIntervalBounds.doc)
-      .def("AddEqualTimeIntervalsConstraints",
-          &MultipleShooting::AddEqualTimeIntervalsConstraints,
-          doc.MultipleShooting.AddEqualTimeIntervalsConstraints.doc)
-      .def("AddDurationBounds", &MultipleShooting::AddDurationBounds,
-          py::arg("lower_bound"), py::arg("upper_bound"),
-          doc.MultipleShooting.AddDurationBounds.doc)
-      .def("AddFinalCost",
-          py::overload_cast<const symbolic::Expression&>(
-              &MultipleShooting::AddFinalCost),
-          py::arg("e"), doc.MultipleShooting.AddFinalCost.doc_1args_e)
-      .def("AddFinalCost",
-          py::overload_cast<
-              const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
-              &MultipleShooting::AddFinalCost),
-          py::arg("matrix"), doc.MultipleShooting.AddFinalCost.doc_1args_matrix)
-      .def("AddInputTrajectoryCallback",
-          &MultipleShooting::AddInputTrajectoryCallback, py::arg("callback"),
-          doc.MultipleShooting.AddInputTrajectoryCallback.doc)
-      .def("AddStateTrajectoryCallback",
-          &MultipleShooting::AddStateTrajectoryCallback, py::arg("callback"),
-          doc.MultipleShooting.AddStateTrajectoryCallback.doc)
-      .def("AddCompleteTrajectoryCallback",
-          &MultipleShooting::AddCompleteTrajectoryCallback, py::arg("callback"),
-          py::arg("names"),
-          doc.MultipleShooting.AddCompleteTrajectoryCallback.doc)
-      .def("SetInitialTrajectory", &MultipleShooting::SetInitialTrajectory,
-          py::arg("traj_init_u"), py::arg("traj_init_x"),
-          doc.MultipleShooting.SetInitialTrajectory.doc)
-      .def("GetSampleTimes",
-          overload_cast_explicit<Eigen::VectorXd,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::GetSampleTimes),
-          py::arg("result"),
-          doc.MultipleShooting.GetSampleTimes.doc_1args_h_var_values)
-      .def("GetInputSamples",
-          overload_cast_explicit<Eigen::MatrixXd,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::GetInputSamples),
-          py::arg("result"), doc.MultipleShooting.GetInputSamples.doc)
-      .def("GetStateSamples",
-          overload_cast_explicit<Eigen::MatrixXd,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::GetStateSamples),
-          py::arg("result"), doc.MultipleShooting.GetStateSamples.doc)
-      .def("GetSequentialVariableSamples",
-          overload_cast_explicit<Eigen::MatrixXd,
-              const solvers::MathematicalProgramResult&, const std::string&>(
-              &MultipleShooting::GetSequentialVariableSamples),
-          py::arg("result"), py::arg("name"),
-          doc.MultipleShooting.GetSequentialVariableSamples.doc)
-      .def("ReconstructInputTrajectory",
-          overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::ReconstructInputTrajectory),
-          py::arg("result"),
-          doc.MultipleShooting.ReconstructInputTrajectory.doc)
-      .def("ReconstructStateTrajectory",
-          overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
-              const solvers::MathematicalProgramResult&>(
-              &MultipleShooting::ReconstructStateTrajectory),
-          py::arg("result"),
-          doc.MultipleShooting.ReconstructStateTrajectory.doc);
-  RegisterAddConstraintToAllKnotPoints<solvers::BoundingBoxConstraint>(&cls);
-  RegisterAddConstraintToAllKnotPoints<solvers::LinearEqualityConstraint>(&cls);
-  RegisterAddConstraintToAllKnotPoints<solvers::LinearConstraint>(&cls);
-  RegisterAddConstraintToAllKnotPoints<solvers::Constraint>(&cls);
+  {
+    using Class = MultipleShooting;
+    constexpr auto& cls_doc = doc.MultipleShooting;
+    py::class_<Class> cls(m, "MultipleShooting", cls_doc.doc);
+    cls  // BR
+        .def("time", &Class::time, cls_doc.time.doc)
+        .def("prog", overload_cast_explicit<MathematicalProgram&>(&Class::prog),
+            py_rvp::reference_internal, cls_doc.prog.doc)
+        .def("timestep", &Class::timestep, py::arg("index"),
+            cls_doc.timestep.doc)
+        .def("fixed_timestep", &Class::fixed_timestep,
+            cls_doc.fixed_timestep.doc)
+        // TODO(eric.cousineau): The original bindings returned references
+        // instead of copies using VectorXBlock. Restore this once dtype=custom
+        // is resolved.
+        .def(
+            "state",
+            [](const Class& self) -> VectorXDecisionVariable {
+              return self.state();
+            },
+            cls_doc.state.doc_0args)
+        .def(
+            "state",
+            [](const Class& self, int index) -> VectorXDecisionVariable {
+              return self.state(index);
+            },
+            py::arg("index"), cls_doc.state.doc_1args)
+        .def(
+            "initial_state",
+            [](const Class& self) -> VectorXDecisionVariable {
+              return self.initial_state();
+            },
+            cls_doc.initial_state.doc)
+        .def(
+            "final_state",
+            [](const Class& self) -> VectorXDecisionVariable {
+              return self.final_state();
+            },
+            cls_doc.final_state.doc)
+        .def(
+            "input",
+            [](const Class& self) -> VectorXDecisionVariable {
+              return self.input();
+            },
+            cls_doc.input.doc_0args)
+        .def(
+            "input",
+            [](const Class& self, int index) -> VectorXDecisionVariable {
+              return self.input(index);
+            },
+            py::arg("index"), cls_doc.input.doc_1args)
+        .def(
+            "NewSequentialVariable",
+            [](Class& self, int rows,
+                const std::string& name) -> VectorXDecisionVariable {
+              return self.NewSequentialVariable(rows, name);
+            },
+            py::arg("rows"), py::arg("name"), cls_doc.NewSequentialVariable.doc)
+        .def(
+            "GetSequentialVariableAtIndex",
+            [](const Class& self, const std::string& name,
+                int index) -> VectorXDecisionVariable {
+              return self.GetSequentialVariableAtIndex(name, index);
+            },
+            py::arg("name"), py::arg("index"),
+            cls_doc.GetSequentialVariableAtIndex.doc)
+        .def(
+            "AddRunningCost",
+            [](Class& prog, const symbolic::Expression& g) {
+              prog.AddRunningCost(g);
+            },
+            py::arg("g"), cls_doc.AddRunningCost.doc_1args_g)
+        .def(
+            "AddRunningCost",
+            [](Class& prog,
+                const Eigen::Ref<const MatrixX<symbolic::Expression>>& g) {
+              prog.AddRunningCost(g);
+            },
+            py::arg("g"), cls_doc.AddRunningCost.doc_1args_constEigenMatrixBase)
+        .def(
+            "AddConstraintToAllKnotPoints",
+            [](Class* self, const symbolic::Formula& f) {
+              return self->AddConstraintToAllKnotPoints(f);
+            },
+            py::arg("f"), cls_doc.AddConstraintToAllKnotPoints.doc)
+        .def(
+            "AddConstraintToAllKnotPoints",
+            [](Class* self,
+                const Eigen::Ref<const VectorX<symbolic::Formula>>& f) {
+              return self->AddConstraintToAllKnotPoints(f);
+            },
+            py::arg("f"), cls_doc.AddConstraintToAllKnotPoints.doc_formulas)
+        .def("AddTimeIntervalBounds", &Class::AddTimeIntervalBounds,
+            py::arg("lower_bound"), py::arg("upper_bound"),
+            cls_doc.AddTimeIntervalBounds.doc)
+        .def("AddEqualTimeIntervalsConstraints",
+            &Class::AddEqualTimeIntervalsConstraints,
+            cls_doc.AddEqualTimeIntervalsConstraints.doc)
+        .def("AddDurationBounds", &Class::AddDurationBounds,
+            py::arg("lower_bound"), py::arg("upper_bound"),
+            cls_doc.AddDurationBounds.doc)
+        .def("AddFinalCost",
+            py::overload_cast<const symbolic::Expression&>(
+                &Class::AddFinalCost),
+            py::arg("e"), cls_doc.AddFinalCost.doc_1args_e)
+        .def("AddFinalCost",
+            py::overload_cast<
+                const Eigen::Ref<const MatrixX<symbolic::Expression>>&>(
+                &Class::AddFinalCost),
+            py::arg("matrix"), cls_doc.AddFinalCost.doc_1args_matrix)
+        .def("AddInputTrajectoryCallback", &Class::AddInputTrajectoryCallback,
+            py::arg("callback"), cls_doc.AddInputTrajectoryCallback.doc)
+        .def("AddStateTrajectoryCallback", &Class::AddStateTrajectoryCallback,
+            py::arg("callback"), cls_doc.AddStateTrajectoryCallback.doc)
+        .def("AddCompleteTrajectoryCallback",
+            &Class::AddCompleteTrajectoryCallback, py::arg("callback"),
+            py::arg("names"), cls_doc.AddCompleteTrajectoryCallback.doc)
+        .def("SetInitialTrajectory", &Class::SetInitialTrajectory,
+            py::arg("traj_init_u"), py::arg("traj_init_x"),
+            cls_doc.SetInitialTrajectory.doc)
+        .def("GetSampleTimes",
+            overload_cast_explicit<Eigen::VectorXd,
+                const solvers::MathematicalProgramResult&>(
+                &Class::GetSampleTimes),
+            py::arg("result"), cls_doc.GetSampleTimes.doc_1args_h_var_values)
+        .def("GetInputSamples",
+            overload_cast_explicit<Eigen::MatrixXd,
+                const solvers::MathematicalProgramResult&>(
+                &Class::GetInputSamples),
+            py::arg("result"), cls_doc.GetInputSamples.doc)
+        .def("GetStateSamples",
+            overload_cast_explicit<Eigen::MatrixXd,
+                const solvers::MathematicalProgramResult&>(
+                &Class::GetStateSamples),
+            py::arg("result"), cls_doc.GetStateSamples.doc)
+        .def("GetSequentialVariableSamples",
+            overload_cast_explicit<Eigen::MatrixXd,
+                const solvers::MathematicalProgramResult&, const std::string&>(
+                &Class::GetSequentialVariableSamples),
+            py::arg("result"), py::arg("name"),
+            cls_doc.GetSequentialVariableSamples.doc)
+        .def("ReconstructInputTrajectory",
+            overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
+                const solvers::MathematicalProgramResult&>(
+                &Class::ReconstructInputTrajectory),
+            py::arg("result"), cls_doc.ReconstructInputTrajectory.doc)
+        .def("ReconstructStateTrajectory",
+            overload_cast_explicit<trajectories::PiecewisePolynomial<double>,
+                const solvers::MathematicalProgramResult&>(
+                &Class::ReconstructStateTrajectory),
+            py::arg("result"), cls_doc.ReconstructStateTrajectory.doc);
+    RegisterAddConstraintToAllKnotPoints<solvers::BoundingBoxConstraint>(&cls);
+    RegisterAddConstraintToAllKnotPoints<solvers::LinearEqualityConstraint>(
+        &cls);
+    RegisterAddConstraintToAllKnotPoints<solvers::LinearConstraint>(&cls);
+    RegisterAddConstraintToAllKnotPoints<solvers::Constraint>(&cls);
+  }
 
-  py::class_<DirectCollocation, MultipleShooting>(
-      m, "DirectCollocation", doc.DirectCollocation.doc)
-      .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int, double, double,
-               std::variant<systems::InputPortSelection,
-                   systems::InputPortIndex>,
-               bool>(),
-          py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          py::arg("minimum_timestep"), py::arg("maximum_timestep"),
-          py::arg("input_port_index") =
-              systems::InputPortSelection::kUseFirstInputIfItExists,
-          py::arg("assume_non_continuous_states_are_fixed") = false,
-          doc.DirectCollocation.ctor.doc);
+  {
+    using Class = DirectCollocation;
+    constexpr auto& cls_doc = doc.DirectCollocation;
+    py::class_<Class, MultipleShooting>(m, "DirectCollocation", cls_doc.doc)
+        .def(py::init<const systems::System<double>*,
+                 const systems::Context<double>&, int, double, double,
+                 std::variant<systems::InputPortSelection,
+                     systems::InputPortIndex>,
+                 bool>(),
+            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+            py::arg("minimum_timestep"), py::arg("maximum_timestep"),
+            py::arg("input_port_index") =
+                systems::InputPortSelection::kUseFirstInputIfItExists,
+            py::arg("assume_non_continuous_states_are_fixed") = false,
+            cls_doc.ctor.doc);
+  }
 
-  py::class_<DirectCollocationConstraint, solvers::Constraint,
-      std::shared_ptr<DirectCollocationConstraint>>(
-      m, "DirectCollocationConstraint", doc.DirectCollocationConstraint.doc)
-      .def(py::init<const systems::System<double>&,
-               const systems::Context<double>&,
-               std::variant<systems::InputPortSelection,
-                   systems::InputPortIndex>,
-               bool>(),
-          py::arg("system"), py::arg("context"),
-          py::arg("input_port_index") =
-              systems::InputPortSelection::kUseFirstInputIfItExists,
-          py::arg("assume_non_continuous_states_are_fixed") = false,
-          doc.DirectCollocationConstraint.ctor.doc);
+  {
+    using Class = DirectCollocationConstraint;
+    constexpr auto& cls_doc = doc.DirectCollocationConstraint;
+    py::class_<Class, solvers::Constraint, std::shared_ptr<Class>>(
+        m, "DirectCollocationConstraint", cls_doc.doc)
+        .def(py::init<const systems::System<double>&,
+                 const systems::Context<double>&,
+                 std::variant<systems::InputPortSelection,
+                     systems::InputPortIndex>,
+                 bool>(),
+            py::arg("system"), py::arg("context"),
+            py::arg("input_port_index") =
+                systems::InputPortSelection::kUseFirstInputIfItExists,
+            py::arg("assume_non_continuous_states_are_fixed") = false,
+            cls_doc.ctor.doc);
+  }
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
       py::arg("constraint"), py::arg("timestep"), py::arg("state"),
@@ -242,31 +245,35 @@ PYBIND11_MODULE(trajectory_optimization, m) {
       .def(py::init<double>(), py::arg("value"))
       .def_readwrite("value", &TimeStep::value, doc.TimeStep.value.doc);
 
-  py::class_<DirectTranscription, MultipleShooting>(
-      m, "DirectTranscription", doc.DirectTranscription.doc)
-      .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int,
-               std::variant<systems::InputPortSelection,
-                   systems::InputPortIndex>>(),
-          py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          py::arg("input_port_index") =
-              systems::InputPortSelection::kUseFirstInputIfItExists,
-          doc.DirectTranscription.ctor.doc_4args)
-      .def(py::init<const systems::System<double>*,
-               const systems::Context<double>&, int, TimeStep,
-               std::variant<systems::InputPortSelection,
-                   systems::InputPortIndex>>(),
-          py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-          py::arg("fixed_timestep"),
-          py::arg("input_port_index") =
-              systems::InputPortSelection::kUseFirstInputIfItExists,
-          doc.DirectTranscription.ctor.doc_5args);
+  {
+    using Class = DirectTranscription;
+    constexpr auto& cls_doc = doc.DirectTranscription;
+    py::class_<Class, MultipleShooting> cls(
+        m, "DirectTranscription", doc.DirectTranscription.doc);
+    cls  // BR
+        .def(py::init<const systems::System<double>*,
+                 const systems::Context<double>&, int,
+                 std::variant<systems::InputPortSelection,
+                     systems::InputPortIndex>>(),
+            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+            py::arg("input_port_index") =
+                systems::InputPortSelection::kUseFirstInputIfItExists,
+            cls_doc.ctor.doc_4args)
+        .def(py::init<const systems::System<double>*,
+                 const systems::Context<double>&, int, TimeStep,
+                 std::variant<systems::InputPortSelection,
+                     systems::InputPortIndex>>(),
+            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+            py::arg("fixed_timestep"),
+            py::arg("input_port_index") =
+                systems::InputPortSelection::kUseFirstInputIfItExists,
+            cls_doc.ctor.doc_5args);
+  }
 
   {
     using Class = KinematicTrajectoryOptimization;
     constexpr auto& cls_doc = doc.KinematicTrajectoryOptimization;
-    py::class_<KinematicTrajectoryOptimization>(
-        m, "KinematicTrajectoryOptimization", cls_doc.doc)
+    py::class_<Class>(m, "KinematicTrajectoryOptimization", cls_doc.doc)
         .def(py::init<int, int, int, double>(), py::arg("num_positions"),
             py::arg("num_control_points"), py::arg("spline_order") = 4,
             py::arg("duration") = 1.0, cls_doc.ctor.doc_4args)
