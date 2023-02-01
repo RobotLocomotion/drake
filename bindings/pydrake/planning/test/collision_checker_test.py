@@ -36,7 +36,7 @@ class TestCollisionChecker(unittest.TestCase):
             parent: world
             child: ground::ground_plane_box
         """)
-        builder.mutable_parser().AddModelsFromString(scene_yaml, "dmd.yaml")
+        builder.parser().AddModelsFromString(scene_yaml, "dmd.yaml")
         model_instance_index = builder.plant().GetModelInstanceByName("box")
         robot_diagram = builder.BuildDiagram()
         return (robot_diagram, model_instance_index)

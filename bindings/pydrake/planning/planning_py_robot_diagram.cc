@@ -54,33 +54,33 @@ void DefinePlanningRobotDiagram(py::module m) {
     {
       using Class = RobotDiagramBuilder<T>;
       constexpr auto& cls_doc = doc.RobotDiagramBuilder;
-      auto cls = DefineTemplateClassWithDefault<Class>(
-          m, "RobotDiagramBuilder", GetPyParam<T>(), cls_doc.doc);
+      auto cls = DefineTemplateClassWithDefault<Class>(m, "RobotDiagramBuilder",
+          GetPyParam<T>(),
+          (std::string(cls_doc.doc) +
+              "\n\n"
+              "Note:\n"
+              "    The C++ class defines pairs of sibling methods, e.g.,\n"
+              "    parser() vs mutable_parser(). Since Python does not use\n"
+              "    const-ness, we only provide one of the two siblings here,\n"
+              "    using the shorter method name but still allowing mutation,\n"
+              "    e.g., parser() returns a Parser that *does* allow loading\n"
+              "    models and changing package paths.\n")
+              .c_str());
       cls  // BR
           .def(py::init<double>(), py::arg("time_step") = 0.0, cls_doc.ctor.doc)
-          .def("mutable_builder", &Class::mutable_builder,
-              py_rvp::reference_internal, cls_doc.mutable_builder.doc)
-          .def("builder", &Class::builder, py_rvp::reference_internal,
-              cls_doc.builder.doc);
+          .def("builder", &Class::mutable_builder, py_rvp::reference_internal,
+              cls_doc.mutable_builder.doc);
       if constexpr (std::is_same_v<T, double>) {
         cls  // BR
             .def(
-                "mutable_parser",
-                [](Class& self) { return &self.mutable_parser(); },
-                py_rvp::reference_internal, cls_doc.mutable_parser.doc)
-            .def(
-                "parser", [](const Class& self) { return &self.parser(); },
-                py_rvp::reference_internal, cls_doc.parser.doc);
+                "parser", [](Class& self) { return &self.mutable_parser(); },
+                py_rvp::reference_internal, cls_doc.mutable_parser.doc);
       }
       cls  // BR
-          .def("mutable_plant", &Class::mutable_plant,
-              py_rvp::reference_internal, cls_doc.mutable_plant.doc)
-          .def("plant", &Class::plant, py_rvp::reference_internal,
-              cls_doc.plant.doc)
-          .def("mutable_scene_graph", &Class::mutable_scene_graph,
+          .def("plant", &Class::mutable_plant, py_rvp::reference_internal,
+              cls_doc.mutable_plant.doc)
+          .def("scene_graph", &Class::mutable_scene_graph,
               py_rvp::reference_internal, cls_doc.mutable_scene_graph.doc)
-          .def("scene_graph", &Class::scene_graph, py_rvp::reference_internal,
-              cls_doc.scene_graph.doc)
           .def("IsPlantFinalized", &Class::IsPlantFinalized,
               cls_doc.IsPlantFinalized.doc)
           .def(
