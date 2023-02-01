@@ -19,12 +19,16 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":constraint_relaxing_ik",
+        ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":robot_plan_interpolator",
     ],
 )
 
 _STUB_HDRS = [
     "constraint_relaxing_ik.h",
+    "differential_inverse_kinematics.h",
+    "differential_inverse_kinematics_integrator.h",
     "robot_plan_interpolator.h",
 ]
 
@@ -54,6 +58,33 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "differential_inverse_kinematics",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //multibody/inverse_kinematics:differential_inverse_kinematics instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        "//multibody/inverse_kinematics:differential_inverse_kinematics",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_integrator",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //multibody/inverse_kinematics:differential_inverse_kinematics_integrator instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//multibody/inverse_kinematics:differential_inverse_kinematics_integrator",  # noqa
+    ],
+)
+
+drake_cc_library(
     name = "robot_plan_interpolator",
     hdrs = _STUB_HDRS,
     deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //manipulation/util:robot_plan_interpolator instead.",  # noqa
@@ -79,8 +110,13 @@ drake_cc_googletest(
     ],
     deps = [
         ":constraint_relaxing_ik",
+        ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":robot_plan_interpolator",
         "//common:find_resource",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
     ],
 )
 
