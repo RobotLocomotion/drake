@@ -4434,10 +4434,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
   /// @} <!-- Introspection -->
 
-  // MultibodyGraph is exposed for internal use only.
-  const internal::MultibodyGraph& multibody_graph() const {
-    return multibody_graph_;
-  }
+  // Internal-only access to MultibodyGraph::FindSubgraphsOfWeldedBodies();
+  // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
+  std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;

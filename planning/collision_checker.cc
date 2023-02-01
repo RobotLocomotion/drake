@@ -942,7 +942,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
   std::vector<int> body_subgraph_mapping(num_bodies, -1);
 
   const std::vector<std::set<BodyIndex>> subgraphs =
-      plant().multibody_graph().FindSubgraphsOfWeldedBodies();
+      plant().FindSubgraphsOfWeldedBodies();
 
   for (size_t subgraph_id = 0; subgraph_id < subgraphs.size(); ++subgraph_id) {
     const std::set<BodyIndex>& subgraph = subgraphs.at(subgraph_id);

@@ -3155,6 +3155,12 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
 }
 
 template <typename T>
+std::vector<std::set<BodyIndex>>
+MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
+  return multibody_graph_.FindSubgraphsOfWeldedBodies();
+}
+
+template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& speed_BcAc,
     const CoulombFriction<double>& friction) const {
