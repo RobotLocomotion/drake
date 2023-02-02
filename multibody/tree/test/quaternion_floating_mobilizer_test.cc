@@ -179,6 +179,55 @@ TEST_F(QuaternionFloatingMobilizerTest, CheckExceptionMessage) {
       " All the elements in a quaternion are zero\\.");
 }
 
+TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  const Quaterniond Q_WB(
+      RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
+  mobilizer_->set_quaternion(context_.get(), Q_WB);
+
+  const Vector3d p_WB(1.0, 2.0, 3.0);
+  mobilizer_->set_position(context_.get(), p_WB);
+
+  // Set arbitrary v and MapVelocityToQDot
+  const Vector6<double> v =
+      (Vector6<double>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
+  VectorX<double> qdot(7);
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Compute N.
+  MatrixX<double> N(7, 6);
+  mobilizer_->CalcNMatrix(*context_, &N);
+
+  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  EXPECT_TRUE(CompareMatrices(qdot, N * v, kTolerance,
+                              MatrixCompareType::relative));
+}
+
+TEST_F(QuaternionFloatingMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  const Quaterniond Q_WB(
+      RollPitchYawd(M_PI / 3, -M_PI / 3, M_PI / 5).ToQuaternion());
+  mobilizer_->set_quaternion(context_.get(), Q_WB);
+
+  const Vector3d p_WB(1.0, 2.0, 3.0);
+  mobilizer_->set_position(context_.get(), p_WB);
+
+  // Set arbitrary qdot and MapQDotToVelocity
+  VectorX<double> qdot(7);
+  qdot << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0;
+
+  Vector6<double> v;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
+
+  // Compute Nplus.
+  MatrixX<double> Nplus(6, 7);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
+                              MatrixCompareType::relative));
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

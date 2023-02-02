@@ -100,6 +100,9 @@ TEST_F(WeldMobilizerTest, KinematicMapping) {
   weld_body_to_world_->CalcNplusMatrix(*context_, &N);
 }
 
+// Since the functions involved are no-ops, MapUsesN and MapUsesNPlus
+// tests are not included here.
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

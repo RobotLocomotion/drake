@@ -255,6 +255,43 @@ TEST_F(UniversalMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus, Matrix2d::Identity());
 }
 
+TEST_F(UniversalMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  const Vector2d some_values(1.5, 2.5);
+  mobilizer_->set_angles(context_.get(), some_values);
+
+  // Set arbitrary v and MapVelocityToQDot.
+  Vector2d v(3.5, 4.5);
+  Vector2d qdot;
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Compute N.
+  MatrixX<double> N(2, 2);
+  mobilizer_->CalcNMatrix(*context_, &N);
+
+  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  EXPECT_TRUE(
+      CompareMatrices(qdot, N * v, kTolerance, MatrixCompareType::relative));
+}
+
+TEST_F(UniversalMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  const Vector2d some_values(1.5, 2.5);
+  mobilizer_->set_angles(context_.get(), some_values);
+
+  // Set arbitrary qdot and MapQDotToVelocity.
+  Vector2d qdot(3.5, 4.5);
+  Vector2d v;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
+
+  // Compute Nplus.
+  MatrixX<double> Nplus(2, 2);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_TRUE(CompareMatrices(v, Nplus * qdot, kTolerance,
+                              MatrixCompareType::relative));
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
