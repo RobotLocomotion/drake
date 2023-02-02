@@ -261,7 +261,7 @@ TEST_F(UniversalMobilizerTest, MapUsesN) {
   mobilizer_->set_angles(context_.get(), some_values);
 
   // Set arbitrary v and MapVelocityToQDot.
-  Vector2d v(1.5, 2.5);
+  Vector2d v(3.5, 4.5);
   Vector2d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
 
@@ -280,7 +280,7 @@ TEST_F(UniversalMobilizerTest, MapUsesNplus) {
   mobilizer_->set_angles(context_.get(), some_values);
 
   // Set arbitrary qdot and MapQDotToVelocity.
-  Vector2d qdot(1.5, 2.5);
+  Vector2d qdot(3.5, 4.5);
   Vector2d v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
 

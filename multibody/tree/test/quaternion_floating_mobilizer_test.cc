@@ -190,7 +190,7 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
 
   // Set arbitrary v and MapVelocityToQDot
   const Vector6<double> v =
-      (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
+      (Vector6<double>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();
   VectorX<double> qdot(7);
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
 

@@ -227,7 +227,7 @@ TEST_F(RevoluteMobilizerTest, MapUsesN) {
   mobilizer_->set_angle(context_.get(), 1.5);
 
   // Set arbitrary v and MapVelocityToQDot
-  Vector1d v(1.5);
+  Vector1d v(2.5);
   Vector1d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
 
@@ -244,7 +244,7 @@ TEST_F(RevoluteMobilizerTest, MapUsesNplus) {
   mobilizer_->set_angle(context_.get(), 1.5);
 
   // Set arbitrary qdot and MapQDotToVelocity
-  Vector1d qdot(1.5);
+  Vector1d qdot(2.5);
   Vector1d v;
   mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
 
