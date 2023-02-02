@@ -768,6 +768,20 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       CompareMatrices(screw_joint.acceleration_upper_limits(), inf));
 }
 
+// Custom planar joints were not necessary, but long supported. See #18730.
+TEST_F(UrdfParserTest, LegacyPlanarJointAsCustomTest) {
+  constexpr const char* model = R"""(
+    <robot name='a'>
+      <link name="link1"/>
+      <link name="link2"/>
+      <drake:joint name="planar_joint" type="planar">
+        <parent link="link1"/>
+        <child link="link2"/>
+      </drake:joint>
+    </robot>)""";
+  EXPECT_NE(AddModelFromUrdfString(model, ""), std::nullopt);
+}
+
 TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
   // Improperly declared joints.
   const std::string full_name_mismatch_1 = FindResourceOrThrow(
