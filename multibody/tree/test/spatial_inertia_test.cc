@@ -259,8 +259,8 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   const Vector3<double> p_B0Bcm = 0.25 * (p1 + p2 + p3);
   const UnitInertia<double> G_BB0 =
       UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p2, p3);
-  SpatialInertia<double> M_BB0_expected(mass, p_B0Bcm, G_BB0);
-  SpatialInertia<double> M_BB0 =
+  const SpatialInertia<double> M_BB0_expected(mass, p_B0Bcm, G_BB0);
+  const SpatialInertia<double> M_BB0 =
       SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           density, p1, p2, p3);
 
