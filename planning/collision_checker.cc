@@ -957,6 +957,9 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
     filtered_collisions(i, i) = -1;
 
     const int body_i_subgraph_id = body_subgraph_mapping.at(i);
+    // We expect FindSubgraphsOfWeldedBodies to cover all bodies, but check to
+    // make sure no bodies are left with the default subgraph id.
+    DRAKE_DEMAND(body_i_subgraph_id >= 0);
 
     const bool i_is_robot = IsPartOfRobot(BodyIndex(i));
 
