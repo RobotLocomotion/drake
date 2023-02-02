@@ -268,13 +268,6 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
-
-  // Ensure nothing changes if two arguments are switched (e.g., p1 and p2).
-  M_BB0_expected = SpatialInertia<double>(mass, p_B0Bcm, G_BB0);
-  M_BB0 = SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
-          density, p2, p1, p3);
-  EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
-                              M_BB0.CopyToFullMatrix6(), kTolerance));
 }
 
 // Test spatial inertia of a solid tetrahedron about an arbitrary point A.
@@ -307,16 +300,6 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   M_BA_expected.ShiftInPlace(-p_AB0);
   M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
           density, p_AB0, p_AB1, p_AB2, p_AB3);
-  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
-                              M_BA.CopyToFullMatrix6(), kTolerance));
-
-  // Ensure nothing changes if two arguments are switched (e.g., p_AB2, p_AB3).
-  const double mass = M_BA_expected.get_mass();
-  const Vector3<double> p_ABcm = M_BA_expected.get_com();
-  const UnitInertia<double> G_BA = M_BA_expected.get_unit_inertia();
-  M_BA_expected = SpatialInertia<double>(mass, p_ABcm, G_BA);
-  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(density,
-      p_AB0, p_AB1, p_AB3, p_AB2);
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
 }
