@@ -79,7 +79,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
 
  protected:
   PackageMap package_map_;
-  MultibodyPlant<double> plant_{0.0};
+  MultibodyPlant<double> plant_{0.1};
   SceneGraph<double> scene_graph_;
 };
 
@@ -326,6 +326,103 @@ TEST_F(UrdfParserTest, JointTypeUnknown) {
     </robot>)""", ""), std::nullopt);
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Joint 'joint' has unrecognized type: 'who'"));
+}
+
+TEST_F(UrdfParserTest, MimicNoSap) {
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='joint' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <mimic/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(
+          ".*Mimic elements are currently only supported by MultibodyPlant "
+          "with a discrete time step and using DiscreteContactSolver::kSap."));
+}
+
+TEST_F(UrdfParserTest, MimicNoJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='joint' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <mimic/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint' mimic element is missing the "
+                           "required 'joint' attribute."));
+}
+
+TEST_F(UrdfParserTest, MimicBadJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child'/>
+      <joint name='joint' type='revolute'>
+        <parent link='parent'/>
+        <child link='child'/>
+        <mimic joint='nonexistent'/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint' mimic element specifies joint "
+                           "'nonexistent' which does not exist."));
+}
+
+TEST_F(UrdfParserTest, MimicMismatchedJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='fixed'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='revolute'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0'/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(TakeError(),
+              MatchesRegex(".*Joint 'joint1' which has 1 DOF cannot mimic "
+                           "joint 'joint0' which has 0 DOF."));
+}
+
+TEST_F(UrdfParserTest, MimicMultiDOFJoint) {
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
+  EXPECT_NE(AddModelFromUrdfString(R"""(
+    <robot name='a'>
+      <link name='parent'/>
+      <link name='child0'/>
+      <link name='child1'/>
+      <joint name='joint0' type='fixed'>
+        <parent link='parent'/>
+        <child link='child0'/>
+      </joint>
+      <joint name='joint1' type='fixed'>
+        <parent link='parent'/>
+        <child link='child1'/>
+        <mimic joint='joint0'/>
+      </joint>
+    </robot>)""", ""), std::nullopt);
+  EXPECT_THAT(
+      TakeWarning(),
+      MatchesRegex(".*Joint 'joint1' mimic element is only supported for "
+                   "single-dof joints. This mimic element will be ignored."));
 }
 
 TEST_F(UrdfParserTest, Material) {
@@ -592,6 +689,8 @@ TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
 }
 
 TEST_F(UrdfParserTest, JointParsingTest) {
+  // We currently need kSap for the mimic element to parse without error.
+  plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/urdf_parser_test/"
       "joint_parsing_test.urdf");
@@ -766,6 +865,12 @@ TEST_F(UrdfParserTest, JointParsingTest) {
       CompareMatrices(screw_joint.acceleration_lower_limits(), neg_inf));
   EXPECT_TRUE(
       CompareMatrices(screw_joint.acceleration_upper_limits(), inf));
+
+  // Revolute joint with mimic
+  DRAKE_EXPECT_NO_THROW(plant_.GetJointByName("revolute_joint_with_mimic"));
+  // TODO(russt): Test coupler constraint properties once constraint getters are
+  // provided by MultibodyPlant (currently a TODO in multibody_plant.h).
+  EXPECT_EQ(plant_.num_constraints(), 1);
 }
 
 TEST_F(UrdfParserTest, JointParsingTagMismatchTest) {
@@ -1472,8 +1577,8 @@ TEST_F(UrdfParserTest, UnsupportedLinkTypeIgnored) {
 }
 
 TEST_F(UrdfParserTest, UnsupportedJointStuffIgnored) {
-  const std::array<std::string, 3> tags{
-    "calibration", "mimic", "safety_controller"};
+  const std::array<std::string, 2> tags{
+    "calibration", "safety_controller"};
   for (const auto& tag : tags) {
     EXPECT_NE(AddModelFromUrdfString(fmt::format(R"""(
     <robot>
