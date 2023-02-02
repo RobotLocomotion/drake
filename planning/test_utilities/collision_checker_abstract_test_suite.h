@@ -21,7 +21,7 @@ namespace planning {
 namespace test {
 
 /* All abstract tests assume the same model; an iiwa welded to a ground plane.
-*/
+ */
 multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene();
 
 /* All abstract tests assume some common constructor parameters for checkers. */
@@ -55,7 +55,7 @@ a collision checker of some derived type, and options that tests may need to
 adapt to the checker. */
 struct CollisionCheckerTestParams {
   std::shared_ptr<CollisionChecker> checker;
-  bool supports_added_world_obstacles{true};   // Most do, some don't.
+  bool supports_added_world_obstacles{true};  // Most do, some don't.
   // Some derived classes may benefit from more thread stress testing than
   // others; the default here provides relatively light stress.
   int thread_stress_iterations{10};
