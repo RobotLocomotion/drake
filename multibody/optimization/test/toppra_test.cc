@@ -4,6 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/solvers/gurobi_solver.h"
@@ -274,6 +275,116 @@ TEST_F(IiwaToppraTest, FrameTranslationalSpeedLimit) {
   EXPECT_LT(speed, upper_bound + tol);
 }
 
+// Tests (non-)error responses based on the (non-)overlapping of limit and
+// path domains.
+TEST_F(IiwaToppraTest, FrameTranslationalSpeedLimitTrajectoryOverlap) {
+  const double upper_bound = 1.1;
+  const Eigen::MatrixXd upper_bound_mat =
+      Vector1<double>::Constant(upper_bound);
+  const std::vector samples{upper_bound_mat, upper_bound_mat};
+  const auto& frame = iiwa_plant_->GetFrameByName("iiwa_link_7");
+
+  const double path_start = path_.start_time();
+  const double path_end = path_.end_time();
+
+  {
+    // Limit domain lies "above" path domain.
+    const std::vector<double> breaks{path_end + 0.1, path_end + 1.1};
+    const auto upper_bound_traj =
+        PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameTranslationalSpeedLimit(frame, upper_bound_traj),
+        fmt::format(".* can't add a trajectory translational speed .* limit "
+                    "domain \\[{}, {}\\].* path domain \\[{}, {}\\].",
+                    breaks[0], breaks[1], path_start, path_end));
+  }
+  {
+    // Limit domain lies "below" path domain.
+    const std::vector<double> breaks{path_start - 1.1, path_start - 0.1};
+    const auto upper_bound_traj =
+        PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameTranslationalSpeedLimit(frame, upper_bound_traj),
+        ".* can't add a trajectory translational speed .* limit .*");
+  }
+
+  {
+    // Overlap at the lower range of the path domain is valid.
+    const std::vector<double> breaks{path_start - 1.1,
+                                     (path_start + path_end) / 2};
+    const auto upper_bound_traj =
+        PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+    EXPECT_NO_THROW(
+        toppra_->AddFrameTranslationalSpeedLimit(frame, upper_bound_traj));
+  }
+
+  {
+    // Overlap at the upper range of the path domain is valid.
+    const std::vector<double> breaks{(path_start + path_end) / 2,
+                                     path_end + 1.1};
+    const auto upper_bound_traj =
+        PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+    EXPECT_NO_THROW(
+        toppra_->AddFrameTranslationalSpeedLimit(frame, upper_bound_traj));
+  }
+}
+
+// TODO(SeanCurtis-TRI): Create a test to validate the time-varying impact
+// of the trajectory. Perhaps it would be enough to examine the returned
+// constraint for evidence. Look into x_bounds_ to see the bounding values.
+
+TEST_F(IiwaToppraTest, FrameTranslationalSpeedLimitTrajectory) {
+  // We create a trajectory equivalent to the global constant limit and we
+  // should get the same result.
+  const std::vector<double> breaks{path_.start_time(), path_.end_time()};
+  const double upper_bound = 1.1;
+  const Eigen::MatrixXd upper_bound_mat =
+      Vector1<double>::Constant(upper_bound);
+  const std::vector samples{upper_bound_mat, upper_bound_mat};
+  const auto upper_bound_traj =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+  const auto& frame = iiwa_plant_->GetFrameByName("iiwa_link_7");
+
+  toppra_->AddFrameTranslationalSpeedLimit(frame, upper_bound_traj);
+  toppra_->AddJointAccelerationLimit(Eigen::VectorXd::Constant(7, -10),
+                                     Eigen::VectorXd::Constant(7, 10));
+
+  auto result = toppra_->SolvePathParameterization();
+  ASSERT_TRUE(result);
+  auto s_path = result.value();
+
+  // This tolerance was tuned to work with the given gridpoints.
+  const double tol = 1e-14;
+  for (int ii = 0; ii < s_path.get_number_of_segments(); ii++) {
+    const auto s = s_path.scalarValue(s_path.start_time(ii));
+    const auto s_dot = s_path.EvalDerivative(s_path.start_time(ii), 1);
+    const auto dq_ds = path_.EvalDerivative(s, 1);
+    const auto position = path_.value(s);
+    const auto velocity = dq_ds * s_dot;
+
+    iiwa_plant_->SetPositions(plant_context_.get(), position);
+    iiwa_plant_->SetVelocities(plant_context_.get(), velocity);
+    const auto frame_velocity =
+        frame.CalcSpatialVelocityInWorld(*plant_context_);
+    const double speed = frame_velocity.translational().norm();
+
+    EXPECT_LT(speed, upper_bound + tol);
+  }
+
+  const auto s = s_path.scalarValue(s_path.end_time());
+  const auto s_dot = s_path.EvalDerivative(s_path.end_time(), 1);
+  const auto dq_ds = path_.EvalDerivative(s, 1);
+  const auto position = path_.value(s);
+  const auto velocity = dq_ds * s_dot;
+
+  iiwa_plant_->SetPositions(plant_context_.get(), position);
+  iiwa_plant_->SetVelocities(plant_context_.get(), velocity);
+  const auto frame_velocity = frame.CalcSpatialVelocityInWorld(*plant_context_);
+  const double speed = frame_velocity.translational().norm();
+
+  EXPECT_LT(speed, upper_bound + tol);
+}
+
 TEST_F(IiwaToppraTest, FrameAccelerationLimit) {
   Eigen::VectorXd lower_bound(6);
   lower_bound << -1.1, -1.2, -1.3, -1.4, -1.5, -1.6;
@@ -282,6 +393,187 @@ TEST_F(IiwaToppraTest, FrameAccelerationLimit) {
   const auto& frame = iiwa_plant_->GetFrameByName("iiwa_link_7");
 
   toppra_->AddFrameAccelerationLimit(frame, lower_bound, upper_bound);
+
+  auto result = toppra_->SolvePathParameterization();
+  ASSERT_TRUE(result);
+  auto s_path = result.value();
+
+  // This tolerance was tuned to work with the given gridpoints.
+  const double tol = 1e-14;
+  Eigen::MatrixXd J(6, 7);
+  Eigen::VectorXd J_dot_v(6);
+  Eigen::VectorXd frame_acceleration(6);
+  for (int ii = 0; ii < s_path.get_number_of_segments(); ii++) {
+    const auto s = s_path.scalarValue(s_path.start_time(ii));
+    const auto s_dot = s_path.EvalDerivative(s_path.start_time(ii), 1);
+    const auto s_ddot = s_path.EvalDerivative(s_path.start_time(ii), 2);
+    const auto dq_ds = path_.EvalDerivative(s, 1);
+    const auto ddq_dds = path_.EvalDerivative(s, 2);
+    const auto position = path_.value(s);
+    const auto velocity = dq_ds * s_dot;
+    const auto acceleration = dq_ds * s_ddot + ddq_dds * s_dot * s_dot;
+
+    iiwa_plant_->SetPositions(plant_context_.get(), position);
+    iiwa_plant_->SetVelocities(plant_context_.get(), velocity);
+    iiwa_plant_->CalcJacobianSpatialVelocity(
+        *plant_context_, JacobianWrtVariable::kQDot, frame,
+        Eigen::Vector3d::Zero(), iiwa_plant_->world_frame(),
+        iiwa_plant_->world_frame(), &J);
+    J_dot_v = iiwa_plant_
+                  ->CalcBiasSpatialAcceleration(
+                      *plant_context_, JacobianWrtVariable::kV, frame,
+                      Eigen::Vector3d::Zero(), iiwa_plant_->world_frame(),
+                      iiwa_plant_->world_frame())
+                  .get_coeffs();
+    frame_acceleration = J * acceleration + J_dot_v;
+
+    EXPECT_TRUE(
+        (frame_acceleration.array() >= lower_bound.array() - tol).all());
+    EXPECT_TRUE(
+        (frame_acceleration.array() <= upper_bound.array() + tol).all());
+  }
+
+  const auto s = s_path.scalarValue(s_path.end_time());
+  const auto s_dot = s_path.EvalDerivative(s_path.end_time(), 1);
+  const auto s_ddot = s_path.EvalDerivative(s_path.end_time(), 2);
+  const auto dq_ds = path_.EvalDerivative(s, 1);
+  const auto ddq_dds = path_.EvalDerivative(s, 2);
+  const auto position = path_.value(s);
+  const auto velocity = dq_ds * s_dot;
+  const auto acceleration = dq_ds * s_ddot + ddq_dds * s_dot * s_dot;
+
+  iiwa_plant_->SetPositions(plant_context_.get(), position);
+  iiwa_plant_->SetVelocities(plant_context_.get(), velocity);
+  iiwa_plant_->CalcJacobianSpatialVelocity(
+      *plant_context_, JacobianWrtVariable::kQDot, frame,
+      Eigen::Vector3d::Zero(), iiwa_plant_->world_frame(),
+      iiwa_plant_->world_frame(), &J);
+  J_dot_v = iiwa_plant_
+                ->CalcBiasSpatialAcceleration(
+                    *plant_context_, JacobianWrtVariable::kV, frame,
+                    Eigen::Vector3d::Zero(), iiwa_plant_->world_frame(),
+                    iiwa_plant_->world_frame())
+                .get_coeffs();
+  frame_acceleration = J * acceleration + J_dot_v;
+
+  EXPECT_TRUE((frame_acceleration.array() >= lower_bound.array() - tol).all());
+  EXPECT_TRUE((frame_acceleration.array() <= upper_bound.array() + tol).all());
+}
+
+// Tests (non-)error responses based on the (non-)overlapping of limit and
+// path domains.
+TEST_F(IiwaToppraTest, FrameAccelerationLimitTrajectoryOverlap) {
+  Eigen::VectorXd lower_bound(6);
+  lower_bound << -1.1, -1.2, -1.3, -1.4, -1.5, -1.6;
+  const std::vector<MatrixX<double>> lower_samples{lower_bound, lower_bound};
+
+  Eigen::VectorXd upper_bound(6);
+  upper_bound << 2.1, 2.2, 2.3, 2.4, 2.5, 2.6;
+  const std::vector<MatrixX<double>> upper_samples{upper_bound, upper_bound};
+
+  const auto& frame = iiwa_plant_->GetFrameByName("iiwa_link_7");
+
+  const double path_start = path_.start_time();
+  const double path_end = path_.end_time();
+  const std::vector<double> big_breaks{path_start - 0.1, path_end +  0.1};
+
+  const auto lower_bigger =
+      PiecewisePolynomial<double>::ZeroOrderHold(big_breaks, lower_samples);
+  const auto upper_bigger =
+      PiecewisePolynomial<double>::ZeroOrderHold(big_breaks, upper_samples);
+
+  {
+    // Limit domain lies "above" path domain.
+    const std::vector<double> bad_breaks{path_end + 0.1, path_end + 1.1};
+    const auto lower_bad =
+        PiecewisePolynomial<double>::ZeroOrderHold(bad_breaks, lower_samples);
+    const auto upper_bad =
+        PiecewisePolynomial<double>::ZeroOrderHold(bad_breaks, upper_samples);
+
+    // Just for lower.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameAccelerationLimit(frame, lower_bad, upper_bigger),
+        fmt::format(".* can't add a trajectory frame acceleration .* lower "
+                    "limit domain \\[{}, {}\\].* upper limit domain "
+                    "\\[{}, {}\\] .* path domain \\[{}, {}\\].",
+                    bad_breaks[0], bad_breaks[1], big_breaks[0],
+                    big_breaks[1], path_start, path_end));
+
+    // Just for upper.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameAccelerationLimit(frame, lower_bigger, upper_bad),
+        ".* can't add a trajectory frame acceleration .*");
+
+    // Both.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameAccelerationLimit(frame, lower_bad, upper_bad),
+        ".* can't add a trajectory frame acceleration .*");
+  }
+
+  {
+    // Limit domain lies "below" path domain.
+    const std::vector<double> bad_breaks{path_start - 1, path_start - 0.1};
+    const auto lower_bad =
+        PiecewisePolynomial<double>::ZeroOrderHold(bad_breaks, lower_samples);
+    const auto upper_bad =
+        PiecewisePolynomial<double>::ZeroOrderHold(bad_breaks, upper_samples);
+
+    // Just for lower.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameAccelerationLimit(frame, lower_bad, upper_bigger),
+        ".* can't add a trajectory frame acceleration .*");
+
+    // Just for upper.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameAccelerationLimit(frame, lower_bigger, upper_bad),
+        ".* can't add a trajectory frame acceleration .*");
+
+    // Both.
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        toppra_->AddFrameAccelerationLimit(frame, lower_bad, upper_bad),
+        ".* can't add a trajectory frame acceleration .*");
+  }
+
+  {
+    // We'll use a single test to infer that the limit domains can partially
+    // overlap. We'll send each limit in different directions.
+    const std::vector<double> low_breaks{path_start - 1,
+                                         (path_start + path_end) / 2};
+    const std::vector<double> high_breaks{(path_start + path_end) / 2,
+                                          path_end + 1};
+    const auto lower_traj =
+        PiecewisePolynomial<double>::ZeroOrderHold(high_breaks, lower_samples);
+    const auto upper_traj =
+        PiecewisePolynomial<double>::ZeroOrderHold(low_breaks, upper_samples);
+    EXPECT_NO_THROW(
+        toppra_->AddFrameAccelerationLimit(frame, lower_traj, upper_traj));
+  }
+}
+
+// TODO(SeanCurtis-TRI): Create a test to validate the time-varying impact
+// of the trajectory. Perhaps it would be enough to examine the returned
+// constraint for evidence. Look into backward_lin_constraint_ to see the
+// bounding values.
+
+TEST_F(IiwaToppraTest, FrameAccelerationLimitTrajectory) {
+  // We create a trajectory equivalent to the global constant limit and we
+  // should get the same result.
+  const std::vector<double> breaks{path_.start_time(), path_.end_time()};
+  Eigen::VectorXd lower_bound(6);
+  lower_bound << -1.1, -1.2, -1.3, -1.4, -1.5, -1.6;
+  const std::vector<MatrixX<double>> lower_samples{lower_bound, lower_bound};
+  const auto lower_bound_traj =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, lower_samples);
+
+  Eigen::VectorXd upper_bound(6);
+  upper_bound << 2.1, 2.2, 2.3, 2.4, 2.5, 2.6;
+  const std::vector<MatrixX<double>> upper_samples{upper_bound, upper_bound};
+  const auto upper_bound_traj =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, upper_samples);
+
+  const auto& frame = iiwa_plant_->GetFrameByName("iiwa_link_7");
+
+  toppra_->AddFrameAccelerationLimit(frame, lower_bound_traj, upper_bound_traj);
 
   auto result = toppra_->SolvePathParameterization();
   ASSERT_TRUE(result);
