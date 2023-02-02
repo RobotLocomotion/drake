@@ -106,7 +106,6 @@ one of several treaments:
 
 - `/robot/@version`
 - `/robot/joint/calibration`
-- `/robot/joint/mimic`
 - `/robot/joint/safety_controller`
 - `/robot/link/@type`
 - `/robot/link/collision/verbose`
