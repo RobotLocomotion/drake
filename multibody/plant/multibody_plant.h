@@ -578,9 +578,6 @@ call to Finalize() must be performed. This call will:
   - between bodies connected by a joint,
   - within subgraphs of welded bodies.
 
-<!-- TODO(#16422): ignore collisions within all groups of welded-together
-     bodies -->
-
 <!-- TODO(amcastro-tri): Consider making the actual geometry registration
      with GS AFTER Finalize() so that we can tell if there are any bodies
      welded to the world to which we could just assign anchored geometry
@@ -1293,7 +1290,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                     const Body<T>& body_B,
                                     const Vector3<double>& p_BQ);
 
-  /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
+  /// <!-- TODO(#18732): Add getters to interrogate existing constraints.
   /// -->
 
   /// @}
