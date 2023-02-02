@@ -547,6 +547,7 @@ std::tuple<double, double, double, double> ParseJointLimits(
     std::string message = "An axis must be specified for joint '"
         + joint_spec.Name() + "'";
     diagnostic.Error(joint_spec.Element(), std::move(message));
+    return std::tuple<double, double, double, double>();
   }
 
   // As of libsdformat13, ±∞ are used for axes with no position limits,
@@ -557,6 +558,7 @@ std::tuple<double, double, double, double> ParseJointLimits(
     std::string message = "The lower limit must be lower (or equal) than "
         "the upper limit for joint '" + joint_spec.Name() + "'.";
     diagnostic.Error(joint_spec.Element(), std::move(message));
+    return std::tuple<double, double, double, double>();
   }
 
   // SDFormat internally interprets a negative velocity limit as infinite and
