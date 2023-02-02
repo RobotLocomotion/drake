@@ -6,8 +6,6 @@ title: Installation via APT (Ubuntu)
 
 Drake publishes pre-compiled binaries as APT packages (``*.deb``) for the
 Ubuntu 20.04 (Focal) and Ubuntu 22.04 (Jammy) operating systems.
-(At the moment, the Ubuntu 22.04 packages are only provided for nightly builds,
-not stable releases.)
 Refer to
 [Supported Configurations](/installation.html#supported-configurations)
 for additional compatibility details.
@@ -28,12 +26,6 @@ Gurobi, you will need to build Drake from source following the instructions
 in [Source Installation](/from_source.html).
 
 ## Stable Releases
-
-<div class="warning" markdown="1">
-Drake does not yet publish stable APT packages for Ubuntu 22.04. See
-[#17736](https://github.com/RobotLocomotion/drake/issues/17736) for updates.
-In the meantime, you could manually install the Nightly Releases (see below).
-</div>
 
 To add the Drake APT repository to your machine and install the `drake-dev` package,
 please do the following in order:
