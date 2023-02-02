@@ -41,16 +41,6 @@ using math::RigidTransformd;
 
 namespace {
 
-// TODO(DamrongGuoy): Refactor this function into detail_sdf_common.h/cc.
-//  It has a non-const version in detail_sdf_parser.cc.
-
-// Helper to return the child element of `element` named `child_name`.
-// Returns nullptr if not present.
-// sdf::ElementConstPtr MaybeGetChildElement(
-//     const sdf::ElementConstPtr element, const std::string &child_name) {
-//   return element->FindElement(child_name);
-// }
-
 // Helper to return the value of a child of `element` named `child_name`.
 // A std::runtime_error is thrown if the `<child_name>` tag is missing from the
 // SDF file and no `default_value` is supplied, or the tag has a bad or missing

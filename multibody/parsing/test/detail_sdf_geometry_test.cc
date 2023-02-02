@@ -198,9 +198,6 @@ class SceneGraphParserDetail : public ::testing::Test {
     // Don't let warnings leak into spdlog; tests should always specifically
     // handle any warnings that apppear.
     diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
-    DataSource data_source(DataSource::kFilename, &dummy_file_path);
-    SDFormatDiagnostic sdf_diagnostic(&diagnostic_, &data_source);
-    sdf_diagnostic_ = std::make_shared<SDFormatDiagnostic>(sdf_diagnostic);
   }
 
   // Wraps a function under test with helpful defaults.
@@ -208,7 +205,7 @@ class SceneGraphParserDetail : public ::testing::Test {
       const sdf::Geometry& sdf_geometry,
       const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeShapeFromSdfGeometry(
-        *sdf_diagnostic_, sdf_geometry, resolve_filename);
+        sdf_diagnostic_, sdf_geometry, resolve_filename);
   }
 
   // Wraps a function under test with helpful defaults.
@@ -216,13 +213,14 @@ class SceneGraphParserDetail : public ::testing::Test {
       const sdf::Visual& sdf_visual,
       const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeVisualPropertiesFromSdfVisual(
-        *sdf_diagnostic_, sdf_visual, resolve_filename);
+        sdf_diagnostic_, sdf_visual, resolve_filename);
   }
 
  protected:
   DiagnosticPolicy diagnostic_;
-  const std::string dummy_file_path{"dummy_test_file.sdf"};
-  std::shared_ptr <SDFormatDiagnostic> sdf_diagnostic_;
+  const std::string dummy_file_path_{"dummy_test_file.sdf"};
+  DataSource data_source_{DataSource::kFilename, &dummy_file_path_};
+  SDFormatDiagnostic sdf_diagnostic_{&diagnostic_, &data_source_};
 };
 
 // Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>
@@ -478,7 +476,7 @@ TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
 
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+          sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
   const RigidTransformd X_LC(geometry_instance->pose());
@@ -622,7 +620,7 @@ TEST_F(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
 
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+          sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
   // Verify we do have a plane geometry.
@@ -662,7 +660,7 @@ TEST_F(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
 
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+          sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
   EXPECT_EQ(geometry_instance, nullptr);
 }
@@ -681,7 +679,7 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapGeometryInstanceFromSdfVisual) {
     "</visual>");
   unique_ptr<GeometryInstance> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
-          *sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
+          sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
   EXPECT_EQ(geometry_instance, nullptr);
 }
@@ -1151,7 +1149,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)""");
     ProximityProperties properties = MakeProximityPropertiesForCollision(
-        *sdf_diagnostic_, *sdf_collision);
+        sdf_diagnostic_, *sdf_collision);
     assert_single_property(properties, geometry::internal::kHydroGroup,
                            geometry::internal::kRezHint, 2.5);
     assert_single_property(properties, geometry::internal::kHydroGroup,
@@ -1170,7 +1168,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
     ProximityProperties properties = MakeProximityPropertiesForCollision(
-        *sdf_diagnostic_, *sdf_collision);
+        sdf_diagnostic_, *sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
     EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -1185,7 +1183,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
     ProximityProperties properties = MakeProximityPropertiesForCollision(
-        *sdf_diagnostic_, *sdf_collision);
+        sdf_diagnostic_, *sdf_collision);
     ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
     EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
@@ -1202,7 +1200,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:soft_hydroelastic/>
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeProximityPropertiesForCollision(*sdf_diagnostic_, *sdf_collision),
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision),
         ".*A <collision> geometry has defined the unsupported tag "
         "<drake:soft_hydroelastic>. Please change it to "
         "<drake:compliant_hydroelastic>.");
@@ -1216,7 +1214,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeProximityPropertiesForCollision(*sdf_diagnostic_, *sdf_collision),
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision),
         ".*A <collision> geometry has defined mutually-exclusive tags "
         ".*rigid.* and .*compliant.*");
   }
@@ -1234,7 +1232,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     </friction>
   </surface>)""");
     ProximityProperties properties = MakeProximityPropertiesForCollision(
-        *sdf_diagnostic_, *sdf_collision);
+        sdf_diagnostic_, *sdf_collision);
     assert_friction(properties, {0.8, 0.3});
   }
 
@@ -1294,7 +1292,7 @@ TEST_F(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
       "  </surface>"
       "</collision>");
   const CoulombFriction<double> friction =
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision);
+      MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision);
   EXPECT_EQ(friction.static_friction(), 0.8);
   EXPECT_EQ(friction.dynamic_friction(), 0.3);
 }
@@ -1313,7 +1311,7 @@ TEST_F(SceneGraphParserDetail,
       "  </geometry>"
       "</collision>");
   const CoulombFriction<double> friction =
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision);
+      MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision);
   const CoulombFriction<double> expected_friction = default_friction();
   EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
   EXPECT_EQ(friction.dynamic_friction(), expected_friction.dynamic_friction());
@@ -1351,7 +1349,7 @@ TEST_F(SceneGraphParserDetail,
       "  </surface>"
       "</collision>");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision),
       "The given dynamic friction \\(.*\\) is greater than the given static "
       "friction \\(.*\\); dynamic friction must be less than or equal to "
       "static friction.");
@@ -1376,7 +1374,7 @@ TEST_F(SceneGraphParserDetail,
       "  </surface>"
       "</collision>");
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision),
       CoulombFriction<double>(default_friction().static_friction(), 0.8));
 }
 
@@ -1399,7 +1397,7 @@ TEST_F(SceneGraphParserDetail,
       "  </surface>"
       "</collision>");
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision),
       CoulombFriction<double>(1.1, default_friction().dynamic_friction()));
 }
 
@@ -1424,7 +1422,7 @@ TEST_F(SceneGraphParserDetail,
   // report a parsing error and/or raise an exception.  For now though, we
   // ignore it and use the defaults.
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision),
       default_friction());
 }
 
@@ -1449,7 +1447,7 @@ TEST_F(SceneGraphParserDetail,
   // report a parsing error and/or raise an exception.  For now though, we
   // ignore it and use the defaults.
   EXPECT_EQ(
-      MakeCoulombFrictionFromSdfCollisionOde(*sdf_diagnostic_, *sdf_collision),
+      MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision),
       default_friction());
 }
 

@@ -511,6 +511,7 @@ void AddRevoluteSpringFromSpecification(
     std::string message = "An axis must be specified for joint '"
         + joint_spec.Name() + "'";
     diagnostic.Error(joint_spec.Element(), std::move(message));
+    return;
   }
 
   const double spring_reference = axis->SpringReference();
@@ -584,6 +585,7 @@ std::tuple<double, double, double, double> ParseJointLimits(
             + joint_spec.Name() + "'. Aceleration limit must be a non-negative"
             " number.";
         diagnostic.Error(limit_element, std::move(message));
+        return std::tuple<double, double, double, double>();
       }
     }
   }
@@ -1030,6 +1032,7 @@ Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
         "<{}>: Unable to find the <{}> child tag.", node->GetName(),
         element_name);
     diagnostic.Error(node, message);
+    return {};
   }
 
   auto value = node->Get<gz::math::Vector3d>(element_name);
@@ -1078,12 +1081,14 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     std::string message =
         "<drake:joint>: Unable to find the 'type' attribute.";
     diagnostic.Error(node, std::move(message));
+    return;
   }
   const std::string joint_type = node->Get<std::string>("type");
   if (!node->HasAttribute("name")) {
     std::string message =
         "<drake:joint>: Unable to find the 'name' attribute.";
     diagnostic.Error(node, std::move(message));
+    return;
   }
   const std::string joint_name = node->Get<std::string>("name");
 
@@ -1092,6 +1097,7 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     std::string message =
         "<drake:joint> does not yet support the <pose> child tag.";
     diagnostic.Error(node, std::move(message));
+    return;
   }
 
   const Frame<double>& parent_frame =
@@ -1108,6 +1114,7 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     std::string message = "ERROR: <drake:joint> '" + joint_name +
         "' has unrecognized value for 'type' attribute: " + joint_type;
     diagnostic.Error(node, std::move(message));
+    return;
   }
 }
 
@@ -1360,6 +1367,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
         std::string message =
             "Only fixed joints are permitted in static models.";
         diagnostic.Error(model.Element(), std::move(message));
+        return {};
       }
     }
     // Weld all links that have been added, but are not (yet) attached to the
@@ -1676,6 +1684,7 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   if (root.Model() == nullptr) {
     std::string message = "File must have a single <model> element.";
     diagnostic.Error(root.Element(), std::move(message));
+    return std::nullopt;
   }
   // Get the only model in the file.
   const sdf::Model& model = *root.Model();
@@ -1727,6 +1736,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         "File must have exactly one <model> or exactly one <world>, but"
         " instead has {} models and {} worlds", model_count, world_count);
     diagnostic.Error(root.Element(), std::move(message));
+    return {};
   }
 
   std::vector<ModelInstanceIndex> model_instances;
@@ -1811,6 +1821,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         std::string message =
             "Only fixed joints are permitted in world joints.";
         diagnostic.Error(world.Element(), std::move(message));
+        return {};
       }
     }
   }

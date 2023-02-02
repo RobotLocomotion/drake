@@ -63,11 +63,11 @@ class SDFormatDiagnostic {
   const std::string file_extension_;
 };
 
-/// Checks that all child elements of @p root_element are in the set of @p
-/// supported_elements, and logs warnings/errors using @p diagnostic.
-/// Unsupported elements in the `drake:` namespace are errors, all others are
-/// warnings.  (see https://github.com/RobotLocomotion/drake/issues/16785 for
-/// some discussion of this rationale)
+// Checks that all child elements of @p root_element are in the set of @p
+// supported_elements, and logs warnings/errors using @p diagnostic.
+// Unsupported elements in the `drake:` namespace are errors, all others are
+// warnings.  (see https://github.com/RobotLocomotion/drake/issues/16785 for
+// some discussion of this rationale)
 void CheckSupportedElements(
     const SDFormatDiagnostic& diagnostic,
     sdf::ElementConstPtr root_element,
@@ -78,22 +78,22 @@ void CheckSupportedElements(
     const sdf::Element* root_element,
     const std::set<std::string>& supported_elements);
 
-/// Checks, for elements where there is only one supported value, that
-/// the element matches that value if it's present.
+// Checks, for elements where there is only one supported value, that
+// the element matches that value if it's present.
 void CheckSupportedElementValue(
     const SDFormatDiagnostic& diagnostic,
     sdf::ElementConstPtr root_element,
     const std::string& element_name,
     const std::string& expected);
 
-/// Move-appends all `input_errors` onto `output_errors`.
-/// Returns true if there were any errors.
+// Move-appends all `input_errors` onto `output_errors`.
+// Returns true if there were any errors.
 bool PropagateErrors(
     sdf::Errors&& input_errors,
     sdf::Errors* output_errors);
 
-/// Returns true iff the given report indicates an error, or false
-/// for warnings.
+// Returns true iff the given report indicates an error, or false
+// for warnings.
 bool IsError(const sdf::Error& report);
 
 }  // namespace internal
