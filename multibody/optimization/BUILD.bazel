@@ -308,6 +308,7 @@ drake_cc_googletest(
     deps = [
         ":toppra",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//multibody/tree",
         "//solvers:gurobi_solver",
