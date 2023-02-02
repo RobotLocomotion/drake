@@ -25,7 +25,7 @@ namespace internal {
 
 template<typename T> class BodyNode;
 
-/* %MobilizedBody represents the mobility of an outboard body B with respect to
+/* MobilizedBody represents the mobility of an outboard body B with respect to
 its inboard (parent) body P in the multibody system's spanning tree. It
 consists of computationally-relevant information about a MultibodyPlant Body,
 and a Mobilizer that is the computational representation of one of the plant's
@@ -54,7 +54,7 @@ FixedOffsetFrame<double>& pin_frame =
 // different than a set of constraints that effectively remove all degrees
 // of freedom but the one permitting rotation about the z-axis.
 const RevoluteMobilizer<double>& revolute_mobilizer =
-  model.AddMobilizedBody<RevoluteMobilizer>(
+  model.AddMobilizer<RevoluteMobilizer>(
     model.world_frame(), // inboard frame F (= W)
     pin_frame,           // outboard frame M
     Vector3d::UnitZ()    // revolute axis in this case
@@ -63,12 +63,12 @@ const RevoluteMobilizer<double>& revolute_mobilizer =
 
 <h3>Tree Structure</h3>
 
-A %MobilizedBody induces a tree structure within a MultibodyTree
+A mobilizer induces a tree structure within a MultibodyTree
 model, connecting an inboard (topologically closer to the world) frame to an
 outboard (topologically further from the world) frame. Every time a
-%MobilizedBody is added to a MultibodyTree (using the
-MultibodyTree::AddMobilizedBody() method), a number of degrees of
-freedom associated with the particular type of %MobilizedBody are added to
+mobilizer is added to a MultibodyTree (using the
+MultibodyTree::AddMobilizer() method), a number of degrees of
+freedom associated with the particular type of mobilizer are added to
 the multibody system. In the example above for the single pendulum, adding a
 RevoluteMobilizer has two purposes:
 
@@ -79,15 +79,24 @@ RevoluteMobilizer has two purposes:
 - It defines a permissible motion space spanned by the generalized
   coordinates introduced by the mobilizer.
 
-<h3>Mathematical Description of a %MobilizedBody</h3>
+Adding a mobilizer also creates and initializes a MobilizedBody that will be
+used directly for high-performance computations over the multibody tree.
+During Finalize(), we will order the MobilizedBodies for optimal computation
+so that we can process the tree by running through them in order.
 
-A %MobilizedBody describes the kinematics relationship between an inboard
+<h3>Mathematical Description of a mobilizer</h3>
+
+A mobilizer describes the kinematics relationship between an inboard
 frame F and an outboard frame M, introducing an nq-dimensional vector of
 generalized coordinates q and an nv-dimensional vector of generalized
 velocities v. Notice that in general `nq != nv`, though `nq == nv` is a very
-common case. The kinematic relationships introduced by a %MobilizedBody are
+common case. The kinematic relationships introduced by a mobilizer are
 fully specified by [Seth 2010]. The monogram notation used below for X_FM,
-V_FM, F_Mo_F, etc., are described in @ref multibody_frames_and_bodies.
+V_FM, F_Mo_F, etc., is described in @ref multibody_frames_and_bodies.
+
+Here q and v refer only to the subset of the generalized coordinates and
+velocities associated with a single mobilizer, not the full collection of
+these associated with the multibody tree.
 
 - X_FM(q):
     The outboard frame M's pose as measured and expressed in the inboard
@@ -97,28 +106,29 @@ V_FM, F_Mo_F, etc., are described in @ref multibody_frames_and_bodies.
     The `6 x nv` mobilizer hinge matrix `H_FM` relates `V_FM` (outboard
     frame M's spatial velocity in its inboard frame F, expressed in F) to
     the mobilizer's `nv` generalized velocities (or mobilities) `v` as
-    `V_FM = H_FM * v`.  The method CalcAcrossMobilizerSpatialVelocity()
+    `V_FM = H_FM * v`.  CalcAcrossMobilizerSpatialVelocity()
     calculates `V_FM`.  Be aware that Drake's spatial velocities are not the
-    Plücker vectors defined in [Featherstone 2008, Ch. 2].
-    Note: `H_FM` is only a function of the `nq` generalized positions `q`.
+    Plücker vectors defined in [Featherstone 2008, Ch. 2], and that our
+    definition of the hinge matrix H is transposed from [Jain 2010].
 - H_FMᵀ(q):
     H_FMᵀ is the `nv x 6` matrix transpose of `H_FM`.  It relates the `nv`
     generalized forces `tau` to `F_Mo_F` (the spatial force on frame M at
     point Mo, expressed in F) as `tau = H_FMᵀ ⋅ F_Mo_F`
-    The %MobilizedBody method ProjectSpatialForce() calculates `tau`.
+    ProjectSpatialForce() calculates `tau`.
     Be aware that Drake's spatial forces are not the Plücker vectors defined
-    in [Featherstone 2008, Ch. 2].
+    in [Featherstone 2008, Ch. 2], and that our definition of the hinge matrix
+    H is transposed from [Jain 2010].
 - Hdot_FM(q, v):
     The time derivative of the mobilizer hinge matrix `H_FM` is used in the
     calculation of `A_FM(q, v, v̇)` (outboard frame M's spatial acceleration
     in its inboard frame F, expressed in F) as
-    `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.  The %MobilizedBody method
+    `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.
     CalcAcrossMobilizerSpatialAcceleration() calculates `A_FM`.
 - N(q):
     This `nq x nv` kinematic coupling matrix relates q̇ (the time-derivative
-    of the nq mobilizer's generalized positions) to `v` (the mobilizer's
+    of the mobilizer's generalized positions) to `v` (the mobilizer's
     generalized velocities) as `q̇ = N(q) * v`, [Seth 2010].
-    The %MobilizedBody method MapVelocityToQDot() performs this computation.
+    MapVelocityToQDot() performs this computation.
 - N⁺(q):
     The left pseudo-inverse of `N(q)`. `N⁺(q)` can be used to invert the
     relationship `q̇ = N(q) * v` without residual error, provided that `q̇` is
@@ -140,12 +150,16 @@ For a detailed discussion on the concept of a mobilizer please refer to
 [Seth 2010]. The mobilizer "hinge" matrix `H_FM(q)` is introduced in
 [Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
 the transpose of the mobilizer hinge matrix H_FM matrix here in Drake.
-For details in the monogram notation used above please refer to
+For details of the monogram notation used above please refer to
 @ref multibody_spatial_algebra.
 
-%MobilizedBody is an abstract base class defining the minimum functionality that
-derived %MobilizedBody objects must implement in order to fully define the
+MobilizedBody is an abstract base class defining the minimum functionality that
+derived MobilizedBody objects must implement in order to fully define the
 kinematic relationship between the two frames they connect.
+
+TODO(sherm1) The base class virtual methods should not be used in
+ performance-sensitive computations; instead those should be performed in the
+ concrete, mobilizer-specialized derived classes.
 
 <h4>Relation between hinge matrix and Jacobians</h4>
 
@@ -157,29 +171,32 @@ and the Drake mobilizer hinge matrix `H_FM` (partial derivatives of
 across-mobilizer q̇ with respect to generalized velocities v).
 
 The translational velocity v_FM component of the spatial velocity `V_FM` is
-defined as the time derivative of the position vector p_FM in `X_FM`. <pre>
+defined as the time derivative of the position vector p_FM in `X_FM`.
   v_FM = dp_FM/dt = ∂p_FM/∂q * q̇ = ∂p_FM/∂q * N(q) * v = Hv_FM * v
-</pre>
+
 where `Hv_FM = ∂p_FM/∂q * N(q)` is the last three rows in `H_FM`.
 
 The angular velocity w_FM component of the spatial velocity `V_FM` can be
 related to the time derivative of the rotation matrix R_FM in `X_FM`. This
 complicated relationship can be written in terms of the skew symmetric
-angular velocity matrix [w_FM] as <pre>
+angular velocity matrix [w_FM] as
  [w_FM] = d(R_FM)/dt * (R_FM)ᵀ
-</pre>
-The ordinary time-derivative of the rotation matrix R_FM is <pre>
+
+The ordinary time-derivative of the rotation matrix R_FM is
   d(R_FM)/dt = ∂R/∂q * q̇ = ∂R/∂q * N(q) * v
-</pre>
+
 Combining the previous two equations leads to <pre>
  [w_FM] = ∂R/∂q * N(q) * v * (R_FM)ᵀ
-</pre>
-Post-multiplying both sides of the previous equation by R_FM gives <pre>
+
+Post-multiplying both sides of the previous equation by R_FM gives
  [w_FM] * R_FM = ∂R/∂q * N(q) * v
-</pre>
-`Hw_FM` is the first three rows in `H_FM`, defined by context as <pre>
+
+TODO(sherm1, alejandro) The following cannot be right since Hw_FM is 3 x nv.
+ In fact we have w_FM = Hw_FM * v.
+
+`Hw_FM` is the first three rows in `H_FM`, defined by context as
  Hw_FM * R_FM = ∂R/∂q * N(q)
-</pre>
+
 
 <h4>Active forces and power</h4>
 
@@ -200,7 +217,7 @@ constrained by: <pre>
 </pre>
 Therefore, this enforces a relationship to the operations implemented by
 CalcAcrossMobilizerSpatialVelocity() and ProjectSpatialForce() for any
-%MobilizedBody object.
+MobilizedBody object.
 
 - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
               algorithms. Springer Science & Business Media.
