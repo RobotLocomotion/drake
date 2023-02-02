@@ -142,6 +142,20 @@ The solution is to use either `GetMyContextFromRoot()`
 
 See the notes on [System Compatibility][m_system_compat] for further discussion.
 
+# PyPI (pip)
+
+## No candidate version for this platform {#pip-no-candidate}
+
+When installing Drake from PyPI on older platforms such as Ubuntu Focal,
+you may receive the error "no candidate version for this platform".
+This is caused by older versions of `pip` which do not recognize the
+`manylinux` platform used by Drake.
+This is remedied by installing a newer version of `pip`.
+
+Use of a Python virtual environment may be required
+in order to get a newer version of `pip`;
+see the instructions for [installing from pip](/pip.html#stable-releases).
+
 # Build problems
 
 ## Out of memory {#build-oom}
