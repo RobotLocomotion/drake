@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/direct_collocation.h"
+#include "drake/planning/trajectory_optimization/direct_collocation.h"
 
 #include <cmath>
 #include <cstddef>
@@ -16,10 +16,13 @@
 #include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 using solvers::Solve;
+using systems::Context;
+using systems::InputPortSelection;
+using systems::LinearSystem;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -419,5 +422,5 @@ GTEST_TEST(DirectCollocation, DiscreteTimeSystemThrows) {
 
 }  // anonymous namespace
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

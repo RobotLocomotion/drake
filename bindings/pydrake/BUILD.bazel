@@ -633,7 +633,6 @@ PYI_FILES = [
     "pydrake/systems/rendering.pyi",
     "pydrake/systems/scalar_conversion.pyi",
     "pydrake/systems/sensors.pyi",
-    "pydrake/systems/trajectory_optimization.pyi",
     "pydrake/trajectories.pyi",
     "pydrake/tutorials.pyi",
     "pydrake/visualization/__init__.pyi",

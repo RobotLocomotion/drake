@@ -14,7 +14,7 @@
 #include "drake/solvers/mathematical_program_result.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 /** Optimizes a trajectory, q(t) subject to costs and constraints on the
@@ -212,5 +212,5 @@ class KinematicTrajectoryOptimization {
 };
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

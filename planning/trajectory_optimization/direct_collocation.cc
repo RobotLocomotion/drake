@@ -1,4 +1,4 @@
-#include "drake/systems/trajectory_optimization/direct_collocation.h"
+#include "drake/planning/trajectory_optimization/direct_collocation.h"
 
 #include <cstddef>
 #include <stdexcept>
@@ -9,13 +9,18 @@
 #include "drake/math/autodiff_gradient.h"
 
 namespace drake {
-namespace systems {
+namespace planning {
 namespace trajectory_optimization {
 
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
+using systems::Context;
+using systems::InputPortIndex;
+using systems::InputPortSelection;
+using systems::PortDataType;
+using systems::System;
 using trajectories::PiecewisePolynomial;
 
 namespace {
@@ -268,5 +273,5 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
 }
 
 }  // namespace trajectory_optimization
-}  // namespace systems
+}  // namespace planning
 }  // namespace drake

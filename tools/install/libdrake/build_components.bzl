@@ -77,6 +77,7 @@ LIBDRAKE_COMPONENTS = [
     "//multibody/triangle_quadrature",
     "//perception",
     "//planning",
+    "//planning/trajectory_optimization",
     "//solvers",
     "//systems/analysis",
     "//systems/controllers",
