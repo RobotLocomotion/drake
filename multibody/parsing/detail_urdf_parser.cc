@@ -571,7 +571,10 @@ void UrdfParser::ParseJoint(
     plant->AddJoint<BallRpyJoint>(name, *parent_body, X_PJ,
                                   *child_body, std::nullopt, damping);
   } else if (type.compare("planar") == 0) {
-    throw_on_custom_joint(true);
+    // Permit both the standard 'joint' and custom 'drake:joint' spellings
+    // here. The standard spelling was actually always correct, but Drake only
+    // supported the custom spelling for quite some time, and some model files
+    // are likely spelled that way. See #18730.
     Vector3d damping_vec(0, 0, 0);
     XMLElement* dynamics_node = node->FirstChildElement("dynamics");
     if (dynamics_node) {

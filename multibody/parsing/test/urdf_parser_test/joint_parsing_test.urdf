@@ -95,12 +95,12 @@ Defines a URDF model with various types of joints.
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <dynamics damping="0.1"/>
   </drake:joint>
-  <drake:joint name="planar_joint" type="planar">
+  <joint name="planar_joint" type="planar">
     <parent link="link6"/>
     <child link="link7"/>
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <dynamics damping="0.1 0.1 0.1"/>
-  </drake:joint>
+  </joint>
   <joint name="continuous_joint" type="continuous">
     <axis xyz="0 0 1"/>
     <parent link="link7"/>
