@@ -70,12 +70,10 @@ class DrakeLcm::Impl {
   std::string handle_subscriptions_error_message_;
 };
 
-DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {
-}
+DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
 
 DrakeLcm::DrakeLcm(std::string lcm_url)
-    : DrakeLcm(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {
-}
+    : DrakeLcm(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {}
 
 DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
     : impl_(std::make_unique<Impl>(params)) {
