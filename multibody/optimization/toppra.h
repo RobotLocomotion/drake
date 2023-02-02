@@ -185,23 +185,45 @@ class Toppra {
    *                    constraint_frame.
    * @return The bounding box constraint that will enforce the frame
    *         translational speed limit during the backward pass.
+   * @pydrake_mkdoc_identifier{const}
    */
   Binding<BoundingBoxConstraint> AddFrameTranslationalSpeedLimit(
       const Frame<double>& constraint_frame, const double& upper_limit);
 
   /**
+   * Adds a limit on the magnitude of the translational velocity of the given
+   * frame, measured and expressed  in the world frame, as a function of path
+   * parameter.
+   * @param constraint_frame The frame to limit the translational speed of.
+   * @param upper_limit The upper translational speed limit trajectory for
+   *                    constraint_frame.
+   * @pre upper_limit must have scalar values (a 1x1 matrix).
+   * @return The bounding box constraint that will enforce the frame
+   *         translational speed limit during the backward pass.
+   * @throws If the interval [upper_limit.start_time(), upper_limit.end_time()]
+   *         doesn't overlap with [path.start_time(), path.end_time()].
+   * @note The constraints are only added between upper_limit.start_time() and
+   *       upper_limit.end_time(). The rest of the time is _not_ constrained.
+   * @pydrake_mkdoc_identifier{trajectory}
+   */
+  Binding<BoundingBoxConstraint> AddFrameTranslationalSpeedLimit(
+      const Frame<double>& constraint_frame,
+      const Trajectory<double>& upper_limit);
+
+  /**
    * Adds a limit on the elements of the spatial acceleration of the given
-   * frame, measured and and expressed in the world frame.  The limits should be
+   * frame, measured and expressed in the world frame.  The limits should be
    * given as [α_WF, a_WF], where α_WF is the frame's angular acceleration and
-   * v_WF is the frame's translational acceleration.
+   * a_WF is the frame's translational acceleration.
    * @param constraint_frame The frame to limit the acceleration of.
    * @param lower_limit The lower acceleration limit for constraint_frame.
    * @param upper_limit The upper acceleration limit for constraint_frame.
    * @param discretization The discretization scheme to use for this linear
    *                       constraint. See ToppraDiscretization for details.
    * @return A pair containing the linear constraints that will enforce the
-   * frame acceleration limit on the backward pass and forward pass
-   * respectively.
+   *         frame acceleration limit on the backward pass and forward pass
+   *         respectively.
+   * @pydrake_mkdoc_identifier{const}
    */
   std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
   AddFrameAccelerationLimit(
@@ -210,6 +232,37 @@ class Toppra {
       const Eigen::Ref<const Vector6d>& upper_limit,
       ToppraDiscretization discretization =
           ToppraDiscretization::kInterpolation);
+  /**
+   * A version of accleration limit that uses a trajectory for the upper and
+   * lower limits.
+   * @param constraint_frame The frame to limit the acceleration of.
+   * @param lower_limit The lower acceleration limit trajectory for
+   *                    constraint_frame.
+   * @param upper_limit The upper acceleration limit trajectory for
+   *                    constraint_frame.
+   * @param discretization The discretization scheme to use for this linear
+   *                       constraint. See ToppraDiscretization for details.
+   * @return A pair containing the linear constraints that will enforce the
+   * frame acceleration limit on the backward pass and forward pass
+   * respectively.
+   * @pre Both lower_limit and upper_limit trajectories must have values in ℜ⁶.
+   *      The six-dimensional column vector is interpreted as [α_WF, a_WF],
+   *      where α_WF is the frame's angular acceleration and a_WF is the frame's
+   *      translational acceleration.
+   * @throws If the intervals [upper_limit.start_time(), upper_limit.end_time()]
+   *         and [lower_limit.start_time(), lower_limit.end_time()] don't
+   *         overlap with [path.start_time(), path.end_time()].
+   * @note The constraints are only added in the constraint trajectories
+   *       domains (where it overlaps the path). The rest of the time is _not_
+   *       constrained.
+   * @pydrake_mkdoc_identifier{trajectory}
+   */
+  std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+  AddFrameAccelerationLimit(const Frame<double>& constraint_frame,
+                            const Trajectory<double>& lower_limit,
+                            const Trajectory<double>& upper_limit,
+                            ToppraDiscretization discretization =
+                                ToppraDiscretization::kInterpolation);
 
  private:
   /*
