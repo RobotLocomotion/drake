@@ -260,12 +260,18 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   const UnitInertia<double> G_BB0 =
       UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p2, p3);
   const SpatialInertia<double> M_BB0_expected(mass, p_B0Bcm, G_BB0);
-  const SpatialInertia<double> M_BB0 =
+  SpatialInertia<double> M_BB0 =
       SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           density, p1, p2, p3);
 
   // An empirical tolerance: two bits = 2^2 times machine epsilon.
   const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
+                              M_BB0.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure nothing changes if two arguments are switched (e.g., p1 and p2).
+  M_BB0 = SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          density, p2, p1, p3);
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
 }
@@ -300,6 +306,12 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   M_BA_expected.ShiftInPlace(-p_AB0);
   M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
           density, p_AB0, p_AB1, p_AB2, p_AB3);
+  EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
+                              M_BA.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure nothing changes if two arguments are switched (e.g., p_AB2, p_AB3).
+  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(density,
+      p_AB0, p_AB1, p_AB3, p_AB2);
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
 }
