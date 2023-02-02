@@ -275,91 +275,68 @@ Binding<BoundingBoxConstraint> Toppra::AddFrameVelocityLimit(
 
 Binding<BoundingBoxConstraint> Toppra::AddFrameTranslationalSpeedLimit(
     const Frame<double>& constraint_frame, const double& upper_limit) {
-  const int N = gridpoints_.size() - 1;
-  Eigen::VectorXd x_lower_bound = Eigen::VectorXd::Zero(N);
-  Eigen::VectorXd x_upper_bound(N);
+  return AddFrameTranslationalSpeedLimit(constraint_frame,
+                                         LimitSource(upper_limit));
+}
 
-  for (int knot = 0; knot < N; knot++) {
-    const Eigen::VectorXd qs = path_.value(gridpoints_(knot));
-    const Eigen::VectorXd qs_dot = path_.EvalDerivative(gridpoints_(knot), 1);
-
-    plant_.SetPositions(plant_context_.get(), qs);
-    plant_.SetVelocities(plant_context_.get(), qs_dot);
-    const SpatialVelocity<double> velocity =
-        constraint_frame.CalcSpatialVelocityInWorld(*plant_context_);
-    const double speed_squared = velocity.translational().squaredNorm();
-
-    // Check to avoid performing division by zero.
-    if (speed_squared > 0) {
-      x_upper_bound(knot) = std::pow(upper_limit, 2) / speed_squared;
-    } else {
-      x_upper_bound(knot) = std::numeric_limits<double>::infinity();
-    }
+Binding<BoundingBoxConstraint> Toppra::AddFrameTranslationalSpeedLimit(
+    const Frame<double>& constraint_frame,
+    const Trajectory<double>& upper_limit) {
+  DRAKE_DEMAND(upper_limit.rows() == 1);
+  DRAKE_DEMAND(upper_limit.cols() == 1);
+  if (upper_limit.start_time() > path_.end_time() ||
+      upper_limit.end_time() < path_.start_time()) {
+    throw std::runtime_error(
+        fmt::format("Toppra can't add a trajectory translational speed "
+                    "limit. The upper limit domain [{}, {}] must overlap the "
+                    "path domain [{}, {}].",
+                    upper_limit.start_time(), upper_limit.end_time(),
+                    path_.start_time(), path_.end_time()));
   }
-  auto x_bbox = backward_prog_->AddBoundingBoxConstraint(0, 1, backward_x_);
-  auto bounds = ToppraBoundingBoxConstraint(x_lower_bound, x_upper_bound);
-  x_bounds_.emplace(x_bbox, bounds);
-  return x_bbox;
+
+  const MatrixX<double> kInf =
+      Vector1<double>::Constant(std::numeric_limits<double>::infinity());
+  return AddFrameTranslationalSpeedLimit(constraint_frame,
+                                         LimitSource(&upper_limit, kInf));
 }
 
 std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
-Toppra::AddFrameAccelerationLimit(
-    const Frame<double>& constraint_frame,
-    const Eigen::Ref<const Vector6d>& lower_limit,
-    const Eigen::Ref<const Vector6d>& upper_limit,
-    ToppraDiscretization discretization) {
-  const int N = gridpoints_.size() - 1;
-  const int n_dof = path_.rows();
-  const int n_con =
-      discretization == ToppraDiscretization::kInterpolation ? 12 : 6;
-  Eigen::MatrixXd con_A(n_con, 2 * N);
-  Eigen::MatrixXd con_lb(n_con, N);
-  Eigen::MatrixXd con_ub(n_con, N);
-  Eigen::MatrixXd J(6, n_dof);
-  Vector6d dJds_times_v;
+Toppra::AddFrameAccelerationLimit(const Frame<double>& constraint_frame,
+                                  const Eigen::Ref<const Vector6d>& lower_limit,
+                                  const Eigen::Ref<const Vector6d>& upper_limit,
+                                  ToppraDiscretization discretization) {
+  return AddFrameAccelerationLimit(constraint_frame, LimitSource(lower_limit),
+                                   LimitSource(upper_limit), discretization);
+}
 
-  for (int knot = 0; knot < N; knot++) {
-    // The constraint equation is Jv_WF * v̇ + J̇v_WF * v = a_WF.
-    // Since v = dq/ds * ṡ and v̇ = dq/ds * s̈ + d²q/ds² * ṡ²,
-    // the constraint becomes
-    // Jv_WF * dq/ds * s̈ + (Jv_WF * d²q/ds² + J̇v_WF) * ṡ² = a_WF
-    // Toppra assumes q̇ = v and will have undefined behavior if it does not.
-    const Eigen::VectorXd qs = path_.value(gridpoints_(knot));
-    const Eigen::VectorXd qs_dot = path_.EvalDerivative(gridpoints_(knot), 1);
-    const Eigen::VectorXd qs_ddot = path_.EvalDerivative(gridpoints_(knot), 2);
+std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+Toppra::AddFrameAccelerationLimit(const Frame<double>& constraint_frame,
+                                  const Trajectory<double>& lower_limit,
+                                  const Trajectory<double>& upper_limit,
+                                  ToppraDiscretization discretization) {
+  DRAKE_DEMAND(lower_limit.rows() == 6);
+  DRAKE_DEMAND(lower_limit.cols() == 1);
+  DRAKE_DEMAND(upper_limit.rows() == 6);
+  DRAKE_DEMAND(upper_limit.cols() == 1);
 
-    plant_.SetPositions(plant_context_.get(), qs);
-    plant_.SetVelocities(plant_context_.get(), qs_dot);
-    plant_.CalcJacobianSpatialVelocity(
-        *plant_context_, JacobianWrtVariable::kQDot, constraint_frame,
-        Eigen::Vector3d::Zero(), plant_.world_frame(), plant_.world_frame(),
-        &J);
-    dJds_times_v = plant_
-                       .CalcBiasSpatialAcceleration(
-                           *plant_context_, JacobianWrtVariable::kV,
-                           constraint_frame, Eigen::Vector3d::Zero(),
-                           plant_.world_frame(), plant_.world_frame())
-                       .get_coeffs();
-
-    con_A.block(0, 2 * knot, 6, 1) << J * qs_ddot + dJds_times_v;
-    con_A.block(0, 2 * knot + 1, 6, 1) << J * qs_dot;
-    con_lb.block(0, knot, 6, 1) << lower_limit;
-    con_ub.block(0, knot, 6, 1) << upper_limit;
+  if (upper_limit.start_time() > path_.end_time() ||
+      upper_limit.end_time() < path_.start_time() ||
+      lower_limit.start_time() > path_.end_time() ||
+      lower_limit.end_time() < path_.start_time()) {
+    throw std::runtime_error(
+        fmt::format("Toppra can't add a trajectory frame acceleration "
+                    "limit. The lower limit domain [{}, {}] and upper limit "
+                    "domain [{}, {}] must both overlap the path domain "
+                    "[{}, {}].",
+                    lower_limit.start_time(), lower_limit.end_time(),
+                    upper_limit.start_time(), upper_limit.end_time(),
+                    path_.start_time(), path_.end_time()));
   }
-  if (discretization == ToppraDiscretization::kInterpolation) {
-    CalcInterpolationConstraint(&con_A, &con_lb, &con_ub);
-  }
-
-  auto backward_con = backward_prog_->AddLinearConstraint(
-      Eigen::MatrixXd::Zero(n_con, 2), Eigen::VectorXd::Zero(n_con),
-      Eigen::VectorXd::Zero(n_con), {backward_x_, backward_u_});
-  auto forward_con = forward_prog_->AddLinearConstraint(
-      Eigen::MatrixXd::Zero(n_con, 1), Eigen::VectorXd::Zero(n_con),
-      Eigen::VectorXd::Zero(n_con), forward_u_);
-  auto coefficients = ToppraLinearConstraint(con_A, con_lb, con_ub);
-  backward_lin_constraint_.emplace(backward_con, coefficients);
-  forward_lin_constraint_.emplace(forward_con, coefficients);
-  return std::make_pair(backward_con, forward_con);
+  const Vector6d kInf =
+      Vector6d::Constant(std::numeric_limits<double>::infinity());
+  return AddFrameAccelerationLimit(
+      constraint_frame, LimitSource(&lower_limit, -kInf),
+      LimitSource(&upper_limit, kInf), discretization);
 }
 
 void Toppra::CalcInterpolationConstraint(Eigen::MatrixXd* A,
@@ -564,6 +541,102 @@ std::optional<PiecewisePolynomial<double>> Toppra::SolvePathParameterization() {
   }
 
   return PiecewisePolynomial<double>(polynomials, t_knots);
+}
+
+
+Binding<BoundingBoxConstraint> Toppra::AddFrameTranslationalSpeedLimit(
+    const Frame<double>& constraint_frame,
+    const Toppra::LimitSource& upper_limit) {
+  const int N = gridpoints_.size() - 1;
+  Eigen::VectorXd x_lower_bound = Eigen::VectorXd::Zero(N);
+  Eigen::VectorXd x_upper_bound(N);
+
+  const MatrixX<double> kInf =
+      Vector1<double>::Constant(std::numeric_limits<double>::infinity());
+
+  for (int knot = 0; knot < N; knot++) {
+    const double t = gridpoints_(knot);
+    const Eigen::VectorXd qs = path_.value(t);
+    const Eigen::VectorXd qs_dot = path_.EvalDerivative(t, 1);
+
+    plant_.SetPositions(plant_context_.get(), qs);
+    plant_.SetVelocities(plant_context_.get(), qs_dot);
+    const SpatialVelocity<double> velocity =
+        constraint_frame.CalcSpatialVelocityInWorld(*plant_context_);
+    const double speed_squared = velocity.translational().squaredNorm();
+
+    const double sampled_limit = upper_limit.value(t)(0);
+    // Check to avoid performing division by zero.
+    if (speed_squared > 0) {
+      x_upper_bound(knot) = std::pow(sampled_limit, 2) / speed_squared;
+    } else {
+      x_upper_bound(knot) = std::numeric_limits<double>::infinity();
+    }
+  }
+  auto x_bbox = backward_prog_->AddBoundingBoxConstraint(0, 1, backward_x_);
+  auto bounds = ToppraBoundingBoxConstraint(x_lower_bound, x_upper_bound);
+  x_bounds_.emplace(x_bbox, bounds);
+  return x_bbox;
+}
+
+std::pair<Binding<LinearConstraint>, Binding<LinearConstraint>>
+Toppra::AddFrameAccelerationLimit(const Frame<double>& constraint_frame,
+                                  const LimitSource& lower_limit,
+                                  const LimitSource& upper_limit,
+                                  ToppraDiscretization discretization) {
+  const int N = gridpoints_.size() - 1;
+  const int n_dof = path_.rows();
+  const int n_con =
+      discretization == ToppraDiscretization::kInterpolation ? 12 : 6;
+  Eigen::MatrixXd con_A(n_con, 2 * N);
+  Eigen::MatrixXd con_lb(n_con, N);
+  Eigen::MatrixXd con_ub(n_con, N);
+  Eigen::MatrixXd J(6, n_dof);
+  Vector6d dJds_times_v;
+
+  for (int knot = 0; knot < N; knot++) {
+    // The constraint equation is Jv_WF * v̇ + J̇v_WF * v = a_WF.
+    // Since v = dq/ds * ṡ and v̇ = dq/ds * s̈ + d²q/ds² * ṡ²,
+    // the constraint becomes
+    // Jv_WF * dq/ds * s̈ + (Jv_WF * d²q/ds² + J̇v_WF) * ṡ² = a_WF
+    // Toppra assumes q̇ = v and will have undefined behavior if it does not.
+    const double t = gridpoints_(knot);
+    const Eigen::VectorXd qs = path_.value(t);
+    const Eigen::VectorXd qs_dot = path_.EvalDerivative(t, 1);
+    const Eigen::VectorXd qs_ddot = path_.EvalDerivative(t, 2);
+
+    plant_.SetPositions(plant_context_.get(), qs);
+    plant_.SetVelocities(plant_context_.get(), qs_dot);
+    plant_.CalcJacobianSpatialVelocity(
+        *plant_context_, JacobianWrtVariable::kQDot, constraint_frame,
+        Eigen::Vector3d::Zero(), plant_.world_frame(), plant_.world_frame(),
+        &J);
+    dJds_times_v = plant_
+                       .CalcBiasSpatialAcceleration(
+                           *plant_context_, JacobianWrtVariable::kV,
+                           constraint_frame, Eigen::Vector3d::Zero(),
+                           plant_.world_frame(), plant_.world_frame())
+                       .get_coeffs();
+
+    con_A.block(0, 2 * knot, 6, 1) << J * qs_ddot + dJds_times_v;
+    con_A.block(0, 2 * knot + 1, 6, 1) << J * qs_dot;
+    con_lb.block(0, knot, 6, 1) << lower_limit.value(t);
+    con_ub.block(0, knot, 6, 1) << upper_limit.value(t);
+  }
+  if (discretization == ToppraDiscretization::kInterpolation) {
+    CalcInterpolationConstraint(&con_A, &con_lb, &con_ub);
+  }
+
+  auto backward_con = backward_prog_->AddLinearConstraint(
+      Eigen::MatrixXd::Zero(n_con, 2), Eigen::VectorXd::Zero(n_con),
+      Eigen::VectorXd::Zero(n_con), {backward_x_, backward_u_});
+  auto forward_con = forward_prog_->AddLinearConstraint(
+      Eigen::MatrixXd::Zero(n_con, 1), Eigen::VectorXd::Zero(n_con),
+      Eigen::VectorXd::Zero(n_con), forward_u_);
+  auto coefficients = ToppraLinearConstraint(con_A, con_lb, con_ub);
+  backward_lin_constraint_.emplace(backward_con, coefficients);
+  forward_lin_constraint_.emplace(forward_con, coefficients);
+  return std::make_pair(backward_con, forward_con);
 }
 
 }  // namespace multibody
