@@ -58,8 +58,8 @@ TEST_F(ScrewMobilizerTest, ExceptionRaisingWhenZeroPitch) {
       tree().world_body().body_frame(), body_->body_frame(),
       Vector3<double>::UnitZ(), zero_screw_pitch);
 
-  const double translation_z{1.};
-  const double velocity_z{2.};
+  const double translation_z{1.0};
+  const double velocity_z{2.0};
   EXPECT_THROW(
       zero_pitch_screw_mobilizer.set_translation(context_.get(), translation_z),
       std::exception);
@@ -71,8 +71,8 @@ TEST_F(ScrewMobilizerTest, ExceptionRaisingWhenZeroPitch) {
 TEST_F(ScrewMobilizerTest, StateAccess) {
   // Verify we can set a screw mobilizer configuration given the model's
   // context.
-  const double translation_z_first{1.};
-  const double translation_z_second{2.};
+  const double translation_z_first{1.0};
+  const double translation_z_second{2.0};
   const double angle_z_second{translation_z_second  * 2 * M_PI / kScrewPitch};
 
   mobilizer_->set_translation(context_.get(), translation_z_first);
@@ -82,7 +82,7 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
   EXPECT_EQ(mobilizer_->get_translation(*context_), translation_z_second);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_second);
 
-  const double angle_z_first{1. * 180. / M_PI};
+  const double angle_z_first{1.0 * 180.0 / M_PI};
 
   mobilizer_->set_angle(context_.get(), angle_z_first);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_first);
@@ -90,8 +90,8 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
   mobilizer_->set_angle(context_.get(), angle_z_second);
   EXPECT_EQ(mobilizer_->get_angle(*context_), angle_z_second);
 
-  const double velocity_z_first{1.};
-  const double velocity_z_second{2.};
+  const double velocity_z_first{1.0};
+  const double velocity_z_second{2.0};
   const double angular_velocity_z_second{
     velocity_z_second * 2 * M_PI / kScrewPitch};
 
@@ -103,7 +103,7 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
   EXPECT_EQ(mobilizer_->get_translation_rate(*context_), velocity_z_second);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angular_velocity_z_second);
 
-  const double angular_velocity_z_first{1. * 180. / M_PI};
+  const double angular_velocity_z_first{1.0 * 180.0 / M_PI};
 
   mobilizer_->set_angular_rate(context_.get(), angular_velocity_z_first);
   EXPECT_EQ(mobilizer_->get_angular_rate(*context_), angular_velocity_z_first);
@@ -113,11 +113,11 @@ TEST_F(ScrewMobilizerTest, StateAccess) {
 }
 
 TEST_F(ScrewMobilizerTest, ZeroState) {
-  const double angle_z{1. * 180. / M_PI};
-  const double angular_velocity_z{2. * 180. / M_PI};
+  const double angle_z{1.0 * 180.0 / M_PI};
+  const double angular_velocity_z{2.0 * 180.0 / M_PI};
 
-  const double translation_z{angle_z * kScrewPitch / (2. * M_PI)};
-  const double velocity_z{angular_velocity_z * kScrewPitch / (2. * M_PI)};
+  const double translation_z{angle_z * kScrewPitch / (2.0 * M_PI)};
+  const double velocity_z{angular_velocity_z * kScrewPitch / (2.0 * M_PI)};
 
   // Set the state to some arbitrary non-zero value.
   mobilizer_->set_angle(context_.get(), angle_z);
@@ -144,13 +144,13 @@ TEST_F(ScrewMobilizerTest, DefaultPosition) {
   EXPECT_EQ(mobilizer_->get_translation(*context_), 0.0);
   EXPECT_EQ(mobilizer_->get_angle(*context_), 0.0);
 
-  const Vector1d new_default(.4);
+  const Vector1d new_default(0.4);
   mutable_mobilizer->set_default_position(new_default);
   mobilizer_->set_default_state(*context_, &context_->get_mutable_state());
 
   EXPECT_EQ(mobilizer_->get_angle(*context_), new_default(0));
   EXPECT_EQ(mobilizer_->get_translation(*context_),
-            new_default(0) * kScrewPitch / (2. * M_PI));
+            new_default(0) * kScrewPitch / (2.0 * M_PI));
 }
 
 TEST_F(ScrewMobilizerTest, RandomState) {
@@ -308,6 +308,41 @@ TEST_F(ScrewMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus, Matrix1d::Identity().eval());
 }
 
+TEST_F(ScrewMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  const double angle_z{1.0 * 180.0 / M_PI};
+  mobilizer_->set_angle(context_.get(), angle_z);
+
+  // Set arbitrary v and MapVelocityToQDot.
+  Vector1d v(1.5);
+  Vector1d qdot;
+  mobilizer_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Compute N.
+  MatrixX<double> N(1, 1);
+  mobilizer_->CalcNMatrix(*context_, &N);
+
+  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  EXPECT_EQ(qdot, N * v);
+}
+
+TEST_F(ScrewMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  const double angle_z{1.0 * 180.0 / M_PI};
+  mobilizer_->set_angle(context_.get(), angle_z);
+
+  // Set arbitrary qdot and MapQDotToVelocity.
+  Vector1d qdot(1.5);
+  Vector1d v;
+  mobilizer_->MapQDotToVelocity(*context_, qdot, &v);
+
+  // Compute Nplus.
+  MatrixX<double> Nplus(1, 1);
+  mobilizer_->CalcNplusMatrix(*context_, &Nplus);
+
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_EQ(v, Nplus * qdot);
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody
