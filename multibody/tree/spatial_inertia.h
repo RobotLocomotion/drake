@@ -212,11 +212,6 @@ class SpatialInertia {
   ///     SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
   ///         density, p_WoB0_W, p_WoB1_W, p_WoB2_W, p_WoB3_W);
   /// @endcode
-  /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
-  /// triangle with its right-handed normal pointing inward (toward vertex B3).
-  /// A zero volume means B is a triangle, line, or point (not a tetrahedron).
-  /// A negative volume occurs if the triangle defined by B0, B1, B2 has its
-  /// right-handed normal pointing outward (away from vertex B3).
   /// @see SolidTetrahedronAboutVertexWithDensity() to efficiently calculate a
   /// spatial inertia about a vertex of B.
   static SpatialInertia<T> SolidTetrahedronAboutPointWithDensity(
@@ -233,14 +228,6 @@ class SpatialInertia {
   /// @param[in] p3 position vector p_B0B3_E from B0 to B3, expressed in E.
   /// @retval M_BB0_E B's spatial inertia about its vertex B0, expressed in E.
   /// @pre density ≥ 0.
-  /// @note A positive volume (and mass) occurs if vertices B0, B1, B2 define a
-  /// triangle with its right-handed normal pointing inward (toward vertex B3).
-  /// In other words the volume is positive if  p1.cross(p2).dot(p3) > 0.
-  /// A zero volume means B is a triangle, line, or point (not a tetrahedron).
-  /// In other words the volume is zero if p1.cross(p2).dot(p3) = 0.
-  /// A negative volume occurs if the triangle defined by B0, B1, B2 has its
-  /// right-handed normal pointing outward (away from vertex B3).
-  /// In other words the volume is negative if p1.cross(p2).dot(p3) < 0.
   /// @see SolidTetrahedronAboutPointWithDensity() to calculate a spatial
   /// inertia about an arbitrary point.
   static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(

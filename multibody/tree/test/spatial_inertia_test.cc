@@ -259,7 +259,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   const Vector3<double> p_B0Bcm = 0.25 * (p1 + p2 + p3);
   const UnitInertia<double> G_BB0 =
       UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p2, p3);
-  SpatialInertia<double> M_BB0_expected(mass, p_B0Bcm, G_BB0);
+  const SpatialInertia<double> M_BB0_expected(mass, p_B0Bcm, G_BB0);
   SpatialInertia<double> M_BB0 =
       SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           density, p1, p2, p3);
@@ -269,9 +269,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
 
-  // Ensure mass becomes negative if the first two arguments are switched.
-  M_BB0_expected = SpatialInertia<double>(-mass, p_B0Bcm, G_BB0,
-      /* skip_validity_check = */ true);
+  // Ensure nothing changes if two arguments are switched (e.g., p1 and p2).
   M_BB0 = SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
           density, p2, p1, p3);
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
@@ -301,7 +299,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
                               M_BA.CopyToFullMatrix6(), kTolerance));
 
   // Check a more general case in which p_AB0 is a non-zero vector.
-  p_AB0 = Vector3<double>(0.1, 0.4, 0.5);
+  p_AB0 = Vector3<double>(1, 4, 5);
   p_AB1 += p_AB0;
   p_AB2 += p_AB0;
   p_AB3 += p_AB0;
@@ -311,12 +309,7 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
 
-  // Ensure mass becomes negative if the two arguments are switched.
-  const double mass = M_BA_expected.get_mass();
-  const Vector3<double> p_ABcm = M_BA_expected.get_com();
-  const UnitInertia<double> G_BA = M_BA_expected.get_unit_inertia();
-  M_BA_expected = SpatialInertia<double>(-mass, p_ABcm, G_BA,
-                                         /* skip_validity_check = */ true);
+  // Ensure nothing changes if two arguments are switched (e.g., p_AB2, p_AB3).
   M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(density,
       p_AB0, p_AB1, p_AB3, p_AB2);
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
