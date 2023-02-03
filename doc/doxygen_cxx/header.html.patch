@@ -69,7 +69,7 @@
 +  </form>
 +  <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
 +   <input type="text" name="q" placeholder="Search all of Drake…">
-+   <input type="hidden" name="sites" value="drake.mit.edu">
++   <input type="hidden" name="sites" value="drake.mit.edu OR site:underactuated.csail.mit.edu OR site:manipulation.csail.mit.edu" />
 +  </form>
 + </div>
 + <!--BEGIN SEARCHENGINE-->
