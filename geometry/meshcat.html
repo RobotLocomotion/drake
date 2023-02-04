@@ -38,10 +38,10 @@
 
     const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
-    // Gamepad support - first check if the gamepad feature is available
+    // Gamepad support - first check if the gamepad feature is available.
     const gamepads_supported = !!navigator.getGamepads;
     if (!gamepads_supported) {
-      if(!window.isSecureContext) {
+      if (!window.isSecureContext) {
         console.warn("Gamepads are not supported outside of a secure context. "
         + "See https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts"
         + " for details. Some browsers support localhost and allowlists.");
