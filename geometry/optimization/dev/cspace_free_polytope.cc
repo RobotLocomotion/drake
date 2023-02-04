@@ -1718,6 +1718,53 @@ CspaceFreePolytope::BinarySearch(
   return ret;
 }
 
+std::unique_ptr<solvers::MathematicalProgram>
+CspaceFreePolytope::InitializePolytopeSearchProgram(
+    const IgnoredCollisionPairs& ignored_collision_pairs,
+    const std::unordered_map<SortedPair<geometry::GeometryId>,
+                             SeparationCertificateResult>& certificates,
+    bool search_s_bounds_lagrangians, MatrixX<symbolic::Variable>* C,
+    VectorX<symbolic::Variable>* d,
+    std::unordered_map<int, SeparationCertificate>* new_certificates) const {
+  const int s_size = rational_forward_kin_.s().rows();
+  const int C_rows = certificates.begin()
+                         ->second.positive_side_rational_lagrangians[0]
+                         .polytope.rows();
+  C->resize(C_rows, s_size);
+  d->resize(C_rows);
+  for (int i = 0; i < C_rows; ++i) {
+    for (int j = 0; j < s_size; ++j) {
+      (*C)(i, j) = symbolic::Variable(fmt::format("C({},{})", i, j));
+    }
+    (*d)(i) = symbolic::Variable(fmt::format("d{}", i));
+  }
+  const auto d_minus_Cs = this->CalcDminusCs<symbolic::Variable>(*C, *d);
+  // In order to get consistent result, I put element into certificates_vec in a
+  // sorted order, based on the plane index.
+  std::vector<std::optional<SeparationCertificateResult>> certificates_vec;
+  for (const auto& plane : separating_planes_) {
+    const SortedPair<geometry::GeometryId> geometry_pair(
+        plane.positive_side_geometry->id(), plane.negative_side_geometry->id());
+    if (ignored_collision_pairs.count(geometry_pair) == 0) {
+      const auto it = certificates.find(geometry_pair);
+      if (it == certificates.end()) {
+        const auto& inspector = scene_graph_.model_inspector();
+        throw std::runtime_error(
+            fmt::format("InitializePolytopeSearchProgram: certificates doesn't "
+                        "contain result for the geometry pair ({}, {})",
+                        inspector.GetName(geometry_pair.first()),
+                        inspector.GetName(geometry_pair.second())));
+      }
+      certificates_vec.emplace_back(it->second);
+    }
+  }
+  const int gram_total_size = this->GetGramVarSizeForPolytopeSearchProgram(
+      ignored_collision_pairs, search_s_bounds_lagrangians);
+  return this->InitializePolytopeSearchProgram(
+      ignored_collision_pairs, *C, *d, d_minus_Cs, certificates_vec,
+      search_s_bounds_lagrangians, gram_total_size, new_certificates);
+}
+
 std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>
 GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
                        const geometry::SceneGraph<double>& scene_graph) {

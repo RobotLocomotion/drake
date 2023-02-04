@@ -384,6 +384,34 @@ class CspaceFreePolytope {
       const Eigen::Ref<const Eigen::VectorXd>& s_center,
       const BinarySearchOptions& options) const;
 
+  /**
+   Constructs a program to search for the C-space polytope {s | C*s<=d,
+   s_lower<=s<=s_upper} such that this polytope is collision free.
+   This program treats C and d as decision variables, and searches for the
+   separating planes between each pair of geometries.
+   Note that this program doesn't contain any cost yet.
+   @param certificates The return of
+   FindSeparationCertificateGivenPolytope().
+   @param search_s_bounds_lagrangians Set to true if we search for the
+   Lagrangian multiplier for the bounds s_lower <=s<=s_upper.
+   @param[out] C The C-space polytope is parameterized as {s | C*s<=d,
+   s_lower<=s<=s_upper}.
+   @param[out] d The C-space polytope is parameterized as {s | C*s<=d,
+   s_lower<=s<=s_upper}.
+   @param[out] new_certificates The new certificates to certify the new C-space
+   polytope {s | C*s<=d, s_lower<=s<=s_upper} is collision free. If
+   new_certificates=nullptr, then we don't update it. This is used for testing.
+   */
+  [[nodiscard]] std::unique_ptr<solvers::MathematicalProgram>
+  InitializePolytopeSearchProgram(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const std::unordered_map<SortedPair<geometry::GeometryId>,
+                               SeparationCertificateResult>& certificates,
+      bool search_s_bounds_lagrangians, MatrixX<symbolic::Variable>* C,
+      VectorX<symbolic::Variable>* d,
+      std::unordered_map<int, SeparationCertificate>* new_certificates =
+          nullptr) const;
+
  private:
   // Forward declaration the tester class. This tester class will expose the
   // private members of CspaceFreePolytope for unit test.
