@@ -343,10 +343,25 @@ void DiagramBuilder<T>::ThrowIfSystemNotRegistered(
     const System<T>* system) const {
   DRAKE_DEMAND(system != nullptr);
   if (systems_.count(system) == 0) {
+    std::string registered_system_names{};
+    for (const auto& sys : registered_systems_) {
+      if (!registered_system_names.empty()) {
+        registered_system_names += ", ";
+      }
+      registered_system_names += '\'' + sys->get_name() + '\'';
+    }
+    if (registered_system_names.empty()) {
+      registered_system_names = "NONE";
+    }
+
     throw std::logic_error(fmt::format(
-        "DiagramBuilder: Cannot operate on ports of System {} "
-        "until it has been registered using AddSystem",
-        system->get_name()));
+        "DiagramBuilder: System '{}' has not been registered to this "
+        "DiagramBuilder using AddSystem nor AddNamedSystem.\n\nThe systems "
+        "currently registered to this builder are: {}.\n\nIf '{}' was "
+        "registered as a subsystem to one of these, you must export the input "
+        "or output port using ExportInput/ExportOutput and then connect to the "
+        "exported port.",
+        system->get_name(), registered_system_names, system->get_name()));
   }
 }
 
