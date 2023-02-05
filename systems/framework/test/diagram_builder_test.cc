@@ -227,20 +227,27 @@ GTEST_TEST(DiagramBuilderTest, FinalizeWhenEmpty) {
 
 GTEST_TEST(DiagramBuilderTest, SystemsThatAreNotAddedThrow) {
   DiagramBuilder<double> builder;
+  // These integrators should be listed in the error messages when it prints the
+  // lists of registered systems.
+  builder.AddNamedSystem<Integrator>("integrator1", 1 /* size */);
+  builder.AddNamedSystem<Integrator>("integrator2", 1 /* size */);
   Adder<double> adder(1 /* inputs */, 1 /* size */);
   adder.set_name("adder");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.Connect(adder, adder),
-      "DiagramBuilder: Cannot operate on ports of System adder "
-      "until it has been registered using AddSystem");
+      "DiagramBuilder: System 'adder' has not been registered to this "
+      "DiagramBuilder using AddSystem nor AddNamedSystem.\n\n.*'integrator1', "
+      "'integrator2'.*\n\n.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ExportInput(adder.get_input_port(0)),
-      "DiagramBuilder: Cannot operate on ports of System adder "
-      "until it has been registered using AddSystem");
+      "DiagramBuilder: System 'adder' has not been registered to this "
+      "DiagramBuilder using AddSystem nor AddNamedSystem.\n\n.*'integrator1', "
+      "'integrator2'.*\n\n.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.ExportOutput(adder.get_output_port()),
-      "DiagramBuilder: Cannot operate on ports of System adder "
-      "until it has been registered using AddSystem");
+      "DiagramBuilder: System 'adder' has not been registered to this "
+      "DiagramBuilder using AddSystem nor AddNamedSystem.\n\n.*'integrator1', "
+      "'integrator2'.*\n\n.*");
 }
 
 GTEST_TEST(DiagramBuilderTest, ConnectVectorToAbstractThrow) {
