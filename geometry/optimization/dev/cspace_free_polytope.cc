@@ -1765,6 +1765,49 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
       search_s_bounds_lagrangians, gram_total_size, new_certificates);
 }
 
+std::optional<CspaceFreePolytope::SeparationCertificateResult>
+CspaceFreePolytope::IsGeometrySeparable(
+    const SortedPair<geometry::GeometryId>& geometry_pair,
+    const Eigen::Ref<const Eigen::MatrixXd>& C,
+    const Eigen::Ref<const Eigen::VectorXd>& d,
+    const CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions&
+        options) const {
+  const auto d_minus_Cs = this->CalcDminusCs<double>(C, d);
+  auto geometry_pair_it =
+      map_geometries_to_separating_planes_.find(geometry_pair);
+  if (geometry_pair_it == map_geometries_to_separating_planes_.end()) {
+    throw std::runtime_error(fmt::format(
+        "IsGeometrySeparable(): geometry pair ({}, {}) does not need "
+        "separation certificate",
+        scene_graph_.model_inspector().GetName(geometry_pair.first()),
+        scene_graph_.model_inspector().GetName(geometry_pair.second())));
+  }
+  const int plane_index = geometry_pair_it->second;
+
+  std::unordered_set<int> C_redundant_indices;
+  std::unordered_set<int> s_lower_redundant_indices;
+  std::unordered_set<int> s_upper_redundant_indices;
+  this->FindRedundantInequalities(C, d, this->s_lower_, this->s_upper_,
+                                  0 /* tighten */, &C_redundant_indices,
+                                  &s_lower_redundant_indices,
+                                  &s_upper_redundant_indices);
+  auto certificate_program = this->ConstructPlaneSearchProgram(
+      this->plane_geometries_[plane_index], d_minus_Cs, C_redundant_indices,
+      s_lower_redundant_indices, s_upper_redundant_indices);
+  solvers::MathematicalProgramResult result;
+  solvers::MakeSolver(options.solver_id)
+      ->Solve(*certificate_program.prog, std::nullopt, options.solver_options,
+              &result);
+  if (result.is_success()) {
+    return certificate_program.certificate.GetSolution(
+        plane_index, separating_planes_[plane_index].a,
+        separating_planes_[plane_index].b,
+        separating_planes_[plane_index].decision_variables, result);
+  } else {
+    return std::nullopt;
+  }
+}
+
 std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>
 GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
                        const geometry::SceneGraph<double>& scene_graph) {
