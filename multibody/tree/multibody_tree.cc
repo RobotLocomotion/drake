@@ -614,21 +614,28 @@ void MultibodyTree<T>::SetVelocitiesInArray(
   model_instances_.at(model_instance)->SetVelocitiesInArray(v_instance, v);
 }
 
+// Create Joint objects' implementation. Joints are implemented using a
+// combination of MultibodyTree's building blocks such as Body, MobilizedBody,
+// ForceElement and Constraint. For a same physical Joint, several
+// implementations could be created (for instance, a Constraint instead of a
+// Mobilizer). The decision on what implementation to create is performed by
+// MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
+// can request MultibodyTree for these choices when building the Joint
+// implementation. Since a Joint's implementation is built upon
+// MultibodyTree's building blocks, notice that creating a Joint's
+// implementation will therefore change the tree topology. Since topology
+// changes are NOT allowed after Finalize(), joint implementations MUST be
+// assembled BEFORE the tree's topology is finalized.
 template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!topology_is_valid());
-  // Create Joint objects' implementation. Joints are implemented using a
-  // combination of MultibodyTree's building blocks such as Body, MobilizedBody,
-  // ForceElement and Constraint. For a same physical Joint, several
-  // implementations could be created (for instance, a Constraint instead of a
-  // Mobilizer). The decision on what implementation to create is performed by
-  // MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
-  // can request MultibodyTree for these choices when building the Joint
-  // implementation. Since a Joint's implementation is built upon
-  // MultibodyTree's building blocks, notice that creating a Joint's
-  // implementation will therefore change the tree topology. Since topology
-  // changes are NOT allowed after Finalize(), joint implementations MUST be
-  // assembled BEFORE the tree's topology is finalized.
+
+  // We're assuming here that Joint parent/child maps to Mobilizer
+  // inboard/outboard. That's an unreasonable restriction even for tree
+  // structured Joint inputs.
+  // TODO(sherm1) Allow for reversing inboard/outboard ordering if necessary
+  //  to form a tree of MobilizedBodies, and use a reversed mobilizer as the
+  //  implementation to preserve Joint semantics.
   const int num_joints_pre_floating_joints = num_joints();
   joint_to_mobilizer_.resize(num_joints_pre_floating_joints);
   for (int i = 0; i < num_joints_pre_floating_joints; ++i) {
@@ -667,7 +674,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
     auto& joint = owned_joints_[i];
     std::vector<MobilizedBody<T>*> mobilizers =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, which is  true
+    // Below we assume a single mobilizer per joint, which is true
     // for all joint types currently implemented. This may change in the future
     // when closed topologies are supported.
     DRAKE_DEMAND(mobilizers.size() == 1);
@@ -699,7 +706,7 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
 template <typename T>
 void MultibodyTree<T>::FinalizeTopology() {
   // If the topology is valid it means that this MultibodyTree was already
-  // finalized. Re-compilation is not allowed.
+  // finalized. Re-finalization is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
         "Attempting to call MultibodyTree::FinalizeTopology() on a tree with"

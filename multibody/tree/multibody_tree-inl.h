@@ -218,6 +218,7 @@ const MobilizerType<T>& MultibodyTree<T>::AddMobilizer(
       mobilizer->has_quaternion_dofs();
 
   MobilizerType<T>* raw_mobilizer_ptr = mobilizer.get();
+  // We're going to reorder these later.
   owned_mobilizers_.push_back(std::move(mobilizer));
   return *raw_mobilizer_ptr;
 }

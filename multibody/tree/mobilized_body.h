@@ -35,34 +35,32 @@ A Mobilizer connects a frame F ("fixed") on the inboard body to a frame M
 ("moving") on the outboard body. Consider the following example to build a
 simple pendulum system:
 
-@code
-MultibodyTree<double> model;
-// ... Code here to setup quantities below as mass, com, X_BM, etc. ...
-const Body<double>& pendulum =
-  model.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
-// We will connect the pendulum (outboard) body B to the world frame W
-// (world is the inboard body here) using a RevoluteMobilizer. To do so we
-// define a pin frame M rigidly attached to the pendulum body.
-FixedOffsetFrame<double>& pin_frame =
-  model.AddFrame<FixedOffsetFrame>(
-    pendulum.body_frame(),
-    X_BM  // pose of pin frame M in body frame B
-    );
-// The mobilizer connects the world frame and the pin frame effectively
-// adding the single degree of freedom describing this system. In this
-// regard, the role of a mobilizer is equivalent but conceptually
-// different than a set of constraints that effectively remove all degrees
-// of freedom but the one permitting rotation about the z-axis.
-const RevoluteMobilizer<double>& revolute_mobilizer =
-  model.AddMobilizer<RevoluteMobilizer>(
-    model.world_frame(), // inboard frame F (= W)
-    pin_frame,           // outboard frame M
-    Vector3d::UnitZ()    // revolute axis in this case
-    ));
-@endcode
+  MultibodyTree<double> model;
+  // ... Code here to setup quantities below as mass, com, X_BM, etc. ...
+  const Body<double>& pendulum =
+    model.AddBody<RigidBody>(SpatialInertia<double>(mass, com, unit_inertia));
+  // We will connect the pendulum (outboard) body B to the world frame W
+  // (world is the inboard body here) using a RevoluteMobilizer. To do so we
+  // define a pin frame M rigidly attached to the pendulum body.
+  FixedOffsetFrame<double>& pin_frame =
+    model.AddFrame<FixedOffsetFrame>(
+      pendulum.body_frame(),
+      X_BM  // pose of pin frame M in body frame B
+      );
+  // The mobilizer connects the world frame and the pin frame effectively
+  // adding the single degree of freedom describing this system. In this
+  // regard, the role of a mobilizer is equivalent but conceptually
+  // different than a set of constraints that effectively remove all degrees
+  // of freedom but the one permitting rotation about the z-axis.
+  const RevoluteMobilizer<double>& revolute_mobilizer =
+    model.AddMobilizer<RevoluteMobilizer>(
+      model.world_frame(), // inboard frame F (= W)
+      pin_frame,           // outboard frame M
+      Vector3d::UnitZ()    // revolute axis in this case
+      ));
 
-<h3>Tree Structure</h3>
-
+Tree Structure
+--------------
 A mobilizer induces a tree structure within a MultibodyTree
 model, connecting an inboard (topologically closer to the world) frame to an
 outboard (topologically further from the world) frame. Every time a
@@ -89,7 +87,7 @@ so that we can process the tree by running through them in order.
 A mobilizer describes the kinematics relationship between an inboard
 frame F and an outboard frame M, introducing an nq-dimensional vector of
 generalized coordinates q and an nv-dimensional vector of generalized
-velocities v. Notice that in general `nq != nv`, though `nq == nv` is a very
+velocities v. Notice that in general nq != nv, though nq == nv is a very
 common case. The kinematic relationships introduced by a mobilizer are
 fully specified by [Seth 2010]. The monogram notation used below for X_FM,
 V_FM, F_Mo_F, etc., is described in @ref multibody_frames_and_bodies.
@@ -100,54 +98,54 @@ these associated with the multibody tree.
 
 - X_FM(q):
     The outboard frame M's pose as measured and expressed in the inboard
-    frame F, as a function of the mobilizer's generalized positions `q`.
+    frame F, as a function of the mobilizer's generalized positions q.
     This pose is computed by CalcAcrossMobilizerTransform().
 - H_FM(q):
-    The `6 x nv` mobilizer hinge matrix `H_FM` relates `V_FM` (outboard
+    The 6 x nv mobilizer hinge matrix H_FM relates V_FM (outboard
     frame M's spatial velocity in its inboard frame F, expressed in F) to
-    the mobilizer's `nv` generalized velocities (or mobilities) `v` as
-    `V_FM = H_FM * v`.  CalcAcrossMobilizerSpatialVelocity()
-    calculates `V_FM`.  Be aware that Drake's spatial velocities are not the
+    the mobilizer's nv generalized velocities (or mobilities) v as
+    V_FM = H_FM ⋅ v.  CalcAcrossMobilizerSpatialVelocity()
+    calculates V_FM.  Be aware that Drake's spatial velocities are not the
     Plücker vectors defined in [Featherstone 2008, Ch. 2], and that our
     definition of the hinge matrix H is transposed from [Jain 2010].
 - H_FMᵀ(q):
-    H_FMᵀ is the `nv x 6` matrix transpose of `H_FM`.  It relates the `nv`
-    generalized forces `tau` to `F_Mo_F` (the spatial force on frame M at
-    point Mo, expressed in F) as `tau = H_FMᵀ ⋅ F_Mo_F`
-    ProjectSpatialForce() calculates `tau`.
+    H_FMᵀ is the nv x 6 matrix transpose of H_FM.  It relates the nv
+    generalized forces tau to F_Mo_F (the spatial force on frame M at
+    point Mo, expressed in F) as tau = H_FMᵀ ⋅ F_Mo_F
+    ProjectSpatialForce() calculates tau.
     Be aware that Drake's spatial forces are not the Plücker vectors defined
     in [Featherstone 2008, Ch. 2], and that our definition of the hinge matrix
     H is transposed from [Jain 2010].
 - Hdot_FM(q, v):
-    The time derivative of the mobilizer hinge matrix `H_FM` is used in the
-    calculation of `A_FM(q, v, v̇)` (outboard frame M's spatial acceleration
+    The time derivative of the mobilizer hinge matrix H_FM is used in the
+    calculation of A_FM(q, v, v̇) (outboard frame M's spatial acceleration
     in its inboard frame F, expressed in F) as
-    `A_FM(q, v, v̇) = H_FM(q) * v̇ + Ḣ_FM(q, v) * v`.
-    CalcAcrossMobilizerSpatialAcceleration() calculates `A_FM`.
+    A_FM(q, v, v̇) = H_FM(q) ⋅ v̇ + Ḣ_FM(q, v) ⋅ v.
+    CalcAcrossMobilizerSpatialAcceleration() calculates A_FM.
 - N(q):
-    This `nq x nv` kinematic coupling matrix relates q̇ (the time-derivative
-    of the mobilizer's generalized positions) to `v` (the mobilizer's
-    generalized velocities) as `q̇ = N(q) * v`, [Seth 2010].
+    This nq x nv kinematic coupling matrix relates q̇ (the time-derivative
+    of the mobilizer's generalized positions) to v (the mobilizer's
+    generalized velocities) as q̇ = N(q) ⋅ v, [Seth 2010].
     MapVelocityToQDot() performs this computation.
 - N⁺(q):
-    The left pseudo-inverse of `N(q)`. `N⁺(q)` can be used to invert the
-    relationship `q̇ = N(q) * v` without residual error, provided that `q̇` is
-    in the range space of `N(q)` (that is, if it _could_ have been produced
-    as `q̇ = N(q) * v` for some `v`). The application `v = N⁺(q) * q̇` is
+    The left pseudo-inverse of N(q). N⁺(q) can be used to invert the
+    relationship q̇ = N(q) ⋅ v without residual error, provided that q̇ is
+    in the range space of N(q) (that is, if it _could_ have been produced
+    as q̇ = N(q) ⋅ v for some v). The application v = N⁺(q) ⋅ q̇ is
     implemented in MapQDotToVelocity().
 
-In general, `nv != nq`. As an example, consider a quaternion mobilizer that
+In general, nv != nq. As an example, consider a quaternion mobilizer that
 would allow frame M to move freely with respect to frame F. For such a
 mobilizer the generalized positions vector might contain a quaternion to
 describe rotations plus a position vector to describe translations. However,
-we might choose the angular velocity `w_FM` and the linear velocity `v_FM`
+we might choose the angular velocity w_FM and the linear velocity v_FM
 as the generalized velocities (or more generally, the spatial velocity
-`V_FM`.) In such a case `nq = 7` (4 dofs for a quaternion plus 3 dofs for a
-position vector) and `nv = 6` (3 dofs for an angular velocity and 3 dofs for
+V_FM.) In such a case nq = 7 (4 dofs for a quaternion plus 3 dofs for a
+position vector) and nv = 6 (3 dofs for an angular velocity and 3 dofs for
 a linear velocity).
 
 For a detailed discussion on the concept of a mobilizer please refer to
-[Seth 2010]. The mobilizer "hinge" matrix `H_FM(q)` is introduced in
+[Seth 2010]. The mobilizer "hinge" matrix H_FM(q) is introduced in
 [Jain 2010], though be aware that what [Jain 2010] calls the hinge matrix is
 the transpose of the mobilizer hinge matrix H_FM matrix here in Drake.
 For details of the monogram notation used above please refer to
@@ -161,63 +159,75 @@ TODO(sherm1) The base class virtual methods should not be used in
  performance-sensitive computations; instead those should be performed in the
  concrete, mobilizer-specialized derived classes.
 
-<h4>Relation between hinge matrix and Jacobians</h4>
-
-The relationship between the across-mobilizer spatial velocity `V_FM` and
-the time derivative of the across-mobilizer transform `X_FM` is similar to
+Relation between hinge matrix and Jacobians
+-------------------------------------------
+The relationship between the across-mobilizer spatial velocity V_FM and
+the time derivative of the across-mobilizer transform X_FM is similar to
 the relationship between the rigid transform Jacobian Jq_X_VM (partial
 derivatives of rigid transform X_FM with respect to generalized positions q)
-and the Drake mobilizer hinge matrix `H_FM` (partial derivatives of
-across-mobilizer q̇ with respect to generalized velocities v).
+and the Drake mobilizer hinge matrix H_FM (partial derivatives of
+across-mobilizer V_FM with respect to generalized velocities v).
 
-The translational velocity v_FM component of the spatial velocity `V_FM` is
-defined as the time derivative of the position vector p_FM in `X_FM`.
-  v_FM = dp_FM/dt = ∂p_FM/∂q * q̇ = ∂p_FM/∂q * N(q) * v = Hv_FM * v
+The translational velocity v_FM component of the spatial velocity V_FM is
+defined as the time derivative of the position vector p_FM in X_FM.
+  v_FM = dp_FM/dt = ∂p_FM/∂q ⋅ q̇ = ∂p_FM/∂q ⋅ N ⋅ v = Hv_FM ⋅ v
 
-where `Hv_FM = ∂p_FM/∂q * N(q)` is the last three rows in `H_FM`.
+where Hv_FM = ∂p_FM/∂q ⋅ N is the last three rows in H_FM.
 
-The angular velocity w_FM component of the spatial velocity `V_FM` can be
-related to the time derivative of the rotation matrix R_FM in `X_FM`. This
-complicated relationship can be written in terms of the skew symmetric
-angular velocity matrix [w_FM] as
- [w_FM] = d(R_FM)/dt * (R_FM)ᵀ
+The angular velocity w_FM component of the spatial velocity V_FM can be
+related to the time derivative of the rotation matrix R_FM in X_FM. The
+time derivative of a rotation matrix R is Ṙ = [ω]R where [ω] (=ṘRᵀ) is the
+skew-symmetric cross product matrix formed from the angular velocity ω.
+We have the identity Rᵀ[ω]R=[Rᵀω] for orthogonal R. Premultiplying the Ṙ
+equation by Rᵀ then gives [Rᵀω] = RᵀṘ which we can use to write
 
-The ordinary time-derivative of the rotation matrix R_FM is
-  d(R_FM)/dt = ∂R/∂q * q̇ = ∂R/∂q * N(q) * v
+ [R_FMᵀ ⋅ w_FM] = R_FMᵀ ⋅ dR_FM/dt
+                = R_FMᵀ ⋅ ∂R_FM/∂q ⋅ q̇
+                = R_FMᵀ ⋅ ∂R_FM/∂q ⋅ N ⋅ v
 
-Combining the previous two equations leads to <pre>
- [w_FM] = ∂R/∂q * N(q) * v * (R_FM)ᵀ
+We define Hw_FM (the first three rows of H_FM) such that
+  w_FM = Hw_FM ⋅ v
 
-Post-multiplying both sides of the previous equation by R_FM gives
- [w_FM] * R_FM = ∂R/∂q * N(q) * v
+so the relationship with the Jacobian of R_FM can be seen as
+    [R_FMᵀ ⋅ Hw_FM ⋅ v] = R_FMᵀ ⋅ ∂R_FM/∂q ⋅ N ⋅ v
+or          [Hw_FM ⋅ v] = ∂R_FM/∂q ⋅ N ⋅ v ⋅ R_FMᵀ
 
-TODO(sherm1, alejandro) The following cannot be right since Hw_FM is 3 x nv.
- In fact we have w_FM = Hw_FM * v.
+TODO(alejandro) Can the above be simplified to get rid of v to provide a
+ more-direct relationship between Hw_FM and ∂R_FM/∂q as we have for translation?
+ Here is the best I've come up with so far:
 
-`Hw_FM` is the first three rows in `H_FM`, defined by context as
- Hw_FM * R_FM = ∂R/∂q * N(q)
+Dropping the frames for clarity, we can write the RHS as
+ | ∂R₀Rᵀ ∂R₁Rᵀ ∂R₂Rᵀ ∂R₃Rᵀ | ⋅ N ⋅ v
+where ∂Rᵢ≜∂R/∂qᵢ.
+
+That matrix can be viewed as a 1 x 4 hypermatrix (each entry is 3x3)
+compatible with the 4 x 3 N matrix, yielding a 1 x 3. The final multiply by
+v (3 x 1) yields a single (1x1) 3x3 matrix, matching the LHS. That 1x3
+matrix | ∑Nᵢ₀∂RᵢRᵀ ∑Nᵢ₁∂RᵢRᵀ ∑Nᵢ₂∂RᵢRᵀ | consists of the three columns of
+Hw_FM (each a 3 vector) written as a skew-symmetric matrix.
 
 
-<h4>Active forces and power</h4>
-
+Active forces and power
+-----------------------
 The power generated by a mobilizer can be computed in two equivalent ways.
-That is, the power can be computed in terms of the spatial force `F_Mo` and
-the spatial velocity `V_FM` as: <pre>
-  P = F_Moᵀ * V_FM
-</pre>
-or in terms of the generalized forces `tau = H_FMᵀ(q) ⋅ F_Mo` and the
-generalized velocities v as: <pre>
-  P = tauᵀ * v
-</pre>
-Notice that spatial forces in the null space of `H_FM(q)` do not perform any
+That is, the power can be computed in terms of the spatial force F_Mo and
+the spatial velocity V_FM as:
+  P = F_Moᵀ ⋅ V_FM
+
+or in terms of the generalized forces tau = H_FMᵀ(q) ⋅ F_Mo and the
+generalized velocities v as:
+  P = tauᵀ ⋅ v
+
+Notice that spatial forces in the null space of H_FM(q) do not perform any
 work.  Since the result from the previous two expressions must be equal, the
-mobilizer hinge matrix `H_FM(q)` and its transpose `H_FMᵀ(q)` are
-constrained by: <pre>
-  (H_FMᵀ(q) * F) * v = Fᵀ * (H_FM(q) * v), ∀ v ∈ ℝⁿᵛ ∧ `F ∈ F⁶`
-</pre>
+mobilizer hinge matrix H_FM(q) and its transpose H_FMᵀ(q) are
+constrained by:
+  (H_FMᵀ(q) ⋅ F) ⋅ v = Fᵀ ⋅ (H_FM(q) ⋅ v), ∀ v ∈ ℝⁿᵛ ∧ F ∈ F⁶
+
 Therefore, this enforces a relationship to the operations implemented by
 CalcAcrossMobilizerSpatialVelocity() and ProjectSpatialForce() for any
 MobilizedBody object.
+
 
 - [Jain 2010] Jain, A., 2010. Robot and multibody dynamics: analysis and
               algorithms. Springer Science & Business Media.

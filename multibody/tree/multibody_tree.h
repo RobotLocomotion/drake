@@ -2991,16 +2991,19 @@ class MultibodyTree {
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckHasRightSizeForModel().
 
+  // These are the elements created by users of MultibodyPlant.
   const RigidBody<T>* world_body_{nullptr};
   std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
-  std::vector<std::unique_ptr<MobilizedBody<T>>> owned_mobilizers_;
+  std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<JointActuator<T>>> owned_actuators_;
-  std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
+
   std::vector<std::unique_ptr<internal::ModelInstance<T>>> model_instances_;
 
-  std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
+
+  // Mobilized bodies are
+  std::vector<std::unique_ptr<MobilizedBody<T>>> owned_mobilizers_;
 
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a

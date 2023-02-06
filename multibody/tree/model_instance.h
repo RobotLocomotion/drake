@@ -12,48 +12,48 @@
 
 namespace drake {
 namespace multibody {
-
-/// @file
-/// @anchor model_instance
-/// Model instance information for multibody trees.
-///
-/// A MultiBodyTree is composed of a number of MultibodyElement items.  In
-/// more complex trees, these items will be loaded from multiple models
-/// (e.g. robot arm, attached gripper, free bodies being manipulated).  Each
-/// model may have a different controller or observer, so the ability to view
-/// the state or command actuation for each model independently can be useful.
-/// For this reason, elements are associated with a ModelInstanceIndex to
-/// determine which model an element belongs to.  In most cases, the allocation
-/// of model instances and assignment of elements to the appropriate model
-/// instance will be handled by the parser loading the model.
-///
-/// There are two special ModelElementIndex values.  The world body is always
-/// ModelInstanceIndex 0, and ModelInstanceIndex 1 is reserved for all elements
-/// with no explicit model instance.  This is generally only relevant for
-/// elements created programmatically (and for which a model instance is not
-/// explicitly specified), as model parsers should handle creating model
-/// elements as needed.
-///
-/// For different types of MultibodyElement, the model instance is
-/// sometimes specified explicitly, and sometimes inferred when the
-/// element is created.  The current convention is:
-///
-/// * Body: Specified at creation
-/// * BodyNode: Same as the associated Body
-/// * Frame: Same as the associated Body
-/// * Joint: Same as the child frame
-/// * JointActuator: Same as the associated Joint
-/// * MobilizedBody:
-///   * Same as the joint (if created from a joint)
-///   * Same as the body (for free floating bodies)
-///   * When creating mobilizers for other reasons (e.g. for unit tests) the
-///     author should take care to choose a reasonable model instance.
-/// * ForceElement: Depends on the type of element
-///   * UniformGravityFieldElement: uses the world model instance
-
 namespace internal {
 
-// @tparam_default_scalar
+/* Model instance information for multibody trees.
+
+MultibodyPlant users see only the ModelInstanceIndex; the underlying
+ModelInstance is for internal use only.
+
+A MultibodyTree is composed of a number of MultibodyElement items.  In
+more complex trees, these items will be loaded from multiple models
+(e.g. robot arm, attached gripper, free bodies being manipulated).  Each
+model may have a different controller or observer, so the ability to view
+the state or command actuation for each model independently can be useful.
+For this reason, elements are associated with a ModelInstanceIndex to
+determine which model an element belongs to.  In most cases, the allocation
+of model instances and assignment of elements to the appropriate model
+instance will be handled by the parser loading the model.
+
+There are two special ModelElementIndex values.  The world body is always
+ModelInstanceIndex 0, and ModelInstanceIndex 1 is reserved for all elements
+with no explicit model instance.  This is generally only relevant for
+elements created programmatically (and for which a model instance is not
+explicitly specified), as model parsers should handle creating model
+elements as needed.
+
+For different types of MultibodyElement, the model instance is
+sometimes specified explicitly, and sometimes inferred when the
+element is created.  The current convention is:
+
+* Body: Specified at creation
+* Frame: Same as the associated Body
+* Joint: Same as the child frame
+* JointActuator: Same as the associated Joint
+* ForceElement: Depends on the type of element
+  * UniformGravityFieldElement: uses the world model instance
+
+* MobilizedBody:
+  * Same as the joint (if created from a joint)
+  * Same as the body and its floating joint (for free floating bodies)
+  * When creating mobilized bodies for other reasons (e.g. for unit tests) the
+    author should take care to choose a reasonable model instance.
+
+@tparam_default_scalar */
 template <typename T>
 class ModelInstance : public MultibodyElement<T> {
  public:
