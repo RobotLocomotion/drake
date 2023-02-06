@@ -78,7 +78,7 @@ void CompliantContactManager<T>::set_sap_solver_parameters(
 }
 
 template <typename T>
-void CompliantContactManager<T>::DeclareCacheEntries() {
+void CompliantContactManager<T>::DoDeclareCacheEntries() {
   // N.B. We use xd_ticket() instead of q_ticket() since discrete
   // multibody plant does not have q's, but rather discrete state.
   // Therefore if we make it dependent on q_ticket() the Jacobian only
