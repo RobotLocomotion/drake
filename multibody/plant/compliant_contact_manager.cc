@@ -23,6 +23,7 @@
 using drake::geometry::ContactSurface;
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
+using drake::math::RigidTransform;
 using drake::math::RotationMatrix;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::internal::DiscreteContactPair;
@@ -1034,6 +1035,103 @@ void CompliantContactManager<T>::DoCalcAccelerationKinematicsCache(
       context0, plant().EvalPositionKinematics(context0),
       plant().EvalVelocityKinematics(context0), ac->get_vdot(),
       &ac->get_mutable_A_WB_pool());
+}
+
+template <typename T>
+void CompliantContactManager<T>::DoCalcDiscreteUpdateMultibodyForces(
+      const systems::Context<T>& context,
+      MultibodyForces<T>* forces) const {
+  // Thus far only contact constraints are considered.
+  // Therefore here we throw an exception to inform the user this feature is
+  // missing, instead of returning an incomplete result.
+  // TODO(amcastro-tri): extend this functionality to include arbitrary
+  // constraints, see #18749.
+  if (plant().num_constraints() > 0) {
+    throw std::logic_error(
+        "Currently reaction forces do not include the effect of additional "
+        "constraints in the model, but only contact constraints. See Drake "
+        "issue #18749.");
+  }
+
+  // TODO(amcastro-tri): This call evaluates all non-contact forces at the same
+  // state stored in the context. With SAP for instance we evaluate dissipation
+  // at the next time step and all other forces at the previous time step. As
+  // is, this might introduce an O(dt) error during transients. While this will
+  // be acceptable for most applications, the accuracy can be improved by asking
+  // the specific driver for the forces used during the discrete update. Related
+  // to #13888.
+  this->CalcNonContactForces(context, forces);
+
+  // Add contribution from contact results.
+  auto& Fapplied_Bo_W_array = forces->mutable_body_forces();
+  const ContactResults<T>& contact_results = this->EvalContactResults(context);
+  CalcAndAddSpatialContactForcesFromContactResults(context, contact_results,
+                                                   &Fapplied_Bo_W_array);
+}
+
+template <typename T>
+void CompliantContactManager<T>::
+    CalcAndAddSpatialContactForcesFromContactResults(
+        const systems::Context<T>& context,
+        const ContactResults<T>& contact_results,
+        std::vector<SpatialForce<T>>* spatial_contact_forces) const {
+  // Add contribution from point contact.
+  for (int i = 0; i < contact_results.num_point_pair_contacts(); ++i) {
+    const PointPairContactInfo<T>& pair =
+        contact_results.point_pair_contact_info(i);
+    const Body<T>& bodyA = plant().get_body(pair.bodyA_index());
+    const Body<T>& bodyB = plant().get_body(pair.bodyB_index());
+    const Vector3<T>& f_Bc_W = pair.contact_force();
+    const Vector3<T>& p_WC = pair.contact_point();
+    const SpatialForce<T> F_Bc_W(Vector3<T>::Zero(), f_Bc_W);
+
+    // Contact spatial force on body A.
+    const RigidTransform<T>& X_WA = plant().EvalBodyPoseInWorld(context, bodyA);
+    const Vector3<T>& p_WA = X_WA.translation();
+    const Vector3<T> p_CA_W = p_WA - p_WC;
+    const SpatialForce<T> F_Ao_W = -F_Bc_W.Shift(p_CA_W);
+
+    // Contact spatial force on body B.
+    const RigidTransform<T>& X_WB = plant().EvalBodyPoseInWorld(context, bodyB);
+    const Vector3<T>& p_WB = X_WB.translation();
+    const Vector3<T> p_CB_W = p_WB - p_WC;
+    const SpatialForce<T> F_Bo_W = F_Bc_W.Shift(p_CB_W);
+
+    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+  }
+
+  // Add contribution from hydroelastic contact.
+  for (int i = 0; i < contact_results.num_hydroelastic_contacts(); ++i) {
+    const HydroelasticContactInfo<T>& info =
+        contact_results.hydroelastic_contact_info(i);
+
+    const GeometryId geometryM_id = info.contact_surface().id_M();
+    const GeometryId geometryN_id = info.contact_surface().id_N();
+    const BodyIndex bodyA_index = this->FindBodyByGeometryId(geometryM_id);
+    const BodyIndex bodyB_index = this->FindBodyByGeometryId(geometryN_id);
+    const Body<T>& bodyA = plant().get_body(bodyA_index);
+    const Body<T>& bodyB = plant().get_body(bodyB_index);
+
+    // Spatial contact force at the centroid of the contact surface.
+    const SpatialForce<T>& F_Ac_W = info.F_Ac_W();
+    const Vector3<T>& p_WC = info.contact_surface().centroid();
+
+    // Contact spatial force on body A.
+    const RigidTransform<T>& X_WA = plant().EvalBodyPoseInWorld(context, bodyA);
+    const Vector3<T>& p_WA = X_WA.translation();
+    const Vector3<T> p_CA_W = p_WA - p_WC;
+    const SpatialForce<T> F_Ao_W = F_Ac_W.Shift(p_CA_W);
+
+    // Contact spatial force on body B.
+    const RigidTransform<T>& X_WB = plant().EvalBodyPoseInWorld(context, bodyB);
+    const Vector3<T>& p_WB = X_WB.translation();
+    const Vector3<T> p_CB_W = p_WB - p_WC;
+    const SpatialForce<T> F_Bo_W = -F_Ac_W.Shift(p_CB_W);
+
+    spatial_contact_forces->at(bodyA.node_index()) += F_Ao_W;
+    spatial_contact_forces->at(bodyB.node_index()) += F_Bo_W;
+  }
 }
 
 }  // namespace internal

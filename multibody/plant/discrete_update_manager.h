@@ -137,19 +137,23 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DoCalcDiscreteValues(context, updates);
   }
 
-  /* MultibodyPlant invokes this method to report contact results. */
-  void CalcContactResults(const systems::Context<T>& context,
-                          ContactResults<T>* contact_results) const {
-    DRAKE_DEMAND(contact_results != nullptr);
-    plant().ValidateContext(context);
-    DoCalcContactResults(context, contact_results);
-  }
+  /* Evaluates the contact results used in CalcDiscreteValues() to advance the
+   discrete update from the state stored in `context`. */
+  const ContactResults<T>& EvalContactResults(
+      const systems::Context<T>& context) const;
 
   // TODO(amcastro-tri): Consider replacing with more specific APIs with the
   // resolution of #16955. E.g., APIs to obtain generalized forces due to
   // constraints, rather than raw solver results.
   const contact_solvers::internal::ContactSolverResults<T>&
   EvalContactSolverResults(const systems::Context<T>& context) const;
+
+  /* When the discrete update is performed, see CalcDiscreteValues(), multibody
+   forces applied during that updated are cached. This method returns a
+   reference to the total multibody forces applied during the discrete update.
+   These forces include force elements, constraints and contact forces. */
+  const MultibodyForces<T>& EvalDiscreteUpdateMultibodyForces(
+      const systems::Context<T>& context) const;
 
   /* Publicly exposed MultibodyPlant private/protected methods.
    @{ */
@@ -196,8 +200,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    information from the owning MultibodyPlant. */
   virtual void ExtractModelInfo() {}
 
-  /* Derived DiscreteUpdateManager should override this method to declare
-   cache entries in the owning MultibodyPlant. */
+  /* Derived classes can implement this method if they wish to declare their own
+   cache entries. It defaults to a no-op. */
   virtual void DoDeclareCacheEntries() {}
 
   /* Returns the discrete state index of the rigid position and velocity states
@@ -262,24 +266,46 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       systems::DiscreteValues<T>* updates) const = 0;
 
+  /* Concrete managers must implement this method to compute contact results
+   according to the underlying formulation of contact. */
   virtual void DoCalcContactResults(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const = 0;
+
+  /* Concrete managers must implement this method to compute the total multibody
+   forces applied during a discrete update. The particulars of the numerical
+   scheme matter. For instance, whether we use an explicit or implicit update.
+   Therefore only concrete managers know how to perform this computation in
+   accordance to the schemes they implement. See
+   EvalDiscreteUpdateMultibodyForces(). */
+  virtual void DoCalcDiscreteUpdateMultibodyForces(
+      const systems::Context<T>& context, MultibodyForces<T>* forces) const = 0;
 
  private:
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
     systems::CacheIndex contact_solver_results;
+    systems::CacheIndex contact_results;
+    systems::CacheIndex discrete_update_multibody_forces;
   };
 
   // NVI to DoDeclareCacheEntries().
   void DeclareCacheEntries();
 
-  systems::DiscreteStateIndex multibody_state_index_;
-  CacheIndexes cache_indexes_;
+  /* Calc version of EvalContactResults(), NVI to DoCalcContactResults(). */
+  void CalcContactResults(const systems::Context<T>& context,
+                          ContactResults<T>* contact_results) const;
+
+  // Calc version of EvalDiscreteUpdateMultibodyForces, NVI to
+  // DoCalcDiscreteUpdateMultibodyForces.
+  void CalcDiscreteUpdateMultibodyForces(const systems::Context<T>& context,
+                                         MultibodyForces<T>* forces) const;
+
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};
+  systems::DiscreteStateIndex multibody_state_index_;
+  CacheIndexes cache_indexes_;
 };
 
 }  // namespace internal
