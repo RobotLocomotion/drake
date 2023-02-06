@@ -25,6 +25,8 @@ AddResult AddMultibodyPlant(
   result.plant.set_contact_surface_representation(
       internal::GetContactSurfaceRepresentationFromString(
           config.contact_surface_representation));
+  result.plant.set_adjacent_bodies_collision_filters(
+      config.adjacent_bodies_collision_filters);
   return result;
 }
 
