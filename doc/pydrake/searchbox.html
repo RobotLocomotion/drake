@@ -5,9 +5,13 @@
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
-  <form id="ddg-search-form" class="wy_form" action="https://duckduckgo.com/" method="get">
-    <input type="text" name="q" placeholder="Search all of Drake…" />
-    <input type="hidden" name="sites" value="drake.mit.edu OR site:underactuated.csail.mit.edu OR site:manipulation.csail.mit.edu" />
+  <form id="search_form" class="wy_form" action="https://google.com/search" method="get">
+    <input type="text" name="q" id="box" placeholder="Search all of Drake…" />
   </form>
+  <script>
+    search_form.addEventListener('submit', function() {
+      box.value = box.value + ' site:drake.mit.edu OR site:underactuated.csail.mit.edu OR site:manipulation.csail.mit.edu';
+    })
+  </script>
 </div>
 {% endblock %}
