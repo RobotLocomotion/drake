@@ -360,17 +360,17 @@ struct GramAndMonomialBasis {
           &gram);
       gram_var_count += gram_lower_size;
     }
-      *poly = symbolic::Polynomial();
-      gram_var_count = 0;
-      for (int i = 0; i < static_cast<int>(this->grams.size()); ++i) {
-        AddPsdConstraint(prog, this->grams[i]);
-        const int gram_lower_size =
-            this->grams[i].rows() * (this->grams[i].rows() + 1) / 2;
-        *poly += symbolic::CalcPolynomialWLowerTriangularPart(
-            this->monomial_basis[i],
-            gram_lower.segment(gram_var_count, gram_lower_size));
-        gram_var_count += gram_lower_size;
-      }
+    *poly = symbolic::Polynomial();
+    gram_var_count = 0;
+    for (int i = 0; i < static_cast<int>(this->grams.size()); ++i) {
+      AddPsdConstraint(prog, this->grams[i]);
+      const int gram_lower_size =
+          this->grams[i].rows() * (this->grams[i].rows() + 1) / 2;
+      *poly += symbolic::CalcPolynomialWLowerTriangularPart(
+          this->monomial_basis[i],
+          gram_lower.segment(gram_var_count, gram_lower_size));
+      gram_var_count += gram_lower_size;
+    }
   }
 
   int gram_var_size;
@@ -703,6 +703,7 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
     const std::unordered_set<int>& s_lower_redundant_indices,
     const std::unordered_set<int>& s_upper_redundant_indices) const {
   SeparationCertificateProgram ret;
+  ret.plane_index = plane_geometries.plane_index;
   ret.prog->AddIndeterminates(rational_forward_kin_.s());
   const auto& plane = separating_planes_[plane_geometries.plane_index];
   ret.prog->AddDecisionVariables(plane.decision_variables);
@@ -1578,7 +1579,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       ellipsoid_Q = options.ellipsoid_scaling * (ellipsoid.A().inverse());
       const double cost = ellipsoid_Q.determinant();
       drake::log()->info("Iteration {}: det(Q)={}", iter, cost);
-      if ((cost - prev_cost)/prev_cost < options.convergence_tol) {
+      if ((cost - prev_cost) / prev_cost < options.convergence_tol) {
         break;
       } else {
         prev_cost = cost;
@@ -1718,20 +1719,18 @@ CspaceFreePolytope::BinarySearch(
   return ret;
 }
 
-std::optional<CspaceFreePolytope::SeparationCertificateResult>
-CspaceFreePolytope::IsGeometrySeparable(
+CspaceFreePolytope::SeparationCertificateProgram
+CspaceFreePolytope::MakeIsGeometrySeparableProgram(
     const SortedPair<geometry::GeometryId>& geometry_pair,
     const Eigen::Ref<const Eigen::MatrixXd>& C,
-    const Eigen::Ref<const Eigen::VectorXd>& d,
-    const CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions&
-        options) const {
+    const Eigen::Ref<const Eigen::VectorXd>& d) const {
   const auto d_minus_Cs = this->CalcDminusCs<double>(C, d);
   auto geometry_pair_it =
       map_geometries_to_separating_planes_.find(geometry_pair);
   if (geometry_pair_it == map_geometries_to_separating_planes_.end()) {
     throw std::runtime_error(fmt::format(
-        "IsGeometrySeparable(): geometry pair ({}, {}) does not need "
-        "separation certificate",
+        "GetIsGeometrySeparableProgram(): geometry pair ({}, {}) does not need "
+        "a separation certificate",
         scene_graph_.model_inspector().GetName(geometry_pair.first()),
         scene_graph_.model_inspector().GetName(geometry_pair.second())));
   }
@@ -1744,21 +1743,30 @@ CspaceFreePolytope::IsGeometrySeparable(
                                   0 /* tighten */, &C_redundant_indices,
                                   &s_lower_redundant_indices,
                                   &s_upper_redundant_indices);
-  auto certificate_program = this->ConstructPlaneSearchProgram(
+  return this->ConstructPlaneSearchProgram(
       this->plane_geometries_[plane_index], d_minus_Cs, C_redundant_indices,
       s_lower_redundant_indices, s_upper_redundant_indices);
+}
+
+std::optional<CspaceFreePolytope::SeparationCertificateResult>
+CspaceFreePolytope::SolveSeparationCertificateProgram(
+    const CspaceFreePolytope::SeparationCertificateProgram& certificate_program,
+    const FindSeparationCertificateGivenPolytopeOptions& options) const {
   solvers::MathematicalProgramResult result;
   solvers::MakeSolver(options.solver_id)
       ->Solve(*certificate_program.prog, std::nullopt, options.solver_options,
               &result);
+  std::optional<CspaceFreePolytope::SeparationCertificateResult> ret{
+      std::nullopt};
   if (result.is_success()) {
-    return certificate_program.certificate.GetSolution(
-        plane_index, separating_planes_[plane_index].a,
-        separating_planes_[plane_index].b,
-        separating_planes_[plane_index].decision_variables, result);
-  } else {
-    return std::nullopt;
+    ret.emplace(certificate_program.certificate.GetSolution(
+        certificate_program.plane_index,
+        separating_planes_[certificate_program.plane_index].a,
+        separating_planes_[certificate_program.plane_index].b,
+        separating_planes_[certificate_program.plane_index].decision_variables,
+        result));
   }
+  return ret;
 }
 
 std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>
