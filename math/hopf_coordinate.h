@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cmath>
+#include <iostream>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -46,25 +47,27 @@ const Eigen::Quaternion<T> HopfCoordinateToQuaternion(const T& theta,
 }
 
 /**
- * Convert a unit-length quaternion (w, x, y, z) to Hopf coordinate as
- * if w >= 0
- *   ψ = 2*atan2(x, w)
- * else
- *   ψ = 2*atan2(-x, -w)
+ * Convert a unit-length quaternion (w, x, y, z) (with the requirement w >= 0)
+ * to Hopf coordinate as
+ * ψ = 2*atan2(x, w)
  * φ = mod(atan2(z, y) - ψ/2, 2pi)
  * θ = 2*atan2(√(y²+z²), √(w²+x²))
  * ψ is in the range of [-pi, pi].
  * φ is in the range of [0, 2pi].
  * θ is in the range of [0, pi].
+ * If the given quaternion has w < 0, then we revert the signs of (w, x, y, z),
+ * and compute the Hopf coordinate of (-w, -x, -y, -z).
  * @param quaternion A unit length quaternion.
  * @return hopf_coordinate (θ, φ, ψ) as an Eigen vector.
  */
 template <typename T>
 Vector3<T> QuaternionToHopfCoordinate(const Eigen::Quaternion<T>& quaternion) {
+  if (quaternion.w() < 0) {
+    return QuaternionToHopfCoordinate(Eigen::Quaternion<T>(
+        -quaternion.w(), -quaternion.x(), -quaternion.y(), -quaternion.z()));
+  }
   using std::atan2;
-  const T psi = quaternion.w() >= T(0)
-                    ? 2 * atan2(quaternion.x(), quaternion.w())
-                    : 2 * atan2(-quaternion.x(), -quaternion.w());
+  const T psi = 2 * atan2(quaternion.x(), quaternion.w());
   const T phi_unwrapped = atan2(quaternion.z(), quaternion.y()) - psi / 2;
   // The range of phi_unwrapped is [-1.5pi, 1.5pi]
   const T phi = phi_unwrapped >= 0 ? phi_unwrapped : phi_unwrapped + 2 * M_PI;
