@@ -23,16 +23,50 @@ drake_cc_package_library(
     ],
 )
 
+# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
+_STUB_HDRS = [
+    "constraint_relaxing_ik.h",
+    "robot_plan_interpolator.h",
+]
+
+# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
+[
+    genrule(
+        name = "_cp_" + hdr,
+        srcs = ["stub/" + hdr],
+        outs = [hdr],
+        cmd = "cp $< $@",
+        tags = ["nolint"],
+        visibility = ["//visibility:private"],
+    )
+    for hdr in _STUB_HDRS
+]
+
+# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 drake_cc_library(
     name = "constraint_relaxing_ik",
-    srcs = ["constraint_relaxing_ik.cc"],
-    hdrs = ["constraint_relaxing_ik.h"],
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //multibody/inverse_kinematics:constraint_relaxing_ik instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
     deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//multibody/inverse_kinematics",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//solvers:solve",
+        "//multibody/inverse_kinematics:constraint_relaxing_ik",
+    ],
+)
+
+# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
+drake_cc_library(
+    name = "robot_plan_interpolator",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //manipulation/util:robot_plan_interpolator instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
+    deps = [
+        "//manipulation/util:robot_plan_interpolator",
     ],
 )
 
@@ -58,29 +92,21 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "robot_plan_interpolator",
-    srcs = ["robot_plan_interpolator.cc"],
-    hdrs = ["robot_plan_interpolator.h"],
-    deps = [
-        "//common/trajectories:piecewise_polynomial",
-        "//lcmtypes:robot_plan",
-        "//multibody/parsing",
-        "//systems/framework:leaf_system",
-    ],
-)
-
 # === test/ ===
 
+# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 drake_cc_googletest(
-    name = "constraint_relaxing_ik_test",
-    srcs = ["test/constraint_relaxing_ik_test.cc"],
+    name = "deprecation_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
     data = [
         "//manipulation/models/iiwa_description:models",
     ],
-    tags = ["snopt"],
     deps = [
         ":constraint_relaxing_ik",
+        ":robot_plan_interpolator",
         "//common:find_resource",
     ],
 )
@@ -109,19 +135,6 @@ drake_cc_googletest(
         "//manipulation/kuka_iiwa:iiwa_constants",
         "//multibody/parsing",
         "//systems/analysis:simulator",
-    ],
-)
-
-drake_cc_googletest(
-    name = "robot_plan_interpolator_test",
-    data = [
-        "//examples/kuka_iiwa_arm:models",
-        "//manipulation/models/iiwa_description:models",
-    ],
-    deps = [
-        ":robot_plan_interpolator",
-        "//common:find_resource",
-        "//systems/framework",
     ],
 )
 

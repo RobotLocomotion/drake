@@ -5,7 +5,7 @@ namespace solvers {
 namespace internal {
 namespace csdp {
 
-// Add CDSP's types into this namespace.
+// Add CSDP's types into this namespace.
 extern "C" {
 #include <csdp/blockmat.h>
 #include <csdp/index.h>

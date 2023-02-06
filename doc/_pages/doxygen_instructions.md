@@ -3,7 +3,7 @@ title: Doxygen Instructions
 ---
 
 This section contains instructions on how to use
-[Doxygen](http://www.stack.nl/~dimitri/doxygen/) with Drake.
+[Doxygen](https://www.doxygen.nl/) with Drake.
 
 # Doxygen Style Guide
 

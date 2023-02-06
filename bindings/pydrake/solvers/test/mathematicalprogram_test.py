@@ -1,5 +1,3 @@
-from pydrake.solvers import mathematicalprogram as mp
-
 import copy
 from functools import partial
 import unittest
@@ -13,19 +11,20 @@ from pydrake.common import kDrakeAssertIsArmed
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.forwarddiff import jacobian
 from pydrake.math import ge
-from pydrake.solvers.gurobi import GurobiSolver
-from pydrake.solvers.snopt import SnoptSolver
-from pydrake.solvers.scs import ScsSolver
-from pydrake.solvers.osqp import OsqpSolver
-from pydrake.solvers.mathematicalprogram import (
+from pydrake.solvers import (
+    GurobiSolver,
     LinearConstraint,
     MathematicalProgramResult,
+    OsqpSolver,
     PyFunctionConstraint,
+    ScsSolver,
+    SnoptSolver,
+    SolverId,
+    SolverInterface,
     SolverOptions,
     SolverType,
-    SolverId,
-    SolverInterface
-    )
+)
+import pydrake.solvers as mp
 import pydrake.solvers._testing as mp_testing
 import pydrake.symbolic as sym
 
@@ -214,6 +213,7 @@ class TestMathematicalProgram(unittest.TestCase):
         m = np.array([sym.Expression(qp.x[0]), sym.Expression(qp.x[1])])
         self.assertTrue(result.GetSolution(m)[1, 0].EqualTo(
             result.GetSolution(qp.x[1])))
+        self.assertEqual(result.num_suboptimal_solution(), 0)
 
         x_val_new = np.array([1, 2])
         result.set_x_val(x_val_new)

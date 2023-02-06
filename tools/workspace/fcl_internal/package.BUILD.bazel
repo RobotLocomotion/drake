@@ -1,0 +1,144 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/workspace:generate_export_header.bzl",
+    "generate_export_header",
+)
+load(
+    "@drake//tools/workspace:generate_include_header.bzl",
+    "drake_generate_include_header",
+)
+
+licenses(["notice"])  # BSD-3-Clause
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Generate header to provide ABI export symbols for fcl.
+generate_export_header(
+    out = "include/fcl/export.h",
+    lib = "fcl",
+    static_define = "FCL_STATIC_DEFINE",
+)
+
+# Generates a version.cmake stub based on package.xml contents.
+genrule(
+    name = "version-from-xml.cmake_genrule",
+    srcs = [
+        "package.xml",
+        "@drake//tools/workspace/fcl_internal:version-from-xml.sed",
+    ],
+    outs = [
+        "version-from-xml.cmake",
+    ],
+    cmd = " ".join([
+        "sed",
+        "-f $(execpath @drake//tools/workspace/fcl_internal:version-from-xml.sed)",  # noqa
+        "-n $(execpath package.xml) > $@",
+        "&&",
+        "test -s $@",
+    ]),
+)
+
+# Generates config.h based on the version numbers in CMake code.
+cmake_configure_file(
+    name = "config",
+    src = "include/fcl/config.h.in",
+    out = "include/fcl/config.h",
+    cmakelists = [
+        ":version-from-xml.cmake",
+    ],
+    defines = [
+        "OCTOMAP_MAJOR_VERSION=0",
+        "OCTOMAP_MINOR_VERSION=0",
+        "OCTOMAP_PATCH_VERSION=0",
+        "GENERATED_FILE_MARKER=GENERATED FILE DO NOT EDIT",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+# Provide all headers (except octomap-related ones) for simplicitly, even
+# though many of these will not have their '*.cpp' mate compiled.
+_HDRS = glob(
+    include = [
+        "include/**/*.h",
+    ],
+    exclude = [
+        "**/octree/**",
+    ],
+    allow_empty = False,
+)
+
+# To minimize the build footprint, only build the fraction of FCL that is
+# needed by Drake.
+_DRAKE_RELEVANT_SRCS = glob(
+    include = [
+        "src/**/*.cpp",
+    ],
+    exclude = [
+        # We use none of this code.
+        "**/*conservative_advancement*.cpp",
+        "**/*continuous_collision*.cpp",
+        "**/octree/**",
+        "src/common/**",
+        "src/math/motion/**",
+        "src/math/sampler/**",
+        # We list out the few of these that we need immediately below.
+        "src/broadphase/*.cpp",
+        "src/broadphase/detail/*.cpp",
+        "src/math/*.cpp",
+        "src/math/detail/*.cpp",
+    ],
+    allow_empty = False,
+) + [
+    "src/broadphase/broadphase_collision_manager.cpp",
+    "src/broadphase/broadphase_dynamic_AABB_tree.cpp",
+    "src/broadphase/detail/morton.cpp",
+    "src/math/geometry.cpp",
+    "src/math/triangle.cpp",
+    "src/math/detail/polysolver.cpp",
+    "src/math/detail/project.cpp",
+]
+
+# Generates fcl.h, which consists of #include statements for *all* of the other
+# headers in the library (!!!).  The first line is '#pragma once' followed by
+# one line like '#include "fcl/common/types.h"' for each non-generated header.
+drake_generate_include_header(
+    name = "fcl_h_genrule",
+    out = "include/fcl/fcl.h",
+    hdrs = _HDRS,
+)
+
+cc_library(
+    name = "fcl",
+    srcs = _DRAKE_RELEVANT_SRCS,
+    hdrs = _HDRS + [
+        ":config",
+        ":fcl_h_genrule",
+        ":include/fcl/export.h",
+    ],
+    copts = ["-fvisibility=hidden"],
+    defines = [
+        "FCL_STATIC_DEFINE",
+    ],
+    includes = ["include"],
+    linkstatic = 1,
+    deps = [
+        "@ccd_internal//:ccd",
+        "@eigen",
+    ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)

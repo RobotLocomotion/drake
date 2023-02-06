@@ -91,14 +91,6 @@ DiscreteUpdateManager<T>::EvalContactSolverResults(
 }
 
 template <typename T>
-const internal::ContactJacobians<T>&
-DiscreteUpdateManager<T>::EvalContactJacobians(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalContactJacobians(
-      plant(), context);
-}
-
-template <typename T>
 const std::vector<geometry::ContactSurface<T>>&
 DiscreteUpdateManager<T>::EvalContactSurfaces(
     const systems::Context<T>& context) const {
@@ -163,6 +155,13 @@ const std::vector<internal::DistanceConstraintSpecs>&
 DiscreteUpdateManager<T>::distance_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::distance_constraints_specs(*plant_);
+}
+
+template <typename T>
+const std::vector<internal::BallConstraintSpecs>&
+DiscreteUpdateManager<T>::ball_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::ball_constraints_specs(
+      *plant_);
 }
 
 template <typename T>

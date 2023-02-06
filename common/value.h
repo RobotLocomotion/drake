@@ -346,7 +346,7 @@ constexpr bool hash_template_argument_from_pretty_func(
       continue;
     }
     // GCC distinguishes between "<unnamed>" and "{anonymous}", while Clang does
-    // not. Map "<unamed>" to "{anonymous}" for consistency and to avoid
+    // not. Map "<unnamed>" to "{anonymous}" for consistency and to avoid
     // confusion with nested types ("<>") below.
     const char* const unnamed_spelling = "<unnamed>";
     const char* unnamed_iter = unnamed_spelling;

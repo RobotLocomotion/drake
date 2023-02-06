@@ -18,7 +18,7 @@ enum class SinCosSubstitutionType {
   /** Substitutes s <=> sin(q/2), c <=> cos(q/2), and prefers sin when the
    choice is ambiguous; e.g. cos(q) => 1 - 2s². */
   kHalfAnglePreferSin,
-  /** Subsitutes s <=> sin(q/2), c <=> cos(q/2), and prefers cos when the
+  /** Substitutes s <=> sin(q/2), c <=> cos(q/2), and prefers cos when the
    choice is ambiguous; e.g. cos(q) => 2c² - 1. */
   kHalfAnglePreferCos,
 };
@@ -154,13 +154,6 @@ symbolic::RationalFunction SubstituteStereographicProjectionImpl(
 [[nodiscard]] symbolic::RationalFunction SubstituteStereographicProjection(
     const symbolic::Polynomial& e, const std::vector<SinCos>& sin_cos,
     const VectorX<symbolic::Variable>& t);
-
-DRAKE_DEPRECATED("2023-02-01",
-                 "Use the other SubstituteStereographicProjection which passes "
-                 "e as a symbolic::Polynomial")
-[[nodiscard]] symbolic::RationalFunction SubstituteStereographicProjection(
-    const symbolic::Expression& e,
-    const std::unordered_map<symbolic::Variable, symbolic::Variable>& subs);
 
 }  // namespace symbolic
 }  // namespace drake

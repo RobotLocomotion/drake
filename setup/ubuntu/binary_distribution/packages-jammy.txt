@@ -3,14 +3,12 @@ coinor-libcoinutils3v5
 coinor-libipopt1v5
 default-jre
 jupyter-notebook
-libamd2
 libblas-dev
 libbz2-1.0
 libdouble-conversion3
 libeigen3-dev
 libexpat1
 libfreetype6
-libgflags2.2
 libgfortran5
 libglew2.2
 libglib2.0-0

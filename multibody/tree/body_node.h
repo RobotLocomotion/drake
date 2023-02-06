@@ -914,7 +914,7 @@ class BodyNode : public MultibodyElement<T> {
   //   velocity in its parent body P, expressed in world W) to this node's `nm`
   //   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
   // @param[in] diagonal_inertias
-  //   Vector of scalar diagonal inertia values for each degree of freedon.
+  //   Vector of scalar diagonal inertia values for each degree of freedom.
   // @param[out] abic
   //   A pointer to a valid, non nullptr, articulated body cache.
   //

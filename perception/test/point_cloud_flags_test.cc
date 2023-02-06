@@ -1,6 +1,6 @@
 #include "drake/perception/point_cloud_flags.h"
 
-#include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 #include <gtest/gtest.h>

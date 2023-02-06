@@ -41,7 +41,7 @@ drake_pybind_library(
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/solvers",
         "//bindings/pydrake/systems",
-        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/geometry",
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake:symbolic_py",
         "//lcmtypes:lcmtypes_drake_py",
@@ -49,7 +49,6 @@ drake_pybind_library(
     py_srcs = [
         "meldis.py",
         "model_visualizer.py",
-        "plotting.py",
         "_meldis.py",
         "_model_visualizer.py",
         "_plotting.py",
@@ -99,7 +98,6 @@ drake_py_unittest(
     ],
     deps = [
         ":visualization",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
@@ -117,7 +115,6 @@ drake_py_unittest(
     name = "plotting_test",
     deps = [
         ":visualization",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 

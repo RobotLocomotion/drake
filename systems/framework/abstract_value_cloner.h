@@ -10,7 +10,7 @@ namespace drake {
 namespace systems {
 namespace internal {
 
-/* Provies a ValueProducer::AllocateCallback functor that clones the given
+/* Provides a ValueProducer::AllocateCallback functor that clones the given
 model_value. */
 class AbstractValueCloner final {
  public:

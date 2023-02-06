@@ -5,10 +5,6 @@ load(
     "cmake_configure_file",
 )
 load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
-load(
     "@drake//tools/workspace:generate_export_header.bzl",
     "generate_export_header",
 )
@@ -66,7 +62,7 @@ cmake_configure_file(
     visibility = ["//visibility:private"],
 )
 
-# Provide all headers (except octomap-related ones) for simplicitly, even
+# Provide all headers (except octomap-related ones) for simplicity, even
 # though many of these will not have their '*.cpp' mate compiled.
 _HDRS = glob(
     include = [
@@ -136,9 +132,5 @@ cc_library(
         "@ccd",
         "@eigen",
     ],
-)
-
-install(
-    name = "install",
-    docs = ["LICENSE"],
+    deprecation = "DRAKE DEPRECATED: The @fcl external is deprecated. The deprecated code will be removed from Drake on or after 2023-05-01.",  # noqa,
 )

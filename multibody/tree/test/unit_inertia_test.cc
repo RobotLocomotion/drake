@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
@@ -340,6 +341,12 @@ GTEST_TEST(UnitInertia, SolidCapsule) {
                               I_capsule_expected.get_moments(), kEpsilon));
   EXPECT_TRUE(CompareMatrices(I_capsule.get_products(),
                               I_capsule_expected.get_products(), kEpsilon));
+
+  // Ensure a bad unit vector throws an exception.
+  const Vector3<double> bad_vec(1, 0.1, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      UnitInertia<double>::SolidCapsule(r, L, bad_vec),
+      "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
 // Tests a degenerate capsule (into sphere) has the same unit inertia as a
@@ -471,6 +478,111 @@ GTEST_TEST(UnitInertia, ThinRod) {
   UnitInertia<double> G_rod = UnitInertia<double>::ThinRod(L, b_E);
   EXPECT_TRUE(G_rod.CopyToFullMatrix3().isApprox(
       G_E_expected.CopyToFullMatrix3(), kEpsilon));
+}
+
+// Helper function to test the unit inertia of a tetrahedron.
+UnitInertia<double> CalcSolidTetrahedronUnitInertia(const Vector3<double>& p1,
+                                                    const Vector3<double>& p2,
+                                                    const Vector3<double>& p3) {
+  // Note: Position vectors p1, p2, p3 start at Bo (a vertex of the tetrahedron)
+  // and go to the other 3 vertices B1, B2, B3. They must all be be expressed in
+  // the same frame.  The code below uses the algorithms from:
+  // https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
+  // http://number-none.com/blow/inertia/bb_inertia.doc
+  // The co-variance matrix of a canonical tetrahedron B with vertices at
+  // (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1) with assumed *unit* density.
+  Matrix3<double> C_canonical;
+  // clang-format off
+  C_canonical << 1 / 60.0,  1 / 120.0, 1 / 120.0,
+                 1 / 120.0, 1 / 60.0,  1 / 120.0,
+                 1 / 120.0, 1 / 120.0, 1 / 60.0;
+  // clang-format on
+
+  // The *transpose* of the affine transformation takes us from the canonical
+  // co-variance matrix to the matrix for the particular tetrahedron.
+  Matrix3<double> A_T = Matrix3<double>::Zero();
+  A_T.row(0) = p1;  // Position vector from vertex Bo to vertex B1.
+  A_T.row(1) = p2;  // Position vector from vertex Bo to vertex B2.
+  A_T.row(2) = p3;  // Position vector from vertex Bo to vertex B3.
+  // We're computing C += det(A)·ACAᵀ. Fortunately, det(A) is equal to 6.
+  const Matrix3<double> C = 6 * A_T.transpose() * C_canonical * A_T;
+
+  // B's unit inertia about Bo is calculated G_BBo = C.trace * 1₃ - C.
+  // Since G_BBo is symmetric, it is more efficient to directly calculate only
+  // six elements than to perform the matrix multiplication.
+  const double trace_C = C.trace();
+  const double Ixx = trace_C - C(0, 0);
+  const double Iyy = trace_C - C(1, 1);
+  const double Izz = trace_C - C(2, 2);
+  const double Ixy = -C(1, 0);
+  const double Ixz = -C(2, 0);
+  const double Iyz = -C(2, 1);
+  return UnitInertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);  // G_BBo
+}
+
+// Test the 3-argument method that forms unit inertia of a solid tetrahedron.
+GTEST_TEST(UnitInertia, SolidTetrahedronAboutVertex) {
+  const Vector3<double> p1(1, 0, 0);
+  const Vector3<double> p2(0, 2, 0);
+  const Vector3<double> p3(0, 0, 3);
+
+  UnitInertia<double> G_expected = CalcSolidTetrahedronUnitInertia(p1, p2, p3);
+  UnitInertia<double> G_dut =
+      UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p2, p3);
+
+  // An empirical tolerance: two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(G_expected.CopyToFullMatrix3(),
+                              G_dut.CopyToFullMatrix3(), kTolerance));
+
+  // Show no change if shuffle last 2 arguments.
+  G_dut = UnitInertia<double>::SolidTetrahedronAboutVertex(p1, p3, p2);
+  EXPECT_TRUE(CompareMatrices(G_expected.CopyToFullMatrix3(),
+                              G_dut.CopyToFullMatrix3(), kTolerance));
+}
+
+// Test the 4-argument method that forms unit inertia of a solid tetrahedron.
+GTEST_TEST(UnitInertia, SolidTetrahedronAboutPoint) {
+  Vector3<double> p_AB0(0, 0, 0);
+  Vector3<double> p_AB1(1, 1, 0);
+  Vector3<double> p_AB2(0, 2, 0);
+  Vector3<double> p_AB3(0, 3, 3);
+
+  // Do a sanity check that SolidTetrahedronAboutPoint() simplifies
+  // to SolidTetrahedronAboutVertex() when p_AB0 is the zero vector.
+  UnitInertia<double> G_BA_expected =
+      UnitInertia<double>::SolidTetrahedronAboutVertex(p_AB1, p_AB2, p_AB3);
+  UnitInertia<double> G_BA = UnitInertia<double>::SolidTetrahedronAboutPoint(
+      p_AB0, p_AB1, p_AB2, p_AB3);
+
+  // An empirical tolerance: two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(G_BA_expected.CopyToFullMatrix3(),
+                              G_BA.CopyToFullMatrix3(), kTolerance));
+
+  // As will be momentarily useful, form position from B0 to Bcm.
+  const Vector3<double> p_B0Bcm = 0.25 * (p_AB1 + p_AB2 + p_AB3);
+
+  // Check a more general case in which p_AB0 is a non-zero vector.
+  p_AB0 = Vector3<double>(0.1, 0.4, 0.5);
+  p_AB1 += p_AB0;
+  p_AB2 += p_AB0;
+  p_AB3 += p_AB0;
+  G_BA = UnitInertia<double>::SolidTetrahedronAboutPoint(
+      p_AB0, p_AB1, p_AB2, p_AB3);
+
+  // Shift G_BA_expected from about-point B0 to about-point A.
+  const Vector3<double> p_ABcm = p_AB0 + p_B0Bcm;
+  G_BA_expected.ShiftToThenAwayFromCenterOfMassInPlace(
+      /* mass = */ 1, p_B0Bcm, p_ABcm);
+  EXPECT_TRUE(CompareMatrices(G_BA_expected.CopyToFullMatrix3(),
+                              G_BA.CopyToFullMatrix3(), kTolerance));
+
+  // Show no change if shuffle last 2 arguments to SolidTetrahedronAboutPoint().
+  G_BA = UnitInertia<double>::SolidTetrahedronAboutPoint(
+      p_AB0, p_AB1, p_AB3, p_AB2);
+  EXPECT_TRUE(CompareMatrices(G_BA_expected.CopyToFullMatrix3(),
+                              G_BA.CopyToFullMatrix3(), kTolerance));
 }
 
 // Tests the methods:

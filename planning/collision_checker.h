@@ -536,7 +536,7 @@ class CollisionChecker {
   void SetPaddingOneRobotBodyAllEnvironmentPairs(
       multibody::BodyIndex body_index, double padding);
 
-  /** Sets the padding for all (robot, environement) pairs.
+  /** Sets the padding for all (robot, environment) pairs.
    @throws std::exception if the @ref collision_checker_padding_prereqs
            "configuration prerequisites" are not met. */
   void SetPaddingAllRobotEnvironmentPairs(double padding);
@@ -824,11 +824,11 @@ class CollisionChecker {
       const ConfigurationDistanceFunction& distance_function);
 
   /** Computes configuration-space distance between the provided configurations
-   `q_1` and `q_2`, using the distance function configured at construction-
+   `q1` and `q2`, using the distance function configured at construction-
    time or via SetConfigurationDistanceFunction(). */
-  double ComputeConfigurationDistance(const Eigen::VectorXd& q_1,
-                                      const Eigen::VectorXd& q_2) const {
-    return configuration_distance_function_(q_1, q_2);
+  double ComputeConfigurationDistance(const Eigen::VectorXd& q1,
+                                      const Eigen::VectorXd& q2) const {
+    return configuration_distance_function_(q1, q2);
   }
 
   /** @returns a functor that captures this object, so it can be used like a
@@ -855,16 +855,16 @@ class CollisionChecker {
   void SetConfigurationInterpolationFunction(
       const ConfigurationInterpolationFunction& interpolation_function);
 
-  /** Interpolates between provided configurations `q_1` and `q_2`.
+  /** Interpolates between provided configurations `q1` and `q2`.
    @param ratio Interpolation ratio.
    @returns Interpolated configuration.
    @throws std::exception if ratio is not in range [0, 1].
    @see ConfigurationInterpolationFunction for more. */
-  Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& q_1,
-                                                   const Eigen::VectorXd& q_2,
+  Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& q1,
+                                                   const Eigen::VectorXd& q2,
                                                    double ratio) const {
     DRAKE_THROW_UNLESS(ratio >= 0.0 && ratio <= 1.0);
-    return configuration_interpolation_function_(q_1, q_2, ratio);
+    return configuration_interpolation_function_(q1, q2, ratio);
   }
 
   /** @returns a functor that captures this object, so it can be used like a

@@ -203,6 +203,10 @@ const AbstractValue* SystemBase::EvalAbstractInputImpl(
       get_input_port_base(port_index));
 }
 
+void SystemBase::ResetSystemId() {
+  system_id_ = get_next_id();
+}
+
 void SystemBase::ThrowNegativePortIndex(const char* func,
                                         int port_index) const {
   DRAKE_DEMAND(port_index < 0);

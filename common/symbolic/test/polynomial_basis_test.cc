@@ -193,8 +193,8 @@ TEST_F(ComputePolynomialBasisUpToDegreeTest, ChebyshevOddParity) {
     EXPECT_EQ(result2(0), ChebyshevBasisElement(x_));
   }
 
-  // The chebyshev basis of x up to requestd degree 3 or 4 (with odd degrees) is
-  // [T1(x), T3(x)].
+  // The chebyshev basis of x up to requested degree 3 or 4 (with odd degrees)
+  // is [T1(x), T3(x)].
   for (int degree : {3, 4}) {
     const auto result4 =
         ComputePolynomialBasisUpToDegree<Eigen::Dynamic, ChebyshevBasisElement>(

@@ -649,7 +649,7 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
     shader_program.SetInstanceParameters(instance.shader_data[render_type]);
     // TODO(SeanCurtis-TRI): Consider storing the float-valued pose in the
     //  OpenGl instance to avoid the conversion every time it is rendered.
-    //  Generally, this wouldn't exepct much savings; an instance is only
+    //  Generally, this wouldn't expect much savings; an instance is only
     //  rendered once per image type. So, for three image types, I'd cast three
     //  times. Stored, I'd cast once.
     shader_program.SetModelViewMatrix(

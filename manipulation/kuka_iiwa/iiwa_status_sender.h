@@ -18,8 +18,8 @@ namespace kuka_iiwa {
 /// This system has many vector-valued input ports, most of which have exactly
 /// num_joints elements. The exception is `time_measured` which is the
 /// one-dimensional time in seconds to set as the message timestamp (i.e. the
-/// time inputed will be converted to microseconds and sent to the hardware). It
-/// is optional and if unset, the context time is used.
+/// time inputted will be converted to microseconds and sent to the hardware).
+/// It is optional and if unset, the context time is used.
 ///
 /// - `position_commanded`: the most recently received position command.
 /// - `position_measured`: the plant's current position.

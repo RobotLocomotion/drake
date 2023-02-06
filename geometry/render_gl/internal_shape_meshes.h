@@ -113,7 +113,7 @@ MeshData MakeUnitCylinder(int num_strips = 50, int num_bands = 1);
  wound such that the right-handed face normal points in the direction of the
  positive z-axis of Frame C.
 
- Texture coordinates are assigned so that the "mimimum" (smallest x- and
+ Texture coordinates are assigned so that the "minimum" (smallest x- and
  y-values) map to (0, 0) and the opposite corner is (1, 1).
 
  The domain of the patch is divided into square sub regions based on the given
@@ -155,7 +155,7 @@ MeshData MakeUnitBox();
 
  The capsule is tessellated according to `samples`. The circular cross section
  of the cylindrical region of the capsule will have `samples` number of
- vertices. The two hemispherical caps will be tesselated such that triangles
+ vertices. The two hemispherical caps will be tessellated such that triangles
  near the spherical equators have good aspect ratios. There is only a single
  band of quadrilaterals (split into pairs of triangles) in the cylindrical
  region.

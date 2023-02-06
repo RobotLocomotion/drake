@@ -120,7 +120,7 @@ GTEST_TEST(PartialPermutation, PermutedDomainIsLargerThanOriginalDomain) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       PartialPermutation({0, -1, 4, 1}),
       "The size of the permuted domain must be smaller or equal than that of "
-      "the original domian. Index 4, larger or equal than the domain size, "
+      "the original domain. Index 4, larger or equal than the domain size, "
       "appears in the input permutation.");
 }
 

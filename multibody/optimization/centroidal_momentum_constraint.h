@@ -33,7 +33,7 @@ class CentroidalMomentumConstraint final : public solvers::Constraint {
    * constraint CentroidalAngularMomentum(q, v) - k_WC = 0 where
    * CentroidalAngularMomentum(q, v) computes the angular momentum of the robot
    * about its center-of-mass, expressed in the world frame. The decision
-   * varaibles are [q; v; k_WC]
+   * variables are [q; v; k_WC]
    * @note Currently, we can only construct this constraint using
    * MultibodyPlant<AutoDiffXd> instead of MultibodyPlant<double>, since we
    * can't compute the Jacobian of the momentum using MultibodyPlant<double>

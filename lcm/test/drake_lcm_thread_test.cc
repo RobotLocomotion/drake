@@ -71,8 +71,8 @@ class DutMailbox final : public MessageMailbox {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DutMailbox)
 
   DutMailbox(const std::string& channel, DrakeLcm* dut) {
-    auto subscription = dut->Subscribe(
-        channel, [this](const void* data, int size) {
+    auto subscription =
+        dut->Subscribe(channel, [this](const void* data, int size) {
           this->Handle(data, size);
         });
     // By default, deleting the subscription should not unsubscribe.

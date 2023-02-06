@@ -142,7 +142,7 @@ void DoMain() {
   //   - Gear ratio ρ = 369.
   //   - Rotor inertia Iᵣ = 1×10⁻⁶ kg⋅m².
   //
-  // This allow us to esimate the reflected inertia as:
+  // This allow us to estimate the reflected inertia as:
   //   - Irefl = ρ²⋅Iᵣ = 0.14 kg⋅m².
   //
   // As a reference, the mass of a finger is 0.17 kg. Each finger has phalanges

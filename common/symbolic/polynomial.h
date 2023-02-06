@@ -151,7 +151,7 @@ class Polynomial {
 
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
-  /// We maintain the invariance that for ancy [monomial, coeff] pair in
+  /// We maintain the invariance that for any [monomial, coeff] pair in
   /// monomial_to_coefficient_map(), symbolic:is_zero(coeff) is false.
   [[nodiscard]] const MapType& monomial_to_coefficient_map() const;
 
@@ -395,7 +395,7 @@ class Polynomial {
 /// Returns `p / v`.
 [[nodiscard]] Polynomial operator/(Polynomial p, double v);
 
-/// Returns polynomial @p rasied to @p n.
+/// Returns polynomial @p raised to @p n.
 [[nodiscard]] Polynomial pow(const Polynomial& p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
@@ -520,7 +520,7 @@ DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
 //
 // Note that we inform Eigen that the return type of Monomial op Monomial is
 // Polynomial, not Monomial, while Monomial * Monomial gets a Monomial in our
-// implementation. This discrepency is due to the implementation of Eigen's
+// implementation. This discrepancy is due to the implementation of Eigen's
 // dot() method whose return type is scalar_product_op::ReturnType. For more
 // information, check line 67 of Eigen/src/Core/Dot.h and line 767 of
 // Eigen/src/Core/util/XprHelper.h.
@@ -555,6 +555,18 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
   return p.ToExpression();
 }
 }  // namespace internal
+namespace numext {
+template <>
+bool equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y);
+template <>
+EIGEN_STRONG_INLINE bool not_equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y) {
+  return !Eigen::numext::equal_strict(x, y);
+}
+}  // namespace numext
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 

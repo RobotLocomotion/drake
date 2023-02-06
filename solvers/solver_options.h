@@ -30,9 +30,9 @@ namespace solvers {
  *
  * "IPOPT" -- Parameter names and values as specified in IPOPT users
  * guide section "Options Reference"
- * http://www.coin-or.org/Ipopt/documentation/node40.html
+ * https://coin-or.github.io/Ipopt/OPTIONS.html
  *
- * "NLOPT" -- Parameter names and values are specifed in
+ * "NLOPT" -- Parameter names and values are specified in
  * https://nlopt.readthedocs.io/en/latest/NLopt_C-plus-plus_Reference/ (in the
  * Stopping criteria section). Besides these parameters, the user can specify
  * "algorithm" using a string of the algorithm name. The complete set of
@@ -55,18 +55,6 @@ namespace solvers {
  *
  * "OSQP" -- Parameter name and values as specified in OSQP Reference
  * https://osqp.org/docs/interfaces/solver_settings.html#solver-settings
- *
- * "dReal" -- Parameter name and values as specified in dReal Reference
- * https://github.com/dreal/dreal4/blob/master/README.md#command-line-options.
- * Note that Drake only supports a subset of the options listed in the
- * reference. @see DrealSolver for the subset of these options supported by the
- * solver interface.
- *
- * "IBEX" -- Parameter name and values as specified in IBEX Reference
- * http://www.ibex-lib.org/doc/optim.html?highlight=eps#options.
- * Note that Drake only supports a subset of the options listed in the
- * reference. @see IbexSolver for the subset of these options supported by the
- * solver interface.
  */
 class SolverOptions {
  public:

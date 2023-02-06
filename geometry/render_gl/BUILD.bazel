@@ -229,6 +229,7 @@ drake_cc_googletest_ubuntu_only(
         "//common/test_utilities:expect_throws_message",
         "//geometry/render:render_label",
         "//systems/sensors:color_palette",
+        "@vtk//:vtkIOImage",
     ],
 )
 

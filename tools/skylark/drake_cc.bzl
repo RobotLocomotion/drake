@@ -7,6 +7,7 @@ load("//tools/skylark:kwargs.bzl", "incorporate_num_threads")
 # building with any compiler.
 CXX_FLAGS = [
     "-Werror=all",
+    "-Werror=attributes",
     "-Werror=cpp",
     "-Werror=deprecated",
     "-Werror=deprecated-declarations",
@@ -581,12 +582,12 @@ def drake_cc_library(
         if kwargs.get("testonly", False):
             fail("Using internal = True is already implied under testonly = 1")
         if len(kwargs.get("visibility") or []) == 0:
-            fail("When using internal = True, you must set visiblity. " +
+            fail("When using internal = True, you must set visibility. " +
                  "In most cases, visibility = [\"//visibility:private\"] " +
                  "or visibility = [\"//:__subpackages__\"] are suitable.")
         for item in kwargs["visibility"]:
             if item == "//visibility:public":
-                fail("When using internal = True, visiblity can't be public")
+                fail("When using internal = True, visibility can't be public")
         install_hdrs_exclude = hdrs
         new_tags = new_tags + [
             "exclude_from_libdrake",
@@ -726,6 +727,11 @@ def drake_cc_binary(
         linkshared = linkshared,
         linkstatic = linkstatic,
         linkopts = linkopts,
+        features = [
+            # We should deduplicate symbols while linking (for a ~6% reduction
+            # in disk use), to conserve space in CI; see #18545 for details.
+            "-no_deduplicate",
+        ],
         **kwargs
     )
 
@@ -804,6 +810,11 @@ def drake_cc_test(
         args = args,
         deps = deps + add_deps,
         copts = new_copts,
+        features = [
+            # We should deduplicate symbols while linking (for a ~6% reduction
+            # in disk use), to conserve space in CI; see #18545 for details.
+            "-no_deduplicate",
+        ],
         **kwargs
     )
 

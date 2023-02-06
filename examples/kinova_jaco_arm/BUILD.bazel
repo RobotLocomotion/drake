@@ -25,7 +25,7 @@ drake_cc_binary(
         "//common:find_resource",
         "//lcm",
         "//manipulation/kinova_jaco",
-        "//manipulation/planner:robot_plan_interpolator",
+        "//manipulation/util:robot_plan_interpolator",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controller",
         "//systems/lcm:lcm_pubsub_system",

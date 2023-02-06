@@ -188,7 +188,7 @@ class VolumetricElement
                                    configuration. The positions must be such
                                    that the element is not degenerate or
                                    inverted.
-   @param[in] denstiy              The mass density of the element with unit
+   @param[in] density              The mass density of the element with unit
                                    kg/m³.
    @param[in] damping_model        The DampingModel to be used for this element.
    @pre element_index and node_indices are valid.

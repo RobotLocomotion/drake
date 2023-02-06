@@ -78,7 +78,7 @@ class JointActuator final : public MultibodyElement<T> {
   ///   this method will throw an exception.
   /// @param[in] joint_tau
   ///   Generalized force corresponding to the degree of freedom indicated by
-  ///   `joint_dof` to be added into `forces`. Refere to the specific Joint
+  ///   `joint_dof` to be added into `forces`. Refer to the specific Joint
   ///   sub-class documentation for details on the meaning and units for this
   ///   degree of freedom.
   /// @param[out] forces

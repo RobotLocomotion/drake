@@ -81,7 +81,7 @@ class pylogging_sink final
     // We don't pass msg.time along into the record time because we'd need to
     // fix up record.created, record.msecs, and record.relativeCreated, and we'd
     // still be brittle with respect to future changes to the record class's
-    // internal bookeeping. Instead, we'll allow the record's own time from its
+    // internal bookkeeping. Instead, we'll allow the record's own time from its
     // constructor to survive.
 
     // Publish the log record.

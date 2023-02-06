@@ -3,13 +3,16 @@ import unittest
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers.scs import ScsSolver
+from pydrake.solvers import (
+    MathematicalProgram,
+    ScsSolver,
+    SolverType,
+)
 
 
 class TestScsSolver(unittest.TestCase):
     def test_scs_solver(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
         x = prog.NewContinuousVariables(2, "x")
         prog.AddLinearConstraint(x[0] >= 1)
         prog.AddLinearConstraint(x[1] >= 1)
@@ -20,7 +23,7 @@ class TestScsSolver(unittest.TestCase):
         self.assertTrue(solver.available())
         self.assertEqual(solver.solver_id().name(), "SCS")
         self.assertEqual(solver.SolverName(), "SCS")
-        self.assertEqual(solver.solver_type(), mp.SolverType.kScs)
+        self.assertEqual(solver.solver_type(), SolverType.kScs)
 
         result = solver.Solve(prog, None, None)
         self.assertTrue(result.is_success())
@@ -36,8 +39,7 @@ class TestScsSolver(unittest.TestCase):
             result.get_solver_details().primal_residue, np.array([0.]),
             atol=atol)
         numpy_compare.assert_float_allclose(
-            result.get_solver_details().y,
-            np.array([1., 1., 1.5, 0.5, -1., -1]), atol=atol)
+            result.get_solver_details().y, np.array([1., 1.]), atol=atol)
 
     def unavailable(self):
         """Per the BUILD file, this test is only run when SCS is disabled."""

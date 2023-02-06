@@ -154,7 +154,7 @@ class Joint : public MultibodyElement<T> {
     // N.B. We cannot use `num_positions()` here because it is virtual.
     const int num_positions = pos_lower_limits.size();
 
-    // intialize the default positions.
+    // initialize the default positions.
     default_positions_ = VectorX<double>::Zero(num_positions);
   }
 

@@ -8,6 +8,7 @@
 
 #include <vtkCamera.h>
 #include <vtkCylinderSource.h>
+#include <vtkImageCast.h>
 #include <vtkOBJReader.h>
 #include <vtkOpenGLPolyDataMapper.h>
 #include <vtkOpenGLShaderProperty.h>
@@ -545,8 +546,21 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
     vtkNew<vtkPNGReader> texture_reader;
     texture_reader->SetFileName(texture_name.c_str());
     texture_reader->Update();
+    if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
+      log()->warn(
+          "Texture map '{}' has an unsupported bit depth, casting it to uchar "
+          "channels.",
+          texture_name);
+    }
+
+    vtkNew<vtkImageCast> caster;
+    caster->SetOutputScalarType(VTK_UNSIGNED_CHAR);
+    caster->SetInputConnection(texture_reader->GetOutputPort());
+    caster->Update();
+    DRAKE_DEMAND(caster->GetOutput() != nullptr);
+
     vtkNew<vtkOpenGLTexture> texture;
-    texture->SetInputConnection(texture_reader->GetOutputPort());
+    texture->SetInputConnection(caster->GetOutputPort());
     const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
     texture->SetRepeat(need_repeat);
     texture->InterpolateOn();

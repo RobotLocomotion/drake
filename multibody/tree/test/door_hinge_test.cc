@@ -348,7 +348,7 @@ TEST_F(DoorHingeTest, ViscousFrictionTest) {
   config.viscous_friction = 1;
   const DoorHinge<double>& dut = BuildDoorHinge(config);
 
-  // Friction opposes motion proprotionally.
+  // Friction opposes motion proportionally.
   EXPECT_EQ(dut.CalcHingeFrictionalTorque(0.), 0);
   EXPECT_EQ(dut.CalcHingeFrictionalTorque(1.), -1);
   EXPECT_EQ(dut.CalcHingeFrictionalTorque(-1.), 1);

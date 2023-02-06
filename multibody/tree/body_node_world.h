@@ -10,7 +10,7 @@ namespace internal {
 //  instead?
 
 // This class represents a BodyNode for the world body.
-// Base class BodyNode methods are sufficent for this zero-dof node.
+// Base class BodyNode methods are sufficient for this zero-dof node.
 template <typename T>
 class BodyNodeWorld : public BodyNode<T> {
  public:

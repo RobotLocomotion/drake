@@ -48,11 +48,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalContactSolverResults(context);
   }
 
-  static const internal::ContactJacobians<T>& EvalContactJacobians(
-      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalContactJacobians(context);
-  }
-
   static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalContactSurfaces(context);
@@ -117,6 +112,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
   static const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.distance_constraints_specs_;
+  }
+
+  static const std::vector<internal::BallConstraintSpecs>&
+  ball_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.ball_constraints_specs_;
   }
 
   static BodyIndex FindBodyByGeometryId(const MultibodyPlant<T>& plant,

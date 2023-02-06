@@ -3,6 +3,7 @@
 import collections
 import copy
 import itertools
+import pickle
 import unittest
 
 import numpy as np
@@ -430,9 +431,9 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body.get_num_flexible_velocities(), int)
         self.assertIsInstance(body.is_floating(), bool)
         self.assertIsInstance(body.has_quaternion_dofs(), bool)
-        self.assertIsInstance(body.floating_positions_start(), int)
-        self.assertIsInstance(body.floating_velocities_start(), int)
         self.assertIsInstance(body.default_mass(), float)
+        # Other APIs can't be called on a Body that isn't part of
+        # a multibody system.
 
     @numpy_compare.check_all_types
     def test_body_context_methods(self, T):
@@ -597,6 +598,22 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(dut, Class)
         assert_pickle(self, dut, RotationalInertia_[T].CopyToFullMatrix3, T=T)
 
+    def test_legacy_unpickle_tree_module(self):
+        """Checks that data pickled as RotationalInertia_[float] in Drake
+        v1.12.0 can be unpickled as RotationalInertia_𝓣float𝓤 in newer
+        versions of Drake.
+
+        Since the unpickling shim lives at the module level, testing one class
+        is sufficient even though our module has several pickle-able classes.
+        """
+        legacy_data = b"\x80\x04\x95\r\x01\x00\x00\x00\x00\x00\x00\x8c\x16pydrake.multibody.tree\x94\x8c\x19RotationalInertia_[float]\x94\x93\x94)\x81\x94\x8c\x15numpy.core.multiarray\x94\x8c\x0c_reconstruct\x94\x93\x94\x8c\x05numpy\x94\x8c\x07ndarray\x94\x93\x94K\x00\x85\x94C\x01b\x94\x87\x94R\x94(K\x01K\x03K\x03\x86\x94h\x07\x8c\x05dtype\x94\x93\x94\x8c\x02f8\x94\x89\x88\x87\x94R\x94(K\x03\x8c\x01<\x94NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK\x00t\x94b\x88CH\xa4p=\n\xd7\xa3\xc0?|\x14\xaeG\xe1z\x94\xbf\xb8\x1e\x85\xebQ\xb8\x9e\xbf|\x14\xaeG\xe1z\x94\xbf\x9a\x99\x99\x99\x99\x99\xb9?\xb8\x1e\x85\xebQ\xb8\xae\xbf\xb8\x1e\x85\xebQ\xb8\x9e\xbf\xb8\x1e\x85\xebQ\xb8\xae\xbf\x9b\x99\x99\x99\x99\x99\xa9?\x94t\x94bb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, RotationalInertia_[float])
+        expected_diag = np.array([0.13, 0.1, 0.05000000000000001])
+        expected_off = np.array([-0.020000000000000004, -0.03, -0.06])
+        numpy_compare.assert_float_equal(obj.get_moments(), expected_diag)
+        numpy_compare.assert_float_equal(obj.get_products(), expected_off)
+
     @numpy_compare.check_all_types
     def test_unit_inertia_api(self, T):
         """Tests unit inertia construction and API."""
@@ -628,6 +645,9 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             UnitInertia.SolidCylinder(r=1.5, L=2, b_E=[1, 2, 3]), UnitInertia)
         self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2), UnitInertia)
+        self.assertIsInstance(UnitInertia.SolidCapsule(r=1, L=2,
+                                                       unit_vector=[0, 0, 1]),
+                              UnitInertia)
         self.assertIsInstance(UnitInertia.SolidCylinderAboutEnd(r=1, L=2),
                               UnitInertia)
         self.assertIsInstance(
@@ -705,6 +725,17 @@ class TestPlant(unittest.TestCase):
             self, CoulombFriction,
             lambda x: [x.static_friction, x.dynamic_friction], T=T
         )
+
+    def test_legacy_unpickle_plant_module(self):
+        """Checks that data pickled as CoulombFriction_[float] in Drake
+        v1.12.0 can be unpickled as CoulombFriction_𝓣float𝓤 in newer
+        versions of Drake.
+        """
+        legacy_data = b"\x80\x04\x95O\x00\x00\x00\x00\x00\x00\x00\x8c\x17pydrake.multibody.plant\x94\x8c\x17CoulombFriction_[float]\x94\x93\x94)\x81\x94G?\xe0\x00\x00\x00\x00\x00\x00G?\xd0\x00\x00\x00\x00\x00\x00\x86\x94b."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, CoulombFriction_[float])
+        self.assertEqual(obj.static_friction(), 0.5)
+        self.assertEqual(obj.dynamic_friction(), 0.25)
 
     @numpy_compare.check_all_types
     def test_rigid_body_api(self, T):
@@ -1680,14 +1711,7 @@ class TestPlant(unittest.TestCase):
             )
 
         def make_screw_joint(plant, P, C):
-            # First, check that the deprecated overload works.
-            with catch_drake_warnings(expected_count=1):
-                ScrewJoint_[T](
-                    name="screw",
-                    frame_on_parent=P,
-                    frame_on_child=C,
-                )
-            # Then, check that the no-axis overload works.
+            # First, check that the no-axis overload works.
             ScrewJoint_[T](
                 name="screw",
                 frame_on_parent=P,

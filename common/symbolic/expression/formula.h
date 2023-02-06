@@ -1252,6 +1252,28 @@ struct scalar_cmp_op<drake::symbolic::Expression, drake::symbolic::Expression,
   }
 };
 
+#if EIGEN_VERSION_AT_LEAST(3, 4, 90)
+// Provides specialization for minmax_compare to handle the case "Expr < Expr".
+// This is needed for the trunk versions of Eigen (i.e., anticipating 3.5.x).
+template <int NaNPropagation>
+struct minmax_compare<drake::symbolic::Expression, NaNPropagation, true> {
+  using Scalar = drake::symbolic::Expression;
+  static EIGEN_DEVICE_FUNC inline bool compare(Scalar a, Scalar b) {
+    return static_cast<bool>(a < b);
+  }
+};
+
+// Provides specialization for minmax_compare to handle the case "Expr > Expr".
+// This is needed for the trunk versions of Eigen (i.e., anticipating 3.5.x).
+template <int NaNPropagation>
+struct minmax_compare<drake::symbolic::Expression, NaNPropagation, false> {
+  using Scalar = drake::symbolic::Expression;
+  static EIGEN_DEVICE_FUNC inline bool compare(Scalar a, Scalar b) {
+    return static_cast<bool>(a > b);
+  }
+};
+#endif  // EIGEN_VERSION_AT_LEAST
+
 /// Provides specialization for scalar_cmp_op to handle the case "Var == Var".
 template <>
 struct scalar_cmp_op<drake::symbolic::Variable, drake::symbolic::Variable,
@@ -1344,13 +1366,9 @@ namespace numext {
 // guards as an optimization to skip expensive computation if it can show
 // that the end result will remain unchanged. If our Expression has any
 // unbound variables during that guard, we will throw instead of skipping
-// the optimizaton. Therefore, we tweak these guards to special-case the
+// the optimization. Therefore, we tweak these guards to special-case the
 // result when either of the operands is a literal zero, with no throwing
 // even if the other operand has unbound variables.
-//
-// These functions were only added in Eigen 3.3.5, but the minimum
-// Eigen version used by drake is 3.3.4, so a version check is needed.
-#if EIGEN_VERSION_AT_LEAST(3, 3, 5)
 template <>
 EIGEN_STRONG_INLINE bool equal_strict(
     const drake::symbolic::Expression& x,
@@ -1365,7 +1383,6 @@ EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Expression& y) {
   return !Eigen::numext::equal_strict(x, y);
 }
-#endif
 
 // Provides specialization of Eigen::numext::isfinite, numext::isnan, and
 // numext::isinf for Expression. The default template relies on an implicit

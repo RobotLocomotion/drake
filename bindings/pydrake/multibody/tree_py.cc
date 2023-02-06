@@ -79,7 +79,8 @@ void BindMultibodyElementMixin(PyClass* pcls) {
             return self.GetParentPlant();
           })
       .def("__repr__", [](const Class& self) {
-        py::str cls_name = py::cast(&self).get_type().attr("__name__");
+        py::str cls_name =
+            internal::PrettyClassName(py::cast(&self).get_type());
         const int index = self.index();
         const int model_instance = self.model_instance();
         if constexpr (has_name_func<Class>::value) {
@@ -682,26 +683,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
     auto cls = DefineTemplateClassWithDefault<Class, Joint<T>>(
         m, "ScrewJoint", param, cls_doc.doc);
     cls  // BR
-        .def(py::init([](const std::string& name,
-                          const Frame<T>& frame_on_parent,
-                          const Frame<T>& frame_on_child,
-                          std::optional<double> screw_pitch,
-                          std::optional<double> damping) {
-          if (!screw_pitch.has_value() || !damping.has_value()) {
-            WarnDeprecated(
-                "Defaults for the ScrewJoint constructor are deprecated.",
-                "2023-02-01");
-          }
-          return std::make_unique<Class>(name, frame_on_parent, frame_on_child,
-              screw_pitch.value_or(0.0), damping.value_or(0.0));
-        }),
+        .def(py::init<const string&, const Frame<T>&, const Frame<T>&, double,
+                 double>(),
             py::arg("name"), py::arg("frame_on_parent"),
-            py::arg("frame_on_child"), py::arg("screw_pitch") = py::none(),
-            py::arg("damping") = py::none(),
-            (std::string(cls_doc.ctor.doc_5args) +
-                "\n\nThe defaults values for screw_pitch and damping are "
-                "deprecated and will removed on 2023-02-01.")
-                .c_str())
+            py::arg("frame_on_child"), py::arg("screw_pitch"),
+            py::arg("damping"), cls_doc.ctor.doc_5args)
         .def(py::init<const string&, const Frame<T>&, const Frame<T>&,
                  const Vector3<double>&, double, double>(),
             py::arg("name"), py::arg("frame_on_parent"),
@@ -1119,7 +1105,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("L"), py::arg("b_E") = Vector3<T>::UnitZ().eval(),
             cls_doc.SolidCylinder.doc)
         .def_static("SolidCapsule", &Class::SolidCapsule, py::arg("r"),
-            py::arg("L"), cls_doc.SolidCapsule.doc)
+            py::arg("L"), py::arg("unit_vector") = Vector3<T>::UnitZ().eval(),
+            cls_doc.SolidCapsule.doc)
         .def_static("SolidCylinderAboutEnd", &Class::SolidCylinderAboutEnd,
             py::arg("r"), py::arg("L"), cls_doc.SolidCylinderAboutEnd.doc)
         .def_static("AxiallySymmetric", &Class::AxiallySymmetric, py::arg("J"),
@@ -1204,6 +1191,8 @@ PYBIND11_MODULE(tree, m) {
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
+
+  ExecuteExtraPythonCode(m);
 }
 
 }  // namespace pydrake

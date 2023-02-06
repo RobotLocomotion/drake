@@ -15,7 +15,7 @@
 //
 // This particular order ensures that everyone sees the order that respects the
 // inter-dependencies of the symbolic headers. This shields us from triggering
-// undefined behaviors due to varing the order of template specializations.
+// undefined behaviors due to varying the order of template specializations.
 //
 // clang-format off
 #include "drake/common/symbolic/expression/variable.h"

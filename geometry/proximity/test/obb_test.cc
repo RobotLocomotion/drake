@@ -114,7 +114,7 @@ GTEST_TEST(ObbMakerTest, VerifyEigenvalues) {
   // In all cases, points are measured and expressed in frame M,
   // and C is the centroid (average) of the points.
 
-  // Case 1: (rank 3, multiplicty 1).
+  // Case 1: (rank 3, multiplicity 1).
   // Covariance matrix of 8 vertices of the box [-1,-1]x[-2,2]x[-3,3]
   // has distinct eigenvalues in increasing order: 1, 2², 3².
   {

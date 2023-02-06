@@ -932,8 +932,8 @@ void SetBoundingBoxConstraintDualSolution(
     MathematicalProgramResult* result) {
   const auto& scale_map = prog.GetVariableScaling();
   // If the variable x(i) is scaled by s, then its bounding box constraint
-  // becoms lower / s <= x(i) <= upper / s. Perturbing the bounds of the
-  // scaled constraint by eps is equivalent to pertubing the original bounds
+  // becomes lower / s <= x(i) <= upper / s. Perturbing the bounds of the
+  // scaled constraint by eps is equivalent to perturbing the original bounds
   // by s * eps. Hence the shadow cost of the original constraint should be
   // divided by s.
   Eigen::VectorXd xmul_scaled_back = xmul;
@@ -997,7 +997,7 @@ void SetConstraintDualSolutions(
 
 SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
   SolutionResult solution_result{SolutionResult::kUnknownError};
-  // Please refer to User's Guide for SNOPT Verions 7, section 8.6 on the
+  // Please refer to User's Guide for SNOPT Versions 7, section 8.6 on the
   // meaning of these snopt_info.
   if (snopt_info >= 1 && snopt_info <= 6) {
     solution_result = SolutionResult::kSolutionFound;

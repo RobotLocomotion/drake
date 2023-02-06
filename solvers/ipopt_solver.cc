@@ -185,10 +185,13 @@ Eigen::VectorXd MakeEigenVector(Index n, const Number* x) {
 /// GetGradientMatrix.
 ///
 /// @return number of gradient entries populated.
+template <typename ConstraintType>
 size_t EvaluateConstraint(const MathematicalProgram& prog,
-                          const Eigen::VectorXd& xvec, const Constraint& c,
-                          const VectorXDecisionVariable& variables,
+                          const Eigen::VectorXd& xvec,
+                          const Binding<ConstraintType>& binding,
                           Number* result, Number* grad) {
+  Constraint* c = binding.evaluator().get();
+
   // For constraints which don't use all of the variables in the X
   // input, extract a subset into the AutoDiffVecXd this_x to evaluate
   // the constraint (we actually do this for all constraints.  One
@@ -196,21 +199,21 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
   // the correct geometry (e.g. the constraint uses all decision
   // variables in the same order they appear in xvec), but this is not
   // currently done).
-  int num_v_variables = variables.rows();
+  int num_v_variables = binding.variables().rows();
   Eigen::VectorXd this_x(num_v_variables);
   for (int i = 0; i < num_v_variables; ++i) {
-    this_x(i) = xvec(prog.FindDecisionVariableIndex(variables(i)));
+    this_x(i) = xvec(prog.FindDecisionVariableIndex(binding.variables()(i)));
   }
 
   if (!grad) {
     // We don't want the gradient info, so just call the VectorXd version of
     // Eval.
-    Eigen::VectorXd ty(c.num_constraints());
+    Eigen::VectorXd ty(c->num_constraints());
 
-    c.Eval(this_x, &ty);
+    c->Eval(this_x, &ty);
 
     // Store the results.
-    for (int i = 0; i < c.num_constraints(); i++) {
+    for (int i = 0; i < c->num_constraints(); i++) {
       result[i] = ty(i);
     }
     return 0;
@@ -218,33 +221,56 @@ size_t EvaluateConstraint(const MathematicalProgram& prog,
 
   // Run the version which calculates gradients.
 
-  AutoDiffVecXd ty(c.num_constraints());
-  c.Eval(math::InitializeAutoDiff(this_x), &ty);
-
-  // Store the results.  Since IPOPT directly knows the bounds of the
-  // constraint, we don't need to apply any bounding information here.
-  for (int i = 0; i < c.num_constraints(); i++) {
-    result[i] = ty(i).value();
-  }
-
-  // Extract the appropriate derivatives from our result into the
-  // gradient array.
-  size_t grad_idx = 0;
-
-  DRAKE_ASSERT(ty.rows() == c.num_constraints());
-  for (int i = 0; i < ty.rows(); i++) {
-    if (ty(i).derivatives().size() > 0) {
-      for (int j = 0; j < variables.rows(); j++) {
-        grad[grad_idx++] = ty(i).derivatives()(j);
-      }
-    } else {
-      for (int j = 0; j < variables.rows(); j++) {
-        grad[grad_idx++] = 0;
+  // Leverage the fact that the gradient is equal to the A matrix for linear
+  // constraints.
+  if constexpr (std::is_same_v<ConstraintType, LinearEqualityConstraint> ||
+                std::is_same_v<ConstraintType, LinearConstraint>) {
+    auto A = static_cast<ConstraintType*>(c)->GetDenseA();
+    // Verify that A has the proper size.
+    DRAKE_ASSERT(A.rows() == c->num_constraints());
+    DRAKE_ASSERT(A.cols() == binding.variables().rows());
+    // Evaluate the constraint.
+    Eigen::VectorXd ty(c->num_constraints());
+    c->Eval(this_x, &ty);
+    // Set the result and the gradient.
+    size_t grad_idx = 0;
+    for (int i = 0; i < ty.rows(); i++) {
+      result[i] = ty(i);
+      for (int j = 0; j < binding.variables().rows(); j++) {
+        grad[grad_idx++] = A.coeff(i, j);
       }
     }
-  }
+    return grad_idx;
+  } else {
+    // Otherwise, use auto-diff.
+    AutoDiffVecXd ty(c->num_constraints());
+    c->Eval(math::InitializeAutoDiff(this_x), &ty);
 
-  return grad_idx;
+    // Store the results.  Since IPOPT directly knows the bounds of the
+    // constraint, we don't need to apply any bounding information here.
+    for (int i = 0; i < c->num_constraints(); i++) {
+      result[i] = ty(i).value();
+    }
+
+    // Extract the appropriate derivatives from our result into the
+    // gradient array.
+    size_t grad_idx = 0;
+
+    DRAKE_ASSERT(ty.rows() == c->num_constraints());
+    for (int i = 0; i < ty.rows(); i++) {
+      if (ty(i).derivatives().size() > 0) {
+        for (int j = 0; j < binding.variables().rows(); j++) {
+          grad[grad_idx++] = ty(i).derivatives()(j);
+        }
+      } else {
+        for (int j = 0; j < binding.variables().rows(); j++) {
+          grad[grad_idx++] = 0;
+        }
+      }
+    }
+
+    return grad_idx;
+  }
 }
 
 // IPOPT uses separate callbacks to get the result and the gradients.  When
@@ -662,28 +688,23 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     Number* grad = eval_gradient ? constraint_cache_->grad.data() : nullptr;
 
     for (const auto& c : problem_->generic_constraints()) {
-      grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
-                                 c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->lorentz_cone_constraints()) {
-      grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
-                                 c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->rotated_lorentz_cone_constraints()) {
-      grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
-                                 c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->linear_constraints()) {
-      grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
-                                 c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
     for (const auto& c : problem_->linear_equality_constraints()) {
-      grad += EvaluateConstraint(*problem_, xvec, (*c.evaluator()),
-                                 c.variables(), result, grad);
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
 

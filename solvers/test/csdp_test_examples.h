@@ -75,7 +75,7 @@ class CsdpDocExample : public ::testing::Test {
 };
 
 /**
- * A simple linear program withou only bounding box constraint.
+ * A simple linear program without only bounding box constraint.
  * max -x(0) + x(1) - 2 *x(2) + 3 * x(3) + x(4) + 1
  * 0 ≤ x(0)
  * 0 ≤ x(1) ≤ 5;

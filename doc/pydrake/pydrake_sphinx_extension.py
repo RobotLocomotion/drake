@@ -140,7 +140,7 @@ class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
     option_spec = {
         'show-all-instantiations': autodoc.bool_option,
     }
-    # Permit propagation of class-specific propreties.
+    # Permit propagation of class-specific properties.
     option_spec.update(autodoc.ClassDocumenter.option_spec)
 
     @classmethod
@@ -247,7 +247,7 @@ def patch_class_add_directive_header(original, self, sig):
 def autodoc_skip_member(app, what, name, obj, skip, options):
     """Skips undesirable members.
     """
-    # N.B. This should be registerd before `napoleon`s event.
+    # N.B. This should be registered before `napoleon`s event.
     # N.B. For some reason, `:exclude-members` via `autodoc_default_options`
     # did not work. Revisit this at some point.
     if "__del__" in name:

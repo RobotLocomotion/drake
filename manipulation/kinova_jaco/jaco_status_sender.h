@@ -18,7 +18,7 @@ namespace kinova_jaco {
 /// This system has many vector-valued input ports.  Most input ports are of
 /// size num_joints + num_fingers. The exception is `time_measured` which is
 /// the one-dimensional time in seconds to set as the message timestamp
-/// (i.e. the time inputed will be converted to microseconds and sent to the
+/// (i.e. the time inputted will be converted to microseconds and sent to the
 /// hardware). It is optional and if unset, the context time is used.  The
 /// elements in the ports are the joints of the arm from the base to the tip,
 /// followed by the fingers in the same order as used by the Kinova SDK

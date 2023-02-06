@@ -55,7 +55,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    with the scalar type `ScalarType`. This method is meant to be called only by
    MultibodyPlant. MultibodyPlant guarantees the call to ExtactModelInfo() after
    this object is scalar converted. Therefore this clone method is only
-   resposible for deep copying to a state *before* the call to
+   responsible for deep copying to a state *before* the call to
    ExtactModelInfo().
    @tparam_default_scalar */
   template <typename ScalarType>
@@ -216,9 +216,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
 
-  const internal::ContactJacobians<T>& EvalContactJacobians(
-      const systems::Context<T>& context) const;
-
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
 
@@ -247,6 +244,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs() const;
+
+  const std::vector<internal::BallConstraintSpecs>& ball_constraints_specs()
+      const;
 
   BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
   /* @} */

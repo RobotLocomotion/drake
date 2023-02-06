@@ -21,4 +21,5 @@ cc_library(
         "-lsuitesparseconfig",
     ],
     licenses = ["notice"],  # BSD-3-Clause
+    deprecation = "DRAKE DEPRECATED: The @suitesparse external is deprecated. The deprecated code will be removed from Drake on or after 2023-05-01.",  # noqa
 )

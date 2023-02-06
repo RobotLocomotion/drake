@@ -98,7 +98,7 @@ PYBIND11_MODULE(sensors, m) {
       using ImageTraitsT = ImageTraits<kPixelType>;
       using T = typename ImageTraitsT::ChannelType;
 
-      // Get associated properites, and iterate.
+      // Get associated properties, and iterate.
       const std::string pixel_type_name = pixel_type_names[pixel_type_index];
       ++pixel_type_index;
 

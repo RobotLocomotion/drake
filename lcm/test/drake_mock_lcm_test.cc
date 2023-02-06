@@ -31,8 +31,7 @@ GTEST_TEST(DrakeMockLcmTest, AcceptanceTest) {
   {
     int received = 0;
     dut.SubscribeAllChannels(
-        [&received, &channel_name](
-            std::string_view channel, const void*, int) {
+        [&received, &channel_name](std::string_view channel, const void*, int) {
           EXPECT_EQ(channel, channel_name);
           received++;
         });

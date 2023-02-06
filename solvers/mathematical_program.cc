@@ -615,7 +615,7 @@ Binding<LinearCost> MathematicalProgram::AddMaximizeGeometricMeanCost(
   // that the size of x is 2ᵏ, then in each iteration, we introduce new slack
   // variables w of size 2ᵏ⁻¹, with the constraint
   // w(i)² ≤ x(2i) * x(2i+1)
-  // we then call AddMaximizeGeometricMeanCost(w). This recusion ends until
+  // we then call AddMaximizeGeometricMeanCost(w). This recursion ends until
   // w.size() == 2. We then add the constraint z(0)² ≤ w(0) * w(1), and maximize
   // the cost z(0).
   if (x.rows() <= 1) {

@@ -14,6 +14,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
+#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 
 namespace drake {
 namespace geometry {
@@ -53,6 +54,10 @@ class CollisionGeometryTest : public CIrisToyRobotTest {
         diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get()));
     scene_graph_context_ = &(diagram_->GetMutableSubsystemContext(
         *scene_graph_, diagram_context_.get()));
+
+    for (int i = 0; i < 3; ++i) {
+      y_slack_(i) = symbolic::Variable("y" + std::to_string(i));
+    }
   }
 
   Eigen::VectorXd SetQ(const Eigen::Vector3d& q_star,
@@ -76,16 +81,70 @@ class CollisionGeometryTest : public CIrisToyRobotTest {
   systems::Context<double>* scene_graph_context_;
 
   Eigen::Vector3d q_val_;
+  Vector3<symbolic::Variable> y_slack_;
 };
 
-void CheckRationalExpression(const symbolic::RationalFunction& rational,
-                             const symbolic::Environment& env,
-                             const symbolic::Expression& expr_expected) {
+void CheckRationalNoSlack(const symbolic::RationalFunction& rational,
+                          const symbolic::Environment& env,
+                          const symbolic::Expression& expr_expected) {
   const symbolic::Expression expr =
       rational.numerator().EvaluatePartial(env).ToExpression() /
       rational.denominator().Evaluate(env);
   EXPECT_PRED3(symbolic::test::PolynomialEqual, symbolic::Polynomial(expr),
                symbolic::Polynomial(expr_expected), 1E-7);
+}
+
+// Split `rationals` into two arrays, one contains the rationals that don't have
+// y as indeterminates, one contains the rationals that do.
+void SplitRationals(const std::vector<symbolic::RationalFunction>& rationals,
+                    const Vector3<symbolic::Variable>& y,
+                    std::vector<symbolic::RationalFunction>* rationals_no_y,
+                    std::vector<symbolic::RationalFunction>* rationals_with_y) {
+  rationals_no_y->clear();
+  rationals_with_y->clear();
+  for (const auto& rational : rationals) {
+    bool with_y = false;
+    for (int i = 0; i < 3; ++i) {
+      if (rational.numerator().indeterminates().find(y(i)) !=
+          rational.numerator().indeterminates().end()) {
+        rationals_with_y->push_back(rational);
+        with_y = true;
+        break;
+      }
+    }
+    if (!with_y) {
+      rationals_no_y->push_back(rational);
+    }
+  }
+}
+
+// Assume the rational is obtained by requiring
+// lhs_expr >= r * |P * a|
+// @param env contains the value of s.
+// @param lhs_expr has been evaluated at env.
+// @param a_expr has been evaluated at env.
+void CheckRationalWSlack(const symbolic::RationalFunction& rational,
+                         const symbolic::Environment& env,
+                         const symbolic::Expression lhs_expr,
+                         const Eigen::Ref<const Eigen::MatrixX3d>& P,
+                         const Vector3<symbolic::Expression>& a_expr,
+                         const VectorX<symbolic::Variable>& y, double radius) {
+  for (int i = 0; i < y.rows(); ++i) {
+    EXPECT_TRUE(rational.numerator().indeterminates().include(y(i)));
+  }
+
+  const double denominator_val = rational.denominator().Evaluate(env);
+
+  const symbolic::Expression expr_expected =
+      (lhs_expr + 2 * (P * a_expr).dot(y) +
+       lhs_expr / (radius * radius) * y.cast<symbolic::Expression>().dot(y));
+
+  EXPECT_PRED3(symbolic::test::PolynomialEqual,
+               symbolic::Polynomial(
+                   rational.numerator().EvaluatePartial(env).ToExpression())
+                       .Expand() /
+                   denominator_val,
+               symbolic::Polynomial(expr_expected), 1E-10);
 }
 
 TEST_F(CollisionGeometryTest, Box) {
@@ -103,13 +162,11 @@ TEST_F(CollisionGeometryTest, Box) {
           q_star, geometry_body, expressed_body);
 
   std::vector<symbolic::RationalFunction> rationals;
-  std::optional<VectorX<symbolic::Polynomial>> unit_length_vector;
-  // Positive side, separating_margin is empty.
-  box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_, std::nullopt,
-                  PlaneSide::kPositive, &rationals, &unit_length_vector);
-  EXPECT_FALSE(unit_length_vector.has_value());
-  EXPECT_EQ(box.num_rationals_per_side(), 9);
-  EXPECT_EQ(rationals.size(), 9);
+  // Positive side.
+  box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
+                  PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(box.num_rationals(), 8);
+  EXPECT_EQ(rationals.size(), 8);
 
   // The order of the vertices should be the same in collision_geometry.cc
   Eigen::Matrix<double, 3, 8> p_GV;
@@ -122,17 +179,8 @@ TEST_F(CollisionGeometryTest, Box) {
   p_GV.row(0) *= box_geometry.width() / 2;
   p_GV.row(1) *= box_geometry.depth() / 2;
   p_GV.row(2) *= box_geometry.height() / 2;
-  // C is the Chebyshev center. The Chebyshev center of the box is not unique,
-  // we choose the one computed from HPolyhedron.
-  const HPolyhedron box_polyhedron{VPolytope(p_GV)};
-  const Eigen::Vector3d p_GC = box_polyhedron.ChebyshevCenter();
-  const double radius =
-      std::min(std::min(box_geometry.width(), box_geometry.depth()),
-               box_geometry.height()) /
-      2;
 
   const Eigen::Matrix<double, 3, 8> p_BV = box.X_BG() * p_GV;
-  const Eigen::Vector3d p_BC = box.X_BG() * p_GC;
 
   // Evaluate the rationals, and compare the evaluation result with a.dot(p_AV)
   // + b
@@ -145,49 +193,28 @@ TEST_F(CollisionGeometryTest, Box) {
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
-  Eigen::Vector3d p_AC;
-  plant_->CalcPointsPositions(
-      *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BC,
-      plant_->get_body(expressed_body).body_frame(), &p_AC);
   Vector3<symbolic::Expression> a_expr;
   for (int j = 0; j < 3; ++j) {
     a_expr(j) = a_(j).EvaluatePartial(env).ToExpression();
   }
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
   for (int i = 0; i < 8; ++i) {
-    const symbolic::Expression expr_expected = a_expr.dot(p_AV.col(i)) + b_expr;
-    CheckRationalExpression(rationals[i], env, expr_expected);
+    const symbolic::Expression expr_expected =
+        a_expr.dot(p_AV.col(i)) + b_expr - 1;
+    CheckRationalNoSlack(rationals[i], env, expr_expected);
   }
-  CheckRationalExpression(
-      rationals.back(), env,
-      a_expr.dot(p_AC) + b_expr -
-          box.polytope_chebyshev_radius_multiplier() * radius);
 
-  // Negative side, with separating margin.
+  // Negative side.
   rationals.clear();
-  symbolic::Variable separating_margin{"delta"};
   box.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                  separating_margin, PlaneSide::kNegative, &rationals,
-                  &unit_length_vector);
-  EXPECT_TRUE(unit_length_vector.has_value());
-  EXPECT_EQ(unit_length_vector->rows(), 3);
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ((*unit_length_vector)(i), a_(i));
-  }
-  EXPECT_EQ(rationals.size(), 9);
-  EXPECT_EQ(box.num_rationals_per_side(), 9);
+                  PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 8);
+  EXPECT_EQ(box.num_rationals(), 8);
   for (int i = 0; i < 8; ++i) {
     const symbolic::Expression expr_expected =
-        -separating_margin - a_expr.dot(p_AV.col(i)) - b_expr;
-    CheckRationalExpression(rationals[i], env, expr_expected);
-    EXPECT_TRUE(rationals[i].numerator().decision_variables().include(
-        separating_margin));
+        -1 - a_expr.dot(p_AV.col(i)) - b_expr;
+    CheckRationalNoSlack(rationals[i], env, expr_expected);
   }
-  CheckRationalExpression(rationals.back(), env,
-                          -box.polytope_chebyshev_radius_multiplier() * radius -
-                              a_expr.dot(p_AC) - b_expr);
-  EXPECT_FALSE(rationals.back().numerator().decision_variables().include(
-      separating_margin));
 }
 
 TEST_F(CollisionGeometryTest, Convex) {
@@ -206,7 +233,6 @@ TEST_F(CollisionGeometryTest, Convex) {
           q_star, geometry_body, expressed_body);
 
   std::vector<symbolic::RationalFunction> rationals;
-  std::optional<VectorX<symbolic::Polynomial>> unit_length_vector;
 
   auto query_object =
       scene_graph_->get_query_output_port().Eval<QueryObject<double>>(
@@ -228,23 +254,12 @@ TEST_F(CollisionGeometryTest, Convex) {
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
-  const Eigen::Vector3d p_GC = h_poly.ChebyshevCenter();
-  const Eigen::Vector3d p_BC = convex.X_BG() * p_GC;
-  Eigen::Vector3d p_AC;
-  plant_->CalcPointsPositions(
-      *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BC,
-      plant_->get_body(expressed_body).body_frame(), &p_AC);
-  const double radius = ((h_poly.b() - h_poly.A() * p_GC).array() /
-                         h_poly.A().rowwise().norm().array())
-                            .minCoeff();
 
-  // negative side, no separating margin.
+  // negative side.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     std::nullopt, PlaneSide::kNegative, &rationals,
-                     &unit_length_vector);
-  EXPECT_FALSE(unit_length_vector.has_value());
-  EXPECT_EQ(rationals.size(), polytope.vertices().cols() + 1);
-  EXPECT_EQ(convex.num_rationals_per_side(), polytope.vertices().cols() + 1);
+                     PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), polytope.vertices().cols());
+  EXPECT_EQ(convex.num_rationals(), polytope.vertices().cols());
   symbolic::Environment env;
   env.insert(rational_forward_kin_.s(), s_val);
   Vector3<symbolic::Expression> a_expr;
@@ -254,59 +269,40 @@ TEST_F(CollisionGeometryTest, Convex) {
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
-        -a_expr.dot(p_AV.col(i)) - b_expr;
-    CheckRationalExpression(rationals[i], env, expr_expected);
+        -1 - a_expr.dot(p_AV.col(i)) - b_expr;
+    CheckRationalNoSlack(rationals[i], env, expr_expected);
   }
-  CheckRationalExpression(
-      rationals.back(), env,
-      -convex.polytope_chebyshev_radius_multiplier() * radius -
-          a_expr.dot(p_AC) - b_expr);
 
-  // Positive side, with separating margin.
-  const symbolic::Variable separating_margin("delta");
-  // Note that here I didn't clear rationals, so that I can test the new
-  // rationals are appended to the existing ones.
+  // Positive side.
+  // Note that here I didn't clear rationals_for_points, so that I can test that
+  // the new rationals_for_points are appended to the existing ones.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     separating_margin, PlaneSide::kPositive, &rationals,
-                     &unit_length_vector);
-  EXPECT_TRUE(unit_length_vector.has_value());
-  EXPECT_EQ(unit_length_vector->rows(), 3);
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ((*unit_length_vector)(i), a_(i));
-  }
-  // The new rationals are appended to the existing ones.
-  EXPECT_EQ(rationals.size(), 2 * polytope.vertices().cols() + 2);
-  EXPECT_EQ(convex.num_rationals_per_side(), 1 + polytope.vertices().cols());
+                     PlaneSide::kPositive, y_slack_, &rationals);
+  // The new rationals_for_points are appended to the existing ones.
+  EXPECT_EQ(rationals.size(), 2 * polytope.vertices().cols());
+  EXPECT_EQ(convex.num_rationals(), polytope.vertices().cols());
   for (int i = 0; i < polytope.vertices().cols(); ++i) {
     const symbolic::Expression expr_expected =
-        a_expr.dot(p_AV.col(i)) + b_expr - separating_margin;
-    CheckRationalExpression(rationals[i + polytope.vertices().cols() + 1], env,
-                            expr_expected);
-    EXPECT_TRUE(rationals[i + polytope.vertices().cols() + 1]
-                    .numerator()
-                    .decision_variables()
-                    .include(separating_margin));
+        a_expr.dot(p_AV.col(i)) + b_expr - 1;
+    CheckRationalNoSlack(rationals[i + polytope.vertices().cols()], env,
+                         expr_expected);
   }
-  CheckRationalExpression(
-      rationals.back(), env,
-      a_expr.dot(p_AC) + b_expr -
-          convex.polytope_chebyshev_radius_multiplier() * radius);
 }
 
 TEST_F(CollisionGeometryTest, Sphere) {
   // Test CollisionGeometry constructed from a sphere object.
   const auto& model_inspector = scene_graph_->model_inspector();
-  CollisionGeometry sphere(&model_inspector.GetShape(world_sphere_),
-                           plant_->world_body().index(), world_sphere_,
-                           model_inspector.GetPoseInFrame(world_sphere_));
+  CollisionGeometry sphere(&model_inspector.GetShape(body2_sphere_),
+                           body_indices_[2], body2_sphere_,
+                           model_inspector.GetPoseInFrame(body2_sphere_));
   EXPECT_EQ(sphere.type(), GeometryType::kSphere);
-  EXPECT_EQ(sphere.num_rationals_per_side(), 1);
+  EXPECT_EQ(sphere.num_rationals(), 2);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[3];
   const auto X_AB_multilinear =
       rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
-          q_star, plant_->world_body().index(), expressed_body);
+          q_star, body_indices_[2], expressed_body);
 
   const Eigen::Vector3d q_val(0.2, -0.1, 0.4);
   const Eigen::Vector3d s_val = SetQ(q_star, q_val);
@@ -318,39 +314,37 @@ TEST_F(CollisionGeometryTest, Sphere) {
   }
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
 
-  // Negative side, no margin.
+  // Negative side.
   std::vector<symbolic::RationalFunction> rationals;
-  std::optional<VectorX<symbolic::Polynomial>> unit_length_vector;
   sphere.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     std::nullopt, PlaneSide::kNegative, &rationals,
-                     &unit_length_vector);
-  EXPECT_TRUE(unit_length_vector.has_value());
-  EXPECT_EQ(unit_length_vector->rows(), 3);
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ((*unit_length_vector)(i), a_(i));
-  }
-  EXPECT_EQ(rationals.size(), 1);
+                     PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 2);
   const Eigen::Vector3d p_BS = sphere.X_BG().translation();
   Eigen::Vector3d p_AS;
-  plant_->CalcPointsPositions(*plant_context_, plant_->world_frame(), p_BS,
-                              plant_->get_body(expressed_body).body_frame(),
-                              &p_AS);
+  plant_->CalcPointsPositions(
+      *plant_context_, plant_->get_body(sphere.body_index()).body_frame(), p_BS,
+      plant_->get_body(expressed_body).body_frame(), &p_AS);
   const double radius =
-      static_cast<const Sphere&>(model_inspector.GetShape(world_sphere_))
+      static_cast<const Sphere&>(model_inspector.GetShape(body2_sphere_))
           .radius();
-  symbolic::Expression expr_expected = -radius - a_expr.dot(p_AS) - b_expr;
-  CheckRationalExpression(rationals[0], env, expr_expected);
 
-  // Positive side, with margin.
+  std::vector<symbolic::RationalFunction> rationals_no_y;
+  std::vector<symbolic::RationalFunction> rationals_with_y;
+  SplitRationals(rationals, y_slack_, &rationals_no_y, &rationals_with_y);
+
+  CheckRationalWSlack(rationals_with_y[0], env, -a_expr.dot(p_AS) - b_expr,
+                      Eigen::Matrix3d::Identity(), a_expr, y_slack_, radius);
+  CheckRationalNoSlack(rationals_no_y[0], env, -1 - a_expr.dot(p_AS) - b_expr);
+
+  // Positive side.
   rationals.clear();
-  const symbolic::Variable separating_margin("delta");
   sphere.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                     separating_margin, PlaneSide::kPositive, &rationals,
-                     &unit_length_vector);
-  EXPECT_TRUE(unit_length_vector.has_value());
-  EXPECT_EQ(unit_length_vector->rows(), 3);
-  expr_expected = a_expr.dot(p_AS) + b_expr - radius - separating_margin;
-  CheckRationalExpression(rationals[0], env, expr_expected);
+                     PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 2);
+  SplitRationals(rationals, y_slack_, &rationals_no_y, &rationals_with_y);
+  CheckRationalWSlack(rationals_with_y[0], env, a_expr.dot(p_AS) + b_expr,
+                      Eigen::Matrix3d::Identity(), a_expr, y_slack_, radius);
+  CheckRationalNoSlack(rationals_no_y[0], env, a_expr.dot(p_AS) + b_expr - 1);
 }
 
 TEST_F(CollisionGeometryTest, Capsule) {
@@ -361,7 +355,7 @@ TEST_F(CollisionGeometryTest, Capsule) {
                             geometry_body, body2_capsule_,
                             model_inspector.GetPoseInFrame(body2_capsule_));
   EXPECT_EQ(capsule.type(), GeometryType::kCapsule);
-  EXPECT_EQ(capsule.num_rationals_per_side(), 2);
+  EXPECT_EQ(capsule.num_rationals(), 3);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[0];
@@ -379,47 +373,125 @@ TEST_F(CollisionGeometryTest, Capsule) {
   }
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
 
-  // Negative side, no margin.
+  // Negative side
   std::vector<symbolic::RationalFunction> rationals;
-  std::optional<VectorX<symbolic::Polynomial>> unit_length_vector;
   capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                      std::nullopt, PlaneSide::kNegative, &rationals,
-                      &unit_length_vector);
-  EXPECT_TRUE(unit_length_vector.has_value());
-  EXPECT_EQ(unit_length_vector->rows(), 3);
-  for (int i = 0; i < 3; ++i) {
-    EXPECT_EQ((*unit_length_vector)(i), a_(i));
-  }
-  EXPECT_EQ(rationals.size(), 2);
+                      PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
   const Capsule& capsule_shape =
       static_cast<const Capsule&>(model_inspector.GetShape(body2_capsule_));
   Eigen::Matrix<double, 3, 2> p_GS;
   p_GS.col(0) << 0, 0, capsule_shape.length() / 2;
   p_GS.col(1) << 0, 0, -capsule_shape.length() / 2;
+  const Eigen::Vector3d p_GO(0, 0, 0);
   const Eigen::Matrix<double, 3, 2> p_BS = capsule.X_BG() * p_GS;
+  const Eigen::Vector3d p_BO = capsule.X_BG() * p_GO;
   Eigen::Matrix<double, 3, 2> p_AS;
+  Eigen::Vector3d p_AO;
   plant_->CalcPointsPositions(
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BS,
       plant_->get_body(expressed_body).body_frame(), &p_AS);
+  plant_->CalcPointsPositions(
+      *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BO,
+      plant_->get_body(expressed_body).body_frame(), &p_AO);
+
+  std::vector<symbolic::RationalFunction> rationals_no_y;
+  std::vector<symbolic::RationalFunction> rationals_with_y;
+  SplitRationals(rationals, y_slack_, &rationals_no_y, &rationals_with_y);
   for (int i = 0; i < 2; ++i) {
-    symbolic::Expression expr_expected =
-        -capsule_shape.radius() - a_expr.dot(p_AS.col(i)) - b_expr;
-    CheckRationalExpression(rationals[i], env, expr_expected);
+    CheckRationalWSlack(
+        rationals_with_y[i], env, -a_expr.dot(p_AS.col(i)) - b_expr,
+        Eigen::Matrix3d::Identity(), a_expr, y_slack_, capsule_shape.radius());
+  }
+  CheckRationalNoSlack(rationals_no_y[0], env, -a_expr.dot(p_AO) - b_expr - 1);
+
+  // Positive side
+  rationals.clear();
+  capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
+                      PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
+  SplitRationals(rationals, y_slack_, &rationals_no_y, &rationals_with_y);
+  for (int i = 0; i < 2; ++i) {
+    CheckRationalWSlack(
+        rationals_with_y[i], env, a_expr.dot(p_AS.col(i)) + b_expr,
+        Eigen::Matrix3d::Identity(), a_expr, y_slack_, capsule_shape.radius());
+  }
+  CheckRationalNoSlack(rationals_no_y[0], env, a_expr.dot(p_AO) + b_expr - 1);
+}
+
+TEST_F(CollisionGeometryTest, Cylinder) {
+  // Test CollisionGeometry constructed from a cylinder object.
+  const auto& model_inspector = scene_graph_->model_inspector();
+  const multibody::BodyIndex geometry_body = body_indices_[3];
+  CollisionGeometry cylinder(&model_inspector.GetShape(body3_cylinder_),
+                             geometry_body, body3_cylinder_,
+                             model_inspector.GetPoseInFrame(body3_cylinder_));
+  EXPECT_EQ(cylinder.type(), GeometryType::kCylinder);
+  EXPECT_EQ(cylinder.num_rationals(), 3);
+
+  const Eigen::Vector3d q_star(0., 0., 0.);
+  const multibody::BodyIndex expressed_body = body_indices_[2];
+  const auto X_AB_multilinear =
+      rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
+          q_star, geometry_body, expressed_body);
+
+  const Eigen::Vector3d q_val(0.2, -0.1, 0.5);
+  const Eigen::Vector3d s_val = SetQ(q_star, q_val);
+  symbolic::Environment env;
+  env.insert(rational_forward_kin_.s(), s_val);
+  Vector3<symbolic::Expression> a_expr;
+  for (int j = 0; j < 3; ++j) {
+    a_expr(j) = a_(j).EvaluatePartial(env).ToExpression();
+  }
+  const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
+
+  // Positive side.
+  std::vector<symbolic::RationalFunction> rationals;
+  cylinder.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
+                       PlaneSide::kPositive, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
+  std::vector<symbolic::RationalFunction> rationals_no_y;
+  std::vector<symbolic::RationalFunction> rationals_with_y;
+  SplitRationals(rationals, y_slack_, &rationals_no_y, &rationals_with_y);
+
+  const Cylinder& cylinder_shape =
+      static_cast<const Cylinder&>(model_inspector.GetShape(body3_cylinder_));
+
+  const math::RigidTransform X_BA = plant_->CalcRelativeTransform(
+      *plant_context_, plant_->get_body(geometry_body).body_frame(),
+      plant_->get_body(expressed_body).body_frame());
+  const math::RigidTransform X_GA = cylinder.X_BG().InvertAndCompose(X_BA);
+  const Vector3<symbolic::Expression> a_G_expr =
+      X_GA.rotation().matrix() * a_expr;
+  const symbolic::Expression b_G_expr =
+      b_expr + a_expr.dot(X_GA.inverse().translation());
+  CheckRationalNoSlack(rationals_no_y[0], env, b_G_expr - 1);
+
+  const double radius = cylinder_shape.radius();
+  const std::array<double, 2> height = {cylinder_shape.length() / 2,
+                                        -cylinder_shape.length() / 2};
+  Eigen::Matrix<double, 2, 3> P;
+  // clang-format off
+  P << 1, 0, 0,
+       0, 1, 0;
+  // clang-format on
+  for (int i = 0; i < 2; ++i) {
+    CheckRationalWSlack(rationals_with_y[i], env,
+                        a_G_expr(2) * height[i] + b_G_expr, P, a_G_expr,
+                        y_slack_.head<2>(), radius);
   }
 
-  // Positive side, with margin.
+  // Negative side.
   rationals.clear();
-  const symbolic::Variable separating_margin("delta");
-  capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
-                      separating_margin, PlaneSide::kPositive, &rationals,
-                      &unit_length_vector);
-  EXPECT_TRUE(unit_length_vector.has_value());
-  EXPECT_EQ(unit_length_vector->rows(), 3);
+  cylinder.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
+                       PlaneSide::kNegative, y_slack_, &rationals);
+  EXPECT_EQ(rationals.size(), 3);
+  SplitRationals(rationals, y_slack_, &rationals_no_y, &rationals_with_y);
+  CheckRationalNoSlack(rationals_no_y[0], env, -1 - b_G_expr);
   for (int i = 0; i < 2; ++i) {
-    const symbolic::Expression expr_expected = a_expr.dot(p_AS.col(i)) +
-                                               b_expr - capsule_shape.radius() -
-                                               separating_margin;
-    CheckRationalExpression(rationals[i], env, expr_expected);
+    CheckRationalWSlack(rationals_with_y[i], env,
+                        -a_G_expr(2) * height[i] - b_G_expr, P, a_G_expr,
+                        y_slack_.head<2>(), radius);
   }
 }
 
@@ -474,6 +546,16 @@ GTEST_TEST(DistanceToHalfspace, Test) {
       math::RigidTransformd(math::RollPitchYawd(0.02, -0.1, 0.05),
                             Eigen::Vector3d(0.03, -0.01, 0.02)),
       HalfSpace(), "body3_halfspace", proximity_properties);
+
+  const double cylinder_radius = 0.02;
+  const double cylinder_length = 0.2;
+  const geometry::GeometryId body4_cylinder = plant->RegisterCollisionGeometry(
+      plant->get_body(body_indices[4]),
+      math::RigidTransformd(math::RollPitchYawd(0.1, -0.2, 0.3),
+                            Eigen::Vector3d(0.02, 0.1, -0.05)),
+      Cylinder(cylinder_radius, cylinder_length), "body4_cylinder",
+      proximity_properties);
+
   plant->Finalize();
   auto diagram = builder.Build();
 
@@ -574,6 +656,37 @@ GTEST_TEST(DistanceToHalfspace, Test) {
 
     const double distance_expected = (-p_HS.row(2)).minCoeff() - capsule_radius;
     EXPECT_NEAR(distance, distance_expected, kTol);
+  }
+
+  {
+    // Distance to cylinder
+    const CollisionGeometry cylinder(
+        &(model_inspector.GetShape(body4_cylinder)), body_indices[4],
+        body4_cylinder, model_inspector.GetPoseInFrame(body4_cylinder));
+    const double distance =
+        DistanceToHalfspace(cylinder, a, b, expressed_body,
+                            PlaneSide::kNegative, *plant, plant_context);
+    // SceneGraph doesn't support distance between cylinder and halfspace yet.
+    // Compute the cylinder in the halfspace frame.
+    Eigen::Matrix<double, 3, 2> p_GS;
+    p_GS.col(0) << 0, 0, cylinder_length / 2;
+    p_GS.col(1) << 0, 0, -cylinder_length / 2;
+    Eigen::Matrix<double, 3, 2> p_ES;
+    plant->CalcPointsPositions(
+        plant_context, plant->get_body(body_indices[4]).body_frame(),
+        model_inspector.GetPoseInFrame(body4_cylinder) * p_GS,
+        plant->get_body(expressed_body).body_frame(), &p_ES);
+    const Eigen::Matrix<double, 3, 2> p_HS = X_HalfspaceE * p_ES;
+
+    // axis_H is the unit length cylinder axis vector expressed in halfspace
+    // frame H.
+    const Eigen::Vector3d axis_H =
+        (p_HS.col(0) - p_HS.col(1)) / (cylinder_length);
+    const double distance_expected =
+        -std::max(p_HS(2, 0), p_HS(2, 1)) -
+        cylinder_radius *
+            std::sqrt(axis_H(0) * axis_H(0) + axis_H(1) * axis_H(1));
+    EXPECT_NEAR(distance, distance_expected, 1E-10);
   }
 }
 }  // namespace optimization

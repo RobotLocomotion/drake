@@ -1897,7 +1897,7 @@ TEST_F(SdfParserTest, LoadDirectlyNestedModelsInWorld) {
 }
 
 // Same test as LoadDirectlyNestedModelsInWorld, but where a model file contains
-// direclty nested models.
+// directly nested models.
 TEST_F(SdfParserTest, LoadDirectlyNestedModelsInModel) {
   const std::string full_name = FindResourceOrThrow(
       "drake/multibody/parsing/test/sdf_parser_test/"
@@ -2739,6 +2739,70 @@ TEST_F(SdfParserTest, WorldJoint) {
       joint.frame_on_child().CalcPose(*context, frame_C);
   EXPECT_TRUE(CompareMatrices(X_CJc_expected.GetAsMatrix4(),
                               X_CJc.GetAsMatrix4(), kEps));
+}
+
+// Tests the error handling for an unsupported visual geometry.
+TEST_F(SdfParserTest, TestUnsupportedVisualGeometry) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+  <model name="heightmap_model">
+    <link name="a">
+      <visual name="b">
+        <geometry>
+          <heightmap/>
+        </geometry>
+      </visual>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: heightmap.*"));
+  ClearDiagnostics();
+
+  ParseTestString(R"""(
+  <model name="polyline_model">
+    <link name="a">
+      <visual name="b">
+        <geometry>
+          <polyline/>
+        </geometry>
+      </visual>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: polyline.*"));
+  ClearDiagnostics();
+}
+
+// Tests the error handling for an unsupported collision geometry.
+TEST_F(SdfParserTest, TestUnsupportedCollisionGeometry) {
+  AddSceneGraph();
+  ParseTestString(R"""(
+  <model name="heightmap_model">
+    <link name="a">
+      <collision name="b">
+        <geometry>
+          <heightmap/>
+        </geometry>
+      </collision>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: heightmap.*"));
+  ClearDiagnostics();
+
+  ParseTestString(R"""(
+  <model name="polyline_model">
+    <link name="a">
+      <collision name="b">
+        <geometry>
+          <polyline/>
+        </geometry>
+      </collision>
+    </link>
+  </model>)""");
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*Ignoring unsupported SDFormat element in geometry: polyline.*"));
+  ClearDiagnostics();
 }
 
 }  // namespace

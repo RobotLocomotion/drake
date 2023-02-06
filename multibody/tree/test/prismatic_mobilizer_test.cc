@@ -173,6 +173,39 @@ TEST_F(PrismaticMobilizerTest, KinematicMapping) {
   EXPECT_EQ(Nplus(0, 0), 1.0);
 }
 
+TEST_F(PrismaticMobilizerTest, MapUsesN) {
+  // Set an arbitrary "non-zero" state.
+  slider_->set_translation(context_.get(), 1.5);
+
+  // Set arbitrary v and MapVelocityToQDot.
+  Vector1d v(1.5);
+  Vector1d qdot;
+  slider_->MapVelocityToQDot(*context_, v, &qdot);
+
+  // Compute N.
+  MatrixX<double> N(1, 1);
+  slider_->CalcNMatrix(*context_, &N);
+
+  // Ensure N(q) is used in `q̇ = N(q)⋅v`
+  EXPECT_EQ(qdot, N * v);
+}
+
+TEST_F(PrismaticMobilizerTest, MapUsesNplus) {
+  // Set an arbitrary "non-zero" state.
+  slider_->set_translation(context_.get(), 1.5);
+
+  // Set arbitrary qdot and MapQDotToVelocity.
+  Vector1d qdot(1.5);
+  Vector1d v;
+  slider_->MapQDotToVelocity(*context_, qdot, &v);
+
+  // Compute Nplus.
+  MatrixX<double> Nplus(1, 1);
+  slider_->CalcNplusMatrix(*context_, &Nplus);
+
+  // Ensure N⁺(q) is used in `v = N⁺(q)⋅q̇`
+  EXPECT_EQ(v, Nplus * qdot);
+}
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

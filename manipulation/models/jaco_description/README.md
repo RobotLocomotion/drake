@@ -12,7 +12,7 @@ hand only.
 
 The versions with the `_sphere_collision` suffix use collision
 geometry defined entirely by sphere primitives.  These models were
-created by hand editing the urdf and verifiying the results using a
+created by hand editing the urdf and verifying the results using a
 visualization tool such as `//manipulation/util:show_model`.
 
 In addition, some tags unsupported by Drake have been removed, to reduce the

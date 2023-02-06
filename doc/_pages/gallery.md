@@ -78,7 +78,7 @@ as described in
   Michael Posa, Scott Kuindersma, Russ Tedrake. "Optimization and
   Stabilization of Trajectories for Constrained Dynamical Systems." ICRA, 2016.
 
-*Source Code:* [https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization](https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization)
+*Source Code:* [https://github.com/DAIRLab/dairlib/tree/master/systems/trajectory_optimization/dircon](https://github.com/DAIRLab/dairlib/tree/master/systems/trajectory_optimization/dircon)
 
 # Task and Motion Planning
 

@@ -27,7 +27,7 @@ std::string ResolveGoodUri(
     const std::string& root_dir) {
   DiagnosticPolicy diagnostic;
   // Don't let warnings leak into spdlog; tests should always specifically
-  // handle any warnings that apppear.
+  // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
   const std::string result = ResolveUri(
       diagnostic, uri, package_map, root_dir);
@@ -47,7 +47,7 @@ std::string ResolveBadUri(
     error = detail;
   });
   // Don't let warnings leak into spdlog; tests should always specifically
-  // handle any warnings that apppear.
+  // handle any warnings that appear.
   diagnostic.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
   const std::string result = ResolveUri(
       diagnostic, uri, package_map, root_dir);

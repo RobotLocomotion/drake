@@ -833,11 +833,15 @@ void CollisionChecker::AllocateContexts() {
       common_robotics_utilities::openmp_helpers::GetMaxNumOmpThreads();
   const int omp_thread_limit =
       common_robotics_utilities::openmp_helpers::GetOmpThreadLimit();
+  const bool omp_enabled_in_build =
+      common_robotics_utilities::openmp_helpers::IsOmpEnabledInBuild();
   const int num_threads = std::max(num_omp_threads, max_num_omp_threads);
   log()->info(
       "Allocating contexts to support {} parallel queries given "
-      "omp_num_threads {} omp_max_threads {} and omp_thread_limit {}",
-      num_threads, num_omp_threads, max_num_omp_threads, omp_thread_limit);
+      "omp_num_threads {} omp_max_threads {} and omp_thread_limit {} "
+      "OpenMP enabled in build? {}",
+      num_threads, num_omp_threads, max_num_omp_threads, omp_thread_limit,
+      omp_enabled_in_build);
   // Make the prototype context.
   const std::unique_ptr<CollisionCheckerContext> prototype_context =
       CreatePrototypeContext();
@@ -934,6 +938,9 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
 
   const auto& inspector = model().scene_graph().model_inspector();
 
+  // Cache the welded bodies for each body, for use in the inner loop below.
+  std::unordered_set<int> bodies_welded_to_body_cache;
+
   // For consistency, (B, B) is always filtered.
   // Loop variables below use `int` for Eigen indexing compatibility.
   for (int i = 0; i < num_bodies; ++i) {
@@ -941,6 +948,17 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
     const bool i_is_robot = IsPartOfRobot(BodyIndex(i));
 
     const Body<double>& body_i = get_body(BodyIndex(i));
+
+    // Update the cache of welded bodies if necessary.
+    // Note: if body i is welded to body i-1, we don't need to update the cache.
+    if (bodies_welded_to_body_cache.count(i) == 0) {
+      bodies_welded_to_body_cache.clear();
+
+      for (const auto* welded_body : plant().GetBodiesWeldedTo(body_i)) {
+        bodies_welded_to_body_cache.insert(welded_body->index());
+      }
+    }
+
     const std::vector<GeometryId>& geometries_i =
         plant().GetCollisionGeometriesForBody(body_i);
 
@@ -954,9 +972,6 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
       }
 
       const Body<double>& body_j = get_body(BodyIndex(j));
-      log()->debug(
-          "Checking if collision is filtered between {} [{}] and {} [{}]",
-          GetScopedName(body_i), i, GetScopedName(body_j), j);
 
       // Check if collisions between the geometries_i are already filtered.
       bool collisions_filtered = false;
@@ -981,23 +996,14 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
         }
       }
 
-      // TODO(sean.curtis) Since #16920 MbP has introduced collision filters
-      //  for welded sub-graphs. This is possibly redundant. Currently, this
-      //  will *replace* collision filters even if SceneGraph erases them
-      //  post finalize. Presumably, that's not the *intent*. This probably
-      //  exists because these welded subgraphs weren't previously handled.
-      //  We can probably remove this logic and simply say, "the nominal
-      //  filters" merely reflect the state of SceneGraph's collision filters
-      //  and be done.
+      // While MbP already filters collisions in SceneGraph between welded
+      // bodies, this is only recorded if both bodies have collision geometries
+      // when this filter is applied. Since we want to handle collision
+      // geometries added later, we must record if bodies are welded together.
 
       // If the body pair has a welded path between them, it should be filtered.
-      bool bodies_welded_together = false;
-      for (const auto* welded_body : plant().GetBodiesWeldedTo(body_j)) {
-        if (welded_body->index() == i) {
-          bodies_welded_together = true;
-          break;
-        }
-      }
+      const bool bodies_welded_together =
+          bodies_welded_to_body_cache.count(j) > 0;
 
       // Add the filter accordingly.
       if (collisions_filtered) {

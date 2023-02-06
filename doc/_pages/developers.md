@@ -234,7 +234,9 @@ can look into the question.
 
 # IDE and Text Editor Notes
 
+* [VS Code setup](/vscode.html)
 * [CLion IDE setup](/clion.html)
+* [Emacs setup](/emacs.html)
 * [Eclipse](https://github.com/tkoolen/drake/wiki/Eclipse-setup-(experimental))
 * [Sublime Text Notes](/sublime_text.html)
 * [Unicode Tips & Tricks](/unicode_tips_tricks.html)

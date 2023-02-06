@@ -233,7 +233,7 @@ GTEST_TEST(MakeCapsuleVolumeMesh, FinestMeshClamped) {
 
 // This test verifies that the error between the volume of the tessellated
 // capsule and the true volume of the parameterized capsule monotonically
-// decreases as the tesselation is refined.
+// decreases as the tessellation is refined.
 GTEST_TEST(MakeCapsuleVolumeMesh, VolumeConvergence) {
   const double height = 2;
   const double radius = 1;

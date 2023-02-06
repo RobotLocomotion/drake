@@ -52,6 +52,58 @@ class System : public SystemBase {
   virtual void Accept(SystemVisitor<T>* v) const;
 
   //----------------------------------------------------------------------------
+  /** @name           Cloning
+  These functions make a deep copy of a system. */
+  //@{
+
+  /** Creates a deep copy of this system.
+
+  Even though the cloned system is functionally identical, any contexts created
+  for this system are not compatible with the cloned system, and vice versa.
+
+  @see Context::SetTimeStateAndParametersFrom() for how to copy context data
+  between clones.
+
+  @warning This implementation is somewhat incomplete at the moment. Many
+  systems will not be able to be cloned, and will throw an exception instead.
+  To be cloned, at minimum a system must support scalar conversion.
+  See @ref system_scalar_conversion.
+
+  The result is never nullptr. */
+  std::unique_ptr<System<T>> Clone() const;
+
+  /** Creates a deep copy of this system.
+
+  In contrast with the instance member function `sys.Clone()`, this static
+  member function `Clone(sys)` is useful for C++ users to preserve the
+  <b>declared</b> type of the system being cloned in the returned pointer.
+  (For both clone overloads, the <b>runtime</b> type is always the same.)
+
+  Even though the cloned system is functionally identical, any contexts created
+  for this system are not compatible with the cloned system, and vice versa.
+
+  @warning This implementation is somewhat incomplete at the moment. Many
+  systems will not be able to be cloned, and will throw an exception instead.
+  To be cloned, at minimum a system must support scalar conversion.
+  See @ref system_scalar_conversion.
+
+  The result is never nullptr.
+
+  Usage: @code
+    MySystem<double> plant;
+    unique_ptr<MySystem<double>> copy = System<double>::Clone(plant);
+  @endcode
+
+  @tparam S The specific System type to accept and return. */
+  template <template <typename> class S = ::drake::systems::System>
+  static std::unique_ptr<S<T>> Clone(const S<T>& from) {
+    static_assert(std::is_base_of_v<System<T>, S<T>>);
+    return dynamic_pointer_cast_or_throw<S<T>>(from.Clone());
+  }
+
+  //@}
+
+  //----------------------------------------------------------------------------
   /** @name           Resource allocation and initialization
   These methods are used to allocate and initialize Context resources. */
   //@{
@@ -774,7 +826,7 @@ class System : public SystemBase {
       the result of applying the discrete update event handlers to the current
       discrete variable values.
 
-  @note The referenced cache entry is recalcuated if anything in the
+  @note The referenced cache entry is recalculated if anything in the
       given Context has changed since last calculation. Subsequent calls just
       return the already-calculated value.
 
@@ -829,19 +881,6 @@ class System : public SystemBase {
   std::map<PeriodicEventData, std::vector<const Event<T>*>,
            PeriodicEventDataComparator>
   MapPeriodicEventsByTiming(const Context<T>* context = nullptr) const;
-
-  /** (Deprecated) See MapPeriodicEventsByTiming(). If you are looking for
-  the EventCollection of periodic events (analogous to GetPerStepEvents()
-  and GetInitializationEvents()), see
-  GetPeriodicEvents(Context, EventCollection). */
-  DRAKE_DEPRECATED("2023-02-01",
-      "Use MapPeriodicEventsByTiming() or "
-      "GetPeriodicEvents(Context, EventCollection) instead")
-  std::map<PeriodicEventData, std::vector<const Event<T>*>,
-           PeriodicEventDataComparator>
-  GetPeriodicEvents() const {
-    return MapPeriodicEventsByTiming();
-  }
 
   /** Utility method that computes for _every_ output port i the value y(i) that
   should result from the current contents of the given Context. Note that
@@ -1364,6 +1403,7 @@ class System : public SystemBase {
   related to scalar-type conversion support. */
   template <typename U, template <typename> class S = ::drake::systems::System>
   static std::unique_ptr<S<U>> ToScalarType(const S<T>& from) {
+    static_assert(std::is_base_of_v<System<T>, S<T>>);
     auto base_result = from.template ToScalarTypeMaybe<U>();
     if (!base_result) {
       const System<T>& upcast_from = from;

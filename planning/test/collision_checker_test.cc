@@ -1,4 +1,4 @@
-#include "planning/collision_checker.h"
+#include "drake/planning/collision_checker.h"
 
 #include <chrono>
 #include <map>
@@ -15,10 +15,13 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/planning/robot_diagram_builder.h"
+#include "drake/planning/test/planning_test_helpers.h"
 #include "drake/planning/unimplemented_collision_checker.h"
 
 namespace drake {
 namespace planning {
+
+using test::AddChain;
 
 // Support for easily comparing EdgeMeasurements.
 bool operator==(const EdgeMeasure& r1, const EdgeMeasure& r2) {
@@ -74,32 +77,6 @@ using std::optional;
 using std::pair;
 using std::vector;
 using testing::ElementsAre;
-
-// TODO(SeanCurtis-TRI): This was pulled out of
-// anzu/planning/planning_test_helpers. As more of planning gets pulled into
-// drake, rehome this in the drake equivalent file.
-ModelInstanceIndex AddChain(MultibodyPlant<double>* plant, int n,
-                            int num_geo = 1) {
-  ModelInstanceIndex instance = plant->AddModelInstance(fmt::format("m{}", n));
-  std::vector<const RigidBody<double>*> bodies;
-  for (int k = 0; k < n; ++k) {
-    bodies.push_back(
-        &plant->AddRigidBody(fmt::format("b{}", k), instance,
-                             SpatialInertia<double>::MakeUnitary()));
-    if (plant->geometry_source_is_registered()) {
-      for (int i = 0; i < num_geo; ++i) {
-        plant->RegisterCollisionGeometry(
-            *bodies.back(), RigidTransformd::Identity(), Sphere(0.01),
-            fmt::format("g{}", i), CoulombFriction<double>());
-      }
-    }
-  }
-  for (int k = 1; k < n; ++k) {
-    plant->AddJoint<RevoluteJoint>(fmt::format("j{}", k), *bodies[k - 1], {},
-                                   *bodies[k], {}, Eigen::Vector3d::UnitY());
-  }
-  return instance;
-}
 
 // Adds a new model instance consisting of a non-zero number of floating bodies.
 ModelInstanceIndex AddEnvironmentModelInstance(MultibodyPlant<double>* plant,

@@ -60,7 +60,7 @@ For each external in the report, add a commit that upgrades it, as follows:
 Run the script to perform one upgrade (for some external "foo"):
 
 ```
-  bazel-bin/tools/workspace/new_release --commit foo
+  bazel-bin/tools/workspace/new_release --lint --commit foo
 ```
 
 If the automated update doesn't succeed, then you'll need to make the edits
@@ -71,7 +71,8 @@ in your editor.  Some diffs will have an instructive comment nearby, e.g.,
 "If you change this commit, then you need to do X, Y, Z afterward."
 Follow any advice that you find.
 
-Run ``bazel test --config lint //...`` as a sanity check of the changes.
+If you didn't use ``--lint`` earlier, or need to re-test, run
+``bazel test --config lint //...`` as a sanity check of the changes.
 
 If any edits are needed, stage the changes and amend the commit using
 ``git commit --amend``.

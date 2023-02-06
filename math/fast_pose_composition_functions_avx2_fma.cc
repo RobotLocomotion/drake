@@ -143,7 +143,7 @@ t = gA+hB+iC
 
 Load columns from left matrix, duplicate elements from right. (Tricky here since
 the inverse is row ordered -- we pull in the rows and then shuffle things.)
-Peform 4 operations in parallel but ignore the 4th result. Be careful not to
+Perform 4 operations in parallel but ignore the 4th result. Be careful not to
 load or store past the last element.
 
 We end up doing 3*4 + 6*8 = 60 flops to get 45 useful ones. However, we do that
@@ -239,7 +239,7 @@ s = bA+eB+hC  etc.    yy = y + bX + eY + hZ
 t = cA+fB+iC          zz = z + cX + fY + iZ
 
 Load columns from left matrix, duplicate elements from right.
-Peform 4 operations in parallel but ignore the 4th result.
+Perform 4 operations in parallel but ignore the 4th result.
 Be careful not to load or store past the last element.
 
 We end up doing 3*4 + 9*8 = 84 flops to get 63 useful ones.
@@ -322,7 +322,7 @@ t = gA+hB+iC          zz = gP + hQ + iR
 Load columns from left matrix, duplicate elements from right.
 (Tricky here since the inverse is row ordered -- we pull in
 the rows and then shuffle things.)
-Peform 4 operations in parallel but ignore the 4th result.
+Perform 4 operations in parallel but ignore the 4th result.
 Be careful not to load or store past the last element.
 
 We end up doing 5*4 + 8*8 = 84 flops to get 63 useful ones.

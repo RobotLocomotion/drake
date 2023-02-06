@@ -648,7 +648,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
 
   multibody::InverseKinematics ik(plant, false);
   // Note: It is tempting to set the lower and upper bounds on the y-axis to
-  // zero (afterall, the point is always in the y=0 plane for all q). This does
+  // zero (after all, the point is always in the y=0 plane for all q). This does
   // work, but the numerics of the counter-example search are much worse and
   // the resulting IRIS region is much smaller because of it.
   ik.AddPositionConstraint(plant.GetFrameByName("link2"),

@@ -24,14 +24,8 @@ void DefineSolversClp(py::module m);
 /* Defines the CSDP bindings. See solvers_py_csdp.cc. */
 void DefineSolversCsdp(py::module m);
 
-/* Defines the DREAL bindings. See solvers_py_dreal.cc. */
-void DefineSolversDreal(py::module m);
-
 /* Defines the GUROBI bindings. See solvers_py_gurobi.cc. */
 void DefineSolversGurobi(py::module m);
-
-/* Defines the IBEX bindings. See solvers_py_ibex.cc. */
-void DefineSolversIbex(py::module m);
 
 /* Defines the IPOPT bindings. See solvers_py_ipopt.cc. */
 void DefineSolversIpopt(py::module m);
@@ -63,7 +57,7 @@ void DefineSolversScs(py::module m);
 /* Defines bindings per solvers_py_sdpa_free_format.cc. */
 void DefineSolversSdpaFreeFormat(py::module m);
 
-/* Defines the SNOPT bindings. See solvers_py_sdpa_free_format.cc. */
+/* Defines the SNOPT bindings. See solvers_snopt.cc. */
 void DefineSolversSnopt(py::module m);
 
 }  // namespace internal

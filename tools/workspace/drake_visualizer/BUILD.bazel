@@ -35,7 +35,7 @@ py_library(
 )
 
 # TODO(eric.cousineau): Use something simpler than cmake_configure_file to do
-# basic subsitutions as a genrule.
+# basic substitutions as a genrule.
 cmake_configure_file(
     name = "config_wrapper_script",
     src = "drake_visualizer_installed.py.in",

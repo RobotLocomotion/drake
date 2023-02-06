@@ -22,7 +22,7 @@ using std::abs;
 using std::find_if;
 // TODO(xuchenhan-tri): The following test method is taken and modified from
 // geometry::proximity::internal::MakeBoxVolumeMeshWithMaTest. Remove the
-// redundent code path when this goes out of dev/.
+// redundant code path when this goes out of dev/.
 
 // Verifies that a tetrahedral
 // mesh of a box from MakeDiamondCubicBoxVolumeMesh() satisfies all these

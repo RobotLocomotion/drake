@@ -60,7 +60,7 @@ class PointContactVisualizer {
 
  private:
   /* When a contact disappears, we mark it invisible rather than deleting it
-  (to improve resposiveness). This struct tracks that state. */
+  (to improve responsiveness). This struct tracks that state. */
   struct VisibilityStatus {
     /* Whether this path is currently visible in meshcat. */
     bool visible{false};

@@ -89,7 +89,7 @@ class MultiDofJointWithLimits final : public Joint<T> {
       const override {
     auto blue_print = std::make_unique<typename Joint<T>::BluePrint>();
     // The only restriction here relevant for these tests is that we provide a
-    // mobilizer with kNumDofs postions and velocities, so that indexes are
+    // mobilizer with kNumDofs positions and velocities, so that indexes are
     // consistent during MultibodyPlant::Finalize().
     auto revolute_mobilizer = std::make_unique<internal::SpaceXYZMobilizer<T>>(
         this->frame_on_parent(), this->frame_on_child());

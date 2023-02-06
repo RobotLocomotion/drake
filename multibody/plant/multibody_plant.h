@@ -22,10 +22,8 @@
 #include "drake/multibody/contact_solvers/contact_solver.h"
 #include "drake/multibody/contact_solvers/contact_solver_results.h"
 #include "drake/multibody/plant/constraint_specs.h"
-#include "drake/multibody/plant/contact_jacobians.h"
 #include "drake/multibody/plant/contact_results.h"
 #include "drake/multibody/plant/coulomb_friction.h"
-#include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
@@ -579,9 +577,6 @@ call to Finalize() must be performed. This call will:
 - declare collision filters to ignore collisions:
   - between bodies connected by a joint,
   - within subgraphs of welded bodies.
-
-<!-- TODO(#16422): ignore collisions within all groups of welded-together
-     bodies -->
 
 <!-- TODO(amcastro-tri): Consider making the actual geometry registration
      with GS AFTER Finalize() so that we can tell if there are any bodies
@@ -1195,7 +1190,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the total number of constraints specified by the user.
   int num_constraints() const {
     return static_cast<int>(coupler_constraints_specs_.size() +
-           distance_constraints_specs_.size());
+                            distance_constraints_specs_.size() +
+                            ball_constraints_specs_.size());
   }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
@@ -1277,7 +1273,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       double stiffness = std::numeric_limits<double>::infinity(),
       double damping = 0.0);
 
-  /// <!-- TODO(xuchenhan-tri): Add getters to interrogate existing constraints.
+  /// Defines a constraint such that point P affixed to body A is coincident at
+  /// all times with point Q affixed to body B, effectively modeling a
+  /// ball-and-socket joint.
+  ///
+  /// @param[in] body_A Body to which point P is rigidly attached.
+  /// @param[in] p_AP Position of point P in body A's frame.
+  /// @param[in] body_B Body to which point Q is rigidly attached.
+  /// @param[in] p_BQ Position of point Q in body B's frame.
+  /// @returns the index to the newly added constraint.
+  ///
+  /// @throws std::exception if bodies A and B are the same body.
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  ConstraintIndex AddBallConstraint(const Body<T>& body_A,
+                                    const Vector3<double>& p_AP,
+                                    const Body<T>& body_B,
+                                    const Vector3<double>& p_BQ);
+
+  /// <!-- TODO(#18732): Add getters to interrogate existing constraints.
   /// -->
 
   /// @}
@@ -4313,7 +4326,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetPositionLowerLimits();
   }
 
-  /// Upper limit analog of GetPositionsLowerLimits(), where any unbounded or
+  /// Upper limit analog of GetPositionLowerLimits(), where any unbounded or
   /// unspecified limits will be +infinity.
   /// @see GetPositionLowerLimits() for more information.
   VectorX<double> GetPositionUpperLimits() const {
@@ -4442,7 +4455,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // when the plant declares its cache entries.
   struct CacheIndexes {
     systems::CacheIndex contact_info_and_body_spatial_forces;
-    systems::CacheIndex contact_jacobians;
     systems::CacheIndex contact_results;
     systems::CacheIndex contact_surfaces;
     systems::CacheIndex generalized_contact_forces_continuous;
@@ -4704,14 +4716,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const drake::systems::Context<T>& context,
       internal::HydroelasticFallbackCacheData<T>* data) const;
 
-  // TODO(amcastro-tri): Remove this function when #16955 is resolved. Right now
-  // this function is here only to support the computation of ContactResults,
-  // which should be performed by the discrete update manager instead.
-  const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
-      const systems::Context<T>& context) const {
-    return discrete_update_manager_->EvalDiscreteContactPairs(context);
-  }
-
   // Helper method to fill in the ContactResults given the current context when
   // the model is continuous.
   // @param[out] contact_results is fully overwritten
@@ -4738,13 +4742,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // @param[out] contact_results is fully overwritten
   void CalcContactResultsDiscrete(const systems::Context<T>& context,
                                   ContactResults<T>* contact_results) const;
-
-  // Helper method to fill in contact_results with point contact information
-  // for the given state stored in context, when the model is discrete.
-  // @param[in,out] contact_results is appended to
-  void AppendContactResultsDiscretePointPair(
-      const systems::Context<T>& context,
-      ContactResults<T>* contact_results) const;
 
   // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
@@ -4939,82 +4936,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // a harmonic oscillator model within SetUpJointLimitsParameters().
   void AddJointLimitsPenaltyForces(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
-
-  // Given a set of point pairs in `point_pairs_set`, this method computes the
-  // normal velocities Jacobian Jn(q) and the tangential velocities Jacobian
-  // Jt(q).
-  //
-  // The normal velocities Jacobian Jn(q) is defined such that:
-  //   vn = Jn(q) v
-  // where the i-th component of vn corresponds to the "separation velocity"
-  // for the i-th point pair in the set. The i-th separation velocity is defined
-  // positive for when the depth in the i-th point pair (
-  // PenetrationAsPointPair::depth) is decreasing. Since for contact problems
-  // the (positive) depth in PenetrationAsPointPair is defined so that it
-  // corresponds to interpenetrating body geometries, a positive separation
-  // velocity corresponds to bodies moving apart.
-  //
-  // The tangential velocities Jacobian Jt(q) is defined such that:
-  //   vt = Jt(q) v
-  // where v ∈ ℝⁿᵛ is the vector of generalized velocities, Jt(q) is a matrix
-  // of size 2⋅nc×nv and vt is a vector of size 2⋅nc. vt is defined such that
-  // its 2⋅i-th and (2⋅i+1)-th entries correspond to relative velocity of the
-  // i-th point pair in these two orthogonal directions. That is:
-  //   vt(2 * i)     = vx_AB_C = Cx ⋅ v_AB
-  //   vt(2 * i + 1) = vy_AB_C = Cy ⋅ v_AB
-  //
-  // If the optional argument R_WC_set is non-null, on output the i-th entry of
-  // R_WC_set will contain the orientation R_WC (with columns Cx, Cy, Cz) in the
-  // world using the mean of the pair of witnesses for point_pairs_set[i] as the
-  // contact point.
-  void CalcNormalAndTangentContactJacobians(
-      const systems::Context<T>& context,
-      const std::vector<internal::DiscreteContactPair<T>>& contact_pairs,
-      MatrixX<T>* Jn, MatrixX<T>* Jt,
-      std::vector<math::RotationMatrix<T>>* R_WC_set = nullptr) const;
-
-  // Populates the ContactJacobians cache struct via EvalDiscreteContactPairs
-  // and CalcNormalAndTangentContactJacobians.
-  void CalcContactJacobiansCache(
-      const systems::Context<T>& context,
-      internal::ContactJacobians<T>* contact_jacobians) const;
-
-  // Evaluates the contact Jacobians for the given state of the plant stored in
-  // `context`.
-  // This method first evaluates the point pair penetrations in the system for
-  // the given `context`, see EvalPointPairPenetrations(). For each penetration
-  // pair involving bodies A and B, a contact frame C is defined by the
-  // rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where `Cz_W = nhat_BA_W`
-  // equals the normal vector pointing from body B into body A, expressed in
-  // the world frame W. See PenetrationAsPointPair for further details on the
-  // definition of each contact pair. Versors `Cx_W` and `Cy_W` constitute a
-  // basis of the plane normal to `Cz_W` and are arbitrarily chosen. The
-  // contact frame basis can be accessed in the results, see
-  // ContactJacobians::R_WC_list. Further, for each contact pair evaluated,
-  // this method computes the Jacobians `Jn` and `Jt`. With the vector of
-  // generalized velocities v of size `nv` and `nc` the number of contact
-  // pairs;
-  //   - `Jn` is a matrix of size `nc x nv` such that `vn = Jn⋅v` is the
-  //     separation speed for each contact point, defined to be positive when
-  //     bodies are moving away at the contact.
-  //   - `Jt` is a matrix of size `2⋅nc x nv` such that `vt = Jt⋅v`
-  //     concatenates the tangential components of the relative velocity vector
-  //     `v_AcBc` in the frame C of contact. That is, for the k-th contact
-  //     pair, `vt.segment<2>(2 * ik)` stores the components of `v_AcBc` in the
-  //     `Cx` and `Cy` directions.
-  //
-  // If no geometry was registered or if `nc = 0`, ContactJacobians holds empty
-  // results.
-  //
-  // See ContactJacobians for specifics on the returned data storage.
-  // This method throws std::exception if called pre-finalize. See Finalize().
-  const internal::ContactJacobians<T>& EvalContactJacobians(
-      const systems::Context<T>& context) const {
-    DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-    this->ValidateContext(context);
-    return this->get_cache_entry(cache_indexes_.contact_jacobians)
-        .template Eval<internal::ContactJacobians<T>>(context);
-  }
 
   // Given a GeometryId, return the corresponding BodyIndex or throw if the
   // GeometryId is invalid or unknown to this plant.
@@ -5246,6 +5167,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Vector of distance constraints specifications.
   std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
+
+  // Vector of ball constraint specifications.
+  std::vector<internal::BallConstraintSpecs> ball_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;

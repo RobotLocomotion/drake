@@ -559,21 +559,6 @@ PYBIND11_MODULE(symbolic, m) {
       py::arg("e"), py::arg("sin_cos"), py::arg("t"),
       doc.SubstituteStereographicProjection.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("SubstituteStereographicProjection",
-      WrapDeprecated(
-          "2023-02-01, use the other SubstituteStereographicProjection which "
-          "passes e as a sym.Polynomial",
-          [](const Expression& e, const std::unordered_map<symbolic::Variable,
-                                      symbolic::Variable>& subs) {
-            return symbolic::SubstituteStereographicProjection(e, subs);
-          }),
-      py::arg("e"), py::arg("subs"),
-      "2023-02-01, use the other SubstituteStereographicProjection which "
-      "passes e as a sym.Polynomial");
-#pragma GCC diagnostic pop
-
   {
     constexpr auto& cls_doc = doc.FormulaKind;
     py::enum_<FormulaKind>(m, "FormulaKind", doc.FormulaKind.doc)
