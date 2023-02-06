@@ -23,7 +23,6 @@ drake_cc_binary(
     ],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//examples/allegro_hand:allegro_common",
         "//examples/allegro_hand:allegro_lcm",
         "//geometry:drake_visualizer",

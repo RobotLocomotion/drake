@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
@@ -41,10 +40,11 @@ VectorX<Expression> PendulumPlantDynamics() {
 // Obtains the dynamics using MultibodyPlant configured to model a pendulum.
 VectorX<Expression> MultibodyPlantDynamics() {
   // Load the Pendulum.urdf into a symbolic MultibodyPlant.
-  const char* const urdf_path = "drake/examples/pendulum/Pendulum.urdf";
+  const std::string pendulum_url =
+      "package://drake/examples/pendulum/Pendulum.urdf";
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
-  parser.AddModels(FindResourceOrThrow(urdf_path));
+  parser.AddModelsFromUrl(pendulum_url);
   plant.Finalize();
   auto symbolic_plant_ptr = System<double>::ToSymbolic(plant);
   const MultibodyPlant<Expression>& symbolic_plant = *symbolic_plant_ptr;

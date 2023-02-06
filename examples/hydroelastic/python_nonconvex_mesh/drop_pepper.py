@@ -10,7 +10,6 @@ non-convex meshes. It reads SDFormat files of:
 import argparse
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
 from pydrake.math import RigidTransform
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlant
@@ -35,14 +34,14 @@ def make_pepper_bowl_table(contact_model, time_step):
 
     parser = Parser(plant)
     parser.AddModels(
-        FindResourceOrThrow(
-            "drake/examples/hydroelastic/python_nonconvex_mesh/pepper.sdf"))
+        url="package://drake/examples/hydroelastic/python_nonconvex_mesh/"
+            "pepper.sdf")
     parser.AddModels(
-        FindResourceOrThrow(
-            "drake/examples/hydroelastic/python_nonconvex_mesh/bowl.sdf"))
+        url="package://drake/examples/hydroelastic/python_nonconvex_mesh/"
+            "bowl.sdf")
     (table,) = parser.AddModels(
-        FindResourceOrThrow(
-            "drake/examples/hydroelastic/python_nonconvex_mesh/table.sdf"))
+        url="package://drake/examples/hydroelastic/python_nonconvex_mesh/"
+            "table.sdf")
 
     # We pose the table with its top surface on World's X-Y plane.
     # Intuitively we push it down 1 cm because the box is 2 cm thick.

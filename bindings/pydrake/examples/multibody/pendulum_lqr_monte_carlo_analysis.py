@@ -11,10 +11,7 @@ import argparse
 
 import numpy as np
 
-from pydrake.common import (
-    RandomGenerator,
-    FindResourceOrThrow
-)
+from pydrake.common import RandomGenerator
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant
 from pydrake.symbolic import (
@@ -55,9 +52,8 @@ def main():
     # Assemble the Pendulum plant.
     builder = DiagramBuilder()
     pendulum = builder.AddSystem(MultibodyPlant(0.0))
-    file_name = FindResourceOrThrow(
-        "drake/examples/pendulum/Pendulum.urdf")
-    Parser(pendulum).AddModels(file_name)
+    Parser(pendulum).AddModelsFromUrl(
+        url="package://drake/examples/pendulum/Pendulum.urdf")
     pendulum.Finalize()
 
     # Set the pendulum to start at uniformly random

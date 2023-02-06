@@ -94,7 +94,16 @@ PYBIND11_MODULE(parsing, m) {
               return self.AddModels(file_name);
             },
             py::arg("file_name"), cls_doc.AddModels.doc)
+        .def("AddModelsFromUrl", &Class::AddModelsFromUrl, py::arg("url"),
+            cls_doc.AddModelsFromUrl.doc)
         .def("AddModelsFromString", &Class::AddModelsFromString,
+            py::arg("file_contents"), py::arg("file_type"),
+            cls_doc.AddModelsFromString.doc)
+        // Overload AddModels(url=) for some sugar.
+        .def("AddModels", &Class::AddModelsFromUrl, py::kw_only(),
+            py::arg("url"), cls_doc.AddModelsFromUrl.doc)
+        // Overload AddModels(file_contents=, file_type=) for some sugar.
+        .def("AddModels", &Class::AddModelsFromString, py::kw_only(),
             py::arg("file_contents"), py::arg("file_type"),
             cls_doc.AddModelsFromString.doc)
         .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),

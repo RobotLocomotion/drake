@@ -120,6 +120,26 @@ class TestParsing(unittest.TestCase):
             file_contents=sdf_contents, file_type="sdf")
         self.assertIsInstance(results[0], ModelInstanceIndex)
 
+        # Check the related AddModel overload.
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        results = parser.AddModels(
+            file_contents=sdf_contents, file_type="sdf")
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+
+    def test_parser_url(self):
+        """Tests for AddModelsFromUrl as well as its related AddModel overload.
+        """
+        sdf_url = "package://drake/multibody/benchmarks/acrobot/acrobot.sdf"
+
+        plant = MultibodyPlant(time_step=0.01)
+        results = Parser(plant).AddModelsFromUrl(url=sdf_url)
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+
+        plant = MultibodyPlant(time_step=0.01)
+        results = Parser(plant).AddModels(url=sdf_url)
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+
     def test_parser_prefix_constructors(self):
         model = "<robot name='r'><link name='a'/></robot>"
         plant = MultibodyPlant(time_step=0.0)
