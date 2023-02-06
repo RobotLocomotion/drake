@@ -5,16 +5,17 @@
 #include <string>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <fmt/format.h>
 
+#include "drake/common/drake_export.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/volume_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
 namespace geometry {
-namespace internal {
+namespace internal DRAKE_NO_EXPORT {
 
 // TODO(SeanCurtis-TRI): Given the dependencies on fcl for this file, the name
 //  should reflect it so that it doesn't get included in files that will
