@@ -1064,7 +1064,7 @@ Eigen::Vector3d ParseVector3(const SDFormatDiagnostic& diagnostic,
   return ToVector3(value);
 }
 
-const Frame<double>& ParseFrame(const SDFormatDiagnostic& diagnostic,
+const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
                                 const sdf::ElementPtr node,
                                 ModelInstanceIndex model_instance,
                                 MultibodyPlant<double>* plant,
@@ -1074,6 +1074,7 @@ const Frame<double>& ParseFrame(const SDFormatDiagnostic& diagnostic,
         "<{}>: Unable to find the <{}> child tag.",
         node->GetName(), element_name);
     diagnostic.Error(node, std::move(message));
+    return nullptr;
   }
 
   const std::string frame_name = node->Get<std::string>(element_name);
@@ -1083,9 +1084,10 @@ const Frame<double>& ParseFrame(const SDFormatDiagnostic& diagnostic,
           "<{}>: Frame '{}' specified for <{}> does not exist in the model.",
           node->GetName(), frame_name, element_name);
     diagnostic.Error(node, std::move(message));
+    return nullptr;
   }
 
-  return plant->GetFrameByName(frame_name, model_instance);
+  return &plant->GetFrameByName(frame_name, model_instance);
 }
 
 // TODO(eric.cousineau): Update parsing pending resolution of
@@ -1124,16 +1126,18 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     return;
   }
 
-  const Frame<double>& parent_frame =
+  const Frame<double>* parent_frame =
       ParseFrame(diagnostic, node, model_instance, plant, "drake:parent");
-  const Frame<double>& child_frame =
+  if (parent_frame == nullptr) { return; }
+  const Frame<double>* child_frame =
       ParseFrame(diagnostic, node, model_instance, plant, "drake:child");
+  if (child_frame == nullptr) { return; }
 
   if (joint_type == "planar") {
     // TODO(eric.cousineau): Error out when there are unused tags.
     Vector3d damping = ParseVector3(diagnostic, node, "drake:damping");
     plant->AddJoint(std::make_unique<PlanarJoint<double>>(
-        joint_name, parent_frame, child_frame, damping));
+        joint_name, *parent_frame, *child_frame, damping));
   } else {
     std::string message = "ERROR: <drake:joint> '" + joint_name +
         "' has unrecognized value for 'type' attribute: " + joint_type;
@@ -1170,7 +1174,10 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
   // the plant.
   auto read_frame = [&diagnostic, node, model_instance, plant](
       const char* element_name) -> const Frame<double>* {
-    return &ParseFrame(diagnostic, node, model_instance, plant, element_name);
+    const Frame<double>* result_frame =
+        ParseFrame(diagnostic, node, model_instance, plant, element_name);
+    if (result_frame == nullptr) { return nullptr; }
+    return result_frame;
   };
 
   auto result = ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
