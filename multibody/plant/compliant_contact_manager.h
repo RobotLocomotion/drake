@@ -179,6 +179,9 @@ class CompliantContactManager final
   void DoCalcContactResults(
       const systems::Context<T>&,
       ContactResults<T>* contact_results) const final;
+  void DoCalcDiscreteUpdateMultibodyForces(
+      const systems::Context<T>& context,
+      MultibodyForces<T>* forces) const final;
 
   // This method computes sparse kinematics information for each contact pair at
   // the given configuration stored in `context`.
@@ -259,6 +262,11 @@ class CompliantContactManager final
   void AppendContactResultsForHydroelasticContact(
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
+
+  void CalcAndAddSpatialContactForcesFromContactResults(
+      const systems::Context<T>& context,
+      const ContactResults<T>& contact_results,
+      std::vector<SpatialForce<T>>* F_Bo_W) const;
 
   CacheIndexes cache_indexes_;
   // Vector of joint damping coefficients, of size plant().num_velocities().

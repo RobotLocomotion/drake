@@ -1638,14 +1638,6 @@ void MultibodyPlant<T>::AppendContactResultsContinuousPointPair(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactResultsDiscrete(
-    const systems::Context<T>& context,
-    ContactResults<T>* contact_results) const {
-  DRAKE_DEMAND(contact_results != nullptr);
-  discrete_update_manager_->CalcContactResults(context, contact_results);
-}
-
-template <typename T>
 void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     const systems::Context<T>& context,
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
@@ -2575,13 +2567,15 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
           .get_index();
 
   // Contact results output port.
-  const auto& contact_results_cache_entry =
-      this->get_cache_entry(cache_indexes_.contact_results);
-  contact_results_port_ = this->DeclareAbstractOutputPort(
-                                  "contact_results", ContactResults<T>(),
-                                  &MultibodyPlant<T>::CopyContactResultsOutput,
-                                  {contact_results_cache_entry.ticket()})
-                              .get_index();
+  const systems::DependencyTicket state_ticket =
+      is_discrete() ? systems::System<T>::xd_ticket()
+                    : this->kinematics_ticket();
+  contact_results_port_ =
+      this->DeclareAbstractOutputPort(
+              "contact_results", ContactResults<T>(),
+              &MultibodyPlant<T>::CopyContactResultsOutput,
+              {state_ticket, systems::System<T>::all_parameters_ticket()})
+          .get_index();
 
   // See ThrowIfNonContactForceInProgress().
   const auto& non_contact_forces_evaluation_in_progress =
@@ -2651,33 +2645,24 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
         contact_info_and_body_spatial_forces_cache_entry.cache_index();
   }
 
-  // Cache contact results.
+  // Cache contact results, for continuous plant models.
   // In discrete mode contact forces computation requires to advance the system
   // from step n to n+1. Therefore they are a function of state and input.
   // In continuous mode contact forces are simply a function of state.
   std::set<systems::DependencyTicket> dependency_ticket = [this,
                                                            use_hydroelastic]() {
     std::set<systems::DependencyTicket> tickets;
-    if (is_discrete()) {
-      tickets.insert(systems::System<T>::xd_ticket());
-      tickets.insert(systems::System<T>::all_parameters_ticket());
-    } else {
-      tickets.insert(this->kinematics_ticket());
-      if (use_hydroelastic) {
-        tickets.insert(this->cache_entry_ticket(
-            cache_indexes_.contact_info_and_body_spatial_forces));
-      }
+    tickets.insert(this->kinematics_ticket());
+    if (use_hydroelastic) {
+      tickets.insert(this->cache_entry_ticket(
+          cache_indexes_.contact_info_and_body_spatial_forces));
     }
     tickets.insert(this->all_parameters_ticket());
-
     return tickets;
   }();
   auto& contact_results_cache_entry = this->DeclareCacheEntry(
-      std::string("Contact results."),
-      is_discrete() ?
-          &MultibodyPlant<T>::CalcContactResultsDiscrete :
-          &MultibodyPlant<T>::CalcContactResultsContinuous,
-      {dependency_ticket});
+      std::string("Contact results (continuous)"),
+      &MultibodyPlant<T>::CalcContactResultsContinuous, {dependency_ticket});
   cache_indexes_.contact_results = contact_results_cache_entry.cache_index();
 
   // Cache spatial continuous contact forces.
@@ -2937,33 +2922,35 @@ void MultibodyPlant<T>::CalcReactionForces(
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_reaction_forces_output_port());
 
-  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
-
-  // TODO(sherm1) EvalForwardDynamics() should record the forces it used
-  //              so that we don't have to attempt to reconstruct them
-  //              here (and this is broken, see #13888).
+  // Compute the multibody forces applied during the computation of forward
+  // dynamics, consistent with the value of vdot obtained below.
   MultibodyForces<T> applied_forces(*this);
-  CalcNonContactForces(context, is_discrete(), &applied_forces);
   auto& Fapplied_Bo_W_array = applied_forces.mutable_body_forces();
   auto& tau_applied = applied_forces.mutable_generalized_forces();
-
-  // Add in forces due to contact.
-  // Only add in hydroelastic contact forces for continuous mode for now as
-  // the forces computed by CalcHydroelasticContactForces() are wrong in
-  // discrete mode. See (#13888).
-  if (!is_discrete()) {
-    CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
+  if (is_discrete()) {
+    applied_forces =
+        discrete_update_manager_->EvalDiscreteUpdateMultibodyForces(context);
   } else {
-    CalcAndAddContactForcesByPenaltyMethod(context, &Fapplied_Bo_W_array);
+    CalcNonContactForces(context, is_discrete(), &applied_forces);
+    CalcAndAddSpatialContactForcesContinuous(context, &Fapplied_Bo_W_array);
   }
 
   // Compute reaction forces at each mobilizer.
+  // N.B. For discrete systems, this approach right now evaluates Coriolis terms
+  // at the state stored in the context (previous time step). This is correct
+  // the discrete solver we have today, though it might change for future
+  // solvers that prefer an implicit evaluation of these terms.
+  // TODO(amcastro-tri): Consider having a
+  // DiscreteUpdateManager::EvalReactionForces() to ensure the manager performs
+  // this computation consistently with its discrete update.
+  const VectorX<T>& vdot = this->EvalForwardDynamics(context).get_vdot();
   std::vector<SpatialAcceleration<T>> A_WB_vector(num_bodies());
   std::vector<SpatialForce<T>> F_BMo_W_vector(num_bodies());
   VectorX<T> tau_id(num_velocities());
   internal_tree().CalcInverseDynamics(context, vdot, Fapplied_Bo_W_array,
                                       tau_applied, &A_WB_vector,
                                       &F_BMo_W_vector, &tau_id);
+
   // Since vdot is the result of Fapplied and tau_applied we expect the result
   // from inverse dynamics to be zero.
   // TODO(amcastro-tri): find a better estimation for this bound. For instance,
