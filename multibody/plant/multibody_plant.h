@@ -4461,7 +4461,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
-    systems::CacheIndex contact_solver_results;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
@@ -4648,23 +4647,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   systems::EventStatus CalcDiscreteStep(
       const systems::Context<T>& context0,
       systems::DiscreteValues<T>* updates) const;
-
-  // This method performs the computation of the impulses to advance the state
-  // stored in `context0` in time.
-  // Contact forces and velocities are computed and stored in `results`. See
-  // ContactSolverResults for further details on the returned data.
-  void CalcContactSolverResults(
-      const drake::systems::Context<T>& context0,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
-
-  // Eval version of the method CalcContactSolverResults().
-  const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.contact_solver_results)
-        .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
-            context);
-  }
 
   // Computes the array of indices of velocities that are not locked in the
   // current configuration. The resulting index values in @p
