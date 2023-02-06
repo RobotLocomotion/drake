@@ -9,6 +9,33 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+void DiscreteUpdateManager<T>::DeclareCacheEntries() {
+  MultibodyForces<T> model_forces(plant());
+  const auto& multibody_forces_cache_entry = DeclareCacheEntry(
+      "Discrete update multibody forces.",
+      systems::ValueProducer(
+          this, model_forces,
+          &DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.discrete_update_multibody_forces =
+      multibody_forces_cache_entry.cache_index();
+
+  const auto& contact_results_cache_entry = DeclareCacheEntry(
+      "Contact results.",
+      systems::ValueProducer(
+          this,
+          &DiscreteUpdateManager<T>::CalcContactResults),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.contact_results =
+      contact_results_cache_entry.cache_index();
+
+  // Allow specific implementations to declare their cache entries.
+  DoDeclareCacheEntries();
+}
+
+template <typename T>
 systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
     std::string description, systems::ValueProducer value_producer,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
@@ -169,6 +196,32 @@ BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
     geometry::GeometryId geometry_id) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
       plant(), geometry_id);
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CalcDiscreteUpdateMultibodyForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  plant().ValidateContext(context);
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
+  DoCalcDiscreteUpdateMultibodyForces(context, forces);
+}
+
+template <typename T>
+const MultibodyForces<T>&
+DiscreteUpdateManager<T>::EvalDiscreteUpdateMultibodyForces(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.discrete_update_multibody_forces)
+      .template Eval<MultibodyForces<T>>(context);
+}
+
+template <typename T>
+const ContactResults<T>& DiscreteUpdateManager<T>::EvalContactResults(
+    const systems::Context<T>& context) const {
+  return plant()
+      .get_cache_entry(cache_indexes_.contact_results)
+      .template Eval<ContactResults<T>>(context);
 }
 
 }  // namespace internal

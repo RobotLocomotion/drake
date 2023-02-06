@@ -12,6 +12,8 @@
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/lcm/drake_lcm.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver.h"
+#include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -22,26 +24,60 @@
 using drake::geometry::Box;
 using drake::geometry::SceneGraph;
 using drake::geometry::Sphere;
+using drake::geometry::internal::HydroelasticType;
+using drake::geometry::internal::kComplianceType;
+using drake::geometry::internal::kElastic;
+using drake::geometry::internal::kHcDissipation;
+using drake::geometry::internal::kHydroGroup;
+using drake::geometry::internal::kMaterialGroup;
+using drake::geometry::internal::kRezHint;
 using drake::math::RigidTransformd;
 using drake::math::RollPitchYawd;
+using drake::multibody::internal::CompliantContactManager;
 using drake::multibody::ConnectContactResultsToDrakeVisualizer;
+using drake::multibody::contact_solvers::internal::SapSolverParameters;
 using drake::multibody::RevoluteJoint;
 using drake::systems::Context;
 using drake::systems::Diagram;
 using drake::systems::Simulator;
 using Eigen::Vector3d;
-using drake::geometry::internal::HydroelasticType;
-using drake::geometry::internal::kComplianceType;
-using drake::geometry::internal::kElastic;
-using drake::geometry::internal::kMaterialGroup;
-using drake::geometry::internal::kHcDissipation;
-using drake::geometry::internal::kHydroGroup;
-using drake::geometry::internal::kRezHint;
 
 namespace drake {
 namespace multibody {
 
+class MultibodyPlantTester {
+ public:
+  static CompliantContactManager<double>& manager(
+      const MultibodyPlant<double>& plant) {
+    auto* manager = dynamic_cast<CompliantContactManager<double>*>(
+        plant.discrete_update_manager_.get());
+    DRAKE_DEMAND(manager != nullptr);
+    return *manager;
+  }
+};
+
 namespace {
+
+struct LadderTestConfig {
+  // This is a gtest test suffix; no underscores or spaces.
+  std::string description;
+  double time_step{0.0};
+  // Contact is modeled with hydroelastic contact if `true` or with
+  // point contact if `false`.
+  bool hydro_geometry{true};
+  // Discrete solver used in the update.
+  DiscreteContactSolver contact_solver{DiscreteContactSolver::kTamsi};
+  // We ask the fixture to define an additional, arbitrary, constraint with the
+  // purpose of testing modeling assertions.
+  bool with_constraint{false};
+};
+
+// This provides the suffix for each test parameter: the test config
+// description.
+std::ostream& operator<<(std::ostream& out, const LadderTestConfig& c) {
+  out << c.description;
+  return out;
+}
 
 // This test simulates a "ladder" leaning against a wall, under the action of
 // gravity pulling in the -z axis direction. The bottom of the ladder is pinned
@@ -75,29 +111,50 @@ namespace {
 // contact results.
 //
 // We perform this test with point contact for both continuous and discrete
-// models. We perform this test with hydroelastic contact for continuous mode
-// only. See (#13888).
+// models.
 //
-class LadderTest : public ::testing::Test {
+class LadderTest : public ::testing::TestWithParam<LadderTestConfig> {
  protected:
-  void BuildLadderModel(double discrete_update_period,
-                        bool hydro_geometry = false) {
+  void BuildLadderModel() {
+    const LadderTestConfig& config = GetParam();
     systems::DiagramBuilder<double> builder;
     std::tie(plant_, scene_graph_) = AddMultibodyPlantSceneGraph(
-        &builder,
-        std::make_unique<MultibodyPlant<double>>(discrete_update_period));
+        &builder, std::make_unique<MultibodyPlant<double>>(config.time_step));
 
-    AddWall(hydro_geometry);
-    AddPinnedLadder(hydro_geometry);
+    AddWall(config.hydro_geometry);
+    AddPinnedLadder(config.hydro_geometry);
     plant_->mutable_gravity_field().set_gravity_vector(
         Vector3d(0.0, 0.0, -kGravity));
+
+    plant_->set_discrete_contact_solver(config.contact_solver);
+
+    if (config.with_constraint) {
+      // In this test we add an arbitrary constraint with the sole purpose of
+      // verifying the reaction forces computations throws an exception, since
+      // the computation does not yet support other than contact constraints.
+      const Vector3d zero = Vector3d::Zero();
+      plant_->AddBallConstraint(*ladder_upper_, zero, plant_->world_body(),
+                                zero);
+    }
+
     plant_->Finalize();
+
+    if (plant_->is_discrete() &&
+        config.contact_solver == DiscreteContactSolver::kSap) {
+      // When using the SAP solver, the solver convergence tolerance must be set
+      // accordingly to the level of high accuracy used in these tests, dictated
+      // by the fixture's parameter kTolerance.
+      auto& manager = MultibodyPlantTester::manager(*plant_);
+      SapSolverParameters sap_parameters;
+      sap_parameters.rel_tolerance = kTolerance / 10;
+      manager.set_sap_solver_parameters(sap_parameters);
+    }
 
     // Add visualization for verification of the results when we have the
     // visualizer running.
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_, &lcm_);
-    ConnectContactResultsToDrakeVisualizer(
-        &builder, *plant_, *scene_graph_, &lcm_);
+    ConnectContactResultsToDrakeVisualizer(&builder, *plant_, *scene_graph_,
+                                           &lcm_);
 
     diagram_ = builder.Build();
   }
@@ -233,9 +290,8 @@ class LadderTest : public ::testing::Test {
     //   |EU| =   (kLadderLength * kPointContactRadius)
     //          / (kDistanceToWall - kPointContactRadius)
     const double norm_EU = (kLadderLength * kPointContactRadius /
-                           (kDistanceToWall - kPointContactRadius));
-    const double theta =
-        std::asin(kDistanceToWall / (kLadderLength + norm_EU));
+                            (kDistanceToWall - kPointContactRadius));
+    const double theta = std::asin(kDistanceToWall / (kLadderLength + norm_EU));
     pin_->set_angle(plant_context, theta);
 
     // Fix the actuation.
@@ -261,13 +317,13 @@ class LadderTest : public ::testing::Test {
     simulator->get_mutable_integrator().set_maximum_step_size(5e-3);
     simulator->get_mutable_integrator().set_target_accuracy(1e-6);
     simulator->Initialize();
-    const double simulation_time = 1.0;  // seconds.
+    const double simulation_time = 10.0;  // seconds.
     simulator->AdvanceTo(simulation_time);
     return simulator;
   }
 
-  void VerifyJointReactionForces(
-      Context<double>* diagram_context, bool hydro_geometry = false) {
+  void VerifyJointReactionForces(Context<double>* diagram_context,
+                                 bool hydro_geometry = false) {
     Context<double>* plant_context =
         &diagram_->GetMutableSubsystemContext(*plant_, diagram_context);
     // Evaluate the reaction forces output port to get the reaction force at the
@@ -338,11 +394,6 @@ class LadderTest : public ::testing::Test {
     const Vector3d p_WBcm =
         plant_->CalcCenterOfMassPositionInWorld(*plant_context);
 
-    // We validate the numerical results to be within this tolerance value,
-    // which is chosen consistently with the time the system is left to reach
-    // steady state and the integration accuracy (for the continuous model).
-    const double kTolerance = 1.0e-11;
-
     // Using a free-body diagram of the entire ladder and known quantities,
     // we use the balance of moments to verify the pin joint's reaction force
     // and torque.
@@ -397,17 +448,18 @@ class LadderTest : public ::testing::Test {
         CompareMatrices(F_Bu_W.translational(), f_Bu_expected, kTolerance));
   }
 
-  void TestWithThreads(double time_step, bool hydro_geometry = false) {
-    SCOPED_TRACE(fmt::format("time_step = {}", time_step));
-    BuildLadderModel(time_step, hydro_geometry);
-    ASSERT_EQ(plant_->is_discrete(), (time_step != 0.));
+  void TestWithThreads() {
+    const LadderTestConfig& config = GetParam();
+    SCOPED_TRACE(fmt::format("time_step = {}", config.time_step));
+    BuildLadderModel();
+    ASSERT_EQ(plant_->is_discrete(), (config.time_step != 0.));
 
     // Create the threads' contexts by cloning a prototype. This will help
     // ensure the context deep copy is properly working.
     auto context_prototype = diagram_->CreateDefaultContext();
     auto simulator_prototype = Simulate(std::move(context_prototype));
     VerifyJointReactionForces(&simulator_prototype->get_mutable_context(),
-                              hydro_geometry);
+                              config.hydro_geometry);
 
     // TODO(#17720): As articulated in the issue, baking a query object when
     // cloning scene graph context is thread-unsafe. In particular, updating the
@@ -474,6 +526,14 @@ class LadderTest : public ::testing::Test {
   // We round off gravity for simpler numbers.
   const double kGravity{10.0};  // [m/s²]
 
+  // Integration accuracy used for these tests.
+  const double kIntegratorTargetAccuracy{1.0e-6};
+
+  // We validate the numerical results to be within this tolerance value, which
+  // is chosen consistently with the time the system is left to reach steady
+  // state and the (continuous) integration accuracy (for the continuous model).
+  const double kTolerance = 1.0e-11;
+
   lcm::DrakeLcm lcm_;  // For visualization.
   MultibodyPlant<double>* plant_{nullptr};
   SceneGraph<double>* scene_graph_{nullptr};
@@ -488,17 +548,55 @@ class LadderTest : public ::testing::Test {
   std::unique_ptr<Diagram<double>> diagram_;
 };
 
-TEST_F(LadderTest, PinReactionForcesContinuous) {
-  TestWithThreads(0.);
+TEST_P(LadderTest, TestWithThreads) {
+  const LadderTestConfig& config = GetParam();
+  if (config.with_constraint) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        TestWithThreads(),
+        "Currently reaction forces do not include the effect of additional "
+        "constraints .*");
+  } else {
+    TestWithThreads();
+  }
 }
 
-TEST_F(LadderTest, PinReactionForcesContinuousHydroelastic) {
-  TestWithThreads(0., true);
+// Setup test cases using point and hydroelastic contact.
+std::vector<LadderTestConfig> MakeTestCases() {
+  return std::vector<LadderTestConfig>{
+      {.description = "ContinuousPoint",
+       .time_step = 0.0,
+       .hydro_geometry = false},
+      {.description = "ContinuousHydroelastic",
+       .time_step = 0.0,
+       .hydro_geometry = true},
+      {.description = "DiscretePointTamsi",
+       .time_step = 1.0e-2,
+       .hydro_geometry = false,
+       .contact_solver = DiscreteContactSolver::kTamsi},
+      {.description = "DiscreteHydroelasticTamsi",
+       .time_step = 1.0e-2,
+       .hydro_geometry = true,
+       .contact_solver = DiscreteContactSolver::kTamsi},
+      {.description = "DiscretePointSap",
+       .time_step = 1.0e-2,
+       .hydro_geometry = false,
+       .contact_solver = DiscreteContactSolver::kSap},
+      {.description = "DiscreteHydroelasticSap",
+       .time_step = 1.0e-2,
+       .hydro_geometry = true,
+       .contact_solver = DiscreteContactSolver::kSap},
+      {.description = "DiscretePointSapWithConstraintThrows",
+       .time_step = 1.0e-2,
+       .hydro_geometry = false,
+       .contact_solver = DiscreteContactSolver::kSap,
+       .with_constraint = true},
+  };
 }
 
-TEST_F(LadderTest, PinReactionForcesDiscrete) {
-  TestWithThreads(1.0e-3);
-}
+INSTANTIATE_TEST_SUITE_P(ReactionForcesTests,
+                         LadderTest,
+                         testing::ValuesIn(MakeTestCases()),
+                         testing::PrintToStringParamName());
 
 // This test verifies the computation of joint reaction forces for a case in
 // which centrifugal terms cannot be neglected.

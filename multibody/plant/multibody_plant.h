@@ -4740,17 +4740,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const;
 
-  // This method accumulates both point and hydroelastic contact results into
-  // contact_results when the model is discrete.
-  // @param[out] contact_results is fully overwritten
-  void CalcContactResultsDiscrete(const systems::Context<T>& context,
-                                  ContactResults<T>* contact_results) const;
-
   // Evaluate contact results.
   const ContactResults<T>& EvalContactResults(
       const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.contact_results)
-        .template Eval<ContactResults<T>>(context);
+    if (this->is_discrete()) {
+      return discrete_update_manager_->EvalContactResults(context);
+    } else {
+      return this->get_cache_entry(cache_indexes_.contact_results)
+          .template Eval<ContactResults<T>>(context);
+    }
   }
 
   // Calc method for the reaction forces output port.
