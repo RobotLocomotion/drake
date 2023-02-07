@@ -665,6 +665,7 @@ drake_cc_library(
     hdrs = ["obj_to_surface_mesh.h"],
     interface_deps = [
         ":triangle_surface_mesh",
+        "//common:diagnostic_policy",
     ],
     deps = [
         "//common:essential",
