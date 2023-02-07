@@ -1767,7 +1767,7 @@ TEST_F(SdfParserTest, BushingParsingBad2) {
 TEST_F(SdfParserTest, BushingParsingBad3) {
   AddSceneGraph();
   // Test missing constants tag
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"""(
+  ParseTestString(R"""(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -1781,8 +1781,7 @@ TEST_F(SdfParserTest, BushingParsingBad3) {
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
-    </model>)"""),
-      ".*condition 'torque_damping_constants.minCoeff\\(\\) >= 0' failed.*");
+    </model>)""");
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*<drake:linear_bushing_rpy>: Unable to find the "
       "<drake:bushing_torque_damping> child tag."));
