@@ -5,7 +5,7 @@
 #include <map>
 #include <ostream>
 #include <utility>
-
+#include <unordered_map>
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
@@ -276,8 +276,8 @@ class Polynomial {
   /// passed substitution map is consistent.
   [[nodiscard]] Polynomial SubstituteAndExpand(
       const std::unordered_map<Variable, Polynomial>& linear_substitutions,
-      std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions) const;
-
+      std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions)
+      const;
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term
   /// from the returned polynomial.
@@ -447,16 +447,15 @@ typename std::enable_if_t<
         // {Polynomial, Monomial, double} x {Polynomial, Monomial, double}
         (std::is_same_v<typename MatrixL::Scalar, Polynomial> ||
          std::is_same_v<typename MatrixL::Scalar, Monomial> ||
-         std::is_same_v<
-             typename MatrixL::Scalar,
-             double>)&&(std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
-                        std::is_same_v<typename MatrixR::Scalar, Monomial> ||
-                        std::is_same_v<typename MatrixR::Scalar, double>)&&
+         std::is_same_v<typename MatrixL::Scalar, double>) &&
+        (std::is_same_v<typename MatrixR::Scalar, Polynomial> ||
+         std::is_same_v<typename MatrixR::Scalar, Monomial> ||
+         std::is_same_v<typename MatrixR::Scalar, double>) &&
         // Exclude Polynomial x Polynomial case (because the other seven
         // operations call this case. If we include this case here, we will have
         // self-recursion).
         !(std::is_same_v<typename MatrixL::Scalar, Polynomial> &&
-          std::is_same_v<typename MatrixR::Scalar, Polynomial>)&&
+          std::is_same_v<typename MatrixR::Scalar, Polynomial>) &&
         // Exclude double x double case.
         !(std::is_same_v<typename MatrixL::Scalar, double> &&
           std::is_same_v<typename MatrixR::Scalar, double>),
@@ -578,8 +577,9 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
 }  // namespace internal
 namespace numext {
 template <>
-bool equal_strict(const drake::symbolic::Polynomial& x,
-                  const drake::symbolic::Polynomial& y);
+bool equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y);
 template <>
 EIGEN_STRONG_INLINE bool not_equal_strict(
     const drake::symbolic::Polynomial& x,
@@ -602,9 +602,7 @@ template <typename Derived>
     std::is_same_v<typename Derived::Scalar, Polynomial>,
     MatrixLikewise<double, Derived>>
 Evaluate(const Eigen::MatrixBase<Derived>& m, const Environment& env) {
-  return m.unaryExpr([&env](const Polynomial& p) {
-    return p.Evaluate(env);
-  });
+  return m.unaryExpr([&env](const Polynomial& p) { return p.Evaluate(env); });
 }
 
 /// Computes the Jacobian matrix J of the vector function @p f with respect to
