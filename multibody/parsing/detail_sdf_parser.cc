@@ -1146,7 +1146,7 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
   }
 }
 
-const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
+const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
     const SDFormatDiagnostic& diagnostic,
     const sdf::ElementPtr node,
     ModelInstanceIndex model_instance,
@@ -1174,18 +1174,10 @@ const LinearBushingRollPitchYaw<double>& AddBushingFromSpecification(
   // the plant.
   auto read_frame = [&diagnostic, node, model_instance, plant](
       const char* element_name) -> const Frame<double>* {
-    const Frame<double>* result_frame =
-        ParseFrame(diagnostic, node, model_instance, plant, element_name);
-    if (result_frame == nullptr) { return nullptr; }
-    return result_frame;
+    return ParseFrame(diagnostic, node, model_instance, plant, element_name);
   };
 
-  auto result = ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
-  // TODO(rpoyner-tri): The SDFormat parser may use the nullptr result later,
-  // when errors are allowed to continue execution, rather than throw. This
-  // invariant will be true until those changes are made.
-  DRAKE_DEMAND(result != nullptr);
-  return *result;
+  return ParseLinearBushingRollPitchYaw(read_vector, read_frame, plant);
 }
 
 // Helper to determine if two links are welded together.
@@ -1384,8 +1376,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
              model.Element()->GetElement("drake:linear_bushing_rpy");
          bushing_node; bushing_node = bushing_node->GetNextElement(
                            "drake:linear_bushing_rpy")) {
-      AddBushingFromSpecification(
-          diagnostic, bushing_node, model_instance, plant);
+      if (AddBushingFromSpecification(
+          diagnostic, bushing_node, model_instance, plant) == nullptr) {
+        return {};
+      }
     }
   }
 
