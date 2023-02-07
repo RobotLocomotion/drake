@@ -21,5 +21,8 @@ def tinyobjloader_repository(
             # We replace tinyobjloader's implementation of float parsing with a
             # faster call to strtod_l.
             ":faster_float_parsing.patch",
+            # tinyobj failed to null-initialize all of the callbacks in its
+            # callback_t type.
+            ":callback_initialization.patch",
         ],
     )

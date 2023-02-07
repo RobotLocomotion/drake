@@ -1,0 +1,10 @@
+--- tiny_obj_loader.h.orig
++++ tiny_obj_loader.h
+@@ -455,6 +455,7 @@ struct callback_t {
+ 
+   callback_t()
+       : vertex_cb(NULL),
++        vertex_color_cb(NULL),
+         normal_cb(NULL),
+         texcoord_cb(NULL),
+         index_cb(NULL),
