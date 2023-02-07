@@ -47,7 +47,6 @@ drake_cc_library(
     hdrs = ["quadrotor_geometry.h"],
     data = [":models"],
     deps = [
-        "//common:find_resource",
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//multibody/parsing",
@@ -69,7 +68,6 @@ drake_cc_binary(
     deps = [
         ":quadrotor_plant",
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
         "//systems/analysis:simulator",
@@ -92,7 +90,6 @@ drake_cc_binary(
     deps = [
         ":quadrotor_geometry",
         ":quadrotor_plant",
-        "//common:find_resource",
         "//common:is_approx_equal_abstol",
         "//geometry:drake_visualizer",
         "//lcm",
@@ -116,7 +113,6 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         ":quadrotor_plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",

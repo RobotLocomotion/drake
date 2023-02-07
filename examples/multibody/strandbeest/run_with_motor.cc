@@ -14,7 +14,6 @@ a way to model kinematic loops. It shows:
 #include <fmt/format.h>
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
@@ -113,13 +112,11 @@ int do_main() {
   auto [strandbeest, scene_graph] = AddMultibodyPlantSceneGraph(
       &builder, std::make_unique<MultibodyPlant<double>>(FLAGS_mbt_dt));
 
-  // Make and add the strandbeest model from an SDF model.
-  const std::string relative_name =
-      "drake/examples/multibody/strandbeest/Strandbeest.urdf";
-  const std::string full_name = FindResourceOrThrow(relative_name);
-
+  // Make and add the strandbeest model from a URDF model.
+  const std::string urdf_url =
+      "package://drake/examples/multibody/strandbeest/Strandbeest.urdf";
   Parser parser(&strandbeest);
-  parser.AddModels(full_name);
+  parser.AddModelsFromUrl(urdf_url);
 
   // We are done defining the model. Finalize.
   strandbeest.Finalize();

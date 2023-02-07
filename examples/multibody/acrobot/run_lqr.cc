@@ -3,7 +3,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/benchmarks/acrobot/make_acrobot_plant.h"
 #include "drake/multibody/parsing/parser.h"
@@ -47,8 +46,7 @@ DEFINE_bool(time_stepping, true, "If 'true', the plant is modeled as a "
 // This helper method makes an LQR controller to balance an acrobot model
 // specified in the SDF file `file_name`.
 std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
-    const std::string &file_name) {
-  const std::string full_name = FindResourceOrThrow(file_name);
+    const std::string& acrobot_url) {
   // LinearQuadraticRegulator() below requires the controller's model of the
   // plant to only have a single input port corresponding to the actuation.
   // Therefore we create a new model that meets this requirement. (a model
@@ -56,7 +54,7 @@ std::unique_ptr<systems::AffineSystem<double>> MakeBalancingLQRController(
   // to interact with that SceneGraph).
   MultibodyPlant<double> acrobot(0.0);
   Parser parser(&acrobot);
-  parser.AddModels(full_name);
+  parser.AddModelsFromUrl(acrobot_url);
   // We are done defining the model.
   acrobot.Finalize();
 
@@ -99,11 +97,10 @@ int do_main() {
       AddMultibodyPlantSceneGraph(&builder, time_step);
 
   // Make and add the acrobot model.
-  const std::string relative_name =
-      "drake/multibody/benchmarks/acrobot/acrobot.sdf";
-  const std::string full_name = FindResourceOrThrow(relative_name);
+  const std::string acrobot_url =
+      "package://drake/multibody/benchmarks/acrobot/acrobot.sdf";
   Parser parser(&acrobot);
-  parser.AddModels(full_name);
+  parser.AddModelsFromUrl(acrobot_url);
 
   // We are done defining the model.
   acrobot.Finalize();
@@ -125,7 +122,7 @@ int do_main() {
   // For this example the controller's model of the plant exactly matches the
   // plant to be controlled (in reality there would always be a mismatch).
   auto controller = builder.AddSystem(
-      MakeBalancingLQRController(relative_name));
+      MakeBalancingLQRController(acrobot_url));
   controller->set_name("controller");
   builder.Connect(acrobot.get_state_output_port(),
                   controller->get_input_port());

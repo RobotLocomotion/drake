@@ -2,7 +2,6 @@
 
 #include <memory>
 
-#include "drake/common/find_resource.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/parsing/parser.h"
@@ -44,8 +43,8 @@ QuadrotorGeometry::QuadrotorGeometry(
   multibody::MultibodyPlant<double> mbp(0.0);
   multibody::Parser parser(&mbp, scene_graph);
 
-  const auto model_instance_indices = parser.AddModels(
-      FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));
+  const auto model_instance_indices = parser.AddModelsFromUrl(
+      "package://drake/examples/quadrotor/quadrotor.urdf");
   mbp.Finalize();
 
   // Identify the single quadrotor body and its frame.

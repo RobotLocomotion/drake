@@ -3,7 +3,6 @@
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -46,9 +45,9 @@ int do_main() {
   // Make and add the cart_pole model.
   auto [cart_pole, scene_graph] =
       AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
-  const std::string full_name = FindResourceOrThrow(
-      "drake/examples/multibody/cart_pole/cart_pole.sdf");
-  Parser(&cart_pole, &scene_graph).AddModels(full_name);
+  const std::string sdf_url =
+      "package://drake/examples/multibody/cart_pole/cart_pole.sdf";
+  Parser(&cart_pole, &scene_graph).AddModelsFromUrl(sdf_url);
 
   // Now the model is complete.
   cart_pole.Finalize();

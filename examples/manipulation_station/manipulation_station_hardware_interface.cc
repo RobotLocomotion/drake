@@ -3,7 +3,6 @@
 #include <iostream>
 #include <utility>
 
-#include "drake/common/find_resource.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -129,10 +128,11 @@ ManipulationStationHardwareInterface::ManipulationStationHardwareInterface(
 
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
-  const std::string iiwa_sdf_path = FindResourceOrThrow(
-      "drake/manipulation/models/iiwa_description/sdf/iiwa14_no_collision.sdf");
+  const std::string iiwa_sdf_url =
+      "package://drake/manipulation/models/iiwa_description/sdf/"
+      "iiwa14_no_collision.sdf";
   Parser parser(owned_controller_plant_.get());
-  iiwa_model_instance_ = parser.AddModels(iiwa_sdf_path).at(0);
+  iiwa_model_instance_ = parser.AddModelsFromUrl(iiwa_sdf_url).at(0);
 
   // TODO(russt): Provide API for changing the base coordinates of the plant.
   owned_controller_plant_->WeldFrames(owned_controller_plant_->world_frame(),

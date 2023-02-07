@@ -14,7 +14,6 @@ os.environ['MPLBACKEND'] = 'Agg'  # noqa
 import matplotlib.pyplot as plt
 import webbrowser
 
-from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.systems.drawing import plot_graphviz, plot_system_graphviz
@@ -27,12 +26,11 @@ for env_name in ['BUILD_WORKING_DIRECTORY', 'TEST_TMPDIR']:
     if env_name in os.environ:
         os.chdir(os.environ[env_name])
 
-file_name = FindResourceOrThrow(
-    "drake/examples/multibody/cart_pole/cart_pole.sdf")
 builder = DiagramBuilder()
 cart_pole, scene_graph = AddMultibodyPlantSceneGraph(
     builder=builder, time_step=0.0)
-Parser(plant=cart_pole).AddModels(file_name)
+Parser(plant=cart_pole).AddModelsFromUrl(
+    url="package://drake/examples/multibody/cart_pole/cart_pole.sdf")
 
 plt.figure(figsize=(11, 8.5), dpi=300)
 plot_graphviz(cart_pole.GetTopologyGraphvizString())

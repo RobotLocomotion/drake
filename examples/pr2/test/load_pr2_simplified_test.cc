@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
@@ -14,10 +13,10 @@ GTEST_TEST(LoadPr2SimplifiedTest, TestIfPr2SimplifiedLoads) {
   systems::DiagramBuilder<double> builder;
   multibody::MultibodyPlant<double>& plant =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0 /* time_step */);
-  const std::string& pathname = FindResourceOrThrow(
-      "drake/examples/pr2/models/pr2_description/urdf/pr2_simplified.urdf");
   multibody::Parser parser(&plant);
-  parser.AddModels(pathname);
+  parser.AddModelsFromUrl(
+      "package://drake/examples/pr2/models/pr2_description/urdf/"
+      "pr2_simplified.urdf");
   plant.Finalize();
 
   EXPECT_EQ(plant.num_actuators(), 28);

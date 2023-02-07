@@ -4,7 +4,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/examples/multibody/cart_pole/gen/cart_pole_params.h"
@@ -35,9 +34,9 @@ class CartPoleTest : public ::testing::Test {
  public:
   void SetUp() override {
     // Make the cart_pole model.
-    const std::string full_name = FindResourceOrThrow(
-        "drake/examples/multibody/cart_pole/cart_pole.sdf");
-    Parser(&cart_pole_).AddModels(full_name);
+    const std::string sdf_url =
+        "package://drake/examples/multibody/cart_pole/cart_pole.sdf";
+    Parser(&cart_pole_).AddModelsFromUrl(sdf_url);
 
     // Add gravity to the model.
     cart_pole_.mutable_gravity_field().set_gravity_vector(

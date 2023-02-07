@@ -7,7 +7,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -37,10 +36,10 @@ class Quadrotor : public systems::Diagram<T> {
     auto [plant, scene_graph] =
         multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
     multibody::Parser parser(&plant);
-    parser.AddModels(
-        FindResourceOrThrow("drake/examples/quadrotor/quadrotor.urdf"));
-    parser.AddModels(
-        FindResourceOrThrow("drake/examples/quadrotor/warehouse.sdf"));
+    parser.AddModelsFromUrl(
+        "package://drake/examples/quadrotor/quadrotor.urdf");
+    parser.AddModelsFromUrl(
+        "package://drake/examples/quadrotor/warehouse.sdf");
     plant.Finalize();
     DRAKE_DEMAND(plant.num_actuators() == 0);
     DRAKE_DEMAND(plant.num_positions() == 7);

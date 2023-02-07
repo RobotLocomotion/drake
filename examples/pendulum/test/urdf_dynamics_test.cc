@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/pendulum/pendulum_plant.h"
 #include "drake/multibody/parsing/parser.h"
@@ -15,8 +14,8 @@ namespace {
 
 GTEST_TEST(UrdfDynamicsTest, AllTests) {
   multibody::MultibodyPlant<double> mbp(0.0);
-  multibody::Parser(&mbp).AddModels(
-      FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf"));
+  multibody::Parser(&mbp).AddModelsFromUrl(
+      "package://drake/examples/pendulum/Pendulum.urdf");
   mbp.Finalize();
   PendulumPlant<double> p;
 
