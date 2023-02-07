@@ -54,7 +54,7 @@ else()
   endif()
 
   if(NOT UNIX_DISTRIBUTION_ID STREQUAL Ubuntu)
-    message(FATAL_ERROR
+    message(WARNING
       "Distribution ${UNIX_DISTRIBUTION_ID} is NOT supported"
     )
   endif()

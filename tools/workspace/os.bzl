@@ -110,6 +110,19 @@ def _determine_linux(repository_ctx):
         return _make_result(error = error_prologue + lsb.error)
     distro = lsb.stdout.strip()
 
+    # Some Ubuntu derivatives reply with their specific name in `-i` mode but
+    # declare Ubuntu compatibility in /etc. Check for that as a fallback.
+    if distro != "Ubuntu":
+        result = repository_ctx.execute([
+            "/bin/sh",
+            "-c",
+            ". /etc/lsb-release; echo $DISTRIB_ID",
+        ])
+        if result.return_code == 0:
+            maybe_distro = result.stdout.strip()
+            if maybe_distro == "Ubuntu":
+                distro = maybe_distro
+
     if distro == "Ubuntu":
         lsb = exec_using_which(repository_ctx, ["lsb_release", "-sr"])
         if lsb.error != None:
