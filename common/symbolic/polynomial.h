@@ -6,6 +6,7 @@
 #include <ostream>
 #include <utility>
 #include <unordered_map>
+
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
@@ -264,8 +265,8 @@ class Polynomial {
   /// (x−1)². Repeatedly expanding the powers of x can take a long time using
   /// factory methods, so we store intermediate computations in the substitution
   /// map to avoid recomputing very high powers.
-  /// @param linear_substitutions The substitutions of indeterminate with the
-  /// new desired expression.
+  /// @param linear_substitutions The substitutions of every indeterminate with the
+  /// new desired expression. This map must containt this -> indeterminates.
   /// @param substitutions A map caching the higher order expansions of the
   /// substitutions.
   /// @out substitution will change as the substituted monomials are expanded.

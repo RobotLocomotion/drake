@@ -825,22 +825,41 @@ Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& linear_substitutions,
     std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions)
     const {
+  for (const auto& var : indeterminates_) {
+    DRAKE_DEMAND(linear_substitutions.find(var) != linear_substitutions.cend());
+  }
+
   MapType new_polynomial_coeff_map;
   if (substitutions->empty()) {
-    substitutions->emplace(Monomial(), Polynomial());
+    substitutions->emplace(Monomial(), Polynomial(1));
   }
+
+  auto find_nearest_cached_monomial =
+      [&substitutions](const Monomial& monomial) {
+        Monomial nearest_cached_monomial =
+            (*std::prev(substitutions->lower_bound(monomial))).first;
+        while (!nearest_cached_monomial.GetVariables().IsSubsetOf(
+            monomial.GetVariables())) {
+          nearest_cached_monomial =
+              (*std::prev(substitutions->lower_bound(nearest_cached_monomial)))
+                  .first;
+        }
+        return nearest_cached_monomial;
+      };
+
   auto compute_substituted_monomial_expansion =
-      [&linear_substitutions, &substitutions](
+      [&linear_substitutions, &substitutions, &find_nearest_cached_monomial](
           const Monomial& monomial,
-          auto&& compute_substituted_monomial_expansion) {
+          auto&& compute_substituted_monomial_expansion_recursion_handle) {
         // Base case. The map substitutions is non-empty and contains the
         // monomial 1.
         if (substitutions->find(monomial) != substitutions->cend()) {
           return substitutions->at(monomial);
         }
 
-        auto [nearest_cached_monomial, ret] =
-            *std::prev(substitutions->lower_bound(monomial));
+        Monomial nearest_cached_monomial =
+            find_nearest_cached_monomial(monomial);
+        Polynomial ret = substitutions->at(nearest_cached_monomial);
 
         std::map<Variable, int> remaining_powers;
         std::map<Variable, int> cached_powers{
@@ -848,17 +867,15 @@ Polynomial Polynomial::SubstituteAndExpand(
         for (const auto& [var, power] : monomial.get_powers()) {
           if (cached_powers.find(var) != cached_powers.cend()) {
             remaining_powers.emplace(var, power - cached_powers[var]);
-          }
-        }
-        for (const auto& [var, power] : remaining_powers) {
-          if (power == 1) {
+          } else {
+            remaining_powers.emplace(var, power - 1);
             ret *= linear_substitutions.at(var);
-            remaining_powers.at(var) -= 1;
           }
         }
-        return ret * compute_substituted_monomial_expansion(
-                         Monomial(remaining_powers),
-                         compute_substituted_monomial_expansion);
+        return ret *
+               compute_substituted_monomial_expansion_recursion_handle(
+                   Monomial(remaining_powers),
+                   compute_substituted_monomial_expansion_recursion_handle);
       };
   for (const auto& [old_monomial, old_coeff] : monomial_to_coefficient_map_) {
     // If substitutions doesn't contain the current substitution create it now.
@@ -877,7 +894,8 @@ Polynomial Polynomial::SubstituteAndExpand(
           new_polynomial_coeff_map.cend()) {
         new_polynomial_coeff_map.insert({new_monomial, Expression()});
       }
-      new_polynomial_coeff_map.at(new_monomial) += new_coeff * old_coeff;
+      new_polynomial_coeff_map.at(new_monomial) +=
+          (new_coeff * old_coeff).Expand();
     }
   }
   return Polynomial{new_polynomial_coeff_map};
