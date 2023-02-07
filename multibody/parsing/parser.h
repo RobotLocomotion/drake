@@ -28,6 +28,7 @@ class CompositeParse;
 /// SDFormat                 | ".sdf"
 /// MJCF (Mujoco XML)        | ".xml"
 /// Drake Model Directives   | ".dmd.yaml"
+/// Wavefront OBJ            | ".obj"
 ///
 /// The output of parsing is one or more model instances added to the
 /// MultibodyPlant provided to the parser at construction.
@@ -48,6 +49,30 @@ class CompositeParse;
 /// Drake Model Directives are only available via AddModels or
 /// AddModelsFromString. The single-model methods (AddModelFromFile,
 /// AddModelFromString) cannot load model directives.
+///
+/// OBJ files will infer a model with a single body from the geometry. The OBJ
+/// file must contain a _single_ object (in the OBJ-file sense). The body's mass
+/// properties are computed based on uniform distribution of material in the
+/// enclosed volume of the mesh (with density 1 kg/m³). If the mesh is not a
+/// closed manifold, this can produce unexpected results. The spatial inertia of
+/// the body is measured at the body frame's origin. The body's frame is
+/// coincident and fixed with the frame the mesh's vertices are measured and
+/// expressed in. The mesh's vertices are assumed to be measured in units of
+/// _meters_.
+///
+/// The name of the model and body are determined according to the following
+/// prioritized protocol:
+///
+///   - The non-empty `model_name`, if given (e.g., in AddModelFromFile()).
+///   - If the object is named in the obj file, that object name is used.
+///   - Otherwise, the base name of the file name is used (i.e., the file name
+///     with the prefixed directory and extension removed).
+///
+/// If the underlying plant is registered with a SceneGraph instance, the mesh
+/// will also be used for all three roles: illustration, perception, and
+/// proximity.
+///
+/// @warning AddModelsFromString() cannot be passed OBJ file contents yet.
 ///
 /// For more documentation of Drake-specific treatment of these input formats,
 /// see @ref multibody_parsing.
