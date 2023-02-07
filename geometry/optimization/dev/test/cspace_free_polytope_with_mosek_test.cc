@@ -382,7 +382,7 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram3) {
   }
 }
 
-TEST_F(CIrisToyRobotTest, IsGeometrySeparable) {
+TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableProgram) {
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytope::Options options;
   options.with_cross_y = false;
@@ -410,9 +410,12 @@ TEST_F(CIrisToyRobotTest, IsGeometrySeparable) {
 
   const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
                                                        body2_sphere_};
+  auto separation_certificate_program =
+      tester.cspace_free_polytope().MakeIsGeometrySeparableProgram(
+          geometry_pair, C_good, d_good);
   auto separation_certificate_result =
-      tester.cspace_free_polytope().IsGeometrySeparable(
-          geometry_pair, C_good, d_good, find_certificate_options);
+      test.cspace_free_polytope().SolveSeparationCertificateProgram(
+          separation_certificate_program, options);
   EXPECT_TRUE(separation_certificate_result.has_value());
   Eigen::Matrix<double, 10, 3> s_samples;
   // clang-format off
