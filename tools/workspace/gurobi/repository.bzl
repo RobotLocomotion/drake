@@ -68,11 +68,11 @@ def _gurobi_impl(repo_ctx):
     )
 
     # Capture whether or not Gurobi tests can run in parallel.
-    license_unlimited_int = repo_ctx.os.environ.get("DRAKE_GUROBI_LICENSE_UNLIMITED", "0")
-    license_unlimited = bool(int(license_unlimited_int) == 1)
+    lu_int = repo_ctx.os.environ.get("DRAKE_GUROBI_LICENSE_UNLIMITED", "0")
+    lu = bool(int(lu_int) == 1)
     repo_ctx.file(
         "defs.bzl",
-        content = "DRAKE_GUROBI_LICENSE_UNLIMITED = {}".format(license_unlimited),
+        content = "DRAKE_GUROBI_LICENSE_UNLIMITED = {}".format(lu),
         executable = False,
     )
 
