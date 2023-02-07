@@ -2,14 +2,38 @@
 
 #include <functional>
 #include <istream>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/common/diagnostic_policy.h"
 
 namespace drake {
 namespace geometry {
+namespace internal {
+
+/* Configures the obj->mesh parsing operation. */
+struct ObjParseConfig {
+    /* The policy for handling warnings and errors. */
+    drake::internal::DiagnosticPolicy diagnostic;
+    /* Defines the maximum number of unique shapes in the file for a strictly
+     positive value. For any non-positive value, there is no limit. */
+    int allowed_shape_count{-1};
+};
+
+/* Creates a triangle mesh from the obj data contained in the `input_stream`.
+ Parsing will continue through warnings, but stop for errors. If the given
+ diagnostic policy (as defined in `config`) doesn't throw for errors,
+ std::nullopt is returned.
+ @pre `config` has both warning and error handlers defined. */
+std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
+    std::istream* input_stream, const double scale,
+    const std::optional<std::string>& mtl_basedir,
+    const ObjParseConfig& config);
+
+}  // namespace internal
 
 /**
  Constructs a surface mesh from a Wavefront .obj file and optionally scales
