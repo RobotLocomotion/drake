@@ -32,12 +32,8 @@
           <div class="search-bar">
             <form id="search_form" action="https://google.com/search" method="get">
               <input type="text" id="box" name="q" placeholder="Search all of Drake…" />
+              <input type="hidden" name="q" value="site:drake.mit.edu OR site:underactuated.csail.mit.edu OR site:manipulation.csail.mit.edu">
             </form>
-            <script>
-              search_form.addEventListener('submit', function() {
-                box.value = box.value + ' site:drake.mit.edu OR site:underactuated.csail.mit.edu OR site:manipulation.csail.mit.edu';
-              })
-            </script>
             <div class="search-close">
               <!-- This is an inline SVG image of an "X". -->
               <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 373.61 373.57">
