@@ -2,9 +2,21 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/math/quaternion.h"
+
 namespace drake {
 namespace math {
 namespace {
+
+void CheckHopfRange(const Eigen::Vector3d& hopf) {
+  ASSERT_GE(hopf[0], 0);
+  ASSERT_LE(hopf[0], M_PI);
+  ASSERT_GE(hopf[1], 0);
+  ASSERT_LE(hopf[1], 2 * M_PI);
+  ASSERT_GE(hopf[2], -M_PI);
+  ASSERT_LE(hopf[2], M_PI);
+}
+
 void CheckHopfToQuaternion(double theta, double phi, double psi) {
   DRAKE_DEMAND(theta >= 0 && theta <= M_PI);
   DRAKE_DEMAND(phi >= 0 && phi <= 2 * M_PI);
@@ -15,12 +27,7 @@ void CheckHopfToQuaternion(double theta, double phi, double psi) {
                   std::pow(quat.y(), 2) + std::pow(quat.z(), 2),
               1., tol);
   const Vector3<double> hopf_coordinate = QuaternionToHopfCoordinate(quat);
-  ASSERT_GE(hopf_coordinate[0], 0);
-  ASSERT_LE(hopf_coordinate[0], M_PI);
-  ASSERT_GE(hopf_coordinate[1], 0);
-  ASSERT_LE(hopf_coordinate[1], 2 * M_PI);
-  ASSERT_GE(hopf_coordinate[2], -M_PI);
-  ASSERT_LE(hopf_coordinate[2], M_PI);
+  CheckHopfRange(hopf_coordinate);
   if (theta == 0.) {
     EXPECT_NEAR(hopf_coordinate[0], 0., tol);
     EXPECT_NEAR(hopf_coordinate[2], psi, tol);
@@ -49,7 +56,17 @@ GTEST_TEST(TestHopfCoordinate, TestQuaternion) {
       }
     }
   }
+
+  // This test case was reported in
+  // https://stackoverflow.com/questions/75359480/quaterniontohopfcoordinate-origin-of-formula-in-drake
+  Eigen::Quaternion quat(-0.2698726, -0.0122792, 0.1635996, 0.94881672);
+  Eigen::Vector3d hopf = QuaternionToHopfCoordinate(quat);
+  CheckHopfRange(hopf);
+  Eigen::Quaternion quat_reconstruct =
+      HopfCoordinateToQuaternion(hopf(0), hopf(1), hopf(2));
+  EXPECT_TRUE(AreQuaternionsEqualForOrientation(quat, quat_reconstruct, 1E-8));
 }
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

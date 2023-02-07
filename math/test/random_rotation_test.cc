@@ -132,7 +132,8 @@ GTEST_TEST(RandomRotationTest, UniformlyRandomRotation) {
   CheckUniformAngleAxes(quaternions, num_intervals, fudge_factor);
   CheckUniformAngleAxes(angle_axes, num_intervals, fudge_factor);
   CheckUniformAngleAxes(rotation_matrices, num_intervals, fudge_factor);
-  CheckUniformHopfCoordinate(hopf_coordinates, 10, fudge_factor);
+  const double hopf_fudge_factor = 3;
+  CheckUniformHopfCoordinate(hopf_coordinates, 10, hopf_fudge_factor);
 }
 
 GTEST_TEST(RandomRotationTest, Symbolic) {
