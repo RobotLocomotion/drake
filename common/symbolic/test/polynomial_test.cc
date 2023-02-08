@@ -4,6 +4,8 @@
 #include <utility>
 #include <vector>
 
+#include <iostream>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/monomial_util.h"
@@ -1088,9 +1090,9 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
   std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions;
   std::unordered_map<Variable, Polynomial> linear_substitutions;
 
-  // A simple substitution
+  // A simple substitution.
   linear_substitutions.emplace(var_x_, Polynomial(2 * var_a_));
-  // A substitution from one variable to a 2 indeterminate polynomial
+  // A substitution from one variable to a 2 indeterminate polynomial.
   linear_substitutions.emplace(var_y_, Polynomial(var_a_ * var_b_ + var_a_));
 
   Polynomial poly1{2 * x_ * x_};
@@ -1098,7 +1100,11 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
       poly1.SubstituteAndExpand(linear_substitutions, &substitutions);
   Polynomial sub1_expected{8 * a_ * a_};
   EXPECT_TRUE(sub1.EqualTo(sub1_expected));
-  // Expect {1: 1, x²: 4a²}
+  for(const auto& key_var: substitutions) {
+    std::cout << key_var.first << std::endl;
+  }
+  std::cout << std::endl;
+  // Expect {1: 1, x²: 4a²}.
   EXPECT_EQ(substitutions.size(), 2);
   EXPECT_TRUE(
       substitutions.at(Monomial(x_ * x_)).EqualTo(Polynomial(4 * a_ * a_)));
@@ -1108,8 +1114,12 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
   Polynomial sub2 =
       poly2.SubstituteAndExpand(linear_substitutions, &substitutions);
   Polynomial sub2_expected{4 * pow(a_, 3) * (b_ + 1)};
+  for(const auto& key_var: substitutions) {
+    std::cout << key_var.first << std::endl;
+  }
+  std::cout << std::endl;
   EXPECT_TRUE(sub2.EqualTo(sub2_expected));
-  // Expect {1: 1, x²: 4a²,  x²y: 8a³(b+1)}
+  // Expect {1: 1, x²: 4a²,  x²y: 8a³(b+1)}.
   EXPECT_EQ(substitutions.size(), 3);
   // Make sure this hasn't changed
   EXPECT_TRUE(
@@ -1117,12 +1127,12 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
   EXPECT_TRUE(substitutions.at(Monomial(x_ * x_ * y_))
                   .EqualTo(Polynomial(4 * pow(a_, 3) * (b_ + 1))));
 
-  // A polynomial where linear subs has no substitution for z_
+  // A polynomial where linear subs has no substitution for z_.
   Polynomial poly3{pow(x_, 3) * z_};
   if (kDrakeAssertIsArmed) {
-    // The indeterminate z_ is not in linear_substitutions
+    // The indeterminate z_ is not in linear_substitutions.
     EXPECT_THROW(
-        poly3.SubstituteAndExpand(linear_substitutions, &substitutions),
+        const auto foo = poly3.SubstituteAndExpand(linear_substitutions, &substitutions),
         runtime_error);
   }
   // A substitution with powers of a variable
@@ -1130,6 +1140,10 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
                                Polynomial(pow(var_a_, 3) + 2 * var_a_ + 1));
   Polynomial sub3 =
       poly3.SubstituteAndExpand(linear_substitutions, &substitutions);
+  for(const auto& key_var: substitutions) {
+    std::cout << key_var.first << std::endl;
+  }
+  std::cout << std::endl;
   Polynomial sub3_expected{pow(2 * a_, 3) * (pow(var_a_, 3) + 2 * var_a_ + 1)};
   EXPECT_TRUE(sub3.EqualTo(sub3_expected));
   // Expect {1: 1, x²: 4a²,  x²y: 4a², x³z: 2a⁹+4a⁷+2a⁶}

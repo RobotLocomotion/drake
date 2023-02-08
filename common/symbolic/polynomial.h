@@ -261,12 +261,12 @@ class Polynomial {
 
   /// Substitute the monomials of this polynomial with new polynomial
   /// expressions and expand the polynomial to the monomial basis. For example,
-  /// consider the substitution x = a(1-y) + by into the polynomial x¹⁴ +
+  /// consider the substitution x = a(1-y) into the polynomial x¹⁴ +
   /// (x−1)². Repeatedly expanding the powers of x can take a long time using
   /// factory methods, so we store intermediate computations in the substitution
   /// map to avoid recomputing very high powers.
-  /// @param linear_substitutions The substitutions of every indeterminate with the
-  /// new desired expression. This map must containt this -> indeterminates.
+  /// @param linear_substitutions The substitutions of every indeterminate with
+  /// the new desired expression. This map must contain this -> indeterminates.
   /// @param substitutions A map caching the higher order expansions of the
   /// substitutions.
   /// @out substitution will change as the substituted monomials are expanded.
