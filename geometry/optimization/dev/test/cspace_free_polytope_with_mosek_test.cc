@@ -382,6 +382,77 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram3) {
   }
 }
 
+TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableProgram) {
+  const Eigen::Vector3d q_star(0, 0, 0);
+  CspaceFreePolytope::Options options;
+  options.with_cross_y = false;
+  CspaceFreePolytopeTester tester(
+      plant_, scene_graph_, SeparatingPlaneOrder::kAffine, q_star, options);
+  Eigen::Matrix<double, 9, 3> C_good;
+  // clang-format off
+  C_good << 1, 1, 0,
+            -1, -1, 0,
+            -1, 0, 1,
+            1, 0, -1,
+            0, 1, 1,
+            0, -1, -1,
+            1, 0, 1,
+            1, 1, -1,
+            1, -1, 1;
+  // clang-format on
+  Eigen::Matrix<double, 9, 1> d_good;
+  d_good << 0.1, 0.2, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.2;
+  CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions
+      find_certificate_options;
+  find_certificate_options.verbose = false;
+  solvers::MosekSolver solver;
+  find_certificate_options.solver_id = solver.id();
+
+  const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
+                                                       body2_sphere_};
+  auto separation_certificate_program =
+      tester.cspace_free_polytope().MakeIsGeometrySeparableProgram(
+          geometry_pair, C_good, d_good);
+  auto separation_certificate_result =
+      test.cspace_free_polytope().SolveSeparationCertificateProgram(
+          separation_certificate_program, options);
+  EXPECT_TRUE(separation_certificate_result.has_value());
+  Eigen::Matrix<double, 10, 3> s_samples;
+  // clang-format off
+  s_samples << 1, 2, -1,
+             -0.5, 0.3, 0.2,
+             0.2, 0.1, 0.4,
+             0.5, -1.2, 0.3,
+             0.2, 0.5, -0.4,
+             -0.3, 1.5, 2,
+             0.5, 0.2, 1,
+             -0.4, 0.5, 1,
+             0, 0, 0,
+             0.2, -1.5, 1;
+  // clang-format on
+  CheckSeparationBySamples(tester, *diagram_, s_samples, C_good, d_good,
+                           {{separation_certificate_result->plane_index,
+                             separation_certificate_result->a}},
+                           {{separation_certificate_result->plane_index,
+                             separation_certificate_result->b}},
+                           q_star, {});
+
+  // This C-space polytope is NOT collision free.
+  Eigen::Matrix<double, 4, 3> C_bad;
+  // clang-format off
+  C_bad << 1, 1, 0,
+          -1, -1, 0,
+          -1, 0, 1,
+          1, 0, -1;
+  // clang-format on
+  Eigen::Matrix<double, 4, 1> d_bad;
+  d_bad << 10.8, 20, 34, 22;
+  separation_certificate_result =
+      tester.cspace_free_polytope().IsGeometrySeparable(
+          geometry_pair, C_bad, d_bad, find_certificate_options);
+  EXPECT_FALSE(separation_certificate_result.has_value());
+}
+
 TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
   // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope for a
   // collision-free C-space polytope.
