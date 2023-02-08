@@ -6,6 +6,8 @@
 # for any license-related needs and provide a marker so that //tools/bazel.rc
 # can selectively enable tests based on the developer's chosen configuration.
 
+load("@gurobi//:defs.bzl", "DRAKE_GUROBI_LICENSE_UNLIMITED")
+
 def gurobi_test_tags(gurobi_required = True):
     """Returns the test tags necessary for properly running Gurobi tests.
 
@@ -13,19 +15,24 @@ def gurobi_test_tags(gurobi_required = True):
     tag filters include "gurobi".
 
     Gurobi checks a license file outside the workspace so tests that use Gurobi
-    must have the tag "no-sandbox". For the moment, we also require the tag
-    "exclusive" to rate-limit license servers with a small number of licenses.
-    """
+    must have the tag "no-sandbox".
 
-    # TODO(david-german-tri): Find a better fix for the license server problem.
-    nominal_tags = [
-        "exclusive",  # implies "local"
+    Unless DRAKE_GUROBI_LICENSE_UNLIMITED=1 is set in the shell environment
+    (e.g., in CI), we also require the tag "exclusive" to rate-limit
+    license servers with a small number of licenses.
+    """
+    result = [
+        # TODO(david-german-tri): Find a better fix for the license file.
         "no-sandbox",
     ]
+
+    if not DRAKE_GUROBI_LICENSE_UNLIMITED:
+        result.append("exclusive")
+
     if gurobi_required:
-        return nominal_tags + ["gurobi"]
-    else:
-        return nominal_tags
+        result.append("gurobi")
+
+    return result
 
 def mosek_test_tags(mosek_required = True):
     """Returns the test tags necessary for properly running MOSEK™ tests.
