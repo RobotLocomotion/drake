@@ -1,5 +1,9 @@
 # -*- python -*-
 
+# This dependency is part of a "cohort" defined in
+# drake/tools/workspace/new_release.py.  This dependency should only be
+# updated in conjunction with the other members of its cohort.
+
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def mypy_internal_repository(
