@@ -19,7 +19,6 @@ libjchart2d-java
 libjpeg-turbo8
 libjsoncpp1
 liblapack3
-libldl2
 liblz4-1
 liblzma5
 libmsgpackc2
@@ -41,7 +40,6 @@ libtiff5
 libx11-6
 libxml2
 libxt6
-libyaml-cpp-dev
 ocl-icd-libopencl1
 python3
 python3-ipywidgets
