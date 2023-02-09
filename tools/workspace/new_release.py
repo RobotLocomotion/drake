@@ -58,6 +58,8 @@ _IGNORED_REPOSITORIES = [
     "clang_cindex_python3_internal",
     "gym_py",  # Pinned at 0.21; see tools/workspace/gym_py/README.md.
     "pybind11",
+    "usockets",  # Pinned due to upstream regression.
+    "uwebsockets",  # Pinned due to upstream regression.
 ]
 
 # For these repositories, we only look at tags, not releases.  For the dict
