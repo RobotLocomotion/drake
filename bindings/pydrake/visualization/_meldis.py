@@ -5,6 +5,7 @@ import time
 
 from drake import (
     lcmt_contact_results_for_viz,
+    lcmt_point_cloud,
     lcmt_viewer_draw,
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
@@ -41,6 +42,7 @@ from pydrake.multibody.meshcat import (
     _PointContactVisualizerItem,
     ContactVisualizerParams,
 )
+from pydrake.perception import BaseField, Fields, PointCloud
 
 _logger = logging.getLogger("drake")
 
@@ -177,6 +179,45 @@ class _ViewerApplet:
         if self._waiting_for_first_draw_message:
             self._waiting_for_first_draw_message = False
             self._set_visible(True)
+
+    def on_viewer_draw_point_cloud(self, message):
+        """Handler for lcmt_point_cloud.
+
+        The basic unit of message.data is formatted as "xyz/rgb/normal" where
+        rgb and normal fields are optional. X, y, z, and their normals are
+        float32, while r, g, and b are uint8 with a one byte padding.
+        """
+        assert message.num_fields in [3, 4, 7]
+        # Transform the raw data into an N x num_fields array.
+        raw_data = np.frombuffer(message.data, dtype=np.float32).reshape(
+            -1, message.num_fields
+        )
+        num_points = raw_data.shape[0]
+
+        cloud_fields = None
+        if message.num_fields == 3:
+            cloud_fields = Fields(BaseField.kXYZs)
+        elif message.num_fields == 4:
+            cloud_fields = Fields(BaseField.kXYZs | BaseField.kRGBs)
+        else:
+            cloud_fields = Fields(
+                BaseField.kXYZs | BaseField.kRGBs | BaseField.kNormals
+            )
+        cloud = PointCloud(num_points, cloud_fields)
+
+        xyzs = raw_data[:, 0:3]
+        cloud.mutable_xyzs()[:] = xyzs.transpose()
+        if message.num_fields > 3:
+            rgbs_with_padding = (
+                raw_data[:, 3].astype(np.float32).view(np.uint8).reshape(-1, 4)
+            )
+            rgbs = rgbs_with_padding[:, 0:3]
+            cloud.mutable_rgbs()[:] = rgbs.transpose()
+        if message.num_fields > 4:
+            normals = raw_data[:, 4:]
+            cloud.mutable_rgbs()[:] = normals.transpose()
+
+        self._meshcat.SetObject(path=self._path, cloud=cloud, point_size=0.01)
 
     def _set_visible(self, value):
         self._meshcat.SetProperty(self._path, property="visible", value=value)
@@ -407,6 +448,9 @@ class Meldis:
         self._subscribe(channel="DRAKE_VIEWER_DEFORMABLE",
                         message_type=lcmt_viewer_link_data,
                         handler=default_viewer.on_viewer_draw_deformable)
+        self._subscribe(channel="DRAKE_POINT_CLOUD",
+                        message_type=lcmt_point_cloud,
+                        handler=default_viewer.on_viewer_draw_point_cloud)
         self._poll(handler=default_viewer.on_poll)
 
         illustration_viewer = _ViewerApplet(meshcat=self.meshcat,

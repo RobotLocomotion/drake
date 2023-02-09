@@ -13,9 +13,11 @@ You can also visualize the LCM test data like so:
 import pydrake.visualization as mut
 
 import functools
+import numpy as np
 import unittest
 
 from drake import (
+    lcmt_point_cloud,
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
 )
@@ -41,6 +43,7 @@ from pydrake.multibody.plant import (
 from pydrake.multibody.tree import (
     PrismaticJoint,
 )
+from pydrake.perception import BaseField, Fields, PointCloud, PointCloudToLcm
 from pydrake.systems.framework import (
     DiagramBuilder,
 )
@@ -325,3 +328,37 @@ class TestMeldis(unittest.TestCase):
 
         # After the handlers are called, we have the expected meshcat path.
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
+
+    def test_point_cloud(self):
+        """Check that _ViewerApplet doesn't crash for point cloud in
+        DRAKE_POINT_CLOUD channel.
+        """
+        # Create the device under test.
+        dut = mut.Meldis()
+
+        num_points = 10
+        xyzs = np.random.uniform(-0.1, 0.1, (3, num_points))
+        rgbs = np.random.uniform(0.0, 255.0, (3, num_points))
+
+        xyz_cloud = PointCloud(num_points, Fields(BaseField.kXYZs))
+        xyz_cloud.mutable_xyzs()[:] = xyzs
+
+        xyzrgb_cloud = PointCloud(
+            num_points, Fields(BaseField.kXYZs | BaseField.kRGBs)
+        )
+        xyzrgb_cloud.mutable_xyzs()[:] = xyzs
+        xyzrgb_cloud.mutable_rgbs()[:] = rgbs
+
+        cloud_to_lcm = PointCloudToLcm(frame_name="world")
+        context = cloud_to_lcm.CreateDefaultContext()
+        context.SetTime(1.0)
+        cloud_to_lcm.get_input_port().FixValue(context, xyz_cloud)
+        lcm_point_cloud = cloud_to_lcm.get_output_port().Eval(context)
+        dut._lcm.Publish(channel="DRAKE_POINT_CLOUD", buffer=cloud.encode())
+        dut._lcm.HandleSubscriptions(timeout_millis=1)
+        dut._invoke_subscriptions()
+
+        # TODO(zachfang): Publish xyzrgb cloud to test as well.
+
+        # After the handlers are called, we have the expected meshcat path.
+        # self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
