@@ -5,6 +5,7 @@ import time
 
 from drake import (
     lcmt_contact_results_for_viz,
+    lcmt_point_cloud,
     lcmt_viewer_draw,
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
@@ -40,6 +41,11 @@ from pydrake.multibody.meshcat import (
     _PointContactVisualizer,
     _PointContactVisualizerItem,
     ContactVisualizerParams,
+)
+from pydrake.perception import (
+    BaseField,
+    Fields,
+    PointCloud,
 )
 
 _logger = logging.getLogger("drake")
@@ -362,6 +368,53 @@ class _ContactApplet:
         self._hydro_helper.Update(viz_items)
 
 
+class _PointCloudApplet:
+    """Displays lcmt_point_cloud into MeshCat."""
+    def __init__(self, *, meshcat):
+        self._meshcat = meshcat
+
+    def on_point_cloud(self, message):
+        """Handler for lcmt_point_cloud.
+
+        The basic unit of message.data is formatted as "xyz/rgb/normal" where
+        rgb and normal fields are optional. X, y, z, and their normals are
+        float32, while r, g, and b are uint8 with a one byte padding.
+        """
+        assert message.num_fields in [3, 4, 7]
+        # Transform the raw data into an N x num_fields array.
+        raw_data = np.frombuffer(message.data, dtype=np.float32).reshape(
+            -1, message.num_fields
+        )
+        num_points = raw_data.shape[0]
+
+        cloud_fields = None
+        if message.num_fields == 3:
+            cloud_fields = Fields(BaseField.kXYZs)
+        elif message.num_fields == 4:
+            cloud_fields = Fields(BaseField.kXYZs | BaseField.kRGBs)
+        else:
+            cloud_fields = Fields(
+                BaseField.kXYZs | BaseField.kRGBs | BaseField.kNormals
+            )
+        cloud = PointCloud(num_points, cloud_fields)
+
+        xyzs = raw_data[:, 0:3]
+        cloud.mutable_xyzs()[:] = xyzs.transpose()
+        if message.num_fields > 3:
+            rgbs_with_padding = (
+                raw_data[:, 3].astype(np.float32).view(np.uint8).reshape(-1, 4)
+            )
+            rgbs = rgbs_with_padding[:, 0:3]
+            cloud.mutable_rgbs()[:] = rgbs.transpose()
+        if message.num_fields > 4:
+            normals = raw_data[:, 4:]
+            cloud.mutable_normals()[:] = normals.transpose()
+
+        self._meshcat.SetObject(
+            path="/POINT_CLOUD", cloud=cloud, point_size=0.01
+        )
+
+
 class Meldis:
     """
     MeshCat LCM Display Server (MeLDiS)
@@ -437,6 +490,12 @@ class Meldis:
                         message_type=lcmt_contact_results_for_viz,
                         handler=contact.on_contact_results)
 
+        # Subscribe to all the point-cloud-related channels.
+        point_cloud = _PointCloudApplet(meshcat=self.meshcat)
+        self._subscribe_multichannel(regex="DRAKE_POINT_CLOUD.*",
+                                     message_type=lcmt_point_cloud,
+                                     handler=point_cloud.on_point_cloud)
+
         # Bookkeeping for automatic shutdown.
         self._last_poll = None
         self._last_active = None
@@ -464,6 +523,18 @@ class Meldis:
         def _on_message(data):
             self._message_pending_data[channel] = data
         self._lcm.Subscribe(channel=channel, handler=_on_message)
+
+    def _subscribe_multichannel(self, regex, message_type, handler):
+        """Subscribes the handler to a group of channels filtered by regex. How
+        this function handles messages is the same as _subscribe() except that
+        the channel name is only known when invoking the callback.
+        """
+        def _on_message(channel, data):
+            if channel not in self._message_types:
+                self._message_types[channel] = message_type
+                self._message_handlers.setdefault(channel, []).append(handler)
+            self._message_pending_data[channel] = data
+        self._lcm.SubscribeMultichannel(regex=regex, handler=_on_message)
 
     def _poll(self, handler):
         self._poll_handlers.append(handler)
