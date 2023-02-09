@@ -2,21 +2,22 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/manipulation/planner/differential_inverse_kinematics.h"
-#include "drake/manipulation/planner/differential_inverse_kinematics_integrator.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h"
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(planner, m) {
-  using drake::manipulation::planner::DifferentialInverseKinematicsStatus;
+void DefineIkDifferential(py::module m) {
+  // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
+  using namespace drake::multibody;
+
   using drake::systems::LeafSystem;
 
-  m.doc() = "Tools for manipulation planning.";
-  constexpr auto& doc = pydrake_doc.drake.manipulation.planner;
+  constexpr auto& doc = pydrake_doc.drake.multibody;
 
   py::module::import("pydrake.systems.framework");
 
@@ -33,7 +34,7 @@ PYBIND11_MODULE(planner, m) {
           doc.DifferentialInverseKinematicsStatus.kStuck.doc);
 
   {
-    using Class = manipulation::planner::DifferentialInverseKinematicsResult;
+    using Class = DifferentialInverseKinematicsResult;
     constexpr auto& cls_doc = doc.DifferentialInverseKinematicsResult;
     py::class_<Class> cls(m, "DifferentialInverseKinematicsResult",
         doc.DifferentialInverseKinematicsResult.doc);
@@ -46,8 +47,7 @@ PYBIND11_MODULE(planner, m) {
         .def_readwrite("status", &Class::status, cls_doc.status.doc);
   }
   {
-    using Class =
-        manipulation::planner::DifferentialInverseKinematicsParameters;
+    using Class = DifferentialInverseKinematicsParameters;
     constexpr auto& cls_doc = doc.DifferentialInverseKinematicsParameters;
 
     py::class_<Class> cls(m, "DifferentialInverseKinematicsParameters",
@@ -118,9 +118,8 @@ PYBIND11_MODULE(planner, m) {
       "DoDifferentialInverseKinematics",
       [](const Eigen::VectorXd& q_current, const Eigen::VectorXd& v_current,
           const Eigen::VectorXd& V, const Eigen::MatrixXd& J,
-          const manipulation::planner::DifferentialInverseKinematicsParameters&
-              parameters) {
-        return manipulation::planner::DoDifferentialInverseKinematics(
+          const DifferentialInverseKinematicsParameters& parameters) {
+        return DoDifferentialInverseKinematics(
             q_current, v_current, V, J, parameters);
       },
       py::arg("q_current"), py::arg("v_current"), py::arg("V"), py::arg("J"),
@@ -134,9 +133,8 @@ PYBIND11_MODULE(planner, m) {
           const systems::Context<double>& context,
           const Vector6<double>& V_WE_desired,
           const multibody::Frame<double>& frame_E,
-          const manipulation::planner::DifferentialInverseKinematicsParameters&
-              parameters) {
-        return manipulation::planner::DoDifferentialInverseKinematics(
+          const DifferentialInverseKinematicsParameters& parameters) {
+        return DoDifferentialInverseKinematics(
             robot, context, V_WE_desired, frame_E, parameters);
       },
       py::arg("robot"), py::arg("context"), py::arg("V_WE_desired"),
@@ -150,9 +148,8 @@ PYBIND11_MODULE(planner, m) {
           const systems::Context<double>& context,
           const math::RigidTransform<double>& X_WE_desired,
           const multibody::Frame<double>& frame_E,
-          const manipulation::planner::DifferentialInverseKinematicsParameters&
-              parameters) {
-        return manipulation::planner::DoDifferentialInverseKinematics(
+          const DifferentialInverseKinematicsParameters& parameters) {
+        return DoDifferentialInverseKinematics(
             robot, context, X_WE_desired, frame_E, parameters);
       },
       py::arg("robot"), py::arg("context"), py::arg("X_WE_desired"),
@@ -161,15 +158,13 @@ PYBIND11_MODULE(planner, m) {
           .doc_5args_robot_context_X_WE_desired_frame_E_parameters);
 
   {
-    using Class =
-        manipulation::planner::DifferentialInverseKinematicsIntegrator;
+    using Class = DifferentialInverseKinematicsIntegrator;
     constexpr auto& cls_doc = doc.DifferentialInverseKinematicsIntegrator;
     py::class_<Class, LeafSystem<double>>(
         m, "DifferentialInverseKinematicsIntegrator", cls_doc.doc)
         .def(py::init<const multibody::MultibodyPlant<double>&,
                  const multibody::Frame<double>&, double,
-                 const manipulation::planner::
-                     DifferentialInverseKinematicsParameters&,
+                 const DifferentialInverseKinematicsParameters&,
                  const systems::Context<double>*, bool>(),
             // Keep alive, reference: `self` keeps `robot` alive.
             py::keep_alive<1, 2>(), py::arg("robot"), py::arg("frame_E"),
@@ -188,5 +183,6 @@ PYBIND11_MODULE(planner, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

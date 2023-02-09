@@ -19,8 +19,7 @@
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 enum class DifferentialInverseKinematicsStatus {
   kSolutionFound,    ///< Found the optimal solution.
@@ -366,10 +365,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @ingroup planning
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyPlant<double>& robot,
+    const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
-    const multibody::Frame<double>& frame_E,
+    const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 /**
@@ -391,10 +390,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @ingroup planning
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyPlant<double>& robot,
+    const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const math::RigidTransform<double>& X_WE_desired,
-    const multibody::Frame<double>& frame_E,
+    const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -404,11 +403,10 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>&,
     const math::RigidTransform<double>&,
     const Eigen::Ref<const Matrix6X<double>>&,
-    const multibody::SpatialVelocity<double>&,
+    const SpatialVelocity<double>&,
     const DifferentialInverseKinematicsParameters&);
 }  // namespace internal
 #endif
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

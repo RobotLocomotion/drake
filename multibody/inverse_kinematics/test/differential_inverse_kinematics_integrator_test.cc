@@ -1,4 +1,4 @@
-#include "drake/manipulation/planner/differential_inverse_kinematics_integrator.h"  // noqa
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics_integrator.h"  // noqa
 
 #include <gtest/gtest.h>
 
@@ -10,8 +10,7 @@
 #include "drake/systems/analysis/simulator.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 namespace {
 
@@ -244,6 +243,5 @@ GTEST_TEST(DifferentialInverseKinematicsIntegratorTest,
 }
 
 }  // namespace
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake
