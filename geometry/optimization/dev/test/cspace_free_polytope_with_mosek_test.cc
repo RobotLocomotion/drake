@@ -414,7 +414,7 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableProgram) {
       tester.cspace_free_polytope().MakeIsGeometrySeparableProgram(
           geometry_pair, C_good, d_good);
   auto separation_certificate_result =
-      test.cspace_free_polytope().SolveSeparationCertificateProgram(
+      tester.cspace_free_polytope().SolveSeparationCertificateProgram(
           separation_certificate_program, options);
   EXPECT_TRUE(separation_certificate_result.has_value());
   Eigen::Matrix<double, 10, 3> s_samples;
