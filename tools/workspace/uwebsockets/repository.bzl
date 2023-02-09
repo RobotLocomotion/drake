@@ -8,8 +8,10 @@ def uwebsockets_repository(
     github_archive(
         name = name,
         repository = "uNetworking/uWebSockets",
-        commit = "v20.36.0",
-        sha256 = "cda266f7ed6abe67ef3cae6e223a580fe5091db9156c1f4123ee328ae21511c9",  # noqa
+        # NOTE: Do not upgrade without testing the tutorials on Deepnote.  See
+        # Drake #18289.  v20.35.0 was tested and showed the same symptoms.
+        commit = "v20.14.0",
+        sha256 = "15cf995844a930c9a36747e8d714b94ff886b6814b5d4e3b3ee176f05681cccc",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )
