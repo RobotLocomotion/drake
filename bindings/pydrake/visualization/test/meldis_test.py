@@ -13,15 +13,20 @@ You can also visualize the LCM test data like so:
 import pydrake.visualization as mut
 
 import functools
+import numpy as np
 import unittest
 
 from drake import (
+    lcmt_point_cloud,
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
 )
 
 from pydrake.common import (
     FindResourceOrThrow,
+)
+from pydrake.common.value import (
+    Value,
 )
 from pydrake.geometry import (
     DrakeVisualizer,
@@ -41,8 +46,17 @@ from pydrake.multibody.plant import (
 from pydrake.multibody.tree import (
     PrismaticJoint,
 )
+from pydrake.perception import (
+    BaseField,
+    Fields,
+    PointCloud,
+    PointCloudToLcm,
+)
 from pydrake.systems.framework import (
     DiagramBuilder,
+)
+from pydrake.systems.lcm import (
+    LcmPublisherSystem,
 )
 
 
@@ -58,6 +72,33 @@ class TestMeldis(unittest.TestCase):
                                      params=visualizer_params, lcm=lcm)
         diagram = builder.Build()
         return diagram
+
+    def _publish_lcm_point_cloud(self, lcm, cloud):
+        """Given the complexity of the lcmt_point_cloud message format, the
+        easiest way to feed the DUT with a sample point cloud is to use
+        PointCloudToLcmSystem for the point cloud conversion and
+        LcmPublisherSystem to publish the LCM message onto the DUT's LCM bus.
+        """
+        builder = DiagramBuilder()
+        cloud_to_lcm = builder.AddSystem(PointCloudToLcm(frame_name="world"))
+        cloud_lcm_publisher = builder.AddSystem(
+            LcmPublisherSystem.Make(
+                channel="DRAKE_POINT_CLOUD_TEST",
+                lcm_type=lcmt_point_cloud,
+                lcm=lcm,
+                publish_period=1.0,
+                use_cpp_serializer=True))
+        builder.Connect(
+            cloud_to_lcm.get_output_port(),
+            cloud_lcm_publisher.get_input_port())
+        diagram = builder.Build()
+
+        # Set input and publish the point cloud.
+        context = diagram.CreateDefaultContext()
+        cloud_context = cloud_to_lcm.GetMyContextFromRoot(context)
+        cloud_to_lcm.get_input_port().FixValue(
+            cloud_context, Value[PointCloud](cloud))
+        diagram.ForcedPublish(context)
 
     def test_viewer_applet(self):
         """Checks that _ViewerApplet doesn't crash when receiving messages.
@@ -325,3 +366,33 @@ class TestMeldis(unittest.TestCase):
 
         # After the handlers are called, we have the expected meshcat path.
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
+
+    def test_point_cloud(self):
+        """Check that _PointCloudApplet doesn't crash when receiving point
+        cloud messages in DRAKE_POINT_CLOUD channel.
+        """
+        # Create the device under test.
+        dut = mut.Meldis()
+
+        num_points = 10
+        xyzs = np.random.uniform(-0.1, 0.1, (3, num_points))
+        rgbs = np.random.randint(0, 255, (3, num_points), dtype=np.uint8)
+        normals = np.random.uniform(-0.1, 0.1, (3, num_points))
+
+        cloud = PointCloud(
+            num_points,
+            Fields(BaseField.kXYZs | BaseField.kRGBs | BaseField.kNormals)
+        )
+        cloud.mutable_xyzs()[:] = xyzs
+        cloud.mutable_rgbs()[:] = rgbs
+        cloud.mutable_normals()[:] = normals
+
+        # Set input and publish the point cloud.
+        self._publish_lcm_point_cloud(dut._lcm, cloud)
+
+        # Check the Meshcat path before and after the message handling.
+        expected_path = "/POINT_CLOUD"
+        self.assertEqual(dut.meshcat.HasPath(expected_path), False)
+        dut._lcm.HandleSubscriptions(timeout_millis=1)
+        dut._invoke_subscriptions()
+        self.assertEqual(dut.meshcat.HasPath(expected_path), True)
