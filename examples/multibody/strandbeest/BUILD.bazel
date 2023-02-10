@@ -22,7 +22,6 @@ drake_cc_binary(
     data = [":Strandbeest.urdf"],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//multibody/inverse_kinematics",
         "//multibody/parsing",
         "//multibody/plant",

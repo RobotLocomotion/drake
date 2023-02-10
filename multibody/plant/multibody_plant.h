@@ -1809,6 +1809,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return contact_surface_representation_;
   }
 
+  /// Sets whether to apply collision filters to topologically adjacent bodies
+  /// at Finalize() time.  Filters are applied when there exists a joint
+  /// between bodies, except in the case of 6-dof joints or joints in which the
+  /// parent body is `world`.
+  /// @throws std::exception iff called post-finalize.
+  void set_adjacent_bodies_collision_filters(bool value) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    adjacent_bodies_collision_filters_ = value;
+  }
+
+  /// Returns whether to apply collision filters to topologically adjacent
+  /// bodies at Finalize() time.
+  bool get_adjacent_bodies_collision_filters() const {
+    return adjacent_bodies_collision_filters_;
+  }
+
   /// For use only by advanced developers wanting to try out their custom time
   /// stepping strategies, including contact resolution.
   ///
@@ -5177,6 +5193,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Vector (with size num_bodies()) of default poses for each body. This is
   // only used if Body::is_floating() is true.
   std::vector<math::RigidTransform<double>> X_WB_default_list_;
+
+  // Whether to apply collsion filters to adjacent bodies at Finalize().
+  bool adjacent_bodies_collision_filters_{
+    MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
 };
 
 /// @cond

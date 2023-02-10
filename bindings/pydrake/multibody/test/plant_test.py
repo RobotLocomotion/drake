@@ -2331,6 +2331,14 @@ class TestPlant(unittest.TestCase):
                 self.assertEqual(
                     plant.get_contact_surface_representation(), rep)
 
+    def test_adjacent_bodies_collision_filters(self):
+        plant = MultibodyPlant_[float](0.1)
+        values = [False, True]
+        for value in values:
+            plant.set_adjacent_bodies_collision_filters(value=value)
+            self.assertEqual(plant.get_adjacent_bodies_collision_filters(),
+                             value)
+
     def test_contact_results_to_lcm(self):
         # ContactResultsToLcmSystem
         file_name = FindResourceOrThrow(

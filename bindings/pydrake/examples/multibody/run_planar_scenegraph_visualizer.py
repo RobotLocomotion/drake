@@ -7,7 +7,7 @@ import argparse
 
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow, temp_directory
+from pydrake.common import temp_directory
 from pydrake.examples import ManipulationStation
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
@@ -21,8 +21,8 @@ def run_pendulum_example(args):
     builder = DiagramBuilder()
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
     parser = Parser(plant)
-    parser.AddModels(FindResourceOrThrow(
-        "drake/examples/pendulum/Pendulum.urdf"))
+    parser.AddModelsFromUrl(
+        url="package://drake/examples/pendulum/Pendulum.urdf")
     plant.Finalize()
 
     T_VW = np.array([[1., 0., 0., 0.],

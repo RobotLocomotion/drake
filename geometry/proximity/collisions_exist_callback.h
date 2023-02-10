@@ -1,15 +1,16 @@
 #pragma once
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_export.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
 
 namespace drake {
 namespace geometry {
 namespace internal {
-namespace has_collisions {
+namespace has_collisions DRAKE_NO_EXPORT {
 
 /* Supporting data for the collisions exist callback (see Callback below).
    It includes:

@@ -2,14 +2,13 @@
 
 #include <vector>
 
-#include "drake/manipulation/planner/differential_inverse_kinematics.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/inverse_kinematics/differential_inverse_kinematics.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/leaf_system.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 /** A LeafSystem which uses DoDifferentialInverseKinematics to produce joint
 position commands.
@@ -75,8 +74,8 @@ class DifferentialInverseKinematicsIntegrator
   Note: All references must remain valid for the lifetime of this system.
   */
   DifferentialInverseKinematicsIntegrator(
-      const multibody::MultibodyPlant<double>& robot,
-      const multibody::Frame<double>& frame_E, double time_step,
+      const MultibodyPlant<double>& robot,
+      const Frame<double>& frame_E, double time_step,
       // Note: parameters last so they could be optional in the future.
       const DifferentialInverseKinematicsParameters& parameters,
       const systems::Context<double>* robot_context = nullptr,
@@ -121,8 +120,8 @@ class DifferentialInverseKinematicsIntegrator
       const systems::Context<double>& context,
       systems::DiscreteValues<double>* values) const;
 
-  const multibody::MultibodyPlant<double>& robot_;
-  const multibody::Frame<double>& frame_E_;
+  const MultibodyPlant<double>& robot_;
+  const Frame<double>& frame_E_;
   DifferentialInverseKinematicsParameters parameters_;
   const double time_step_{0.0};
   const systems::CacheEntry* robot_context_cache_entry_{};
@@ -131,6 +130,5 @@ class DifferentialInverseKinematicsIntegrator
   systems::InputPortIndex use_robot_state_index_{};
 };
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake

@@ -6,9 +6,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -18,7 +19,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-namespace point_distance {
+namespace point_distance DRAKE_NO_EXPORT {
 
 /* Supporting data for the distance-to-point callback (see Callback below).
  It includes:

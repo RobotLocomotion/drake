@@ -5,9 +5,10 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <fmt/format.h>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
@@ -26,7 +27,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-namespace hydroelastic {
+namespace hydroelastic DRAKE_NO_EXPORT {
 
 /* Supporting data for the shape-to-shape hydroelastic contact callback (see
  Callback below). It includes:

@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
 #include "drake/multibody/parsing/parser.h"
@@ -18,8 +17,8 @@ GTEST_TEST(MultibodyDynamicsTest, AllTests) {
   for (const char* const ext : {"urdf", "sdf"}) {
     const double kTimeStep = 0.0;
     multibody::MultibodyPlant<double> mbp(kTimeStep);
-    multibody::Parser(&mbp).AddModels(FindResourceOrThrow(
-        fmt::format("drake/examples/acrobot/Acrobot.{}", ext)));
+    multibody::Parser(&mbp).AddModelsFromUrl(
+        fmt::format("package://drake/examples/acrobot/Acrobot.{}", ext));
     mbp.Finalize();
 
     AcrobotPlant<double> p;

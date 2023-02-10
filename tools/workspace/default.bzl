@@ -125,6 +125,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "cc" not in excludes:
         cc_repository(name = "cc")
     if "ccd" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-05-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18611.
         ccd_repository(name = "ccd", mirrors = mirrors)
     if "ccd_internal" not in excludes:
         ccd_internal_repository(name = "ccd_internal", mirrors = mirrors)
@@ -159,6 +161,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
     if "expat" not in excludes:
         expat_repository(name = "expat")
     if "fcl" not in excludes:
+        # N.B. This repository is deprecated for removal on 2023-05-01.
+        # For details see https://github.com/RobotLocomotion/drake/pull/18611.
         fcl_repository(name = "fcl", mirrors = mirrors)
     if "fcl_internal" not in excludes:
         fcl_internal_repository(name = "fcl_internal", mirrors = mirrors)

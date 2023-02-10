@@ -37,7 +37,6 @@ drake_cc_googletest(
     name = "load_pr2_simplified_test",
     data = [":models"],
     deps = [
-        "//common:find_resource",
         "//multibody/parsing",
     ],
 )

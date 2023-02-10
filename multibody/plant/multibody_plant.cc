@@ -396,6 +396,9 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
     X_WB_default_list_ = other.X_WB_default_list_;
+
+    adjacent_bodies_collision_filters_ =
+        other.adjacent_bodies_collision_filters_;
   }
 
   DeclareSceneGraphPorts();
@@ -1153,23 +1156,25 @@ const CoulombFriction<double>& MultibodyPlant<T>::GetCoulombFriction(
 template <typename T>
 void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   DRAKE_DEMAND(geometry_source_is_registered());
-  // Disallow collisions between adjacent bodies. Adjacency is implied by the
-  // existence of a joint between bodies, except in the case of 6-dof joints or
-  // joints in which the parent body is `world`.
-  for (JointIndex j{0}; j < num_joints(); ++j) {
-    const Joint<T>& joint = get_joint(j);
-    const Body<T>& child = joint.child_body();
-    const Body<T>& parent = joint.parent_body();
-    if (parent.index() == world_index()) continue;
-    if (joint.type_name() == QuaternionFloatingJoint<T>::kTypeName) continue;
-    std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
-    std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
+  if (adjacent_bodies_collision_filters_) {
+    // Disallow collisions between adjacent bodies. Adjacency is implied by the
+    // existence of a joint between bodies, except in the case of 6-dof joints
+    // or joints in which the parent body is `world`.
+    for (JointIndex j{0}; j < num_joints(); ++j) {
+      const Joint<T>& joint = get_joint(j);
+      const Body<T>& child = joint.child_body();
+      const Body<T>& parent = joint.parent_body();
+      if (parent.index() == world_index()) continue;
+      if (joint.type_name() == QuaternionFloatingJoint<T>::kTypeName) continue;
+      std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
+      std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
-    if (child_id && parent_id) {
-      scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeBetween(
-          geometry::GeometrySet(*child_id),
-          geometry::GeometrySet(*parent_id)));
+      if (child_id && parent_id) {
+        scene_graph_->collision_filter_manager().Apply(
+            CollisionFilterDeclaration().ExcludeBetween(
+                geometry::GeometrySet(*child_id),
+                geometry::GeometrySet(*parent_id)));
+      }
     }
   }
   // We explicitly exclude collisions within welded subgraphs.

@@ -7,6 +7,7 @@
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_composite_parse.h"
 #include "drake/multibody/parsing/detail_parsing_workspace.h"
+#include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_select_parser.h"
 
 namespace drake {
@@ -61,6 +62,16 @@ std::vector<ModelInstanceIndex> Parser::AddModels(
   auto composite = internal::CompositeParse::MakeCompositeParse(this);
   return parser.AddAllModels(data_source, model_name_prefix_,
                              composite->workspace());
+}
+
+std::vector<ModelInstanceIndex> Parser::AddModelsFromUrl(
+    const std::string& url) {
+  const std::string file_name = internal::ResolveUri(
+      diagnostic_policy_, url, package_map_, {});
+  if (file_name.empty()) {
+    return {};
+  }
+  return AddModels(file_name);
 }
 
 std::vector<ModelInstanceIndex> Parser::AddAllModelsFromFile(

@@ -8,7 +8,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/manipulation/kinova_jaco/jaco_command_receiver.h"
@@ -54,8 +53,8 @@ namespace examples {
 namespace kinova_jaco_arm {
 namespace {
 
-const char kUrdfPath[] =
-    "drake/manipulation/models/jaco_description/urdf/"
+const char kUrdfUrl[] =
+    "package://drake/manipulation/models/jaco_description/urdf/"
     "j2s7s300_sphere_collision.urdf";
 
 int DoMain() {
@@ -65,7 +64,7 @@ int DoMain() {
       multibody::AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
 
   const multibody::ModelInstanceIndex jaco_id =
-      Parser(&jaco_plant).AddModels(FindResourceOrThrow(kUrdfPath)).at(0);
+      Parser(&jaco_plant).AddModelsFromUrl(kUrdfUrl).at(0);
   jaco_plant.WeldFrames(jaco_plant.world_frame(),
                         jaco_plant.GetFrameByName("base"));
   jaco_plant.Finalize();
