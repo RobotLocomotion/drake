@@ -27,49 +27,50 @@ class MultilayerPerceptronBenchmark : public benchmark::Fixture {
  public:
   MultilayerPerceptronBenchmark() {
     tools::performance::AddMinMaxStatistics(this);
-//    this->Unit(benchmark::kSecond);
+    this->Unit(benchmark::kMicrosecond);
 
     // Use 1 output so that we can call BatchOutput with gradients.
-    mlp = std::make_unique<MultilayerPerceptron<double>>(
-        std::vector<int>({num_inputs, FLAGS_width, FLAGS_width, 1}));
-    X = MatrixXd::Ones(num_inputs, FLAGS_batch_size);
-    Y.resize(FLAGS_batch_size);
-    dloss_dparams.resize(mlp->num_parameters());
-    Yd = RowVectorXd::Ones(FLAGS_batch_size);
-    dYdX.resize(num_inputs, FLAGS_batch_size);
+    mlp_ = std::make_unique<MultilayerPerceptron<double>>(
+         std::vector<int>({num_inputs_, FLAGS_width, FLAGS_width, 1}));
+    X_ = MatrixXd::Ones(num_inputs_, FLAGS_batch_size);
+    Y_.resize(FLAGS_batch_size);
+    dloss_dparams_.resize(mlp_->num_parameters());
+    Yd_ = RowVectorXd::Ones(FLAGS_batch_size);
+    dYdX_.resize(num_inputs_, FLAGS_batch_size);
 
-    context = mlp->CreateDefaultContext();
+    context_ = mlp_->CreateDefaultContext();
     RandomGenerator generator(243);
-    mlp->SetRandomContext(context.get(), &generator);
+    mlp_->SetRandomContext(context_.get(), &generator);
   }
 
-  const int num_inputs{10};
+ protected:
+  const int num_inputs_{10};
 
-  std::unique_ptr<MultilayerPerceptron<double>> mlp;
-  std::unique_ptr<Context<double>> context;
+  std::unique_ptr<MultilayerPerceptron<double>> mlp_;
+  std::unique_ptr<Context<double>> context_;
 
-  MatrixXd X;
-  RowVectorXd Y;
-  RowVectorXd dloss_dparams;
-  RowVectorXd Yd;
-  MatrixXd dYdX;
+  MatrixXd X_;
+  RowVectorXd Y_;
+  RowVectorXd dloss_dparams_;
+  RowVectorXd Yd_;
+  MatrixXd dYdX_;
 };
 
 BENCHMARK_F(MultilayerPerceptronBenchmark, Backprop)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
-    mlp->BackpropagationMeanSquaredError(*context, X, Yd, &dloss_dparams);
+    mlp_->BackpropagationMeanSquaredError(*context_, X_, Yd_, &dloss_dparams_);
   }
 }
 
 BENCHMARK_F(MultilayerPerceptronBenchmark, Output)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
-    mlp->BatchOutput(*context, X, &Y);
+    mlp_->BatchOutput(*context_, X_, &Y_);
   }
 }
 
 BENCHMARK_F(MultilayerPerceptronBenchmark, OutputGradient)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
-    mlp->BatchOutput(*context, X, &Y, &dYdX);
+    mlp_->BatchOutput(*context_, X_, &Y_, &dYdX_);
   }
 }
 
