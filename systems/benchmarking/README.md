@@ -8,6 +8,8 @@ to a user supplied directory, under relatively controlled conditions:
 
     $ bazel run //systems/benchmarking:framework_experiment -- --output_dir=trial1
 
+    $ bazel run //systems/benchmarking:multilayer_perceptron_experiment -- --output_dir=trial1
+
 ## Additional information
 
 Documentation for command line arguments is here:

@@ -1,14 +1,10 @@
 /* @file
- A simple binary to benchmark the performance of the MultilayerPerceptron.
- Run this at the command line with, e.g.
+Measures the performance of the MultilayerPerceptron implementation.
+Refer to the README.md for more information. */
 
- time bazel-bin/systems/primitives/multilayer_perceptron_performance \
-  --batch_size=1000 --iterations=10
-*/
-
-#include "systems/primitives/multilayer_perceptron.h"
 #include <gflags/gflags.h>
 
+#include "drake/systems/primitives/multilayer_perceptron.h"
 #include "drake/tools/performance/fixture_common.h"
 
 namespace drake {
@@ -19,33 +15,55 @@ using Eigen::MatrixXd;
 using Eigen::RowVectorXd;
 using Eigen::VectorXd;
 
-// TODO(jwnimmer-tri) Rewrite these to use googlebench Args().
-DEFINE_int32(batch_size, 2, "Number of batch evaluations.");
-DEFINE_int32(width, 256, "Number of units in each hidden layer.");
+// TODO(jwnimmer-tri) Add benchmarking cases for input sin/cos features.
 
-class MultilayerPerceptronBenchmark : public benchmark::Fixture {
+class Mlp : public benchmark::Fixture {
  public:
-  MultilayerPerceptronBenchmark() {
+  Mlp() {
     tools::performance::AddMinMaxStatistics(this);
     this->Unit(benchmark::kMicrosecond);
+  }
 
+  using benchmark::Fixture::SetUp;
+  void SetUp(const benchmark::State& state) {
+    // Number of inputs.
+    const int num_inputs = state.range(0);
+    DRAKE_DEMAND(num_inputs >= 1);
+    // Number of layers.
+    const int num_layers = state.range(1);
+    DRAKE_DEMAND(num_layers >= 2);
+    // Number of units in each hidden layer.
+    const int width = state.range(2);
+    DRAKE_DEMAND(width >= 1);
     // Use 1 output so that we can call BatchOutput with gradients.
-    mlp_ = std::make_unique<MultilayerPerceptron<double>>(
-         std::vector<int>({num_inputs_, FLAGS_width, FLAGS_width, 1}));
-    X_ = MatrixXd::Ones(num_inputs_, FLAGS_batch_size);
-    Y_.resize(FLAGS_batch_size);
-    dloss_dparams_.resize(mlp_->num_parameters());
-    Yd_ = RowVectorXd::Ones(FLAGS_batch_size);
-    dYdX_.resize(num_inputs_, FLAGS_batch_size);
+    const int num_outputs = 1;
+    // Number of batch evaluations.
+    const int batch_size = state.range(3);
+    DRAKE_DEMAND(batch_size >= 1);
 
+    // Create the MLP.
+    std::vector<int> layers;
+    layers.push_back(num_inputs);
+    for (int i = 0; i < (num_layers - 2); ++i) {
+      layers.push_back(width);
+    }
+    layers.push_back(num_outputs);
+    mlp_ = std::make_unique<MultilayerPerceptron<double>>(layers);
+
+    // Prepare the input/output matrix storage.
+    X_ = MatrixXd::Ones(num_inputs, batch_size);
+    Y_.resize(batch_size);
+    dloss_dparams_.resize(mlp_->num_parameters());
+    Yd_ = RowVectorXd::Ones(batch_size);
+    dYdX_.resize(num_inputs, batch_size);
+
+    // Prepare a random context.
     context_ = mlp_->CreateDefaultContext();
     RandomGenerator generator(243);
     mlp_->SetRandomContext(context_.get(), &generator);
   }
 
  protected:
-  const int num_inputs_{10};
-
   std::unique_ptr<MultilayerPerceptron<double>> mlp_;
   std::unique_ptr<Context<double>> context_;
 
@@ -56,23 +74,47 @@ class MultilayerPerceptronBenchmark : public benchmark::Fixture {
   MatrixXd dYdX_;
 };
 
-BENCHMARK_F(MultilayerPerceptronBenchmark, Backprop)(benchmark::State& state) {  // NOLINT
+BENCHMARK_DEFINE_F(Mlp, Backprop)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
     mlp_->BackpropagationMeanSquaredError(*context_, X_, Yd_, &dloss_dparams_);
   }
 }
+// The Args are { num_inputs, num_layers, width, batch_size }.
+BENCHMARK_REGISTER_F(Mlp, Backprop)
+    ->Args({10, 4, 64, 100})
+    ->Args({10, 4, 256, 100})
+    ->Args({10, 16, 256, 100})
+    ->Args({10, 4, 64, 500})
+    ->Args({10, 4, 256, 500})
+    ->Args({10, 16, 256, 500});
 
-BENCHMARK_F(MultilayerPerceptronBenchmark, Output)(benchmark::State& state) {  // NOLINT
+BENCHMARK_DEFINE_F(Mlp, Output)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
     mlp_->BatchOutput(*context_, X_, &Y_);
   }
 }
+// The Args are { num_inputs, num_layers, width, batch_size }.
+BENCHMARK_REGISTER_F(Mlp, Output)
+    ->Args({10, 4, 64, 100})
+    ->Args({10, 4, 256, 100})
+    ->Args({10, 16, 256, 100})
+    ->Args({10, 4, 64, 500})
+    ->Args({10, 4, 256, 500})
+    ->Args({10, 16, 256, 500});
 
-BENCHMARK_F(MultilayerPerceptronBenchmark, OutputGradient)(benchmark::State& state) {  // NOLINT
+BENCHMARK_DEFINE_F(Mlp, OutputGradient)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
     mlp_->BatchOutput(*context_, X_, &Y_, &dYdX_);
   }
 }
+// The Args are { num_inputs, num_layers, width, batch_size }.
+BENCHMARK_REGISTER_F(Mlp, OutputGradient)
+    ->Args({10, 4, 64, 100})
+    ->Args({10, 4, 256, 100})
+    ->Args({10, 16, 256, 100})
+    ->Args({10, 4, 64, 500})
+    ->Args({10, 4, 256, 500})
+    ->Args({10, 16, 256, 500});
 
 }  // namespace
 }  // namespace systems
