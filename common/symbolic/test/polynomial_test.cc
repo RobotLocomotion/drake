@@ -1092,6 +1092,9 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
   linear_substitutions.emplace(var_x_, Polynomial(2 * var_a_));
   // A substitution from one variable to a 2 indeterminate polynomial.
   linear_substitutions.emplace(var_y_, Polynomial(var_a_ * var_b_ + var_a_));
+  // A substitution with powers of a variable
+  linear_substitutions.emplace(var_z_,
+                               Polynomial(pow(var_a_, 3) + 2 * var_a_ + 1));
 
   Polynomial poly1{2 * x_ * x_};
   Polynomial sub1 =
@@ -1104,7 +1107,6 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
       substitutions.at(Monomial(x_ * x_)).EqualTo(Polynomial(4 * a_ * a_)));
 
   Polynomial poly2{x_ * x_ * y_};
-
   Polynomial sub2 =
       poly2.SubstituteAndExpand(linear_substitutions, &substitutions);
   Polynomial sub2_expected{4 * pow(a_, 3) * (b_ + 1)};
@@ -1117,17 +1119,7 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
   EXPECT_TRUE(substitutions.at(Monomial(x_ * x_ * y_))
                   .EqualTo(Polynomial(4 * pow(a_, 3) * (b_ + 1))));
 
-  // A polynomial where linear subs has no substitution for z_.
   Polynomial poly3{pow(x_, 3) * z_};
-  if (kDrakeAssertIsArmed) {
-    // The indeterminate z_ is not in linear_substitutions.
-    EXPECT_THROW(const auto foo = poly3.SubstituteAndExpand(
-                     linear_substitutions, &substitutions),
-                 runtime_error);
-  }
-  // A substitution with powers of a variable
-  linear_substitutions.emplace(var_z_,
-                               Polynomial(pow(var_a_, 3) + 2 * var_a_ + 1));
   Polynomial sub3 =
       poly3.SubstituteAndExpand(linear_substitutions, &substitutions);
   Polynomial sub3_expected{pow(2 * a_, 3) * (pow(var_a_, 3) + 2 * var_a_ + 1)};

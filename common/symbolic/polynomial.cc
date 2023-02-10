@@ -822,17 +822,17 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 }
 
 Polynomial Polynomial::SubstituteAndExpand(
-    const std::unordered_map<Variable, Polynomial>& linear_substitutions,
+    const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
     std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions)
     const {
   for (const auto& var : indeterminates_) {
-    DRAKE_DEMAND(linear_substitutions.find(var) != linear_substitutions.cend());
+    DRAKE_DEMAND(indeterminate_substitution.find(var) !=
+                 indeterminate_substitution.cend());
   }
 
   MapType new_polynomial_coeff_map;
-  if (substitutions->empty()) {
-    substitutions->emplace(Monomial(), Polynomial(1));
-  }
+  // Ensures the base case of the constant term monomial is always reached.
+  substitutions->insert_or_assign(Monomial(), Polynomial(1));
 
   auto find_nearest_cached_monomial = [&substitutions](
                                           const Monomial& monomial) {
@@ -846,8 +846,11 @@ Polynomial Polynomial::SubstituteAndExpand(
     return (*nearest_cached_monomial_iter).first;
   };
 
+  // Given a monomial, compute its expansion using the saved expansions in
+  // substitutions and by repeated squaring.
   auto compute_substituted_monomial_expansion =
-      [&linear_substitutions, &substitutions, &find_nearest_cached_monomial](
+      [&indeterminate_substitution, &substitutions,
+       &find_nearest_cached_monomial](
           const Monomial& monomial,
           auto&& compute_substituted_monomial_expansion_recursion_handle) {
         // Base case. Since the map substitutions is non-empty and contains the
@@ -856,63 +859,88 @@ Polynomial Polynomial::SubstituteAndExpand(
           return substitutions->at(monomial);
         }
 
+        // Find the largest (in the lexicographic order) monomial for which we
+        // have already computed the expansion.
         Monomial nearest_cached_monomial =
             find_nearest_cached_monomial(monomial);
-        Polynomial ret = substitutions->at(nearest_cached_monomial);
 
-        std::map<Variable, int> remaining_powers;
-        std::map<Variable, int> halved_powers;
-        std::map<Variable, int> mod_2_powers;
-        bool same_monomial{true};
-        const std::map<Variable, int>& cached_powers{
-            nearest_cached_monomial.get_powers()};
-        for (const auto& [var, power] : monomial.get_powers()) {
-          if (cached_powers.find(var) != cached_powers.cend()) {
-            remaining_powers.emplace(var, power - cached_powers.at(var));
-            same_monomial = false;
-          } else {
-            remaining_powers.emplace(var, power);
+        // If the nearest cached monomial is 1, then we do not have a cached
+        // substitution for it. In this case, we will compute the expansion
+        // using the successive squaring method. For example, x³y⁵ would be
+        // computed as (xy²)²(xy).
+        //
+        // If the nearest cached monomial is not 1, we recurse on the remaining
+        // powers. The reason we do not perform successive squaring  immediately
+        // is to enable us to potentially find a larger power immediately. For
+        // example, if we are expanding x³y⁵, and substitutions only contains
+        // the keys {1, xy²}, then the nearest cached monomial is xy².
+        // The remaining monomial would be x²y³. Applying the successive
+        // squaring method would require us to compute the expansion of xy.
+        // Recursing immediately would enable us to again use the substitution
+        // of xy². We wish to use the stored substitutions as much as possible
+        // and so we prefer to recurse immediately.
+        if (nearest_cached_monomial == Monomial()) {
+          Polynomial ret{1};
+          std::map<Variable, int> halved_powers;
+          for (const auto& [var, power] : monomial.get_powers()) {
             halved_powers.emplace(var, static_cast<int>(std::floor(power / 2)));
-            mod_2_powers.emplace(var, power % 2);
-          }
-        }
-
-        const Monomial remaining_monomials = same_monomial
-                                                 ? Monomial{halved_powers}
-                                                 : Monomial{remaining_powers};
-        const Polynomial remaining_substitution{
-            compute_substituted_monomial_expansion_recursion_handle(
-                remaining_monomials,
-                compute_substituted_monomial_expansion_recursion_handle)};
-        if (remaining_monomials.total_degree() != 1) {
-          substitutions->insert_or_assign(remaining_monomials,
-                                          remaining_substitution);
-        }
-
-        if (same_monomial) {
-          ret *= pow(remaining_substitution, 2);
-          for (const auto& [var, is_odd] : mod_2_powers) {
-            if (is_odd) {
-              ret *= linear_substitutions.at(var);
+            // If the current power is odd, we perform a substitution of the
+            // degree 1 monomial.
+            if (power % 2 == 1) {
+              ret *= indeterminate_substitution.at(var);
             }
           }
-
+          const Monomial halved_monomials{halved_powers};
+          const Monomial& halved_monomials_squared{pow(halved_monomials, 2)};
+          const Polynomial& halved_power_substitution{
+              compute_substituted_monomial_expansion_recursion_handle(
+                  halved_monomials,
+                  compute_substituted_monomial_expansion_recursion_handle)};
+          if (halved_monomials.total_degree() != 1) {
+            substitutions->insert_or_assign(halved_monomials,
+                                            halved_power_substitution);
+          }
+          substitutions->insert_or_assign(halved_monomials_squared,
+                                          pow(halved_power_substitution, 2));
+          return ret * substitutions->at(halved_monomials_squared);
         } else {
-          ret *= remaining_substitution;
+          std::map<Variable, int> remaining_powers;
+          const std::map<Variable, int>& cached_powers{
+              nearest_cached_monomial.get_powers()};
+          for (const auto& [var, power] : monomial.get_powers()) {
+            if (cached_powers.find(var) != cached_powers.cend()) {
+              remaining_powers.emplace(var, power - cached_powers.at(var));
+            } else {
+              remaining_powers.emplace(var, power);
+            }
+          }
+          const Monomial remaining_monomials{remaining_powers};
+          const Polynomial& remaining_substitution{
+              compute_substituted_monomial_expansion_recursion_handle(
+                  remaining_monomials,
+                  compute_substituted_monomial_expansion_recursion_handle)};
+          // Store the remaining substitution in case it is useful for later.
+          if (remaining_monomials.total_degree() != 1) {
+            substitutions->insert_or_assign(remaining_monomials,
+                                            remaining_substitution);
+          }
+          return substitutions->at(nearest_cached_monomial) *
+                 remaining_substitution;
         }
-        return ret;
       };
+
   for (const auto& [old_monomial, old_coeff] : monomial_to_coefficient_map_) {
-    // If substitutions doesn't contain the current substitution create it now.
-    if (substitutions->find(old_monomial) == substitutions->end()) {
+    // If substitutions doesn't contain the current substitution create it
+    // now.
+    if (substitutions->find(old_monomial) == substitutions->cend()) {
       substitutions->insert(
           {old_monomial,
            compute_substituted_monomial_expansion(
                old_monomial, compute_substituted_monomial_expansion)});
     }
 
-    // Now go through at add the substitution to the appropriate monomial in the
-    // new polynomial.
+    // Now go through and add the substitution to the appropriate monomial
+    // in the new polynomial.
     for (const auto& [new_monomial, new_coeff] :
          substitutions->at(old_monomial).monomial_to_coefficient_map()) {
       if (new_polynomial_coeff_map.find(new_monomial) ==
