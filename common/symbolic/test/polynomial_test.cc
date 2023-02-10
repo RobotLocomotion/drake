@@ -705,40 +705,41 @@ TEST_F(SymbolicPolynomialTest, DifferentiateJacobian) {
 
 TEST_F(SymbolicPolynomialTest, Integrate) {
   // p = 2a²x²y + 3axy³.
-  const Polynomial p{
-      2 * pow(a_, 2) * pow(x_, 2) * y_ + 3 * a_ * x_ * pow(y_, 3),
-      {var_x_, var_y_}};
+  const Polynomial p{2 * pow(a_, 2) * pow(x_, 2) * y_
+    + 3 * a_ * x_ * pow(y_, 3),
+    {var_x_, var_y_}};
 
   // ∫ p dx = 2/3 a²x³y + 3/2 ax²y³.
-  const Polynomial int_p_dx{2 * pow(a_, 2) * pow(x_, 3) * y_ / 3 +
-                                3 * a_ * pow(x_, 2) * pow(y_, 3) / 2,
-                            {var_x_, var_y_}};
+  const Polynomial int_p_dx{
+    2 * pow(a_, 2) * pow(x_, 3) * y_ / 3 + 3 * a_ * pow(x_, 2) * pow(y_, 3) / 2,
+    {var_x_, var_y_}};
   EXPECT_PRED2(PolyEqual, p.Integrate(var_x_), int_p_dx);
 
   // ∫ p dx from 1 to 3 = 52/3 a²y + 12 ay³.
-  const Polynomial def_int_p_dx{52 * pow(a_, 2) * y_ / 3 + 12 * a_ * pow(y_, 3),
-                                {var_y_}};
+  const Polynomial def_int_p_dx{
+    52 * pow(a_, 2) * y_ / 3 + 12 * a_ * pow(y_, 3),
+    {var_y_}};
   EXPECT_PRED2(PolyEqual, p.Integrate(var_x_, 1, 3), def_int_p_dx);
   // ∫ from [a,b] = -∫ from [b,a]
   EXPECT_PRED2(PolyEqual, p.Integrate(var_x_, 3, 1), -def_int_p_dx);
 
   // ∫ p dy = a²x²y² + 3/4 axy⁴.
   const Polynomial int_p_dy{
-      pow(a_, 2) * pow(x_, 2) * pow(y_, 2) + 3 * a_ * x_ * pow(y_, 4) / 4,
-      {var_x_, var_y_}};
+    pow(a_, 2) * pow(x_, 2) * pow(y_, 2) + 3 * a_ * x_ * pow(y_, 4) / 4,
+    {var_x_, var_y_}};
   EXPECT_PRED2(PolyEqual, p.Integrate(var_y_), int_p_dy);
 
   // ∫ p dz = 2a²x²yz + 3axy³z.
   const Polynomial int_p_dz{
-      2 * pow(a_, 2) * pow(x_, 2) * y_ * z_ + 3 * a_ * x_ * pow(y_, 3) * z_,
-      {var_x_, var_y_, var_z_}};
+    2 * pow(a_, 2) * pow(x_, 2) * y_ * z_ + 3 * a_ * x_ * pow(y_, 3) * z_,
+    {var_x_, var_y_, var_z_}};
   EXPECT_TRUE(p.Integrate(var_z_).indeterminates().include(var_z_));
   EXPECT_PRED2(PolyEqual, p.Integrate(var_z_), int_p_dz);
 
   // ∫ p dz from -1 to 1 = 4a²x²y + 6axy³.
   const Polynomial def_int_p_dz{
-      4 * pow(a_, 2) * pow(x_, 2) * y_ + 6 * a_ * x_ * pow(y_, 3),
-      {var_x_, var_y_, var_z_}};
+    4 * pow(a_, 2) * pow(x_, 2) * y_ + 6 * a_ * x_ * pow(y_, 3),
+    {var_x_, var_y_, var_z_}};
   EXPECT_TRUE(p.Integrate(var_z_).indeterminates().include(var_z_));
   EXPECT_PRED2(PolyEqual, p.Integrate(var_z_, -1, 1), def_int_p_dz);
 
