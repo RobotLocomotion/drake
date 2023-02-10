@@ -501,21 +501,31 @@ bool CompliantContactManager<T>::DiscreteHydroelasticToPointContact(
   const bool M_is_compliant = contact_patch.HasGradE_M();
   const bool N_is_compliant = contact_patch.HasGradE_N();
 
-  // From ContactSurface'contact_patch documentation: The normal of each face is
-  // guaranteed to point "out of" N and "into" M.
-  const Vector3<T>& nhat_W = contact_patch.face_normal(face);
-
-  // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
-  // 2022], for convenience we define both pressure gradients
-  // to be positive in the direction "into" the bodies. Therefore,
-  // we use the minus sign for gN.
+  // Unlike [Masterjohn 2022], try the idea to use the norm of the pressure
+  // gradient |∇p| instead of the normal pressure gradient ∇p⋅𝓃, which is the
+  // projection of the pressure gradient ∇p along the direction of surface
+  // normal 𝓃 of the contact patch. Intuitively using |∇p| is like "pivoting
+  // or rotating" ∇p to align with 𝓃, while using ∇p⋅𝓃 is like "projecting"
+  // ∇p onto the line of 𝓃.
+  //
+  // The original formula ∇p⋅𝓃 suffers when the direction of ∇p drastically
+  // deviates from 𝓃, for example, when ∇p is almost tangential to the contact
+  // patch then ∇p⋅𝓃 becomes near zero.
+  //
+  // Compared to ∇p⋅𝓃, using |∇p| here gives larger effective
+  // stiffness k = area * |∇p| and smaller magnitude of surrogate signed
+  // distance phi0 = - p0 / |∇p|, where p0 = pressure at centroid.
+  //
+  // Switching from ∇p⋅𝓃 to |∇p| has no effect on the undamped normal
+  // force fn0 = area * p0.
+  //
   // [Masterjohn 2022] Velocity Level Approximation of Pressure
   // Field Contact Patches.
   const T gM = M_is_compliant
-                   ? contact_patch.EvaluateGradE_M_W(face).dot(nhat_W)
+                   ? contact_patch.EvaluateGradE_M_W(face).norm()
                    : T(std::numeric_limits<double>::infinity());
   const T gN = N_is_compliant
-                   ? -contact_patch.EvaluateGradE_N_W(face).dot(nhat_W)
+                   ? contact_patch.EvaluateGradE_N_W(face).norm()
                    : T(std::numeric_limits<double>::infinity());
 
   constexpr double kGradientEpsilon = 1.0e-14;

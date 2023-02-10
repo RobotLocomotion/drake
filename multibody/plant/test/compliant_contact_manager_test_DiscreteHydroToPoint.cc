@@ -139,16 +139,14 @@ GTEST_TEST(CompliantContactManagerTest, DiscreteHydroToPointContactTricky) {
           &surrogate_signed_distance);
 
   ASSERT_TRUE(success);
-  // area * centroidal pressure = 1e-4 * 5e6 = 5e2 Newtons
+  // area * centroidal pressure = 1e-4 * 5e6 = 5e2 newtons
   EXPECT_NEAR(normal_force_on_polygon, 5e2, 1e-12);
-  // area * normal pressure gradient
-  // = area * pressure_gradients_into_volume.Z()
-  // = 1e-4 * 5e-6 = 5e-10 Pascal*meter
-  EXPECT_NEAR(effective_stiffness, 5e-10, kEps);
-  // - centroidal pressure / normal pressure gradient
-  // = - centroidal pressure / pressure_gradients_into_volume.Z()
-  // = -5e6 / 5e-6 = -1e12 meters = 1 terameters
-  EXPECT_NEAR(surrogate_signed_distance, -1e12, 1);
+  // area * pressure-gradient magnitude
+  // about 1e-4 * 1e9 = 1e5 newtons/meter
+  EXPECT_NEAR(effective_stiffness, 1e5, kEps);
+  // - centroidal pressure / pressure-gradient magnitude
+  // about -5e6 / 1e9 = -5e-3 meters = -5 millimeters
+  EXPECT_NEAR(surrogate_signed_distance, -5e-3, kEps);
 }
 
 }  // namespace internal
