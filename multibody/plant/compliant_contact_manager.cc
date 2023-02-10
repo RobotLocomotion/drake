@@ -463,87 +463,112 @@ void CompliantContactManager<T>::
         GetCombinedDynamicCoulombFriction(s.id_M(), s.id_N(), inspector);
 
     for (int face = 0; face < s.num_faces(); ++face) {
-      const T& Ae = s.area(face);  // Face element area.
-
-      // We found out that the hydroelastic query might report
-      // infinitesimally small triangles (consider for instance an initial
-      // condition that perfectly places an object at zero distance from the
-      // ground.) While the area of zero sized triangles is not a problem by
-      // itself, the badly computed normal on these triangles leads to
-      // problems when computing the contact Jacobians (since we need to
-      // obtain an orthonormal basis based on that normal.)
-      // We therefore ignore infinitesimally small triangles. The tolerance
-      // below is somehow arbitrary and could possibly be tightened.
-      if (Ae > 1.0e-14) {
-        // From ContactSurface's documentation: The normal of each face is
-        // guaranteed to point "out of" N and "into" M.
-        const Vector3<T>& nhat_W = s.face_normal(face);
-
-        // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
-        // 2022], for convenience we define both pressure gradients
-        // to be positive in the direction "into" the bodies. Therefore,
-        // we use the minus sign for gN.
-        // [Masterjohn 2022] Velocity Level Approximation of Pressure
-        // Field Contact Patches.
-        const T gM = M_is_compliant
-                         ? s.EvaluateGradE_M_W(face).dot(nhat_W)
-                         : T(std::numeric_limits<double>::infinity());
-        const T gN = N_is_compliant
-                         ? -s.EvaluateGradE_N_W(face).dot(nhat_W)
-                         : T(std::numeric_limits<double>::infinity());
-
-        constexpr double kGradientEpsilon = 1.0e-14;
-        if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
-          // Mathematically g = gN*gM/(gN+gM) and therefore g = 0 when
-          // either gradient on one of the bodies is zero. A zero gradient
-          // means there is no contact constraint, and therefore we
-          // ignore it to avoid numerical problems in the discrete solver.
-          continue;
-        }
-
-        // Effective hydroelastic pressure gradient g result of
-        // compliant-compliant interaction, see [Masterjohn 2022].
-        // The expression below is mathematically equivalent to g =
-        // gN*gM/(gN+gM) but it has the advantage of also being valid if
-        // one of the gradients is infinity.
-        const T g = 1.0 / (1.0 / gM + 1.0 / gN);
-
-        // Position of quadrature point Q in the world frame (since mesh_W
-        // is measured and expressed in W).
-        const Vector3<T>& p_WQ = s.centroid(face);
-        // For a triangle, its centroid has the fixed barycentric
-        // coordinates independent of the shape of the triangle. Using
-        // barycentric coordinates to evaluate field value could be
-        // faster than using Cartesian coordinates, especially if the
-        // TriangleSurfaceMeshFieldLinear<> does not store gradients and
-        // has to solve linear equations to convert Cartesian to
-        // barycentric coordinates.
-        const Vector3<T> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
-        // Pressure at the quadrature point.
-        const T p0 = s.is_triangle()
-                         ? s.tri_e_MN().Evaluate(face, tri_centroid_barycentric)
-                         : s.poly_e_MN().EvaluateCartesian(face, p_WQ);
-
-        // Force contribution by this quadrature point.
-        const T fn0 = Ae * p0;
-
-        // Effective compliance in the normal direction for the given
-        // discrete patch, refer to [Masterjohn 2022] for details.
-        // [Masterjohn 2022] Masterjohn J., Guoy D., Shepherd J. and
-        // Castro A., 2022. Velocity Level Approximation of Pressure Field
-        // Contact Patches. Available at https://arxiv.org/abs/2110.04157.
-        const T k = Ae * g;
-
-        // phi < 0 when in penetration.
-        const T phi0 = -p0 / g;
-
-        if (k > 0) {
-          contact_pairs.push_back({s.id_M(), s.id_N(), p_WQ, nhat_W, phi0, fn0,
-                                   k, d, tau, mu, surface_index, face});
-        }
+      // Undamped normal contact force by this polygonal/triangle face
+      T fn0;
+      // Effective stiffness of the contact pair.
+      T stiffness;
+      // Surrogate signed distance. It's negative when in contact.
+      T phi0;
+      if (DiscreteHydroelasticToPointContact(s, face, &fn0, &stiffness,
+                                             &phi0)) {
+        contact_pairs.push_back({s.id_M(), s.id_N(), s.centroid(face),
+                                 s.face_normal(face), phi0, fn0, stiffness,
+                                 d, tau, mu, surface_index, face});
       }
     }
   }
+}
+
+template <typename T>
+bool CompliantContactManager<T>::DiscreteHydroelasticToPointContact(
+    const geometry::ContactSurface<T>& contact_patch, const int face,
+    T* normal_force, T* stiffness, T* surrogate_signed_distance) {
+  const T& Ae = contact_patch.area(face);  // Face element area.
+
+  // We found out that the hydroelastic query might report
+  // infinitesimally small triangles (consider for instance an initial
+  // condition that perfectly places an object at zero distance from the
+  // ground.) While the area of zero sized triangles is not a problem by
+  // itself, the badly computed normal on these triangles leads to
+  // problems when computing the contact Jacobians (since we need to
+  // obtain an orthonormal basis based on that normal.)
+  // We therefore ignore infinitesimally small triangles. The tolerance
+  // below is somehow arbitrary and could possibly be tightened.
+  if (Ae <= 1.0e-14) {
+    return false;
+  }
+
+  const bool M_is_compliant = contact_patch.HasGradE_M();
+  const bool N_is_compliant = contact_patch.HasGradE_N();
+
+  // From ContactSurface'contact_patch documentation: The normal of each face is
+  // guaranteed to point "out of" N and "into" M.
+  const Vector3<T>& nhat_W = contact_patch.face_normal(face);
+
+  // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
+  // 2022], for convenience we define both pressure gradients
+  // to be positive in the direction "into" the bodies. Therefore,
+  // we use the minus sign for gN.
+  // [Masterjohn 2022] Velocity Level Approximation of Pressure
+  // Field Contact Patches.
+  const T gM = M_is_compliant
+                   ? contact_patch.EvaluateGradE_M_W(face).dot(nhat_W)
+                   : T(std::numeric_limits<double>::infinity());
+  const T gN = N_is_compliant
+                   ? -contact_patch.EvaluateGradE_N_W(face).dot(nhat_W)
+                   : T(std::numeric_limits<double>::infinity());
+
+  constexpr double kGradientEpsilon = 1.0e-14;
+  if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+    // Mathematically g = gN*gM/(gN+gM) and therefore g = 0 when
+    // either gradient on one of the bodies is zero. A zero gradient
+    // means there is no contact constraint, and therefore we
+    // ignore it to avoid numerical problems in the discrete solver.
+    return false;
+  }
+
+  // Effective hydroelastic pressure gradient g result of
+  // compliant-compliant interaction, see [Masterjohn 2022].
+  // The expression below is mathematically equivalent to g =
+  // gN*gM/(gN+gM) but it has the advantage of also being valid if
+  // one of the gradients is infinity.
+  const T g = 1.0 / (1.0 / gM + 1.0 / gN);
+
+  // Position of quadrature point Q in the world frame (since mesh_W
+  // is measured and expressed in W).
+  const Vector3<T>& p_WQ = contact_patch.centroid(face);
+  // For a triangle, its centroid has the fixed barycentric
+  // coordinates independent of the shape of the triangle. Using
+  // barycentric coordinates to evaluate field value could be
+  // faster than using Cartesian coordinates, especially if the
+  // TriangleSurfaceMeshFieldLinear<> does not store gradients and
+  // has to solve linear equations to convert Cartesian to
+  // barycentric coordinates.
+  const Vector3<T> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
+  // Pressure at the quadrature point.
+  const T p0 =
+      contact_patch.is_triangle()
+          ? contact_patch.tri_e_MN().Evaluate(face, tri_centroid_barycentric)
+          : contact_patch.poly_e_MN().EvaluateCartesian(face, p_WQ);
+
+  // Force contribution by this quadrature point.
+  *normal_force = Ae * p0;
+
+  // Effective compliance in the normal direction for the given
+  // discrete patch, refer to [Masterjohn 2022] for details.
+  // [Masterjohn 2022] Masterjohn J., Guoy D., Shepherd J. and
+  // Castro A., 2022. Velocity Level Approximation of Pressure Field
+  // Contact Patches. Available at https://arxiv.org/abs/2110.04157.
+  *stiffness = Ae * g;
+
+  // phi < 0 when in penetration.
+  *surrogate_signed_distance = -p0 / g;
+
+  if (*stiffness <= 0) {
+    return false;
+  }
+
+  return true;
 }
 
 template <typename T>

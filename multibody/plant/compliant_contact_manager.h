@@ -203,6 +203,10 @@ class CompliantContactManager final
       const systems::Context<T>& context,
       std::vector<internal::DiscreteContactPair<T>>* pairs) const;
 
+  static bool DiscreteHydroelasticToPointContact(
+      const geometry::ContactSurface<T>& contact_patch, int face,
+      T* normal_force, T* stiffness, T* surrogate_signed_distance);
+
   // Given the configuration stored in `context`, this method computes all
   // discrete contact pairs, including point, hydroelastic, and deformable
   // contact, into `pairs`. Contact pairs including deformable bodies are
@@ -287,6 +291,14 @@ void CompliantContactManager<symbolic::Expression>::
     AppendDiscreteContactPairsForHydroelasticContact(
         const drake::systems::Context<symbolic::Expression>&,
         std::vector<DiscreteContactPair<symbolic::Expression>>*) const;
+template <>
+bool CompliantContactManager<symbolic::Expression>::
+    DiscreteHydroelasticToPointContact(
+        const geometry::ContactSurface<symbolic::Expression>& contact_patch,
+        int face,
+        symbolic::Expression* normal_force,
+        symbolic::Expression* stiffness,
+        symbolic::Expression* surrogated_signed_distance);
 
 }  // namespace internal
 }  // namespace multibody

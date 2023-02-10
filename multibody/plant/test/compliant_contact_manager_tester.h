@@ -58,6 +58,16 @@ class CompliantContactManagerTester {
     return manager.DoCalcContactResults(context, contact_results);
   }
 
+  static bool DiscreteHydroelasticToPointContact(
+      const CompliantContactManager<double>& manager,
+      const geometry::ContactSurface<double>& contact_patch, int face,
+      double* normal_force, double* stiffness,
+      double* surrogate_signed_distance) {
+    return manager.DiscreteHydroelasticToPointContact(
+        contact_patch, face, normal_force, stiffness,
+        surrogate_signed_distance);
+  }
+
   static const DeformableDriver<double>* deformable_driver(
       const CompliantContactManager<double>& manager) {
     return manager.deformable_driver_.get();

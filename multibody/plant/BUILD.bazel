@@ -453,6 +453,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "compliant_contact_manager_test_DiscreteHydroToPoint",
+    deps = [
+        ":compliant_contact_manager_tester",
+        ":multibody_plant_core",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "sap_driver_test",
     deps = [
         ":compliant_contact_manager_tester",
