@@ -406,9 +406,7 @@ Polynomial::Polynomial(const Expression& e, Variables indeterminates)
   DRAKE_ASSERT_VOID(CheckInvariant());
 }
 
-const Variables& Polynomial::indeterminates() const {
-  return indeterminates_;
-}
+const Variables& Polynomial::indeterminates() const { return indeterminates_; }
 
 void Polynomial::SetIndeterminates(const Variables& new_indeterminates) {
   if (new_indeterminates.IsSupersetOf(indeterminates_) &&
@@ -836,18 +834,17 @@ Polynomial Polynomial::SubstituteAndExpand(
     substitutions->emplace(Monomial(), Polynomial(1));
   }
 
-  auto find_nearest_cached_monomial =
-      [&substitutions](const Monomial& monomial) {
-        Monomial nearest_cached_monomial =
-            (*std::prev(substitutions->lower_bound(monomial))).first;
-        while (!nearest_cached_monomial.GetVariables().IsSubsetOf(
-            monomial.GetVariables())) {
-          nearest_cached_monomial =
-              (*std::prev(substitutions->lower_bound(nearest_cached_monomial)))
-                  .first;
-        }
-        return nearest_cached_monomial;
-      };
+  auto find_nearest_cached_monomial = [&substitutions](
+                                          const Monomial& monomial) {
+    auto nearest_cached_monomial_iter =
+        std::prev(substitutions->lower_bound(monomial));
+    while (!((*nearest_cached_monomial_iter).first)
+                .GetVariables()
+                .IsSubsetOf(monomial.GetVariables())) {
+      nearest_cached_monomial_iter = std::prev(nearest_cached_monomial_iter);
+    }
+    return (*nearest_cached_monomial_iter).first;
+  };
 
   auto compute_substituted_monomial_expansion =
       [&linear_substitutions, &substitutions, &find_nearest_cached_monomial](
@@ -864,27 +861,46 @@ Polynomial Polynomial::SubstituteAndExpand(
         Polynomial ret = substitutions->at(nearest_cached_monomial);
 
         std::map<Variable, int> remaining_powers;
+        std::map<Variable, int> halved_powers;
+        std::map<Variable, int> mod_2_powers;
+        bool same_monomial{true};
         const std::map<Variable, int>& cached_powers{
             nearest_cached_monomial.get_powers()};
         for (const auto& [var, power] : monomial.get_powers()) {
           if (cached_powers.find(var) != cached_powers.cend()) {
             remaining_powers.emplace(var, power - cached_powers.at(var));
+            same_monomial = false;
           } else {
-            remaining_powers.emplace(var, power - 1);
-            ret *= linear_substitutions.at(var);
+            remaining_powers.emplace(var, power);
+            halved_powers.emplace(var, static_cast<int>(std::floor(power / 2)));
+            mod_2_powers.emplace(var, power % 2);
           }
         }
-        const Monomial remaining_monomial{remaining_powers};
-        const Polynomial& remaining_substitution{
+
+        const Monomial remaining_monomials = same_monomial
+                                                 ? Monomial{halved_powers}
+                                                 : Monomial{remaining_powers};
+        const Polynomial remaining_substitution{
             compute_substituted_monomial_expansion_recursion_handle(
-                Monomial(remaining_powers),
+                remaining_monomials,
                 compute_substituted_monomial_expansion_recursion_handle)};
-        // Don't store any of the linear substitutions
-        if (remaining_monomial.total_degree() != 1) {
-          substitutions->insert_or_assign(remaining_monomial,
+        if (remaining_monomials.total_degree() != 1) {
+          substitutions->insert_or_assign(remaining_monomials,
                                           remaining_substitution);
         }
-        return ret * remaining_substitution;
+
+        if (same_monomial) {
+          ret *= pow(remaining_substitution, 2);
+          for (const auto& [var, is_odd] : mod_2_powers) {
+            if (is_odd) {
+              ret *= linear_substitutions.at(var);
+            }
+          }
+
+        } else {
+          ret *= remaining_substitution;
+        }
+        return ret;
       };
   for (const auto& [old_monomial, old_coeff] : monomial_to_coefficient_map_) {
     // If substitutions doesn't contain the current substitution create it now.
@@ -991,98 +1007,54 @@ void Polynomial::CheckInvariant() const {
   }
 }
 
-Polynomial operator-(const Polynomial& p) {
-  return -1 * p;
-}
-Polynomial operator+(Polynomial p1, const Polynomial& p2) {
-  return p1 += p2;
-}
-Polynomial operator+(Polynomial p, const Monomial& m) {
-  return p += m;
-}
-Polynomial operator+(const Monomial& m, Polynomial p) {
-  return p += m;
-}
+Polynomial operator-(const Polynomial& p) { return -1 * p; }
+Polynomial operator+(Polynomial p1, const Polynomial& p2) { return p1 += p2; }
+Polynomial operator+(Polynomial p, const Monomial& m) { return p += m; }
+Polynomial operator+(const Monomial& m, Polynomial p) { return p += m; }
 Polynomial operator+(const Monomial& m1, const Monomial& m2) {
   return Polynomial(m1) + m2;
 }
-Polynomial operator+(Polynomial p, const double c) {
-  return p += c;
-}
-Polynomial operator+(const double c, Polynomial p) {
-  return p += c;
-}
+Polynomial operator+(Polynomial p, const double c) { return p += c; }
+Polynomial operator+(const double c, Polynomial p) { return p += c; }
 Polynomial operator+(const Monomial& m, const double c) {
   return Polynomial(m) + c;
 }
 Polynomial operator+(const double c, const Monomial& m) {
   return c + Polynomial(m);
 }
-Polynomial operator+(Polynomial p, const Variable& v) {
-  return p += v;
-}
-Polynomial operator+(const Variable& v, Polynomial p) {
-  return p += v;
-}
+Polynomial operator+(Polynomial p, const Variable& v) { return p += v; }
+Polynomial operator+(const Variable& v, Polynomial p) { return p += v; }
 
-Polynomial operator-(Polynomial p1, const Polynomial& p2) {
-  return p1 -= p2;
-}
-Polynomial operator-(Polynomial p, const Monomial& m) {
-  return p -= m;
-}
+Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
+Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
 Polynomial operator-(const Monomial& m, Polynomial p) {
   return p = -1 * p + m;  // p' = m - p = -1 * p + m.
 }
 Polynomial operator-(const Monomial& m1, const Monomial& m2) {
   return Polynomial(m1) - m2;
 }
-Polynomial operator-(Polynomial p, const double c) {
-  return p -= c;
-}
-Polynomial operator-(const double c, Polynomial p) {
-  return p = -p + c;
-}
+Polynomial operator-(Polynomial p, const double c) { return p -= c; }
+Polynomial operator-(const double c, Polynomial p) { return p = -p + c; }
 Polynomial operator-(const Monomial& m, const double c) {
   return Polynomial(m) - c;
 }
 Polynomial operator-(const double c, const Monomial& m) {
   return c - Polynomial(m);
 }
-Polynomial operator-(Polynomial p, const Variable& v) {
-  return p -= v;
-}
+Polynomial operator-(Polynomial p, const Variable& v) { return p -= v; }
 Polynomial operator-(const Variable& v, const Polynomial& p) {
   return Polynomial(v, p.indeterminates()) - p;
 }
 
-Polynomial operator*(Polynomial p1, const Polynomial& p2) {
-  return p1 *= p2;
-}
-Polynomial operator*(Polynomial p, const Monomial& m) {
-  return p *= m;
-}
-Polynomial operator*(const Monomial& m, Polynomial p) {
-  return p *= m;
-}
-Polynomial operator*(const double c, Polynomial p) {
-  return p *= c;
-}
-Polynomial operator*(Polynomial p, const double c) {
-  return p *= c;
-}
-Polynomial operator*(const Monomial& m, double c) {
-  return Polynomial(m) * c;
-}
-Polynomial operator*(double c, const Monomial& m) {
-  return c * Polynomial(m);
-}
-Polynomial operator*(Polynomial p, const Variable& v) {
-  return p *= v;
-}
-Polynomial operator*(const Variable& v, Polynomial p) {
-  return p *= v;
-}
+Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
+Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
+Polynomial operator*(const Monomial& m, Polynomial p) { return p *= m; }
+Polynomial operator*(const double c, Polynomial p) { return p *= c; }
+Polynomial operator*(Polynomial p, const double c) { return p *= c; }
+Polynomial operator*(const Monomial& m, double c) { return Polynomial(m) * c; }
+Polynomial operator*(double c, const Monomial& m) { return c * Polynomial(m); }
+Polynomial operator*(Polynomial p, const Variable& v) { return p *= v; }
+Polynomial operator*(const Variable& v, Polynomial p) { return p *= v; }
 
 Polynomial operator/(Polynomial p, const double v) {
   for (auto& item : p.monomial_to_coefficient_map_) {
@@ -1130,8 +1102,9 @@ ostream& operator<<(ostream& os, const Polynomial& p) {
 namespace Eigen {
 namespace numext {
 template <>
-bool equal_strict(const drake::symbolic::Polynomial& x,
-                  const drake::symbolic::Polynomial& y) {
+bool equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y) {
   return static_cast<bool>(x == y);
 }
 }  // namespace numext
