@@ -79,14 +79,21 @@ BENCHMARK_DEFINE_F(Mlp, Backprop)(benchmark::State& state) {  // NOLINT
     mlp_->BackpropagationMeanSquaredError(*context_, X_, Yd_, &dloss_dparams_);
   }
 }
-// The Args are { num_inputs, num_layers, width, batch_size }.
+// The Args are { num_inputs, num_layers, width, batch_size }. A few notes
+// about common parameter values:
+// - The default architecture in stablebaselines3 has 4 layers, width=64.
+// - It's relatively rare to have MLPs with more than 8 layers.
+// - Batch sizes tend to be powers of 2 (16, 32, ..., 256).
+// - Width also tends to be powers of 2 (64, 128, ..).
 BENCHMARK_REGISTER_F(Mlp, Backprop)
-    ->Args({10, 4, 64, 100})
-    ->Args({10, 4, 256, 100})
-    ->Args({10, 16, 256, 100})
-    ->Args({10, 4, 64, 500})
-    ->Args({10, 4, 256, 500})
-    ->Args({10, 16, 256, 500});
+    ->Args({10, 4, 64, 32})
+    ->Args({10, 4, 64, 64})
+    ->Args({10, 4, 64, 128})
+    ->Args({10, 4, 64, 256})
+    ->Args({10, 4, 128, 128})
+    ->Args({10, 4, 256, 256})
+    ->Args({128, 4, 64, 256})
+    ->Args({128, 8, 64, 256});
 
 BENCHMARK_DEFINE_F(Mlp, Output)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
@@ -95,12 +102,14 @@ BENCHMARK_DEFINE_F(Mlp, Output)(benchmark::State& state) {  // NOLINT
 }
 // The Args are { num_inputs, num_layers, width, batch_size }.
 BENCHMARK_REGISTER_F(Mlp, Output)
-    ->Args({10, 4, 64, 100})
-    ->Args({10, 4, 256, 100})
-    ->Args({10, 16, 256, 100})
-    ->Args({10, 4, 64, 500})
-    ->Args({10, 4, 256, 500})
-    ->Args({10, 16, 256, 500});
+    ->Args({10, 4, 64, 32})
+    ->Args({10, 4, 64, 64})
+    ->Args({10, 4, 64, 128})
+    ->Args({10, 4, 64, 256})
+    ->Args({10, 4, 128, 128})
+    ->Args({10, 4, 256, 256})
+    ->Args({128, 4, 64, 256})
+    ->Args({128, 8, 64, 256});
 
 BENCHMARK_DEFINE_F(Mlp, OutputGradient)(benchmark::State& state) {  // NOLINT
   for (auto _ : state) {
@@ -109,12 +118,15 @@ BENCHMARK_DEFINE_F(Mlp, OutputGradient)(benchmark::State& state) {  // NOLINT
 }
 // The Args are { num_inputs, num_layers, width, batch_size }.
 BENCHMARK_REGISTER_F(Mlp, OutputGradient)
-    ->Args({10, 4, 64, 100})
-    ->Args({10, 4, 256, 100})
-    ->Args({10, 16, 256, 100})
-    ->Args({10, 4, 64, 500})
-    ->Args({10, 4, 256, 500})
-    ->Args({10, 16, 256, 500});
+    ->Args({10, 4, 64, 32})
+    ->Args({10, 4, 64, 64})
+    ->Args({10, 4, 64, 128})
+    ->Args({10, 4, 64, 256})
+    ->Args({10, 4, 128, 128})
+    ->Args({10, 4, 256, 256})
+    ->Args({128, 4, 64, 256})
+    ->Args({128, 8, 64, 256});
+
 
 }  // namespace
 }  // namespace systems
