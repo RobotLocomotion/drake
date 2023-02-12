@@ -38,7 +38,7 @@ class TestCollisionChecker(unittest.TestCase):
         """)
         builder.parser().AddModelsFromString(scene_yaml, "dmd.yaml")
         model_instance_index = builder.plant().GetModelInstanceByName("box")
-        robot_diagram = builder.BuildDiagram()
+        robot_diagram = builder.Build()
         return (robot_diagram, model_instance_index)
 
     def test_body_shape_description(self):

@@ -24,7 +24,7 @@ template <typename T>
 RobotDiagramBuilder<T>::~RobotDiagramBuilder() = default;
 
 template <typename T>
-std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::BuildDiagram() {
+std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::Build() {
   ThrowIfAlreadyBuilt();
   if (!IsPlantFinalized()) {
     FinalizePlant();
@@ -41,7 +41,7 @@ bool RobotDiagramBuilder<T>::IsDiagramBuilt() const {
   if (builder_->already_built()) {
     throw std::logic_error(
         "RobotDiagramBuilder: Do not call mutable_builder().Build() to create"
-        " a Diagram; instead, call BuildDiagram() to create a RobotDiagram.");
+        " a Diagram; instead, call Build() to create a RobotDiagram.");
   }
   return false;
 }
