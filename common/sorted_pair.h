@@ -102,14 +102,8 @@ struct SortedPair {
 
   /// @name Support for using SortedPair in structured bindings.
   //@{
-  template<std::size_t Index>
-  std::tuple_element_t<Index, SortedPair<T>>& get() {
-    if constexpr (Index == 0) return first_;
-    if constexpr (Index == 1) return second_;
-  }
-
-  template<std::size_t Index>
-  const std::tuple_element_t<Index, SortedPair<T>>& get() const {
+  template <size_t Index>
+  const T& get() const {
     if constexpr (Index == 0) return first_;
     if constexpr (Index == 1) return second_;
   }
@@ -207,7 +201,7 @@ struct tuple_size<drake::SortedPair<T>> : std::integral_constant<size_t, 2> {};
 
 template <size_t Index, typename T>
 struct tuple_element<Index, drake::SortedPair<T>> {
-  using type = T;
+  using type = const T;
 };
 
 }  // namespace std
