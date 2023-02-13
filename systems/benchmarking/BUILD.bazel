@@ -1,10 +1,6 @@
 # -*- python -*-
 
 load(
-    "@drake//tools/skylark:drake_cc.bzl",
-    "drake_cc_binary",
-)
-load(
     "@drake//tools/performance:defs.bzl",
     "drake_cc_googlebench_binary",
     "drake_py_experiment_binary",
@@ -31,15 +27,21 @@ drake_py_experiment_binary(
     googlebench_binary = ":framework_benchmarks",
 )
 
-drake_cc_binary(
-    name = "multilayer_perceptron_performance",
-    srcs = ["multilayer_perceptron_performance.cc"],
+drake_cc_googlebench_binary(
+    name = "multilayer_perceptron_benchmark",
+    srcs = ["multilayer_perceptron_benchmark.cc"],
     add_test_rule = True,
     deps = [
         "//common:add_text_logging_gflags",
         "//systems/primitives:multilayer_perceptron",
-        "@gflags",
+        "//tools/performance:fixture_common",
+        "//tools/performance:gflags_main",
     ],
+)
+
+drake_py_experiment_binary(
+    name = "multilayer_perceptron_experiment",
+    googlebench_binary = ":multilayer_perceptron_benchmark",
 )
 
 add_lint_tests()
