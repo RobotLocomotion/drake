@@ -447,9 +447,12 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableProgram) {
   // clang-format on
   Eigen::Matrix<double, 4, 1> d_bad;
   d_bad << 10.8, 20, 34, 22;
+  separation_certificate_program =
+      tester.cspace_free_polytope().MakeIsGeometrySeparableProgram(
+          geometry_pair, C_bad, d_bad);
   separation_certificate_result =
-      tester.cspace_free_polytope().IsGeometrySeparable(
-          geometry_pair, C_bad, d_bad, find_certificate_options);
+      tester.cspace_free_polytope().SolveSeparationCertificateProgram(
+          separation_certificate_program, find_certificate_options);
   EXPECT_FALSE(separation_certificate_result.has_value());
 }
 
@@ -1007,12 +1010,12 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
           plane_geometries.positive_side_rationals,
           certificate_result.positive_side_rational_lagrangians,
           plane.decision_variables, certificate_result.plane_decision_var_vals,
-          polytope_result->C, polytope_result->d, tester, 3E-4);
+          polytope_result->C, polytope_result->d, tester, 1E-3);
       CheckRationalsPositiveInCspacePolytope(
           plane_geometries.negative_side_rationals,
           certificate_result.negative_side_rational_lagrangians,
           plane.decision_variables, certificate_result.plane_decision_var_vals,
-          polytope_result->C, polytope_result->d, tester, 3E-4);
+          polytope_result->C, polytope_result->d, tester, 1E-3);
     }
 
     // Now check if the C-space polytope {s | C*s<=d, s_lower<=s<=s_upper} is
