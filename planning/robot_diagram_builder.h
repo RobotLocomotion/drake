@@ -50,8 +50,8 @@ class RobotDiagramBuilder {
 
   /** Gets the contained Parser (mutable).
   @throws exception when IsDiagramBuilt() already. */
-  template <typename T1 = T, typename std::enable_if_t<
-    std::is_same_v<T1, double>>* = nullptr>
+  template <typename T1 = T,
+            typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
   multibody::Parser& mutable_parser() {
     ThrowIfAlreadyBuilt();
     return parser_;
@@ -59,8 +59,8 @@ class RobotDiagramBuilder {
 
   /** Gets the contained Parser (readonly).
   @throws exception when IsDiagramBuilt() already. */
-  template <typename T1 = T, typename std::enable_if_t<
-    std::is_same_v<T1, double>>* = nullptr>
+  template <typename T1 = T,
+            typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
   const multibody::Parser& parser() const {
     ThrowIfAlreadyBuilt();
     return parser_;
@@ -118,9 +118,7 @@ class RobotDiagramBuilder {
   std::unique_ptr<RobotDiagram<T>> Build();
 
   DRAKE_DEPRECATED("2023-06-01", "Use Build() instead of BuildDiagram().")
-  std::unique_ptr<RobotDiagram<T>> BuildDiagram() {
-    return Build();
-  }
+  std::unique_ptr<RobotDiagram<T>> BuildDiagram() { return Build(); }
 
  private:
   void ThrowIfAlreadyBuilt() const;
@@ -133,8 +131,8 @@ class RobotDiagramBuilder {
   geometry::SceneGraph<T>& scene_graph_;
 
   // The Parser object only exists when T == double.
-  using MaybeParser = std::conditional_t<
-      std::is_same_v<T, double>, multibody::Parser, void*>;
+  using MaybeParser =
+      std::conditional_t<std::is_same_v<T, double>, multibody::Parser, void*>;
   MaybeParser parser_;
 };
 

@@ -149,8 +149,7 @@ GTEST_TEST(RobotDiagramTest, ContextGetters) {
   std::unique_ptr<RobotDiagram<double>> dut = MakeSampleDut()->Build();
 
   std::unique_ptr<Context<double>> root_context = dut->CreateDefaultContext();
-  const Context<double>& plant_context =
-      dut->plant_context(*root_context);
+  const Context<double>& plant_context = dut->plant_context(*root_context);
   const Context<double>& scene_graph_context =
       dut->scene_graph_context(*root_context);
   Context<double>& mutable_plant_context =
@@ -274,8 +273,7 @@ GTEST_TEST(RobotDiagramTest, DeprecatedContextGetters) {
   std::unique_ptr<RobotDiagram<double>> dut = MakeSampleDut()->BuildDiagram();
 
   std::unique_ptr<Context<double>> root_context = dut->CreateDefaultContext();
-  const Context<double>& plant_context =
-      dut->plant_context(*root_context);
+  const Context<double>& plant_context = dut->plant_context(*root_context);
   const Context<double>& scene_graph_context =
       dut->scene_graph_context(*root_context);
   Context<double>& mutable_plant_context =
@@ -308,4 +306,3 @@ GTEST_TEST(RobotDiagramTest, DeprecatedClone) {
 }  // namespace
 }  // namespace planning
 }  // namespace drake
-
