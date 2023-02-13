@@ -62,7 +62,7 @@ INSTANTIATE_TEST_SUITE_P(
 // Dallas's sphere has a radius of 1.0.
 GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   RobotDiagramBuilder<double> builder;
-  builder.mutable_parser().AddModelsFromString(R"""(
+  builder.parser().AddModelsFromString(R"""(
 <?xml version='1.0'?>
 <sdf xmlns:drake='http://drake.mit.edu' version='1.9'>
 <world name='default'>
@@ -216,7 +216,7 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
 GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceFloatingBase) {
   // Build a dut with a ground plane + floating chassis with welded arm.
   RobotDiagramBuilder<double> builder;
-  builder.mutable_parser().AddModelsFromString(R"""(
+  builder.parser().AddModelsFromString(R"""(
 directives:
 - add_model:
     name: ground

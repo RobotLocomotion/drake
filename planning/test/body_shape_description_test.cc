@@ -53,7 +53,7 @@ GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {
   </model>
 </sdf>
 )""";
-  builder.mutable_parser().AddModelsFromString(model, "sdf");
+  builder.parser().AddModelsFromString(model, "sdf");
   auto diagram = builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
   auto& plant = diagram->plant();

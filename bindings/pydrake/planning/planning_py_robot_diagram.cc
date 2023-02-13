@@ -55,37 +55,30 @@ void DefinePlanningRobotDiagram(py::module m) {
     {
       using Class = RobotDiagramBuilder<T>;
       constexpr auto& cls_doc = doc.RobotDiagramBuilder;
-      auto cls = DefineTemplateClassWithDefault<Class>(m, "RobotDiagramBuilder",
-          GetPyParam<T>(),
-          (std::string(cls_doc.doc) +
-              "\n\n"
-              "Note:\n"
-              "    The C++ class defines pairs of sibling methods, e.g.,\n"
-              "    parser() vs mutable_parser(). Since Python does not use\n"
-              "    const-ness, we only provide one of the two siblings here,\n"
-              "    using the shorter method name but still allowing mutation,\n"
-              "    e.g., parser() returns a Parser that *does* allow loading\n"
-              "    models and changing package paths.\n")
-              .c_str());
+      auto cls = DefineTemplateClassWithDefault<Class>(
+          m, "RobotDiagramBuilder", GetPyParam<T>(), cls_doc.doc);
       cls  // BR
           .def(py::init<double>(), py::arg("time_step") = 0.0, cls_doc.ctor.doc)
-          .def("builder", &Class::mutable_builder, py_rvp::reference_internal,
-              cls_doc.mutable_builder.doc);
+          .def("builder",
+              overload_cast_explicit<systems::DiagramBuilder<T>&>(
+                  &Class::builder),
+              py_rvp::reference_internal, cls_doc.builder.doc_0args_nonconst);
       if constexpr (std::is_same_v<T, double>) {
         cls  // BR
             .def(
-                "parser", [](Class& self) { return &self.mutable_parser(); },
-                py_rvp::reference_internal, cls_doc.mutable_parser.doc);
+                "parser", [](Class& self) { return &self.parser(); },
+                py_rvp::reference_internal, cls_doc.parser.doc_0args_nonconst);
       }
       cls  // BR
-          .def("plant", &Class::mutable_plant, py_rvp::reference_internal,
-              cls_doc.mutable_plant.doc)
-          .def("scene_graph", &Class::mutable_scene_graph,
-              py_rvp::reference_internal, cls_doc.mutable_scene_graph.doc)
-          .def("IsPlantFinalized", &Class::IsPlantFinalized,
-              cls_doc.IsPlantFinalized.doc)
-          .def(
-              "FinalizePlant", &Class::FinalizePlant, cls_doc.FinalizePlant.doc)
+          .def("plant",
+              overload_cast_explicit<multibody::MultibodyPlant<T>&>(
+                  &Class::plant),
+              py_rvp::reference_internal, cls_doc.plant.doc_0args_nonconst)
+          .def("scene_graph",
+              overload_cast_explicit<geometry::SceneGraph<T>&>(
+                  &Class::scene_graph),
+              py_rvp::reference_internal,
+              cls_doc.scene_graph.doc_0args_nonconst)
           .def("IsDiagramBuilt", &Class::IsDiagramBuilt,
               cls_doc.IsDiagramBuilt.doc)
           .def("Build", &Class::Build,
@@ -95,13 +88,23 @@ void DefinePlanningRobotDiagram(py::module m) {
               // until the builder (and all of its internal references) are
               // finished.
               py::keep_alive<1, 0>(), cls_doc.Build.doc);
-      cls.def(  // Deprecation for BuildDiagram.
-          "BuildDiagram",
-          [](Class* self) {
-            WarnDeprecated(cls_doc.BuildDiagram.doc_deprecated);
-            return self->Build();
-          },
-          py::keep_alive<1, 0>(), cls_doc.BuildDiagram.doc_deprecated);
+      // Remove these deprecations on 2023-06-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+      cls  // BR
+          .def("BuildDiagram",
+              WrapDeprecated(
+                  cls_doc.BuildDiagram.doc_deprecated, &Class::BuildDiagram),
+              py::keep_alive<1, 0>(), cls_doc.BuildDiagram.doc_deprecated)
+          .def("IsPlantFinalized",
+              WrapDeprecated(cls_doc.IsPlantFinalized.doc_deprecated,
+                  &Class::IsPlantFinalized),
+              cls_doc.IsPlantFinalized.doc_deprecated)
+          .def("FinalizePlant",
+              WrapDeprecated(
+                  cls_doc.FinalizePlant.doc_deprecated, &Class::FinalizePlant),
+              cls_doc.FinalizePlant.doc_deprecated);
+#pragma GCC diagnostic pop
     }
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});

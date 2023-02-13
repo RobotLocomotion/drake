@@ -26,8 +26,8 @@ RobotDiagramBuilder<T>::~RobotDiagramBuilder() = default;
 template <typename T>
 std::unique_ptr<RobotDiagram<T>> RobotDiagramBuilder<T>::Build() {
   ThrowIfAlreadyBuilt();
-  if (!IsPlantFinalized()) {
-    FinalizePlant();
+  if (!plant().is_finalized()) {
+    plant().Finalize();
   }
   return std::unique_ptr<RobotDiagram<T>>(
       new RobotDiagram<T>(std::move(builder_)));

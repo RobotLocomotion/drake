@@ -28,8 +28,8 @@ double ZeroDistanceFunc(const VectorXd&, const VectorXd&) { return 0.0; }
 unique_ptr<RobotDiagram<double>> MakeRobot() {
   RobotDiagramBuilder<double> builder;
   const auto model_instance = drake::multibody::default_model_instance();
-  builder.mutable_plant().AddRigidBody("floater", model_instance,
-                                       SpatialInertia<double>::MakeUnitary());
+  builder.plant().AddRigidBody("floater", model_instance,
+                               SpatialInertia<double>::MakeUnitary());
   return builder.Build();
 }
 

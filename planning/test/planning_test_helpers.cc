@@ -25,7 +25,7 @@ using multibody::parsing::ProcessModelDirectives;
 std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
     const ModelDirectives& directives) {
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
-  auto& parser = builder->mutable_parser();
+  auto& parser = builder->parser();
   ProcessModelDirectives(directives, &parser);
   return builder->Build();
 }

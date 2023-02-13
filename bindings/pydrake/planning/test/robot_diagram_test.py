@@ -32,11 +32,6 @@ class TestRobotDiagram(unittest.TestCase):
         self.assertIsInstance(dut.plant(), MultibodyPlant_[T])
         self.assertIsInstance(dut.scene_graph(), SceneGraph_[T])
 
-        # Finalize.
-        self.assertFalse(dut.IsPlantFinalized())
-        dut.FinalizePlant()
-        self.assertTrue(dut.IsPlantFinalized())
-
         # Build.
         self.assertFalse(dut.IsDiagramBuilt())
         diagram = dut.Build()
@@ -46,6 +41,10 @@ class TestRobotDiagram(unittest.TestCase):
     def test_robot_diagram_builder_deprecation(self):
         builder = mut.RobotDiagramBuilder()
         self.assertFalse(builder.IsDiagramBuilt())
+        with catch_drake_warnings(expected_count=1) as w:
+            self.assertFalse(builder.IsPlantFinalized())
+        with catch_drake_warnings(expected_count=1) as w:
+            builder.FinalizePlant()
         with catch_drake_warnings(expected_count=1) as w:
             diagram = builder.BuildDiagram()
         self.assertTrue(builder.IsDiagramBuilt())

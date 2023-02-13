@@ -257,13 +257,13 @@ struct ModelConfig {
 pair<std::unique_ptr<RobotDiagram<double>>, ModelInstanceIndex> MakeModel(
     const ModelConfig& config = {}) {
   RobotDiagramBuilder<double> builder;
-  auto& builder_plant = builder.mutable_plant();
+  auto& builder_plant = builder.plant();
   // Add the robot -- a chain of three links -- and weld it to the world.
   // Don't change the ordering or the length of the chain; the tests for this
   // fixture rely on knowing body indices.
   auto robot_index = AddChain(&builder_plant, 3, config.per_body_geometries);
   if (config.weld_robot) {
-    builder.mutable_plant().WeldFrames(
+    builder_plant.WeldFrames(
         builder_plant.get_body(BodyIndex(0)).body_frame(),
         builder_plant.get_body(BodyIndex(1)).body_frame());
   } else if (config.on_env_base) {
@@ -356,7 +356,7 @@ TEST_F(CollisionCheckerThrowTest, WorldRobot) {
 // sorts them.
 GTEST_TEST(CollisionCheckerTest, SortedRobots) {
   RobotDiagramBuilder<double> builder;
-  auto& plant = builder.mutable_plant();
+  auto& plant = builder.plant();
   const ModelInstanceIndex robot1 = AddChain(&plant, 1);
   const ModelInstanceIndex robot2 = AddChain(&plant, 2);
   auto distance_function = [](auto...) { return 0; };
@@ -1279,7 +1279,7 @@ CheckerType MakeEdgeChecker(ConfigurationDistanceFunction calc_dist,
                             bool welded = true, int N = 2) {
   RobotDiagramBuilder<double> builder;
   // We need just enough state so we can save values in q.
-  auto& plant = builder.mutable_plant();
+  auto& plant = builder.plant();
   const ModelInstanceIndex robot = AddChain(&plant, N);
   // Weld the chain to the world so we don't have to worry about quaternions.
   const auto& body = plant.GetBodyByName("b0");
