@@ -1,0 +1,19 @@
+--- googletest/include/gtest/gtest-printers.h
++++ googletest/include/gtest/gtest-printers.h
+@@ -115,6 +115,8 @@
+ #include "gtest/internal/gtest-internal.h"
+ #include "gtest/internal/gtest-port.h"
+ 
++#include "drake/common/test_utilities/fmt_format_printer.h"
++
+ namespace testing {
+ 
+ // Definitions in the internal* namespaces are subject to change without notice.
+@@ -306,6 +308,7 @@
+ void PrintWithFallback(const T& value, ::std::ostream* os) {
+   using Printer = typename FindFirstPrinter<
+       T, void, ContainerPrinter, FunctionPointerPrinter, PointerPrinter,
++      drake::internal::FmtFormatPrinter,
+       internal_stream_operator_without_lexical_name_lookup::StreamPrinter,
+       ProtobufPrinter, ConvertibleToIntegerPrinter,
+       ConvertibleToStringViewPrinter, RawBytesPrinter, FallbackPrinter>::type;

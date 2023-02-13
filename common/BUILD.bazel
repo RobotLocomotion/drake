@@ -76,6 +76,7 @@ drake_cc_library(
         "drake_deprecated.h",
         "drake_throw.h",
         "eigen_types.h",
+        "fmt.h",
         "never_destroyed.h",
         "text_logging.h",
     ],
@@ -885,6 +886,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "fmt_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":essential",
@@ -964,6 +972,7 @@ drake_cc_googletest(
     name = "text_logging_no_spdlog_test",
     srcs = [
         "drake_copyable.h",
+        "fmt.h",
         "never_destroyed.h",
         "test/text_logging_test.cc",
         "text_logging.cc",

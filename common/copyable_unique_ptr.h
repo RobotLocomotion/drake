@@ -16,6 +16,8 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 
 namespace drake {
 
@@ -421,10 +423,9 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   }
 };
 
-/** Output the system-dependent representation of the pointer contained
- in a copyable_unique_ptr object. This is equivalent to `os << p.get();`.
- @relates copyable_unique_ptr */
+// TODO(jwnimmer-tri) On 2023-06-01 also remove the <ostream> include.
 template <class charT, class traits, class T>
+DRAKE_DEPRECATED("2023-06-01", "Use fmt or spdlog for logging, not operator<<.")
 std::basic_ostream<charT, traits>& operator<<(
     std::basic_ostream<charT, traits>& os,
     const copyable_unique_ptr<T>& cu_ptr) {
@@ -433,3 +434,6 @@ std::basic_ostream<charT, traits>& operator<<(
 }
 
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(typename T, drake, copyable_unique_ptr<T>, x,
+                   static_cast<const void*>(x.get()))
