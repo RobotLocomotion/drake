@@ -2,6 +2,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -87,13 +88,20 @@ void DefinePlanningRobotDiagram(py::module m) {
               "FinalizePlant", &Class::FinalizePlant, cls_doc.FinalizePlant.doc)
           .def("IsDiagramBuilt", &Class::IsDiagramBuilt,
               cls_doc.IsDiagramBuilt.doc)
-          .def("BuildDiagram", &Class::BuildDiagram,
+          .def("Build", &Class::Build,
               // Keep alive, ownership (tr.): `self` keeps `return` alive.
               // Any prior reference access to our owned systems (e.g., plant())
               // must remain valid, so the RobotDiagram cannot be destroyed
               // until the builder (and all of its internal references) are
               // finished.
-              py::keep_alive<1, 0>(), cls_doc.BuildDiagram.doc);
+              py::keep_alive<1, 0>(), cls_doc.Build.doc);
+      cls.def(  // Deprecation for BuildDiagram.
+          "BuildDiagram",
+          [](Class* self) {
+            WarnDeprecated(cls_doc.BuildDiagram.doc_deprecated);
+            return self->Build();
+          },
+          py::keep_alive<1, 0>(), cls_doc.BuildDiagram.doc_deprecated);
     }
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});

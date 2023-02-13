@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -33,7 +34,7 @@ class RobotDiagramBuilder {
   ~RobotDiagramBuilder();
 
   /** Gets the contained DiagramBuilder (mutable).
-  Do not call Build() on the return value; instead, call BuildDiagram() on this.
+  Do not call Build() on the return value; instead, call Build() on this.
   @throws exception when IsDiagramBuilt() already. */
   systems::DiagramBuilder<T>& mutable_builder() {
     ThrowIfAlreadyBuilt();
@@ -114,13 +115,18 @@ class RobotDiagramBuilder {
   RobotDiagram. The plant will be finalized during this function, unless it's
   already been finalized.
   @throws exception when IsDiagramBuilt() already. */
-  std::unique_ptr<RobotDiagram<T>> BuildDiagram();
+  std::unique_ptr<RobotDiagram<T>> Build();
+
+  DRAKE_DEPRECATED("2023-06-01", "Use Build() instead of BuildDiagram().")
+  std::unique_ptr<RobotDiagram<T>> BuildDiagram() {
+    return Build();
+  }
 
  private:
   void ThrowIfAlreadyBuilt() const;
 
   // Storage for the diagram and its plant and scene graph.
-  // After BuildDiagram(), the `builder_` is set to nullptr.
+  // After Build(), the `builder_` is set to nullptr.
   std::unique_ptr<systems::DiagramBuilder<T>> builder_;
   multibody::AddMultibodyPlantSceneGraphResult<T> pair_;
   multibody::MultibodyPlant<T>& plant_;

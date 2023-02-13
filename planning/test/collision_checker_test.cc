@@ -281,7 +281,7 @@ pair<std::unique_ptr<RobotDiagram<double>>, ModelInstanceIndex> MakeModel(
   // because we don't care.
   AddEnvironmentModelInstance(&builder_plant, config.per_body_geometries);
   AddEnvironmentModelInstance(&builder_plant, config.per_body_geometries);
-  return {builder.BuildDiagram(), robot_index};
+  return {builder.Build(), robot_index};
 }
 
 // Reports the indices of the dofs of the robot's environmental floating base.
@@ -322,7 +322,7 @@ class CollisionCheckerThrowTest : public testing::Test {
  protected:
   // The default values are all legal. Tests will invalidate specific values.
   RobotDiagramBuilder<double> builder_;
-  std::unique_ptr<RobotDiagram<double>> diagram_{builder_.BuildDiagram()};
+  std::unique_ptr<RobotDiagram<double>> diagram_{builder_.Build()};
   std::vector<ModelInstanceIndex> robot_model_instances_{
     default_model_instance()};
   ConfigurationDistanceFunction distance_fn_{
@@ -362,7 +362,7 @@ GTEST_TEST(CollisionCheckerTest, SortedRobots) {
   auto distance_function = [](auto...) { return 0; };
   auto dut =
       std::make_unique<CollisionCheckerTester>(CollisionCheckerParams{
-          builder.BuildDiagram(),
+          builder.Build(),
           std::vector<ModelInstanceIndex>{robot2, robot2, robot1},
           distance_function, 0.1, 0, 0});
   EXPECT_THAT(dut->robot_model_instances(), ElementsAre(robot1, robot2));
@@ -386,7 +386,7 @@ TEST_F(CollisionCheckerThrowTest, InfSelfPad) {
 // diagram. (See e.g. the EdgeCheckConfiguration test).
 GTEST_TEST(CollisionCheckerTest, CollisionCheckerEmpty) {
   RobotDiagramBuilder<double> builder;
-  auto diagram = builder.BuildDiagram();
+  auto diagram = builder.Build();
   const ConfigurationDistanceFunction fn0 = [](const VectorXd&,
                                                const VectorXd&) { return 0.0; };
   const ModelInstanceIndex robot = default_model_instance();
@@ -1286,7 +1286,7 @@ CheckerType MakeEdgeChecker(ConfigurationDistanceFunction calc_dist,
   if (welded) {
     plant.WeldFrames(plant.world_frame(), body.body_frame(), {});
   }
-  auto diagram = builder.BuildDiagram();
+  auto diagram = builder.Build();
 
   CheckerType checker({move(diagram), {robot}, calc_dist, step_size, 0, 0});
   checker.SetConfigurationInterpolationFunction(interp);

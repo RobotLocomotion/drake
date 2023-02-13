@@ -4,6 +4,7 @@ import unittest
 
 from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import SceneGraph_
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import MultibodyPlant_
@@ -38,16 +39,24 @@ class TestRobotDiagram(unittest.TestCase):
 
         # Build.
         self.assertFalse(dut.IsDiagramBuilt())
-        diagram = dut.BuildDiagram()
+        diagram = dut.Build()
         self.assertTrue(dut.IsDiagramBuilt())
         self.assertIsInstance(diagram, mut.RobotDiagram_[T])
+
+    def test_robot_diagram_builder_deprecation(self):
+        builder = mut.RobotDiagramBuilder()
+        self.assertFalse(builder.IsDiagramBuilt())
+        with catch_drake_warnings(expected_count=1) as w:
+            diagram = builder.BuildDiagram()
+        self.assertTrue(builder.IsDiagramBuilt())
+        self.assertIsInstance(diagram, mut.RobotDiagram)
 
     @numpy_compare.check_all_types
     def test_robot_diagram(self, T):
         """Tests the full RobotDiagram API.
         """
         builder = mut.RobotDiagramBuilder_[T]()
-        dut = builder.BuildDiagram()
+        dut = builder.Build()
 
         self.assertIsInstance(dut.plant(), MultibodyPlant_[T])
         self.assertIsInstance(dut.mutable_scene_graph(), SceneGraph_[T])

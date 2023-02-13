@@ -27,7 +27,7 @@ std::unique_ptr<RobotDiagram<double>> MakePlanningTestModel(
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
   auto& parser = builder->mutable_parser();
   ProcessModelDirectives(directives, &parser);
-  return builder->BuildDiagram();
+  return builder->Build();
 }
 
 ConfigurationDistanceFunction MakeWeightedIiwaConfigurationDistanceFunction() {

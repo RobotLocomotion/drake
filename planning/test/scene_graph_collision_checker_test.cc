@@ -106,7 +106,7 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   const auto& plant = builder.plant();
 
   CollisionCheckerParams params;
-  params.model = builder.BuildDiagram();
+  params.model = builder.Build();
   params.robot_model_instances.push_back(
       plant.GetModelInstanceByName("robot"));
   params.configuration_distance_function =
@@ -236,7 +236,7 @@ directives:
 )""", "dmd.yaml");
   const auto& plant = builder.plant();
   CollisionCheckerParams params;
-  params.model = builder.BuildDiagram();
+  params.model = builder.Build();
   params.robot_model_instances.push_back(
       plant.GetModelInstanceByName("arm"));
   params.configuration_distance_function =

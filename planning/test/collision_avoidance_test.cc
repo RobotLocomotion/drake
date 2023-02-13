@@ -30,7 +30,7 @@ unique_ptr<RobotDiagram<double>> MakeRobot() {
   const auto model_instance = drake::multibody::default_model_instance();
   builder.mutable_plant().AddRigidBody("floater", model_instance,
                                        SpatialInertia<double>::MakeUnitary());
-  return builder.BuildDiagram();
+  return builder.Build();
 }
 
 /* Has to match the 7 dofs in the robot. */

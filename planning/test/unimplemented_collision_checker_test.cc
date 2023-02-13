@@ -25,7 +25,7 @@ class MyUnimplementedCollisionChecker : public UnimplementedCollisionChecker {
 
 GTEST_TEST(UnimplementedCollisionCheckerTest, SmokeTest) {
   CollisionCheckerParams params{
-    .model = RobotDiagramBuilder<double>{}.BuildDiagram(),
+    .model = RobotDiagramBuilder<double>{}.Build(),
     .robot_model_instances = {default_model_instance()},
     .configuration_distance_function = [](auto...) { return 0; },
     .edge_step_size = 0.1,
