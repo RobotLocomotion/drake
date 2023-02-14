@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/collision_geometry.h"
+#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
 
 #include <utility>
 
@@ -16,11 +16,12 @@ PlaneSide OtherSide(PlaneSide plane_side) {
                                             : PlaneSide::kPositive;
 }
 
-CollisionGeometry::CollisionGeometry(const geometry::Shape* geometry,
-                                     multibody::BodyIndex body_index,
-                                     geometry::GeometryId id,
-                                     math::RigidTransformd X_BG)
-    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {}
+CIrisCollisionGeometry::CIrisCollisionGeometry(const geometry::Shape* geometry,
+                                               multibody::BodyIndex body_index,
+                                               geometry::GeometryId id,
+                                               math::RigidTransformd X_BG)
+    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {
+}
 
 namespace {
 struct ReifyData {
@@ -371,12 +372,13 @@ class OnPlaneSideReifier : public ShapeReifier {
   GeometryId geometry_id_;
 };
 
-class GeometryTypeReifier : public ShapeReifier {
+class CIrisGeometryTypeReifier : public ShapeReifier {
  public:
-  explicit GeometryTypeReifier(const geometry::Shape* shape) : shape_{shape} {}
+  explicit CIrisGeometryTypeReifier(const geometry::Shape* shape)
+      : shape_{shape} {}
 
-  GeometryType ProcessData() {
-    GeometryType type;
+  CIrisGeometryType ProcessData() {
+    CIrisGeometryType type;
     shape_->Reify(this, &type);
     return type;
   }
@@ -384,28 +386,28 @@ class GeometryTypeReifier : public ShapeReifier {
  private:
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box&, void* data) {
-    auto* type = static_cast<GeometryType*>(data);
-    *type = GeometryType::kPolytope;
+    auto* type = static_cast<CIrisGeometryType*>(data);
+    *type = CIrisGeometryType::kPolytope;
   }
 
   void ImplementGeometry(const Convex&, void* data) {
-    auto* type = static_cast<GeometryType*>(data);
-    *type = GeometryType::kPolytope;
+    auto* type = static_cast<CIrisGeometryType*>(data);
+    *type = CIrisGeometryType::kPolytope;
   }
 
   void ImplementGeometry(const Sphere&, void* data) {
-    auto* type = static_cast<GeometryType*>(data);
-    *type = GeometryType::kSphere;
+    auto* type = static_cast<CIrisGeometryType*>(data);
+    *type = CIrisGeometryType::kSphere;
   }
 
   void ImplementGeometry(const Capsule&, void* data) {
-    auto* type = static_cast<GeometryType*>(data);
-    *type = GeometryType::kCapsule;
+    auto* type = static_cast<CIrisGeometryType*>(data);
+    *type = CIrisGeometryType::kCapsule;
   }
 
   void ImplementGeometry(const Cylinder&, void* data) {
-    auto* type = static_cast<GeometryType*>(data);
-    *type = GeometryType::kCylinder;
+    auto* type = static_cast<CIrisGeometryType*>(data);
+    *type = CIrisGeometryType::kCylinder;
   }
 
   const Shape* shape_;
@@ -542,7 +544,7 @@ class DistanceToHalfspaceReifier : public ShapeReifier {
 };
 }  // namespace
 
-void CollisionGeometry::OnPlaneSide(
+void CIrisCollisionGeometry::OnPlaneSide(
     const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
     const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
         X_AB_multilinear,
@@ -554,17 +556,17 @@ void CollisionGeometry::OnPlaneSide(
                       y_slack, rationals);
 }
 
-GeometryType CollisionGeometry::type() const {
-  GeometryTypeReifier reifier(geometry_);
+CIrisGeometryType CIrisCollisionGeometry::type() const {
+  CIrisGeometryTypeReifier reifier(geometry_);
   return reifier.ProcessData();
 }
 
-int CollisionGeometry::num_rationals() const {
+int CIrisCollisionGeometry::num_rationals() const {
   NumRationalsReifier reifier(geometry_);
   return reifier.ProcessData();
 }
 
-double DistanceToHalfspace(const CollisionGeometry& collision_geometry,
+double DistanceToHalfspace(const CIrisCollisionGeometry& collision_geometry,
                            const Eigen::Vector3d& a, double b,
                            multibody::BodyIndex expressed_body,
                            PlaneSide plane_side,

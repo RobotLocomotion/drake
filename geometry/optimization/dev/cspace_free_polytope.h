@@ -11,8 +11,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/geometry/optimization/dev/collision_geometry.h"
-#include "drake/geometry/optimization/dev/separating_plane.h"
+#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/dev/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
@@ -125,7 +125,7 @@ class CspaceFreePolytope {
     return map_geometries_to_separating_planes_;
   }
 
-  [[nodiscard]] const std::vector<SeparatingPlane<symbolic::Variable>>&
+  [[nodiscard]] const std::vector<CIrisSeparatingPlane<symbolic::Variable>>&
   separating_planes() const {
     return separating_planes_;
   }
@@ -602,11 +602,11 @@ class CspaceFreePolytope {
   multibody::RationalForwardKinematics rational_forward_kin_;
   const geometry::SceneGraph<double>& scene_graph_;
   std::map<multibody::BodyIndex,
-           std::vector<std::unique_ptr<CollisionGeometry>>>
+           std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
       link_geometries_;
 
   SeparatingPlaneOrder plane_order_;
-  std::vector<SeparatingPlane<symbolic::Variable>> separating_planes_;
+  std::vector<CIrisSeparatingPlane<symbolic::Variable>> separating_planes_;
   std::unordered_map<SortedPair<geometry::GeometryId>, int>
       map_geometries_to_separating_planes_;
 
@@ -643,7 +643,7 @@ class CspaceFreePolytope {
  * the collision geometries.
  */
 [[nodiscard]] std::map<multibody::BodyIndex,
-                       std::vector<std::unique_ptr<CollisionGeometry>>>
+                       std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
 GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
                        const geometry::SceneGraph<double>& scene_graph);
 }  // namespace optimization

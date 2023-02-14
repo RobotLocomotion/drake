@@ -13,7 +13,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-enum class GeometryType {
+enum class CIrisGeometryType {
   kSphere,
   kPolytope,
   kCylinder,
@@ -28,9 +28,9 @@ enum class PlaneSide {
 /** Returns the other side */
 [[nodiscard]] PlaneSide OtherSide(PlaneSide plane_side);
 
-class CollisionGeometry {
+class CIrisCollisionGeometry {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CollisionGeometry)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisCollisionGeometry)
 
   /**
    @param geometry The actual geometry object.
@@ -38,9 +38,9 @@ class CollisionGeometry {
    @param id The ID of this geometry.
    @param X_BG The pose of the geometry (G) in the attached body frame (B).
    */
-  CollisionGeometry(const geometry::Shape* geometry,
-                    multibody::BodyIndex body_index, geometry::GeometryId id,
-                    math::RigidTransformd X_BG);
+  CIrisCollisionGeometry(const geometry::Shape* geometry,
+                         multibody::BodyIndex body_index,
+                         geometry::GeometryId id, math::RigidTransformd X_BG);
 
   const Shape& geometry() const { return *geometry_; }
 
@@ -97,7 +97,7 @@ class CollisionGeometry {
       PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
       std::vector<symbolic::RationalFunction>* rationals) const;
 
-  [[nodiscard]] GeometryType type() const;
+  [[nodiscard]] CIrisGeometryType type() const;
 
   /**
    Returns the number of rationals in the condition "this geometry is
@@ -118,7 +118,7 @@ class CollisionGeometry {
  The halfspace is expressed in the expressed_body's body frame.
  */
 [[nodiscard]] double DistanceToHalfspace(
-    const CollisionGeometry& collision_geometry, const Eigen::Vector3d& a,
+    const CIrisCollisionGeometry& collision_geometry, const Eigen::Vector3d& a,
     double b, multibody::BodyIndex expressed_body, PlaneSide plane_side,
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& plant_context);
