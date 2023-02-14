@@ -109,19 +109,34 @@ def do_main(args, platform):
         '-n', '--no-extract', dest='extract', action='store_false',
         help='build images but do not extract wheels')
 
-    platform.add_build_arguments(parser)
+    if platform is not None:
+        platform.add_build_arguments(parser)
 
     parser.add_argument(
         '-t', '--test', action='store_true',
         help='run tests on wheels')
 
-    platform.add_selection_arguments(parser)
+    if platform is not None:
+        platform.add_selection_arguments(parser)
+
+    parser.add_argument(
+        '--pep440', action='store_true',
+        help='validate version number without building anything')
 
     # Parse arguments.
     options = parser.parse_args(args)
-    platform.fixup_options(options)
+    if platform is not None:
+        platform.fixup_options(options)
 
     if not _check_version(options.version):
         die(f'Version \'{options.version}\' does not conform to PEP 440')
 
-    platform.build(options)
+    if options.pep440:
+        print(f'Version \'{options.version}\' conforms to PEP 440')
+        return
+
+    if platform is not None:
+        platform.build(options)
+    else:
+        die('Building wheels is not supported on this platform '
+            f'(\'{sys.platform}\')')
