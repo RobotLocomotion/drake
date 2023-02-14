@@ -52,6 +52,7 @@ class TestDeprecation(unittest.TestCase):
             "__format__(",
             "__getattr__(",
             "__getattribute__(",
+            "__getstate__(",
             "__hash__(",
             "__init__(",
             "__module__",
