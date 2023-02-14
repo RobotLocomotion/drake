@@ -200,32 +200,14 @@ PYBIND11_MODULE(optimization, m) {
             py::arg("constraint_frame"), py::arg("lower_limit"),
             py::arg("upper_limit"), cls_doc.AddFrameVelocityLimit.doc)
         .def("AddFrameTranslationalSpeedLimit",
-            py::overload_cast<const Frame<double>&, const double&>(
-                &Class::AddFrameTranslationalSpeedLimit),
+            &Class::AddFrameTranslationalSpeedLimit,
             py::arg("constraint_frame"), py::arg("upper_limit"),
-            cls_doc.AddFrameTranslationalSpeedLimit.doc_const)
-        .def("AddFrameTranslationalSpeedLimit",
-            py::overload_cast<const Frame<double>&, const Trajectory<double>&>(
-                &Class::AddFrameTranslationalSpeedLimit),
-            py::arg("constraint_frame"), py::arg("upper_limit"),
-            cls_doc.AddFrameTranslationalSpeedLimit.doc_trajectory)
-        .def("AddFrameAccelerationLimit",
-            py::overload_cast<const Frame<double>&,
-                const Eigen::Ref<const Vector6d>&,
-                const Eigen::Ref<const Vector6d>&, ToppraDiscretization>(
-                &Class::AddFrameAccelerationLimit),
+            cls_doc.AddFrameTranslationalSpeedLimit.doc)
+        .def("AddFrameAccelerationLimit", &Class::AddFrameAccelerationLimit,
             py::arg("constraint_frame"), py::arg("lower_limit"),
             py::arg("upper_limit"),
             py::arg("discretization") = ToppraDiscretization::kInterpolation,
-            cls_doc.AddFrameAccelerationLimit.doc_const)
-        .def("AddFrameAccelerationLimit",
-            py::overload_cast<const Frame<double>&, const Trajectory<double>&,
-                const Trajectory<double>&, ToppraDiscretization>(
-                &Class::AddFrameAccelerationLimit),
-            py::arg("constraint_frame"), py::arg("lower_limit"),
-            py::arg("upper_limit"),
-            py::arg("discretization") = ToppraDiscretization::kInterpolation,
-            cls_doc.AddFrameAccelerationLimit.doc_trajectory);
+            cls_doc.AddFrameAccelerationLimit.doc);
   }
 }
 }  // namespace
