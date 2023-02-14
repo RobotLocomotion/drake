@@ -7,14 +7,7 @@ py_test(
     name = "cpplint_unittest",
     size = "small",
     srcs = ["@styleguide//:cpplint_unittest"],
-    # TODO(jwnimmer-tri): macOS python 3.11 began having import issues because
-    # the directory cpplint has an __init__.py, so `import cpplint` ends up
-    # finding __init__.py rather than cpplint/cpplint.py.  When fixed, remove
-    # the manual tag.
-    tags = [
-        "manual",
-        "no_kcov",
-    ],
+    tags = ["no_kcov"],
 )
 
 add_lint_tests()
