@@ -4,6 +4,7 @@
 #include <functional>
 #include <map>
 #include <ostream>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 
@@ -296,8 +297,8 @@ class Polynomial {
   [[nodiscard]] Polynomial SubstituteAndExpand(
       const std::unordered_map<Variable, Polynomial>&
           indeterminate_substitution,
-      std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions =
-          nullptr) const;
+      std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*> substitutions_optional =
+          std::nullopt) const;
 
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term

@@ -824,12 +824,11 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 
 Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
-    std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions)
+    std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*> substitutions_optional)
     const {
   std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions_obj;
-  if (substitutions == nullptr) {
-    substitutions = &substitutions_obj;
-  }
+  std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions =
+      substitutions_optional.value_or(&substitutions_obj);
 
   for (const auto& var : indeterminates_) {
     DRAKE_DEMAND(indeterminate_substitution.find(var) !=
@@ -989,7 +988,7 @@ Polynomial Polynomial::SubstituteAndExpand(
     }
   }
   return Polynomial{new_polynomial_coeff_map};
-}  // namespace symbolic
+}
 
 Polynomial Polynomial::Expand() const {
   Polynomial::MapType expanded_poly_map;
