@@ -50,8 +50,8 @@ class RobotDiagramBuilder {
 
   /** Gets the contained Parser (mutable).
   @throws exception when IsDiagramBuilt() already. */
-  template <typename T1 = T, typename std::enable_if_t<
-    std::is_same_v<T1, double>>* = nullptr>
+  template <typename T1 = T,
+            typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
   multibody::Parser& parser() {
     ThrowIfAlreadyBuilt();
     return parser_;
@@ -59,8 +59,8 @@ class RobotDiagramBuilder {
 
   /** Gets the contained Parser (readonly).
   @throws exception when IsDiagramBuilt() already. */
-  template <typename T1 = T, typename std::enable_if_t<
-    std::is_same_v<T1, double>>* = nullptr>
+  template <typename T1 = T,
+            typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
   const multibody::Parser& parser() const {
     ThrowIfAlreadyBuilt();
     return parser_;
@@ -104,42 +104,34 @@ class RobotDiagramBuilder {
   std::unique_ptr<RobotDiagram<T>> Build();
 
   DRAKE_DEPRECATED("2023-06-01", "Use Build() instead of BuildDiagram().")
-  std::unique_ptr<RobotDiagram<T>> BuildDiagram() {
-    return Build();
-  }
+  std::unique_ptr<RobotDiagram<T>> BuildDiagram() { return Build(); }
 
   DRAKE_DEPRECATED("2023-06-01", "Use builder() instead of mutable_builder().")
-  systems::DiagramBuilder<T>& mutable_builder() {
-    return builder();
-  }
+  systems::DiagramBuilder<T>& mutable_builder() { return builder(); }
 
-  template <typename T1 = T, typename std::enable_if_t<
-    std::is_same_v<T1, double>>* = nullptr>
+  template <typename T1 = T,
+            typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
   DRAKE_DEPRECATED("2023-06-01", "Use parser() instead of mutable_parser().")
   multibody::Parser& mutable_parser() {
     return parser();
   }
 
   DRAKE_DEPRECATED("2023-06-01", "Use plant() instead of mutable_plant().")
-  multibody::MultibodyPlant<T>& mutable_plant() {
-    return plant();
-  }
+  multibody::MultibodyPlant<T>& mutable_plant() { return plant(); }
 
   DRAKE_DEPRECATED("2023-06-01",
-      "Use scene_graph() instead of mutable_scene_graph().")
-  geometry::SceneGraph<T>& mutable_scene_graph() {
-    return scene_graph();
-  }
+                   "Use scene_graph() instead of mutable_scene_graph().")
+  geometry::SceneGraph<T>& mutable_scene_graph() { return scene_graph(); }
 
   DRAKE_DEPRECATED("2023-06-01",
-      "Use plant().is_finalized() instead of IsPlantFinalized().")
+                   "Use plant().is_finalized() instead of IsPlantFinalized().")
   bool IsPlantFinalized() const {
     ThrowIfAlreadyBuilt();
     return plant_.is_finalized();
   }
 
   DRAKE_DEPRECATED("2023-06-01",
-      "Use plant().Finalize() instead of FinalizePlant().")
+                   "Use plant().Finalize() instead of FinalizePlant().")
   void FinalizePlant() {
     ThrowIfAlreadyBuilt();
     plant_.Finalize();
@@ -156,8 +148,8 @@ class RobotDiagramBuilder {
   geometry::SceneGraph<T>& scene_graph_;
 
   // The Parser object only exists when T == double.
-  using MaybeParser = std::conditional_t<
-      std::is_same_v<T, double>, multibody::Parser, void*>;
+  using MaybeParser =
+      std::conditional_t<std::is_same_v<T, double>, multibody::Parser, void*>;
   MaybeParser parser_;
 };
 

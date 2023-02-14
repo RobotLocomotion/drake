@@ -12,8 +12,8 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 
 # Compress functions onto a single line (when they fit) iff they are defined
-# inline (inside a of class).
-AllowShortFunctionsOnASingleLine: InlineOnly
+# inline (inside a of class) or are empty.
+AllowShortFunctionsOnASingleLine: Inline
 
 # Compress lambdas onto a single line iff they are empty.
 AllowShortLambdasOnASingleLine: Empty
