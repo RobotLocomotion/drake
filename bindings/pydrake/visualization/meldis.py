@@ -15,6 +15,10 @@ From a Drake binary release (including pip releases), run this as::
 
   python3 -m pydrake.visualization.meldis
 
+For binary releases (except for pip) there is also a shortcut available as::
+
+  /opt/drake/bin/meldis
+
 In many cases, passing ``-w`` (i.e., ``--open-window``) to the program will be
 convenient::
 
