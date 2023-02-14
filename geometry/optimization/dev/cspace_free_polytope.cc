@@ -11,8 +11,7 @@
 
 #include "drake/common/symbolic/monomial_util.h"
 #include "drake/common/symbolic/polynomial.h"
-#include "drake/geometry/optimization/dev/collision_geometry.h"
-#include "drake/geometry/optimization/dev/separating_plane.h"
+#include "drake/geometry/optimization/dev/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
@@ -52,14 +51,17 @@ namespace {
 // For all the geometries `link1_geometries` on link1, and `link2_geometries` on
 // link2, return them as pairs if they are not filtered.
 [[nodiscard]] std::vector<
-    std::pair<const CollisionGeometry*, const CollisionGeometry*>>
+    std::pair<const CIrisCollisionGeometry*, const CIrisCollisionGeometry*>>
 GetLinkCollisionPairs(
     const multibody::MultibodyPlant<double>& plant,
     const SceneGraph<double>& scene_graph, multibody::BodyIndex link1,
     multibody::BodyIndex link2,
-    const std::vector<std::unique_ptr<CollisionGeometry>>& link1_geometries,
-    const std::vector<std::unique_ptr<CollisionGeometry>>& link2_geometries) {
-  std::vector<std::pair<const CollisionGeometry*, const CollisionGeometry*>>
+    const std::vector<std::unique_ptr<CIrisCollisionGeometry>>&
+        link1_geometries,
+    const std::vector<std::unique_ptr<CIrisCollisionGeometry>>&
+        link2_geometries) {
+  std::vector<
+      std::pair<const CIrisCollisionGeometry*, const CIrisCollisionGeometry*>>
       ret;
   if (ChainIsWeld(plant, link1, link2)) {
     // Two links cannot collide if there are only welded joints between them as
@@ -408,8 +410,8 @@ CspaceFreePolytope::CspaceFreePolytope(
   // collision_pairs maps each pair of body to the pair of collision geometries
   // on that pair of body.
   std::map<SortedPair<multibody::BodyIndex>,
-           std::vector<
-               std::pair<const CollisionGeometry*, const CollisionGeometry*>>>
+           std::vector<std::pair<const CIrisCollisionGeometry*,
+                                 const CIrisCollisionGeometry*>>>
       collision_pairs;
   int num_collision_pairs = 0;
   for (const auto& [link1, geometries1] : link_geometries_) {
@@ -493,7 +495,7 @@ void CspaceFreePolytope::GenerateRationals() {
     std::vector<symbolic::RationalFunction> negative_side_rationals;
     for (const PlaneSide plane_side :
          {PlaneSide::kPositive, PlaneSide::kNegative}) {
-      const CollisionGeometry* link_geometry =
+      const CIrisCollisionGeometry* link_geometry =
           separating_plane.geometry(plane_side);
 
       const BodyPair expressed_to_link(separating_plane.expressed_body,
@@ -525,15 +527,15 @@ void CspaceFreePolytope::GenerateRationals() {
     // program size. We know that the redundant constraints can only be the
     // rationals without y_slack variable in non-polytopic geometries.
     if (separating_plane.positive_side_geometry->type() ==
-            GeometryType::kPolytope &&
+            CIrisGeometryType::kPolytope &&
         separating_plane.negative_side_geometry->type() ==
-            GeometryType::kPolytope) {
+            CIrisGeometryType::kPolytope) {
       plane_geometries_.emplace_back(positive_side_rationals,
                                      negative_side_rationals, plane_index);
     } else if (separating_plane.positive_side_geometry->type() ==
-                   GeometryType::kPolytope &&
+                   CIrisGeometryType::kPolytope &&
                separating_plane.negative_side_geometry->type() !=
-                   GeometryType::kPolytope) {
+                   CIrisGeometryType::kPolytope) {
       // Do not add the negative side rationals that have no y_slack variable.
       std::vector<symbolic::RationalFunction> negative_side_rationals_with_y;
       for (int i = 0; i < static_cast<int>(negative_side_rationals.size());
@@ -546,9 +548,9 @@ void CspaceFreePolytope::GenerateRationals() {
       plane_geometries_.emplace_back(
           positive_side_rationals, negative_side_rationals_with_y, plane_index);
     } else if (separating_plane.positive_side_geometry->type() !=
-                   GeometryType::kPolytope &&
+                   CIrisGeometryType::kPolytope &&
                separating_plane.negative_side_geometry->type() ==
-                   GeometryType::kPolytope) {
+                   CIrisGeometryType::kPolytope) {
       // Do not add the positive side rationals that have no y_slack variables.
       std::vector<symbolic::RationalFunction> positive_side_rationals_with_y;
       for (int i = 0; i < static_cast<int>(positive_side_rationals.size());
@@ -802,8 +804,8 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
     return lagrangians;
   };
 
-  if (plane.positive_side_geometry->type() != GeometryType::kPolytope ||
-      plane.negative_side_geometry->type() != GeometryType::kPolytope) {
+  if (plane.positive_side_geometry->type() != CIrisGeometryType::kPolytope ||
+      plane.negative_side_geometry->type() != CIrisGeometryType::kPolytope) {
     ret.prog->AddIndeterminates(y_slack_);
   }
 
@@ -1114,8 +1116,10 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
     if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
             plane.positive_side_geometry->id(),
             plane.negative_side_geometry->id())) == 0) {
-      if (plane.positive_side_geometry->type() != GeometryType::kPolytope ||
-          plane.negative_side_geometry->type() != GeometryType::kPolytope) {
+      if (plane.positive_side_geometry->type() !=
+              CIrisGeometryType::kPolytope ||
+          plane.negative_side_geometry->type() !=
+              CIrisGeometryType::kPolytope) {
         prog->AddIndeterminates(y_slack_);
         break;
       }
@@ -1816,11 +1820,12 @@ CspaceFreePolytope::SolveSeparationCertificateProgram(
   return ret;
 }
 
-std::map<multibody::BodyIndex, std::vector<std::unique_ptr<CollisionGeometry>>>
+std::map<multibody::BodyIndex,
+         std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
 GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
                        const geometry::SceneGraph<double>& scene_graph) {
   std::map<multibody::BodyIndex,
-           std::vector<std::unique_ptr<CollisionGeometry>>>
+           std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
       ret;
   const auto& inspector = scene_graph.model_inspector();
 
@@ -1832,12 +1837,12 @@ GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
       const auto geometry_ids =
           inspector.GetGeometries(frame_id.value(), geometry::Role::kProximity);
       for (const auto& geometry_id : geometry_ids) {
-        auto collision_geometry = std::make_unique<CollisionGeometry>(
+        auto collision_geometry = std::make_unique<CIrisCollisionGeometry>(
             &(inspector.GetShape(geometry_id)), body_index, geometry_id,
             inspector.GetPoseInFrame(geometry_id));
         auto body_it = ret.find(body_index);
         if (body_it == ret.end()) {
-          std::vector<std::unique_ptr<CollisionGeometry>> body_geometries;
+          std::vector<std::unique_ptr<CIrisCollisionGeometry>> body_geometries;
           body_geometries.push_back(std::move(collision_geometry));
           ret.emplace_hint(body_it, body_index, std::move(body_geometries));
         } else {
