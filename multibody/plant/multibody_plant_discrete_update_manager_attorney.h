@@ -42,12 +42,6 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
                                     std::move(prerequisites_of_calc));
   }
 
-  static const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const MultibodyPlant<T>& plant,
-                           const systems::Context<T>& context) {
-    return plant.EvalContactSolverResults(context);
-  }
-
   static const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
     return plant.EvalContactSurfaces(context);
