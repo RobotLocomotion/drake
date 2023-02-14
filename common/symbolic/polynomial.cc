@@ -824,7 +824,8 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 
 Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
-    std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*> substitutions_optional)
+    std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*>
+        substitutions_optional)
     const {
   std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions_obj;
   std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions =
