@@ -4435,9 +4435,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   }
   /// @} <!-- Introspection -->
 
+#ifndef DRAKE_DOXYGEN_CXX
   // Internal-only access to MultibodyGraph::FindSubgraphsOfWeldedBodies();
   // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
   std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
+#endif
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
