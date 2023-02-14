@@ -41,8 +41,8 @@ bool UnimplementedCollisionChecker::DoCheckContextConfigCollisionFree(
 
 std::optional<geometry::GeometryId>
 UnimplementedCollisionChecker::DoAddCollisionShapeToBody(
-    const std::string&, const multibody::Body<double>&,
-    const geometry::Shape&, const math::RigidTransform<double>&) {
+    const std::string&, const multibody::Body<double>&, const geometry::Shape&,
+    const math::RigidTransform<double>&) {
   ThrowNotImplemented(__func__);
 }
 
