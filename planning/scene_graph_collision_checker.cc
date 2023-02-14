@@ -61,10 +61,9 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
 
   const GeometrySet bodyA_geometries =
       plant().CollectRegisteredGeometries(plant().GetBodiesWeldedTo(bodyA));
-  log()->debug(
-      "Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}",
-      group_name, GetScopedName(bodyA), body_frame_id,
-      X_AG.GetAsMatrix4());
+  log()->debug("Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}",
+               group_name, GetScopedName(bodyA), body_frame_id,
+               X_AG.GetAsMatrix4());
 
   // The geometry instance template which will be copied into each per-thread
   // SceneGraph Context; the GeometryId will match across each thread this way.
@@ -142,13 +141,11 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
     const double padding = GetPaddingBetween(*body_A, *body_B);
     if (distance_pair.distance <= padding) {
       if (body_A_part_of_robot && body_B_part_of_robot) {
-        log()->trace(
-            "Self collision between bodies [{}] and [{}]",
-            GetScopedName(*body_A), GetScopedName(*body_B));
+        log()->trace("Self collision between bodies [{}] and [{}]",
+                     GetScopedName(*body_A), GetScopedName(*body_B));
       } else {
-        log()->trace(
-            "Environment collision between bodies [{}] and [{}]",
-            GetScopedName(*body_A), GetScopedName(*body_B));
+        log()->trace("Environment collision between bodies [{}] and [{}]",
+                     GetScopedName(*body_A), GetScopedName(*body_B));
       }
       return false;
     }
@@ -263,16 +260,18 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
     // our ∂p_BA_W/∂qᵣ may include additional non-zero columns; we rely on the
     // parent class to zero those columns out and make the result truly ∂ϕ/∂qᵣ.
     if (body_A_part_of_robot) {
-      plant().CalcJacobianPositionVector(
+      plant().CalcJacobianPositionVector(  // BR
           plant_context, frame_A, p_ACa, frame_W, frame_W,
-          &dp_BA_dq /* ∂p_WA/∂q after this invocation */);
+          // ∂p_WA/∂q after this invocation
+          &dp_BA_dq);
     } else {
       dp_BA_dq.setZero();
     }
     if (body_B_part_of_robot) {
-      plant().CalcJacobianPositionVector(
+      plant().CalcJacobianPositionVector(  // BR
           plant_context, frame_B, p_BCb, frame_W, frame_W,
-          &partial_temp /* ∂p_WB/∂q */);
+          // ∂p_WB/∂q
+          &partial_temp);
       dp_BA_dq -= partial_temp;  // ∂p_WA/∂qᵣ - ∂p_WB/∂qᵣ.
     }
     ddist_dq.noalias() = ddist_dp_BA.transpose() * dp_BA_dq;
