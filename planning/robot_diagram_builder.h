@@ -36,7 +36,7 @@ class RobotDiagramBuilder {
   /** Gets the contained DiagramBuilder (mutable).
   Do not call Build() on the return value; instead, call Build() on this.
   @throws exception when IsDiagramBuilt() already. */
-  systems::DiagramBuilder<T>& mutable_builder() {
+  systems::DiagramBuilder<T>& builder() {
     ThrowIfAlreadyBuilt();
     return *builder_;
   }
@@ -52,7 +52,7 @@ class RobotDiagramBuilder {
   @throws exception when IsDiagramBuilt() already. */
   template <typename T1 = T, typename std::enable_if_t<
     std::is_same_v<T1, double>>* = nullptr>
-  multibody::Parser& mutable_parser() {
+  multibody::Parser& parser() {
     ThrowIfAlreadyBuilt();
     return parser_;
   }
@@ -68,7 +68,7 @@ class RobotDiagramBuilder {
 
   /** Gets the contained plant (mutable).
   @throws exception when IsDiagramBuilt() already. */
-  multibody::MultibodyPlant<T>& mutable_plant() {
+  multibody::MultibodyPlant<T>& plant() {
     ThrowIfAlreadyBuilt();
     return plant_;
   }
@@ -82,7 +82,7 @@ class RobotDiagramBuilder {
 
   /** Gets the contained scene graph (mutable).
   @throws exception when IsDiagramBuilt() already. */
-  geometry::SceneGraph<T>& mutable_scene_graph() {
+  geometry::SceneGraph<T>& scene_graph() {
     ThrowIfAlreadyBuilt();
     return scene_graph_;
   }
@@ -92,20 +92,6 @@ class RobotDiagramBuilder {
   const geometry::SceneGraph<T>& scene_graph() const {
     ThrowIfAlreadyBuilt();
     return scene_graph_;
-  }
-
-  /** Checks if the contained plant is finalized.
-  @throws exception when IsDiagramBuilt() already. */
-  bool IsPlantFinalized() const {
-    ThrowIfAlreadyBuilt();
-    return plant_.is_finalized();
-  }
-
-  /** Finalizes the contained plant.
-  @throws exception when IsDiagramBuilt() already. */
-  void FinalizePlant() {
-    ThrowIfAlreadyBuilt();
-    plant_.Finalize();
   }
 
   /** Checks if the diagram has already been built. */
@@ -120,6 +106,43 @@ class RobotDiagramBuilder {
   DRAKE_DEPRECATED("2023-06-01", "Use Build() instead of BuildDiagram().")
   std::unique_ptr<RobotDiagram<T>> BuildDiagram() {
     return Build();
+  }
+
+  DRAKE_DEPRECATED("2023-06-01", "Use builder() instead of mutable_builder().")
+  systems::DiagramBuilder<T>& mutable_builder() {
+    return builder();
+  }
+
+  template <typename T1 = T, typename std::enable_if_t<
+    std::is_same_v<T1, double>>* = nullptr>
+  DRAKE_DEPRECATED("2023-06-01", "Use parser() instead of mutable_parser().")
+  multibody::Parser& mutable_parser() {
+    return parser();
+  }
+
+  DRAKE_DEPRECATED("2023-06-01", "Use plant() instead of mutable_plant().")
+  multibody::MultibodyPlant<T>& mutable_plant() {
+    return plant();
+  }
+
+  DRAKE_DEPRECATED("2023-06-01",
+      "Use scene_graph() instead of mutable_scene_graph().")
+  geometry::SceneGraph<T>& mutable_scene_graph() {
+    return scene_graph();
+  }
+
+  DRAKE_DEPRECATED("2023-06-01",
+      "Use plant().is_finalized() instead of IsPlantFinalized().")
+  bool IsPlantFinalized() const {
+    ThrowIfAlreadyBuilt();
+    return plant_.is_finalized();
+  }
+
+  DRAKE_DEPRECATED("2023-06-01",
+      "Use plant().Finalize() instead of FinalizePlant().")
+  void FinalizePlant() {
+    ThrowIfAlreadyBuilt();
+    plant_.Finalize();
   }
 
  private:

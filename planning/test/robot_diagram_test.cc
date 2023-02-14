@@ -21,7 +21,7 @@ using systems::System;
 
 std::unique_ptr<RobotDiagramBuilder<double>> MakeSampleDut() {
   auto builder = std::make_unique<RobotDiagramBuilder<double>>();
-  builder->mutable_parser().AddModels(
+  builder->parser().AddModels(
       FindResourceOrThrow("drake/manipulation/models/iiwa_description/urdf/"
                           "iiwa14_spheres_dense_collision.urdf"));
   return builder;
@@ -35,15 +35,16 @@ GTEST_TEST(RobotDiagramBuilderTest, TimeStep) {
 
 GTEST_TEST(RobotDiagramBuilderTest, Getters) {
   std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  const RobotDiagramBuilder<double>* const_dut = dut.get();
 
-  DiagramBuilder<double>& mutable_builder = dut->mutable_builder();
-  const DiagramBuilder<double>& builder = dut->builder();
-  Parser& mutable_parser = dut->mutable_parser();
-  const Parser& parser = dut->parser();
-  MultibodyPlant<double>& mutable_plant = dut->mutable_plant();
-  const MultibodyPlant<double>& plant = dut->plant();
-  SceneGraph<double>& mutable_scene_graph = dut->mutable_scene_graph();
-  const SceneGraph<double>& scene_graph = dut->scene_graph();
+  DiagramBuilder<double>& mutable_builder = dut->builder();
+  const DiagramBuilder<double>& builder = const_dut->builder();
+  Parser& mutable_parser = dut->parser();
+  const Parser& parser = const_dut->parser();
+  MultibodyPlant<double>& mutable_plant = dut->plant();
+  const MultibodyPlant<double>& plant = const_dut->plant();
+  SceneGraph<double>& mutable_scene_graph = dut->scene_graph();
+  const SceneGraph<double>& scene_graph = const_dut->scene_graph();
 
   // The getters for mutable vs readonly are consistent.
   EXPECT_EQ(&mutable_builder, &builder);
@@ -59,11 +60,12 @@ GTEST_TEST(RobotDiagramBuilderTest, Getters) {
 
 GTEST_TEST(RobotDiagramBuilderTest, Lifecycle) {
   std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
-  EXPECT_FALSE(dut->IsPlantFinalized());
+
+  EXPECT_FALSE(dut->plant().is_finalized());
   EXPECT_FALSE(dut->IsDiagramBuilt());
 
-  dut->FinalizePlant();
-  EXPECT_TRUE(dut->IsPlantFinalized());
+  dut->plant().Finalize();
+  EXPECT_TRUE(dut->plant().is_finalized());
   EXPECT_FALSE(dut->IsDiagramBuilt());
 
   auto robot_diagram = dut->Build();
@@ -77,21 +79,20 @@ GTEST_TEST(RobotDiagramBuilderTest, Lifecycle) {
 
 GTEST_TEST(RobotDiagramBuilderTest, LifecycleFailFast) {
   std::unique_ptr<RobotDiagramBuilder<double>> dut = MakeSampleDut();
+  const RobotDiagramBuilder<double>* const_dut = dut.get();
   auto robot_diagram = dut->Build();
   robot_diagram.reset();
 
   EXPECT_TRUE(dut->IsDiagramBuilt());
   constexpr const char* error = ".*may no longer be used.*";
-  DRAKE_EXPECT_THROWS_MESSAGE(dut->mutable_builder(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->builder(), error);
-  DRAKE_EXPECT_THROWS_MESSAGE(dut->mutable_parser(), error);
+  DRAKE_EXPECT_THROWS_MESSAGE(const_dut->builder(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->parser(), error);
-  DRAKE_EXPECT_THROWS_MESSAGE(dut->mutable_plant(), error);
+  DRAKE_EXPECT_THROWS_MESSAGE(const_dut->parser(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->plant(), error);
-  DRAKE_EXPECT_THROWS_MESSAGE(dut->mutable_scene_graph(), error);
+  DRAKE_EXPECT_THROWS_MESSAGE(const_dut->plant(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->scene_graph(), error);
-  DRAKE_EXPECT_THROWS_MESSAGE(dut->IsPlantFinalized(), error);
-  DRAKE_EXPECT_THROWS_MESSAGE(dut->FinalizePlant(), error);
+  DRAKE_EXPECT_THROWS_MESSAGE(const_dut->scene_graph(), error);
   DRAKE_EXPECT_THROWS_MESSAGE(dut->Build(), error);
 }
 
@@ -122,7 +123,7 @@ GTEST_TEST(RobotDiagramTest, ToSymbolic) {
 
 GTEST_TEST(RobotDiagramBuilderTest, AutoDiffFromBirthToDeath) {
   auto builder_autodiff = std::make_unique<RobotDiagramBuilder<AutoDiffXd>>();
-  builder_autodiff->mutable_plant().AddModelInstance("mike");
+  builder_autodiff->plant().AddModelInstance("mike");
   std::unique_ptr<RobotDiagram<AutoDiffXd>> robot_diagram_autodiff =
       builder_autodiff->Build();
   ASSERT_NE(robot_diagram_autodiff, nullptr);
@@ -178,7 +179,8 @@ GTEST_TEST(RobotDiagramTest, Clone) {
   EXPECT_NE(&copy->plant(), &dut->plant());
 }
 
-// Tests for BuildDiagram() deprecation.
+// Tests for BuildDiagram() deprecation, as well as IsPlantFinalized() and
+// FinalizePlant() and the 'mutable_...' getter functions.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
