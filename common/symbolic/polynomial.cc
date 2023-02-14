@@ -15,6 +15,7 @@
 #undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 
 #include "drake/common/symbolic/decompose.h"
+#include "drake/common/text_logging.h"
 
 using std::accumulate;
 using std::make_pair;
@@ -825,15 +826,38 @@ Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
     std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions)
     const {
+  std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions_obj;
+  if (substitutions == nullptr) {
+    substitutions = &substitutions_obj;
+  }
+
   for (const auto& var : indeterminates_) {
     DRAKE_DEMAND(indeterminate_substitution.find(var) !=
                  indeterminate_substitution.cend());
+    const Polynomial cur_sub{indeterminate_substitution.at(var).Expand()};
+    const Monomial cur_monomial{var};
+    if (substitutions->find(cur_monomial) != substitutions->cend()) {
+      if (!substitutions->at(cur_monomial).EqualTo(cur_sub)) {
+        drake::log()->warn(fmt::format(
+            "SubstituteAndExpand(): the passed substitutions map contains a "
+            "different expansion for {} than is contained in "
+            "indeterminate_substitutions. Substitutions contains {}, but "
+            "indeterminate_substitutions contains {}. It is very likely that "
+            "substitutions is storing expansions which are inconsistent and so "
+            "you should not trust the output of this method.",
+            cur_monomial, substitutions->at(cur_monomial), cur_sub));
+      }
+    } else {
+      substitutions->emplace(cur_monomial, cur_sub);
+    }
   }
 
   MapType new_polynomial_coeff_map;
   // Ensures the base case of the constant term monomial is always reached.
   substitutions->insert_or_assign(Monomial(), Polynomial(1));
 
+  // Find the largest (in the lexicographic order) monomial for which we
+  // have already computed the expansion.
   auto find_nearest_cached_monomial = [&substitutions](
                                           const Monomial& monomial) {
     auto nearest_cached_monomial_iter =
@@ -862,7 +886,7 @@ Polynomial Polynomial::SubstituteAndExpand(
       return indeterminate_substitution.at(*monomial.GetVariables().begin());
     }
     // Base case. Since the map substitutions is non-empty and contains the
-    // monomial 1 this will always be hit.
+    // monomial 1 the recursion is guaranteed to terminate.
     if (substitutions->find(monomial) != substitutions->cend()) {
       return substitutions->at(monomial);
     }
@@ -965,7 +989,7 @@ Polynomial Polynomial::SubstituteAndExpand(
     }
   }
   return Polynomial{new_polynomial_coeff_map};
-}
+}  // namespace symbolic
 
 Polynomial Polynomial::Expand() const {
   Polynomial::MapType expanded_poly_map;
