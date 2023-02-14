@@ -14,6 +14,10 @@ From a Drake binary release (including pip releases), run this module as::
 
   python3 -m pydrake.visualization.model_visualizer --help
 
+For binary releases (except for pip) there is also a shortcut available as::
+
+  /opt/drake/bin/model_visualizer
+
 Refer to the instructions printed by ``--help`` for additional details.
 
 An example of viewing an iiwa model file::

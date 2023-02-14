@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+
+"""
+Runs Meldis from an install tree.
+"""
+
+from os.path import isdir, join, dirname, realpath
+import sys
+
+
+def main():
+    # Ensure that we can import pydrake, accommodating symlinks.
+    prefix_dir = dirname(dirname(realpath(__file__)))
+    assert isdir(join(prefix_dir, "bin")), f"Bad location: {prefix_dir}"
+    site_dir = join(prefix_dir, "@PYTHON_SITE_PACKAGES_RELPATH@")
+    sys.path.insert(0, site_dir)
+
+    # Execute the imported main.
+    from pydrake.visualization.meldis import _main
+    _main()
+
+
+assert __name__ == "__main__"
+main()
