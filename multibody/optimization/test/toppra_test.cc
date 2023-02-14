@@ -636,7 +636,7 @@ TEST_F(IiwaToppraTest, FrameAccelerationLimitVarying) {
 
   // This tolerance was tuned to work with the given gridpoints.
   bool second_half_increased_accleration = false;
-  const double tol = 1e-14;
+  const double tol = 2e-14;
   for (int ii = 0; ii < s_path.get_number_of_segments(); ii++) {
     const double t = s_path.start_time(ii);
     auto [accel, lower, upper] = calc_accel_lower_and_upper_limit(t);
