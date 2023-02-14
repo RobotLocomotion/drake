@@ -23,9 +23,8 @@ ConfigurationDistanceFunction MakeWeightedIiwaConfigurationDistanceFunction();
 revolute joints. The geometry for each body consists of @p num_geo small
 spheres.  @note: the model name is based on @p n, so adding chains of the
 same length will fail. */
-multibody::ModelInstanceIndex
-AddChain(multibody::MultibodyPlant<double>* plant, int n,
-         int num_geo = 1);
+multibody::ModelInstanceIndex AddChain(multibody::MultibodyPlant<double>* plant,
+                                       int n, int num_geo = 1);
 
 }  // namespace test
 }  // namespace planning

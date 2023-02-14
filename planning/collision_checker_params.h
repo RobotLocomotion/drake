@@ -35,9 +35,8 @@ To be valid, the function must satisfy the following conditions:
  - interpolate(q1, q2, 1) ≡ q2
  - interpolate(q, q, r) ≡ q, for all r in [0, 1]
 */
-using ConfigurationInterpolationFunction =
-    std::function<Eigen::VectorXd(
-        const Eigen::VectorXd&, const Eigen::VectorXd&, double)>;
+using ConfigurationInterpolationFunction = std::function<Eigen::VectorXd(
+    const Eigen::VectorXd&, const Eigen::VectorXd&, double)>;
 
 /** A set of common constructor parameters for a CollisionChecker.
 Not all subclasses of CollisionChecker will necessarily support this
