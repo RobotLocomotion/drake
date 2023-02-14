@@ -414,20 +414,6 @@ class CspaceFreePolytope {
           nullptr) const;
 
   /**
-   Search for the separation certificate for a pair of geometries for a C-space
-   polytope {s | C*s<=d, s_lower<=s<=s_upper}.
-   @return result If we find the separation certificate, then `result` contains
-   the separation plane and the Lagrangian polynomials; otherwise result is
-   empty.
-   */
-  std::optional<CspaceFreePolytope::SeparationCertificateResult>
-  IsGeometrySeparable(
-      const SortedPair<geometry::GeometryId>& geometry_pair,
-      const Eigen::Ref<const Eigen::MatrixXd>& C,
-      const Eigen::Ref<const Eigen::VectorXd>& d,
-      const FindSeparationCertificateGivenPolytopeOptions& options) const;
-
-  /**
    Constructs the MathematicalProgram which searches for a separation
    certificate for a pair of geometries for a C-space polytope.Search for the
    separation certificate for a pair of geometries for a C-space polytope

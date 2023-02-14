@@ -100,12 +100,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cspace_free_polytope_with_mosek_test",
     timeout = "long",
-    # Set to manual because it is failing on mac-x86-monterey-clang tests.
-    #  https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/job/mac-x86-monterey-clang-bazel-nightly-everything-address-sanitizer/79/
-    #  https://drake-jenkins.csail.mit.edu/view/Nightly%20Production/job/mac-x86-monterey-clang-bazel-nightly-everything-release/76/
     # This test launches 2 threads to test both serial and parallel code paths
     # in CspaceFreePolytope.
-    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"] + ["manual"],
+    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
     use_default_main = False,
     deps = [
         ":c_iris_test_utilities",
