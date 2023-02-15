@@ -45,10 +45,10 @@ class ModelVisualizer:
       visualizer.AddModels(filename)
       visualizer.Run()
 
-    The class also provides a `parser` property to allow more complex
+    The class also provides a `parser()` method to allow more complex
     Parser handling, e.g. adding a model from a string::
 
-      visualizer.parser.AddModelsFromString(buffer_containing_model, 'sdf')
+      visualizer.parser().AddModelsFromString(buffer_containing_model, 'sdf')
 
     This class may also be run as a standalone command-line tool using the
     ``pydrake.visualization.model_visualizer`` script, or via
@@ -254,10 +254,10 @@ class ModelVisualizer:
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
 
-        # We want to place this button far away from the Stop Running button,
-        # hence the work to do this here.
+        # We want to place the Reload Model Files button far away from the
+        # Stop Running button, hence the work to do this here.
         if self._model_filenames:
-            self._reload_button_name = "Reload model files"
+            self._reload_button_name = "Reload Model Files"
             self._meshcat.AddButton(self._reload_button_name)
 
         # Connect to drake_visualizer, meldis, and meshcat.
@@ -273,6 +273,12 @@ class ModelVisualizer:
             meshcat=self._meshcat)
 
         # Add joint sliders to meshcat.
+        # TODO(trowell-tri) Restoring slider values wont work if slider
+        # names switch from being abbreviated to fully-qualified (i.e. when
+        # there's a joint name collision); it would probably be better to
+        # be able to configure the JointSliders to always use fully-qualified
+        # names on demand, perhaps once the size of the control panel is
+        # adjustable so the slider names are better visible.
         self._sliders = self._builder.builder().AddNamedSystem(
             "joint_sliders", JointSliders(meshcat=self._meshcat,
                                           plant=self._builder.plant()))
@@ -292,10 +298,10 @@ class ModelVisualizer:
         # the truth values of arrays.
         if position is not None and len(position) > 0:
             self._raise_if_invalid_positions(position)
-            self._sliders.SetPositions(position)
             self._diagram.plant().SetPositions(
                 self._diagram.plant().GetMyContextFromRoot(self._context),
                 position)
+            self._sliders.SetPositions(position)
 
         # Use Simulator to dispatch initialization events.
         # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
@@ -353,6 +359,7 @@ class ModelVisualizer:
         else:
             self._check_rep(finalized=True)
             if position is not None and len(position) > 0:
+                self._raise_if_invalid_positions(position)
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyContextFromRoot(self._context),
                     position)
@@ -382,19 +389,19 @@ class ModelVisualizer:
 
             while True:
                 time.sleep(1 / 32.0)
-                if has_clicks(stop_button_name):
-                    break
+                if has_clicks(self._reload_button_name):
+                    self._meshcat.DeleteButton(stop_button_name)
+                    slider_values = self._get_slider_values()
+                    self._reload()
+                    self._set_slider_values(slider_values)
+                    self._meshcat.AddButton(stop_button_name, "Escape")
                 q = self._sliders.get_output_port().Eval(
                     self._sliders.GetMyContextFromRoot(self._context))
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyContextFromRoot(self._context),
                     q)
                 self._diagram.ForcedPublish(self._context)
-                if has_clicks(self._reload_button_name):
-                    self._meshcat.DeleteButton(stop_button_name)
-                    self._reload()
-                    self._meshcat.AddButton(stop_button_name, "Escape")
-                if loop_once:
+                if loop_once or has_clicks(stop_button_name):
                     break
         except KeyboardInterrupt:
             pass
@@ -428,6 +435,23 @@ class ModelVisualizer:
             raise ValueError(
                 f"Number of passed positions ({actual}) does not match the "
                 f"number in the model ({expected}).")
+
+    def _get_slider_values(self):
+        """Returns a map of slider names to current values."""
+        return {slider: self._meshcat.GetSliderValue(slider)
+                for slider in self._meshcat.GetSliderNames()}
+
+    def _set_slider_values(self, slider_values):
+        """
+        Sets current sliders to the values found in the slider_values dict.
+
+        Current sliders not in the passed map -- or values in the map but
+        which not longer exist in the GUI -- are ignored.
+        """
+        current_sliders = self._meshcat.GetSliderNames()
+        for slider_name, value in slider_values.items():
+            if slider_name in current_sliders:
+                self._meshcat.SetSliderValue(slider_name, value)
 
     def _add_triad(
         self,
