@@ -14,6 +14,7 @@ from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
 from pydrake.multibody.parsing import Parser
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
+from pydrake.multibody.tree import JointIndex
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import DiagramBuilder
 from pydrake.systems.planar_scenegraph_visualizer import (
@@ -45,10 +46,10 @@ class ModelVisualizer:
       visualizer.AddModels(filename)
       visualizer.Run()
 
-    The class also provides a `parser` property to allow more complex
+    The class also provides a `parser()` method to allow more complex
     Parser handling, e.g. adding a model from a string::
 
-      visualizer.parser.AddModelsFromString(buffer_containing_model, 'sdf')
+      visualizer.parser().AddModelsFromString(buffer_containing_model, 'sdf')
 
     This class may also be run as a standalone command-line tool using the
     ``pydrake.visualization.model_visualizer`` script, or via
@@ -110,6 +111,7 @@ class ModelVisualizer:
         self._plant, self._scene_graph = AddMultibodyPlantSceneGraph(
             self._builder, time_step=0.0)
         self._parser = Parser(self._plant)
+        self._parser_accessed = False
 
     @staticmethod
     def _get_constructor_defaults():
@@ -140,7 +142,17 @@ class ModelVisualizer:
         This method cannot be used after Finalize is called.
         """
         assert self._parser is not None, "Finalize has already been called."
+        self._parser_accessed = True
         return self._parser
+
+    def package_map(self):
+        """
+        Returns the package map used by this visualizer's Parser.
+
+        This method cannot be used after Finalize is called.
+        """
+        assert self._parser is not None, "Finalize has already been called."
+        return self._parser.package_map()
 
     def meshcat(self):
         """
@@ -348,6 +360,7 @@ class ModelVisualizer:
         Only models added using AddModels() will be properly reloaded.
         If the parser() was accessed to add models directly to the parser
         then those models will not be properly reloaded by this method.
+        A warning message will be printed in this case.
 
         Args:
           position: an ndarray-like list of slider positions for the model(s);
@@ -372,13 +385,29 @@ class ModelVisualizer:
             self._context,
             self._plant_context)])
 
+        # Warn the user if the parser was directly accessed; this method
+        # *may* still work which is why we don't just abort.
+        if self._parser_accessed:
+            print("Warning: the Parser object of this ModelVisualizer was "
+                  "accessed via the parser() method before RunWithReload() "
+                  "was called; doing so may prevent model reloading from "
+                  "working properly.")
+
+        prior_pose_values = None  # Maps joint name -> pose value.
+
         # We don't just test 'position' because NumPy does weird things with
         # the truth values of arrays.
         if position is not None and len(position) > 0:
             # If we have a position list to validate, finalize the outer
-            # visualizer's plant only so we can validate positions.
+            # visualizer's plant so we can validate positions, then create
+            # a position map from the passed positions.
             self._plant.Finalize()
             self._raise_if_invalid_positions(position)
+
+            pos_to_name_map = self._get_position_to_name_map()
+            prior_pose_values = dict()
+            for index, value in enumerate(position):
+                prior_pose_values[pos_to_name_map[index]] = value
 
         if self._browser_new:
             url = self.meshcat().web_url()
@@ -401,28 +430,33 @@ class ModelVisualizer:
             for filename in self._model_filenames:
                 inner_visualizer.AddModels(filename)
 
-            # Finalize the inner visualizer outside of Run so that we can
-            # make sure the positions we saved from the prior iteration
-            # are still usable with the reloaded model. This is necessary
-            # so that changes in the number of joints doesn't just exit.
+            # Finalize the inner visualizer so that its tree topology is valid.
             inner_visualizer.Finalize()
+            pos_to_name_map = inner_visualizer._get_position_to_name_map()
 
-            # We don't just test 'position' because NumPy does weird things
-            # with the truth values of arrays.
-            if position is not None and len(position) > 0:
-                # Don't exit if the number of positions in the model changes.
-                # TODO(trowell-tri) Examine the plant more thoroughly
-                # and properly restore position values to the same joints.
-                if inner_visualizer._plant.num_positions() != len(position):
-                    position = None
+            # Turn any prior pose value map into an inner position array.
+            inner_position = None
+            if prior_pose_values is not None:
+                # Prior joint positions may have disappeared and some new
+                # ones may exist, so initialize a map with the defaults
+                # and then copy anything we can from the prior positions.
+                inner_position = inner_visualizer._get_default_positions()
+                name_to_pos_map = {v: k for k, v in pos_to_name_map.items()}
+                for pos_name, pos_value in prior_pose_values.items():
+                    if pos_name in name_to_pos_map:
+                        inner_position[name_to_pos_map[pos_name]] = pos_value
 
-            result = inner_visualizer.Run(position)
+            result = inner_visualizer.Run(inner_position)
             if result != RunResult.RELOAD:
                 return
 
-            position = inner_visualizer._sliders.get_output_port().Eval(
+            inner_position = inner_visualizer._sliders.get_output_port().Eval(
                 inner_visualizer._sliders.GetMyContextFromRoot(
                     inner_visualizer._context))
+
+            prior_pose_values = dict()
+            for index, value in enumerate(inner_position):
+                prior_pose_values[pos_to_name_map[index]] = value
 
     def _raise_if_invalid_positions(self, position):
         """
@@ -438,6 +472,31 @@ class ModelVisualizer:
                        "the number in the model (%d).")
             raise ValueError(
                 message % (len(position), self._plant.num_positions()))
+
+    def _get_default_positions(self):
+        """
+        Returns a list of the default position values from the plant.
+        """
+        result = list()
+        default_context = self._plant.CreateDefaultContext()
+        positions = self._plant.GetPositions(default_context)
+        for item in positions:
+            result.append(float(item))
+        return result
+
+    def _get_position_to_name_map(self):
+        """
+        Returns a map of position index -> fully qualified joint name.
+        """
+        result = dict()
+        for joint_index in range(self._plant.num_joints()):
+            joint = self._plant.get_joint(JointIndex(joint_index))
+            for joint_pos in range(joint.num_positions()):
+                index = joint.position_start() + joint_pos
+                result[index] = "%s_%s/%s" % (joint.name(),
+                                              joint.position_suffix(joint_pos),
+                                              int(joint.model_instance()))
+        return result
 
     def _add_triad(
         self,
