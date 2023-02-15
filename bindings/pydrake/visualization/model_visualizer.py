@@ -3,6 +3,11 @@ Drake's built-in visualizers (MeshCat and/or Meldis). When viewing in MeshCat,
 joint sliders to posture the model are available by clicking on "Open Controls"
 in the top right corner.
 
+If the loaded model file is changed, it can be reloaded by pressing
+the "Reload Model Files" button, which will attempt to maintain slider values
+once reloading is finished. To exit, press the "Stop Running" button or press
+the Escape key.
+
 This command-line module is provided for convenience, but the feature is also
 available via the library class ``pydrake.visualization.ModelVisualizer``.
 

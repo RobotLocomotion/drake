@@ -550,6 +550,9 @@ class Meshcat {
    @throws std::exception if `name` is not a registered slider. */
   double GetSliderValue(std::string_view name) const;
 
+  /** Returns the names of all sliders. */
+  std::vector<std::string> GetSliderNames() const;
+
   /** Removes the slider `name` from the GUI.
    @throws std::exception if `name` is not a registered slider. */
   void DeleteSlider(std::string name);
