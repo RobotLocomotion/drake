@@ -289,8 +289,9 @@ template <typename T>
 void ManipulationStation<T>::AddManipulandFromFile(
     const std::string& model_file, const RigidTransform<double>& X_WObject) {
   multibody::Parser parser(plant_);
-  const auto model_index =
-      parser.AddModelFromFile(FindResourceOrThrow(model_file));
+  const auto models = parser.AddModels(FindResourceOrThrow(model_file));
+  DRAKE_THROW_UNLESS(models.size() == 1);
+  const auto model_index = models[0];
   const auto indices = plant_->GetBodyIndices(model_index);
   // Only support single-body objects for now.
   // Note: this could be generalized fairly easily... would just want to
@@ -511,8 +512,9 @@ void ManipulationStation<T>::MakeIiwaControllerModel() {
   // Build the controller's version of the plant, which only contains the
   // IIWA and the equivalent inertia of the gripper.
   multibody::Parser parser(owned_controller_plant_.get());
-  const auto controller_iiwa_model =
-      parser.AddModelFromFile(iiwa_model_.model_path, "iiwa");
+  const auto models = parser.AddModels(iiwa_model_.model_path);
+  DRAKE_THROW_UNLESS(models.size() == 1);
+  const auto controller_iiwa_model = models[0];
 
   owned_controller_plant_->WeldFrames(
       owned_controller_plant_->world_frame(),
