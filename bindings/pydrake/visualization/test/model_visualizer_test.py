@@ -199,6 +199,12 @@ class TestModelVisualizer(unittest.TestCase):
         # Remember the originally-created diagram.
         orig_diagram = dut._diagram
 
+        # Repose the model.
+        prior_q = dut._sliders.get_output_port().Eval(
+            dut._sliders.GetMyContextFromRoot(dut._context))
+        prior_q[0] = 1.0
+        prior_q[1] = 2.0
+
         # Click the reload button.
         cli = FindResourceOrThrow("drake/geometry/meshcat_websocket_client")
         message = f"""{{
@@ -212,8 +218,16 @@ class TestModelVisualizer(unittest.TestCase):
         self.assertEqual(meshcat.GetButtonClicks(button), 1)
 
         # Run once. If a reload() happened, the diagram will have changed out.
-        dut.Run(loop_once=True)
+        dut.Run(position=prior_q, loop_once=True)
         self.assertNotEqual(id(orig_diagram), id(dut._diagram))
+
+        # Ensure the reloaded slider and joint values are the same.
+        slider_q = dut._sliders.get_output_port().Eval(
+            dut._sliders.GetMyContextFromRoot(dut._context))
+        self.assertListEqual(list(prior_q), list(slider_q))
+        joint_q = dut._diagram.plant().GetPositions(
+            dut._diagram.plant().GetMyContextFromRoot(dut._context))
+        self.assertListEqual(list(prior_q), list(joint_q))
 
     def test_webbrowser(self):
         """

@@ -14,6 +14,7 @@ from pydrake.geometry import (
 )
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.multibody.meshcat import JointSliders
+from pydrake.multibody.tree import JointIndex
 from pydrake.planning import RobotDiagramBuilder
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.planar_scenegraph_visualizer import (
@@ -45,10 +46,10 @@ class ModelVisualizer:
       visualizer.AddModels(filename)
       visualizer.Run()
 
-    The class also provides a `parser` property to allow more complex
+    The class also provides a `parser()` method to allow more complex
     Parser handling, e.g. adding a model from a string::
 
-      visualizer.parser.AddModelsFromString(buffer_containing_model, 'sdf')
+      visualizer.parser().AddModelsFromString(buffer_containing_model, 'sdf')
 
     This class may also be run as a standalone command-line tool using the
     ``pydrake.visualization.model_visualizer`` script, or via
@@ -254,10 +255,10 @@ class ModelVisualizer:
         self._meshcat.Delete()
         self._meshcat.DeleteAddedControls()
 
-        # We want to place this button far away from the Stop Running button,
-        # hence the work to do this here.
+        # We want to place the Reload Model Files button far away from the
+        # Stop Running button, hence the work to do this here.
         if self._model_filenames:
-            self._reload_button_name = "Reload model files"
+            self._reload_button_name = "Reload Model Files"
             self._meshcat.AddButton(self._reload_button_name)
 
         # Connect to drake_visualizer, meldis, and meshcat.
@@ -292,10 +293,10 @@ class ModelVisualizer:
         # the truth values of arrays.
         if position is not None and len(position) > 0:
             self._raise_if_invalid_positions(position)
-            self._sliders.SetPositions(position)
             self._diagram.plant().SetPositions(
                 self._diagram.plant().GetMyContextFromRoot(self._context),
                 position)
+            self._sliders.SetPositions(position)
 
         # Use Simulator to dispatch initialization events.
         # TODO(eric.cousineau): Simplify as part of #13776 (was #10015).
@@ -309,7 +310,7 @@ class ModelVisualizer:
 
         self._check_rep(finalized=True)
 
-    def _reload(self):
+    def _reload(self, positions):
         """
         Re-creates the Diagram using the same sequence of calls to AddModels
         as the user performed. In effect, this will refresh the visualizer to
@@ -317,6 +318,12 @@ class ModelVisualizer:
         """
         self._check_rep(finalized=True)
         assert self._model_filenames is not None
+
+        # Build a map of current joint names to pose values.
+        prior_joint_to_pose_values = dict()
+        prior_pos_to_name_map = self._get_position_to_name_map()
+        for index, value in enumerate(positions):
+            prior_joint_to_pose_values[prior_pos_to_name_map[index]] = value
 
         # Clear out the old diagram.
         self._diagram = None
@@ -332,6 +339,25 @@ class ModelVisualizer:
 
         # Finalize the rest of the systems and widgets.
         self.Finalize()
+
+        # Restore joint positions.
+        #
+        # Prior joint positions may have disappeared and some new
+        # ones may exist, so initialize a list with the defaults
+        # and then copy anything we can from the prior positions.
+        new_positions = self._get_default_positions()
+        pos_to_name_map = self._get_position_to_name_map()
+        name_to_pos_map = {v: k for k, v in pos_to_name_map.items()}
+        for pos_name, pos_value in prior_joint_to_pose_values.items():
+            if pos_name in name_to_pos_map:
+                new_positions[name_to_pos_map[pos_name]] = pos_value
+
+        # Publish the new position values.
+        self._diagram.plant().SetPositions(
+            self._diagram.plant().GetMyContextFromRoot(self._context),
+            new_positions)
+        self._sliders.SetPositions(new_positions)
+        self._diagram.ForcedPublish(self._context)
 
     def Run(self, position=None, loop_once=False):
         """
@@ -353,6 +379,7 @@ class ModelVisualizer:
         else:
             self._check_rep(finalized=True)
             if position is not None and len(position) > 0:
+                self._raise_if_invalid_positions(position)
                 self._diagram.plant().SetPositions(
                     self._diagram.plant().GetMyContextFromRoot(self._context),
                     position)
@@ -392,7 +419,7 @@ class ModelVisualizer:
                 self._diagram.ForcedPublish(self._context)
                 if has_clicks(self._reload_button_name):
                     self._meshcat.DeleteButton(stop_button_name)
-                    self._reload()
+                    self._reload(q)
                     self._meshcat.AddButton(stop_button_name, "Escape")
                 if loop_once:
                     break
@@ -428,6 +455,29 @@ class ModelVisualizer:
             raise ValueError(
                 f"Number of passed positions ({actual}) does not match the "
                 f"number in the model ({expected}).")
+
+    def _get_default_positions(self):
+        """
+        Returns a list of the default position values from the plant.
+        """
+        default_context = self._diagram.plant().CreateDefaultContext()
+        return list(self._diagram.plant().GetPositions(default_context))
+
+    def _get_position_to_name_map(self):
+        """
+        Returns a map of position index -> fully qualified joint name.
+        """
+        result = dict()
+        for joint_index in range(self._diagram.plant().num_joints()):
+            joint = self._diagram.plant().get_joint(JointIndex(joint_index))
+            for joint_pos in range(joint.num_positions()):
+                index = joint.position_start() + joint_pos
+                name = joint.name()
+                suffix = joint.position_suffix(joint_pos)
+                instance_name = self._diagram.plant().GetModelInstanceName(
+                    joint.model_instance())
+                result[index] = f"{name}_{suffix}/{instance_name}"
+        return result
 
     def _add_triad(
         self,
