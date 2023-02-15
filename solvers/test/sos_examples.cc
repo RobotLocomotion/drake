@@ -113,7 +113,8 @@ void MotzkinPolynomial::CheckResult(const MathematicalProgramResult& result,
   CheckSymmetricMatrixPSD(gram2_val, tol);
 }
 
-UnivariateNonnegative1::UnivariateNonnegative1() : prog_{} {
+UnivariateNonnegative1::UnivariateNonnegative1(bool small_sos_as_sdp)
+    : prog_{} {
   a_ = prog_.NewContinuousVariables<1>()(0);
   b_ = prog_.NewContinuousVariables<1>()(0);
   c_ = prog_.NewContinuousVariables<1>()(0);
@@ -126,7 +127,14 @@ UnivariateNonnegative1::UnivariateNonnegative1() : prog_{} {
   prog_.AddLinearEqualityConstraint(2 + a_ + b_ + c_ == 1);
   prog_.AddLinearCost(-a_ - b_ - c_);
   std::tie(s_, gram_s_) = prog_.NewSosPolynomial({x_}, 4);
-  std::tie(t_, gram_t_) = prog_.NewSosPolynomial({x_}, 2);
+  if (small_sos_as_sdp) {
+    gram_t_ = prog_.NewSymmetricContinuousVariables<2>();
+    prog_.AddPositiveSemidefiniteConstraint(gram_t_);
+    t_ = symbolic::Polynomial(
+        gram_t_(0, 0) + 2 * x_ * gram_t_(1, 0) + x_ * x_ * gram_t_(1, 1), {x_});
+  } else {
+    std::tie(t_, gram_t_) = prog_.NewSosPolynomial({x_}, 2);
+  }
   prog_.AddEqualityConstraintBetweenPolynomials(p_, s_ + x_ * t_);
 }
 

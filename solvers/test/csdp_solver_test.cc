@@ -435,7 +435,7 @@ GTEST_TEST(TestSOS, MotzkinPolynomial) {
 }
 
 GTEST_TEST(TestSOS, UnivariateNonnegative1) {
-  UnivariateNonnegative1 dut;
+  UnivariateNonnegative1 dut{true /*small_sos_as_sdp */};
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver;
     if (solver.available()) {
