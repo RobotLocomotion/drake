@@ -667,6 +667,12 @@ GTEST_TEST(MeshcatTest, Sliders) {
 
   meshcat.AddSlider("slider1", 2, 3, 0.01, 2.35);
   meshcat.AddSlider("slider2", 4, 5, 0.01, 4.56);
+
+  auto slider_names = meshcat.GetSliderNames();
+  EXPECT_EQ(slider_names.size(), 2);
+  EXPECT_EQ(slider_names[0], "slider1");
+  EXPECT_EQ(slider_names[1], "slider2");
+
   meshcat.DeleteAddedControls();
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider1"),
@@ -674,6 +680,9 @@ GTEST_TEST(MeshcatTest, Sliders) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider2"),
       "Meshcat does not have any slider named slider2.");
+
+  slider_names = meshcat.GetSliderNames();
+  EXPECT_EQ(slider_names.size(), 0);
 }
 
 GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
