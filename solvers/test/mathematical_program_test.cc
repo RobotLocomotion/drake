@@ -3330,39 +3330,66 @@ void CheckNewSosPolynomial(MathematicalProgram::NonnegativePolynomial type) {
 
 // Test NewSosPolynomial whose gram matrix has size 1x1 or 2x2.
 GTEST_TEST(TestMathematicalProgram, NewSosPolynomialSmallGram) {
-  MathematicalProgram prog;
-  // Check 1 x 1 matrix.
-  auto gramian1 = prog.NewSymmetricContinuousVariables<1>();
-  auto x = prog.NewIndeterminates<1>();
-  const auto p1 = prog.NewSosPolynomial(
-      gramian1, Vector1<symbolic::Monomial>(symbolic::Monomial(x(0))));
-  EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
-  EXPECT_EQ(prog.bounding_box_constraints().front().variables().rows(), 1);
-  EXPECT_EQ(prog.bounding_box_constraints().front().variables()(0),
-            gramian1(0));
-  EXPECT_EQ(prog.bounding_box_constraints().front().evaluator()->lower_bound(),
-            Vector1d(0));
-  EXPECT_TRUE(std::isinf(
-      prog.bounding_box_constraints().front().evaluator()->upper_bound()(0)));
+  {
+    // Check 1 x 1 matrix.
+    for (bool small_gram_as_lorentz_cone : {false, true}) {
+      MathematicalProgram prog;
+      auto gramian1 = prog.NewSymmetricContinuousVariables<1>();
+      auto x = prog.NewIndeterminates<1>();
+      const auto p1 = prog.NewSosPolynomial(
+          gramian1, Vector1<symbolic::Monomial>(symbolic::Monomial(x(0))),
+          MathematicalProgram::NonnegativePolynomial::kSos,
+          small_gram_as_lorentz_cone);
+      EXPECT_EQ(prog.bounding_box_constraints().size(), 1);
+      EXPECT_EQ(prog.bounding_box_constraints().front().variables().rows(), 1);
+      EXPECT_EQ(prog.bounding_box_constraints().front().variables()(0),
+                gramian1(0));
+      EXPECT_EQ(
+          prog.bounding_box_constraints().front().evaluator()->lower_bound(),
+          Vector1d(0));
+      EXPECT_TRUE(std::isinf(
+          prog.bounding_box_constraints().front().evaluator()->upper_bound()(
+              0)));
+    }
+  }
 
-  // Now check 2 x 2 matrix.
-  const auto gramian2 = prog.NewSymmetricContinuousVariables<2>();
-  const auto p2 = prog.NewSosPolynomial(
-      gramian2, Vector2<symbolic::Monomial>(symbolic::Monomial(),
-                                            symbolic::Monomial(x(0))));
-  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 1);
-  EXPECT_TRUE(CompareMatrices(
-      prog.rotated_lorentz_cone_constraints().front().evaluator()->A_dense(),
-      Eigen::Matrix3d::Identity()));
-  EXPECT_TRUE(CompareMatrices(
-      prog.rotated_lorentz_cone_constraints().front().evaluator()->b(),
-      Eigen::Vector3d::Zero()));
-  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(0),
-            gramian2(0, 0));
-  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(1),
-            gramian2(1, 1));
-  EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(2),
-            gramian2(0, 1));
+  {
+    // Now check 2 x 2 matrix with small_gram_as_lorentz_cone = true
+    MathematicalProgram prog;
+    auto x = prog.NewIndeterminates<1>();
+    const auto gramian2 = prog.NewSymmetricContinuousVariables<2>();
+    const auto p2 = prog.NewSosPolynomial(
+        gramian2, Vector2<symbolic::Monomial>(symbolic::Monomial(),
+                                              symbolic::Monomial(x(0))));
+    EXPECT_EQ(prog.rotated_lorentz_cone_constraints().size(), 1);
+    EXPECT_TRUE(CompareMatrices(
+        prog.rotated_lorentz_cone_constraints().front().evaluator()->A_dense(),
+        Eigen::Matrix3d::Identity()));
+    EXPECT_TRUE(CompareMatrices(
+        prog.rotated_lorentz_cone_constraints().front().evaluator()->b(),
+        Eigen::Vector3d::Zero()));
+    EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(0),
+              gramian2(0, 0));
+    EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(1),
+              gramian2(1, 1));
+    EXPECT_EQ(prog.rotated_lorentz_cone_constraints().front().variables()(2),
+              gramian2(0, 1));
+  }
+
+  {
+    // Now check 2 x 2 matrix with small_gram_as_lorentz_cone = false
+    MathematicalProgram prog;
+    auto x = prog.NewIndeterminates<1>();
+    const auto gramian2 = prog.NewSymmetricContinuousVariables<2>();
+    const auto p2 = prog.NewSosPolynomial(
+        gramian2,
+        Vector2<symbolic::Monomial>(symbolic::Monomial(),
+                                    symbolic::Monomial(x(0))),
+        MathematicalProgram::NonnegativePolynomial::kSos,
+        false /* small_gram_as_lorentz_cone */);
+    EXPECT_TRUE(prog.rotated_lorentz_cone_constraints().empty());
+    EXPECT_EQ(prog.positive_semidefinite_constraints().size(), 1);
+  }
 }
 
 GTEST_TEST(TestMathematicalProgram, NewSosPolynomial) {

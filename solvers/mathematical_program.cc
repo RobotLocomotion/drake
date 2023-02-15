@@ -184,10 +184,12 @@ symbolic::Polynomial MathematicalProgram::NewOddDegreeFreePolynomial(
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type, const std::string& gram_name) {
+    NonnegativePolynomial type, const std::string& gram_name,
+    bool small_gram_as_lorentz_cone) {
   const MatrixXDecisionVariable Q =
       NewSymmetricContinuousVariables(monomial_basis.size(), gram_name);
-  const symbolic::Polynomial p = NewSosPolynomial(Q, monomial_basis, type);
+  const symbolic::Polynomial p =
+      NewSosPolynomial(Q, monomial_basis, type, small_gram_as_lorentz_cone);
   return std::make_pair(p, Q);
 }
 
@@ -214,7 +216,7 @@ symbolic::Polynomial ComputePolynomialFromMonomialBasisAndGramMatrix(
 symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
     const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
     const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-    NonnegativePolynomial type) {
+    NonnegativePolynomial type, bool small_gram_as_lorentz_cone) {
   DRAKE_ASSERT(math::IsSymmetric(gramian));
   DRAKE_ASSERT(gramian.rows() == monomial_basis.rows());
   const symbolic::Polynomial p =
@@ -224,7 +226,7 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
       if (gramian.rows() == 1) {
         // A 1x1 matrix being PSD is equivalent to its entry being non-negative.
         AddBoundingBoxConstraint(0, kInf, gramian(0, 0));
-      } else if (gramian.rows() == 2) {
+      } else if (gramian.rows() == 2 && small_gram_as_lorentz_cone) {
         // A 2x2 matrix
         // ⌈X(0, 0) X(0, 1)⌉
         // ⌊X(0, 1) X(1, 1)⌋
@@ -260,7 +262,8 @@ symbolic::Polynomial MathematicalProgram::NewSosPolynomial(
 pair<symbolic::Polynomial, MatrixXDecisionVariable>
 MathematicalProgram::NewSosPolynomial(const symbolic::Variables& indeterminates,
                                       int degree, NonnegativePolynomial type,
-                                      const std::string& gram_name) {
+                                      const std::string& gram_name,
+                                      bool small_gram_as_lorentz_cone) {
   DRAKE_DEMAND(degree >= 0 && degree % 2 == 0);
   if (degree == 0) {
     // The polynomial only has a non-negative constant term.
@@ -274,7 +277,7 @@ MathematicalProgram::NewSosPolynomial(const symbolic::Variables& indeterminates,
   } else {
     const drake::VectorX<symbolic::Monomial> x{
         MonomialBasis(indeterminates, degree / 2)};
-    return NewSosPolynomial(x, type, gram_name);
+    return NewSosPolynomial(x, type, gram_name, small_gram_as_lorentz_cone);
   }
 }
 

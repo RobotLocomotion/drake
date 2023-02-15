@@ -642,7 +642,7 @@ class TestMathematicalProgram(unittest.TestCase):
         (poly1, gramian1) = prog.NewSosPolynomial(
             indeterminates=sym.Variables(x), degree=4,
             type=mp.MathematicalProgram.NonnegativePolynomial.kSdsos,
-            gram_name="M0")
+            gram_name="M0", small_gram_as_lorentz_cone=True)
         self.assertIsInstance(poly1, sym.Polynomial)
         self.assertIsInstance(gramian1, np.ndarray)
 
@@ -650,13 +650,14 @@ class TestMathematicalProgram(unittest.TestCase):
         poly2 = prog.NewSosPolynomial(
             gramian=gramian2,
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
-            type=mp.MathematicalProgram.NonnegativePolynomial.kDsos)
+            type=mp.MathematicalProgram.NonnegativePolynomial.kDsos,
+            small_gram_as_lorentz_cone=True)
         self.assertIsInstance(gramian2, np.ndarray)
 
         poly3, gramian3 = prog.NewSosPolynomial(
             monomial_basis=(sym.Monomial(x[0]), sym.Monomial(x[1])),
             type=mp.MathematicalProgram.NonnegativePolynomial.kSos,
-            gram_name="M2")
+            gram_name="M2", small_gram_as_lorentz_cone=True)
         self.assertIsInstance(poly3, sym.Polynomial)
         self.assertIsInstance(gramian3, np.ndarray)
 

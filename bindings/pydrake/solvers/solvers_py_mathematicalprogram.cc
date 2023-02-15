@@ -730,33 +730,36 @@ void BindMathematicalProgram(py::module m) {
               MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<Monomial>>&,
               MathematicalProgram::NonnegativePolynomial,
-              const std::string& gram_name)>(
+              const std::string& gram_name, bool small_gram_as_lorentz_cone)>(
               &MathematicalProgram::NewSosPolynomial),
           py::arg("monomial_basis"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
           py::arg("gram_name") = "S",
+          py::arg("small_gram_as_lorentz_cone") = true,
           doc.MathematicalProgram.NewSosPolynomial
-              .doc_3args_monomial_basis_type_gram_name)
+              .doc_4args_monomial_basis_type_gram_name_small_gram_as_lorentz_cone)
       .def("NewSosPolynomial",
           static_cast<Polynomial (MathematicalProgram::*)(
               const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
               const Eigen::Ref<const VectorX<Monomial>>&,
-              MathematicalProgram::NonnegativePolynomial)>(
+              MathematicalProgram::NonnegativePolynomial, bool)>(
               &MathematicalProgram::NewSosPolynomial),
           py::arg("gramian"), py::arg("monomial_basis"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
+          py::arg("small_gram_as_lorentz_cone") = true,
           doc.MathematicalProgram.NewSosPolynomial
-              .doc_3args_gramian_monomial_basis_type)
+              .doc_4args_gramian_monomial_basis_type_small_gram_as_lorentz_cone)
       .def("NewSosPolynomial",
           static_cast<std::pair<Polynomial, MatrixXDecisionVariable> (
               MathematicalProgram::*)(const Variables&, int,
-              MathematicalProgram::NonnegativePolynomial, const std::string&)>(
-              &MathematicalProgram::NewSosPolynomial),
+              MathematicalProgram::NonnegativePolynomial, const std::string&,
+              bool)>(&MathematicalProgram::NewSosPolynomial),
           py::arg("indeterminates"), py::arg("degree"),
           py::arg("type") = MathematicalProgram::NonnegativePolynomial::kSos,
           py::arg("gram_name") = "S",
+          py::arg("small_gram_as_lorentz_cone") = true,
           doc.MathematicalProgram.NewSosPolynomial
-              .doc_4args_indeterminates_degree_type_gram_name)
+              .doc_5args_indeterminates_degree_type_gram_name_small_gram_as_lorentz_cone)
       .def("NewEvenDegreeNonnegativePolynomial",
           &MathematicalProgram::NewEvenDegreeNonnegativePolynomial,
           py::arg("indeterminates"), py::arg("degree"), py::arg("type"),

@@ -482,7 +482,7 @@ class MathematicalProgram {
     kDsos,       ///< A diagonally dominant sum-of-squares polynomial.
   };
 
-  /** Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,
+  /** Returns a pair of a SOS polynomial p = mᵀQm and the Gram matrix Q,
    * where m is the @p monomial basis.
    * For example, `NewSosPolynomial(Vector2<Monomial>{x,y})` returns a
    * polynomial
@@ -496,11 +496,27 @@ class MathematicalProgram {
    * @param gram_name The name of the gram matrix for print out.
    * @note Q is a symmetric monomial_basis.rows() x monomial_basis.rows()
    * matrix.
+   * @param small_gram_as_lorentz_cone If set to true, then for
+   * small-sized Gram matrix Q (with size 2 x 2), we impose a rotated Lorentz
+   * cone constraint Q(0, 0) * Q(1, 1) >= Q(0, 1)², Q(0, 0) >= 0, Q(1, 1) >= 0.
+   * If set to false, then we always impose the positive semidefinite constraint
+   * "Q is psd", whatever the size of Q is. @default is true. Note that for most
+   * optimization solvers (Mosek, SCS, etc) that support positive semidefinite
+   * matrix constraint, it is advantageous to use rotated Lorentz cone
+   * constraint for small-size 2x2 Gram matrices, because these solvers have
+   * special routines for (rotated) Lorentz cone constraint. On the other hand
+   * for some optimization solvers (like CSDP) which doesn't have special
+   * routines for (rotated) Lorentz cone constraint, it is disadvantage to set
+   * this flag to true, since the solver actually need to impose the (rotated)
+   * Lorentz cone constraint as matrix positive semidefinite constraint, and
+   * introduce larger size psd matrix (this rotated Lorentz cone constraint will
+   * be imposed as a 3 x 3 matrix being psd).
    */
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
       NonnegativePolynomial type = NonnegativePolynomial::kSos,
-      const std::string& gram_name = "S");
+      const std::string& gram_name = "S",
+      bool small_gram_as_lorentz_cone = true);
 
   /**
    * Overloads NewSosPolynomial, except the Gramian matrix Q is an
@@ -510,7 +526,8 @@ class MathematicalProgram {
   symbolic::Polynomial NewSosPolynomial(
       const Eigen::Ref<const MatrixX<symbolic::Variable>>& gramian,
       const Eigen::Ref<const VectorX<symbolic::Monomial>>& monomial_basis,
-      NonnegativePolynomial type = NonnegativePolynomial::kSos);
+      NonnegativePolynomial type = NonnegativePolynomial::kSos,
+      bool small_gram_as_lorentz_cone = true);
 
   /**
    * Overloads NewSosPolynomial.
@@ -533,7 +550,8 @@ class MathematicalProgram {
   std::pair<symbolic::Polynomial, MatrixXDecisionVariable> NewSosPolynomial(
       const symbolic::Variables& indeterminates, int degree,
       NonnegativePolynomial type = NonnegativePolynomial::kSos,
-      const std::string& gram_name = "S");
+      const std::string& gram_name = "S",
+      bool small_gram_as_lorentz_cone = true);
 
   /**
    * @anchor even_degree_nonnegative_polynomial

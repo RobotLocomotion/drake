@@ -435,7 +435,7 @@ GTEST_TEST(TestSOS, MotzkinPolynomial) {
 }
 
 GTEST_TEST(TestSOS, UnivariateNonnegative1) {
-  UnivariateNonnegative1 dut;
+  UnivariateNonnegative1 dut{false /*small_gram_as_lorentz_cone*/};
   for (auto method : GetRemoveFreeVariableMethods()) {
     CsdpSolver solver;
     if (solver.available()) {
