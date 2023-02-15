@@ -132,7 +132,13 @@ class UnivariateNonnegative1 {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(UnivariateNonnegative1)
 
-  UnivariateNonnegative1();
+  // @param small_sos_as_sdp If the sos Gram matrix is small (like 1 x 1 or 2 x
+  // 2 matrix), then by default we impose either bounding box or rotated Lorentz
+  // cone constraint. Unfortunately due to some mysterious reason on Mac
+  // machine, for this particular problem, this formulation would fail with CSDP
+  // solver on Mac; while imposing positive semidefinite matrix constraint on
+  // these small Grams will succeed.
+  explicit UnivariateNonnegative1(bool small_sos_as_sdp = false);
 
   const MathematicalProgram& prog() const { return prog_; }
 
