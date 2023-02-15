@@ -929,31 +929,39 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
 
   const auto& inspector = model().scene_graph().model_inspector();
 
-  // Cache the welded bodies for each body, for use in the inner loop below.
-  std::unordered_set<int> bodies_welded_to_body_cache;
+  // Generate a mapping from body to subgraph for use in identifying welds.
+  std::vector<int> body_subgraph_mapping(num_bodies, -1);
+
+  const std::vector<std::set<BodyIndex>> subgraphs =
+      plant().FindSubgraphsOfWeldedBodies();
+
+  for (size_t subgraph_id = 0; subgraph_id < subgraphs.size(); ++subgraph_id) {
+    const std::set<BodyIndex>& subgraph = subgraphs.at(subgraph_id);
+    for (const BodyIndex& body_id : subgraph) {
+      body_subgraph_mapping.at(body_id) = static_cast<int>(subgraph_id);
+    }
+  }
 
   // For consistency, (B, B) is always filtered.
   // Loop variables below use `int` for Eigen indexing compatibility.
   for (int i = 0; i < num_bodies; ++i) {
     filtered_collisions(i, i) = -1;
+
+    const int body_i_subgraph_id = body_subgraph_mapping.at(i);
+    // We expect FindSubgraphsOfWeldedBodies to cover all bodies, but check to
+    // make sure no bodies are left with the default subgraph id.
+    DRAKE_DEMAND(body_i_subgraph_id >= 0);
+
     const bool i_is_robot = IsPartOfRobot(BodyIndex(i));
 
     const Body<double>& body_i = get_body(BodyIndex(i));
-
-    // Update the cache of welded bodies if necessary.
-    // Note: if body i is welded to body i-1, we don't need to update the cache.
-    if (bodies_welded_to_body_cache.count(i) == 0) {
-      bodies_welded_to_body_cache.clear();
-
-      for (const auto* welded_body : plant().GetBodiesWeldedTo(body_i)) {
-        bodies_welded_to_body_cache.insert(welded_body->index());
-      }
-    }
 
     const std::vector<GeometryId>& geometries_i =
         plant().GetCollisionGeometriesForBody(body_i);
 
     for (int j = i + 1; j < num_bodies; ++j) {
+      const int body_j_subgraph_id = body_subgraph_mapping.at(j);
+
       const bool j_is_robot = IsPartOfRobot(BodyIndex(j));
       // (Env, env) pairs are immutably filtered (marked -1).
       if (!(i_is_robot || j_is_robot)) {
@@ -994,7 +1002,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
 
       // If the body pair has a welded path between them, it should be filtered.
       const bool bodies_welded_together =
-          bodies_welded_to_body_cache.count(j) > 0;
+          body_i_subgraph_id == body_j_subgraph_id;
 
       // Add the filter accordingly.
       if (collisions_filtered) {
