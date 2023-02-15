@@ -4,6 +4,9 @@ url: "" # the base hostname & protocol for the site
 baseurl: "" # the subpath of the site
 title: Drake
 
+# Tell Jekyll not to hide release notes based on their date.
+future: True
+
 # N.B. Items under this `custom` section are not part of the standard Jekyll
 # configuration schema; instead, they are used by the relevant templates.
 custom:
