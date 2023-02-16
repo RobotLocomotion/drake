@@ -77,6 +77,7 @@ drake_cc_library(
         "drake_throw.h",
         "eigen_types.h",
         "fmt.h",
+        "fmt_ostream.h",
         "never_destroyed.h",
         "text_logging.h",
     ],
@@ -887,6 +888,13 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "fmt_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fmt_ostream_test",
     deps = [
         ":essential",
     ],
