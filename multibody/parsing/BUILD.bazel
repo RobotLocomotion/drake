@@ -424,7 +424,7 @@ drake_cc_googletest(
     deps = [
         ":process_model_directives",
         ":scoped_names",
-        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities",
     ],
 )
 

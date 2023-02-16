@@ -138,6 +138,13 @@ void ParseModelDirectivesImpl(
           X_PC, plant, added_models);
 
     } else if (directive.add_collision_filter_group) {
+      // If there's no geometry registered, there's nothing to be done with
+      // collision filtering.  Trying to proceed will just trigger an error
+      // eventually.
+      if (!plant->geometry_source_is_registered()) {
+        continue;
+      }
+
       // Find the model instance index that corresponds to model_namespace, if
       // the name is non-empty.
       std::optional<ModelInstanceIndex> model_instance;
@@ -260,4 +267,3 @@ std::vector<ModelInstanceIndex> DmdParserWrapper::AddAllModels(
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
-
