@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/parsing/scoped_names.h"
@@ -309,6 +310,20 @@ GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupSmokeTest) {
     {"nested::sub_model1::collision", "nested::sub_model2::collision"},
   };
   VerifyCollisionFilters(scene_graph, expected_filters);
+}
+
+// Test collision filter groups in ModelDirectives.
+GTEST_TEST(ProcessModelDirectivesTest, CollisionFilterGroupNoSceneGraph) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/collision_filter_group.dmd.yaml"));
+
+
+  MultibodyPlant<double> plant(0.0);
+  ASSERT_FALSE(plant.geometry_source_is_registered());
+  DRAKE_EXPECT_NO_THROW(
+      ProcessModelDirectives(directives, &plant,
+                             nullptr, make_parser(&plant).get()));
 }
 
 // Test collision filter groups in ModelDirectives.
