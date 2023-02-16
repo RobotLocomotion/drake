@@ -18,6 +18,7 @@ using drake::internal::DiagnosticPolicy;
 using internal::CollisionFilterGroupResolver;
 using internal::DataSource;
 using internal::ParserInterface;
+using internal::ParsingOptions;
 using internal::ParsingWorkspace;
 using internal::SelectParser;
 
