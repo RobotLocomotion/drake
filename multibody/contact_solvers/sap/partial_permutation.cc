@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "fmt/format.h"
+#include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
 

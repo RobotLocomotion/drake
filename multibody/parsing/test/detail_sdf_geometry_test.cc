@@ -7,9 +7,9 @@
 #include <sstream>
 #include <vector>
 
-#include "fmt/ostream.h"
 #include <drake_vendor/sdf/Root.hh>
 #include <drake_vendor/sdf/parser.hh>
+#include <fmt/ostream.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

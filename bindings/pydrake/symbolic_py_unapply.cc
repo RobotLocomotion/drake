@@ -1,8 +1,8 @@
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
 
-#include "fmt/format.h"
-#include "fmt/ostream.h"
 #include "pybind11/stl.h"
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 namespace drake {
 namespace pydrake {
