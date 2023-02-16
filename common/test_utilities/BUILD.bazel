@@ -64,6 +64,15 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "fmt_format_printer",
+    testonly = 1,
+    hdrs = ["fmt_format_printer.h"],
+    tags = ["exclude_from_package"],
+    visibility = ["@gtest//:__pkg__"],
+    deps = ["@fmt"],
+)
+
+drake_cc_library(
     name = "is_dynamic_castable",
     testonly = 1,
     hdrs = ["is_dynamic_castable.h"],

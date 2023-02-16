@@ -45,6 +45,9 @@ cc_library(
         "@//conditions:default": [],
     }),
     linkstatic = 1,
+    deps = [
+        "@drake//common/test_utilities:fmt_format_printer",
+    ],
     visibility = ["//visibility:public"],
 )
 

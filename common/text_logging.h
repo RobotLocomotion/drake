@@ -32,6 +32,10 @@ used by Drake might be older.)
 
 #include <string>
 
+#include <fmt/ostream.h>
+
+#include "drake/common/fmt.h"
+
 #ifndef DRAKE_DOXYGEN_CXX
 #ifdef HAVE_SPDLOG
 #ifndef NDEBUG
@@ -70,20 +74,7 @@ used by Drake might be older.)
 
 #endif
 
-/* clang-format off */
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
-/* clang-format on */
-
-#else  // HAVE_SPDLOG
-
-// We always want text_logging.h to provide fmt support to those who include
-// it, even if spdlog is disabled.
-
-/* clang-format off */
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-/* clang-format on */
 
 #endif  // HAVE_SPDLOG
 #endif  // DRAKE_DOXYGEN_CXX
@@ -91,14 +82,6 @@ used by Drake might be older.)
 #include "drake/common/drake_copyable.h"
 
 namespace drake {
-
-#if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
-/// When using fmt >= 8, this is an alias for fmt::runtime.
-/// When using fmt < 8, this is a no-op.
-inline auto fmt_runtime(std::string_view s) { return fmt::runtime(s); }
-#else
-inline auto fmt_runtime(std::string_view s) { return s; }
-#endif
 
 #ifdef HAVE_SPDLOG
 namespace logging {
