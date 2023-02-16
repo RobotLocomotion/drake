@@ -452,6 +452,38 @@ GTEST_TEST(FileParserTest, StrictParsing) {
   }
 }
 
+GTEST_TEST(FileParserTest, AutoRenaming) {
+  std::string model = "<robot name='robot'><link name='a'/></robot>";
+  MultibodyPlant<double> plant(0.0);
+
+  Parser parser(&plant);
+  EXPECT_FALSE(parser.GetAutoRenaming());
+
+  // Load a model.
+  parser.AddModelsFromString(model, "urdf");
+  EXPECT_TRUE(plant.HasModelInstanceNamed("robot"));
+  // Auto renaming is off; fail to load it again.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModelsFromString(model, "urdf"),
+      ".*names must be unique.*");
+
+  // Load it again with auto renaming.
+  parser.SetAutoRenaming(true);
+  EXPECT_TRUE(parser.GetAutoRenaming());
+  parser.AddModelsFromString(model, "urdf");
+  // The auto renaming format is not guaranteed by any contract, but we test
+  // for it explicitly here, since it is easy with whitebox knowledge.
+  EXPECT_TRUE(plant.HasModelInstanceNamed(
+      fmt::format("robot_{}", plant.num_model_instances() - 1)));
+
+  // Disable auto renaming and show repeat loading subsequently fails.
+  parser.SetAutoRenaming(false);
+  EXPECT_FALSE(parser.GetAutoRenaming());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModelsFromString(model, "urdf"),
+      ".*names must be unique.*");
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
