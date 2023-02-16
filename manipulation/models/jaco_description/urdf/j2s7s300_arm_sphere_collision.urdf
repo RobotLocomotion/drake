@@ -566,12 +566,6 @@
         <sphere radius="0.035"/>
       </geometry>
     </collision>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0.1 -0.0"/>
-      <geometry>
-        <sphere radius="0.035"/>
-      </geometry>
-    </collision>
     <inertial>
       <mass value="0.463"/>
       <origin xyz="0 0.0497208855 -0.0028562765"/>
@@ -596,6 +590,12 @@
     </actuator>
   </transmission>
   <link name="j2s7s300_link_7">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.00375"/>
+      <geometry>
+        <sphere radius="0.035"/>
+      </geometry>
+    </collision>
     <inertial>
       <!-- TODO(sammy-tri) This inertial is bogus with the hand removed. -->
       <mass value="0.001"/>
