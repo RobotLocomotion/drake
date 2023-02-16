@@ -1,7 +1,7 @@
 #include <memory>
 #include <string>
 
-#include "fmt/ostream.h"
+#include <fmt/ostream.h>
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"

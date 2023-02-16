@@ -7,8 +7,8 @@
 #include <typeinfo>
 #include <unordered_map>
 
-#include "fmt/ostream.h"
 #include <Eigen/Dense>
+#include <fmt/ostream.h>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/never_destroyed.h"

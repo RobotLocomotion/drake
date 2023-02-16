@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "fmt/format.h"
 #include <benchmark/benchmark.h>
+#include <fmt/format.h>
 
 #include "drake/geometry/proximity/make_ellipsoid_field.h"
 #include "drake/geometry/proximity/make_ellipsoid_mesh.h"
