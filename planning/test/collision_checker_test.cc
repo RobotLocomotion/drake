@@ -1615,7 +1615,7 @@ class MockEdgeChecker : public UnimplementedCollisionChecker {
       const CollisionCheckerContext& model_context) const override {
     // Make this call artificially more expensive so that parallel edge checks
     // will actually perform work in multiple OpenMP threads.
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     const int thread_index =
         common_robotics_utilities::openmp_helpers::GetContextOmpThreadNum();
     thread_signals_[thread_index] = 1;
