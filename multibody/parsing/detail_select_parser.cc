@@ -5,6 +5,7 @@
 
 #include "drake/common/never_destroyed.h"
 #include "drake/multibody/parsing/detail_dmd_parser.h"
+#include "drake/multibody/parsing/detail_mesh_parser.h"
 #include "drake/multibody/parsing/detail_mujoco_parser.h"
 #include "drake/multibody/parsing/detail_sdf_parser.h"
 #include "drake/multibody/parsing/detail_urdf_parser.h"
@@ -17,7 +18,7 @@ using drake::internal::DiagnosticPolicy;
 
 namespace {
 
-enum class FileType { kUnknown, kSdf, kUrdf, kMjcf, kDmd };
+enum class FileType { kUnknown, kSdf, kUrdf, kMjcf, kDmd, kMesh };
 FileType DetermineFileType(const DiagnosticPolicy& policy,
                            const std::string& filename) {
   if (EndsWithCaseInsensitive(filename, ".urdf")) {
@@ -32,9 +33,12 @@ FileType DetermineFileType(const DiagnosticPolicy& policy,
   if (EndsWithCaseInsensitive(filename, ".dmd.yaml")) {
     return FileType::kDmd;
   }
+  if (EndsWithCaseInsensitive(filename, ".obj")) {
+    return FileType::kMesh;
+  }
   policy.Error(fmt::format(
       "The file '{}' is not a recognized type."
-      " Known types are: .urdf, .sdf, .xml (Mujoco), .dmd.yaml",
+      " Known types are: .urdf, .sdf, .xml (Mujoco), .dmd.yaml, .obj",
       filename));
   return FileType::kUnknown;
 }
@@ -65,6 +69,7 @@ ParserInterface& SelectParser(const DiagnosticPolicy& policy,
   static never_destroyed<internal::MujocoParserWrapper> mujoco;
   static never_destroyed<internal::UnknownParserWrapper> unknown;
   static never_destroyed<internal::DmdParserWrapper> dmd;
+  static never_destroyed<internal::MeshParserWrapper> mesh;
   const FileType type = DetermineFileType(policy, filename);
   switch (type) {
     case FileType::kUrdf:
@@ -75,6 +80,8 @@ ParserInterface& SelectParser(const DiagnosticPolicy& policy,
       return mujoco.access();
     case FileType::kDmd:
       return dmd.access();
+    case FileType::kMesh:
+      return mesh.access();
     case FileType::kUnknown:
       return unknown.access();
   }

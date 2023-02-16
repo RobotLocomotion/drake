@@ -157,7 +157,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionInvalidFilePath) {
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionForEmptyFile) {
   std::istringstream empty("");
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&empty),
-                              "The Wavefront obj file has no faces.");
+                              ".*The Wavefront obj data has no faces.");
 }
 
 void FailOnWarning(std::string_view message) {
@@ -183,7 +183,7 @@ GTEST_TEST(ObjToSurfaceMeshTest, WarningCallback) {
     std::ifstream input(filename);
     DRAKE_EXPECT_THROWS_MESSAGE(
         ReadObjToTriangleSurfaceMesh(&input, 1.0, &FailOnWarning),
-        "FailOnWarning: Warning parsing Wavefront obj file : "
+        "FailOnWarning: .*Warning parsing Wavefront obj data : "
         ".*CubeMaterial.*not found.*");
   }
 
@@ -199,7 +199,7 @@ v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 )"};
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              "The Wavefront obj file has no faces.");
+                              ".*The Wavefront obj data has no faces.");
 }
 
 GTEST_TEST(ObjToSurfaceMeshTest, ThrowExceptionObjectHasNoFaces) {
@@ -210,7 +210,7 @@ v 0.0 1.0 0.0
 v 0.0 0.0 1.0
 )"};
   DRAKE_EXPECT_THROWS_MESSAGE(ReadObjToTriangleSurfaceMesh(&no_faces),
-                              "The Wavefront obj file has no faces.");
+                              ".*The Wavefront obj data has no faces.");
 }
 
 // Confirms that we can accept an obj file with faces (f lines) without

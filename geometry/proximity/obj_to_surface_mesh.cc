@@ -22,6 +22,8 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using drake::internal::DiagnosticDetail;
+using drake::internal::DiagnosticPolicy;
 using Eigen::Vector3d;
 
 // TODO(DamrongGuoy): Refactor the tinyobj usage between here and
@@ -109,11 +111,15 @@ void TinyObjToSurfaceFaces(const tinyobj::mesh_t& mesh,
   }
 }
 
-TriangleSurfaceMesh<double> DoReadObjToSurfaceMesh(
+}  // namespace
+
+namespace internal {
+std::optional<TriangleSurfaceMesh<double>> DoReadObjToSurfaceMesh(
     std::istream* input_stream,
     const double scale,
     const std::optional<std::string>& mtl_basedir,
-    const std::function<void(std::string_view)> on_warning) {
+    const ObjParseConfig& config) {
+
   tinyobj::attrib_t attrib;  // Used for vertices.
   std::vector<tinyobj::shape_t> shapes;  // Used for triangles.
   std::vector<tinyobj::material_t> materials;  // Not used.
@@ -130,22 +136,33 @@ TriangleSurfaceMesh<double> DoReadObjToSurfaceMesh(
       &attrib, &shapes, &materials, &warn, &err, input_stream, readMatFn.get(),
       triangulate);
   if (!ret || !err.empty()) {
-    throw std::runtime_error("Error parsing Wavefront obj file : " + err);
+    const std::string err_message =
+        fmt::format("Error parsing Wavefront obj data : {}", err);
+    config.diagnostic.Error(err_message);
+    return std::nullopt;
   }
   if (!warn.empty()) {
-    warn = "Warning parsing Wavefront obj file : " + warn;
+    warn = "Warning parsing Wavefront obj data : " + warn;
     if (warn.back() == '\n') {
       warn.pop_back();
     }
-    if (on_warning) {
-      on_warning(warn);
-    } else {
-      drake::log()->warn(warn);
-    }
+    config.diagnostic.Warning(warn);
   }
   if (shapes.size() == 0) {
-    throw std::runtime_error("The Wavefront obj file has no faces.");
+    const char* err_message = "The Wavefront obj data has no faces.";
+    config.diagnostic.Error(err_message);
+    return std::nullopt;
   }
+
+  if (config.allowed_shape_count > 0 &&
+      static_cast<int>(shapes.size()) > config.allowed_shape_count) {
+    const std::string err_message = fmt::format(
+        "The Wavefront obj data defines {} unique shapes; only {} allowed.",
+        shapes.size(), config.allowed_shape_count);
+    config.diagnostic.Error(err_message);
+    return std::nullopt;
+  }
+
   std::vector<Vector3d> vertices =
       TinyObjToSurfaceVertices(attrib.vertices, scale);
 
@@ -168,7 +185,7 @@ TriangleSurfaceMesh<double> DoReadObjToSurfaceMesh(
   return TriangleSurfaceMesh<double>(std::move(faces), std::move(vertices));
 }
 
-}  // namespace
+}  // namespace internal
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
     const std::string& filename,
@@ -180,17 +197,35 @@ TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
   }
   const std::string mtl_basedir =
       std::filesystem::path(filename).parent_path().string() + "/";
-  return DoReadObjToSurfaceMesh(&input_stream, scale, mtl_basedir,
-                                std::move(on_warning));
+
+  DiagnosticPolicy policy;
+  if (on_warning != nullptr) {
+    policy.SetActionForWarnings([&on_warning](const DiagnosticDetail& detail) {
+      on_warning(detail.FormatWarning());
+    });
+  }
+
+  // We will either throw or return a mesh here.
+  return *internal::DoReadObjToSurfaceMesh(&input_stream, scale, mtl_basedir,
+                                           {.diagnostic = policy});
 }
 
 TriangleSurfaceMesh<double> ReadObjToTriangleSurfaceMesh(
-    std::istream* input_stream,
-    const double scale,
+    std::istream* input_stream, const double scale,
     std::function<void(std::string_view)> on_warning) {
   DRAKE_THROW_UNLESS(input_stream != nullptr);
-  return DoReadObjToSurfaceMesh(input_stream, scale,
-      std::nullopt /* mtl_basedir */, std::move(on_warning));
+
+  DiagnosticPolicy policy;
+  if (on_warning != nullptr) {
+    policy.SetActionForWarnings([&on_warning](const DiagnosticDetail& detail) {
+      on_warning(detail.FormatWarning());
+    });
+  }
+
+  // We will either throw or return a mesh here.
+  return *internal::DoReadObjToSurfaceMesh(input_stream, scale,
+                                           std::nullopt /* mtl_basedir */,
+                                           {.diagnostic = policy});
 }
 
 }  // namespace geometry
