@@ -13,6 +13,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -410,3 +411,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
 }  // namespace multibody
 }  // namespace drake
+
+namespace fmt {
+template <>
+struct formatter<drake::multibody::DifferentialInverseKinematicsStatus>
+    : drake::ostream_formatter {};
+}  // namespace fmt

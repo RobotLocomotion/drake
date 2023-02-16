@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/symbolic/chebyshev_basis_element.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/monomial_basis_element.h"
@@ -558,3 +559,11 @@ struct NumTraits<
 };
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename BasisElement>
+struct formatter<drake::symbolic::GenericPolynomial<BasisElement>>
+    : drake::ostream_formatter {};
+}  // namespace fmt

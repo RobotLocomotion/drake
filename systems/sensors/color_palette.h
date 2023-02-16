@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -197,3 +198,10 @@ class ColorPalette {
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::systems::sensors::Color<T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt

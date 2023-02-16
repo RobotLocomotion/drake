@@ -535,6 +535,11 @@ def print_symbols(f, name, node, level=0, *, tree_parser_doc,
     """
     Prints C++ code for relevant documentation.
     """
+    if level == 1 and name == "fmt":
+        # We have trouble parsing fmt's nested inline namespaces, so just
+        # skip everything in the fmt namespace wholesale.
+        return
+
     indent = '  ' * level
 
     def iprint(s):

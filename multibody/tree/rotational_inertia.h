@@ -19,6 +19,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -1180,6 +1181,13 @@ RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
 
 }  // namespace multibody
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::multibody::RotationalInertia<T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::RotationalInertia)

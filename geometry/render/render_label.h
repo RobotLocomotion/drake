@@ -6,6 +6,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 #include "drake/systems/sensors/pixel_types.h"
 
@@ -182,3 +183,10 @@ struct hash<drake::geometry::render::RenderLabel>
   : public drake::DefaultHash {};
 
 }  // namespace std
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::geometry::render::RenderLabel>
+    : drake::ostream_formatter {};
+}  // namespace fmt

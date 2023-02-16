@@ -7,6 +7,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/fmt.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/context_base.h"
 #include "drake/systems/framework/parameters.h"
@@ -894,6 +895,8 @@ std::ostream& operator<<(std::ostream& os, const Context<T>& context) {
 
 }  // namespace systems
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(typename T, drake::systems, Context<T>, x, x.to_string())
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::Context)

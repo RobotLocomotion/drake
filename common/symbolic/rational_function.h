@@ -2,6 +2,7 @@
 
 #include <ostream>
 
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/symbolic/polynomial.h"
 
 namespace drake {
@@ -324,3 +325,11 @@ EIGEN_STRONG_INLINE bool not_equal_strict(
 }  // namespace numext
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::symbolic::RationalFunction>
+    : drake::ostream_formatter {};
+}  // namespace fmt

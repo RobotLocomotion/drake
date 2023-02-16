@@ -107,6 +107,10 @@ struct SortedPair {
     if constexpr (Index == 0) return first_;
     if constexpr (Index == 1) return second_;
   }
+  template <std::size_t Index>
+  friend const T& get(const SortedPair<T>& self) {
+    return self.get<Index>();
+  }
   //@}
 
  private:
