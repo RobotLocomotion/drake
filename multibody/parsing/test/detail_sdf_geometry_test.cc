@@ -7,13 +7,13 @@
 #include <sstream>
 #include <vector>
 
-#include "fmt/ostream.h"
 #include <drake_vendor/sdf/Root.hh>
 #include <drake_vendor/sdf/parser.hh>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
@@ -75,7 +75,7 @@ sdf::SDFPtr ReadString(const std::string& input) {
   const bool success = sdf::readString(input, config, result, errors);
   if (!success) {
     for (const auto& error : errors) {
-      drake::log()->error("Parse error: {}", error);
+      drake::log()->error("Parse error: {}", fmt_streamed(error));
     }
     // Note that we don't throw here, we just spam the console.  This is not
     // great, but it matches the pre-existing behavior which wants this helper

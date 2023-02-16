@@ -692,5 +692,13 @@ using RigidTransformd = RigidTransform<double>;
 }  // namespace math
 }  // namespace drake
 
+// Format RigidTransform using its operator<<.
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::math::RigidTransform<T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt
+
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::RigidTransform)

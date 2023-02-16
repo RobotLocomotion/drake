@@ -10,13 +10,14 @@
 namespace drake {
 
 #if FMT_VERSION >= 80000 || defined(DRAKE_DOXYGEN_CXX)
-/** When using fmt >= 8, this is an alias for fmt::runtime.
+/** When using fmt >= 8, this is an alias for
+<a href="https://fmt.dev/latest/api.html#compile-time-format-string-checks">fmt::runtime</a>.
 When using fmt < 8, this is a no-op. */
 inline auto fmt_runtime(std::string_view s) {
   return fmt::runtime(s);
 }
 /** When using fmt >= 8, this is defined to be `const` to indicate that the
-fmt::formatter<T>::format(...) function should be object-const.
+`fmt::formatter<T>::format(...)` function should be object-const.
 When using fmt < 8, the function signature was incorrect (lacking the const),
 so this macro will be empty. */
 #define DRAKE_FMT8_CONST const
