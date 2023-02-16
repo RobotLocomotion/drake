@@ -11,5 +11,8 @@ def gtest_repository(
         commit = "v1.13.0",
         sha256 = "ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363",  # noqa
         build_file = ":package.BUILD.bazel",
+        patches = [
+            ":patches/add_printers.patch",
+        ],
         mirrors = mirrors,
     )
