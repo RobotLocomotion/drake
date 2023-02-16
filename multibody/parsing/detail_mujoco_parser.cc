@@ -87,7 +87,12 @@ void ApplyDefaultAttributes(const XMLElement& default_node, XMLElement* node) {
 
 class MujocoParser {
  public:
-  explicit MujocoParser(MultibodyPlant<double>* plant) : plant_{plant} {}
+  explicit MujocoParser(const ParsingWorkspace& workspace)
+      : workspace_(workspace), plant_(workspace.plant) {
+    // Clang complains that the workspace_ field is unused. Nerf the warning
+    // for now; it will be used soon.
+    unused(workspace_);
+  }
 
   RigidTransformd ParseTransform(
       XMLElement* node, const RigidTransformd& X_default = RigidTransformd{}) {
@@ -1314,6 +1319,7 @@ class MujocoParser {
   }
 
  private:
+  const ParsingWorkspace& workspace_;
   MultibodyPlant<double>* plant_;
   ModelInstanceIndex model_instance_{};
   std::filesystem::path main_mjcf_path_{};
@@ -1332,9 +1338,8 @@ class MujocoParser {
 ModelInstanceIndex AddModelFromMujocoXml(
     const DataSource& data_source, const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
-    MultibodyPlant<double>* plant) {
-  DRAKE_THROW_UNLESS(plant != nullptr);
-  DRAKE_THROW_UNLESS(!plant->is_finalized());
+    const ParsingWorkspace& workspace) {
+  DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
   XMLDocument xml_doc;
   std::filesystem::path path{};
@@ -1356,7 +1361,7 @@ ModelInstanceIndex AddModelFromMujocoXml(
     path = std::filesystem::current_path();
   }
 
-  MujocoParser parser(plant);
+  MujocoParser parser(workspace);
   return parser.Parse(model_name_in, parent_model_name, &xml_doc, path);
 }
 
@@ -1369,7 +1374,7 @@ std::optional<ModelInstanceIndex> MujocoParserWrapper::AddModel(
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
   return AddModelFromMujocoXml(data_source, model_name, parent_model_name,
-                               workspace.plant);
+                               workspace);
 }
 
 std::vector<ModelInstanceIndex> MujocoParserWrapper::AddAllModels(
