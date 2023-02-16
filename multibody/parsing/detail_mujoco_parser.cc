@@ -1248,6 +1248,13 @@ class MujocoParser {
 
     model_instance_ = plant_->AddModelInstance(model_name);
 
+    if (plant_->HasModelInstanceNamed(model_name)) {
+      if (workspace_.options.enable_auto_renaming) {
+        model_name =
+            fmt::format("{}_{}", model_name, plant_->num_model_instances());
+      }
+    }
+
     // Parse the compiler parameters.
     for (XMLElement* compiler_node = node->FirstChildElement("compiler");
          compiler_node;

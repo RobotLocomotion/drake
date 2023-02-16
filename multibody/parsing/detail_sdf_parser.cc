@@ -1527,8 +1527,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     const ParsingWorkspace& workspace,
     const sdf::NestedInclude& include, sdf::Errors* errors) {
   const sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
-  auto& [package_map, diagnostic, plant, collision_resolver, parser_selector] =
-      workspace;
+  auto& [options, package_map, diagnostic, plant,
+         collision_resolver, parser_selector] = workspace;
   const std::string resolved_filename{include.ResolvedFileName()};
 
   // Do not attempt to parse anything other than URDF files.
@@ -1562,8 +1562,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   ModelInstanceIndex main_model_instance;
   // New instances will have indices starting from cur_num_models
   int cur_num_models = plant->num_model_instances();
-  ParsingWorkspace subworkspace{
-    package_map, subdiagnostic, plant, collision_resolver, parser_selector};
+  ParsingWorkspace subworkspace{options, package_map, subdiagnostic, plant,
+    collision_resolver, parser_selector};
   const std::optional<ModelInstanceIndex> maybe_model =
       parser_selector(diagnostic, resolved_filename).
       AddModel(data_source, include.LocalModelName().value_or(""),
@@ -1730,10 +1730,25 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   const std::string local_model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
 
-  const std::string model_name =
+  std::string model_name =
       parent_model_name.has_value()
           ? sdf::JoinName(*parent_model_name, local_model_name)
           : local_model_name;
+  if (workspace.plant->HasModelInstanceNamed(model_name)) {
+    if (workspace.options.enable_auto_renaming) {
+      model_name =
+          fmt::format("{}_{}", model_name,
+                      workspace.plant->num_model_instances());
+    }
+  }
+
+  if (workspace.plant->HasModelInstanceNamed(model_name)) {
+    if (workspace.options.enable_auto_renaming) {
+      model_name =
+          fmt::format("{}_{}", model_name,
+                      workspace.plant->num_model_instances());
+    }
+  }
 
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
@@ -1783,10 +1798,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     DRAKE_DEMAND(root.Model() != nullptr);
     const sdf::Model& model = *root.Model();
 
-    const std::string model_name =
+    std::string model_name =
         parent_model_name.has_value()
-            ? sdf::JoinName(*parent_model_name, model.Name())
-            : model.Name();
+        ? sdf::JoinName(*parent_model_name, model.Name())
+        : model.Name();
+    if (workspace.plant->HasModelInstanceNamed(model_name)) {
+      if (workspace.options.enable_auto_renaming) {
+        model_name =
+            fmt::format("{}_{}", model_name,
+                        workspace.plant->num_model_instances());
+      }
+    }
 
     std::vector<ModelInstanceIndex> added_model_instances =
         AddModelsFromSpecification(
@@ -1817,10 +1839,17 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         ++model_index) {
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
-      const std::string model_name =
+      std::string model_name =
           parent_model_name.has_value()
-              ? sdf::JoinName(*parent_model_name, model.Name())
-              : model.Name();
+          ? sdf::JoinName(*parent_model_name, model.Name())
+          : model.Name();
+      if (workspace.plant->HasModelInstanceNamed(model_name)) {
+        if (workspace.options.enable_auto_renaming) {
+          model_name =
+              fmt::format("{}_{}", model_name,
+                          workspace.plant->num_model_instances());
+        }
+      }
 
       std::vector<ModelInstanceIndex> added_model_instances =
           AddModelsFromSpecification(

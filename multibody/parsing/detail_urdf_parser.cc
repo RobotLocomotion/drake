@@ -917,6 +917,13 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
   model_name = parsing::PrefixName(
       parent_model_name_.value_or(""), model_name);
 
+  if (w_.plant->HasModelInstanceNamed(model_name)) {
+    if (w_.options.enable_auto_renaming) {
+      model_name =
+          fmt::format("{}_{}", model_name, w_.plant->num_model_instances());
+    }
+  }
+
   model_instance_ = w_.plant->AddModelInstance(model_name);
 
   // Parses the model's material elements. Throws an exception if there's a

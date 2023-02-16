@@ -51,7 +51,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_name,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{{}, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kFilename, &file_name}, model_name, {}, w);
@@ -63,7 +63,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_contents,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{{}, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kContents, &file_contents}, model_name, {}, w);

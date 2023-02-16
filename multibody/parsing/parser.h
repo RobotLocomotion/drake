@@ -161,6 +161,10 @@ class Parser final {
   /// warnings will be treated as errors.
   void SetStrictParsing() { is_strict_ = true; }
 
+  void SetAutoRenaming(bool value) { enable_auto_rename_ = value; }
+
+  bool GetAutoRenaming() const {return enable_auto_rename_; }
+
   /// Parses the input file named in @p file_name and adds all of its model(s)
   /// to @p plant.
   ///
@@ -239,6 +243,7 @@ class Parser final {
   friend class internal::CompositeParse;
 
   bool is_strict_{false};
+  bool enable_auto_rename_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
