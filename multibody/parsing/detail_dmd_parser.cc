@@ -5,6 +5,7 @@
 #include <set>
 
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/tree/scoped_name.h"
@@ -51,7 +52,7 @@ void ParseModelDirectivesImpl(
     std::vector<ModelInstanceInfo>* added_models) {
   drake::log()->debug("ParseModelDirectivesImpl(MultibodyPlant)");
   DRAKE_DEMAND(added_models != nullptr);
-  auto& [package_map, diagnostic, plant,
+  auto& [options, package_map, diagnostic, plant,
          collision_resolver, parser_selector] = workspace;
   DRAKE_DEMAND(plant != nullptr);
   auto get_scoped_frame = [plant = plant, &model_namespace](
@@ -100,7 +101,7 @@ void ParseModelDirectivesImpl(
     } else if (directive.add_model_instance) {
       auto& instance = *directive.add_model_instance;
       const std::string name =
-          ScopedName::Join(model_namespace, instance.name).to_string();
+          MakeModelName(instance.name, model_namespace, workspace);
       drake::log()->debug("  add_model_instance: {}", name);
       plant->AddModelInstance(name);
 

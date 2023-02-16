@@ -18,6 +18,7 @@
 
 #include "drake/common/sorted_pair.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
@@ -914,9 +915,7 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
     return {};
   }
 
-  model_name = ScopedName::Join(
-      parent_model_name_.value_or(""), model_name).to_string();
-
+  model_name = MakeModelName(model_name, parent_model_name_, w_);
   model_instance_ = w_.plant->AddModelInstance(model_name);
 
   // Parses the model's material elements. Throws an exception if there's a
