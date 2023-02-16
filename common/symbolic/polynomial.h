@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <functional>
 #include <map>
+#include <optional>
 #include <ostream>
+#include <unordered_map>
 #include <utility>
 
 #include <Eigen/Core>
@@ -257,6 +259,46 @@ class Polynomial {
 
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
+
+  /// Substitute the monomials of this polynomial with new polynomial
+  /// expressions and expand the polynomial to the monomial basis. For example,
+  /// consider the substitution x = a(1-y) into the polynomial x¹⁴ +
+  /// (x−1)². Repeatedly expanding the powers of x can take a long time using
+  /// factory methods, so we store intermediate computations in the substitution
+  /// map to avoid recomputing very high powers.
+  /// @param indeterminate_substitution The substitutions of every indeterminate
+  /// with the new desired expression. This map must contain each element
+  /// of `indeterminates()`. For performance reasons, it is recommended that
+  /// this map contains Expanded polynomials as its values, but this is not
+  /// necessary.
+  /// @param[in,out] substitutions A map caching the higher order expansions of
+  /// the `indeterminate_substitutions`. Typically, the first time an
+  /// indeterminate_substitution is performed, substitutions will be either a
+  /// pointer to an empty map or a nullptr. If the same
+  /// indeterminate_substitutions is used for multiple polynomials, passing a
+  /// non nullptr value for substitutions will enable the user to re-use the
+  /// expansions across multiple calls. For example, suppose we wish to perform
+  /// the substitution x = a(1-y) into the polynomials p1 = x¹⁴ + (x−1)² and p2
+  /// = x⁷. A user map call p1.SubstituteAndExpand({x : a(1-y), substitutions})
+  /// where substitutions is a pointer to an empty map. As part of computing the
+  /// expansion of p1, the expansion of x⁷ may get computed and stored in
+  /// substitutions, and so a subsequent call of p2.SubstituteAndExpand({x :
+  /// a(1-y)}, substitutions) would be very fast.
+  ///
+  /// Never reuse substitutions if indeterminate_substitutions changes as this
+  /// function will then compute in an incorrect result.
+  ///
+  /// Note that this function is NOT responsible for ensuring that @param
+  /// substitutions is consistent i.e. this method will not throw an error if
+  /// substitutions = {x: y, x²: 2y}. To ensure correct results, ensure that the
+  /// passed substitution map is consistent with indeterminate_substitutions.
+  /// The easiest way to do this is to pass a pointer to an empty map or nullptr
+  /// to this function.
+  [[nodiscard]] Polynomial SubstituteAndExpand(
+      const std::unordered_map<Variable, Polynomial>&
+          indeterminate_substitution,
+      std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*>
+          substitutions_optional = std::nullopt) const;
 
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term

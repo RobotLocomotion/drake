@@ -1084,6 +1084,78 @@ TEST_F(SymbolicPolynomialTest, EvaluateWithAffineCoefficients) {
   }
 }
 
+TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
+  std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions;
+  std::unordered_map<Variable, Polynomial> indeterminate_substitution;
+
+  // A simple substitution.
+  indeterminate_substitution.emplace(var_x_, Polynomial(2 * var_a_));
+  // A substitution from one variable to a 2 indeterminate polynomial.
+  indeterminate_substitution.emplace(var_y_,
+                                     Polynomial(var_a_ * var_b_ + var_a_));
+  // A substitution with powers of a variable
+  indeterminate_substitution.emplace(
+      var_z_, Polynomial(pow(var_a_, 3) + 2 * var_a_ + 1));
+
+  // A polynomial with only linear monomials.
+  const Polynomial poly0{x_ + y_};
+  const Polynomial sub0 =
+      poly0.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub0_expected{3 * a_ + a_ * b_};
+  EXPECT_TRUE(sub0.EqualTo(sub0_expected));
+  // We expect {1: 1, x: 2a, y: ab+a }
+  EXPECT_EQ(substitutions.size(), 3);
+  EXPECT_TRUE(substitutions.at(Monomial()).EqualTo(Polynomial(1)));
+
+  const Polynomial poly1{2 * x_ * x_};
+  const Polynomial sub1 =
+      poly1.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub1_expected{8 * a_ * a_};
+  EXPECT_TRUE(sub1.EqualTo(sub1_expected));
+  // Expect {1: 1, x: 2a, y: ab+a, x²: 4a²}.
+  EXPECT_EQ(substitutions.size(), 4);
+  EXPECT_TRUE(
+      substitutions.at(Monomial(x_ * x_)).EqualTo(Polynomial(4 * a_ * a_)));
+
+  const Polynomial poly2{x_ * x_ * y_};
+  const Polynomial sub2 =
+      poly2.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub2_expected{4 * pow(a_, 3) * (b_ + 1)};
+  EXPECT_TRUE(sub2.EqualTo(sub2_expected));
+  // Expect {1: 1, x: 2a, y: ab+a, x²: 4a²,  x²y: 8a³(b+1)}.
+  EXPECT_EQ(substitutions.size(), 5);
+  // Make sure this hasn't changed
+  EXPECT_TRUE(
+      substitutions.at(Monomial(x_ * x_)).EqualTo(Polynomial(4 * a_ * a_)));
+  EXPECT_TRUE(substitutions.at(Monomial(x_ * x_ * y_))
+                  .EqualTo(Polynomial(4 * pow(a_, 3) * (b_ + 1))));
+
+  const Polynomial poly3{pow(x_, 3) * z_};
+  const Polynomial sub3 =
+      poly3.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub3_expected{pow(2 * a_, 3) *
+                                 (pow(var_a_, 3) + 2 * var_a_ + 1)};
+  EXPECT_TRUE(sub3.EqualTo(sub3_expected));
+  // Expect {1: 1, x: 2a, y: ab+a, x²: 4a²,  x²y: 4a², xz: 2a + 4a² + 2a⁴, x³z:
+  // 2a⁹+4a⁷+2a⁶}
+  EXPECT_EQ(substitutions.size(), 8);
+  EXPECT_TRUE(
+      substitutions.at(Monomial(pow(x_, 3) * z_)).EqualTo(sub3_expected));
+
+  indeterminate_substitution.clear();
+  const Polynomial::MapType a_poly_map{{Monomial(a_), pow(cos(z_) + 1, 2)}};
+  const Polynomial a_poly{a_poly_map};
+  indeterminate_substitution.emplace(var_x_, a_poly);
+
+  const Polynomial poly4{x_};
+  const Polynomial sub4 = poly4.SubstituteAndExpand(indeterminate_substitution);
+
+  const Polynomial::MapType sub4_expected_map{
+      {Monomial(a_), pow(cos(z_), 2) + 2 * cos(z_) + 1}};
+  const Polynomial sub4_expected{sub4_expected_map};
+  EXPECT_TRUE(sub4.EqualTo(sub4_expected));
+}
+
 TEST_F(SymbolicPolynomialTest, Hash) {
   const auto h = std::hash<Polynomial>{};
   Polynomial p1{x_ * x_};
