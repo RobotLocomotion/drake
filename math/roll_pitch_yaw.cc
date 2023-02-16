@@ -238,7 +238,7 @@ std::ostream& operator<<(std::ostream& out, const RollPitchYaw<T>& rpy) {
   // Helper to represent an angle as a terse string.  If the angle is symbolic
   // and ends up a string that's too long, return a placeholder instead.
   auto repr = [](const T& angle) {
-    std::string result = fmt::format("{}", angle);
+    std::string result = fmt::to_string(angle);
     if (std::is_same_v<T, symbolic::Expression> && (result.size() >= 30)) {
       result = "<symbolic>";
     }
