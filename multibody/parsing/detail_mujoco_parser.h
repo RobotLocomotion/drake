@@ -42,7 +42,7 @@ namespace internal {
 ModelInstanceIndex AddModelFromMujocoXml(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
-    MultibodyPlant<double>* plant);
+    const ParsingWorkspace& workspace);
 
 class MujocoParserWrapper final : public ParserInterface {
  public:
