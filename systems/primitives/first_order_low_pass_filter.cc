@@ -1,10 +1,10 @@
 #include "drake/systems/primitives/first_order_low_pass_filter.h"
 
-#include <sstream>
 #include <stdexcept>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -36,11 +36,11 @@ FirstOrderLowPassFilter<T>::FirstOrderLowPassFilter(
 template <typename T>
 double FirstOrderLowPassFilter<T>::get_time_constant() const {
   if (!time_constants_.isConstant(time_constants_[0])) {
-    std::stringstream s;
-    s << "The time constants vector, [" << time_constants_ << "], cannot be "
-         "represented as a scalar value. Please use "
-         "FirstOrderLowPassFilter::get_time_constants_vector() instead.";
-    throw std::domain_error(s.str());
+    throw std::domain_error(fmt::format(
+        "The time constants vector, [{}], cannot be represented as a scalar "
+        "value. Please use FirstOrderLowPassFilter::get_time_constants_vector()"
+        " instead.",
+        fmt_eigen(time_constants_)));
   }
   return time_constants_[0];
 }

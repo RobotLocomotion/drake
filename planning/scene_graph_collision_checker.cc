@@ -5,6 +5,7 @@
 #include <set>
 #include <utility>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_instance.h"
 #include "drake/geometry/scene_graph.h"
@@ -63,7 +64,7 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
       plant().CollectRegisteredGeometries(plant().GetBodiesWeldedTo(bodyA));
   log()->debug("Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}",
                group_name, GetScopedName(bodyA), body_frame_id,
-               X_AG.GetAsMatrix4());
+               fmt_eigen(X_AG.GetAsMatrix4()));
 
   // The geometry instance template which will be copied into each per-thread
   // SceneGraph Context; the GeometryId will match across each thread this way.

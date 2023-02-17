@@ -111,5 +111,6 @@ class AutoDiff {
 // These further refine our AutoDiff type and must appear in exactly this order.
 #include "drake/common/ad/internal/standard_operations.h"
 
-/* Formats the `value()` part of x to the stream. */
+/* Formats the `value()` part of x to the stream.
+To format the derivatives use `drake::fmt_eigen(x.derivatives())`. */
 DRAKE_FORMATTER_AS(, drake::ad, AutoDiff, x, x.value())
