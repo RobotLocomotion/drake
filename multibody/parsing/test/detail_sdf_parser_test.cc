@@ -130,35 +130,6 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     AddModelsFromSdfString(file_contents, parent_model_name);
   }
 
-  // Returns the first error as a string (or else fails the test case,
-  // if there were no errors).
-  std::string FormatFirstError() {
-    if (error_records_.empty()) {
-      for (const auto& warning : warning_records_) {
-        drake::log()->warn(warning.FormatWarning());
-      }
-      EXPECT_TRUE(error_records_.size() > 0)
-          << "FormatFirstError did not get any errors";
-      return {};
-    }
-    return error_records_[0].FormatError();
-  }
-
-  // Returns the first warning as a string (or else fails the test case,
-  // if there were no warnings). Also fails if there were any errors.
-  std::string FormatFirstWarning() {
-    for (const auto& error : error_records_) {
-      drake::log()->error(error.FormatError());
-    }
-    EXPECT_TRUE(error_records_.empty());
-    if (warning_records_.empty()) {
-      EXPECT_TRUE(warning_records_.size() > 0)
-          << "FormatFirstWarning did not get any warnings";
-      return {};
-    }
-    return warning_records_[0].FormatWarning();
-  }
-
   void VerifyCollisionFilters(
       const std::vector<GeometryId>& ids,
       const std::set<CollisionPair>& expected_filters) {
@@ -178,18 +149,6 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
                   contains(names));
       }
     }
-  }
-
-  void ThrowErrors() {
-    diagnostic_policy_.SetActionForErrors(
-        &DiagnosticPolicy::ErrorDefaultAction);
-  }
-
-  void RecordErrors() {
-    diagnostic_policy_.SetActionForErrors(
-    [this](const DiagnosticDetail& detail) {
-      error_records_.push_back(detail);
-    });
   }
 
  protected:
@@ -759,6 +718,251 @@ TEST_F(SdfParserTest, StaticModelWithJoints) {
 </model>)""");
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
     ".*Only fixed joints are permitted in static models."));
+  ClearDiagnostics();
+}
+
+// Revolute joints should have an axis and 1-dof joints should have no axis2.
+TEST_F(SdfParserTest, JointWithNoAxisError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='revolute'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*An axis2 may not specified for 1-dof joint 'no_axis'"
+      " and will be ignored.*"));
+  ClearDiagnostics();
+}
+
+// Ball joints should not have an axis2.
+TEST_F(SdfParserTest, BallJointWithAxis2Error) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='ball'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*Actuation \\(via non-zero effort limits\\) for ball joint 'no_axis'"
+      " is not implemented yet and will be ignored.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*An axis2 may not specified for ball joint 'no_axis' and will be"
+      " ignored.*"));
+  ClearDiagnostics();
+}
+
+// Joint axis upper limit should be lower than upper limit.
+TEST_F(SdfParserTest, JointAxisLimitsError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <lower>2</lower>
+        <upper>1</upper>
+      </limit>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*The lower limit must be lower \\(or equal\\) than the"
+      " upper limit for joint 'no_axis'.*"));
+  ClearDiagnostics();
+}
+
+// Joint axis drake:acceleartion should be non negative.
+TEST_F(SdfParserTest, JointAxisDrakeAccelerationError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <drake:acceleration>-1</drake:acceleration>
+      </limit>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Acceleration limit is negative for joint 'no_axis'."
+      " Aceleration limit must be a non-negative number.*"));
+  ClearDiagnostics();
+}
+
+// Check that prismatic joints must have an axis.
+TEST_F(SdfParserTest, PrismaticJointWithNoAxisError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  ClearDiagnostics();
+}
+
+// Make sure world joints are fixed.
+TEST_F(SdfParserTest, WorldJointNotFixedError) {
+  ParseTestString(R"""(
+<world name='uno'>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+  </joint>
+  <model name='a'>
+  <link name='l'/>
+  </model>
+  <model name='b'>
+  <link name='h'/>
+  </model>
+</world>
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Only fixed joints are permitted in world joints.*"));
+  ClearDiagnostics();
+}
+
+
+// drake:joint should have a type.
+TEST_F(SdfParserTest, DrakeJointNoTypeError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <drake:joint>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*<drake:joint>: Unable to find the 'type' attribute.*"));
+  ClearDiagnostics();
+}
+
+// drake:joint should have a name.
+TEST_F(SdfParserTest, DrakeJointNoNameError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <drake:joint type='nonetype'>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*<drake:joint>: Unable to find the 'name' attribute.*"));
+  ClearDiagnostics();
+}
+
+// drake:joint does not support pose tags.
+TEST_F(SdfParserTest, DrakeJointPoseError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <drake:joint type='nonetype' name='joint_name'>
+    <pose></pose>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*<drake:joint> does not yet support the <pose> child tag.*"));
+  ClearDiagnostics();
+}
+
+// Verify that drake:joint yields an error for unrecognized types.
+TEST_F(SdfParserTest, DrakeJointUnrecognizedTypeError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint type='nonetype' name='joint_name'>
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*<drake:joint> 'joint_name' has unrecognized value for"
+      " 'type' attribute: nonetype.*"));
+  ClearDiagnostics();
+}
+
+// Verify error when no model is found.
+TEST_F(SdfParserTest, AddModelFromSdfNoModelError) {
+  const std::string sdf_string = R"""(
+<sdf version='1.6'>
+  <world name='empty_world'>
+  </world>
+</sdf>
+)""";
+
+  const DataSource data_source{DataSource::kContents, &sdf_string};
+  internal::CollisionFilterGroupResolver resolver{&plant_};
+  ParsingWorkspace w{package_map_, diagnostic_policy_,
+                      &plant_, &resolver, TestingSelect};
+  std::optional<ModelInstanceIndex> result =
+      AddModelFromSdf(data_source, "", "", w);
+  resolver.Resolve(diagnostic_policy_);
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*File must have a single <model> element.*"));
+  EXPECT_FALSE(result.has_value());
+  ClearDiagnostics();
+}
+
+// Verify error thrown when more than one world are present.
+TEST_F(SdfParserTest, MoreThanOneWorldOrModelError) {
+  ParseTestString(R"""(
+<world name='uno'>
+</world>
+<world name='dos'>
+</world>
+)""");
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*File must have exactly one <model> or exactly one <world>,"
+      " but instead has 0 models and 2 worlds.*"));
   ClearDiagnostics();
 }
 

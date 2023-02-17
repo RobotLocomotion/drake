@@ -475,6 +475,7 @@ void AddPrismaticSpringFromSpecification(const SDFormatDiagnostic& diagnostic,
         "An axis must be specified for joint '{}'.",
         joint_spec.Name());
     diagnostic.Error(joint_spec.Element(), std::move(message));
+    return;
   }
 
   const double spring_reference = axis->SpringReference();

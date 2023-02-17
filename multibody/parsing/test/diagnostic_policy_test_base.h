@@ -83,6 +83,47 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
     return stream.str();
   }
 
+  void ThrowErrors() {
+    diagnostic_policy_.SetActionForErrors(
+        &DiagnosticPolicy::ErrorDefaultAction);
+  }
+
+  void RecordErrors() {
+    diagnostic_policy_.SetActionForErrors(
+    [this](const DiagnosticDetail& detail) {
+      error_records_.push_back(detail);
+    });
+  }
+
+  // Returns the first error as a string (or else fails the test case,
+  // if there were no errors).
+  std::string FormatFirstError() {
+    if (error_records_.empty()) {
+      for (const auto& warning : warning_records_) {
+        drake::log()->warn(warning.FormatWarning());
+      }
+      EXPECT_TRUE(error_records_.size() > 0)
+          << "FormatFirstError did not get any errors";
+      return {};
+    }
+    return error_records_[0].FormatError();
+  }
+
+  // Returns the first warning as a string (or else fails the test case,
+  // if there were no warnings). Also fails if there were any errors.
+  std::string FormatFirstWarning() {
+    for (const auto& error : error_records_) {
+      drake::log()->error(error.FormatError());
+    }
+    EXPECT_TRUE(error_records_.empty());
+    if (warning_records_.empty()) {
+      EXPECT_TRUE(warning_records_.size() > 0)
+          << "FormatFirstWarning did not get any warnings";
+      return {};
+    }
+    return warning_records_[0].FormatWarning();
+  }
+
   template <typename T>
   T Take(std::deque<T>* c) {
     T result = c->at(0);

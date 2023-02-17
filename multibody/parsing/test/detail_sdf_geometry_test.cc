@@ -24,6 +24,7 @@
 #include "drake/multibody/parsing/detail_common.h"
 #include "drake/multibody/parsing/detail_ignition.h"
 #include "drake/multibody/parsing/detail_sdf_diagnostic.h"
+#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 
 namespace drake {
 namespace multibody {
@@ -192,12 +193,14 @@ std::string NoopResolveFilename(const SDFormatDiagnostic&,
   return filename;
 }
 
-class SceneGraphParserDetail : public ::testing::Test {
+class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
  public:
   SceneGraphParserDetail() {
     // Don't let warnings leak into spdlog; tests should always specifically
     // handle any warnings that appear.
-    diagnostic_.SetActionForWarnings(&DiagnosticPolicy::ErrorDefaultAction);
+    diagnostic_policy_.SetActionForWarnings(
+        &DiagnosticPolicy::ErrorDefaultAction);
+    RecordErrors();
   }
 
   // Wraps a function under test with helpful defaults.
@@ -217,10 +220,9 @@ class SceneGraphParserDetail : public ::testing::Test {
   }
 
  protected:
-  DiagnosticPolicy diagnostic_;
   const std::string dummy_file_path_{"dummy_test_file.sdf"};
   DataSource data_source_{DataSource::kFilename, &dummy_file_path_};
-  SDFormatDiagnostic sdf_diagnostic_{&diagnostic_, &data_source_};
+  SDFormatDiagnostic sdf_diagnostic_{&diagnostic_policy_, &data_source_};
 };
 
 // Verify MakeShapeFromSdfGeometry returns nullptr when we specify an <empty>
@@ -265,6 +267,7 @@ TEST_F(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
 // TODO(azeey): We should deprecate use of <drake:capsule> per
 // https://github.com/RobotLocomotion/drake/issues/14837
 TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
+  ThrowErrors();
   unique_ptr<sdf::Geometry> no_radius_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <length>1.2</length>"
@@ -332,6 +335,7 @@ TEST_F(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
 // TODO(azeey): We should deprecate use of <drake:ellipsoid> per
 // https://github.com/RobotLocomotion/drake/issues/14837
 TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
+  ThrowErrors();
   unique_ptr<sdf::Geometry> no_a_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <b>1.2</b>"
@@ -414,6 +418,24 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->filename(), absolute_file_path);
   EXPECT_EQ(mesh->scale(), 3);
+}
+
+// Verify error when mesh scale is not isotropic.
+TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometryIsotropicError) {
+  // TODO(amcastro-tri): Be warned, the result of this test might (should)
+  // change as we add support allowing to specify paths relative to the SDF file
+  // location.
+  const std::string absolute_file_path = "/path/to/some/mesh.obj";
+  unique_ptr<sdf::Geometry> sdf_geometry = MakeSdfGeometryFromString(
+      "<mesh>"
+      "  <uri>" + absolute_file_path + "</uri>"
+      "  <scale> 3 1 2 </scale>"
+      "</mesh>");
+  MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Drake meshes only support isotropic scaling. Therefore"
+      " all three scaling factors must be exactly equal."));
+  ClearDiagnostics();
 }
 
 // Verify MakeShapeFromSdfGeometry can make a convex mesh from an sdf::Geometry.
@@ -911,6 +933,21 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
                              emissive, kLocalMap));
   }
 
+  // Case: Diffuse map file not found.
+  {
+    const std::string kLocalMap = "empty.png";
+    const std::string xml =
+        make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap);
+    unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
+        make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap));
+    internal::MakeVisualPropertiesFromSdfVisual(sdf_diagnostic_,
+        *sdf_visual, [](const SDFormatDiagnostic&, std::string filename)
+            -> std::string {return {};});
+    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+        ".*Unable to locate the texture file: empty.png"));
+    ClearDiagnostics();
+  }
+
   // Note: As of https://github.com/osrf/sdformat/pull/519, sdformat is doing
   // more work in validating otherwise invalid color declarations. When sdformat
   // deems a color to be invalid, we don't get the corresponding property. This
@@ -1025,9 +1062,10 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "  </material>"
         "  <drake:accepting_renderer> </drake:accepting_renderer>"
         "</visual>");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeVisualPropertiesFromSdfVisual(*sdf_visual),
-      ".*<drake:accepting_renderer> tag given without any name");
+  MakeVisualPropertiesFromSdfVisual(*sdf_visual);
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*<drake:accepting_renderer> tag given without any name"));
+  ClearDiagnostics();
 }
 
 // Verify MakeGeometryPoseFromSdfCollision() makes the pose X_LG of geometry
@@ -1195,6 +1233,7 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
   // Case: specifies unsupported drake:soft_hydroelastic -- should be an error.
   {
+    ThrowErrors();
     unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
