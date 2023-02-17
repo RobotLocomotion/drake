@@ -121,3 +121,10 @@ class TestNamedView(unittest.TestCase):
         np.testing.assert_equal(value, [3, 3])
         self.assertEqual(repr(view), "MyView(a=3, b=3)")
         self.assertEqual(str(view), repr(view))
+
+    def test_Zero(self):
+        MyView = namedview("MyView", ["a", "b"])
+        view = MyView.Zero()
+        self.assertEqual(len(view), 2)
+        self.assertEqual(view.a, 0)
+        self.assertEqual(view.b, 0)
