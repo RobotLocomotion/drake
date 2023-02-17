@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 namespace drake {
@@ -313,7 +314,7 @@ TEST_F(VariableOverloadingTest, OperatorOverloadingEigenDivideVariable) {
   EXPECT_PRED2(ExprEqual, m2(1, 1), w_ / (x_ + y_));
 }
 
-TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutput) {
+TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutputStream) {
   ostringstream oss1;
   oss1 << expr_mat_;
 
@@ -322,6 +323,12 @@ TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutput) {
        << "      (y + z)       (y + w)";
 
   EXPECT_EQ(oss1.str(), oss2.str());
+}
+
+TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutputFmt) {
+  EXPECT_EQ(fmt::to_string(fmt_eigen(expr_mat_)),
+            "      (x + z)       (x + w)\n"
+            "      (y + z)       (y + w)");
 }
 }  // namespace
 }  // namespace symbolic
