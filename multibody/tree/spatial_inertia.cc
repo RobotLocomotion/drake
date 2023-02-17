@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include <fmt/format.h>
+#include "drake/common/fmt_eigen.h"
 
 namespace drake {
 namespace multibody {
@@ -68,9 +68,9 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
   using std::abs;
   constexpr double kTolerance = 1E-14;
   if (abs(unit_vector.norm() - 1) > kTolerance) {
-    std::string error_message = fmt::format("{}(): The unit_vector argument "
-      "{} is not a unit vector.", __func__, unit_vector.transpose());
-    throw std::logic_error(error_message);
+    throw std::logic_error(
+        fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
+                    __func__, fmt_eigen(unit_vector.transpose())));
   }
 
   const T volume = M_PI * r * r * l;  // π r² l
@@ -223,7 +223,7 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M) {
   } else {
     // Print symbolic results.
     out << " mass = " << mass << "\n"
-        << " Center of mass = [" << p_PBcm.transpose() << "]\n";
+        << fmt::format(" Center of mass = {}\n", fmt_eigen(p_PBcm.transpose()));
   }
 
   // Get G_BP (unit inertia about point P) and use it to calculate I_BP

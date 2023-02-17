@@ -4,6 +4,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/examples/manipulation_station/manipulation_station.h"
 #include "drake/geometry/drake_visualizer.h"
@@ -125,7 +126,7 @@ int do_main(int argc, char* argv[]) {
   VectorXd q = station->GetIiwaPosition(station_context);
   if (!is_approx_equal_abstol(q, q0, 1.e-3)) {
     std::cout << "q is not sufficiently close to q0.\n";
-    std::cout << "q - q0  = " << (q - q0).transpose() << "\n";
+    std::cout << fmt::format("q - q0  = {}\n", fmt_eigen((q - q0).transpose()));
     return EXIT_FAILURE;
   }
 

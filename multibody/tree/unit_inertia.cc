@@ -1,5 +1,7 @@
 #include "drake/multibody/tree/unit_inertia.h"
 
+#include "drake/common/fmt_eigen.h"
+
 namespace drake {
 namespace multibody {
 
@@ -28,8 +30,9 @@ UnitInertia<T> UnitInertia<T>::SolidCapsule(const T& r, const T& L,
   using std::abs;
   constexpr double kTolerance = 1E-14;
   if (abs(unit_vector.norm() - 1) > kTolerance) {
-    std::string error_message = fmt::format("{}(): The unit_vector argument "
-      "{} is not a unit vector.", __func__, unit_vector.transpose());
+    std::string error_message =
+        fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
+                    __func__, fmt_eigen(unit_vector.transpose()));
     throw std::logic_error(error_message);
   }
 
