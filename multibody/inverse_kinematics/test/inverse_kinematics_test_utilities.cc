@@ -80,10 +80,10 @@ std::unique_ptr<MultibodyPlant<T>> ConstructTwoFreeBodiesPlant() {
 std::unique_ptr<MultibodyPlant<double>> ConstructIiwaPlant(
     const std::string& file_path, double time_step, int num_iiwa) {
   auto plant = std::make_unique<MultibodyPlant<double>>(time_step);
+  Parser parser(plant.get());
+  parser.SetAutoRenaming(true);
   for (int i = 0; i < num_iiwa; ++i) {
-    const auto iiwa_instance =
-        Parser(plant.get())
-            .AddModelFromFile(file_path, "iiwa" + std::to_string(i));
+    const auto iiwa_instance = parser.AddModels(file_path).at(0);
     plant->WeldFrames(plant->world_frame(),
                       plant->GetFrameByName("iiwa_link_0", iiwa_instance));
   }

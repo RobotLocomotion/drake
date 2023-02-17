@@ -34,9 +34,10 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
         "iiwa14_no_collision.sdf");
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     multibody::Parser parser{plant_.get()};
+    parser.SetAutoRenaming(true);
     for (int i = 0; i < kNumIiwas; ++i) {
       const ModelInstanceIndex model_instance =
-          parser.AddModelFromFile(iiwa_path, fmt::format("iiwa{}", i));
+          parser.AddModels(iiwa_path).at(0);
       plant_->WeldFrames(plant_->world_frame(),
                          plant_->GetFrameByName("iiwa_link_0", model_instance));
     }
@@ -48,7 +49,7 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
     const Eigen::Vector3d p_AQ_lower(-0.2, -0.3, -0.4);
     const Eigen::Vector3d p_AQ_upper(0.2, 0.3, 0.4);
     const ModelInstanceIndex first_iiwa =
-        plant_->GetModelInstanceByName("iiwa0");
+        plant_->GetModelInstanceByName("iiwa14");
     constraint_ = std::make_unique<PositionConstraint>(
         plant_.get(), plant_->GetFrameByName("iiwa_link_7", first_iiwa),
         p_AQ_lower, p_AQ_upper,
@@ -64,7 +65,7 @@ class IiwaPositionConstraintFixture : public benchmark::Fixture {
     DRAKE_DEMAND(ad_plant_ != nullptr);
     ad_context_ = ad_plant_->CreateDefaultContext();
     const ModelInstanceIndex ad_first_iiwa =
-        ad_plant_->GetModelInstanceByName("iiwa0");
+        ad_plant_->GetModelInstanceByName("iiwa14");
     ad_constraint_ = std::make_unique<PositionConstraint>(
         ad_plant_.get(),
         ad_plant_->GetFrameByName("iiwa_link_7", ad_first_iiwa), p_AQ_lower,
