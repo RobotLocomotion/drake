@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/symbolic/expression.h"
 #define DRAKE_COMMON_SYMBOLIC_POLYNOMIAL_H
 #include "drake/common/symbolic/monomial.h"
@@ -675,3 +676,11 @@ CalcPolynomialWLowerTriangularPart(
 }
 }  // namespace symbolic
 }  // namespace drake
+
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::symbolic::Polynomial>
+    : drake::ostream_formatter {};
+}  // namespace fmt

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 
 namespace drake {
 namespace multibody {
@@ -159,3 +160,10 @@ class PackageMap final {
 
 }  // namespace multibody
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::multibody::PackageMap>
+    : drake::ostream_formatter {};
+}  // namespace fmt

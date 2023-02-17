@@ -7,6 +7,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/rigid_transform.h"
 
 /** @file
@@ -510,3 +511,10 @@ double CalcVolume(const Shape& shape);
 
 }  // namespace geometry
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::geometry::ShapeName>
+    : drake::ostream_formatter {};
+}  // namespace fmt

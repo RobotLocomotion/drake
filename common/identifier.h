@@ -7,6 +7,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -255,3 +256,10 @@ template <typename Tag>
 struct hash<drake::Identifier<Tag>> : public drake::DefaultHash {};
 
 }  // namespace std
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename Tag>
+struct formatter<drake::Identifier<Tag>>
+    : drake::ostream_formatter {};
+}  // namespace fmt

@@ -12,6 +12,7 @@
 #include <string>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -182,3 +183,5 @@ namespace std {
 template <>
 struct hash<drake::symbolic::Variables> : public drake::DefaultHash {};
 }  // namespace std
+
+DRAKE_FORMATTER_AS(, drake::symbolic, Variables, vs, vs.to_string())

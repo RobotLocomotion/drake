@@ -57,3 +57,12 @@ struct hash<drake::geometry::GeometryId> {
 };
 
 }  // namespace std
+
+// Tell fmt to use the Identifier formatter for GeometryId values. By default,
+// fmt wouldn't find the Identifier<GeometryTag> formatter because GeometryId
+// inherits from Identifier instead of using a typedef.
+namespace fmt {
+template <>
+struct formatter<drake::geometry::GeometryId>
+    : public formatter<drake::Identifier<drake::geometry::GeometryTag>> {};
+}  // namespace fmt

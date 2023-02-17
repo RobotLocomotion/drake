@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 
 // Note that even though this file contains "class Node", the file is named
 // "yaml_node.h" not "node.h" to avoid conflict with "yaml-cpp/node/node.h".
@@ -244,3 +245,10 @@ class Node final {
 }  // namespace internal
 }  // namespace yaml
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::yaml::internal::Node>
+    : drake::ostream_formatter {};
+}  // namespace fmt
