@@ -15,7 +15,6 @@ import pydrake.visualization as mut
 import functools
 import numpy as np
 import unittest
-
 from drake import (
     lcmt_point_cloud,
     lcmt_viewer_geometry_data,
@@ -338,8 +337,8 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
 
     def test_point_cloud(self):
-        """Check that _ViewerApplet doesn't crash for point cloud in
-        DRAKE_POINT_CLOUD channel.
+        """Check that _PointCloudApplet doesn't crash when receiving point
+        cloud messages in DRAKE_POINT_CLOUD channel.
         """
         # Create the device under test.
         dut = mut.Meldis()
@@ -349,10 +348,6 @@ class TestMeldis(unittest.TestCase):
         rgbs = np.random.randint(0, 255, (3, num_points), dtype=np.uint8)
         normals = np.random.uniform(-0.1, 0.1, (3, num_points))
 
-        cloud = PointCloud(num_points, Fields(BaseField.kXYZs))
-        cloud.mutable_xyzs()[:] = xyzs
-
-        """
         cloud = PointCloud(
             num_points,
             Fields(BaseField.kXYZs | BaseField.kRGBs | BaseField.kNormals)
@@ -360,7 +355,6 @@ class TestMeldis(unittest.TestCase):
         cloud.mutable_xyzs()[:] = xyzs
         cloud.mutable_rgbs()[:] = rgbs
         cloud.mutable_normals()[:] = normals
-        """
 
         builder = DiagramBuilder()
         cloud_to_lcm = builder.AddSystem(PointCloudToLcm(frame_name="world"))
