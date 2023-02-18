@@ -1037,7 +1037,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetToNaN", &Class::SetToNaN, cls_doc.SetToNaN.doc)
         .def("SetZero", &Class::SetZero, cls_doc.SetZero.doc)
         .def("IsNaN", &Class::IsNaN, cls_doc.IsNaN.doc)
-        // TODO(jwnimmer-tri) Need to bind cast<>.
         .def("CalcPrincipalMomentsOfInertia",
             &Class::CalcPrincipalMomentsOfInertia,
             cls_doc.CalcPrincipalMomentsOfInertia.doc)
@@ -1064,6 +1063,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   I(0, 0), I(1, 1), I(2, 2), I(0, 1), I(0, 2), I(1, 2));
             }));
     DefCopyAndDeepCopy(&cls);
+    py::print("start cast");
+    DefCast<T>(&cls, cls_doc.cast.doc);
+    py::print("end cast");
   }
   {
     using Class = UnitInertia<T>;
@@ -1126,6 +1128,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   I(0, 0), I(1, 1), I(2, 2), I(0, 1), I(0, 2), I(1, 2));
             }));
     DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, cls_doc.cast.doc);
   }
 
   // SpatialInertia
@@ -1143,7 +1146,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
                  const UnitInertia<T>&, const bool>(),
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("G_SP_E"),
             py::arg("skip_validity_check") = false, cls_doc.ctor.doc_4args)
-        // TODO(jwnimmer-tri) Need to bind cast<>.
         .def("get_mass", &Class::get_mass, cls_doc.get_mass.doc)
         .def("get_com", &Class::get_com, cls_doc.get_com.doc)
         .def("CalcComMoment", &Class::CalcComMoment, cls_doc.CalcComMoment.doc)
@@ -1174,6 +1176,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   t[2].cast<UnitInertia<T>>());
             }));
     DefCopyAndDeepCopy(&cls);
+    DefCast<T>(&cls, cls_doc.cast.doc);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }

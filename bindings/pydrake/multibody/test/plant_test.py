@@ -527,12 +527,13 @@ class TestPlant(unittest.TestCase):
         self.assertGreaterEqual(joint_actuator.input_start(), 0)
         self.assertEqual(joint_actuator.num_inputs(), 1)
 
-    def _test_rotational_inertia_or_unit_inertia_api(self, T, Class):
+    def _test_rotational_inertia_or_unit_inertia_api(self, T, Template):
         """
         Tests the given Class (either RotationInertia or UnitInertia) for the
         API subset that they both share.
         """
         RotationMatrix = RotationMatrix_[T]
+        Class = Template[T]
         Class()
         Class(Ixx=1.0, Iyy=1.0, Izz=1.0, Ixy=0.1, Ixz=0.1, Iyz=0.1)
         Class(Ixx=1.0, Iyy=1.0, Izz=1.0)
@@ -563,12 +564,14 @@ class TestPlant(unittest.TestCase):
         dut.CouldBePhysicallyValid()
         self.assertIsInstance(dut.ReExpress(R_AE=RotationMatrix()), Class)
         self.assertIsInstance(copy.copy(dut), Class)
+        for U in numpy_compare.get_cast_types(T):
+            self.assertIsInstance(dut.cast[U](), Template[U])
 
     @numpy_compare.check_all_types
     def test_rotational_inertia_api(self, T):
         """Tests rotational inertia construction and API."""
+        self._test_rotational_inertia_or_unit_inertia_api(T, RotationalInertia_)
         Class = RotationalInertia_[T]
-        self._test_rotational_inertia_or_unit_inertia_api(T, Class)
         # Test methods present only on RotationalInernia, not UnitInertia.
         p = [0.1, 0.2, 0.3]
         dut = Class(mass=1.0, p_PQ_E=p)
@@ -617,8 +620,8 @@ class TestPlant(unittest.TestCase):
     @numpy_compare.check_all_types
     def test_unit_inertia_api(self, T):
         """Tests unit inertia construction and API."""
+        self._test_rotational_inertia_or_unit_inertia_api(T, UnitInertia_)
         UnitInertia = UnitInertia_[T]
-        self._test_rotational_inertia_or_unit_inertia_api(T, UnitInertia)
         # Test methods present only on UnitInertia, not RotationalInertia.
         p = [0.1, 0.2, 0.3]
         dut = UnitInertia(I=RotationalInertia_[T](mass=1.0, p_PQ_E=p))
@@ -701,6 +704,8 @@ class TestPlant(unittest.TestCase):
         # N.B. `numpy_compare.assert_equal(IsNaN(), True)` does not work.
         if T != Expression:
             self.assertTrue(spatial_inertia.IsNaN())
+        for U in numpy_compare.get_cast_types(T):
+            self.assertIsInstance(spatial_inertia.cast[U](), SpatialInertia_[U])
 
     def test_geometry_spatial_inertia_apis(self):
         box = Box(1, 2, 3)

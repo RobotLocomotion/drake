@@ -321,6 +321,16 @@ def check_nonsymbolic_types(check_func):
     return wrapper
 
 
+def get_cast_types(T):
+    """Reflects default casting types per `DefCast`."""
+    if T == float:
+        # Float can cast to anything.
+        return [float, AutoDiffXd, Expression]
+    else:
+        # Other types can only cast to themselves.
+        return [T]
+
+
 @contextmanager
 def soft_sub_test(hint_for_error):
     """
