@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include <fmt/ostream.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -24,13 +25,13 @@ namespace internal {
 
 std::ostream& operator<<(std::ostream& out, const UrdfMaterial& m) {
   if (m.rgba.has_value()) {
-    out << "RGBA: " << m.rgba->transpose();
+    fmt::print(out, "RGBA: {}", fmt_eigen(m.rgba->transpose()));
   } else {
     out << "RGBA: None";
   }
   out << ", ";
   if (m.diffuse_map.has_value()) {
-    out << "Diffuse map: " << *m.diffuse_map;
+    fmt::print(out, "Diffuse map: {}", *m.diffuse_map);
   } else {
     out << "Diffuse map: None";
   }

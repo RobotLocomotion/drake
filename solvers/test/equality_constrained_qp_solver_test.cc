@@ -59,9 +59,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testUnconstrainedQPDispatch) {
   const auto& y_value = result.GetSolution(y);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
-                              MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
+                              MatrixCompareType::absolute));
   EXPECT_NEAR(2.0, result.get_optimal_cost(), 1e-10);
 
   // Problem still has only quadratic costs, so solver should be the same.
@@ -115,9 +113,7 @@ GTEST_TEST(testEqualityConstrainedQPSolver, testLinearlyConstrainedQPDispatch) {
   auto y_value = result.GetSolution(y);
   actual_answer << x_value, y_value;
   EXPECT_TRUE(CompareMatrices(expected_answer, actual_answer, 1e-10,
-                              MatrixCompareType::absolute))
-      << "\tExpected: " << expected_answer.transpose()
-      << "\tActual: " << actual_answer.transpose();
+                              MatrixCompareType::absolute));
   EXPECT_NEAR(0.5, result.get_optimal_cost(), 1e-10);
   EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint1), Vector1d(-1),
                               1e-14));
