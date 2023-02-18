@@ -190,9 +190,16 @@ class TemplateBase:
         """
         # Ensure that we do not already have this tuple.
         param = get_param_canonical(self._param_resolve(param))
-        if param in self._instantiation_map:
+        existing_instantiation = self._instantiation_map.get(param)
+        if "RotationalInertia" in str(self._scope):
+            print(param, instantiation)
+        if existing_instantiation is not None:
+            # import pdb; pdb.set_trace()
             raise RuntimeError(
-                "Parameter instantiation already registered: {}".format(param))
+                f"Parameter instantiation already registered: {param}\n"
+                f"  Scope: {self._scope}\n"
+                f"  Existing instantiation: {existing_instantiation}\n"
+                f"  New instantiation: {instantiation}\n")
         # Register it.
         self.param_list.append(param)
         self._add_instantiation_internal(param, instantiation)
