@@ -192,7 +192,11 @@ struct Impl {
    public:
     using Base = Diagram<T>;
 
+    // Explicitly forward constructors as opposed to `using Base::Base`, as we
+    // want the protected `SystemScalarConverter` exposed publicly.
     DiagramPublic() = default;
+    explicit DiagramPublic(SystemScalarConverter converter)
+        : Base(std::move(converter)) {}
   };
 
   // Provide flexible inheritance to leverage prior binding information, per
@@ -1002,6 +1006,9 @@ Note: The above is for the C++ documentation. For Python, use
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
         .def(py::init<>(), doc.Diagram.ctor.doc_0args)
+        // See comment above for LeafSystem's converter-based constructor.
+        .def(py::init<SystemScalarConverter>(), py::arg("converter"),
+            doc.Diagram.ctor.doc_1args_converter)
         .def(
             "connection_map",
             [](Diagram<T>* self) {
