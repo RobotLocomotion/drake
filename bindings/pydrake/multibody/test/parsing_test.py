@@ -189,7 +189,8 @@ class TestParsing(unittest.TestCase):
     def test_scoped_frame_names(self):
         plant = MultibodyPlant(time_step=0.01)
         frame = GetScopedFrameByName(plant, "world")
-        self.assertIsNotNone(GetScopedFrameName(plant, frame))
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsNotNone(GetScopedFrameName(plant, frame))
 
     def _make_plant_parser_directives(self):
         """Returns a tuple (plant, parser, directives) for later testing."""

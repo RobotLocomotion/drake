@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/body_shape_description.h"
@@ -191,15 +192,15 @@ class CollisionChecker {
     return plant().get_body(body_index);
   }
 
-  // TODO(SeanCurtis-TRI): Ideally, these utilities do not belong to the
-  // checker. They don't use the collision checker's API or data. It's MbP sugar
-  // that belongs with MbP sugar.
-  // TODO(rpoyner-tri): reference to discussion of scoped names?
-  /** Gets the scoped name for a frame within the full model. */
-  std::string GetScopedName(const multibody::Frame<double>& frame) const;
+  DRAKE_DEPRECATED("2023-06-01", "Use frame.scoped_name() instead.")
+  std::string GetScopedName(const multibody::Frame<double>& frame) const {
+    return frame.scoped_name().to_string();
+  }
 
-  /** Gets the scoped name for a body within the full model. */
-  std::string GetScopedName(const multibody::Body<double>& body) const;
+  DRAKE_DEPRECATED("2023-06-01", "Use body.scoped_name() instead.")
+  std::string GetScopedName(const multibody::Body<double>& body) const {
+    return body.scoped_name().to_string();
+  }
 
   /** Gets the set of model instances belonging to the robot. The returned
    vector has no duplicates and is in sorted order. */

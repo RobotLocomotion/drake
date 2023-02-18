@@ -20,7 +20,6 @@
 #endif
 
 #include "drake/common/drake_throw.h"
-#include "drake/multibody/parsing/scoped_names.h"
 
 namespace drake {
 namespace planning {
@@ -154,16 +153,6 @@ std::vector<int> CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
 }  // namespace
 
 CollisionChecker::~CollisionChecker() = default;
-
-std::string CollisionChecker::GetScopedName(const Frame<double>& frame) const {
-  return drake::multibody::parsing::PrefixName(
-      plant().GetModelInstanceName(frame.model_instance()), frame.name());
-}
-
-std::string CollisionChecker::GetScopedName(const Body<double>& body) const {
-  return drake::multibody::parsing::PrefixName(
-      plant().GetModelInstanceName(body.model_instance()), body.name());
-}
 
 bool CollisionChecker::IsPartOfRobot(const Body<double>& body) const {
   const ModelInstanceIndex needle = body.model_instance();
@@ -989,7 +978,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
               throw std::runtime_error(fmt::format(
                   "SceneGraph's collision filters on the geometries of bodies "
                   " {} [{}] and {} [{}] are not homogeneous",
-                  i, GetScopedName(body_i), j, GetScopedName(body_j)));
+                  i, body_i.scoped_name(), j, body_j.scoped_name()));
             }
           }
         }
@@ -1010,7 +999,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
         log()->debug(
             "Collision between body {} [{}] and body {} [{}] filtered "
             "(filtered in SceneGraph)",
-            GetScopedName(body_i), i, GetScopedName(body_j), j);
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
         filtered_collisions(i, j) = 1;
         filtered_collisions(j, i) = 1;
       } else if (bodies_welded_together) {
@@ -1018,13 +1007,13 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
         log()->debug(
             "Collision between body {} [{}] and body {} [{}] filtered "
             "(bodies are welded together)",
-            GetScopedName(body_i), i, GetScopedName(body_j), j);
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
         filtered_collisions(i, j) = 1;
         filtered_collisions(j, i) = 1;
       } else {
         log()->debug(
             "Collision between body {} [{}] and body {} [{}] not filtered",
-            GetScopedName(body_i), i, GetScopedName(body_j), j);
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
       }
     }
   }
