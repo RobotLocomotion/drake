@@ -3,6 +3,7 @@
 #include <drake_vendor/fcl/fcl.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -103,7 +104,8 @@ class PointShapeAutoDiffSignedDistanceTester {
     if (grad_W_val.array().isNaN().any()) {
       if (error) failure << "\n";
       error = true;
-      failure << "Analytical gradient contains NaN: " << grad_W_val.transpose();
+      failure << fmt::format("Analytical gradient contains NaN: {}",
+                             fmt_eigen(grad_W_val.transpose()));
     }
     auto gradient_compare =
         CompareMatrices(ddistance_dp_WQ, grad_W_val, tolerance_);

@@ -9,12 +9,11 @@
 
 #include <drake_vendor/sdf/Root.hh>
 #include <drake_vendor/sdf/parser.hh>
-#include <fmt/ostream.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
-#include "drake/common/fmt_ostream.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_instance.h"
@@ -697,9 +696,19 @@ template <typename T, typename Compare>
       if (matches(value, *expected_value)) {
         return ::testing::AssertionSuccess();
       } else {
-        failure << "\nIncorrect values for ('" << group << "', " << property
-                << "'):" << "\n  expected: " << (*expected_value)
-                << "\n  found:    " << value;
+        std::string value_str;
+        std::string expected_str;
+        if constexpr (is_eigen_type<T>::value) {
+          value_str = fmt::to_string(fmt_eigen(value));
+          expected_str = fmt::to_string(fmt_eigen(*expected_value));
+        } else {
+          value_str = fmt::to_string(value);
+          expected_str = fmt::to_string(*expected_value);
+        }
+        failure << "\nIncorrect values for "
+                << "('" << group << "', " << property << "'):"
+                << "\n  expected: " << expected_str
+                << "\n  found:    " << value_str;
       }
     } else {
       failure << "\n  missing expected property ('" << group << "', '"

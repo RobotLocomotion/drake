@@ -17,6 +17,7 @@
 #include "lcm/lcm-cpp.hpp"
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_iiwa_command.hpp"
 #include "drake/lcmt_iiwa_status.hpp"
@@ -150,7 +151,7 @@ class RobotPlanRunner {
     }
 
     for (int i = 0; i < plan->num_states; ++i) {
-      std::cout << knots[i] << std::endl;
+      fmt::print("{}\n", fmt_eigen(knots[i]));
     }
 
     std::vector<double> input_time;
