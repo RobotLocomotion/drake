@@ -366,6 +366,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
     timeout = "moderate",
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -382,6 +383,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
     timeout = "moderate",
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -400,6 +402,7 @@ drake_cc_googletest(
     timeout = "long",
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         "no_asan",
         # Takes too long to run with Valgrind.
@@ -416,6 +419,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
     timeout = "moderate",
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",

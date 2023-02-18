@@ -1,6 +1,7 @@
 #include "drake/solvers/gurobi_solver.h"
 
 #include <algorithm>
+#include <charconv>
 #include <cmath>
 #include <limits>
 #include <optional>
@@ -1019,6 +1020,17 @@ void SetSolution(
     }
   }
 }
+
+std::optional<int> ParseInt(std::string_view s) {
+  int result{};
+  const char* begin = s.data();
+  const char* end = s.data() + s.size();
+  auto [past, ec] = std::from_chars(begin, end, result);
+  if ((ec == std::errc()) && (past == end)) {
+    return result;
+  }
+  return std::nullopt;
+}
 }  // anonymous namespace
 
 bool GurobiSolver::is_available() { return true; }
@@ -1255,6 +1267,22 @@ void GurobiSolver::DoSolve(
   if (!error) {
     SetOptionOrThrow(model_env, "LogToConsole",
                      static_cast<int>(merged_options.get_print_to_console()));
+  }
+
+  // Default the option for number of threads based on an environment variable
+  // (but only if the user hasn't set the option directly already).
+  if (merged_options.GetOptionsInt(id()).count("Threads") == 0) {
+    if (char* num_threads_str = std::getenv("GUROBI_NUM_THREADS")) {
+      const std::optional<int> num_threads = ParseInt(num_threads_str);
+      if (num_threads.has_value()) {
+        SetOptionOrThrow(model_env, "Threads", *num_threads);
+        log()->debug("Using GUROBI_NUM_THREADS={}", *num_threads);
+      } else {
+        static const logging::Warn log_once(
+            "Ignoring unparseable value '{}' for GUROBI_NUM_THREADS",
+            num_threads_str);
+      }
+    }
   }
 
   for (const auto& it : merged_options.GetOptionsDouble(id())) {

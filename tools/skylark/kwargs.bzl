@@ -78,5 +78,6 @@ def incorporate_num_threads(kwargs, *, num_threads):
         "OPENBLAS_NUM_THREADS": str(num_threads),
         "NUMEXPR_NUM_THREADS": str(num_threads),
         "MKL_NUM_THREADS": str(num_threads),
+        "GUROBI_NUM_THREADS": str(num_threads),
     })
     return kwargs
