@@ -62,14 +62,14 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
   const GeometrySet bodyA_geometries =
       plant().CollectRegisteredGeometries(plant().GetBodiesWeldedTo(bodyA));
   log()->debug("Adding shape (group: [{}]) to {} (FrameID {}) at X_AG =\n{}",
-               group_name, GetScopedName(bodyA), body_frame_id,
+               group_name, bodyA.scoped_name(), body_frame_id,
                X_AG.GetAsMatrix4());
 
   // The geometry instance template which will be copied into each per-thread
   // SceneGraph Context; the GeometryId will match across each thread this way.
   GeometryInstance geometry_template(X_AG, shape.Clone(), "temp");
   geometry_template.set_name(fmt::format("Added collision geometry on {} ({})",
-                                         GetScopedName(bodyA),
+                                         bodyA.scoped_name(),
                                          geometry_template.id()));
   // Set proximity properties in order for this geometry to actually collide.
   geometry_template.set_proximity_properties({});
@@ -142,10 +142,10 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
     if (distance_pair.distance <= padding) {
       if (body_A_part_of_robot && body_B_part_of_robot) {
         log()->trace("Self collision between bodies [{}] and [{}]",
-                     GetScopedName(*body_A), GetScopedName(*body_B));
+                     body_A->scoped_name(), body_B->scoped_name());
       } else {
         log()->trace("Environment collision between bodies [{}] and [{}]",
-                     GetScopedName(*body_A), GetScopedName(*body_B));
+                     body_A->scoped_name(), body_B->scoped_name());
       }
       return false;
     }

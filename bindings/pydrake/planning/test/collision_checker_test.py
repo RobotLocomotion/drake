@@ -239,8 +239,6 @@ class TestCollisionChecker(unittest.TestCase):
         num_bodies = 3
 
         self.assertIs(dut.get_body(body_index=body.index()), body)
-        self.assertEqual(dut.GetScopedName(frame=frame), "box::box")
-        self.assertEqual(dut.GetScopedName(body=body), "box::box")
         self.assertEqual(len(dut.robot_model_instances()), 1)
         self.assertTrue(dut.IsPartOfRobot(body=body))
         self.assertTrue(dut.IsPartOfRobot(body_index=body.index()))
