@@ -1,0 +1,26 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
+)
+
+drake_py_library(
+    name = "spatial_trajectories_py",
+    srcs = ["spatial_trajectories.py"],
+    imports = ["."],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_py_unittest(
+    name = "spatial_trajectories_test",
+    deps = [
+        ":spatial_trajectories_py",
+        "//bindings/pydrake",
+    ],
+)
+
+# Linting deliberately ignored.
