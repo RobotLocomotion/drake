@@ -6,7 +6,9 @@ import unittest
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
+    Diagram_,
     DiagramBuilder,
+    DiagramBuilder_,
     LeafSystem_,
     SystemScalarConverter,
 )
@@ -253,7 +255,7 @@ class TestScalarConversion(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             BadParenting_[float]
         self.assertIn("BadParenting_[float]", str(cm.exception))
-        self.assertIn("LeafSystem", str(cm.exception))
+        self.assertIn("System", str(cm.exception))
 
     def test_clone(self):
         """Tests the System.Clone bindings. This is most convenient to do in
@@ -265,3 +267,23 @@ class TestScalarConversion(unittest.TestCase):
             dut.Clone()
             copy.copy(dut)
             copy.deepcopy(dut)
+
+    def test_diagram_sublcass(self):
+        @mut.TemplateSystem.define("MyDiagram_")
+        def MyDiagram_(T):
+
+            class Impl(Diagram_[T]):
+                def _construct(self, *, converter=None):
+                    Diagram_[T].__init__(self)
+                    builder = DiagramBuilder_[T]()
+                    builder.AddSystem(Example_[T](value=0.0))
+                    builder.BuildInto(self)
+
+                def _construct_copy(self, other, *, converter=None):
+                    self._construct(converter=converter)
+
+            return Impl
+
+        for T in SystemScalarConverter.SupportedScalars:
+            diagram = MyDiagram_[T]()
+            diagram.CreateDefaultContext()
