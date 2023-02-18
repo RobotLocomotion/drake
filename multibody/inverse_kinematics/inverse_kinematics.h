@@ -334,6 +334,29 @@ class InverseKinematics {
       double distance_upper);
 
   /**
+   * Add a constraint that the distance between point P attached to frame 1 and
+   * a line attached to frame 2 is within the range [distance_lower,
+   * distance_upper].
+   * The line passes through a point Q with directional vector n.
+   * @param frame_point The frame to which P is attached.
+   * @param p_B1P The position of P measured and expressed in frame 1.
+   * @param frame_line The frame to which the line is attached.
+   * @param p_B2Q The position of Q measured and expressed in frame 2, the line
+   * passes through Q.
+   * @param n_B2 The direction vector of the line measured and expressed in
+   * frame 2.
+   * @param distance_lower The lower bound on the distance.
+   * @param distance_upper The upper bound on the distance.
+   */
+  solvers::Binding<solvers::Constraint> AddPointToLineDistanceConstraint(
+      const Frame<double>& frame_point,
+      const Eigen::Ref<const Eigen::Vector3d>& p_B1P,
+      const Frame<double>& frame_line,
+      const Eigen::Ref<const Eigen::Vector3d>& p_B2Q,
+      const Eigen::Ref<const Eigen::Vector3d>& n_B2, double distance_lower,
+      double distance_upper);
+
+  /**
    * Adds the constraint that the position of P1, ..., Pn satisfy A *
    * [p_FP1; p_FP2; ...; p_FPn] <= b.
    * @param frameF The frame in which the position P is measured and expressed
