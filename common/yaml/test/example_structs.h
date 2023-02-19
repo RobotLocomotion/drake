@@ -10,7 +10,9 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <fmt/ostream.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/name_value.h"
 
 namespace drake {
@@ -242,13 +244,13 @@ using Variant4 = std::variant<
 
 std::ostream& operator<<(std::ostream& os, const Variant4& value) {
   if (value.index() == 0) {
-    os << "std::string{" << std::get<0>(value) << "}";
+    fmt::print(os,  "std::string{{{}}}", std::get<0>(value));
   } else if (value.index() == 1) {
-    os << "double{" << std::get<1>(value) << "}";
+    fmt::print(os, "double{{{}}}", std::get<1>(value));
   } else if (value.index() == 2) {
-    os << "DoubleStruct{" << std::get<2>(value).value << "}";
+    fmt::print(os, "DoubleStruct{{{}}}", std::get<2>(value).value);
   } else {
-    os << "EigenVecStruct{" << std::get<3>(value).value << "}";
+    fmt::print(os, "EigenVecStruct{{{}}}", fmt_eigen(std::get<3>(value).value));
   }
   return os;
 }

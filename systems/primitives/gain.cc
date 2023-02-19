@@ -1,7 +1,6 @@
 #include "drake/systems/primitives/gain.h"
 
-#include <fmt/format.h>
-
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/unused.h"
 
 namespace drake {
@@ -28,7 +27,7 @@ double Gain<T>::get_gain() const {
     throw std::runtime_error(fmt::format(
         "The gain vector [{}] cannot be represented as a scalar value. "
         "Please use drake::systems::Gain::get_gain_vector() instead.",
-        k_.transpose()));
+        fmt_eigen(k_.transpose())));
   }
   return k_[0];
 }

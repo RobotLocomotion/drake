@@ -16,6 +16,7 @@
 #include <vtkPolyDataAlgorithm.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/scope_exit.h"
 
 namespace drake {
@@ -69,8 +70,9 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
   /* VTK boilerplate to support printing the source.  */
   void PrintSelf(std::ostream& os, vtkIndent indent) override {
     this->Superclass::PrintSelf(os, indent);
-    os << indent << "Size: " << size_.transpose() << "\n";
-    os << indent << "UV Scale: " << uv_scale_.transpose() << "\n";
+    os << indent << fmt::format("Size: {}\n", fmt_eigen(size_.transpose()));
+    os << indent
+       << fmt::format("UV Scale: {}\n", fmt_eigen(uv_scale_.transpose()));
   }
 
   /* Set the size of the box along each of its principal axes.

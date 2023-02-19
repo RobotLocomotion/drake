@@ -338,14 +338,16 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
       const Scalar p_X_test = test_field_W.EvaluateCartesian(f, p_WX);
       const Scalar error = (p_X_test - p_X_expected);
       if (error > kPressureEps) {
-        return ::testing::AssertionFailure()
-               << "\nMesh face " << f
-               << " failed to provide the correct pressure for a point on the "
-                  "inside of the face: " << p_WX.transpose() << ".\n"
-               << "  Expected: " << p_X_expected << "\n"
-               << "  Found: " << p_X_test << "\n"
-               << "  tolerance: " << kPressureEps << "\n"
-               << "  error: " << error;
+        const std::string message = fmt::format(
+            "\nMesh face {} failed to provide the correct pressure for a "
+            "point on the inside of the face: {}.\n"
+            "  Expected: {}\n"
+            "  Found: {}\n"
+            "  tolerance: {}\n"
+            "  error: {}",
+            f, fmt_eigen(p_WX.transpose()), p_X_expected, p_X_test,
+            kPressureEps, error);
+        return ::testing::AssertionFailure() << message;
       }
     }
 
