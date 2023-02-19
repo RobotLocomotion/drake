@@ -225,6 +225,32 @@ class TestGeneral(unittest.TestCase):
         system.configure_default_state(x0=np.array([1, 2]))
         system.configure_random_state(covariance=np.eye(2))
 
+    def test_linear_affine_system_empty_matrices(self):
+        # Confirm the default values for the system matrices in the
+        # constructor.
+        def CheckSizes(system, num_states, num_inputs, num_outputs):
+            self.assertEqual(system.num_continuous_states(), num_states)
+            self.assertEqual(system.num_inputs(), num_inputs)
+            self.assertEqual(system.num_outputs(), num_outputs)
+
+        # A constant vector system.
+        system = AffineSystem(y0=[2, 1])
+        CheckSizes(system, num_states=0, num_inputs=0, num_outputs=2)
+
+        # A matrix gain.
+        system = AffineSystem(D=np.eye(2))
+        CheckSizes(system, num_states=0, num_inputs=2, num_outputs=2)
+        system = LinearSystem(D=np.eye(2))
+        CheckSizes(system, num_states=0, num_inputs=2, num_outputs=2)
+
+        # Add an offset.
+        system = AffineSystem(D=np.eye(2), y0=[1, 2])
+        CheckSizes(system, num_states=0, num_inputs=2, num_outputs=2)
+
+        # An integrator.
+        system = LinearSystem(B=np.eye(2))
+        CheckSizes(system, num_states=2, num_inputs=2, num_outputs=0)
+
     def test_linear_system_zero_size(self):
         # Explicitly test #12633.
         num_x = 0
