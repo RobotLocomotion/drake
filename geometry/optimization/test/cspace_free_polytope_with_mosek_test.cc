@@ -6,8 +6,8 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/optimization/dev/cspace_free_polytope.h"  // NOLINT
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"  // NOLINT
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/solvers/common_solver_option.h"
@@ -755,7 +755,9 @@ TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
   ASSERT_TRUE(std::all_of(
       certificates_result.begin(), certificates_result.end(),
       [](const std::optional<CspaceFreePolytope::SeparationCertificateResult>&
-             certificate) { return certificate.has_value(); }));
+             certificate) {
+        return certificate.has_value();
+      }));
 
   for (bool search_s_bounds_lagrangians : {false, true}) {
     const int gram_total_size = tester.GetGramVarSizeForPolytopeSearchProgram(
@@ -866,7 +868,9 @@ class CIrisToyRobotInitializePolytopeSearchProgramTest
     ASSERT_TRUE(std::all_of(
         certificates_result.begin(), certificates_result.end(),
         [](const std::optional<CspaceFreePolytope::SeparationCertificateResult>&
-               certificate) { return certificate.has_value(); }));
+               certificate) {
+          return certificate.has_value();
+        }));
 
     for (bool search_s_bounds_lagrangians :
          search_s_bounds_lagrangians_options) {
@@ -954,7 +958,9 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
   ASSERT_TRUE(std::all_of(
       certificates_result.begin(), certificates_result.end(),
       [](const std::optional<CspaceFreePolytope::SeparationCertificateResult>&
-             certificate) { return certificate.has_value(); }));
+             certificate) {
+        return certificate.has_value();
+      }));
   for (bool search_s_bounds_lagrangians : {true}) {
     const int gram_total_size = tester.GetGramVarSizeForPolytopeSearchProgram(
         ignored_collision_pairs, search_s_bounds_lagrangians);

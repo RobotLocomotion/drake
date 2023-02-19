@@ -11,8 +11,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
-#include "drake/geometry/optimization/dev/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
@@ -44,9 +44,12 @@ struct PlaneSeparatesGeometries {
  This class tries to find large convex region in the configuration space, such
  that this whole convex set is collision free.
  For more details, refer to the paper
+ "Certified Polyhedral Decompositions of Collision-Free COnfiguration Space"
+ by Hongkai Dai*, Alexandre Amice*, Peter Werner, Annan Zhang and Russ Tedrake.
+ A conference version of this paper is published at
  "Finding and Optimizing Certified, Colision-Free Regions in Configuration Space
  for Robot Manipulators" by Alexandre Amice, Hongkai Dai, Peter Werner, Annan
- Zhang and Russ Tedrake.
+ Zhang and Russ Tedrake, 2022.
  */
 class CspaceFreePolytope {
  public:
@@ -279,7 +282,8 @@ class CspaceFreePolytope {
     kSum,            ///< Maximize ∑ᵢδᵢ
     kGeometricMean,  ///< Maximize the geometric mean power(∏ᵢ (δᵢ + ε), 1/n)
                      ///< where n is C.rows(),
-                     ///< ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon.  # NOLINT
+                     ///< ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon.
+                     ///< # NOLINT
   };
 
   struct FindPolytopeGivenLagrangianOptions {
@@ -419,8 +423,7 @@ class CspaceFreePolytope {
    separation certificate for a pair of geometries for a C-space polytope
    {s | C*s<=d, s_lower<=s<=s_upper}.
    */
-  [[nodiscard]] SeparationCertificateProgram
-  MakeIsGeometrySeparableProgram(
+  [[nodiscard]] SeparationCertificateProgram MakeIsGeometrySeparableProgram(
       const SortedPair<geometry::GeometryId>& geometry_pair,
       const Eigen::Ref<const Eigen::MatrixXd>& C,
       const Eigen::Ref<const Eigen::VectorXd>& d) const;

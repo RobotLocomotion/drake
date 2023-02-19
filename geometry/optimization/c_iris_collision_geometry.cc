@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
 #include <utility>
 
@@ -20,8 +20,7 @@ CIrisCollisionGeometry::CIrisCollisionGeometry(const geometry::Shape* geometry,
                                                multibody::BodyIndex body_index,
                                                geometry::GeometryId id,
                                                math::RigidTransformd X_BG)
-    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {
-}
+    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {}
 
 namespace {
 struct ReifyData {

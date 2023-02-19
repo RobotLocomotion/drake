@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/cspace_free_polytope.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"
 
 #include <limits>
 
@@ -8,7 +8,7 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/solvers/solve.h"

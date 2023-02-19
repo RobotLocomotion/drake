@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/cspace_free_polytope.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"
 
 #include <chrono>
 #include <future>
@@ -11,7 +11,7 @@
 
 #include "drake/common/symbolic/monomial_util.h"
 #include "drake/common/symbolic/polynomial.h"
-#include "drake/geometry/optimization/dev/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
@@ -1583,7 +1583,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
       ellipsoid_Q = options.ellipsoid_scaling * (ellipsoid.A().inverse());
       const double cost = ellipsoid_Q.determinant();
       drake::log()->info("Iteration {}: det(Q)={}", iter, cost);
-      if ((cost - prev_cost)/prev_cost < options.convergence_tol) {
+      if ((cost - prev_cost) / prev_cost < options.convergence_tol) {
         break;
       } else {
         prev_cost = cost;

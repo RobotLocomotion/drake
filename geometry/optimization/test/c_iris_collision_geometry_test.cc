@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
 #include <memory>
 
@@ -7,7 +7,7 @@
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"

@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 
 #include <string>
 
@@ -82,7 +82,7 @@ CIrisToyRobotTest::CIrisToyRobotTest() {
       body1, math::RigidTransformd(Eigen::Vector3d(0.02, -0.1, 0.05)),
       Capsule(0.08, 0.2), "body1_capsule", proximity_properties);
   const std::string convex_obj =
-      FindResourceOrThrow("drake/geometry/optimization/dev/test/convex.obj");
+      FindResourceOrThrow("drake/geometry/optimization/test/convex.obj");
   body1_convex_ = plant_->RegisterCollisionGeometry(
       body1,
       math::RigidTransformd(math::RollPitchYawd(0.05, -0.03, 0),
@@ -164,7 +164,7 @@ CIrisRobotPolytopicGeometryTest::CIrisRobotPolytopicGeometryTest() {
                            Eigen::Vector3d(0.2, 0.2, 0.1)),
       geometry::Box(0.04, 0.1, 0.05), "world_box2", proximity_properties));
   const std::string convex_obj =
-      FindResourceOrThrow("drake/geometry/optimization/dev/test/convex.obj");
+      FindResourceOrThrow("drake/geometry/optimization/test/convex.obj");
   world_convex_ = plant_->RegisterCollisionGeometry(
       plant_->world_body(),
       math::RigidTransform(Eigen::Vector3d(-0.1, -0.5, 0.2)),

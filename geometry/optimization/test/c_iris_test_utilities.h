@@ -9,7 +9,7 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/geometry/optimization/dev/cspace_free_polytope.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
