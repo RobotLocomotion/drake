@@ -177,6 +177,9 @@ PointCloud::PointCloud(PointCloud&& other)
 }
 
 PointCloud& PointCloud::operator=(const PointCloud& other) {
+  size_ = other.size();
+  fields_ = other.fields();
+  storage_.reset(new Storage(size_, fields_));
   SetFrom(other);
   return *this;
 }
