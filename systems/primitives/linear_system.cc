@@ -22,13 +22,13 @@ using std::make_unique;
 using std::unique_ptr;
 
 template <typename T>
-LinearSystem<T>::LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
-                              const Eigen::Ref<const Eigen::MatrixXd>& B,
-                              const Eigen::Ref<const Eigen::MatrixXd>& C,
-                              const Eigen::Ref<const Eigen::MatrixXd>& D,
-                              double time_period)
-    : LinearSystem<T>(SystemTypeTag<LinearSystem>{}, A, B, C, D,
-                      time_period) {}
+LinearSystem<T>::LinearSystem(
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& A,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& B,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& C,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& D,
+    double time_period)
+    : LinearSystem<T>(SystemTypeTag<LinearSystem>{}, A, B, C, D, time_period) {}
 
 template <typename T>
 template <typename U>
@@ -37,15 +37,15 @@ LinearSystem<T>::LinearSystem(const LinearSystem<U>& other)
                       other.time_period()) {}
 
 template <typename T>
-LinearSystem<T>::LinearSystem(SystemScalarConverter converter,
-                              const Eigen::Ref<const Eigen::MatrixXd>& A,
-                              const Eigen::Ref<const Eigen::MatrixXd>& B,
-                              const Eigen::Ref<const Eigen::MatrixXd>& C,
-                              const Eigen::Ref<const Eigen::MatrixXd>& D,
-                              double time_period)
-    : AffineSystem<T>(std::move(converter), A, B,
-                      Eigen::VectorXd::Zero(A.rows()), C, D,
-                      Eigen::VectorXd::Zero(C.rows()), time_period) {}
+LinearSystem<T>::LinearSystem(
+    SystemScalarConverter converter,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& A,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& B,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& C,
+    const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& D,
+    double time_period)
+    : AffineSystem<T>(std::move(converter), A, B, std::nullopt, C, D,
+                      std::nullopt, time_period) {}
 
 template <typename T>
 unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(

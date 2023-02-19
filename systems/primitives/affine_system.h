@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -198,20 +199,26 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// |:-------:|:-----------:|:-----------:|
   /// | A       | num states  | num states  |
   /// | B       | num states  | num inputs  |
+  /// | f0      | num_states  | 1           |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
+  /// | y0      | num_outputs | 1           |
+  ///
+  /// Matrices passed as std::nullopt are treated as zero matrices with the
+  /// appropriate number of rows and columns.
   ///
   /// @param time_period Defines the period of the discrete time system; use
-  ///  time_period=0.0 to denote a continuous time system.  @default 0.0
+  /// time_period=0.0 to denote a continuous time system.  @default 0.0
   ///
   /// Subclasses must use the protected constructor, not this one.
-  AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::VectorXd>& f0,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
-               const Eigen::Ref<const Eigen::VectorXd>& y0,
-               double time_period = 0.0);
+  AffineSystem(
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& A = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& B = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::VectorXd>>& f0 = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& C = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& D = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::VectorXd>>& y0 = std::nullopt,
+      double time_period = 0.0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -257,12 +264,12 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
   AffineSystem(SystemScalarConverter converter,
-               const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::VectorXd>& f0,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
-               const Eigen::Ref<const Eigen::VectorXd>& y0,
+               const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& A,
+               const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& B,
+               const std::optional<Eigen::Ref<const Eigen::VectorXd>>& f0,
+               const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& C,
+               const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& D,
+               const std::optional<Eigen::Ref<const Eigen::VectorXd>>& y0,
                double time_period);
 
  private:
@@ -276,12 +283,12 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   EventStatus CalcDiscreteUpdate(
       const Context<T>& context, DiscreteValues<T>* updates) const final;
 
-  const Eigen::MatrixXd A_;
-  const Eigen::MatrixXd B_;
-  const Eigen::VectorXd f0_;
-  const Eigen::MatrixXd C_;
-  const Eigen::MatrixXd D_;
-  const Eigen::VectorXd y0_;
+  Eigen::MatrixXd A_;
+  Eigen::MatrixXd B_;
+  Eigen::VectorXd f0_;
+  Eigen::MatrixXd C_;
+  Eigen::MatrixXd D_;
+  Eigen::VectorXd y0_;
   const bool has_meaningful_C_{};
   const bool has_meaningful_D_{};
 };

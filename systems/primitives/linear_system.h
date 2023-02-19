@@ -55,12 +55,16 @@ class LinearSystem : public AffineSystem<T> {
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
   ///
+  /// Matrices passed as std::nullopt are treated as zero matrices with the
+  /// appropriate number of rows and columns.
+  ///
   /// Subclasses must use the protected constructor, not this one.
-  LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
-               double time_period = 0.0);
+  LinearSystem(
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& A = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& B = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& C = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& D = std::nullopt,
+      double time_period = 0.0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -84,11 +88,13 @@ class LinearSystem : public AffineSystem<T> {
   /// etc.); pass a default-constructed object if such support is not desired.
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
-  LinearSystem(SystemScalarConverter converter,
-               const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D, double time_period);
+  LinearSystem(
+      SystemScalarConverter converter,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& A = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& B = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& C = std::nullopt,
+      const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& D = std::nullopt,
+      double time_period = 0.0);
 };
 
 /// Base class for a discrete or continuous linear time-varying (LTV) system.
