@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/lcmt_robot_plan.hpp"
@@ -148,7 +149,7 @@ void RobotPlanInterpolator::MakeFixedPlan(
   plan.pp = PiecewisePolynomial<double>::ZeroOrderHold(times, knots);
   plan.pp_deriv = plan.pp.derivative();
   plan.pp_double_deriv = plan.pp_deriv.derivative();
-  drake::log()->info("Generated fixed plan at {}", q0.transpose());
+  drake::log()->info("Generated fixed plan at {}", fmt_eigen(q0.transpose()));
 }
 
 void RobotPlanInterpolator::Initialize(double plan_start_time,

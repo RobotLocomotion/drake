@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -215,10 +216,10 @@ class DistancePairGeometryTest : public ::testing::Test {
     const Vector3d dd_dAo_point = point_result.distance.derivatives();
     result = CompareMatrices(dd_dAo_shape, dd_dAo_point);
     if (!result) {
-      return ::testing::AssertionFailure()
-             << "Distance derivatives don't match; "
-             << "expected: <" << dd_dAo_point << ">, got: <" << dd_dAo_shape
-             << ">";
+      const std::string message = fmt::format(
+          "Distance derivatives don't match; expected: <{}>, got: <{}>",
+          fmt_eigen(dd_dAo_point), fmt_eigen(dd_dAo_shape));
+      return ::testing::AssertionFailure() << message;
     }
 
     // Derivatives of nhat_BA_W; point distance grad_W member is the same
@@ -227,10 +228,10 @@ class DistancePairGeometryTest : public ::testing::Test {
     const auto dgrad_dAo_point = math::ExtractGradient(point_result.grad_W);
     result = CompareMatrices(dgrad_dAo_shape, dgrad_dAo_point);
     if (!result) {
-      return ::testing::AssertionFailure() << "Normal derivatives don't match; "
-                                           << "expected:\n"
-                                           << dgrad_dAo_point << "\ngot:\n"
-                                           << dgrad_dAo_shape;
+      const std::string message =
+          fmt::format("Normal derivatives don't match; expected:\n{}\ngot:\n{}",
+                      fmt_eigen(dgrad_dAo_point), fmt_eigen(dgrad_dAo_shape));
+      return ::testing::AssertionFailure() << message;
     }
 
     // Derivatives of p_BCb.
@@ -238,10 +239,10 @@ class DistancePairGeometryTest : public ::testing::Test {
     const auto dN_dAo = math::ExtractGradient(point_result.p_GN);
     result = CompareMatrices(dCb_dAo, dN_dAo);
     if (!result) {
-      return ::testing::AssertionFailure() << "p_BCb derivatives don't match; "
-                                           << "expected:\n"
-                                           << dN_dAo << "\ngot:\n"
-                                           << dCb_dAo;
+      const std::string message =
+          fmt::format("p_BCb derivatives don't match; expected:\n{}\ngot:\n{}",
+                      fmt_eigen(dN_dAo), fmt_eigen(dCb_dAo));
+      return ::testing::AssertionFailure() << message;
     }
 
     // Derivatives of p_ACa.
@@ -294,10 +295,10 @@ class DistancePairGeometryTest : public ::testing::Test {
     const auto dCa_dAo = math::ExtractGradient(shape_result.p_ACa);
     result = CompareMatrices(dCa_dAo, dCa_dAo_expected, 4 * kEps);
     if (!result) {
-      return ::testing::AssertionFailure() << "p_ACa derivatives don't match; "
-                                           << "expected:\n"
-                                           << dCa_dAo_expected << "\ngot:\n"
-                                           << dCa_dAo;
+      const std::string message =
+          fmt::format("p_ACa derivatives don't match; expected:\n{}\ngot:\n{}",
+                      fmt_eigen(dCa_dAo_expected), fmt_eigen(dCa_dAo));
+      return ::testing::AssertionFailure() << message;
     }
 
     return result;

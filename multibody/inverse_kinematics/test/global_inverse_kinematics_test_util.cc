@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
@@ -74,8 +75,8 @@ void KukaTest::CheckGlobalIKSolution(
     // Tolerance from Gurobi is about 1E-6. I increase it to 3e-6 to pass on Mac
     // CI.
     const double tol = 3e-6;
-    EXPECT_TRUE((body_Ri.array().abs() <= 1 + tol).all()) << "body_Ri:\n"
-                                                          << body_Ri << "\n";
+    EXPECT_TRUE((body_Ri.array().abs() <= 1 + tol).all())
+        << fmt::format("body_Ri:\n{}\n", fmt_eigen(body_Ri));
     EXPECT_LE(body_Ri.trace(), 3 + tol);
     EXPECT_GE(body_Ri.trace(), -1 - tol);
     Vector3d body_pos_global_ik =

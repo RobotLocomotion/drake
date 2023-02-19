@@ -1071,17 +1071,20 @@ struct SignedDistanceToPointTestData {
   // when a test fails.
   friend std::ostream& operator<<(std::ostream& os,
                                   const SignedDistanceToPointTestData& obj) {
-    return os << "{\n"
-              << "  geometry: (not printed)\n"
-              << "  X_WG: (not printed)\n"
-              << "  p_WQ: " << obj.p_WQ.transpose() << "\n"
-              << "  expected_result.p_GN: "
-              << obj.expected_result.p_GN.transpose() << "\n"
-              << "  expected_result.distance: " << obj.expected_result.distance
-              << "\n"
-              << "  expected_result.grad_W: "
-              << obj.expected_result.grad_W.transpose() << "\n"
-              << "}" << std::flush;
+    fmt::print(os,
+               "{{\n"
+               "  geometry: (not printed)\n"
+               "  X_WG: (not printed)\n"
+               "  p_WQ: {}\n"
+               "  expected_result.p_GN: {}\n"
+               "  expected_result.distance: {}\n"
+               "  expected_result.grad_W: {}\n"
+               "}}",
+               fmt_eigen(obj.p_WQ.transpose()),
+               fmt_eigen(obj.expected_result.p_GN.transpose()),
+               obj.expected_result.distance,
+               fmt_eigen(obj.expected_result.grad_W.transpose()));
+    return os;
   }
 
   shared_ptr<Shape> geometry;
@@ -2601,22 +2604,23 @@ class SignedDistancePairTestData {
   // when a test fails.
   friend std::ostream& operator<<(std::ostream& os,
                                   const SignedDistancePairTestData& obj) {
-    return os << "{\n"
-              << " geometry A: (not printed)\n"
-              << " geometry B: (not printed)\n"
-              << " X_WA: (not printed)\n"
-              << " X_WB: (not printed)\n"
-              << " expected_result.id_A: "
-              << obj.expected_result_.id_A << "\n"
-              << " expected_result.id_B: "
-              << obj.expected_result_.id_B << "\n"
-              << " expected_result.distance: "
-              << obj.expected_result_.distance << "\n"
-              << " expected_result.p_ACa: "
-              << obj.expected_result_.p_ACa.transpose() << "\n"
-              << " expected_result.p_BCb: "
-              << obj.expected_result_.p_BCb.transpose() << "\n"
-              << "}" << std::flush;
+    fmt::print(os,
+               "{{\n"
+               " geometry A: (not printed)\n"
+               " geometry B: (not printed)\n"
+               " X_WA: (not printed)\n"
+               " X_WB: (not printed)\n"
+               " expected_result.id_A: {}\n"
+               " expected_result.id_B: {}\n"
+               " expected_result.distance: {}\n"
+               " expected_result.p_ACa: {}\n"
+               " expected_result.p_BCb: {}\n"
+               "}}",
+               obj.expected_result_.id_A, obj.expected_result_.id_B,
+               obj.expected_result_.distance,
+               fmt_eigen(obj.expected_result_.p_ACa.transpose()),
+               fmt_eigen(obj.expected_result_.p_BCb.transpose()));
+    return os;
   }
 
   shared_ptr<const Shape> a_;

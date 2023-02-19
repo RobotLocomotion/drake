@@ -10,7 +10,10 @@
 #include <stdexcept>
 #include <utility>
 
+#include <fmt/ostream.h>
+
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 
 namespace drake {
 namespace symbolic {
@@ -553,11 +556,10 @@ FormulaPositiveSemidefinite::FormulaPositiveSemidefinite(
     const Eigen::Ref<const MatrixX<Expression>>& m)
     : FormulaCell{FormulaKind::PositiveSemidefinite}, m_{m} {
   if (!IsSymmetric(m)) {
-    ostringstream oss;
-    oss << "The following matrix is not symmetric and cannot be used to "
-           "construct drake::symbolic::FormulaPositiveSemidefinite:\n"
-        << m;
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(fmt::format(
+        "The following matrix is not symmetric and cannot be used to "
+        "construct drake::symbolic::FormulaPositiveSemidefinite:\n{}",
+        fmt_eigen(m)));
   }
 }
 
@@ -649,7 +651,8 @@ Formula FormulaPositiveSemidefinite::Substitute(const Substitution& s) const {
 }
 
 ostream& FormulaPositiveSemidefinite::Display(ostream& os) const {
-  return os << "positive_semidefinite(" << m_ << ")";
+  fmt::print(os, "positive_semidefinite({})", fmt_eigen(m_));
+  return os;
 }
 
 bool is_false(const FormulaCell& f) {

@@ -10,6 +10,7 @@
 #include <vtkPNGReader.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_ids.h"
@@ -1698,7 +1699,8 @@ TEST_F(RenderEngineGlTest, IntrinsicsAndRenderProperties) {
   // Confirm all edges were found, the box is square and centered in the
   // image.
   const Vector4<int> ref_box_edges = FindBoxEdges(ref_depth);
-  ASSERT_TRUE((ref_box_edges.array() > -1).all()) << ref_box_edges.transpose();
+  ASSERT_TRUE((ref_box_edges.array() > -1).all())
+      << fmt::to_string(fmt_eigen(ref_box_edges.transpose()));
   const int ref_box_width = ref_box_edges(2) - ref_box_edges(0);
   const int ref_box_height = ref_box_edges(1) - ref_box_edges(3);
   ASSERT_EQ(ref_box_width, ref_box_height);
@@ -1708,9 +1710,11 @@ TEST_F(RenderEngineGlTest, IntrinsicsAndRenderProperties) {
   {
     // Also confirm the box is positioned the same in color and label images.
     const Vector4<int> color_edges = FindBoxEdges(ref_color);
-    ASSERT_EQ(color_edges, ref_box_edges) << color_edges;
+    ASSERT_EQ(color_edges, ref_box_edges)
+        << fmt::to_string(fmt_eigen(color_edges));
     const Vector4<int> label_edges = FindBoxEdges(ref_label);
-    ASSERT_EQ(label_edges, ref_box_edges) << label_edges;
+    ASSERT_EQ(label_edges, ref_box_edges)
+        << fmt::to_string(fmt_eigen(label_edges));
   }
 
   {
@@ -1755,7 +1759,8 @@ TEST_F(RenderEngineGlTest, IntrinsicsAndRenderProperties) {
     //    increase or decrease the amount of image around the box.
 
     const Vector4<int> test_edges = FindBoxEdges(depth);
-    ASSERT_TRUE((test_edges.array() > -1).all()) << test_edges.transpose();
+    ASSERT_TRUE((test_edges.array() > -1).all())
+        << fmt::to_string(fmt_eigen(test_edges.transpose()));
     const int test_box_width = test_edges(2) - test_edges(0);
     const int test_box_height = test_edges(1) - test_edges(3);
 
@@ -1767,16 +1772,18 @@ TEST_F(RenderEngineGlTest, IntrinsicsAndRenderProperties) {
 
     // Confirm that its center is translated.
     EXPECT_NEAR((test_edges(0) + test_edges(2)) / 2.0, w2 / 2.0 + offset_x, 1.0)
-        << test_edges.transpose();
+        << fmt::to_string(fmt_eigen(test_edges.transpose()));
     EXPECT_NEAR((test_edges(1) + test_edges(3)) / 2.0, h2 / 2.0 + offset_y, 1.0)
-        << test_edges.transpose();
+        << fmt::to_string(fmt_eigen(test_edges.transpose()));
 
     {
       // Also confirm it matches for color and label.
       const Vector4<int> color_edges = FindBoxEdges(color);
-      ASSERT_EQ(color_edges, test_edges) << color_edges.transpose();
+      ASSERT_EQ(color_edges, test_edges)
+          << fmt::to_string(fmt_eigen(color_edges.transpose()));
       const Vector4<int> label_edges = FindBoxEdges(label);
-      ASSERT_EQ(label_edges, test_edges) << label_edges.transpose();
+      ASSERT_EQ(label_edges, test_edges)
+          << fmt::to_string(fmt_eigen(label_edges.transpose()));
     }
   }
 
