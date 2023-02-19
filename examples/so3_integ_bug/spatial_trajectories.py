@@ -691,7 +691,7 @@ def pinv_raw(A):
 
 
 def pinv(A):
-    if A.dtype == float:
+    if False:  # A.dtype == float:
         return np.linalg.pinv(A)
     else:
         return pinv_raw(A)
