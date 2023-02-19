@@ -216,22 +216,6 @@ TEST_F(MonomialBasisElementTest, GetVariables) {
   EXPECT_EQ(m3.GetVariables(), Variables({var_x_, var_y_, var_z_}));
 }
 
-// Checks we can have an Eigen matrix of Monomials without compilation
-// errors. No assertions in the test.
-TEST_F(MonomialBasisElementTest, EigenMatrixOfMonomials) {
-  Eigen::Matrix<MonomialBasisElement, 2, 2> M;
-  // M = | 1   x    |
-  //     | y²  x²z³ |
-  M << MonomialBasisElement{}, MonomialBasisElement{var_x_},
-      MonomialBasisElement{{{var_y_, 2}}},
-      MonomialBasisElement{{{var_x_, 2}, {var_z_, 3}}};
-
-  // The following fails if we do not provide
-  // `Eigen::NumTraits<drake::symbolic::MonomialBasisElement>`.
-  std::ostringstream oss;
-  oss << M;
-}
-
 TEST_F(MonomialBasisElementTest, MonomialOne) {
   // Compares monomials all equal to 1, but with different variables.
   MonomialBasisElement m1{};

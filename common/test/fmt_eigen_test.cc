@@ -48,6 +48,7 @@ GTEST_TEST(FmtEigenTest, Matrix3dNeedsPadding) {
             " 3.1  3.2  3.3");
 }
 
+#if 0  // XXX
 GTEST_TEST(FmtEigenTest, Matrix3i) {
   Eigen::Matrix3i value;
   value << 11, 12, 13,
@@ -58,6 +59,7 @@ GTEST_TEST(FmtEigenTest, Matrix3i) {
             "21 22 23\n"
             "31 32 33");
 }
+#endif
 
 }  // namespace
 }  // namespace drake

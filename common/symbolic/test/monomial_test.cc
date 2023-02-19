@@ -1,11 +1,9 @@
 #include <exception>
-#include <sstream>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -16,7 +14,6 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 using std::map;
-using std::ostringstream;
 using std::pair;
 using std::runtime_error;
 using std::unordered_map;
@@ -183,23 +180,6 @@ TEST_F(MonomialTest, GetVariables) {
 
   const Monomial m3{{{var_x_, 1}, {var_y_, 2}, {var_z_, 3}}};
   EXPECT_EQ(m3.GetVariables(), Variables({var_x_, var_y_, var_z_}));
-}
-
-// Checks we can have an Eigen matrix of Monomials without compilation
-// errors. No assertions in the test.
-TEST_F(MonomialTest, EigenMatrixOfMonomials) {
-  Eigen::Matrix<Monomial, 2, 2> M;
-  // M = | 1   x    |
-  //     | y²  x²z³ |
-  // clang-format off
-  M << Monomial{}, Monomial{var_x_},
-       Monomial{{{var_y_, 2}}}, Monomial{{{var_x_, 2}, {var_z_, 3}}};
-  // clang-format on
-
-  // The following fails if we do not provide
-  // `Eigen::NumTraits<drake::symbolic::Monomial>`.
-  ostringstream oss;
-  oss << M;
 }
 
 TEST_F(MonomialTest, MonomialOne) {

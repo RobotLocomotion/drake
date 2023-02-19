@@ -1,7 +1,6 @@
 #pragma once
 
-#include <limits>
-#include <sstream>
+#include <string>
 #include <string_view>
 
 #include <Eigen/Core>
@@ -17,6 +16,13 @@ template <typename Derived>
 struct fmt_eigen_ref {
   const Eigen::MatrixBase<Derived>& matrix;
 };
+
+/* Returns the string formatting of the given matrix.
+@tparam T must be either double, float, or string */
+template <typename T>
+std::string FormatEigenMatrix(
+    const Eigen::Ref<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&
+        matrix);
 
 }  // namespace internal
 
@@ -45,19 +51,20 @@ struct formatter<drake::internal::fmt_eigen_ref<Derived>>
   auto format(const drake::internal::fmt_eigen_ref<Derived>& ref,
               // NOLINTNEXTLINE(runtime/references) To match fmt API.
               FormatContext& ctx) DRAKE_FMT8_CONST -> decltype(ctx.out()) {
+    using Scalar = typename Derived::Scalar;
     const auto& matrix = ref.matrix;
-    std::stringstream stream;
-    // We'll print our matrix data using as much precision as we can, so that
-    // console log output and/or error messages paint the full picture. Sadly,
-    // the ostream family of floating-point formatters doesn't know how to do
-    // "shortest round-trip precision". If we set the precision to max_digits,
-    // then simple numbers like "1.1" print as "1.1000000000000001"; instead,
-    // well use max_digits - 1 to avoid that problem, with the risk of losing
-    // the last ulps in the printout it case it does matter. This will all be
-    // fixed once we stop using Eigen IO.
-    stream.precision(std::numeric_limits<double>::max_digits10 - 1);
-    stream << matrix;
-    return formatter<std::string_view>{}.format(stream.str(), ctx);
+    if constexpr (std::is_same_v<Scalar, double> ||
+                  std::is_same_v<Scalar, float>) {
+      return formatter<std::string_view>{}.format(
+          drake::internal::FormatEigenMatrix<Scalar>(matrix), ctx);
+    } else {
+      return formatter<std::string_view>{}.format(
+          drake::internal::FormatEigenMatrix<std::string>(
+              matrix.unaryExpr([](const auto& element) -> std::string {
+                return fmt::to_string(element);
+              })),
+          ctx);
+    }
   }
 };
 }  // namespace fmt

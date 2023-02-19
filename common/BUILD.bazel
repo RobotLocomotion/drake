@@ -66,6 +66,7 @@ drake_cc_library(
     name = "essential",
     srcs = [
         "drake_assert_and_throw.cc",
+        "fmt_eigen.cc",
         "text_logging.cc",
     ],
     hdrs = [

@@ -64,12 +64,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "fmt_format_printer",
+    name = "gtest_printers",
     testonly = 1,
-    hdrs = ["fmt_format_printer.h"],
+    hdrs = [
+        "eigen_printer.h",
+        "fmt_format_printer.h",
+    ],
     tags = ["exclude_from_package"],
     visibility = ["@gtest//:__pkg__"],
-    deps = ["@fmt"],
+    deps = [
+        "//common:essential",
+        "@eigen",
+        "@fmt",
+    ],
 )
 
 drake_cc_library(

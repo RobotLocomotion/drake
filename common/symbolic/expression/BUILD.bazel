@@ -177,6 +177,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "ostream_test",
+    deps = [
+        ":expression",
+    ],
+)
+
+drake_cc_googletest(
     name = "sparse_test",
     deps = [
         ":expression",

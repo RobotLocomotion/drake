@@ -16,6 +16,8 @@ CXX_FLAGS = [
     "-Werror=overloaded-virtual",
     "-Werror=shadow",
     "-Werror=unused-result",
+    # We eschew Eigen::IO in lieu of drake::fmt_eigen.
+    "-DEIGEN_NO_IO=1",
 ]
 
 # The CLANG_FLAGS will be enabled for all C++ rules in the project when

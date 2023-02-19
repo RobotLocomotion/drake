@@ -249,20 +249,6 @@ TEST_F(SymbolicChebyshevBasisElementTest, ToExpression) {
                    ChebyshevPolynomial(y_, 3).ToPolynomial().ToExpression());
 }
 
-TEST_F(SymbolicChebyshevBasisElementTest, EigenMatrix) {
-  // Checks we can have an Eigen matrix of ChebyshevBasisElements without
-  // compilation errors. No assertions in the test.
-  Eigen::Matrix<ChebyshevBasisElement, 2, 2> M;
-  M << ChebyshevBasisElement(), ChebyshevBasisElement({{x_, 1}}),
-      ChebyshevBasisElement({{x_, 1}, {y_, 2}}),
-      ChebyshevBasisElement({{y_, 2}});
-
-  // The following fails if we do not provide
-  // `Eigen::NumTraits<drake::symbolic::DerivedA>`
-  std::ostringstream oss;
-  oss << M;
-}
-
 TEST_F(SymbolicChebyshevBasisElementTest, Hash) {
   // Check that ChebyshevBasisElement can be used as a key in
   // std::unordered_map.
