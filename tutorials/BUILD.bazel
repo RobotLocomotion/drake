@@ -87,6 +87,14 @@ drake_jupyter_py_binary(
 )
 
 drake_jupyter_py_binary(
+    name = "working_with_diagrams",
+    add_test_rule = 1,
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+drake_jupyter_py_binary(
     name = "authoring_multibody_simulation",
     add_test_rule = 1,
     test_timeout = "moderate",
