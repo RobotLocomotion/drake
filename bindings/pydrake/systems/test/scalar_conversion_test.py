@@ -274,7 +274,7 @@ class TestScalarConversion(unittest.TestCase):
 
             class Impl(Diagram_[T]):
                 def _construct(self, *, converter=None):
-                    Diagram_[T].__init__(self)
+                    Diagram_[T].__init__(self, converter=converter)
                     builder = DiagramBuilder_[T]()
                     builder.AddSystem(Example_[T](value=0.0))
                     builder.BuildInto(self)
@@ -284,6 +284,9 @@ class TestScalarConversion(unittest.TestCase):
 
             return Impl
 
-        for T in SystemScalarConverter.SupportedScalars:
-            diagram = MyDiagram_[T]()
-            diagram.CreateDefaultContext()
+        for T, U in SystemScalarConverter.SupportedConversionPairs:
+            diagram_U = MyDiagram_[U]()
+            diagram_T = diagram_U.ToScalarType[T]()
+            # Ensure both diagrams can create a context.
+            diagram_U.CreateDefaultContext()
+            diagram_T.CreateDefaultContext()
