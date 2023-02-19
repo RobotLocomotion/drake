@@ -44,8 +44,8 @@ LinearSystem<T>::LinearSystem(SystemScalarConverter converter,
                               const Eigen::Ref<const Eigen::MatrixXd>& D,
                               double time_period)
     : AffineSystem<T>(std::move(converter), A, B,
-                      Eigen::VectorXd::Zero(A.rows()), C, D,
-                      Eigen::VectorXd::Zero(C.rows()), time_period) {}
+                      Eigen::VectorXd::Zero(0), C, D,
+                      Eigen::VectorXd::Zero(0), time_period) {}
 
 template <typename T>
 unique_ptr<LinearSystem<T>> LinearSystem<T>::MakeLinearSystem(

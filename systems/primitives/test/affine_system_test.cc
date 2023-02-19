@@ -530,6 +530,83 @@ TEST_F(AffineSystemSymbolicTest, MakeAffineSystemException3) {
                    C_ * x_ + D_ * u_ + y0_, x_, u_, 10.0),
                std::runtime_error);
 }
+
+void CheckSizes(std::unique_ptr<AffineSystem<double>> sys, int num_states,
+                int num_inputs, int num_outputs) {
+  EXPECT_EQ(sys->A().rows(), num_states);
+  EXPECT_EQ(sys->A().cols(), num_states);
+  EXPECT_EQ(sys->B().rows(), num_states);
+  EXPECT_EQ(sys->B().cols(), num_inputs);
+  EXPECT_EQ(sys->C().rows(), num_outputs);
+  EXPECT_EQ(sys->C().cols(), num_states);
+  EXPECT_EQ(sys->D().rows(), num_outputs);
+  EXPECT_EQ(sys->D().cols(), num_inputs);
+  EXPECT_EQ(sys->f0().size(), num_states);
+  EXPECT_EQ(sys->y0().size(), num_outputs);
+}
+
+// Confirm that empty matrices passed to the constructor are treated as zeros
+// of the correct size.
+GTEST_TEST(AffineSystemExtraTest, EmptyMatrices) {
+  const int kNumStates = 3;
+  const int kNumInputs = 2;
+  const int kNumOutputs = 1;
+  // Default matrices (uninitialized; only their size matters).
+  const Eigen::Matrix<double, kNumStates, kNumStates> A;
+  const Eigen::Matrix<double, kNumStates, kNumInputs> B;
+  const Eigen::Vector<double, kNumStates> f0;
+  const Eigen::Matrix<double, kNumOutputs, kNumStates> C;
+  const Eigen::Matrix<double, kNumOutputs, kNumInputs> D;
+  const Eigen::Vector<double, kNumOutputs> y0;
+
+  CheckSizes(std::make_unique<AffineSystem<double>>(A, B, f0, C, D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // A has zero rows.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 Eigen::Matrix<double, 0, kNumStates>(), B, f0, C, D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // A has zero cols.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 Eigen::Matrix<double, kNumStates, 0>(), B, f0, C, D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // A has zero rows and cols.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 Eigen::Matrix<double, 0, 0>(), B, f0, C, D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // B has zero rows.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 A, Eigen::Matrix<double, 0, kNumInputs>(), f0, C, D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // B has zero cols.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 A, Eigen::Matrix<double, kNumStates, 0>(), f0, C, D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // f0 is empty.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 A, B, Eigen::Vector<double, 0>(), C, D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // C has zero rows.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 A, B, f0, Eigen::Matrix<double, 0, kNumStates>(), D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // C has zero cols.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 A, B, f0, Eigen::Matrix<double, kNumOutputs, 0>(), D, y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // D has zero rows.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 A, B, f0, C, Eigen::Matrix<double, 0, kNumInputs>(), y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // D has zero cols.
+  CheckSizes(std::make_unique<AffineSystem<double>>(
+                 A, B, f0, C, Eigen::Matrix<double, kNumOutputs, 0>(), y0),
+             kNumStates, kNumInputs, kNumOutputs);
+  // y0 is empty.
+  CheckSizes(std::make_unique<AffineSystem<double>>(A, B, f0, C, D,
+                                                    Eigen::Vector<double, 0>()),
+             kNumStates, kNumInputs, kNumOutputs);
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

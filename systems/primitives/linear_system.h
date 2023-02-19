@@ -55,11 +55,18 @@ class LinearSystem : public AffineSystem<T> {
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
   ///
+  /// Empty matrices (zero rows or zero columns) are treated as zero-matrices
+  /// with the number of rows and columns matching the non-empty matrices.
+  ///
   /// Subclasses must use the protected constructor, not this one.
-  LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
+  LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A =
+                   Eigen::Matrix<double, 0, 0>(),
+               const Eigen::Ref<const Eigen::MatrixXd>& B =
+                   Eigen::Matrix<double, 0, 0>(),
+               const Eigen::Ref<const Eigen::MatrixXd>& C =
+                   Eigen::Matrix<double, 0, 0>(),
+               const Eigen::Ref<const Eigen::MatrixXd>& D =
+                   Eigen::Matrix<double, 0, 0>(),
                double time_period = 0.0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.

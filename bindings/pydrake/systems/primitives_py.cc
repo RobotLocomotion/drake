@@ -82,9 +82,13 @@ PYBIND11_MODULE(primitives, m) {
                  const Eigen::Ref<const MatrixXd>&,
                  const Eigen::Ref<const MatrixXd>&,
                  const Eigen::Ref<const VectorXd>&, double>(),
-            py::arg("A"), py::arg("B"), py::arg("f0"), py::arg("C"),
-            py::arg("D"), py::arg("y0"), py::arg("time_period") = 0.0,
-            doc.AffineSystem.ctor.doc_7args)
+            py::arg("A") = Eigen::Matrix<double, 0, 0>(),
+            py::arg("B") = Eigen::Matrix<double, 0, 0>(),
+            py::arg("f0") = Eigen::Matrix<double, 0, 1>(),
+            py::arg("C") = Eigen::Matrix<double, 0, 0>(),
+            py::arg("D") = Eigen::Matrix<double, 0, 0>(),
+            py::arg("y0") = Eigen::Matrix<double, 0, 1>(),
+            py::arg("time_period") = 0.0, doc.AffineSystem.ctor.doc_7args)
         // TODO(eric.cousineau): Fix these to return references instead of
         // copies.
         .def("A", overload_cast_explicit<const MatrixXd&>(&AffineSystem<T>::A),
@@ -106,6 +110,12 @@ PYBIND11_MODULE(primitives, m) {
         // wrapped.
         .def("time_period", &AffineSystem<T>::time_period,
             doc.TimeVaryingAffineSystem.time_period.doc)
+        .def("num_states", &TrajectoryAffineSystem<T>::num_states,
+            doc.TimeVaryingAffineSystem.num_states.doc)
+        .def("num_inputs", &TrajectoryAffineSystem<T>::num_inputs,
+            doc.TimeVaryingAffineSystem.num_inputs.doc)
+        .def("num_outputs", &TrajectoryAffineSystem<T>::num_outputs,
+            doc.TimeVaryingAffineSystem.num_outputs.doc)
         .def("configure_default_state",
             &TimeVaryingAffineSystem<T>::configure_default_state, py::arg("x0"),
             doc.TimeVaryingAffineSystem.configure_default_state.doc)
@@ -214,7 +224,10 @@ PYBIND11_MODULE(primitives, m) {
                  const Eigen::Ref<const MatrixXd>&,
                  const Eigen::Ref<const MatrixXd>&,
                  const Eigen::Ref<const MatrixXd>&, double>(),
-            py::arg("A"), py::arg("B"), py::arg("C"), py::arg("D"),
+            py::arg("A") = Eigen::Matrix<double, 0, 0>(),
+            py::arg("B") = Eigen::Matrix<double, 0, 0>(),
+            py::arg("C") = Eigen::Matrix<double, 0, 0>(),
+            py::arg("D") = Eigen::Matrix<double, 0, 0>(),
             py::arg("time_period") = 0.0, doc.LinearSystem.ctor.doc_5args);
 
     DefineTemplateClassWithDefault<MatrixGain<T>, LinearSystem<T>>(

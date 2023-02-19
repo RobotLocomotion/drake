@@ -198,20 +198,30 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// |:-------:|:-----------:|:-----------:|
   /// | A       | num states  | num states  |
   /// | B       | num states  | num inputs  |
+  /// | f0      | num_states  | 1           |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
+  /// | y0      | num_outputs | 1           |
+  ///
+  /// Empty matrices (zero rows or zero columns) are treated as zero-matrices
+  /// with the number of rows and columns matching the non-empty matrices.
   ///
   /// @param time_period Defines the period of the discrete time system; use
-  ///  time_period=0.0 to denote a continuous time system.  @default 0.0
+  /// time_period=0.0 to denote a continuous time system.  @default 0.0
   ///
   /// Subclasses must use the protected constructor, not this one.
-  AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::VectorXd>& f0,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
-               const Eigen::Ref<const Eigen::VectorXd>& y0,
-               double time_period = 0.0);
+  AffineSystem(
+      const Eigen::Ref<const Eigen::MatrixXd>& A =
+          Eigen::Matrix<double, 0, 0>(),
+      const Eigen::Ref<const Eigen::MatrixXd>& B =
+          Eigen::Matrix<double, 0, 0>(),
+      const Eigen::Ref<const Eigen::VectorXd>& f0 = Eigen::Vector<double, 0>(),
+      const Eigen::Ref<const Eigen::MatrixXd>& C =
+          Eigen::Matrix<double, 0, 0>(),
+      const Eigen::Ref<const Eigen::MatrixXd>& D =
+          Eigen::Matrix<double, 0, 0>(),
+      const Eigen::Ref<const Eigen::VectorXd>& y0 = Eigen::Vector<double, 0>(),
+      double time_period = 0.0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -276,12 +286,12 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   EventStatus CalcDiscreteUpdate(
       const Context<T>& context, DiscreteValues<T>* updates) const final;
 
-  const Eigen::MatrixXd A_;
-  const Eigen::MatrixXd B_;
-  const Eigen::VectorXd f0_;
-  const Eigen::MatrixXd C_;
-  const Eigen::MatrixXd D_;
-  const Eigen::VectorXd y0_;
+  Eigen::MatrixXd A_;
+  Eigen::MatrixXd B_;
+  Eigen::VectorXd f0_;
+  Eigen::MatrixXd C_;
+  Eigen::MatrixXd D_;
+  Eigen::VectorXd y0_;
   const bool has_meaningful_C_{};
   const bool has_meaningful_D_{};
 };

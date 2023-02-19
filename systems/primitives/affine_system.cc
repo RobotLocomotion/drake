@@ -250,7 +250,86 @@ bool IsMeaningful(const Eigen::MatrixXd& m) {
   return m.size() > 0 && (m.array() != 0).any();
 }
 
-}  // namespace
+// Returns the number of states, where any empty matrix is assumed to have the
+// correct size.
+int CalcNumStates(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                  const Eigen::Ref<const Eigen::MatrixXd>& B,
+                  const Eigen::Ref<const Eigen::VectorXd>& f0,
+                  const Eigen::Ref<const Eigen::MatrixXd>& C) {
+  int num_states = 0;
+  if (A.size() > 0) {
+    num_states = A.rows();
+    DRAKE_DEMAND(A.rows() == A.cols());
+  }
+  if (B.size() > 0) {
+    if (num_states) {
+      DRAKE_DEMAND(B.rows() == A.rows());
+    } else {
+      num_states = B.rows();
+    }
+  }
+  if (f0.size() > 0) {
+    if (num_states) {
+      DRAKE_DEMAND(f0.size() == num_states);
+    } else {
+      num_states = f0.size();
+    }
+  }
+  if (C.size() > 0) {
+    if (num_states) {
+      DRAKE_DEMAND(C.cols() == num_states);
+    } else {
+      num_states = C.cols();
+    }
+  }
+  return num_states;
+}
+
+// Returns the number of inputs, where any empty matrix is assumed to have the
+// correct size.
+int CalcNumInputs(const Eigen::Ref<const Eigen::MatrixXd>& B,
+                  const Eigen::Ref<const Eigen::MatrixXd>& D) {
+  int num_inputs = 0;
+  if (B.size() > 0) {
+    num_inputs = B.cols();
+  }
+  if (D.size() > 0) {
+    if (num_inputs) {
+      DRAKE_DEMAND(D.cols() == B.cols());
+    } else {
+      num_inputs = D.cols();
+    }
+  }
+  return num_inputs;
+}
+
+// Returns the number of outputs, where any empty matrix is assumed to have the
+// correct size.
+int CalcNumOutputs(const Eigen::Ref<const Eigen::MatrixXd>& C,
+                   const Eigen::Ref<const Eigen::MatrixXd>& D,
+                   const Eigen::Ref<const Eigen::VectorXd>& y0) {
+  int num_outputs = 0;
+  if (C.size() > 0) {
+    num_outputs = C.rows();
+  }
+  if (D.size() > 0) {
+    if (num_outputs) {
+      DRAKE_DEMAND(D.rows() == C.rows());
+    } else {
+      num_outputs = D.rows();
+    }
+  }
+  if (y0.size() > 0) {
+    if (num_outputs) {
+      DRAKE_DEMAND(y0.size() == num_outputs);
+    } else {
+      num_outputs = y0.size();
+    }
+  }
+  return num_outputs;
+}
+
+}   // namespace
 
 // Our protected constructor does all of the real work -- everything else
 // delegates to here.
@@ -264,7 +343,8 @@ AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
                               const Eigen::Ref<const Eigen::VectorXd>& y0,
                               double time_period)
     : TimeVaryingAffineSystem<T>(
-          std::move(converter), f0.size(), D.cols(), D.rows(), time_period),
+          std::move(converter), CalcNumStates(A, B, f0, C), CalcNumInputs(B, D),
+          CalcNumOutputs(C, D, y0), time_period),
       A_(A),
       B_(B),
       f0_(f0),
@@ -273,14 +353,25 @@ AffineSystem<T>::AffineSystem(SystemScalarConverter converter,
       y0_(y0),
       has_meaningful_C_(IsMeaningful(C)),
       has_meaningful_D_(IsMeaningful(D)) {
-  DRAKE_DEMAND(this->num_states() == A.rows());
-  DRAKE_DEMAND(this->num_states() == A.cols());
-  DRAKE_DEMAND(this->num_states() == B.rows());
-  DRAKE_DEMAND(this->num_states() == C.cols());
-  DRAKE_DEMAND(this->num_inputs() == B.cols());
-  DRAKE_DEMAND(this->num_inputs() == D.cols());
-  DRAKE_DEMAND(this->num_outputs() == C.rows());
-  DRAKE_DEMAND(this->num_outputs() == D.rows());
+  // Reshape empty matrices to compatible sizes.
+  if (A.size() == 0) {
+    A_ = Eigen::MatrixXd::Zero(this->num_states(), this->num_states());
+  }
+  if (B.size() == 0) {
+    B_ = Eigen::MatrixXd::Zero(this->num_states(), this->num_inputs());
+  }
+  if (f0.size() == 0) {
+    f0_ = Eigen::VectorXd::Zero(this->num_states());
+  }
+  if (C.size() == 0) {
+    C_ = Eigen::MatrixXd::Zero(this->num_outputs(), this->num_states());
+  }
+  if (D.size() == 0) {
+    D_ = Eigen::MatrixXd::Zero(this->num_outputs(), this->num_inputs());
+  }
+  if (y0.size() == 0) {
+    y0_ = Eigen::VectorXd::Zero(this->num_outputs());
+  }
 
   // Specify our output port's dependencies more precisely than our base class
   // is able to.  We know that output never depends on time nor parameters,
