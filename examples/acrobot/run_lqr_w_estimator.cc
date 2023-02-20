@@ -4,6 +4,7 @@
 
 #include <gflags/gflags.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/proto/call_python.h"
 #include "drake/examples/acrobot/acrobot_geometry.h"
 #include "drake/examples/acrobot/acrobot_plant.h"
@@ -82,9 +83,9 @@ int do_main() {
 
     Eigen::Matrix4d error_sys =
         linearized_acrobot->A() - observer->L() * linearized_acrobot->C();
-    std::cout << "L = " << observer->L() << std::endl;
-    std::cout << "A - LC = " << std::endl << error_sys << std::endl;
-    std::cout << "eig(A-LC) = " << error_sys.eigenvalues() << std::endl;
+    fmt::print("L = {}\n", fmt_eigen(observer->L()));
+    fmt::print("A - LC =\n{}\n", fmt_eigen(error_sys));
+    fmt::print("eig(A-LC) = {}\n", fmt_eigen(error_sys.eigenvalues().real()));
   }
 
   // Make the LQR Controller.

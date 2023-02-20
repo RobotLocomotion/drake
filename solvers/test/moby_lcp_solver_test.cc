@@ -72,8 +72,7 @@ void RunRegularizedLcp(const Eigen::MatrixBase<Derived>& M,
     if (expect_fast_pass) {
       ASSERT_TRUE(result);
       EXPECT_TRUE(CompareMatrices(fast_z, expected_z, epsilon,
-                                  MatrixCompareType::absolute))
-          << "expected: " << expected_z << " actual " << fast_z << std::endl;
+                                  MatrixCompareType::absolute));
     } else {
       EXPECT_FALSE(CompareMatrices(fast_z, expected_z, epsilon,
                                    MatrixCompareType::absolute));

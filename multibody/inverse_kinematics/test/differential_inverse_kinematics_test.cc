@@ -9,6 +9,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/manipulation/kuka_iiwa/iiwa_constants.h"
 #include "drake/math/rigid_transform.h"
@@ -96,7 +97,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
                            const DifferentialInverseKinematicsResult& result) {
     ASSERT_TRUE(result.joint_velocities != std::nullopt);
     drake::log()->info("result.joint_velocities = {}",
-                       result.joint_velocities->transpose());
+                       fmt_eigen(result.joint_velocities->transpose()));
 
     const VectorXd q = plant_->GetPositions(*context_);
     auto temp_context = plant_->CreateDefaultContext();
@@ -105,9 +106,9 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 
     const multibody::SpatialVelocity<double> V_WE_actual =
         frame_E_->CalcSpatialVelocityInWorld(*temp_context);
-    drake::log()->info(
-        "V_WE_actual = {}", V_WE_actual.get_coeffs().transpose());
-    drake::log()->info("V_WE = {}", V_WE.get_coeffs().transpose());
+    drake::log()->info("V_WE_actual = {}",
+                       fmt_eigen(V_WE_actual.get_coeffs().transpose()));
+    drake::log()->info("V_WE = {}", fmt_eigen(V_WE.get_coeffs().transpose()));
     EXPECT_TRUE(CompareMatrices(V_WE_actual.get_coeffs().normalized(),
                                 V_WE.get_coeffs().normalized(), 1e-6));
 

@@ -1,8 +1,7 @@
 #include "drake/systems/primitives/sine.h"
 
-#include <sstream>
-
 #include "drake/common/drake_throw.h"
+#include "drake/common/fmt_eigen.h"
 
 namespace drake {
 namespace systems {
@@ -62,11 +61,10 @@ Sine<T>::Sine(const Sine<U>& other)
 template <typename T>
 double Sine<T>::amplitude() const {
   if (!is_const_amplitude_) {
-    std::stringstream s;
-    s << "The amplitude vector, [" << amplitude_ << "], cannot be represented "
-      << "as a scalar value. Please use "
-      << "drake::systems::Sine::amplitude_vector() instead.";
-    throw std::logic_error(s.str());
+    throw std::logic_error(fmt::format(
+        "The amplitude vector, [{}], cannot be represented as a scalar value. "
+        "Please use drake::systems::Sine::amplitude_vector() instead.",
+        fmt_eigen(amplitude_)));
   }
   return amplitude_[0];
 }
@@ -74,11 +72,10 @@ double Sine<T>::amplitude() const {
 template <typename T>
 double Sine<T>::frequency() const {
   if (!is_const_frequency_) {
-    std::stringstream s;
-    s << "The frequency vector, [" << frequency_ << "], cannot be represented "
-      << "as a scalar value. Please use "
-      << "drake::systems::Sine::frequency_vector() instead.";
-    throw std::logic_error(s.str());
+    throw std::logic_error(fmt::format(
+        "The frequency vector, [{}], cannot be represented as a scalar value. "
+        "Please use drake::systems::Sine::frequency_vector() instead.",
+        fmt_eigen(frequency_)));
   }
   return frequency_[0];
 }
@@ -86,11 +83,10 @@ double Sine<T>::frequency() const {
 template <typename T>
 double Sine<T>::phase() const {
   if (!is_const_phase_) {
-    std::stringstream s;
-    s << "The phase vector, [" << phase_ << "], cannot be represented as a "
-      << "scalar value. Please use "
-      << "drake::systems::Sine::phase_vector() instead.";
-    throw std::logic_error(s.str().c_str());
+    throw std::logic_error(fmt::format(
+        "The phase vector, [{}], cannot be represented as a scalar value. "
+        "Please use drake::systems::Sine::phase_vector() instead.",
+        fmt_eigen(phase_)));
   }
   return phase_[0];
 }

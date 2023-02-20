@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/analysis/integrator_base.h"
@@ -131,17 +132,18 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasMomentum) {
 
         EXPECT_TRUE(CompareMatrices(particle_momentum_ivp.Solve(t0, t),
                                     solution, integration_accuracy_))
-            << "Failure solving d𝐩/dt = -μ * 𝐩/m"
-            << " using 𝐩(" << t0 << "; [μ, m]) = " << p0 << " for t = " << t
-            << ", μ = " << mu << " and m = " << m << " to an accuracy of "
-            << integration_accuracy_;
+            << fmt::format(
+                   "Failure solving d𝐩/dt = -μ * 𝐩/m using 𝐩({}; [μ, m]) = {}"
+                   " for t = {}, μ = {} and m = {} to an accuracy of {}",
+                   t0, fmt_eigen(p0), t, mu, m, integration_accuracy_);
 
         EXPECT_TRUE(CompareMatrices(particle_momentum_approx->Evaluate(t),
                                     solution, integration_accuracy_))
-            << "Failure approximating the solution for d𝐩/dt = -μ * 𝐩/m"
-            << " using 𝐩(" << t0 << "; [μ, m]) = " << p0 << " for t = " << t
-            << ", μ = " << mu << " and m = " << m << " to an accuracy of "
-            << integration_accuracy_ << " with solver's continuous extension.";
+            << fmt::format(
+                   "Failure approximating the solution for d𝐩/dt = -μ * 𝐩/m"
+                   " using 𝐩({}; [μ, m]) = {} for t = {}, μ = {} and m = {}"
+                   " to an accuracy of {} with solver's continuous extension.",
+                   t0, fmt_eigen(p0), t, mu, m, integration_accuracy_);
       }
     }
   }
@@ -212,18 +214,23 @@ TEST_P(InitialValueProblemAccuracyTest, ParticleInAGasForcedVelocity) {
             F / mu * (1. - std::exp(-mu * (t - t0) / m));
         EXPECT_TRUE(CompareMatrices(particle_velocity_ivp.Solve(t0, t),
                                     solution, integration_accuracy_))
-            << "Failure solving d𝐯/dt = (-μ * 𝐯 + 𝐅) / m"
-            << " using 𝐯(" << t0 << "; [μ, m]) = " << v0 << " for t = " << t
-            << ", μ = " << mu << ", m = " << m << "and 𝐅 = " << F
-            << " to an accuracy of " << integration_accuracy_;
+            << fmt::format(
+                   "Failure solving"
+                   " d𝐯/dt = (-μ * 𝐯 + 𝐅) / m using 𝐯({}; [μ, m]) = {}"
+                   " for t = {}, μ = {}, m = {} and 𝐅 = {}"
+                   " to an accuracy of {}",
+                   t0, fmt_eigen(v0), t, mu, m, fmt_eigen(F),
+                   integration_accuracy_);
 
         EXPECT_TRUE(CompareMatrices(particle_velocity_approx->Evaluate(t),
                                     solution, integration_accuracy_))
-            << "Failure approximating the solution for "
-            << "d𝐯/dt = (-μ * 𝐯 + 𝐅) / m using 𝐯(" << t0 << "; [μ, m]) = " << v0
-            << " for t = " << t << ", μ = " << mu << ", m = " << m
-            << "and 𝐅 = " << F << " to an accuracy of " << integration_accuracy_
-            << " with solver's continuous extension.";
+            << fmt::format(
+                   "Failure approximating the solution for"
+                   " d𝐯/dt = (-μ * 𝐯 + 𝐅) / m using 𝐯({}; [μ, m]) = {}"
+                   " for t = {}, μ = {}, m = {} and 𝐅 = {}"
+                   " to an accuracy of {} with solver's continuous extension.",
+                   t0, fmt_eigen(v0), t, mu, m, fmt_eigen(F),
+                   integration_accuracy_);
       }
     }
   }

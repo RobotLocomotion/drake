@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/make_box_mesh.h"
@@ -57,7 +58,8 @@ constexpr double kTol = std::numeric_limits<double>::epsilon();
            << dut.get_unit_inertia() << "\n"
            << "  with tolerance: " << tolerance << "\n"
            << "(with mass: " << dut.get_mass() << "\n"
-           << " and com: " << dut.get_com().transpose() << "\n";
+           << " and com: "
+           << fmt::to_string(fmt_eigen(dut.get_com().transpose())) << "\n";
   }
   return ::testing::AssertionSuccess();
 }

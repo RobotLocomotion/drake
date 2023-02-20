@@ -5,6 +5,7 @@
 #include <common_robotics_utilities/openmp_helpers.hpp>
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/random.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -546,7 +547,7 @@ void CheckNormal(const Eigen::Ref<const Eigen::Vector3f>& normal,
                  const Eigen::Ref<const Eigen::Vector3f>& expected,
                  double tolerance) {
   EXPECT_NEAR(normal.norm(), 1.0, tolerance)
-      << "Normal " << normal << " does not have unit length.";
+      << fmt::format("Normal {} does not have unit length.", fmt_eigen(normal));
   EXPECT_NEAR(std::abs(normal.dot(expected)), 1.0, tolerance)
       << "normal.dot(expected) = " << normal.dot(expected);
 }
