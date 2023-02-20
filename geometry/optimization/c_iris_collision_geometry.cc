@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
 #include <utility>
 
@@ -11,17 +11,11 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-PlaneSide OtherSide(PlaneSide plane_side) {
-  return plane_side == PlaneSide::kPositive ? PlaneSide::kNegative
-                                            : PlaneSide::kPositive;
-}
-
 CIrisCollisionGeometry::CIrisCollisionGeometry(const geometry::Shape* geometry,
                                                multibody::BodyIndex body_index,
                                                geometry::GeometryId id,
                                                math::RigidTransformd X_BG)
-    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {
-}
+    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {}
 
 namespace {
 struct ReifyData {

@@ -13,6 +13,9 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+/**
+ The supported type of geometries in C-IRIS.
+ */
 enum class CIrisGeometryType {
   kSphere,
   kPolytope,
@@ -25,9 +28,11 @@ enum class PlaneSide {
   kNegative,
 };
 
-/** Returns the other side */
-[[nodiscard]] PlaneSide OtherSide(PlaneSide plane_side);
-
+/**
+ This class contains the necessary information about the collision geometry used
+ in C-IRIS. Most notably it transcribes the geometric condition that the
+ collision geometry is on one side of the plane to mathematical constraints.
+ */
 class CIrisCollisionGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisCollisionGeometry)
