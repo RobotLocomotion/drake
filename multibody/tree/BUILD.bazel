@@ -99,6 +99,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "quaternion_rate",
+    srcs = ["quaternion_rate.cc"],
+    hdrs = ["quaternion_rate.h"],
+    deps = [
+        "//common",
+        "//math:geometric_transform",
+    ],
+    internal = True,
+    visibility = ["//visibility:private"]
+)
+
+drake_cc_library(
+    name = "quaternion_rate_hack",
+    hdrs = ["quaternion_rate.h"],
+    visibility = ["//visibility:public"],
+    tags = ["nolint"],
+)
+
+drake_cc_library(
     name = "multibody_tree_core",
     srcs = [
         "ball_rpy_joint.cc",
@@ -190,6 +209,7 @@ drake_cc_library(
     deps = [
         ":multibody_tree_caches",
         ":multibody_tree_indexes",
+        ":quaternion_rate",
         ":spatial_inertia",
         ":string_view_map_key",
         "//common:default_scalars",
