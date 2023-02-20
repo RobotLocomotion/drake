@@ -1,5 +1,6 @@
 import dataclasses as dc
 import functools
+import textwrap
 
 import numpy as np
 
@@ -29,6 +30,17 @@ from pydrake.all import (
     Variable,
 )
 import pydrake.math as drake_math
+
+try:
+    import mujoco
+except ImportError:
+    mujoco = None
+
+try:
+    import pinocchio as pin
+except ImportError:
+    pin = None
+
 
 # Vector and matrix manipulation.
 
@@ -937,6 +949,64 @@ class MbpForceToAccel(LeafSystem):
             output.set_value(vd)
 
         self.vd = self.DeclareVectorOutputPort("vd", 6, calc_vd)
+
+
+def spatial_drake_to_mujoco(x):
+    # (rot, pos) to (pos, rot)
+    num_rot = len(x) - 3
+    rot = x[:num_rot]
+    pos = x[num_rot:]
+    return cat(pos, rot)
+
+
+def spatial_mujoco_to_drake(xm):
+    # (pos, rot) to (rot, pos)
+    pos = xm[:3]
+    rot = xm[3:]
+    return cat(rot, pos)
+
+
+class MujocoForceToAccel(LeafSystem):
+    def __init__(self, M):
+        super().__init__()
+        assert (M == np.eye(6)).all()
+        xml = textwrap.dedent(r"""
+        <mujoco>
+          <option gravity="0 0 0"/>
+          <worldbody>
+            <body>
+              <inertial mass="1" diaginertia="1 1 1" pos="0 0 0"/>
+              <freejoint/>
+            </body>
+          </worldbody>
+        </mujoco>
+        """.lstrip())
+        model = mujoco.MjModel.from_xml_string(xml)
+        data = mujoco.MjData(model)
+        mujoco.mj_resetData(model, data)
+
+        self.x = self.DeclareVectorInputPort("x", 13)
+        self.u = self.DeclareVectorInputPort("u", 6)
+
+        def calc_vd(context, output):
+            x = self.x.Eval(context)
+            u = self.u.Eval(context)
+            q = x[:7]
+            v = x[7:]
+            # N.B. Drake does (rot, pos); MuJoCo does (pos, rot).
+            data.qpos = spatial_drake_to_mujoco(q)
+            data.qvel = spatial_drake_to_mujoco(v)
+            data.qfrc_applied = spatial_drake_to_mujoco(u)
+            mujoco.mj_forward(model, data)
+            vd = spatial_mujoco_to_drake(data.qacc)
+            output.set_value(vd)
+
+        self.vd = self.DeclareVectorOutputPort("vd", 6, calc_vd)
+
+
+class PinnochioForceToAccel(LeafSystem):
+    def __init__(self, M):
+        assert False
 
 
 @TemplateSystem.define("NaivePlant_", T_list=T_list)

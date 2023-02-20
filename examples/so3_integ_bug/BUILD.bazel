@@ -6,17 +6,38 @@ load(
     "drake_py_unittest",
 )
 
+venv_dir = "venv/lib/python3.10/site-packages"
+
+py_library(
+    name = "hack_venv_py",
+    data = glob(
+        include = [venv_dir + "/**"],
+        exclude = [
+            "* *",
+            "**/setuptools/**",
+            "**/cmeel.prefix/include/**",
+        ],
+    ),
+    imports = [
+        venv_dir,
+        # Er, what?
+        venv_dir + "/cmeel.prefix/lib/python3.10/site-packages",
+    ],
+)
+
 drake_py_library(
     name = "spatial_trajectories_py",
     srcs = ["spatial_trajectories.py"],
     imports = ["."],
     deps = [
+        ":hack_venv_py",
         "//bindings/pydrake",
     ],
 )
 
 drake_py_unittest(
     name = "spatial_trajectories_test",
+    legacy_create_init = False,
     deps = [
         ":spatial_trajectories_py",
         "//bindings/pydrake",

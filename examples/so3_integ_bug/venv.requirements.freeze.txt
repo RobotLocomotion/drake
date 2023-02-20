@@ -1,0 +1,16 @@
+absl-py==1.4.0
+cmeel==0.31.0
+cmeel-assimp==5.2.5
+cmeel-boost==1.81.0
+cmeel-console-bridge==1.0.2.1
+cmeel-octomap==1.9.8.1
+cmeel-tinyxml==2.6.2.1
+cmeel-urdfdom==3.1.0.1
+eigenpy==2.9.2
+glfw==2.5.6
+hpp-fcl==2.2.0
+mujoco==2.3.2
+numpy==1.24.2
+pin==2.6.17
+PyOpenGL==3.1.6
+tomli==2.0.1

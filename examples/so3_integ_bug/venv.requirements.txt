@@ -1,0 +1,2 @@
+mujoco == 2.3.2
+pin == 2.6.17  # Pinocchio

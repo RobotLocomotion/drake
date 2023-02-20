@@ -23,6 +23,7 @@ from spatial_trajectories import (
     MbpForceToAccel,
     MbpPlant,
     MbpPlant_,
+    MujocoForceToAccel,
     NaiveFeedforward,
     NaiveForceToAccel,
     NaiveForceToAccel_,
@@ -38,6 +39,7 @@ from spatial_trajectories import (
     make_rot_info_rpy_sym,
     make_rotation_2nd_order_integrator,
     maxabs,
+    mujoco,
     num_spatial,
     se3_diff,
     sym_to_float,
@@ -191,9 +193,11 @@ class Test(unittest.TestCase):
         """
         # WARNING: This currently fails :(
         with self.assertRaises(AssertionError):
-            self.check_floating_tracking(use_rpy=True, use_mbp=True)
-        with self.assertRaises(AssertionError):
-            self.check_floating_tracking(use_rpy=False, use_mbp=True)
+            self.check_floating_tracking(use_rpy=False, mode="full_mbp")
+
+    def test_floating_tracking_naive_mbp(self):
+        self.check_floating_tracking(use_rpy=False, mode="naive_mbp")
+
     @unittest.skipIf(mujoco is None, "no mujoco")
     def test_floating_tracking_naive_mujoco(self):
         self.check_floating_tracking(use_rpy=False, mode="naive_mujoco")
@@ -219,6 +223,8 @@ class Test(unittest.TestCase):
             plant = NaivePlant(rot_info, NaiveForceToAccel(M))
         elif mode == "naive_mbp":
             plant = NaivePlant(rot_info, MbpForceToAccel(M))
+        elif mode == "naive_mujoco":
+            plant = NaivePlant(rot_info, MujocoForceToAccel(M))
         else:
             assert False
         builder.AddSystem(plant)
