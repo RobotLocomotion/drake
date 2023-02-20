@@ -7,59 +7,11 @@
 #include <unordered_set>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "drake/geometry/optimization/dev/cspace_free_polytope.h"
-#include "drake/geometry/scene_graph.h"
-#include "drake/multibody/plant/multibody_plant.h"
-#include "drake/systems/framework/diagram.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
-
-// Create a toy robot with different collision geometries.
-// world - weld - body0 - revolute - body1 - prismatic - body2
-//                 |
-//              revolute - body3
-class CIrisToyRobotTest : public ::testing::Test {
- public:
-  CIrisToyRobotTest();
-
- protected:
-  std::unique_ptr<systems::Diagram<double>> diagram_;
-  multibody::MultibodyPlant<double>* plant_;
-  geometry::SceneGraph<double>* scene_graph_;
-  std::vector<multibody::BodyIndex> body_indices_;
-  geometry::GeometryId world_box_;
-  geometry::GeometryId world_cylinder_;
-  geometry::GeometryId body0_box_;
-  geometry::GeometryId body0_sphere_;
-  geometry::GeometryId body1_convex_;
-  geometry::GeometryId body1_capsule_;
-  geometry::GeometryId body2_capsule_;
-  geometry::GeometryId body2_sphere_;
-  geometry::GeometryId body3_box_;
-  geometry::GeometryId body3_cylinder_;
-};
-
-// Create a robot with only polytopic collision geometry.
-// world - revolute - body0 - revolute - body1 - revolute - body2 - revolute -
-// body3
-class CIrisRobotPolytopicGeometryTest : public ::testing::Test {
- public:
-  CIrisRobotPolytopicGeometryTest();
-
- protected:
-  std::unique_ptr<systems::Diagram<double>> diagram_;
-  multibody::MultibodyPlant<double>* plant_;
-  geometry::SceneGraph<double>* scene_graph_;
-  std::vector<multibody::BodyIndex> body_indices_;
-  std::vector<geometry::GeometryId> world_boxes_;
-  geometry::GeometryId world_convex_;
-  std::vector<geometry::GeometryId> body_boxes_;
-};
-
 // This is a friend class of CspaceFreePolytope, we use it to expose the private
 // functions in CspaceFreePolytope for unit testing.
 class CspaceFreePolytopeTester {
@@ -84,11 +36,7 @@ class CspaceFreePolytopeTester {
       const Eigen::VectorXd& s_lower, const Eigen::VectorXd& s_upper,
       double tighten, std::unordered_set<int>* C_redundant_indices,
       std::unordered_set<int>* s_lower_redundant_indices,
-      std::unordered_set<int>* s_upper_redundant_indices) const {
-    cspace_free_polytope_->FindRedundantInequalities(
-        C, d, s_lower, s_upper, tighten, C_redundant_indices,
-        s_lower_redundant_indices, s_upper_redundant_indices);
-  }
+      std::unordered_set<int>* s_upper_redundant_indices) const;
 
   const Eigen::VectorXd& s_lower() const {
     return cspace_free_polytope_->s_lower_;
@@ -130,11 +78,7 @@ class CspaceFreePolytopeTester {
       const VectorX<symbolic::Polynomial>& d_minus_Cs,
       const std::unordered_set<int>& C_redundant_indices,
       const std::unordered_set<int>& s_lower_redundant_indices,
-      const std::unordered_set<int>& s_upper_redundant_indices) const {
-    return cspace_free_polytope_->ConstructPlaneSearchProgram(
-        plane_geometries, d_minus_Cs, C_redundant_indices,
-        s_lower_redundant_indices, s_upper_redundant_indices);
-  }
+      const std::unordered_set<int>& s_upper_redundant_indices) const;
 
   [[nodiscard]] std::vector<
       std::optional<CspaceFreePolytope::SeparationCertificateResult>>
@@ -143,17 +87,11 @@ class CspaceFreePolytopeTester {
       const Eigen::Ref<const Eigen::MatrixXd>& C,
       const Eigen::Ref<const Eigen::VectorXd>& d,
       const CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions&
-          options) const {
-    return cspace_free_polytope_->FindSeparationCertificateGivenPolytope(
-        ignored_collision_pairs, C, d, options);
-  }
+          options) const;
 
   [[nodiscard]] int GetGramVarSizeForPolytopeSearchProgram(
       const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs,
-      bool search_s_bounds_lagrangians) const {
-    return cspace_free_polytope_->GetGramVarSizeForPolytopeSearchProgram(
-        ignored_collision_pairs, search_s_bounds_lagrangians);
-  }
+      bool search_s_bounds_lagrangians) const;
 
   [[nodiscard]] std::unique_ptr<solvers::MathematicalProgram>
   InitializePolytopeSearchProgram(
@@ -166,28 +104,18 @@ class CspaceFreePolytopeTester {
           certificates_vec,
       bool search_s_bounds_lagrangians, int gram_total_size,
       std::unordered_map<int, CspaceFreePolytope::SeparationCertificate>*
-          new_certificates) const {
-    return cspace_free_polytope_->InitializePolytopeSearchProgram(
-        ignored_collision_pairs, C, d, d_minus_Cs, certificates_vec,
-        search_s_bounds_lagrangians, gram_total_size, new_certificates);
-  }
+          new_certificates) const;
 
   void AddEllipsoidContainmentConstraint(
       solvers::MathematicalProgram* prog, const Eigen::MatrixXd& Q,
       const Eigen::VectorXd& s0, const MatrixX<symbolic::Variable>& C,
       const VectorX<symbolic::Variable>& d,
-      const VectorX<symbolic::Variable>& ellipsoid_margins) const {
-    cspace_free_polytope_->AddEllipsoidContainmentConstraint(prog, Q, s0, C, d,
-                                                             ellipsoid_margins);
-  }
+      const VectorX<symbolic::Variable>& ellipsoid_margins) const;
 
   void AddCspacePolytopeContainment(solvers::MathematicalProgram* prog,
                                     const MatrixX<symbolic::Variable>& C,
                                     const VectorX<symbolic::Variable>& d,
-                                    const Eigen::MatrixXd& s_inner_pts) const {
-    cspace_free_polytope_->AddCspacePolytopeContainment(prog, C, d,
-                                                        s_inner_pts);
-  }
+                                    const Eigen::MatrixXd& s_inner_pts) const;
 
   [[nodiscard]] std::optional<
       CspaceFreePolytope::FindPolytopeGivenLagrangianResult>
@@ -203,21 +131,14 @@ class CspaceFreePolytopeTester {
       const VectorX<symbolic::Variable>& ellipsoid_margins, int gram_total_size,
       const CspaceFreePolytope::FindPolytopeGivenLagrangianOptions& options,
       std::unordered_map<int, CspaceFreePolytope::SeparationCertificateResult>*
-          certificates_result) const {
-    return cspace_free_polytope_->FindPolytopeGivenLagrangian(
-        ignored_collision_pairs, C, d, d_minus_Cs, certificates_vec, Q, s0,
-        ellipsoid_margins, gram_total_size, options, certificates_result);
-  }
+          certificates_result) const;
 
   HPolyhedron GetPolyhedronWithJointLimits(const Eigen::MatrixXd& C,
-                                           const Eigen::VectorXd& d) const {
-    return cspace_free_polytope_->GetPolyhedronWithJointLimits(C, d);
-  }
+                                           const Eigen::VectorXd& d) const;
 
  private:
   std::unique_ptr<CspaceFreePolytope> cspace_free_polytope_;
 };
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

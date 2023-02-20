@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
@@ -13,6 +12,9 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+/**
+ The supported type of geometries in C-IRIS.
+ */
 enum class CIrisGeometryType {
   kSphere,
   kPolytope,
@@ -25,15 +27,18 @@ enum class PlaneSide {
   kNegative,
 };
 
-/** Returns the other side */
-[[nodiscard]] PlaneSide OtherSide(PlaneSide plane_side);
-
+/**
+ This class contains the necessary information about the collision geometry used
+ in C-IRIS. Most notably it transcribes the geometric condition that the
+ collision geometry is on one side of the plane to mathematical constraints.
+ */
 class CIrisCollisionGeometry {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisCollisionGeometry)
 
   /**
-   @param geometry The actual geometry object.
+   @param geometry The actual geometry object. `geometry` must outlive this
+   CIrisCollisionGeometry object.
    @param body_index The index of the body to which this geometry is fixed.
    @param id The ID of this geometry.
    @param X_BG The pose of the geometry (G) in the attached body frame (B).
@@ -50,8 +55,8 @@ class CIrisCollisionGeometry {
 
   const math::RigidTransformd& X_BG() const { return X_BG_; }
 
-  /** Impose the constraint that the geometry is on a given side of the plane {x
-   | aᵀx+b=0}.
+  /** Impose the constraint that the geometry is on a given side of the plane
+   {x | aᵀx+b=0}.
 
    For example, to impose the constraint that a polytope is on the positive
    side of the plane, we consider the following constraints
@@ -74,7 +79,7 @@ class CIrisCollisionGeometry {
    is positive.
 
    @param a The normal vector in the separating plane. a is expressed in frame
-   A.
+   A. Note that `a` doesn't need to have a unit length.
    @param b The constant term in the separating plane.
    @param X_AB_multilinear The pose of the collision geometry body (B) in the
    expressed frame A, written as a multilinear polynomial. This quantity is
@@ -85,9 +90,12 @@ class CIrisCollisionGeometry {
    @param plane_side Whether the geometry is on the positive or negative side of
    the plane.
    @param y_slack The slack variable y in the documentation above, used for
-   non-polytopic geometries.
-   @param[out] rationals The rational functions that need to be
-   positive to represent that the geometry is on a given side of the plane.
+   non-polytopic geometries. For spheres and capsules, y_slack has size 3. For
+   cylinders, y_slack has size 2.
+   @param[in/out] rationals We append new rational functions to `rationals`.
+   If these new rational functions are positive, then the geometry is on a given
+   side of the plane.
+   @pre rationals != nullptr
    */
   void OnPlaneSide(
       const Vector3<symbolic::Polynomial>& a, const symbolic::Polynomial& b,
@@ -106,16 +114,19 @@ class CIrisCollisionGeometry {
   [[nodiscard]] int num_rationals() const;
 
  private:
-  const Shape* geometry_;
-  multibody::BodyIndex body_index_;
+  const Shape* geometry_{};
+  multibody::BodyIndex body_index_{};
   geometry::GeometryId id_;
   math::RigidTransformd X_BG_;
 };
 
-/** Computes the signed distance from `collision_geometry` to the halfspace ℋ,
- where ℋ ={ x | aᵀx+b >= 0} if plane_side=PlaneSide::kPositive, and ℋ ={ x |
- aᵀx+b <= 0} if plane_side=PlaneSide::kNegative.
- The halfspace is expressed in the expressed_body's body frame.
+/** Computes the signed distance from `collision_geometry` to the half space ℋ,
+ where ℋ  = {x | aᵀx+b >= 0} if plane_side=PlaneSide::kPositive, and
+ ℋ  = {x | aᵀx+b <= 0} if plane_side=PlaneSide::kNegative.
+ The half space is measured and expressed in the expressed_body's body frame.
+ This works for both `collision_geometry` separated from the half space, and
+ `collision geometry` in penetration with the halfspace.
+ @note `a` does not need to be a unit length vector (but should be non-zero).
  */
 [[nodiscard]] double DistanceToHalfspace(
     const CIrisCollisionGeometry& collision_geometry, const Eigen::Vector3d& a,
