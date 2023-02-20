@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -264,33 +265,34 @@ TEST_F(ReifierTest, CloningShapes) {
   const Vector3<double>& z_axis = pose.rotation().col(2);
   if (!CompareMatrices(z_axis, expected_z, tolerance,
                        MatrixCompareType::absolute)) {
-    return ::testing::AssertionFailure()
-           << "pose =\n"
-           << pose.GetAsMatrix34() << "\nExpected z-axis "
-           << expected_z.transpose() << " does not match pose's z-axis "
-           << z_axis.transpose();
+    const std::string message = fmt::format(
+        "pose =\n{}\nExpected z-axis {} does not match pose's z-axis {}",
+        fmt_eigen(pose.GetAsMatrix34()), fmt_eigen(expected_z.transpose()),
+        fmt_eigen(z_axis.transpose()));
+    return ::testing::AssertionFailure() << message;
   }
 
   // Test expected translation.
   if (!CompareMatrices(pose.translation(), expected_translation, tolerance,
                        MatrixCompareType::absolute)) {
-    return ::testing::AssertionFailure()
-           << "pose =\n"
-           << pose.GetAsMatrix34() << "\nExpected translation "
-           << expected_translation.transpose()
-           << " does not match pose's translation "
-           << pose.translation().transpose();
+    const std::string message = fmt::format(
+        "pose =\n{}\nExpected translation {} does not match pose's "
+        "translation {}",
+        fmt_eigen(pose.GetAsMatrix34()),
+        fmt_eigen(expected_translation.transpose()),
+        fmt_eigen(pose.translation().transpose()));
+    return ::testing::AssertionFailure() << message;
   }
 
   // Test unit-length rotation.
   char axis_labels[] = {'x', 'y', 'z'};
   for (int i = 0; i < 3; ++i) {
     if (abs(pose.rotation().col(i).norm() - 1) > tolerance) {
-      return ::testing::AssertionFailure()
-             << "pose =\n"
-             << pose.GetAsMatrix34() << "\ndoes not have unit length "
-             << axis_labels[i] << "-axis "
-             << pose.rotation().col(i).transpose();
+      const std::string message =
+          fmt::format("pose =\n{}\ndoes not have unit length {}-axis {}",
+                      fmt_eigen(pose.GetAsMatrix34()), axis_labels[i],
+                      fmt_eigen(pose.rotation().col(i).transpose()));
+      return ::testing::AssertionFailure() << message;
     }
   }
 
@@ -299,18 +301,18 @@ TEST_F(ReifierTest, CloningShapes) {
     for (int j = i + 1; j < 3; ++j) {
       double dot_product = pose.rotation().col(i).dot(pose.rotation().col(j));
       if (abs(dot_product) > tolerance) {
-        return ::testing::AssertionFailure()
-               << "For pose =\n"
-               << pose.GetAsMatrix34() << "\nThe " << axis_labels[i]
-               << "-axis and " << axis_labels[j] << "-axis are not orthogonal";
+        const std::string message = fmt::format(
+            "For pose =\n{}\nThe {}-axis and {}-axis are not orthogonal",
+            fmt_eigen(pose.GetAsMatrix34()), axis_labels[i], axis_labels[j]);
+        return ::testing::AssertionFailure() << message;
       }
     }
   }
-  return ::testing::AssertionSuccess()
-         << "pose =\n"
-         << pose.GetAsMatrix34()
-         << "\nhas expected z-axis = " << expected_z.transpose()
-         << "\nand expected translation = " << expected_translation.transpose();
+  const std::string message = fmt::format(
+      "pose =\n{}\nhas expected z-axis = {}\nand expected translation = {}",
+      fmt_eigen(pose.GetAsMatrix34()), fmt_eigen(expected_z.transpose()),
+      fmt_eigen(expected_translation.transpose()));
+  return ::testing::AssertionSuccess() << message;
 }
 
 // Confirms that the pose computed by HalfSpace::X_FC() is consistent with

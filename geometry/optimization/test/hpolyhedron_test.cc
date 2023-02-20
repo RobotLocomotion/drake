@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/geometry_frame.h"
@@ -257,7 +258,8 @@ GTEST_TEST(HPolyhedronTest, InscribedEllipsoidTest) {
   RandomGenerator generator;
   for (int i = 0; i < 10; ++i) {
     const RotationMatrixd R = math::UniformlyRandomRotationMatrix(&generator);
-    SCOPED_TRACE(fmt::format("With random rotation matrix\n{}", R.matrix()));
+    SCOPED_TRACE(fmt::format("With random rotation matrix\n{}",
+                             fmt_eigen(R.matrix())));
     Vector3d x = C * R.matrix() * Vector3d(0.99, 0.0, 0.0) + E2.center();
     EXPECT_TRUE(E2.PointInSet(x));
     EXPECT_TRUE(H2.PointInSet(x));

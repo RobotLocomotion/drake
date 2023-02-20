@@ -4,8 +4,7 @@
 #include <fstream>
 #include <limits>
 
-#include <fmt/format.h>
-
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -108,7 +107,7 @@ void ShapeConfigurations<T>::ImplementGeometry(const Box& box, void*) {
       throw std::runtime_error(
           fmt::format("The box (with dimensions {}) isn't large enough for "
                       "penetration depth of {}",
-                      box.size(), -distance_));
+                      fmt_eigen(box.size()), -distance_));
     }
     // If we actually need penetration, we need to make sure that the distance
     // to the edges is *larger* than the requested depth (plus small padding).
@@ -552,7 +551,7 @@ void CharacterizeResultTest<T>::RunCharacterization(
             "\n{}\n",
             GetGeometryName(*obj_A), GetGeometryName(*obj_B), first, second,
             test_config.description, test_config.signed_distance,
-            test_config.X_AB.GetAsMatrix34()));
+            fmt_eigen(test_config.X_AB.GetAsMatrix34())));
         RunCallback(query, obj_A, obj_B, &collision_filter_, &world_poses);
         const std::optional<double> error =
             ComputeErrorMaybe(test_config.signed_distance);

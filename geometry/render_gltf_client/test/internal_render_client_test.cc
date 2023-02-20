@@ -11,9 +11,11 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
@@ -37,8 +39,8 @@ void PrintTo(const Image<kPixelType>& image, std::ostream* os) {
     using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
     Eigen::Map<const MatrixX<T>, 0, Stride> eigen(
         base, height, width, Stride(num_channels, width * num_channels));
-    *os << "Channel " << z << ":\n";
-    *os << eigen.template cast<Promoted>() << "\n";
+    fmt::print(*os, "Channel {}:\n", z);
+    fmt::print(*os, "{}\n", fmt_eigen(eigen.template cast<Promoted>()));
   }
 }
 }  // namespace sensors

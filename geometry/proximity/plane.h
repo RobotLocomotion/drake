@@ -2,12 +2,10 @@
 
 #include <limits>
 
-#include <fmt/format.h>
-#include <fmt/ostream.h>
-
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/geometry/proximity/mesh_traits.h"
 
 namespace drake {
@@ -62,10 +60,10 @@ class Plane {
       // passes in an incredibly small normal (picometers), it is probably an
       // error.
       if (magnitude < 1e-10) {
-        throw std::runtime_error(
-            fmt::format("Cannot instantiate plane from normal n_F = [{}]; its "
-                        "magnitude is too small: {}",
-                        n_F.transpose(), magnitude));
+        throw std::runtime_error(fmt::format(
+            "Cannot instantiate plane from normal n_F = [{}]; its magnitude is "
+            "too small: {}",
+            fmt_eigen(n_F.transpose()), magnitude));
       }
       nhat_F_ = n_F / magnitude;
     } else {
@@ -101,10 +99,10 @@ class Plane {
     // in the columns/rows of a rotation matrix -- a likely source for plane
     // normals.
     if (delta > 1e-13) {
-      throw std::runtime_error(
-          fmt::format("Plane constructed with a normal vector that was "
-                      "declared normalized; the vector is not unit length. "
-                      "Vector [{}] with length {}", n.transpose(), n.norm()));
+      throw std::runtime_error(fmt::format(
+          "Plane constructed with a normal vector that was declared normalized;"
+          " the vector is not unit length. Vector [{}] with length {}",
+          fmt_eigen(n.transpose()), T{n.norm()}));
     }
   }
 

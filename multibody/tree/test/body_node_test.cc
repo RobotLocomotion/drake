@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/planar_mobilizer.h"
@@ -240,7 +241,8 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
         Vector3d{Vector3d{1.1, 2e12, 3e17}}}) {
     six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values);
     EXPECT_NO_THROW(Tester::CallLltFactorization(body_node, six_by_six))
-        << "For expected bad eigenvalues: " << K_eigen_values.transpose();
+        << fmt::format("For expected bad eigenvalues: {}",
+                       fmt_eigen(K_eigen_values.transpose()));
   }
 
   // N.B. There are more ways the matrix could cause a throw. This approach
@@ -263,7 +265,8 @@ GTEST_TEST(BodyNodeTest, FactorHingeMatrixThrows) {
     six_by_six.block<3, 3>(0, 0) = make_K(K_eigen_values);
     EXPECT_THROW(Tester::CallLltFactorization(body_node, six_by_six),
                  std::exception)
-        << "For expected bad eigenvalues: " << K_eigen_values.transpose();
+        << fmt::format("For expected bad eigenvalues: {}",
+                       fmt_eigen(K_eigen_values.transpose()));
   }
 }
 
