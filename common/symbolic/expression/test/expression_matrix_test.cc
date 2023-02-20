@@ -532,29 +532,55 @@ TEST_F(SymbolicExpressionMatrixTest, EvaluateWithRandomGenerator) {
   EXPECT_EQ(B_eval(0, 0), B_eval(1, 1));
 }
 
-// Tests Eigen `.inverse` method works for symbolic matrices. We demonstrate it
-// by showing that the following two values are matched for a 2x2 symbolic
-// matrix `M` and a substitution (Variable -> double) `subst`:
+Eigen::MatrixX<Variable> MakeMatrixVariable(int rows, int cols) {
+  Eigen::MatrixX<Variable> M(rows, cols);
+  for (int i = 0; i < rows; ++i) {
+    for (int j = 0; j < cols; ++j) {
+      M(i, j) = Variable(fmt::format("m{}{}", i, j));
+    }
+  }
+  return M;
+}
+
+const char* kBadMatrixInversion =
+    R"""(.*does not have an entry for the variable[\s\S]*)""";
+
+template <int N>
+void CheckMatrixInversion() {
+  drake::log()->debug("CheckMatrixInversion<{}>()", N);
+  Eigen::Matrix<Variable, N, N> Mvar = MakeMatrixVariable(N, N);
+  Eigen::Matrix<Expression, N, N> M = Mvar;
+  Eigen::Matrix<Expression, N, N> Minv = M.inverse();
+  Substitution subst;
+  for (int i = 0; i < N * N; ++i) {
+    subst[Mvar(i)] = pow(i, N - 1);
+  }
+  EXPECT_TRUE(CompareMatrices(Substitute(Minv, subst),
+                              Substitute(M, subst).inverse(), 1e-10));
+  // Show that the dynamically-sized variant fails.
+  Eigen::MatrixX<Expression> Mdyn = M;
+  DRAKE_EXPECT_THROWS_MESSAGE(Mdyn.inverse().eval(), kBadMatrixInversion);
+}
+
+// Tests Eigen `.inverse` method works for certain shapes of symbolic matrices.
+// We demonstrate it  by showing that the following two values are matched for
+// a symbolic matrix `M` (of size 1x1, 2x2, 3x3, and 4x4) and a substitution
+// (Variable -> double) `subst`:
 //
 //  1. Substitute(M.inverse(), subst)
 //  2. Substitute(M, subst).inverse()
 //
 // Note that in 1) Matrix<Expression>::inverse() is called while in 2)
 // Matrix<double>::inverse() is used.
+// Also that it fails for matrices larger than 4x4 and any dynamically-sized
+// matrix.
 TEST_F(SymbolicExpressionMatrixTest, Inverse) {
-  Eigen::Matrix<Expression, 2, 2> M;
-  // clang-format off
-  M << x_, y_,
-       z_, w_;
-  // clang-format on
-  const Substitution subst{
-      {var_x_, 1.0},
-      {var_y_, 2.0},
-      {var_w_, 3.0},
-      {var_z_, 4.0},
-  };
-  EXPECT_TRUE(CompareMatrices(Substitute(M.inverse(), subst),
-                              Substitute(M, subst).inverse(), 1e-10));
+  CheckMatrixInversion<1>();
+  CheckMatrixInversion<2>();
+  CheckMatrixInversion<3>();
+  CheckMatrixInversion<4>();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      CheckMatrixInversion<5>(), kBadMatrixInversion);
 }
 
 // We found that the following example could leak memory. This test makes sure
