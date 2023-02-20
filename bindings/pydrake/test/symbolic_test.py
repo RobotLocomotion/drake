@@ -564,6 +564,39 @@ class TestSymbolicExpression(unittest.TestCase):
         self.assertEqual(e_xv.shape, (2,))
         self.assertIsInstance(e_xv[0], sym.Expression)
 
+    def make_matrix_variable(self, rows, cols):
+        M = np.zeros((rows, cols), dtype=object)
+        for i in range(rows):
+            for j in range(cols):
+                M[i, j] = sym.Variable(f"m{i}{j}")
+        return M
+
+    def check_matrix_inversion(self, N):
+        Mvar = self.make_matrix_variable(N, N)
+        subst = {}
+        for i in range(N * N):
+            subst[Mvar.flat[i]] = i ** (N - 1)
+        to_expr = np.vectorize(sym.Expression)
+        M = to_expr(Mvar)
+        Minv = drake_math.inv(M)
+        np.testing.assert_allclose(
+            sym.Evaluate(Minv, subst),
+            np.linalg.inv(sym.Evaluate(M, subst)),
+            rtol=0,
+            atol=1e-10,
+        )
+
+    def test_matrix_inversion(self):
+        self.check_matrix_inversion(1)
+        self.check_matrix_inversion(2)
+        self.check_matrix_inversion(3)
+        self.check_matrix_inversion(4)
+        with self.assertRaises(RuntimeError) as cm:
+            self.check_matrix_inversion(5)
+        self.assertIn(
+            "does not have an entry for the variable", str(cm.exception)
+        )
+
     def test_vectorized_binary_operator_type_combinatorics(self):
         """
         Tests vectorized binary operator via brute-force combinatorics per
