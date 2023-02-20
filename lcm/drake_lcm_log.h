@@ -4,6 +4,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -72,6 +73,10 @@ class DrakeLcmLog : public DrakeLcmInterface {
    */
   std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string& channel, HandlerFunction handler) override;
+
+  /** This function is not yet supported for LCM logs, and will always throw. */
+  std::shared_ptr<DrakeSubscriptionInterface> SubscribeMultichannel(
+      std::string_view regex, MultichannelHandlerFunction) override;
 
   /**
    * Subscribe to all channels; this is useful for logging and redirecting LCM

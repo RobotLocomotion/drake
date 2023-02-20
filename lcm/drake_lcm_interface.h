@@ -6,6 +6,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -105,11 +106,8 @@ class DrakeLcmInterface {
    * The handler should never throw an exception, because it is indirectly
    * called from C functions.
    *
-   * NOTE: Unlike upstream LCM, DrakeLcm does not support regexes for the
-   * `channel` argument.
-   *
-   * @param channel The channel to subscribe to.
-   * Must not be the empty string.
+   * @param channel The channel to subscribe to.  Must not be the empty string.
+   * To use a regex, see SubscribeMultichannel().
    *
    * @return the object used to manage the subscription if that is supported,
    * or else nullptr if not supported.  The unsubscribe-on-delete default is
@@ -118,6 +116,15 @@ class DrakeLcmInterface {
    */
   virtual std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string& channel, HandlerFunction) = 0;
+
+  /**
+   * Subscribes to all channels whose name matches the given regular expression.
+   * The `regex` is treated as an anchored "match" not a "search", i.e., it must
+   * match the entire channel name. The specific regular expression grammar is
+   * left unspecified, so it's best to use only patterns that have identical
+   * semantics in all grammars, e.g., `".*"`. */
+  virtual std::shared_ptr<DrakeSubscriptionInterface> SubscribeMultichannel(
+      std::string_view regex, MultichannelHandlerFunction) = 0;
 
   /**
    * Subscribe to all channels; this is useful for logging and redirecting LCM

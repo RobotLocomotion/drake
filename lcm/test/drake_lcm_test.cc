@@ -390,13 +390,15 @@ TEST_F(DrakeLcmTest, Suffix) {
 TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
   // The device under test will listen for messages.
   DrakeLcmParams params;
-  params.channel_suffix = "_SUFFIX";
+  params.channel_suffix = ".SUFFIX";
   params.lcm_url = kUdpmUrl;
   dut_ = std::make_unique<DrakeLcm>(params);
 
+  // Here we use a suffix string that contains a regex character.
+  // We want it to be treated as a string literal, not a regex.
   const std::string unadorned = "SuffixInSubscribeAllChannels";
-  const std::string suffixed = unadorned + "_SUFFIX";
-  const std::string mismatched = unadorned + "_WRONG!";
+  const std::string suffixed = unadorned + ".SUFFIX";
+  const std::string mismatched = unadorned + "xSUFFIX";
 
   // Use a separate publisher, to have direct control over the channel name.
   auto publisher = std::make_unique<DrakeLcm>(kUdpmUrl);
@@ -416,6 +418,30 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
     Publish(publisher.get(), suffixed, message_);
     dut_->HandleSubscriptions(5 /* millis */);
   });
+}
+
+// Confirm that SubscribeMultichannel ignores mismatched channel names.
+TEST_F(DrakeLcmTest, SubscribeMultiTest) {
+  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  const std::string channel_name = "DrakeLcmTest.SubscribeMultiTest";
+
+  lcmt_drake_signal received{};
+  auto subscription = dut_->SubscribeMultichannel(
+      "Drake.*MultiTest",
+      [&received, &channel_name](std::string_view channel, const void* data,
+                                 int size) {
+        EXPECT_EQ(channel, channel_name);
+        received.decode(data, 0, size);
+      });
+  subscription.reset();  // Deleting the subscription should be a no-op.
+
+  int total = 0;
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    native_lcm->publish("WRONG_" + channel_name, &message_);
+    native_lcm->publish(channel_name, &message_);
+    total += dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(total, 1);
 }
 
 }  // namespace
