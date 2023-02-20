@@ -47,12 +47,12 @@ namespace multibody {
 /// are defined in terms of the mass dm of a differential volume of the body.
 /// The position of dm from about-point P is xx̂ + yŷ + zẑ = [x, y, z]_E.
 /// <pre>
-/// Ixx = ∫ (y² + z²) dm
-/// Iyy = ∫ (x² + z²) dm
-/// Izz = ∫ (x² + y²) dm
-/// Ixy = - ∫ x y dm
-/// Ixz = - ∫ x z dm
-/// Iyz = - ∫ y z dm
+/// Ixx = ∫ (y² + z²) dm
+/// Iyy = ∫ (x² + z²) dm
+/// Izz = ∫ (x² + y²) dm
+/// Ixy = - ∫ x y dm
+/// Ixz = - ∫ x z dm
+/// Iyz = - ∫ y z dm
 /// </pre>
 /// We use the negated convention for products of inertia, so that I serves
 /// to relate angular velocity ω and angular momentum h via `h = I ⋅ ω`.
