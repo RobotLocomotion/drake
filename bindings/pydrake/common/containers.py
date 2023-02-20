@@ -159,6 +159,19 @@ def namedview(name, fields):
         value[1] = 100  # `view` is now [10, 100]
         view[:] = 3  # `value` is now [3, 3]
 
+        # Get an *alias* of the original vector from the view.
+        value_view = np.asarray(view)
+        # Another way to get an alias of the original vector from the view.
+        value_view_2 = view[:]
+        # Get a *copy* of the original vector.
+        value_copy = np.array(view)
+
+    Warning::
+
+        As illustrated above, if you use ``np.array(view)``, then it will copy
+        the original data. If you want an aliased array from the view, then use
+        ``view[:]``, ``np.asarray(view)``, or ``np.array(view, copy=False)``.
+
     For more details, see ``NamedViewBase``.
     """
     base_cls = (NamedViewBase,)
