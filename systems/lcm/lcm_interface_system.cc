@@ -50,6 +50,12 @@ std::shared_ptr<DrakeSubscriptionInterface> LcmInterfaceSystem::Subscribe(
 }
 
 std::shared_ptr<DrakeSubscriptionInterface>
+LcmInterfaceSystem::SubscribeMultichannel(std::string_view regex,
+                                          MultichannelHandlerFunction handler) {
+  return lcm_->SubscribeMultichannel(regex, std::move(handler));
+}
+
+std::shared_ptr<DrakeSubscriptionInterface>
 LcmInterfaceSystem::SubscribeAllChannels(MultichannelHandlerFunction handler) {
   return lcm_->SubscribeAllChannels(std::move(handler));
 }

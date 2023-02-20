@@ -418,6 +418,30 @@ TEST_F(DrakeLcmTest, SuffixInSubscribeAllChannels) {
   });
 }
 
+// Confirm that SubscribeMultichannel ignores mismatched channel names.
+TEST_F(DrakeLcmTest, SubscribeMultiTest) {
+  ::lcm::LCM* const native_lcm = dut_->get_lcm_instance();
+  const std::string channel_name = "DrakeLcmTest.SubscribeMultiTest";
+
+  lcmt_drake_signal received{};
+  auto subscription = dut_->SubscribeMultichannel(
+      "Drake.*MultiTest",
+      [&received, &channel_name](std::string_view channel, const void* data,
+                                 int size) {
+        EXPECT_EQ(channel, channel_name);
+        received.decode(data, 0, size);
+      });
+  subscription.reset();  // Deleting the subscription should be a no-op.
+
+  int total = 0;
+  LoopUntilDone(&received, 20 /* retries */, [&]() {
+    native_lcm->publish("WRONG_" + channel_name, &message_);
+    native_lcm->publish(channel_name, &message_);
+    total += dut_->HandleSubscriptions(50 /* millis */);
+  });
+  EXPECT_EQ(total, 1);
+}
+
 }  // namespace
 }  // namespace lcm
 }  // namespace drake
