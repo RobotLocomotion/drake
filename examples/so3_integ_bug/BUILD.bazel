@@ -5,6 +5,10 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load(
+    "@drake//tools/skylark:pybind.bzl",
+    "pybind_py_library",
+)
 
 venv_dir = "venv/lib/python3.10/site-packages"
 
@@ -25,11 +29,26 @@ py_library(
     ],
 )
 
+pybind_py_library(
+    name = "cc_py",
+    cc_srcs = [
+        "cc_py.cc",
+    ],
+    cc_so_name = "cc",
+    cc_deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "//multibody/tree:quaternion_rate_hack",
+        "//:drake_shared_library",
+    ],
+    py_imports = ["."],
+)
+
 drake_py_library(
     name = "spatial_trajectories_py",
     srcs = ["spatial_trajectories.py"],
     imports = ["."],
     deps = [
+        ":cc_py",
         ":hack_venv_py",
         "//bindings/pydrake",
     ],

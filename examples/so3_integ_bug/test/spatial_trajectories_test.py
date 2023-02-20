@@ -34,7 +34,9 @@ from spatial_trajectories import (
     SimpleSpatialReference,
     angle_axis_deg_to_quat,
     cat,
+    drake_sym_replace,
     eval_port,
+    make_rot_info_quat_drake_jacobian,
     make_rot_info_quat_sym,
     make_rot_info_rpy_sym,
     make_rotation_2nd_order_integrator,
@@ -42,7 +44,7 @@ from spatial_trajectories import (
     mujoco,
     num_spatial,
     se3_diff,
-    sym_to_float,
+    to_float,
 )
 
 
@@ -122,13 +124,26 @@ class Test(unittest.TestCase):
         self.check_rotation_integration(use_rpy=True)
         self.check_rotation_integration(use_rpy=False)
 
-    def check_rotation_integration(self, *, use_rpy):
+    def test_rotation_integration_drake(self):
+        # Fails, even with large tolerance.
+        with self.assertRaises(AssertionError):
+            self.check_rotation_integration(
+                use_rpy=False, use_drake=True, tol=0.1
+            )
+
+    def check_rotation_integration(
+        self, *, use_rpy, use_drake=False, tol=1e-5, accuracy=1e-6,
+    ):
         """
         With a given SO(3) trajectory through time, take the angular
         acceleration, integrate it forward, and ensure we recover the original
         trajectory with our given coordinate representation.
         """
         reference, rot_info = make_sample_rotation_reference(use_rpy)
+        if use_drake:
+            assert not use_rpy
+            rot_info = make_rot_info_quat_drake_jacobian()
+
         num_r = rot_info.num_rot
 
         builder = DiagramBuilder()
@@ -146,7 +161,7 @@ class Test(unittest.TestCase):
         diagram = builder.Build()
 
         simulator = Simulator(diagram)
-        config = SimulatorConfig(accuracy=1e-6)
+        config = SimulatorConfig(accuracy=accuracy)
         ApplySimulatorConfig(config, simulator)
 
         def monitor(diagram_context):
@@ -160,8 +175,6 @@ class Test(unittest.TestCase):
             # Integrated w/ mapping (maybe non-Euclidean)
             rm = eval_port(integ_map.q, diagram_context)
             wm = eval_port(integ_map.v, diagram_context)
-            # Cross-check values.
-            tol = 10 * config.accuracy
             # Check integrated.
             self.assertLess(maxabs(r - ri), tol)
             self.assertLess(maxabs(rd - rdi), tol)
@@ -174,7 +187,12 @@ class Test(unittest.TestCase):
         simulator.set_monitor(monitor)
 
         print(f"Check rotation integration w/ use_rpy={use_rpy}...")
-        simulator.AdvanceTo(3.0)
+        try:
+            simulator.AdvanceTo(3.0)
+        except AssertionError:
+            t = simulator.get_context().get_time()
+            print(f"Error at time t={t}s")
+            raise
         print("  Done")
 
     def test_floating_tracking_naive(self):
@@ -362,3 +380,12 @@ class Test(unittest.TestCase):
         print(mbp_dx[1])
         print(naive_dx[1])
 
+        # Moar symbolics.
+        q0[:4] = [Variable(n) for n in "wxyz"]
+        quat = q0[:4]
+        mbp_dx, naive_dx = calc_derivs(q0, v0)
+        diff_dx = mbp_dx - naive_dx
+        # # Not legible :(
+        # bad = diff_dx[1]
+        # bad = drake_sym_replace(bad, np.sum(quat**2), 1.0)
+        # print(bad)
