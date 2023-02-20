@@ -274,25 +274,26 @@ class TestScalarConversion(unittest.TestCase):
 
             class Impl(Diagram_[T]):
                 def _construct(self, value, *, converter=None):
-                    Diagram_[T].__init__(self, converter=converter)
+                    Diagram_[T].__init__(self)
                     builder = DiagramBuilder_[T]()
                     self.example = builder.AddSystem(Example_[T](value=value))
                     builder.BuildInto(self)
 
                 def _construct_copy(self, other, *, converter=None):
-                    self._construct(
-                        value=other.example.value, converter=converter
+                    Diagram_[T].__init__(
+                        self, converter=converter, other=other
                     )
+                    self.example, = diagram.GetSystems()
 
             return Impl
 
         for T, U in SystemScalarConverter.SupportedConversionPairs:
             diagram_U = MyDiagram_[U](value=10)
             self.assertEqual(diagram_U.example.value, 10)
-            self.assertIsNone(diagram_U.example.copied_from, None)
+            self.assertIsNone(diagram_U.example.copied_from)
             diagram_T = diagram_U.ToScalarType[T]()
             self.assertEqual(diagram_T.example.value, 10)
-            self.assertIsNone(diagram_T.example.copied_from, diagram_U.example)
+            self.assertIs(diagram_T.example.copied_from, diagram_U.example)
             # Ensure both diagrams can create a context.
             diagram_U.CreateDefaultContext()
             diagram_T.CreateDefaultContext()
