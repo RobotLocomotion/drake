@@ -73,6 +73,22 @@ void BindSymbolicMathOverloads(PyObject* obj) {
       .def(
           "inv",
           [](const MatrixX<Expression>& X) -> MatrixX<Expression> {
+            const int N = X.rows();
+            // Note that MatrixX<Expression>.inverse() will fail for
+            // non-float-convertible symbolic matrices. We special case the
+            // sizes shown to work in `expression_matrix_test.cc`.
+            if (N == X.cols()) {
+              switch (N) {
+                case 1:
+                  return Eigen::Matrix<Expression, 1, 1>(X).inverse();
+                case 2:
+                  return Eigen::Matrix<Expression, 2, 2>(X).inverse();
+                case 3:
+                  return Eigen::Matrix<Expression, 3, 3>(X).inverse();
+                case 4:
+                  return Eigen::Matrix<Expression, 4, 4>(X).inverse();
+              }
+            }
             return X.inverse();
           },
           "Symbolic matrix inverse");
