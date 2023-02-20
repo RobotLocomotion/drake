@@ -16,6 +16,7 @@ drake_cc_package_library(
     deps = [
         ":autodiff",
         ":barycentric",
+        ":binomial_coefficient",
         ":bspline_basis",
         ":compute_numerical_gradient",
         ":continuous_algebraic_riccati_equation",
@@ -52,6 +53,15 @@ drake_cc_library(
     name = "barycentric",
     srcs = ["barycentric.cc"],
     hdrs = ["barycentric.h"],
+    deps = [
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "binomial_coefficient",
+    srcs = ["binomial_coefficient.cc"],
+    hdrs = ["binomial_coefficient.h"],
     deps = [
         "//common:essential",
     ],
@@ -318,6 +328,13 @@ drake_cc_googletest(
         ":barycentric",
         "//common/symbolic:expression",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "binomial_coefficient_test",
+    deps = [
+        ":binomial_coefficient",
     ],
 )
 
