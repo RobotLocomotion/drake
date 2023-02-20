@@ -7,6 +7,9 @@ def uwebsockets_repository(
         mirrors = None):
     github_archive(
         name = name,
+        # This dependency is part of a "cohort" defined in
+        # drake/tools/workspace/new_release.py.  When practical, all members
+        # of this cohort should be updated at the same time.
         repository = "uNetworking/uWebSockets",
         # NOTE: Do not upgrade without testing the tutorials on Deepnote.  See
         # Drake #18289.  v20.35.0 was tested and showed the same symptoms.

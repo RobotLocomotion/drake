@@ -36,19 +36,20 @@ command line.
 import argparse
 import getpass
 import git
-import glob
+import github3
 import hashlib
 import json
 import logging
 import os
 import re
+import shlex
 import subprocess
-import sys
-from tempfile import TemporaryDirectory
 import time
 import urllib
 
-import github3
+from dataclasses import dataclass
+from tempfile import TemporaryDirectory
+from typing import List, Optional
 
 from drake.tools.workspace.metadata import read_repository_metadata
 
@@ -78,6 +79,24 @@ _OVERLOOK_RELEASE_REPOSITORIES = {
     "ros_xacro_internal": r"^(\d+\.\d+\.)",
     "sdformat_internal": "",
 }
+
+# Packages in these cohorts should be upgraded together (in a single commit).
+_COHORTS = (
+    # mypy uses mypy_extensions; be sure to keep them aligned.
+    {"mypy_internal", "mypy_extensions_internal"},
+    # sdformat depends on both gz libraries; be sure to keep them aligned.
+    {"sdformat_internal", "gz_math_internal", "gz_utils_internal"},
+    # uwebsockets depends on usockets; be sure to keep them aligned.
+    {"uwebsockets", "usockets"},
+)
+
+
+@dataclass
+class UpgradeResult:
+    was_upgraded: bool
+    can_be_committed: bool = False
+    modified_paths: Optional[List[str]] = None
+    commit_message: Optional[str] = None
 
 
 def _check_output(args):
@@ -221,7 +240,27 @@ def _is_modified(repo, path):
     return False
 
 
+def _do_commit(local_drake_checkout, actually_commit,
+               workspace_names, paths, message):
+    if actually_commit:
+        names = ", ".join(workspace_names)
+        path_args = zip(['-o'] * len(paths), paths)
+        local_drake_checkout.git.commit(
+            *path_args, '-m', "[workspace] " + message)
+        print("\n" + ("*" * 72))
+        print(f"Done.  Changes for {names} were committed.")
+        print("Be sure to review the changes and amend the commit if needed.")
+        print(("*" * 72) + "\n")
+    else:
+        print("\n" + ("*" * 72))
+        print("Done.  Be sure to review and commit the changes:")
+        print(f"  git add {' '.join([shlex.quote(p) for p in paths])}")
+        print(f"  git commit -m{shlex.quote('[workspace] ' + message)}")
+        print(("*" * 72) + "\n")
+
+
 def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
+    """Returns an `UpgradeResult` describing what (if anything) was done."""
     if workspace_name not in metadata:
         raise RuntimeError(f"Unknown repository {workspace_name}")
     data = metadata[workspace_name]
@@ -239,16 +278,16 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         if _is_modified(local_drake_checkout, bzl_filename):
             print(f"{bzl_filename} has local changes.")
             print(f"Changes made for {workspace_name} will NOT be committed.")
-            commit = False
+            can_commit = False
         else:
-            commit = True
+            can_commit = True
     else:
-        commit = False
+        can_commit = False
 
     # Figure out what to upgrade.
     old_commit, new_commit = _handle_github(workspace_name, gh, data)
     if old_commit == new_commit:
-        raise RuntimeError(f"No upgrade needed for {workspace_name}")
+        return UpgradeResult(False)
     elif new_commit is None:
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
     print("Upgrading {} from {} to {}".format(
@@ -266,12 +305,10 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
         if match:
             assert commit_line_num is None
             commit_line_num = i
-            commit_line_match = match
         match = checksum_line_re.search(line)
         if match:
             assert checksum_line_num is None
             checksum_line_num = i
-            checksum_line_match = match
     assert commit_line_num is not None
     assert checksum_line_num is not None
 
@@ -303,24 +340,53 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     print("Populating repository cache ...")
     subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
 
-    message = f"[workspace] Upgrade {workspace_name}"
+    message = f"Upgrade {workspace_name} to latest"
     if _smells_like_a_git_commit(new_commit):
-        message += " to latest commit"
+        message += " commit"
     else:
-        message += f" to latest release {new_commit}"
+        message += f" release {new_commit}"
 
-    if commit:
-        local_drake_checkout.git.commit('-o', bzl_filename, '-m', message)
-        print("\n" + ("*" * 72))
-        print(f"Done.  Changes for {workspace_name} were committed.")
-        print("Be sure to review the changes and amend the commit if needed.")
-        print(("*" * 72) + "\n")
+    return UpgradeResult(True, can_commit, [bzl_filename], message)
+
+
+def _do_upgrades(temp_dir, gh, local_drake_checkout,
+                 workspace_names, metadata):
+
+    # Make sure there are workspaces to update.
+    if len(workspace_names) == 0:
+        return
+
+    can_commit = True
+    modified_paths = []
+    commit_messages = []
+    modified_workspace_names = []
+    for workspace_name in workspace_names:
+        result = _do_upgrade(temp_dir, gh, local_drake_checkout,
+                             workspace_name, metadata)
+        if result.was_upgraded:
+            can_commit = can_commit and result.can_be_committed
+            modified_paths += result.modified_paths
+            commit_messages.append(result.commit_message)
+            modified_workspace_names.append(workspace_name)
+        elif len(workspace_names) == 1:
+            raise RuntimeError(f"No upgrade needed for {workspace_name}")
+
+    # Determine if we should and can commit the changes made.
+    if len(modified_workspace_names) == 1:
+        _do_commit(local_drake_checkout, actually_commit=can_commit,
+                   workspace_names=modified_workspace_names,
+                   paths=modified_paths, message=commit_messages[0])
     else:
-        print("\n" + ("*" * 72))
-        print("Done.  Be sure to review and commit the changes:")
-        print(f"  git add {bzl_filename}")
-        print(f"  git commit -m'{message}'")
-        print(("*" * 72) + "\n")
+        cohort = ', '.join(modified_workspace_names)
+
+        if not can_commit:
+            print(f"Changes made for {cohort} will NOT be committed.")
+
+        message = f"Upgrade {cohort} to latest\n\n"
+        message += "- " + "\n- ".join(commit_messages)
+        _do_commit(local_drake_checkout, actually_commit=can_commit,
+                   workspace_names=modified_workspace_names,
+                   paths=modified_paths, message=message)
 
 
 def main():
@@ -375,7 +441,14 @@ def main():
 
     # Are we operating on all repositories, or just one?
     if len(args.workspace):
-        workspaces = args.workspace
+        workspaces = set(args.workspace)
+
+        # Grow the set of specified repositories to cover cohorts.
+        for workspace in args.workspace:
+            for cohort in _COHORTS:
+                if workspace in cohort:
+                    workspaces.update(cohort)
+
     else:
         if args.commit:
             parser.error("--commit requires one or more workspaces.")
@@ -394,10 +467,23 @@ def main():
         print(json.dumps(metadata, sort_keys=True, indent=2))
 
     if workspaces is not None:
+        visited_workspaces = set()
         for workspace in workspaces:
+            # If we already did this as part of a tandem upgrade, skip it.
+            if workspace in visited_workspaces:
+                continue
+
+            # Determine if this workspace is part of a cohort.
+            cohort_workspaces = {workspace}
+            for cohort in _COHORTS:
+                if workspace in cohort:
+                    cohort_workspaces = cohort
+
+            # Actually do the upgrade(s).
             with TemporaryDirectory(prefix='drake_new_release_') as temp_dir:
-                _do_upgrade(temp_dir, gh, local_drake_checkout,
-                            workspace, metadata)
+                _do_upgrades(temp_dir, gh, local_drake_checkout,
+                             cohort_workspaces, metadata)
+                visited_workspaces.update(cohort_workspaces)
     else:
         # Run our report of what's available.
         print("Checking for new releases...")

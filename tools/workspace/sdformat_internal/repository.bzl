@@ -7,6 +7,9 @@ def sdformat_internal_repository(
         mirrors = None):
     github_archive(
         name = name,
+        # This dependency is part of a "cohort" defined in
+        # drake/tools/workspace/new_release.py.  When practical, all members
+        # of this cohort should be updated at the same time.
         repository = "gazebosim/sdformat",
         commit = "sdformat13_13.2.0",
         build_file = ":package.BUILD.bazel",

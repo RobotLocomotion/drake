@@ -7,6 +7,9 @@ def usockets_repository(
         mirrors = None):
     github_archive(
         name = name,
+        # This dependency is part of a "cohort" defined in
+        # drake/tools/workspace/new_release.py.  When practical, all members
+        # of this cohort should be updated at the same time.
         repository = "uNetworking/uSockets",
         # NOTE: Do not upgrade without testing the tutorials on Deepnote.  See
         # Drake #18289.  v0.8.5 was tested and showed the same symptoms.
