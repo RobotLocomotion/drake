@@ -885,10 +885,13 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
     }
     sdpa_file << "\n";
     // Forth line, the right-hand side of the constraint g.
-    std::stringstream g_stream;
-    g_stream << std::setprecision(20);
-    g_stream << g.transpose() << "\n";
-    sdpa_file << g_stream.str();
+    for (int i = 0; i < g.size(); ++i) {
+      if (i > 0) {
+        sdpa_file << " ";
+      }
+      sdpa_file << fmt::to_string(g[i]);
+    }
+    sdpa_file << "\n";
     // block_start_rows[i] records the starting row index of the i'th block in
     // X. row_to_block_indices[i] records the index of the block that X(i, i)
     // belongs to.
