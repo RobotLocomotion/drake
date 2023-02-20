@@ -1,6 +1,6 @@
 """
-Shows possible bug in MultibodyPlant dynamics by integrating a SE(3) trajectory where the quaternion rate mapping to angular
-velocity (or something else).
+Shows possible bug in MultibodyPlant dynamics by integrating a
+SE(3) trajectory that has a non-constant axis of rotation.
 """
 
 import unittest
@@ -20,9 +20,12 @@ from pydrake.all import (
 )
 
 from spatial_trajectories import (
+    MbpForceToAccel,
     MbpPlant,
     MbpPlant_,
     NaiveFeedforward,
+    NaiveForceToAccel,
+    NaiveForceToAccel_,
     NaivePlant,
     NaivePlant_,
     SecondOrderIntegrator,
@@ -179,8 +182,8 @@ class Test(unittest.TestCase):
         by using a unit-inertia body and providing spatial forces which are
         equal to the desired accelerations.
         """
-        self.check_floating_tracking(use_rpy=True, use_mbp=False)
-        self.check_floating_tracking(use_rpy=False, use_mbp=False)
+        self.check_floating_tracking(use_rpy=True, mode="naive")
+        self.check_floating_tracking(use_rpy=False, mode="naive")
 
     def test_floating_tracking_mbp(self):
         """
@@ -191,14 +194,18 @@ class Test(unittest.TestCase):
             self.check_floating_tracking(use_rpy=True, use_mbp=True)
         with self.assertRaises(AssertionError):
             self.check_floating_tracking(use_rpy=False, use_mbp=True)
+    @unittest.skipIf(mujoco is None, "no mujoco")
+    def test_floating_tracking_naive_mujoco(self):
+        self.check_floating_tracking(use_rpy=False, mode="naive_mujoco")
 
     def check_floating_tracking(
         self,
         *,
         use_rpy,
-        use_mbp,
+        mode,
         do_print=False,
     ):
+        print(f"Check use_rpy={use_rpy}, mode={mode}...")
         max_tol = 1e-4
 
         M = make_identity_inertia_matrix()
@@ -206,10 +213,14 @@ class Test(unittest.TestCase):
 
         builder = DiagramBuilder()
 
-        if use_mbp:
+        if mode == "full_mbp":
             plant = MbpPlant(M)
+        elif mode == "naive":
+            plant = NaivePlant(rot_info, NaiveForceToAccel(M))
+        elif mode == "naive_mbp":
+            plant = NaivePlant(rot_info, MbpForceToAccel(M))
         else:
-            plant = NaivePlant(rot_info, M)
+            assert False
         builder.AddSystem(plant)
 
         controller = builder.AddSystem(NaiveFeedforward(M))
@@ -249,7 +260,6 @@ class Test(unittest.TestCase):
             self.assertLess(maxabs(w_err), max_tol)
             self.assertLess(maxabs(v_err), max_tol)
 
-        print(f"Check use_rpy={use_rpy}, use_mbp={use_mbp}...")
         simulator = Simulator(diagram)
         simulator.set_monitor(monitor)
         simulator.Initialize()
@@ -275,7 +285,8 @@ class Test(unittest.TestCase):
         builder.Connect(u_port, mbp.generalized_forces_input)
 
         # Naive floating body plant.
-        naive = builder.AddSystem(NaivePlant_[T](rot_info, M))
+        force_to_accel = NaiveForceToAccel_[T](M)
+        naive = builder.AddSystem(NaivePlant_[T](rot_info, force_to_accel))
         builder.Connect(u_port, naive.generalized_forces_input)
 
         diagram = builder.Build()

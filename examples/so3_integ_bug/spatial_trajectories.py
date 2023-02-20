@@ -657,7 +657,7 @@ def SecondOrderIntegrator_(T):
             self.qd = self.DeclareVectorOutputPort(
                 "qd", num_q, calc_qd, prereqs
             )
-            self.state = self.DeclareVectorOutputPort(
+            self.x = self.DeclareVectorOutputPort(
                 "x", 2 * num_q, calc_x, prereqs
             )
 
@@ -744,9 +744,7 @@ def SecondOrderIntegratorWithMapping_(T):
             prereqs = {self.all_state_ticket()}
             self.q = self.DeclareVectorOutputPort("q", num_q, calc_q, prereqs)
             self.v = self.DeclareVectorOutputPort("v", num_v, calc_v, prereqs)
-            self.state = self.DeclareVectorOutputPort(
-                "x", num_x, calc_x, prereqs
-            )
+            self.x = self.DeclareVectorOutputPort("x", num_x, calc_x, prereqs)
 
             def calc_xd(context, derivatives):
                 vector = derivatives.get_mutable_vector()
@@ -878,6 +876,69 @@ def is_axisymmetric(M):
 # Simple plant.
 
 
+@TemplateSystem.define("NaiveForceToAccel_", T_list=T_list)
+def NaiveForceToAccel_(T):
+    class Impl(Diagram_[T]):
+        def _construct(self, M, *, converter=None):
+            super().__init__()
+            # M should be axisymmetric s.t. it is invariant of rotation.
+            # TODO(eric.cousineau): Pipe in rotation matrix?
+            assert is_axisymmetric(M)
+            Minv = np.linalg.inv(M)
+            builder = DiagramBuilder_[T]()
+            force_to_accel = builder.AddSystem(MatrixMultiply_[T](Minv))
+            # Junk so that we can export an input port.
+            num_x = 13
+            x_empty = np.zeros((0, num_x))
+            x_sink = builder.AddSystem(MatrixMultiply_[T](x_empty))
+            x_index = builder.ExportInput(x_sink.get_input_port())
+            u_index = builder.ExportInput(force_to_accel.get_input_port())
+            vd_index = builder.ExportOutput(force_to_accel.get_output_port())
+            builder.BuildInto(self)
+            self.x = self.get_input_port(x_index)
+            self.u = self.get_input_port(u_index)
+            self.vd = self.get_output_port(vd_index)
+
+        def _construct_copy(self, other, *, converter=None):
+            raise NotImplementedError()
+
+    return Impl
+
+
+NaiveForceToAccel = NaiveForceToAccel_[None]
+
+
+def make_plant(M, *, T=float):
+    plant = MultibodyPlant_[T](time_step=0.0)
+    plant.mutable_gravity_field().set_gravity_vector(np.zeros(3))
+    plant.AddRigidBody("body", make_spatial_inertia(M))
+    plant.Finalize()
+    return plant
+
+
+class MbpForceToAccel(LeafSystem):
+    def __init__(self, M):
+        super().__init__()
+        plant = make_plant(M)
+        plant_context = plant.CreateDefaultContext()
+
+        self.x = self.DeclareVectorInputPort("x", 13)
+        self.u = self.DeclareVectorInputPort("u", 6)
+
+        def calc_vd(context, output):
+            x = self.x.Eval(context)
+            u = self.u.Eval(context)
+            plant.SetPositionsAndVelocities(plant_context, x)
+            plant.get_applied_generalized_force_input_port().FixValue(
+                plant_context, u
+            )
+            xd = plant.EvalTimeDerivatives(plant_context).CopyToVector()
+            vd = xd[7:]
+            output.set_value(vd)
+
+        self.vd = self.DeclareVectorOutputPort("vd", 6, calc_vd)
+
+
 @TemplateSystem.define("NaivePlant_", T_list=T_list)
 def NaivePlant_(T):
     class Impl(Diagram_[T]):
@@ -892,23 +953,18 @@ def NaivePlant_(T):
         coordinates. Rotation coordinates are as specified by `rot_info`.
         """
 
-        def _construct(self, rot_info, M, *, converter=None):
+        def _construct(self, rot_info, force_to_accel, *, converter=None):
             # assert converter is None
             super().__init__()
-            # M should be axisymmetric s.t. it is invariant of rotation.
-            # TODO(eric.cousineau): Pipe in rotation matrix?
-            assert is_axisymmetric(M)
 
             builder = DiagramBuilder_[T]()
-            Minv = np.linalg.inv(M)
-            force_to_accel = builder.AddSystem(MatrixMultiply_[T](Minv))
             integ = builder.AddSystem(
                 make_spatial_2nd_order_integrator(rot_info, T=T)
             )
-            builder.Connect(
-                force_to_accel.get_output_port(),
-                integ.get_input_port(),
-            )
+            builder.AddSystem(force_to_accel)
+            if rot_info.num_rot == 4:
+                builder.Connect(integ.x, force_to_accel.x)
+            builder.Connect(force_to_accel.vd, integ.get_input_port())
 
             if T == float:
                 calc_spatial = builder.AddSystem(CalcSpatialValues(rot_info))
@@ -917,8 +973,8 @@ def NaivePlant_(T):
                 X_index = builder.ExportOutput(calc_spatial.X, "X")
                 V_index = builder.ExportOutput(calc_spatial.V, "V")
 
-            u_index = builder.ExportInput(force_to_accel.get_input_port(), "u")
-            state_index = builder.ExportOutput(integ.state, "state")
+            u_index = builder.ExportInput(force_to_accel.u, "u")
+            state_index = builder.ExportOutput(integ.x, "state")
             builder.BuildInto(self)
             self.generalized_forces_input = self.get_input_port(u_index)
             self.state = self.get_output_port(state_index)
@@ -950,11 +1006,7 @@ def MbpPlant_(T):
             super().__init__()
 
             builder = DiagramBuilder_[T]()
-
-            plant = builder.AddSystem(MultibodyPlant_[T](time_step=0.0))
-            plant.mutable_gravity_field().set_gravity_vector(np.zeros(3))
-            plant.AddRigidBody("body", make_spatial_inertia(M))
-            plant.Finalize()
+            plant = builder.AddSystem(make_plant(M, T=T))
 
             if T == float:
                 calc_spatial = builder.AddSystem(CalcPlantSpatialValues(plant))
