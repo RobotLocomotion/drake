@@ -128,23 +128,15 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
       g_free(channel_regex);
     });
 
-    return Create(native_instance, channel_regex,
-                  [handler = std::move(single_channel_handler)](
-                      std::string_view, const void* data, int size) {
-                    handler(data, size);
-                  });
+    return CreateMultichannel(
+        native_instance, channel_regex,
+        [handler = std::move(single_channel_handler)](
+            std::string_view, const void* data, int size) {
+          handler(data, size);
+        });
   }
 
   static std::shared_ptr<DrakeSubscription> CreateMultichannel(
-      ::lcm::LCM* native_instance,
-      MultichannelHandlerFunction multichannel_handler) {
-    // TODO(jwnimmer-tri) If a channel_suffix was given, we should use it here
-    // for efficiency (to drop unwanted packets as early as possible). Be sure
-    // to regex-escape it first.
-    return Create(native_instance, ".*", std::move(multichannel_handler));
-  }
-
-  static std::shared_ptr<DrakeSubscription> Create(
       ::lcm::LCM* native_instance, std::string_view channel_regex,
       MultichannelHandlerFunction handler) {
     DRAKE_DEMAND(native_instance != nullptr);
@@ -280,10 +272,12 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::Subscribe(
   return result;
 }
 
-std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
-    MultichannelHandlerFunction handler) {
+std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeMultichannel(
+    std::string_view regex, MultichannelHandlerFunction handler) {
+  DRAKE_THROW_UNLESS(!regex.empty());
   DRAKE_THROW_UNLESS(handler != nullptr);
   impl_->CleanUpOldSubscriptions();
+
   const std::string& suffix = impl_->channel_suffix_;
   if (!suffix.empty()) {
     handler = [&suffix, handler](std::string_view channel, const void* data,
@@ -303,14 +297,19 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
   }
 
   // Add the new subscriber.
-  auto result =
-      DrakeSubscription::CreateMultichannel(&(impl_->lcm_), std::move(handler));
+  auto result = DrakeSubscription::CreateMultichannel(
+      &(impl_->lcm_), std::string(regex) + suffix, std::move(handler));
   if (!impl_->deferred_initialization_) {
     result->AttachIfNeeded();
   }
   impl_->subscriptions_.push_back(result);
   DRAKE_DEMAND(!impl_->subscriptions_.back().expired());
   return result;
+}
+
+std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
+    MultichannelHandlerFunction handler) {
+  return SubscribeMultichannel(".*", std::move(handler));
 }
 
 int DrakeLcm::HandleSubscriptions(int timeout_millis) {
