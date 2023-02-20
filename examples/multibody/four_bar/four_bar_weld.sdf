@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="four_bar_weld">
+    <!--
+    The same 4-bar crank/rocker mechanism as in four_bar_loop.sdf, but
+    with the user having to define a spanning tree plus constraint
+    model for it. Here we use the most straightforward transformation:
+    split one of the bodies and then add a weld constraint to put it
+    back together. We also have to make sure the remaining parent-child
+    ordering forms a tree. See four_bar_loop.sdf for more info about
+    the notation used here.
+
+                                                        * Rt
+              tie_shadow   0.5kg                        |
+              O−−−−−−−−−−−−−−−−−−−−−−−−−Xs−−−−−−−−−−−−−−|−−−−−−−−−−−−−* Tr
+                                                        |
+      tie O−−−−−−−−−−−−−−−−−−−−−−−−−−X−−−−−−−−−−−−−−−−−−−−−−−−−−−−−
+                        5m 0.5kg                        |
+          * Ct                                          |
+          |                                             | 
+          |                                             |
+      1m  |                                         2m  |
+      1kg |                                         2kg |
+          |                                             |              y
+          O crank                                       O rocker       |
+                                                                       |
+          *=======================O=====================*              +−−−−− x
+         Wc           2m        World        2m         Wr            /
+                                                                     z
+
+    The tie and its shadow each get half the original mass properties, and are
+    connected by a weld constraint between frames X and Xs. Note that the
+    Ct-tie joint remains on the origin link but the Tr-Rt joint moves to the
+    shadow, and also has to be reversed to Rt-Tr in order to define a tree
+    World-rocker-tie_shadow. (The other tree is World-crank-tie.) -->
+
+    <!-- Define links & their attached frames. -->
+
+    <frame name="Wc" attached_to="world">
+      <pose relative_to="world">-2 0 0 0 0 0</pose>
+    </frame>
+    <frame name="Wr" attached_to="world">
+      <pose relative_to="world">2 0 0 0 0 0</pose>
+    </frame>
+
+
+    <link name="crank">
+      <inertial>
+        <pose>0 0.5 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.0833333333333333</ixx>
+          <iyy>0</iyy>
+          <izz>0.0833333333333333</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Ct" attached_to="crank">
+      <pose relative_to="crank">0 1 0 0 0 0</pose>
+    </frame>
+
+
+    <link name="rocker">
+      <inertial>
+        <pose>0 1 0 0 0 0</pose>
+        <mass>2</mass>
+        <inertia>
+          <ixx>0.6666666666666667</ixx>
+          <iyy>0</iyy>
+          <izz>0.6666666666666667</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Rt" attached_to="rocker">
+      <pose relative_to="rocker">0 2 0 0 0 0</pose>
+    </frame>
+
+    <!-- Mass and inertia are divided by 2 so that
+         tie + tie_shadow add up to the original. -->
+    <link name="tie">
+      <inertial>
+        <pose>2.5 0 0 0 0 0</pose>
+        <mass>0.5</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <iyy>1.0416666666666667</iyy>
+          <izz>1.0416666666666667</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="X" attached_to="tie">
+      <pose relative_to="tie">2.5 0 0 0 0 0</pose>
+    </frame>
+
+    <link name="tie_shadow">
+      <inertial>
+        <pose>2.5 0 0 0 0 0</pose>
+        <mass>0.5</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <iyy>1.0416666666666667</iyy>
+          <izz>1.0416666666666667</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Xs" attached_to="tie_shadow">
+      <pose relative_to="tie_shadow">2.5 0 0 0 0 0</pose>
+    </frame>
+    <frame name="Tr" attached_to="tie_shadow">
+      <pose relative_to="tie_shadow">5 0 0 0 0 0</pose>
+    </frame>
+
+
+    <!-- Define the four joints -->
+
+    <joint name="world_crank" type="revolute">
+      <parent>Wc</parent>
+      <child>crank</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <joint name="world_rocker" type="revolute">
+      <parent>Wr</parent>
+      <child>rocker</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <joint name="crank_tie" type="revolute">
+      <parent>Ct</parent>
+      <child>tie</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <!-- We had to reverse parent and child here to form a tree. -->
+    <joint name="tie_rocker" type="revolute">
+      <parent>Rt</parent>
+      <child>Tr</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <!-- Now add the weld constraint to hold tie and tie_shadow together.
+         A weld constraint looks exactly like a weld joint. -->
+    
+    <drake:weld_constraint>
+      <parent>X</parent>
+      <child>Xs</child>
+    </drake:weld_constraint>
+
+  </model>
+</sdf>
