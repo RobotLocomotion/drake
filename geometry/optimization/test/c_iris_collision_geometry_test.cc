@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
 #include <memory>
 
@@ -7,7 +7,7 @@
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
@@ -19,7 +19,9 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+namespace {
 
+// Sets each entry in `a` and `b` as an affine polynomial of indeterminates `s`.
 void SetupPlane(const Eigen::Ref<const VectorX<symbolic::Variable>>& s,
                 Vector3<symbolic::Polynomial>* a, symbolic::Polynomial* b) {
   // Set each entry in a and b as an affine polynomial of s.
@@ -50,10 +52,10 @@ class CIrisCollisionGeometryTest : public CIrisToyRobotTest {
       : rational_forward_kin_{plant_},
         diagram_context_{diagram_->CreateDefaultContext()} {
     SetupPlane(rational_forward_kin_.s(), &a_, &b_);
-    plant_context_ = &(
-        diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get()));
-    scene_graph_context_ = &(diagram_->GetMutableSubsystemContext(
-        *scene_graph_, diagram_context_.get()));
+    plant_context_ =
+        &(plant_->GetMyMutableContextFromRoot(diagram_context_.get()));
+    scene_graph_context_ =
+        &(scene_graph_->GetMyMutableContextFromRoot(diagram_context_.get()));
 
     for (int i = 0; i < 3; ++i) {
       y_slack_(i) = symbolic::Variable("y" + std::to_string(i));
@@ -184,7 +186,7 @@ TEST_F(CIrisCollisionGeometryTest, Box) {
   const Eigen::Matrix<double, 3, 8> p_BV = box.X_BG() * p_GV;
 
   // Evaluate the rationals, and compare the evaluation result with a.dot(p_AV)
-  // + b
+  // + b.
   Eigen::Vector3d q_val(0.2, -0.1, 0.5);
   const Eigen::VectorXd s_val = SetQ(q_star, q_val);
 
@@ -256,7 +258,7 @@ TEST_F(CIrisCollisionGeometryTest, Convex) {
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
 
-  // negative side.
+  // Negative side.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
                      PlaneSide::kNegative, y_slack_, &rationals);
   EXPECT_EQ(rationals.size(), polytope.vertices().cols());
@@ -293,8 +295,9 @@ TEST_F(CIrisCollisionGeometryTest, Convex) {
 TEST_F(CIrisCollisionGeometryTest, Sphere) {
   // Test CIrisCollisionGeometry constructed from a sphere object.
   const auto& model_inspector = scene_graph_->model_inspector();
+  const auto& geometry_body = body_indices_[2];
   CIrisCollisionGeometry sphere(&model_inspector.GetShape(body2_sphere_),
-                                body_indices_[2], body2_sphere_,
+                                geometry_body, body2_sphere_,
                                 model_inspector.GetPoseInFrame(body2_sphere_));
   EXPECT_EQ(sphere.type(), CIrisGeometryType::kSphere);
   EXPECT_EQ(sphere.num_rationals(), 2);
@@ -303,7 +306,7 @@ TEST_F(CIrisCollisionGeometryTest, Sphere) {
   const multibody::BodyIndex expressed_body = body_indices_[3];
   const auto X_AB_multilinear =
       rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
-          q_star, body_indices_[2], expressed_body);
+          q_star, geometry_body, expressed_body);
 
   const Eigen::Vector3d q_val(0.2, -0.1, 0.4);
   const Eigen::Vector3d s_val = SetQ(q_star, q_val);
@@ -374,7 +377,7 @@ TEST_F(CIrisCollisionGeometryTest, Capsule) {
   }
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
 
-  // Negative side
+  // Negative side.
   std::vector<symbolic::RationalFunction> rationals;
   capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
                       PlaneSide::kNegative, y_slack_, &rationals);
@@ -608,7 +611,7 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   }
 
   {
-    // Distance to box
+    // Distance to box.
     const CIrisCollisionGeometry box(&(model_inspector.GetShape(body0_box)),
                                      body_indices[0], body0_box,
                                      model_inspector.GetPoseInFrame(body0_box));
@@ -636,7 +639,7 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   }
 
   {
-    // Distance to capsule
+    // Distance to capsule.
     const CIrisCollisionGeometry capsule(
         &(model_inspector.GetShape(body2_capsule)), body_indices[2],
         body2_capsule, model_inspector.GetPoseInFrame(body2_capsule));
@@ -660,7 +663,7 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   }
 
   {
-    // Distance to cylinder
+    // Distance to cylinder.
     const CIrisCollisionGeometry cylinder(
         &(model_inspector.GetShape(body4_cylinder)), body_indices[4],
         body4_cylinder, model_inspector.GetPoseInFrame(body4_cylinder));
@@ -690,6 +693,7 @@ GTEST_TEST(DistanceToHalfspace, Test) {
     EXPECT_NEAR(distance, distance_expected, 1E-10);
   }
 }
+}  // namespace
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
