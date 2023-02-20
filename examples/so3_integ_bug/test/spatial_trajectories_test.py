@@ -79,7 +79,6 @@ def make_sample_spatial_reference(use_rpy=True):
     acceleration at some point.
     """
     # N.B. The translation portions of this don't really matter.
-    # N.B. 
     As_p = [0.5, 0.6, 0.7]
     Ts_p = [1.0, 2.0, 3.0]
     T0_ratios_p = [0.0, 0.0, 0.0]
@@ -278,10 +277,12 @@ class Test(unittest.TestCase):
         body integrator vs. MultibodyPlant.
         """
         M = make_identity_inertia_matrix()
-        u = np.array([Variable(f"u{i}") for i in range(num_spatial)])
+        # u = np.array([Variable(f"u{i}") for i in range(num_spatial)])
+        u = np.zeros(num_spatial)
         rot_info = make_rot_info_quat_sym()
 
         T = Expression
+        # T = float
         builder = DiagramBuilder_[T]()
         u_sys = builder.AddSystem(ConstantVectorSource_[T](u))
         u_port = u_sys.get_output_port()
@@ -300,20 +301,27 @@ class Test(unittest.TestCase):
         mbp_context = mbp.GetMyContextFromRoot(context)
         naive_context = naive.GetMyContextFromRoot(context)
 
-        def calc_quat_dot_diff(q0, v0):
+        def calc_derivs(q0, v0):
             mbp.set_state(context, q0, v0)
             mbp_dx = mbp.EvalTimeDerivatives(mbp_context).CopyToVector()
             naive.set_state(context, q0, v0)
             naive_dx = naive.EvalTimeDerivatives(naive_context).CopyToVector()
-            diff_dx = sym_to_float(mbp_dx - naive_dx)
+            return mbp_dx, naive_dx
+
+        def calc_quat_dot_diff(q0, v0):
+            mbp_dx, naive_dx = calc_derivs(q0, v0)
+            diff_dx = to_float(mbp_dx - naive_dx)
             # Diff should only be in Jacobian mapping for quaternion rate.
             assert (diff_dx[4:] == 0).all()
             quat_dot_diff = diff_dx[:4]
+            print(quat_dot_diff)
             return quat_dot_diff
 
-        q0 = np.zeros(7)
+        q0 = np.zeros(7, dtype=T)
         q0[0] = 1.0
-        v0 = np.zeros(6)
+        v0 = np.zeros(6, dtype=T)
+
+        tol = 1e-15
 
         # Nominal should be matched.
         quat_dot_diff = calc_quat_dot_diff(q0, v0)
@@ -330,19 +338,27 @@ class Test(unittest.TestCase):
         q0[:4] = angle_axis_deg_to_quat(90, [0, 0, 1])
         v0[:3] = [0, 0, 1]
         quat_dot_diff = calc_quat_dot_diff(q0, v0)
-        assert_equal(quat_dot_diff, 0.0)
+        assert_allclose(quat_dot_diff, 0.0, tol=tol)
 
         q0[:4] = angle_axis_deg_to_quat(65, [0, 1, 1])
         v0[:3] = [0, 1, 1]
         quat_dot_diff = calc_quat_dot_diff(q0, v0)
-        assert_allclose(quat_dot_diff, 0.0, tol=1e-15)
+        assert_allclose(quat_dot_diff, 0.0, tol=tol)
 
-        # However, axis of rotation with a time derivative != 0 shows some
-        # inaccuracy.
+        # However, axis of rotation with a misalined axis of angular velocity
+        # (perhaps relating non-constant axis) shows a diff.
         q0[:4] = angle_axis_deg_to_quat(90, [0, 0, 1])
         v0[:3] = [0, 0.1, 1]
         quat_dot_diff = calc_quat_dot_diff(q0, v0)
         s2i = 1 / np.sqrt(2)
-        assert_equal(quat_dot_diff, [0, v0[1] * s2i, 0, 0])
+        assert_allclose(quat_dot_diff, [0, v0[1] * s2i, 0, 0], tol=tol)
+        print(f"Difference!")
 
-        print(f"Difference! {quat_dot_diff}")
+        # Look at dem symbolics.
+        v0[:3] = [0, Variable("a"), 1]
+        mbp_dx, naive_dx = calc_derivs(q0, v0)
+        diff_dx = mbp_dx - naive_dx
+        print(diff_dx[:4])
+        print(mbp_dx[1])
+        print(naive_dx[1])
+
