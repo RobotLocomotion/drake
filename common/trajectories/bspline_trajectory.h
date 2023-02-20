@@ -15,7 +15,9 @@ namespace drake {
 namespace trajectories {
 /** Represents a B-spline curve using a given `basis` with ordered
 `control_points` such that each control point is a matrix in ℝʳᵒʷˢ ˣ ᶜᵒˡˢ.
-@see math::BsplineBasis */
+@see math::BsplineBasis
+@tparam_default_scalar
+*/
 template <typename T>
 class BsplineTrajectory final : public trajectories::Trajectory<T> {
  public:
@@ -145,5 +147,9 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   math::BsplineBasis<T> basis_;
   std::vector<MatrixX<T>> control_points_;
 };
+
 }  // namespace trajectories
 }  // namespace drake
+
+DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
+    class drake::trajectories::BsplineTrajectory)
