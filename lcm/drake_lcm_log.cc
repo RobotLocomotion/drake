@@ -84,6 +84,12 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcmLog::Subscribe(
   return nullptr;
 }
 
+std::shared_ptr<DrakeSubscriptionInterface> DrakeLcmLog::SubscribeMultichannel(
+    std::string_view /* regex */, MultichannelHandlerFunction /* handler */) {
+  throw std::logic_error(
+      "DrakeLcmLog::SubscribeMultichannel is not implemented.");
+}
+
 std::shared_ptr<DrakeSubscriptionInterface> DrakeLcmLog::SubscribeAllChannels(
     MultichannelHandlerFunction handler) {
   if (is_write_) {
