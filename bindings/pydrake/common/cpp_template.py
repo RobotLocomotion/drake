@@ -122,10 +122,11 @@ class TemplateBase:
         """
         Returns module name for this object's parent scope.
 
-        Example::
+        Example:
+            ::
 
-            >>> pydrake.common.value.Value.get_module_name()
-            pydrake.common.value
+                >>> pydrake.common.value.Value.get_module_name()
+                pydrake.common.value
         """
         if isinstance(self._scope, types.ModuleType):
             return self._scope.__name__

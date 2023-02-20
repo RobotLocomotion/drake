@@ -150,14 +150,16 @@ def namedview(name, fields):
     is instantiated, it must be given the object that it will be a proxy for.
     Similar to ``namedtuple``.
 
-    Example::
-        MyView = namedview("MyView", ('a', 'b'))
+    Example:
+        ::
 
-        value = np.array([1, 2])
-        view = MyView(value)
-        view.a = 10  # `value` is now [10, 2]
-        value[1] = 100  # `view` is now [10, 100]
-        view[:] = 3  # `value` is now [3, 3]
+            MyView = namedview("MyView", ('a', 'b'))
+
+            value = np.array([1, 2])
+            view = MyView(value)
+            view.a = 10  # `value` is now [10, 2]
+            value[1] = 100  # `view` is now [10, 100]
+            view[:] = 3  # `value` is now [3, 3]
 
     For more details, see ``NamedViewBase``.
     """
