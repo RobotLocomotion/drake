@@ -192,7 +192,18 @@ struct Impl {
    public:
     using Base = Diagram<T>;
 
+    // Explicitly forward constructors as opposed to `using Base::Base`, as we
+    // want the protected scalar-converting constructors exposed publicly so
+    // that implementing Python classes can use them.
+
     DiagramPublic() = default;
+    explicit DiagramPublic(SystemScalarConverter converter)
+        : Base(std::move(converter)) {}
+
+    template <typename U>
+    explicit DiagramPublic(
+        SystemScalarConverter converter, const Diagram<U>& other)
+        : Base(std::move(converter), other) {}
   };
 
   // Provide flexible inheritance to leverage prior binding information, per
@@ -999,9 +1010,26 @@ Note: The above is for the C++ documentation. For Python, use
             doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc_deprecated);
 #pragma GCC diagnostic pop
 
-    DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
-        m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
+    auto diagram_cls =
+        DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
+            m, "Diagram", GetPyParam<T>(), doc.Diagram.doc);
+    diagram_cls  // BR
         .def(py::init<>(), doc.Diagram.ctor.doc_0args)
+        // See comment above for LeafSystem's converter-based constructor.
+        .def(py::init<SystemScalarConverter>(), py::arg("converter"),
+            doc.Diagram.ctor.doc_1args_converter);
+    auto def_diagram_init_U = [&diagram_cls](auto dummy) {
+      using U = decltype(dummy);
+      if constexpr (!std::is_same_v<T, U>) {
+        diagram_cls  // BR
+            .def(py::init<SystemScalarConverter, const Diagram<U>&>(),
+                py::arg("converter"), py::arg("other"),
+                doc.Diagram.ctor
+                    .doc_2args_drakesystemsSystemScalarConverter_constDiagram);
+      }
+    };
+    type_visit(def_diagram_init_U, CommonScalarPack{});
+    diagram_cls  // BR
         .def(
             "connection_map",
             [](Diagram<T>* self) {
