@@ -29,6 +29,7 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(publish_proximity));
     a->Visit(DRAKE_NVP(default_proximity_color));
     a->Visit(DRAKE_NVP(publish_contacts));
+    a->Visit(DRAKE_NVP(publish_inertia));
     a->Visit(DRAKE_NVP(enable_meshcat_creation));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
     a->Visit(DRAKE_NVP(enable_alpha_sliders));
@@ -60,6 +61,9 @@ struct VisualizationConfig {
 
   /** Whether to show contact forces. */
   bool publish_contacts{true};
+
+  /** Whether to show body inertia. */
+  bool publish_inertia{true};
 
   /** Whether to create a Meshcat object if needed. */
   bool enable_meshcat_creation{true};
