@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/basic_vector.h"
 #include "drake/systems/framework/diagram_continuous_state.h"
@@ -238,10 +239,10 @@ TEST_F(ContinuousStateTest, Clone) {
 TEST_F(ContinuousStateTest, StringStream) {
   std::stringstream s;
   s << "hello " << continuous_state_->get_vector() << " world";
-  std::stringstream s_expected;
-  VectorXd eigen_vector = continuous_state_->CopyToVector();
-  s_expected << "hello " << eigen_vector.transpose() << " world";
-  EXPECT_EQ(s.str(), s_expected.str());
+  const std::string expected =
+      fmt::format("hello {} world",
+                  fmt_eigen(continuous_state_->CopyToVector().transpose()));
+  EXPECT_EQ(s.str(), expected);
 }
 
 // Tests for DiagramContinousState.

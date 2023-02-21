@@ -7,7 +7,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -66,7 +65,6 @@ using std::make_shared;
 using std::map;
 using std::move;
 using std::numeric_limits;
-using std::ostringstream;
 using std::pair;
 using std::runtime_error;
 using std::set;
@@ -126,9 +124,7 @@ void CheckAddedVariable(const MathematicalProgram& prog, const T& var, int rows,
   EXPECT_EQ(var.rows(), rows);
   EXPECT_EQ(var.cols(), cols);
   // Checks the name of the newly added variables.
-  ostringstream msg_buff;
-  msg_buff << var << endl;
-  EXPECT_EQ(msg_buff.str(), var_name);
+  EXPECT_EQ(fmt::to_string(fmt_eigen(var)), var_name);
   // Checks num_vars() function.
   const int num_new_vars =
       is_symmetric ? var.rows() * (var.rows() + 1) / 2 : var.size();
@@ -166,9 +162,7 @@ void CheckAddedIndeterminates(const MathematicalProgram& prog,
                               const Eigen::MatrixBase<Derived>& indeterminates,
                               const string& indeterminates_name) {
   // Checks the name of the newly added indeterminates.
-  ostringstream msg_buff;
-  msg_buff << indeterminates << endl;
-  EXPECT_EQ(msg_buff.str(), indeterminates_name);
+  EXPECT_EQ(fmt::to_string(fmt_eigen(indeterminates)), indeterminates_name);
   // Checks num_indeterminates() function.
   const int num_new_indeterminates = indeterminates.size();
   EXPECT_EQ(prog.num_indeterminates(), num_new_indeterminates);
@@ -203,7 +197,7 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariables1) {
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables(2, 3, "X");
   CheckAddedVariable<MatrixXDecisionVariable>(
-      prog, X, 2, 3, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false,
+      prog, X, 2, 3, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -212,7 +206,7 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariable2) {
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<2, 3>("X");
   CheckAddedVariable<MatrixDecisionVariable<2, 3>>(
-      prog, X, 2, 3, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n", false,
+      prog, X, 2, 3, "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -221,7 +215,7 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariable3) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(4, "x");
   CheckAddedVariable<VectorXDecisionVariable>(
-      prog, x, 4, 1, "x(0)\nx(1)\nx(2)\nx(3)\n", false,
+      prog, x, 4, 1, "x(0)\nx(1)\nx(2)\nx(3)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -230,7 +224,7 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariable4) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<4>("y");
   CheckAddedVariable<VectorDecisionVariable<4>>(
-      prog, x, 4, 1, "y(0)\ny(1)\ny(2)\ny(3)\n", false,
+      prog, x, 4, 1, "y(0)\ny(1)\ny(2)\ny(3)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -239,7 +233,7 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariable5) {
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<2, 3>(2, 3, "Y");
   CheckAddedVariable<MatrixDecisionVariable<2, 3>>(
-      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n", false,
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -249,7 +243,7 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariables6) {
   auto X =
       prog.NewContinuousVariables<Eigen::Dynamic, Eigen::Dynamic>(2, 3, "Y");
   CheckAddedVariable<MatrixXDecisionVariable>(
-      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n", false,
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -258,7 +252,7 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariables7) {
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<2, Eigen::Dynamic>(2, 3, "Y");
   CheckAddedVariable<MatrixDecisionVariable<2, Eigen::Dynamic>>(
-      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n", false,
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -267,13 +261,13 @@ GTEST_TEST(TestAddVariable, TestAddContinuousVariables8) {
   MathematicalProgram prog;
   auto X = prog.NewContinuousVariables<Eigen::Dynamic, 3>(2, 3, "Y");
   CheckAddedVariable<MatrixDecisionVariable<Eigen::Dynamic, 3>>(
-      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)\n", false,
+      prog, X, 2, 3, "Y(0,0) Y(0,1) Y(0,2)\nY(1,0) Y(1,1) Y(1,2)", false,
       MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(TestAddVariable, TestAddContinuousVariables9) {
   // Adds continuous variables with default variable name.
-  const std::string X_names = "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n";
+  const std::string X_names = "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)";
   MathematicalProgram prog1;
   auto X1 = prog1.NewContinuousVariables(2, 3);
   CheckAddedVariable<MatrixXDecisionVariable>(
@@ -299,7 +293,7 @@ GTEST_TEST(TestAddVariable, TestAddSymmetricVariable1) {
   auto X = prog.NewSymmetricContinuousVariables<3>("X");
   CheckAddedVariable<MatrixDecisionVariable<3, 3>>(
       prog, X, 3, 3,
-      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)\n",
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)",
       true, MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -309,7 +303,7 @@ GTEST_TEST(TestAddVariable, TestAddSymmetricVariable2) {
   auto X = prog.NewSymmetricContinuousVariables(3, "X");
   CheckAddedVariable<MatrixXDecisionVariable>(
       prog, X, 3, 3,
-      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)\n",
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)",
       true, MathematicalProgram::VarType::CONTINUOUS);
 }
 
@@ -318,7 +312,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable1) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables(2, 3, "B");
   CheckAddedVariable<MatrixXDecisionVariable>(
-      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n", false,
+      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -327,7 +321,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable2) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<Eigen::Dynamic, Eigen::Dynamic>(2, 3, "B");
   CheckAddedVariable<MatrixXDecisionVariable>(
-      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n", false,
+      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -336,7 +330,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable3) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables(4, "B");
   CheckAddedVariable<VectorXDecisionVariable>(
-      prog, X, 4, 1, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
+      prog, X, 4, 1, "B(0)\nB(1)\nB(2)\nB(3)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -345,7 +339,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable4) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<4>("B");
   CheckAddedVariable<VectorDecisionVariable<4>>(
-      prog, X, 4, 1, "B(0)\nB(1)\nB(2)\nB(3)\n", false,
+      prog, X, 4, 1, "B(0)\nB(1)\nB(2)\nB(3)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -354,7 +348,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable5) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<2, 3>("B");
   CheckAddedVariable<MatrixDecisionVariable<2, 3>>(
-      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n", false,
+      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -363,7 +357,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable6) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<2, 3>(2, 3, "B");
   CheckAddedVariable<MatrixDecisionVariable<2, 3>>(
-      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n", false,
+      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -372,7 +366,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable7) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<2, Eigen::Dynamic>(2, 3, "B");
   CheckAddedVariable<MatrixDecisionVariable<2, Eigen::Dynamic>>(
-      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n", false,
+      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -381,7 +375,7 @@ GTEST_TEST(TestAddVariable, TestAddBinaryVariable8) {
   MathematicalProgram prog;
   auto X = prog.NewBinaryVariables<Eigen::Dynamic, 3>(2, 3, "B");
   CheckAddedVariable<MatrixDecisionVariable<Eigen::Dynamic, 3>>(
-      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)\n", false,
+      prog, X, 2, 3, "B(0,0) B(0,1) B(0,2)\nB(1,0) B(1,1) B(1,2)", false,
       MathematicalProgram::VarType::BINARY);
 }
 
@@ -509,7 +503,7 @@ GTEST_TEST(NewIndeterminates, DynamicSizeMatrix) {
   EXPECT_EQ(X.rows(), 2);
   EXPECT_EQ(X.cols(), 3);
   CheckAddedIndeterminates(prog, X,
-                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)");
 }
 
 GTEST_TEST(NewIndeterminates, StaticSizeMatrix) {
@@ -519,7 +513,7 @@ GTEST_TEST(NewIndeterminates, StaticSizeMatrix) {
   static_assert(is_same_v<decltype(X), MatrixIndeterminate<2, 3>>,
                 "should be a static sized matrix");
   CheckAddedIndeterminates(prog, X,
-                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)\n");
+                           "X(0,0) X(0,1) X(0,2)\nX(1,0) X(1,1) X(1,2)");
 }
 
 GTEST_TEST(NewIndeterminates, DynamicSizeVector) {
@@ -529,7 +523,7 @@ GTEST_TEST(NewIndeterminates, DynamicSizeVector) {
   static_assert(is_same_v<decltype(x), VectorXIndeterminate>,
                 "Should be a VectorXDecisionVariable object.");
   EXPECT_EQ(x.rows(), 4);
-  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)");
 }
 
 GTEST_TEST(NewIndeterminates, StaticSizeVector) {
@@ -538,7 +532,7 @@ GTEST_TEST(NewIndeterminates, StaticSizeVector) {
   auto x = prog.NewIndeterminates<4>("x");
   static_assert(is_same_v<decltype(x), VectorIndeterminate<4>>,
                 "Should be a VectorXDecisionVariable object.");
-  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)\n");
+  CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)");
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminates1) {

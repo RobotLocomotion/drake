@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":extract_double",
         ":find_resource",
         ":find_runfiles",
+        ":fmt",
         ":hash",
         ":identifier",
         ":is_approx_equal_abstol",
@@ -60,6 +61,23 @@ drake_cc_package_library(
     ],
 )
 
+drake_cc_library(
+    name = "fmt",
+    srcs = [
+        "fmt_eigen.cc",
+    ],
+    hdrs = [
+        "fmt.h",
+        "fmt_eigen.h",
+        "fmt_ostream.h",
+    ],
+    visibility = ["//common/test_utilities:__pkg__"],
+    deps = [
+        "@eigen",
+        "@fmt",
+    ],
+)
+
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
 drake_cc_library(
@@ -76,13 +94,11 @@ drake_cc_library(
         "drake_deprecated.h",
         "drake_throw.h",
         "eigen_types.h",
-        "fmt.h",
-        "fmt_eigen.h",
-        "fmt_ostream.h",
         "never_destroyed.h",
         "text_logging.h",
     ],
     deps = [
+        ":fmt",
         "@eigen",
         "@fmt",
         "@spdlog",

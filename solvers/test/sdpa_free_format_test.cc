@@ -1100,7 +1100,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA1) {
   std::getline(infile, line);
   EXPECT_EQ(line, "2 -2 ");
   std::getline(infile, line);
-  EXPECT_EQ(line, "10 20");
+  EXPECT_EQ(line, "10.0 20.0");
   std::getline(infile, line);
   EXPECT_EQ(line, "0 1 1 1 3");
   std::getline(infile, line);
@@ -1159,7 +1159,7 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_two_slack) {
   std::getline(infile, line);
   EXPECT_EQ(line, "2 -4 ");
   std::getline(infile, line);
-  EXPECT_EQ(line, "1");
+  EXPECT_EQ(line, "1.0");
   std::getline(infile, line);
   EXPECT_EQ(line, "0 1 1 2 -0.5");
   std::getline(infile, line);
@@ -1243,7 +1243,7 @@ GTEST_TEST(SdpaFreeFormatTest,
   EXPECT_EQ(line, "2 3 ");
   std::getline(infile, line);
   // constraint rhs
-  EXPECT_EQ(line, "1 0 0 0");
+  EXPECT_EQ(line, "1.0 0.0 0.0 0.0");
   // Each non-zero entry in C
   std::getline(infile, line);
   EXPECT_EQ(line, "0 1 1 2 -0.5");

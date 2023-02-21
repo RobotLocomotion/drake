@@ -885,10 +885,17 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
     }
     sdpa_file << "\n";
     // Forth line, the right-hand side of the constraint g.
-    std::stringstream g_stream;
-    g_stream << std::setprecision(20);
-    g_stream << g.transpose() << "\n";
-    sdpa_file << g_stream.str();
+    for (int i = 0; i < g.size(); ++i) {
+      if (i > 0) {
+        sdpa_file << " ";
+      }
+      // Different versions of fmt disagree on whether to omit the trailing
+      // ".0" when formatting integer-valued floating-point numbers. Force
+      // the ".0" in all cases by using the "#" option for floats, so that
+      // our output is consistent on all platforms.
+      sdpa_file << fmt::format("{:#}", g[i]);
+    }
+    sdpa_file << "\n";
     // block_start_rows[i] records the starting row index of the i'th block in
     // X. row_to_block_indices[i] records the index of the block that X(i, i)
     // belongs to.
