@@ -1,17 +1,3 @@
-# Copyright 2022 Open Source Robotics Foundation, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import lxml.etree as ET
 import os
 import unittest
@@ -99,6 +85,61 @@ def get_joints(plant, model_instances=None):
     )
 
 
+# Checks that body_a and body_b are effectively the same.
+def assert_bodies_same(plant_a, context_a, body_a, plant_b, context_b, body_b):
+    if (body_a.name() != body_b.name()):
+        return False
+
+    # Check that positions in the world frame reference are also the same
+    directives_body_transform = \
+        plant_a.EvalBodyPoseInWorld(
+            context_a,
+            body_a)
+    sdformat_body_transform = plant_b.EvalBodyPoseInWorld(
+        context_b, body_b)
+    directives_body_transform.IsNearlyEqualTo(
+        sdformat_body_transform, 1e-10)
+
+    # Check frames attached to this body
+    frames_b = get_frames_attached_to(
+        plant_b, [body_b])
+    frames_a = get_frames_attached_to(
+        plant_a, [body_a])
+
+    # All frames created through model directives would have
+    # been created when loading the SDFormat
+    if not all(
+            frame_a.name()
+            in
+            [frame_b.name()
+                for frame_b in frames_b]
+            for frame_a in frames_a):
+        return False
+
+    return True
+
+
+# Compares if two lists of joints are similar. If they have the same
+# child and parent, body name and the same type, we consider them the same.
+def are_joints_same(joints_a, joints_b):
+    for i in range(len(joints_a)):
+        for j in range(len(joints_b)):
+            if joints_a[i].parent_body().name() == \
+                joints_b[j].parent_body().name() \
+                and joints_a[i].child_body().name() == \
+                joints_b[j].child_body().name() \
+                and joints_a[i].type_name() == \
+                    joints_b[j].type_name():
+                joints_a.pop(i)
+                joints_b.pop(j)
+
+    # All joints should have been verified
+    if len(joints_a) == 0 and len(joints_b) == 0:
+        return True
+    else:
+        return False
+
+
 class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                      metaclass=ValueParameterizedTest):
 
@@ -119,7 +160,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                for file_path in files_to_test])
     def test_through_plant_comparison(self, *, file_path):
         # Convert
-        sdformat_tree = convert_directive(file_path)
+        sdformat_tree = convert_directive(file_path, toplevel_entity='world')
         sfdormat_result = ET.tostring(
             sdformat_tree, pretty_print=True, encoding="unicode")
 
@@ -143,7 +184,6 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         sdformat_plant.Finalize()
 
         # Compare plants
-        # The number of model instances should be the same
         self.assertEqual(sdformat_plant.num_model_instances(),
                          directives_plant.num_model_instances())
 
@@ -165,64 +205,25 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             self.assertTrue(model_found)
 
             # Check Model Bodies and corresponding Frames
+            model_instance = ModelInstanceIndex(i)
             directives_bodies = get_bodies(
-                directives_plant, [ModelInstanceIndex(i)])
+                directives_plant, [model_instance])
+            directives_context = directives_plant.CreateDefaultContext()
+            sdformat_intance_index = ModelInstanceIndex(sdformat_model_index)
             sdformat_bodies = get_bodies(
-                sdformat_plant, [
-                    ModelInstanceIndex(sdformat_model_index)])
-            for sdformat_body, directives_body in zip(
-                    sdformat_bodies, directives_bodies):
-                self.assertEqual(sdformat_body.name(), directives_body.name())
+                sdformat_plant, [sdformat_intance_index])
+            sdformat_context = sdformat_plant.CreateDefaultContext()
 
-                # Check that positions in the world frame reference
-                # are also the same
-                directives_body_transform = \
-                    directives_plant.EvalBodyPoseInWorld(
-                        directives_plant.CreateDefaultContext(),
-                        directives_body)
-                sdformat_body_transform = sdformat_plant.EvalBodyPoseInWorld(
-                    sdformat_plant.CreateDefaultContext(), sdformat_body)
-                directives_body_transform.IsNearlyEqualTo(
-                    sdformat_body_transform, 1e-10)
-
-                # Check frames attached to this body
-                sdformat_frames = get_frames_attached_to(
-                    sdformat_plant, [sdformat_body])
-                directives_frames = get_frames_attached_to(
-                    directives_plant, [directives_body])
-                # All frames created through model directives would have
-                # been created when loading the SDFormat
-                self.assertTrue(
-                    all(
-                        frame.name()
-                        in
-                        [sdformat_frame.name()
-                         for sdformat_frame in sdformat_frames]
-                        for frame in directives_frames))
+            for sdformat_body, directives_body in zip(sdformat_bodies,
+                                                      directives_bodies):
+                self.assertTrue(assert_bodies_same(
+                    directives_plant, directives_context, directives_body,
+                    sdformat_plant, sdformat_context, sdformat_body))
 
             # Check Model Joints
-            directives_joints = get_joints(
-                directives_plant, [ModelInstanceIndex(i)])
-            sdformat_joints = get_joints(
-                sdformat_plant, [
-                    ModelInstanceIndex(sdformat_model_index)])
-            for i in range(len(directives_joints)):
-                for j in range(len(sdformat_joints)):
-                    # TODO (marcoag): If they have the same child and parent
-                    # body name and the same type, we consider them the same
-                    # joint. Anything else we should check?
-                    if sdformat_joints[j].parent_body().name() == \
-                       directives_joints[i].parent_body().name() \
-                       and sdformat_joints[j].child_body().name() == \
-                       directives_joints[i].child_body().name() \
-                       and sdformat_joints[j].type_name() == \
-                       directives_joints[i].type_name():
-                        sdformat_joints.pop(j)
-                        directives_joints.pop(i)
-
-            # All joints should have been verified
-            self.assertEqual(len(sdformat_joints), 0)
-            self.assertEqual(len(directives_joints), 0)
+            self.assertTrue(are_joints_same(
+                get_joints(directives_plant, [model_instance]),
+                get_joints(sdformat_plant, [sdformat_intance_index])))
 
     def test_error_no_directives(self):
         with self.assertRaisesRegex(
@@ -242,9 +243,8 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
     def test_error_implicit_hidden_base_frame(self):
         with self.assertRaisesRegex(
-                ConversionError, 'Failed trying to find scope for frame: '
-                r'\[frame\] when trying to add frame: '
-                r'\[frame_name\].'):
+                ConversionError, 'Unable to find scope for frame: '
+                r'\[frame\] while adding frame: \[frame_name\].'):
             convert_directive('multibody/parsing/test/'
                               'model_directives_to_sdformat_files/'
                               'implicit_hidden_base_frame.yaml')
@@ -296,101 +296,83 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                 'model_directives_to_sdformat_files/too_many_models.yaml')
 
     def test_add_model_instance_add_directives(self):
-        expected_xml = '<sdf version="1.9">'\
-            '<world name="add_directives"><model name="model_instance">'\
-            '<include merge="true">'\
-            '<uri>package://model_directives_to_sdformat_files/'\
-            'hidden_frame.sdf</uri>'\
-            '</include></model></world></sdf>'
+        os.environ['ROS_PACKAGE_PATH'] = 'multibody/parsing/'
+        expected_xml = """<sdf version="1.9">
+  <model name="add_directives">
+    <model name="model_instance">
+      <include merge="true">
+        <uri>package://model_directives_to_sdformat_files/hidden_frame.sdf</uri>
+      </include>
+    </model>
+  </model>
+</sdf>
+"""
         result = convert_directive(
             'multibody/parsing/test/'
             'model_directives_to_sdformat_files/add_directives.yaml', True)
-        self.assertEqual(expected_xml, ET.tostring(result, encoding="unicode"))
+        print(ET.tostring(result,
+                          pretty_print=True,
+                          encoding="unicode"))
+        self.assertEqual(expected_xml, ET.tostring(result,
+                                                   pretty_print=True,
+                                                   encoding="unicode"))
 
     def test_resulting_xml_and_weld_structures(self):
         result = convert_directive(
             'multibody/parsing/test/'
             'model_directives_to_sdformat_files/inject_frames.yaml', True)
-        root = result.getroot()
-        self.assertEqual(len(root.getchildren()), 1)
-        root_model = root.getchildren()[0]
-
-        # Check inject_frames model
-        self.assertEqual(root_model.tag, 'world')
-        self.assertEqual(root.getchildren()[0].attrib['name'], 'inject_frames')
-
-        # Check fixed joints
-        self.assertEqual(len(root_model.findall('joint')), 2)
-        joint1 = root_model.findall('joint')[0]
-        self.assertEqual(joint1.attrib['type'], 'fixed')
-        self.assertEqual(joint1.find('parent').text,
-                         'top_level_model::top_injected_frame')
-        self.assertEqual(joint1.find('child').text, 'mid_level_model::base')
-        joint2 = root_model.findall('joint')[1]
-        self.assertEqual(joint2.attrib['type'], 'fixed')
-        self.assertEqual(joint2.find('parent').text,
-                         'mid_level_model::mid_injected_frame')
-        self.assertEqual(joint2.find('child').text, 'bottom_level_model::base')
-
-        # Check top_level_model
-        self.assertEqual(len(root_model.findall('model')), 2)
-        model1 = root_model.findall('model')[0]
-        self.assertEqual(model1.attrib['name'], 'top_level_model')
-        self.assertEqual(len(model1.findall('frame')), 1)
-        model1_frame = model1.findall('frame')[0]
-        self.assertEqual(model1_frame.attrib['name'], 'top_injected_frame')
-        self.assertEqual(model1_frame.attrib['attached_to'], 'base')
-        self.assertEqual(model1_frame.find('pose').attrib['degrees'], 'true')
-        self.assertEqual(len(model1.findall('include')), 1)
-        model1_include = model1.findall('include')[0]
-        self.assertEqual(model1_include.attrib['merge'], 'true')
-        self.assertEqual(model1_include.find('name').text, 'top_level_model')
-        self.assertEqual(model1_include.find('uri').text,
-                         'package://process_model_directives_test/'
-                         'simple_model.sdf')
-
-        # Check mid_level_model
-        model2 = root_model.findall('model')[1]
-        self.assertEqual(model2.attrib['name'], 'mid_level_model')
-        self.assertEqual(model2.attrib['placement_frame'], 'base')
-        self.assertEqual(len(model2.findall('frame')), 1)
-        model2_frame = model2.findall('frame')[0]
-        self.assertEqual(model2_frame.attrib['name'], 'mid_injected_frame')
-        self.assertEqual(model2_frame.attrib['attached_to'], 'base')
-        self.assertEqual(model2_frame.find('pose').attrib['degrees'], 'true')
-        self.assertEqual(len(model2.findall('include')), 1)
-        model2_include = model2.findall('include')[0]
-        self.assertEqual(model2_include.attrib['merge'], 'true')
-        self.assertEqual(model2_include.find('name').text, 'mid_level_model')
-        self.assertEqual(model2_include.find('uri').text,
-                         'package://process_model_directives_test/'
-                         'simple_model.sdf')
-        self.assertEqual(len(model2.findall('pose')), 1)
-        model2_pose = model2.findall('pose')[0]
-        self.assertEqual(model2_pose.attrib['relative_to'],
-                         'top_level_model::top_injected_frame')
-
-        # Check bottom_levelmodel
-        self.assertEqual(len(root_model.findall('include')), 1)
-        include = root_model.findall('include')[0]
-        self.assertEqual(include.find('name').text, 'bottom_level_model')
-        self.assertEqual(include.find('uri').text,
-                         'package://process_model_directives_test/'
-                         'simple_model.sdf')
-        self.assertEqual(include.find('placement_frame').text, 'base')
-        self.assertEqual(include.find('pose').attrib['relative_to'],
-                         'mid_level_model::mid_injected_frame')
+        expected_xml = """<sdf version="1.9">
+  <model name="inject_frames">
+    <model name="top_level_model">
+      <include merge="true">
+        <name>top_level_model</name>
+        <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      </include>
+      <frame name="top_injected_frame" attached_to="base">
+        <pose degrees="true">1 2 3   10.0 20.0 30.0</pose>
+      </frame>
+    </model>
+    <model name="mid_level_model" placement_frame="base">
+      <pose relative_to="top_level_model::top_injected_frame"/>
+      <include merge="true">
+        <name>mid_level_model</name>
+        <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      </include>
+      <frame name="mid_injected_frame" attached_to="base">
+        <pose degrees="true">1 2 3   0 0 0</pose>
+      </frame>
+    </model>
+    <include>
+      <name>bottom_level_model</name>
+      <uri>package://process_model_directives_test/simple_model.sdf</uri>
+      <placement_frame>base</placement_frame>
+      <pose relative_to="mid_level_model::mid_injected_frame"/>
+    </include>
+    <joint name="top_level_model__top_injected_frame___to___mid_level_"""\
+        """mid_level_model__base___weld_joint" type="fixed">
+      <parent>top_level_model::top_injected_frame</parent>
+      <child>mid_level_model::base</child>
+    </joint>
+    <joint name="mid_level_model__mid_injected_frame___to___"""\
+        """bottom_level_model__base___weld_joint" type="fixed">
+      <parent>mid_level_model::mid_injected_frame</parent>
+      <child>bottom_level_model::base</child>
+    </joint>
+  </model>
+</sdf>
+"""
 
     def test_main(self):
+        os.environ['ROS_PACKAGE_PATH'] = 'multibody/parsing/'
         self.assertEqual(0, model_directives_to_sdformat.main(
             ['-m',
              'multibody/parsing/test/'
              'model_directives_to_sdformat_files/hidden_frame.yaml',
-             '-n', '-c', '-p', '.']))
+             '-e', '-c']))
 
-    def test_follow_add_directives(self):
+    def test_expand_directives_add_directives(self):
+        os.environ['ROS_PACKAGE_PATH'] = 'multibody/parsing/'
         self.assertEqual(0, model_directives_to_sdformat.main(
             ['-m',
              'multibody/parsing/test/'
-             'model_directives_to_sdformat_files/add_directives.yaml',
-             '-p', '.']))
+             'model_directives_to_sdformat_files/add_directives.yaml']))
