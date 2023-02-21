@@ -40,14 +40,14 @@ const std::vector<GeometryId>& GetCollisionGeometriesForBody(
       plant.GetCollisionGeometriesForBody(body);
   if (warn_for_multi_geometry_body && geometries.size() > 1) {
     static const logging::Warn log_once(
-        "MultibodyPlant has at least one body '{}/{}' with multiple contact "
+        "MultibodyPlant has at least one body '{}' with multiple contact "
         "geometries. Contacts with this body may be unclear in the visualizer "
         "if contact is made with multiple geometries simultaneously. To "
         "clarify the visualization, use ConnectContactResultsToDrakeVisualizer "
         "instead of the ContactResultsToLcm constructor, and pass a SceneGraph "
         "to that function. See the documentation for ContactResultsToLcmSystem "
         "for details.",
-        plant.GetModelInstanceName(body.model_instance()), body.name());
+        body.scoped_name());
     unused(log_once);
   }
   return geometries;

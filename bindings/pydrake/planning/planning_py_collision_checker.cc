@@ -35,14 +35,6 @@ void DefinePlanningCollisionChecker(py::module m) {
             cls_doc.plant.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
             py_rvp::reference_internal, cls_doc.get_body.doc)
-        .def("GetScopedName",
-            overload_cast_explicit<std::string, const Frame<double>&>(
-                &Class::GetScopedName),
-            py::arg("frame"), cls_doc.GetScopedName.doc_1args_frame)
-        .def("GetScopedName",
-            overload_cast_explicit<std::string, const Body<double>&>(
-                &Class::GetScopedName),
-            py::arg("body"), cls_doc.GetScopedName.doc_1args_body)
         .def("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
         .def("IsPartOfRobot",

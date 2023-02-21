@@ -251,8 +251,14 @@ PYBIND11_MODULE(parsing, m) {
       py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
       doc.parsing.GetScopedFrameByName.doc);
 
-  m.def("GetScopedFrameName", &parsing::GetScopedFrameName, py::arg("plant"),
-      py::arg("frame"), doc.parsing.GetScopedFrameName.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("GetScopedFrameName",
+      WrapDeprecated(doc.parsing.GetScopedFrameName.doc_deprecated,
+          &parsing::GetScopedFrameName),
+      py::arg("plant"), py::arg("frame"),
+      doc.parsing.GetScopedFrameName.doc_deprecated);
+#pragma GCC diagnostic push
 }
 
 }  // namespace pydrake
