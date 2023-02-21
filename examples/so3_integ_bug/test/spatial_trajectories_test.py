@@ -1,6 +1,5 @@
 """
-Shows possible bug in MultibodyPlant dynamics by integrating a
-SE(3) trajectory that has a non-constant axis of rotation.
+Shows integration of SE(3) trajectory that has a non-constant axis of rotation.
 """
 
 import unittest
@@ -116,33 +115,38 @@ def assert_allclose(a, b, *, tol):
     np.testing.assert_allclose(a, b, rtol=0, atol=tol)
 
 
+def assert_not_allclose(test, a, b, *, tol):
+    with test.assertRaises(AssertionError):
+        assert_allclose(a, b, tol=tol)
+
+
 class Test(unittest.TestCase):
     def setUp(self):
         warnings.simplefilter("ignore", RuntimeWarning)
 
-    def test_rotation_integration(self):
-        self.check_rotation_integration(use_rpy=True)
-        self.check_rotation_integration(use_rpy=False)
+    def test_rotation_integration_rpy(self):
+        reference, rot_info = make_sample_rotation_reference(use_rpy=True)
+        self.check_rotation_integration(reference, rot_info)
 
-    def test_rotation_integration_drake(self):
+    def test_rotation_integration_quat(self):
+        reference, rot_info = make_sample_rotation_reference(use_rpy=False)
+        self.check_rotation_integration(reference, rot_info)
+
+    def test_rotation_integration_quat_drake(self):
         # Fails, even with large tolerance.
-        with self.assertRaises(AssertionError):
-            self.check_rotation_integration(
-                use_rpy=False, use_drake=True, tol=0.1
-            )
+        for use_pinv in [False, True]:
+            reference, _ = make_sample_rotation_reference(use_rpy=False)
+            rot_info = make_rot_info_quat_drake_jacobian(use_pinv=use_pinv)
+            self.check_rotation_integration(reference, rot_info, tol=0.1)
 
     def check_rotation_integration(
-        self, *, use_rpy, use_drake=False, tol=1e-5, accuracy=1e-6,
+        self, reference, rot_info, *, tol=1e-5, accuracy=1e-6,
     ):
         """
         With a given SO(3) trajectory through time, take the angular
         acceleration, integrate it forward, and ensure we recover the original
         trajectory with our given coordinate representation.
         """
-        reference, rot_info = make_sample_rotation_reference(use_rpy)
-        if use_drake:
-            assert not use_rpy
-            rot_info = make_rot_info_quat_drake_jacobian()
 
         num_r = rot_info.num_rot
 
@@ -186,7 +190,6 @@ class Test(unittest.TestCase):
         simulator.Initialize()
         simulator.set_monitor(monitor)
 
-        print(f"Check rotation integration w/ use_rpy={use_rpy}...")
         try:
             simulator.AdvanceTo(3.0)
         except AssertionError:
@@ -208,9 +211,7 @@ class Test(unittest.TestCase):
         """
         Same as above, but use MultibodyPlant.
         """
-        # WARNING: This currently fails :(
-        with self.assertRaises(AssertionError):
-            self.check_floating_tracking(use_rpy=False, mode="full_mbp")
+        self.check_floating_tracking(use_rpy=False, mode="full_mbp")
 
     def test_floating_tracking_naive_mbp(self):
         self.check_floating_tracking(use_rpy=False, mode="naive_mbp")
@@ -299,8 +300,8 @@ class Test(unittest.TestCase):
         u = np.zeros(num_spatial)
         rot_info = make_rot_info_quat_sym()
 
-        T = Expression
-        # T = float
+        # T = Expression
+        T = float
         builder = DiagramBuilder_[T]()
         u_sys = builder.AddSystem(ConstantVectorSource_[T](u))
         u_port = u_sys.get_output_port()
@@ -364,28 +365,35 @@ class Test(unittest.TestCase):
         assert_allclose(quat_dot_diff, 0.0, tol=tol)
 
         # However, axis of rotation with a misalined axis of angular velocity
-        # (perhaps relating non-constant axis) shows a diff.
+        # (perhaps relating non-constant axis) used to show a diff.
         q0[:4] = angle_axis_deg_to_quat(90, [0, 0, 1])
         v0[:3] = [0, 0.1, 1]
         quat_dot_diff = calc_quat_dot_diff(q0, v0)
         s2i = 1 / np.sqrt(2)
-        assert_allclose(quat_dot_diff, [0, v0[1] * s2i, 0, 0], tol=tol)
-        print(f"Difference!")
+        assert_allclose(quat_dot_diff, 0, tol=tol)
 
-        # Look at dem symbolics.
-        v0[:3] = [0, Variable("a"), 1]
-        mbp_dx, naive_dx = calc_derivs(q0, v0)
-        diff_dx = mbp_dx - naive_dx
-        print(diff_dx[:4])
-        print(mbp_dx[1])
-        print(naive_dx[1])
+    def test_rate_jacobian_difference(self):
+        calc_a = make_rot_info_quat_sym().calc_rate_jacobian
+        calc_b = make_rot_info_quat_drake_jacobian().calc_rate_jacobian
 
-        # Moar symbolics.
-        q0[:4] = [Variable(n) for n in "wxyz"]
-        quat = q0[:4]
-        mbp_dx, naive_dx = calc_derivs(q0, v0)
-        diff_dx = mbp_dx - naive_dx
-        # # Not legible :(
-        # bad = diff_dx[1]
-        # bad = drake_sym_replace(bad, np.sum(quat**2), 1.0)
-        # print(bad)
+        q = angle_axis_deg_to_quat(90, [0, 0, 1])
+        w = np.array([0, 0, 1])
+
+        Ja = calc_a(q)
+        Jb = calc_b(q)
+        # Jacobians project same for this subspace.
+        qd_a = Ja @ w
+        qd_b = Jb @ w
+        assert_allclose(qd_a, qd_b, tol=1e-15)
+        assert_allclose(Ja, Jb, tol=0.3)
+
+    def test_angular_velocity_jacobian_difference(self):
+        rot_info = make_rot_info_quat_sym()
+        calc_a = rot_info.calc_angular_velocity_jacobian
+        rot_info_b = make_rot_info_quat_drake_jacobian()
+        calc_b = rot_info_b.calc_angular_velocity_jacobian
+
+        q = angle_axis_deg_to_quat(65, [0, 1, 1])
+        Ja = calc_a(q)
+        Jb = calc_b(q)
+        assert_allclose(Ja, Jb, tol=1e-10)

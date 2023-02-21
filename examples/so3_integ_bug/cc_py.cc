@@ -27,7 +27,9 @@ PYBIND11_MODULE(cc, m) {
   // Hack around normalization check for bindings.
   m.def(
       "hack_quaternion",
-      [](const Eigen::Vector4d& q) { return Eigen::Quaternion<double>(q); });
+      [](const Eigen::Vector4d& wxyz) {
+        return Eigen::Quaternion<double>(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+      }, py::arg("wxyz"));
 }
 
 }  // namespace pydrake

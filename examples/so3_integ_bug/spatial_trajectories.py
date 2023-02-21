@@ -218,6 +218,8 @@ class RotationInfo:
     calc_values: object
     # J+ = dr/dw
     calc_rate_jacobian: object
+    # J = dw/dr
+    calc_angular_velocity_jacobian: object
     # Projects "raw" inputs (r_i, rd_i, rdd_i) onto proper subspace
     # (r, rd, rdd)
     project_values: object
@@ -280,8 +282,9 @@ def make_rot_info_rpy_sym():
         num_rot=len(r_s),
         r0=np.zeros(3),
         calc_values=calc_values,
-        calc_rate_jacobian=make_pinv(calc_angular_velocity_jacobian),
         project_values=project_values,
+        calc_rate_jacobian=make_pinv(calc_angular_velocity_jacobian),
+        calc_angular_velocity_jacobian=calc_angular_velocity_jacobian,
     )
 
 
@@ -354,16 +357,27 @@ def make_rot_info_quat_sym():
         calc_values=calc_values,
         project_values=project_values,
         calc_rate_jacobian=make_pinv(calc_angular_velocity_jacobian),
+        calc_angular_velocity_jacobian=calc_angular_velocity_jacobian,
     )
 
 
-def make_rot_info_quat_drake_jacobian():
+def make_rot_info_quat_drake_jacobian(*, use_pinv=False):
     quat_info = make_rot_info_quat_sym()
 
-    def calc_rate_jacobian(q):
+    def calc_rate_jacobian_direct(q):
         q = hack_quaternion(q)
-        Jqd = QuaternionRate.AngularVelocityToQuaternionRateMatrix(q)
-        return Jqd
+        J = QuaternionRate.AngularVelocityToQuaternionRateMatrix(q)
+        return J
+
+    def calc_angular_velocity_jacobian(q):
+        q = hack_quaternion(q)
+        J = QuaternionRate.QuaternionRateToAngularVelocityMatrix(q)
+        return J
+
+    if use_pinv:
+        calc_rate_jacobian = make_pinv(calc_angular_velocity_jacobian)
+    else:
+        calc_rate_jacobian = calc_rate_jacobian_direct
 
     return RotationInfo(
         num_rot=quat_info.num_rot,
@@ -371,6 +385,7 @@ def make_rot_info_quat_drake_jacobian():
         calc_values=quat_info.calc_values,
         project_values=quat_info.project_values,
         calc_rate_jacobian=calc_rate_jacobian,
+        calc_angular_velocity_jacobian=calc_angular_velocity_jacobian,
     )
 
 
