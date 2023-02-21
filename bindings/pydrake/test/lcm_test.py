@@ -23,6 +23,9 @@ class TestLcm(unittest.TestCase):
         DrakeLcm(lcm_url="")
         # Test virtual function names.
         dut.Publish
+        dut.Subscribe
+        dut.SubscribeMultichannel
+        dut.SubscribeAllChannels
         dut.HandleSubscriptions
 
     def test_params(self):
@@ -57,3 +60,55 @@ class TestLcm(unittest.TestCase):
         self.assertEqual(dut.message.x, self.quat.x)
         self.assertEqual(dut.message.y, self.quat.y)
         self.assertEqual(dut.message.z, self.quat.z)
+
+    def test_round_trip_single_channel(self):
+        dut = DrakeLcm()
+        channel = "ROUND_TRIP_SINGLE"
+
+        received = []
+        dut.Subscribe(
+            channel=channel,
+            handler=lambda data: received.append(data))
+        for _ in range(10):
+            dut.Publish(channel=channel, buffer=self.quat.encode())
+            dut.HandleSubscriptions(timeout_millis=100)
+            if len(received) > 0:
+                break
+
+        data = received[0]
+        self.assertEqual(data, self.quat.encode())
+
+    def test_round_trip_multi_channel(self):
+        dut = DrakeLcm()
+        channel = "ROUND_TRIP_MULTI"
+
+        received = []
+        dut.SubscribeMultichannel(
+            regex="ROUND.*MULTI",
+            handler=lambda name, data: received.append((name, data)))
+        for _ in range(10):
+            dut.Publish(channel=channel, buffer=self.quat.encode())
+            dut.HandleSubscriptions(timeout_millis=100)
+            if len(received) > 0:
+                break
+
+        name, data = received[0]
+        self.assertEqual(name, channel)
+        self.assertEqual(data, self.quat.encode())
+
+    def test_round_trip_all_channels(self):
+        dut = DrakeLcm()
+        channel = "ROUND_TRIP_ALL"
+
+        received = []
+        dut.SubscribeAllChannels(
+            handler=lambda name, data: received.append((name, data)))
+        for _ in range(10):
+            dut.Publish(channel=channel, buffer=self.quat.encode())
+            dut.HandleSubscriptions(timeout_millis=100)
+            if len(received) > 0:
+                break
+
+        name, data = received[0]
+        self.assertEqual(name, channel)
+        self.assertEqual(data, self.quat.encode())

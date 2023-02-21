@@ -67,7 +67,6 @@ drake_cc_library(
         "//common:essential",
     ],
     deps = [
-        "//common:scope_exit",
         "@glib",
         "@lcm",
     ],
