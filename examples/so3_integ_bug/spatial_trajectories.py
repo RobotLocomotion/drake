@@ -250,8 +250,8 @@ def make_rot_info_rpy_sym():
     # Compute expressions.
     R_s = RollPitchYaw_[Expression](r_s).ToRotationMatrix().matrix()
     Rd_s, Rdd_s = derivatives_1st_and_2nd(R_s, r_s, rd_s, rdd_s)
-    wh_s = R_s.T @ Rd_s
-    ah_s = wh_s.T @ wh_s + R_s.T @ Rdd_s
+    wh_s = Rd_s @ R_s.T
+    ah_s = wh_s.T @ wh_s + Rdd_s @ R_s.T
     # ah = derivatives_1st(wh, cat(r, rd), cat(rd, rdd))
     w_s = unskew(wh_s, tol=None)
     J_s = Jacobian(w_s, rd_s)
@@ -314,10 +314,10 @@ def make_rot_info_quat_sym():
     R_s = remove_q_norm_unit(R_s)
 
     Rd_s, Rdd_s = derivatives_1st_and_2nd(R_s, q_s, qd_s, qdd_s)
-    wh_s = R_s.T @ Rd_s
+    wh_s = Rd_s @ R_s.T
+    ah_s = wh_s.T @ wh_s + Rdd_s @ R_s.T
     w_s = unskew(wh_s, tol=None)
     J_s = Jacobian(w_s, qd_s)
-    ah_s = derivatives_1st(wh_s, q_qd_s, qd_qdd_s)
 
     def calc_values(q_e, qd_e, qdd_e):
         T, evaluate, tol = infer_sym_dtype_stuff(q_e)
