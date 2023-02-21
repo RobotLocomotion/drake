@@ -1694,6 +1694,18 @@ int Diagram<T>::num_subsystems() const {
   return static_cast<int>(registered_systems_.size());
 }
 
+// TODO(jwnimmer-tri) When possible, use the conventional helper here, i.e.,
+// DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS. At the
+// moment, it doesn't work for private member functions, and also we should
+// skip any pairs where T == U.
+using symbolic::Expression;
+template std::unique_ptr<Diagram<AutoDiffXd>::Blueprint> Diagram<double>::ConvertScalarType<AutoDiffXd>() const;  // NOLINT
+template std::unique_ptr<Diagram<Expression>::Blueprint> Diagram<double>::ConvertScalarType<Expression>() const;  // NOLINT
+template std::unique_ptr<Diagram<double>::Blueprint> Diagram<AutoDiffXd>::ConvertScalarType<double>() const;  // NOLINT
+template std::unique_ptr<Diagram<Expression>::Blueprint> Diagram<AutoDiffXd>::ConvertScalarType<Expression>() const;  // NOLINT
+template std::unique_ptr<Diagram<double>::Blueprint> Diagram<Expression>::ConvertScalarType<double>() const;  // NOLINT
+template std::unique_ptr<Diagram<AutoDiffXd>::Blueprint> Diagram<Expression>::ConvertScalarType<AutoDiffXd>() const;  // NOLINT
+
 }  // namespace systems
 }  // namespace drake
 
