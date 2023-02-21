@@ -359,6 +359,9 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_array_equal(discrete_values.get_mutable_value(), x)
         discrete_values[1] = 5.
         self.assertEqual(discrete_values[1], 5.)
+        vector = discrete_values.get_mutable_value()
+        vector[0] = 2.3
+        self.assertEqual(discrete_values[0], 2.3)
         discrete_values.SetFrom(DiscreteValues(BasicVector(3)))
 
     def test_instantiations(self):

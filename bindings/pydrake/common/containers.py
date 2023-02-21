@@ -143,6 +143,11 @@ class NamedViewBase:
             fget=lambda self: self[i],
             fset=lambda self, value: self.__setitem__(i, value))
 
+    @classmethod
+    def Zero(cls):
+        """Constructs a view onto values set to all zeros."""
+        return cls([0]*len(cls._fields))
+
 
 def namedview(name, fields):
     """
