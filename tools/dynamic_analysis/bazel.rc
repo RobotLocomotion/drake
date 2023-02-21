@@ -231,7 +231,7 @@ build:memcheck --test_tag_filters=-gurobi,-mosek,-snopt,-lint,-no_memcheck,-no_v
 # Slowdown factor can range from 5-100.
 # See http://valgrind.org/info/about.html
 build:memcheck --test_timeout=1500,7500,22500,90000  # 25x
-test:memcheck --test_env=VALGRIND_OPTS
+build:memcheck --test_env=VALGRIND_OPTS
 
 ### Memcheck everything build. ###
 build:memcheck_everything --build_tests_only
