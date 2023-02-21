@@ -15,37 +15,37 @@ build --strip=never
 build --strict_system_includes
 
 # Default test options.
-test --test_output=errors
-test --test_summary=terse
+build --test_output=errors
+build --test_summary=terse
 
 # By default, disable execution of tests that require proprietary software.
 # Individual targets that use proprietary software are responsible for ensuring
 # they can also build without it, typically by using a select statement.
 # config_setting rules for proprietary software are provided in //tools.
-test --test_tag_filters=-gurobi,-mosek,-snopt
+build --test_tag_filters=-gurobi,-mosek,-snopt
 
 # Inject DISPLAY into test runner environment for tests that use X.
-test --test_env=DISPLAY
+build --test_env=DISPLAY
 
 # Location of the Gurobi license key file, typically named "gurobi.lic".
 # Setting this --test_env for all configurations is deliberate to improve
 # remote caching performance.
-test --test_env=GRB_LICENSE_FILE
+build --test_env=GRB_LICENSE_FILE
 
 # Location of the MOSEK license file, typically named "mosek.lic". Setting
 # this --test_env for all configurations is deliberate to improve remote
 # caching performance.
-test --test_env=MOSEKLM_LICENSE_FILE
+build --test_env=MOSEKLM_LICENSE_FILE
 
 # Prevent LCM messages from leaking outside of tests.
 # See documentation: https://lcm-proj.github.io/group__LcmC__lcm__t.html#gaf29963ef43edadf45296d5ad82c18d4b  # noqa
 # WARNING: If your LCM test depends on communication between separate LCM
 # instances (and you cannot easily mock the LCM instances), make sure that each
 # instance has a consistent, but non-default, LCM URL.
-test --test_env=LCM_DEFAULT_URL=memq://
+build --test_env=LCM_DEFAULT_URL=memq://
 
 # Prevent matplotlib from showing windows (#11029).
-test --test_env=MPLBACKEND=Template
+build --test_env=MPLBACKEND=Template
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set
@@ -78,7 +78,7 @@ build:mosek --define=WITH_MOSEK=ON
 build:snopt --define=WITH_SNOPT=ON
 
 ### A configuration that enables all optional dependencies. ###
-test:everything --test_tag_filters=-no_everything
+build:everything --test_tag_filters=-no_everything
 
 # -- Options for Gurobi.
 build:everything --define=WITH_GUROBI=ON
