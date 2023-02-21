@@ -288,6 +288,7 @@ filegroup(
     srcs = glob([
         "**/*.sdf",
     ]),
+    visibility = ["//:__pkg__"],
 )
 
 drake_jupyter_py_binary(

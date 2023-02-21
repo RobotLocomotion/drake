@@ -29,6 +29,7 @@ filegroup(
         "//manipulation/models/iiwa_description:prod_models",
         "//manipulation/models/wsg_50_description:prod_models",
     ],
+    visibility = ["//:__pkg__"],
 )
 
 drake_cc_library(

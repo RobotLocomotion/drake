@@ -12,6 +12,7 @@ filegroup(
     srcs = glob([
         "**/*.sdf",
     ]),
+    visibility = ["//:__pkg__"],
 )
 
 drake_cc_binary(
