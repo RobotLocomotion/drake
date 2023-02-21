@@ -7,6 +7,7 @@
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
+#include "drake/visualization/inertia_visualizer.h"
 
 namespace drake {
 namespace visualization {
@@ -47,6 +48,11 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
   }
   if (config.publish_contacts) {
     ConnectContactResultsToDrakeVisualizer(builder, plant, scene_graph, lcm);
+  }
+  if (config.publish_inertia) {
+    InertiaVisualizer<double>::AddToBuilder(
+        builder, plant,
+        const_cast<geometry::SceneGraph<double>*>(&scene_graph));
   }
 
   if (meshcat == nullptr && config.enable_meshcat_creation) {
