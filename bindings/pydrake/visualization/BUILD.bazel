@@ -72,6 +72,7 @@ drake_py_binary(
 drake_py_binary(
     name = "model_visualizer",
     srcs = ["model_visualizer.py"],
+    data = ["//:all_models"],
     visibility = ["//tools:__pkg__"],
     deps = [":visualization"],
 )
