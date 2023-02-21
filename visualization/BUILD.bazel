@@ -14,8 +14,22 @@ drake_cc_package_library(
     name = "visualization",
     visibility = ["//visibility:public"],
     deps = [
+        # ":inertia_visualizer",  FIXME
         ":visualization_config",
         ":visualization_config_functions",
+    ],
+)
+
+drake_cc_library(
+    name = "inertia_visualizer",
+    srcs = ["inertia_visualizer.cc"],
+    hdrs = ["inertia_visualizer.h"],
+    internal = True,  # FIXME
+    visibility = ["//visibility:private"],  # FIXME
+    deps = [
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -47,6 +61,7 @@ drake_cc_library(
         "//systems/lcm:lcm_buses",
     ],
     deps = [
+        ":inertia_visualizer",
         "//geometry:drake_visualizer",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/lcm:lcm_config_functions",

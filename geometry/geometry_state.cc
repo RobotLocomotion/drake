@@ -732,7 +732,7 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
 
   FrameIdSet& f_set = GetMutableValueOrThrow(source_id, &source_frame_id_map_);
   if (parent_id != InternalFrame::world_frame_id()) {
-    FindOrThrow(parent_id, f_set, [parent_id, source_id]() {
+    FindOrThrow(parent_id, frames_, [parent_id, source_id]() {
       return "Indicated parent id " + to_string(parent_id) + " does not belong "
           "to the indicated source id " + to_string(source_id) + ".";
     });
