@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <string>
 
 #include <Eigen/Dense>
 #include <gtest/gtest.h>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -33,9 +35,10 @@ template <typename DerivedA, typename DerivedB>
     const Eigen::MatrixBase<DerivedB>& m2, double tolerance = 0.0,
     MatrixCompareType compare_type = MatrixCompareType::absolute) {
   if (m1.rows() != m2.rows() || m1.cols() != m2.cols()) {
-    return ::testing::AssertionFailure()
-           << "Matrix size mismatch: (" << m1.rows() << " x " << m1.cols()
-           << " vs. " << m2.rows() << " x " << m2.cols() << ")";
+    const std::string message =
+        fmt::format("Matrix size mismatch: ({} x {} vs. {} x {})", m1.rows(),
+                    m1.cols(), m2.rows(), m2.cols());
+    return ::testing::AssertionFailure() << message;
   }
 
   for (int ii = 0; ii < m1.rows(); ii++) {
@@ -59,10 +62,10 @@ template <typename DerivedA, typename DerivedB>
       // Check for case where one value is NaN and the other is not
       if ((isnan(m1(ii, jj)) && !isnan(m2(ii, jj))) ||
           (!isnan(m1(ii, jj)) && isnan(m2(ii, jj)))) {
-        return ::testing::AssertionFailure() << "NaN mismatch at (" << ii
-                                             << ", " << jj << "):\nm1 =\n"
-                                             << m1 << "\nm2 =\n"
-                                             << m2;
+        const std::string message =
+            fmt::format("NaN mismatch at ({}, {}):\nm1 =\n{}\nm2 =\n{}", ii, jj,
+                        fmt_eigen(m1), fmt_eigen(m2));
+        return ::testing::AssertionFailure() << message;
       }
 
       // Determine whether the difference between the two matrices is less than
@@ -72,16 +75,13 @@ template <typename DerivedA, typename DerivedB>
 
       if (compare_type == MatrixCompareType::absolute) {
         // Perform comparison using absolute tolerance.
-
         if (delta > tolerance) {
-          return ::testing::AssertionFailure()
-                 << "Values at (" << ii << ", " << jj
-                 << ") exceed tolerance: " << m1(ii, jj) << " vs. "
-                 << m2(ii, jj) << ", diff = " << delta
-                 << ", tolerance = " << tolerance << "\nm1 =\n"
-                 << m1 << "\nm2 =\n"
-                 << m2 << "\ndelta=\n"
-                 << (m1 - m2);
+          const std::string message = fmt::format(
+              "Values at ({}, {}) exceed tolerance: {} vs. {}, diff = {}, "
+              "tolerance = {}\nm1 =\n{}\nm2 =\n{}\ndelta=\n{}",
+              ii, jj, m1(ii, jj), m2(ii, jj), delta, tolerance, fmt_eigen(m1),
+              fmt_eigen(m2), fmt_eigen(m1 - m2));
+          return ::testing::AssertionFailure() << message;
         }
       } else {
         // Perform comparison using relative tolerance, see:
@@ -90,27 +90,24 @@ template <typename DerivedA, typename DerivedB>
         const auto max_value = max(abs(m1(ii, jj)), abs(m2(ii, jj)));
         const auto relative_tolerance =
             tolerance * max(decltype(max_value){1}, max_value);
-
         if (delta > relative_tolerance) {
-          return ::testing::AssertionFailure()
-                 << "Values at (" << ii << ", " << jj
-                 << ") exceed tolerance: " << m1(ii, jj) << " vs. "
-                 << m2(ii, jj) << ", diff = " << delta
-                 << ", tolerance = " << tolerance
-                 << ", relative tolerance = " << relative_tolerance
-                 << "\nm1 =\n"
-                 << m1 << "\nm2 =\n"
-                 << m2 << "\ndelta=\n"
-                 << (m1 - m2);
+          const std::string message = fmt::format(
+              "Values at ({}, {}) exceed tolerance: {} vs. {}, diff = {}, "
+              "tolerance = {}, relative tolerance = {}\nm1 =\n{}\nm2 "
+              "=\n{}\ndelta=\n{}",
+              ii, jj, m1(ii, jj), m2(ii, jj), delta, tolerance,
+              relative_tolerance, fmt_eigen(m1), fmt_eigen(m2),
+              fmt_eigen(m1 - m2));
+          return ::testing::AssertionFailure() << message;
         }
       }
     }
   }
 
-  return ::testing::AssertionSuccess() << "m1 =\n"
-                                       << m1
-                                       << "\nis approximately equal to m2 =\n"
-                                       << m2;
+  const std::string message =
+      fmt::format("m1 =\n{}\nis approximately equal to m2 =\n{}", fmt_eigen(m1),
+                  fmt_eigen(m2));
+  return ::testing::AssertionSuccess() << message;
 }
 
 }  // namespace drake
