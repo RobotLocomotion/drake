@@ -34,7 +34,7 @@ void OnHandleSubscriptionsError(DrakeLcmInterface* lcm,
  *
  * Because it must be pure, in general it will receive breaking API changes
  * without notice.  Users should not subclass this interface directly, but
- * rather use one of the existing subclasses instead.
+ * rather use one of the existing subclasses such as DrakeLcmBase instead.
  *
  * Similarly, method arguments will receive breaking API changes without
  * notice.  Users should not call this interface directly, but rather use
