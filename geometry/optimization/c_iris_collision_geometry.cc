@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
 #include <utility>
 
@@ -11,48 +11,25 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-PlaneSide OtherSide(PlaneSide plane_side) {
-  return plane_side == PlaneSide::kPositive ? PlaneSide::kNegative
-                                            : PlaneSide::kPositive;
-}
-
-CIrisCollisionGeometry::CIrisCollisionGeometry(const geometry::Shape* geometry,
+CIrisCollisionGeometry::CIrisCollisionGeometry(const Shape* geometry,
                                                multibody::BodyIndex body_index,
-                                               geometry::GeometryId id,
+                                               GeometryId id,
                                                math::RigidTransformd X_BG)
-    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {
-}
+    : geometry_{geometry}, body_index_{body_index}, id_{id}, X_BG_{X_BG} {}
 
 namespace {
 struct ReifyData {
-  ReifyData(
-      const Vector3<symbolic::Polynomial>& m_a, const symbolic::Polynomial& m_b,
-      const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>&
-          m_X_AB_multilinear,
-      const multibody::RationalForwardKinematics& m_rational_forward_kin,
-      PlaneSide m_plane_side, GeometryId m_geometry_id,
-      const VectorX<symbolic::Variable>& m_y_slack,
-      std::vector<symbolic::RationalFunction>* m_rationals)
-      : a{&m_a},
-        b{&m_b},
-        X_AB_multilinear{&m_X_AB_multilinear},
-        rational_forward_kin{&m_rational_forward_kin},
-        plane_side{m_plane_side},
-        geometry_id{m_geometry_id},
-        y_slack{&m_y_slack},
-        rationals{m_rationals} {}
-
   // To avoid copying objects (which might be expensive), I store the
   // non-primitive-type objects with pointers.
-  const Vector3<symbolic::Polynomial>* a;
-  const symbolic::Polynomial* b;
+  const Vector3<symbolic::Polynomial>* a{};
+  const symbolic::Polynomial* b{};
   const multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>*
-      X_AB_multilinear;
-  const multibody::RationalForwardKinematics* rational_forward_kin;
+      X_AB_multilinear{};
+  const multibody::RationalForwardKinematics* rational_forward_kin{};
   const PlaneSide plane_side;
   const GeometryId geometry_id;
-  const VectorX<symbolic::Variable>* y_slack;
-  std::vector<symbolic::RationalFunction>* rationals;
+  const VectorX<symbolic::Variable>* y_slack{};
+  std::vector<symbolic::RationalFunction>* rationals{};
 };
 
 // Compute the rational function
@@ -88,14 +65,14 @@ struct ReifyData {
 }
 
 void ImplementPointRationals(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
-                             const math::RigidTransformd& X_BG, void* data) {
+                             const math::RigidTransformd& X_BG,
+                             ReifyData* reify_data) {
   // As part of the conditions that a geometry is on one side of the separating
   // plane, we impose the following constraint:
   // if plane_side = kPositive
   //   aᵀ*p_AV+b ≥ 1
   // if plane_side = kNegative
   //   aᵀ*p_AV+b ≤ -1
-  auto* reify_data = static_cast<ReifyData*>(data);
 
   const double offset{1};
   const int num_rationals_for_points = p_GV.cols();
@@ -112,7 +89,7 @@ void ImplementPointRationals(const Eigen::Ref<const Eigen::Matrix3Xd>& p_GV,
 
 void ImplementSpherePsdMatRational(const Eigen::Vector3d& p_GS,
                                    const math::RigidTransformd& X_BG,
-                                   double radius, void* data) {
+                                   double radius, ReifyData* reify_data) {
   // As part of the condition that a sphere-based geometry (e.g., sphere,
   // capsule) is on one side of the separating plane, we impose the constraint
   // aᵀ*p_AS + b ≥ r|a|       if plane_side = kPositive   (1)
@@ -131,8 +108,6 @@ void ImplementSpherePsdMatRational(const Eigen::Vector3d& p_GS,
   // ⌈1⌉ᵀ⌈-aᵀp_AS - b               aᵀ⌉⌈1⌉
   // ⌊y⌋ ⌊ a        -(aᵀp_AS+ b)/r²*I₃⌋⌊y⌋
   // being non-negative.
-  auto* reify_data = static_cast<ReifyData*>(data);
-
   const Eigen::Vector3d p_BS = X_BG * p_GS;
   const Vector3<symbolic::Polynomial> p_AS =
       reify_data->X_AB_multilinear->position +
@@ -174,8 +149,9 @@ class OnPlaneSideReifier : public ShapeReifier {
       const multibody::RationalForwardKinematics& rational_forward_kin,
       PlaneSide plane_side, const VectorX<symbolic::Variable>& y_slack,
       std::vector<symbolic::RationalFunction>* rationals) {
-    ReifyData data(a, b, X_AB_multilinear, rational_forward_kin, plane_side,
-                   geometry_id_, y_slack, rationals);
+    ReifyData data{
+        &a,         &b,           &X_AB_multilinear, &rational_forward_kin,
+        plane_side, geometry_id_, &y_slack,          rationals};
     geometry_->Reify(this, &data);
   }
 
@@ -184,6 +160,7 @@ class OnPlaneSideReifier : public ShapeReifier {
   using ShapeReifier::ImplementGeometry;
 
   void ImplementGeometry(const Box& box, void* data) {
+    auto* reify_data = static_cast<ReifyData*>(data);
     // The position of the vertices V in the geometry frame G.
     Eigen::Matrix<double, 3, 8> p_GV;
     // clang-format off
@@ -194,15 +171,17 @@ class OnPlaneSideReifier : public ShapeReifier {
     p_GV.row(0) *= box.width() / 2;
     p_GV.row(1) *= box.depth() / 2;
     p_GV.row(2) *= box.height() / 2;
-    ImplementPointRationals(p_GV, X_BG_, data);
+    ImplementPointRationals(p_GV, X_BG_, reify_data);
   }
 
   void ImplementGeometry(const Convex& convex, void* data) {
+    auto* reify_data = static_cast<ReifyData*>(data);
     const Eigen::Matrix3Xd p_GV = GetVertices(convex);
-    ImplementPointRationals(p_GV, X_BG_, data);
+    ImplementPointRationals(p_GV, X_BG_, reify_data);
   }
 
   void ImplementGeometry(const Sphere& sphere, void* data) {
+    auto* reify_data = static_cast<ReifyData*>(data);
     // If the sphere with radius r is on one side of the plane
     // it is equivalent to the following condition
     // aᵀ*p_AS + b ≥ r|a|       if plane_side = kPositive   (1a)
@@ -215,11 +194,11 @@ class OnPlaneSideReifier : public ShapeReifier {
 
     // First add the psd matrix constraint.
     ImplementSpherePsdMatRational(Eigen::Vector3d::Zero(), X_BG_,
-                                  sphere.radius(), data);
+                                  sphere.radius(), reify_data);
     // Now add the rational constraint
     // aᵀ*p_AS + b ≥ 1          if plane_side = kPositive   (1b)
     // aᵀ*p_AS + b ≤ -1         if plane_side = kNegative   (2b)
-    ImplementPointRationals(Eigen::Vector3d::Zero(), X_BG_, data);
+    ImplementPointRationals(Eigen::Vector3d::Zero(), X_BG_, reify_data);
   }
 
   void ImplementGeometry(const Capsule& capsule, void* data) {
@@ -240,13 +219,14 @@ class OnPlaneSideReifier : public ShapeReifier {
     // impose conditions (1) and (2).
     //
     // Add the psd-mat constraints.
+    auto* reify_data = static_cast<ReifyData*>(data);
     ImplementSpherePsdMatRational(Eigen::Vector3d(0, 0, capsule.length() / 2),
-                                  X_BG_, capsule.radius(), data);
+                                  X_BG_, capsule.radius(), reify_data);
     ImplementSpherePsdMatRational(Eigen::Vector3d(0, 0, -capsule.length() / 2),
-                                  X_BG_, capsule.radius(), data);
+                                  X_BG_, capsule.radius(), reify_data);
     // aᵀ*p_AO + b ≥ 1          if plane_side = kPositive
     // aᵀ*p_AO + b ≤ -1         if plane_side = kNegative
-    ImplementPointRationals(Eigen::Vector3d::Zero(), X_BG_, data);
+    ImplementPointRationals(Eigen::Vector3d::Zero(), X_BG_, reify_data);
   }
 
   void ImplementGeometry(const Cylinder& cylinder, void* data) {
@@ -374,122 +354,98 @@ class OnPlaneSideReifier : public ShapeReifier {
 
 class CIrisGeometryTypeReifier : public ShapeReifier {
  public:
-  explicit CIrisGeometryTypeReifier(const geometry::Shape* shape)
-      : shape_{shape} {}
+  explicit CIrisGeometryTypeReifier(const Shape& shape) { shape.Reify(this); }
 
-  CIrisGeometryType ProcessData() {
-    CIrisGeometryType type;
-    shape_->Reify(this, &type);
-    return type;
-  }
+  CIrisGeometryType type() const { return type_; }
 
  private:
   using ShapeReifier::ImplementGeometry;
-  void ImplementGeometry(const Box&, void* data) {
-    auto* type = static_cast<CIrisGeometryType*>(data);
-    *type = CIrisGeometryType::kPolytope;
+  void ImplementGeometry(const Box&, void*) {
+    type_ = CIrisGeometryType::kPolytope;
   }
 
-  void ImplementGeometry(const Convex&, void* data) {
-    auto* type = static_cast<CIrisGeometryType*>(data);
-    *type = CIrisGeometryType::kPolytope;
+  void ImplementGeometry(const Convex&, void*) {
+    type_ = CIrisGeometryType::kPolytope;
   }
 
-  void ImplementGeometry(const Sphere&, void* data) {
-    auto* type = static_cast<CIrisGeometryType*>(data);
-    *type = CIrisGeometryType::kSphere;
+  void ImplementGeometry(const Sphere&, void*) {
+    type_ = CIrisGeometryType::kSphere;
   }
 
-  void ImplementGeometry(const Capsule&, void* data) {
-    auto* type = static_cast<CIrisGeometryType*>(data);
-    *type = CIrisGeometryType::kCapsule;
+  void ImplementGeometry(const Capsule&, void*) {
+    type_ = CIrisGeometryType::kCapsule;
   }
 
-  void ImplementGeometry(const Cylinder&, void* data) {
-    auto* type = static_cast<CIrisGeometryType*>(data);
-    *type = CIrisGeometryType::kCylinder;
+  void ImplementGeometry(const Cylinder&, void*) {
+    type_ = CIrisGeometryType::kCylinder;
   }
 
-  const Shape* shape_;
+  CIrisGeometryType type_;
 };
 
 class NumRationalsReifier : public ShapeReifier {
  public:
-  explicit NumRationalsReifier(const Shape* shape) : shape_{shape} {}
+  explicit NumRationalsReifier(const Shape& shape) { shape.Reify(this); }
 
-  int ProcessData() {
-    int ret;
-    shape_->Reify(this, &ret);
-    return ret;
-  }
+  int count() const { return count_; }
 
  private:
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Box&, void* data) {
+  void ImplementGeometry(const Box&, void*) {
     // We implement a.dot(p_AVᵢ) + b >= 1 (or <= -1) where Vᵢ is the vertex of
     // the box. The box has 8 vertices.
-    auto* num = static_cast<int*>(data);
-    *num = 8;
+    count_ = 8;
   }
 
-  void ImplementGeometry(const Convex& convex, void* data) {
+  void ImplementGeometry(const Convex& convex, void*) {
     // One rational for each vertex of the polytope.
-    auto* num = static_cast<int*>(data);
     const Eigen::Matrix3Xd p_GV = GetVertices(convex);
-    *num = p_GV.cols();
+    count_ = p_GV.cols();
   }
 
-  void ImplementGeometry(const Sphere&, void* data) {
+  void ImplementGeometry(const Sphere&, void*) {
     // Two rationals:
     // a.dot(p_AS) + b >= r * |a|  (or <= -r * |a|)
     // a.dot(p_AS) + b >= 1        (or <= -1)
-    auto* num = static_cast<int*>(data);
-    *num = 2;
+    count_ = 2;
   }
 
-  void ImplementGeometry(const Capsule&, void* data) {
+  void ImplementGeometry(const Capsule&, void*) {
     // Three rationals
     // a.dot(p_AS1) + b >= r * |a|  (or <= -r * |a|)
     // a.dot(p_AS2) + b >= r * |a|  (or <= -r * |a|)
     // a.dot(p_AO) + b >= 1        (or <= -1)
-    auto* num = static_cast<int*>(data);
-    *num = 3;
+    count_ = 3;
   }
 
-  void ImplementGeometry(const Cylinder&, void* data) {
+  void ImplementGeometry(const Cylinder&, void*) {
     // Three rationals
     //  a_G(2)*h/2+b_G >= r*|[a_G(0) a_G(1)]| (or <= -r*|[a_G(0) a_G(1)]|)
     // -a_G(2)*h/2+b_G >= r*|[a_G(0) a_G(1)]| (or <= -r*|[a_G(0) a_G(1)]|)
     //  b_G >= 1 (or <= -1).
-    auto* num = static_cast<int*>(data);
-    *num = 3;
+    count_ = 3;
   }
 
-  const Shape* shape_;
+  int count_;
 };
 
-/**
- Compute the signed distance from a collision geometry to the halfspace { p_GQ |
- a_Gᵀ*p_GQ+b_G >= 0}, where a_G is in the collision geometry frame.
- */
+// Compute the signed distance from a collision geometry to the half space
+// { p_GQ | a_Gᵀ*p_GQ+b_G >= 0}, where a_G is in the collision geometry frame.
 class DistanceToHalfspaceReifier : public ShapeReifier {
  public:
-  explicit DistanceToHalfspaceReifier(const Shape* shape, Eigen::Vector3d a_G,
+  explicit DistanceToHalfspaceReifier(const Shape& shape, Eigen::Vector3d a_G,
                                       double b_G)
-      : shape_{shape}, a_G_{std::move(a_G)}, b_G_{b_G} {}
-
-  double ProcessData() {
-    double ret;
-    shape_->Reify(this, &ret);
-    return ret;
+      : a_G_{std::move(a_G)}, b_G_{b_G} {
+    shape.Reify(this);
   }
+
+  double distance() const { return distance_; }
 
  private:
   using ShapeReifier::ImplementGeometry;
 
-  void ImplementGeometry(const Box& box, void* data) {
-    double* distance = static_cast<double*>(data);
+  void ImplementGeometry(const Box& box, void*) {
     // Box vertices.
     Eigen::Matrix<double, 3, 8> p_GV;
     // clang-format off
@@ -500,30 +456,27 @@ class DistanceToHalfspaceReifier : public ShapeReifier {
     p_GV.row(0) *= box.width() / 2;
     p_GV.row(1) *= box.depth() / 2;
     p_GV.row(2) *= box.height() / 2;
-    *distance = ((a_G_.transpose() * p_GV).minCoeff() + b_G_) / (a_G_.norm());
+    distance_ = ((a_G_.transpose() * p_GV).minCoeff() + b_G_) / (a_G_.norm());
   }
 
-  void ImplementGeometry(const Convex& convex, void* data) {
-    double* distance = static_cast<double*>(data);
-    *distance = ((a_G_.transpose() * GetVertices(convex)).minCoeff() + b_G_) /
+  void ImplementGeometry(const Convex& convex, void*) {
+    distance_ = ((a_G_.transpose() * GetVertices(convex)).minCoeff() + b_G_) /
                 (a_G_.norm());
   }
 
-  void ImplementGeometry(const Sphere& sphere, void* data) {
-    double* distance = static_cast<double*>(data);
-    *distance = b_G_ / (a_G_.norm()) - sphere.radius();
+  void ImplementGeometry(const Sphere& sphere, void*) {
+    distance_ = b_G_ / (a_G_.norm()) - sphere.radius();
   }
 
-  void ImplementGeometry(const Capsule& capsule, void* data) {
-    double* distance = static_cast<double*>(data);
+  void ImplementGeometry(const Capsule& capsule, void*) {
     Eigen::Matrix<double, 3, 2> p_GS;
     p_GS.col(0) << 0, 0, capsule.length() / 2;
     p_GS.col(1) << 0, 0, -capsule.length() / 2;
-    *distance = ((a_G_.transpose() * p_GS).minCoeff() + b_G_) / (a_G_.norm()) -
+    distance_ = ((a_G_.transpose() * p_GS).minCoeff() + b_G_) / (a_G_.norm()) -
                 capsule.radius();
   }
 
-  void ImplementGeometry(const Cylinder& cylinder, void* data) {
+  void ImplementGeometry(const Cylinder& cylinder, void*) {
     // The distance from a point on the top rim [r*cosθ, r*sinθ, l/2] to the
     // face {x | a.dot(x)+b=0} is (a(0)*r*cosθ + a(1)*r*sinθ + a(2)*l/2 + b) /
     // |a|. Taking the minimum over θ, we get the distance from the top rim to
@@ -531,16 +484,15 @@ class DistanceToHalfspaceReifier : public ShapeReifier {
     // distance from the bottom rim [r*cosθ, r*sinθ, -l/2] to the face {x |
     // a.dot(x)+b=0} is
     // (-r * |[a(0), a(1)]| - a(2)*l/2 + b) / |a|.
-    double* distance = static_cast<double*>(data);
-    *distance =
+    distance_ =
         (-cylinder.radius() * a_G_.head<2>().norm() +
          (a_G_(2) >= 0 ? -a_G_(2) : a_G_(2)) * cylinder.length() / 2 + b_G_) /
         a_G_.norm();
   }
 
-  const Shape* shape_;
   Eigen::Vector3d a_G_;
   double b_G_;
+  double distance_;
 };
 }  // namespace
 
@@ -557,13 +509,13 @@ void CIrisCollisionGeometry::OnPlaneSide(
 }
 
 CIrisGeometryType CIrisCollisionGeometry::type() const {
-  CIrisGeometryTypeReifier reifier(geometry_);
-  return reifier.ProcessData();
+  CIrisGeometryTypeReifier reifier(*geometry_);
+  return reifier.type();
 }
 
 int CIrisCollisionGeometry::num_rationals() const {
-  NumRationalsReifier reifier(geometry_);
-  return reifier.ProcessData();
+  NumRationalsReifier reifier(*geometry_);
+  return reifier.count();
 }
 
 double DistanceToHalfspace(const CIrisCollisionGeometry& collision_geometry,
@@ -572,9 +524,10 @@ double DistanceToHalfspace(const CIrisCollisionGeometry& collision_geometry,
                            PlaneSide plane_side,
                            const multibody::MultibodyPlant<double>& plant,
                            const systems::Context<double>& plant_context) {
-  // Transforms the halfspace from expressed frame (E) to the collision_geometry
-  // geometry frame (G). First compute the pose of expressed frame (E) to the
-  // collision geometry body frame (B).
+  DRAKE_ASSERT((a.array() != 0).any());
+  // Transforms the halfspace from frame E to the collision_geometry
+  // geometry frame G. First compute the pose of frame E to the
+  // collision geometry body frame B.
   const auto X_BE = plant.CalcRelativeTransform(
       plant_context,
       plant.get_body(collision_geometry.body_index()).body_frame(),
@@ -585,18 +538,15 @@ double DistanceToHalfspace(const CIrisCollisionGeometry& collision_geometry,
   // we want to express this point Q in the G frame as p_GQ = R_GE * p_EQ +
   // p_GE, and compute a_G, b_G such that a_G.dot(p_GQ) + b_G = 0.
   // We have a_G = R_GE * a_E, a_G.dot(p_GE) + b_G = b_E
-  Eigen::Vector3d a_G;
-  double b_G;
-  a_G = X_GE.rotation() * a;
-  b_G = b - a_G.dot(X_GE.translation());
+  Eigen::Vector3d a_G = X_GE.rotation() * a;
+  double b_G = b - a_G.dot(X_GE.translation());
   if (plane_side == PlaneSide::kNegative) {
     a_G = -a_G;
     b_G = -b_G;
   }
 
-  DistanceToHalfspaceReifier reifier(&(collision_geometry.geometry()), a_G,
-                                     b_G);
-  return reifier.ProcessData();
+  DistanceToHalfspaceReifier reifier(collision_geometry.geometry(), a_G, b_G);
+  return reifier.distance();
 }
 }  // namespace optimization
 }  // namespace geometry

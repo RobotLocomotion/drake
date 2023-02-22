@@ -3,7 +3,7 @@
 #include <utility>
 
 #include "drake/common/symbolic/polynomial.h"
-#include "drake/geometry/optimization/dev/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
 namespace drake {
 namespace geometry {
