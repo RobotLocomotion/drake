@@ -24,15 +24,23 @@ not be compiled if debugging is turned off (-DNDEBUG is set):
 </pre>
 
 The format string syntax is fmtlib; see https://fmt.dev/latest/syntax.html.
-In particular, any class that overloads `operator<<` for `ostream` can be
-printed without any special handling.  (Note that the documentation link
-provides syntax for the latest version of fmtlib; the version of fmtlib
-used by Drake might be older.)
-*/
+(Note that the documentation link provides syntax for the latest version of
+fmtlib; the version of fmtlib used by Drake might be older.)
+
+When formatting an Eigen matrix into a string you must wrap the Eigen object
+with fmt_eigen(); see its documentation for details. This holds true whether it
+be for logging, error messages, etc.
+
+When logging a third-party type whose only affordance for string output is
+`operator<<`, use fmt_streamed(); see its documentation for details. This is
+very rare (only a couple uses in Drake so far).
+
+When implementing a string output for a Drake type, eventually we'll want to
+teach you how to use fmt::formatter<T>. In the meantime, you can implement
+`operator<<` and use drake::ostream_formatter, or else use the macro helper
+DRAKE_FORMATTER_AS(). Grep around in Drake's existing code to find examples. */
 
 #include <string>
-
-#include <fmt/ostream.h>
 
 #include "drake/common/fmt.h"
 

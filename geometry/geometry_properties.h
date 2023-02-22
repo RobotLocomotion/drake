@@ -8,7 +8,6 @@
 #include <unordered_map>
 
 #include <Eigen/Dense>
-#include <fmt/ostream.h>
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/fmt_ostream.h"

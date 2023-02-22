@@ -74,7 +74,7 @@ RunfilesSingleton Create() {
     result.runfiles.reset(Runfiles::Create(argv0, &bazel_error));
   }
   drake::log()->debug("FindRunfile mechanism = {}", mechanism);
-  drake::log()->debug("cwd = {}", fs::current_path());
+  drake::log()->debug("cwd = \"{}\"", fs::current_path().string());
 
   // If there were runfiles, identify the RUNFILES_DIR.
   if (result.runfiles) {

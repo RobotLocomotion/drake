@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/math/autodiff.h"
