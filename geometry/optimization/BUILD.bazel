@@ -15,6 +15,7 @@ drake_cc_package_library(
     visibility = ["//visibility:public"],
     deps = [
         ":c_iris_collision_geometry",
+        ":c_iris_separating_plane",
         ":convex_set",
         ":graph_of_convex_sets",
         ":iris",
@@ -70,6 +71,16 @@ drake_cc_library(
         "//geometry/optimization:convex_set",
         "//multibody/rational:rational_forward_kinematics",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "c_iris_separating_plane",
+    srcs = ["c_iris_separating_plane.cc"],
+    hdrs = ["c_iris_separating_plane.h"],
+    deps = [
+        "//common/symbolic:polynomial",
+        "//geometry/optimization:c_iris_collision_geometry",
     ],
 )
 
@@ -154,6 +165,14 @@ drake_cc_googletest(
     deps = [
         ":c_iris_collision_geometry",
         ":c_iris_test_utilities",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
+drake_cc_googletest(
+    name = "c_iris_separating_plane_test",
+    deps = [
+        ":c_iris_separating_plane",
         "//common/test_utilities:symbolic_test_util",
     ],
 )
