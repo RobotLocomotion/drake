@@ -22,7 +22,9 @@ This class is a convenient syntactic sugar to help build a robot diagram,
 especially in C++ code where it simplifies object lifetime tracking and
 downcasting of the plant and scene graph references.
 
-@tparam_default_scalar */
+@tparam_default_scalar
+
+@ingroup planning_infrastructure */
 template <typename T>
 class RobotDiagramBuilder {
  public:

@@ -34,7 +34,9 @@ namespace planning {
  @note For α to be meaningful, the caller is obliged to make sure that they
  use the same interpolating function as the CollisionChecker did when generating
  the measure. Calling CollisionChecker::InterpolateBetweenConfigurations() on
- the same checker instance would satisfy that requirement. */
+ the same checker instance would satisfy that requirement.
+
+ @ingroup planning_collision_checker */
 class EdgeMeasure {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(EdgeMeasure)

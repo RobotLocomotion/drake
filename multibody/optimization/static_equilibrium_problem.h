@@ -28,7 +28,7 @@ namespace multibody {
  *    distance.
  * 5. q within the joint limit.
  *
- * @ingroup planning
+ * @ingroup planning_configuration
  */
 class StaticEquilibriumProblem {
  public:

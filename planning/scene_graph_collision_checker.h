@@ -14,6 +14,8 @@ namespace planning {
 /** An implementation of CollisionChecker that uses SceneGraph to provide
 collision checks. Its behavior and limitations are exactly those of SceneGraph,
 e.g., in terms of what kinds of geometries can be collided.
+
+@ingroup planning_collision_checker
 */
 class SceneGraphCollisionChecker final : public CollisionChecker {
  public:

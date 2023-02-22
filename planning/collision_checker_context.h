@@ -19,7 +19,9 @@ namespace planning {
 
  In all cases, modifying context should happen through
  CollisionChecker::PerformOperationAgainstAllModelContexts(). Modifying the
- contained Drake Contexts directly is generally erroneous. */
+ contained Drake Contexts directly is generally erroneous.
+
+ @ingroup planning_collision_checker */
 class CollisionCheckerContext {
  public:
   /** \name Does not allow copy, move, or assignment generally.
