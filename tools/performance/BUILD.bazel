@@ -19,6 +19,11 @@ package(default_visibility = [
     "//systems/benchmarking:__pkg__",
 ])
 
+config_setting(
+    name = "apple",
+    constraint_values = ["@platforms//os:osx"],
+)
+
 drake_cc_library(
     name = "fixture_common",
     srcs = ["fixture_common.cc"],
@@ -29,9 +34,25 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "fixture_memory",
+    srcs = select({
+        ":apple": ["fixture_memory_no.cc"],
+        "//tools:using_memcheck": ["fixture_memory_no.cc"],
+        "//tools:using_sanitizier": ["fixture_memory_no.cc"],
+        "//conditions:default": ["fixture_memory_yes.cc"],
+    }),
+    hdrs = ["fixture_memory.h"],
+    deps = [
+        "//common:essential",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
+drake_cc_library(
     name = "gflags_main",
     srcs = ["gflags_main.cc"],
     deps = [
+        ":fixture_memory",
         "@gflags",
         "@googlebenchmark//:benchmark",
     ],
@@ -46,4 +67,9 @@ drake_py_binary(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_extra_srcs = [
+        "fixture_memory_no.cc",
+        "fixture_memory_yes.cc",
+    ],
+)
