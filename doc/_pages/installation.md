@@ -14,24 +14,35 @@ notebooks. See the [Tutorials](/index.html#tutorials) page for details.
 The following table shows the configurations and platforms that Drake
 officially supports:
 
-| Operating System ⁽²⁾               | Architecture     | Python ⁽¹⁾ |
-|------------------------------------|------------------|------------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64           | 3.8        |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64           | 3.10       |
-| macOS Monterey (12)                | x86_64 or arm64  | 3.11       |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ |
+|------------------------------------|--------------|------------|
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8 ⁽³⁾    |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   |
+| macOS Monterey (12)                | x86_64       | 3.11       |
+| macOS Monterey (12)                | arm64        | 3.11       |
 
-⁽¹⁾ CPython is the only Python implementation supported.
-Drake does not support the Python environment supplied by Anaconda. Before
-installing or using Drake, please `conda deactivate` (repeatedly, until even
-the conda base environment has been deactivated) such that none of the paths
-reported `which -a python python3` refer to conda.
-Note that Miniconda seems to work fine; it's only Anaconda that has caused
-problems for some users.
+"Official support" means that we have Continuous Integration test coverage to
+notice regressions, so if it doesn't work for you then please file a bug report.
 
-⁽²⁾ Drake features that perform image rendering (e.g., camera simulation)
+Unofficially, Drake is also likely to be compatible with newer versions of
+Ubuntu or macOS than what are listed, or with Ubuntu 22.04 running on arm64, or
+with other versions of Python. However, these are not supported so if it doesn't
+work for you then please file a pull request with the fix, not a bug report.
+
+⁽¹⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server.  Most personal computers will have this
 already built in, but some cloud or docker environments may require extra
 setup steps.
+
+⁽²⁾ CPython is the only Python implementation supported. Drake does not support
+the Python environment supplied by Anaconda. Before installing or using Drake,
+please `conda deactivate` (repeatedly, until even the conda base environment has
+been deactivated) such that none of the paths reported `which -a python python3`
+refer to conda. Note that Miniconda seems to work fine; it's only Anaconda that
+has caused problems for some users.
+
+⁽³⁾ On Ubuntu when installing via ``pip``, CPython versions 3.8 through 3.11
+inclusive are all supported.
 
 Additionally, if you are compiling your own C++ code against Drake's C++ code
 and are using Drake's pre-compiled binaries, then you must use the same
