@@ -58,11 +58,9 @@ T GetChildElementValue(const SDFormatDiagnostic& diagnostic,
     diagnostic.Error(element, std::move(message));
   }
   std::pair<T, bool> value_pair = element->Get<T>(child_name, T());
-  if (value_pair.second == false) {
-    std::string message = "Invalid value for <" + child_name +
-        "> within element <" + element->GetName() + ">.";
-    diagnostic.Error(element, std::move(message));
-  }
+  // We already know that HasElement() succeeded above, so the flag
+  // in the return value should always be true.
+  DRAKE_DEMAND(value_pair.second == true);
   return value_pair.first;
 }
 

@@ -809,13 +809,9 @@ void AddJointFromSpecification(
       break;
     }
     case sdf::JointType::INVALID: {
-      // N.B. It's not practical to reach this code via unit test.
-      // In (probably?) all cases, libsdformat will have already detected
-      // this error and so Drake won't even call this function.
-      std::string message = fmt::format(
-          "Unknown joint type for joint '{}'.", joint_spec.Name());
-      diagnostic.Error(joint_spec.Element(), std::move(message));
-      break;
+      // In probably all cases, libsdformat will have already detected
+      // this error and so Drake won't get an INVALID joint.
+      DRAKE_DEMAND(false);
     }
   }
   joint_types->insert(joint_spec.Type());
@@ -1037,12 +1033,10 @@ const Frame<double>& AddFrameFromSpecification(
       }
     }
   }
-  if (parent_frame == nullptr) {
-    // TODO(jwnimmer-tri) Not covered by unit tests.
-    std::string message = "Could not find parent frame";
-    diagnostic.Error(frame_spec.Element(), message);
-    parent_frame = &plant->world_frame();
-  }
+  // Libsdformat will have already detected this error and
+  // at this point the parent_frame wouldn't be a nullptr
+  DRAKE_DEMAND(parent_frame == nullptr);
+
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
           frame_spec.Name(), *parent_frame, X_PF));
