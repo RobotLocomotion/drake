@@ -31,6 +31,9 @@ enum class PlaneSide {
  This class contains the necessary information about the collision geometry used
  in C-IRIS. Most notably it transcribes the geometric condition that the
  collision geometry is on one side of the plane to mathematical constraints.
+ For the detailed algorithm please refer to the paper
+ Certified Polyhedral Decompositions of Collision-Free Configuration Space
+ by Hongkai Dai*, Alexandre Amice*, Peter Werner, Annan Zhang and Russ Tedrake.
  */
 class CIrisCollisionGeometry {
  public:

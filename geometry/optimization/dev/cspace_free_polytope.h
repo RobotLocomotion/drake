@@ -12,7 +12,7 @@
 #include <fmt/format.h>
 
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
-#include "drake/geometry/optimization/dev/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
@@ -61,37 +61,39 @@ class CspaceFreePolytope {
   struct Options {
     Options() {}
 
-    // For non-polytopic collision geometries, we will impose a matrix-sos
-    // constraint X(s) being psd, with a slack indeterminates y, such that the
-    // polynomial
-    // p(s, y) = ⌈ 1 ⌉ᵀ * X(s) * ⌈ 1 ⌉
-    //           ⌊ y ⌋           ⌊ y ⌋
-    // is positive. This p(s, y) polynomial doesn't contain the cross term of y
-    // (namely it doesn't have y(i)*y(j), i≠j). When we select the monomial
-    // basis for this polynomial, we can also exclude the cross term of y in the
-    // monomial basis.
-    //
-    // To illustrate the idea, let's consider the following toy example: if we
-    // want to certify that
-    // a(0) + a(1)*y₀ + a(2)*y₁ + a(3)*y₀² + a(4)*y₁² is positive
-    // (this polynomial doesn't have the cross term y₀*y₁), we can write it as
-    // ⌈ 1⌉ᵀ * A₀ * ⌈ 1⌉ + ⌈ 1⌉ᵀ * A₁ * ⌈ 1⌉
-    // ⌊y₀⌋         ⌊y₀⌋   ⌊y₁⌋         ⌊y₁⌋
-    // with two small psd matrices A₀, A₁
-    // Instead of
-    // ⌈ 1⌉ᵀ * A * ⌈ 1⌉
-    // |y₀|        |y₀|
-    // ⌊y₁⌋        ⌊y₁⌋
-    // with one large psd matrix A. The first parameterization won't have the
-    // cross term y₀*y₁ by construction, while the second parameterization
-    // requires imposing extra constraints on certain off-diagonal terms in A
-    // so that the cross term vanishes.
-    //
-    // If we set with_cross_y = false, then we will use the monomial basis that
-    // doesn't generate cross terms of y, leading to smaller size sos problems.
-    // If we set with_cross_y = true, then we will use the monomial basis that
-    // will generate cross terms of y, causing larger size sos problems, but
-    // possibly able to certify a larger C-space polytope.
+    /**
+     For non-polytopic collision geometries, we will impose a matrix-sos
+     constraint X(s) being psd, with a slack indeterminates y, such that the
+     polynomial
+     p(s, y) = ⌈ 1 ⌉ᵀ * X(s) * ⌈ 1 ⌉
+               ⌊ y ⌋           ⌊ y ⌋
+     is positive. This p(s, y) polynomial doesn't contain the cross term of y
+     (namely it doesn't have y(i)*y(j), i≠j). When we select the monomial
+     basis for this polynomial, we can also exclude the cross term of y in the
+     monomial basis.
+
+     To illustrate the idea, let's consider the following toy example: if we
+     want to certify that
+     a(0) + a(1)*y₀ + a(2)*y₁ + a(3)*y₀² + a(4)*y₁² is positive
+     (this polynomial doesn't have the cross term y₀*y₁), we can write it as
+     ⌈ 1⌉ᵀ * A₀ * ⌈ 1⌉ + ⌈ 1⌉ᵀ * A₁ * ⌈ 1⌉
+     ⌊y₀⌋         ⌊y₀⌋   ⌊y₁⌋         ⌊y₁⌋
+     with two small psd matrices A₀, A₁
+     Instead of
+     ⌈ 1⌉ᵀ * A * ⌈ 1⌉
+     |y₀|        |y₀|
+     ⌊y₁⌋        ⌊y₁⌋
+     with one large psd matrix A. The first parameterization won't have the
+     cross term y₀*y₁ by construction, while the second parameterization
+     requires imposing extra constraints on certain off-diagonal terms in A
+     so that the cross term vanishes.
+
+     If we set with_cross_y = false, then we will use the monomial basis that
+     doesn't generate cross terms of y, leading to smaller size sos problems.
+     If we set with_cross_y = true, then we will use the monomial basis that
+     will generate cross terms of y, causing larger size sos problems, but
+     possibly able to certify a larger C-space polytope.
+     */
     bool with_cross_y{false};
   };
 
