@@ -1,3 +1,6 @@
+// TODO(jwnimmer-tri) Rewrite the logging in this file to use spdlog.
+#undef EIGEN_NO_IO
+
 #include "drake/solvers/moby_lcp_solver.h"
 
 #include <algorithm>

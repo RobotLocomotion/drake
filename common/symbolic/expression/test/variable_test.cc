@@ -3,7 +3,6 @@
 /* clang-format on */
 
 #include <map>
-#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -24,7 +23,6 @@ namespace {
 
 using std::map;
 using std::move;
-using std::ostringstream;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -165,18 +163,6 @@ TEST_F(VariableTest, EigenVariableMatrix) {
   EXPECT_PRED2(VarEqual, M_(0, 1), y_);
   EXPECT_PRED2(VarEqual, M_(1, 0), z_);
   EXPECT_PRED2(VarEqual, M_(1, 1), w_);
-}
-
-TEST_F(VariableTest, EigenVariableMatrixOutput) {
-  ostringstream oss1;
-  oss1 << M_;
-
-  ostringstream oss2;
-  oss2 << "x y"
-       << "\n"
-       << "z w";
-
-  EXPECT_EQ(oss1.str(), oss2.str());
 }
 
 TEST_F(VariableTest, MemcpyKeepsVariableIntact) {

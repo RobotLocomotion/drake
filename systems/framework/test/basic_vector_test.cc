@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/systems/framework/test_utilities/my_vector.h"
@@ -242,9 +243,9 @@ TYPED_TEST(TypedBasicVectorTest, StringStream) {
   vec.get_mutable_value() << 1.0, 2.2, 3.3;
   std::stringstream s;
   s << "hello " << vec << " world";
-  std::stringstream s_expected;
-  s_expected << "hello " << vec.value().transpose() << " world";
-  EXPECT_EQ(s.str(), s_expected.str());
+  const std::string expected =
+      fmt::format("hello {} world", fmt_eigen(vec.value().transpose()));
+  EXPECT_EQ(s.str(), expected);
 }
 
 // Tests ability to stream a BasicVector of size zero into a string.
@@ -253,9 +254,9 @@ TYPED_TEST(TypedBasicVectorTest, ZeroLengthStringStream) {
   BasicVector<T> vec(0);
   std::stringstream s;
   s << "foo [" << vec << "] bar";
-  std::stringstream s_expected;
-  s_expected << "foo [" << vec.value().transpose() << "] bar";
-  EXPECT_EQ(s.str(), s_expected.str());
+  const std::string expected =
+      fmt::format("foo [{}] bar", fmt_eigen(vec.value().transpose()));
+  EXPECT_EQ(s.str(), expected);
 }
 
 // Tests the default set of bounds (empty).
