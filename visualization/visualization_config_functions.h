@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/drake_visualizer_params.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
@@ -94,7 +95,16 @@ void ApplyVisualizationConfig(
     const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
     const systems::lcm::LcmBuses* lcm_buses = nullptr,
     const multibody::MultibodyPlant<double>* plant = nullptr,
-    const geometry::SceneGraph<double>* scene_graph = nullptr,
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+DRAKE_DEPRECATED("2023-06-01", "Pass a non-const SceneGraph pointer")
+void ApplyVisualizationConfig(
+    const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
+    const systems::lcm::LcmBuses* lcm_buses,
+    const multibody::MultibodyPlant<double>* plant,
+    const geometry::SceneGraph<double>* scene_graph,
     std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
