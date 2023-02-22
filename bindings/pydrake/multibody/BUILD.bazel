@@ -1,4 +1,4 @@
-load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/install:install.bzl", "install", "install_files")
 load(
     "@drake//tools/skylark:pybind.bzl",
     "add_pybind_coverage_data",
@@ -8,6 +8,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -17,6 +18,11 @@ load(
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 load("//tools/jupyter:jupyter_py.bzl", "drake_jupyter_py_binary")
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -234,6 +240,28 @@ drake_pybind_library(
     ],
 )
 
+drake_py_library(
+    name = "mesh_model_maker_py",
+    srcs = ["_mesh_model_maker.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":tree_py",
+        "//bindings/pydrake:math_py",
+        "//bindings/pydrake/geometry",
+    ],
+)
+
+drake_py_binary(
+    name = "mesh_to_model",
+    srcs = [
+        "mesh_to_model.py",
+    ],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":mesh_model_maker_py",
+    ],
+)
+
 drake_jupyter_py_binary(
     name = "examples/door_hinge_inspector",
     add_test_rule = 1,
@@ -241,6 +269,26 @@ drake_jupyter_py_binary(
         ":plant_py",
         ":tree_py",
     ],
+)
+
+cmake_configure_file(
+    name = "generate_run_installed_mesh_to_model",
+    src = "run_installed_mesh_to_model.py.in",
+    out = "run_installed_mesh_to_model.py",
+    defines = [
+        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
+    ],
+)
+
+install_files(
+    name = "install_wrapper_scripts",
+    dest = "bin",
+    files = [
+        "run_installed_mesh_to_model.py.in",
+    ],
+    rename = {
+        "bin/run_installed_mesh_to_model.py.in": "mesh_to_model",
+    },
 )
 
 PY_LIBRARIES_WITH_INSTALL = [
@@ -259,6 +307,7 @@ PY_LIBRARIES_WITH_INSTALL = [
 PY_LIBRARIES = [
     ":jupyter_widgets_py",
     ":module_py",
+    ":mesh_model_maker_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -278,7 +327,9 @@ install(
     name = "install",
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL),
+    deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL) + [
+        ":install_wrapper_scripts",
+    ],
 )
 
 filegroup(
@@ -434,6 +485,25 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "mesh_to_model_test",
+    data = [
+        ":mesh_to_model",
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":mesh_model_maker_py",
+        "//bindings/pydrake/common",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+        "//bindings/pydrake/systems:framework_py",
+    ],
+)
+
 add_pybind_coverage_data()
 
-add_lint_tests_pydrake()
+add_lint_tests_pydrake(
+    python_lint_extra_srcs = [
+        "run_installed_mesh_to_model.py.in",
+    ],
+)
