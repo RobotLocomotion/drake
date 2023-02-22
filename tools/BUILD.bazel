@@ -56,6 +56,11 @@ alias(
     actual = "//bindings/pydrake/visualization:model_visualizer",
 )
 
+alias(
+    name = "mesh_to_model",
+    actual = "//bindings/pydrake/multibody:mesh_to_model",
+)
+
 # === config_setting rules ===
 
 # When this is set, a Drake build will promote some warnings to errors.
