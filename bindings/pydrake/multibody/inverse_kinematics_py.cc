@@ -18,6 +18,7 @@
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_cost.h"
+#include "drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/polyhedron_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
@@ -117,6 +118,12 @@ PYBIND11_MODULE(inverse_kinematics, m) {
         .def("AddDistanceConstraint", &Class::AddDistanceConstraint,
             py::arg("geometry_pair"), py::arg("distance_lower"),
             py::arg("distance_upper"), cls_doc.AddDistanceConstraint.doc)
+        .def("AddPointToLineDistanceConstraint",
+            &Class::AddPointToLineDistanceConstraint, py::arg("frame_point"),
+            py::arg("p_B1P"), py::arg("frame_line"), py::arg("p_B2Q"),
+            py::arg("n_B2"), py::arg("distance_lower"),
+            py::arg("distance_upper"),
+            cls_doc.AddPointToLineDistanceConstraint.doc)
         .def("AddPointToPointDistanceConstraint",
             &Class::AddPointToPointDistanceConstraint, py::arg("frame1"),
             py::arg("p_B1P1"), py::arg("frame2"), py::arg("p_B2P2"),
@@ -256,6 +263,53 @@ PYBIND11_MODULE(inverse_kinematics, m) {
             py::keep_alive<1, 2>(),
             // Keep alive, reference: `self` keeps `plant_context` alive.
             py::keep_alive<1, 9>(), cls_doc.ctor.doc_autodiff);
+  }
+  {
+    using Class = PointToLineDistanceConstraint;
+    constexpr auto& cls_doc = doc.PointToLineDistanceConstraint;
+    using Ptr = std::shared_ptr<Class>;
+    py::class_<Class, Constraint, Ptr>(
+        m, "PointToLineDistanceConstraint", cls_doc.doc)
+        .def(py::init([](const multibody::MultibodyPlant<double>* const plant,
+                          const multibody::Frame<double>& frame_point,
+                          const Eigen::Ref<const Eigen::Vector3d>& p_B1P,
+                          const multibody::Frame<double>& frame_line,
+                          const Eigen::Ref<const Eigen::Vector3d>& p_B2Q,
+                          const Eigen::Ref<const Eigen::Vector3d>& n_B2,
+                          double distance_lower, double distance_upper,
+                          systems::Context<double>* plant_context) {
+          return std::make_shared<Class>(plant, frame_point, p_B1P, frame_line,
+              p_B2Q, n_B2, distance_lower, distance_upper, plant_context);
+        }),
+            py::arg("plant"), py::arg("frame_point"), py::arg("p_B1P"),
+            py::arg("frame_line"), py::arg("p_B2Q"), py::arg("n_B2"),
+            py::arg("distance_lower"), py::arg("distance_upper"),
+            py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 10>(), cls_doc.ctor.doc_double)
+        .def(py::init(
+                 [](const multibody::MultibodyPlant<AutoDiffXd>* const plant,
+                     const multibody::Frame<AutoDiffXd>& frame_point,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_B1P,
+                     const multibody::Frame<AutoDiffXd>& frame_line,
+                     const Eigen::Ref<const Eigen::Vector3d>& p_B2Q,
+                     const Eigen::Ref<const Eigen::Vector3d>& n_B2,
+                     double distance_lower, double distance_upper,
+                     systems::Context<AutoDiffXd>* plant_context) {
+                   return std::make_shared<Class>(plant, frame_point, p_B1P,
+                       frame_line, p_B2Q, n_B2, distance_lower, distance_upper,
+                       plant_context);
+                 }),
+            py::arg("plant"), py::arg("frame_point"), py::arg("p_B1P"),
+            py::arg("frame_line"), py::arg("p_B2Q"), py::arg("n_B2"),
+            py::arg("distance_lower"), py::arg("distance_upper"),
+            py::arg("plant_context"),
+            // Keep alive, reference: `self` keeps `plant` alive.
+            py::keep_alive<1, 2>(),
+            // Keep alive, reference: `self` keeps `plant_context` alive.
+            py::keep_alive<1, 10>(), cls_doc.ctor.doc_autodiff);
   }
   {
     using Class = PolyhedronConstraint;

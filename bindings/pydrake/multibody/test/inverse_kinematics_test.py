@@ -328,6 +328,42 @@ class TestInverseKinematics(unittest.TestCase):
         self.assertTrue(result.is_success())
         self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
 
+    def test_AddPointToLineDistanceConstraint(self):
+        p_B1P = np.array([0.2, -0.4, 0.9])
+        p_B2Q = np.array([1.4, -0.1, 1.8])
+        n_B2 = np.array([0.1, 0.3, 0.2])
+
+        distance_lower = 0.1
+        distance_upper = 0.2
+
+        self.ik_two_bodies.AddPointToLineDistanceConstraint(
+            frame_point=self.body1_frame, p_B1P=p_B1P,
+            frame_line=self.body2_frame, p_B2Q=p_B2Q, n_B2=n_B2,
+            distance_lower=distance_lower, distance_upper=distance_upper)
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+
+        q_val = result.GetSolution(self.q)
+        body1_quat = self._body1_quat(q_val)
+        body2_quat = self._body2_quat(q_val)
+        body1_rotmat = Quaternion(body1_quat).rotation()
+        body2_rotmat = Quaternion(body2_quat).rotation()
+
+        p_WP = self._body1_xyz(q_val) + body1_rotmat.dot(p_B1P)
+        p_WQ = self._body2_xyz(q_val) + body2_rotmat.dot(p_B2Q)
+        n_W = body2_rotmat @ n_B2
+        n_W_normalized = n_W / np.linalg.norm(n_W)
+        distance = np.linalg.norm(
+            p_WQ + n_W_normalized.dot(p_WP - p_WQ) * n_W_normalized
+            - p_WP)
+
+        self.assertLess(distance, distance_upper + 1e-5)
+        self.assertGreater(distance, distance_lower - 1e-5)
+
+        result = mp.Solve(self.prog)
+        self.assertTrue(result.is_success())
+        self.assertTrue(np.allclose(result.GetSolution(self.q), q_val))
+
     def test_AddPolyhedronConstraint(self):
         p_GP = np.array([[0.2, -0.4], [0.9, 0.2], [-0.1, 1]])
         A = np.array([[0.5, 1., 0.1, 0.2, 0.5, 1.5]])
@@ -621,6 +657,17 @@ class TestConstraints(unittest.TestCase):
             plant=variables.plant,
             frame1=variables.body1_frame, p_B1P1=[0.1, 0.2, 0.3],
             frame2=variables.body2_frame, p_B2P2=[0.3, 0.4, 0.5],
+            distance_lower=0.1, distance_upper=0.2,
+            plant_context=variables.plant_context)
+        self.assertIsInstance(constraint, mp.Constraint)
+
+    @check_type_variables
+    def test_point_to_line_distance_constraint(self, variables):
+        constraint = ik.PointToLineDistanceConstraint(
+            plant=variables.plant,
+            frame_point=variables.body1_frame, p_B1P=[0.1, 0.2, 0.3],
+            frame_line=variables.body2_frame, p_B2Q=[0.3, 0.4, 0.5],
+            n_B2=[0.2, 0.3, 0.4],
             distance_lower=0.1, distance_upper=0.2,
             plant_context=variables.plant_context)
         self.assertIsInstance(constraint, mp.Constraint)
