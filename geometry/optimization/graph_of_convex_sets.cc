@@ -1,3 +1,7 @@
+// TODO(jwnimmer-tri) Port GetGraphvizString to fmt, once we have sufficient
+// options there to control precision and scientific formatting.
+#undef EIGEN_NO_IO
+
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 
 #include <limits>

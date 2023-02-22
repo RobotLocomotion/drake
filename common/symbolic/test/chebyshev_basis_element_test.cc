@@ -256,11 +256,6 @@ TEST_F(SymbolicChebyshevBasisElementTest, EigenMatrix) {
   M << ChebyshevBasisElement(), ChebyshevBasisElement({{x_, 1}}),
       ChebyshevBasisElement({{x_, 1}, {y_, 2}}),
       ChebyshevBasisElement({{y_, 2}});
-
-  // The following fails if we do not provide
-  // `Eigen::NumTraits<drake::symbolic::DerivedA>`
-  std::ostringstream oss;
-  oss << M;
 }
 
 TEST_F(SymbolicChebyshevBasisElementTest, Hash) {

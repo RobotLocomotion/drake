@@ -314,21 +314,10 @@ TEST_F(VariableOverloadingTest, OperatorOverloadingEigenDivideVariable) {
   EXPECT_PRED2(ExprEqual, m2(1, 1), w_ / (x_ + y_));
 }
 
-TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutputStream) {
-  ostringstream oss1;
-  oss1 << expr_mat_;
-
-  ostringstream oss2;
-  oss2 << "      (x + z)       (x + w)\n"
-       << "      (y + z)       (y + w)";
-
-  EXPECT_EQ(oss1.str(), oss2.str());
-}
-
 TEST_F(VariableOverloadingTest, EigenExpressionMatrixOutputFmt) {
   EXPECT_EQ(fmt::to_string(fmt_eigen(expr_mat_)),
-            "      (x + z)       (x + w)\n"
-            "      (y + z)       (y + w)");
+            "(x + z) (x + w)\n"
+            "(y + z) (y + w)");
 }
 }  // namespace
 }  // namespace symbolic
