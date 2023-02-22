@@ -225,11 +225,6 @@ TEST_F(MonomialBasisElementTest, EigenMatrixOfMonomials) {
   M << MonomialBasisElement{}, MonomialBasisElement{var_x_},
       MonomialBasisElement{{{var_y_, 2}}},
       MonomialBasisElement{{{var_x_, 2}, {var_z_, 3}}};
-
-  // The following fails if we do not provide
-  // `Eigen::NumTraits<drake::symbolic::MonomialBasisElement>`.
-  std::ostringstream oss;
-  oss << M;
 }
 
 TEST_F(MonomialBasisElementTest, MonomialOne) {

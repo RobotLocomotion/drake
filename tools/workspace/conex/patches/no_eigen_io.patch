@@ -1,0 +1,18 @@
+Nerf the DUMP() macro to be a no-op
+
+Drake builds using EIGEN_NO_IO, so Conex can't use it either.
+
+--- conex/debug_macros.h
++++ conex/debug_macros.h
+@@ -8,10 +8,7 @@
+ 
+ namespace conex {
+ 
+-#define DUMP(x)                                              \
+-  std::cerr << __FILE__ << " line " << __LINE__ << std::endl \
+-            << #x ":" << std::endl                           \
+-            << x << std::endl;
++#define DUMP(x) (void)(x);
+ 
+ #ifndef CONEX_VERBOSE
+ #define CONEX_VERBOSE 1
