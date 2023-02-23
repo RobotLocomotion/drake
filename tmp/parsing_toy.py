@@ -128,13 +128,19 @@ MOCK_FILESYSTEM = {
 }
 
 
-def scope(prefix, name):
+def scope(prefix, name=None, *args):
+    if name == None:
+        return prefix
     if name == "world":
         return name
     elif prefix == "":
         return name
     else:
-        return f"{prefix}::{name}"
+        return scope(f"{prefix}::{name}", *args)
+
+def unscope(prefix, name):
+    assert (prefix+"::") in name
+    return name[len(prefix)+2:]
 
 
 # This is a lightweight Model used by libsdformat when interfacing with custom
@@ -142,9 +148,10 @@ def scope(prefix, name):
 # contained in libsdformat's InterfaceModel. Here, for simplicity, we only use
 # links and frames.
 class InterfaceModel:
-    def __init__(self, model_name, schema, pose):
+    def __init__(self, model_name, schema, pose, reposture_function):
         self.name = model_name
         self.pose = pose
+        self.reposture_function = reposture_function
         self.interface_links = []
         self.interface_frames = []
 
@@ -206,8 +213,11 @@ class SdfModel:
 class PoseGraph:
     def __init__(self, model: SdfModel):
         self.graph = {}
-        self.graph[model.name] = PoseSchema(
+        self.graph["world"] = PoseSchema(
             relative_to="__root__", position=[0, 0, 0]
+        )
+        self.graph[model.name] = PoseSchema(
+            relative_to="world", position=[0, 0, 0]
         )
         self.add_model(model, model.name)
 
@@ -282,6 +292,67 @@ class PoseGraph:
         out += "}"
         return out
 
+class FrameGraph:
+    def __init__(self, model: SdfModel):
+        self.graph = {}
+        self.add_model(model, model.name)
+
+    def add_model(self, model: Union[SdfModel, InterfaceModel], prefix: str):
+
+        if isinstance(model, SdfModel):
+            assert len(model.links) > 0
+            self._add_to_graph(
+                scope(prefix,  "__model__"),
+                scope(prefix, model.links[0].name),
+            )
+
+            for link in model.links:
+                self._add_to_graph(scope(prefix, link.name), "__link__")
+
+            for frame in model.frames:
+                self._add_to_graph(scope(prefix, frame.name),
+                                   scope(prefix, frame.attached_to))
+
+            for nested_model in model.models:
+                self._add_to_graph(
+                    scope(prefix, nested_model.name),
+                    scope(prefix, nested_model.name, "__model__"),
+                )
+                self.add_model(nested_model, scope(prefix, nested_model.name))
+
+        elif isinstance(model, InterfaceModel):
+            for link in model.interface_links:
+                self._add_to_graph(scope(prefix, link.name), "__link__")
+
+            for frame in model.interface_frames:
+                self._add_to_graph(scope(prefix, frame.name),
+                                   scope(prefix, frame.attached_to))
+
+    def resolve_to_link(self, frame):
+        parent_frame = self.graph[frame]
+        if parent_frame  == "__link__":
+            return frame
+        else:
+            return self.resolve_to_link(parent_frame)
+
+    def _add_to_graph(self, key, val):
+        if key in self.graph:
+            raise RuntimeError(f"Frame {key} is already in graph")
+        self.graph[key] = val
+
+    def __str__(self):
+        return str(self.graph)
+
+    def to_dot(self):
+        out = "digraph {\n"
+        for key in self.graph.keys():
+            out += f'  "{key}"\n'
+
+        for key, val in self.graph.items():
+            out += f'  "{key}" -> "{val}"\n'
+        out += "}"
+        return out
+
 
 # Emulates sdf::Root in libsdformat.
 class SdfRoot:
@@ -293,6 +364,12 @@ class SdfRoot:
             custom_parser_cb=custom_parser,
         )
         self._pose_graph = PoseGraph(self.model)
+        self._frame_graph = FrameGraph(self.model)
+
+        for model in self.model.models:
+            if isinstance(model, InterfaceModel):
+                model.reposture_function(self._pose_graph)
+
 
     # In libsdformat, each DOM element has a `SemanticPose` member function
     # that can be used to resolve poses. We're simplifying the API here by
@@ -302,6 +379,9 @@ class SdfRoot:
     # scope.
     def resolve_pose(self, frame, relative_to):
         return self._pose_graph.resolve_pose(frame, relative_to)
+
+    def resolve_attached_to_link(self, scoped_frame_name):
+        return self._frame_graph.resolve_to_link(scoped_frame_name)
 
 
 # Emulates Drake's MultibodyPlant. Methods for adding model instances, bodies,
@@ -318,10 +398,11 @@ class MockMultibodyPlant:
         self._id_counter += 1
         return self._id_counter
 
-    def add_model_instance(self, name):
+    def add_model_instance(self, name, canonical_link, X_LcM):
         model_instance = self._next_id()
-        self._model_instances[model_instance] = defaultdict(list)
+        self._model_instances[model_instance] = defaultdict(dict)
         self._model_instances[model_instance]["name"] = name
+        self.add_frame("__model__", model_instance, canonical_link, X_LcM)
         return model_instance
 
     # Drake MBP's add_body equivalent doesn't take X_WB as an argument, but it
@@ -329,12 +410,12 @@ class MockMultibodyPlant:
     # after a body has been added to the MBP
     def add_body(self, name, model_instance, X_WB):
         model = self._model_instances[model_instance]
-        model["bodies"].append([name, X_WB])
-        self.add_frame("", model_instance, name, [0, 0, 0])
+        model["bodies"][name] = X_WB
+        self.add_frame(name, model_instance, name, [0, 0, 0])
 
-    def add_frame(self, name, model_instance, parent_frame, X_PF):
+    def add_frame(self, name, model_instance, parent_body, X_PF):
         model = self._model_instances[model_instance]
-        model["frames"].append([name, parent_frame, X_PF])
+        model["frames"][name] = [parent_body, X_PF]
 
     def __str__(self):
         return f"{self._model_instances}"
@@ -351,13 +432,25 @@ class MockMultibodyPlant:
             count += len(model["frames"])
         return count
 
+    def bodies(self, model_instance):
+        return self._model_instances[model_instance]["bodies"]
+
+    def resolve_frame_pose_to_world(self, scoped_frame_name):
+        if scoped_frame_name == "world":
+            return [0, 0, 0]
+        for _, model in self._model_instances.items():
+            for frame_name, (parent_body, X_PF) in model["frames"].items():
+                if scope(model["name"], frame_name) == scoped_frame_name:
+                    return model["bodies"][parent_body] + X_PF
+
+        raise RuntimeError(f"Frame '{scoped_frame_name}' not found")
+
 
 # Emulates the functionality of //multibody/parsing:parser and
 # //multibody/parsing:detail_sdf_parser
 def mock_drake_sdf_parser(model_name, sdf_file):
 
     plant = MockMultibodyPlant()
-    model_instance = plant.add_model_instance(model_name)
 
     # We make assumptions about poses encountered in the custom parser such
     # that we don't need pose resolution. This assumption holds, for example,
@@ -366,17 +459,29 @@ def mock_drake_sdf_parser(model_name, sdf_file):
     # MultibodyPlant without having to be resolved relative to some other
     # frame.
     def custom_parser(nested_model_name, file_name, pose):
-        nested_model_instance = plant.add_model_instance(
-            scope(model_name, nested_model_name)
-        )
         schema = MOCK_FILESYSTEM[file_name]
+
+        canonical_link = ""
+        for directive in schema:
+            if isinstance(directive, LinkSchema):
+                canonical_link = directive.name
+                X_PLc = directive.pose.position
+                X_PM = pose.position
+                X_LcM = - X_PLc + X_PM
+                break
+        assert canonical_link != ""
+        nested_model_instance = plant.add_model_instance(
+            scope(model_name, nested_model_name), canonical_link, X_LcM
+        )
 
         for directive in schema:
             if isinstance(directive, FrameSchema):
-                # We'll assume that all poses of frames parsed the custom
-                # parser are expressed relative to the parent frame. This is
-                # similar to how the Drake URDF parser is used as a custom
-                # parser via libsdformat's Interface API.
+                # All poses of frames parsed by the custom parser are expected
+                # to be expressed relative to the parent frame. This is similar
+                # to how the Drake URDF parser is used as a custom parser via
+                # libsdformat's Interface API.
+                assert directive.pose.relative_to == directive.attached_to
+
                 plant.add_frame(
                     directive.name,
                     nested_model_instance,
@@ -384,19 +489,34 @@ def mock_drake_sdf_parser(model_name, sdf_file):
                     directive.pose.position,
                 )
             elif isinstance(directive, LinkSchema):
-                # We'll assume that all poses of bodies parsed the custom
-                # parser are expressed relative to the world or root model
-                # frame.
+                # The pose of the body will be updated during reposture, so we 
+                # could just use identity here.
                 plant.add_body(
                     directive.name,
                     nested_model_instance,
                     directive.pose.position,
                 )
 
-        return InterfaceModel(nested_model_name, schema, pose)
+        def reposture_function(pose_graph):
+            bodies = plant.bodies(nested_model_instance)
+            for body_name,_ in bodies.items():
+                X_WB = pose_graph.resolve_pose(
+                    scope(model_name, nested_model_name, body_name), "world")
+                bodies[body_name] = X_WB
+
+        return InterfaceModel(nested_model_name, schema, pose,
+                              reposture_function)
 
     root = SdfRoot(sdf_file, custom_parser=custom_parser)
     model = root.model
+    assert len(model.links) > 0
+
+    canonical_link = model.links[0].name
+    X_WLc = root.resolve_pose(scope(model.name, canonical_link), model.name)
+    X_WM = [0, 0, 0]
+    X_LcM = -X_WLc + X_WM
+    model_instance = plant.add_model_instance(model_name, canonical_link,
+                                              X_LcM)
 
     for link in model.links:
         X_WB = root.resolve_pose(scope(model.name, link.name), model.name)
@@ -413,23 +533,39 @@ def mock_drake_sdf_parser(model_name, sdf_file):
         # libsdformat.
         # The frame resolution capability is emulated here in the `PoseGraph`
         # class.
-        X_PF = root.resolve_pose(
-            scope(model.name, frame.name), scope(model.name, frame.attached_to)
-        )
-        plant.add_frame(link.name, model_instance, frame.attached_to, X_PF)
-
-    # We'll assume that nested models have already been parsed through the
-    # custom parser. There's an extra Reposture step that happens in
-    # libsdformat, but it is not included here for now.
+        attached_to_link = root.resolve_attached_to_link(
+            scope(model.name, frame.attached_to))
+        attached_to_link_local_name = unscope(model.name, attached_to_link)
+        X_PF = root.resolve_pose(scope(model.name, frame.name),
+                                 attached_to_link)
+        plant.add_frame(frame.name, model_instance,
+                        attached_to_link_local_name, X_PF)
 
     return plant
 
+
+EXPECTED_POSITION_W_MAP = {
+    "world": [0, 0, 0],
+    "top::__model__": [0, 0, 0],
+    "top::L1": [0.0, 0.0, 10.0],
+    "top::L2": [1.0, 2.0, 3.0],
+    "top::F1": [1.0, 2.0, 13.0],
+    "top::included::__model__": [0, 0, 10],
+    "top::included::base": [0, 0, 10],
+    "top::included::included_frame": [0.5, 0.25, 10.125],
+    "top::top_frame": [10.5, 20.25, 40.125],
+}
 
 class Test(unittest.TestCase):
     def test_expected(self):
         plant = mock_drake_sdf_parser("top", "top.model")
         self.assertEqual(plant.num_bodies(), 3)
-        self.assertEqual(plant.num_frames(), 6)
+        self.assertEqual(plant.num_frames(), 8)
+        position_W_map = dict(
+            (frame, plant.resolve_frame_pose_to_world(frame))
+            for frame in EXPECTED_POSITION_W_MAP.keys()
+        )
+        np.testing.assert_equal(position_W_map, EXPECTED_POSITION_W_MAP)
 
 
 if __name__ == "__main__":
