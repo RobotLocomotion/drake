@@ -13,23 +13,13 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_library(
-    name = "c_iris_separating_plane",
-    srcs = ["c_iris_separating_plane.cc"],
-    hdrs = ["c_iris_separating_plane.h"],
-    deps = [
-        "//common/symbolic:polynomial",
-        "//geometry/optimization:c_iris_collision_geometry",
-    ],
-)
-
-drake_cc_library(
     name = "cspace_free_polytope",
     srcs = ["cspace_free_polytope.cc"],
     hdrs = ["cspace_free_polytope.h"],
     deps = [
-        ":c_iris_separating_plane",
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",
+        "//geometry/optimization:c_iris_separating_plane",
         "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
         "//solvers:mosek_solver",
@@ -48,14 +38,6 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
-    ],
-)
-
-drake_cc_googletest(
-    name = "c_iris_separating_plane_test",
-    deps = [
-        ":c_iris_separating_plane",
-        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
