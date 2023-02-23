@@ -40,22 +40,23 @@ class TemplateSystem(TemplateClass):
     If any of these constraints are violated, then an error will be thrown
     at the time of the first class instantiation.
 
-    Example::
+    Example:
+        ::
 
-        @TemplateSystem.define("MySystem_")
-        def MySystem_(T):
+            @TemplateSystem.define("MySystem_")
+            def MySystem_(T):
 
-            class Impl(LeafSystem_[T]):
-                def _construct(self, value, converter=None):
-                    LeafSystem_[T].__init__(self, converter=converter)
-                    self.value = value
+                class Impl(LeafSystem_[T]):
+                    def _construct(self, value, converter=None):
+                        LeafSystem_[T].__init__(self, converter=converter)
+                        self.value = value
 
-                def _construct_copy(self, other, converter=None):
-                    Impl._construct(self, other.value, converter=converter)
+                    def _construct_copy(self, other, converter=None):
+                        Impl._construct(self, other.value, converter=converter)
 
-            return Impl
+                return Impl
 
-        MySystem = MySystem_[None]  # Default instantiation.
+            MySystem = MySystem_[None]  # Default instantiation.
 
     Things to note:
 

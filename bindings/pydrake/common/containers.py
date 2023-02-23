@@ -143,6 +143,11 @@ class NamedViewBase:
             fget=lambda self: self[i],
             fset=lambda self, value: self.__setitem__(i, value))
 
+    @classmethod
+    def Zero(cls):
+        """Constructs a view onto values set to all zeros."""
+        return cls([0]*len(cls._fields))
+
 
 def namedview(name, fields):
     """
@@ -150,14 +155,31 @@ def namedview(name, fields):
     is instantiated, it must be given the object that it will be a proxy for.
     Similar to ``namedtuple``.
 
-    Example::
-        MyView = namedview("MyView", ('a', 'b'))
+    Example:
+        ::
 
-        value = np.array([1, 2])
-        view = MyView(value)
-        view.a = 10  # `value` is now [10, 2]
-        value[1] = 100  # `view` is now [10, 100]
-        view[:] = 3  # `value` is now [3, 3]
+            MyView = namedview("MyView", ('a', 'b'))
+
+            value = np.array([1, 2])
+            view = MyView(value)
+            view.a = 10  # `value` is now [10, 2]
+            value[1] = 100  # `view` is now [10, 100]
+            view[:] = 3  # `value` is now [3, 3]
+
+            # Get an array from the view *aliasing* the original vector.
+            value_view = view[:]
+            # Another way to get an aliased array.
+            value_view_2 = np.asarray(view)
+            # Get an array from the view that is a *copy* of the original
+            # vector.
+            value_copy = np.array(view)
+
+    Warning:
+
+        As illustrated above, if you use ``np.array(view)``, then it will
+        provide a *copied* array from the view. If you want an *aliased* array
+        from the view, then use operations like ``view[:]``,
+        ``np.asarray(view)``, or ``np.array(view, copy=False)``.
 
     For more details, see ``NamedViewBase``.
     """

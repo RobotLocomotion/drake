@@ -29,6 +29,7 @@
 #include "drake/common/dummy_value.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/fmt.h"
 #include "drake/common/hash.h"
 #include "drake/common/random.h"
 
@@ -1028,6 +1029,7 @@ inline bool operator!=(
   return !(lhs == rhs);
 }
 
+// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
 inline std::ostream& operator<<(
     std::ostream& os,
     const uniform_real_distribution<drake::symbolic::Expression>& d) {
@@ -1169,6 +1171,7 @@ inline bool operator!=(
   return !(lhs == rhs);
 }
 
+// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
 inline std::ostream& operator<<(
     std::ostream& os,
     const normal_distribution<drake::symbolic::Expression>& d) {
@@ -1267,6 +1270,7 @@ inline bool operator!=(
   return !(lhs == rhs);
 }
 
+// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
 inline std::ostream& operator<<(
     std::ostream& os,
     const exponential_distribution<drake::symbolic::Expression>& d) {
@@ -1621,3 +1625,5 @@ struct is_eigen_vector_expression_double_pair
               is_eigen_vector_of<DerivedB, double>::value> {};
 
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::symbolic, Expression, e, e.to_string())

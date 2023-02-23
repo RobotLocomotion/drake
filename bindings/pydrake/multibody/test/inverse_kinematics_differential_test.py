@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import pydrake.manipulation.planner as mut
+import pydrake.multibody.inverse_kinematics as mut
 
 import unittest
 import numpy as np

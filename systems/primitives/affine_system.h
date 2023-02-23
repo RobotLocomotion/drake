@@ -198,20 +198,26 @@ class AffineSystem : public TimeVaryingAffineSystem<T> {
   /// |:-------:|:-----------:|:-----------:|
   /// | A       | num states  | num states  |
   /// | B       | num states  | num inputs  |
+  /// | f0      | num_states  | 1           |
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
+  /// | y0      | num_outputs | 1           |
+  ///
+  /// Empty matrices are treated as zero matrices with the appropriate number
+  /// of rows and columns.
   ///
   /// @param time_period Defines the period of the discrete time system; use
-  ///  time_period=0.0 to denote a continuous time system.  @default 0.0
+  /// time_period=0.0 to denote a continuous time system.  @default 0.0
   ///
   /// Subclasses must use the protected constructor, not this one.
-  AffineSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::VectorXd>& f0,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
-               const Eigen::Ref<const Eigen::VectorXd>& y0,
-               double time_period = 0.0);
+  explicit AffineSystem(
+      const Eigen::Ref<const Eigen::MatrixXd>& A = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& B = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::VectorXd>& f0 = Eigen::VectorXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& C = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& D = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::VectorXd>& y0 = Eigen::VectorXd(),
+      double time_period = 0.0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>

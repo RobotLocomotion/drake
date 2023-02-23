@@ -6,6 +6,7 @@
 #include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/math/autodiff.h"
 
 namespace drake {
@@ -65,7 +66,7 @@ void ThrowIfInvalidForCentroid(const char* prefix,
   if (n_F.norm() < 1e-10) {
     throw std::runtime_error(fmt::format(
         "{}: given normal is too small; normal [{}] with length {}",
-        prefix, n_F.transpose(), n_F.norm()));
+        prefix, fmt_eigen(n_F.transpose()), n_F.norm()));
   }
 
   // Now test for orthogonality.
@@ -134,7 +135,8 @@ void ThrowIfInvalidForCentroid(const char* prefix,
     throw std::runtime_error(
         fmt::format("{}: the given normal is not perpendicular to the "
                     "polygon's plane; given normal: [{}], plane normal: [{}]",
-                    prefix, n_F.transpose(), plane_norm.transpose()));
+                    prefix, fmt_eigen(n_F.transpose()),
+                    fmt_eigen(plane_norm.transpose())));
   }
 }
 

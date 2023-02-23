@@ -14,7 +14,7 @@ namespace controllers {
 using trajectories::ExponentialPlusPiecewisePolynomial;
 using trajectories::PiecewisePolynomial;
 
-Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
+Eigen::Vector2d ZmpPlanner::ComputeOptimalCoMdd(
     double time, const Eigen::Vector4d& x) const {
   DRAKE_DEMAND(planned_);
   // Eq. 20 in [1].
@@ -24,7 +24,7 @@ Eigen::Vector2d ZMPPlanner::ComputeOptimalCoMdd(
   return K_ * x_bar + k2_.value(time);
 }
 
-bool ZMPPlanner::CheckStationaryEndPoint(
+bool ZmpPlanner::CheckStationaryEndPoint(
     const PiecewisePolynomial<double>& zmp_d) const {
   PiecewisePolynomial<double> last_segment =
       zmp_d.slice(zmp_d.get_number_of_segments() - 1, 1);
@@ -40,7 +40,7 @@ bool ZMPPlanner::CheckStationaryEndPoint(
   return true;
 }
 
-void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
+void ZmpPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
                       const Eigen::Vector4d& x0, double height, double gravity,
                       const Eigen::Matrix2d& Qy, const Eigen::Matrix2d& R) {
   // Warn the caller if the last point is not stationary. The math is still
@@ -48,7 +48,7 @@ void ZMPPlanner::Plan(const PiecewisePolynomial<double>& zmp_d,
   // If the user use the policy / nominal trajectory past the end point, the
   // system diverges exponentially fast.
   if (!CheckStationaryEndPoint(zmp_d)) {
-    drake::log()->warn("ZMPPlanner: The desired zmp trajectory does not end "
+    drake::log()->warn("ZmpPlanner: The desired zmp trajectory does not end "
         "in a stationary condition.");
   }
 

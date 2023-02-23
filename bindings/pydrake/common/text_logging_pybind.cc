@@ -144,7 +144,7 @@ void MaybeRedirectPythonLogging() {
         "Will not redirect C++ logging to Python (wrong root sink)");
     return;
   }
-  const std::vector<std::shared_ptr<spdlog::sinks::sink> >& dist_sinks =
+  std::vector<std::shared_ptr<spdlog::sinks::sink> >& dist_sinks =
       dist_sink->sinks();
   if (dist_sinks.size() != 1) {
     drake::log()->debug(
@@ -159,10 +159,14 @@ void MaybeRedirectPythonLogging() {
   }
   // If we reach this point, then we've matched text_logging.cc exactly.
 
-  // Replace the stderr sink with a python sink.
-  spdlog::sink_ptr& old_sink = root_sinks.at(0);
-  spdlog::sink_ptr new_sink = std::make_shared<pylogging_sink>();
-  std::atomic_exchange(&old_sink, std::move(new_sink));
+  // Add the python sink. Note that we must add it to the root logger (not the
+  // dist_sink) because the dist_sink takes a mutex on every log, which suffers
+  // from lock priority order inversion once the GIL gets involved.
+  drake::log()->sinks().push_back(std::make_shared<pylogging_sink>());
+
+  // Remove the stderr sink.
+  dist_sink->set_sinks({});
+
   drake::log()->trace("Successfully redirected C++ logs to Python");
 }
 #else

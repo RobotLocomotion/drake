@@ -3,6 +3,8 @@
 #include <ostream>
 #include <string>
 
+#include "drake/common/fmt.h"
+
 namespace drake {
 namespace solvers {
 enum SolutionResult {
@@ -22,3 +24,6 @@ std::string to_string(SolutionResult solution_result);
 std::ostream& operator<<(std::ostream& os, SolutionResult solution_result);
 }  // namespace solvers
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::solvers, SolutionResult, x,
+                   drake::solvers::to_string(x))

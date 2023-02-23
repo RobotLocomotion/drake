@@ -3,7 +3,7 @@
 #include <limits>
 #include <utility>
 
-#include "fmt/format.h"
+#include <fmt/format.h>
 
 #include "drake/lcm/drake_lcm.h"
 
@@ -47,6 +47,12 @@ void LcmInterfaceSystem::Publish(
 std::shared_ptr<DrakeSubscriptionInterface> LcmInterfaceSystem::Subscribe(
     const std::string& channel, HandlerFunction handler) {
   return lcm_->Subscribe(channel, std::move(handler));
+}
+
+std::shared_ptr<DrakeSubscriptionInterface>
+LcmInterfaceSystem::SubscribeMultichannel(std::string_view regex,
+                                          MultichannelHandlerFunction handler) {
+  return lcm_->SubscribeMultichannel(regex, std::move(handler));
 }
 
 std::shared_ptr<DrakeSubscriptionInterface>

@@ -9,7 +9,7 @@ namespace examples {
 namespace zmp {
 namespace {
 
-void PlotResults(const systems::controllers::ZMPTestTraj& traj) {
+void PlotResults(const systems::controllers::ZmpTestTraj& traj) {
   using common::CallPython;
   using common::ToPythonTuple;
 
@@ -88,20 +88,20 @@ void do_main() {
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
   std::vector<trajectories::PiecewisePolynomial<double>> zmp_trajs =
-      systems::controllers::GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
+      systems::controllers::GenerateDesiredZmpTrajs(footsteps, 0.5, 1);
 
   Eigen::Vector4d x0(0, 0, 0, 0);
   double z = 1;
 
-  systems::controllers::ZMPPlanner zmp_planner;
+  systems::controllers::ZmpPlanner zmp_planner;
   zmp_planner.Plan(zmp_trajs[0], x0, z);
 
   double sample_dt = 0.01;
 
   // Perturb the initial state a bit.
   x0 << 0, 0, 0.2, -0.1;
-  systems::controllers::ZMPTestTraj result =
-      systems::controllers::SimulateZMPPolicy(zmp_planner, x0, sample_dt, 2);
+  systems::controllers::ZmpTestTraj result =
+      systems::controllers::SimulateZmpPolicy(zmp_planner, x0, sample_dt, 2);
 
   PlotResults(result);
 }

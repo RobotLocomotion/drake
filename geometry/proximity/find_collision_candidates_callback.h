@@ -4,9 +4,10 @@
 #include <utility>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <fmt/format.h>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/sorted_pair.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/proximity/collision_filter.h"
@@ -14,7 +15,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-namespace find_collision_candidates {
+namespace find_collision_candidates DRAKE_NO_EXPORT {
 
 /* Supporting data for the collision candidates callback (see Callback below).
    It includes:

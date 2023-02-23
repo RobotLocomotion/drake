@@ -10,6 +10,7 @@
 #include <optional>
 #include <ostream>
 
+#include "drake/common/fmt_ostream.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
@@ -177,3 +178,10 @@ void AddCompliantHydroelasticPropertiesForHalfSpace(
 
 }  // namespace geometry
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::geometry::internal::HydroelasticType>
+    : drake::ostream_formatter {};
+}  // namespace fmt

@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
 
@@ -122,7 +123,7 @@ bool ImplicitEulerIntegrator<T>::StepAbstract(
 
   // Start from the guess.
   *xtplus = xtplus_guess;
-  DRAKE_LOGGER_DEBUG("Starting state: {}", xtplus->transpose());
+  DRAKE_LOGGER_DEBUG("Starting state: {}", fmt_eigen(xtplus->transpose()));
 
   // Advance the context time and state to compute derivatives at t0 + h.
   const T tf = t0 + h;

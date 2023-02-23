@@ -25,6 +25,7 @@ filegroup(
         "ball.sdf",
         "paddle.sdf",
     ],
+    visibility = ["//:__pkg__"],
 )
 
 add_lint_tests()

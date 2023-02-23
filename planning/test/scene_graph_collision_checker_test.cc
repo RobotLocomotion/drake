@@ -13,6 +13,7 @@ namespace planning {
 namespace test {
 namespace {
 
+using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -24,14 +25,14 @@ CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams() {
   const CollisionCheckerConstructionParams p;
   auto model = MakePlanningTestModel(MakeCollisionCheckerTestScene());
   const auto robot_instance = model->plant().GetModelInstanceByName("iiwa");
-  result.checker.reset(new SceneGraphCollisionChecker({
-      .model = std::move(model),
-      .robot_model_instances = {robot_instance},
-      .configuration_distance_function =
-          MakeWeightedIiwaConfigurationDistanceFunction(),
-      .edge_step_size = p.edge_step_size,
-      .env_collision_padding = p.env_padding,
-      .self_collision_padding = p.self_padding}));
+  result.checker.reset(new SceneGraphCollisionChecker(
+      {.model = std::move(model),
+       .robot_model_instances = {robot_instance},
+       .configuration_distance_function =
+           MakeWeightedIiwaConfigurationDistanceFunction(),
+       .edge_step_size = p.edge_step_size,
+       .env_collision_padding = p.env_padding,
+       .self_collision_padding = p.self_padding}));
   return result;
 }
 
@@ -62,7 +63,7 @@ INSTANTIATE_TEST_SUITE_P(
 // Dallas's sphere has a radius of 1.0.
 GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   RobotDiagramBuilder<double> builder;
-  builder.mutable_parser().AddModelsFromString(R"""(
+  const std::string model_data = R"""(
 <?xml version='1.0'?>
 <sdf xmlns:drake='http://drake.mit.edu' version='1.9'>
 <world name='default'>
@@ -102,15 +103,16 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   </model>
 </world>
 </sdf>
-)""", "sdf");
+)""";
+  builder.parser().AddModelsFromString(model_data, "sdf");
+
   const auto& plant = builder.plant();
 
   CollisionCheckerParams params;
-  params.model = builder.BuildDiagram();
-  params.robot_model_instances.push_back(
-      plant.GetModelInstanceByName("robot"));
-  params.configuration_distance_function =
-      [](const VectorXd& q1, const VectorXd& q2) {
+  params.model = builder.Build();
+  params.robot_model_instances.push_back(plant.GetModelInstanceByName("robot"));
+  params.configuration_distance_function = [](const VectorXd& q1,
+                                              const VectorXd& q2) {
     return (q1 - q2).norm();
   };
   params.edge_step_size = 0.05;
@@ -137,14 +139,8 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   const double tol = 1e-9;
   EXPECT_EQ(clearance.size(), 3);
   EXPECT_EQ(clearance.num_positions(), 3);
-  EXPECT_THAT(clearance.robot_indices(), ElementsAre(
-      boston,
-      boston,
-      seattle));
-  EXPECT_THAT(clearance.other_indices(), ElementsAre(
-      seattle,
-      dallas,
-      dallas));
+  EXPECT_THAT(clearance.robot_indices(), ElementsAre(boston, boston, seattle));
+  EXPECT_THAT(clearance.other_indices(), ElementsAre(seattle, dallas, dallas));
   EXPECT_THAT(clearance.collision_types(),
               ElementsAre(RobotCollisionType::kSelfCollision,
                           RobotCollisionType::kEnvironmentCollision,
@@ -154,35 +150,33 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   // The Seattle <-> Dallas distance on-center is 5.0.
   // In each case, the measured distance is less than on-center by each of the
   // two cities' sphere radii.
-  EXPECT_TRUE(CompareMatrices(clearance.distances(), (VectorXd(3) <<
-      8.0 - 0.5 - 0.25,
-      5.0 - 0.5 - 1.0,
-      5.0 - 0.25 - 1.0).finished(), tol));
+  Vector3d expected_distances;
+  expected_distances(0) = 8.0 - 0.5 - 0.25;
+  expected_distances(1) = 5.0 - 0.5 - 1.0;
+  expected_distances(2) = 5.0 - 0.25 - 1.0;
+  EXPECT_TRUE(CompareMatrices(clearance.distances(), expected_distances, tol));
   // Recall that:
   // - The prismatic joint for Boston moves (+0.6, +0.8) for each +1.0 q₀.
   // - The prismatic joint for Seattle moves (-0.6, +0.8) for each +1.0 q₁.
   // - Dallas is not part of the robot, so its jacobian will always be zero.
-  EXPECT_TRUE(CompareMatrices(clearance.jacobians(), (MatrixXd(3, 3) <<
-      // Increasing either q₀ or q₁ will increase the Boston-Seattle distance.
-      0.8, 0.8, 0,
-      // Increasing q₀ will increase the Boston-Dallas distance.
-      1.0, 0,   0,
-      // Increasing q₁ will increase the Seattle-Dallas distance.
-      0,   1.0, 0).finished(), tol));
+  Matrix3d expected_jacobians(3, 3);
+  expected_jacobians.setZero();
+  // Increasing either q₀ or q₁ will increase the Boston-Seattle distance.
+  expected_jacobians(0, 0) = 0.8;
+  expected_jacobians(0, 1) = 0.8;
+  // Increasing q₀ will increase the Boston-Dallas distance.
+  expected_jacobians(1, 0) = 1.0;
+  // Increasing q₁ will increase the Seattle-Dallas distance.
+  expected_jacobians(2, 1) = 1.0;
+  EXPECT_TRUE(CompareMatrices(clearance.jacobians(), expected_jacobians, tol));
 
   // Now reposture Seattle to be directly south of Boston (tectonic plates!).
   // The distances will change in the obvious ways; what we care about most is
   // that the jacobian and especially its sign update correctly.
   q(1) = -5.0;
   clearance = dut.CalcRobotClearance(q, influence);
-  EXPECT_THAT(clearance.robot_indices(), ElementsAre(
-      boston,
-      boston,
-      seattle));
-  EXPECT_THAT(clearance.other_indices(), ElementsAre(
-      seattle,
-      dallas,
-      dallas));
+  EXPECT_THAT(clearance.robot_indices(), ElementsAre(boston, boston, seattle));
+  EXPECT_THAT(clearance.other_indices(), ElementsAre(seattle, dallas, dallas));
   EXPECT_THAT(clearance.collision_types(),
               ElementsAre(RobotCollisionType::kSelfCollision,
                           RobotCollisionType::kEnvironmentCollision,
@@ -192,22 +186,24 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
   // The Seattle <-> Dallas distance on-center is 5.0.
   // In each case, the measured distance is less than on-center by each of the
   // two cities' sphere radii.
-  EXPECT_TRUE(CompareMatrices(clearance.distances(), (VectorXd(3) <<
-      6.0 - 0.5 - 0.25,
-      5.0 - 0.5 - 1.0,
-      5.0 - 0.25 - 1.0).finished(), tol));
+  expected_distances(0) = 6.0 - 0.5 - 0.25;
+  expected_distances(1) = 5.0 - 0.5 - 1.0;
+  expected_distances(2) = 5.0 - 0.25 - 1.0;
+  EXPECT_TRUE(CompareMatrices(clearance.distances(), expected_distances, tol));
   // Recall that:
   // - The prismatic joint for Boston moves (+0.6, +0.8) for each +1.0 q₀.
   // - The prismatic joint for Seattle moves (-0.6, +0.8) for each +1.0 q₁.
   // - Dallas is not part of the robot, so its jacobian will always be zero.
-  EXPECT_TRUE(CompareMatrices(clearance.jacobians(), (MatrixXd(3, 3) <<
-      // Increasing q₀ will increase the Boston-Seattle distance.
-      // Increasing q₁ will decrease the Boston-Seattle distance.
-      0.6, -0.6, 0,
-      // Increasing q₀ will increase the Boston-Dallas distance.
-      1.0, 0,    0,
-      // Increasing q₁ will decrease the Seattle-Dallas distance.
-      0,   -1.0, 0).finished(), tol));
+  expected_jacobians.setZero();
+  // Increasing q₀ will increase the Boston-Seattle distance.
+  expected_jacobians(0, 0) = 0.6;
+  // Increasing q₁ will decrease the Boston-Seattle distance.
+  expected_jacobians(0, 1) = -0.6;
+  // Increasing q₀ will increase the Boston-Dallas distance.
+  expected_jacobians(1, 0) = 1.0;
+  // Increasing q₁ will decrease the Seattle-Dallas distance.
+  expected_jacobians(2, 1) = -1.0;
+  EXPECT_TRUE(CompareMatrices(clearance.jacobians(), expected_jacobians, tol));
 }
 
 // Checks RobotClearance when the robot is an arm (only) but inboard of the
@@ -216,7 +212,7 @@ GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceThreeSpheres) {
 GTEST_TEST(SceneGraphCollisionCheckerTest, ClearanceFloatingBase) {
   // Build a dut with a ground plane + floating chassis with welded arm.
   RobotDiagramBuilder<double> builder;
-  builder.mutable_parser().AddModelsFromString(R"""(
+  const std::string model_directives = R"""(
 directives:
 - add_model:
     name: ground
@@ -233,14 +229,15 @@ directives:
 - add_weld:
     parent: chassis::base_link_meat
     child: arm::base
-)""", "dmd.yaml");
+)""";
+  builder.parser().AddModelsFromString(model_directives, "dmd.yaml");
+
   const auto& plant = builder.plant();
   CollisionCheckerParams params;
-  params.model = builder.BuildDiagram();
-  params.robot_model_instances.push_back(
-      plant.GetModelInstanceByName("arm"));
-  params.configuration_distance_function =
-      [](const VectorXd& q1, const VectorXd& q2) {
+  params.model = builder.Build();
+  params.robot_model_instances.push_back(plant.GetModelInstanceByName("arm"));
+  params.configuration_distance_function = [](const VectorXd& q1,
+                                              const VectorXd& q2) {
     return (q1 - q2).norm();
   };
   params.edge_step_size = 0.05;

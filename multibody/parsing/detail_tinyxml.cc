@@ -12,7 +12,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-std::vector<double> ConvertToDoubles(const std::string& str) {
+template <typename T>
+std::vector<T> ConvertToVector(const std::string& str) {
   std::istringstream ss(str);
   // Every real number in a URDF file needs to be parsed assuming that the
   // decimal point separator is the period, as specified in XML Schema
@@ -21,8 +22,8 @@ std::vector<double> ConvertToDoubles(const std::string& str) {
   // Related PR: https://github.com/ros/urdfdom_headers/pull/42 .
   ss.imbue(std::locale::classic());
 
-  double val{};
-  std::vector<double> out;
+  T val{};
+  std::vector<T> out;
   while (ss >> val) {
     out.push_back(val);
   }
@@ -40,16 +41,16 @@ bool ParseStringAttribute(const tinyxml2::XMLElement* node,
   return false;
 }
 
+template <typename T>
 bool ParseScalarAttribute(
-    const tinyxml2::XMLElement* node,
-    const char* attribute_name, double* val,
+    const tinyxml2::XMLElement* node, const char* attribute_name, T* val,
     std::optional<const drake::internal::DiagnosticPolicy> policy) {
   if (!policy.has_value()) {
     policy.emplace();
   }
   const char* attr = node->Attribute(attribute_name);
   if (attr) {
-    std::vector<double> vals = ConvertToDoubles(attr);
+    std::vector<T> vals = ConvertToVector<T>(attr);
     if (vals.size() != 1) {
       policy->Error(
           fmt::format("Expected single value for attribute '{}' got '{}'",
@@ -99,6 +100,16 @@ bool ParseThreeVectorAttribute(const tinyxml2::XMLElement* node,
   }
   return true;
 }
+
+// Explicit instantiation
+template std::vector<double> ConvertToVector(const std::string& str);
+template std::vector<int> ConvertToVector(const std::string& str);
+template bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node, const char* attribute_name, double* val,
+    std::optional<const drake::internal::DiagnosticPolicy> policy);
+template bool ParseScalarAttribute(
+    const tinyxml2::XMLElement* node, const char* attribute_name, int* val,
+    std::optional<const drake::internal::DiagnosticPolicy> policy);
 
 }  // namespace internal
 }  // namespace multibody

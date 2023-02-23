@@ -19,6 +19,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/extract_double.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -46,12 +47,12 @@ namespace multibody {
 /// are defined in terms of the mass dm of a differential volume of the body.
 /// The position of dm from about-point P is xx̂ + yŷ + zẑ = [x, y, z]_E.
 /// <pre>
-/// Ixx = ∫ (y² + z²) dm
-/// Iyy = ∫ (x² + z²) dm
-/// Izz = ∫ (x² + y²) dm
-/// Ixy = - ∫ x y dm
-/// Ixz = - ∫ x z dm
-/// Iyz = - ∫ y z dm
+/// Ixx = ∫ (y² + z²) dm
+/// Iyy = ∫ (x² + z²) dm
+/// Izz = ∫ (x² + y²) dm
+/// Ixy = - ∫ x y dm
+/// Ixz = - ∫ x z dm
+/// Iyz = - ∫ y z dm
 /// </pre>
 /// We use the negated convention for products of inertia, so that I serves
 /// to relate angular velocity ω and angular momentum h via `h = I ⋅ ω`.
@@ -1180,6 +1181,13 @@ RotationalInertia<T>& RotationalInertia<T>::ReExpressInPlace(
 
 }  // namespace multibody
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::multibody::RotationalInertia<T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::RotationalInertia)

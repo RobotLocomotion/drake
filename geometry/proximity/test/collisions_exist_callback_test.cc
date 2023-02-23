@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/proximity_utilities.h"

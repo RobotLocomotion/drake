@@ -50,6 +50,7 @@ filegroup(
         "pepper.sdf",
         "table.sdf",
     ] + _VEGGIES_MESHES + _DISHES_FILES,
+    visibility = ["//:__pkg__"],
 )
 
 add_lint_tests()

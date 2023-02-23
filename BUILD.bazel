@@ -35,6 +35,47 @@ alias(
     visibility = ["//visibility:public"],
 )
 
+# A manually-curated collection of most model files in Drake, so that we can
+# easily provide access to them for tools like //tools:model_visualizer.
+filegroup(
+    name = "all_models",
+    data = [
+        "//bindings/pydrake/multibody:models",
+        "//examples/acrobot:models",
+        "//examples/atlas:models",
+        "//examples/compass_gait:models",
+        "//examples/hardware_sim:demo_data",
+        "//examples/hydroelastic/ball_plate:floor_files",
+        "//examples/hydroelastic/ball_plate:plate_files",
+        "//examples/hydroelastic/python_ball_paddle:ball_paddle_files",
+        "//examples/hydroelastic/python_nonconvex_mesh:models",
+        "//examples/hydroelastic/spatula_slip_control:models",
+        "//examples/kuka_iiwa_arm/models",
+        "//examples/manipulation_station:models",
+        "//examples/multibody/cart_pole:models",
+        "//examples/multibody/four_bar:models",
+        "//examples/pendulum:models",
+        "//examples/planar_gripper:models",
+        "//examples/pr2:models",
+        "//examples/quadrotor:models",
+        "//examples/rimless_wheel:models",
+        "//examples/scene_graph:models",
+        "//examples/simple_gripper:simple_gripper_models",
+        "//examples/zmp:models",
+        "//manipulation/models/allegro_hand_description:models",
+        "//manipulation/models/franka_description:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/jaco_description:models",
+        "//manipulation/models/realsense2_description:models",
+        "//manipulation/models/tri_homecart:models",
+        "//manipulation/models/ur3e:models",
+        "//manipulation/models/wsg_50_description:models",
+        "//manipulation/models/ycb:models",
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    visibility = ["//:__subpackages__"],
+)
+
 # To create a manifest of all installed files for use by drake_bazel_installed,
 # we declare an install target that contains almost everything -- but it can't
 # contain the bazel logic that is generated based on the manifest, so we'll add

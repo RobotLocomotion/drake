@@ -11,7 +11,6 @@ a way to model a kinematic loop. It shows:
 */
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -77,12 +76,10 @@ int do_main() {
       &builder, std::make_unique<MultibodyPlant<double>>(0.0));
 
   // Make and add the four_bar model from an SDF model.
-  const std::string relative_name =
-      "drake/examples/multibody/four_bar/four_bar.sdf";
-  const std::string full_name = FindResourceOrThrow(relative_name);
-
+  const std::string sdf_url =
+      "package://drake/examples/multibody/four_bar/four_bar.sdf";
   Parser parser(&four_bar);
-  parser.AddModels(full_name);
+  parser.AddModelsFromUrl(sdf_url);
 
   // Get the two frames that define the bushing, namely frame Bc that is
   // welded to the end of link B and frame Cb that is welded to the end of

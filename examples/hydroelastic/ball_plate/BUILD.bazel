@@ -59,6 +59,7 @@ filegroup(
         "plate_8in_col.mtl",
         "plate_8in_col.obj",
     ],
+    visibility = ["//:__pkg__"],
 )
 
 filegroup(
@@ -66,6 +67,7 @@ filegroup(
     srcs = [
         "floor.sdf",
     ],
+    visibility = ["//:__pkg__"],
 )
 
 add_lint_tests()

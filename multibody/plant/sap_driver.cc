@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -58,12 +59,20 @@ template <typename T>
 void SapDriver<T>::DeclareCacheEntries(
     CompliantContactManager<T>* mutable_manager) {
   DRAKE_DEMAND(mutable_manager == manager_);
+
+  const systems::DependencyTicket xd_ticket = systems::System<T>::xd_ticket();
+  const systems::DependencyTicket inputs_ticket =
+      plant().all_input_ports_ticket();
+  const systems::DependencyTicket parameters_ticket =
+      plant().all_parameters_ticket();
+  const std::set<systems::DependencyTicket> state_input_and_parameters = {
+      xd_ticket, inputs_ticket, parameters_ticket};
+
   const auto& contact_problem_cache_entry = mutable_manager->DeclareCacheEntry(
       "contact problem",
       systems::ValueProducer(this, ContactProblemCache<T>(plant().time_step()),
                              &SapDriver<T>::CalcContactProblemCache),
-      {plant().cache_entry_ticket(
-          manager().cache_indexes_.discrete_contact_pairs)});
+      state_input_and_parameters);
   contact_problem_ = contact_problem_cache_entry.cache_index();
 }
 

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
@@ -82,19 +83,18 @@ class SymbolicPolynomialMatrixTest : public ::testing::Test {
   const MatrixX<Expression> m2_expanded{
       m2.unaryExpr([](const Expression& e) { return e.Expand(); })};
   if (m1_expanded == m2_expanded) {
-    return ::testing::AssertionSuccess()
-           << "m1 and m2 are equal after expansion where m1 = \n"
-           << m1 << "\n"
-           << "and m2 = " << m2;
+    return ::testing::AssertionSuccess() << fmt::format(
+               "m1 and m2 are equal after expansion where m1 = \n{}\n"
+               "and m2 = {}",
+               fmt_eigen(m1), fmt_eigen(m2));
   } else {
-    return ::testing::AssertionFailure()
-           << "m1 and m2 are not equal after expansion where m1 = \n"
-           << m1 << "\n"
-           << "m2 = " << m2 << "\n"
-           << "m1_expanded = \n"
-           << m1_expanded << "\n"
-           << "m2_expanded = \n"
-           << m2_expanded;
+    return ::testing::AssertionFailure() << fmt::format(
+               "m1 and m2 are not equal after expansion where m1 = \n{}\n"
+               "m2 = \n{}\n"
+               "m1_expanded = \n{}\n"
+               "m2_expanded = \n{}\n",
+               fmt_eigen(m1), fmt_eigen(m2), fmt_eigen(m1_expanded),
+               fmt_eigen(m2_expanded));
   }
 }
 

@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
 
 #include <memory>
 
@@ -7,7 +7,7 @@
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/geometry_roles.h"
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/geometry/optimization/vpolytope.h"
 #include "drake/geometry/proximity_properties.h"
 #include "drake/geometry/shape_specification.h"
@@ -19,7 +19,9 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+namespace {
 
+// Sets each entry in `a` and `b` as an affine polynomial of indeterminates `s`.
 void SetupPlane(const Eigen::Ref<const VectorX<symbolic::Variable>>& s,
                 Vector3<symbolic::Polynomial>* a, symbolic::Polynomial* b) {
   // Set each entry in a and b as an affine polynomial of s.
@@ -44,16 +46,16 @@ void SetupPlane(const Eigen::Ref<const VectorX<symbolic::Variable>>& s,
       b_coeff.dot(s.cast<symbolic::Expression>()) + b_constant, s_set);
 }
 
-class CollisionGeometryTest : public CIrisToyRobotTest {
+class CIrisCollisionGeometryTest : public CIrisToyRobotTest {
  public:
-  CollisionGeometryTest()
+  CIrisCollisionGeometryTest()
       : rational_forward_kin_{plant_},
         diagram_context_{diagram_->CreateDefaultContext()} {
     SetupPlane(rational_forward_kin_.s(), &a_, &b_);
-    plant_context_ = &(
-        diagram_->GetMutableSubsystemContext(*plant_, diagram_context_.get()));
-    scene_graph_context_ = &(diagram_->GetMutableSubsystemContext(
-        *scene_graph_, diagram_context_.get()));
+    plant_context_ =
+        &(plant_->GetMyMutableContextFromRoot(diagram_context_.get()));
+    scene_graph_context_ =
+        &(scene_graph_->GetMyMutableContextFromRoot(diagram_context_.get()));
 
     for (int i = 0; i < 3; ++i) {
       y_slack_(i) = symbolic::Variable("y" + std::to_string(i));
@@ -147,13 +149,14 @@ void CheckRationalWSlack(const symbolic::RationalFunction& rational,
                symbolic::Polynomial(expr_expected), 1E-10);
 }
 
-TEST_F(CollisionGeometryTest, Box) {
-  // Test CollisionGeometry constructed from a box.
+TEST_F(CIrisCollisionGeometryTest, Box) {
+  // Test CIrisCollisionGeometry constructed from a box.
   const auto& model_inspector = scene_graph_->model_inspector();
   const multibody::BodyIndex geometry_body = body_indices_[0];
-  CollisionGeometry box(&model_inspector.GetShape(body0_box_), geometry_body,
-                        body0_box_, model_inspector.GetPoseInFrame(body0_box_));
-  EXPECT_EQ(box.type(), GeometryType::kPolytope);
+  CIrisCollisionGeometry box(&model_inspector.GetShape(body0_box_),
+                             geometry_body, body0_box_,
+                             model_inspector.GetPoseInFrame(body0_box_));
+  EXPECT_EQ(box.type(), CIrisGeometryType::kPolytope);
 
   Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[1];
@@ -183,7 +186,7 @@ TEST_F(CollisionGeometryTest, Box) {
   const Eigen::Matrix<double, 3, 8> p_BV = box.X_BG() * p_GV;
 
   // Evaluate the rationals, and compare the evaluation result with a.dot(p_AV)
-  // + b
+  // + b.
   Eigen::Vector3d q_val(0.2, -0.1, 0.5);
   const Eigen::VectorXd s_val = SetQ(q_star, q_val);
 
@@ -217,14 +220,14 @@ TEST_F(CollisionGeometryTest, Box) {
   }
 }
 
-TEST_F(CollisionGeometryTest, Convex) {
-  // Test CollisionGeometry constructed from a convex object.
+TEST_F(CIrisCollisionGeometryTest, Convex) {
+  // Test CIrisCollisionGeometry constructed from a convex object.
   const auto& model_inspector = scene_graph_->model_inspector();
   const multibody::BodyIndex geometry_body = body_indices_[1];
-  CollisionGeometry convex(&model_inspector.GetShape(body1_convex_),
-                           geometry_body, body1_convex_,
-                           model_inspector.GetPoseInFrame(body1_convex_));
-  EXPECT_EQ(convex.type(), GeometryType::kPolytope);
+  CIrisCollisionGeometry convex(&model_inspector.GetShape(body1_convex_),
+                                geometry_body, body1_convex_,
+                                model_inspector.GetPoseInFrame(body1_convex_));
+  EXPECT_EQ(convex.type(), CIrisGeometryType::kPolytope);
 
   const multibody::BodyIndex expressed_body = body_indices_[3];
   const Eigen::Vector3d q_star(0, 0, 0);
@@ -255,7 +258,7 @@ TEST_F(CollisionGeometryTest, Convex) {
       *plant_context_, plant_->get_body(geometry_body).body_frame(), p_BV,
       plant_->get_body(expressed_body).body_frame(), &p_AV);
 
-  // negative side.
+  // Negative side.
   convex.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
                      PlaneSide::kNegative, y_slack_, &rationals);
   EXPECT_EQ(rationals.size(), polytope.vertices().cols());
@@ -289,20 +292,21 @@ TEST_F(CollisionGeometryTest, Convex) {
   }
 }
 
-TEST_F(CollisionGeometryTest, Sphere) {
-  // Test CollisionGeometry constructed from a sphere object.
+TEST_F(CIrisCollisionGeometryTest, Sphere) {
+  // Test CIrisCollisionGeometry constructed from a sphere object.
   const auto& model_inspector = scene_graph_->model_inspector();
-  CollisionGeometry sphere(&model_inspector.GetShape(body2_sphere_),
-                           body_indices_[2], body2_sphere_,
-                           model_inspector.GetPoseInFrame(body2_sphere_));
-  EXPECT_EQ(sphere.type(), GeometryType::kSphere);
+  const auto& geometry_body = body_indices_[2];
+  CIrisCollisionGeometry sphere(&model_inspector.GetShape(body2_sphere_),
+                                geometry_body, body2_sphere_,
+                                model_inspector.GetPoseInFrame(body2_sphere_));
+  EXPECT_EQ(sphere.type(), CIrisGeometryType::kSphere);
   EXPECT_EQ(sphere.num_rationals(), 2);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
   const multibody::BodyIndex expressed_body = body_indices_[3];
   const auto X_AB_multilinear =
       rational_forward_kin_.CalcBodyPoseAsMultilinearPolynomial(
-          q_star, body_indices_[2], expressed_body);
+          q_star, geometry_body, expressed_body);
 
   const Eigen::Vector3d q_val(0.2, -0.1, 0.4);
   const Eigen::Vector3d s_val = SetQ(q_star, q_val);
@@ -347,14 +351,14 @@ TEST_F(CollisionGeometryTest, Sphere) {
   CheckRationalNoSlack(rationals_no_y[0], env, a_expr.dot(p_AS) + b_expr - 1);
 }
 
-TEST_F(CollisionGeometryTest, Capsule) {
-  // Test CollisionGeometry constructed from a capsule object.
+TEST_F(CIrisCollisionGeometryTest, Capsule) {
+  // Test CIrisCollisionGeometry constructed from a capsule object.
   const auto& model_inspector = scene_graph_->model_inspector();
   const multibody::BodyIndex geometry_body = body_indices_[2];
-  CollisionGeometry capsule(&model_inspector.GetShape(body2_capsule_),
-                            geometry_body, body2_capsule_,
-                            model_inspector.GetPoseInFrame(body2_capsule_));
-  EXPECT_EQ(capsule.type(), GeometryType::kCapsule);
+  CIrisCollisionGeometry capsule(
+      &model_inspector.GetShape(body2_capsule_), geometry_body, body2_capsule_,
+      model_inspector.GetPoseInFrame(body2_capsule_));
+  EXPECT_EQ(capsule.type(), CIrisGeometryType::kCapsule);
   EXPECT_EQ(capsule.num_rationals(), 3);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
@@ -373,7 +377,7 @@ TEST_F(CollisionGeometryTest, Capsule) {
   }
   const symbolic::Expression b_expr = b_.EvaluatePartial(env).ToExpression();
 
-  // Negative side
+  // Negative side.
   std::vector<symbolic::RationalFunction> rationals;
   capsule.OnPlaneSide(a_, b_, X_AB_multilinear, rational_forward_kin_,
                       PlaneSide::kNegative, y_slack_, &rationals);
@@ -419,14 +423,14 @@ TEST_F(CollisionGeometryTest, Capsule) {
   CheckRationalNoSlack(rationals_no_y[0], env, a_expr.dot(p_AO) + b_expr - 1);
 }
 
-TEST_F(CollisionGeometryTest, Cylinder) {
-  // Test CollisionGeometry constructed from a cylinder object.
+TEST_F(CIrisCollisionGeometryTest, Cylinder) {
+  // Test CIrisCollisionGeometry constructed from a cylinder object.
   const auto& model_inspector = scene_graph_->model_inspector();
   const multibody::BodyIndex geometry_body = body_indices_[3];
-  CollisionGeometry cylinder(&model_inspector.GetShape(body3_cylinder_),
-                             geometry_body, body3_cylinder_,
-                             model_inspector.GetPoseInFrame(body3_cylinder_));
-  EXPECT_EQ(cylinder.type(), GeometryType::kCylinder);
+  CIrisCollisionGeometry cylinder(
+      &model_inspector.GetShape(body3_cylinder_), geometry_body,
+      body3_cylinder_, model_inspector.GetPoseInFrame(body3_cylinder_));
+  EXPECT_EQ(cylinder.type(), CIrisGeometryType::kCylinder);
   EXPECT_EQ(cylinder.num_rationals(), 3);
 
   const Eigen::Vector3d q_star(0., 0., 0.);
@@ -573,9 +577,9 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   plant->SetPositions(&plant_context, q);
 
   // Test the distance for each geometry.
-  const CollisionGeometry sphere(&(model_inspector.GetShape(body1_sphere)),
-                                 body_indices[1], body1_sphere,
-                                 model_inspector.GetPoseInFrame(body1_sphere));
+  const CIrisCollisionGeometry sphere(
+      &(model_inspector.GetShape(body1_sphere)), body_indices[1], body1_sphere,
+      model_inspector.GetPoseInFrame(body1_sphere));
 
   // Expressed body is where the halfspace is welded to.
   const multibody::BodyIndex expressed_body = body_indices[3];
@@ -607,10 +611,10 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   }
 
   {
-    // Distance to box
-    const CollisionGeometry box(&(model_inspector.GetShape(body0_box)),
-                                body_indices[0], body0_box,
-                                model_inspector.GetPoseInFrame(body0_box));
+    // Distance to box.
+    const CIrisCollisionGeometry box(&(model_inspector.GetShape(body0_box)),
+                                     body_indices[0], body0_box,
+                                     model_inspector.GetPoseInFrame(body0_box));
     const double distance = DistanceToHalfspace(
         box, a, b, expressed_body, PlaneSide::kNegative, *plant, plant_context);
     // SceneGraph doesn't support distance between box and halfspace yet.
@@ -635,8 +639,8 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   }
 
   {
-    // Distance to capsule
-    const CollisionGeometry capsule(
+    // Distance to capsule.
+    const CIrisCollisionGeometry capsule(
         &(model_inspector.GetShape(body2_capsule)), body_indices[2],
         body2_capsule, model_inspector.GetPoseInFrame(body2_capsule));
     const double distance =
@@ -659,8 +663,8 @@ GTEST_TEST(DistanceToHalfspace, Test) {
   }
 
   {
-    // Distance to cylinder
-    const CollisionGeometry cylinder(
+    // Distance to cylinder.
+    const CIrisCollisionGeometry cylinder(
         &(model_inspector.GetShape(body4_cylinder)), body_indices[4],
         body4_cylinder, model_inspector.GetPoseInFrame(body4_cylinder));
     const double distance =
@@ -689,6 +693,7 @@ GTEST_TEST(DistanceToHalfspace, Test) {
     EXPECT_NEAR(distance, distance_expected, 1E-10);
   }
 }
+}  // namespace
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

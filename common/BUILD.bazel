@@ -37,6 +37,7 @@ drake_cc_package_library(
         ":extract_double",
         ":find_resource",
         ":find_runfiles",
+        ":fmt",
         ":hash",
         ":identifier",
         ":is_approx_equal_abstol",
@@ -60,6 +61,23 @@ drake_cc_package_library(
     ],
 )
 
+drake_cc_library(
+    name = "fmt",
+    srcs = [
+        "fmt_eigen.cc",
+    ],
+    hdrs = [
+        "fmt.h",
+        "fmt_eigen.h",
+        "fmt_ostream.h",
+    ],
+    visibility = ["//common/test_utilities:__pkg__"],
+    deps = [
+        "@eigen",
+        "@fmt",
+    ],
+)
+
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
 drake_cc_library(
@@ -80,6 +98,7 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
+        ":fmt",
         "@eigen",
         "@fmt",
         "@spdlog",
@@ -429,6 +448,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "type_safe_index",
+    srcs = ["type_safe_index.cc"],
     hdrs = ["type_safe_index.h"],
     deps = [
         ":essential",
@@ -885,6 +905,27 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "fmt_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fmt_eigen_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fmt_ostream_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":essential",
@@ -964,6 +1005,7 @@ drake_cc_googletest(
     name = "text_logging_no_spdlog_test",
     srcs = [
         "drake_copyable.h",
+        "fmt.h",
         "never_destroyed.h",
         "test/text_logging_test.cc",
         "text_logging.cc",

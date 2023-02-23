@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/lcm/drake_lcm_interface.h"
@@ -61,6 +62,8 @@ class DrakeLcm : public DrakeLcmInterface {
   std::string get_lcm_url() const override;
   std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string&, HandlerFunction) override;
+  std::shared_ptr<DrakeSubscriptionInterface> SubscribeMultichannel(
+      std::string_view, MultichannelHandlerFunction) override;
   std::shared_ptr<DrakeSubscriptionInterface> SubscribeAllChannels(
       MultichannelHandlerFunction) override;
   int HandleSubscriptions(int) override;

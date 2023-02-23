@@ -16,6 +16,10 @@ load(
     "@drake//tools/workspace:generate_include_header.bzl",
     "drake_generate_include_header",
 )
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
 
 licenses(["notice"])  # BSD-3-Clause
 
@@ -30,45 +34,33 @@ generate_export_header(
     static_define = "FCL_STATIC_DEFINE",
 )
 
-# Generates a version.cmake stub based on package.xml contents.
-genrule(
-    name = "version-from-xml.cmake_genrule",
-    srcs = [
-        "package.xml",
-        "@drake//tools/workspace/fcl_internal:version-from-xml.sed",
-    ],
-    outs = [
-        "version-from-xml.cmake",
-    ],
-    cmd = " ".join([
-        "sed",
-        "-f $(execpath @drake//tools/workspace/fcl_internal:version-from-xml.sed)",  # noqa
-        "-n $(execpath package.xml) > $@",
-        "&&",
-        "test -s $@",
-    ]),
-)
-
-# Generates config.h based on the version numbers in CMake code.
+# Generate config.h.
 cmake_configure_file(
     name = "config",
     src = "include/fcl/config.h.in",
     out = "include/fcl/config.h",
-    cmakelists = [
-        ":version-from-xml.cmake",
-    ],
+    strict = True,
     defines = [
+        "FCL_VERSION=\"0.0.0\"",
+        "FCL_MAJOR_VERSION=0",
+        "FCL_MINOR_VERSION=0",
+        "FCL_PATCH_VERSION=0",
         "OCTOMAP_MAJOR_VERSION=0",
         "OCTOMAP_MINOR_VERSION=0",
         "OCTOMAP_PATCH_VERSION=0",
         "GENERATED_FILE_MARKER=GENERATED FILE DO NOT EDIT",
+    ],
+    undefines = [
+        "FCL_ENABLE_PROFILING",
+        "FCL_HAVE_OCTOMAP",
+        "FCL_HAVE_SSE",
     ],
     visibility = ["//visibility:private"],
 )
 
 # Provide all headers (except octomap-related ones) for simplicitly, even
 # though many of these will not have their '*.cpp' mate compiled.
-_HDRS = glob(
+_HDRS_GLOB = glob(
     include = [
         "include/**/*.h",
     ],
@@ -80,7 +72,7 @@ _HDRS = glob(
 
 # To minimize the build footprint, only build the fraction of FCL that is
 # needed by Drake.
-_DRAKE_RELEVANT_SRCS = glob(
+_SRCS = glob(
     include = [
         "src/**/*.cpp",
     ],
@@ -115,23 +107,37 @@ _DRAKE_RELEVANT_SRCS = glob(
 drake_generate_include_header(
     name = "fcl_h_genrule",
     out = "include/fcl/fcl.h",
-    hdrs = _HDRS,
+    hdrs = _HDRS_GLOB,
 )
 
-cc_library(
+# All headers -- those from upstream directly, plus our generated headers.
+_HDRS = _HDRS_GLOB + [
+    "include/fcl/config.h",
+    "include/fcl/fcl.h",
+    "include/fcl/export.h",
+]
+
+cc_library_vendored(
     name = "fcl",
-    srcs = _DRAKE_RELEVANT_SRCS,
-    hdrs = _HDRS + [
-        ":config",
-        ":fcl_h_genrule",
-        ":include/fcl/export.h",
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/src/")
+        for x in _SRCS
     ],
+    hdrs = _HDRS,
+    hdrs_vendored = [
+        x.replace("include/fcl/", "drake_src/drake_vendor/fcl/")
+        for x in _HDRS
+    ],
+    edit_include = {
+        "fcl/": "drake_vendor/fcl/",
+    },
     copts = ["-fvisibility=hidden"],
     defines = [
         "FCL_STATIC_DEFINE",
     ],
-    includes = ["include"],
-    linkstatic = 1,
+    includes = ["drake_src"],
+    linkstatic = True,
     deps = [
         "@ccd_internal//:ccd",
         "@eigen",

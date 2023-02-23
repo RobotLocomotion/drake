@@ -11,6 +11,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt.h"
 #include "drake/common/random.h"
 
 namespace drake {
@@ -163,3 +164,5 @@ Environment PopulateRandomVariables(Environment env, const Variables& variables,
 
 }  // namespace symbolic
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::symbolic, Environment, env, env.to_string())

@@ -70,7 +70,6 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//common:find_resource",
         "//examples/planar_gripper:planar_gripper_common",
         "//geometry:drake_visualizer",
         "//multibody/parsing",
@@ -90,7 +89,6 @@ drake_cc_binary(
     deps = [
         ":planar_gripper_common",
         ":planar_gripper_lcm",
-        "//common:find_resource",
         "//lcm",
         "//multibody/parsing",
         "//systems/analysis:simulator",
@@ -116,7 +114,6 @@ drake_cc_binary(
     deps = [
         ":planar_gripper_common",
         ":planar_gripper_lcm",
-        "//common:find_resource",
         "//geometry:drake_visualizer",
         "//multibody/parsing",
         "//multibody/plant",
@@ -189,7 +186,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":planar_gripper_common",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",

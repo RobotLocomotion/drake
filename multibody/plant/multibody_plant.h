@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -1807,6 +1808,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   geometry::HydroelasticContactRepresentation
   get_contact_surface_representation() const {
     return contact_surface_representation_;
+  }
+
+  /// Sets whether to apply collision filters to topologically adjacent bodies
+  /// at Finalize() time.  Filters are applied when there exists a joint
+  /// between bodies, except in the case of 6-dof joints or joints in which the
+  /// parent body is `world`.
+  /// @throws std::exception iff called post-finalize.
+  void set_adjacent_bodies_collision_filters(bool value) {
+    DRAKE_MBP_THROW_IF_FINALIZED();
+    adjacent_bodies_collision_filters_ = value;
+  }
+
+  /// Returns whether to apply collision filters to topologically adjacent
+  /// bodies at Finalize() time.
+  bool get_adjacent_bodies_collision_filters() const {
+    return adjacent_bodies_collision_filters_;
   }
 
   /// For use only by advanced developers wanting to try out their custom time
@@ -4429,7 +4446,28 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       return false;
     }
   }
+
+  // Note: As discussed in #18351, we've used CamelCase here in case we need to
+  // change its implementation down the road to a more expensive lookup.
+  /// (Internal use only) Returns a mutable pointer to the SceneGraph that this
+  /// plant is registered as a source for. This method can only be used
+  /// pre-Finalize.
+  ///
+  /// @throws std::exception if is_finalized() == true ||
+  ///           geometry_source_is_registered() == false
+  geometry::SceneGraph<T>* GetMutableSceneGraphPreFinalize() {
+    DRAKE_THROW_UNLESS(!is_finalized());
+    DRAKE_THROW_UNLESS(geometry_source_is_registered());
+    return scene_graph_;
+  }
+
   /// @} <!-- Introspection -->
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // Internal-only access to MultibodyGraph::FindSubgraphsOfWeldedBodies();
+  // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
+  std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
+#endif
 
   using internal::MultibodyTreeSystem<T>::is_discrete;
   using internal::MultibodyTreeSystem<T>::EvalPositionKinematics;
@@ -4461,7 +4499,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex hydro_fallback;
     systems::CacheIndex point_pairs;
     systems::CacheIndex spatial_contact_forces_continuous;
-    systems::CacheIndex contact_solver_results;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
@@ -4648,23 +4685,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   systems::EventStatus CalcDiscreteStep(
       const systems::Context<T>& context0,
       systems::DiscreteValues<T>* updates) const;
-
-  // This method performs the computation of the impulses to advance the state
-  // stored in `context0` in time.
-  // Contact forces and velocities are computed and stored in `results`. See
-  // ContactSolverResults for further details on the returned data.
-  void CalcContactSolverResults(
-      const drake::systems::Context<T>& context0,
-      contact_solvers::internal::ContactSolverResults<T>* results) const;
-
-
-  // Eval version of the method CalcContactSolverResults().
-  const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const systems::Context<T>& context) const {
-    return this->get_cache_entry(cache_indexes_.contact_solver_results)
-        .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
-            context);
-  }
 
   // Computes the array of indices of velocities that are not locked in the
   // current configuration. The resulting index values in @p
@@ -5177,6 +5197,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Vector (with size num_bodies()) of default poses for each body. This is
   // only used if Body::is_floating() is true.
   std::vector<math::RigidTransform<double>> X_WB_default_list_;
+
+  // Whether to apply collsion filters to adjacent bodies at Finalize().
+  bool adjacent_bodies_collision_filters_{
+    MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
 };
 
 /// @cond

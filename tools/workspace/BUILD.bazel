@@ -49,6 +49,7 @@ drake_py_binary(
     srcs = ["vendor_cxx.py"],
     visibility = [
         # These should all be of the form "@foo_internal//:__pkg__".
+        "@fcl_internal//:__pkg__",
         "@gz_math_internal//:__pkg__",
         "@gz_utils_internal//:__pkg__",
         "@msgpack_internal//:__pkg__",

@@ -20,7 +20,9 @@ construct a valid %BodyShapeDescription; it will extract and verify the correct
 information from a multibody plant and its context.
 
 When moved-from, this object models a "null" description and all of the getter
-functions will throw. */
+functions will throw.
+
+@ingroup planning_collision_checker */
 class BodyShapeDescription final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(BodyShapeDescription)

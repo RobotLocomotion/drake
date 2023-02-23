@@ -13,14 +13,14 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
-namespace manipulation {
-namespace planner {
+namespace multibody {
 
 enum class DifferentialInverseKinematicsStatus {
   kSolutionFound,    ///< Found the optimal solution.
@@ -337,7 +337,7 @@ class DifferentialInverseKinematicsParameters {
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
- * @ingroup planning
+ * @ingroup planning_configuration
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& q_current,
@@ -363,13 +363,13 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
- * @ingroup planning
+ * @ingroup planning_configuration
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyPlant<double>& robot,
+    const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const Vector6<double>& V_WE_desired,
-    const multibody::Frame<double>& frame_E,
+    const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 /**
@@ -388,13 +388,13 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
  * @return If the solver successfully finds a solution, joint_velocities will
  * be set to v, otherwise it will be nullopt.
  *
- * @ingroup planning
+ * @ingroup planning_configuration
  */
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
-    const multibody::MultibodyPlant<double>& robot,
+    const MultibodyPlant<double>& robot,
     const systems::Context<double>& context,
     const math::RigidTransform<double>& X_WE_desired,
-    const multibody::Frame<double>& frame_E,
+    const Frame<double>& frame_E,
     const DifferentialInverseKinematicsParameters& parameters);
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -404,11 +404,16 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>&,
     const math::RigidTransform<double>&,
     const Eigen::Ref<const Matrix6X<double>>&,
-    const multibody::SpatialVelocity<double>&,
+    const SpatialVelocity<double>&,
     const DifferentialInverseKinematicsParameters&);
 }  // namespace internal
 #endif
 
-}  // namespace planner
-}  // namespace manipulation
+}  // namespace multibody
 }  // namespace drake
+
+namespace fmt {
+template <>
+struct formatter<drake::multibody::DifferentialInverseKinematicsStatus>
+    : drake::ostream_formatter {};
+}  // namespace fmt

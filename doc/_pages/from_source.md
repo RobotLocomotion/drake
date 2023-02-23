@@ -5,27 +5,35 @@ title: Source Installation
 # Supported Configurations
 
 The following table shows the configurations and platforms that Drake
-officially supports. Supported configurations are tested in continuous
-integration. Any other configurations are provided on a best-effort basis.
+officially supports:
 
 <!-- The operating system requirements should match those listed in both the
      root CMakeLists.txt and tools/workspace/os.bzl. -->
 <!-- The minimum compiler versions should match those listed in both the root
      CMakeLists.txt and tools/workspace/cc/repository.bzl. -->
 
-| Operating System ⁽²⁾               | Architecture | Python ⁽¹⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
+| Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
 | Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8        | 6.0   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 6.0   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
-| macOS Monterey (12)                | x86_64       | 3.10       | 6.0   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Monterey (12)                | arm64        | 3.10       | 6.0   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | x86_64       | 3.11       | 6.0   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | arm64        | 3.11       | 6.0   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
-⁽¹⁾ CPython is the only Python implementation supported.
+"Official support" means that we have Continuous Integration test coverage to
+notice regressions, so if it doesn't work for you then please file a bug report.
 
-⁽²⁾ Drake features that perform image rendering (e.g., camera simulation)
-require a working display server.  Most personal computers will have this
+Unofficially, Drake is also likely to be compatible with newer versions of
+Ubuntu or macOS than what are listed, or with Ubuntu 22.04 running on arm64, or
+with other versions of Python or Java. However, these are not supported so if it
+doesn't work for you then please file a pull request with the fix, not a bug
+report.
+
+⁽¹⁾ Drake features that perform image rendering (e.g., camera simulation)
+require a working display server. Most personal computers will have this
 already built in, but some cloud or docker environments may require extra
 setup steps.
+
+⁽²⁾ CPython is the only Python implementation supported.
 
 ⁽³⁾ Drake requires a compiler running in C++17 or C++20 mode.
 

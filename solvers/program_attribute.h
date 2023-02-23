@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_set>
 
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -97,3 +98,16 @@ std::string to_string(const ProgramType&);
 std::ostream& operator<<(std::ostream&, const ProgramType&);
 }  // namespace solvers
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::solvers::ProgramAttribute>
+    : drake::ostream_formatter {};
+template <>
+struct formatter<drake::solvers::ProgramAttributes>
+    : drake::ostream_formatter {};
+template <>
+struct formatter<drake::solvers::ProgramType>
+    : drake::ostream_formatter {};
+}  // namespace fmt

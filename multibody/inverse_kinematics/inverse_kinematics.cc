@@ -9,6 +9,7 @@
 #include "drake/multibody/inverse_kinematics/minimum_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_constraint.h"
 #include "drake/multibody/inverse_kinematics/orientation_cost.h"
+#include "drake/multibody/inverse_kinematics/point_to_line_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/point_to_point_distance_constraint.h"
 #include "drake/multibody/inverse_kinematics/polyhedron_constraint.h"
 #include "drake/multibody/inverse_kinematics/position_constraint.h"
@@ -160,6 +161,20 @@ InverseKinematics::AddPointToPointDistanceConstraint(
   auto constraint = std::make_shared<PointToPointDistanceConstraint>(
       &plant_, frame1, p_B1P1, frame2, p_B2P2, distance_lower, distance_upper,
       get_mutable_context());
+  return prog_->AddConstraint(constraint, q_);
+}
+
+solvers::Binding<solvers::Constraint>
+InverseKinematics::AddPointToLineDistanceConstraint(
+    const Frame<double>& frame_point,
+    const Eigen::Ref<const Eigen::Vector3d>& p_B1P,
+    const Frame<double>& frame_line,
+    const Eigen::Ref<const Eigen::Vector3d>& p_B2Q,
+    const Eigen::Ref<const Eigen::Vector3d>& n_B2, double distance_lower,
+    double distance_upper) {
+  auto constraint = std::make_shared<PointToLineDistanceConstraint>(
+      &plant_, frame_point, p_B1P, frame_line, p_B2Q, n_B2, distance_lower,
+      distance_upper, get_mutable_context());
   return prog_->AddConstraint(constraint, q_);
 }
 

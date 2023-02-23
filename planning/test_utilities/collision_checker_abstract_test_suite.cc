@@ -13,8 +13,8 @@ namespace planning {
 namespace test {
 
 using geometry::GeometryId;
-using multibody::BodyIndex;
 using internal::ComputeCollisionAvoidanceDisplacement;
+using multibody::BodyIndex;
 
 multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
   // Assemble model directives.
@@ -29,13 +29,14 @@ multibody::parsing::ModelDirectives MakeCollisionCheckerTestScene() {
   multibody::parsing::ModelDirective add_robot_model;
   add_robot_model.add_model = multibody::parsing::AddModel{
       "package://drake/manipulation/models/iiwa_description/urdf/"
-      "iiwa14_spheres_dense_collision.urdf", "iiwa"};
+      "iiwa14_spheres_dense_collision.urdf",
+      "iiwa"};
   multibody::parsing::ModelDirective add_robot_weld;
-  add_robot_weld.add_weld = multibody::parsing::AddWeld{
-      "world", "iiwa::base"};
+  add_robot_weld.add_weld = multibody::parsing::AddWeld{"world", "iiwa::base"};
 
-  const multibody::parsing::ModelDirectives directives{.directives = {
-      add_env_model, add_env_weld, add_robot_model, add_robot_weld}};
+  const multibody::parsing::ModelDirectives directives{
+      .directives = {add_env_model, add_env_weld, add_robot_model,
+                     add_robot_weld}};
   return directives;
 }
 
@@ -62,8 +63,7 @@ TEST_P(CollisionCheckerAbstractTestSuite, Clone) {
   EXPECT_EQ(checker.GetZeroConfiguration(), cloned->GetZeroConfiguration());
   EXPECT_EQ(checker.edge_step_size(), cloned->edge_step_size());
   EXPECT_EQ(checker.MaxNumDistances(), cloned->MaxNumDistances());
-  EXPECT_EQ(checker.num_allocated_contexts(),
-            cloned->num_allocated_contexts());
+  EXPECT_EQ(checker.num_allocated_contexts(), cloned->num_allocated_contexts());
   EXPECT_EQ(checker.GetPaddingMatrix(), cloned->GetPaddingMatrix());
   EXPECT_EQ(checker.GetFilteredCollisionMatrix(),
             cloned->GetFilteredCollisionMatrix());
@@ -92,8 +92,7 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddSpheres) {
   auto& checker = *params.checker;
   const auto& dut_frame = checker.plant().GetFrameByName("iiwa_link_2");
   // Add a really big ball so that collision will definitely happen.
-  checker.AddCollisionShapeToFrame("test", dut_frame,
-                                   geometry::Sphere(1.0),
+  checker.AddCollisionShapeToFrame("test", dut_frame, geometry::Sphere(1.0),
                                    math::RigidTransform<double>());
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
   EXPECT_NE(checker.GetAllAddedCollisionShapes().size(), 0);
@@ -120,8 +119,7 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddSpheres) {
   EXPECT_EQ(checker.GetAllAddedCollisionShapes().size(), 0);
 
   // Re-add a shape to test removal of everything.
-  checker.AddCollisionShapeToFrame("test", dut_frame,
-                                   geometry::Sphere(1.0),
+  checker.AddCollisionShapeToFrame("test", dut_frame, geometry::Sphere(1.0),
                                    math::RigidTransform<double>());
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
   EXPECT_NE(checker.GetAllAddedCollisionShapes().size(), 0);
@@ -135,10 +133,9 @@ TEST_P(CollisionCheckerAbstractTestSuite, AddObstacles) {
   auto params = GetParam();
   auto& checker = *params.checker;
   // Add a really big cylinder so that collision will definitely happen.
-  const bool added =
-      checker.AddCollisionShapeToFrame("test", checker.plant().world_frame(),
-                                       geometry::Cylinder(1.0, 1.0),
-                                       math::RigidTransform<double>());
+  const bool added = checker.AddCollisionShapeToFrame(
+      "test", checker.plant().world_frame(), geometry::Cylinder(1.0, 1.0),
+      math::RigidTransform<double>());
   EXPECT_EQ(params.supports_added_world_obstacles, added);
   if (added) {
     EXPECT_FALSE(checker.CheckConfigCollisionFree(qs_.q1));
@@ -280,8 +277,7 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
   qtest << 0.0, M_PI_2, 0.0, -M_PI_4 * 1.25, 0.0, 0.0, 0.0;
   const Eigen::VectorXd qtest_initial = qtest;
   EXPECT_FALSE(checker.CheckConfigCollisionFree(qtest));
-  log()->info("Starting q: {}",
-              common_robotics_utilities::print::Print(qtest));
+  log()->info("Starting q: {}", common_robotics_utilities::print::Print(qtest));
   int current_iteration = 0;
   while (current_iteration < max_iterations &&
          !checker.CheckConfigCollisionFree(qtest)) {
@@ -294,20 +290,18 @@ void CollisionCheckerAbstractTestSuite::TestParallelizeableGradientQueries(
     const Eigen::VectorXd scaled_grad_qtest =
         grad_qtest.stableNormalized() * 0.05;
     qtest = qtest + scaled_grad_qtest;
-    log()->info(
-        "Iteration {}; raw grad_q: {}; scaled_grad_q: {}; new q: {}",
-        current_iteration,
-        common_robotics_utilities::print::Print(grad_qtest),
-        common_robotics_utilities::print::Print(scaled_grad_qtest),
-        common_robotics_utilities::print::Print(qtest));
+    log()->info("Iteration {}; raw grad_q: {}; scaled_grad_q: {}; new q: {}",
+                current_iteration,
+                common_robotics_utilities::print::Print(grad_qtest),
+                common_robotics_utilities::print::Print(scaled_grad_qtest),
+                common_robotics_utilities::print::Print(qtest));
     ++current_iteration;
   }
   EXPECT_TRUE(checker.CheckConfigCollisionFree(qtest));
-  log()->info(
-      "Modified qtest {} to collision-free {} in {} iterations",
-      common_robotics_utilities::print::Print(qtest_initial),
-      common_robotics_utilities::print::Print(qtest),
-      current_iteration);
+  log()->info("Modified qtest {} to collision-free {} in {} iterations",
+              common_robotics_utilities::print::Print(qtest_initial),
+              common_robotics_utilities::print::Print(qtest),
+              current_iteration);
 }
 
 TEST_P(CollisionCheckerAbstractTestSuite, StressParallelGradientQueries) {

@@ -1,12 +1,12 @@
 #include <map>
 #include <string>
 
-#include "fmt/format.h"
-#include "fmt/ostream.h"
 #include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"

@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/geometry/geometry_properties.h"
 
 namespace drake {
@@ -227,3 +228,9 @@ IllustrationProperties MakePhongIllustrationProperties(
 
 }  // namespace geometry
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::geometry::Role> : drake::ostream_formatter {};
+}  // namespace fmt

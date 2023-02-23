@@ -7,7 +7,6 @@ The ball is dropped on an edge of the paddle and bounces off.
 import argparse
 import numpy as np
 
-from pydrake.common import FindResourceOrThrow
 from pydrake.math import RigidTransform
 from pydrake.math import RollPitchYaw
 from pydrake.multibody.parsing import Parser
@@ -37,19 +36,17 @@ def make_ball_paddle(contact_model, contact_surface_representation,
     plant, scene_graph = AddMultibodyPlant(multibody_plant_config, builder)
 
     parser = Parser(plant)
-    paddle_sdf_file_name = \
-        FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
-                            "/paddle.sdf")
-    (paddle,) = parser.AddModels(paddle_sdf_file_name)
+    paddle_sdf_url = \
+        "package://drake/examples/hydroelastic/python_ball_paddle/paddle.sdf"
+    (paddle,) = parser.AddModels(url=paddle_sdf_url)
     plant.WeldFrames(
         frame_on_parent_F=plant.world_frame(),
         frame_on_child_M=plant.GetFrameByName("paddle", paddle),
         X_FM=p_WPaddle_fixed
     )
-    ball_sdf_file_name = \
-        FindResourceOrThrow("drake/examples/hydroelastic/python_ball_paddle"
-                            "/ball.sdf")
-    parser.AddModels(ball_sdf_file_name)
+    ball_sdf_url = \
+        "package://drake/examples/hydroelastic/python_ball_paddle/ball.sdf"
+    parser.AddModels(url=ball_sdf_url)
     # TODO(DamrongGuoy): Let users override hydroelastic modulus, dissipation,
     #  and resolution hint from the two SDF files above.
 

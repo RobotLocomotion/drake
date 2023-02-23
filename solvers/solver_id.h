@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
 
@@ -68,3 +69,10 @@ struct less<drake::solvers::SolverId> {
 template <>
 struct hash<drake::solvers::SolverId> : public drake::DefaultHash {};
 }  // namespace std
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::solvers::SolverId>
+    : drake::ostream_formatter {};
+}  // namespace fmt

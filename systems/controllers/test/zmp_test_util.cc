@@ -8,7 +8,7 @@ namespace controllers {
 
 using trajectories::PiecewisePolynomial;
 
-ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
+ZmpTestTraj SimulateZmpPolicy(const ZmpPlanner& zmp_planner,
                               const Eigen::Vector4d& x0, double dt,
                               double extra_time_at_the_end) {
   const PiecewisePolynomial<double>& zmp_d = zmp_planner.get_desired_zmp();
@@ -16,7 +16,7 @@ ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
       (zmp_d.end_time() + extra_time_at_the_end - zmp_d.start_time())
       / dt);
 
-  ZMPTestTraj traj(N);
+  ZmpTestTraj traj(N);
 
   for (int i = 0; i < N; i++) {
     traj.time[i] = zmp_d.start_time() + i * dt;
@@ -44,7 +44,7 @@ ZMPTestTraj SimulateZMPPolicy(const ZMPPlanner& zmp_planner,
   return traj;
 }
 
-std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
+std::vector<PiecewisePolynomial<double>> GenerateDesiredZmpTrajs(
     const std::vector<Eigen::Vector2d>& footsteps,
     double double_support_duration, double single_support_duration) {
   DRAKE_DEMAND(!footsteps.empty());
@@ -82,6 +82,18 @@ std::vector<PiecewisePolynomial<double>> GenerateDesiredZMPTrajs(
 
   return zmp_trajs;
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+const std::function<ZmpTestTraj(const ZmpPlanner&, const Eigen::Vector4d&,
+                                double, double)>
+    SimulateZMPPolicy = SimulateZmpPolicy;
+
+const std::function<
+    std::vector<trajectories::PiecewisePolynomial<double>>(
+        const std::vector<Eigen::Vector2d>&, double, double)>
+    GenerateDesiredZMPTrajs = GenerateDesiredZmpTrajs;
+#pragma GCC diagnostic pop
 
 }  // namespace controllers
 }  // namespace systems

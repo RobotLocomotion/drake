@@ -21,16 +21,18 @@ using Eigen::VectorXd;
 using std::move;
 using std::unique_ptr;
 
-double ZeroDistanceFunc(const VectorXd&, const VectorXd&) { return 0.0; }
+double ZeroDistanceFunc(const VectorXd&, const VectorXd&) {
+  return 0.0;
+}
 
 /* We simply need a diagram with a non-zero number of dofs; a single floating
  body will give us 7 -- the semantics are unimportant. */
 unique_ptr<RobotDiagram<double>> MakeRobot() {
   RobotDiagramBuilder<double> builder;
   const auto model_instance = drake::multibody::default_model_instance();
-  builder.mutable_plant().AddRigidBody("floater", model_instance,
-                                       SpatialInertia<double>::MakeUnitary());
-  return builder.BuildDiagram();
+  builder.plant().AddRigidBody("floater", model_instance,
+                               SpatialInertia<double>::MakeUnitary());
+  return builder.Build();
 }
 
 /* Has to match the 7 dofs in the robot. */
@@ -49,7 +51,8 @@ class DummyCollisionChecker final : public UnimplementedCollisionChecker {
             {.model = MakeRobot(),
              .robot_model_instances = {default_model_instance()},
              .configuration_distance_function = ZeroDistanceFunc,
-             .edge_step_size = 0.1}, false /* supports_parallel */),
+             .edge_step_size = 0.1},
+            false /* supports_parallel */),
         data_(plant().num_positions()) {
     AllocateContexts();
   }
@@ -57,9 +60,7 @@ class DummyCollisionChecker final : public UnimplementedCollisionChecker {
   /* This clearance data will define the distance/jacobian data that will be
    given back to ComputeCollisionAvoidanceDisplacement() when invoking
    CalcRobotClearance(). */
-  void set_robot_clearance(RobotClearance data) {
-    data_ = move(data);
-  }
+  void set_robot_clearance(RobotClearance data) { data_ = move(data); }
 
  private:
   void DoUpdateContextPositions(
@@ -117,9 +118,9 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, NoDistanceMeasurements) {
   /* The checker returns an empty RobotClearance by default. This should lead to
    zero-valued Δq. We're passing in an arbitrary, non-zero, q to eliminate the
    appearance that the return value copies the input value. */
-  EXPECT_TRUE(CompareMatrices(
-      ComputeCollisionAvoidanceDisplacement(checker, q, 0, 1),
-      VectorXd::Zero(kQSize)));
+  EXPECT_TRUE(
+      CompareMatrices(ComputeCollisionAvoidanceDisplacement(checker, q, 0, 1),
+                      VectorXd::Zero(kQSize)));
 }
 
 GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
@@ -205,19 +206,16 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, Errors) {
   const VectorXd q = VectorXd::Zero(kQSize);
 
   // The max_penetration cannot be positive.
-  EXPECT_THROW(
-      ComputeCollisionAvoidanceDisplacement(checker, q, 0.1, 1),
-      std::exception);
+  EXPECT_THROW(ComputeCollisionAvoidanceDisplacement(checker, q, 0.1, 1),
+               std::exception);
 
   // The max_clearance cannot be negative.
-  EXPECT_THROW(
-      ComputeCollisionAvoidanceDisplacement(checker, q, -1, -0.1),
-      std::exception);
+  EXPECT_THROW(ComputeCollisionAvoidanceDisplacement(checker, q, -1, -0.1),
+               std::exception);
 
   // They cannot be both zero.
-  EXPECT_THROW(
-      ComputeCollisionAvoidanceDisplacement(checker, q, 0, 0),
-      std::exception);
+  EXPECT_THROW(ComputeCollisionAvoidanceDisplacement(checker, q, 0, 0),
+               std::exception);
 }
 
 }  // namespace

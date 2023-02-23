@@ -10,10 +10,10 @@ from pydrake.examples import (
     ManipulationStation, ManipulationStationHardwareInterface,
     CreateClutterClearingYcbObjectList, SchunkCollisionModel)
 from pydrake.geometry import DrakeVisualizer, Meshcat, MeshcatVisualizer
-from pydrake.manipulation.planner import (
+from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
+from pydrake.multibody.inverse_kinematics import (
     DifferentialInverseKinematicsIntegrator,
     DifferentialInverseKinematicsParameters)
-from pydrake.math import RigidTransform, RollPitchYaw, RotationMatrix
 from pydrake.systems.analysis import Simulator
 from pydrake.systems.framework import (DiagramBuilder, LeafSystem,
                                        PublishEvent)

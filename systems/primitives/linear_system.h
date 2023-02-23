@@ -55,12 +55,16 @@ class LinearSystem : public AffineSystem<T> {
   /// | C       | num outputs | num states  |
   /// | D       | num outputs | num inputs  |
   ///
+  /// Empty matrices are treated as zero matrices with the appropriate number
+  /// of rows and columns.
+  ///
   /// Subclasses must use the protected constructor, not this one.
-  LinearSystem(const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D,
-               double time_period = 0.0);
+  explicit LinearSystem(
+      const Eigen::Ref<const Eigen::MatrixXd>& A = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& B = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& C = Eigen::MatrixXd(),
+      const Eigen::Ref<const Eigen::MatrixXd>& D = Eigen::MatrixXd(),
+      double time_period = 0.0);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -84,11 +88,13 @@ class LinearSystem : public AffineSystem<T> {
   /// etc.); pass a default-constructed object if such support is not desired.
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
-  LinearSystem(SystemScalarConverter converter,
-               const Eigen::Ref<const Eigen::MatrixXd>& A,
-               const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::MatrixXd>& C,
-               const Eigen::Ref<const Eigen::MatrixXd>& D, double time_period);
+  LinearSystem(
+      SystemScalarConverter converter,
+      const Eigen::Ref<const Eigen::MatrixXd>& A,
+      const Eigen::Ref<const Eigen::MatrixXd>& B,
+      const Eigen::Ref<const Eigen::MatrixXd>& C,
+      const Eigen::Ref<const Eigen::MatrixXd>& D,
+      double time_period);
 };
 
 /// Base class for a discrete or continuous linear time-varying (LTV) system.

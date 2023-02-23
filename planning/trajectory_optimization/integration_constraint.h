@@ -10,6 +10,8 @@ namespace trajectory_optimization {
  *
  *     (ẋₗ + ẋᵣ)/2  * dt = xᵣ - xₗ
  * where the bounded variables are (xᵣ, xₗ, ẋᵣ, ẋₗ, dt)
+ *
+ * @ingroup solver_evaluators
  */
 class MidPointIntegrationConstraint : public solvers::Constraint {
  public:

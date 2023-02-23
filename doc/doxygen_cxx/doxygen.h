@@ -186,17 +186,6 @@ namespace solvers {
  @}
  */
 
-/** @addtogroup planning
- @{
-   A collection of algorithms for finding configurations and/or trajectories of
-   dynamical systems.
-
-   Many planning algorithms make heavy use of solvers::MathematicalProgram and
-   the numerous @ref solver_evaluators.  There are also some useful classes in
-   @ref manipulation_systems.
- @}
-*/
-
 /** @addtogroup control
  @{
    A collection of algorithms for synthesizing feedback control.

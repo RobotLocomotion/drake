@@ -19,7 +19,9 @@ references. It's purpose is to serve as planner-specific syntactic sugar for
 operating on a MultibodyPlant. For other purposes (e.g., simulation), users
 should generally prefer to just use a Diagram, instead.
 
-@tparam_default_scalar */
+@tparam_default_scalar
+
+@ingroup planning_infrastructure */
 template <typename T>
 class RobotDiagram final : public systems::Diagram<T> {
  public:
@@ -40,19 +42,13 @@ class RobotDiagram final : public systems::Diagram<T> {
   using systems::Diagram<T>::CreateDefaultContext;
 
   /** Gets the contained plant (readonly). */
-  const multibody::MultibodyPlant<T>& plant() const {
-    return plant_;
-  }
+  const multibody::MultibodyPlant<T>& plant() const { return plant_; }
 
   /** Gets the contained scene graph (mutable). */
-  geometry::SceneGraph<T>& mutable_scene_graph() {
-    return scene_graph_;
-  }
+  geometry::SceneGraph<T>& mutable_scene_graph() { return scene_graph_; }
 
   /** Gets the contained scene graph (readonly). */
-  const geometry::SceneGraph<T>& scene_graph() const {
-    return scene_graph_;
-  }
+  const geometry::SceneGraph<T>& scene_graph() const { return scene_graph_; }
 
   /** Gets the contained plant's context (mutable) out of the given root
   context. Refer to drake::systems::System::GetMyContextFromRoot() to
@@ -92,7 +88,8 @@ class RobotDiagram final : public systems::Diagram<T> {
 
  private:
   // To access our private constructor.
-  template <typename> friend class RobotDiagramBuilder;
+  template <typename>
+  friend class RobotDiagramBuilder;
 
   // For use by RobotDiagramBuilder.
   explicit RobotDiagram(std::unique_ptr<systems::DiagramBuilder<T>>);

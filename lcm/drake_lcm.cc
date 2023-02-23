@@ -12,7 +12,6 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
-#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -70,12 +69,10 @@ class DrakeLcm::Impl {
   std::string handle_subscriptions_error_message_;
 };
 
-DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {
-}
+DrakeLcm::DrakeLcm() : DrakeLcm(std::string{}) {}
 
 DrakeLcm::DrakeLcm(std::string lcm_url)
-    : DrakeLcm(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {
-}
+    : DrakeLcm(DrakeLcmParams{.lcm_url = std::move(lcm_url)}) {}
 
 DrakeLcm::DrakeLcm(const DrakeLcmParams& params)
     : impl_(std::make_unique<Impl>(params)) {
@@ -109,6 +106,16 @@ void DrakeLcm::Publish(const std::string& channel, const void* data,
 
 namespace {
 
+// Given a literal string, escape it to be safe to use in an LCM channel regex.
+// For example ".foo" should be escaped to "\.foo" so that it only matches the
+// exact literal string, not "xfoo".
+std::string ConvertLiteralStringToLcmRegex(const std::string& literal) {
+  char* const result_cstr = g_regex_escape_string(literal.c_str(), -1);
+  const std::string result{result_cstr};
+  g_free(result_cstr);
+  return result;
+}
+
 // The concrete implementation of DrakeSubscriptionInterface used by DrakeLcm.
 class DrakeSubscription final : public DrakeSubscriptionInterface {
  public:
@@ -123,30 +130,17 @@ class DrakeSubscription final : public DrakeSubscriptionInterface {
   static std::shared_ptr<DrakeSubscription> CreateSingleChannel(
       ::lcm::LCM* native_instance, const std::string& channel,
       HandlerFunction single_channel_handler) {
-    // The argument to subscribeFunction is regex (not a string literal), so
-    // we'll need to escape the channel name before calling subscribeFunction.
-    char* const channel_regex = g_regex_escape_string(channel.c_str(), -1);
-    ScopeExit guard([channel_regex]() {
-      g_free(channel_regex);
-    });
-
-    return Create(native_instance, channel_regex,
-                  [handler = std::move(single_channel_handler)](
-                      std::string_view, const void* data, int size) {
-                    handler(data, size);
-                  });
+    // N.B. The argument to CreateMultichannel is regex, so we need to escape
+    // the channel name as part delegating to it.
+    return CreateMultichannel(
+        native_instance, ConvertLiteralStringToLcmRegex(channel),
+        [handler = std::move(single_channel_handler)](
+            std::string_view, const void* data, int size) {
+          handler(data, size);
+        });
   }
 
   static std::shared_ptr<DrakeSubscription> CreateMultichannel(
-      ::lcm::LCM* native_instance,
-      MultichannelHandlerFunction multichannel_handler) {
-    // TODO(jwnimmer-tri) If a channel_suffix was given, we should use it here
-    // for efficiency (to drop unwanted packets as early as possible). Be sure
-    // to regex-escape it first.
-    return Create(native_instance, ".*", std::move(multichannel_handler));
-  }
-
-  static std::shared_ptr<DrakeSubscription> Create(
       ::lcm::LCM* native_instance, std::string_view channel_regex,
       MultichannelHandlerFunction handler) {
     DRAKE_DEMAND(native_instance != nullptr);
@@ -282,37 +276,41 @@ std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::Subscribe(
   return result;
 }
 
-std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
-    MultichannelHandlerFunction handler) {
+std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeMultichannel(
+    std::string_view regex, MultichannelHandlerFunction handler) {
+  DRAKE_THROW_UNLESS(!regex.empty());
   DRAKE_THROW_UNLESS(handler != nullptr);
   impl_->CleanUpOldSubscriptions();
+
   const std::string& suffix = impl_->channel_suffix_;
   if (!suffix.empty()) {
     handler = [&suffix, handler](std::string_view channel, const void* data,
                                  int length) {
       // TODO(ggould-tri) Use string_view::ends_with() once we have C++20.
-      if (channel.length() >= suffix.length() &&
-          channel.substr(channel.length() - suffix.length()) == suffix) {
-        channel.remove_suffix(suffix.length());
-        handler(channel, data, length);
-      } else {
-        drake::log()->debug(
-            "DrakeLcm with suffix {} received message on channel {}, which "
-            "lacks the suffix.",
-            suffix, channel);
-      }
+      DRAKE_DEMAND(channel.length() >= suffix.length() &&
+                   channel.substr(channel.length() - suffix.length()) ==
+                       suffix);
+      channel.remove_suffix(suffix.length());
+      handler(channel, data, length);
     };
   }
 
   // Add the new subscriber.
-  auto result =
-      DrakeSubscription::CreateMultichannel(&(impl_->lcm_), std::move(handler));
+  auto result = DrakeSubscription::CreateMultichannel(
+      &(impl_->lcm_),
+      std::string(regex) + ConvertLiteralStringToLcmRegex(suffix),
+      std::move(handler));
   if (!impl_->deferred_initialization_) {
     result->AttachIfNeeded();
   }
   impl_->subscriptions_.push_back(result);
   DRAKE_DEMAND(!impl_->subscriptions_.back().expired());
   return result;
+}
+
+std::shared_ptr<DrakeSubscriptionInterface> DrakeLcm::SubscribeAllChannels(
+    MultichannelHandlerFunction handler) {
+  return SubscribeMultichannel(".*", std::move(handler));
 }
 
 int DrakeLcm::HandleSubscriptions(int timeout_millis) {

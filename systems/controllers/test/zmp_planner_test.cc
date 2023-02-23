@@ -1,5 +1,7 @@
 #include "drake/systems/controllers/zmp_planner.h"
 
+#include <typeinfo>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
@@ -14,7 +16,7 @@ using trajectories::PiecewisePolynomial;
 
 namespace {
 
-class ZMPPlannerTest : public ::testing::Test {
+class ZmpPlannerTest : public ::testing::Test {
  protected:
   // A default setup.
   void SetUp() override {
@@ -130,7 +132,7 @@ class ZMPPlannerTest : public ::testing::Test {
     return u;
   }
 
-  ZMPPlanner zmp_planner_;
+  ZmpPlanner zmp_planner_;
 
   Eigen::Matrix<double, 4, 4> A_;
   Eigen::Matrix<double, 4, 2> B_;
@@ -149,7 +151,7 @@ class ZMPPlannerTest : public ::testing::Test {
 
 // The HJB equations should be satisfied at the optimal u and x:
 // -Vdot = L(y, u) + dV / dx_bar * x_bar_dot
-TEST_F(ZMPPlannerTest, TestHJB) {
+TEST_F(ZmpPlannerTest, TestHJB) {
   double dt = 1e-2;
   double t0 = zmp_planner_.get_desired_zmp().start_time();
   double t1 = zmp_planner_.get_desired_zmp().end_time();
@@ -175,13 +177,13 @@ TEST_F(ZMPPlannerTest, TestHJB) {
 }
 
 // S1dot (Vxxdot) is zero since S1 should be constant.
-TEST_F(ZMPPlannerTest, TestS1dot) {
+TEST_F(ZmpPlannerTest, TestS1dot) {
   EXPECT_TRUE(CompareMatrices(ComputeS1dot(), Eigen::Matrix4d::Zero(), 1e-8,
                               MatrixCompareType::absolute));
 }
 
 // s2dot computed by Eq. 18 should be the same as s2.derivative.
-TEST_F(ZMPPlannerTest, TestS2dot) {
+TEST_F(ZmpPlannerTest, TestS2dot) {
   double dt = 1e-2;
   double t0 = zmp_planner_.get_desired_zmp().start_time();
   double t1 = zmp_planner_.get_desired_zmp().end_time();
@@ -198,7 +200,7 @@ TEST_F(ZMPPlannerTest, TestS2dot) {
 // The nominal CoM acceleration (given by the derivatives from the CoM
 // position trajectory) should equal to calling the linear controller
 // with the nominal CoM state.
-TEST_F(ZMPPlannerTest, TestCoMdd) {
+TEST_F(ZmpPlannerTest, TestCoMdd) {
   double dt = 1e-2;
   double t0 = zmp_planner_.get_desired_zmp().start_time();
   double t1 = zmp_planner_.get_desired_zmp().end_time();
@@ -213,7 +215,7 @@ TEST_F(ZMPPlannerTest, TestCoMdd) {
 // The end state should converge to the nominal trajectory.
 // Also test control computed by the optimal linear policy against directly
 // minimizing the Hamiltonian.
-TEST_F(ZMPPlannerTest, TestOptimalControl) {
+TEST_F(ZmpPlannerTest, TestOptimalControl) {
   Eigen::Vector4d x0(0, 0, 0, 0);
   Eigen::Vector2d u0, u1;
 
@@ -223,7 +225,7 @@ TEST_F(ZMPPlannerTest, TestOptimalControl) {
       Eigen::Vector2d(2, -0.1), Eigen::Vector2d(2.5, 0)};
 
   std::vector<PiecewisePolynomial<double>> zmp_trajs =
-      GenerateDesiredZMPTrajs(footsteps, 0.5, 1);
+      GenerateDesiredZmpTrajs(footsteps, 0.5, 1);
 
   double z = 1;
 
@@ -235,7 +237,7 @@ TEST_F(ZMPPlannerTest, TestOptimalControl) {
     double simulation_past_end_time = 2;
 
     x0 << 0.1, -0.05, 0.1, 0.1;
-    ZMPTestTraj result = SimulateZMPPolicy(zmp_planner_, x0, sample_dt,
+    ZmpTestTraj result = SimulateZmpPolicy(zmp_planner_, x0, sample_dt,
                                            simulation_past_end_time);
 
     int N = result.time.size();
@@ -252,6 +254,19 @@ TEST_F(ZMPPlannerTest, TestOptimalControl) {
     }
   }
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Confirm that the deprecated spelling has simply aliased the version tested
+// above.
+GTEST_TEST(ZmpPlannerAliasTest, Deprecated) {
+  EXPECT_EQ(typeid(ZMPPlanner), typeid(ZmpPlanner));
+  EXPECT_EQ(typeid(ZMPTestTraj), typeid(ZmpTestTraj));
+  EXPECT_EQ(SimulateZMPPolicy.target_type(), typeid(&SimulateZmpPolicy));
+  EXPECT_EQ(GenerateDesiredZMPTrajs.target_type(),
+            typeid(&GenerateDesiredZmpTrajs));
+}
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace controllers

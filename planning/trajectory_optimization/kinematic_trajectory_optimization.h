@@ -38,6 +38,8 @@ Use solvers::Solve to solve the problem. A typical use case could look like:
 
 When possible this class attempts to formulate convex forms of the costs and
 constraints.
+
+@ingroup planning_trajectory
 */
 class KinematicTrajectoryOptimization {
  public:

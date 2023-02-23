@@ -329,15 +329,35 @@ class TestToppra(unittest.TestCase):
         constraint = toppra.AddFrameTranslationalSpeedLimit(
             constraint_frame=frame, upper_limit=1.)
         self.assertIsInstance(constraint, mp.Binding[mp.BoundingBoxConstraint])
-        constraint = toppra.AddFrameAccelerationLimit(
+
+        breaks = [path.start_time(), path.end_time()]
+
+        speed_limit_traj = PiecewisePolynomial.FirstOrderHold(
+            breaks, np.array(([[1, 1]])))
+        constraint = toppra.AddFrameTranslationalSpeedLimit(
+            constraint_frame=frame, upper_limit=speed_limit_traj)
+        self.assertIsInstance(constraint, mp.Binding[mp.BoundingBoxConstraint])
+
+        backward_con, forward_con = toppra.AddFrameAccelerationLimit(
             constraint_frame=frame, lower_limit=lower_limit,
             upper_limit=upper_limit,
             discretization=ToppraDiscretization.kCollocation)
         self.assertIsInstance(backward_con, mp.Binding[mp.LinearConstraint])
         self.assertIsInstance(forward_con, mp.Binding[mp.LinearConstraint])
-        constraint = toppra.AddFrameAccelerationLimit(
+        backward_con, forward_con = toppra.AddFrameAccelerationLimit(
             constraint_frame=frame, lower_limit=lower_limit,
             upper_limit=upper_limit,
+            discretization=ToppraDiscretization.kInterpolation)
+        self.assertIsInstance(backward_con, mp.Binding[mp.LinearConstraint])
+        self.assertIsInstance(forward_con, mp.Binding[mp.LinearConstraint])
+
+        upper_traj = PiecewisePolynomial.FirstOrderHold(breaks,
+                                                        np.ones((6, 2)))
+        lower_traj = PiecewisePolynomial.FirstOrderHold(breaks,
+                                                        -np.ones((6, 2)))
+        backward_con, forward_con = toppra.AddFrameAccelerationLimit(
+            constraint_frame=frame, lower_limit=lower_traj,
+            upper_limit=upper_traj,
             discretization=ToppraDiscretization.kInterpolation)
         self.assertIsInstance(backward_con, mp.Binding[mp.LinearConstraint])
         self.assertIsInstance(forward_con, mp.Binding[mp.LinearConstraint])

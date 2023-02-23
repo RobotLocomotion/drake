@@ -12,8 +12,8 @@ DerivePointerAlignment: false
 PointerAlignment: Left
 
 # Compress functions onto a single line (when they fit) iff they are defined
-# inline (inside a of class).
-AllowShortFunctionsOnASingleLine: InlineOnly
+# inline (inside a of class) or are empty.
+AllowShortFunctionsOnASingleLine: Inline
 
 # Compress lambdas onto a single line iff they are empty.
 AllowShortLambdasOnASingleLine: Empty
@@ -58,12 +58,6 @@ IncludeCategories:
 
 # Avoid widening out code horizontally a lot.
 AlignAfterOpenBracket: DontAlign
-
-# Try to fit onto a single line:
-# - functions with an empty body, or
-# - member functions defined inside a class;
-# everything else (e.g., free functions) are forced onto multiple lines.
-AllowShortFunctionsOnASingleLine: Inline
 
 # Compress lambdas as much as possible.
 AllowShortLambdasOnASingleLine: All

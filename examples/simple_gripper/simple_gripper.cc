@@ -1,11 +1,10 @@
 #include <memory>
 #include <string>
 
-#include "fmt/ostream.h"
+#include <fmt/ostream.h>
 #include <gflags/gflags.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/find_resource.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
@@ -169,10 +168,10 @@ int do_main() {
       multibody::AddMultibodyPlant(plant_config, &builder);
 
   Parser parser(&plant);
-  parser.AddModels(FindResourceOrThrow(
-      "drake/examples/simple_gripper/simple_gripper.sdf"));
-  parser.AddModels(FindResourceOrThrow(
-      "drake/examples/simple_gripper/simple_mug.sdf"));
+  parser.AddModelsFromUrl(
+      "package://drake/examples/simple_gripper/simple_gripper.sdf");
+  parser.AddModelsFromUrl(
+      "package://drake/examples/simple_gripper/simple_mug.sdf");
 
   // Obtain the "translate_joint" axis so that we know the direction of the
   // forced motions. We do not apply gravity if motions are forced in the

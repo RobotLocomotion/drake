@@ -396,6 +396,9 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
     X_WB_default_list_ = other.X_WB_default_list_;
+
+    adjacent_bodies_collision_filters_ =
+        other.adjacent_bodies_collision_filters_;
   }
 
   DeclareSceneGraphPorts();
@@ -1153,23 +1156,25 @@ const CoulombFriction<double>& MultibodyPlant<T>::GetCoulombFriction(
 template <typename T>
 void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   DRAKE_DEMAND(geometry_source_is_registered());
-  // Disallow collisions between adjacent bodies. Adjacency is implied by the
-  // existence of a joint between bodies, except in the case of 6-dof joints or
-  // joints in which the parent body is `world`.
-  for (JointIndex j{0}; j < num_joints(); ++j) {
-    const Joint<T>& joint = get_joint(j);
-    const Body<T>& child = joint.child_body();
-    const Body<T>& parent = joint.parent_body();
-    if (parent.index() == world_index()) continue;
-    if (joint.type_name() == QuaternionFloatingJoint<T>::kTypeName) continue;
-    std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
-    std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
+  if (adjacent_bodies_collision_filters_) {
+    // Disallow collisions between adjacent bodies. Adjacency is implied by the
+    // existence of a joint between bodies, except in the case of 6-dof joints
+    // or joints in which the parent body is `world`.
+    for (JointIndex j{0}; j < num_joints(); ++j) {
+      const Joint<T>& joint = get_joint(j);
+      const Body<T>& child = joint.child_body();
+      const Body<T>& parent = joint.parent_body();
+      if (parent.index() == world_index()) continue;
+      if (joint.type_name() == QuaternionFloatingJoint<T>::kTypeName) continue;
+      std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
+      std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 
-    if (child_id && parent_id) {
-      scene_graph_->collision_filter_manager().Apply(
-        CollisionFilterDeclaration().ExcludeBetween(
-          geometry::GeometrySet(*child_id),
-          geometry::GeometrySet(*parent_id)));
+      if (child_id && parent_id) {
+        scene_graph_->collision_filter_manager().Apply(
+            CollisionFilterDeclaration().ExcludeBetween(
+                geometry::GeometrySet(*child_id),
+                geometry::GeometrySet(*parent_id)));
+      }
     }
   }
   // We explicitly exclude collisions within welded subgraphs.
@@ -2092,20 +2097,6 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcContactSolverResults(
-    const drake::systems::Context<T>& context,
-    contact_solvers::internal::ContactSolverResults<T>* results) const {
-  this->ValidateContext(context);
-  // Assert this method was called on a context storing discrete state.
-  DRAKE_ASSERT(context.num_continuous_states() == 0);
-
-  // By default MultibodyPlant uses a DiscreteUpdateManger to advance the
-  // discrete dynamics.
-  DRAKE_DEMAND(discrete_update_manager_ != nullptr);
-  discrete_update_manager_->CalcContactSolverResults(context, results);
-}
-
-template <typename T>
 void MultibodyPlant<T>::CalcJointLockingIndices(
     const systems::Context<T>& context,
     std::vector<int>* unlocked_velocity_indices) const {
@@ -2532,8 +2523,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
     const int instance_num_velocities = num_velocities(model_instance_index);
 
     if (is_discrete()) {
-      const auto& contact_solver_results_cache_entry =
-          this->get_cache_entry(cache_indexes_.contact_solver_results);
       auto calc = [this, model_instance_index](
                       const systems::Context<T>& context,
                       systems::BasicVector<T>* result) {
@@ -2543,8 +2532,10 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
             context,
             get_generalized_contact_forces_output_port(model_instance_index));
 
+        DRAKE_DEMAND(discrete_update_manager_ != nullptr);
         const contact_solvers::internal::ContactSolverResults<T>&
-            solver_results = EvalContactSolverResults(context);
+            solver_results =
+                discrete_update_manager_->EvalContactSolverResults(context);
         this->CopyGeneralizedContactForcesOut(solver_results,
                                               model_instance_index, result);
       };
@@ -2553,7 +2544,8 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                   GetModelInstanceName(model_instance_index) +
                       "_generalized_contact_forces",
                   instance_num_velocities, calc,
-                  {contact_solver_results_cache_entry.ticket()})
+                  {systems::System<T>::xd_ticket(),
+                   systems::System<T>::all_parameters_ticket()})
               .get_index();
     } else {
       const auto& generalized_contact_forces_continuous_cache_entry =
@@ -2649,39 +2641,6 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
       {this->configuration_ticket()});
   cache_indexes_.contact_surfaces = contact_surfaces_cache_entry.cache_index();
 
-  if (is_discrete()) {
-    // Cache discrete solver computations.
-    auto& contact_solver_results_cache_entry = this->DeclareCacheEntry(
-        std::string("discrete contact solver computations."),
-        &MultibodyPlant<T>::CalcContactSolverResults,
-        // The Correct Solution:
-        // The Implicit Stribeck solver solution S is a function of state x,
-        // actuation input u (and externally applied forces) and even time if
-        // any of the force elements in the model is time dependent. We can
-        // write this as S = S(t, x, u).
-        // Even though this variables can change continuously with time, we
-        // want the solver solution to be updated periodically (with period
-        // time_step()) only. That is, ContactSolverResults should be handled
-        // as an abstract state with periodic updates. In the systems::
-        // framework terminology, we'd like to have an "unrestricted update"
-        // with a periodic event trigger.
-        // The Problem (#10149):
-        // From issue #10149 we know unrestricted updates incur a very
-        // noticeably performance hit that at this stage we are not willing to
-        // pay.
-        // The Work Around (#10888):
-        // To emulate the correct behavior until #10149 is addressed we declare
-        // the Implicit Stribeck solver solution dependent only on the discrete
-        // state. This is not the correct solution given these results do
-        // depend on time and (even continuous) inputs. However it does emulate
-        // the discrete update of these values as if zero-order held, which is
-        // what we want.
-        {this->xd_ticket(), this->all_parameters_ticket()});
-    cache_indexes_.contact_solver_results =
-        contact_solver_results_cache_entry.cache_index();
-  }
-
-
   // Cache entry for spatial forces and contact info due to hydroelastic
   // contact.
   const bool use_hydroelastic =
@@ -2709,8 +2668,8 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
                                                            use_hydroelastic]() {
     std::set<systems::DependencyTicket> tickets;
     if (is_discrete()) {
-      tickets.insert(
-          this->cache_entry_ticket(cache_indexes_.contact_solver_results));
+      tickets.insert(systems::System<T>::xd_ticket());
+      tickets.insert(systems::System<T>::all_parameters_ticket());
     } else {
       tickets.insert(this->kinematics_ticket());
       if (use_hydroelastic) {
@@ -3152,6 +3111,12 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
   if (!component.is_cloneable_to_symbolic()) {
     scalar_converter.Remove<symbolic::Expression, T>();
   }
+}
+
+template <typename T>
+std::vector<std::set<BodyIndex>>
+MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
+  return multibody_graph_.FindSubgraphsOfWeldedBodies();
 }
 
 template <typename T>

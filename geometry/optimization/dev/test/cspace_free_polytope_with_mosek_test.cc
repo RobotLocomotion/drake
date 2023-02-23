@@ -6,9 +6,9 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/optimization/dev/collision_geometry.h"
 #include "drake/geometry/optimization/dev/cspace_free_polytope.h"  // NOLINT
 #include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/solvers/common_solver_option.h"
@@ -382,6 +382,80 @@ TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram3) {
   }
 }
 
+TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableProgram) {
+  const Eigen::Vector3d q_star(0, 0, 0);
+  CspaceFreePolytope::Options options;
+  options.with_cross_y = false;
+  CspaceFreePolytopeTester tester(
+      plant_, scene_graph_, SeparatingPlaneOrder::kAffine, q_star, options);
+  Eigen::Matrix<double, 9, 3> C_good;
+  // clang-format off
+  C_good << 1, 1, 0,
+            -1, -1, 0,
+            -1, 0, 1,
+            1, 0, -1,
+            0, 1, 1,
+            0, -1, -1,
+            1, 0, 1,
+            1, 1, -1,
+            1, -1, 1;
+  // clang-format on
+  Eigen::Matrix<double, 9, 1> d_good;
+  d_good << 0.1, 0.2, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.2;
+  CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions
+      find_certificate_options;
+  find_certificate_options.verbose = false;
+  solvers::MosekSolver solver;
+  find_certificate_options.solver_id = solver.id();
+
+  const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
+                                                       body2_sphere_};
+  auto separation_certificate_program =
+      tester.cspace_free_polytope().MakeIsGeometrySeparableProgram(
+          geometry_pair, C_good, d_good);
+  auto separation_certificate_result =
+      tester.cspace_free_polytope().SolveSeparationCertificateProgram(
+          separation_certificate_program, find_certificate_options);
+  EXPECT_TRUE(separation_certificate_result.has_value());
+  Eigen::Matrix<double, 10, 3> s_samples;
+  // clang-format off
+  s_samples << 1, 2, -1,
+             -0.5, 0.3, 0.2,
+             0.2, 0.1, 0.4,
+             0.5, -1.2, 0.3,
+             0.2, 0.5, -0.4,
+             -0.3, 1.5, 2,
+             0.5, 0.2, 1,
+             -0.4, 0.5, 1,
+             0, 0, 0,
+             0.2, -1.5, 1;
+  // clang-format on
+  CheckSeparationBySamples(tester, *diagram_, s_samples, C_good, d_good,
+                           {{separation_certificate_result->plane_index,
+                             separation_certificate_result->a}},
+                           {{separation_certificate_result->plane_index,
+                             separation_certificate_result->b}},
+                           q_star, {});
+
+  // This C-space polytope is NOT collision free.
+  Eigen::Matrix<double, 4, 3> C_bad;
+  // clang-format off
+  C_bad << 1, 1, 0,
+          -1, -1, 0,
+          -1, 0, 1,
+          1, 0, -1;
+  // clang-format on
+  Eigen::Matrix<double, 4, 1> d_bad;
+  d_bad << 10.8, 20, 34, 22;
+  separation_certificate_program =
+      tester.cspace_free_polytope().MakeIsGeometrySeparableProgram(
+          geometry_pair, C_bad, d_bad);
+  separation_certificate_result =
+      tester.cspace_free_polytope().SolveSeparationCertificateProgram(
+          separation_certificate_program, find_certificate_options);
+  EXPECT_FALSE(separation_certificate_result.has_value());
+}
+
 TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytopeSuccess) {
   // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope for a
   // collision-free C-space polytope.
@@ -642,6 +716,7 @@ void CheckPolytopeSearchResult(
   }
 }
 
+// Test the private InitializePolytopeSearchProgram function
 TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
   const Eigen::Vector4d q_star(0, 0, 0, 0);
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
@@ -702,6 +777,35 @@ TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
     auto prog = tester.InitializePolytopeSearchProgram(
         ignored_collision_pairs, C_var, d_var, d_minus_Cs, certificates_result,
         search_s_bounds_lagrangians, gram_total_size, &new_certificates);
+    solvers::SolverOptions solver_options;
+    solver_options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 0);
+    const auto result = solver.Solve(*prog, std::nullopt, solver_options);
+    ASSERT_TRUE(result.is_success());
+    const auto C_sol = result.GetSolution(C_var);
+    const auto d_sol = result.GetSolution(d_var);
+    CheckPolytopeSearchResult(tester, C_sol, d_sol, result, certificates_result,
+                              new_certificates, search_s_bounds_lagrangians,
+                              2E-2);
+  }
+
+  // Now test the public InitializePolytopeSearchProgram function
+  // First find the separation certificate with a fixed C-space polytope using
+  // the public FindSeparationCertificateGivenPolytope function.
+  std::unordered_map<SortedPair<geometry::GeometryId>,
+                     CspaceFreePolytope::SeparationCertificateResult>
+      certificates;
+  const bool find_separation_success =
+      tester.cspace_free_polytope().FindSeparationCertificateGivenPolytope(
+          C, d, ignored_collision_pairs, options, &certificates);
+  ASSERT_TRUE(find_separation_success);
+  for (bool search_s_bounds_lagrangians : {false, true}) {
+    MatrixX<symbolic::Variable> C_var;
+    VectorX<symbolic::Variable> d_var;
+    std::unordered_map<int, CspaceFreePolytope::SeparationCertificate>
+        new_certificates;
+    auto prog = tester.cspace_free_polytope().InitializePolytopeSearchProgram(
+        ignored_collision_pairs, certificates, search_s_bounds_lagrangians,
+        &C_var, &d_var, &new_certificates);
     solvers::SolverOptions solver_options;
     solver_options.SetOption(solvers::CommonSolverOption::kPrintToConsole, 0);
     const auto result = solver.Solve(*prog, std::nullopt, solver_options);
@@ -906,12 +1010,12 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
           plane_geometries.positive_side_rationals,
           certificate_result.positive_side_rational_lagrangians,
           plane.decision_variables, certificate_result.plane_decision_var_vals,
-          polytope_result->C, polytope_result->d, tester, 3E-4);
+          polytope_result->C, polytope_result->d, tester, 1E-3);
       CheckRationalsPositiveInCspacePolytope(
           plane_geometries.negative_side_rationals,
           certificate_result.negative_side_rational_lagrangians,
           plane.decision_variables, certificate_result.plane_decision_var_vals,
-          polytope_result->C, polytope_result->d, tester, 3E-4);
+          polytope_result->C, polytope_result->d, tester, 1E-3);
     }
 
     // Now check if the C-space polytope {s | C*s<=d, s_lower<=s<=s_upper} is

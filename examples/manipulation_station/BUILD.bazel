@@ -65,7 +65,6 @@ drake_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//common:find_resource",
         "//lcm",
         "//manipulation/kuka_iiwa:iiwa_command_sender",
         "//manipulation/kuka_iiwa:iiwa_status_receiver",

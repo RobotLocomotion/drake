@@ -11,6 +11,7 @@
 #include "drake/common/drake_bool.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/rotation_matrix.h"
@@ -652,6 +653,13 @@ std::ostream& operator<<(std::ostream& out, const SpatialInertia<T>& M);
 
 }  // namespace multibody
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::multibody::SpatialInertia<T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::multibody::SpatialInertia)

@@ -82,8 +82,7 @@ TEST_F(AutodiffTest, ExtractValue) {
   expected[1] = sin(v0_) + v1_;
   expected[2] = v0_ * v0_ + v1_ * v1_ * v1_;
   EXPECT_TRUE(
-      CompareMatrices(expected, values, 1e-10, MatrixCompareType::absolute))
-      << values;
+      CompareMatrices(expected, values, 1e-10, MatrixCompareType::absolute));
 }
 
 TEST_F(AutodiffTest, ExtractGradient) {
@@ -110,8 +109,7 @@ TEST_F(AutodiffTest, ExtractGradient) {
   expected(2, 1) = 3 * v1_ * v1_;
 
   EXPECT_TRUE(
-      CompareMatrices(expected, gradients, 1e-10, MatrixCompareType::absolute))
-      << gradients;
+      CompareMatrices(expected, gradients, 1e-10, MatrixCompareType::absolute));
 
   // Given an AutoDiff matrix with no derivatives, ExtractGradient() should
   // return a matrix with zero-length rows, or return with specified-length

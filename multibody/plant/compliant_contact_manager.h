@@ -162,7 +162,7 @@ class CompliantContactManager final
   // function that extracts the particular variant of the physical model.
   void ExtractConcreteModel(std::monostate) {}
 
-  void DeclareCacheEntries() final;
+  void DoDeclareCacheEntries() final;
 
   // TODO(amcastro-tri): implement these APIs according to #16955.
   // @throws For SAP if T = symbolic::Expression.
@@ -214,7 +214,7 @@ class CompliantContactManager final
 
   // Eval version of CalcDiscreteContactPairs().
   const std::vector<internal::DiscreteContactPair<T>>& EvalDiscreteContactPairs(
-      const systems::Context<T>& context) const final;
+      const systems::Context<T>& context) const;
 
   // Computes per-face contact information for the hydroelastic model (slip
   // velocity, traction, etc). On return contact_info->size() will equal the

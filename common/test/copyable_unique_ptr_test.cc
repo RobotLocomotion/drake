@@ -1055,7 +1055,22 @@ GTEST_TEST(CopyableUniquePtrTest, ReleaseTest) {
 }
 
 // Tests the stream value.
-GTEST_TEST(CopyableUniquePtrTest, StreamTest) {
+GTEST_TEST(CopyableUniquePtrTest, FormatterTest) {
+  // Try a null pointer value.
+  cup<CloneOnly> ptr;
+  const void* raw = ptr.get();
+  EXPECT_EQ(fmt::to_string(ptr), fmt::to_string(raw));
+
+  // Try a non-null value.
+  ptr.reset(new CloneOnly(1));
+  raw = ptr.get();
+  EXPECT_EQ(fmt::to_string(ptr), fmt::to_string(raw));
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Tests the stream value.
+GTEST_TEST(CopyableUniquePtrTest, DeprecatedStreamTest) {
   stringstream ss;
   CloneOnly* raw = nullptr;
   ss << raw;
@@ -1076,6 +1091,7 @@ GTEST_TEST(CopyableUniquePtrTest, StreamTest) {
   ss << ptr;
   EXPECT_EQ(ss.str(), raw_str);
 }
+#pragma GCC diagnostic pop
 
 // Tests the == tests between copyable_unique_ptr and other entities.
 GTEST_TEST(CopyableUniquePtrTest, EqualityTest) {

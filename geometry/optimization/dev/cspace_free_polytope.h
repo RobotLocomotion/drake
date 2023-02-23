@@ -11,8 +11,8 @@
 
 #include <fmt/format.h>
 
-#include "drake/geometry/optimization/dev/collision_geometry.h"
-#include "drake/geometry/optimization/dev/separating_plane.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
@@ -61,37 +61,39 @@ class CspaceFreePolytope {
   struct Options {
     Options() {}
 
-    // For non-polytopic collision geometries, we will impose a matrix-sos
-    // constraint X(s) being psd, with a slack indeterminates y, such that the
-    // polynomial
-    // p(s, y) = ⌈ 1 ⌉ᵀ * X(s) * ⌈ 1 ⌉
-    //           ⌊ y ⌋           ⌊ y ⌋
-    // is positive. This p(s, y) polynomial doesn't contain the cross term of y
-    // (namely it doesn't have y(i)*y(j), i≠j). When we select the monomial
-    // basis for this polynomial, we can also exclude the cross term of y in the
-    // monomial basis.
-    //
-    // To illustrate the idea, let's consider the following toy example: if we
-    // want to certify that
-    // a(0) + a(1)*y₀ + a(2)*y₁ + a(3)*y₀² + a(4)*y₁² is positive
-    // (this polynomial doesn't have the cross term y₀*y₁), we can write it as
-    // ⌈ 1⌉ᵀ * A₀ * ⌈ 1⌉ + ⌈ 1⌉ᵀ * A₁ * ⌈ 1⌉
-    // ⌊y₀⌋         ⌊y₀⌋   ⌊y₁⌋         ⌊y₁⌋
-    // with two small psd matrices A₀, A₁
-    // Instead of
-    // ⌈ 1⌉ᵀ * A * ⌈ 1⌉
-    // |y₀|        |y₀|
-    // ⌊y₁⌋        ⌊y₁⌋
-    // with one large psd matrix A. The first parameterization won't have the
-    // cross term y₀*y₁ by construction, while the second parameterization
-    // requires imposing extra constraints on certain off-diagonal terms in A
-    // so that the cross term vanishes.
-    //
-    // If we set with_cross_y = false, then we will use the monomial basis that
-    // doesn't generate cross terms of y, leading to smaller size sos problems.
-    // If we set with_cross_y = true, then we will use the monomial basis that
-    // will generate cross terms of y, causing larger size sos problems, but
-    // possibly able to certify a larger C-space polytope.
+    /**
+     For non-polytopic collision geometries, we will impose a matrix-sos
+     constraint X(s) being psd, with a slack indeterminates y, such that the
+     polynomial
+     p(s, y) = ⌈ 1 ⌉ᵀ * X(s) * ⌈ 1 ⌉
+               ⌊ y ⌋           ⌊ y ⌋
+     is positive. This p(s, y) polynomial doesn't contain the cross term of y
+     (namely it doesn't have y(i)*y(j), i≠j). When we select the monomial
+     basis for this polynomial, we can also exclude the cross term of y in the
+     monomial basis.
+
+     To illustrate the idea, let's consider the following toy example: if we
+     want to certify that
+     a(0) + a(1)*y₀ + a(2)*y₁ + a(3)*y₀² + a(4)*y₁² is positive
+     (this polynomial doesn't have the cross term y₀*y₁), we can write it as
+     ⌈ 1⌉ᵀ * A₀ * ⌈ 1⌉ + ⌈ 1⌉ᵀ * A₁ * ⌈ 1⌉
+     ⌊y₀⌋         ⌊y₀⌋   ⌊y₁⌋         ⌊y₁⌋
+     with two small psd matrices A₀, A₁
+     Instead of
+     ⌈ 1⌉ᵀ * A * ⌈ 1⌉
+     |y₀|        |y₀|
+     ⌊y₁⌋        ⌊y₁⌋
+     with one large psd matrix A. The first parameterization won't have the
+     cross term y₀*y₁ by construction, while the second parameterization
+     requires imposing extra constraints on certain off-diagonal terms in A
+     so that the cross term vanishes.
+
+     If we set with_cross_y = false, then we will use the monomial basis that
+     doesn't generate cross terms of y, leading to smaller size sos problems.
+     If we set with_cross_y = true, then we will use the monomial basis that
+     will generate cross terms of y, causing larger size sos problems, but
+     possibly able to certify a larger C-space polytope.
+     */
     bool with_cross_y{false};
   };
 
@@ -125,7 +127,7 @@ class CspaceFreePolytope {
     return map_geometries_to_separating_planes_;
   }
 
-  [[nodiscard]] const std::vector<SeparatingPlane<symbolic::Variable>>&
+  [[nodiscard]] const std::vector<CIrisSeparatingPlane<symbolic::Variable>>&
   separating_planes() const {
     return separating_planes_;
   }
@@ -209,6 +211,7 @@ class CspaceFreePolytope {
     /// plane and Lagrangian multipliers as certificate.
     std::unique_ptr<solvers::MathematicalProgram> prog;
     SeparationCertificate certificate;
+    int plane_index;
   };
 
   struct FindSeparationCertificateGivenPolytopeOptions {
@@ -384,6 +387,57 @@ class CspaceFreePolytope {
       const Eigen::Ref<const Eigen::VectorXd>& s_center,
       const BinarySearchOptions& options) const;
 
+  /**
+   Constructs a program to search for the C-space polytope {s | C*s<=d,
+   s_lower<=s<=s_upper} such that this polytope is collision free.
+   This program treats C and d as decision variables, and searches for the
+   separating planes between each pair of geometries.
+   Note that this program doesn't contain any cost yet.
+   @param certificates The return of
+   FindSeparationCertificateGivenPolytope().
+   @param search_s_bounds_lagrangians Set to true if we search for the
+   Lagrangian multiplier for the bounds s_lower <=s<=s_upper.
+   @param[out] C The C-space polytope is parameterized as {s | C*s<=d,
+   s_lower<=s<=s_upper}.
+   @param[out] d The C-space polytope is parameterized as {s | C*s<=d,
+   s_lower<=s<=s_upper}.
+   @param[out] new_certificates The new certificates to certify the new C-space
+   polytope {s | C*s<=d, s_lower<=s<=s_upper} is collision free. If
+   new_certificates=nullptr, then we don't update it. This is used for testing.
+   */
+  [[nodiscard]] std::unique_ptr<solvers::MathematicalProgram>
+  InitializePolytopeSearchProgram(
+      const IgnoredCollisionPairs& ignored_collision_pairs,
+      const std::unordered_map<SortedPair<geometry::GeometryId>,
+                               SeparationCertificateResult>& certificates,
+      bool search_s_bounds_lagrangians, MatrixX<symbolic::Variable>* C,
+      VectorX<symbolic::Variable>* d,
+      std::unordered_map<int, SeparationCertificate>* new_certificates =
+          nullptr) const;
+
+  /**
+   Constructs the MathematicalProgram which searches for a separation
+   certificate for a pair of geometries for a C-space polytope.Search for the
+   separation certificate for a pair of geometries for a C-space polytope
+   {s | C*s<=d, s_lower<=s<=s_upper}.
+   */
+  [[nodiscard]] SeparationCertificateProgram
+  MakeIsGeometrySeparableProgram(
+      const SortedPair<geometry::GeometryId>& geometry_pair,
+      const Eigen::Ref<const Eigen::MatrixXd>& C,
+      const Eigen::Ref<const Eigen::VectorXd>& d) const;
+
+  /**
+   Solves a SeparationCertificateProgram with the given options
+   @return result If we find the separation certificate, then `result` contains
+   the separation plane and the Lagrangian polynomials; otherwise result is
+   empty.
+   */
+  [[nodiscard]] std::optional<SeparationCertificateResult>
+  SolveSeparationCertificateProgram(
+      const SeparationCertificateProgram& certificate_program,
+      const FindSeparationCertificateGivenPolytopeOptions& options) const;
+
  private:
   // Forward declaration the tester class. This tester class will expose the
   // private members of CspaceFreePolytope for unit test.
@@ -550,11 +604,11 @@ class CspaceFreePolytope {
   multibody::RationalForwardKinematics rational_forward_kin_;
   const geometry::SceneGraph<double>& scene_graph_;
   std::map<multibody::BodyIndex,
-           std::vector<std::unique_ptr<CollisionGeometry>>>
+           std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
       link_geometries_;
 
   SeparatingPlaneOrder plane_order_;
-  std::vector<SeparatingPlane<symbolic::Variable>> separating_planes_;
+  std::vector<CIrisSeparatingPlane<symbolic::Variable>> separating_planes_;
   std::unordered_map<SortedPair<geometry::GeometryId>, int>
       map_geometries_to_separating_planes_;
 
@@ -591,7 +645,7 @@ class CspaceFreePolytope {
  * the collision geometries.
  */
 [[nodiscard]] std::map<multibody::BodyIndex,
-                       std::vector<std::unique_ptr<CollisionGeometry>>>
+                       std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
 GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
                        const geometry::SceneGraph<double>& scene_graph);
 }  // namespace optimization

@@ -669,6 +669,9 @@ drake_cc_library(
     name = "solution_result",
     srcs = ["solution_result.cc"],
     hdrs = ["solution_result.h"],
+    deps = [
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(
@@ -1543,6 +1546,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "mixed_integer_rotation_constraint_limit_test",
     timeout = "long",
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         # Times out with Valgrind
         "no_memcheck",

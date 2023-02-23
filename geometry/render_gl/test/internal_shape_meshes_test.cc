@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
@@ -579,8 +580,8 @@ void TestGenericPrimitiveTraits(const MeshData& mesh,
       ASSERT_GT(n_face.dot(c), 0) << "for triangle " << t;
     }
     const NormalCone cone(mesh, t);
-    ASSERT_TRUE(cone.Contains(n_face))
-        << "for triangle " << t << "\n  face normal: " << n_face.transpose();
+    ASSERT_TRUE(cone.Contains(n_face)) << fmt::format(
+        "for triangle {}\n  face normal: {}", t, fmt_eigen(n_face.transpose()));
   }
 
   // UVs lie in the expected range.

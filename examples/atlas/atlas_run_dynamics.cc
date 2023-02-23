@@ -2,7 +2,6 @@
 
 #include <gflags/gflags.h>
 
-#include "drake/common/find_resource.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
@@ -52,9 +51,8 @@ int do_main() {
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 
-  const std::string full_name =
-      FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
-  multibody::Parser(&plant).AddModels(full_name);
+  multibody::Parser(&plant).AddModelsFromUrl(
+      "package://drake/examples/atlas/urdf/atlas_convex_hull.urdf");
 
   // Add model of the ground.
   const double static_friction = 1.0;

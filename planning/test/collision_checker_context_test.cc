@@ -35,7 +35,7 @@ class DummyContext final : public CollisionCheckerContext {
  the attendant query object). */
 GTEST_TEST(CollisionCheckerContextTest, SimpleConstructor) {
   RobotDiagramBuilder<double> builder;
-  auto diagram = builder.BuildDiagram();
+  auto diagram = builder.Build();
   CollisionCheckerContext dut(diagram.get());
   EXPECT_EQ(dut.model_context().num_total_states(), 0);
   EXPECT_EQ(dut.plant_context().num_total_states(), 0);
@@ -47,7 +47,7 @@ GTEST_TEST(CollisionCheckerContextTest, SimpleConstructor) {
  non-const access to contexts that are all wired together. */
 GTEST_TEST(CollisionCheckerContextTest, InternalMutators) {
   RobotDiagramBuilder<double> builder;
-  auto diagram = builder.BuildDiagram();
+  auto diagram = builder.Build();
   CollisionCheckerContext dut(diagram.get());
 
   /* Part of this test is confirming we can assign to a *non-const* reference.
@@ -67,7 +67,7 @@ GTEST_TEST(CollisionCheckerContextTest, InternalMutators) {
  wired -- they are the contexts stored in the clone. */
 GTEST_TEST(CollisionCheckerContextTest, Cloneable) {
   RobotDiagramBuilder<double> builder;
-  auto diagram = builder.BuildDiagram();
+  auto diagram = builder.Build();
   CollisionCheckerContext source(diagram.get());
 
   const double t = 1.234;
@@ -96,7 +96,7 @@ GTEST_TEST(CollisionCheckerContextTest, Cloneable) {
 /* Confirms that a further context can be derived and successfully cloned. */
 GTEST_TEST(CollisionCheckerContextTest, Derived) {
   RobotDiagramBuilder<double> builder;
-  auto diagram = builder.BuildDiagram();
+  auto diagram = builder.Build();
   DummyContext source_context(diagram.get(), 7);
   std::unique_ptr<CollisionCheckerContext> cloned = source_context.Clone();
   DummyContext* cloned_raw = dynamic_cast<DummyContext*>(cloned.get());

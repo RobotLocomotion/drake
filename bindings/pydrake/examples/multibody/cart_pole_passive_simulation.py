@@ -2,7 +2,6 @@
 
 import argparse
 
-from pydrake.common import FindResourceOrThrow
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.multibody.parsing import Parser
 from pydrake.systems.framework import DiagramBuilder
@@ -26,12 +25,11 @@ def main():
              "If 0, the plant is modeled as a continuous system.")
     args = parser.parse_args()
 
-    file_name = FindResourceOrThrow(
-        "drake/examples/multibody/cart_pole/cart_pole.sdf")
     builder = DiagramBuilder()
     cart_pole, scene_graph = AddMultibodyPlantSceneGraph(
         builder=builder, time_step=args.time_step)
-    Parser(plant=cart_pole).AddModels(file_name)
+    Parser(plant=cart_pole).AddModelsFromUrl(
+        url="package://drake/examples/multibody/cart_pole/cart_pole.sdf")
     cart_pole.Finalize()
 
     AddDefaultVisualization(builder=builder)
