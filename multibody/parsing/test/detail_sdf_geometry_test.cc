@@ -204,7 +204,7 @@ class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
   }
 
   // Wraps a function under test with helpful defaults.
-  std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
+  std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
       const sdf::Geometry& sdf_geometry,
       const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeShapeFromSdfGeometry(
@@ -212,9 +212,10 @@ class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
   }
 
   // Wraps a function under test with helpful defaults.
-  geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
-      const sdf::Visual& sdf_visual,
-      const ResolveFilename& resolve_filename = &NoopResolveFilename) {
+  std::optional<geometry::IllustrationProperties>
+      MakeVisualPropertiesFromSdfVisual(
+          const sdf::Visual& sdf_visual,
+          const ResolveFilename& resolve_filename = &NoopResolveFilename) {
     return internal::MakeVisualPropertiesFromSdfVisual(
         sdf_diagnostic_, sdf_visual, resolve_filename);
   }
@@ -230,8 +231,10 @@ class SceneGraphParserDetail : public test::DiagnosticPolicyTestBase {
 TEST_F(SceneGraphParserDetail, MakeEmptyFromSdfGeometry) {
   unique_ptr<sdf::Geometry> sdf_geometry =
       MakeSdfGeometryFromString("<empty/>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_EQ(shape, nullptr);
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(shape.has_value());
+  EXPECT_EQ(*shape, nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a box from an sdf::Geometry.
@@ -240,8 +243,10 @@ TEST_F(SceneGraphParserDetail, MakeBoxFromSdfGeometry) {
       "<box>"
       "  <size>1.0 2.0 3.0</size>"
       "</box>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Box* box = dynamic_cast<const Box*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(shape.has_value());
+  const Box* box = dynamic_cast<const Box*>(shape->get());
   ASSERT_NE(box, nullptr);
   EXPECT_EQ(box->size(), Vector3d(1.0, 2.0, 3.0));
 }
@@ -256,8 +261,10 @@ TEST_F(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(shape.has_value());
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape->get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
   EXPECT_EQ(capsule->length(), 1.2);
@@ -267,21 +274,27 @@ TEST_F(SceneGraphParserDetail, MakeDrakeCapsuleFromSdfGeometry) {
 // TODO(azeey): We should deprecate use of <drake:capsule> per
 // https://github.com/RobotLocomotion/drake/issues/14837
 TEST_F(SceneGraphParserDetail, CheckInvalidDrakeCapsules) {
-  ThrowErrors();
   unique_ptr<sdf::Geometry> no_radius_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <length>1.2</length>"
       "</drake:capsule>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_radius_geometry),
-      ".*Element <radius> is required within element <drake:capsule>.");
+  std::optional<unique_ptr<Shape>> shape_no_radius =
+      MakeShapeFromSdfGeometry(*no_radius_geometry);
+  EXPECT_FALSE(shape_no_radius.has_value());
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Element <radius> is required within element <drake:capsule>."));
+  ClearDiagnostics();
+
   unique_ptr<sdf::Geometry> no_length_geometry = MakeSdfGeometryFromString(
       "<drake:capsule>"
       "  <radius>0.5</radius>"
       "</drake:capsule>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_length_geometry),
-      ".*Element <length> is required within element <drake:capsule>.");
+  std::optional<unique_ptr<Shape>> shape_no_length =
+      MakeShapeFromSdfGeometry(*no_length_geometry);
+  EXPECT_FALSE(shape_no_length.has_value());
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Element <length> is required within element <drake:capsule>."));
+  ClearDiagnostics();
 }
 
 // Verify MakeShapeFromSdfGeometry can make a capsule from an sdf::Geometry.
@@ -291,8 +304,10 @@ TEST_F(SceneGraphParserDetail, MakeCapsuleFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</capsule>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Capsule* capsule = dynamic_cast<const Capsule*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(shape.has_value());
+  const Capsule* capsule = dynamic_cast<const Capsule*>(shape->get());
   ASSERT_NE(capsule, nullptr);
   EXPECT_EQ(capsule->radius(), 0.5);
   EXPECT_EQ(capsule->length(), 1.2);
@@ -305,8 +320,10 @@ TEST_F(SceneGraphParserDetail, MakeCylinderFromSdfGeometry) {
       "  <radius>0.5</radius>"
       "  <length>1.2</length>"
       "</cylinder>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(shape.has_value());
+  const Cylinder* cylinder = dynamic_cast<const Cylinder*>(shape->get());
   ASSERT_NE(cylinder, nullptr);
   EXPECT_EQ(cylinder->radius(), 0.5);
   EXPECT_EQ(cylinder->length(), 1.2);
@@ -323,8 +340,10 @@ TEST_F(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(shape.has_value());
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape->get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
   EXPECT_EQ(ellipsoid->b(), 1.2);
@@ -335,31 +354,35 @@ TEST_F(SceneGraphParserDetail, MakeDrakeEllipsoidFromSdfGeometry) {
 // TODO(azeey): We should deprecate use of <drake:ellipsoid> per
 // https://github.com/RobotLocomotion/drake/issues/14837
 TEST_F(SceneGraphParserDetail, CheckInvalidEllipsoids) {
-  ThrowErrors();
   unique_ptr<sdf::Geometry> no_a_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <b>1.2</b>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_a_geometry),
-      ".*Element <a> is required within element <drake:ellipsoid>.");
+  MakeShapeFromSdfGeometry(*no_a_geometry);
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Element <a> is required within element <drake:ellipsoid>."));
+  ClearDiagnostics();
+
   unique_ptr<sdf::Geometry> no_b_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <a>0.5</a>"
       "  <c>0.9</c>"
       "</drake:ellipsoid>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_b_geometry),
-      ".*Element <b> is required within element <drake:ellipsoid>.");
+  MakeShapeFromSdfGeometry(*no_b_geometry);
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Element <b> is required within element <drake:ellipsoid>."));
+  ClearDiagnostics();
+
   unique_ptr<sdf::Geometry> no_c_geometry = MakeSdfGeometryFromString(
       "<drake:ellipsoid>"
       "  <a>0.5</a>"
       "  <b>1.2</b>"
       "</drake:ellipsoid>");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      MakeShapeFromSdfGeometry(*no_c_geometry),
-      ".*Element <c> is required within element <drake:ellipsoid>.");
+  MakeShapeFromSdfGeometry(*no_c_geometry);
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Element <c> is required within element <drake:ellipsoid>."));
+  ClearDiagnostics();
 }
 
 
@@ -369,8 +392,9 @@ TEST_F(SceneGraphParserDetail, MakeEllipsoidFromSdfGeometry) {
       "<ellipsoid>"
       "  <radii>0.5 1.2 0.9</radii>"
       "</ellipsoid>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Ellipsoid* ellipsoid = dynamic_cast<const Ellipsoid*>(shape->get());
   ASSERT_NE(ellipsoid, nullptr);
   EXPECT_EQ(ellipsoid->a(), 0.5);
   EXPECT_EQ(ellipsoid->b(), 1.2);
@@ -383,8 +407,9 @@ TEST_F(SceneGraphParserDetail, MakeSphereFromSdfGeometry) {
       "<sphere>"
       "  <radius>0.5</radius>"
       "</sphere>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Sphere* sphere = dynamic_cast<const Sphere*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Sphere* sphere = dynamic_cast<const Sphere*>(shape->get());
   ASSERT_NE(sphere, nullptr);
   EXPECT_EQ(sphere->radius(), 0.5);
 }
@@ -398,8 +423,9 @@ TEST_F(SceneGraphParserDetail, MakeHalfSpaceFromSdfGeometry) {
       "</plane>");
   // MakeShapeFromSdfGeometry() ignores <normal> and <size> to create the
   // HalfSpace. Therefore we only verify it created the right object.
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape.get()) != nullptr);
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(dynamic_cast<const HalfSpace*>(shape->get()) != nullptr);
 }
 
 // Verify MakeShapeFromSdfGeometry can make a mesh from an sdf::Geometry.
@@ -413,8 +439,9 @@ TEST_F(SceneGraphParserDetail, MakeMeshFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Mesh* mesh = dynamic_cast<const Mesh*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Mesh* mesh = dynamic_cast<const Mesh*>(shape->get());
   ASSERT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->filename(), absolute_file_path);
   EXPECT_EQ(mesh->scale(), 3);
@@ -447,8 +474,9 @@ TEST_F(SceneGraphParserDetail, MakeConvexFromSdfGeometry) {
       "  <uri>" + absolute_file_path + "</uri>"
       "  <scale> 3 3 3 </scale>"
       "</mesh>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  const Convex* convex = dynamic_cast<const Convex*>(shape.get());
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  const Convex* convex = dynamic_cast<const Convex*>(shape->get());
   ASSERT_NE(convex, nullptr);
   EXPECT_EQ(convex->filename(), absolute_file_path);
   EXPECT_EQ(convex->scale(), 3);
@@ -460,8 +488,9 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapFromSdfGeometry) {
       "<heightmap>"
       "  <uri>/path/to/some/heightmap.png</uri>"
       "</heightmap>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_EQ(shape, nullptr);
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_EQ(*shape, nullptr);
 }
 
 // Verify that MakeShapeFromSdfGeometry does nothing with a polyline.
@@ -476,8 +505,10 @@ TEST_F(SceneGraphParserDetail, MakePolylineFromSdfGeometry) {
       "    <height>1</height>"
       "  </polyline>"
       "</polyline>");
-  unique_ptr<Shape> shape = MakeShapeFromSdfGeometry(*sdf_geometry);
-  EXPECT_EQ(shape, nullptr);
+  std::optional<unique_ptr<Shape>> shape =
+      MakeShapeFromSdfGeometry(*sdf_geometry);
+  EXPECT_TRUE(shape.has_value());
+  EXPECT_EQ(*shape, nullptr);
 }
 
 // Verify MakeGeometryInstanceFromSdfVisual can make a GeometryInstance from an
@@ -496,12 +527,12 @@ TEST_F(SceneGraphParserDetail, MakeGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
 
-  unique_ptr<GeometryInstance> geometry_instance =
+  std::optional<unique_ptr<GeometryInstance>> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
-  const RigidTransformd X_LC(geometry_instance->pose());
+  const RigidTransformd X_LC((*geometry_instance)->pose());
 
   // These are the expected values as specified by the string above.
   const RollPitchYaw<double> expected_rpy(3.14, 6.28, 1.57);
@@ -640,14 +671,14 @@ TEST_F(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
 
-  unique_ptr<GeometryInstance> geometry_instance =
+  std::optional<unique_ptr<GeometryInstance>> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
 
   // Verify we do have a plane geometry.
   const HalfSpace* shape =
-      dynamic_cast<const HalfSpace*>(&geometry_instance->shape());
+      dynamic_cast<const HalfSpace*>(&(*geometry_instance)->shape());
   ASSERT_TRUE(shape != nullptr);
 
   // The expected coordinates of the normal vector in the link frame L.
@@ -659,7 +690,7 @@ TEST_F(SceneGraphParserDetail, MakeHalfSpaceGeometryInstanceFromSdfVisual) {
       HalfSpace::MakePose(normal_L_expected, Vector3d::Zero()).rotation();
 
   // Retrieve the GeometryInstance pose as parsed from the sdf::Visual.
-  const RotationMatrix<double> R_LC = geometry_instance->pose().rotation();
+  const RotationMatrix<double> R_LC = (*geometry_instance)->pose().rotation();
   const Vector3d normal_L = R_LC.col(2);
 
   // Verify results to precision given by kTolerance.
@@ -680,11 +711,11 @@ TEST_F(SceneGraphParserDetail, MakeEmptyGeometryInstanceFromSdfVisual) {
       "  </geometry>"
       "</visual>");
 
-  unique_ptr<GeometryInstance> geometry_instance =
+  std::optional<unique_ptr<GeometryInstance>> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
-  EXPECT_EQ(geometry_instance, nullptr);
+  EXPECT_EQ(*geometry_instance, nullptr);
 }
 
 
@@ -699,11 +730,11 @@ TEST_F(SceneGraphParserDetail, MakeHeightmapGeometryInstanceFromSdfVisual) {
     "    </heightmap>"
     "  </geometry>"
     "</visual>");
-  unique_ptr<GeometryInstance> geometry_instance =
+  std::optional<unique_ptr<GeometryInstance>> geometry_instance =
       MakeGeometryInstanceFromSdfVisual(
           sdf_diagnostic_, *sdf_visual, NoopResolveFilename,
           ToRigidTransform(sdf_visual->RawPose()));
-  EXPECT_EQ(geometry_instance, nullptr);
+  EXPECT_EQ(*geometry_instance, nullptr);
 }
 
 // Reports if the indicated typed geometry property matches expectations.
@@ -860,9 +891,9 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(false, nullptr, nullptr, nullptr, nullptr, ""));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
   }
 
   // Case: Material tag defined, but no material properties -- empty
@@ -870,9 +901,9 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, nullptr, ""));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
   }
 
   Vector4<double> diffuse{0.25, 0.5, 0.75, 1.0};
@@ -884,46 +915,46 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, nullptr, nullptr, nullptr, ""));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(material, true, diffuse, {}, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(*material, true, diffuse, {}, {}, {}, {}));
   }
 
   // Case: Only valid specular defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, &specular, nullptr, nullptr, ""));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(material, true, {}, specular, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(*material, true, {}, specular, {}, {}, {}));
   }
 
   // Case: Only valid ambient defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, &ambient, nullptr, ""));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(material, true, {}, {}, ambient, {}, {}));
+    EXPECT_TRUE(expect_phong(*material, true, {}, {}, ambient, {}, {}));
   }
 
   // Case: Only valid emissive defined.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, nullptr, nullptr, nullptr, &emissive, ""));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(material, true, {}, {}, {}, emissive, {}));
+    EXPECT_TRUE(expect_phong(*material, true, {}, {}, {}, emissive, {}));
   }
 
   // Case: All four.
   {
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, ""));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(
-        expect_phong(material, true, diffuse, specular, ambient, emissive, {}));
+    EXPECT_TRUE(expect_phong(*material, true, diffuse,
+                specular, ambient, emissive, {}));
   }
 
   // Case: With diffuse map.
@@ -935,12 +966,12 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap);
     unique_ptr<sdf::Visual> sdf_visual = MakeSdfVisualFromString(
         make_xml(true, &diffuse, &specular, &ambient, &emissive, kLocalMap));
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
     // Note: The "no-op" filename resolver will just return kLocalMap as the
     // property name.
-    EXPECT_TRUE(expect_phong(material, true, diffuse, specular, ambient,
-                             emissive, kLocalMap));
+    EXPECT_TRUE(expect_phong(*material, true, diffuse, specular,
+                             ambient, emissive, kLocalMap));
   }
 
   // Case: Diffuse map file not found.
@@ -978,9 +1009,9 @@ TEST_F(SceneGraphParserDetail, ParseVisualMaterial) {
         "  <material>" + bad_diffuse +
         "  </material>"
         "</visual>");
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(expect_phong(material, false, {}, {}, {}, {}, {}));
+    EXPECT_TRUE(expect_phong(*material, false, {}, {}, {}, {}, {}));
   }
 }
 
@@ -1003,9 +1034,9 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "    <diffuse>0.25 1 0.5 0.25</diffuse>"
         "  </material>"
         "</visual>");
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_FALSE(material.HasProperty(group, property));
+    EXPECT_FALSE(material->HasProperty(group, property));
   }
 
   // Case: single <drake:accepting_renderer> tag.
@@ -1023,11 +1054,11 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "  </material>"
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "</visual>");
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(material.HasProperty(group, property));
+    EXPECT_TRUE(material->HasProperty(group, property));
     const auto& names =
-        material.GetProperty<std::set<std::string>>(group, property);
+        material->GetProperty<std::set<std::string>>(group, property);
     EXPECT_EQ(names.size(), 1);
     EXPECT_EQ(names.count("renderer1"), 1);
   }
@@ -1048,11 +1079,11 @@ TEST_F(SceneGraphParserDetail, AcceptingRenderers) {
         "  <drake:accepting_renderer>renderer1</drake:accepting_renderer>"
         "  <drake:accepting_renderer>renderer2</drake:accepting_renderer>"
         "</visual>");
-    IllustrationProperties material =
+    std::optional<IllustrationProperties> material =
         MakeVisualPropertiesFromSdfVisual(*sdf_visual);
-    EXPECT_TRUE(material.HasProperty(group, property));
+    EXPECT_TRUE(material->HasProperty(group, property));
     const auto& names =
-        material.GetProperty<std::set<std::string>>(group, property);
+        material->GetProperty<std::set<std::string>>(group, property);
     EXPECT_EQ(names.size(), 2);
     EXPECT_EQ(names.count("renderer1"), 1);
     EXPECT_EQ(names.count("renderer2"), 1);
@@ -1196,17 +1227,18 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:mu_dynamic>4.5</drake:mu_dynamic>
     <drake:mu_static>4.75</drake:mu_static>
   </drake:proximity_properties>)""");
-    ProximityProperties properties = MakeProximityPropertiesForCollision(
-        sdf_diagnostic_, *sdf_collision);
-    assert_single_property(properties, geometry::internal::kHydroGroup,
+    std::optional<ProximityProperties> properties =
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
+    ASSERT_TRUE(properties.has_value());
+    assert_single_property(*properties, geometry::internal::kHydroGroup,
                            geometry::internal::kRezHint, 2.5);
-    assert_single_property(properties, geometry::internal::kHydroGroup,
+    assert_single_property(*properties, geometry::internal::kHydroGroup,
                            geometry::internal::kElastic, 3.5);
-    assert_single_property(properties, geometry::internal::kMaterialGroup,
+    assert_single_property(*properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kHcDissipation, 4.5);
-    assert_single_property(properties, geometry::internal::kMaterialGroup,
+    assert_single_property(*properties, geometry::internal::kMaterialGroup,
                            geometry::internal::kRelaxationTime, 3.1);
-    assert_friction(properties, {4.75, 4.5});
+    assert_friction(*properties, {4.75, 4.5});
   }
 
   // Case: specifies rigid hydroelastic.
@@ -1215,11 +1247,12 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   <drake:proximity_properties>
     <drake:rigid_hydroelastic/>
   </drake:proximity_properties>)""");
-    ProximityProperties properties = MakeProximityPropertiesForCollision(
-        sdf_diagnostic_, *sdf_collision);
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+    std::optional<ProximityProperties> properties =
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
+    ASSERT_TRUE(properties.has_value());
+    ASSERT_TRUE(properties->HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
+    EXPECT_EQ(properties->GetProperty<geometry::internal::HydroelasticType>(
         geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
               geometry::internal::HydroelasticType::kRigid);
   }
@@ -1230,11 +1263,12 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   <drake:proximity_properties>
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
-    ProximityProperties properties = MakeProximityPropertiesForCollision(
-        sdf_diagnostic_, *sdf_collision);
-    ASSERT_TRUE(properties.HasProperty(geometry::internal::kHydroGroup,
+    std::optional<ProximityProperties> properties =
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
+    ASSERT_TRUE(properties.has_value());
+    ASSERT_TRUE(properties->HasProperty(geometry::internal::kHydroGroup,
                                        geometry::internal::kComplianceType));
-    EXPECT_EQ(properties.GetProperty<geometry::internal::HydroelasticType>(
+    EXPECT_EQ(properties->GetProperty<geometry::internal::HydroelasticType>(
         geometry::internal::kHydroGroup, geometry::internal::kComplianceType),
               geometry::internal::HydroelasticType::kSoft);
   }
@@ -1243,16 +1277,18 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
   //  issue 16229 "Diagnostics for unsupported SDFormat and URDF stanzas."
   // Case: specifies unsupported drake:soft_hydroelastic -- should be an error.
   {
-    ThrowErrors();
     unique_ptr<sdf::Collision> sdf_collision = make_sdf_collision(R"""(
   <drake:proximity_properties>
     <drake:soft_hydroelastic/>
   </drake:proximity_properties>)""");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision),
+    std::optional<ProximityProperties> properties =
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
+    EXPECT_FALSE(properties.has_value());
+    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
         ".*A <collision> geometry has defined the unsupported tag "
         "<drake:soft_hydroelastic>. Please change it to "
-        "<drake:compliant_hydroelastic>.");
+        "<drake:compliant_hydroelastic>."));
+    ClearDiagnostics();
   }
 
   // Case: specifies both -- should be an error.
@@ -1262,10 +1298,13 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     <drake:rigid_hydroelastic/>
     <drake:compliant_hydroelastic/>
   </drake:proximity_properties>)""");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision),
+    std::optional<ProximityProperties> properties =
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
+    EXPECT_FALSE(properties.has_value());
+    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
         ".*A <collision> geometry has defined mutually-exclusive tags "
-        ".*rigid.* and .*compliant.*");
+        ".*rigid.* and .*compliant.*"));
+    ClearDiagnostics();
   }
 
   // Case: has no drake coefficients, only mu & m2 in ode: contains mu, mu2
@@ -1280,9 +1319,10 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
       </ode>
     </friction>
   </surface>)""");
-    ProximityProperties properties = MakeProximityPropertiesForCollision(
-        sdf_diagnostic_, *sdf_collision);
-    assert_friction(properties, {0.8, 0.3});
+    std::optional<ProximityProperties> properties =
+        MakeProximityPropertiesForCollision(sdf_diagnostic_, *sdf_collision);
+    ASSERT_TRUE(properties.has_value());
+    assert_friction(*properties, {0.8, 0.3});
   }
 
   // Case: has both ode (mu, mu2) and drake (dynamic): contains
@@ -1308,11 +1348,12 @@ TEST_F(SceneGraphParserDetail, MakeProximityPropertiesForCollision) {
     const std::string file_path("file.txt");
     DataSource data_source(DataSource::kFilename, &file_path);
     SDFormatDiagnostic sdf_diagnostic(&diagnostic, &data_source);
-    ProximityProperties properties =
+    std::optional<ProximityProperties> properties =
         MakeProximityPropertiesForCollision(sdf_diagnostic, *sdf_collision);
+    ASSERT_TRUE(properties.has_value());
     EXPECT_THAT(warning.message, ::testing::MatchesRegex(
         ".*collision.*some_geo.*ode.*ignored.*"));
-    assert_friction(properties, {0.3, 0.3});
+    assert_friction(*properties, {0.3, 0.3});
   }
   // Note: we're not explicitly testing negative friction coefficients or
   // dynamic > static because we rely on the CoulombFriction constructor to
@@ -1340,10 +1381,11 @@ TEST_F(SceneGraphParserDetail, MakeCoulombFrictionFromSdfCollisionOde) {
       "    </friction>"
       "  </surface>"
       "</collision>");
-  const CoulombFriction<double> friction =
+  std::optional<CoulombFriction<double>> friction =
       MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision);
-  EXPECT_EQ(friction.static_friction(), 0.8);
-  EXPECT_EQ(friction.dynamic_friction(), 0.3);
+  ASSERT_TRUE(friction.has_value());
+  EXPECT_EQ(friction->static_friction(), 0.8);
+  EXPECT_EQ(friction->dynamic_friction(), 0.3);
 }
 
 // Verify that if no <surface> tag is present, we return default friction
@@ -1359,11 +1401,16 @@ TEST_F(SceneGraphParserDetail,
       "    </plane>"
       "  </geometry>"
       "</collision>");
-  const CoulombFriction<double> friction =
+  std::optional<CoulombFriction<double>> friction =
       MakeCoulombFrictionFromSdfCollisionOde(sdf_diagnostic_, *sdf_collision);
-  const CoulombFriction<double> expected_friction = default_friction();
-  EXPECT_EQ(friction.static_friction(), expected_friction.static_friction());
-  EXPECT_EQ(friction.dynamic_friction(), expected_friction.dynamic_friction());
+  ASSERT_TRUE(friction.has_value());
+  std::optional<CoulombFriction<double>> expected_friction =
+      default_friction();
+  ASSERT_TRUE(expected_friction.has_value());
+  EXPECT_EQ(friction->static_friction(),
+            expected_friction->static_friction());
+  EXPECT_EQ(friction->dynamic_friction(),
+            expected_friction->dynamic_friction());
 }
 
 // Verify MakeCoulombFrictionFromSdfCollisionOde() throws an exception if

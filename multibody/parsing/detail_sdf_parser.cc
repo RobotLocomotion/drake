@@ -811,7 +811,7 @@ void AddJointFromSpecification(
     case sdf::JointType::INVALID: {
       // In probably all cases, libsdformat will have already detected
       // this error and so Drake won't get an INVALID joint.
-      DRAKE_DEMAND(false);
+      DRAKE_UNREACHABLE();
     }
   }
   joint_types->insert(joint_spec.Type());
@@ -850,7 +850,7 @@ struct LinkInfo {
 
 // Helper method to add a model to a MultibodyPlant given an sdf::Model
 // specification object.
-std::vector<LinkInfo> AddLinksFromSpecification(
+std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
     const SDFormatDiagnostic& diagnostic,
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
@@ -934,21 +934,23 @@ std::vector<LinkInfo> AddLinksFromSpecification(
 
         const RigidTransformd X_LG = ResolveRigidTransform(
             diagnostic, sdf_visual.SemanticPose());
-        unique_ptr<GeometryInstance> geometry_instance =
+        std::optional<unique_ptr<GeometryInstance>> geometry_instance =
             MakeGeometryInstanceFromSdfVisual(
                 diagnostic, sdf_visual, resolve_filename, X_LG);
+        if (!geometry_instance.has_value()) return std::nullopt;
         // We check for nullptr in case someone decided to specify an SDF
         // <empty/> geometry.
-        if (geometry_instance) {
+        if (*geometry_instance) {
           // The parsing should *always* produce an IllustrationProperties
           // instance, even if it is empty.
           DRAKE_DEMAND(
-              geometry_instance->illustration_properties() != nullptr);
+              (*geometry_instance)->illustration_properties() != nullptr);
 
           plant->RegisterVisualGeometry(
-              body, geometry_instance->pose(), geometry_instance->shape(),
-              geometry_instance->name(),
-              *geometry_instance->illustration_properties());
+              body, (*geometry_instance)->pose(),
+              (*geometry_instance)->shape(),
+              (*geometry_instance)->name(),
+              *(*geometry_instance)->illustration_properties());
         }
       }
 
@@ -962,19 +964,21 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         CheckSupportedElements(
             diagnostic, geometry_element, supported_geometry_elements);
 
-        std::unique_ptr<geometry::Shape> shape =
+        std::optional<std::unique_ptr<geometry::Shape>> shape =
             MakeShapeFromSdfGeometry(
                 diagnostic, sdf_geometry, resolve_filename);
-        if (shape != nullptr) {
+        if (!shape.has_value()) return std::nullopt;
+        if (*shape != nullptr) {
           const RigidTransformd X_LG = ResolveRigidTransform(
               diagnostic, sdf_collision.SemanticPose());
           const RigidTransformd X_LC =
               MakeGeometryPoseFromSdfCollision(sdf_collision, X_LG);
-          geometry::ProximityProperties props =
+          std::optional<geometry::ProximityProperties> props =
               MakeProximityPropertiesForCollision(diagnostic, sdf_collision);
-          plant->RegisterCollisionGeometry(body, X_LC, *shape,
+          if (!props.has_value()) return std::nullopt;
+          plant->RegisterCollisionGeometry(body, X_LC, **shape,
                                            sdf_collision.Name(),
-                                           std::move(props));
+                                           std::move(*props));
         }
       }
     }
@@ -1035,7 +1039,7 @@ const Frame<double>& AddFrameFromSpecification(
   }
   // Libsdformat will have already detected this error and
   // at this point the parent_frame wouldn't be a nullptr
-  DRAKE_DEMAND(parent_frame == nullptr);
+  DRAKE_DEMAND(parent_frame != nullptr);
 
   const Frame<double>& frame =
       plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
@@ -1301,10 +1305,11 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
                                  nested_model_instances.begin(),
                                  nested_model_instances.end());
   }
-
   drake::log()->trace("sdf_parser: Add links");
-  std::vector<LinkInfo> added_link_infos = AddLinksFromSpecification(
-      diagnostic, model_instance, model, X_WM, plant, package_map, root_dir);
+  std::optional<std::vector<LinkInfo>> added_link_infos =
+      AddLinksFromSpecification(diagnostic, model_instance, model,
+                                X_WM, plant, package_map, root_dir);
+  if (!added_link_infos.has_value()) return {};
 
   // Add the SDF "model frame" given the model name so that way any frames added
   // to the plant are associated with this current model instance.
@@ -1394,7 +1399,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     // world.
     // N.B. This implementation complicates "reposturing" a static model after
     // parsing. See #12227 and #14518 for more discussion.
-    for (const LinkInfo& link_info : added_link_infos) {
+    for (const LinkInfo& link_info : *added_link_infos) {
       if (!AreWelded(*plant, plant->world_body(), *link_info.body)) {
         const auto& A = plant->world_frame();
         const auto& B = link_info.body->body_frame();
