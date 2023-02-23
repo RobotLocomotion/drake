@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/cspace_free_polytope.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"
 
 #include <chrono>
 #include <future>

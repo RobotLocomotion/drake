@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":c_iris_collision_geometry",
         ":c_iris_separating_plane",
         ":convex_set",
+        ":cspace_free_polytope",
         ":graph_of_convex_sets",
         ":iris",
     ],
@@ -81,6 +82,21 @@ drake_cc_library(
     deps = [
         "//common/symbolic:polynomial",
         "//geometry/optimization:c_iris_collision_geometry",
+    ],
+)
+
+drake_cc_library(
+    name = "cspace_free_polytope",
+    srcs = ["//geometry/optimization/dev:cspace_free_polytope.cc"],
+    hdrs = ["cspace_free_polytope.h"],
+    deps = [
+        "//common/symbolic:monomial_util",
+        "//geometry/optimization:c_iris_collision_geometry",
+        "//geometry/optimization:c_iris_separating_plane",
+        "//solvers:choose_best_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mosek_solver",
+        "//solvers:solve",
     ],
 )
 
