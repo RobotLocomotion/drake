@@ -15,6 +15,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
@@ -449,7 +450,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   SetSubVector(q_prime_beta_prime_, index_sets_.beta_prime, q_prime);
   SetSubVector(q_prime_alpha_bar_prime_, index_sets_.alpha_bar_prime, q_prime);
 
-  DRAKE_LOGGER_DEBUG("q': {}", q_prime->transpose());
+  DRAKE_LOGGER_DEBUG("q': {}", fmt_eigen(q_prime->transpose()));
 
   // If it is not necessary to compute the column of M, quit now.
   if (!M_prime_col)
@@ -511,7 +512,7 @@ bool UnrevisedLemkeSolver<T>::LemkePivot(
   SetSubVector(M_prime_driving_alpha_bar_prime_, index_sets_.alpha_bar_prime,
                M_prime_col);
 
-  DRAKE_LOGGER_DEBUG("M' (driving): {}", M_prime_col->transpose());
+  DRAKE_LOGGER_DEBUG("M' (driving): {}", fmt_eigen(M_prime_col->transpose()));
   return true;
 }
 
@@ -673,7 +674,7 @@ bool UnrevisedLemkeSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   DRAKE_LOGGER_DEBUG(
       "UnrevisedLemkeSolver::SolveLcpLemke() entered, M: {}, "
-      "q: {}, ", M, q.transpose());
+      "q: {}, ", fmt_eigen(M), fmt_eigen(q.transpose()));
 
   const int n = q.size();
   const int max_pivots = 50 * n;  // O(n) pivots expected for solvable problems.
