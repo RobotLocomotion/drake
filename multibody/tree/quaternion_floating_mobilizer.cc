@@ -12,6 +12,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+using Eigen::Quaternion;
+
 template <typename T>
 std::string QuaternionFloatingMobilizer<T>::position_suffix(
   int position_index_in_mobilizer) const {
@@ -144,7 +146,7 @@ void QuaternionFloatingMobilizer<T>::set_random_position_distribution(
 template <typename T>
 void QuaternionFloatingMobilizer<
     T>::set_random_quaternion_distribution(
-        const Eigen::Quaternion<symbolic::Expression>& q_FM) {
+        const Quaternion<symbolic::Expression>& q_FM) {
   Vector<symbolic::Expression, kNq> positions;
   if (this->get_random_state_distribution()) {
     positions = this->get_random_state_distribution()->template head<kNq>();
@@ -232,7 +234,7 @@ QuaternionFloatingMobilizer<T>::CalcAcrossMobilizerTransform(
   // The last 3 elements in q contain position from Fo to Mo.
   const Vector4<T> wxyz(q.template head<4>());
   const Vector3<T> p_FM = q.template tail<3>();  // position from Fo to Mo.
-  const Eigen::Quaternion<T> quaternion_FM(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
+  const Quaternion<T> quaternion_FM(wxyz(0), wxyz(1), wxyz(2), wxyz(3));
   const math::RigidTransform<T> X_FM(quaternion_FM, p_FM);
   return X_FM;
 }

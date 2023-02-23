@@ -91,7 +91,7 @@ Vector6<double> ComputePoseDiffInCommonFrame(
   diff.tail<3>() = (X_C1.translation() - X_C0.translation());
 
   // Angular.
-  AngleAxis<double> rot_err =
+  Eigen::AngleAxis<double> rot_err =
       (X_C1.rotation() * X_C0.rotation().transpose()).ToAngleAxis();
   diff.head<3>() = rot_err.axis() * rot_err.angle();
 

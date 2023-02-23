@@ -91,7 +91,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
     DRAKE_THROW_UNLESS(translational_damping >= 0);
     // Parent constructor sets all default positions to 0.
     // Adjust quaternion default to identity.
-    this->set_default_quaternion(Quaternion<double>::Identity());
+    this->set_default_quaternion(Eigen::Quaternion<double>::Identity());
   }
 
   /// Returns the name of this joint type: "quaternion_floating"
@@ -129,7 +129,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] context
   ///   The context of the model this joint belongs to.
   /// @returns The quaternion representing the orientation of frame M in F.
-  Quaternion<T> get_quaternion(const systems::Context<T>& context) const {
+  Eigen::Quaternion<T> get_quaternion(
+      const systems::Context<T>& context) const {
     return get_mobilizer().get_quaternion(context);
   }
 
@@ -193,7 +194,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The desired orientation of M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
   const QuaternionFloatingJoint<T>& set_quaternion(
-      systems::Context<T>* context, const Quaternion<T>& q_FM) const {
+      systems::Context<T>* context, const Eigen::Quaternion<T>& q_FM) const {
     get_mobilizer().set_quaternion(context, q_FM);
     return *this;
   }
@@ -314,9 +315,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
 
   /// Gets the default quaternion `q_FM` for `this` joint.
   /// @returns The default quaternion `q_FM` of `this`.
-  Quaternion<double> get_default_quaternion() const {
+  Eigen::Quaternion<double> get_default_quaternion() const {
     const Vector4<double>& q_FM = this->default_positions().template head<4>();
-    return Quaternion<double>(q_FM[0], q_FM[1], q_FM[2], q_FM[3]);
+    return Eigen::Quaternion<double>(q_FM[0], q_FM[1], q_FM[2], q_FM[3]);
   }
 
   /// Gets the default position `p_FM` for `this` joint.
@@ -340,7 +341,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Sets the default quaternion `q_FM` of this joint.
   /// @param[in] q_FM
   ///   The desired default quaternion of the joint.
-  void set_default_quaternion(const Quaternion<double>& q_FM) {
+  void set_default_quaternion(const Eigen::Quaternion<double>& q_FM) {
     VectorX<double> default_positions = this->default_positions();
     // @note we store the quaternion components consistently with
     // `QuaternionFloatingMobilizer<T>::get_quaternion()`
@@ -365,7 +366,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The desired default pose of the joint.
   void SetDefaultPose(const math::RigidTransform<double>& X_FM) {
     Vector<double, 7> default_positions;
-    const Quaternion<double> q_FM = X_FM.rotation().ToQuaternion();
+    const Eigen::Quaternion<double> q_FM = X_FM.rotation().ToQuaternion();
     default_positions[0] = q_FM.w();
     default_positions[1] = q_FM.x();
     default_positions[2] = q_FM.y();

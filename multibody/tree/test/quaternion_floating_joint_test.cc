@@ -14,6 +14,7 @@ namespace {
 
 const double kTolerance = std::numeric_limits<double>::epsilon();
 
+using Eigen::Quaternion;
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;

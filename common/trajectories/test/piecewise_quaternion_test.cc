@@ -13,6 +13,9 @@ namespace drake {
 namespace trajectories {
 namespace {
 
+using Eigen::AngleAxis;
+using Eigen::Quaternion;
+
 // Returns q1 = quat(omega * dt) * q0
 template <typename Scalar>
 Quaternion<double> EulerIntegrateQuaternion(const Quaternion<Scalar>& q0,

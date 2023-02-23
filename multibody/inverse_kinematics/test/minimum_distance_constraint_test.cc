@@ -17,7 +17,7 @@ constexpr int kNumPositionsForTwoFreeBodies{14};
 
 template <typename T>
 Vector3<T> ComputeCollisionSphereCenterPosition(
-    const Vector3<T>& p_WB, const Quaternion<T>& quat_WB,
+    const Vector3<T>& p_WB, const Eigen::Quaternion<T>& quat_WB,
     const math::RigidTransformd& X_BS) {
   math::RigidTransform<T> X_WB{quat_WB, p_WB};
   return X_WB * (X_BS.translation().cast<T>());

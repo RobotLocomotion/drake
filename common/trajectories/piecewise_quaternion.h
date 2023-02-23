@@ -48,7 +48,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   PiecewiseQuaternionSlerp(
       const std::vector<T>& breaks,
-      const std::vector<Quaternion<T>>& quaternions);
+      const std::vector<Eigen::Quaternion<T>>& quaternions);
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
@@ -75,7 +75,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    */
   PiecewiseQuaternionSlerp(
       const std::vector<T>& breaks,
-      const std::vector<AngleAxis<T>>& angle_axes);
+      const std::vector<Eigen::AngleAxis<T>>& angle_axes);
 
   ~PiecewiseQuaternionSlerp() override = default;
 
@@ -90,10 +90,10 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    * @param time Time for interpolation.
    * @return The interpolated quaternion at `time`.
    */
-  Quaternion<T> orientation(const T& time) const;
+  Eigen::Quaternion<T> orientation(const T& time) const;
 
   MatrixX<T> value(const T& time) const override {
-    const Quaternion<T> quat = orientation(time);
+    const Eigen::Quaternion<T> quat = orientation(time);
     return Vector4<T>(quat.w(), quat.x(), quat.y(), quat.z());
   }
 
@@ -122,7 +122,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    *
    * @return the internal sample points.
    */
-  const std::vector<Quaternion<T>>& get_quaternion_samples() const {
+  const std::vector<Eigen::Quaternion<T>>& get_quaternion_samples() const {
     return quaternions_;
   }
 
@@ -137,7 +137,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   /**
    * Given a new Quaternion, this method adds one segment to the end of `this`.
    */
-  void Append(const T& time, const Quaternion<T>& quaternion);
+  void Append(const T& time, const Eigen::Quaternion<T>& quaternion);
 
   /**
    * Given a new RotationMatrix, this method adds one segment to the end of
@@ -148,13 +148,13 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   /**
    * Given a new AngleAxis, this method adds one segment to the end of `this`.
    */
-  void Append(const T& time, const AngleAxis<T>& angle_axis);
+  void Append(const T& time, const Eigen::AngleAxis<T>& angle_axis);
 
  private:
   // Initialize quaternions_ and computes angular velocity for each segment.
   void Initialize(
       const std::vector<T>& breaks,
-      const std::vector<Quaternion<T>>& quaternions);
+      const std::vector<Eigen::Quaternion<T>>& quaternions);
 
   // Computes the interpolation time within each segment. Result is in [0, 1].
   T ComputeInterpTime(int segment_index, const T& time) const;
@@ -166,7 +166,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
   std::unique_ptr<Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
 
-  std::vector<Quaternion<T>> quaternions_;
+  std::vector<Eigen::Quaternion<T>> quaternions_;
   std::vector<Vector3<T>> angular_velocities_;
 };
 

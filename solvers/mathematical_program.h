@@ -62,7 +62,8 @@ struct NewVariableNames<Eigen::Dynamic> {
 
 template <int Rows, int Cols>
 struct NewVariableNames<Rows, Cols>
-    : public NewVariableNames<MultiplyEigenSizes<Rows, Cols>::value> {};
+    : public NewVariableNames<
+          Eigen::Matrix<double, Rows, Cols>::SizeAtCompileTime> {};
 
 template <int Rows>
 struct NewSymmetricVariableNames
@@ -261,9 +262,8 @@ class MathematicalProgram {
       int rows, int cols, const std::string& name = "X") {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
-    auto names =
-        internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(
-            rows * cols);
+    auto names = internal::CreateNewVariableNames<
+        Eigen::Matrix<double, Rows, Cols>::SizeAtCompileTime>(rows * cols);
     internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::CONTINUOUS, names, rows, cols);
   }
@@ -331,9 +331,8 @@ class MathematicalProgram {
       int rows, int cols, const std::string& name) {
     rows = Rows == Eigen::Dynamic ? rows : Rows;
     cols = Cols == Eigen::Dynamic ? cols : Cols;
-    auto names =
-        internal::CreateNewVariableNames<MultiplyEigenSizes<Rows, Cols>::value>(
-            rows * cols);
+    auto names = internal::CreateNewVariableNames<
+        Eigen::Matrix<double, Rows, Cols>::SizeAtCompileTime>(rows * cols);
     internal::SetVariableNames(name, rows, cols, &names);
     return NewVariables<Rows, Cols>(VarType::BINARY, names, rows, cols);
   }

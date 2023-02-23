@@ -9,6 +9,8 @@
 namespace drake {
 namespace trajectories {
 
+using Eigen::AngleAxis;
+using Eigen::Quaternion;
 using std::abs;
 using std::cos;
 using std::max;

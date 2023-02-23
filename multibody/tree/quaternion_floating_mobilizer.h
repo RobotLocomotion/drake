@@ -69,7 +69,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   //   belongs to.
   // @retval q_FM
   //   The quaternion representing the orientation of frame M in F.
-  Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
+  Eigen::Quaternion<T> get_quaternion(const systems::Context<T>& context) const;
 
   // Returns the position `p_FM` of the outboard frame M's origin as measured
   // and expressed in the inboard frame F. Refer to the documentation for this
@@ -90,13 +90,13 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   //   The desired orientation of M in F to be stored in `context`.
   // @returns a constant reference to `this` mobilizer.
   const QuaternionFloatingMobilizer<T>& set_quaternion(
-      systems::Context<T>* context, const Quaternion<T>& q_FM) const;
+      systems::Context<T>* context, const Eigen::Quaternion<T>& q_FM) const;
 
   // Alternative signature to set_quaternion(context, q_FM) to set `state` to
   // store the orientation of M in F given by the quaternion `q_FM`.
   const QuaternionFloatingMobilizer<T>& set_quaternion(
       const systems::Context<T>& context,
-      const Quaternion<T>& q_FM, systems::State<T>* state) const;
+      const Eigen::Quaternion<T>& q_FM, systems::State<T>* state) const;
 
   // Sets the distribution governing the random samples of the rotation
   // component of the mobilizer state.
@@ -257,13 +257,13 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   using MobilizerBase::kNv;
 
   // Helper to compute the kinematic map N(q). L ∈ ℝ⁴ˣ³.
-  static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Quaternion<T>& q);
+  static Eigen::Matrix<T, 4, 3> CalcLMatrix(const Eigen::Quaternion<T>& q);
   // Helper to compute the kinematic map N(q) from angular velocity to
   // quaternion time derivative for which q̇_WB = N(q)⋅w_WB.
   // With L given by CalcLMatrix we have:
   // N(q) = L(q_FM/2)
   static Eigen::Matrix<T, 4, 3> AngularVelocityToQuaternionRateMatrix(
-      const Quaternion<T>& q);
+      const Eigen::Quaternion<T>& q);
 
   // Helper to compute the kinematic map N⁺(q) from quaternion time derivative
   // to angular velocity for which w_WB = N⁺(q)⋅q̇_WB.
@@ -272,7 +272,7 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // With L given by CalcLMatrix we have:
   // N⁺(q) = L(2 q_FM)ᵀ
   static Eigen::Matrix<T, 3, 4> QuaternionRateToAngularVelocityMatrix(
-      const Quaternion<T>& q);
+      const Eigen::Quaternion<T>& q);
 
   // Helper method to make a clone templated on ToScalar.
   template <typename ToScalar>

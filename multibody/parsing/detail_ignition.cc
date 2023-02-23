@@ -12,8 +12,8 @@ Vector3d ToVector3(const gz::math::Vector3d& vector) {
 }
 
 RigidTransformd ToRigidTransform(const gz::math::Pose3d& pose) {
-  const Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
-                                    pose.Rot().Y(), pose.Rot().Z());
+  const Eigen::Quaternion<double> rotation(pose.Rot().W(), pose.Rot().X(),
+                                           pose.Rot().Y(), pose.Rot().Z());
   return RigidTransformd(rotation, ToVector3(pose.Pos()));;
 }
 

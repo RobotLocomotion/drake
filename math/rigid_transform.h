@@ -156,7 +156,9 @@ class RigidTransform {
   /// orthonormal 3x3 rotation matrix.
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
-  explicit RigidTransform(const Isometry3<T>& pose) { SetFromIsometry3(pose); }
+  explicit RigidTransform(const Isometry3<T>& pose) {
+    SetFromIsometry3(pose);
+  }
 
   /// Constructs a %RigidTransform from a 3x4 matrix whose structure is below.
   /// @param[in] pose 3x4 matrix that contains an allegedly valid 3x3 rotation

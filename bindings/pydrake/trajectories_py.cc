@@ -426,7 +426,7 @@ struct Impl {
       cls  // BR
           .def(py::init<>(), cls_doc.ctor.doc_0args)
           .def(py::init<const std::vector<T>&,
-                   const std::vector<Quaternion<T>>&>(),
+                   const std::vector<Eigen::Quaternion<T>>&>(),
               py::arg("breaks"), py::arg("quaternions"),
               cls_doc.ctor.doc_2args_breaks_quaternions)
           .def(
@@ -438,11 +438,12 @@ struct Impl {
               py::arg("breaks"), py::arg("rotation_matrices"),
               cls_doc.ctor.doc_2args_breaks_rotation_matrices)
           .def(py::init<const std::vector<T>&,
-                   const std::vector<AngleAxis<T>>&>(),
+                   const std::vector<Eigen::AngleAxis<T>>&>(),
               py::arg("breaks"), py::arg("angle_axes"),
               cls_doc.ctor.doc_2args_breaks_angle_axes)
           .def("Append",
-              py::overload_cast<const T&, const Quaternion<T>&>(&Class::Append),
+              py::overload_cast<const T&, const Eigen::Quaternion<T>&>(
+                  &Class::Append),
               py::arg("time"), py::arg("quaternion"),
               cls_doc.Append.doc_2args_time_quaternion)
           .def("Append",
@@ -451,7 +452,8 @@ struct Impl {
               py::arg("time"), py::arg("rotation_matrix"),
               cls_doc.Append.doc_2args_time_rotation_matrix)
           .def("Append",
-              py::overload_cast<const T&, const AngleAxis<T>&>(&Class::Append),
+              py::overload_cast<const T&, const Eigen::AngleAxis<T>&>(
+                  &Class::Append),
               py::arg("time"), py::arg("angle_axis"),
               cls_doc.Append.doc_2args_time_angle_axis)
           .def("orientation", &Class::orientation, py::arg("time"),

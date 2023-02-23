@@ -518,23 +518,25 @@ namespace internal {
 /// @pre The type of (DerivedA::Scalar() == DerivedB::Scalar()) is symbolic
 /// formula.
 template <
-  typename DerivedA,
-  typename DerivedB,
-  typename = std::enable_if_t<
-    std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
-                   Eigen::ArrayXpr> &&
-    std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
-                   Eigen::ArrayXpr> &&
-    std::is_same_v<decltype(typename DerivedA::Scalar() ==
-                            typename DerivedB::Scalar()),
-                   Formula>>>
+    typename DerivedA, typename DerivedB,
+    typename = std::enable_if_t<
+        std::is_same_v<typename Eigen::internal::traits<DerivedA>::XprKind,
+                       Eigen::ArrayXpr> &&
+        std::is_same_v<typename Eigen::internal::traits<DerivedB>::XprKind,
+                       Eigen::ArrayXpr> &&
+        std::is_same_v<decltype(typename DerivedA::Scalar() ==
+                                typename DerivedB::Scalar()),
+                       Formula>>>
 struct RelationalOpTraits {
-  using ReturnType =
-      Eigen::Array<Formula,
-                   EigenSizeMinPreferFixed<DerivedA::RowsAtCompileTime,
-                                           DerivedB::RowsAtCompileTime>::value,
-                   EigenSizeMinPreferFixed<DerivedA::ColsAtCompileTime,
-                                           DerivedB::ColsAtCompileTime>::value>;
+  static constexpr auto Dynamic = Eigen::Dynamic;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+  static constexpr int Rows = EIGEN_SIZE_MIN_PREFER_FIXED(
+      (DerivedA::RowsAtCompileTime), (DerivedB::RowsAtCompileTime));
+  static constexpr int Cols = EIGEN_SIZE_MIN_PREFER_FIXED(
+      (DerivedA::ColsAtCompileTime), (DerivedB::ColsAtCompileTime));
+#pragma GCC diagnostic pop
+  using ReturnType = Eigen::Array<Formula, Rows, Cols>;
 };
 /// Returns @p f1 ∧ @p f2.
 /// Note that this function returns a `Formula` while

@@ -9,6 +9,7 @@
 namespace drake {
 namespace trajectories {
 
+using Eigen::AngleAxis;
 using Eigen::Vector3d;
 using math::RigidTransform;
 using math::RigidTransformd;

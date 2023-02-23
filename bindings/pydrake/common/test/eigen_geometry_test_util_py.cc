@@ -33,15 +33,16 @@ PYBIND11_MODULE(eigen_geometry_test_util, m) {
   });
 
   m.def("create_translation",
-      []() { return Translation3<T>(Vector3<T>::Zero()); });
-  m.def("check_translation", [max_abs](const Translation3<T>& p) {
+      []() { return Eigen::Translation<T, 3>(Vector3<T>::Zero()); });
+  m.def("check_translation", [max_abs](const Eigen::Translation<T, 3>& p) {
     const T error = max_abs(p.vector());
     DRAKE_THROW_UNLESS(error < kTolerance);
   });
 
-  m.def("create_quaternion", []() { return Quaternion<T>::Identity(); });
-  m.def("check_quaternion", [max_abs](const Quaternion<T>& q) {
-    const T error = max_abs(q.coeffs() - Quaternion<T>::Identity().coeffs());
+  m.def("create_quaternion", []() { return Eigen::Quaternion<T>::Identity(); });
+  m.def("check_quaternion", [max_abs](const Eigen::Quaternion<T>& q) {
+    const T error =
+        max_abs(q.coeffs() - Eigen::Quaternion<T>::Identity().coeffs());
     DRAKE_THROW_UNLESS(error < kTolerance);
   });
 }
