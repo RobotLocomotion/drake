@@ -448,6 +448,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "type_safe_index",
+    srcs = ["type_safe_index.cc"],
     hdrs = ["type_safe_index.h"],
     deps = [
         ":essential",
