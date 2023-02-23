@@ -6,7 +6,6 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
@@ -75,7 +74,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def("__repr__",
           [](const Variable& self) {
             return fmt::format(
-                "Variable('{}', {})", self.to_string(), self.get_type());
+                "Variable('{}', {})", self.get_name(), self.get_type());
           })
       .def("__hash__",
           [](const Variable& self) { return std::hash<Variable>{}(self); })

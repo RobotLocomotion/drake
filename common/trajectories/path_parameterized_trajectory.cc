@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#include <fmt/ostream.h>
+#include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 

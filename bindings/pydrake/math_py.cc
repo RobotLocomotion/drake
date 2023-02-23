@@ -16,6 +16,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
 #include "drake/math/compute_numerical_gradient.h"
@@ -581,8 +582,8 @@ void DoScalarIndependentDefinitions(py::module m) {
               // displaying memory addresses in pydrake docs and help strings.
               // In the future, we should enhance this to display all of the
               // information.
-              return fmt::format(
-                  "<NumericalGradientOption({})>", py::repr(method));
+              return fmt::format("<NumericalGradientOption({})>",
+                  fmt_streamed(py::repr(method)));
             });
   }
 

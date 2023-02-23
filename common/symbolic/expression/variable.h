@@ -373,4 +373,7 @@ namespace fmt {
 template <>
 struct formatter<drake::symbolic::Variable>
     : drake::ostream_formatter {};
+template <>
+struct formatter<drake::symbolic::Variable::Type>
+    : drake::ostream_formatter {};
 }  // namespace fmt

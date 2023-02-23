@@ -8,7 +8,6 @@
 #include <stdexcept>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"

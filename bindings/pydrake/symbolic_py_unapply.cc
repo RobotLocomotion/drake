@@ -2,7 +2,6 @@
 
 #include "pybind11/stl.h"
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 namespace drake {
 namespace pydrake {

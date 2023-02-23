@@ -15,7 +15,6 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/fmt_eigen.h"

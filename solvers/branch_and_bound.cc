@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/unused.h"
 #include "drake/solvers/choose_best_solver.h"

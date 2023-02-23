@@ -1,7 +1,6 @@
 #pragma once
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"

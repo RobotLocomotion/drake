@@ -437,8 +437,8 @@ TEST_F(BoxMeshTest, MeshFileAbsolutePathCompiler) {
   std::string mesh_asset =
       R"""(<mesh name="box" file="box.obj"/>)""";
   std::string compiler =
-      fmt::format(R"""(<compiler meshdir={}/>)""",
-                  std::filesystem::path(box_obj_).parent_path());
+      fmt::format(R"""(<compiler meshdir="{}"/>)""",
+                  std::filesystem::path(box_obj_).parent_path().string());
   TestBoxMesh(box_obj_, mesh_asset, compiler);
 }
 
