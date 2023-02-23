@@ -41,12 +41,20 @@ struct PlaneSeparatesGeometries {
 };
 
 /**
- This class tries to find large convex region in the configuration space, such
- that this whole convex set is collision free.
+ This class tries to find large convex polytope in the tangential-configuration
+ space, such that this whole convex polytope is collision free.
+ By tangential-configuration space, we mean the revolute joint angle θ is
+ replaced by t = tan(θ/2).
  For more details, refer to the paper
- "Finding and Optimizing Certified, Colision-Free Regions in Configuration Space
- for Robot Manipulators" by Alexandre Amice, Hongkai Dai, Peter Werner, Annan
- Zhang and Russ Tedrake.
+
+ Certified Polyhedral Decomposition of Collisoin-Free Configuration Space
+ by Hongkai Dai*, Alexandre Amice*, Peter Werner, Annan Zhang and Russ Tedrake.
+
+ A conference version is published at
+
+ Finding and Optimizing Certified, Colision-Free Regions in Configuration Space
+ for Robot Manipulators
+ by Alexandre Amice*, Hongkai Dai*, Peter Werner, Annan Zhang and Russ Tedrake.
  */
 class CspaceFreePolytope {
  public:
@@ -65,8 +73,10 @@ class CspaceFreePolytope {
      For non-polytopic collision geometries, we will impose a matrix-sos
      constraint X(s) being psd, with a slack indeterminates y, such that the
      polynomial
+     <pre>
      p(s, y) = ⌈ 1 ⌉ᵀ * X(s) * ⌈ 1 ⌉
                ⌊ y ⌋           ⌊ y ⌋
+     </pre>
      is positive. This p(s, y) polynomial doesn't contain the cross term of y
      (namely it doesn't have y(i)*y(j), i≠j). When we select the monomial
      basis for this polynomial, we can also exclude the cross term of y in the
@@ -76,13 +86,17 @@ class CspaceFreePolytope {
      want to certify that
      a(0) + a(1)*y₀ + a(2)*y₁ + a(3)*y₀² + a(4)*y₁² is positive
      (this polynomial doesn't have the cross term y₀*y₁), we can write it as
+     <pre>
      ⌈ 1⌉ᵀ * A₀ * ⌈ 1⌉ + ⌈ 1⌉ᵀ * A₁ * ⌈ 1⌉
      ⌊y₀⌋         ⌊y₀⌋   ⌊y₁⌋         ⌊y₁⌋
+     </pre>
      with two small psd matrices A₀, A₁
      Instead of
+     <pre>
      ⌈ 1⌉ᵀ * A * ⌈ 1⌉
      |y₀|        |y₀|
      ⌊y₁⌋        ⌊y₁⌋
+     </pre>
      with one large psd matrix A. The first parameterization won't have the
      cross term y₀*y₁ by construction, while the second parameterization
      requires imposing extra constraints on certain off-diagonal terms in A
