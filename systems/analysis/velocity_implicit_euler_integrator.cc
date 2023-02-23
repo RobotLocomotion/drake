@@ -7,6 +7,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
@@ -143,8 +144,8 @@ void VelocityImplicitEulerIntegrator<T>::ComputeAutoDiffVelocityJacobian(
   DRAKE_LOGGER_DEBUG(
       "VelocityImplicitEulerIntegrator ComputeAutoDiffVelocityJacobian "
       "{}-Jacobian t={}", y.size(), t);
-  DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", qk.transpose(),
-                     y.transpose());
+  DRAKE_LOGGER_DEBUG("  computing from qk {}, y {}", fmt_eigen(qk.transpose()),
+                     fmt_eigen(y.transpose()));
   // TODO(antequ): Investigate how to refactor this method to use
   // math::jacobian(), if possible.
 

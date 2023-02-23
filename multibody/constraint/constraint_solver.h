@@ -1462,7 +1462,7 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
       // Transform the impulsive forces to non-impulsive forces.
       lambda = u.tail(num_eq_constraints) / dt;
       DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
-          lambda.transpose());
+          fmt_eigen(lambda.transpose()));
     }
 
     return;
@@ -1482,11 +1482,11 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
   cf->segment(num_contacts, num_spanning_vectors) = fD_plus - fD_minus;
   cf->segment(num_contacts + num_spanning_vectors, num_limits) = fL;
   DRAKE_LOGGER_DEBUG("Normal contact forces/impulses: {}",
-      fN.transpose());
+      fmt_eigen(fN.transpose()));
   DRAKE_LOGGER_DEBUG("Frictional contact forces/impulses: {}",
-      (fD_plus - fD_minus).transpose());
+      fmt_eigen((fD_plus - fD_minus).transpose()));
   DRAKE_LOGGER_DEBUG("Generic unilateral constraint "
-      "forces/impulses: {}", fL.transpose());
+      "forces/impulses: {}", fmt_eigen(fL.transpose()));
 
   // Determine the new velocity and the bilateral constraint forces/
   // impulses.
@@ -1517,7 +1517,7 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
     // Transform the impulsive forces back to non-impulsive forces.
     lambda = u.tail(num_eq_constraints) / dt;
     DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
-        lambda.transpose());
+        fmt_eigen(lambda.transpose()));
   }
 }
 
