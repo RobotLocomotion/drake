@@ -41,7 +41,9 @@ namespace internal {
  @pre max_penetration <= 0.
  @pre max_clearance >= 0.
  @pre max_clearance > max_penetration.
- @pre if context != nullptr, it is a context managed by checker. */
+ @pre if context != nullptr, it is a context managed by checker.
+
+ @ingroup planning_collision_checker */
 Eigen::VectorXd ComputeCollisionAvoidanceDisplacement(
     const CollisionChecker& checker, const Eigen::VectorXd& q,
     double max_penetration, double max_clearance,

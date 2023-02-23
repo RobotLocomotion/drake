@@ -68,7 +68,7 @@ namespace controllers {
  2015 IEEE-RAS 15th International Conference on Humanoid Robots (Humanoids),
  Seoul, 2015, pp. 936-940.
 
- @ingroup planning
+ @ingroup planning_trajectory
  */
 class ZmpPlanner {
  public:

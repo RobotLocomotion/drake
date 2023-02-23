@@ -59,7 +59,9 @@ namespace planning {
       filtering collisions will cull most of these Jacobians. But depending on
       the structure of the robot and its representative collision geometry, it
       is still possible to evaluate the Jacobian at a configuration that
-      represents a local optimum (zero-valued Jacobian). */
+      represents a local optimum (zero-valued Jacobian).
+
+ @ingroup planning_collision_checker */
 class RobotClearance {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(RobotClearance)

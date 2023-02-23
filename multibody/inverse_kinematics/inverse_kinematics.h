@@ -15,7 +15,7 @@ namespace multibody {
  * postures of the robot satisfying certain constraints.
  * The decision variables include the generalized position of the robot.
  *
- * @ingroup planning
+ * @ingroup planning_configuration
  */
 class InverseKinematics {
  public:

@@ -148,7 +148,8 @@ namespace planning {
  CheckEdgesCollisionFree(), etc); a derived implementation should return `false`
  from SupportsParallelChecking() if there is no meaningful benefit to attempting
  to do work in parallel (e.g., they must fully serialize on shared state).
- */
+
+ @ingroup planning_collision_checker */
 class CollisionChecker {
  public:
   // N.B. The copy constructor is protected for use in implementing Clone().

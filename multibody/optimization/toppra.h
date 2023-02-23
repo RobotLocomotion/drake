@@ -59,7 +59,7 @@ struct CalcGridPointsOptions {
  * Parameterization based on Reachability Analysis" by Hung Pham and Quang Cuong
  * Pham, IEEE Transactions on Robotics, 2018.
  *
- * @ingroup planning
+ * @ingroup planning_trajectory
  */
 class Toppra {
  public:

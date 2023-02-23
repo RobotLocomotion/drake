@@ -24,7 +24,7 @@ namespace trajectory_optimization {
 /// achieve a 3rd order integration accuracy.
 ///
 /// Note: This algorithm only works with the continuous states of a system.
-/// @ingroup planning
+/// @ingroup planning_trajectory
 class DirectCollocation : public MultipleShooting {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DirectCollocation)

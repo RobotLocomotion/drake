@@ -40,7 +40,9 @@ using ConfigurationInterpolationFunction = std::function<Eigen::VectorXd(
 
 /** A set of common constructor parameters for a CollisionChecker.
 Not all subclasses of CollisionChecker will necessarily support this
-configuration struct, but many do so. */
+configuration struct, but many do so.
+
+@ingroup planning_collision_checker */
 struct CollisionCheckerParams {
   /** A RobotDiagram model of the robot and environment. Must not be
   nullptr. */
