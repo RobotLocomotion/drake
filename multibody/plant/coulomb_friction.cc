@@ -1,7 +1,6 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 namespace drake {
 namespace multibody {

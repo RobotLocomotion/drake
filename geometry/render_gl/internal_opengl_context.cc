@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -49,6 +50,15 @@ GLXContext glXCreateContextAttribsARB(
       GLXContext(Display*, GLXFBConfig, GLXContext, Bool, const int*)>(
       "glXCreateContextAttribsARB")(
           dpy, config, share_context, direct, attrib_list);
+}
+
+// Returns the GL_VENDOR bytes as a std::string.
+std::string GetGlVendor() {
+  std::stringstream result;
+  for (const GLubyte* iter = glGetString(GL_VENDOR); *iter != 0; ++iter) {
+    result << static_cast<char>(*iter);
+  }
+  return result.str();
 }
 
 void GlDebugCallback(GLenum, GLenum type, GLuint, GLenum severity, GLsizei,
@@ -166,7 +176,7 @@ class OpenGlContext::Impl {
 
     // Enable debug.
     if (debug) {
-      drake::log()->info("Vendor: {}", glGetString(GL_VENDOR));
+      drake::log()->info("Vendor: {}", GetGlVendor());
       glEnable(GL_DEBUG_OUTPUT);
       glDebugMessageCallback(GlDebugCallback, 0);
     }

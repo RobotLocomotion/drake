@@ -971,9 +971,9 @@ class MujocoParser {
         } else if (std::filesystem::exists(original_filename)) {
           log()->warn(
               "Drake's MuJoCo parser currently only supports mesh files in "
-              ".obj format. The meshfile {} was requested; Drake attempted to "
-              "load {}, but that file does not exist.",
-              original_filename, filename);
+              ".obj format. The meshfile \"{}\" was requested; Drake attempted "
+              "to load \"{}\", but that file does not exist.",
+              original_filename.string(), filename.string());
           std::string original_extension = original_filename.extension();
           std::transform(original_extension.begin(), original_extension.end(),
                          original_extension.begin(),
@@ -981,15 +981,15 @@ class MujocoParser {
           if (original_extension == ".stl") {
             log()->warn(
                 "If you have built Drake from source, running\n\n bazel run "
-                "//manipulation/utils/stl2obj -- {} {}\n\nonce will "
+                "//manipulation/utils/stl2obj -- \"{}\" \"{}\"\n\nonce will "
                 "resolve this.",
-                original_filename, filename);
+                original_filename.string(), filename.string());
           }
         } else {
           log()->warn(
-              "The mesh asset {} could not be found, nor could its .obj "
-              "replacement {}.",
-              original_filename, filename);
+              "The mesh asset \"{}\" could not be found, nor could its .obj "
+              "replacement \"{}\".",
+              original_filename.string(), filename.string());
         }
       } else {
         std::string name{};
