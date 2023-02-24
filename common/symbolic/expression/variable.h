@@ -74,8 +74,8 @@ class Variable {
   /** Checks if this is a dummy variable (ID = 0) which is created by
    *  the default constructor. */
   [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
-  [[nodiscard]] Id get_id() const;
-  [[nodiscard]] Type get_type() const;
+  [[nodiscard]] Id get_id() const { return id_; }
+  [[nodiscard]] Type get_type() const { return type_; }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
 
