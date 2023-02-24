@@ -87,7 +87,10 @@ drake_cc_library(
 
 drake_cc_library(
     name = "cspace_free_polytope",
-    srcs = ["//geometry/optimization/dev:cspace_free_polytope.cc"],
+    srcs = [
+        "cspace_free_polytope.cc",
+        "//geometry/optimization/dev:cspace_free_polytope.cc",
+    ],
     hdrs = ["cspace_free_polytope.h"],
     deps = [
         "//common/symbolic:monomial_util",
