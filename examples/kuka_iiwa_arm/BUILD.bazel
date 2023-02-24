@@ -152,6 +152,24 @@ drake_cc_binary(
     ],
 )
 
+drake_cc_binary(
+    name = "iiwa_relaxed_ik",
+    srcs = ["iiwa_relaxed_ik.cc"],
+    data = [
+        ":models",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":iiwa_common",
+        "//common:add_text_logging_gflags",
+        "//multibody/inverse_kinematics",
+        "//multibody/parsing",
+        "//solvers:snopt_solver",
+        "//solvers:solve",
+        "//solvers:solver_options",
+    ],
+)
+
 alias(
     name = "models",
     actual = "//examples/kuka_iiwa_arm/models:models",
