@@ -125,6 +125,13 @@ class SpatialInertia {
   /// moments of inertia of 1 and products of inertia of 0.
   static SpatialInertia<T> MakeUnitary();
 
+  /// Creates the spatial inertia for a particle Q of mass m about a point P.
+  /// @param[in] mass mass of the single particle (i.e., the point mass).
+  /// @param[in] position vector from point P to Q, expressed in a frame B.
+  /// @retval M_QP_B particle Q's spatial inertia about P, expressed in frame B.
+  /// @throws std::exception if mass is negative.
+  static SpatialInertia<T> PointMass(const T& mass, const Vector3<T>& position);
+
   /// Creates a spatial inertia for a uniform density solid box B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).

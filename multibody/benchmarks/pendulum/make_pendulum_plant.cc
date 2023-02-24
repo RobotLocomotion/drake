@@ -28,16 +28,17 @@ MakePendulumPlant(const PendulumParameters& params,
   // frame B and the world frame W are coincident.
   const Vector3<double> p_BoBcm_B = -params.l() * Vector3<double>::UnitZ();
 
-  // Define the point mass spatial inertia about its body frame origin Bo.
-  // We define the body frame B to have its origin Bo coincident with Wo at all
-  // times, and it rotates about the a pin joint's y-axis.
-  UnitInertia<double> G_Bo =
-      UnitInertia<double>::PointMass(p_BoBcm_B);
-  SpatialInertia<double> M_Bo(params.m(), p_BoBcm_B, G_Bo);
+  // Body B's mass distribution is modeled as all its mass concentrated at Bcm
+  // (B's center of mass). Hence B's spatial inertia about Bo (B's origin) can
+  // be calculated as if B was a point mass (single particle).
+  // Note: We define the body frame B to have its origin Bo coincident with Wo
+  // at all times, and it rotates about the a pin joint's y-axis.
+  const SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::PointMass(params.m(), p_BoBcm_B);
 
   // Add a rigid body to model the point mass.
   const RigidBody<double>& point_mass =
-      plant->AddRigidBody(params.body_name(), M_Bo);
+      plant->AddRigidBody(params.body_name(), M_BBo_B);
 
   if (scene_graph != nullptr) {
     plant->RegisterAsSourceForSceneGraph(scene_graph);
