@@ -839,7 +839,7 @@ drake_cc_variant_library(
     deps_enabled = [
         "//common:scope_exit",
         "//math:autodiff",
-        "@snopt//:snopt_cwrap",
+        "@snopt//:snopt_c",
     ],
 )
 
