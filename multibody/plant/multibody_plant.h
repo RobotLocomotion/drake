@@ -26,7 +26,8 @@
 #include "drake/multibody/plant/discrete_update_manager.h"
 #include "drake/multibody/plant/multibody_plant_config.h"
 #include "drake/multibody/plant/physical_model.h"
-#include "drake/multibody/topology/multibody_graph.h"
+#include "drake/multibody/topology/link_joint_graph.h"
+#include "drake/multibody/topology/spanning_forest_model.h"
 #include "drake/multibody/tree/force_element.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
@@ -4974,7 +4975,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @} <!-- Introspection -->
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // Internal-only access to MultibodyGraph::FindSubgraphsOfWeldedBodies();
+  // Internal-only access to LinkJointGraph::FindSubgraphsOfWeldedBodies();
   // TODO(calderpg-tri) Properly expose this method (docs/tests/bindings).
   std::vector<std::set<BodyIndex>> FindSubgraphsOfWeldedBodies() const;
 #endif

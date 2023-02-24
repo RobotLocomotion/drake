@@ -25,6 +25,7 @@
 #include "drake/multibody/plant/hydroelastic_traction_calculator.h"
 #include "drake/multibody/plant/make_discrete_update_manager.h"
 #include "drake/multibody/plant/slicing_and_indexing.h"
+#include "drake/multibody/topology/spanning_forest_model.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -328,7 +329,6 @@ MultibodyPlant<T>::MultibodyPlant(
   // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
-
   DeclareSceneGraphPorts();
 }
 
@@ -889,7 +889,7 @@ template <typename T>
 std::vector<const Body<T>*> MultibodyPlant<T>::GetBodiesWeldedTo(
     const Body<T>& body) const {
   const std::set<BodyIndex> island =
-      internal_tree().multibody_graph().FindBodiesWeldedTo(body.index());
+      internal_tree().link_joint_graph().FindLinksWeldedTo(body.index());
   // Map body indices to pointers.
   std::vector<const Body<T>*> sub_graph_bodies;
   for (BodyIndex body_index : island) {
@@ -1097,8 +1097,61 @@ void MultibodyPlant<T>::RenameModelInstance(ModelInstanceIndex model_instance,
 
 template<typename T>
 void MultibodyPlant<T>::Finalize() {
-  // After finalizing the base class, tree is read-only.
-  internal::MultibodyTreeSystem<T>::Finalize();
+  /* Given the user-defined directed graph of Links and Joints, decide how we're
+  going to model this using a spanning forest comprised of
+    - bodies and their mobilizers, paired as "mobilized bodies" (mobods) and
+      directed by inboard/outboard edges, and
+    - added constraints where needed to close kinematic loops in the graph.
+  The modeler sorts the mobilized bodies into depth-first order.
+
+  Every Link will be modeled with one "primary" body and possibly several
+  "shadow" bodies. Every Joint will be modeled with a mobilizer, with the
+  Joint's parent/child connections mapped to the mobilizer's inboard/outboard
+  connection or to the reverse, as necessary for the mobilizers to form a
+  properly-directed tree. Every body in the tree must have a path in the
+  inboard direction connecting it to World. If necessary, additional "floating"
+  (6 dof) or "weld" (0 dof) mobilizers are added to make the final connection
+  to World.
+
+  During the modeling process, the LinkJointGraph is augmented to have
+  additional elements to provide an interface to the additional elements that
+  were required to build the model. Below, we will augment the MultibodyPlant
+  elements to match, so that advanced users can use the familiar Plant API to
+  access and control these elements. */
+  this->mutable_tree().BuildSpanningForest();
+
+  /* Add Links, Joints, and Constraints that were created during the modeling
+  process. */
+
+  const internal::LinkJointGraph& graph = internal_tree().link_joint_graph();
+  unused(graph);
+
+  /* TODO(sherm1) why not use MbP as the LinkJointGraph and do away with
+      the extra class? Then we wouldn't have to repeat these additions.
+  // Added floating mobods are in the order the new joints were added so
+  // the index we get in the plant should match the one stored with the mobod.
+  for (auto index : graph.added_floating_mobods()) {
+      const internal::SpanningForestModel::Mobod& floating_mobod =
+              model.mobods()[index];
+      const JointIndex floating = AddFloatingJointToWorld(floating_mobod);
+      DRAKE_DEMAND(floating == floating_mobod.joint_index);
+  }
+
+  // Shadow mobods are in the order the new bodies were added so the body
+  // index should match.
+  for (auto index : model.shadow_mobods()) {
+    const internal::SpanningForestModel::Mobod shadow_mobod = model.mobods()[index];
+    const BodyIndex shadow = AddShadowBody(shadow_mobod);
+    DRAKE_DEMAND(shadow == shadow_mobod.link_index_);
+  }
+
+  // The modeler only knows about constraints it adds so there is no
+  // indexing correspondence.
+  for (auto& loop_constraint : model.added_constraints()) {
+    const ConstraintIndex constraint =
+        AddLoopClosingConstraint(loop_constraint);
+  }
+  */
 
   if (geometry_source_is_registered()) {
     ApplyDefaultCollisionFilters();
@@ -1120,6 +1173,12 @@ void MultibodyPlant<T>::Finalize() {
         "only supported for discrete models. Refer to MultibodyPlant's "
         "documentation for further details.");
   }
+
+  /* The Plant is complete now. Next, build an efficient computational
+  representation structured in accordance with `model`. */
+
+  // After finalizing the base class, tree is read-only.
+  internal::MultibodyTreeSystem<T>::Finalize();
 }
 
 template<typename T>
@@ -1342,7 +1401,7 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
   }
   // We explicitly exclude collisions within welded subgraphs.
   std::vector<std::set<BodyIndex>> subgraphs =
-      internal_tree().multibody_graph().FindSubgraphsOfWeldedBodies();
+      internal_tree().link_joint_graph().FindSubgraphsOfWeldedLinks();
   for (const auto& subgraph : subgraphs) {
     // Only operate on non-trivial weld subgraphs.
     if (subgraph.size() <= 1) { continue; }
@@ -3550,7 +3609,7 @@ void MultibodyPlant<T>::RemoveUnsupportedScalars(
 template <typename T>
 std::vector<std::set<BodyIndex>>
 MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
-  return internal_tree().multibody_graph().FindSubgraphsOfWeldedBodies();
+  return internal_tree().link_joint_graph().FindSubgraphsOfWeldedLinks();
 }
 
 template <typename T>

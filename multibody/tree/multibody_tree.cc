@@ -75,6 +75,9 @@ MultibodyTree<T>::MultibodyTree() {
   world_body_ = &AddRigidBody("world", world_model_instance(),
                               SpatialInertia<double>());
 
+  // Add the world body to the graph.
+  link_joint_graph_.AddLink(world_body().name(), world_body().model_instance());
+
   // `default_model_instance()` hardcodes the returned index.  Make sure it's
   // correct.
   ModelInstanceIndex default_instance =
@@ -85,6 +88,25 @@ MultibodyTree<T>::MultibodyTree() {
       AddForceElement<UniformGravityFieldElement>();
   DRAKE_DEMAND(num_force_elements() == 1);
   DRAKE_DEMAND(owned_force_elements_[0].get() == &new_field);
+}
+
+// Registers a joint in the graph if it isn't already there.
+template <typename T>
+void MultibodyTree<T>::RegisterJointInGraph(const Joint<T>& joint) {
+  const std::string type_name = joint.type_name();
+  if (!link_joint_graph_.IsJointTypeRegistered(type_name)) {
+    // TODO(sherm1) The Joint interface should say whether we're expecting
+    //  a quaternion. Then get rid of this hack.
+    const bool has_quaternion =
+        type_name.find("quaternion") != std::string::npos;
+    link_joint_graph_.RegisterJointType(type_name, joint.num_positions(),
+                                        joint.num_velocities(),
+                                        has_quaternion);
+  }
+  // Note changes in the graph.
+  link_joint_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
+                             joint.parent_body().index(),
+                             joint.child_body().index());
 }
 
 template <typename T>

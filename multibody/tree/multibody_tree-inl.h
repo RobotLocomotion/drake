@@ -110,7 +110,8 @@ const RigidBody<T>& MultibodyTree<T>::AddRigidBody(
             "' already contains a body named '" + name + "'. " +
             "Body names must be unique within a given model.");
   }
-
+  // Make note in the graph.
+  link_joint_graph_.AddLink(name, model_instance);
   const RigidBody<T>& body =
       this->template AddBody<RigidBody>(name, model_instance, M_BBo_B);
   return body;

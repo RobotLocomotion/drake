@@ -21,7 +21,7 @@
 #include "drake/common/pointer_cast.h"
 #include "drake/common/random.h"
 #include "drake/math/rigid_transform.h"
-#include "drake/multibody/topology/multibody_graph.h"
+#include "drake/multibody/topology/link_joint_graph.h"
 #include "drake/multibody/tree/acceleration_kinematics_cache.h"
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
@@ -537,6 +537,9 @@ class MultibodyTree {
   // @throws std::exception if Finalize() was already called on `this` tree.
   ModelInstanceIndex AddModelInstance(const std::string& name);
 
+  // Registers a joint in the graph if it isn't already there.
+  void RegisterJointInGraph(const Joint<T>& joint);
+
   // Renames an existing model instance.
   //
   // @param[in] model_instance
@@ -1012,21 +1015,33 @@ class MultibodyTree {
   // @}
   // End of "Model instance accessors" section.
 
-  // This method must be called after all elements in the tree (joints, bodies,
+  // MultibodyPlant invokes this to construct a spanning forest/loop constraint
+  // model we want to use to simulate the user's Link and Joint structure.
+  const SpanningForestModel& BuildSpanningForest() {
+    return link_joint_graph_.BuildModel();
+  }
+
+  // Returns a reference to LinkJointGraph. That contains the
+  // SpanningForestModel also if it has been built.
+  [[nodiscard]] const LinkJointGraph& link_joint_graph() const {
+      return link_joint_graph_;
+  }
+
+  // This method must be called after all elements in the plant (joints, bodies,
   // force elements, constraints) were added and before any computations are
-  // performed.
-  // It essentially compiles all the necessary "topological information", i.e.
-  // how bodies, joints and, any other elements connect with each other, and
-  // performs all the required pre-processing to perform computations at a
-  // later stage.
+  // performed. It compiles all the necessary "topological information", i.e.
+  // how bodies, mobilizers, and any other elements connect with each other, and
+  // performs all the required pre-processing to permit efficient computations
+  // at a later stage.
   //
-  // If the finalize stage is successful, the topology of this %MultibodyTree
+  // If the finalize stage is successful, the topology of this MultibodyTree
   // is validated, meaning that the topology is up-to-date after this call.
-  // No more multibody tree elements can be added after a call to Finalize().
+  // No more multibody plant elements can be added after a call to Finalize().
   //
   // @throws std::exception if called post-finalize.
+
   // TODO(amcastro-tri): Consider making this method private and calling it
-  // automatically when CreateDefaultContext() is called.
+  //  automatically when CreateDefaultContext() is called.
   void Finalize();
 
   // (Advanced) Allocates a new context for this %MultibodyTree uniquely
@@ -2303,18 +2318,6 @@ class MultibodyTree {
       tree_clone->CloneBodyAndAdd(body);
     }
 
-    // TODO(sherm1) Remove these unfortunate hacks needed to duplicate the
-    //  multibody graph. The upcoming LinkJointGraph is copyable. (Includes
-    //  Body here and Joint below.)
-
-    // Partially copy multibody_graph_. The looped calls to RegisterJointInGraph
-    // below copy the second half. Skip World since it was created by
-    // MultibodyTree's default constructor above.
-    for (BodyIndex index(1); index < num_bodies(); ++index) {
-      const Body<T>& body = get_body(index);
-      tree_clone->multibody_graph_.AddBody(body.name(), body.model_instance());
-    }
-
     // Frames are cloned in their index order, that is, in the exact same order
     // they were added to the original tree. Since the Frame API enforces the
     // creation of the parent frame first, this traversal guarantees that parent
@@ -2352,11 +2355,6 @@ class MultibodyTree {
 
     for (const auto& actuator : owned_actuators_) {
       tree_clone->CloneActuatorAndAdd(*actuator);
-    }
-
-    // Register the cloned Joints with the multibody_graph_.
-    for (JointIndex index(0); index < num_joints(); ++index) {
-      tree_clone->RegisterJointInGraph(tree_clone->get_joint(index));
     }
 
     // We can safely make a deep copy here since the original multibody tree is
@@ -2596,10 +2594,6 @@ class MultibodyTree {
   // properties will cause subsequent numerical problems.
   void ThrowDefaultMassInertiaError() const;
 
-  const internal::MultibodyGraph& multibody_graph() const {
-    return multibody_graph_;
-  }
-
  private:
   // Make MultibodyTree templated on every other scalar type a friend of
   // MultibodyTree<T> so that CloneToScalar<ToAnyOtherScalar>() can access
@@ -2690,7 +2684,8 @@ class MultibodyTree {
       ModelInstanceIndex joint_instance, std::string_view joint_name,
       std::string_view frame_suffix);
 
-  // Finalizes the MultibodyTreeTopology of this tree.
+  // Finalizes the MultibodyTreeTopology of this tree in accordance with the
+  // SpanningForestModel.
   void FinalizeTopology();
 
   // At Finalize(), this method performs all other finalization that is not
@@ -3073,18 +3068,6 @@ class MultibodyTree {
     name_to_index->emplace(std::move(key), index);
   }
 
-  // Registers a joint in the graph.
-  void RegisterJointInGraph(const Joint<T>& joint) {
-    const std::string type_name = joint.type_name();
-    if (!multibody_graph_.IsJointTypeRegistered(type_name)) {
-      multibody_graph_.RegisterJointType(type_name);
-    }
-    // Note changes in the graph.
-    multibody_graph_.AddJoint(joint.name(), joint.model_instance(), type_name,
-                              joint.parent_body().index(),
-                              joint.child_body().index());
-  }
-
   // If there exists a unique base body (a body whose parent is the world body)
   // in the model given by `model_instance`, return the index of that body.
   // Otherwise return std::nullopt. In particular, if the given `model_instance`
@@ -3098,23 +3081,28 @@ class MultibodyTree {
   GetDefaultFreeBodyPoseAsQuaternionVec3Pair(const Body<T>& body) const;
 
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
-  // a method that verifies the state of the topology with a signature similar
-  // to RoadGeometry::CheckHasRightSizeForModel().
+  //  a method that verifies the state of the topology with a signature similar
+  //  to RoadGeometry::CheckHasRightSizeForModel().
 
-  // A graph representing the body/joint topology of the multibody plant (Not
-  // to be confused with the spanning-tree model we will build for analysis.)
-  internal::MultibodyGraph multibody_graph_;
-
+  // These objects are defined via MultibodyPlant and are thus user-visible.
   const RigidBody<T>* world_body_{nullptr};
-  std::vector<std::unique_ptr<Body<T>>> owned_bodies_;
+  std::vector<std::unique_ptr<Body<T>>> owned_bodies_;  // TODO(sherm1) Links
   std::vector<std::unique_ptr<Frame<T>>> owned_frames_;
-  std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
+  std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
   std::vector<std::unique_ptr<ForceElement<T>>> owned_force_elements_;
   std::vector<std::unique_ptr<JointActuator<T>>> owned_actuators_;
-  std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
+
+  // This is the internal representation of user-defined model instances.
   std::vector<std::unique_ptr<internal::ModelInstance<T>>> model_instances_;
 
-  std::vector<std::unique_ptr<Joint<T>>> owned_joints_;
+  // A graph representing the user-specified Link/Joint topology of the
+  // multibody plant, and containing the chosen SpanningForestModel we use
+  // for computation.
+  internal::LinkJointGraph link_joint_graph_;
+
+  // These are internal data structures generated to implement the model.
+  std::vector<std::unique_ptr<Mobilizer<T>>> owned_mobilizers_;
+  std::vector<std::unique_ptr<internal::BodyNode<T>>> body_nodes_;
 
   // List of all frames in the system ordered by their FrameIndex.
   // This vector contains a pointer to all frames in owned_frames_ as well as a
@@ -3183,8 +3171,11 @@ class MultibodyTree {
 
   MultibodyTreeTopology topology_;
 
+  // Back pointer to the owning MultibodyTreeSystem.
   const MultibodyTreeSystem<T>* tree_system_{};
 
+  // TODO(sherm1) This should be split into separate position and velocity
+  //  states for efficient use of the cache.
   // The discrete state index for the multibody state if the system is discrete.
   systems::DiscreteStateIndex discrete_state_index_;
 };

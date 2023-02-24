@@ -43,13 +43,13 @@ class MultibodySimDriver {
   // MultibodyPlant::Finalize() and Simulator::Initialize().
   void Initialize();
 
-  // @pre BuildModel() must have been called.
+  // @pre BuildForest() must have been called.
   const MultibodyPlant<double>& plant() const {
     DRAKE_DEMAND(plant_ != nullptr);
     return *plant_;
   }
 
-  // @pre BuildModel() must have been called.
+  // @pre BuildForest() must have been called.
   MultibodyPlant<double>& mutable_plant() {
     DRAKE_DEMAND(plant_ != nullptr);
     return *plant_;
