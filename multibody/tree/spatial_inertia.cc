@@ -141,6 +141,22 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::HollowSphereWithDensity(
+    const T& density, const T& r) {
+  // Ensure r is positive.
+  if (r <= 0) {
+    std::string error_message = fmt::format("{}(): A hollow sphere's "
+      "radius = {} is negative or zero.", __func__, r);
+    throw std::logic_error(error_message);
+  }
+  const T area = 4.0 * M_PI * r * r;  // 4 π r²
+  const T mass = density * area;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::HollowSphere(r);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
     const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
     const Vector3<T>& p2, const Vector3<T>& p3) {
