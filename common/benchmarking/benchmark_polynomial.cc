@@ -46,12 +46,20 @@ void BenchmarkPolynomialEvaluatePartial(benchmark::State& state) {  // NOLINT
 
 void BenchmarkMatrixInnerProduct(benchmark::State& state) {  // NOLINT
   const int n = state.range(0);
+  const bool sparse_Q = state.range(1);
   Eigen::MatrixXd Q(n, n);
-  for (int i = 0; i < n; ++i) {
-    Q(i, i) = std::sin(i);
-    for (int j = i + 1; j < n; ++j) {
-      Q(i, j) = std::cos(i + 2 * j);
-      Q(j, i) = Q(i, j);
+  if (sparse_Q) {
+    Q.setZero();
+    for (int i = 0; i < n; ++i) {
+      Q(i, i) = std::sin(i);
+    }
+  } else {
+    for (int i = 0; i < n; ++i) {
+      Q(i, i) = std::sin(i);
+      for (int j = i + 1; j < n; ++j) {
+        Q(i, j) = std::cos(i + 2 * j);
+        Q(j, i) = Q(i, j);
+      }
     }
   }
   MatrixX<symbolic::Variable> X(n, n);
@@ -70,10 +78,7 @@ void BenchmarkMatrixInnerProduct(benchmark::State& state) {  // NOLINT
 
 BENCHMARK(BenchmarkPolynomialEvaluatePartial)->Unit(benchmark::kMicrosecond);
 BENCHMARK(BenchmarkMatrixInnerProduct)
-    ->Arg(10)
-    ->Arg(50)
-    ->Arg(100)
-    ->Arg(200)
+    ->ArgsProduct({{10, 50, 100, 200}, {false, true}})
     ->Unit(benchmark::kSecond);
 }  // namespace
 }  // namespace symbolic
