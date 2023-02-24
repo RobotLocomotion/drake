@@ -276,7 +276,7 @@ void Expression::AddImpl(const Expression& rhs) {
     }
   }
   // Extract an expression from factory
-  lhs = add_factory.GetExpression();
+  lhs = std::move(add_factory).GetExpression();
 }
 
 Expression& Expression::operator++() {
@@ -484,7 +484,7 @@ void Expression::MulImpl(const Expression& rhs) {
       mul_factory.AddExpression(rhs);
     }
   }
-  lhs = mul_factory.GetExpression();
+  lhs = std::move(mul_factory).GetExpression();
 }
 
 void Expression::DivImpl(const Expression& rhs) {
@@ -941,7 +941,7 @@ Expression Exp(const vector<Expression>& terms, const MultiIndex& alpha) {
   for (size_t i = 0; i < terms.size(); ++i) {
     factory.AddExpression(pow(terms[i], alpha[i]));
   }
-  return factory.GetExpression();
+  return std::move(factory).GetExpression();
 }
 
 // Computes ∑_{|α| = order} ∂fᵅ(a) / α! * (x - a)ᵅ.
@@ -978,7 +978,7 @@ Expression TaylorExpand(const Expression& f, const Environment& a,
   for (int i = 1; i <= order; ++i) {
     DoTaylorExpand(f, a, terms, i, num_vars, &factory);
   }
-  return factory.GetExpression();
+  return std::move(factory).GetExpression();
 }
 
 namespace {
