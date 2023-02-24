@@ -55,6 +55,23 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
+    const T& density, const T& l) {
+  // Ensure l is positive.
+  if (l <= 0) {
+    std::string error_message = fmt::format("{}(): The length of a solid cube "
+    "is negative or zero: {}.", __func__, l);
+    throw std::logic_error(error_message);
+  }
+
+  const T volume = l * l * l;
+  const T mass = density * volume;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidCube(l);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
     const T& density, const T& r, const T& l, const Vector3<T>& unit_vector) {
   // Ensure r and l are positive.
