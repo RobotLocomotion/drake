@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 namespace {
 
@@ -60,6 +60,6 @@ GTEST_TEST(BufferDimTest, HashableKey) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

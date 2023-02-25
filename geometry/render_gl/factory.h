@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
 
 /** Reports the availability of the RenderEngineGl implementation. */
 extern const bool kHasRenderEngineGl;
@@ -30,9 +29,8 @@ extern const bool kHasRenderEngineGl;
  SceneGraph, rendering in multiple threads may exhibit issues.
 
  @throws std::exception if kHasRenderEngineGl is false. */
-std::unique_ptr<RenderEngine> MakeRenderEngineGl(
+std::unique_ptr<render::RenderEngine> MakeRenderEngineGl(
     RenderEngineGlParams params = {});
 
-}  // namespace render
 }  // namespace geometry
 }  // namespace drake
