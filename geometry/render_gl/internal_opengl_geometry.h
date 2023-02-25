@@ -11,7 +11,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
 // TODO(SeanCurtis-TRI): Consider moving this up to RenderEngine; it's useful
@@ -126,6 +126,6 @@ struct OpenGlInstance {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake
