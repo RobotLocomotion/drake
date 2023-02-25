@@ -4,7 +4,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 namespace {
 
@@ -52,6 +52,6 @@ GTEST_TEST(OpenGlContext, WindowVisibility) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

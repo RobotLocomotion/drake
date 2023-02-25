@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
 /* Stores a set of OpenGl textures objects, keyed by their in-filesystem name.
@@ -41,6 +41,6 @@ class TextureLibrary {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

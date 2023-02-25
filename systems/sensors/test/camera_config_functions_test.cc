@@ -433,7 +433,7 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
   // on whether GL is available.
   const CameraConfig gl_config{.renderer_name = "gl_renderer",
                                .renderer_class = "RenderEngineGl"};
-  if (geometry::render::kHasRenderEngineGl) {
+  if (geometry::kHasRenderEngineGl) {
     ASSERT_FALSE(scene_graph_->HasRenderer(gl_config.renderer_name));
     ApplyCameraConfig(gl_config, &builder_);
     ASSERT_EQ(NiceTypeName::RemoveNamespaces(

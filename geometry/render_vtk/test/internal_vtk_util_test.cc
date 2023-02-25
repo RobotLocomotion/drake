@@ -12,8 +12,8 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
-namespace vtk_util {
+namespace render_vtk {
+namespace internal {
 namespace {
 
 const double kTolerance = 1e-15;
@@ -90,7 +90,7 @@ GTEST_TEST(MakeVtkPointerArrayTest, ValidTest) {
 }
 
 }  // namespace
-}  // namespace vtk_util
-}  // namespace render
+}  // namespace internal
+}  // namespace render_vtk
 }  // namespace geometry
 }  // namespace drake
