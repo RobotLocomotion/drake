@@ -22,7 +22,7 @@ namespace {
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using geometry::render::RenderCameraCore;
-using geometry::render::RenderEngineGlParams;
+using geometry::RenderEngineGlParams;
 using geometry::Rgba;
 using math::RigidTransformd;
 using schema::Transform;
