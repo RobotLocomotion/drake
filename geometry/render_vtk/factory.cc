@@ -7,7 +7,7 @@ namespace geometry {
 
 std::unique_ptr<render::RenderEngine> MakeRenderEngineVtk(
     const RenderEngineVtkParams& params) {
-  return std::make_unique<render::RenderEngineVtk>(params);
+  return std::make_unique<render_vtk::internal::RenderEngineVtk>(params);
 }
 
 }  // namespace geometry
