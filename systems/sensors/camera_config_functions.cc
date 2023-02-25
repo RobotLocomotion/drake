@@ -26,9 +26,9 @@ namespace sensors {
 using drake::lcm::DrakeLcmInterface;
 using drake::systems::lcm::LcmBuses;
 using Eigen::Vector3d;
-using geometry::render::MakeRenderEngineGl;
-using geometry::render::RenderEngineGlParams;
+using geometry::MakeRenderEngineGl;
 using geometry::MakeRenderEngineVtk;
+using geometry::RenderEngineGlParams;
 using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
 using geometry::render::ColorRenderCamera;
@@ -81,7 +81,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 
   // Now we know we need to add one. Confirm we can add the specified class.
   if (config.renderer_class == "RenderEngineGl") {
-    if (!geometry::render::kHasRenderEngineGl) {
+    if (!geometry::kHasRenderEngineGl) {
       throw std::logic_error(
           "Invalid camera configuration; renderer_class = 'RenderEngineGl' "
           "is not supported in current build.");

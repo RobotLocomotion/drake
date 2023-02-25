@@ -9,7 +9,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
 /* The data representing a mesh. The triangle mesh is defined by `indices`. Row
@@ -170,6 +170,6 @@ MeshData MakeUnitBox();
 MeshData MakeCapsule(int samples, double radius, double length);
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake
