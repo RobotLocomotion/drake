@@ -23,11 +23,11 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
 /** See documentation of MakeRenderEngineGl().  */
-class RenderEngineGl final : public RenderEngine {
+class RenderEngineGl final : public geometry::render::RenderEngine {
  public:
   /** @name Does not allow public copy, move, or assignment  */
   //@{
@@ -53,7 +53,7 @@ class RenderEngineGl final : public RenderEngine {
 
   /** @name    Shape reification  */
   //@{
-  using RenderEngine::ImplementGeometry;
+  using render::RenderEngine::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* user_data) final;
   void ImplementGeometry(const Capsule& capsule, void* user_data) final;
   void ImplementGeometry(const Convex& convex, void* user_data) final;
@@ -92,17 +92,17 @@ class RenderEngineGl final : public RenderEngine {
 
   // @see RenderEngine::DoRenderColorImage().
   void DoRenderColorImage(
-      const ColorRenderCamera& camera,
+      const geometry::render::ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const final;
 
   // @see RenderEngine::DoRenderDepthImage().
   void DoRenderDepthImage(
-      const DepthRenderCamera& render_camera,
+      const geometry::render::DepthRenderCamera& render_camera,
       systems::sensors::ImageDepth32F* depth_image_out) const final;
 
   // @see RenderEngine::DoRenderLabelImage().
   void DoRenderLabelImage(
-      const ColorRenderCamera& camera,
+      const geometry::render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const final;
 
   // Copy constructor used for cloning.
@@ -143,7 +143,7 @@ class RenderEngineGl final : public RenderEngine {
   // called if there is not already a cached render target for the camera's
   // reported image size (w, h) in render_targets_.
   static RenderTarget CreateRenderTarget(
-      const RenderCameraCore& camera, RenderType render_type);
+      const geometry::render::RenderCameraCore& camera, RenderType render_type);
 
   // Obtains the label image rendered from a specific object pose. This is
   // slower than it has to be because it does per-pixel processing on the CPU.
@@ -154,8 +154,8 @@ class RenderEngineGl final : public RenderEngine {
   // Acquires the render target for the given camera. "Acquiring" the render
   // target guarantees that the target will be ready for receiving OpenGL
   // draw commands.
-  RenderTarget GetRenderTarget(
-      const RenderCameraCore& camera, RenderType render_type) const;
+  RenderTarget GetRenderTarget(const geometry::render::RenderCameraCore& camera,
+                               RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
   static OpenGlGeometry CreateGlGeometry(
@@ -170,8 +170,8 @@ class RenderEngineGl final : public RenderEngine {
   //  - the window is made hidden (or remains hidden).
   // @pre RenderTarget's frame buffer has the same dimensions as reported by the
   // camera.
-  void SetWindowVisibility(const RenderCameraCore& camera, bool show_window,
-                           const RenderTarget& target) const;
+  void SetWindowVisibility(const geometry::render::RenderCameraCore& camera,
+                           bool show_window, const RenderTarget& target) const;
 
   // Adds a shader program to the set of candidate shaders for the given render
   // type.
@@ -271,6 +271,6 @@ class RenderEngineGl final : public RenderEngine {
 };
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

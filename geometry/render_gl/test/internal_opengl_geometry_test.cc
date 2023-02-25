@@ -8,12 +8,13 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 namespace {
 
 using Eigen::Vector3d;
 using math::RigidTransformd;
+using render::RenderLabel;
 
 // Note: All values in these tests are effectively garbage. They are not really
 // names of OpenGL objects. These tests merely exercise the functionality of the
@@ -105,6 +106,6 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

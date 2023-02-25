@@ -347,11 +347,12 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   m.def("MakeRenderEngineVtk", &geometry::MakeRenderEngineVtk,
-      py::arg("params"), doc_geometry.MakeRenderEngineVtk.doc);
+      py::arg("params") = RenderEngineVtkParams(),
+      doc_geometry.MakeRenderEngineVtk.doc);
 
   {
-    using Class = RenderEngineGlParams;
-    constexpr auto& cls_doc = doc.RenderEngineGlParams;
+    using Class = geometry::RenderEngineGlParams;
+    constexpr auto& cls_doc = doc_geometry.RenderEngineGlParams;
     py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -360,8 +361,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
-      py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
+  m.def("MakeRenderEngineGl", &geometry::MakeRenderEngineGl,
+      py::arg("params") = RenderEngineGlParams(),
+      doc_geometry.MakeRenderEngineGl.doc);
 
   {
     using Class = geometry::RenderEngineGltfClientParams;
