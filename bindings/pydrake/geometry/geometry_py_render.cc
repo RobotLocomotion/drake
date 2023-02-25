@@ -336,7 +336,7 @@ void DoScalarIndependentDefinitions(py::module m) {
   }
 
   {
-    using Class = geometry::RenderEngineVtkParams;
+    using Class = RenderEngineVtkParams;
     constexpr auto& cls_doc = doc_geometry.RenderEngineVtkParams;
     py::class_<Class> cls(m, "RenderEngineVtkParams", cls_doc.doc);
     cls  // BR
@@ -346,12 +346,14 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineVtk", &geometry::MakeRenderEngineVtk,
-      py::arg("params"), doc_geometry.MakeRenderEngineVtk.doc);
+  m.def("MakeRenderEngineVtk", &MakeRenderEngineVtk, py::arg("params"),
+      doc_geometry.MakeRenderEngineVtk.doc);
 
   {
-    using Class = RenderEngineGlParams;
-    constexpr auto& cls_doc = doc.RenderEngineGlParams;
+    // TODO(zachfang): During the 2023-07-01 deprecation removals also
+    // remove the spurious `geometry::` qualifier on this typename.
+    using Class = geometry::RenderEngineGlParams;
+    constexpr auto& cls_doc = doc_geometry.RenderEngineGlParams;
     py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
     cls  // BR
         .def(ParamInit<Class>());
@@ -360,11 +362,14 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
-      py::arg("params") = RenderEngineGlParams(), doc.MakeRenderEngineGl.doc);
+  // TODO(zachfang): During the 2023-07-01 deprecation removals also
+  // remove the spurious `geometry::` qualifier on this typename.
+  m.def("MakeRenderEngineGl", &geometry::MakeRenderEngineGl,
+      py::arg("params") = geometry::RenderEngineGlParams(),
+      doc_geometry.MakeRenderEngineGl.doc);
 
   {
-    using Class = geometry::RenderEngineGltfClientParams;
+    using Class = RenderEngineGltfClientParams;
     constexpr auto& cls_doc = doc_geometry.RenderEngineGltfClientParams;
     py::class_<Class> cls(m, "RenderEngineGltfClientParams", cls_doc.doc);
     cls  // BR
@@ -374,7 +379,7 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineGltfClient", &geometry::MakeRenderEngineGltfClient,
+  m.def("MakeRenderEngineGltfClient", &MakeRenderEngineGltfClient,
       py::arg("params") = RenderEngineGltfClientParams(),
       doc_geometry.MakeRenderEngineGltfClient.doc);
 
@@ -383,7 +388,9 @@ void DoScalarIndependentDefinitions(py::module m) {
 }  // namespace
 
 void DefineGeometryRender(py::module m) {
-  m.doc() = "Local bindings for `drake::geometry::render`";
+  m.doc() =
+      "Local bindings for render artifacts found in `drake::geometry` and "
+      "`drake::geometry::render`";
   DoScalarIndependentDefinitions(m);
 }
 
