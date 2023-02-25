@@ -6,7 +6,6 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
 
 /** Construction parameters for RenderEngineGl.  */
 struct RenderEngineGlParams {
@@ -21,7 +20,7 @@ struct RenderEngineGlParams {
 
   /** Default render label to apply to a geometry when none is otherwise
    specified.  */
-  RenderLabel default_label{RenderLabel::kUnspecified};
+  render::RenderLabel default_label{render::RenderLabel::kUnspecified};
 
   /** Default diffuse color to apply to a geometry when none is otherwise
    specified in the (phong, diffuse) property.  */
@@ -31,6 +30,5 @@ struct RenderEngineGlParams {
   Rgba default_clear_color{204 / 255., 229 / 255., 255 / 255., 1.0};
 };
 
-}  // namespace render
 }  // namespace geometry
 }  // namespace drake
