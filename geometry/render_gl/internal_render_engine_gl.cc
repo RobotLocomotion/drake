@@ -12,7 +12,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_gl {
 namespace internal {
 
 using Eigen::Vector2d;
@@ -25,6 +25,11 @@ using std::string;
 using std::unique_ptr;
 using std::unordered_map;
 using std::vector;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderLabel;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
@@ -1132,6 +1137,6 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
 }
 
 }  // namespace internal
-}  // namespace render
+}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake
