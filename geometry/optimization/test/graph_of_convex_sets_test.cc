@@ -1320,6 +1320,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
 
   options.preprocessing = true;
   options.max_rounded_paths = 10;
+  options.rounding_solver_options = SolverOptions();
   auto rounded_result =
       spp.SolveShortestPath(source->id(), target->id(), options);
   ASSERT_TRUE(rounded_result.is_success());

@@ -622,12 +622,22 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
 
 namespace {
 MathematicalProgramResult Solve(const MathematicalProgram& prog,
-                                const GraphOfConvexSetsOptions& options) {
+                                const GraphOfConvexSetsOptions& options,
+                                bool rounding) {
   MathematicalProgramResult result;
   if (options.solver) {
-    options.solver->Solve(prog, {}, options.solver_options, &result);
+    options.solver->Solve(
+        prog, {},
+        (rounding && options.rounding_solver_options != std::nullopt)
+            ? options.rounding_solver_options
+            : options.solver_options,
+        &result);
   } else {
-    result = solvers::Solve(prog, {}, options.solver_options);
+    result = solvers::Solve(
+        prog, {},
+        (rounding && options.rounding_solver_options != std::nullopt)
+            ? options.rounding_solver_options
+            : options.solver_options);
   }
   return result;
 }
@@ -885,7 +895,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
   }
 
-  MathematicalProgramResult result = Solve(prog, options);
+  MathematicalProgramResult result = Solve(prog, options, false);
 
   // Implements the rounding scheme put forth in Section 4.2 of
   // "Motion Planning around Obstacles with Convex Optimization":
@@ -976,7 +986,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         }
       }
 
-      MathematicalProgramResult rounded_result = Solve(prog, options);
+      MathematicalProgramResult rounded_result = Solve(prog, options, true);
 
       // Check path quality.
       if (rounded_result.is_success() &&
