@@ -16,7 +16,7 @@ namespace drake {
 namespace solvers {
 
 GurobiSolver::GurobiSolver()
-    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+    : SolverBase(id(), &is_available, &is_enabled, &ProgramAttributesSatisfied,
                  &UnsatisfiedProgramAttributes) {}
 
 GurobiSolver::~GurobiSolver() = default;

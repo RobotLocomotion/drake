@@ -10,7 +10,7 @@ namespace drake {
 namespace solvers {
 
 ScsSolver::ScsSolver()
-    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+    : SolverBase(id(), &is_available, &is_enabled, &ProgramAttributesSatisfied,
                  &UnsatisfiedProgramAttributes) {}
 
 ScsSolver::~ScsSolver() = default;
