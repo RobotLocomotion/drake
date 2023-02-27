@@ -59,7 +59,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
     const T& density, const T& l) {
   // Ensure l is positive.
   if (l <= 0) {
-   std::string error_message = fmt::format(
+    std::string error_message = fmt::format(
         "{}(): The length of a solid cube is negative or zero: {}.",
         __func__, l);
     throw std::logic_error(error_message);
