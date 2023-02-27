@@ -2806,6 +2806,19 @@ TEST_F(SdfParserTest, TestUnsupportedCollisionGeometry) {
   ClearDiagnostics();
 }
 
+// Regression test for #18878.
+TEST_F(SdfParserTest, TestSingleModelInWorld) {
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/table_in_world.sdf");
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_sdf_filename, "");
+  plant_.Finalize();
+
+  // Verify the number of model instances.
+  EXPECT_EQ(plant_.num_model_instances(), 3);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

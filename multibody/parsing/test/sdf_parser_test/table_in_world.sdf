@@ -1,0 +1,24 @@
+?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="table_world">
+    <model name="table">
+      <static>true</static>
+      <pose>0.0 0.0 -0.005 0 0 0</pose>
+      <link name="table_link">
+        <collision name="table_collision">
+          <geometry>
+            <box><size>1. 1. 0.001</size></box>
+          </geometry>
+        </collision>
+        <visual name="table_visual">
+          <geometry>
+            <box> <size>2. 2. 0.001</size> </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
