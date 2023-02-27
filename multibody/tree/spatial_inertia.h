@@ -125,8 +125,8 @@ class SpatialInertia {
   /// moments of inertia of 1 and products of inertia of 0.
   static SpatialInertia<T> MakeUnitary();
 
-  /// Creates a spatial inertia for a uniform density solid box B about
-  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// Creates a spatial inertia for a uniform density solid box B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] lx length of the box in the Bx direction.
   /// @param[in] ly length of the box in the By direction.
