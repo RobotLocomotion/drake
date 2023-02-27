@@ -249,24 +249,24 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
 
 // Tests the static method for the spatial inertia of a thin hollow sphere.
 GTEST_TEST(SpatialInertia, HollowSphereWithDensity) {
-  const double density = 80;  // density per unit area is 80 kg/m².
+  const double area_density = 80;  // density per unit area is 80 kg/m².
   const double r = 0.2;
   const double surface_area = 4.0 * M_PI * std::pow(r, 2);
-  const double mass = density * surface_area;
+  const double mass = area_density * surface_area;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
   const UnitInertia<double>G_BBo_B = UnitInertia<double>::HollowSphere(r);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
   const SpatialInertia<double> M =
-      SpatialInertia<double>::HollowSphereWithDensity(density, r);
+      SpatialInertia<double>::HollowSphereWithDensity(area_density, r);
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
   // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::HollowSphereWithDensity(density, 0),
+      SpatialInertia<double>::HollowSphereWithDensity(area_density, 0),
       "[^]* A hollow sphere's radius = .* is negative or zero.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::HollowSphereWithDensity(density, -0.2),
+      SpatialInertia<double>::HollowSphereWithDensity(area_density, -0.2),
       "[^]* A hollow sphere's radius = .* is negative or zero.");
 }
 
