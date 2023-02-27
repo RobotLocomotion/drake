@@ -121,6 +121,12 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
   EXPECT_FALSE(model.HasJointActuatorNamed(kInvalidName));
 
+  // Get model instance by name.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.GetModelInstanceByName(kInvalidName),
+      ".*There is no model instance named.*The model instances currently "
+      "registered are.*DefaultModelInstance.*");
+
   // Get links by name.
   for (const std::string& link_name : kLinkNames) {
     drake::test::LimitMalloc guard;
@@ -216,7 +222,7 @@ void VerifyModelBasics(const MultibodyTree<T>& model) {
   }
 }
 
-// This test creates a model for a KUKA Iiiwa arm and verifies we can retrieve
+// This test creates a model for a KUKA Iiwa arm and verifies we can retrieve
 // multibody elements by name or get exceptions accordingly.
 GTEST_TEST(MultibodyTree, VerifyModelBasics) {
   // Create a non-finalized model of the arm so that we can test adding more
