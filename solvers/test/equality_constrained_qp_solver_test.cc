@@ -394,7 +394,7 @@ TEST_F(EqualityConstrainedQPSolverTest, WrongSolverOptions1) {
   solver_options_.SetOption(solver_.solver_id(), "Foo", 0.1);
   DRAKE_EXPECT_THROWS_MESSAGE_IF_ARMED(
       solver_.Solve(prog_, {}, solver_options_, &result_),
-      "Foo is not allowed in the SolverOptions for Equality constrained QP.");
+      "Foo is not allowed in the SolverOptions for EqConstrainedQP.");
 }
 
 TEST_F(EqualityConstrainedQPSolverTest, WrongSolverOptions2) {

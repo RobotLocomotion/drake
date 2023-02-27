@@ -13,7 +13,7 @@ namespace drake {
 namespace solvers {
 
 OsqpSolver::OsqpSolver()
-    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+    : SolverBase(id(), &is_available, &is_enabled, &ProgramAttributesSatisfied,
                  &UnsatisfiedProgramAttributes) {}
 
 OsqpSolver::~OsqpSolver() = default;

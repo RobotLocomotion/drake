@@ -9,14 +9,13 @@ namespace drake {
 namespace solvers {
 
 SnoptSolver::SnoptSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
+    : SolverBase(id(), &is_available, &is_enabled,
                  &ProgramAttributesSatisfied) {}
 
 SnoptSolver::~SnoptSolver() = default;
 
 SolverId SnoptSolver::id() {
-  static const never_destroyed<SolverId> singleton{
-      SnoptSolver::is_available() ? "SNOPT/fortran" : "SNOPT/unavailable"};
+  static const never_destroyed<SolverId> singleton{"SNOPT"};
   return singleton.access();
 }
 

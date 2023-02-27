@@ -9,7 +9,7 @@ namespace drake {
 namespace solvers {
 
 IpoptSolver::IpoptSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
+    : SolverBase(id(), &is_available, &is_enabled,
                  &ProgramAttributesSatisfied) {}
 
 IpoptSolver::~IpoptSolver() = default;

@@ -103,7 +103,7 @@ void SetDualSolutions(const MathematicalProgram& prog,
 }  // namespace
 
 EqualityConstrainedQPSolver::EqualityConstrainedQPSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
+    : SolverBase(id(), &is_available, &is_enabled,
                  &ProgramAttributesSatisfied) {}
 
 EqualityConstrainedQPSolver::~EqualityConstrainedQPSolver() = default;
@@ -323,7 +323,7 @@ std::string EqualityConstrainedQPSolver::FeasibilityTolOptionName() {
 }
 
 SolverId EqualityConstrainedQPSolver::id() {
-  static const never_destroyed<SolverId> singleton{"Equality constrained QP"};
+  static const never_destroyed<SolverId> singleton{"EqConstrainedQP"};
   return singleton.access();
 }
 
