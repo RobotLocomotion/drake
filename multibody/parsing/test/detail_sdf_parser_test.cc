@@ -2806,6 +2806,43 @@ TEST_F(SdfParserTest, TestUnsupportedCollisionGeometry) {
   ClearDiagnostics();
 }
 
+// Regression test for #18878.
+TEST_F(SdfParserTest, TestSingleModelInWorld) {
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/table_in_world.sdf");
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_sdf_filename, "");
+  plant_.Finalize();
+
+  // Verify the number of model instances.
+  EXPECT_EQ(plant_.num_model_instances(), 3);
+}
+
+// Test case discussed during solution of #18878. This error is caught by
+// sdformat library processing.
+TEST_F(SdfParserTest, TestSingleModelEnforcement) {
+  const std::string multi_models = R"""(
+  <sdf version='1.9'>
+  <model name='a'><link name='a'/></model>
+  <model name='b'><link name='b'/></model>
+  </sdf>
+)""";
+
+  const DataSource data_source{DataSource::kContents, &multi_models};
+  internal::CollisionFilterGroupResolver resolver{&plant_};
+  ParsingWorkspace w{package_map_, diagnostic_policy_,
+    &plant_, &resolver, TestingSelect};
+  std::optional<ModelInstanceIndex> result =
+      AddModelFromSdf(data_source, "", {}, w);
+  resolver.Resolve(diagnostic_policy_);
+  EXPECT_FALSE(result.has_value());
+
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Root object can only contain one model.*"));
+  ClearDiagnostics();
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace multibody

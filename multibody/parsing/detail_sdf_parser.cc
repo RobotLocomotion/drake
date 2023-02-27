@@ -1703,6 +1703,23 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
 
   return parser_config;
 }
+
+const sdf::Model* get_only_model(const sdf::Root& root) {
+  const sdf::Model* maybe_model = root.Model();
+  if (maybe_model != nullptr) {
+    return maybe_model;
+  }
+  // If Model() is null, there still may be a single world with a single model
+  // (ignoring nested models). Try to find that.
+  if (root.WorldCount() != 1) {
+    return nullptr;
+  }
+  const sdf::World* world0 = root.WorldByIndex(0);
+  if (world0->ModelCount() != 1) {
+    return nullptr;
+  }
+  return world0->ModelByIndex(0);
+}
 }  // namespace
 
 std::optional<ModelInstanceIndex> AddModelFromSdf(
@@ -1721,11 +1738,12 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
     return std::nullopt;
   }
 
-  if (root.Model() == nullptr) {
-    throw std::runtime_error("File must have a single <model> element.");
+  const sdf::Model* maybe_model = get_only_model(root);
+  if (maybe_model == nullptr) {
+    throw std::runtime_error("File must express a single model.");
   }
   // Get the only model in the file.
-  const sdf::Model& model = *root.Model();
+  const sdf::Model& model = *maybe_model;
 
   const std::string local_model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
