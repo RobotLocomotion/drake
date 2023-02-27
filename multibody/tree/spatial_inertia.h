@@ -125,6 +125,8 @@ class SpatialInertia {
   /// moments of inertia of 1 and products of inertia of 0.
   static SpatialInertia<T> MakeUnitary();
 
+  /// Creates a spatial inertia for a uniform density solid box B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// Creates the spatial inertia for a particle Q of mass m about a point P.
   /// @param[in] mass mass of the single particle (units of kg).
   /// @param[in] position vector from point P to Q, expressed in a frame B.
