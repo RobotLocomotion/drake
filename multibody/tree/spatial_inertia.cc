@@ -16,6 +16,27 @@ SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::PointMass(
+    const T& mass, const Vector3<T>& position) {
+  // Ensure mass is non-negative.
+  if (mass < 0) {
+    std::string error_message = fmt::format(
+        "{}(): The mass of a particle is negative: {}.", __func__, mass);
+    throw std::logic_error(error_message);
+  }
+
+  // Upgrade to monogram notation: position is the position vector from
+  // point P to particle Q expressed in a frame B.
+  const Vector3<T> p_PQ_B = position;
+
+  // Form particle Q's unit inertia about point P, expressed in frame B.
+  const UnitInertia<T> G_QP_B = UnitInertia<T>::PointMass(p_PQ_B);
+
+  // Return particle Q's spatial inertia about point P, expressed in frame B.
+  return SpatialInertia<T>(mass, p_PQ_B, G_QP_B);
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
     const T& density, const T& lx, const T& ly, const T& lz) {
   // Ensure lx, ly, lz are positive.

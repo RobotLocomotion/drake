@@ -66,6 +66,37 @@ GTEST_TEST(SpatialInertia, MakeUnitary) {
   EXPECT_EQ(M_unit_products, Vector3<double>::Zero());
 }
 
+// Tests the static method for the spatial inertia of a single particle.
+GTEST_TEST(SpatialInertia, PointMass) {
+  // This example models a rigid body B as having all of its mass concentrated
+  // at a single point Bcm (B's center of mass) and calculates B's spatial
+  // inertia about an arbitrary point Bp of body B.
+  const double mass = 3;
+  const double lx = 1.0;
+  const double ly = 2.0;
+  const double lz = 3.0;
+  const Vector3<double> p_BpBcm_B = Vector3<double>(lx, ly, lz);
+  const UnitInertia<double>G_BBp_B = UnitInertia<double>::PointMass(p_BpBcm_B);
+  const SpatialInertia<double> M_expected(mass, p_BpBcm_B, G_BBp_B);
+  const SpatialInertia<double> M_BBp_B =
+      SpatialInertia<double>::PointMass(mass, p_BpBcm_B);
+  EXPECT_TRUE(CompareMatrices(
+      M_expected.CopyToFullMatrix6(), M_BBp_B.CopyToFullMatrix6()));
+
+  // Verify PointMass() with a zero position vector produces the same spatial
+  // inertia as shifting the spatial inertia from M_BBp_B to M_BBcm_B.
+  const SpatialInertia<double> M_BBcm_B_expected = M_BBp_B.Shift(p_BpBcm_B);
+  const SpatialInertia<double> M_BBcm_B =
+       SpatialInertia<double>::PointMass(mass, Vector3<double>::Zero());
+  EXPECT_TRUE(CompareMatrices(
+      M_BBcm_B_expected.CopyToFullMatrix6(), M_BBcm_B.CopyToFullMatrix6()));
+
+  // Ensure a negative mass throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::PointMass(-1, p_BpBcm_B),
+      "[^]* The mass of a particle is negative: .*");
+}
+
 // Tests the static method for the spatial inertia of a solid box.
 GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
