@@ -12,7 +12,7 @@ namespace drake {
 namespace solvers {
 
 CsdpSolver::CsdpSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
+    : SolverBase(id(), &is_available, &is_enabled,
                  &ProgramAttributesSatisfied) {}
 
 CsdpSolver::~CsdpSolver() = default;

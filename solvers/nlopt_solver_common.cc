@@ -9,7 +9,7 @@ namespace drake {
 namespace solvers {
 
 NloptSolver::NloptSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
+    : SolverBase(id(), &is_available, &is_enabled,
                  &ProgramAttributesSatisfied) {}
 
 NloptSolver::~NloptSolver() = default;

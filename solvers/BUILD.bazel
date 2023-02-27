@@ -1613,6 +1613,7 @@ drake_cc_googletest(
     name = "solver_id_test",
     deps = [
         ":solver_id",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 

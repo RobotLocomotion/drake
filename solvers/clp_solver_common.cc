@@ -9,7 +9,7 @@
 namespace drake {
 namespace solvers {
 ClpSolver::ClpSolver()
-    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+    : SolverBase(id(), &is_available, &is_enabled, &ProgramAttributesSatisfied,
                  &UnsatisfiedProgramAttributes) {}
 
 ClpSolver::~ClpSolver() = default;

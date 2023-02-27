@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/never_destroyed.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace solvers {
@@ -19,7 +20,13 @@ int get_next_id() {
 }  // namespace
 
 SolverId::SolverId(std::string name)
-    : id_{get_next_id()}, name_{std::move(name)} {}
+    : id_{get_next_id()}, name_{std::move(name)} {
+  if (name_.length() > 15) {
+    static const logging::Warn log_once(
+        "The SolverId(name='{}') exceeds the recommended name length of 15.",
+        name_);
+  }
+}
 
 bool operator==(const SolverId& a, const SolverId& b) {
   return a.id_ == b.id_;
