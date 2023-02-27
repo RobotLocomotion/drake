@@ -350,7 +350,7 @@ void SpaceXYZMobilizer<T>::MapQDotToVelocity(
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<Mobilizer<ToScalar>>
+std::unique_ptr<MobilizedBody<ToScalar>>
 SpaceXYZMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
@@ -362,20 +362,20 @@ SpaceXYZMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> SpaceXYZMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<MobilizedBody<double>> SpaceXYZMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>>
+std::unique_ptr<MobilizedBody<AutoDiffXd>>
 SpaceXYZMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<symbolic::Expression>>
+std::unique_ptr<MobilizedBody<symbolic::Expression>>
 SpaceXYZMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);

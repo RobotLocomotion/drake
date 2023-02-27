@@ -44,9 +44,9 @@ template <typename T>
 class JointImplementationBuilder {
  public:
   JointImplementationBuilder() = delete;
-  static std::vector<Mobilizer<T>*> Build(
+  static std::vector<MobilizedBody<T>*> Build(
       Joint<T>* joint, MultibodyTree<T>* tree) {
-    std::vector<Mobilizer<T>*> mobilizers;
+    std::vector<MobilizedBody<T>*> mobilizers;
     std::unique_ptr<JointBluePrint> blue_print =
         joint->MakeImplementationBlueprint();
     auto implementation = std::make_unique<JointImplementation>(*blue_print);
@@ -544,7 +544,7 @@ std::vector<BodyIndex> MultibodyTree<T>::GetBodiesKinematicallyAffectedBy(
   // For each joint, get its mobilizer collect the corresponding outboard body.
   std::vector<BodyIndex> bodies;
   for (const JointIndex& joint : joint_indexes) {
-    const MobilizerIndex mobilizer = get_joint_mobilizer(joint);
+    const MobilizedBodyIndex mobilizer = get_joint_mobilizer(joint);
     DRAKE_THROW_UNLESS(mobilizer.is_valid());
     bodies.emplace_back(get_mobilizer(mobilizer).outboard_body().index());
   }
@@ -614,32 +614,39 @@ void MultibodyTree<T>::SetVelocitiesInArray(
   model_instances_.at(model_instance)->SetVelocitiesInArray(v_instance, v);
 }
 
+// Create Joint objects' implementation. Joints are implemented using a
+// combination of MultibodyTree's building blocks such as Body, MobilizedBody,
+// ForceElement and Constraint. For a same physical Joint, several
+// implementations could be created (for instance, a Constraint instead of a
+// Mobilizer). The decision on what implementation to create is performed by
+// MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
+// can request MultibodyTree for these choices when building the Joint
+// implementation. Since a Joint's implementation is built upon
+// MultibodyTree's building blocks, notice that creating a Joint's
+// implementation will therefore change the tree topology. Since topology
+// changes are NOT allowed after Finalize(), joint implementations MUST be
+// assembled BEFORE the tree's topology is finalized.
 template <typename T>
 void MultibodyTree<T>::CreateJointImplementations() {
   DRAKE_DEMAND(!topology_is_valid());
-  // Create Joint objects' implementation. Joints are implemented using a
-  // combination of MultibodyTree's building blocks such as Body, Mobilizer,
-  // ForceElement and Constraint. For a same physical Joint, several
-  // implementations could be created (for instance, a Constraint instead of a
-  // Mobilizer). The decision on what implementation to create is performed by
-  // MultibodyTree at Finalize() time. Then, JointImplementationBuilder below
-  // can request MultibodyTree for these choices when building the Joint
-  // implementation. Since a Joint's implementation is built upon
-  // MultibodyTree's building blocks, notice that creating a Joint's
-  // implementation will therefore change the tree topology. Since topology
-  // changes are NOT allowed after Finalize(), joint implementations MUST be
-  // assembled BEFORE the tree's topology is finalized.
+
+  // We're assuming here that Joint parent/child maps to Mobilizer
+  // inboard/outboard. That's an unreasonable restriction even for tree
+  // structured Joint inputs.
+  // TODO(sherm1) Allow for reversing inboard/outboard ordering if necessary
+  //  to form a tree of MobilizedBodies, and use a reversed mobilizer as the
+  //  implementation to preserve Joint semantics.
   const int num_joints_pre_floating_joints = num_joints();
   joint_to_mobilizer_.resize(num_joints_pre_floating_joints);
   for (int i = 0; i < num_joints_pre_floating_joints; ++i) {
     auto& joint = owned_joints_[i];
-    std::vector<Mobilizer<T>*> mobilizers =
+    std::vector<MobilizedBody<T>*> mobilizers =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
     // Below we assume a single mobilizer per joint, which is  true
     // for all joint types currently implemented. This may change in the future
     // when closed topologies are supported.
     DRAKE_DEMAND(mobilizers.size() == 1);
-    for (Mobilizer<T>* mobilizer : mobilizers) {
+    for (MobilizedBody<T>* mobilizer : mobilizers) {
       mobilizer->set_model_instance(joint->model_instance());
       // Record the joint to mobilizer map.
       joint_to_mobilizer_[joint->index()] = mobilizer->index();
@@ -656,7 +663,7 @@ void MultibodyTree<T>::CreateJointImplementations() {
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const BodyTopology& body_topology = get_topology().get_body(body.index());
-    if (!body_topology.inboard_mobilizer.is_valid()) {
+    if (!body_topology.mobilized_body.is_valid()) {
       this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
                                               world_body(), {}, body, {});
     }
@@ -665,13 +672,13 @@ void MultibodyTree<T>::CreateJointImplementations() {
   joint_to_mobilizer_.resize(num_joints());
   for (int i = num_joints_pre_floating_joints; i < num_joints(); ++i) {
     auto& joint = owned_joints_[i];
-    std::vector<Mobilizer<T>*> mobilizers =
+    std::vector<MobilizedBody<T>*> mobilizers =
         internal::JointImplementationBuilder<T>::Build(joint.get(), this);
-    // Below we assume a single mobilizer per joint, which is  true
+    // Below we assume a single mobilizer per joint, which is true
     // for all joint types currently implemented. This may change in the future
     // when closed topologies are supported.
     DRAKE_DEMAND(mobilizers.size() == 1);
-    for (Mobilizer<T>* mobilizer : mobilizers) {
+    for (MobilizedBody<T>* mobilizer : mobilizers) {
       mobilizer->set_model_instance(joint->model_instance());
       // Record the joint to mobilizer map.
       joint_to_mobilizer_[joint->index()] = mobilizer->index();
@@ -688,7 +695,7 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
   const BodyTopology& body_topology = get_topology().get_body(body.index());
   const QuaternionFloatingMobilizer<T>* mobilizer =
       dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
-          &get_mobilizer(body_topology.inboard_mobilizer));
+          &get_mobilizer(body_topology.mobilized_body));
   if (mobilizer == nullptr) {
     throw std::logic_error(
         "Body '" + body.name() + "' is not a free floating body.");
@@ -699,7 +706,7 @@ MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
 template <typename T>
 void MultibodyTree<T>::FinalizeTopology() {
   // If the topology is valid it means that this MultibodyTree was already
-  // finalized. Re-compilation is not allowed.
+  // finalized. Re-finalization is not allowed.
   if (topology_is_valid()) {
     throw std::logic_error(
         "Attempting to call MultibodyTree::FinalizeTopology() on a tree with"
@@ -778,7 +785,7 @@ void MultibodyTree<T>::CreateBodyNode(BodyNodeIndex body_node_index) {
   } else {
     // The mobilizer should be valid if not at the root (the world).
     DRAKE_ASSERT(node_topology.mobilizer.is_valid());
-    const Mobilizer<T>* mobilizer =
+    const MobilizedBody<T>* mobilizer =
         owned_mobilizers_[node_topology.mobilizer].get();
 
     BodyNode<T>* parent_node =
@@ -816,7 +823,7 @@ void MultibodyTree<T>::CreateModelInstances() {
     if (body_node->get_num_mobilizer_positions() > 0 ||
         body_node->get_num_mobilizer_velocities() > 0) {
       model_instances_.at(body_node->model_instance())->add_mobilizer(
-          &body_node->get_mobilizer());
+          &body_node->get_mobilized_body());
     }
   }
 
@@ -2670,7 +2677,7 @@ void MultibodyTree<T>::CalcJacobianAngularAndOrTranslationalVelocityInWorld(
     const BodyNodeIndex body_node_index = path_to_world[ilevel];
     const BodyNode<T>& node = *body_nodes_[body_node_index];
     const BodyNodeTopology& node_topology = node.get_topology();
-    const Mobilizer<T>& mobilizer = node.get_mobilizer();
+    const MobilizedBody<T>& mobilizer = node.get_mobilizer();
     const int start_index_in_v = node_topology.mobilizer_velocities_start_in_v;
     const int start_index_in_q = node_topology.mobilizer_positions_start;
     const int mobilizer_num_velocities =
@@ -3032,9 +3039,9 @@ void MultibodyTree<T>::ThrowDefaultMassInertiaError() const {
     const BodyIndex parent_body_index = *welded_body.begin();
     const BodyTopology& parent_body_topology =
         tree_topology.get_body(parent_body_index);
-    const MobilizerIndex& parent_mobilizer_index =
-        parent_body_topology.inboard_mobilizer;
-    const Mobilizer<T>& parent_mobilizer =
+    const MobilizedBodyIndex& parent_mobilizer_index =
+        parent_body_topology.mobilized_body;
+    const MobilizedBody<T>& parent_mobilizer =
         get_mobilizer(parent_mobilizer_index);
 
     // Check previous assumptions.
@@ -3513,7 +3520,7 @@ std::optional<BodyIndex> MultibodyTree<T>::MaybeGetUniqueBaseBodyIndex(
   std::optional<BodyIndex> base_body_index{};
   for (const auto& body : owned_bodies_) {
     if (body->model_instance() == model_instance &&
-        (topology_.get_body(body->index()).parent_body == world_index())) {
+        (topology_.get_body(body->index()).inboard_body == world_index())) {
       if (base_body_index.has_value()) {
         // More than one base body associated with this model.
         return std::nullopt;

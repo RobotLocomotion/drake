@@ -62,8 +62,8 @@ using std::vector;
 using systems::Context;
 
 // Set of MultibodyTree tests for a double pendulum model. The model is built
-// directly using Mobilizer objects and therefore it is used to test some of the
-// MultibodyTree internal details. Users would typically build their models
+// directly using MobilizedBody objects and therefore it is used to test some of
+// the MultibodyTree internal details. Users would typically build their models
 // using Joint objects instead.
 // This double pendulum is similar to the acrobot model described in Section 3.1
 // of the Underactuated Robotics notes available online at
@@ -180,9 +180,9 @@ class PendulumTests : public ::testing::Test {
         &model_->AddFrame<FixedOffsetFrame>(
             "So", upper_link_->body_frame(), X_USo_);
 
-    // Adds the shoulder and elbow mobilizers of the pendulum.
-    // Using:
-    //  const Mobilizer& AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
+    // Adds the shoulder and elbow mobilizers of the pendulum. Using:
+    //  const MobilizedBody&
+    //      AddMobilizer(std::unique_ptr<MobilizerType> mobilizer).
     shoulder_mobilizer_ =
         &model_->AddMobilizer(
             make_unique<RevoluteMobilizer<double>>(

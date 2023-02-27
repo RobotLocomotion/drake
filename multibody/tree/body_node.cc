@@ -50,7 +50,7 @@ void BodyNode<T>::CalcArticulatedBodyHingeInertiaMatrixFactorization(
   //  positive definite, we _know_ D_B is near singular.
   if (llt_D_B->eigen_linear_solver().info() != Eigen::Success) {
     // Create a meaningful message that helps the user as much as possible.
-    const Mobilizer<T>& mobilizer = get_mobilizer();
+    const MobilizedBody<T>& mobilizer = get_mobilizer();
     const Body<T>& inboard_body = mobilizer.inboard_body();
     const Body<T>& outboard_body = mobilizer.outboard_body();
     const std::string& inboard_body_name = inboard_body.name();

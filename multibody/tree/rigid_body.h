@@ -33,7 +33,7 @@ namespace multibody {
 /// freedom obey the Newton-Euler equations of motion. However, within a
 /// MultibodyTree, a %RigidBody is *not* free in space; instead, it is assigned
 /// a limited number of degrees of freedom (0-6) with respect to its parent
-/// body in the multibody tree by its Mobilizer (also called a
+/// body in the multibody tree by its MobilizedBody (also called a
 /// "tree joint" or "inboard joint"). Additional constraints on permissible
 /// motion can be added using Constraint objects to remove more degrees of
 /// freedom.

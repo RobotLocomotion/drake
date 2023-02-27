@@ -5,7 +5,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/frame.h"
-#include "drake/multibody/tree/mobilizer_impl.h"
+#include "drake/multibody/tree/mobilized_body_impl.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/multibody_tree_system.h"
 #include "drake/multibody/tree/space_xyz_mobilizer.h"
@@ -27,13 +27,13 @@ constexpr double kEpsilon = std::numeric_limits<double>::epsilon();
 // A cylindrical-like mobilizer that permits rotation about the x-axis and
 // translation along the y-axis.
 template <typename T>
-class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
+class FeatherstoneMobilizer final : public MobilizedBodyImpl<T, 2, 2> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FeatherstoneMobilizer)
 
   FeatherstoneMobilizer(const Frame<T>& inboard_frame_F,
                         const Frame<T>& outboard_frame_M) :
-      MobilizerImpl<T, 2, 2>(inboard_frame_F, outboard_frame_M) {
+      MobilizedBodyImpl<T, 2, 2>(inboard_frame_F, outboard_frame_M) {
     H_FM_ << 1, 0,
              0, 0,
              0, 0,
@@ -123,23 +123,23 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     Nplus->setIdentity();
   }
 
-  std::unique_ptr<Mobilizer<double>> DoCloneToScalar(
+  std::unique_ptr<MobilizedBody<double>> DoCloneToScalar(
       const MultibodyTree<double>& tree_clone) const override {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
-  std::unique_ptr<Mobilizer<AutoDiffXd>> DoCloneToScalar(
+  std::unique_ptr<MobilizedBody<AutoDiffXd>> DoCloneToScalar(
       const MultibodyTree<AutoDiffXd>& tree_clone) const override {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
-  std::unique_ptr<Mobilizer<symbolic::Expression>> DoCloneToScalar(
+  std::unique_ptr<MobilizedBody<symbolic::Expression>> DoCloneToScalar(
       const MultibodyTree<symbolic::Expression>& tree_clone) const override {
     return TemplatedDoCloneToScalar(tree_clone);
   }
 
  private:
-  typedef MobilizerImpl<T, 2, 2> MobilizerBase;
+  typedef MobilizedBodyImpl<T, 2, 2> MobilizerBase;
 
   const Vector3<T> rotation_axis() const {
     return H_FM_.template block<3, 1>(0, 0);
@@ -160,7 +160,7 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
   }
 
   template <typename ToScalar>
-  std::unique_ptr<Mobilizer<ToScalar>> TemplatedDoCloneToScalar(
+  std::unique_ptr<MobilizedBody<ToScalar>> TemplatedDoCloneToScalar(
       const MultibodyTree<ToScalar>& tree_clone) const {
     const Frame<ToScalar>& inboard_frame_clone =
         tree_clone.get_variant(this->inboard_frame());

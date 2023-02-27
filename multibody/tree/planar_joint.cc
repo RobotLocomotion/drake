@@ -55,9 +55,6 @@ std::unique_ptr<Joint<symbolic::Expression>> PlanarJoint<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
-// N.B. Due to esoteric linking errors on Mac (see #9345) involving
-// `MobilizerImpl`, we must place this implementation in the source file, not
-// in the header file.
 template <typename T>
 std::unique_ptr<typename Joint<T>::BluePrint>
 PlanarJoint<T>::MakeImplementationBlueprint() const {

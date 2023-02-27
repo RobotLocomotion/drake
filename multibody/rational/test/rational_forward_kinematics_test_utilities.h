@@ -51,7 +51,7 @@ class IiwaTest : public ::testing::Test {
   const internal::MultibodyTree<double>& iiwa_tree_;
   const BodyIndex world_;
   std::array<BodyIndex, 8> iiwa_link_;
-  std::array<internal::MobilizerIndex, 8> iiwa_joint_;
+  std::array<internal::MobilizedBodyIndex, 8> iiwa_joint_;
 };
 
 /*
@@ -66,7 +66,7 @@ class FinalizedIiwaTest : public ::testing::Test {
   const internal::MultibodyTree<double>& iiwa_tree_;
   const BodyIndex world_;
   std::array<BodyIndex, 8> iiwa_link_;
-  std::array<internal::MobilizerIndex, 8> iiwa_joint_;
+  std::array<internal::MobilizedBodyIndex, 8> iiwa_joint_;
 };
 
 /*

@@ -64,7 +64,7 @@ void ModelInstance<T>::GetPositionsFromArray(
   if (q_out->size() != num_positions_)
     throw std::logic_error("Output array is not properly sized.");
   int position_offset = 0;
-  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+  for (const MobilizedBody<T>* mobilizer : mobilizers_) {
     const int mobilizer_positions = mobilizer->num_positions();
     q_out->segment(position_offset, mobilizer_positions) =
         mobilizer->get_positions_from_array(q);
@@ -83,7 +83,7 @@ void ModelInstance<T>::SetPositionsInArray(
     throw std::logic_error("Passed in array(s) is not properly sized.");
   }
   int position_offset = 0;
-  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+  for (const MobilizedBody<T>* mobilizer : mobilizers_) {
     const int mobilizer_positions = mobilizer->num_positions();
     q_array->segment(mobilizer->position_start_in_q(), mobilizer_positions) =
         model_q.segment(position_offset, mobilizer_positions);
@@ -111,7 +111,7 @@ void ModelInstance<T>::GetVelocitiesFromArray(
   if (v_out->size() != num_velocities_)
     throw std::logic_error("Output array is not properly sized.");
   int velocity_offset = 0;
-  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+  for (const MobilizedBody<T>* mobilizer : mobilizers_) {
     const int mobilizer_velocities = mobilizer->num_velocities();
     v_out->segment(velocity_offset, mobilizer_velocities) =
         mobilizer->get_velocities_from_array(v);
@@ -128,7 +128,7 @@ void ModelInstance<T>::SetVelocitiesInArray(
   DRAKE_DEMAND(v_array->size() == this->get_parent_tree().num_velocities());
   DRAKE_DEMAND(model_v.size() == num_velocities());
   int velocity_offset = 0;
-  for (const Mobilizer<T>* mobilizer : mobilizers_) {
+  for (const MobilizedBody<T>* mobilizer : mobilizers_) {
     const int mobilizer_velocities = mobilizer->num_velocities();
     v_array->segment(mobilizer->velocity_start_in_v(), mobilizer_velocities) =
         model_v.segment(velocity_offset, mobilizer_velocities);

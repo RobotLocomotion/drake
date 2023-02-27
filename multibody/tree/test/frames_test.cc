@@ -51,7 +51,7 @@ class FrameTests : public ::testing::Test {
     bodyB_ = &model->AddBody<RigidBody>("B", M_Bo_B);
     frameB_ = &bodyB_->body_frame();
 
-    // Mobilizer connecting bodyB to the world.
+    // MobilizedBody connecting bodyB to the world.
     // The mobilizer is only needed because it is a requirement of MultibodyTree
     // that all bodies in the model must have an inboard mobilizer.
     model->AddMobilizer<RevoluteMobilizer>(

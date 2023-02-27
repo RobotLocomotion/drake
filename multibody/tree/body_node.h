@@ -13,7 +13,7 @@
 #include "drake/multibody/tree/articulated_body_force_cache.h"
 #include "drake/multibody/tree/articulated_body_inertia_cache.h"
 #include "drake/multibody/tree/body.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_element.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
@@ -25,13 +25,16 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
+// TODO(sherm1) Get rid of this class by moving its functionality to
+//  MobilizedBody.
+
 // For internal use only of the MultibodyTree implementation.
 // This is a base class representing a **node** in the tree structure of a
 // MultibodyTree. %BodyNode provides implementations for convenience methods to
 // be used in MultibodyTree recursive algorithms but that however should not
-// leak into the public API for the Mobilizer class. In this regard, %BodyNode
-// provides an additional separation layer between implementation internals and
-// user facing API.
+// leak into the public API for the MobilizedBody class. In this regard,
+// %BodyNode provides an additional separation layer between implementation
+// internals and user facing API.
 //
 // <h4>Tree Structure</h4>
 //
@@ -65,7 +68,7 @@ namespace internal {
 //
 // <h4>Associated State</h4>
 //
-// In the same way a Mobilizer and a Body have a number of generalized
+// In the same way a MobilizedBody and a Body have a number of generalized
 // positions associated with them, a %BodyNode is associated with the
 // generalized positions of body B and of its inboard mobilizer.
 //
@@ -98,7 +101,7 @@ class BodyNode : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
-  // A node encompasses a Body in a MultibodyTree and the inboard Mobilizer
+  // A node encompasses a Body in a MultibodyTree and the inboard MobilizedBody
   // that connects this body to the rest of tree. Given a body and its inboard
   // mobilizer in a MultibodyTree this constructor creates the corresponding
   // %BodyNode. See this class' documentation for details on how a %BodyNode is
@@ -116,7 +119,7 @@ class BodyNode : public MultibodyElement<T> {
   // @note %BodyNode keeps a reference to the parent body, body and mobilizer
   // for this node, which must outlive `this` BodyNode.
   BodyNode(const BodyNode<T>* parent_node,
-           const Body<T>* body, const Mobilizer<T>* mobilizer)
+           const Body<T>* body, const MobilizedBody<T>* mobilizer)
       : MultibodyElement<T>(body->model_instance()),
         parent_node_(parent_node),
         body_(body),
@@ -165,7 +168,7 @@ class BodyNode : public MultibodyElement<T> {
   // Returns a constant reference to the mobilizer associated with this node.
   // Aborts if called on the root node corresponding to the _world_ body, for
   // which there is no mobilizer.
-  const Mobilizer<T>& get_mobilizer() const {
+  const MobilizedBody<T>& get_mobilizer() const {
     DRAKE_DEMAND(mobilizer_ != nullptr);
     return *mobilizer_;
   }
@@ -173,14 +176,14 @@ class BodyNode : public MultibodyElement<T> {
   // @name Methods to retrieve BodyNode sizes
   //@{
 
-  // Returns the number of generalized positions for the Mobilizer in `this`
+  // Returns the number of generalized positions for the MobilizedBody in `this`
   // node.
   int get_num_mobilizer_positions() const {
     return topology_.num_mobilizer_positions;
   }
 
-  // Returns the number of generalized velocities for the Mobilizer in `this`
-  // node.
+  // Returns the number of generalized velocities for the MobilizedBody in
+  // `this` node.
   int get_num_mobilizer_velocities() const {
     return topology_.num_mobilizer_velocities;
   }
@@ -241,7 +244,7 @@ class BodyNode : public MultibodyElement<T> {
 
     // TODO(amcastro-tri):
     // With H_FM(qm) already in the cache (computed by
-    // Mobilizer::UpdatePositionKinematicsCache()) update the cache
+    // MobilizedBody::UpdatePositionKinematicsCache()) update the cache
     // entries for H_PB_W, the hinge matrix for the SpatialVelocity jump between
     // body B and its parent body P expressed in the world frame W.
   }
@@ -464,7 +467,7 @@ class BodyNode : public MultibodyElement<T> {
     //   A_PB_W = R_WF * A_FM.Shift(p_MB_F, w_FM)                           (4)
     // where R_WF is the rotation matrix from F to W and A_FM expressed in the
     // inboard frame F is the direct result from
-    // Mobilizer::CalcAcrossMobilizerAcceleration().
+    // MobilizedBody::CalcAcrossMobilizerAcceleration().
     //
     // * Note:
     //     The rigid body assumption is made in Eq. (3) in two places:
@@ -1903,7 +1906,7 @@ class BodyNode : public MultibodyElement<T> {
 
   // Pointers for fast access.
   const Body<T>* body_;
-  const Mobilizer<T>* mobilizer_{nullptr};
+  const MobilizedBody<T>* mobilizer_{nullptr};
 };
 
 }  // namespace internal

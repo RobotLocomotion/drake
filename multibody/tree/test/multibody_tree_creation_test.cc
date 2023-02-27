@@ -218,7 +218,7 @@ GTEST_TEST(MultibodyTree, MultibodyElementChecks) {
 // each connection denotes a mobilizer with the number corresponding to the
 // mobilizer index (assigned by MultibodyTree in the order mobilizers are
 // created).
-// At Finalize(), a body node is created per (body, inboard_mobilizer) pair.
+// At Finalize(), a body node is created per (body, mobilized_body) pair.
 // Body node indexes, shown in parentheses, are assigned in DFT order. In
 // addition, we know that internal::MultibodyTreeTopology assigns body nodes to
 // each branch in the order mobilizers are added. For instance, in the schematic
@@ -299,7 +299,7 @@ class TreeTopologyTests : public ::testing::Test {
           Vector3d::UnitZ());
       joints_.push_back(joint);
     } else {
-      const Mobilizer<double> *mobilizer =
+      const MobilizedBody<double> *mobilizer =
           &model_->AddMobilizer<RevoluteMobilizer>(
               inboard.body_frame(), outboard.body_frame(),
               Vector3d::UnitZ());
@@ -309,9 +309,10 @@ class TreeTopologyTests : public ::testing::Test {
 
   void WeldBodies(const RigidBody<double>& inboard,
                   const RigidBody<double>& outboard) {
-    const Mobilizer<double>* mobilizer = &model_->AddMobilizer<WeldMobilizer>(
-        inboard.body_frame(), outboard.body_frame(),
-        math::RigidTransformd::Identity());
+    const MobilizedBody<double>* mobilizer =
+        &model_->AddMobilizer<WeldMobilizer>(inboard.body_frame(),
+                                             outboard.body_frame(),
+                                             math::RigidTransformd::Identity());
     mobilizers_.push_back(mobilizer);
   }
 
@@ -353,16 +354,17 @@ class TreeTopologyTests : public ::testing::Test {
       // Verifies BodyNode has the parent node to the correct body.
       const BodyIndex parent_body = topology.get_body_node(parent_node).body;
       EXPECT_TRUE(parent_body.is_valid());
-      EXPECT_EQ(parent_body, topology.get_body(body).parent_body);
+      EXPECT_EQ(parent_body, topology.get_body(body).inboard_body);
       EXPECT_EQ(topology.get_body_node(parent_node).index,
                 topology.get_body(parent_body).body_node);
 
       // Verifies that BodyNode makes reference to the proper mobilizer index.
-      const MobilizerIndex mobilizer = topology.get_body_node(node).mobilizer;
-      EXPECT_EQ(mobilizer, topology.get_body(body).inboard_mobilizer);
+      const MobilizedBodyIndex mobilizer =
+          topology.get_body_node(node).mobilizer;
+      EXPECT_EQ(mobilizer, topology.get_body(body).mobilized_body);
 
       // Verifies the mobilizer makes reference to the appropriate node.
-      EXPECT_EQ(topology.get_mobilizer(mobilizer).body_node, node);
+      EXPECT_EQ(topology.get_mobilized_body(mobilizer).body_node, node);
 
       // Helper lambda to check if this "node" effectively is a child of
       // "parent_node".
@@ -480,7 +482,7 @@ class TreeTopologyTests : public ::testing::Test {
   // Bodies:
   std::vector<const RigidBody<double>*> bodies_;
   // Mobilizers:
-  std::vector<const Mobilizer<double>*> mobilizers_;
+  std::vector<const MobilizedBody<double>*> mobilizers_;
   // Joints:
   std::vector<const RevoluteJoint<double>*> joints_;
 };
@@ -524,10 +526,10 @@ TEST_F(TreeTopologyTests, SizesAndIndexing) {
        node_index < topology.get_num_body_nodes(); ++node_index) {
     const BodyNodeTopology& node = topology.get_body_node(node_index);
     const BodyIndex body_index = node.body;
-    const MobilizerIndex mobilizer_index = node.mobilizer;
+    const MobilizedBodyIndex mobilizer_index = node.mobilizer;
 
-    const MobilizerTopology& mobilizer_topology =
-        topology.get_mobilizer(mobilizer_index);
+    const MobilizedBodyTopology& mobilizer_topology =
+            topology.get_mobilized_body(mobilizer_index);
 
     EXPECT_EQ(body_index, bodies_[body_index]->index());
     EXPECT_EQ(mobilizer_index, mobilizers_[mobilizer_index]->index());

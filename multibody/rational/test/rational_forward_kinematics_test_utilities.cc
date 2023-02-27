@@ -82,7 +82,7 @@ IiwaTest::IiwaTest()
     iiwa_link_[i] =
         iiwa_->GetBodyByName("iiwa_link_" + std::to_string(i)).index();
     iiwa_joint_[i] =
-        iiwa_tree_.get_topology().get_body(iiwa_link_[i]).inboard_mobilizer;
+        iiwa_tree_.get_topology().get_body(iiwa_link_[i]).mobilized_body;
   }
 }
 
@@ -94,7 +94,7 @@ FinalizedIiwaTest::FinalizedIiwaTest()
     iiwa_link_[i] =
         iiwa_->GetBodyByName("iiwa_link_" + std::to_string(i)).index();
     iiwa_joint_[i] =
-        iiwa_tree_.get_topology().get_body(iiwa_link_[i]).inboard_mobilizer;
+        iiwa_tree_.get_topology().get_body(iiwa_link_[i]).mobilized_body;
   }
 }
 

@@ -220,7 +220,7 @@ class Body : public MultibodyElement<T> {
           "Attempted to call Lock() on non-floating body {}", name()));
     }
     this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
+        .get_mobilizer(topology_.mobilized_body)
         .Lock(context);
   }
 
@@ -239,7 +239,7 @@ class Body : public MultibodyElement<T> {
           "Attempted to call Unlock() on non-floating body {}", name()));
     }
     this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
+        .get_mobilizer(topology_.mobilized_body)
         .Unlock(context);
   }
 
@@ -249,7 +249,7 @@ class Body : public MultibodyElement<T> {
   /// @returns true if the body is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
     return this->get_parent_tree()
-        .get_mobilizer(topology_.inboard_mobilizer)
+        .get_mobilizer(topology_.mobilized_body)
         .is_locked(context);
   }
 
@@ -327,7 +327,7 @@ class Body : public MultibodyElement<T> {
       DRAKE_DEMAND(0 <= position_index_in_body && position_index_in_body < 6);
     }
     return this->get_parent_tree().get_mobilizer(
-      topology_.inboard_mobilizer).position_suffix(position_index_in_body);
+      topology_.mobilized_body).position_suffix(position_index_in_body);
   }
 
   /// Returns a string suffix (e.g. to be appended to the name()) to identify
@@ -341,7 +341,7 @@ class Body : public MultibodyElement<T> {
     DRAKE_DEMAND(is_floating());
     DRAKE_DEMAND(0 <= velocity_index_in_body && velocity_index_in_body < 6);
     return this->get_parent_tree().get_mobilizer(
-      topology_.inboard_mobilizer).velocity_suffix(velocity_index_in_body);
+      topology_.mobilized_body).velocity_suffix(velocity_index_in_body);
   }
 
   /// Returns the default mass (not Context dependent) for `this` body.

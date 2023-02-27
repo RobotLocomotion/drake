@@ -42,7 +42,7 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
     }
     const BodyTopology& current_node = topology.get_body(current);
     if (current != world_index()) {
-      const BodyIndex parent = current_node.parent_body;
+      const BodyIndex parent = current_node.inboard_body;
       visit_edge(current, parent);
     }
     for (BodyIndex child : current_node.child_bodies) {
@@ -64,23 +64,23 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
   return path;
 }
 
-std::vector<MobilizerIndex> FindMobilizersOnPath(
+std::vector<MobilizedBodyIndex> FindMobilizersOnPath(
     const MultibodyPlant<double>& plant, BodyIndex start, BodyIndex end) {
   const std::vector<BodyIndex> path = FindPath(plant, start, end);
-  std::vector<MobilizerIndex> mobilizers_on_path;
+  std::vector<MobilizedBodyIndex> mobilizers_on_path;
   mobilizers_on_path.reserve(path.size() - 1);
   const MultibodyTree<double>& tree = GetInternalTree(plant);
   for (int i = 0; i < static_cast<int>(path.size()) - 1; ++i) {
     const BodyTopology& body_topology = tree.get_topology().get_body(path[i]);
-    if (path[i] != world_index() && body_topology.parent_body == path[i + 1]) {
+    if (path[i] != world_index() && body_topology.inboard_body == path[i + 1]) {
       // path[i] is the child of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i]'s inboard mobilizer.
-      mobilizers_on_path.push_back(body_topology.inboard_mobilizer);
+      mobilizers_on_path.push_back(body_topology.mobilized_body);
     } else {
       // path[i] is the parent of path[i+1] in MultibodyTreeTopology, they are
       // connected by path[i+1]'s inboard mobilizer.
       mobilizers_on_path.push_back(
-          tree.get_topology().get_body(path[i + 1]).inboard_mobilizer);
+          tree.get_topology().get_body(path[i + 1]).mobilized_body);
     }
   }
   return mobilizers_on_path;
@@ -96,11 +96,12 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
   path_not_weld.reserve(path.size());
   path_not_weld.push_back(start);
   const MultibodyTree<double>& tree = GetInternalTree(plant);
-  const std::vector<MobilizerIndex> mobilizer_indices =
+  const std::vector<MobilizedBodyIndex> mobilizer_indices =
       FindMobilizersOnPath(plant, path[0], path.back());
   for (int i = 0; i < static_cast<int>(mobilizer_indices.size()); ++i) {
-    const MobilizerIndex mobilizer_index = mobilizer_indices[i];
-    const Mobilizer<double>& mobilizer = tree.get_mobilizer(mobilizer_index);
+    const MobilizedBodyIndex mobilizer_index = mobilizer_indices[i];
+    const MobilizedBody<double>& mobilizer =
+        tree.get_mobilizer(mobilizer_index);
     if (mobilizer.num_positions() != 0) {
       path_not_weld.push_back(path[i + 1]);
     }

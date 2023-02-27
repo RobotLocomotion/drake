@@ -136,7 +136,7 @@ void RevoluteMobilizer<T>::MapQDotToVelocity(
 
 template <typename T>
 template <typename ToScalar>
-std::unique_ptr<Mobilizer<ToScalar>>
+std::unique_ptr<MobilizedBody<ToScalar>>
 RevoluteMobilizer<T>::TemplatedDoCloneToScalar(
     const MultibodyTree<ToScalar>& tree_clone) const {
   const Frame<ToScalar>& inboard_frame_clone =
@@ -148,19 +148,20 @@ RevoluteMobilizer<T>::TemplatedDoCloneToScalar(
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<double>> RevoluteMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<MobilizedBody<double>> RevoluteMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<double>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<AutoDiffXd>> RevoluteMobilizer<T>::DoCloneToScalar(
+std::unique_ptr<MobilizedBody<AutoDiffXd>>
+RevoluteMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<AutoDiffXd>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
 template <typename T>
-std::unique_ptr<Mobilizer<symbolic::Expression>>
+std::unique_ptr<MobilizedBody<symbolic::Expression>>
 RevoluteMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);

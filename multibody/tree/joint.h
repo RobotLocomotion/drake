@@ -9,7 +9,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
-#include "drake/multibody/tree/mobilizer.h"
+#include "drake/multibody/tree/mobilized_body.h"
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -345,7 +345,7 @@ class Joint : public MultibodyElement<T> {
     // Joint locking is only supported for discrete mode.
     // TODO(sherm1): extend the design to support continuous-mode systems.
     DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
-    for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
+    for (internal::MobilizedBody<T>* mobilizer : implementation_->mobilizers_) {
       mobilizer->Lock(context);
     }
   }
@@ -357,7 +357,7 @@ class Joint : public MultibodyElement<T> {
     // Joint locking is only supported for discrete mode.
     // TODO(sherm1): extend the design to support continuous-mode systems.
     DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
-    for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
+    for (internal::MobilizedBody<T>* mobilizer : implementation_->mobilizers_) {
       mobilizer->Unlock(context);
     }
   }
@@ -365,7 +365,7 @@ class Joint : public MultibodyElement<T> {
   /// @return true if the joint is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
     bool locked = false;
-    for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
+    for (internal::MobilizedBody<T>* mobilizer : implementation_->mobilizers_) {
       locked |= mobilizer->is_locked(context);
     }
     return locked;
@@ -522,7 +522,7 @@ class Joint : public MultibodyElement<T> {
   /// %Joint creates a BluePrint of its implementation with MakeModelBlueprint()
   /// so that MultibodyTree can build an implementation for it.
   struct BluePrint {
-    std::vector<std::unique_ptr<internal::Mobilizer<T>>> mobilizers_;
+    std::vector<std::unique_ptr<internal::MobilizedBody<T>>> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies.
   };
 
@@ -561,8 +561,8 @@ class Joint : public MultibodyElement<T> {
     CloneToScalar(internal::MultibodyTree<ToScalar>* tree_clone) const {
       auto implementation_clone =
           std::make_unique<typename Joint<ToScalar>::JointImplementation>();
-      for (const internal::Mobilizer<T>* mobilizer : mobilizers_) {
-        internal::Mobilizer<ToScalar>* mobilizer_clone =
+      for (const internal::MobilizedBody<T>* mobilizer : mobilizers_) {
+        internal::MobilizedBody<ToScalar>* mobilizer_clone =
             &tree_clone->get_mutable_variant(*mobilizer);
         implementation_clone->mobilizers_.push_back(mobilizer_clone);
       }
@@ -573,7 +573,7 @@ class Joint : public MultibodyElement<T> {
 
     /// References (raw pointers) to the mobilizers that make part of this
     /// implementation.
-    std::vector<internal::Mobilizer<T>*> mobilizers_;
+    std::vector<internal::MobilizedBody<T>*> mobilizers_;
     // TODO(amcastro-tri): add force elements, constraints, bodies, etc.
   };
 

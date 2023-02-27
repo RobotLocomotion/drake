@@ -191,7 +191,7 @@ class ForceElement : public MultibodyElement<T> {
   /// since there is no external mechanism to ensure the argument `tree_clone`
   /// is in a valid stage of cloning. In contrast,
   /// MultibodyTree::CloneToScalar() guarantees that by when
-  /// ForceElement::CloneToScalar() is called, all Body, Frame and Mobilizer
+  /// ForceElement::CloneToScalar() is called, all Body, Frame and MobilizedBody
   /// objects in the original tree (templated on T) to which `this`
   /// %ForceElement<T> belongs, have a corresponding clone in the cloned tree
   /// (argument `tree_clone` for these methods). Therefore, implementations of
