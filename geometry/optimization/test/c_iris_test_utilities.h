@@ -10,6 +10,8 @@
 #include <gtest/gtest.h>
 
 #include "drake/geometry/optimization/cspace_free_polytope.h"
+#include "drake/geometry/optimization/dev/cspace_free_path.h"
+
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram.h"
@@ -110,6 +112,10 @@ class CspaceFreePolytopeTester {
     return cspace_free_polytope_->plane_geometries_;
   }
 
+  const symbolic::Variables s_set() const {
+    return cspace_free_polytope_->get_s_set();
+  }
+
   template <typename T>
   [[nodiscard]] VectorX<symbolic::Polynomial> CalcDminusCs(
       const Eigen::Ref<const MatrixX<T>>& C,
@@ -190,6 +196,44 @@ class CspaceFreePolytopeTester {
 
  private:
   std::unique_ptr<CspaceFreePolytope> cspace_free_polytope_;
+};
+
+// This is a friend class of CspaceFreePath, we use it to expose the private
+// functions in CspaceFreePath for unit testing.
+class CspaceFreePathTester {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePathTester)
+
+  CspaceFreePathTester(const multibody::MultibodyPlant<double>* plant,
+                       const geometry::SceneGraph<double>* scene_graph,
+                       SeparatingPlaneOrder plane_order,
+                       const Eigen::Ref<const Eigen::VectorXd>& q_star,
+                       unsigned int maximum_path_degree,
+                       const CspaceFreePolytope::Options& options =
+                           CspaceFreePolytope::Options())
+      : cspace_free_path_{new CspaceFreePath(plant, scene_graph, plane_order,
+                                             q_star, maximum_path_degree,
+                                             options)} {}
+
+  const CspaceFreePath& cspace_free_path() const { return *cspace_free_path_; }
+
+  const symbolic::Variable& get_mu() const { return cspace_free_path_->mu_; }
+
+  const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& get_path()
+      const {
+    return cspace_free_path_->path_;
+  }
+
+  const symbolic::Variables s_set() const {
+    return cspace_free_path_->get_s_set();
+  }
+
+  const std::vector<PlaneSeparatesGeometries>& plane_geometries() const {
+    return cspace_free_path_->plane_geometries_;
+  }
+
+ private:
+  std::unique_ptr<CspaceFreePath> cspace_free_path_;
 };
 
 }  // namespace optimization

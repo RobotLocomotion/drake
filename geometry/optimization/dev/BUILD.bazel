@@ -14,6 +14,22 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(["cspace_free_polytope.cc"])
 
+drake_cc_library(
+    name = "cspace_free_path",
+    srcs = ["cspace_free_path.cc"],
+    hdrs = ["cspace_free_path.h"],
+    deps = [
+        "//common/symbolic:monomial_util",
+        "//geometry/optimization:c_iris_collision_geometry",
+        "//geometry/optimization:c_iris_separating_plane",
+        "//geometry/optimization:cspace_free_polytope",
+        "//solvers:choose_best_solver",
+        "//solvers:mathematical_program",
+        "//solvers:mosek_solver",
+        "//solvers:solve",
+    ],
+)
+
 # test
 drake_cc_googletest(
     name = "cspace_free_polytope_with_mosek_test",
