@@ -23,7 +23,7 @@ namespace multibody {
  * Convex Optimization by Hongkai Dai, Gregory Izatt and Russ Tedrake,
  * International Journal of Robotics Research, 2019.
  *
- * @ingroup planning_configuration
+ * @ingroup planning_kinematics
  */
 class GlobalInverseKinematics {
  public:
