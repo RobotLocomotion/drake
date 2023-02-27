@@ -20,8 +20,8 @@ SpatialInertia<T> SpatialInertia<T>::PointMass(
     const T& mass, const Vector3<T>& position) {
   // Ensure mass is non-negative.
   if (mass < 0) {
-    std::string error_message = fmt::format("{}(): The mass of a particle is "
-                                            "negative: {}.", __func__, mass);
+    std::string error_message = fmt::format(
+        "{}(): The mass of a particle is negative: {}.", __func__, mass);
     throw std::logic_error(error_message);
   }
 

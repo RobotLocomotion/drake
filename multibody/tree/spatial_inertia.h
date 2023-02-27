@@ -126,7 +126,7 @@ class SpatialInertia {
   static SpatialInertia<T> MakeUnitary();
 
   /// Creates the spatial inertia for a particle Q of mass m about a point P.
-  /// @param[in] mass mass of the single particle (i.e., the point mass).
+  /// @param[in] mass mass of the single particle (units of kg).
   /// @param[in] position vector from point P to Q, expressed in a frame B.
   /// @retval M_QP_B particle Q's spatial inertia about P, expressed in frame B.
   /// @throws std::exception if mass is negative.

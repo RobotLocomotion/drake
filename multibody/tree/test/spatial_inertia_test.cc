@@ -84,7 +84,7 @@ GTEST_TEST(SpatialInertia, PointMass) {
       M_expected.CopyToFullMatrix6(), M_BBp_B.CopyToFullMatrix6()));
 
   // Verify PointMass() with a zero position vector produces the same spatial
-  // inertia s shifting the spatial inertia from M_BBp_B to M_BBcm_B.
+  // inertia as shifting the spatial inertia from M_BBp_B to M_BBcm_B.
   const SpatialInertia<double> M_BBcm_B_expected = M_BBp_B.Shift(p_BpBcm_B);
   const SpatialInertia<double> M_BBcm_B =
        SpatialInertia<double>::PointMass(mass, Vector3<double>::Zero());
