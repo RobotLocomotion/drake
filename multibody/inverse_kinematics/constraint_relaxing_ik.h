@@ -16,7 +16,7 @@ namespace multibody {
  * A wrapper class around the IK planner. This class improves IK's usability by
  * handling constraint relaxing and multiple initial guesses internally.
  *
- * @ingroup planning_configuration
+ * @ingroup planning_kinematics
  */
 class ConstraintRelaxingIk {
  public:
