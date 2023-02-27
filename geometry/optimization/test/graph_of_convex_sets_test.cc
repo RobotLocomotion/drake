@@ -1033,6 +1033,84 @@ GTEST_TEST(ShortestPathTest, InfeasibleProblem) {
   ASSERT_FALSE(result.is_success());
 }
 
+GTEST_TEST(ShortestPathTest, SelfLoop) {
+  // GraphOfConvexSets spp;
+
+  // Vertex* source = spp.AddVertex(Point(Vector1d(-1)));
+  // Vertex* v1 = spp.AddVertex(Point(Vector1d(0)));
+  // Vertex* target = spp.AddVertex(Point(Vector1d(1)));
+
+  // spp.AddEdge(*source, *v1);
+  // Edge* loop = spp.AddEdge(*v1, *v1);
+  // spp.AddEdge(*v1, *target);
+
+  // auto result = spp.SolveShortestPath(*source, *target);
+  // ASSERT_TRUE(result.is_success());
+  // EXPECT_EQ(result.GetSolution(loop->phi()), 0);
+
+  // GraphOfConvexSetsOptions options;
+  // options.max_rounded_paths = 1;
+  // auto result2 = spp.SolveShortestPath(*source, *target, options);
+  // ASSERT_TRUE(result2.is_success());
+  // EXPECT_EQ(result2.GetSolution(loop->phi()), 0);
+
+  Vector3d b(-1, -1, 4);
+  Matrix<double, 3, 2> A_left;
+  A_left << 1, 1, 1, -1, -1, 0;
+  Matrix<double, 3, 2> A_right;
+  A_right << -1, -1, -1, 1, 1, 0;
+  Matrix<double, 3, 2> A_top;
+  A_top << -1, -1, 1, -1, 0, 1;
+  Matrix<double, 3, 2> A_bottom;
+  A_bottom << 1, 1, -1, 1, 0, -1;
+
+  HPolyhedron H_left(A_left, b);
+  HPolyhedron H_right(A_right, b);
+  HPolyhedron H_top(A_top, b);
+  HPolyhedron H_bottom(A_bottom, b);
+
+  GraphOfConvexSets G;
+  Vertex* source = G.AddVertex(Point(Vector2d(0.2, -2)), "source");
+  Vertex* left = G.AddVertex(H_left, "left");
+  Vertex* right = G.AddVertex(H_right, "right");
+  Vertex* top = G.AddVertex(H_top, "top");
+  Vertex* bottom = G.AddVertex(H_bottom, "bottom");
+  Vertex* target = G.AddVertex(Point(Vector2d(0, 2)), "target");
+
+  Matrix<double, 2, 4> A_cost;
+  A_cost << Matrix2d::Identity(), -Matrix2d::Identity();
+  auto cost = std::make_shared<solvers::L2NormCost>(A_cost, Vector2d::Zero());
+
+  G.AddEdge(*left, *left)
+      ->AddCost(solvers::Binding(cost, {left->x(), left->x()}));
+  G.AddEdge(*source, *left)
+      ->AddCost(solvers::Binding(cost, {source->x(), left->x()}));
+  G.AddEdge(*source, *bottom)
+      ->AddCost(solvers::Binding(cost, {source->x(), bottom->x()}));
+  G.AddEdge(*source, *right)
+      ->AddCost(solvers::Binding(cost, {source->x(), right->x()}));
+  G.AddEdge(*bottom, *left)
+      ->AddCost(solvers::Binding(cost, {bottom->x(), left->x()}));
+  G.AddEdge(*bottom, *right)
+      ->AddCost(solvers::Binding(cost, {bottom->x(), right->x()}));
+  G.AddEdge(*left, *top)
+      ->AddCost(solvers::Binding(cost, {left->x(), top->x()}));
+  G.AddEdge(*right, *top)
+      ->AddCost(solvers::Binding(cost, {right->x(), top->x()}));
+  G.AddEdge(*left, *target)
+      ->AddCost(solvers::Binding(cost, {left->x(), target->x()}));
+  G.AddEdge(*top, *target)
+      ->AddCost(solvers::Binding(cost, {top->x(), target->x()}));
+  G.AddEdge(*right, *target)
+      ->AddCost(solvers::Binding(cost, {right->x(), target->x()}));
+
+  GraphOfConvexSetsOptions options;
+  options.convex_relaxation = false;
+  auto result = G.SolveShortestPath(*source, *target, options);
+
+  ASSERT_TRUE(result.is_success());
+}
+
 GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   GraphOfConvexSets spp;
 
