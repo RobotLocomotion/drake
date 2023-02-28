@@ -134,8 +134,8 @@ class SpatialInertia {
   /// @throws std::exception if mass is negative.
   static SpatialInertia<T> PointMass(const T& mass, const Vector3<T>& position);
 
-  /// Creates a spatial inertia for a uniform density solid box B about
-  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// Creates a spatial inertia for a uniform density solid box B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] lx length of the box in the Bx direction.
   /// @param[in] ly length of the box in the By direction.
@@ -188,8 +188,8 @@ class SpatialInertia {
   static SpatialInertia<T> SolidEllipsoidWithDensity(
       const T& density, const T& a, const T& b, const T& c);
 
-  /// Creates a spatial inertia for a uniform density solid sphere B about
-  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// Creates a spatial inertia for a uniform density solid sphere B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] r sphere's radius.
   /// @retval M_BBo B's spatial inertia about Bo. Since B's rotational inertia
