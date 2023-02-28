@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <functional>
 #include <map>
-#include <optional>
 #include <ostream>
 #include <unordered_map>
 #include <utility>
@@ -311,8 +310,7 @@ class Polynomial {
   [[nodiscard]] Polynomial SubstituteAndExpand(
       const std::unordered_map<Variable, Polynomial>&
           indeterminate_substitution,
-      std::optional<SubstituteAndExpandCacheData*> substitutions_cached_data =
-          std::nullopt) const;
+      SubstituteAndExpandCacheData* substitutions_cached_data = nullptr) const;
 
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term

@@ -824,13 +824,14 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 
 Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
-    std::optional<SubstituteAndExpandCacheData*> substitutions_cached_data)
+    SubstituteAndExpandCacheData* substitutions_cached_data)
     const {
-  SubstituteAndExpandCacheData substitutions_struct_default;
-  SubstituteAndExpandCacheData* substitutions_struct =
-      substitutions_cached_data.value_or(&substitutions_struct_default);
+  if (substitutions_cached_data == nullptr) {
+    SubstituteAndExpandCacheData substitutions_default_obj;
+    substitutions_cached_data = &substitutions_default_obj;
+  }
   std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions =
-      substitutions_struct->get_data();
+      substitutions_cached_data->get_data();
 
   for (const auto& var : indeterminates_) {
     DRAKE_DEMAND(indeterminate_substitution.find(var) !=
