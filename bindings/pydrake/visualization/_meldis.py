@@ -62,7 +62,7 @@ class _Slider:
         self._exists = False
 
     def realize(self):
-        """Ensure the slider is created and visible."""
+        """Ensures the slider is created and visible."""
         # Avoid a redundant slider crash if the user runs a sending program
         # twice with the same meldis still running.
         if not self._exists:
@@ -70,7 +70,7 @@ class _Slider:
             self._meshcat.AddSlider(self._name, 0.02, 1.0, 0.02, self._value)
 
     def read(self):
-        """Return a pair of the current value, and a flag that is True if the
+        """Returns a pair of the current value, and a flag that is True if the
         value has changed since the last read().
 
         Clients *must* call realize() before calling read().
@@ -189,7 +189,7 @@ class _ViewerApplet:
         self._meshcat.SetProperty(self._path, property="visible", value=value)
 
     def _convert_deformable_geom(self, geom):
-        """Given an lcmt_viewer_geometry_data, parse it into a tuple of
+        """Given an lcmt_viewer_geometry_data, parses it into a tuple of
         (vertices, faces, Rgba, RigidTransform) if the geometry type is a
         MESH.
         """
@@ -209,8 +209,8 @@ class _ViewerApplet:
         return (vertices, faces, rgba, pose)
 
     def _convert_geom(self, geom):
-        """Given an lcmt_viewer_geometry_data, parse it into a tuple of (Shape,
-        Rgba, RigidTransform).
+        """Given an lcmt_viewer_geometry_data, parses it into a tuple of
+        (Shape, Rgba, RigidTransform).
         """
         shape = None
         if geom.type == lcmt_viewer_geometry_data.BOX:
@@ -254,7 +254,7 @@ class _ViewerApplet:
 
     @staticmethod
     def _to_pose(position, quaternion):
-        """Given pose parts of an lcmt_viewer_geometry_data, parse it into a
+        """Given pose parts of an lcmt_viewer_geometry_data, parses it into a
         RigidTransform.
         """
         (p_x, p_y, p_z) = position
@@ -615,7 +615,7 @@ class Meldis:
         self._message_pending_data.clear()
 
     def serve_forever(self, *, idle_timeout=None):
-        """Run indefinitely, forwarding LCM => MeshCat messages.
+        """Runs indefinitely, forwarding LCM => MeshCat messages.
 
         If provided, the optional idle_timeout must be strictly positive and
         this loop will sys.exit after that many seconds without any websocket
@@ -631,7 +631,7 @@ class Meldis:
             self._check_for_shutdown(idle_timeout=idle_timeout)
 
     def _should_update(self):
-        """Post LCM-driven updates to MeshCat no faster than 40 Hz."""
+        """Posts LCM-driven updates to MeshCat no faster than 40 Hz."""
         now = time.time()
         update_period = 0.025  # 40 Hz
         remaining = update_period - (now - self._last_update_time)
