@@ -531,9 +531,21 @@ ModelInstanceIndex MultibodyTree<T>::GetModelInstanceByName(
     std::string_view name) const {
   const auto it = instance_name_to_index_.find(name);
   if (it == instance_name_to_index_.end()) {
+    std::string instance_names{};
+    for (const auto& kv : instance_name_to_index_) {
+      if (!instance_names.empty()) {
+        instance_names += ", ";
+      }
+      instance_names += '\'' + std::string(kv.first.view()) + '\'';
+    }
+    if (instance_names.empty()) {
+      instance_names = "NONE";
+    }
+
     throw std::logic_error(fmt::format(
-        "GetModelInstanceByName(): There is no model instance named '{}'.",
-        name));
+        "GetModelInstanceByName(): There is no model instance named '{}'. The "
+        "current model instances are {}.",
+        name, instance_names));
   }
   return it->second;
 }
