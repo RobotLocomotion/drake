@@ -455,7 +455,8 @@ class CspaceFreePolytope {
  protected:
   [[nodiscard]] const symbolic::Variables get_s_set() const { return s_set_; }
 
-  [[nodiscard]] std::vector<PlaneSeparatesGeometries>& get_mutable_plane_geometries() {
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries>&
+  get_mutable_plane_geometries() {
     return plane_geometries_;
   }
 
