@@ -126,6 +126,36 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
+    const T& mass, const T& length, const Vector3<T>& unit_vector) {
+  // Ensure mass and length are positive.
+  if (mass <= 0 || length <= 0) {
+    std::string error_message = fmt::format(
+        "{}(): A thin rod's mass = {} or length = {} is negative or zero.",
+        __func__, mass, length);
+    throw std::logic_error(error_message);
+  }
+
+  // Ensure ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+  // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+  using std::abs;
+  constexpr double kTolerance = 1E-14;
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
+    throw std::logic_error(
+        fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
+                    __func__, fmt_eigen(unit_vector.transpose())));
+  }
+
+  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
+  // UnitInertia::ThinRod() allows for a near zero-vector due to code in
+  // UnitInertia::AxiallySymmetric() which normalizes unit_vector before use.
+  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
+  const UnitInertia<T> G_BBcm_B = UnitInertia<T>::ThinRod(length, unit_vector);
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBcm_B);
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
