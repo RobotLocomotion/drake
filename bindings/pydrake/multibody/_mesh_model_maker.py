@@ -125,7 +125,18 @@ class MeshModelMaker:
         # TODO: Incomplete documentation!
 
         """
-        _logger.info(f"Reading mesh from: {mesh_path}")
+        _logger.info(f"Creating a model from: {mesh_path}")
+
+        # Figure out the mesh URI and model names.
+        package_prefix = self._resolve_package_prefix(self.encoded_package,
+                                                      mesh_path)
+        if package_prefix is None:
+            # No package prefix was determined; explanation already output to
+            # log, so, we can simply return.
+            return
+        mesh_file_name = os.path.basename(mesh_path)
+        mesh_uri = package_prefix + mesh_file_name
+
         mesh_G = ReadObjToTriangleSurfaceMesh(filename=mesh_path,
                                               scale=self.scale)
         p_GoMin, p_GoMax = mesh_G.CalcBoundingBox()
@@ -179,12 +190,6 @@ class MeshModelMaker:
         moments = I_GGcm_G.get_moments()
         products = I_GGcm_G.get_products()
 
-        # Figure out the mesh URI and model names.
-        package_prefix = self._resolve_package_prefix(self.encoded_package,
-                                                      mesh_path)
-        mesh_file_name = os.path.basename(mesh_path)
-        mesh_uri = package_prefix + mesh_file_name
-
         # Possible model name.
         mesh_stem = os.path.splitext(mesh_file_name)[0]
 
@@ -233,13 +238,27 @@ class MeshModelMaker:
 
         Returns:
             A string that can be prefixed to the mesh file name to be used as
-            the mesh URI.
+            the mesh URI. None if there is an error.
         """
+
+        # TODO: If package.xml is defined, the obj must be in a sub-tree of
+        # that package.
+
         if package_spec == "none":
             return ""
 
         package_name = None
         if package_spec.endswith("package.xml"):
+            # The mesh must lie in the tree rooted at the package.
+            abs_package = os.path.abspath(package_spec)
+            package_dir = os.path.split(abs_package)[0]
+            abs_mesh = os.path.abspath(mesh_path)
+            if not abs_mesh.startswith(package_dir):
+                _logger.error(
+                    "When specifying the package, the mesh must be located in "
+                    f"the file tree of the package.\n  package: {abs_package}"
+                    f"\n  mesh: {abs_mesh}")
+                return None
             package_name = _read_package_name(package_spec)
 
         if package_spec == "auto":
