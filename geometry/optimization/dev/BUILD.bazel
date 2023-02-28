@@ -15,30 +15,6 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 exports_files(["cspace_free_polytope.cc"])
 
 # test
-drake_cc_library(
-    name = "c_iris_test_utilities",
-    testonly = 1,
-    srcs = ["test/c_iris_test_utilities.cc"],
-    hdrs = ["test/c_iris_test_utilities.h"],
-    deps = [
-        "//geometry:scene_graph",
-        "//geometry/optimization:cspace_free_polytope",
-        "//multibody/plant",
-        "//systems/framework:diagram_builder",
-    ],
-)
-
-drake_cc_googletest(
-    name = "cspace_free_polytope_test",
-    deps = [
-        ":c_iris_test_utilities",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:symbolic_test_util",
-        "//geometry/optimization:c_iris_test_utilities",
-        "//geometry/optimization:cspace_free_polytope",
-    ],
-)
-
 drake_cc_googletest(
     name = "cspace_free_polytope_with_mosek_test",
     timeout = "long",
@@ -47,7 +23,6 @@ drake_cc_googletest(
     tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
     use_default_main = False,
     deps = [
-        ":c_iris_test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization:c_iris_test_utilities",
