@@ -156,6 +156,11 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
   TestSocpDuplicatedVariable1(solver, std::nullopt, 1E-6);
 }
 
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
+  MosekSolver solver;
+  TestSocpDuplicatedVariable2(solver, std::nullopt, 1E-6);
+}
+
 GTEST_TEST(TestSemidefiniteProgram, TrivialSDP) {
   MosekSolver mosek_solver;
   if (mosek_solver.available()) {
