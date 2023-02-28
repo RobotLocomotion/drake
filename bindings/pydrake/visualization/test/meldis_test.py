@@ -229,7 +229,7 @@ class TestMeldis(unittest.TestCase):
             self.assertTrue(meshcat.HasPath(link_path))
 
     def test_hydroelastic_geometry(self):
-        """Check that _ViewerApplet doesn't crash when receiving
+        """Checks that _ViewerApplet doesn't crash when receiving
         hydroelastic geometry.
         """
         dut = mut.Meldis()
@@ -247,7 +247,7 @@ class TestMeldis(unittest.TestCase):
         dut._invoke_subscriptions()
 
     def test_contact_applet_point_pair(self):
-        """Check that _ContactApplet doesn't crash when receiving point
+        """Checks that _ContactApplet doesn't crash when receiving point
            contact messages.
         """
         # Create the device under test.
@@ -290,7 +290,7 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(meshcat.HasPath(pair_path), True)
 
     def test_contact_applet_hydroelastic(self):
-        """Check that _ContactApplet doesn't crash when receiving hydroelastic
+        """Checks that _ContactApplet doesn't crash when receiving hydroelastic
            messages.
         """
         # Create the device under test.
@@ -340,7 +340,7 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(meshcat.HasPath(hydro_path2), True)
 
     def test_deformable(self):
-        """Check that _ViewerApplet doesn't crash for deformable geometries
+        """Checks that _ViewerApplet doesn't crash for deformable geometries
         in DRAKE_VIEWER_DEFORMABLE channel.
         """
 
@@ -391,7 +391,7 @@ class TestMeldis(unittest.TestCase):
         self.assertEqual(dut.meshcat.HasPath(meshcat_path), True)
 
     def test_point_cloud(self):
-        """Check that _PointCloudApplet doesn't crash when receiving point
+        """Checks that _PointCloudApplet doesn't crash when receiving point
         cloud messages.
         """
         # Create the device under test.
