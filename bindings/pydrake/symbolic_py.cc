@@ -812,28 +812,9 @@ PYBIND11_MODULE(symbolic, m) {
       .def("AddProduct", &Polynomial::AddProduct, py::arg("coeff"),
           py::arg("m"), doc.Polynomial.AddProduct.doc)
       .def("Expand", &Polynomial::Expand, doc.Polynomial.Expand.doc)
-      .def(
-          "SubstituteAndExpand",
-          [](const Polynomial& self,
-              const std::unordered_map<Variable, Polynomial>&
-                  indeterminate_substitution,
-              std::optional<std::map<Monomial, Polynomial,
-                  symbolic::internal::CompareMonomial>>
-                  substitutions_optional) {
-            std::map<Monomial, Polynomial, symbolic::internal::CompareMonomial>
-                cached_subs;
-            if (substitutions_optional.has_value()) {
-              cached_subs = std::move(substitutions_optional.value());
-            }
-            const symbolic::Polynomial& poly_ret = self.SubstituteAndExpand(
-                indeterminate_substitution, &cached_subs);
-            return std::pair<symbolic::Polynomial,
-                std::map<Monomial, Polynomial,
-                    symbolic::internal::CompareMonomial>>(
-                poly_ret, cached_subs);
-          },
+      .def("SubstituteAndExpand", &Polynomial::SubstituteAndExpand,
           py::arg("indeterminate_substitution"),
-          py::arg("substitutions_optional") = std::nullopt,
+          py::arg("substitutions_cached_data") = std::nullopt,
           doc.Polynomial.SubstituteAndExpand.doc)
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,
@@ -933,6 +914,13 @@ PYBIND11_MODULE(symbolic, m) {
             return p.Jacobian(vars);
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
+
+  py::class_<Polynomial::SubstituteAndExpandCacheData>(m,
+      "SubstituteAndExpandCacheData",
+      doc.Polynomial.SubstituteAndExpandCacheData.doc)
+      .def(py::init<>())
+      .def("get_data", &Polynomial::SubstituteAndExpandCacheData::get_data,
+          py_rvp::reference);
 
   // Bind CalcPolynomialWLowerTriangularPart
   m.def(
