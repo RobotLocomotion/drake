@@ -143,8 +143,8 @@ class SpatialInertia {
   static SpatialInertia<T> SolidBoxWithDensity(
       const T& density, const T& lx, const T& ly, const T& lz);
 
-  /// Creates a spatial inertia for a uniform density solid cube B about
-  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// Creates a spatial inertia for a uniform density solid cube B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] l The length of each of the cube's sides.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.  Since B's

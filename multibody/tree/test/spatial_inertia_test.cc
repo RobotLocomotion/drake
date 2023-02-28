@@ -145,7 +145,7 @@ GTEST_TEST(SpatialInertia, SolidCubeWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
-  // Also test againt a solid box with length = width = height.
+  // Also test against a solid box with length = width = height.
   const SpatialInertia<double> Mbox =
       SpatialInertia<double>::SolidBoxWithDensity(density, l, l, l);
   EXPECT_TRUE(
