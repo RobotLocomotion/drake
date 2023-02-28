@@ -18,6 +18,7 @@
 namespace drake {
 namespace solvers {
 namespace test {
+const double kInf = std::numeric_limits<double>::infinity();
 TEST_P(LinearProgramTest, TestLP) {
   MosekSolver solver;
   prob()->RunProblem(&solver);
@@ -612,6 +613,29 @@ GTEST_TEST(MosekTest, InfeasibleSemidefiniteProgramTest) {
 
     // Check that the optimal cost is not NAN.
     EXPECT_FALSE(std::isnan(result.get_optimal_cost()));
+  }
+}
+
+GTEST_TEST(MosekTest, LPNoBasisSelection) {
+  // We solve an LP using interior point method (IPM), but don't do basis
+  // identification (which cleans the solution) after IPM finishes. Hence the
+  // basis solution is not available and Mosek can only acquire the IPM
+  // solution.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  prog.AddBoundingBoxConstraint(0, kInf, x);
+  prog.AddLinearConstraint(x(0) + x(1) <= 1);
+  prog.AddLinearCost(-x(0) - 2 * x(1));
+
+  SolverOptions solver_options;
+  solver_options.SetOption(MosekSolver::id(), "MSK_IPAR_INTPNT_BASIS", 0);
+  MosekSolver solver;
+  if (solver.available()) {
+    auto result = solver.Solve(prog, std::nullopt, solver_options);
+    EXPECT_TRUE(result.is_success());
+    const auto x_sol = result.GetSolution(x);
+    const double tol = 1E-6;
+    EXPECT_TRUE(CompareMatrices(x_sol, Eigen::Vector2d(0, 1), tol));
   }
 }
 }  // namespace test
