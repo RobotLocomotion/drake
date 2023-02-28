@@ -207,7 +207,18 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
              prog.positive_semidefinite_constraints().empty() &&
              prog.linear_matrix_inequality_constraints().empty() &&
              prog.exponential_cone_constraints().empty()) {
-    solution_type = MSK_SOL_BAS;
+    // The program is LP.
+    int ipm_basis;
+    rescode = MSK_getintparam(impl.task(), MSK_IPAR_INTPNT_BASIS, &ipm_basis);
+    DRAKE_ASSERT(rescode == MSK_RES_OK);
+    // By default imp_basis > 0 and Mosek will do a basis identification to
+    // clean up the solution after the interior point method (IPM), then we can
+    // query the basis solution. Otherwise we will only query the IPM solution.
+    if (ipm_basis > 0) {
+      solution_type = MSK_SOL_BAS;
+    } else {
+      solution_type = MSK_SOL_ITR;
+    }
   } else {
     solution_type = MSK_SOL_ITR;
   }
