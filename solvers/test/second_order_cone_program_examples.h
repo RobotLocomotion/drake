@@ -348,6 +348,21 @@ void TestSocpDualSolution2(const SolverInterface& solver,
 void TestSocpDuplicatedVariable1(
     const SolverInterface& solver,
     const std::optional<SolverOptions>& solver_options, double tol);
+
+// We intentionally use duplicated variables in the second order cone constraint
+// to test if Drake's solver wrappers can handle duplicated variables.
+// min x0 + x1
+// s.t 4x0²+9x1² ≤ 1
+void TestSocpDuplicatedVariable2(
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol);
+
+// This SOCP is degenerate, in the sense it can be formulated as an LP.
+// find x
+// s.t x(0) >= sqrt( (x(1)-x(1))² + (x(2)-x(2))² )
+// We also intentionally impose it in a way to contain duplicated variables in
+// the LorentzConeConstraint.
+void TestDegenerateSOCP(const SolverInterface& solver);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
