@@ -36,6 +36,10 @@ class CspaceFreePath : public CspaceFreePolytope {
 
   ~CspaceFreePath() {}
 
+  [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
+
+
+
  protected:
   /**
    Generate all the conditions (certain rationals being non-negative, and
@@ -55,6 +59,12 @@ class CspaceFreePath : public CspaceFreePolytope {
   // a map storing the substitutions from the s_set_ variables to the path
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
+
+  // friend declaration for use in constructor to avoid large initialization
+  // lambda.
+  friend std::unordered_map<symbolic::Variable, symbolic::Polynomial>
+  initialize_path_map(CspaceFreePath* cspace_free_path,
+                      unsigned int maximum_path_degree);
 };
 
 }  // namespace optimization

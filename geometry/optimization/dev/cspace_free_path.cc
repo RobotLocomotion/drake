@@ -6,7 +6,28 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-namespace {}
+std::unordered_map<symbolic::Variable, symbolic::Polynomial>
+initialize_path_map(CspaceFreePath* cspace_free_path,
+                    unsigned int maximum_path_degree) {
+  std::unordered_map<symbolic::Variable, symbolic::Polynomial> ret;
+  Eigen::Matrix<symbolic::Monomial, Eigen::Dynamic, 1> basis =
+      symbolic::MonomialBasis(symbolic::Variables{cspace_free_path->mu_},
+                              maximum_path_degree);
+
+  std::size_t i = 0;
+  for (const auto& s_set_itr : cspace_free_path->get_s_set()) {
+    // construct a dense polynomial
+    symbolic::Polynomial::MapType path_monomial_to_coeff;
+    for (unsigned int j = 0; j <= maximum_path_degree; ++j) {
+      const symbolic::Variable cur_var{fmt::format("s_{}_{}", i, j)};
+      path_monomial_to_coeff.emplace(basis(j), symbolic::Expression{cur_var});
+    }
+    ret.insert(
+        {s_set_itr, symbolic::Polynomial(std::move(path_monomial_to_coeff))});
+    ++i;
+  }
+  return ret;
+}
 
 CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const geometry::SceneGraph<double>* scene_graph,
@@ -16,28 +37,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const Options& options)
     : CspaceFreePolytope(plant, scene_graph, plane_order, q_star, options),
       mu_(symbolic::Variable("mu")),
-      path_(([maximum_path_degree,
-              this]() -> std::unordered_map<symbolic::Variable,
-                                            symbolic::Polynomial> {
-        std::unordered_map<symbolic::Variable, symbolic::Polynomial> ret;
-        Eigen::Matrix<symbolic::Monomial, Eigen::Dynamic, 1> basis =
-            symbolic::MonomialBasis(symbolic::Variables{mu_},
-                                    maximum_path_degree);
-
-        std::size_t i = 0;
-        for (const auto& s_set_itr : this->get_s_set()) {
-          // construct a dense polynomial
-          symbolic::Polynomial::MapType path_monomial_to_coeff;
-          for (unsigned int j = 0; j < maximum_path_degree; ++j) {
-            const symbolic::Variable cur_var{fmt::format("s_{}_{}", i, j)};
-            path_monomial_to_coeff.emplace(basis(j),
-                                           symbolic::Expression{cur_var});
-          }
-          ret.insert({s_set_itr, symbolic::Polynomial(path_monomial_to_coeff)});
-          ++i;
-        }
-        return ret;
-      })()) {
+      path_(initialize_path_map(this, maximum_path_degree)) {
   this->GeneratePathRationals();
 }
 
@@ -45,7 +45,6 @@ void CspaceFreePath::GeneratePathRationals() {
   // plane_geometries_ currently has rationals in terms of the configuration
   // space variable. We replace each of these PlaneSeparatesGeometries with a
   // new one that has rationals in terms of the path variable.
-  //  auto substitute_path_
   std::map<symbolic::Monomial, symbolic::Polynomial,
            symbolic::internal::CompareMonomial>
       cached_substitutions;
@@ -76,13 +75,13 @@ void CspaceFreePath::GeneratePathRationals() {
       };
 
   std::vector<PlaneSeparatesGeometries> path_plane_geometries;
-  for (const auto& plane_geometry : plane_geometries_) {
+  for (const auto& plane_geometry : this->get_mutable_plane_geometries()) {
     path_plane_geometries.emplace_back(
         generate_substituted_rationals(plane_geometry.positive_side_rationals),
         generate_substituted_rationals(plane_geometry.negative_side_rationals),
         plane_geometry.plane_index);
   }
-  plane_geometries_ = std::move(path_plane_geometries);
+  this->get_mutable_plane_geometries() = std::move(path_plane_geometries);
 }
 
 }  // namespace optimization
