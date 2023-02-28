@@ -192,7 +192,6 @@ class SpatialInertia {
   static SpatialInertia<T> SolidCylinderWithDensityAboutEnd(
       const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
-
   /// Creates a spatial inertia for a uniform density solid ellipsoid B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
