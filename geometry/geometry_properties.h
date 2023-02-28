@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <unordered_map>
 
@@ -469,7 +470,7 @@ class GeometryProperties {
   // that is easily traceable to this class.
   template <typename ValueType>
   static const ValueType& GetValueOrThrow(
-      const std::string& method, const std::string& group_name,
+      std::string_view method, const std::string& group_name,
       const std::string& name, const AbstractValue& abstract,
       const std::type_info& requested_type = typeid(ValueType)) {
     const ValueType* value = abstract.maybe_get_value<ValueType>();
