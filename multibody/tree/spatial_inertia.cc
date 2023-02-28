@@ -108,6 +108,16 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
+    const T& density, const T& r, const T& l, const Vector3<T>& unit_vector) {
+  const SpatialInertia<T> M_BBcm_B =
+      SpatialInertia<T>::SolidCylinderWithDensity(density, r, l, unit_vector);
+  const Vector3<T> p_BcmBp_B = -0.5 * l * unit_vector;
+  const SpatialInertia<T> M_BBp_B = M_BBcm_B.Shift(p_BcmBp_B);
+  return M_BBp_B;
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
     const T& density, const T& a, const T& b, const T& c) {
   // Ensure a, b, c are positive.

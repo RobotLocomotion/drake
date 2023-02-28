@@ -158,6 +158,15 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
+  // Test a solid cylinder B about Bp with a different unit vector direction.
+  const Vector3<double> p_BcmBp_B = -0.5 * l * unit_vec;
+  const SpatialInertia<double> M_BBcm_B = M;
+  M_expected = M_BBcm_B.Shift(p_BcmBp_B);
+  M = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
+      density, r, l, unit_vec);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
   // Ensure a negative or zero radius or length throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
   // Instead, each parameter is tested with a single bad value and we assume a
@@ -181,7 +190,7 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
 
-  // Test a solid cylinder B whose unit_vector is in the z-direction.
+  // Test a solid cylinder B about Bcm whose unit_vector is in the z-direction.
   Vector3<double> unit_vec(0, 0, 1);
   UnitInertia<double>G_BBo_B =
       UnitInertia<double>::SolidCylinder(r, l, unit_vec);
@@ -191,7 +200,18 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
-  // Test a solid cylinder B with a different unit vector direction.
+  // Test a solid cylinder B about Bp, where Bp is at the center of the circular
+  // end of the cylinder. The position from Bp to Bcm p_BpBcm_B = 0.5*l*Bz.
+  const Vector3<double> p_BpBcm_B(0, 0, 0.5*l);
+  const UnitInertia<double>G_BBp_B =
+      UnitInertia<double>::SolidCylinderAboutEnd(r, l);
+  M_expected = SpatialInertia<double>(mass, p_BpBcm_B, G_BBp_B);
+  M = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
+      density, r, l, unit_vec);
+  EXPECT_TRUE(
+      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Test a solid cylinder B about Bcm with a different unit vector direction.
   unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
   G_BBo_B = UnitInertia<double>::SolidCylinder(r, l, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBo_B);
