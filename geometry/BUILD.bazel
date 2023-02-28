@@ -706,6 +706,7 @@ drake_cc_googletest(
     deps = [
         ":geometry_properties",
         "//common/test_utilities",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 

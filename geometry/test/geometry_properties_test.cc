@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/rgba.h"
 
@@ -183,23 +184,34 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
           ".*The property \\('{}', '{}'\\) exists, but is of a different type. "
           "Requested 'int', but found 'double'",
           group_name, prop_name));
-  DRAKE_EXPECT_NO_THROW(
-      properties.GetPropertyOrDefault<double>(group_name, prop_name, 3));
 
-  // Case: read an existing property.
-  int read_value =
-      properties.GetPropertyOrDefault(group_name, prop_name, default_value);
-  EXPECT_EQ(double_value, read_value);
+  const string invalid_group("invalid_group");
+  const string invalid_prop("invalid_prop");
+  {
+    // A successful lookup should not allocate at all. Guard all of these cases
+    // to confirm behavior.
+    test::LimitMalloc guard({.max_num_allocations = 0});
 
-  // Case: read from valid group, but invalid property.
-  read_value = properties.GetPropertyOrDefault(group_name, "invalid_prop",
-                                               default_value);
-  EXPECT_EQ(default_value, read_value);
+    // Case: explicitly declaring type allows implicit conversions
+    // (int -> double).
+    DRAKE_EXPECT_NO_THROW(
+        properties.GetPropertyOrDefault<double>(group_name, prop_name, 3));
 
-  // Case: read from invalid group.
-  read_value = properties.GetPropertyOrDefault("invalid_group", "invalid_prop",
-                                               default_value);
-  EXPECT_EQ(default_value, read_value);
+    // Case: read an existing property.
+    int read_value =
+        properties.GetPropertyOrDefault(group_name, prop_name, default_value);
+    EXPECT_EQ(double_value, read_value);
+
+    // Case: read from valid group, but invalid property.
+    read_value = properties.GetPropertyOrDefault(group_name, invalid_prop,
+                                                 default_value);
+    EXPECT_EQ(default_value, read_value);
+
+    // Case: read from invalid group.
+    read_value = properties.GetPropertyOrDefault(invalid_group, invalid_prop,
+                                                 default_value);
+    EXPECT_EQ(default_value, read_value);
+  }
 
   // Case: Property exists of different type.
   DRAKE_EXPECT_THROWS_MESSAGE(
