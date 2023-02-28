@@ -616,6 +616,58 @@ void TestSocpDuplicatedVariable1(
     EXPECT_NEAR(4 * x_sol(0) * x_sol(0) + 3 * x_sol(1) * x_sol(1), 1, tol);
   }
 }
+
+void TestSocpDuplicatedVariable2(
+    const SolverInterface& solver,
+    const std::optional<SolverOptions>& solver_options, double tol) {
+  MathematicalProgram prog;
+  auto dummy = prog.NewContinuousVariables<2>();
+  auto x = prog.NewContinuousVariables<2>();
+  // A * [x(0), x(1), x(0), x(1)] = [1; 2x(0); 3x(1)]
+  Eigen::Matrix<double, 3, 4> A;
+  // clang-format off
+  A << 1, 1, 0, -1, 0,
+       0, 3, 0, -1, 0,
+       0, 2, 2, -2, 1;
+  // clang-format on
+  prog.AddLorentzConeConstraint(A, Eigen::Vector3d::Zero(), {x, x});
+  prog.AddLinearCost(-x(0) - x(1));
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, solver_options, &result);
+    EXPECT_TRUE(result.is_success());
+    const auto x_sol = result.GetSolution(x);
+    // This expected solution is obtained by solving the equation
+    // 4x0²+9x1² = 1
+    // x+y= -sqrt(13)/6
+    // where x+y=-sqrt(13)/6 is obtained from the inequality
+    // (4x0²+9x1²) * (1/4 + 1/9) >= (x+y)²
+    // (4x0²+9x1²) * (1/4 + 1/9) <= (1/4 + 1/9) = 13 / 36 = (sqrt(13)/6)²
+    Eigen::Vector2d x_expected(-3 * std::sqrt(13) / 26,
+                               -4 * std::sqrt(13) / 78);
+    EXPECT_TRUE(CompareMatrices(x_sol, x_expected, tol));
+  }
+}
+
+void TestDegenerateSOCP(const SolverInterface& solver) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+
+  // A * [x(0), x(1), x(2), x(1), x(2)] = [x(0); x(1)-x(1); x(2)-x(2)]
+  Eigen::Matrix<double, 3, 5> A;
+  A.setZero();
+  A(0, 0) = 1;
+  A.block<2, 2>(1, 1) = Eigen::Matrix2d::Identity();
+  A.block<2, 2>(1, 3) = -Eigen::Matrix2d::Identity();
+  prog.AddLorentzConeConstraint(A, Eigen::Vector3d::Zero(), {x, x.tail<2>()});
+  if (solver.available()) {
+    MathematicalProgramResult result;
+    solver.Solve(prog, std::nullopt, std::nullopt, &result);
+    EXPECT_TRUE(result.is_success());
+    const auto x_sol = result.GetSolution(x);
+    EXPECT_GE(x_sol(0), 0);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

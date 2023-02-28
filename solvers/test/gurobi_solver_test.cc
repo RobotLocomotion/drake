@@ -304,6 +304,11 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable1) {
   TestSocpDuplicatedVariable1(solver, std::nullopt, 1E-6);
 }
 
+GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
+  GurobiSolver solver;
+  TestSocpDuplicatedVariable1(solver, std::nullopt, 1E-6);
+}
+
 GTEST_TEST(GurobiTest, MultipleThreadsSharingEnvironment) {
   // Running multiple threads of GurobiSolver, they share the same GRBenv
   // which is created when acquiring the Gurobi license in the main function.
@@ -662,6 +667,13 @@ GTEST_TEST(GurobiTest, SOCPDualSolution2) {
     // price is 0.
     EXPECT_TRUE(CompareMatrices(result.GetDualSolution(constraint2),
                                 Vector1d(0), 1e-8));
+  }
+}
+
+GTEST_TEST(GurobiTest, TestDegenerateSOCP) {
+  GurobiSolver solver;
+  if (solver.is_available()) {
+    TestDegenerateSOCP(solver);
   }
 }
 

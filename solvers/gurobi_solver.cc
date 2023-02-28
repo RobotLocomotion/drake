@@ -490,6 +490,9 @@ int AddSecondOrderConeConstraints(
   DRAKE_ASSERT(second_order_cone_constraints.size() ==
                second_order_cone_new_variable_indices.size());
   int second_order_cone_count = 0;
+  int num_gurobi_vars;
+  int error = GRBgetintattr(model, "NumVars", &num_gurobi_vars);
+  DRAKE_ASSERT(!error);
   for (const auto& binding : second_order_cone_constraints) {
     const auto& A = binding.evaluator()->A();
     const auto& b = binding.evaluator()->b();
@@ -511,46 +514,25 @@ int AddSecondOrderConeConstraints(
     // z - A*x will be written as M * [x; z], where M = [-A I].
     // Gurobi expects M in compressed sparse row format, so we will first find
     // out the non-zero entries in each row of M.
-    // M_rows_col[i] stores the column index of non-zero entries in M.row(i)
-    std::vector<std::vector<int>> M_rows_col(num_z);
-    // M_rows_val[i] stores the value of non-zero entries in M.row(i).
-    std::vector<std::vector<double>> M_rows_val(num_z);
-    for (int i = 0; i < num_z; ++i) {
-      M_rows_val[i].reserve(num_x + 1);
-      M_rows_col[i].reserve(num_x + 1);
-    }
-    for (int i = 0; i < num_x; ++i) {
-      // The entries are from -A.
+    std::vector<Eigen::Triplet<double>> M_triplets;
+    M_triplets.reserve(A.nonZeros() + num_z);
+    for (int i = 0; i < A.outerSize(); ++i) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(A, i); it; ++it) {
-        M_rows_col[it.row()].push_back(xz_indices[it.col()]);
-        M_rows_val[it.row()].push_back(-it.value());
+        M_triplets.emplace_back(it.row(), xz_indices[it.col()], -it.value());
       }
     }
     for (int i = 0; i < num_z; ++i) {
-      // The entries of identity matrix.
-      M_rows_col[i].push_back(xz_indices[num_x + i]);
-      M_rows_val[i].push_back(1.0);
+      M_triplets.emplace_back(i, xz_indices[num_x + i], 1);
     }
-    // M_val, M_beg, M_ind stores M in compressed sparse row format.
-    std::vector<double> M_val;
-    M_val.reserve(A.nonZeros() + num_z);
-    std::vector<int> M_beg(num_z + 1);
-    std::vector<int> M_ind;
-    M_ind.reserve(A.nonZeros() + num_z);
-    int M_nonzero_count = 0;
-    for (int i = 0; i < num_z; ++i) {
-      M_beg[i] = M_nonzero_count;
-      M_val.insert(M_val.end(), M_rows_val[i].begin(), M_rows_val[i].end());
-      M_ind.insert(M_ind.end(), M_rows_col[i].begin(), M_rows_col[i].end());
-      M_nonzero_count += static_cast<int>(M_rows_val[i].size());
-    }
-    M_beg[num_z] = M_nonzero_count;
+
+    Eigen::SparseMatrix<double, Eigen::RowMajor> M(num_z, num_gurobi_vars);
+    M.setFromTriplets(M_triplets.begin(), M_triplets.end());
 
     std::vector<char> sense(num_z, GRB_EQUAL);
 
-    int error = GRBaddconstrs(model, num_z, M_nonzero_count, M_beg.data(),
-                              M_ind.data(), M_val.data(), sense.data(),
-                              const_cast<double*>(b.data()), nullptr);
+    error = GRBaddconstrs(model, num_z, M.nonZeros(), M.outerIndexPtr(),
+                          M.innerIndexPtr(), M.valuePtr(), sense.data(),
+                          const_cast<double*>(b.data()), nullptr);
     DRAKE_ASSERT(!error);
     *num_gurobi_linear_constraints += num_z;
 
