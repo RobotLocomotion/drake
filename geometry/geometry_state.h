@@ -161,14 +161,7 @@ class GeometryState {
   }
 
   /** Implementation of SceneGraphInspector::GetAllGeometryIds().  */
-  std::vector<GeometryId> GetAllGeometryIds() const {
-    std::vector<GeometryId> ids;
-    ids.reserve(geometries_.size());
-    for (const auto& id_geometry_pair : geometries_) {
-      ids.push_back(id_geometry_pair.first);
-    }
-    return ids;
-  }
+  std::vector<GeometryId> GetAllGeometryIds() const;
 
   /** Implementation of SceneGraphInspector::GetGeometryIds().  */
   std::unordered_set<GeometryId> GetGeometryIds(
