@@ -51,6 +51,7 @@ struct ostream_formatter : fmt::formatter<std::string_view> {
 }  // namespace drake
 
 // Formatter specialization for drake::fmt_streamed.
+#ifndef DRAKE_DOXYGEN_CXX
 #if FMT_VERSION < 90000
 namespace fmt {
 template <typename T>
@@ -64,3 +65,4 @@ struct formatter<drake::internal::streamed_ref<T>> : drake::ostream_formatter {
 };
 }  // namespace fmt
 #endif  // FMT_VERSION
+#endif  // DRAKE_DOXYGEN_CXX
