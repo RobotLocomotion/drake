@@ -68,8 +68,9 @@ struct GraphOfConvexSetsOptions {
 
   /** Optional solver options for the rounded problems.
   If not set, solver_options is used.
-  For instance, one might want to set lower tolerances for running
-  the relaxed problem and higher tolerances for final solves during rounding. */
+  For instance, one might want to set tighter (i.e., lower) tolerances for
+  running the relaxed problem and looser (i.e., higher) tolerances for final
+  solves during rounding. */
   std::optional<solvers::SolverOptions> rounding_solver_options{std::nullopt};
 };
 

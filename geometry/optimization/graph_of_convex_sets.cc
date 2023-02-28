@@ -625,19 +625,13 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
                                 const GraphOfConvexSetsOptions& options,
                                 bool rounding) {
   MathematicalProgramResult result;
+  auto solver_options = (rounding && options.rounding_solver_options)
+                            ? options.rounding_solver_options
+                            : options.solver_options;
   if (options.solver) {
-    options.solver->Solve(
-        prog, {},
-        (rounding && options.rounding_solver_options != std::nullopt)
-            ? options.rounding_solver_options
-            : options.solver_options,
-        &result);
+    options.solver->Solve(prog, {}, solver_options, &result);
   } else {
-    result = solvers::Solve(
-        prog, {},
-        (rounding && options.rounding_solver_options != std::nullopt)
-            ? options.rounding_solver_options
-            : options.solver_options);
+    result = solvers::Solve(prog, {}, solver_options);
   }
   return result;
 }
@@ -1069,7 +1063,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     // prevent the projection back into the Xᵤ, then we prefer to return NaN.
     if (sum_phi < 100.0 * std::numeric_limits<double>::epsilon()) {
       x_v = VectorXd::Constant(v->ambient_dimension(),
-                                std::numeric_limits<double>::quiet_NaN());
+                               std::numeric_limits<double>::quiet_NaN());
     } else if (options.convex_relaxation) {
       x_v /= sum_phi;
     }
