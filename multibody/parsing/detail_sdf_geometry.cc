@@ -596,7 +596,7 @@ std::optional<CoulombFriction<double>> MakeCoulombFrictionFromSdfCollisionOde(
   std::optional<const double> dynamic_friction =
       GetChildElementValue<double>(diagnostic,
           ode_element, "mu2", default_friction().dynamic_friction());
-  if (!static_friction.has_value()) return std::nullopt;
+  if (!dynamic_friction.has_value()) return std::nullopt;
 
   return CoulombFriction<double>(*static_friction, *dynamic_friction);
 }
