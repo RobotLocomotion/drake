@@ -87,10 +87,9 @@ class SceneGraphInspector {
    (including the world frame).  */
   int num_frames() const;
 
-  /** Returns all of the frame ids in the scene graph. The order is not
-   guaranteed; but it will be consistent across invocations as long as there are
-   no changes to the topology. The ids includes the world frame's id.  */
-  typename std::vector<FrameId> GetAllFrameIds() const;
+  /** Returns all of the frame ids in the scene graph. The order is guaranteed
+   to be stable and consistent. The ids includes the world frame's id.  */
+  std::vector<FrameId> GetAllFrameIds() const;
 
   /** Reports the id for the world frame.  */
   FrameId world_frame_id() const {
@@ -101,11 +100,9 @@ class SceneGraphInspector {
   /** Reports the _total_ number of geometries in the scene graph.  */
   int num_geometries() const;
 
-  /** Returns the set of all ids for registered geometries. The order is _not_
-   guaranteed to have any particular meaning. But the order is
-   guaranteed to remain fixed until a topological change is made (e.g., removal
-   or addition of geometry/frames).  */
-  const std::vector<GeometryId> GetAllGeometryIds() const;
+  /** Returns the set of all ids for registered geometries. The order is
+   guaranteed to be stable and consistent.  */
+  std::vector<GeometryId> GetAllGeometryIds() const;
 
   /** Returns the geometry ids that are *implied* by the given GeometrySet and
    `role`. Remember that a GeometrySet can reference a FrameId in place of the
@@ -231,6 +228,7 @@ class SceneGraphInspector {
   /** Returns geometry ids that have been registered directly to the frame
    indicated by `frame_id`. If a `role` is provided, only geometries with that
    role assigned will be returned, otherwise all geometries will be returned.
+   The order of the ids is guaranteed to be stable and consistent.
    @param frame_id    The id of the frame in question.
    @param role  The requested role; if omitted, all geometries registered to the
                 frame are returned.
@@ -408,7 +406,8 @@ class SceneGraphInspector {
            geometry.  */
   bool IsDeformableGeometry(GeometryId geometry_id) const;
 
-  /** Returns all geometry ids that correspond to deformable geometries. */
+  /** Returns all geometry ids that correspond to deformable geometries. The
+   order is guaranteed to be stable and consistent.  */
   std::vector<GeometryId> GetAllDeformableGeometryIds() const;
 
   /** Reports true if the two geometries with given ids `geometry_id1` and
