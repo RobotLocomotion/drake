@@ -19,6 +19,8 @@ references. It's purpose is to serve as planner-specific syntactic sugar for
 operating on a MultibodyPlant. For other purposes (e.g., simulation), users
 should generally prefer to just use a Diagram, instead.
 
+Use RobotDiagramBuilder to construct a RobotDiagram.
+
 @tparam_default_scalar
 
 @ingroup planning_infrastructure */
