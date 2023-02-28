@@ -232,7 +232,7 @@ class ExpressionAdd : public ExpressionCell {
   /** Constructs ExpressionAdd from @p constant_term and @p term_to_coeff_map.
    */
   ExpressionAdd(double constant,
-                const std::map<Expression, double>& expr_to_coeff_map);
+                std::map<Expression, double> expr_to_coeff_map);
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -288,9 +288,10 @@ class ExpressionAddFactory {
    * this method flips it into -c0 - c1 * t1 - ... - cn * tn.
    * @returns *this.
    */
-  ExpressionAddFactory& Negate();
+  ExpressionAddFactory&& Negate() &&;
+
   /** Returns a symbolic expression. */
-  [[nodiscard]] Expression GetExpression() const;
+  [[nodiscard]] Expression GetExpression() &&;
 
  private:
   /* Adds a constant @p constant to this factory.
@@ -336,7 +337,7 @@ class ExpressionMul : public ExpressionCell {
  public:
   /** Constructs ExpressionMul from @p constant and @p base_to_exponent_map. */
   ExpressionMul(double constant,
-                const std::map<Expression, Expression>& base_to_exponent_map);
+                std::map<Expression, Expression> base_to_exponent_map);
   void HashAppendDetail(DelegatingHasher*) const override;
   [[nodiscard]] Variables GetVariables() const override;
   [[nodiscard]] bool EqualTo(const ExpressionCell& e) const override;
@@ -393,14 +394,16 @@ class ExpressionMulFactory {
   void Add(const ExpressionMul& ptr);
   /** Assigns a factory from an ExpressionMul.  */
   ExpressionMulFactory& operator=(const ExpressionMul& ptr);
+
   /** Negates the expressions in factory.
    * If it represents c0 * p1 * ... * pn,
    * this method flips it into -c0 * p1 * ... * pn.
    * @returns *this.
    */
-  ExpressionMulFactory& Negate();
+  ExpressionMulFactory&& Negate() &&;
+
   /** Returns a symbolic expression. */
-  [[nodiscard]] Expression GetExpression() const;
+  [[nodiscard]] Expression GetExpression() &&;
 
  private:
   /* Adds constant to this factory.

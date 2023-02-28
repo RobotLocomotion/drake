@@ -131,7 +131,7 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     for (const pair<const Expression, double>& p : m1) {
       fac.AddExpression(ExpandMultiplication(p.second, p.first, e2));
     }
-    return fac.GetExpression();
+    return std::move(fac).GetExpression();
   }
   if (is_addition(e2)) {
     //   e1 * (c0 + c1 * e_{2,1} + ... + c_n * e_{2, n})
@@ -143,7 +143,7 @@ Expression ExpandMultiplication(const Expression& e1, const Expression& e2) {
     for (const pair<const Expression, double>& p : m1) {
       fac.AddExpression(ExpandMultiplication(e1, p.second, p.first));
     }
-    return fac.GetExpression();
+    return std::move(fac).GetExpression();
   }
   if (is_division(e1)) {
     const Expression& e1_1{get_first_argument(e1)};
@@ -434,11 +434,11 @@ Expression ExpressionNaN::Differentiate(const Variable&) const {
 ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
 
 ExpressionAdd::ExpressionAdd(const double constant,
-                             const map<Expression, double>& expr_to_coeff_map)
+                             map<Expression, double> expr_to_coeff_map)
     : ExpressionCell{ExpressionKind::Add,
                      determine_polynomial(expr_to_coeff_map), false},
       constant_(constant),
-      expr_to_coeff_map_(expr_to_coeff_map) {
+      expr_to_coeff_map_(std::move(expr_to_coeff_map)) {
   DRAKE_ASSERT(!expr_to_coeff_map_.empty());
 }
 
@@ -522,7 +522,7 @@ Expression ExpressionAdd::Expand() const {
     fac.AddExpression(
         ExpandMultiplication(e_i.is_expanded() ? e_i : e_i.Expand(), c_i));
   }
-  return fac.GetExpression();
+  return std::move(fac).GetExpression();
 }
 
 Expression ExpressionAdd::EvaluatePartial(const Environment& env) const {
@@ -551,7 +551,7 @@ Expression ExpressionAdd::Differentiate(const Variable& x) const {
   for (const pair<const Expression, double>& p : expr_to_coeff_map_) {
     fac.AddExpression(p.second * p.first.Differentiate(x));
   }
-  return fac.GetExpression();
+  return std::move(fac).GetExpression();
 }
 
 ostream& ExpressionAdd::Display(ostream& os) const {
@@ -645,15 +645,15 @@ ExpressionAddFactory& ExpressionAddFactory::operator=(
   return *this;
 }
 
-ExpressionAddFactory& ExpressionAddFactory::Negate() {
+ExpressionAddFactory&& ExpressionAddFactory::Negate() && {
   constant_ = -constant_;
   for (auto& p : expr_to_coeff_map_) {
     p.second = -p.second;
   }
-  return *this;
+  return std::move(*this);
 }
 
-Expression ExpressionAddFactory::GetExpression() const {
+Expression ExpressionAddFactory::GetExpression() && {
   if (expr_to_coeff_map_.empty()) {
     return Expression{constant_};
   }
@@ -662,7 +662,8 @@ Expression ExpressionAddFactory::GetExpression() const {
     const auto it(expr_to_coeff_map_.cbegin());
     return it->first * it->second;
   }
-  auto result = make_unique<ExpressionAdd>(constant_, expr_to_coeff_map_);
+  auto result =
+      make_unique<ExpressionAdd>(constant_, std::move(expr_to_coeff_map_));
   if (is_expanded_) {
     result->set_expanded();
   }
@@ -715,11 +716,11 @@ void ExpressionAddFactory::AddMap(
 
 ExpressionMul::ExpressionMul(
     const double constant,
-    const map<Expression, Expression>& base_to_exponent_map)
+    map<Expression, Expression> base_to_exponent_map)
     : ExpressionCell{ExpressionKind::Mul,
                      determine_polynomial(base_to_exponent_map), false},
       constant_(constant),
-      base_to_exponent_map_(base_to_exponent_map) {
+      base_to_exponent_map_(std::move(base_to_exponent_map)) {
   DRAKE_ASSERT(!base_to_exponent_map_.empty());
 }
 
@@ -879,9 +880,9 @@ Expression ExpressionMul::Differentiate(const Variable& x) const {
     mul_fac.AddExpression(DifferentiatePow(base, exponent, x));
     mul_fac.AddExpression(pow(base, -exponent));
 
-    add_fac.AddExpression(mul_fac.GetExpression());
+    add_fac.AddExpression(std::move(mul_fac).GetExpression());
   }
-  return add_fac.GetExpression();
+  return std::move(add_fac).GetExpression();
 }
 
 ostream& ExpressionMul::Display(ostream& os) const {
@@ -977,12 +978,12 @@ ExpressionMulFactory& ExpressionMulFactory::operator=(
   return *this;
 }
 
-ExpressionMulFactory& ExpressionMulFactory::Negate() {
+ExpressionMulFactory&& ExpressionMulFactory::Negate() && {
   constant_ = -constant_;
-  return *this;
+  return std::move(*this);
 }
 
-Expression ExpressionMulFactory::GetExpression() const {
+Expression ExpressionMulFactory::GetExpression() && {
   if (base_to_exponent_map_.empty()) {
     return Expression{constant_};
   }
@@ -991,7 +992,8 @@ Expression ExpressionMulFactory::GetExpression() const {
     const auto it(base_to_exponent_map_.cbegin());
     return pow(it->first, it->second);
   }
-  auto result = make_unique<ExpressionMul>(constant_, base_to_exponent_map_);
+  auto result =
+      make_unique<ExpressionMul>(constant_, std::move(base_to_exponent_map_));
   if (is_expanded_) {
     result->set_expanded();
   }
@@ -1105,7 +1107,7 @@ class DivExpandVisitor {
          get_expr_to_coeff_map_in_addition(e)) {
       factory.AddExpression(p.second / n * p.first);
     }
-    return factory.GetExpression();
+    return std::move(factory).GetExpression();
   }
   [[nodiscard]] Expression VisitMultiplication(const Expression& e,
                                                const double n) const {
