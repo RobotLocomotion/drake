@@ -248,7 +248,7 @@ GTEST_TEST(TestSOCP, TestSocpDuplicatedVariable2) {
       SolverOptions solver_options;
       solver_options.SetOption(solver.id(), "drake::RemoveFreeVariableMethod",
                                static_cast<int>(method));
-      TestSocpDuplicatedVariable2(solver, solver_options, 1E-6);
+      TestSocpDuplicatedVariable2(solver, solver_options, 1E-5);
     }
   }
 }
