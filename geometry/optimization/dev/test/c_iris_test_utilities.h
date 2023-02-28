@@ -55,11 +55,12 @@ class CspaceFreePolytopeTester {
     return cspace_free_polytope_->s_upper_minus_s_;
   }
 
-  std::vector<PlaneSeparatesGeometries>& plane_geometries() const {
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries>&
+  get_mutable_plane_geometries() const {
     return cspace_free_polytope_->get_mutable_plane_geometries();
   }
 
-  const symbolic::Variables s_set() const {
+  [[nodiscard]] const symbolic::Variables get_s_set() const {
     return cspace_free_polytope_->get_s_set();
   }
 
@@ -162,20 +163,26 @@ class CspaceFreePathTester {
                                              q_star, maximum_path_degree,
                                              options)} {}
 
-  const CspaceFreePath& cspace_free_path() const { return *cspace_free_path_; }
+  [[nodiscard]] const CspaceFreePath& cspace_free_path() const {
+    return *cspace_free_path_;
+  }
 
-  const symbolic::Variable& get_mu() const { return cspace_free_path_->mu_; }
+  [[nodiscard]] const symbolic::Variable& get_mu() const {
+    return cspace_free_path_->mu_;
+  }
 
-  const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& get_path()
-      const {
+  [[nodiscard]] const std::unordered_map<symbolic::Variable,
+                                         symbolic::Polynomial>&
+  get_path() const {
     return cspace_free_path_->path_;
   }
 
-  const symbolic::Variables s_set() const {
+  [[nodiscard]] const symbolic::Variables& get_s_set() const {
     return cspace_free_path_->get_s_set();
   }
 
-  std::vector<PlaneSeparatesGeometries>& plane_geometries() const {
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries>&
+  get_mutable_plane_geometries() {
     return cspace_free_path_->get_mutable_plane_geometries();
   }
 

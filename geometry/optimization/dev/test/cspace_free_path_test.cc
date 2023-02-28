@@ -23,7 +23,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
     // check that the path map is properly instantiated
-    for (const auto& s_set_itr : tester.s_set()) {
+    for (const auto& s_set_itr : tester.get_s_set()) {
       EXPECT_GT(tester.get_path().count(s_set_itr), 0);
       const symbolic::Polynomial& poly{tester.get_path().at(s_set_itr)};
       EXPECT_EQ(poly.indeterminates().size(), 1);
@@ -43,7 +43,8 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
   auto find_free_polytope_plane_geometry_with_plane_index =
       [&polytope_tester](
           int plane_index) -> std::optional<PlaneSeparatesGeometries> {
-    for (const auto& plane_geometry : polytope_tester.plane_geometries()) {
+    for (const auto& plane_geometry :
+         polytope_tester.get_mutable_plane_geometries()) {
       if (plane_geometry.plane_index == plane_index) {
         return std::optional{plane_geometry};
       }
@@ -56,12 +57,13 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
     CspaceFreePathTester tester(plant_, scene_graph_,
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
-    EXPECT_EQ(tester.plane_geometries().size(),
+    EXPECT_EQ(tester.get_mutable_plane_geometries().size(),
               tester.cspace_free_path().separating_planes().size());
     const symbolic::Variables mu_indets{tester.get_mu()};
     const symbolic::Variables y_slack{tester.cspace_free_path().y_slack()};
 
-    for (const auto& free_path_plane_geometry : tester.plane_geometries()) {
+    for (const auto& free_path_plane_geometry :
+         tester.get_mutable_plane_geometries()) {
       const auto& plane =
           tester.cspace_free_path()
               .separating_planes()[free_path_plane_geometry.plane_index];
@@ -119,10 +121,9 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
           auto compute_total_s_degree =
               [&polytope_tester](const symbolic::Polynomial& poly) {
                 int degree{0};
-                for (const auto& [m, c] :
-                     poly.monomial_to_coefficient_map()) {
+                for (const auto& [m, c] : poly.monomial_to_coefficient_map()) {
                   int cur_s_degree{0};
-                  for (const auto& s : polytope_tester.s_set()) {
+                  for (const auto& s : polytope_tester.get_s_set()) {
                     cur_s_degree += m.degree(s);
                   }
                   degree = std::max(degree, cur_s_degree);
