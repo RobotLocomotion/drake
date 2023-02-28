@@ -283,8 +283,7 @@ TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationExprVar) {
   const MatrixX<Expression> M2{V_expr_fixed_.transpose() * M_var_dyn_};
   const MatrixX<Expression> M3{V_expr_dyn_.transpose() * M_var_fixed_};
   const MatrixX<Expression> M4{V_expr_dyn_.transpose() * M_var_dyn_};
-  const string expected{
-      "((y * z) + pow(x, 2))   ((x * y) + (y * w))"};
+  const string expected{"((y * z) + pow(x, 2))   ((x * y) + (y * w))"};
   EXPECT_EQ(to_string(M1), expected);
   EXPECT_EQ(to_string(M2), expected);
   EXPECT_EQ(to_string(M3), expected);
@@ -336,8 +335,7 @@ TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationVarExpr) {
   const MatrixX<Expression> M2{V_var_fixed_.transpose() * M_expr_dyn_};
   const MatrixX<Expression> M3{V_var_dyn_.transpose() * M_expr_fixed_};
   const MatrixX<Expression> M4{V_var_dyn_.transpose() * M_expr_dyn_};
-  const string expected{
-      "((y * z) + pow(x, 2))   ((x * y) + (y * w))"};
+  const string expected{"((y * z) + pow(x, 2))   ((x * y) + (y * w))"};
   EXPECT_EQ(to_string(M1), expected);
   EXPECT_EQ(to_string(M2), expected);
   EXPECT_EQ(to_string(M3), expected);
@@ -385,8 +383,7 @@ TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationExprDouble) {
   const MatrixX<Expression> M2{V_expr_fixed_.transpose() * M_double_dyn_};
   const MatrixX<Expression> M3{V_expr_dyn_.transpose() * M_double_fixed_};
   const MatrixX<Expression> M4{V_expr_dyn_.transpose() * M_double_dyn_};
-  const string expected{
-      "    (x + 3 * y) (2 * x + 4 * y)"};
+  const string expected{"    (x + 3 * y) (2 * x + 4 * y)"};
   EXPECT_EQ(to_string(M1), expected);
   EXPECT_EQ(to_string(M2), expected);
   EXPECT_EQ(to_string(M3), expected);
@@ -486,8 +483,7 @@ TEST_F(SymbolicMixingScalarTypesTest, VectorMatrixMultiplicationVarDouble) {
   const MatrixX<Expression> M2{V_var_fixed_.transpose() * M_double_dyn_};
   const MatrixX<Expression> M3{V_var_dyn_.transpose() * M_double_fixed_};
   const MatrixX<Expression> M4{V_var_dyn_.transpose() * M_double_dyn_};
-  const string expected{
-      "    (x + 3 * y) (2 * x + 4 * y)"};
+  const string expected{"    (x + 3 * y) (2 * x + 4 * y)"};
   EXPECT_EQ(to_string(M1), expected);
   EXPECT_EQ(to_string(M2), expected);
   EXPECT_EQ(to_string(M3), expected);

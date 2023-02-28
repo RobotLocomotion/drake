@@ -41,11 +41,12 @@ size_t get_next_id(const Variable::Type type) {
 }  // namespace
 
 Variable::Variable(string name, const Type type)
-    : id_{get_next_id(type)},
-      name_{make_shared<const string>(move(name))} {
+    : id_{get_next_id(type)}, name_{make_shared<const string>(move(name))} {
   DRAKE_ASSERT(id_ > 0);
 }
-string Variable::get_name() const { return *name_; }
+string Variable::get_name() const {
+  return *name_;
+}
 string Variable::to_string() const {
   ostringstream oss;
   oss << *this;

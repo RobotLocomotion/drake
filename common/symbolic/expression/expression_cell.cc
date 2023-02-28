@@ -48,7 +48,9 @@ bool is_integer(const double v) {
   return modf(v, &intpart) == 0.0;
 }
 
-bool is_positive_integer(const double v) { return (v > 0) && is_integer(v); }
+bool is_positive_integer(const double v) {
+  return (v > 0) && is_integer(v);
+}
 
 bool is_non_negative_integer(const double v) {
   return (v >= 0) && is_integer(v);
@@ -335,7 +337,9 @@ void ExpressionVar::HashAppendDetail(DelegatingHasher* hasher) const {
   hash_append(*hasher, var_);
 }
 
-Variables ExpressionVar::GetVariables() const { return {get_variable()}; }
+Variables ExpressionVar::GetVariables() const {
+  return {get_variable()};
+}
 
 bool ExpressionVar::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
@@ -365,7 +369,9 @@ double ExpressionVar::Evaluate(const Environment& env) const {
   throw runtime_error{oss.str()};
 }
 
-Expression ExpressionVar::Expand() const { return Expression{var_}; }
+Expression ExpressionVar::Expand() const {
+  return Expression{var_};
+}
 
 Expression ExpressionVar::EvaluatePartial(const Environment& env) const {
   const Environment::const_iterator it{env.find(var_)};
@@ -390,14 +396,18 @@ Expression ExpressionVar::Differentiate(const Variable& x) const {
   return Expression::Zero();
 }
 
-ostream& ExpressionVar::Display(ostream& os) const { return os << var_; }
+ostream& ExpressionVar::Display(ostream& os) const {
+  return os << var_;
+}
 
 ExpressionNaN::ExpressionNaN()
     : ExpressionCell{ExpressionKind::NaN, false, false} {}
 
 void ExpressionNaN::HashAppendDetail(DelegatingHasher*) const {}
 
-Variables ExpressionNaN::GetVariables() const { return Variables{}; }
+Variables ExpressionNaN::GetVariables() const {
+  return Variables{};
+}
 
 bool ExpressionNaN::EqualTo(const ExpressionCell& e) const {
   // Expression::EqualTo guarantees the following assertion.
@@ -431,7 +441,9 @@ Expression ExpressionNaN::Differentiate(const Variable&) const {
   throw runtime_error("NaN is detected during differentiation.");
 }
 
-ostream& ExpressionNaN::Display(ostream& os) const { return os << "NaN"; }
+ostream& ExpressionNaN::Display(ostream& os) const {
+  return os << "NaN";
+}
 
 ExpressionAdd::ExpressionAdd(const double constant,
                              map<Expression, double> expr_to_coeff_map)
@@ -595,15 +607,15 @@ ostream& ExpressionAdd::DisplayTerm(ostream& os, const bool print_plus,
 
 ExpressionAddFactory::ExpressionAddFactory(
     const double constant, map<Expression, double> expr_to_coeff_map)
-    : is_expanded_(false), constant_{constant},
+    : is_expanded_(false),
+      constant_{constant},
       expr_to_coeff_map_{std::move(expr_to_coeff_map)} {
   // Note that we set is_expanded_ to false to be conservative. We could imagine
   // inspecting the expr_to_coeff_map to compute a more precise value, but it's
   // not clear that doing so would improve our overall performance.
 }
 
-ExpressionAddFactory::ExpressionAddFactory(
-    const ExpressionAdd& add)
+ExpressionAddFactory::ExpressionAddFactory(const ExpressionAdd& add)
     : ExpressionAddFactory{add.get_constant(), add.get_expr_to_coeff_map()} {
   is_expanded_ = add.is_expanded();
 }
@@ -688,9 +700,9 @@ void ExpressionAddFactory::AddTerm(const double coeff, const Expression& term) {
       // TODO(soonho-tri): The following operation is not sound since it cancels
       // `term` which might contain 0/0 problems.
       expr_to_coeff_map_.erase(it);
-     // Note that we leave is_expanded_ unchanged here. We could imagine
-     // inspecting the new expr_to_coeff_map_ to compute a more precise value,
-     // but it's not clear that doing so would improve our overall performance.
+      // Note that we leave is_expanded_ unchanged here. We could imagine
+      // inspecting the new expr_to_coeff_map_ to compute a more precise value,
+      // but it's not clear that doing so would improve our overall performance.
     }
   } else {
     // Case2: term is not found in expr_to_coeff_map_.
@@ -714,9 +726,8 @@ void ExpressionAddFactory::AddMap(
   }
 }
 
-ExpressionMul::ExpressionMul(
-    const double constant,
-    map<Expression, Expression> base_to_exponent_map)
+ExpressionMul::ExpressionMul(const double constant,
+                             map<Expression, Expression> base_to_exponent_map)
     : ExpressionCell{ExpressionKind::Mul,
                      determine_polynomial(base_to_exponent_map), false},
       constant_(constant),
@@ -799,24 +810,23 @@ double ExpressionMul::Evaluate(const Environment& env) const {
 Expression ExpressionMul::Expand() const {
   //   (c * ∏ᵢ pow(bᵢ, eᵢ)).Expand()
   // = c * ExpandMultiplication(∏ ExpandPow(bᵢ.Expand(), eᵢ.Expand()))
-  return accumulate(base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
-                    Expression{constant_},
-                    [](const Expression& init,
-                       const pair<const Expression, Expression>& p) {
-                      const Expression& b_i{p.first};
-                      const Expression& e_i{p.second};
-                      return ExpandMultiplication(
-                          init,
-                          ExpandPow(b_i.is_expanded() ? b_i : b_i.Expand(),
-                                    e_i.is_expanded() ? e_i : e_i.Expand()));
-                    });
+  return accumulate(
+      base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
+      Expression{constant_},
+      [](const Expression& init, const pair<const Expression, Expression>& p) {
+        const Expression& b_i{p.first};
+        const Expression& e_i{p.second};
+        return ExpandMultiplication(
+            init, ExpandPow(b_i.is_expanded() ? b_i : b_i.Expand(),
+                            e_i.is_expanded() ? e_i : e_i.Expand()));
+      });
 }
 
 Expression ExpressionMul::EvaluatePartial(const Environment& env) const {
   return accumulate(base_to_exponent_map_.begin(), base_to_exponent_map_.end(),
                     Expression{constant_},
                     [&env](const Expression& init,
-                         const pair<const Expression, Expression>& p) {
+                           const pair<const Expression, Expression>& p) {
                       return init * pow(p.first.EvaluatePartial(env),
                                         p.second.EvaluatePartial(env));
                     });
@@ -920,7 +930,8 @@ ostream& ExpressionMul::DisplayTerm(ostream& os, const bool print_mul,
 
 ExpressionMulFactory::ExpressionMulFactory(
     const double constant, map<Expression, Expression> base_to_exponent_map)
-    : is_expanded_{false}, constant_{constant},
+    : is_expanded_{false},
+      constant_{constant},
       base_to_exponent_map_{std::move(base_to_exponent_map)} {}
 
 ExpressionMulFactory::ExpressionMulFactory(
@@ -932,8 +943,7 @@ ExpressionMulFactory::ExpressionMulFactory(
 }
 
 ExpressionMulFactory::ExpressionMulFactory(const ExpressionMul& mul)
-    : ExpressionMulFactory{mul.get_constant(),
-                           mul.get_base_to_exponent_map()} {
+    : ExpressionMulFactory{mul.get_constant(), mul.get_base_to_exponent_map()} {
   is_expanded_ = mul.is_expanded();
 }
 
@@ -1340,7 +1350,9 @@ ostream& ExpressionAbs::Display(ostream& os) const {
   return os << "abs(" << get_argument() << ")";
 }
 
-double ExpressionAbs::DoEvaluate(const double v) const { return std::fabs(v); }
+double ExpressionAbs::DoEvaluate(const double v) const {
+  return std::fabs(v);
+}
 
 ExpressionExp::ExpressionExp(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Exp, e, false, e.is_expanded()} {}
@@ -1368,7 +1380,9 @@ ostream& ExpressionExp::Display(ostream& os) const {
   return os << "exp(" << get_argument() << ")";
 }
 
-double ExpressionExp::DoEvaluate(const double v) const { return std::exp(v); }
+double ExpressionExp::DoEvaluate(const double v) const {
+  return std::exp(v);
+}
 
 ExpressionSqrt::ExpressionSqrt(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Sqrt, e, false, e.is_expanded()} {}
@@ -1483,7 +1497,9 @@ ostream& ExpressionSin::Display(ostream& os) const {
   return os << "sin(" << get_argument() << ")";
 }
 
-double ExpressionSin::DoEvaluate(const double v) const { return std::sin(v); }
+double ExpressionSin::DoEvaluate(const double v) const {
+  return std::sin(v);
+}
 
 ExpressionCos::ExpressionCos(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cos, e, false, e.is_expanded()} {}
@@ -1511,7 +1527,9 @@ ostream& ExpressionCos::Display(ostream& os) const {
   return os << "cos(" << get_argument() << ")";
 }
 
-double ExpressionCos::DoEvaluate(const double v) const { return std::cos(v); }
+double ExpressionCos::DoEvaluate(const double v) const {
+  return std::cos(v);
+}
 
 ExpressionTan::ExpressionTan(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tan, e, false, e.is_expanded()} {}
@@ -1539,7 +1557,9 @@ ostream& ExpressionTan::Display(ostream& os) const {
   return os << "tan(" << get_argument() << ")";
 }
 
-double ExpressionTan::DoEvaluate(const double v) const { return std::tan(v); }
+double ExpressionTan::DoEvaluate(const double v) const {
+  return std::tan(v);
+}
 
 ExpressionAsin::ExpressionAsin(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Asin, e, false, e.is_expanded()} {}
@@ -1647,7 +1667,9 @@ ostream& ExpressionAtan::Display(ostream& os) const {
   return os << "atan(" << get_argument() << ")";
 }
 
-double ExpressionAtan::DoEvaluate(const double v) const { return std::atan(v); }
+double ExpressionAtan::DoEvaluate(const double v) const {
+  return std::atan(v);
+}
 
 ExpressionAtan2::ExpressionAtan2(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Atan2, e1, e2, false,
@@ -1713,7 +1735,9 @@ ostream& ExpressionSinh::Display(ostream& os) const {
   return os << "sinh(" << get_argument() << ")";
 }
 
-double ExpressionSinh::DoEvaluate(const double v) const { return std::sinh(v); }
+double ExpressionSinh::DoEvaluate(const double v) const {
+  return std::sinh(v);
+}
 
 ExpressionCosh::ExpressionCosh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Cosh, e, false, e.is_expanded()} {}
@@ -1741,7 +1765,9 @@ ostream& ExpressionCosh::Display(ostream& os) const {
   return os << "cosh(" << get_argument() << ")";
 }
 
-double ExpressionCosh::DoEvaluate(const double v) const { return std::cosh(v); }
+double ExpressionCosh::DoEvaluate(const double v) const {
+  return std::cosh(v);
+}
 
 ExpressionTanh::ExpressionTanh(const Expression& e)
     : UnaryExpressionCell{ExpressionKind::Tanh, e, false, e.is_expanded()} {}
@@ -1769,7 +1795,9 @@ ostream& ExpressionTanh::Display(ostream& os) const {
   return os << "tanh(" << get_argument() << ")";
 }
 
-double ExpressionTanh::DoEvaluate(const double v) const { return std::tanh(v); }
+double ExpressionTanh::DoEvaluate(const double v) const {
+  return std::tanh(v);
+}
 
 ExpressionMin::ExpressionMin(const Expression& e1, const Expression& e2)
     : BinaryExpressionCell{ExpressionKind::Min, e1, e2, false,
@@ -1796,10 +1824,9 @@ Expression ExpressionMin::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     const Expression& e1{get_first_argument()};
     const Expression& e2{get_second_argument()};
-    return if_then_else(e1 < e2, e1.Differentiate(x),
-                        if_then_else(
-                            e1 == e2, Expression::NaN(),
-                            e2.Differentiate(x)));
+    return if_then_else(
+        e1 < e2, e1.Differentiate(x),
+        if_then_else(e1 == e2, Expression::NaN(), e2.Differentiate(x)));
   } else {
     return Expression::Zero();
   }
@@ -1839,9 +1866,9 @@ Expression ExpressionMax::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     const Expression& e1{get_first_argument()};
     const Expression& e2{get_second_argument()};
-    return if_then_else(e1 > e2, e1.Differentiate(x),
-                        if_then_else(e1 == e2, Expression::NaN(),
-                                     e2.Differentiate(x)));
+    return if_then_else(
+        e1 > e2, e1.Differentiate(x),
+        if_then_else(e1 == e2, Expression::NaN(), e2.Differentiate(x)));
   } else {
     return Expression::Zero();
   }
@@ -1876,8 +1903,7 @@ Expression ExpressionCeiling::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     const Expression& arg{get_argument()};
     // FYI:  'ceil(x) == floor(x)` is the same as `x % 1 == 0`.
-    return if_then_else(ceil(arg) == floor(arg),
-                        Expression::NaN(),
+    return if_then_else(ceil(arg) == floor(arg), Expression::NaN(),
                         Expression::Zero());
   } else {
     return Expression::Zero();
@@ -1912,8 +1938,7 @@ Expression ExpressionFloor::Differentiate(const Variable& x) const {
   if (GetVariables().include(x)) {
     const Expression& arg{get_argument()};
     // FYI:  'ceil(x) == floor(x)` is the same as `x % 1 == 0`.
-    return if_then_else(ceil(arg) == floor(arg),
-                        Expression::NaN(),
+    return if_then_else(ceil(arg) == floor(arg), Expression::NaN(),
                         Expression::Zero());
   } else {
     return Expression::Zero();
@@ -2000,8 +2025,7 @@ Expression ExpressionIfThenElse::EvaluatePartial(const Environment& env) const {
   for (const pair<const Variable, double>& p : env) {
     subst.emplace(p.first, p.second);
   }
-  return if_then_else(f_cond_.Substitute(subst),
-                      e_then_.EvaluatePartial(env),
+  return if_then_else(f_cond_.Substitute(subst), e_then_.EvaluatePartial(env),
                       e_else_.EvaluatePartial(env));
 }
 
@@ -2021,8 +2045,7 @@ Expression ExpressionIfThenElse::Differentiate(const Variable& x) const {
       return if_then_else(
           get_lhs_expression(f_cond_) == get_rhs_expression(f_cond_),
           Expression::NaN(),
-          if_then_else(f_cond_,
-                       e_then_.Differentiate(x),
+          if_then_else(f_cond_, e_then_.Differentiate(x),
                        e_else_.Differentiate(x)));
     } else {
       // Because we cannot write an expression for whether the condition is
@@ -2097,8 +2120,9 @@ bool ExpressionUninterpretedFunction::Less(const ExpressionCell& e) const {
   }
   return lexicographical_compare(
       arguments_.begin(), arguments_.end(), uf_e.arguments_.begin(),
-      uf_e.arguments_.end(),
-      [](const Expression& e1, const Expression& e2) { return e1.Less(e2); });
+      uf_e.arguments_.end(), [](const Expression& e1, const Expression& e2) {
+        return e1.Less(e2);
+      });
 }
 
 double ExpressionUninterpretedFunction::Evaluate(const Environment&) const {
@@ -2266,8 +2290,8 @@ UnaryExpressionCell& to_unary(Expression* const e) {
 }
 
 bool is_binary(const ExpressionCell& cell) {
-  return (is_division(cell) || is_pow(cell) || is_atan2(cell) ||
-          is_min(cell) || is_max(cell));
+  return (is_division(cell) || is_pow(cell) || is_atan2(cell) || is_min(cell) ||
+          is_max(cell));
 }
 
 const BinaryExpressionCell& to_binary(const Expression& e) {

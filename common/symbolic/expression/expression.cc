@@ -26,9 +26,9 @@ using std::ostream;
 using std::ostringstream;
 using std::pair;
 using std::runtime_error;
-using std::unique_ptr;
 using std::streamsize;
 using std::string;
+using std::unique_ptr;
 using std::vector;
 
 namespace {
@@ -172,7 +172,9 @@ double Expression::Evaluate(RandomGenerator* const random_generator) const {
 Eigen::SparseMatrix<double> Evaluate(
     const Eigen::Ref<const Eigen::SparseMatrix<Expression>>& m,
     const Environment& env) {
-  return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
+  return m.unaryExpr([&env](const Expression& e) {
+    return e.Evaluate(env);
+  });
 }
 
 Expression Expression::EvaluatePartial(const Environment& env) const {
@@ -290,7 +292,9 @@ Expression Expression::operator++(int) {
   return copy;
 }
 
-Expression operator+(const Expression& e) { return e; }
+Expression operator+(const Expression& e) {
+  return e;
+}
 
 void Expression::SubImpl(const Expression& rhs) {
   Expression& lhs = *this;
@@ -816,8 +820,12 @@ const Expression& get_else_expression(const Expression& e) {
   return to_if_then_else(e).get_else_expression();
 }
 
-Expression operator+(const Variable& var) { return Expression{var}; }
-Expression operator-(const Variable& var) { return -Expression{var}; }
+Expression operator+(const Variable& var) {
+  return Expression{var};
+}
+Expression operator-(const Variable& var) {
+  return -Expression{var};
+}
 
 VectorX<Variable> GetVariableVector(
     const Eigen::Ref<const VectorX<Expression>>& evec) {

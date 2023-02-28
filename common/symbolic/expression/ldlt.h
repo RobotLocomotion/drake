@@ -20,21 +20,20 @@ namespace Eigen {
 // Scalar is symbolic::Expression.  We need to list out all of the different
 // matrix sizes that Drake uses symbolically, because we cannot partially
 // specialize a template class template method.
-#define DRAKE_DECLARE_SPECIALIZE_LDLT(SomeMatrix)               \
-template <>                                                     \
-template <>                                                     \
-Eigen::LDLT<SomeMatrix>&                                        \
-Eigen::LDLT<SomeMatrix>::compute<Ref<const SomeMatrix>>(        \
-    const EigenBase<Ref<const SomeMatrix>>&);                   \
-template <>                                                     \
-template <>                                                     \
-inline                                                          \
-Eigen::LDLT<SomeMatrix>&                                        \
-Eigen::LDLT<SomeMatrix>::compute<SomeMatrix>(                   \
-    const EigenBase<SomeMatrix>& a) {                           \
-  const Ref<const SomeMatrix> ref_a(a.derived());               \
-  return compute(ref_a);                                        \
-}                                                               \
+#define DRAKE_DECLARE_SPECIALIZE_LDLT(SomeMatrix)          \
+  template <>                                              \
+  template <>                                              \
+  Eigen::LDLT<SomeMatrix>&                                 \
+  Eigen::LDLT<SomeMatrix>::compute<Ref<const SomeMatrix>>( \
+      const EigenBase<Ref<const SomeMatrix>>&);            \
+  template <>                                              \
+  template <>                                              \
+  inline Eigen::LDLT<SomeMatrix>&                          \
+  Eigen::LDLT<SomeMatrix>::compute<SomeMatrix>(            \
+      const EigenBase<SomeMatrix>& a) {                    \
+    const Ref<const SomeMatrix> ref_a(a.derived());        \
+    return compute(ref_a);                                 \
+  }
 
 DRAKE_DECLARE_SPECIALIZE_LDLT(drake::MatrixX<drake::symbolic::Expression>)
 DRAKE_DECLARE_SPECIALIZE_LDLT(drake::MatrixUpTo6<drake::symbolic::Expression>)
