@@ -35,8 +35,7 @@ class Variable {
   typedef size_t Id;
 
   /** Supported types of symbolic variables. */
-  // TODO(soonho-tri): refines the following descriptions.
-  enum class Type {
+  enum class Type : uint8_t {
     CONTINUOUS,       ///< A CONTINUOUS variable takes a `double` value.
     INTEGER,          ///< An INTEGER variable takes an `int` value.
     BINARY,           ///< A BINARY variable takes an integer value from {0, 1}.
@@ -75,7 +74,7 @@ class Variable {
    *  the default constructor. */
   [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
   [[nodiscard]] Id get_id() const { return id_; }
-  [[nodiscard]] Type get_type() const { return type_; }
+  [[nodiscard]] Type get_type() const { return static_cast<Type>(id_ >> 56); }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
 
@@ -95,18 +94,17 @@ class Variable {
                           const Variable& item) noexcept {
     using drake::hash_append;
     hash_append(hasher, item.id_);
-    // We do not send the type_ or name_ to the hasher, because the id_ is
-    // already unique across all instances, and two Variable instances with
-    // matching id_ will always have identical type_ and name_.
+    // We do not send the name_ to the hasher, because the id_ is already unique
+    // across all instances, so two Variable instances with matching id_ will
+    // always have identical names.
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Variable& var);
 
  private:
-  // Produces a unique ID for a variable.
-  static Id get_next_id();
-  Id id_{};  // Unique identifier.
-  Type type_{Type::CONTINUOUS};
+  // Unique identifier for this Varible.
+  // The high-order byte stores the Type.
+  Id id_{};
 
   // Variable class has shared_ptr<const string> instead of string to be
   // drake::test::IsMemcpyMovable.
