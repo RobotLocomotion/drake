@@ -23,7 +23,9 @@ template <typename T>
 std::vector<FrameId> SceneGraphInspector<T>::GetAllFrameIds() const {
   DRAKE_DEMAND(state_ != nullptr);
   typename GeometryState<T>::FrameIdRange range = state_->get_frame_ids();
-  return std::vector<FrameId>(range.begin(), range.end());
+  std::vector<FrameId> frame_ids(range.begin(), range.end());
+  std::sort(frame_ids.begin(), frame_ids.end());
+  return frame_ids;
 }
 
 template <typename T>
