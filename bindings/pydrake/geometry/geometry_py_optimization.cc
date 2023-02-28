@@ -393,10 +393,12 @@ void DefineGeometryOptimization(py::module m) {
                   return &(self.rounding_solver_options);
                 },
                 py_rvp::reference_internal),
-            py::cpp_function([](GraphOfConvexSetsOptions& self,
-                                 solvers::SolverOptions rounding_solver_options) {
-              self.rounding_solver_options = std::move(rounding_solver_options);
-            }),
+            py::cpp_function(
+                [](GraphOfConvexSetsOptions& self,
+                    solvers::SolverOptions rounding_solver_options) {
+                  self.rounding_solver_options =
+                      std::move(rounding_solver_options);
+                }),
             cls_doc.rounding_solver_options.doc)
         .def("__repr__", [](const GraphOfConvexSetsOptions& self) {
           return py::str(
