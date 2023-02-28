@@ -824,12 +824,13 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
 
 Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
-    std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*>
-        substitutions_optional)
+    std::optional<SubstituteAndExpandCacheData*> substitutions_cached_data)
     const {
-  std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions_obj;
+  SubstituteAndExpandCacheData substitutions_struct_default;
+  SubstituteAndExpandCacheData* substitutions_struct =
+      substitutions_cached_data.value_or(&substitutions_struct_default);
   std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions =
-      substitutions_optional.value_or(&substitutions_obj);
+      substitutions_struct->get_data();
 
   for (const auto& var : indeterminates_) {
     DRAKE_DEMAND(indeterminate_substitution.find(var) !=
@@ -839,12 +840,13 @@ Polynomial Polynomial::SubstituteAndExpand(
     if (substitutions->find(cur_monomial) != substitutions->cend()) {
       if (!substitutions->at(cur_monomial).EqualTo(cur_sub)) {
         drake::log()->warn(fmt::format(
-            "SubstituteAndExpand(): the passed substitutions map contains a "
-            "different expansion for {} than is contained in "
-            "indeterminate_substitutions. Substitutions contains {}, but "
-            "indeterminate_substitutions contains {}. It is very likely that "
-            "substitutions is storing expansions which are inconsistent and so "
-            "you should not trust the output of this method.",
+            "SubstituteAndExpand(): the passed substitutions_cached_data "
+            "contains a different expansion for {} than is contained in "
+            "indeterminate_substitutions. Substitutions_cached_data contains "
+            "{}, but indeterminate_substitutions contains {}. It is very "
+            "likely that substitutions_cached_data is storing expansions which "
+            "are inconsistent and so you should not trust the output of this "
+            "method.",
             cur_monomial, substitutions->at(cur_monomial), cur_sub));
       }
     } else {
