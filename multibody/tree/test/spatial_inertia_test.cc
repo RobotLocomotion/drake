@@ -158,15 +158,6 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
-  // Test a solid cylinder B about Bp with a different unit vector direction.
-  const Vector3<double> p_BcmBp_B = -0.5 * l * unit_vec;
-  const SpatialInertia<double> M_BBcm_B = M;
-  M_expected = M_BBcm_B.Shift(p_BcmBp_B);
-  M = SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
-      density, r, l, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
-
   // Ensure a negative or zero radius or length throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
   // Instead, each parameter is tested with a single bad value and we assume a
