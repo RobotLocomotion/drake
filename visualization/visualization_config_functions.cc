@@ -5,6 +5,7 @@
 
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
+#include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
 
@@ -22,6 +23,8 @@ using geometry::SceneGraph;
 using lcm::DrakeLcmInterface;
 using multibody::ConnectContactResultsToDrakeVisualizer;
 using multibody::MultibodyPlant;
+using multibody::meshcat::ContactVisualizer;
+using multibody::meshcat::ContactVisualizerParams;
 using systems::DiagramBuilder;
 using systems::System;
 using systems::lcm::LcmBuses;
@@ -60,6 +63,11 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
       MeshcatVisualizer<double>::AddToBuilder(builder, scene_graph, meshcat,
                                               params);
+    }
+    if (config.publish_contacts) {
+      ContactVisualizer<double>::AddToBuilder(
+          builder, plant, meshcat,
+          internal::ConvertVisualizationConfigToMeshcatContactParams(config));
     }
   }
 }
@@ -153,6 +161,14 @@ std::vector<MeshcatVisualizerParams> ConvertVisualizationConfigToMeshcatParams(
     result.push_back(proximity);
   }
 
+  return result;
+}
+
+ContactVisualizerParams ConvertVisualizationConfigToMeshcatContactParams(
+    const VisualizationConfig& config) {
+  ContactVisualizerParams result;
+  result.publish_period = config.publish_period;
+  result.delete_on_initialization_event = config.delete_on_initialization_event;
   return result;
 }
 

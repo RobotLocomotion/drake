@@ -7,6 +7,7 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/meshcat/contact_visualizer_params.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_buses.h"
@@ -140,6 +141,10 @@ ConvertVisualizationConfigToDrakeParams(const VisualizationConfig&);
 // (For unit testing only.)
 std::vector<geometry::MeshcatVisualizerParams>
 ConvertVisualizationConfigToMeshcatParams(const VisualizationConfig&);
+
+// (For unit testing only.)
+multibody::meshcat::ContactVisualizerParams
+ConvertVisualizationConfigToMeshcatContactParams(const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization

@@ -17,6 +17,7 @@ using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::MultibodyPlant;
+using drake::multibody::meshcat::ContactVisualizerParams;
 using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
 using drake::systems::lcm::LcmBuses;
@@ -81,6 +82,12 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
             config.enable_alpha_sliders);
+
+  const ContactVisualizerParams contact_params =
+      ConvertVisualizationConfigToMeshcatContactParams(config);
+  EXPECT_EQ(contact_params.publish_period, config.publish_period);
+  EXPECT_EQ(contact_params.delete_on_initialization_event,
+            config.delete_on_initialization_event);
 }
 
 // Tests the mapping from non-default schema data to geometry params.
