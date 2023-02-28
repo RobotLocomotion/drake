@@ -826,12 +826,12 @@ Polynomial Polynomial::SubstituteAndExpand(
     const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
     SubstituteAndExpandCacheData* substitutions_cached_data)
     const {
-  if (substitutions_cached_data == nullptr) {
-    SubstituteAndExpandCacheData substitutions_default_obj;
-    substitutions_cached_data = &substitutions_default_obj;
-  }
+  SubstituteAndExpandCacheData substitutions_default_obj;
+  SubstituteAndExpandCacheData* cached_data_ptr =
+      substitutions_cached_data == nullptr ? &substitutions_default_obj
+                                           : substitutions_cached_data;
   std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions =
-      substitutions_cached_data->get_data();
+      cached_data_ptr->get_data();
 
   for (const auto& var : indeterminates_) {
     DRAKE_DEMAND(indeterminate_substitution.find(var) !=
