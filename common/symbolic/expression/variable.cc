@@ -24,17 +24,24 @@ using std::to_string;
 namespace drake {
 namespace symbolic {
 
-Variable::Id Variable::get_next_id() {
+namespace {
+/* Produces a unique ID for a variable. */
+size_t get_next_id(const Variable::Type type) {
+  static_assert(std::is_same_v<Variable::Id, size_t>);
   // Note that id 0 is reserved for anonymous variable which is created by the
   // default constructor, Variable(). As a result, we have an invariant
   // "get_next_id() > 0".
-  static never_destroyed<atomic<Id>> next_id(1);
-  return next_id.access()++;
+  static never_destroyed<atomic<size_t>> next_id(1);
+  const size_t counter = next_id.access()++;
+  // We'll assume that size_t is at least 8 bytes wide, so that we can pack the
+  // counter into the lower 7 bytes of `id_` and the `Type` into the upper byte.
+  static_assert(sizeof(size_t) >= 8);
+  return counter | (static_cast<size_t>(type) << (7 * 8));
 }
+}  // namespace
 
 Variable::Variable(string name, const Type type)
-    : id_{get_next_id()},
-      type_{type},
+    : id_{get_next_id(type)},
       name_{make_shared<const string>(move(name))} {
   DRAKE_ASSERT(id_ > 0);
 }
