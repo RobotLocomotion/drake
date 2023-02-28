@@ -1,18 +1,13 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
-#include <limits>
 #include <optional>
 
 #include <gtest/gtest.h>
 
-#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
-#include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
-#include "drake/multibody/rational/rational_forward_kinematics.h"
-#include "drake/multibody/rational/rational_forward_kinematics_internal.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
@@ -29,13 +24,14 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
                                 maximum_path_degree);
     // check that the path map is properly instantiated
     for (const auto& s_set_itr : tester.s_set()) {
-      EXPECT_FALSE(tester.get_path().find(s_set_itr) ==
-                   tester.get_path().cend());
+      EXPECT_GT(tester.get_path().count(s_set_itr), 0);
       const symbolic::Polynomial& poly{tester.get_path().at(s_set_itr)};
       EXPECT_EQ(poly.indeterminates().size(), 1);
       EXPECT_EQ((*poly.indeterminates().cbegin()), tester.get_mu());
       EXPECT_EQ(static_cast<unsigned int>(poly.TotalDegree()),
                 maximum_path_degree);
+      EXPECT_EQ(poly.monomial_to_coefficient_map().size(),
+                maximum_path_degree + 1);
     }
   }
 }
@@ -123,10 +119,8 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
           auto compute_total_s_degree =
               [&polytope_tester](const symbolic::Polynomial& poly) {
                 int degree{0};
-                for (const std::pair<const symbolic::Monomial,
-                                     symbolic::Expression>& p :
+                for (const auto& [m, c] :
                      poly.monomial_to_coefficient_map()) {
-                  const symbolic::Monomial& m{p.first};
                   int cur_s_degree{0};
                   for (const auto& s : polytope_tester.s_set()) {
                     cur_s_degree += m.degree(s);

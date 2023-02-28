@@ -453,10 +453,11 @@ class CspaceFreePolytope {
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
  protected:
-  symbolic::Variables& get_s_set() { return s_set_; }
+  [[nodiscard]] const symbolic::Variables get_s_set() const { return s_set_; }
 
-  // We have the invariant plane_geometries_[i].plane_index == i.
-  std::vector<PlaneSeparatesGeometries> plane_geometries_;
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries>& get_mutable_plane_geometries() {
+    return plane_geometries_;
+  }
 
  private:
   // Forward declaration the tester class. This tester class will expose the
@@ -646,6 +647,8 @@ class CspaceFreePolytope {
   Eigen::VectorXd s_upper_;
   VectorX<symbolic::Polynomial> s_minus_s_lower_;
   VectorX<symbolic::Polynomial> s_upper_minus_s_;
+  // We have the invariant plane_geometries_[i].plane_index == i.
+  std::vector<PlaneSeparatesGeometries> plane_geometries_;
 
   // Maps a pair of body (body1, body2) to an array of monomial basis
   // `monomial_basis_array`. monomial_basis_array[0] contains all the monomials
