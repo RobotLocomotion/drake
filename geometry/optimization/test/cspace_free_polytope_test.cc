@@ -8,7 +8,6 @@
 #include "drake/common/test_utilities/symbolic_test_util.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
@@ -146,14 +145,17 @@ TEST_F(CIrisToyRobotTest, FindRedundantInequalities) {
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
                                   SeparatingPlaneOrder::kAffine, q_star);
-  Eigen::Matrix3d C;
+  Eigen::Matrix<double, 5, 3> C;
   // clang-format off
   C << 1, 1, 0,
        0, 1, 1,
-       1, 0, 1;
+       1, 0, 1,
+       -1, 0, -1,
+       0, -1, -1;
   // clang-format on
-  Eigen::Vector3d d(2, 0.5, 0.1);
-  Eigen::Vector3d s_lower(0, 0, 0);
+  Eigen::Matrix<double, 5, 1> d;
+  d << 2, 0.5, 0.1, 0.4, 0.5;
+  Eigen::Vector3d s_lower(0, -10, 0);
   Eigen::Vector3d s_upper(0.5, 0.45, 1);
   std::unordered_set<int> C_redundant_indices;
   std::unordered_set<int> s_lower_redundant_indices;
@@ -161,8 +163,8 @@ TEST_F(CIrisToyRobotTest, FindRedundantInequalities) {
   tester.FindRedundantInequalities(
       C, d, s_lower, s_upper, 0., &C_redundant_indices,
       &s_lower_redundant_indices, &s_upper_redundant_indices);
-  EXPECT_EQ(C_redundant_indices, std::unordered_set<int>({0}));
-  EXPECT_TRUE(s_lower_redundant_indices.empty());
+  EXPECT_EQ(C_redundant_indices, std::unordered_set<int>({0, 3}));
+  EXPECT_EQ(s_lower_redundant_indices, std::unordered_set<int>({1}));
   EXPECT_EQ(s_upper_redundant_indices, std::unordered_set<int>({0, 2}));
 }
 

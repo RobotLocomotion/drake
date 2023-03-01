@@ -252,89 +252,6 @@ int GetNumYInRational(const symbolic::RationalFunction& rational,
 }
 }  // namespace
 
-// Find the redundant inequalities in C * s <= d, s_lower <= s <= s_upper.
-void CspaceFreePolytope::FindRedundantInequalities(
-    const Eigen::MatrixXd& C, const Eigen::VectorXd& d,
-    const Eigen::VectorXd& s_lower, const Eigen::VectorXd& s_upper,
-    double tighten, std::unordered_set<int>* C_redundant_indices,
-    std::unordered_set<int>* s_lower_redundant_indices,
-    std::unordered_set<int>* s_upper_redundant_indices) const {
-  C_redundant_indices->clear();
-  s_lower_redundant_indices->clear();
-  s_upper_redundant_indices->clear();
-  // We aggregate the constraint {C*s<=d, s_lower <= s <= s_upper} as C̅s ≤
-  // d̅
-  const int ns = s_lower.rows();
-  Eigen::MatrixXd C_bar(C.rows() + 2 * ns, ns);
-  Eigen::VectorXd d_bar(d.rows() + 2 * ns);
-  C_bar << C, Eigen::MatrixXd::Identity(ns, ns),
-      -Eigen::MatrixXd::Identity(ns, ns);
-  d_bar << d, s_upper, -s_lower;
-  const HPolyhedron hpolyhedron(C_bar, d_bar);
-  const std::set<int> redundant_indices = hpolyhedron.FindRedundant(-tighten);
-  C_redundant_indices->reserve(redundant_indices.size());
-  s_lower_redundant_indices->reserve(redundant_indices.size());
-  s_upper_redundant_indices->reserve(redundant_indices.size());
-  for (const int index : redundant_indices) {
-    if (index < C.rows()) {
-      C_redundant_indices->emplace_hint(C_redundant_indices->end(), index);
-    } else if (index < C.rows() + ns) {
-      s_upper_redundant_indices->emplace_hint(s_upper_redundant_indices->end(),
-                                              index - C.rows());
-    } else {
-      s_lower_redundant_indices->emplace_hint(s_lower_redundant_indices->end(),
-                                              index - C.rows() - ns);
-    }
-  }
-}
-
-void CspaceFreePolytope::CalcSBoundsPolynomial() {
-  const int s_size = rational_forward_kin_.s().rows();
-  s_minus_s_lower_.resize(s_size);
-  s_upper_minus_s_.resize(s_size);
-  const symbolic::Monomial monomial_one{};
-  const auto& s = rational_forward_kin_.s();
-  for (int i = 0; i < s_size; ++i) {
-    s_minus_s_lower_(i) = symbolic::Polynomial(symbolic::Polynomial::MapType(
-        {{symbolic::Monomial(s(i)), 1}, {monomial_one, -s_lower_(i)}}));
-    s_upper_minus_s_(i) = symbolic::Polynomial(symbolic::Polynomial::MapType(
-        {{monomial_one, s_upper_(i)}, {symbolic::Monomial(s(i)), -1}}));
-  }
-}
-
-template <typename T>
-VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs(
-    const Eigen::Ref<const MatrixX<T>>& C,
-    const Eigen::Ref<const VectorX<T>>& d) const {
-  // Now build the polynomials d(i) - C.row(i) * s
-  const auto& s = rational_forward_kin_.s();
-  DRAKE_DEMAND(C.rows() == d.rows() && C.cols() == static_cast<int>(s.size()));
-  const symbolic::Monomial monomial_one{};
-  symbolic::Polynomial::MapType d_minus_Cs_poly_map;
-  VectorX<symbolic::Monomial> s_monomials(s.rows());
-  for (int i = 0; i < s.rows(); ++i) {
-    s_monomials(i) = symbolic::Monomial(s(i));
-  }
-  VectorX<symbolic::Polynomial> d_minus_Cs(d.rows());
-  for (int i = 0; i < C.rows(); ++i) {
-    for (int j = 0; j < static_cast<int>(s.rows()); ++j) {
-      auto it = d_minus_Cs_poly_map.find(s_monomials(j));
-      if (it == d_minus_Cs_poly_map.end()) {
-        d_minus_Cs_poly_map.emplace_hint(it, s_monomials(j), -C(i, j));
-      } else {
-        it->second = -C(i, j);
-      }
-    }
-    auto it = d_minus_Cs_poly_map.find(monomial_one);
-    if (it == d_minus_Cs_poly_map.end()) {
-      d_minus_Cs_poly_map.emplace_hint(it, monomial_one, d(i));
-    } else {
-      it->second = d(i);
-    }
-    d_minus_Cs(i) = symbolic::Polynomial(d_minus_Cs_poly_map);
-  }
-  return d_minus_Cs;
-}
 
 CspaceFreePolytope::SeparatingPlaneLagrangians
 CspaceFreePolytope::SeparatingPlaneLagrangians::GetSolution(
@@ -1473,49 +1390,6 @@ CspaceFreePolytope::SolveSeparationCertificateProgram(
   }
   return ret;
 }
-
-std::map<multibody::BodyIndex,
-         std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
-GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
-                       const geometry::SceneGraph<double>& scene_graph) {
-  std::map<multibody::BodyIndex,
-           std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
-      ret;
-  const auto& inspector = scene_graph.model_inspector();
-
-  for (multibody::BodyIndex body_index{0}; body_index < plant.num_bodies();
-       ++body_index) {
-    const std::optional<geometry::FrameId> frame_id =
-        plant.GetBodyFrameIdIfExists(body_index);
-    if (frame_id.has_value()) {
-      const auto geometry_ids =
-          inspector.GetGeometries(frame_id.value(), geometry::Role::kProximity);
-      for (const auto& geometry_id : geometry_ids) {
-        auto collision_geometry = std::make_unique<CIrisCollisionGeometry>(
-            &(inspector.GetShape(geometry_id)), body_index, geometry_id,
-            inspector.GetPoseInFrame(geometry_id));
-        auto body_it = ret.find(body_index);
-        if (body_it == ret.end()) {
-          std::vector<std::unique_ptr<CIrisCollisionGeometry>> body_geometries;
-          body_geometries.push_back(std::move(collision_geometry));
-          ret.emplace_hint(body_it, body_index, std::move(body_geometries));
-        } else {
-          body_it->second.push_back(std::move(collision_geometry));
-        }
-      }
-    }
-  }
-  return ret;
-}
-
-// Explicit instantiation
-template VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs<double>(
-    const Eigen::Ref<const Eigen::MatrixXd>&,
-    const Eigen::Ref<const Eigen::VectorXd>&) const;
-template VectorX<symbolic::Polynomial>
-CspaceFreePolytope::CalcDminusCs<symbolic::Variable>(
-    const Eigen::Ref<const MatrixX<symbolic::Variable>>&,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>&) const;
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

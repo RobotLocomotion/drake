@@ -162,6 +162,16 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "cspace_free_polytope_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_polytope",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+    ],
+)
+
 drake_cc_library(
     name = "c_iris_test_utilities",
     testonly = 1,
@@ -172,6 +182,7 @@ drake_cc_library(
         "test/convex.obj",
     ],
     deps = [
+        ":cspace_free_polytope",
         "//geometry:scene_graph",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
