@@ -45,9 +45,7 @@ void CspaceFreePath::GeneratePathRationals() {
   // plane_geometries_ currently has rationals in terms of the configuration
   // space variable. We replace each of these PlaneSeparatesGeometries with a
   // new one that has rationals in terms of the path variable.
-  std::map<symbolic::Monomial, symbolic::Polynomial,
-           symbolic::internal::CompareMonomial>
-      cached_substitutions;
+  symbolic::Polynomial::SubstituteAndExpandCacheData cached_substitutions;
 
   // add the auxilliary variables for matrix SOS constraints to the substitution
   // map.
