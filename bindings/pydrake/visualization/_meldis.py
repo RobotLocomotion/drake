@@ -5,6 +5,8 @@ import time
 
 from drake import (
     lcmt_contact_results_for_viz,
+    lcmt_point_cloud,
+    lcmt_point_cloud_field,
     lcmt_viewer_draw,
     lcmt_viewer_geometry_data,
     lcmt_viewer_link_data,
@@ -41,6 +43,11 @@ from pydrake.multibody.meshcat import (
     _PointContactVisualizerItem,
     ContactVisualizerParams,
 )
+from pydrake.perception import (
+    BaseField,
+    Fields,
+    PointCloud,
+)
 
 _logger = logging.getLogger("drake")
 
@@ -55,7 +62,7 @@ class _Slider:
         self._exists = False
 
     def realize(self):
-        """Ensure the slider is created and visible."""
+        """Ensures the slider is created and visible."""
         # Avoid a redundant slider crash if the user runs a sending program
         # twice with the same meldis still running.
         if not self._exists:
@@ -63,7 +70,7 @@ class _Slider:
             self._meshcat.AddSlider(self._name, 0.02, 1.0, 0.02, self._value)
 
     def read(self):
-        """Return a pair of the current value, and a flag that is True if the
+        """Returns a pair of the current value, and a flag that is True if the
         value has changed since the last read().
 
         Clients *must* call realize() before calling read().
@@ -182,7 +189,7 @@ class _ViewerApplet:
         self._meshcat.SetProperty(self._path, property="visible", value=value)
 
     def _convert_deformable_geom(self, geom):
-        """Given an lcmt_viewer_geometry_data, parse it into a tuple of
+        """Given an lcmt_viewer_geometry_data, parses it into a tuple of
         (vertices, faces, Rgba, RigidTransform) if the geometry type is a
         MESH.
         """
@@ -202,8 +209,8 @@ class _ViewerApplet:
         return (vertices, faces, rgba, pose)
 
     def _convert_geom(self, geom):
-        """Given an lcmt_viewer_geometry_data, parse it into a tuple of (Shape,
-        Rgba, RigidTransform).
+        """Given an lcmt_viewer_geometry_data, parses it into a tuple of
+        (Shape, Rgba, RigidTransform).
         """
         shape = None
         if geom.type == lcmt_viewer_geometry_data.BOX:
@@ -247,7 +254,7 @@ class _ViewerApplet:
 
     @staticmethod
     def _to_pose(position, quaternion):
-        """Given pose parts of an lcmt_viewer_geometry_data, parse it into a
+        """Given pose parts of an lcmt_viewer_geometry_data, parses it into a
         RigidTransform.
         """
         (p_x, p_y, p_z) = position
@@ -362,6 +369,107 @@ class _ContactApplet:
         self._hydro_helper.Update(viz_items)
 
 
+class _PointCloudApplet:
+    """Displays lcmt_point_cloud into MeshCat."""
+
+    _POINT_CLOUD_FIELDS = (
+        # (name, byte_offset, datatype, count)
+        ("x", 0, lcmt_point_cloud_field.FLOAT32, 1),
+        ("y", 4, lcmt_point_cloud_field.FLOAT32, 1),
+        ("z", 8, lcmt_point_cloud_field.FLOAT32, 1),
+        ("rgb", 12, lcmt_point_cloud_field.UINT32, 1),
+        ("normal_x", 16, lcmt_point_cloud_field.FLOAT32, 1),
+        ("normal_y", 20, lcmt_point_cloud_field.FLOAT32, 1),
+        ("normal_z", 24, lcmt_point_cloud_field.FLOAT32, 1),
+    )
+    """The supported fields and their data types of a point cloud. An XYZ,
+    XYZRGB, and XYZRGBNormal cloud will have the first three, first four, and
+    all the fields in this particular order.
+    """
+
+    def __init__(self, *, meshcat):
+        self._meshcat = meshcat
+        self._already_warned_channel_names = set()
+
+    def _validate_and_get_fields(self, message):
+        """Checks the point cloud LCM message and returns the corresponding
+        `Fields` for the PointCloud object. Either XYZ, XYZRGB, or XYZRGBNormal
+        cloud with the exact data type is supported.
+        """
+        if message.flags != lcmt_point_cloud.IS_STRICTLY_FINITE:
+            return None
+
+        if message.num_fields not in (3, 4, 7):
+            return None
+
+        for i in range(message.num_fields):
+            (name, byte_offset, datatype, count) = self._POINT_CLOUD_FIELDS[i]
+            if (
+                message.fields[i].name != name
+                or message.fields[i].byte_offset != byte_offset
+                or message.fields[i].datatype != datatype
+                or message.fields[i].count != count
+            ):
+                return None
+
+        if message.num_fields == 3:
+            return Fields(BaseField.kXYZs)
+        elif message.num_fields == 4:
+            return Fields(BaseField.kXYZs | BaseField.kRGBs)
+        else:
+            return Fields(
+                BaseField.kXYZs | BaseField.kRGBs | BaseField.kNormals
+            )
+
+    def _channel_to_meshcat_path(self, channel):
+        assert channel.startswith("DRAKE_POINT_CLOUD")
+        if channel == "DRAKE_POINT_CLOUD":
+            return "/POINT_CLOUD/default"
+        else:
+            # E.g., `DRAKE_POINT_CLOUD_FOO` => `/POINT_CLOUD/FOO`.
+            suffix = channel[len("DRAKE_POINT_CLOUD_"):]
+            return f"/POINT_CLOUD/{suffix}"
+
+    def on_point_cloud(self, channel, message):
+        """Handler for lcmt_point_cloud.
+
+        Validates and converts the lcmt_point_cloud message to a PointCloud
+        object for display.
+        """
+        cloud_fields = self._validate_and_get_fields(message)
+        if cloud_fields is None:
+            # Throttle warning messages to one per channel.
+            if channel not in self._already_warned_channel_names:
+                self._already_warned_channel_names.add(channel)
+                _logger.warn(f"Unsupported point cloud data from {channel}.")
+            return
+
+        # Transform the raw data into an N x num_fields array.
+        raw_data = np.frombuffer(message.data, dtype=np.float32).reshape(
+            -1, message.num_fields
+        )
+        num_points = raw_data.shape[0]
+
+        cloud = PointCloud(num_points, cloud_fields)
+        xyzs = raw_data[:, 0:3]
+        cloud.mutable_xyzs()[:] = xyzs.transpose()
+        if message.num_fields > 3:
+            rgbs_with_padding = (
+                raw_data[:, 3].astype(np.float32).view(np.uint8).reshape(-1, 4)
+            )
+            rgbs = rgbs_with_padding[:, 0:3]
+            cloud.mutable_rgbs()[:] = rgbs.transpose()
+        if message.num_fields > 4:
+            normals = raw_data[:, 4:]
+            cloud.mutable_normals()[:] = normals.transpose()
+
+        self._meshcat.SetObject(
+            path=self._channel_to_meshcat_path(channel),
+            cloud=cloud,
+            point_size=0.01
+        )
+
+
 class Meldis:
     """
     MeshCat LCM Display Server (MeLDiS)
@@ -437,6 +545,12 @@ class Meldis:
                         message_type=lcmt_contact_results_for_viz,
                         handler=contact.on_contact_results)
 
+        # Subscribe to all the point-cloud-related channels.
+        point_cloud = _PointCloudApplet(meshcat=self.meshcat)
+        self._subscribe_multichannel(regex="DRAKE_POINT_CLOUD.*",
+                                     message_type=lcmt_point_cloud,
+                                     handler=point_cloud.on_point_cloud)
+
         # Bookkeeping for automatic shutdown.
         self._last_poll = None
         self._last_active = None
@@ -450,7 +564,12 @@ class Meldis:
         # Record this channel's type and handler.
         assert self._message_types.get(channel, message_type) == message_type
         self._message_types[channel] = message_type
-        self._message_handlers.setdefault(channel, []).append(handler)
+
+        # A wrapper to discard `channel` information as it's not used in the
+        # actual handler.
+        def _multi_handler(*, channel, message):
+            handler(message)
+        self._message_handlers.setdefault(channel, []).append(_multi_handler)
 
         # Subscribe using an internal function that implements "last one wins".
         # It's important to service the LCM queue as frequently as possible:
@@ -464,6 +583,18 @@ class Meldis:
         def _on_message(data):
             self._message_pending_data[channel] = data
         self._lcm.Subscribe(channel=channel, handler=_on_message)
+
+    def _subscribe_multichannel(self, regex, message_type, handler):
+        """Subscribes the handler to a group of channels filtered by regex. How
+        this function handles messages is the same as _subscribe() except that
+        the channel name is only known when invoking the callback.
+        """
+        def _on_message(channel, data):
+            if channel not in self._message_types:
+                self._message_types[channel] = message_type
+                self._message_handlers.setdefault(channel, []).append(handler)
+            self._message_pending_data[channel] = data
+        self._lcm.SubscribeMultichannel(regex=regex, handler=_on_message)
 
     def _poll(self, handler):
         self._poll_handlers.append(handler)
@@ -479,11 +610,12 @@ class Meldis:
         for channel, data in self._message_pending_data.items():
             message = self._message_types[channel].decode(data)
             for function in self._message_handlers[channel]:
-                function(message=message)
+                function(channel=channel, message=message)
+
         self._message_pending_data.clear()
 
     def serve_forever(self, *, idle_timeout=None):
-        """Run indefinitely, forwarding LCM => MeshCat messages.
+        """Runs indefinitely, forwarding LCM => MeshCat messages.
 
         If provided, the optional idle_timeout must be strictly positive and
         this loop will sys.exit after that many seconds without any websocket
@@ -499,7 +631,7 @@ class Meldis:
             self._check_for_shutdown(idle_timeout=idle_timeout)
 
     def _should_update(self):
-        """Post LCM-driven updates to MeshCat no faster than 40 Hz."""
+        """Posts LCM-driven updates to MeshCat no faster than 40 Hz."""
         now = time.time()
         update_period = 0.025  # 40 Hz
         remaining = update_period - (now - self._last_update_time)
