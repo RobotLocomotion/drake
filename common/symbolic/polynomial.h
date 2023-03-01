@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <functional>
 #include <map>
-#include <optional>
 #include <ostream>
 #include <unordered_map>
 #include <utility>
@@ -261,6 +260,18 @@ class Polynomial {
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
 
+  /// An encapsulated data type for use with the method SubstituteAndExpand.
+  struct SubstituteAndExpandCacheData {
+   public:
+    std::map<Monomial, Polynomial, internal::CompareMonomial>* get_data() {
+      return &data_;
+    }
+
+   private:
+    friend class Polynomial;
+    std::map<Monomial, Polynomial, internal::CompareMonomial> data_;
+  };
+
   /// Substitute the monomials of this polynomial with new polynomial
   /// expressions and expand the polynomial to the monomial basis. For example,
   /// consider the substitution x = a(1-y) into the polynomial x¹⁴ +
@@ -272,34 +283,34 @@ class Polynomial {
   /// of `indeterminates()`. For performance reasons, it is recommended that
   /// this map contains Expanded polynomials as its values, but this is not
   /// necessary.
-  /// @param[in,out] substitutions A map caching the higher order expansions of
-  /// the `indeterminate_substitutions`. Typically, the first time an
-  /// indeterminate_substitution is performed, substitutions will be either a
-  /// pointer to an empty map or a nullptr. If the same
-  /// indeterminate_substitutions is used for multiple polynomials, passing a
-  /// non nullptr value for substitutions will enable the user to re-use the
-  /// expansions across multiple calls. For example, suppose we wish to perform
-  /// the substitution x = a(1-y) into the polynomials p1 = x¹⁴ + (x−1)² and p2
-  /// = x⁷. A user map call p1.SubstituteAndExpand({x : a(1-y), substitutions})
-  /// where substitutions is a pointer to an empty map. As part of computing the
-  /// expansion of p1, the expansion of x⁷ may get computed and stored in
-  /// substitutions, and so a subsequent call of p2.SubstituteAndExpand({x :
-  /// a(1-y)}, substitutions) would be very fast.
+  /// @param[in,out] substitutions_cached_data A container caching the higher
+  /// order expansions of the `indeterminate_substitutions`. Typically, the
+  /// first time an indeterminate_substitution is performed, this will be empty.
+  /// If the same indeterminate_substitutions is used for multiple polynomials,
+  /// passing this value will enable the user to re-use the expansions across
+  /// multiple calls. For example, suppose we wish to perform the substitution x
+  /// = a(1-y) into the polynomials p1 = x¹⁴ + (x−1)² and p2 = x⁷. A user may
+  /// call p1.SubstituteAndExpand({x : a(1-y), substitutions_cached_data}) where
+  /// substitutions_cached_data is a pointer to an empty container. As part of
+  /// computing the expansion of p1, the expansion of x⁷ may get computed and
+  /// stored in substitutions_cached_data, and so a subsequent call of
+  /// p2.SubstituteAndExpand({x : a(1-y)}, substitutions_cached_data) would be
+  /// very fast.
   ///
-  /// Never reuse substitutions if indeterminate_substitutions changes as this
-  /// function will then compute in an incorrect result.
+  /// Never reuse substitutions_cached_data if indeterminate_substitutions
+  /// changes as this function will then compute an incorrect result.
   ///
   /// Note that this function is NOT responsible for ensuring that @param
-  /// substitutions is consistent i.e. this method will not throw an error if
-  /// substitutions = {x: y, x²: 2y}. To ensure correct results, ensure that the
-  /// passed substitution map is consistent with indeterminate_substitutions.
-  /// The easiest way to do this is to pass a pointer to an empty map or nullptr
-  /// to this function.
+  /// substitutions_cached_data is consistent i.e. this method will not throw an
+  /// error if substitutions_cached_data contains the inconsistent substitutions
+  /// {x: y, x²: 2y}. To ensure correct results, ensure that the passed
+  /// substitutions_cached_data object is consistent with
+  /// indeterminate_substitutions. The easiest way to do this is to pass a
+  /// pointer to an empty substitutions_cached_data or nullopt to this function.
   [[nodiscard]] Polynomial SubstituteAndExpand(
       const std::unordered_map<Variable, Polynomial>&
           indeterminate_substitution,
-      std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*>
-          substitutions_optional = std::nullopt) const;
+      SubstituteAndExpandCacheData* substitutions_cached_data = nullptr) const;
 
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term

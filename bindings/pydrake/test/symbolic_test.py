@@ -1337,6 +1337,45 @@ class TestSymbolicPolynomial(unittest.TestCase):
             p_expand.monomial_to_coefficient_map()[
                 sym.Monomial(x)].EqualTo(a+2))
 
+    def test_substitute_and_exand(self):
+        a = sym.Variable("a")
+        x = sym.Variable("x")
+
+        x_sub = sym.Polynomial(a**2 - 1)
+
+        p = sym.Polynomial({
+            sym.Monomial(): 1,
+            sym.Monomial({x: 2}): 1})
+
+        indeterminates_sub = {x: x_sub}
+        cached_data = sym.SubstituteAndExpandCacheData()
+
+        p_sub1 = p.SubstituteAndExpand(
+            indeterminate_substitution=indeterminates_sub)
+        p_sub2 = p.SubstituteAndExpand(
+            indeterminate_substitution=indeterminates_sub,
+            substitutions_cached_data=cached_data)
+        # Check that the data in cached_data grew
+        # (i.e. was modified by SubstituteAndExpand)
+        len_data = len(cached_data.get_data())
+        self.assertTrue(len_data > 1)
+        p_sub3 = p.SubstituteAndExpand(
+            indeterminate_substitution=indeterminates_sub,
+            substitutions_cached_data=cached_data)
+        # Check that the data in cached_data did not grow since we should
+        # already have the expansion saved.
+        self.assertEqual(len(cached_data.get_data()), len_data)
+
+        p_expected = sym.Polynomial({
+            sym.Monomial(): 2,
+            sym.Monomial({a: 2}): -2,
+            sym.Monomial({a: 4}): 1,
+        })
+
+        self.assertTrue(p_expected.EqualTo(p_sub1))
+        self.assertTrue(p_expected.EqualTo(p_sub2))
+        self.assertTrue(p_expected.EqualTo(p_sub3))
+
     def test_remove_terms_with_small_coefficients(self):
         e = 3 * x + 1e-12 * y
         p = sym.Polynomial(e, [x, y])
