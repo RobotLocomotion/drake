@@ -293,10 +293,10 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
-  // Ensure a negative or zero radius or mass throws an exception.
+  // Ensure a negative or zero mass or length throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
-  // Instead, each parameter is tested with a single bad value and we hope a
-  // single value sufficiently tests the full domain of invalid values.
+  // Instead, each parameter is tested with a single bad value, which is only
+  // a partial test of the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(-1.23, length, unit_vec),
       "[^]* A thin rod's mass = .* or length = .* "

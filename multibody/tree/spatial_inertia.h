@@ -199,7 +199,7 @@ class SpatialInertia {
   /// @note B's rotational inertia about Bcm is axially symmetric, meaning B has
   /// an equal moment of inertia about any line that both passes through Bcm and
   /// is perpendicular to unit_vector.
-  /// @throws std::exception if l is zero or negative.
+  /// @throws std::exception if length is zero or negative.
   static SpatialInertia<T> ThinRodWithMass(
       const T& mass, const T& length, const Vector3<T>& unit_vector);
 
