@@ -132,7 +132,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
 }
 
 // Generally, SceneGraphInspector is a thin wrapper for invoking methods on
-// GeometryState. SceneGraphInspector::GetAllFrameIds() is an exception, it does
+// GeometryState. SceneGraphInspector::GetAllFrameIds() is an exception; it does
 // transformation work and, as such, needs to be functionally tested.
 GTEST_TEST(SceneGraphInspector, AllFrameIds) {
   SceneGraphInspectorTester tester;
@@ -142,7 +142,9 @@ GTEST_TEST(SceneGraphInspector, AllFrameIds) {
   // Always includes the world frame.
   ASSERT_EQ(tester.inspector().GetAllFrameIds().size(), 1);
 
-  // Add a number of frames.
+  // Add a number of frames (in addition to the world frame which is always
+  // included).
+  const FrameId world_id = internal::InternalFrame::world_frame_id();
   const FrameId frame_id_1 =
       tester.mutable_state().RegisterFrame(source_id, GeometryFrame("frame1"));
   const FrameId frame_id_2 =
@@ -150,12 +152,15 @@ GTEST_TEST(SceneGraphInspector, AllFrameIds) {
   const FrameId frame_id_3 =
       tester.mutable_state().RegisterFrame(source_id, GeometryFrame("frame3"));
 
-  const std::vector<FrameId> all_frames = tester.inspector().GetAllFrameIds();
-  EXPECT_EQ(std::count(all_frames.begin(), all_frames.end(), frame_id_1), 1);
-  EXPECT_EQ(std::count(all_frames.begin(), all_frames.end(), frame_id_2), 1);
-  EXPECT_EQ(std::count(all_frames.begin(), all_frames.end(), frame_id_3), 1);
-}
+  // We expect the results to be nicely, consistently ordered.
+  std::vector<FrameId> expected_ids{frame_id_1, frame_id_2, frame_id_3,
+                                    world_id};
+  std::sort(expected_ids.begin(), expected_ids.end());
 
+  const std::vector<FrameId> all_frames = tester.inspector().GetAllFrameIds();
+  // Same contents and same order.
+  EXPECT_EQ(all_frames, expected_ids);
+}
 
 }  // namespace
 }  // namespace geometry

@@ -229,6 +229,16 @@ GeometryState<T>::GeometryState(const GeometryState<U>& source)
     }
   }
 }
+template <typename T>
+std::vector<GeometryId> GeometryState<T>::GetAllGeometryIds() const {
+  std::vector<GeometryId> ids;
+  ids.reserve(geometries_.size());
+  for (const auto& id_geometry_pair : geometries_) {
+    ids.push_back(id_geometry_pair.first);
+  }
+  std::sort(ids.begin(), ids.end());
+  return ids;
+}
 
 template <typename T>
 unordered_set<GeometryId> GeometryState<T>::GetGeometryIds(
@@ -598,12 +608,12 @@ bool GeometryState<T>::IsDeformableGeometry(GeometryId id) const {
 
 template <typename T>
 std::vector<GeometryId> GeometryState<T>::GetAllDeformableGeometryIds() const {
-  std::vector<GeometryId> deformable_geometries;
+  std::vector<GeometryId> ids;
   for (const auto& it : source_deformable_geometry_id_map_) {
-    deformable_geometries.insert(
-        deformable_geometries.end(), it.second.begin(), it.second.end());
+    ids.insert(ids.end(), it.second.begin(), it.second.end());
   }
-  return deformable_geometries;
+  std::sort(ids.begin(), ids.end());
+  return ids;
 }
 
 template <typename T>
