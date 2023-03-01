@@ -247,7 +247,9 @@ namespace {
 
 // Hack to fully qualify frame names, pending resolution of #9128. Used by
 // geometry registration routines. When this hack is removed, also undo the
-// de-hacking step within internal_geometry_names.cc.
+// de-hacking step within internal_geometry_names.cc. Note that unlike the
+// ScopedName convention, here the world and default model instances do not
+// use any scoping.
 template <typename T>
 std::string GetScopedName(
     const MultibodyPlant<T>& plant,
