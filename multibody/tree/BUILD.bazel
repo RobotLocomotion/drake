@@ -23,6 +23,7 @@ drake_cc_package_library(
         ":multibody_tree_indexes",
         ":multibody_tree_topology",
         ":rotational_inertia",
+        ":scoped_name",
         ":spatial_inertia",
         ":string_view_map_key",
         ":unit_inertia",
@@ -190,6 +191,7 @@ drake_cc_library(
     deps = [
         ":multibody_tree_caches",
         ":multibody_tree_indexes",
+        ":scoped_name",
         ":spatial_inertia",
         ":string_view_map_key",
         "//common:default_scalars",
@@ -211,6 +213,17 @@ drake_cc_library(
         "//common:essential",
         "//common:extract_double",
         "//math:geometric_transform",
+    ],
+)
+
+drake_cc_library(
+    name = "scoped_name",
+    srcs = ["scoped_name.cc"],
+    hdrs = ["scoped_name.h"],
+    deps = [
+        ":multibody_tree_indexes",
+        "//common:essential",
+        "//common:reset_after_move",
     ],
 )
 
@@ -302,6 +315,13 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/benchmarks/free_body",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "scoped_name_test",
+    deps = [
+        ":scoped_name",
     ],
 )
 

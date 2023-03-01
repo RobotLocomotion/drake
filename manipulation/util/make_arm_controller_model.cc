@@ -127,7 +127,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeArmControllerModel(
     const Frame<double>& gripper_grand_parent_frame =
         plant->GetFrameByName(gripper_grand_parent_frame_name, arm_model_index);
     log()->trace("    gripper_grand_parent_frame: {}",
-                 GetScopedFrameName(*plant, gripper_grand_parent_frame));
+                 gripper_grand_parent_frame.scoped_name());
     const RigidTransform<double> gripper_X_PpP =
         sim_gripper_parent_frame.GetFixedPoseInBodyFrame();
     const RigidTransform<double> gripper_X_PpC =

@@ -36,6 +36,7 @@
 #include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/scoped_name.h"
 #include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
@@ -58,6 +59,18 @@ using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
 namespace {
+
+// Returns the model instance name for the given `instance`, unless it's the
+// world model instance in which case returns the empty string.
+std::string GetInstanceScopeNameIgnoringWorld(
+    const MultibodyPlant<double>& plant,
+    ModelInstanceIndex instance) {
+  if (instance != plant.world_body().model_instance()) {
+    return plant.GetModelInstanceName(instance);
+  } else {
+    return "";
+  }
+}
 
 // Given a @p relative_nested_name to an object, this function returns the model
 // instance that is an immediate parent of the object and the local name of the
@@ -1025,9 +1038,9 @@ const Frame<double>& AddFrameFromSpecification(
   if (frame_spec.AttachedTo().empty()) {
     parent_frame = &default_frame;
   } else {
-    const std::string attached_to_absolute_name = parsing::PrefixName(
-        parsing::GetInstanceScopeName(*plant, model_instance),
-        frame_spec.AttachedTo());
+    const std::string attached_to_absolute_name = ScopedName::Join(
+        GetInstanceScopeNameIgnoringWorld(*plant, model_instance),
+        frame_spec.AttachedTo()).to_string();
 
     // If the attached_to refers to a model, we use the `__model__` frame
     // associated with the model.
@@ -1058,9 +1071,9 @@ const Frame<double>& AddFrameFromSpecification(
             resolved_attached_to_body_name);
         PropagateErrors(errors, diagnostic);
         const std::string resolved_attached_to_body_absolute_name =
-            parsing::PrefixName(
-                parsing::GetInstanceScopeName(*plant, model_instance),
-                resolved_attached_to_body_name);
+            ScopedName::Join(
+                GetInstanceScopeNameIgnoringWorld(*plant, model_instance),
+                resolved_attached_to_body_name).to_string();
         parent_frame = parsing::GetScopedFrameByNameMaybe(
             *plant, resolved_attached_to_body_absolute_name);
       }
