@@ -206,7 +206,7 @@ class SpatialInertia {
       const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density thin rod B about its
-  /// geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// center of mass Bcm.
   /// @param[in] mass mass of the rod (units of kg).
   /// @param[in] length length of the rod.
   /// @param[in] unit_vector unit vector defining the rod's axial direction,
