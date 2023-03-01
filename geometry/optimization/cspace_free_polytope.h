@@ -119,6 +119,9 @@ class CspaceFreePolytope {
    @param plane_order The order of the polynomials in the plane to separate a
    pair of collision geometries.
    @param q_star Refer to RationalForwardKinematics for its meaning.
+
+   @note CspaceFreePolytope knows nothing about contexts. The plant and
+   scene_graph must be fully configured before instantiating this class.
    */
   CspaceFreePolytope(const multibody::MultibodyPlant<double>* plant,
                      const geometry::SceneGraph<double>* scene_graph,
@@ -157,18 +160,42 @@ class CspaceFreePolytope {
    Lagrangian multipliers for the polytopic constraint d-C*s >= 0, s - s_lower
    >= 0, s_upper - s >= 0.
    */
-  struct SeparatingPlaneLagrangians {
+  class SeparatingPlaneLagrangians {
+   public:
     SeparatingPlaneLagrangians(int C_rows, int s_size)
-        : polytope(C_rows), s_lower(s_size), s_upper(s_size) {}
-    // The Lagrangians for d - C*s >= 0.
-    VectorX<symbolic::Polynomial> polytope;
-    // The Lagrangians for s - s_lower >= 0.
-    VectorX<symbolic::Polynomial> s_lower;
-    // The Lagrangians for s_upper - s >= 0.
-    VectorX<symbolic::Polynomial> s_upper;
+        : polytope_(C_rows), s_lower_(s_size), s_upper_(s_size) {}
 
+    /** Substitutes the decision variables in each Lagrangians with its value in
+     * result, returns the substitution result.
+     */
     [[nodiscard]] SeparatingPlaneLagrangians GetSolution(
         const solvers::MathematicalProgramResult& result) const;
+
+    /// The Lagrangians for d - C*s >= 0.
+    const VectorX<symbolic::Polynomial>& polytope() const { return polytope_; }
+
+    /// The Lagrangians for d - C*s >= 0.
+    VectorX<symbolic::Polynomial>& mutable_polytope() { return polytope_; }
+
+    /// The Lagrangians for s - s_lower >= 0.
+    const VectorX<symbolic::Polynomial>& s_lower() const { return s_lower_; }
+
+    /// The Lagrangians for s - s_lower >= 0.
+    VectorX<symbolic::Polynomial>& mutable_s_lower() { return s_lower_; }
+
+    /// The Lagrangians for s_upper - s >= 0.
+    const VectorX<symbolic::Polynomial>& s_upper() const { return s_upper_; }
+
+    /// The Lagrangians for s_upper - s >= 0.
+    VectorX<symbolic::Polynomial>& mutable_s_upper() { return s_upper_; }
+
+   private:
+    // The Lagrangians for d - C*s >= 0.
+    VectorX<symbolic::Polynomial> polytope_;
+    // The Lagrangians for s - s_lower >= 0.
+    VectorX<symbolic::Polynomial> s_lower_;
+    // The Lagrangians for s_upper - s >= 0.
+    VectorX<symbolic::Polynomial> s_upper_;
   };
 
   /**

@@ -197,14 +197,14 @@ void CheckSosLagrangians(
     const std::vector<CspaceFreePolytope::SeparatingPlaneLagrangians>&
         lagrangians_vec) {
   for (const auto& lagrangians : lagrangians_vec) {
-    for (int i = 0; i < lagrangians.polytope.rows(); ++i) {
-      EXPECT_TRUE(IsPolynomialSos(lagrangians.polytope(i), 0.0));
+    for (int i = 0; i < lagrangians.polytope().rows(); ++i) {
+      EXPECT_TRUE(IsPolynomialSos(lagrangians.polytope()(i), 0.0));
     }
-    for (int i = 0; i < lagrangians.s_lower.rows(); ++i) {
-      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_lower(i), 0.0));
+    for (int i = 0; i < lagrangians.s_lower().rows(); ++i) {
+      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_lower()(i), 0.0));
     }
-    for (int i = 0; i < lagrangians.s_upper.rows(); ++i) {
-      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_upper(i), 0.0));
+    for (int i = 0; i < lagrangians.s_upper().rows(); ++i) {
+      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_upper()(i), 0.0));
     }
   }
 }
@@ -230,9 +230,9 @@ void CheckRationalsPositiveInCspacePolytope(
     const symbolic::Polynomial rational_numerator =
         rationals[i].numerator().EvaluatePartial(env);
     const symbolic::Polynomial sos_poly =
-        rational_numerator - lagrangians_vec[i].polytope.dot(d_minus_Cs) -
-        lagrangians_vec[i].s_lower.dot(tester.s_minus_s_lower()) -
-        lagrangians_vec[i].s_upper.dot(tester.s_upper_minus_s());
+        rational_numerator - lagrangians_vec[i].polytope().dot(d_minus_Cs) -
+        lagrangians_vec[i].s_lower().dot(tester.s_minus_s_lower()) -
+        lagrangians_vec[i].s_upper().dot(tester.s_upper_minus_s());
     EXPECT_TRUE(IsPolynomialSos(sos_poly, tol));
   }
   CheckSosLagrangians(lagrangians_vec);
@@ -649,22 +649,24 @@ void CompareLagrangians(
     bool compare_s_bounds) {
   EXPECT_EQ(lagrangians_vec1.size(), lagrangians_vec2.size());
   for (int i = 0; i < static_cast<int>(lagrangians_vec1.size()); ++i) {
-    EXPECT_EQ(lagrangians_vec1[i].polytope.size(),
-              lagrangians_vec2[i].polytope.size());
-    for (int j = 0; j < lagrangians_vec1[i].polytope.rows(); ++j) {
-      EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].polytope(j),
-                   lagrangians_vec2[i].polytope(j));
+    EXPECT_EQ(lagrangians_vec1[i].polytope().size(),
+              lagrangians_vec2[i].polytope().size());
+    for (int j = 0; j < lagrangians_vec1[i].polytope().rows(); ++j) {
+      EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].polytope()(j),
+                   lagrangians_vec2[i].polytope()(j));
     }
     if (compare_s_bounds) {
-      EXPECT_EQ(lagrangians_vec1[i].s_lower.size(),
-                lagrangians_vec2[i].s_lower.size());
-      EXPECT_EQ(lagrangians_vec1[i].s_upper.size(),
-                lagrangians_vec2[i].s_upper.size());
-      for (int j = 0; j < lagrangians_vec1[i].s_lower.rows(); ++j) {
-        EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].s_lower(j),
-                     lagrangians_vec2[i].s_lower(j));
-        EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].s_upper(j),
-                     lagrangians_vec2[i].s_upper(j));
+      EXPECT_EQ(lagrangians_vec1[i].s_lower().size(),
+                lagrangians_vec2[i].s_lower().size());
+      EXPECT_EQ(lagrangians_vec1[i].s_upper().size(),
+                lagrangians_vec2[i].s_upper().size());
+      for (int j = 0; j < lagrangians_vec1[i].s_lower().rows(); ++j) {
+        EXPECT_PRED2(symbolic::test::PolyEqual,
+                     lagrangians_vec1[i].s_lower()(j),
+                     lagrangians_vec2[i].s_lower()(j));
+        EXPECT_PRED2(symbolic::test::PolyEqual,
+                     lagrangians_vec1[i].s_upper()(j),
+                     lagrangians_vec2[i].s_upper()(j));
       }
     }
   }
