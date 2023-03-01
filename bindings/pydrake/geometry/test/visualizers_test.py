@@ -114,9 +114,12 @@ class TestGeometryVisualizers(unittest.TestCase):
             triangles=[mut.SurfaceTriangle(
                 0, 1, 2), mut.SurfaceTriangle(3, 0, 2)],
             vertices=[[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]])
-        meshcat.SetObject(path="/test/triangle_surface_mesh", mesh=mesh,
-                          rgba=mut.Rgba(0.3, 0.3, 0.3), wireframe=True,
-                          wireframe_line_width=2.0)
+        meshcat.SetObject(path="/test/triangle_surface_mesh",
+                          mesh=mesh,
+                          rgba=mut.Rgba(0.3, 0.3, 0.3),
+                          wireframe=True,
+                          wireframe_line_width=2.0,
+                          side=meshcat.SideOfFaceToRender.kFrontSide)
         meshcat.SetLine(path="/test/line", vertices=np.eye(3),
                         line_width=2.0, rgba=mut.Rgba(.3, .3, .3))
         meshcat.SetLineSegments(path="/test/line_segments", start=np.eye(3),
@@ -128,14 +131,28 @@ class TestGeometryVisualizers(unittest.TestCase):
             faces=np.array([[0, 1, 2], [3, 0, 2]]).T,
             rgba=mut.Rgba(0.3, 0.3, 0.3),
             wireframe=True,
-            wireframe_line_width=2.0)
+            wireframe_line_width=2.0,
+            side=meshcat.SideOfFaceToRender.kBackSide)
         meshcat.SetTriangleColorMesh(
             path="/test/triangle_mesh",
             vertices=np.array([[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]]).T,
             faces=np.array([[0, 1, 2], [3, 0, 2]]).T,
             colors=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]]).T,
             wireframe=False,
-            wireframe_line_width=2.0)
+            wireframe_line_width=2.0,
+            side=meshcat.SideOfFaceToRender.kDoubleSide)
+        # Plot the six-hump camel
+        xs = np.linspace(-2.2, 2.2, 51)
+        ys = np.linspace(-1.2, 1.2, 51)
+        [X, Y] = np.meshgrid(xs, ys)
+        P = 4 * X**2 + X * Y - 4 * Y**2 - 2.1 * X**4 + 4 * Y**4 + X**6 / 3
+        meshcat.PlotSurface(path="six_hump_camel",
+                            X=X,
+                            Y=Y,
+                            Z=P,
+                            rgba=mut.Rgba(0.3, 0.3, 0.3),
+                            wireframe=True,
+                            wireframe_line_width=2.0)
         meshcat.SetProperty(path="/Background",
                             property="visible",
                             value=True)
