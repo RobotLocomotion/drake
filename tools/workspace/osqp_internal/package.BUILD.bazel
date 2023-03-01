@@ -1,0 +1,112 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # Apache-2.0
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+# Generates osqp_configure.h based on the defines= we want in Drake.
+cmake_configure_file(
+    name = "configure_file",
+    src = "configure/osqp_configure.h.in",
+    out = "include/osqp_configure.h",
+    defines = [
+        "PRINTING",
+        "PROFILING",
+        # Keep the default primitive size of `double` and `int`.  Don't define
+        # 'DFLOAT' nor 'DLONG' unless @qdldl_internal and @scs_internal are
+        # also changed to use those primitive sizes.
+        # See drake/tools/workspace/qdldl_internal/README.md.
+    ] + select({
+        "@drake//tools/cc_toolchain:apple": [
+            "IS_MAC",
+        ],
+        "@drake//tools/cc_toolchain:linux": [
+            "IS_LINUX",
+        ],
+        "//conditions:default": [],
+    }),
+    undefines = [
+        "OSQP_CUSTOM_MEMORY",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+cc_library(
+    name = "osqp",
+    # Our hdrs match OSQP's ./include/CMakeLists.txt variable `osqp_headers`.
+    hdrs = [
+        # These headers are always enabled in CMakeLists.
+        "include/auxil.h",
+        "include/constants.h",
+        "include/error.h",
+        "include/glob_opts.h",
+        "include/lin_alg.h",
+        "include/osqp.h",
+        "include/osqp_configure.h",
+        "include/proj.h",
+        "include/scaling.h",
+        "include/types.h",
+        "include/util.h",
+        # These headers are enabled in CMakeLists only when building in normal
+        # mode.
+        "include/kkt.h",
+        # These headers are enabled in CMakeLists only when building in
+        # non-embedded mode.
+        "include/cs.h",
+        "include/polish.h",
+        "include/lin_sys.h",
+    ],
+    srcs = [
+        # From ./lin_sys/direct/qdldl/CMakeLists.txt at `qdldl_interface_src`.
+        "lin_sys/direct/qdldl/qdldl_interface.h",
+        "lin_sys/direct/qdldl/qdldl_interface.c",
+        # From ./src/CMakeLists.txt at `osqp_src`.
+        # These sources are always enabled in CMakeLists.
+        "src/auxil.c",
+        "src/error.c",
+        "src/lin_alg.c",
+        "src/osqp.c",
+        "src/proj.c",
+        "src/scaling.c",
+        "src/util.c",
+        # These sources are enabled in CMakeLists only when building in normal
+        # mode.
+        "src/kkt.c",
+        # These sources are enabled in CMakeLists only when building in
+        # non-embedded mode.
+        "src/cs.c",
+        "src/polish.c",
+        "src/lin_sys.c",
+    ],
+    includes = [
+        "include",
+        "lin_sys/direct/qdldl",
+    ],
+    copts = [
+        "-fvisibility=hidden",
+        "-w",
+        "-Werror=incompatible-pointer-types",
+    ],
+    linkstatic = 1,
+    deps = [
+        "@qdldl_internal//:qdldl",
+        "@suitesparse_internal//:amd",
+    ],
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+    doc_strip_prefix = ["lin_sys/direct/qdldl"],
+)

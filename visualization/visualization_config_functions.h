@@ -91,8 +91,7 @@ or else the provided `scene_graph` is non-null.
 @see drake::multibody::AddMultibodyPlant()
 @see drake::systems::lcm::ApplyLcmBusConfig() */
 void ApplyVisualizationConfig(
-    const VisualizationConfig& config,
-    systems::DiagramBuilder<double>* builder,
+    const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
     const systems::lcm::LcmBuses* lcm_buses = nullptr,
     const multibody::MultibodyPlant<double>* plant = nullptr,
     const geometry::SceneGraph<double>* scene_graph = nullptr,

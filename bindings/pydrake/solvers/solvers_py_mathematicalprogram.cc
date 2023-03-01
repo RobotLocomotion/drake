@@ -475,13 +475,6 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kScs", SolverType::kScs, doc.SolverType.kScs.doc)
       .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  solver_type  // BR
-      .value("kDReal", SolverType::kDReal, "(Deprecated.)")
-      .value("kIbex", SolverType::kIbex, "(Deprecated.)");
-#pragma GCC diagnostic pop
-
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
       .def(py::init<>(), doc.SolverOptions.ctor.doc)
@@ -522,7 +515,13 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .def("get_print_file_name", &SolverOptions::get_print_file_name,
           doc.SolverOptions.get_print_file_name.doc)
       .def("get_print_to_console", &SolverOptions::get_print_to_console,
-          doc.SolverOptions.get_print_to_console.doc);
+          doc.SolverOptions.get_print_to_console.doc)
+      .def("__repr__", [](const SolverOptions&) -> std::string {
+        // This is a minimal implementation that serves to avoid displaying
+        // memory addresses in pydrake docs and help strings. In the future,
+        // we should enhance this to provide more details.
+        return "<SolverOptions>";
+      });
 
   py::enum_<CommonSolverOption>(
       m, "CommonSolverOption", doc.CommonSolverOption.doc)
@@ -630,7 +629,7 @@ void BindMathematicalProgram(py::module m) {
           },
           doc.MathematicalProgramResult.GetSuboptimalSolution
               .doc_2args_constEigenMatrixBase_int)
-      .def("num_suboptimal_solution()",
+      .def("num_suboptimal_solution",
           &MathematicalProgramResult::num_suboptimal_solution,
           doc.MathematicalProgramResult.num_suboptimal_solution.doc)
       .def("get_suboptimal_objective",

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 
 namespace drake {
 namespace systems {
@@ -64,11 +65,12 @@ CameraInfo::CameraInfo(
   CheckBetweenZeroAndMax("Center X", K(0, 2), width, &errors);
   CheckBetweenZeroAndMax("Center Y", K(1, 2), height, &errors);
 
-  // Off-diagonal terms should be zero and homogenous row should be [0, 0, 1].
+  // Off-diagonal terms should be zero and homogeneous row should be [0, 0, 1].
   // TODO(eric.cousineau): Relax this with a tolerance?
   if (K(0, 1) != 0 || K(1, 0) != 0 || K(2, 0) != 0 || K(2, 1) != 0 ||
       K(2, 2) != 1) {
-    errors << kPrefix << "The camera's intrinsic matrix is malformed:\n" << K;
+    errors << kPrefix << "The camera's intrinsic matrix is malformed:\n"
+           << fmt::to_string(fmt_eigen(K));
   }
 
   const std::string error_message = errors.str();

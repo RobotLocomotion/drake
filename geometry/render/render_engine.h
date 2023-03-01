@@ -278,7 +278,7 @@ class RenderEngine : public ShapeReifier {
    `color_image_out` is not `nullptr` and its size is consistent with the
    camera intrinsics.
 
-   @throws std::exception in its default implementaiton indicating that it has
+   @throws std::exception in its default implementation indicating that it has
    not been implemented. Derived %RenderEngine classes must implement this to
    support rendering color images. */
   virtual void DoRenderColorImage(
@@ -290,7 +290,7 @@ class RenderEngine : public ShapeReifier {
    `depth_image_out` is not `nullptr` and its size is consistent with the
    camera intrinsics.
 
-   @throws std::exception in its default implementaiton indicating that it has
+   @throws std::exception in its default implementation indicating that it has
    not been implemented. Derived %RenderEngine classes must implement this to
    support rendering depth images. */
   virtual void DoRenderDepthImage(
@@ -302,7 +302,7 @@ class RenderEngine : public ShapeReifier {
    `label_image_out` is not `nullptr` and its size is consistent with the
    camera intrinsics.
 
-   @throws std::exception in its default implementaiton indicating that it has
+   @throws std::exception in its default implementation indicating that it has
    not been implemented. Derived %RenderEngine classes must implement this to
    support rendering label images. */
   virtual void DoRenderLabelImage(

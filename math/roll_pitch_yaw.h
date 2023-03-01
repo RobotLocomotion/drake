@@ -4,12 +4,12 @@
 #include <limits>
 
 #include <Eigen/Dense>
-#include <fmt/ostream.h>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 
 namespace drake {
 namespace math {
@@ -663,6 +663,14 @@ using RollPitchYawd = RollPitchYaw<double>;
 
 }  // namespace math
 }  // namespace drake
+
+// Format RollPitchYaw using its operator<<.
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::math::RollPitchYaw<T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::math::RollPitchYaw)

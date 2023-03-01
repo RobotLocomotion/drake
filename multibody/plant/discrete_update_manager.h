@@ -55,7 +55,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    with the scalar type `ScalarType`. This method is meant to be called only by
    MultibodyPlant. MultibodyPlant guarantees the call to ExtactModelInfo() after
    this object is scalar converted. Therefore this clone method is only
-   resposible for deep copying to a state *before* the call to
+   responsible for deep copying to a state *before* the call to
    ExtactModelInfo().
    @tparam_default_scalar */
   template <typename ScalarType>
@@ -112,6 +112,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       contact_solvers::internal::ContactSolverResults<T>* results) const {
     DRAKE_DEMAND(results != nullptr);
+    plant().ValidateContext(context);
     DoCalcContactSolverResults(context, results);
   }
 
@@ -144,12 +145,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DoCalcContactResults(context, contact_results);
   }
 
-  /* TODO(amcastro-tri): Remove this function when #16955 is resolved. Right now
-   this API is here to allow MultibodyPlant retrieve discrete pairs for the
-   reporting of ContactResults. With the resolution of #16955, the managers
-   will be responsible for this computation. */
-  virtual const std::vector<internal::DiscreteContactPair<T>>&
-  EvalDiscreteContactPairs(const systems::Context<T>&) const = 0;
+  // TODO(amcastro-tri): Consider replacing with more specific APIs with the
+  // resolution of #16955. E.g., APIs to obtain generalized forces due to
+  // constraints, rather than raw solver results.
+  const contact_solvers::internal::ContactSolverResults<T>&
+  EvalContactSolverResults(const systems::Context<T>& context) const;
 
   /* Publicly exposed MultibodyPlant private/protected methods.
    @{ */
@@ -162,10 +162,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   systems::CacheEntry& DeclareCacheEntry(std::string description,
                                          systems::ValueProducer,
                                          std::set<systems::DependencyTicket>);
-
-  // TODO(#16955): Remove this function when the referenced issue is resolved.
-  const contact_solvers::internal::ContactSolverResults<T>&
-  EvalContactSolverResults(const systems::Context<T>& context) const;
 
   double default_contact_stiffness() const;
   double default_contact_dissipation() const;
@@ -202,7 +198,7 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   /* Derived DiscreteUpdateManager should override this method to declare
    cache entries in the owning MultibodyPlant. */
-  virtual void DeclareCacheEntries() {}
+  virtual void DoDeclareCacheEntries() {}
 
   /* Returns the discrete state index of the rigid position and velocity states
    declared by MultibodyPlant. */
@@ -215,9 +211,6 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
 
   // N.B. Keep the spelling and order of declarations here identical to the
   // MultibodyPlantDiscreteUpdateManagerAttorney spelling and order of same.
-
-  const internal::ContactJacobians<T>& EvalContactJacobians(
-      const systems::Context<T>& context) const;
 
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
@@ -248,6 +241,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs() const;
 
+  const std::vector<internal::BallConstraintSpecs>& ball_constraints_specs()
+      const;
+
   BodyIndex FindBodyByGeometryId(geometry::GeometryId geometry_id) const;
   /* @} */
 
@@ -271,9 +267,19 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       ContactResults<T>* contact_results) const = 0;
 
  private:
+  // Struct used to conglomerate the indexes of cache entries declared by the
+  // manager.
+  struct CacheIndexes {
+    systems::CacheIndex contact_solver_results;
+  };
+
+  // NVI to DoDeclareCacheEntries().
+  void DeclareCacheEntries();
+
+  systems::DiscreteStateIndex multibody_state_index_;
+  CacheIndexes cache_indexes_;
   const MultibodyPlant<T>* plant_{nullptr};
   MultibodyPlant<T>* mutable_plant_{nullptr};
-  systems::DiscreteStateIndex multibody_state_index_;
 };
 
 }  // namespace internal

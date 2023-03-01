@@ -49,19 +49,6 @@ set(libtiff_url "http://download.osgeo.org/libtiff/tiff-${libtiff_version}.tar.g
 set(libtiff_md5 "2165e7aba557463acc0664e71a3ed424")
 list(APPEND ALL_PROJECTS libtiff)
 
-# msgpack
-set(msgpack_version 3.1.0)
-set(msgpack_url "https://github.com/msgpack/msgpack-c/releases/download/cpp-${msgpack_version}/msgpack-${msgpack_version}.tar.gz")
-set(msgpack_md5 "57bdba5ae83831c7c04aad39e479b225")
-list(APPEND ALL_PROJECTS msgpack)
-
-# gflags
-set(gflags_version 2.2.1)
-set(gflags_url "https://github.com/gflags/gflags/archive/v${gflags_version}.tar.gz")
-set(gflags_md5 "b98e772b4490c84fc5a87681973f75d1")
-set(gflags_dlname "gflags-${gflags_version}.tar.gz")
-list(APPEND ALL_PROJECTS gflags)
-
 # eigen
 if(APPLE)
     # This version mimics homebrew.
@@ -88,12 +75,6 @@ set(lapack_version 3.10.0)
 set(lapack_url "https://github.com/Reference-LAPACK/lapack/archive/v${lapack_version}.tar.gz")
 set(lapack_md5 "d70fc27a8bdebe00481c97c728184f09")
 list(APPEND ALL_PROJECTS lapack)
-
-# suitesparse
-set(suitesparse_version 4.4.5)
-set(suitesparse_url "http://faculty.cse.tamu.edu/davis/SuiteSparse/SuiteSparse-${suitesparse_version}.tar.gz")
-set(SuiteSparse_md5 "a2926c27f8a5285e4a10265cc68bbc18")
-list(APPEND ALL_PROJECTS suitesparse)
 
 # coinutils
 set(coinutils_version 2.11.4)

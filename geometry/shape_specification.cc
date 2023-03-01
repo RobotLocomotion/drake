@@ -72,8 +72,10 @@ Capsule::Capsule(double radius, double length)
 Capsule::Capsule(const Vector2<double>& measures)
     : Capsule(measures(0), measures(1)) {}
 
-Convex::Convex(const std::string& absolute_filename, double scale)
-    : Shape(ShapeTag<Convex>()), filename_(absolute_filename), scale_(scale) {
+Convex::Convex(const std::string& filename, double scale)
+    : Shape(ShapeTag<Convex>()),
+      filename_(std::filesystem::absolute(filename)),
+      scale_(scale) {
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Convex |scale| cannot be < 1e-8.");
   }
@@ -140,8 +142,10 @@ RigidTransform<double> HalfSpace::MakePose(const Vector3<double>& Hz_dir_F,
   return RigidTransform<double>(R_FH, p_FH);
 }
 
-Mesh::Mesh(const std::string& absolute_filename, double scale)
-    : Shape(ShapeTag<Mesh>()), filename_(absolute_filename), scale_(scale) {
+Mesh::Mesh(const std::string& filename, double scale)
+    : Shape(ShapeTag<Mesh>()),
+      filename_(std::filesystem::absolute(filename)),
+      scale_(scale) {
   if (std::abs(scale) < 1e-8) {
     throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
   }

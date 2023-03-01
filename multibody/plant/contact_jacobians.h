@@ -10,16 +10,15 @@ namespace drake {
 namespace multibody {
 namespace internal {
 
-// Stores the computed contact Jacobians when a point contact model is used.
+// Stores the computed contact Jacobians when a discrete contact model is used.
 // At a given state of the multibody system, there will be `nc` contact pairs.
 // For each penetration pair involving bodies A and B a contact frame C is
 // defined by the rotation matrix `R_WC = [Cx_W, Cy_W, Cz_W]` where
 // `Cz_W = nhat_BA_W` equals the normal vector pointing from body B into body
-// A, expressed in the world frame W. See PenetrationAsPointPair for further
+// A, expressed in the world frame W. See DiscreteContactPair for further
 // details on the definition of each contact pair. Versors `Cx_W` and `Cy_W`
 // constitute a basis of the plane normal to `Cz_W` and are arbitrarily chosen.
 // Below, v denotes the vector of generalized velocities, of size `nv`.
-// @see MultibodyPlant::EvalContactJacobians().
 template <class T>
 struct ContactJacobians {
   // Normal contact Jacobian.

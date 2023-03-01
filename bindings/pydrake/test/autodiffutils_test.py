@@ -98,12 +98,12 @@ class TestAutoDiffXd(unittest.TestCase):
         # Conversion.
         with self.assertRaises(TypeError):
             # Avoid implicit coercion, as this will imply information loss.
-            xf = np.zeros(2, dtype=np.float)
+            xf = np.zeros(2, dtype=float)
             xf[:] = x
         with self.assertRaises(TypeError):
             # We could define `__float__` to allow this, but then that will
             # enable implicit coercion, which we should avoid.
-            xf = x.astype(dtype=np.float)
+            xf = x.astype(dtype=float)
         # Presently, does not convert.
         x = np.zeros((3, 3), dtype=AD)
         self.assertFalse(isinstance(x[0, 0], AD))

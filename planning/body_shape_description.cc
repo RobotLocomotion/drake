@@ -1,4 +1,4 @@
-#include "planning/body_shape_description.h"
+#include "drake/planning/body_shape_description.h"
 
 #include "drake/common/drake_throw.h"
 #include "drake/geometry/query_object.h"
@@ -7,11 +7,10 @@
 namespace drake {
 namespace planning {
 
-BodyShapeDescription::BodyShapeDescription(
-    const geometry::Shape& shape,
-    const math::RigidTransformd& X_BS,
-    std::string model_instance_name,
-    std::string body_name)
+BodyShapeDescription::BodyShapeDescription(const geometry::Shape& shape,
+                                           const math::RigidTransformd& X_BS,
+                                           std::string model_instance_name,
+                                           std::string body_name)
     : shape_(shape.Clone()),
       X_BS_(X_BS),
       model_instance_name_(std::move(model_instance_name)),
@@ -37,8 +36,7 @@ BodyShapeDescription MakeBodyShapeDescription(
   const auto frame_id = inspector.GetFrameId(geometry_id);
   // inspector gives us the shape's pose w.r.t. the parent geometry frame F. We
   // rely on MbP registering the geometry frame F to the body B as X_BF = I.
-  const math::RigidTransformd& X_BS =
-      inspector.GetPoseInFrame(geometry_id);
+  const math::RigidTransformd& X_BS = inspector.GetPoseInFrame(geometry_id);
   const auto body = plant.GetBodyFromFrameId(frame_id);
   DRAKE_DEMAND(body != nullptr);
   const std::string& model_instance_name =

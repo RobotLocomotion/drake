@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/fmt_ostream.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mixed_integer_optimization_util.h"
 
@@ -231,3 +232,11 @@ AddRotationMatrixBoxSphereIntersectionMilpConstraints(
 
 }  // namespace solvers
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<
+    drake::solvers::MixedIntegerRotationConstraintGenerator::Approach>
+    : drake::ostream_formatter {};
+}  // namespace fmt

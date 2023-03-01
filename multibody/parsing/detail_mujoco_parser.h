@@ -31,17 +31,18 @@ namespace internal {
 // @param data_source The XML data to be parsed.
 // @param model_name The name given to the newly created instance of this
 //   model.  If empty, the "name" attribute from the model tag will be used.
-// @param parent_model_name Optional name of parent model. If set, this will be
-//   prefixed with the model name (either `model_name` or from the "name"
-//   attribute) using the SDFormat scope delimiter "::". The prefixed name will
-//   used as the name given to the newly created instance of this model.
+// @param parent_model_name Optional name of parent model. If set, the model
+//   name of the parsed model (either `model_name` or from the "name"
+//   attribute) will be prefixed with the parent_model_name, using the SDFormat
+//   scope delimiter "::". The prefixed name will used as the name given to the
+//   newly created instance of this model.
 // @param plant A pointer to a mutable MultibodyPlant object to which the model
 //   will be added.
 // @returns The model instance index for the newly added model.
 ModelInstanceIndex AddModelFromMujocoXml(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
-    MultibodyPlant<double>* plant);
+    const ParsingWorkspace& workspace);
 
 class MujocoParserWrapper final : public ParserInterface {
  public:

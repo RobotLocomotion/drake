@@ -16,8 +16,8 @@ def common_robotics_utilities_repository(
         # package.BUILD.bazel and BUILD.bazel in drake. Tests may have been
         # updated in ToyotaResearchInstitute/common_robotics_utilities/test/ or
         # ToyotaResearchInstitute/common_robotics_utilities/CMakeLists.txt.ros2
-        commit = "73a4d936fcf72a7319d15f46f3ea493625f29a26",
-        sha256 = "4a3cdd7b3d21c0d40477ca87166e6c7e2750118566d4bd83c400f0f1f8d10db1",  # noqa
+        commit = "d8b1a861d07e7c526e2a7dd3123d351498b53636",
+        sha256 = "8d3357221aeacabc538391b1ab53bd848a8f29ddae75896912c23b7bb9c3d8d8",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

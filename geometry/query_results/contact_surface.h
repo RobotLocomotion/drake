@@ -107,7 +107,7 @@ enum class HydroelasticContactRepresentation { kTriangle, kPolygon };
 
   Intersection between triangles and tetrahedra (or tetrahedra and tetrahedra)
   can produce polygons with up to eight sides. A %ContactSurface can represent
-  the resulting surface as a mesh of such polygons, or as a mesh of tesselated
+  the resulting surface as a mesh of such polygons, or as a mesh of tessellated
   triangles. The domains of the two representations are identical. The
   triangular version admits for simple, high-order integration over the domain.
   Every element is a triangle, and triangles will only disappear and reappear
@@ -318,7 +318,7 @@ class ContactSurface {
    mesh and field. */
   //@{
 
-  /** Simpley reports if this contact surface's mesh representation is triangle.
+  /** Simply reports if this contact surface's mesh representation is triangle.
    Equivalent to:
 
        representation() == HydroelasticContactRepresentation::kTriangle

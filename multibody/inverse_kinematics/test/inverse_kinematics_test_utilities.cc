@@ -28,7 +28,7 @@ IiwaKinematicConstraintTest::IiwaKinematicConstraintTest() {
   plant_->RegisterAsSourceForSceneGraph(
       builder.AddSystem<SceneGraph<double>>());
   multibody::Parser parser{plant_};
-  parser.AddModelFromFile(iiwa_path, "iiwa");
+  parser.AddModels(iiwa_path);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0"));
   plant_->Finalize();

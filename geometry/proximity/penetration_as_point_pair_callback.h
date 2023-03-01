@@ -3,8 +3,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 
+#include "drake/common/drake_export.h"
 #include "drake/geometry/proximity/collision_filter.h"
 #include "drake/geometry/query_results/penetration_as_point_pair.h"
 #include "drake/math/rigid_transform.h"
@@ -12,7 +13,7 @@
 namespace drake {
 namespace geometry {
 namespace internal {
-namespace penetration_as_point_pair {
+namespace penetration_as_point_pair DRAKE_NO_EXPORT {
 
 /* Supporting data for the detecting collision between geometries and reporting
  them as a pair of points (see PenetrationAsPointPair). It includes:

@@ -5,31 +5,35 @@
 #include <string>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 #include "drake/common/reset_after_move.h"
 
 namespace drake {
 namespace solvers {
 
-/// Identifies a SolverInterface implementation.
-///
-/// A moved-from instance is guaranteed to be empty and will not compare equal
-/// to any non-empty ID.
+/** Identifies a SolverInterface implementation.
+
+A moved-from instance is guaranteed to be empty and will not compare equal to
+any non-empty ID. */
 class SolverId {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SolverId)
   ~SolverId() = default;
 
-  /// Constructs a specific, known solver type.  Internally, a hidden
-  /// identifier is allocated and assigned to this instance; all instances that
-  /// share an identifier (including copies of this instance) are considered
-  /// equal.  The solver names are not enforced to be unique, though we
-  /// recommend that they remain so in practice.
+  /** Constructs a specific, known solver type. Internally, a hidden integer is
+  allocated and assigned to this instance; all instances that share an integer
+  (including copies of this instance) are considered equal. The solver names are
+  not enforced to be unique, though we recommend that they remain so in
+  practice.
+
+  For best performance, choose a name that is 15 characters or less, so that it
+  fits within the libstdc++ "small string" optimization ("SSO"). */
   explicit SolverId(std::string name);
 
   const std::string& name() const { return name_; }
 
-  /// Implements the @ref hash_append concept.
+  /** Implements the @ref hash_append concept. */
   template <class HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher,
                           const SolverId& item) noexcept {
@@ -68,3 +72,10 @@ struct less<drake::solvers::SolverId> {
 template <>
 struct hash<drake::solvers::SolverId> : public drake::DefaultHash {};
 }  // namespace std
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::solvers::SolverId>
+    : drake::ostream_formatter {};
+}  // namespace fmt

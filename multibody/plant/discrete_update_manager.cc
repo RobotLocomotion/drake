@@ -9,6 +9,43 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+void DiscreteUpdateManager<T>::DeclareCacheEntries() {
+  // The Correct Solution:
+  // The Implicit Stribeck solver solution S is a function of state x,
+  // actuation input u (and externally applied forces) and even time if
+  // any of the force elements in the model is time dependent. We can
+  // write this as S = S(t, x, u).
+  // Even though this variables can change continuously with time, we
+  // want the solver solution to be updated periodically (with period
+  // time_step()) only. That is, ContactSolverResults should be handled
+  // as an abstract state with periodic updates. In the systems::
+  // framework terminology, we'd like to have an "unrestricted update"
+  // with a periodic event trigger.
+  // The Problem (#10149):
+  // From issue #10149 we know unrestricted updates incur a very
+  // noticeably performance hit that at this stage we are not willing to
+  // pay.
+  // The Work Around (#10888):
+  // To emulate the correct behavior until #10149 is addressed we declare
+  // the Implicit Stribeck solver solution dependent only on the discrete
+  // state. This is not the correct solution given these results do
+  // depend on time and (even continuous) inputs. However it does emulate
+  // the discrete update of these values as if zero-order held, which is
+  // what we want.
+  const auto& contact_solver_results_cache_entry = this->DeclareCacheEntry(
+      "Contact solver results",
+      systems::ValueProducer(
+          this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
+      {systems::System<T>::xd_ticket(),
+       systems::System<T>::all_parameters_ticket()});
+  cache_indexes_.contact_solver_results =
+      contact_solver_results_cache_entry.cache_index();
+
+  // Allow derived classes to declare their own cache entries.
+  DoDeclareCacheEntries();
+}
+
+template <typename T>
 systems::CacheEntry& DiscreteUpdateManager<T>::DeclareCacheEntry(
     std::string description, systems::ValueProducer value_producer,
     std::set<systems::DependencyTicket> prerequisites_of_calc) {
@@ -86,16 +123,10 @@ template <typename T>
 const contact_solvers::internal::ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::EvalContactSolverResults(plant(), context);
-}
-
-template <typename T>
-const internal::ContactJacobians<T>&
-DiscreteUpdateManager<T>::EvalContactJacobians(
-    const systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::EvalContactJacobians(
-      plant(), context);
+  return plant()
+      .get_cache_entry(cache_indexes_.contact_solver_results)
+      .template Eval<contact_solvers::internal::ContactSolverResults<T>>(
+          context);
 }
 
 template <typename T>
@@ -163,6 +194,13 @@ const std::vector<internal::DistanceConstraintSpecs>&
 DiscreteUpdateManager<T>::distance_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
       T>::distance_constraints_specs(*plant_);
+}
+
+template <typename T>
+const std::vector<internal::BallConstraintSpecs>&
+DiscreteUpdateManager<T>::ball_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::ball_constraints_specs(
+      *plant_);
 }
 
 template <typename T>

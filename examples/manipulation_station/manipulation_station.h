@@ -18,6 +18,39 @@ namespace drake {
 namespace examples {
 namespace manipulation_station {
 
+template<typename T> class ManipulationStation;
+
+// This system computes the generalized forces on the IIWA arm of the
+// manipulation resulting from externally applied spatial forces.
+//
+// @system
+// name: ExternalGeneralizedForcesComputer
+// input_ports:
+// - multibody_state
+// - applied_spatial_force
+// output_ports:
+// - applied_generalized_force
+// @endsystem
+class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ExternalGeneralizedForcesComputer)
+
+  ExternalGeneralizedForcesComputer(
+      const multibody::MultibodyPlant<double>* plant, int iiwa_num_dofs);
+
+ private:
+  void CalcGeneralizedForcesOutput(
+      const drake::systems::Context<double>& context,
+      drake::systems::BasicVector<double>* output_vector) const;
+
+  const multibody::MultibodyPlant<double>* plant_{nullptr};
+  int iiwa_num_velocities_{0};
+  int iiwa_velocity_start_{0};
+  systems::InputPortIndex multibody_state_;
+  systems::InputPortIndex applied_spatial_force_input_port_;
+  systems::OutputPortIndex applied_generalized_force_output_port_;
+};
+
 /// Determines which sdf is loaded for the IIWA in the ManipulationStation.
 enum class IiwaCollisionModel { kNoCollision, kBoxCollision };
 
@@ -55,6 +88,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// - iiwa_feedforward_torque (optional)
 /// - wsg_position
 /// - wsg_force_limit (optional)
+/// - <b style="color:orange">applied_spatial_force (optional)</b>
 /// output_ports:
 /// - iiwa_position_commanded
 /// - iiwa_position_measured
@@ -129,7 +163,7 @@ enum class Setup { kNone, kManipulationClass, kClutterClearing, kPlanarIiwa };
 /// ManipulationStation<double> station;
 /// Parser parser(&station.get_mutable_multibody_plant(),
 ///                &station.get_mutable_scene_graph());
-/// parser.AddModelFromFile("my.sdf", "my_model");
+/// parser.AddModels("my.sdf");
 /// ...
 /// // coming soon -- sugar API for adding additional objects.
 /// station.Finalize()

@@ -3,6 +3,7 @@
 #include <string>
 #include <utility>
 
+#include "drake/common/fmt.h"
 #include "drake/solvers/mathematical_program.h"
 
 namespace drake {
@@ -412,3 +413,6 @@ void AddBilinearProductMcCormickEnvelopeMultipleChoice(
 
 }  // namespace solvers
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(, drake::solvers, IntervalBinning, x,
+                   drake::solvers::to_string(x))

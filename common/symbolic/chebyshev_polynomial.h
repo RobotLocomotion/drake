@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/expression.h"
 #include "drake/common/symbolic/polynomial.h"
@@ -130,3 +131,10 @@ template <>
 struct hash<drake::symbolic::ChebyshevPolynomial> : public drake::DefaultHash {
 };
 }  // namespace std
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::symbolic::ChebyshevPolynomial>
+    : drake::ostream_formatter {};
+}  // namespace fmt

@@ -7,17 +7,11 @@
 
 set -euxo pipefail
 
-with_maintainer_only=0
 with_test_only=1
 with_update=1
 
 while [ "${1:-}" != "" ]; do
   case "$1" in
-    # Install prerequisites that are only needed to run select maintainer
-    # scripts. Most developers will not need to install these dependencies.
-    --with-maintainer-only)
-      with_maintainer_only=1
-      ;;
     # Do NOT install prerequisites that are only needed to build and/or run
     # unit tests, i.e., those prerequisites that are not dependencies of
     # bazel { build, run } //:install.
@@ -51,21 +45,13 @@ fi
 
 brew bundle --file="${BASH_SOURCE%/*}/Brewfile" --no-lock
 
-if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  brew bundle --file="${BASH_SOURCE%/*}/Brewfile-maintainer-only" --no-lock
-fi
-
-if ! command -v pip3.10 &>/dev/null; then
-  echo 'ERROR: pip3.10 is NOT installed. The post-install step for the python@3.10 formula may have failed.' >&2
+if ! command -v pip3.11 &>/dev/null; then
+  echo 'ERROR: pip3.11 is NOT installed. The post-install step for the python@3.11 formula may have failed.' >&2
   exit 2
 fi
 
-pip3.10 install -r "${BASH_SOURCE%/*}/requirements.txt"
+pip3.11 install -r "${BASH_SOURCE%/*}/requirements.txt"
 
 if [[ "${with_test_only}" -eq 1 ]]; then
-  pip3.10 install -r "${BASH_SOURCE%/*}/requirements-test-only.txt"
-fi
-
-if [[ "${with_maintainer_only}" -eq 1 ]]; then
-  pip3.10 install -r "${BASH_SOURCE%/*}/requirements-maintainer-only.txt"
+  pip3.11 install -r "${BASH_SOURCE%/*}/requirements-test-only.txt"
 fi

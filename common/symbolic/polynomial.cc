@@ -15,6 +15,7 @@
 #undef DRAKE_COMMON_SYMBOLIC_EXPRESSION_DETAIL_HEADER
 
 #include "drake/common/symbolic/decompose.h"
+#include "drake/common/text_logging.h"
 
 using std::accumulate;
 using std::make_pair;
@@ -821,6 +822,175 @@ Polynomial& Polynomial::AddProduct(const Expression& coeff, const Monomial& m) {
   return *this;
 }
 
+Polynomial Polynomial::SubstituteAndExpand(
+    const std::unordered_map<Variable, Polynomial>& indeterminate_substitution,
+    std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*>
+        substitutions_optional)
+    const {
+  std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions_obj;
+  std::map<Monomial, Polynomial, internal::CompareMonomial>* substitutions =
+      substitutions_optional.value_or(&substitutions_obj);
+
+  for (const auto& var : indeterminates_) {
+    DRAKE_DEMAND(indeterminate_substitution.find(var) !=
+                 indeterminate_substitution.cend());
+    const Polynomial cur_sub{indeterminate_substitution.at(var).Expand()};
+    const Monomial cur_monomial{var};
+    if (substitutions->find(cur_monomial) != substitutions->cend()) {
+      if (!substitutions->at(cur_monomial).EqualTo(cur_sub)) {
+        drake::log()->warn(fmt::format(
+            "SubstituteAndExpand(): the passed substitutions map contains a "
+            "different expansion for {} than is contained in "
+            "indeterminate_substitutions. Substitutions contains {}, but "
+            "indeterminate_substitutions contains {}. It is very likely that "
+            "substitutions is storing expansions which are inconsistent and so "
+            "you should not trust the output of this method.",
+            cur_monomial, substitutions->at(cur_monomial), cur_sub));
+      }
+    } else {
+      substitutions->emplace(cur_monomial, cur_sub);
+    }
+  }
+
+  MapType new_polynomial_coeff_map;
+  // Ensures the base case of the constant term monomial is always reached.
+  substitutions->insert_or_assign(Monomial(), Polynomial(1));
+
+  // Find the largest (in the lexicographic order) monomial for which we
+  // have already computed the expansion.
+  auto find_nearest_cached_monomial = [&substitutions](
+                                          const Monomial& monomial) {
+    auto nearest_cached_monomial_iter =
+        std::prev(substitutions->lower_bound(monomial));
+    while (!((*nearest_cached_monomial_iter).first)
+                .GetVariables()
+                .IsSubsetOf(monomial.GetVariables())) {
+      nearest_cached_monomial_iter = std::prev(nearest_cached_monomial_iter);
+    }
+    return (*nearest_cached_monomial_iter).first;
+  };
+
+  // Given a monomial, compute its expansion using the saved expansions in
+  // substitutions and by repeated squaring. If the total degree of monomial is
+  // not 1 (i.e. monomial is not a pure indeterminate), then the expanded
+  // substitution will be added to the substitutions map.
+  auto compute_substituted_monomial_expansion =
+      [&indeterminate_substitution, &substitutions,
+       &find_nearest_cached_monomial](
+          const Monomial& monomial,
+          auto&& compute_substituted_monomial_expansion_recursion_handle)
+      -> const Polynomial& {
+    // If the monomial total degree is 1, it is an indeterminate and so we can
+    // just find the substitution.
+    if (monomial.total_degree() == 1) {
+      return indeterminate_substitution.at(*monomial.GetVariables().begin());
+    }
+    // Base case. Since the map substitutions is non-empty and contains the
+    // monomial 1 the recursion is guaranteed to terminate.
+    if (substitutions->find(monomial) != substitutions->cend()) {
+      return substitutions->at(monomial);
+    }
+
+    // Find the largest (in the lexicographic order) monomial for which we
+    // have already computed the expansion.
+    Monomial nearest_cached_monomial = find_nearest_cached_monomial(monomial);
+
+    // If the nearest cached monomial is 1, then we do not have a cached
+    // substitution for it. In this case, we will compute the expansion
+    // using the successive squaring method. For example, x³y⁵ would be
+    // computed as (xy²)²(xy).
+    //
+    // If the nearest cached monomial is not 1, we recurse on the remaining
+    // powers. The reason we do not perform successive squaring immediately
+    // is to enable us to potentially find a larger power immediately. For
+    // example, if we are expanding x³y⁵, and substitutions only contains
+    // the keys {1, xy²}, then the nearest cached monomial is xy².
+    // The remaining monomial would be x²y³. Applying the successive
+    // squaring method would require us to compute the expansion of xy.
+    // Recursing immediately would enable us to again use the substitution
+    // of xy². We wish to use the stored substitutions as much as possible,
+    // and so we prefer to recurse immediately.
+    if (nearest_cached_monomial == Monomial()) {
+      Polynomial expanded_substitution{1};
+      std::map<Variable, int> halved_powers;
+      for (const auto& [var, power] : monomial.get_powers()) {
+        halved_powers.emplace(var, static_cast<int>(std::floor(power / 2)));
+        // If the current power is odd, we perform a substitution of the
+        // degree 1 monomial.
+        if (power % 2 == 1) {
+          expanded_substitution *= indeterminate_substitution.at(var);
+        }
+      }
+      const Monomial halved_monomials{halved_powers};
+      const Monomial& halved_monomials_squared{pow(halved_monomials, 2)};
+      const Polynomial& halved_power_substitution{
+          compute_substituted_monomial_expansion_recursion_handle(
+              halved_monomials,
+              compute_substituted_monomial_expansion_recursion_handle)};
+      // Store the remaining substitution in case it is useful for later. We do
+      // not need to attempt to store the halved_power_substitutions since they
+      // should already be stored by the recursive call to
+      // compute_substituted_monomial_expansion_recursion_handle.
+      if (substitutions->find(halved_monomials_squared) ==
+          substitutions->cend()) {
+        substitutions->emplace(halved_monomials_squared,
+                               pow(halved_power_substitution, 2).Expand());
+      }
+      expanded_substitution *= substitutions->at(halved_monomials_squared);
+      substitutions->emplace(monomial, expanded_substitution.Expand());
+    } else {
+      std::map<Variable, int> remaining_powers;
+      const std::map<Variable, int>& cached_powers{
+          nearest_cached_monomial.get_powers()};
+      for (const auto& [var, power] : monomial.get_powers()) {
+        if (cached_powers.find(var) != cached_powers.cend()) {
+          remaining_powers.emplace(var, power - cached_powers.at(var));
+        } else {
+          remaining_powers.emplace(var, power);
+        }
+      }
+      const Monomial remaining_monomials{remaining_powers};
+      const Polynomial& remaining_substitution{
+          compute_substituted_monomial_expansion_recursion_handle(
+              remaining_monomials,
+              compute_substituted_monomial_expansion_recursion_handle)};
+      substitutions->emplace(
+          monomial,
+          (substitutions->at(nearest_cached_monomial) * remaining_substitution)
+              .Expand());
+    }
+    return substitutions->at(monomial);
+  };
+
+  for (const auto& [old_monomial, old_coeff] : monomial_to_coefficient_map_) {
+    // If substitutions doesn't contain the current substitution create it
+    // now.
+    if (old_monomial.total_degree() != 1 &&
+        substitutions->find(old_monomial) == substitutions->cend()) {
+      compute_substituted_monomial_expansion(
+          old_monomial, compute_substituted_monomial_expansion);
+    }
+
+    // Now go through and add the substitution to the appropriate monomial
+    // in the new polynomial.
+    const Polynomial& substitution_map =
+        (old_monomial.total_degree() == 1
+             ? indeterminate_substitution.at(
+                   *old_monomial.GetVariables().begin())
+             : substitutions->at(old_monomial));
+    for (const auto& [new_monomial, new_coeff] :
+         substitution_map.monomial_to_coefficient_map()) {
+      if (new_polynomial_coeff_map.find(new_monomial) ==
+          new_polynomial_coeff_map.cend()) {
+        new_polynomial_coeff_map.insert({new_monomial, Expression()});
+      }
+      new_polynomial_coeff_map.at(new_monomial) +=
+          (new_coeff * old_coeff).Expand();
+    }
+  }
+  return Polynomial{new_polynomial_coeff_map};
+}
+
 Polynomial Polynomial::Expand() const {
   Polynomial::MapType expanded_poly_map;
   for (const auto& [monomial, coeff] : monomial_to_coefficient_map_) {
@@ -991,3 +1161,16 @@ ostream& operator<<(ostream& os, const Polynomial& p) {
 }
 }  // namespace symbolic
 }  // namespace drake
+
+// We must define this in the cc file so that symbolic_formula.h is fully
+// defined (not just forward declared) when comparing.
+namespace Eigen {
+namespace numext {
+template <>
+bool equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y) {
+  return static_cast<bool>(x == y);
+}
+}  // namespace numext
+}  // namespace Eigen

@@ -157,15 +157,6 @@ GTEST_TEST(SortedPair, StructuredBinding) {
     EXPECT_EQ(b, pair.second());
   }
 
-  // Mutable reference access.
-  {
-    auto& [a, b] = pair;
-    a = 13;
-    b = 14;
-    EXPECT_EQ(a, pair.first());
-    EXPECT_EQ(b, pair.second());
-  }
-
   // Const reference access.
   {
     auto& [a, b] = pair;

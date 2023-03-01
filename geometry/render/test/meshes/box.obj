@@ -1,5 +1,6 @@
 mtllib ./box.obj.mtl
 
+o test_box
 # Vertices
 v -1.0 -1.0 -1.0
 v -1.0 1.0 -1.0

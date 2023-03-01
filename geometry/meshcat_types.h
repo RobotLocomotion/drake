@@ -8,7 +8,7 @@
 #include <variant>
 #include <vector>
 
-#include <msgpack.hpp>
+#include <drake_vendor/msgpack.hpp>
 
 #include "drake/common/nice_type_name.h"
 #include "drake/geometry/meshcat.h"

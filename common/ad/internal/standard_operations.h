@@ -6,7 +6,7 @@
 /* This file contains free function operators for Drake's AutoDiff type.
 
 The functions provide not only arithmetic (+,-,*,/) and boolean comparison
-(<,<=,>,>=,==,!=) but also argument-dependent lookup ("ADL") compatiblity with
+(<,<=,>,>=,==,!=) but also argument-dependent lookup ("ADL") compatibility with
 the standard library's mathematical functions (abs, etc.)
 
 (See https://en.cppreference.com/w/cpp/language/adl for details about ADL.)
@@ -566,6 +566,7 @@ inline bool isnan(const AutoDiff& x) {
 /// @name Miscellaneous functions
 //@{
 
+// TODO(jwnimmer-tri) Deprecate me.
 /** Outputs the `value()` part of x to the stream.
 To output the derivatives use `<< x.derivatives().transpose()`. */
 std::ostream& operator<<(std::ostream& s, const AutoDiff& x);

@@ -24,7 +24,7 @@ GTEST_TEST(ScalarCastingTest, Casting) {
   // const double ad_to_double = ad;  // Compile error.
   const double ad_to_double = ExtractDoubleOrThrow(ad);
   EXPECT_EQ(ad_to_double, 1.0);
-  // const double sym_to_double = sym;  // Compile errror.
+  // const double sym_to_double = sym;  // Compile error.
   const double sym_to_double = ExtractDoubleOrThrow(sym);
   EXPECT_EQ(sym_to_double, 1.0);
 }

@@ -16,6 +16,8 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 #include <utility>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt.h"
 
 namespace drake {
 
@@ -47,9 +49,9 @@ namespace drake {
  3. To allow for future copy-on-write optimizations, there is a distinction
     between writable and const access, the get() method is modified to return
     only a const pointer, with get_mutable() added to return a writable pointer.
-    Furthermore, derefencing (operator*()) a mutable pointer will give a mutable
-    reference (in so far as T is not declared const), and dereferencing a
-    const pointer will give a const reference.
+    Furthermore, dereferencing (operator*()) a mutable pointer will give a
+    mutable reference (in so far as T is not declared const), and dereferencing
+    a const pointer will give a const reference.
 
  This class is entirely inline and has no computational or space overhead except
  when copying is required; it contains just a single pointer and does no
@@ -421,10 +423,11 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   }
 };
 
-/** Output the system-dependent representation of the pointer contained
- in a copyable_unique_ptr object. This is equivalent to `os << p.get();`.
- @relates copyable_unique_ptr */
+// TODO(jwnimmer-tri) On 2023-06-01 also remove the <ostream> include above.
 template <class charT, class traits, class T>
+DRAKE_DEPRECATED("2023-06-01",
+    "Use fmt or spdlog for logging, not operator<<. "
+    "See https://github.com/RobotLocomotion/drake/issues/17742 for details.")
 std::basic_ostream<charT, traits>& operator<<(
     std::basic_ostream<charT, traits>& os,
     const copyable_unique_ptr<T>& cu_ptr) {
@@ -433,3 +436,6 @@ std::basic_ostream<charT, traits>& operator<<(
 }
 
 }  // namespace drake
+
+DRAKE_FORMATTER_AS(typename T, drake, copyable_unique_ptr<T>, x,
+                   static_cast<const void*>(x.get()))

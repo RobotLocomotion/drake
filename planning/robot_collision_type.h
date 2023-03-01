@@ -7,7 +7,9 @@ namespace planning {
 
 /** Enumerates these predicates (and their combinations):
  - is the robot in collision with itself?
- - is the robot in collision with something in the environment? */
+ - is the robot in collision with something in the environment?
+
+ @ingroup planning_collision_checker */
 enum class RobotCollisionType : uint8_t {
   kNoCollision = 0x00,
   kEnvironmentCollision = 0x01,

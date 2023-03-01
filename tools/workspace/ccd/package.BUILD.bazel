@@ -4,10 +4,6 @@ load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
     "cmake_configure_file",
 )
-load(
-    "@drake//tools/install:install.bzl",
-    "install",
-)
 
 licenses(["notice"])  # BSD-3-Clause
 
@@ -41,6 +37,8 @@ CCD_PUBLIC_HEADERS = [
 # Options used when building the ccd code. Handled by cmake in upstream code
 CCD_COPTS = [
     "-Wno-all",
+    # N.B. Because ccd is C code (not C++ code), we can set hidden visibility
+    # globally, rather than laundering it though our vendor_cxx tool.
     "-fvisibility=hidden",
 ]
 
@@ -58,9 +56,5 @@ cc_library(
     defines = ["CCD_STATIC_DEFINE"],
     includes = ["src"],
     linkstatic = 1,
-)
-
-install(
-    name = "install",
-    docs = ["BSD-LICENSE"],
+    deprecation = "DRAKE DEPRECATED: The @ccd external is deprecated. The deprecated code will be removed from Drake on or after 2023-05-01.",  # noqa,
 )

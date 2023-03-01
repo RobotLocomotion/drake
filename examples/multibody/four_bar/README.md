@@ -191,7 +191,7 @@ that has both force and torque stiffness/damping.  If this technique
 is used, torque stiffness is needed.  One way to approximate torque
 stiffness is with concepts similar to the force stiffness above.
 For example, the bushing's torque stiffness k₀ could be calculated
-by specifing a maximum bushing angular displacement θₘₐₓ, estimating
+by specifying a maximum bushing angular displacement θₘₐₓ, estimating
 a maximum moment load Mx and calculating k₀ = Mx / θₘₐₓ.
 Alternatively, a value for k₀ can be determined by choosing a
 characteristic moment of inertia I₀ (which is directionally dependent)

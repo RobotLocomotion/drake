@@ -15,9 +15,9 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/symbolic/decompose.h"
 #include "drake/common/symbolic/monomial_util.h"
 #include "drake/math/matrix_util.h"
@@ -615,7 +615,7 @@ Binding<LinearCost> MathematicalProgram::AddMaximizeGeometricMeanCost(
   // that the size of x is 2ᵏ, then in each iteration, we introduce new slack
   // variables w of size 2ᵏ⁻¹, with the constraint
   // w(i)² ≤ x(2i) * x(2i+1)
-  // we then call AddMaximizeGeometricMeanCost(w). This recusion ends until
+  // we then call AddMaximizeGeometricMeanCost(w). This recursion ends until
   // w.size() == 2. We then add the constraint z(0)² ≤ w(0) * w(1), and maximize
   // the cost z(0).
   if (x.rows() <= 1) {
@@ -744,9 +744,8 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
   } else {
-    std::stringstream oss;
-    oss << "Expression " << v << " is non-linear.";
-    throw std::runtime_error(oss.str());
+    throw std::runtime_error(
+        fmt::format("Expression {} is non-linear.", fmt_eigen(v)));
   }
 }
 
@@ -1786,14 +1785,15 @@ bool MathematicalProgram::CheckBinding(const Binding<C>& binding) const {
 
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
   if (prog.num_vars() > 0) {
-    os << "Decision variables:" << prog.decision_variables().transpose()
-       << "\n\n";
+    os << fmt::format("Decision variables: {}\n\n",
+                      fmt_eigen(prog.decision_variables().transpose()));
   } else {
     os << "No decision variables.\n";
   }
 
   if (prog.num_indeterminates() > 0) {
-    os << "Indeterminates:" << prog.indeterminates().transpose() << "\n\n";
+    os << fmt::format("Indeterminates: {}\n\n",
+                      fmt_eigen(prog.indeterminates().transpose()));
   }
 
   for (const auto& b : prog.GetAllCosts()) {

@@ -152,7 +152,7 @@ int do_main() {
   /* Minimum required proximity properties for rigid bodies to interact with
    deformable bodies.
    1. A valid Coulomb friction coefficient, and
-   2. A resolution hint. (Rigid bodies need to be tesselated so that collision
+   2. A resolution hint. (Rigid bodies need to be tessellated so that collision
    queries can be performed against deformable geometries.) */
   ProximityProperties rigid_proximity_props;
   /* Set the friction coefficient close to that of rubber against rubber. */
@@ -175,9 +175,8 @@ int do_main() {
   // station instead.
   /* Set up a simple gripper. */
   Parser parser(&plant);
-  const std::string gripper_path = FindResourceOrThrow(
-      "drake/examples/multibody/deformable_torus/simple_gripper.sdf");
-  parser.AddModels(gripper_path);
+  parser.AddModelsFromUrl(
+      "package://drake/examples/multibody/deformable_torus/simple_gripper.sdf");
   /* Add collision geometries. */
   const RigidTransformd X_BG = RigidTransformd::Identity();
   const Body<double>& left_finger = plant.GetBodyByName("left_finger");
@@ -222,7 +221,7 @@ int do_main() {
   torus_instance->set_proximity_properties(deformable_proximity_props);
 
   /* Registration of all deformable geometries ostensibly requires a resolution
-   hint parameter that dictates how the shape is tesselated. In the case of a
+   hint parameter that dictates how the shape is tessellated. In the case of a
    `Mesh` shape, the resolution hint is unused because the shape is already
    tessellated. */
   // TODO(xuchenhan-tri): Though unused, we still asserts the resolution hint is

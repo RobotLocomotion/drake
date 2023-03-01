@@ -17,21 +17,48 @@ drake_cc_package_library(
     name = "inverse_kinematics",
     visibility = ["//visibility:public"],
     deps = [
+        ":constraint_relaxing_ik",
+        ":differential_inverse_kinematics",
+        ":differential_inverse_kinematics_integrator",
         ":global_inverse_kinematics",
         ":inverse_kinematics_core",
         ":kinematic_evaluators",
     ],
 )
 
-# A deprecation shim library, to be removed on or after 2022-11-01.
 drake_cc_library(
-    name = "kinematic_constraint",
-    deprecation = "The new name is 'kinematic_evaluators' instead of 'kinematic_constraint'.",  # noqa
-    tags = [
-        "exclude_from_package",
-        "manual",
+    name = "constraint_relaxing_ik",
+    srcs = ["constraint_relaxing_ik.cc"],
+    hdrs = ["constraint_relaxing_ik.h"],
+    deps = [
+        ":inverse_kinematics_core",
+        "//common/trajectories:piecewise_polynomial",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//solvers:solve",
     ],
-    deps = [":kinematic_evaluators"],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics",
+    srcs = ["differential_inverse_kinematics.cc"],
+    hdrs = ["differential_inverse_kinematics.h"],
+    deps = [
+        "//multibody/plant",
+        "//solvers:clp_solver",
+        "//solvers:mathematical_program",
+        "//solvers:osqp_solver",
+    ],
+)
+
+drake_cc_library(
+    name = "differential_inverse_kinematics_integrator",
+    srcs = ["differential_inverse_kinematics_integrator.cc"],
+    hdrs = ["differential_inverse_kinematics_integrator.h"],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//systems/framework:leaf_system",
+    ],
 )
 
 drake_cc_library(
@@ -48,6 +75,7 @@ drake_cc_library(
         "minimum_distance_constraint.cc",
         "orientation_constraint.cc",
         "orientation_cost.cc",
+        "point_to_line_distance_constraint.cc",
         "point_to_point_distance_constraint.cc",
         "polyhedron_constraint.cc",
         "position_constraint.cc",
@@ -66,6 +94,7 @@ drake_cc_library(
         "minimum_distance_constraint.h",
         "orientation_constraint.h",
         "orientation_cost.h",
+        "point_to_line_distance_constraint.h",
         "point_to_point_distance_constraint.h",
         "polyhedron_constraint.h",
         "position_constraint.h",
@@ -119,6 +148,46 @@ drake_cc_library(
 )
 
 #============ Test ============================
+
+drake_cc_googletest(
+    name = "constraint_relaxing_ik_test",
+    srcs = ["test/constraint_relaxing_ik_test.cc"],
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    tags = ["snopt"],
+    deps = [
+        ":constraint_relaxing_ik",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":differential_inverse_kinematics",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
+    ],
+)
+
+drake_cc_googletest(
+    name = "differential_inverse_kinematics_integrator_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        ":differential_inverse_kinematics_integrator",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//manipulation/kuka_iiwa:iiwa_constants",
+        "//multibody/parsing",
+        "//systems/analysis:simulator",
+    ],
+)
 
 drake_cc_library(
     name = "inverse_kinematics_test_utilities",
@@ -236,6 +305,15 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "point_to_line_distance_constraint_test",
+    deps = [
+        ":inverse_kinematics_test_utilities",
+        ":kinematic_evaluators",
+        "//solvers/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
     name = "point_to_point_distance_constraint_test",
     deps = [
         ":inverse_kinematics_test_utilities",
@@ -299,6 +377,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "global_inverse_kinematics_test",
     timeout = "moderate",
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -315,6 +394,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "global_inverse_kinematics_reachable_test",
     timeout = "moderate",
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",
@@ -333,6 +413,7 @@ drake_cc_googletest(
     timeout = "long",
     # This test is prohibitively slow with --compilation_mode=dbg.
     disable_in_compilation_mode_dbg = True,
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         "no_asan",
         # Takes too long to run with Valgrind.
@@ -349,6 +430,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "global_inverse_kinematics_collision_avoidance_test",
     timeout = "moderate",
+    num_threads = 4,
     tags = gurobi_test_tags() + [
         # Takes too long to run with Valgrind.
         "no_memcheck",

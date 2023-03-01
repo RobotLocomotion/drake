@@ -51,7 +51,7 @@ drake_cc_library(
     deps = [
         ":iiwa_common",
         ":iiwa_lcm",
-        "//manipulation/planner:robot_plan_interpolator",
+        "//manipulation/util:robot_plan_interpolator",
         "//systems/framework:diagram_builder",
         "//systems/primitives:demultiplexer",
     ],
@@ -128,7 +128,6 @@ drake_cc_binary(
         "//manipulation/models/iiwa_description:models",
     ],
     deps = [
-        "//common:find_resource",
         "//common/trajectories:piecewise_polynomial",
         "//lcmtypes:iiwa",
         "//lcmtypes:robot_plan",

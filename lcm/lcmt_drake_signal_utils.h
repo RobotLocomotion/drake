@@ -16,9 +16,8 @@ namespace lcm {
  *
  * @return `true` if @p actual_message and @p expected_message are equal.
  */
-bool
-CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
-                               const lcmt_drake_signal& expected_message);
+bool CompareLcmtDrakeSignalMessages(const lcmt_drake_signal& actual_message,
+                                    const lcmt_drake_signal& expected_message);
 
 }  // namespace lcm
 }  // namespace drake

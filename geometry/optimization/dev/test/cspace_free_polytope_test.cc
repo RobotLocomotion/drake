@@ -1,4 +1,4 @@
-#include "drake/geometry/optimization/dev/cspace_free_polytope.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"
 
 #include <limits>
 
@@ -6,160 +6,18 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
+#include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/optimization/dev/collision_geometry.h"
 #include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
-#include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
 const double kInf = std::numeric_limits<double>::infinity();
-
-// This is a friend class of CspaceFreePolytope, we use it to expose the private
-// functions in CspaceFreePolytope for unit testing.
-class CspaceFreePolytopeTester {
- public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytopeTester)
-
-  CspaceFreePolytopeTester(const multibody::MultibodyPlant<double>* plant,
-                           const geometry::SceneGraph<double>* scene_graph,
-                           SeparatingPlaneOrder plane_order,
-                           const Eigen::Ref<const Eigen::VectorXd>& q_star)
-      : cspace_free_polytope_{
-            new CspaceFreePolytope(plant, scene_graph, plane_order, q_star)} {}
-
-  const CspaceFreePolytope& cspace_free_polytope() const {
-    return *cspace_free_polytope_;
-  }
-
-  void FindRedundantInequalities(
-      const Eigen::MatrixXd& C, const Eigen::VectorXd& d,
-      const Eigen::VectorXd& s_lower, const Eigen::VectorXd& s_upper,
-      double tighten, std::unordered_set<int>* C_redundant_indices,
-      std::unordered_set<int>* s_lower_redundant_indices,
-      std::unordered_set<int>* s_upper_redundant_indices) const {
-    cspace_free_polytope_->FindRedundantInequalities(
-        C, d, s_lower, s_upper, tighten, C_redundant_indices,
-        s_lower_redundant_indices, s_upper_redundant_indices);
-  }
-
-  const Eigen::VectorXd& s_lower() const {
-    return cspace_free_polytope_->s_lower_;
-  }
-
-  const Eigen::VectorXd& s_upper() const {
-    return cspace_free_polytope_->s_upper_;
-  }
-
-  const VectorX<symbolic::Polynomial>& s_minus_s_lower() const {
-    return cspace_free_polytope_->s_minus_s_lower_;
-  }
-
-  const VectorX<symbolic::Polynomial>& s_upper_minus_s() const {
-    return cspace_free_polytope_->s_upper_minus_s_;
-  }
-
-  template <typename T>
-  [[nodiscard]] VectorX<symbolic::Polynomial> CalcDminusCs(
-      const Eigen::Ref<const MatrixX<T>>& C,
-      const Eigen::Ref<const VectorX<T>>& d) const {
-    return cspace_free_polytope_->CalcDminusCs<T>(C, d);
-  }
-
-  [[nodiscard]] std::unordered_map<SortedPair<multibody::BodyIndex>,
-                                   VectorX<symbolic::Monomial>>
-  CalcMonomialBasis(
-      const std::vector<PlaneSeparatesGeometries>& plane_geometries) const {
-    return cspace_free_polytope_->CalcMonomialBasis(plane_geometries);
-  }
-
-  [[nodiscard]] CspaceFreePolytope::SeparationCertificate
-  ConstructPlaneSearchProgram(
-      const PlaneSeparatesGeometries& plane_geometries,
-      const VectorX<symbolic::Polynomial>& d_minus_Cs,
-      const std::unordered_set<int>& C_redundant_indices,
-      const std::unordered_set<int>& s_lower_redundant_indices,
-      const std::unordered_set<int>& s_upper_redundant_indices,
-      const std::unordered_map<SortedPair<multibody::BodyIndex>,
-                               VectorX<symbolic::Monomial>>&
-          map_body_to_monomial_basis) const {
-    return cspace_free_polytope_->ConstructPlaneSearchProgram(
-        plane_geometries, d_minus_Cs, C_redundant_indices,
-        s_lower_redundant_indices, s_upper_redundant_indices,
-        map_body_to_monomial_basis);
-  }
-
-  [[nodiscard]] CspaceFreePolytope::UnitLengthLagrangians
-  AddUnitLengthConstraint(
-      solvers::MathematicalProgram* prog,
-      const VectorX<symbolic::Polynomial>& unit_length_vec,
-      const VectorX<symbolic::Polynomial>& d_minus_Cs,
-      const std::unordered_set<int>& C_redundant_indices,
-      const std::unordered_set<int>& s_lower_redundant_indices,
-      const std::unordered_set<int>& s_upper_redundant_indices) const {
-    return cspace_free_polytope_->AddUnitLengthConstraint(
-        prog, unit_length_vec, d_minus_Cs, C_redundant_indices,
-        s_lower_redundant_indices, s_upper_redundant_indices);
-  }
-
-  [[nodiscard]] std::vector<
-      std::optional<CspaceFreePolytope::SeparationCertificateResult>>
-  FindSeparationCertificateGivenPolytope(
-      const std::vector<PlaneSeparatesGeometries>& plane_geometries,
-      const Eigen::Ref<const Eigen::MatrixXd>& C,
-      const Eigen::Ref<const Eigen::VectorXd>& d,
-      const std::unordered_map<SortedPair<multibody::BodyIndex>,
-                               VectorX<symbolic::Monomial>>&
-          map_body_to_monomial_basis,
-      const CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions&
-          options) const {
-    return cspace_free_polytope_->FindSeparationCertificateGivenPolytope(
-        plane_geometries, C, d, map_body_to_monomial_basis, options);
-  }
-
- private:
-  std::unique_ptr<CspaceFreePolytope> cspace_free_polytope_;
-};
-
-// Project s_sample to the polytope {s | C*s<=d, s_lower<=s<=s_upper}.
-[[nodiscard]] Eigen::VectorXd ProjectToPolytope(
-    const Eigen::VectorXd& s_sample, const Eigen::Ref<const Eigen::MatrixXd>& C,
-    const Eigen::Ref<const Eigen::VectorXd>& d,
-    const Eigen::Ref<const Eigen::VectorXd>& s_lower,
-    const Eigen::Ref<const Eigen::VectorXd>& s_upper) {
-  if (((C * s_sample).array() <= d.array()).all() &&
-      (s_sample.array() >= s_lower.array()).all() &&
-      (s_sample.array() <= s_upper.array()).all()) {
-    return s_sample;
-  } else {
-    solvers::MathematicalProgram prog;
-    auto s = prog.NewContinuousVariables(s_sample.rows());
-    prog.AddBoundingBoxConstraint(s_lower, s_upper, s);
-    prog.AddLinearConstraint(C, Eigen::VectorXd::Constant(C.rows(), -kInf), d,
-                             s);
-    prog.AddQuadraticErrorCost(Eigen::MatrixXd::Identity(s.rows(), s.rows()),
-                               s_sample, s);
-    const auto result = solvers::Solve(prog);
-    DRAKE_DEMAND(result.is_success());
-    return result.GetSolution(s);
-  }
-}
-
-// Evaluate the polynomial at a batch of samples, check if all evaluated results
-// are positive.
-// @param x_samples Each column is a sample of indeterminates.
-void CheckPositivePolynomialBySamples(
-    const symbolic::Polynomial& poly,
-    const Eigen::Ref<const VectorX<symbolic::Variable>>& indeterminates,
-    const Eigen::Ref<const Eigen::MatrixXd>& x_samples) {
-  EXPECT_TRUE(
-      (poly.EvaluateIndeterminates(indeterminates, x_samples).array() >= 0)
-          .all());
-}
 
 TEST_F(CIrisToyRobotTest, GetCollisionGeometries) {
   const auto link_geometries = GetCollisionGeometries(*plant_, *scene_graph_);
@@ -183,18 +41,19 @@ TEST_F(CIrisToyRobotTest, GetCollisionGeometries) {
       };
 
   check_link_geometries(plant_->world_body().index(),
-                        {world_box_, world_sphere_});
+                        {world_box_, world_cylinder_});
   check_link_geometries(body_indices_[0], {body0_box_, body0_sphere_});
   check_link_geometries(body_indices_[1], {body1_convex_, body1_capsule_});
   check_link_geometries(body_indices_[2], {body2_sphere_, body2_capsule_});
-  check_link_geometries(body_indices_[3], {body3_box_, body3_sphere_});
+  check_link_geometries(body_indices_[3], {body3_box_, body3_cylinder_});
 }
 
 TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
   // Test CspaceFreePolytope constructor.
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytope dut(plant_, scene_graph_, SeparatingPlaneOrder::kAffine,
-                         q_star);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine, q_star);
+  const CspaceFreePolytope& dut = tester.cspace_free_polytope();
   int num_planes_expected = 0;
 
   const auto link_geometries = GetCollisionGeometries(*plant_, *scene_graph_);
@@ -218,6 +77,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
 
   for (const auto& [geometry_pair, plane_index] :
        dut.map_geometries_to_separating_planes()) {
+    // check plane
     const auto& plane = dut.separating_planes()[plane_index];
     if (plane.positive_side_geometry->id() <
         plane.negative_side_geometry->id()) {
@@ -243,59 +103,41 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
 
 TEST_F(CIrisToyRobotTest, CspaceFreePolytopeGenerateRationals) {
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytope dut(plant_, scene_graph_, SeparatingPlaneOrder::kAffine,
-                         q_star);
-  CspaceFreePolytope::FilteredCollsionPairs filtered_collision_pairs = {};
-  auto ret = dut.GenerateRationals(filtered_collision_pairs,
-                                   false /* search_separating_margin */);
-  EXPECT_EQ(ret.size(), dut.separating_planes().size());
-  for (const auto& plane_geometries : ret) {
-    const auto& plane = dut.separating_planes()[plane_geometries.plane_index];
-    if (plane.positive_side_geometry->type() == GeometryType::kCylinder ||
-        plane.negative_side_geometry->type() == GeometryType::kCylinder) {
-      throw std::runtime_error(
-          "Cylinder has not been implemented yet for C-IRIS.");
-    } else if (plane.positive_side_geometry->type() == GeometryType::kSphere ||
-               plane.positive_side_geometry->type() == GeometryType::kCapsule ||
-               plane.negative_side_geometry->type() == GeometryType::kSphere ||
-               plane.negative_side_geometry->type() == GeometryType::kCapsule) {
-      // If one of the geometry is sphere or capsule, and neither geometry is
-      // cylinder, then the unit length vector is just a.
-      EXPECT_EQ(plane_geometries.unit_length_vectors.size(), 1);
-      for (int i = 0; i < 3; ++i) {
-        EXPECT_EQ(plane_geometries.unit_length_vectors[0][i], plane.a(i));
-      }
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine, q_star);
+  EXPECT_EQ(tester.plane_geometries().size(),
+            tester.cspace_free_polytope().separating_planes().size());
+  for (const auto& plane_geometries : tester.plane_geometries()) {
+    const auto& plane = tester.cspace_free_polytope()
+                            .separating_planes()[plane_geometries.plane_index];
+    if (plane.positive_side_geometry->type() == CIrisGeometryType::kPolytope &&
+        plane.negative_side_geometry->type() == CIrisGeometryType::kPolytope) {
+      EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
+                plane.positive_side_geometry->num_rationals());
+      EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
+                plane.negative_side_geometry->num_rationals());
     } else if (plane.positive_side_geometry->type() ==
-                   GeometryType::kPolytope &&
+                   CIrisGeometryType::kPolytope &&
+               plane.negative_side_geometry->type() !=
+                   CIrisGeometryType::kPolytope) {
+      EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
+                plane.positive_side_geometry->num_rationals());
+      EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
+                plane.negative_side_geometry->num_rationals() - 1);
+    } else if (plane.positive_side_geometry->type() !=
+                   CIrisGeometryType::kPolytope &&
                plane.negative_side_geometry->type() ==
-                   GeometryType::kPolytope) {
-      EXPECT_TRUE(plane_geometries.unit_length_vectors.empty());
+                   CIrisGeometryType::kPolytope) {
+      EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
+                plane.positive_side_geometry->num_rationals() - 1);
+      EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
+                plane.negative_side_geometry->num_rationals());
+    } else {
+      EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
+                plane.positive_side_geometry->num_rationals());
+      EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
+                plane.negative_side_geometry->num_rationals() - 1);
     }
-    EXPECT_EQ(plane_geometries.positive_side_rationals.size(),
-              plane.positive_side_geometry->num_rationals_per_side());
-    EXPECT_EQ(plane_geometries.negative_side_rationals.size(),
-              plane.negative_side_geometry->num_rationals_per_side());
-    EXPECT_FALSE(plane_geometries.separating_margin.has_value());
-  }
-
-  // Pass a non-empty filtered_collision_pairs with a separating margin.
-  filtered_collision_pairs.emplace(
-      SortedPair<geometry::GeometryId>(world_box_, body3_sphere_));
-  ret = dut.GenerateRationals(filtered_collision_pairs,
-                              true /* search_separating_margin */);
-  EXPECT_EQ(ret.size(), dut.separating_planes().size() - 1);
-  for (const auto& plane_geometries : ret) {
-    const auto& plane = dut.separating_planes()[plane_geometries.plane_index];
-    if (plane.positive_side_geometry->type() != GeometryType::kCylinder &&
-        plane.negative_side_geometry->type() != GeometryType::kCylinder) {
-      // The unit length vector is always a.
-      EXPECT_EQ(plane_geometries.unit_length_vectors.size(), 1);
-      EXPECT_EQ(plane_geometries.unit_length_vectors[0].rows(), 3);
-      for (int i = 0; i < 3; ++i) {
-        EXPECT_EQ(plane_geometries.unit_length_vectors[0](i), plane.a(i));
-      }
-    }
-    EXPECT_TRUE(plane_geometries.separating_margin.has_value());
   }
 }
 
@@ -373,554 +215,123 @@ TEST_F(CIrisToyRobotTest, CalcSBoundsPolynomial) {
 }
 
 TEST_F(CIrisToyRobotTest, CalcMonomialBasis) {
+  // Test CalcMonomialBasis
   const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
-  const auto plane_geometries =
-      tester.cspace_free_polytope().GenerateRationals({}, false);
-  const auto map_body_to_monomial_basis =
-      tester.CalcMonomialBasis(plane_geometries);
-  // Make sure map_body_to_monomial_basis contains all pairs of bodies.
-  for (const auto& plane : tester.cspace_free_polytope().separating_planes()) {
-    for (const auto collision_geometry :
-         {plane.positive_side_geometry, plane.negative_side_geometry}) {
-      auto it =
-          map_body_to_monomial_basis.find(SortedPair<multibody::BodyIndex>(
-              plane.expressed_body, collision_geometry->body_index()));
-      EXPECT_NE(it, map_body_to_monomial_basis.end());
-      // Make sure the degree for each variable in the monomial is at most 1.
-      for (int i = 0; i < it->second.rows(); ++i) {
-        for (const auto& [var, degree] : it->second(i).get_powers()) {
-          EXPECT_LE(degree, 1);
+  CspaceFreePolytope::Options options;
+  for (bool with_cross_y : {false, true}) {
+    options.with_cross_y = with_cross_y;
+    CspaceFreePolytopeTester tester(
+        plant_, scene_graph_, SeparatingPlaneOrder::kAffine, q_star, options);
+
+    const auto& map_body_to_monomial_basis_array =
+        tester.map_body_to_monomial_basis_array();
+    // Make sure map_body_to_monomial_basis_array contains all pairs of bodies.
+    for (const auto& plane :
+         tester.cspace_free_polytope().separating_planes()) {
+      for (const auto collision_geometry :
+           {plane.positive_side_geometry, plane.negative_side_geometry}) {
+        const SortedPair<multibody::BodyIndex> body_pair(
+            plane.expressed_body, collision_geometry->body_index());
+        auto it = map_body_to_monomial_basis_array.find(body_pair);
+        EXPECT_NE(it, map_body_to_monomial_basis_array.end());
+        const auto& monomial_basis_array = it->second;
+        for (int i = 0; i < monomial_basis_array[0].rows(); ++i) {
+          // Make sure the degree for each variable in the
+          // monomial_basis_array[0] is at most 1.
+          for (const auto& [var, degree] :
+               monomial_basis_array[0](i).get_powers()) {
+            EXPECT_LE(degree, 1);
+          }
+        }
+        for (int i = 0; i < 3; ++i) {
+          EXPECT_EQ(monomial_basis_array[i + 1].rows(),
+                    monomial_basis_array[0].rows());
+          for (int j = 0; j < monomial_basis_array[0].rows(); ++j) {
+            EXPECT_EQ(
+                monomial_basis_array[i + 1](j),
+                symbolic::Monomial(tester.cspace_free_polytope().y_slack()(i)) *
+                    monomial_basis_array[0](j));
+          }
         }
       }
     }
   }
 }
 
-void SetupPolytope(const CspaceFreePolytopeTester& tester,
-                   const Eigen::Ref<const Eigen::MatrixXd>& C,
-                   const Eigen::Ref<const Eigen::VectorXd>& d,
-                   VectorX<symbolic::Polynomial>* d_minus_Cs,
-                   std::unordered_set<int>* C_redundant_indices,
-                   std::unordered_set<int>* s_lower_redundant_indices,
-                   std::unordered_set<int>* s_upper_redundant_indices) {
-  *d_minus_Cs = tester.CalcDminusCs<double>(C, d);
-  tester.FindRedundantInequalities(
-      C, d, tester.s_lower(), tester.s_upper(), 0., C_redundant_indices,
-      s_lower_redundant_indices, s_upper_redundant_indices);
-}
-
-TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram1) {
-  // Test ConstructPlaneSearchProgram with no unit-length-vector constraint.
+TEST_F(CIrisToyRobotTest, AddEllipsoidContainmentConstraint) {
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
                                   SeparatingPlaneOrder::kAffine, q_star);
-  Eigen::Matrix<double, 9, 3> C;
-  // clang-format off
-  C << 1, 1, 0,
-       -1, -1, 0,
-       -1, 0, 1,
-       1, 0, -1,
-       0, 1, 1,
-       0, -1, -1,
-       1, 0, 1,
-       1, 1, -1,
-       1, -1, 1;
-  // clang-format on
-  Eigen::Matrix<double, 9, 1> d;
-  d << 0.1, 0.2, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.2;
 
-  VectorX<symbolic::Polynomial> d_minus_Cs;
-  std::unordered_set<int> C_redundant_indices;
-  std::unordered_set<int> s_lower_redundant_indices;
-  std::unordered_set<int> s_upper_redundant_indices;
-  SetupPolytope(tester, C, d, &d_minus_Cs, &C_redundant_indices,
-                &s_lower_redundant_indices, &s_upper_redundant_indices);
-
-  const auto plane_geometries_vec =
-      tester.cspace_free_polytope().GenerateRationals({}, false);
-  // Consider the plane between world_box_ and body3_box_.
-  // Notice that this chain only has one DOF, hence one of the rationals is
-  // actually a constant.
-  int plane_geometries_index = -1;
-  for (int i = 0; i < static_cast<int>(plane_geometries_vec.size()); ++i) {
-    const auto& plane =
-        tester.cspace_free_polytope()
-            .separating_planes()[plane_geometries_vec[i].plane_index];
-    if (SortedPair<geometry::GeometryId>(plane.positive_side_geometry->id(),
-                                         plane.negative_side_geometry->id()) ==
-        SortedPair<geometry::GeometryId>(world_box_, body3_box_)) {
-      plane_geometries_index = i;
-      break;
-    }
-  }
-  const auto& plane_geometries = plane_geometries_vec[plane_geometries_index];
-  const auto map_body_to_monomial_basis =
-      tester.CalcMonomialBasis(plane_geometries_vec);
-  auto ret = tester.ConstructPlaneSearchProgram(
-      plane_geometries, d_minus_Cs, C_redundant_indices,
-      s_lower_redundant_indices, s_upper_redundant_indices,
-      map_body_to_monomial_basis);
-
-  solvers::MosekSolver solver;
-  if (solver.available()) {
-    solvers::SolverOptions solver_options;
-    auto result = solver.Solve(*(ret.prog), std::nullopt, solver_options);
-    ASSERT_TRUE(result.is_success());
-
-    Eigen::Matrix<double, 10, 3> s_samples;
-    // clang-format off
-    s_samples << 1, 2, -1,
-               -0.5, 0.3, 0.2,
-               0.2, 0.1, 0.4,
-               0.5, -1.2, 0.3,
-               0.2, 0.5, -0.4,
-               -0.3, 1.5, 2,
-               0.5, 0.2, 1,
-               -0.4, 0.5, 1,
-               0, 0, 0,
-               0.2, -1.5, 1;
-    // clang-format on
-
-    const auto& s = tester.cspace_free_polytope().rational_forward_kin().s();
-
-    auto check_lagrangians =
-        [&s_samples, &s](const VectorX<symbolic::Polynomial>& lagrangians,
-                         const std::unordered_set<int> redundant_indices) {
-          for (int i = 0; i < lagrangians.rows(); ++i) {
-            if (redundant_indices.count(i) == 0) {
-              CheckPositivePolynomialBySamples(lagrangians(i), s,
-                                               s_samples.transpose());
-            } else {
-              EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians(i),
-                           symbolic::Polynomial());
-            }
-          }
-        };
-
-    const VectorX<symbolic::Polynomial>& s_minus_s_lower =
-        tester.s_minus_s_lower();
-    const VectorX<symbolic::Polynomial>& s_upper_minus_s =
-        tester.s_upper_minus_s();
-    auto check_rational_positive_in_polytope =
-        [&result, &d_minus_Cs, &s_minus_s_lower, &s_upper_minus_s,
-         check_lagrangians, &C_redundant_indices, &s_lower_redundant_indices,
-         &s_upper_redundant_indices, &s, &s_samples](
-            const std::vector<symbolic::RationalFunction>& rationals,
-            const std::vector<CspaceFreePolytope::SeparatingPlaneLagrangians>&
-                plane_side_lagrangians) {
-          for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
-            const auto& search_plane_lagrangians = plane_side_lagrangians[i];
-            const auto search_plane_lagrangians_result =
-                search_plane_lagrangians.GetSolution(result);
-            check_lagrangians(search_plane_lagrangians_result.polytope,
-                              C_redundant_indices);
-            check_lagrangians(search_plane_lagrangians_result.s_lower,
-                              s_lower_redundant_indices);
-            check_lagrangians(search_plane_lagrangians_result.s_upper,
-                              s_upper_redundant_indices);
-            const symbolic::Polynomial poly =
-                result.GetSolution(rationals[i].numerator()) -
-                search_plane_lagrangians_result.polytope.dot(d_minus_Cs) -
-                search_plane_lagrangians_result.s_lower.dot(s_minus_s_lower) -
-                search_plane_lagrangians_result.s_upper.dot(s_upper_minus_s);
-            CheckPositivePolynomialBySamples(poly, s, s_samples.transpose());
-          }
-        };
-    check_rational_positive_in_polytope(
-        plane_geometries.positive_side_rationals,
-        ret.positive_side_lagrangians);
-    check_rational_positive_in_polytope(
-        plane_geometries.negative_side_rationals,
-        ret.negative_side_lagrangians);
-  }
-}
-
-TEST_F(CIrisToyRobotTest, ConstructPlaneSearchProgram2) {
-  // Test ConstructPlaneSearchProgram with unit-length-vector constraint.
-  const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
-  Eigen::Matrix<double, 9, 3> C;
-  // clang-format off
-  C << 1, 1, 0,
-       -1, -1, 0,
-       -1, 0, 1,
-       1, 0, -1,
-       0, 1, 1,
-       0, -1, -1,
-       1, 0, 1,
-       1, 1, -1,
-       1, -1, 1;
-  // clang-format on
-  Eigen::Matrix<double, 9, 1> d;
-  d << 0.1, 0.2, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.2;
-
-  VectorX<symbolic::Polynomial> d_minus_Cs;
-  std::unordered_set<int> C_redundant_indices;
-  std::unordered_set<int> s_lower_redundant_indices;
-  std::unordered_set<int> s_upper_redundant_indices;
-  SetupPolytope(tester, C, d, &d_minus_Cs, &C_redundant_indices,
-                &s_lower_redundant_indices, &s_upper_redundant_indices);
-
-  const auto plane_geometries_vec =
-      tester.cspace_free_polytope().GenerateRationals({}, false);
-  // Consider the plane between world_sphere_ and body2_capsule_.
-  int plane_geometries_index = -1;
-  for (int i = 0; i < static_cast<int>(plane_geometries_vec.size()); ++i) {
-    const auto& plane =
-        tester.cspace_free_polytope()
-            .separating_planes()[plane_geometries_vec[i].plane_index];
-    if (SortedPair<geometry::GeometryId>(plane.positive_side_geometry->id(),
-                                         plane.negative_side_geometry->id()) ==
-        SortedPair<geometry::GeometryId>(world_sphere_, body2_capsule_)) {
-      plane_geometries_index = i;
-      break;
-    }
-  }
-  const auto& plane_geometries = plane_geometries_vec[plane_geometries_index];
-  const auto map_body_to_monomial_basis =
-      tester.CalcMonomialBasis(plane_geometries_vec);
-  auto ret = tester.ConstructPlaneSearchProgram(
-      plane_geometries, d_minus_Cs, C_redundant_indices,
-      s_lower_redundant_indices, s_upper_redundant_indices,
-      map_body_to_monomial_basis);
-  EXPECT_EQ(ret.unit_length_lagrangians.size(),
-            plane_geometries.unit_length_vectors.size());
-
-  solvers::MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(*(ret.prog));
-    ASSERT_TRUE(result.is_success());
-    Eigen::Matrix<double, 10, 3> s_samples;
-    // clang-format off
-    s_samples << 1, 2, -1,
-               -0.5, 0.3, 0.2,
-               0.2, 0.1, 0.4,
-               0.5, -1.2, 0.3,
-               0.2, 0.5, -0.4,
-               -0.3, 1.5, 2,
-               0.5, 0.2, 1,
-               -0.4, 0.5, 1,
-               0, 0, 0,
-               0.2, -1.5, 1;
-    // clang-format on
-    const Eigen::Vector3d s_lower =
-        tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
-            plant_->GetPositionLowerLimits(), q_star);
-    const Eigen::Vector3d s_upper =
-        tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
-            plant_->GetPositionUpperLimits(), q_star);
-    for (int i = 0; i < s_samples.rows(); ++i) {
-      const Eigen::Vector3d s_val = ProjectToPolytope(
-          s_samples.row(i).transpose(), C, d, s_lower, s_upper);
-      // Check if the unit_length_vector really has norm <= 1.
-      for (const auto& unit_length_vec : plane_geometries.unit_length_vectors) {
-        Vector3<symbolic::Polynomial> unit_length_vec_result;
-        for (int j = 0; j < 3; ++j) {
-          unit_length_vec_result(j) = result.GetSolution(unit_length_vec(j));
-        }
-        Eigen::Vector3d unit_length_vec_val;
-        symbolic::Environment env;
-        env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
-                   s_val);
-        for (int j = 0; j < 3; ++j) {
-          unit_length_vec_val(j) = unit_length_vec_result(j).Evaluate(env);
-        }
-        EXPECT_LE(unit_length_vec_val.norm(), 1);
-      }
-    }
-  }
-}
-
-TEST_F(CIrisToyRobotTest, AddUnitLengthConstraint) {
-  // Test CspaceFreePolytope::AddUnitLengthConstraint
-  const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
-  Eigen::Matrix<double, 9, 3> C;
-  // clang-format off
-  C << 1, 1, 0,
-       -1, -1, 0,
-       -1, 0, 1,
-       1, 0, -1,
-       0, 1, 1,
-       0, -1, -1,
-       1, 0, 1,
-       1, 1, -1,
-       1, -1, 1;
-  // clang-format on
-  Eigen::Matrix<double, 9, 1> d;
-  d << 0.1, 0.2, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.2;
-
-  VectorX<symbolic::Polynomial> d_minus_Cs;
-  std::unordered_set<int> C_redundant_indices;
-  std::unordered_set<int> s_lower_redundant_indices;
-  std::unordered_set<int> s_upper_redundant_indices;
-  SetupPolytope(tester, C, d, &d_minus_Cs, &C_redundant_indices,
-                &s_lower_redundant_indices, &s_upper_redundant_indices);
   solvers::MathematicalProgram prog;
-  prog.AddIndeterminates(
-      tester.cspace_free_polytope().rational_forward_kin().s());
+  auto C = prog.NewContinuousVariables(8, 3);
+  auto d = prog.NewContinuousVariables(8);
+  auto ellipsoid_margins = prog.NewContinuousVariables(8);
 
-  const auto plane_geometries_vec =
-      tester.cspace_free_polytope().GenerateRationals({}, false);
-  // Consider the separating plane between world_sphere_ and body2_capsule_.
-  int plane_geometries_index = -1;
-  for (int i = 0; i < static_cast<int>(plane_geometries_vec.size()); ++i) {
-    const auto& plane =
-        tester.cspace_free_polytope()
-            .separating_planes()[plane_geometries_vec[i].plane_index];
-    if (SortedPair<geometry::GeometryId>(plane.positive_side_geometry->id(),
-                                         plane.negative_side_geometry->id()) ==
-        SortedPair<geometry::GeometryId>(world_sphere_, body2_capsule_)) {
-      plane_geometries_index = i;
-      prog.AddDecisionVariables(plane.decision_variables);
-      break;
-    }
-  }
-  const auto& plane_geometries = plane_geometries_vec[plane_geometries_index];
-
-  prog.AddIndeterminates(tester.cspace_free_polytope().y_slack());
-  const auto ret = tester.AddUnitLengthConstraint(
-      &prog, plane_geometries.unit_length_vectors[0], d_minus_Cs,
-      C_redundant_indices, s_lower_redundant_indices,
-      s_upper_redundant_indices);
-  EXPECT_EQ(ret.polytope.rows(), C.rows());
-  const int s_size =
-      tester.cspace_free_polytope().rational_forward_kin().s().rows();
-  EXPECT_EQ(ret.s_lower.rows(), s_size);
-  EXPECT_EQ(ret.s_upper.rows(), s_size);
-  const symbolic::Variables y_set{tester.cspace_free_polytope().y_slack()};
-  // Make sure that the Lagrangians are quadratic polynomials of y, if they are
-  // not redundant.
-  for (int i = 0; i < ret.polytope.rows(); ++i) {
-    if (C_redundant_indices.count(i) == 0) {
-      EXPECT_EQ(ret.polytope(i).indeterminates(), y_set);
-      EXPECT_EQ(ret.polytope(i).TotalDegree(), 2);
-    } else {
-      EXPECT_PRED2(symbolic::test::PolyEqual, ret.polytope(i),
-                   symbolic::Polynomial());
-    }
-  }
-  for (int i = 0; i < s_size; ++i) {
-    if (s_lower_redundant_indices.count(i) == 0) {
-      EXPECT_EQ(ret.s_lower(i).indeterminates(), y_set);
-      EXPECT_EQ(ret.s_lower(i).TotalDegree(), 2);
-    } else {
-      EXPECT_PRED2(symbolic::test::PolyEqual, ret.s_lower(i),
-                   symbolic::Polynomial());
-    }
-    if (s_upper_redundant_indices.count(i) == 0) {
-      EXPECT_EQ(ret.s_upper(i).indeterminates(), y_set);
-      EXPECT_EQ(ret.s_upper(i).TotalDegree(), 2);
-    } else {
-      EXPECT_PRED2(symbolic::test::PolyEqual, ret.s_upper(i),
-                   symbolic::Polynomial());
-    }
-  }
-  const symbolic::Variables s_set(
-      tester.cspace_free_polytope().rational_forward_kin().s());
-  EXPECT_EQ(ret.y_square.indeterminates(), s_set);
-  EXPECT_EQ(ret.y_square.TotalDegree(), 1);
-
-  solvers::MosekSolver solver;
-  if (solver.available()) {
-    const auto result = solver.Solve(prog);
-    ASSERT_TRUE(result.is_success());
-    Vector3<symbolic::Polynomial> unit_length_vec;
-    for (int i = 0; i < 3; ++i) {
-      unit_length_vec(i) =
-          result.GetSolution(plane_geometries.unit_length_vectors[0](i));
-    }
-    Eigen::Matrix<double, 10, 3> s_samples;
-    // clang-format off
-    s_samples << 1, 2, -1,
-               -0.5, 0.3, 0.2,
-               0.2, 0.1, 0.4,
-               0.5, -1.2, 0.3,
-               0.2, 0.5, -0.4,
-               -0.3, 1.5, 2,
-               0.5, 0.2, 1,
-               -0.4, 0.5, 1,
-               0, 0, 0,
-               0.2, -1.5, 1;
-    // clang-format on
-    const Eigen::Vector3d s_lower =
-        tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
-            plant_->GetPositionLowerLimits(), q_star);
-    const Eigen::Vector3d s_upper =
-        tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
-            plant_->GetPositionUpperLimits(), q_star);
-    for (int i = 0; i < s_samples.rows(); ++i) {
-      const Eigen::Vector3d s_val = ProjectToPolytope(
-          s_samples.row(i).transpose(), C, d, s_lower, s_upper);
-      Eigen::Vector3d unit_length_vec_val;
-      symbolic::Environment env;
-      env.insert(tester.cspace_free_polytope().rational_forward_kin().s(),
-                 s_val);
-      for (int j = 0; j < 3; ++j) {
-        unit_length_vec_val(j) = unit_length_vec(j).Evaluate(env);
-      }
-      EXPECT_LE(unit_length_vec_val.norm(), 1);
-    }
+  Eigen::Matrix3d Q;
+  // Use arbitrary Q and s0
+  // clang-format off
+  Q << 1, 2, -1,
+       0, 1, 2,
+       2, -1, 3;
+  // clang-format on
+  const Eigen::Vector3d s0 = 0.4 * tester.s_lower() + tester.s_upper() * 0.6;
+  tester.AddEllipsoidContainmentConstraint(&prog, Q, s0, C, d,
+                                           ellipsoid_margins);
+  prog.AddBoundingBoxConstraint(0, kInf, ellipsoid_margins);
+  const auto result = solvers::Solve(prog);
+  ASSERT_TRUE(result.is_success());
+  const auto C_sol = result.GetSolution(C);
+  const auto d_sol = result.GetSolution(d);
+  const auto margin_sol = result.GetSolution(ellipsoid_margins);
+  for (int i = 0; i < C_sol.rows(); ++i) {
+    EXPECT_LE(C_sol.row(i).norm(), 1);
+    EXPECT_LE((C_sol.row(i) * Q).norm(),
+              d_sol(i) - C_sol.row(i).dot(s0) - margin_sol(i));
   }
 }
 
-TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope1) {
-  // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope for a
-  // collision-free C-space polytope.
+TEST_F(CIrisToyRobotTest, AddCspacePolytopeContainment) {
   const Eigen::Vector3d q_star(0, 0, 0);
   CspaceFreePolytopeTester tester(plant_, scene_graph_,
                                   SeparatingPlaneOrder::kAffine, q_star);
 
-  const CspaceFreePolytope::FilteredCollsionPairs filtered_collision_pairs{
-      {SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)}};
-  const auto plane_geometries = tester.cspace_free_polytope().GenerateRationals(
-      filtered_collision_pairs, true /* search_separating_plane */);
-  // This C-space polytope is collision free.
-  Eigen::Matrix<double, 9, 3> C;
+  Eigen::Matrix<double, 3, 4> s_inner_pts;
   // clang-format off
-  C << 1, 1, 0,
-       -1, -1, 0,
-       -1, 0, 1,
-       1, 0, -1,
-       0, 1, 1,
-       0, -1, -1,
-       1, 0, 1,
-       1, 1, -1,
-       1, -1, 1;
+  s_inner_pts << 1, 2, 0, 3,
+                 0, -1, 2, 3,
+                 -1, 2, 1, 3;
   // clang-format on
-  Eigen::Matrix<double, 9, 1> d;
-  d << 0.1, 0.1, 0.1, 0.02, 0.02, 0.2, 0.1, 0.1, 0.2;
-
-  VectorX<symbolic::Polynomial> d_minus_Cs;
-  std::unordered_set<int> C_redundant_indices;
-  std::unordered_set<int> s_lower_redundant_indices;
-  std::unordered_set<int> s_upper_redundant_indices;
-  SetupPolytope(tester, C, d, &d_minus_Cs, &C_redundant_indices,
-                &s_lower_redundant_indices, &s_upper_redundant_indices);
-  const auto map_body_to_monomial_basis =
-      tester.CalcMonomialBasis(plane_geometries);
-  CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions options;
-  options.verbose = true;
-  solvers::MosekSolver solver;
-  options.solver_id = solver.id();
-  if (solver.available()) {
-    for (int num_threads : {-1, 1, 5}) {
-      options.num_threads = num_threads;
-
-      const auto certificates_result =
-          tester.FindSeparationCertificateGivenPolytope(
-              plane_geometries, C, d, map_body_to_monomial_basis, options);
-      EXPECT_EQ(certificates_result.size(), plane_geometries.size());
-      for (int i = 0; i < static_cast<int>(certificates_result.size()); ++i) {
-        EXPECT_TRUE(certificates_result[i].has_value());
-        EXPECT_EQ(certificates_result[i]->plane_index,
-                  plane_geometries[i].plane_index);
-        EXPECT_TRUE(certificates_result[i]->separating_margin.has_value());
-        EXPECT_GT(certificates_result[i]->separating_margin.value(), 0);
-        EXPECT_TRUE(CompareMatrices(certificates_result[i]->C, C));
-        EXPECT_TRUE(CompareMatrices(certificates_result[i]->d, d));
-      }
+  for (int i = 0; i < s_inner_pts.cols(); ++i) {
+    s_inner_pts.col(i) = s_inner_pts.col(i)
+                             .cwiseMin(tester.s_upper())
+                             .cwiseMax(tester.s_lower());
+  }
+  solvers::MathematicalProgram prog;
+  auto C = prog.NewContinuousVariables<5, 3>();
+  auto d = prog.NewContinuousVariables<5>();
+  tester.AddCspacePolytopeContainment(&prog, C, d, s_inner_pts);
+  EXPECT_EQ(prog.linear_constraints().size(), 1);
+  const VectorX<symbolic::Expression> constraint_val =
+      prog.linear_constraints()[0].evaluator()->get_sparse_A() *
+      prog.linear_constraints()[0].variables();
+  EXPECT_TRUE(CompareMatrices(
+      prog.linear_constraints()[0].evaluator()->lower_bound(),
+      Eigen::VectorXd::Constant(
+          prog.linear_constraints()[0].evaluator()->num_constraints(), -kInf)));
+  EXPECT_TRUE(CompareMatrices(
+      prog.linear_constraints()[0].evaluator()->upper_bound(),
+      Eigen::VectorXd::Constant(
+          prog.linear_constraints()[0].evaluator()->num_constraints(), 0)));
+  for (int i = 0; i < C.rows(); ++i) {
+    for (int j = 0; j < s_inner_pts.cols(); ++j) {
+      EXPECT_PRED2(symbolic::test::ExprEqual,
+                   constraint_val(i * s_inner_pts.cols() + j),
+                   C.row(i).dot(s_inner_pts.col(j)) - d(i));
     }
   }
 }
 
-TEST_F(CIrisToyRobotTest, FindSeparationCertificateGivenPolytope2) {
-  // Test CspaceFreePolytope::FindSeparationCertificateGivenPolytope. The
-  // C-space polytope is NOT collision free.
-  const Eigen::Vector3d q_star(0, 0, 0);
-  CspaceFreePolytopeTester tester(plant_, scene_graph_,
-                                  SeparatingPlaneOrder::kAffine, q_star);
-
-  const CspaceFreePolytope::FilteredCollsionPairs filtered_collision_pairs{
-      {SortedPair<geometry::GeometryId>(world_box_, body2_sphere_)}};
-  const auto plane_geometries = tester.cspace_free_polytope().GenerateRationals(
-      filtered_collision_pairs, true /* search_separating_plane */);
-  // This/ C-space polytope is collision free.
-  Eigen::Matrix<double, 4, 3> C;
-  // clang-format off
-  C << 1, 1, 0,
-       -1, -1, 0,
-       -1, 0, 1,
-       1, 0, -1;
-  // clang-format on
-  Eigen::Matrix<double, 4, 1> d;
-  d << 0.1, 0.3, 0.4, 0.2;
-
-  VectorX<symbolic::Polynomial> d_minus_Cs;
-  std::unordered_set<int> C_redundant_indices;
-  std::unordered_set<int> s_lower_redundant_indices;
-  std::unordered_set<int> s_upper_redundant_indices;
-  SetupPolytope(tester, C, d, &d_minus_Cs, &C_redundant_indices,
-                &s_lower_redundant_indices, &s_upper_redundant_indices);
-
-  const auto map_body_to_monomial_basis =
-      tester.CalcMonomialBasis(plane_geometries);
-  CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions options;
-  options.verbose = true;
-  solvers::MosekSolver solver;
-  options.solver_id = solver.id();
-  if (solver.available()) {
-    for (int num_threads : {-1, 1, 5}) {
-      options.num_threads = num_threads;
-
-      const auto certificates_result =
-          tester.FindSeparationCertificateGivenPolytope(
-              plane_geometries, C, d, map_body_to_monomial_basis, options);
-      EXPECT_EQ(certificates_result.size(), plane_geometries.size());
-      EXPECT_TRUE(
-          std::any_of(certificates_result.begin(), certificates_result.end(),
-                      [](const std::optional<
-                          CspaceFreePolytope::SeparationCertificateResult>&
-                             certificate_result) {
-                        return !certificate_result.has_value();
-                      }));
-    }
-    // Test with terminate_at_failure=false. This will run the sos for every
-    // separating plane.
-    options.terminate_at_failure = false;
-    const auto certificates_result =
-        tester.FindSeparationCertificateGivenPolytope(
-            plane_geometries, C, d, map_body_to_monomial_basis, options);
-    EXPECT_EQ(certificates_result.size(), plane_geometries.size());
-    for (int i = 0; i < static_cast<int>(plane_geometries.size()); ++i) {
-      const auto& plane =
-          tester.cspace_free_polytope()
-              .separating_planes()[plane_geometries[i].plane_index];
-      const SortedPair<geometry::GeometryId> geometry_pair(
-          plane.positive_side_geometry->id(),
-          plane.negative_side_geometry->id());
-      if (geometry_pair ==
-              SortedPair<geometry::GeometryId>(body0_box_, body2_capsule_) ||
-          geometry_pair ==
-              SortedPair<geometry::GeometryId>(body0_box_, body2_sphere_) ||
-          geometry_pair ==
-              SortedPair<geometry::GeometryId>(body0_sphere_, body2_capsule_) ||
-          geometry_pair ==
-              SortedPair<geometry::GeometryId>{body0_sphere_, body2_sphere_} ||
-          geometry_pair ==
-              SortedPair<geometry::GeometryId>{body1_convex_, body3_sphere_} ||
-          geometry_pair ==
-              SortedPair<geometry::GeometryId>{body2_sphere_, body3_sphere_}) {
-        EXPECT_FALSE(certificates_result[i].has_value());
-      } else {
-        EXPECT_TRUE(certificates_result[i].has_value());
-      }
-    }
-  }
-}
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
-
-int main(int argc, char** argv) {
-  // Ensure that we have the MOSEK license for the entire duration of this test,
-  // so that we do not have to release and re-acquire the license for every
-  // test.
-  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "fmt/ostream.h"
+#include <fmt/format.h>
 #include <vtkImageData.h>
 #include <vtkNew.h>
 #include <vtkPNGWriter.h>

@@ -7,6 +7,7 @@ load(
 )
 load(
     "//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -17,6 +18,19 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
+
+filegroup(
+    name = "demo_data",
+    srcs = [
+        ":example_iiwa_wsg.dmd.yaml",
+        ":example_scenarios.yaml",
+        "//examples/manipulation_station:prod_models",
+        "//examples/pendulum:prod_models",
+        "//manipulation/models/iiwa_description:prod_models",
+        "//manipulation/models/wsg_50_description:prod_models",
+    ],
+    visibility = ["//:__pkg__"],
+)
 
 drake_cc_library(
     name = "scenario",
@@ -40,7 +54,7 @@ drake_cc_library(
 )
 
 drake_cc_binary(
-    name = "hardware_sim",
+    name = "hardware_sim_cc",
     srcs = ["hardware_sim.cc"],
     visibility = ["//visibility:public"],
     deps = [
@@ -60,43 +74,65 @@ drake_cc_binary(
     ],
 )
 
-drake_py_unittest(
-    name = "hardware_sim_test",
-    data = [
-        "test/test_scenarios.yaml",
-        ":demo",
-        ":hardware_sim",
-        "//examples/pendulum:prod_models",
-    ],
-    shard_count = 3,
-    deps = [
-        "@bazel_tools//tools/python/runfiles",
-    ],
-)
-
-# Binds the hardware_sim program to the data files required for the Demo
+# Binds the C++ hardware_sim program to the data files required for the Demo
 # example scenario.
 sh_binary(
-    name = "demo",
-    srcs = [":hardware_sim"],
+    name = "demo_cc",
+    srcs = [":hardware_sim_cc"],
     args = [
         "--scenario_file=examples/hardware_sim/example_scenarios.yaml",
         "--scenario_name=Demo",
     ],
     data = [
-        ":example_iiwa_wsg.dmd.yaml",
-        ":example_scenarios.yaml",
-        "//examples/manipulation_station:prod_models",
-        "//manipulation/models/iiwa_description:prod_models",
-        "//manipulation/models/wsg_50_description:prod_models",
+        ":demo_data",
     ],
     # Use the runfiles of the ":demo", not of the ":hardware_sim".
     env = {"RUNFILES_DIR": "../"},
 )
 
 drake_py_library(
-    name = "hardware_sim_py_lib",
+    name = "hardware_sim_test_common",
+    testonly = True,
+    srcs = ["test/hardware_sim_test_common.py"],
+    deps = [
+        "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+drake_py_unittest(
+    name = "hardware_sim_cc_test",
+    data = [
+        "test/test_scenarios.yaml",
+        ":demo_cc",
+    ],
+    shard_count = 3,
+    deps = [
+        ":hardware_sim_test_common",
+    ],
+)
+
+drake_py_binary(
+    name = "hardware_sim_py",
     srcs = ["hardware_sim.py"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake",
+    ],
+)
+
+# Binds the Python hardware_sim program to the data files required for the Demo
+# example scenario.
+drake_py_binary(
+    name = "demo_py",
+    srcs = ["hardware_sim.py"],
+    args = [
+        "--scenario_file=examples/hardware_sim/example_scenarios.yaml",
+        "--scenario_name=Demo",
+    ],
+    data = [
+        ":demo_data",
+        ":hardware_sim_py",
+    ],
     deps = [
         "//bindings/pydrake",
     ],
@@ -104,9 +140,13 @@ drake_py_library(
 
 drake_py_unittest(
     name = "hardware_sim_py_test",
+    data = [
+        "test/test_scenarios.yaml",
+        ":demo_py",
+    ],
+    shard_count = 3,
     deps = [
-        ":hardware_sim_py_lib",
-        "//bindings/pydrake",
+        ":hardware_sim_test_common",
     ],
 )
 

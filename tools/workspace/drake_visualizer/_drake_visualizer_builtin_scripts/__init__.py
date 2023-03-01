@@ -1,5 +1,5 @@
 """
-Includes utilitiy functions for plugins, as well as functionality for ensuring
+Includes utility functions for plugins, as well as functionality for ensuring
 that Drake Visualizer can be launched with builtin scripts wrapped in for both
 Bazel and the install tree.
 

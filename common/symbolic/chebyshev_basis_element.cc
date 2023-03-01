@@ -140,7 +140,7 @@ std::map<ChebyshevBasisElement, double> operator*(
   // both a and b.
 
   // Number of variables that show up in both ChebyshevBasisElement a and b.
-  // I first count the nummber of common variables, so as to do memory
+  // I first count the number of common variables, so as to do memory
   // allocation for the product result.
   int num_common_variables = 0;
   auto it_a = a.var_to_degree_map().begin();

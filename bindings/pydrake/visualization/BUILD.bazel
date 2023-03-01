@@ -1,6 +1,6 @@
 # -*- python -*-
 
-load("@drake//tools/install:install.bzl", "install")
+load("@drake//tools/install:install.bzl", "install", "install_files")
 load(
     "@drake//tools/skylark:pybind.bzl",
     "add_pybind_coverage_data",
@@ -13,6 +13,11 @@ load(
     "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
+)
+load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
 
@@ -41,7 +46,7 @@ drake_pybind_library(
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/solvers",
         "//bindings/pydrake/systems",
-        "//bindings/pydrake:geometry_py",
+        "//bindings/pydrake/geometry",
         "//bindings/pydrake:lcm_py",
         "//bindings/pydrake:symbolic_py",
         "//lcmtypes:lcmtypes_drake_py",
@@ -49,7 +54,6 @@ drake_pybind_library(
     py_srcs = [
         "meldis.py",
         "model_visualizer.py",
-        "plotting.py",
         "_meldis.py",
         "_model_visualizer.py",
         "_plotting.py",
@@ -68,8 +72,40 @@ drake_py_binary(
 drake_py_binary(
     name = "model_visualizer",
     srcs = ["model_visualizer.py"],
+    data = ["//:all_models"],
     visibility = ["//tools:__pkg__"],
     deps = [":visualization"],
+)
+
+cmake_configure_file(
+    name = "generate_run_installed_meldis",
+    src = "run_installed_meldis.py.in",
+    out = "run_installed_meldis.py",
+    defines = [
+        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
+    ],
+)
+
+cmake_configure_file(
+    name = "generate_run_installed_model_visualizer",
+    src = "run_installed_model_visualizer.py.in",
+    out = "run_installed_model_visualizer.py",
+    defines = [
+        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
+    ],
+)
+
+install_files(
+    name = "install_wrapper_scripts",
+    dest = "bin",
+    files = [
+        "run_installed_meldis.py",
+        "run_installed_model_visualizer.py",
+    ],
+    rename = {
+        "bin/run_installed_meldis.py": "meldis",
+        "bin/run_installed_model_visualizer.py": "model_visualizer",
+    },
 )
 
 PY_LIBRARIES = [
@@ -78,9 +114,14 @@ PY_LIBRARIES = [
 
 install(
     name = "install",
+    install_tests = [
+        ":test/visualization_install_tests.py",
+    ],
     targets = [":visualization"],
     py_dest = PACKAGE_INFO.py_dest,
-    deps = get_drake_py_installs([":visualization"]),
+    deps = get_drake_py_installs(PY_LIBRARIES) + [
+        ":install_wrapper_scripts",
+    ],
 )
 
 drake_py_unittest(
@@ -99,7 +140,6 @@ drake_py_unittest(
     ],
     deps = [
         ":visualization",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
@@ -117,7 +157,6 @@ drake_py_unittest(
     name = "plotting_test",
     deps = [
         ":visualization",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 
@@ -131,4 +170,10 @@ drake_py_unittest(
 
 add_pybind_coverage_data()
 
-add_lint_tests_pydrake()
+add_lint_tests_pydrake(
+    python_lint_extra_srcs = [
+        "run_installed_meldis.py.in",
+        "run_installed_model_visualizer.py.in",
+        "test/visualization_install_tests.py",
+    ],
+)

@@ -3,14 +3,12 @@ coinor-libcoinutils3v5
 coinor-libipopt1v5
 default-jre
 jupyter-notebook
-libamd2
 libblas3
 libbz2-1.0
 libdouble-conversion3
 libeigen3-dev
 libexpat1
 libfreetype6
-libgflags2.2
 libgfortran5
 libglew2.1
 libglib2.0-0
@@ -21,7 +19,6 @@ libjchart2d-java
 libjpeg-turbo8
 libjsoncpp1
 liblapack3
-libldl2
 liblz4-1
 liblzma5
 libmsgpackc2
@@ -40,12 +37,9 @@ libspdlog-dev
 libsqlite3-0
 libtheora0
 libtiff5
-libtinyxml2-dev
-libtinyxml2.6.2v5
 libx11-6
 libxml2
 libxt6
-libyaml-cpp-dev
 ocl-icd-libopencl1
 python3
 python3-ipywidgets

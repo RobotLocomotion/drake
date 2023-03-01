@@ -1,0 +1,14 @@
+# -*- python -*-
+
+load("@drake//tools/skylark:py.bzl", "py_library")
+
+licenses(["notice"])  # MIT
+
+# Internal vendoring of a few files of stable_baselines3; see README.md
+py_library(
+    name = "stable_baselines3",
+    srcs = glob(["**/*.py"]),
+    deps = ["@gym_py"],
+    data = glob(["**/version.txt"]),
+    visibility = ["//visibility:public"],
+)

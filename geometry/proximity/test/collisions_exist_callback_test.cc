@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include <fcl/fcl.h>
+#include <drake_vendor/fcl/fcl.h>
 #include <gtest/gtest.h>
 
 #include "drake/geometry/proximity/proximity_utilities.h"
@@ -27,7 +27,7 @@ using std::make_shared;
 // Geometry C is created like geometry B but translated beyond any of the
 // existing box dimensions such that the pair (A, C) do not collide.
 //
-// Simplifed 2D representation:
+// Simplified 2D representation:
 //
 //          A
 //    ┏━━━┓
@@ -73,7 +73,7 @@ GTEST_TEST(CollisionsExistCallback, Exist) {
 // creating a pair of geometries (A, B) that are in collision, then checking
 // that they no longer collide once filtered out.
 //
-// Simplifed 2D representation:
+// Simplified 2D representation:
 //
 //          A
 //    ┏━━━┓

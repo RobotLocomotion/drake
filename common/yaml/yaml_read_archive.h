@@ -206,6 +206,8 @@ class YamlReadArchive final {
     if constexpr (Cols == 1) {
       if constexpr (Rows >= 0) {
         this->VisitArray(nvp.name(), Rows, nvp.value()->data());
+      } else if constexpr (MaxRows >= 0) {
+        this->VisitVector(nvp, MaxRows);
       } else {
         this->VisitVector(nvp);
       }
@@ -283,7 +285,7 @@ class YamlReadArchive final {
   void VariantHelper(
       const std::string& tag, const char* name, Variant<Types...>* storage) {
     if (tag == internal::Node::kTagNull) {
-      // Our varaint parsing does not yet support nulls.  When the tag indicates
+      // Our variant parsing does not yet support nulls.  When the tag indicates
       // null, don't try to match it to a variant type; instead, just parse into
       // the first variant type in order to generate a useful error message.
       // TODO(jwnimmer-tri) Allow for std::monostate as one of the Types...,
@@ -365,12 +367,21 @@ class YamlReadArchive final {
     }
   }
 
+  // @param max_size an upper bound on how big we can resize() the vector
   template <typename NVP>
-  void VisitVector(const NVP& nvp) {
+  void VisitVector(const NVP& nvp, std::optional<size_t> max_size = {}) {
     const internal::Node* sub_node = GetSubNodeSequence(nvp.name());
     if (sub_node == nullptr) { return; }
     const std::vector<internal::Node>& elements = sub_node->GetSequence();
     const size_t size = elements.size();
+    if (max_size.has_value() && size > *max_size) {
+      // This error message snippet looks odd in the source code, but turns
+      // out okay once ReportError tacks on some extra text.
+      ReportError(fmt::format(
+          "has too many array elements ({}); the maximum size is {} in the",
+          size, *max_size));
+      return;
+    }
     auto&& storage = *nvp.value();
     storage.resize(size);
     if (size > 0) {

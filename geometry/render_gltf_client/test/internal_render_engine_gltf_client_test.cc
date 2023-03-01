@@ -10,6 +10,7 @@
 #include <vtkMatrix4x4.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
@@ -156,18 +157,18 @@ TEST_F(RenderEngineGltfClientTest, UpdateViewpoint) {
     const Matrix4d vtk_inv = transform_inverse(vtk);
     const Matrix3d R_vtk_inv = vtk_inv.topLeftCorner<3, 3>();
     const Matrix3d R_gltf = gltf.topLeftCorner<3, 3>();
-    EXPECT_TRUE(R_vtk_inv.isApprox(R_gltf, tolerance))
-        << "Rotation matrices not similar enough:\nR_vtk_inv:\n"
-        << R_vtk_inv << "\nR_gltf:\n"
-        << R_gltf << '\n';
+    EXPECT_TRUE(R_vtk_inv.isApprox(R_gltf, tolerance)) << fmt::format(
+        "Rotation matrices not similar enough:\n"
+        "R_vtk_inv:\n{}\nR_gltf:\n{}\n",
+        fmt_eigen(R_vtk_inv), fmt_eigen(R_gltf));
 
     // Compare the translations.
     const Vector3d t_vtk_inv = vtk_inv.topRightCorner<3, 1>();
     const Vector3d t_gltf = gltf.topRightCorner<3, 1>();
-    EXPECT_TRUE(t_vtk_inv.isApprox(t_gltf, tolerance))
-        << "Translation vectors not similar enough:\nt_vtk_inv:\n"
-        << t_vtk_inv << "\nt_gltf:\n"
-        << t_gltf << '\n';
+    EXPECT_TRUE(t_vtk_inv.isApprox(t_gltf, tolerance)) << fmt::format(
+        "Translation vectors not similar enough:\n"
+        "t_vtk_inv:\n{}\nt_gltf:\n{}\n",
+        fmt_eigen(t_vtk_inv), fmt_eigen(t_gltf));
 
     // For posterity, compare the homogeneous row.
     const Vector4d gltf_homogeneous = gltf.bottomRightCorner<1, 4>();

@@ -12,6 +12,7 @@ filegroup(
     srcs = glob([
         "**/*.sdf",
     ]),
+    visibility = ["//:__pkg__"],
 )
 
 drake_cc_binary(
@@ -23,7 +24,6 @@ drake_cc_binary(
         "--simulation_time=0.1",
     ],
     deps = [
-        "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
         "//multibody/tree",

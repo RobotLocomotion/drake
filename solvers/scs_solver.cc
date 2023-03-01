@@ -110,15 +110,32 @@ void ParseRotatedLorentzConeConstraint(
   second_order_cone_length->push_back(b_cone.rows());
 }
 
-void ParseQuadraticCost(const MathematicalProgram& prog, std::vector<double>* c,
-                        std::vector<Eigen::Triplet<double>>* A_triplets,
-                        std::vector<double>* b, int* A_row_count,
-                        std::vector<int>* second_order_cone_length,
-                        int* num_x) {
+void ParseQuadraticCost(const MathematicalProgram& prog,
+                        std::vector<Eigen::Triplet<double>>* P_upper_triplets,
+                        std::vector<double>* c, double* constant) {
+  for (const auto& cost : prog.quadratic_costs()) {
+    const auto var_indices = prog.FindDecisionVariableIndices(cost.variables());
+    for (int j = 0; j < cost.evaluator()->Q().cols(); ++j) {
+      for (int i = 0; i <= j; ++i) {
+        if (cost.evaluator()->Q()(i, j) != 0) {
+          P_upper_triplets->emplace_back(var_indices[i], var_indices[j],
+                                         cost.evaluator()->Q()(i, j));
+        }
+      }
+      (*c)[var_indices[j]] += cost.evaluator()->b()(j);
+    }
+    *constant += cost.evaluator()->c();
+  }
+}
+
+void ParseQuadraticCostWithRotatedLorentzCone(
+    const MathematicalProgram& prog, std::vector<double>* c,
+    std::vector<Eigen::Triplet<double>>* A_triplets, std::vector<double>* b,
+    int* A_row_count, std::vector<int>* second_order_cone_length, int* num_x) {
   // A QuadraticCost encodes cost of the form
   //   0.5 zᵀQz + pᵀz + r
-  // Since SCS only supports linear cost, we introduce a new slack variable y
-  // as the upper bound of the cost, with the rotated Lorentz cone constraint
+  // We introduce a new slack variable y as the upper bound of the cost, with
+  // the rotated Lorentz cone constraint
   // 2(y - r - pᵀz) ≥ zᵀQz.
   // We only need to minimize y then.
   for (const auto& cost : prog.quadratic_costs()) {
@@ -552,11 +569,11 @@ std::string Scs_return_info(scs_int scs_status) {
   }
 }
 
-void SetScsProblemData(int A_row_count, int num_vars,
-                       const Eigen::SparseMatrix<double>& A,
-                       const std::vector<double>& b,
-                       const std::vector<double>& c,
-                       ScsData* scs_problem_data) {
+void SetScsProblemData(
+    int A_row_count, int num_vars, const Eigen::SparseMatrix<double>& A,
+    const std::vector<double>& b,
+    const std::vector<Eigen::Triplet<double>>& P_upper_triplets,
+    const std::vector<double>& c, ScsData* scs_problem_data) {
   scs_problem_data->m = A_row_count;
   scs_problem_data->n = num_vars;
 
@@ -599,6 +616,41 @@ void SetScsProblemData(int A_row_count, int num_vars,
   for (int i = 0; i < static_cast<int>(b.size()); ++i) {
     scs_problem_data->b[i] = b[i];
   }
+
+  if (P_upper_triplets.empty()) {
+    scs_problem_data->P = SCS_NULL;
+  } else {
+    Eigen::SparseMatrix<double> P_upper(num_vars, num_vars);
+    P_upper.setFromTriplets(P_upper_triplets.begin(), P_upper_triplets.end());
+    scs_problem_data->P = static_cast<ScsMatrix*>(malloc(sizeof(ScsMatrix)));
+    // This scs_calloc doesn't need to accompany a ScopeExit since
+    // scs_problem_data->P->x will be cleaned up recursively by freeing up
+    // scs_problem_data in scs_free_data()
+    scs_problem_data->P->x = static_cast<scs_float*>(
+        scs_calloc(P_upper.nonZeros(), sizeof(scs_float)));
+
+    // This scs_calloc doesn't need to accompany a ScopeExit since
+    // scs_problem_data->P->i will be cleaned up recursively by freeing up
+    // scs_problem_data in scs_free_data()
+    scs_problem_data->P->i =
+        static_cast<scs_int*>(scs_calloc(P_upper.nonZeros(), sizeof(scs_int)));
+
+    // This scs_calloc doesn't need to accompany a ScopeExit since
+    // scs_problem_data->P->p will be cleaned up recursively by freeing up
+    // scs_problem_data in scs_free_data()
+    scs_problem_data->P->p = static_cast<scs_int*>(
+        scs_calloc(scs_problem_data->n + 1, sizeof(scs_int)));
+    for (int i = 0; i < P_upper.nonZeros(); ++i) {
+      scs_problem_data->P->x[i] = *(P_upper.valuePtr() + i);
+      scs_problem_data->P->i[i] = *(P_upper.innerIndexPtr() + i);
+    }
+    for (int i = 0; i < scs_problem_data->n + 1; ++i) {
+      scs_problem_data->P->p[i] = *(P_upper.outerIndexPtr() + i);
+    }
+    scs_problem_data->P->m = scs_problem_data->n;
+    scs_problem_data->P->n = scs_problem_data->n;
+  }
+
   // This scs_calloc doesn't need to accompany a ScopeExit since
   // scs_problem_data->c will be cleaned up recursively by freeing up
   // scs_problem_data in scs_free_data()
@@ -840,7 +892,7 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   unused(initial_guess);
   // The initial guess for SCS is unused.
   // SCS solves the problem in this form
-  // min  cᵀx
+  // min 0.5xᵀPx + cᵀx
   // s.t A x + s = b
   //     s in K
   // where K is a Cartesian product of some primitive cones.
@@ -864,7 +916,8 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   // num_x is the number of variables in `x`. It can contain more variables
   // than in prog. For some constraint/cost, we need to append slack variables
   // to convert the constraint/cost to the SCS form. For example, SCS does not
-  // support quadratic cost. So we need to convert the quadratic cost
+  // support un-constrained QP. So when we have an un-constrained QP, we need to
+  // convert the quadratic cost
   //   min 0.5zᵀQz + bᵀz + d
   // to the form
   //   min y
@@ -880,6 +933,13 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   // matrix to construct a sparse matrix in column order first, and then
   // compress it to get CCS.
   std::vector<Eigen::Triplet<double>> A_triplets;
+
+  // We need to construct a sparse matrix in Column Compressed Storage (CCS)
+  // format. Since we add an array of quadratic cost, each cost has its own
+  // associated variables, we use Eigen sparse matrix to aggregate the quadratic
+  // cost Hessian matrices. SCS only takes the upper triangular entries of the
+  // symmetric Hessian.
+  std::vector<Eigen::Triplet<double>> P_upper_triplets;
 
   // cone stores all the cones K in the problem.
   ScsCone* cone = static_cast<ScsCone*>(scs_calloc(1, sizeof(ScsCone)));
@@ -964,10 +1024,25 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
       &lorentz_cone_y_start_indices, &rotated_lorentz_cone_y_start_indices);
 
   // Parse quadratic cost. This MUST be called after parsing the second order
-  // cone constraint, as we convert quadratic cost to second order cone
+  // cone constraint, as we might convert quadratic cost to second order cone
   // constraint.
-  ParseQuadraticCost(prog, &c, &A_triplets, &b, &A_row_count,
-                     &second_order_cone_length, &num_x);
+  if (A_triplets.empty() && prog.positive_semidefinite_constraints().empty() &&
+      prog.linear_matrix_inequality_constraints().empty() &&
+      prog.exponential_cone_constraints().empty()) {
+    // A_triplets.empty() = true means that up to now (after looping through
+    // box, linear and second-order cone constraints) no constraints have been
+    // added to SCS. Combining this with the fact that the
+    // positive semidefinite, linear matrix inequality and exponential cone
+    // constraints are all empty, this means that `prog` is un-constrained. If
+    // the program is un-constrained but with a quadratic cost, since SCS
+    // doesn't handle un-constrained QP, we convert this un-constrained QP to a
+    // program with linear cost and rotated Lorentz cone constraint.
+    ParseQuadraticCostWithRotatedLorentzCone(prog, &c, &A_triplets, &b,
+                                             &A_row_count,
+                                             &second_order_cone_length, &num_x);
+  } else {
+    ParseQuadraticCost(prog, &P_upper_triplets, &c, &cost_constant);
+  }
 
   // Set the lorentz cone length in the SCS cone.
   cone->qsize = second_order_cone_length.size();
@@ -987,7 +1062,8 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   A.setFromTriplets(A_triplets.begin(), A_triplets.end());
   A.makeCompressed();
 
-  SetScsProblemData(A_row_count, num_x, A, b, c, scs_problem_data);
+  SetScsProblemData(A_row_count, num_x, A, b, P_upper_triplets, c,
+                    scs_problem_data);
   std::unordered_map<std::string, int> input_solver_options_int =
       merged_options.GetOptionsInt(id());
   std::unordered_map<std::string, double> input_solver_options_double =

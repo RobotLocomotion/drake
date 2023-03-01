@@ -118,12 +118,12 @@ drake_cc_binary(
         ":pendulum_plant",
         "//common:is_approx_equal_abstol",
         "//geometry:drake_visualizer",
+        "//planning/trajectory_optimization:direct_collocation",
         "//solvers:solve",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controlled_system",
         "//systems/framework:diagram",
         "//systems/primitives:trajectory_source",
-        "//systems/trajectory_optimization:direct_collocation",
         "@gflags",
     ],
 )
@@ -158,7 +158,6 @@ drake_cc_googletest(
     data = ["Pendulum.urdf"],
     deps = [
         ":pendulum_plant",
-        "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
         "//multibody/plant",

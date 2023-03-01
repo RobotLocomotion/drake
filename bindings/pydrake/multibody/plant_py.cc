@@ -972,6 +972,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_contact_surface_representation",
             &Class::get_contact_surface_representation,
             cls_doc.get_contact_surface_representation.doc)
+        .def("set_adjacent_bodies_collision_filters",
+            &Class::set_adjacent_bodies_collision_filters, py::arg("value"),
+            cls_doc.set_adjacent_bodies_collision_filters.doc)
+        .def("get_adjacent_bodies_collision_filters",
+            &Class::get_adjacent_bodies_collision_filters,
+            cls_doc.get_adjacent_bodies_collision_filters.doc)
         .def("AddPhysicalModel", &Class::AddPhysicalModel, py::arg("model"),
             cls_doc.AddPhysicalModel.doc)
         .def("physical_models", &Class::physical_models,
@@ -1449,6 +1455,8 @@ PYBIND11_MODULE(plant, m) {
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
       CommonScalarPack{});
+
+  ExecuteExtraPythonCode(m);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

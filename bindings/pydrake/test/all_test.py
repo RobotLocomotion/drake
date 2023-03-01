@@ -12,10 +12,14 @@ from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 
 
 class TestAll(unittest.TestCase):
-    # N.B. Synchronize code snippests with `doc/python_bindings.rst`.
-    def test_import_warnings(self):
+    # N.B. Synchronize code snippets with `doc/_pages/python_bindings.md`.
+    def test_000_import_warnings(self):
         """Prints if we encounter any warnings (primarily from `pybind11`) when
-        importing `pydrake.all`."""
+        importing `pydrake.all`.
+
+        N.B. This test must run before any others in this class, hence the
+        magical name which causes it to sort first.
+        """
         # Ensure that we haven't yet imported `pydrake.all`.
         self.assertTrue("pydrake.all" not in sys.modules)
         # - While this may be redundant, let's do it for good measure.
@@ -138,38 +142,10 @@ class TestAll(unittest.TestCase):
             "MultibodyForces",
             # perception
             "PointCloud",
+            # planning
+            "RobotDiagram",
             # solvers
-            # - agumented_lagrangian
-            "AugmentedLagrangianSmooth",
-            # - mixed_integer_optimization_util
-            "AddLogarithmicSos2Constraint",
-            # - clp
-            "ClpSolver",
-            # - csdp
-            "CsdpSolver",
-            # - dreal
-            "DrealSolver",
-            # - gurobi
-            "GurobiSolver",
-            # - sdpa_free_format
-            "GenerateSDPA",
-            # - ipopt
-            "IpoptSolver",
-            # - branch_and_bound
-            "MixedIntegerBranchAndBound",
-            # - mixed_integer_rotation_constraint
-            "MixedIntegerRotationConstraintGenerator",
-            # - mathematicalprogram
             "MathematicalProgram",
-            # - mosek
-            "MosekSolver",
-            # - nlopt
-            "NloptSolver",
-            # - osqp
-            "OsqpSolver",
-            # - scs
-            "ScsSolver",
-            # - snopt
             "SnoptSolver",
             # systems
             # - framework
@@ -201,3 +177,31 @@ class TestAll(unittest.TestCase):
         for expected_symbol in expected_symbols:
             self.assertTrue(
                 expected_symbol in pydrake.all.__dict__, expected_symbol)
+
+    def test_function_only_imports(self):
+        """Check for disallowed imports.
+
+        Test that none of the modules which we've decided should only be
+        imported by functions appear in sys.modules."""
+        import pydrake.all
+
+        # We want to ensure that the following modules are only be imported
+        # within a function, not at the module level.
+        # E.g., `matplotlib.animation` will freeze `bazel run`.
+        function_only_imports = (
+            "cv2",
+            "matplotlib.animation",
+            "matplotlib.pyplot",
+            "pydot",
+            "scipy",
+            )
+
+        bad_imports = list()
+        for item in sys.modules.keys():
+            for module_name in function_only_imports:
+                if item.startswith(module_name):
+                    bad_imports.append(item)
+
+        self.assertFalse(
+            bad_imports,
+            "Function-only import(s) found after importing pydrake.all")

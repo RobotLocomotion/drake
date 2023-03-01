@@ -27,6 +27,9 @@ drake_cc_library(
     name = "yaml_io_options",
     srcs = ["yaml_io_options.cc"],
     hdrs = ["yaml_io_options.h"],
+    deps = [
+        "//common:essential",
+    ],
 )
 
 drake_cc_library(

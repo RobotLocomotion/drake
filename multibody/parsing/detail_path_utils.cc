@@ -7,7 +7,6 @@
 #include <vector>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/never_destroyed.h"
@@ -32,11 +31,11 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
   if (std::regex_match(uri, match, uri_matcher.access())) {
     // The `uri` was actually a URI (not a bare filename).
     DRAKE_DEMAND(match.size() == 4);
-    const auto& uri_scheme = match[1];
-    const auto& uri_package = match[2];
-    const auto& uri_path = match[3];
+    const std::string& uri_scheme = match[1];
+    const std::string& uri_package = match[2];
+    const std::string& uri_path = match[3];
     if (uri_scheme == "file") {
-      result = "/" + uri_path.str();
+      result = "/" + uri_path;
     } else if ((uri_scheme == "model") || (uri_scheme == "package")) {
       if (!package_map.Contains(uri_package)) {
         diagnostic.Error(fmt::format(
@@ -50,7 +49,7 @@ string ResolveUri(const DiagnosticPolicy& diagnostic, const string& uri,
         diagnostic.Warning(fmt::format(
             "In URI '{}': {}", uri, *deprecation));
       }
-      result = fs::path(package_path) / std::string(uri_path);
+      result = fs::path(package_path) / uri_path;
     } else {
       diagnostic.Error(fmt::format(
           "URI '{}' specifies an unsupported scheme; supported schemes are "

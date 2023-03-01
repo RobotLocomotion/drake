@@ -1,10 +1,9 @@
 #include <unistd.h>
 
 #include <filesystem>
-#include <iostream>
 
-#include "fmt/format.h"
 #include <benchmark/benchmark.h>
+#include <fmt/format.h>
 #include <gflags/gflags.h>
 
 #include "drake/geometry/render_gl/factory.h"

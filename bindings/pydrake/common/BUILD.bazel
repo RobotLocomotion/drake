@@ -231,6 +231,7 @@ drake_pybind_library(
         "//bindings/pydrake:autodiffutils_py",
         "//bindings/pydrake:symbolic_py",
     ],
+    py_srcs = ["_eigen_geometry_extra.py"],
 )
 
 # ODR does not matter, because the singleton will be stored in Python.
@@ -288,6 +289,7 @@ drake_cc_library(
     declare_installed_headers = 0,
     visibility = ["//visibility:public"],
     deps = [
+        ":cpp_template_pybind",
         "//:drake_shared_library",
         "//bindings/pydrake:pydrake_pybind",
     ],
@@ -341,12 +343,16 @@ drake_pybind_library(
     name = "serialize_test_util_py",
     testonly = 1,
     add_install = False,
-    cc_deps = [":serialize_pybind"],
+    cc_deps = [
+        ":cpp_template_pybind",
+        ":serialize_pybind",
+    ],
     cc_so_name = "test/serialize_test_util",
     cc_srcs = ["test/serialize_test_util_py.cc"],
     package_info = PACKAGE_INFO,
     py_deps = [
         ":cpp_param_py",
+        ":cpp_template_py",
         ":module_py",
     ],
     visibility = ["//visibility:private"],
@@ -422,6 +428,7 @@ drake_py_library(
 drake_pybind_library(
     name = "schema_py",
     cc_deps = [
+        ":cpp_template_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:serialize_pybind",
@@ -807,9 +814,30 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "schema_serialization_test",
+    deps = [
+        ":schema_py",
+        ":yaml_py",
+    ],
+)
+
+drake_py_unittest(
     name = "yaml_test",
     deps = [
         ":yaml_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "yaml_typed_test",
+    data = [
+        "//common/yaml:test/yaml_io_test_input_1.yaml",
+    ],
+    deps = [
+        ":serialize_test_util_py",
+        ":value_py",
+        ":yaml_py",
+        "//bindings/pydrake/common/test_utilities:meta_py",
     ],
 )
 

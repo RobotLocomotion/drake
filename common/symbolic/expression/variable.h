@@ -14,6 +14,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 
 namespace drake {
@@ -366,3 +367,13 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 }
 }  // namespace symbolic
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::symbolic::Variable>
+    : drake::ostream_formatter {};
+template <>
+struct formatter<drake::symbolic::Variable::Type>
+    : drake::ostream_formatter {};
+}  // namespace fmt

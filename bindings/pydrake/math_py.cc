@@ -16,6 +16,7 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
 #include "drake/math/compute_numerical_gradient.h"
@@ -353,6 +354,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
 
+  // Add in query functions that we don't want to bind directly onto
+  // the scalar type classes, as mentioned below.
+  // TODO(eric.cousineau): Add other query functions.
+  // tODO(eric.cousineau): Should these belong on the class for NumPy UFuncs?
+  m.def(
+      "isnan", [](const T& x) { return isnan(x); }, py::arg("x"));
+
   // Cross product
   m.def(
       "VectorToSkewSymmetric",
@@ -510,10 +518,15 @@ void DoScalarIndependentDefinitions(py::module m) {
           py::arg("A"), py::arg("Q"), doc.RealDiscreteLyapunovEquation.doc);
 
   // General scalar math overloads.
-  // N.B. Additional overloads will be added for autodiff, symbolic, etc, by
-  // those respective modules.
-  // TODO(eric.cousineau): If possible, delegate these to NumPy UFuncs,
-  // either using __array_ufunc__ or user dtypes.
+  // N.B. Additional overloads will be added for AutoDiffXd and Expression
+  // via:
+  // - `BindAutoDiffMathOverloads` and `BindSymbolicMathOverloads` for
+  //   functions that should exist as both overloads in this module *and* as
+  //   class members so that NumPy UFuncs for dtype=object can use them, and
+  // - `DoScalarDependentDefinitions` defined above, for functions that should
+  //   only exist as module-level overloads.
+  // TODO(eric.cousineau): If possible, delegate these to explicit NumPy
+  // UFuncs, either using __array_ufunc__ or user dtypes.
   // TODO(m-chaturvedi) Add Pybind11 documentation.
   m  // BR
       .def("log", [](double x) { return log(x); })
@@ -561,7 +574,17 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("function_accuracy") = 1E-15, cls_doc.ctor.doc)
         .def("NumericalGradientMethod", &Class::method, cls_doc.method.doc)
         .def("perturbation_size", &Class::perturbation_size,
-            cls_doc.perturbation_size.doc);
+            cls_doc.perturbation_size.doc)
+        .def(
+            "__repr__", [](const NumericalGradientOption& self) -> std::string {
+              py::object method = py::cast(self.method());
+              // This is a minimal implementation that serves to avoid
+              // displaying memory addresses in pydrake docs and help strings.
+              // In the future, we should enhance this to display all of the
+              // information.
+              return fmt::format("<NumericalGradientOption({})>",
+                  fmt_streamed(py::repr(method)));
+            });
   }
 
   m.def(

@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 
-#include <fmt/ostream.h>
+#include <fmt/format.h>
 
 namespace drake {
 namespace symbolic {

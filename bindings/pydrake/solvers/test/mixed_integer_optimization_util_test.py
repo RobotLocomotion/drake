@@ -1,18 +1,27 @@
 import unittest
+
 import numpy as np
-from pydrake.solvers import mathematicalprogram as mp
-from pydrake.solvers import mixed_integer_optimization_util as mip_util
-from pydrake.solvers import branch_and_bound as bnb
-from pydrake.solvers.clp import ClpSolver
+
+from pydrake.solvers import (
+    AddBilinearProductMcCormickEnvelopeSos2,
+    AddLogarithmicSos1Constraint,
+    AddLogarithmicSos2Constraint,
+    AddSos2Constraint,
+    ClpSolver,
+    IntervalBinning,
+    MathematicalProgram,
+    MixedIntegerBranchAndBound,
+    SolutionResult,
+)
 
 
 class TestMixedIntegerOptimizationUtil(unittest.TestCase):
     def test_AddLogarithmicSos2Constraint(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
         lambdas = prog.NewContinuousVariables(3)
         # we use +lambdas to convert a numpy array of symbolic variables to a
         # numpy array of symbolic expressions
-        y = mip_util.AddLogarithmicSos2Constraint(prog, +lambdas, "y")
+        y = AddLogarithmicSos2Constraint(prog, +lambdas, "y")
         self.assertEqual(y.shape, (1,))
 
         def check_val(y_val, lambdas_val, satisfied_expected):
@@ -31,12 +40,12 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
         check_val([1], [0., 0.3, 0.7], True)
 
     def test_AddSos2Constraint(self):
-        prog = mp.MathematicalProgram()
+        prog = MathematicalProgram()
         lambdas = prog.NewContinuousVariables(3)
         y = prog.NewBinaryVariables(2)
         # we use +lambdas to convert a numpy array of symbolic variables to a
         # numpy array of symbolic expressions
-        mip_util.AddSos2Constraint(prog, +lambdas, +y)
+        AddSos2Constraint(prog, +lambdas, +y)
 
         def check_val(y_val, lambdas_val, satisfied_expected):
             x_val = np.zeros(prog.num_vars())
@@ -56,8 +65,8 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
         check_val([0, 0], [0., 0.3, 0.7], False)
 
     def test_AddLogarithmicSos1Constraint(self):
-        prog = mp.MathematicalProgram()
-        (lambdas, y) = mip_util.AddLogarithmicSos1Constraint(prog, 4)
+        prog = MathematicalProgram()
+        (lambdas, y) = AddLogarithmicSos1Constraint(prog, 4)
 
         def check_val(y_val, lambdas_val, satisfied_expected):
             x_val = np.zeros(prog.num_vars())
@@ -92,7 +101,7 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
             4) Solve the program and assert that the solver finds the
                expected xyw values and the expected binary setting.
             '''
-            prog = mp.MathematicalProgram()
+            prog = MathematicalProgram()
 
             w, x, y = prog.NewContinuousVariables(3)
             N_x_divisions = len(expected_Bx)
@@ -102,16 +111,15 @@ class TestMixedIntegerOptimizationUtil(unittest.TestCase):
             # Divide range [0, 1] into appropriate number of bins.
             phi_x = np.linspace(0., 1., N_x_divisions+1)
             phi_y = np.linspace(0., 1., N_y_divisions+1)
-            binning = mip_util.IntervalBinning.kLinear
-            mip_util.AddBilinearProductMcCormickEnvelopeSos2(
+            binning = IntervalBinning.kLinear
+            AddBilinearProductMcCormickEnvelopeSos2(
                 prog=prog, x=x, y=y, w=w, phi_x=phi_x, phi_y=phi_y,
                 Bx=Bx, By=By, binning=binning
             )
             setup_aux(prog, x, y, w)
-            solver = bnb.MixedIntegerBranchAndBound(
-                prog, ClpSolver().solver_id())
+            solver = MixedIntegerBranchAndBound(prog, ClpSolver().solver_id())
             solution_result = solver.Solve()
-            self.assertEqual(solution_result, mp.SolutionResult.kSolutionFound)
+            self.assertEqual(solution_result, SolutionResult.kSolutionFound)
 
             xyw = solver.GetSolution([x, y, w])
             self.assertTrue(np.allclose(xyw, expected_xyw))

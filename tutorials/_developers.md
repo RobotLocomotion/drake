@@ -19,7 +19,7 @@ your fork and branch, e.g.,
 # Deploying changes
 
 The tutorials on the Drake website are refreshed to latest master as part of
-our [stable release process](/release_playbook.html]. In general we do not
+our [stable release process](/release_playbook.html). In general we do not
 upgrade them between those monthly releases, but in case of emergency feel
 free to manually edit them online at deepnote.com. Any manual changes will
 be overwritten during the next stable release, so be sure that the fixes

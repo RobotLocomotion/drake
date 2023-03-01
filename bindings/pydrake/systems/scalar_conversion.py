@@ -3,6 +3,7 @@
 import copy
 from functools import partial
 
+from pydrake.common import pretty_class_name
 from pydrake.systems.framework import (
     LeafSystem_,
     SystemScalarConverter,
@@ -39,22 +40,23 @@ class TemplateSystem(TemplateClass):
     If any of these constraints are violated, then an error will be thrown
     at the time of the first class instantiation.
 
-    Example::
+    Example:
+        ::
 
-        @TemplateSystem.define("MySystem_")
-        def MySystem_(T):
+            @TemplateSystem.define("MySystem_")
+            def MySystem_(T):
 
-            class Impl(LeafSystem_[T]):
-                def _construct(self, value, converter=None):
-                    LeafSystem_[T].__init__(self, converter=converter)
-                    self.value = value
+                class Impl(LeafSystem_[T]):
+                    def _construct(self, value, converter=None):
+                        LeafSystem_[T].__init__(self, converter=converter)
+                        self.value = value
 
-                def _construct_copy(self, other, converter=None):
-                    Impl._construct(self, other.value, converter=converter)
+                    def _construct_copy(self, other, converter=None):
+                        Impl._construct(self, other.value, converter=converter)
 
-            return Impl
+                return Impl
 
-        MySystem = MySystem_[None]  # Default instantiation.
+            MySystem = MySystem_[None]  # Default instantiation.
 
     Things to note:
 
@@ -151,7 +153,8 @@ class TemplateSystem(TemplateClass):
         # `_construct` and `_construct_copy`.
         if not issubclass(cls, LeafSystem_[T]):
             raise RuntimeError(
-                "{} must inherit from {}".format(cls, LeafSystem_[T]))
+                "{} must inherit from {}".format(
+                    pretty_class_name(cls), LeafSystem_[T]))
 
         # Use the immediate `__dict__`, rather than querying the attributes, so
         # that we don't get spillover from inheritance.
@@ -163,15 +166,15 @@ class TemplateSystem(TemplateClass):
             raise RuntimeError(
                 "{} defines `__init__`, but should not. Please implement "
                 "`_construct` and `_construct_copy` instead."
-                .format(cls.__name__))
+                .format(pretty_class_name(cls)))
         if not has_construct:
             raise RuntimeError(
                 "{} does not define `_construct`. Please ensure this is "
-                "defined.".format(cls.__name__))
+                "defined.".format(pretty_class_name(cls)))
         if not has_copy:
             raise RuntimeError(
                 "{} does not define `_construct_copy`. Please ensure this "
-                "is defined.".format(cls.__name__))
+                "is defined.".format(pretty_class_name(cls)))
 
         # Patch `__init__`.
         template = self

@@ -87,7 +87,7 @@ drake_cc_library(
         "//geometry/proximity:hydroelastic_callback",
         "//geometry/proximity:obj_to_surface_mesh",
         "//geometry/proximity:penetration_as_point_pair_callback",
-        "@fcl",
+        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -248,6 +248,7 @@ drake_cc_library(
         ":proximity_engine",
         ":utilities",
         "//geometry/render:render_engine",
+        "//math:gradient",
     ],
 )
 
@@ -466,12 +467,13 @@ drake_cc_library(
         "//perception:point_cloud",
     ],
     deps = [
+        "//common:drake_export",
         "//common:find_resource",
         "//common:scope_exit",
         "//common:unused",
         "@common_robotics_utilities",
-        "@msgpack",
-        "@stduuid",
+        "@msgpack_internal//:msgpack",
+        "@stduuid_internal//:stduuid",
         "@uwebsockets",
     ],
 )
@@ -518,7 +520,7 @@ drake_cc_googletest(
         ":meshcat",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "@msgpack",
+        "@msgpack_internal//:msgpack",
     ],
 )
 
@@ -668,7 +670,7 @@ drake_cc_googletest(
         "//geometry/proximity:hydroelastic_callback",
         "//geometry/proximity:make_sphere_mesh",
         "//math",
-        "@fcl",
+        "@fcl_internal//:fcl",
     ],
 )
 
@@ -759,6 +761,7 @@ drake_cc_googletest(
     name = "internal_geometry_test",
     deps = [
         ":internal_geometry",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/proximity:make_sphere_mesh",
@@ -769,6 +772,7 @@ drake_cc_googletest(
     name = "scene_graph_test",
     deps = [
         ":scene_graph",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
         "//geometry/test_utilities:dummy_render_engine",

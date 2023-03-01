@@ -200,7 +200,7 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentMapValues) {
 )""");
 }
 
-// In the ununsual case that the user provided two different schemas to
+// In the unusual case that the user provided two different schemas to
 // subtract, we notice the discrepancy without throwing any exceptions.
 // This test case serves to help achieve code coverage; we do not intend
 // for users to necessarily depend on this behavior.
@@ -216,7 +216,7 @@ TEST_F(YamlWriteArchiveDefaultsTest, DifferentSchemas) {
 )""");
 }
 
-// In the ununsual case that the user provided two different (but similar)
+// In the unusual case that the user provided two different (but similar)
 // schemas to subtract, we notice the discrepancy without throwing any
 // exceptions.  This test case serves to help achieve code coverage; we do not
 // intend for users to necessarily depend on this behavior.  Here, we do

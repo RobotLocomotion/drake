@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 namespace drake {
 namespace ad {

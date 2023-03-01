@@ -25,6 +25,11 @@ const AbstractValue* DoEval(const ContextBase&) {
   return g_do_eval_result;
 }
 
+// We need to define this to compile, but it should never be invoked.
+std::unique_ptr<AbstractValue> DoAlloc() {
+  return nullptr;
+}
+
 GTEST_TEST(InputPortTest, VectorTest) {
   using T = double;
 
@@ -43,7 +48,7 @@ GTEST_TEST(InputPortTest, VectorTest) {
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
       system, system_interface, dummy_system.get_system_id(), name, index,
-      ticket, data_type, size, random_type, &DoEval);
+      ticket, data_type, size, random_type, &DoEval, &DoAlloc);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);
@@ -102,7 +107,7 @@ GTEST_TEST(InputPortTest, AbstractTest) {
 
   auto dut = internal::FrameworkFactory::Make<InputPort<T>>(
       system, system_interface, dummy_system.get_system_id(), name, index,
-      ticket, data_type, size, random_type, &DoEval);
+      ticket, data_type, size, random_type, &DoEval, &DoAlloc);
 
   // Check basic getters.
   EXPECT_EQ(dut->get_name(), name);
@@ -159,18 +164,39 @@ struct SystemWithInputPorts final : public LeafSystem<double> {
         double_port{
             DeclareAbstractInputPort("double_port", Value<double>(1.25))},
         string_port{DeclareAbstractInputPort("string_port",
-                                             Value<std::string>("hello"))} {}
+                                             Value<std::string>("hello"))},
+        // To check that FixValue() properly invalidates dependents, make a
+        // cache entry that depends only on an input port.
+        cache_entry{this->DeclareCacheEntry(
+            "depends_on_int_port", &SystemWithInputPorts::CalcCacheEntry,
+            {this->input_port_ticket(int_port.get_index())})},
+        dependent_cache_entry{this->DeclareCacheEntry(
+            "depends_on_cache_entry",
+            &SystemWithInputPorts::CalcDependentCacheEntry,
+            {cache_entry.ticket()})} {}
+
+  void CalcCacheEntry(const Context<double>& context, int* value) const {
+    *value = int_port.Eval<int>(context);
+  }
+
+  void CalcDependentCacheEntry(const Context<double>& context,
+                               int* value) const {
+    *value = cache_entry.Eval<int>(context);
+  }
+
   InputPort<double>& basic_vec_port;
   InputPort<double>& derived_vec_port;
   InputPort<double>& int_port;
   InputPort<double>& double_port;
   InputPort<double>& string_port;
+  CacheEntry& cache_entry;
+  CacheEntry& dependent_cache_entry;
 };
 
 // Test the FixValue() method. Note that the conversion of its value argument
 // to an AbstractValue is handled by internal::ValueToAbstractValue which has
 // its own unit tests. Here we need just check the input-port specific
-// behavior for vector and abstract intput ports.
+// behavior for vector and abstract input ports.
 // Also for sanity, make sure the returned FixedInputPortValue object works,
 // although its API is so awful no one should use it.
 GTEST_TEST(InputPortTest, FixValueTests) {
@@ -303,6 +329,43 @@ GTEST_TEST(InputPortTest, FixValueTests) {
   for (int i = 0; i < dut.num_input_ports(); ++i) {
     EXPECT_TRUE(dut.get_input_port(i).HasValue(*context));
   }
+}
+
+GTEST_TEST(InputPortTest, FixValueCacheInvalidationTests) {
+  SystemWithInputPorts dut;
+  std::unique_ptr<Context<double>> context = dut.CreateDefaultContext();
+
+  EXPECT_FALSE(dut.int_port.HasValue(*context));
+  EXPECT_TRUE(dut.cache_entry.is_out_of_date(*context));
+  EXPECT_TRUE(dut.dependent_cache_entry.is_out_of_date(*context));
+  // Can't evaluate the cache entry if input has no value.
+  EXPECT_THROW(dut.cache_entry.Eval<int>(*context), std::exception);
+
+  dut.int_port.FixValue(&*context, 19);
+  EXPECT_TRUE(dut.int_port.HasValue(*context));
+  // Note: we're getting a _reference_ to the cache value so we'll see changes.
+  const int& cached_value = dut.cache_entry.Eval<int>(*context);
+  EXPECT_FALSE(dut.cache_entry.is_out_of_date(*context));
+  EXPECT_EQ(cached_value, 19);
+  EXPECT_TRUE(dut.dependent_cache_entry.is_out_of_date(*context));
+  const int& dependent_cached_value =
+      dut.dependent_cache_entry.Eval<int>(*context);
+  EXPECT_EQ(dependent_cached_value, 19);
+
+  dut.int_port.FixValue(&*context, -3);  // Should invalidate dependents.
+  EXPECT_TRUE(dut.cache_entry.is_out_of_date(*context));
+  EXPECT_TRUE(dut.dependent_cache_entry.is_out_of_date(*context));
+  EXPECT_EQ(cached_value, 19);  // Out-of-date values are still there.
+  EXPECT_EQ(dependent_cached_value, 19);
+  dut.dependent_cache_entry.Eval<int>(*context);  // Updates cache_entry also.
+  EXPECT_EQ(dependent_cached_value, -3);
+  EXPECT_FALSE(dut.cache_entry.is_out_of_date(*context));
+  EXPECT_EQ(cached_value, -3);
+
+  // Once more to make sure this wasn't a fluke.
+  dut.int_port.FixValue(&*context, 123);
+  EXPECT_TRUE(dut.cache_entry.is_out_of_date(*context));
+  EXPECT_TRUE(dut.dependent_cache_entry.is_out_of_date(*context));
 }
 
 // For a subsystem embedded in a diagram, test that we can query, fix, and

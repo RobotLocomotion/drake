@@ -15,37 +15,40 @@ build --strip=never
 build --strict_system_includes
 
 # Default test options.
-test --test_output=errors
-test --test_summary=terse
+build --test_output=errors
+build --test_summary=terse
 
 # By default, disable execution of tests that require proprietary software.
 # Individual targets that use proprietary software are responsible for ensuring
 # they can also build without it, typically by using a select statement.
 # config_setting rules for proprietary software are provided in //tools.
-test --test_tag_filters=-gurobi,-mosek,-snopt
+build --test_tag_filters=-gurobi,-mosek,-snopt
 
 # Inject DISPLAY into test runner environment for tests that use X.
-test --test_env=DISPLAY
+build --test_env=DISPLAY
 
 # Location of the Gurobi license key file, typically named "gurobi.lic".
 # Setting this --test_env for all configurations is deliberate to improve
 # remote caching performance.
-test --test_env=GRB_LICENSE_FILE
+build --test_env=GRB_LICENSE_FILE
 
 # Location of the MOSEK license file, typically named "mosek.lic". Setting
 # this --test_env for all configurations is deliberate to improve remote
 # caching performance.
-test --test_env=MOSEKLM_LICENSE_FILE
+build --test_env=MOSEKLM_LICENSE_FILE
 
 # Prevent LCM messages from leaking outside of tests.
 # See documentation: https://lcm-proj.github.io/group__LcmC__lcm__t.html#gaf29963ef43edadf45296d5ad82c18d4b  # noqa
 # WARNING: If your LCM test depends on communication between separate LCM
 # instances (and you cannot easily mock the LCM instances), make sure that each
 # instance has a consistent, but non-default, LCM URL.
-test --test_env=LCM_DEFAULT_URL=memq://
+build --test_env=LCM_DEFAULT_URL=memq://
 
 # Prevent matplotlib from showing windows (#11029).
-test --test_env=MPLBACKEND=Template
+build --test_env=MPLBACKEND=Template
+
+### A configuration that enables all optional dependencies. ###
+build:everything --test_tag_filters=-no_everything
 
 ### A configuration that enables Gurobi. ###
 # -- To use this config, the GRB_LICENSE_FILE environment variable must be set
@@ -58,6 +61,10 @@ test --test_env=MPLBACKEND=Template
 # -- "gurobi_test_tags()" from //tools/skylark:test_tags.bzl.
 # -- If Gurobi is optional, set gurobi_required=False.
 build:gurobi --define=WITH_GUROBI=ON
+build:everything --define=WITH_GUROBI=ON
+# N.B. The build:packaging configuration does NOT use Gurobi (yet).
+# See https://github.com/RobotLocomotion/drake/issues/10804.
+build:packaging --test_tag_filters=-gurobi
 
 ### A configuration that enables MOSEK™. ###
 # -- To use this config, the MOSEKLM_LICENSE_FILE environment variable must be
@@ -67,6 +74,8 @@ build:gurobi --define=WITH_GUROBI=ON
 # -- "mosek_test_tags()" from //tools/skylark:test_tags.bzl.
 # -- If MOSEK™ is optional, set mosek_required=False.
 build:mosek --define=WITH_MOSEK=ON
+build:packaging --define=WITH_MOSEK=ON
+build:everything --define=WITH_MOSEK=ON
 
 ### A configuration that enables SNOPT. ###
 # -- To use this config, you must have access to the private repository
@@ -76,15 +85,7 @@ build:mosek --define=WITH_MOSEK=ON
 # -- To run tests that require SNOPT, also specify a set of test_tag_filters
 # -- that does not exclude the "snopt" tag.
 build:snopt --define=WITH_SNOPT=ON
-
-### A configuration that enables all optional dependencies. ###
-test:everything --test_tag_filters=-no_everything
-
-# -- Options for Gurobi.
-build:everything --define=WITH_GUROBI=ON
-# -- Options for MOSEK.
-build:everything --define=WITH_MOSEK=ON
-# -- Options for SNOPT.
+build:packaging --define=WITH_SNOPT=ON
 build:everything --define=WITH_SNOPT=ON
 
 # -- Options for explicitly using GCC.

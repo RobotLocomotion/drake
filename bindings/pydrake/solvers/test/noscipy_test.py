@@ -3,7 +3,7 @@ import warnings
 
 import numpy as np
 
-from pydrake.solvers.mathematicalprogram import (
+from pydrake.solvers import (
     LinearConstraint,
 )
 
@@ -31,7 +31,7 @@ class TestMathematicalProgram(unittest.TestCase):
         self.assertEqual(dut.num_constraints(), 2)
         self.assertEqual(dut.num_vars(), 3)
 
-        # UpdateCoefficients is similarily overloaded for sparse or dense, and
+        # UpdateCoefficients is similarly overloaded for sparse or dense, and
         # the user should be able to invoke the dense overload without scipy.
         dut.UpdateCoefficients(
             new_A=np.array([[1E-10, 0, 0], [0, 1, 1]]),

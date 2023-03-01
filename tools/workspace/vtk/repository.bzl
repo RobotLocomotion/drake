@@ -304,6 +304,7 @@ licenses([
             "vtkSmartPointerBase.h",
             "vtkStdString.h",
             "vtkSystemIncludes.h",
+            "vtkThreads.h",
             "vtkTimeStamp.h",
             "vtkType.h",
             "vtkTypeInt32Array.h",
@@ -600,6 +601,40 @@ licenses([
         ],
     )
 
+    vtk_io_export_deps = [
+        ":vtkCommonCore",
+        ":vtkCommonDataModel",
+        ":vtkCommonMath",
+        ":vtkCommonTransforms",
+        ":vtkFiltersGeometry",
+        ":vtkImagingCore",
+        ":vtkIOCore",
+        ":vtkIOGeometry",
+        ":vtkIOImage",
+        ":vtkIOXML",
+        ":vtkRenderingContext2D",
+        ":vtkRenderingCore",
+        ":vtkRenderingFreeType",
+        ":vtkRenderingVtkJS",
+        ":vtklibharu",
+    ]
+
+    if os_result.is_manylinux or os_result.is_macos_wheel:
+        # When VTK is built as shared libraries these transitive dependencies
+        # would be loaded automatically, but when VTK is built statically we
+        # need to list them out ourselves.
+        file_content += _vtk_cc_library(
+            os_result,
+            "vtkfreetype",
+            deps = [
+                ":vtkkwiml",
+                "@zlib",
+            ],
+        )
+        vtk_io_export_deps.append(":vtkfreetype")
+        file_content += _vtk_cc_library(os_result, "vtkjsoncpp")
+        vtk_io_export_deps.append(":vtkjsoncpp")
+
     file_content += _vtk_cc_library(
         os_result,
         "vtkIOExport",
@@ -609,23 +644,7 @@ licenses([
             "vtkIOExportModule.h",
             "vtkOBJExporter.h",
         ],
-        deps = [
-            ":vtkCommonCore",
-            ":vtkCommonDataModel",
-            ":vtkCommonMath",
-            ":vtkCommonTransforms",
-            ":vtkFiltersGeometry",
-            ":vtkImagingCore",
-            ":vtkIOCore",
-            ":vtkIOGeometry",
-            ":vtkIOImage",
-            ":vtkIOXML",
-            ":vtkRenderingContext2D",
-            ":vtkRenderingCore",
-            ":vtkRenderingFreeType",
-            ":vtkRenderingVtkJS",
-            ":vtklibharu",
-        ],
+        deps = vtk_io_export_deps,
     )
 
     file_content += _vtk_cc_library(
@@ -684,14 +703,17 @@ licenses([
             "vtkBMPReader.h",
             "vtkBMPWriter.h",
             "vtkIOImageModule.h",
+            "vtkImageCast.h",
             "vtkImageExport.h",
             "vtkImageReader.h",
             "vtkImageReader2.h",
             "vtkImageWriter.h",
+            "vtkImagingCoreModule.h",
             "vtkJPEGReader.h",
             "vtkJPEGWriter.h",
             "vtkPNGReader.h",
             "vtkPNGWriter.h",
+            "vtkThreadedImageAlgorithm.h",
             "vtkTIFFReader.h",
             "vtkTIFFWriter.h",
         ],

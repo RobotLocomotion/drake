@@ -5,6 +5,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff_gradient.h"
 
@@ -87,7 +88,7 @@ void ImplicitIntegrator<T>::ComputeForwardDiffJacobian(
   DRAKE_LOGGER_DEBUG(
       "  ImplicitIntegrator Compute Forwarddiff {}-Jacobian t={}", n, t);
   DRAKE_LOGGER_DEBUG(
-      "  computing from state {}", xt.transpose());
+      "  computing from state {}", fmt_eigen(xt.transpose()));
 
   // Initialize the Jacobian.
   J->resize(n, n);

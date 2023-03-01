@@ -6,71 +6,25 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
+load(
+    "@drake//tools/skylark:test_tags.bzl",
+    "mosek_test_tags",
+)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-drake_cc_library(
-    name = "collision_geometry",
-    srcs = ["collision_geometry.cc"],
-    hdrs = ["collision_geometry.h"],
-    deps = [
-        "//geometry:geometry_ids",
-        "//geometry:shape_specification",
-        "//geometry/optimization:convex_set",
-        "//multibody/rational:rational_forward_kinematics",
-        "//multibody/tree:multibody_tree_indexes",
-    ],
-)
-
-drake_cc_library(
-    name = "separating_plane",
-    srcs = ["separating_plane.cc"],
-    hdrs = ["separating_plane.h"],
-    deps = [
-        ":collision_geometry",
-        "//common/symbolic:polynomial",
-    ],
-)
-
-drake_cc_library(
-    name = "cspace_free_polytope",
-    srcs = ["cspace_free_polytope.cc"],
-    hdrs = ["cspace_free_polytope.h"],
-    deps = [
-        ":collision_geometry",
-        ":separating_plane",
-        "//common/symbolic:monomial_util",
-        "//solvers:choose_best_solver",
-        "//solvers:mathematical_program",
-        "//solvers:mosek_solver",
-        "//solvers:solve",
-    ],
-)
+exports_files(["cspace_free_polytope.cc"])
 
 # test
-
 drake_cc_library(
     name = "c_iris_test_utilities",
     testonly = 1,
     srcs = ["test/c_iris_test_utilities.cc"],
     hdrs = ["test/c_iris_test_utilities.h"],
-    data = [
-        "test/convex.mtl",
-        "test/convex.obj",
-    ],
     deps = [
         "//geometry:scene_graph",
+        "//geometry/optimization:cspace_free_polytope",
         "//multibody/plant",
         "//systems/framework:diagram_builder",
-        "@gtest//:without_main",
-    ],
-)
-
-drake_cc_googletest(
-    name = "collision_geometry_test",
-    deps = [
-        ":c_iris_test_utilities",
-        ":collision_geometry",
-        "//common/test_utilities:symbolic_test_util",
     ],
 )
 
@@ -78,10 +32,28 @@ drake_cc_googletest(
     name = "cspace_free_polytope_test",
     deps = [
         ":c_iris_test_utilities",
-        ":cspace_free_polytope",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:c_iris_test_utilities",
+        "//geometry/optimization:cspace_free_polytope",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_polytope_with_mosek_test",
+    timeout = "long",
+    # This test launches 2 threads to test both serial and parallel code paths
+    # in CspaceFreePolytope.
+    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
+    use_default_main = False,
+    deps = [
+        ":c_iris_test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:c_iris_test_utilities",
+        "//geometry/optimization:cspace_free_polytope",
         "//solvers:mosek_solver",
+        "//solvers:sos_basis_generator",
     ],
 )
 

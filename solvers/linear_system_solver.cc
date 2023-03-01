@@ -15,7 +15,7 @@ namespace drake {
 namespace solvers {
 
 LinearSystemSolver::LinearSystemSolver()
-    : SolverBase(&id, &is_available, &is_enabled, &ProgramAttributesSatisfied,
+    : SolverBase(id(), &is_available, &is_enabled, &ProgramAttributesSatisfied,
                  &UnsatisfiedProgramAttributes) {}
 
 LinearSystemSolver::~LinearSystemSolver() = default;
@@ -106,7 +106,7 @@ bool CheckAttributes(
     if (explanation) {
       if (required_capabilities.empty()) {
         *explanation =
-          " a LinearEqualityConstraint is required but has not beed declared";
+          " a LinearEqualityConstraint is required but has not been declared";
       }
       *explanation = fmt::format(
           "LinearSystemSolver is unable to solve because {}.", *explanation);

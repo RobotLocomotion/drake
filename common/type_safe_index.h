@@ -1,16 +1,21 @@
 #pragma once
 
-#include <functional>
 #include <limits>
-#include <stdexcept>
 #include <string>
+#include <typeinfo>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_throw.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
-#include "drake/common/nice_type_name.h"
 
 namespace drake {
+
+namespace internal {
+[[noreturn]] void ThrowTypeSafeIndexAssertValidFailed(
+    const std::type_info& type, const char* source);
+[[noreturn]] void ThrowTypeSafeIndexAssertNoOverflowFailed(
+    const std::type_info& type, const char* source);
+}  // namespace internal
 
 /// A type-safe non-negative index class.
 ///
@@ -498,10 +503,8 @@ class TypeSafeIndex {
   // Invocations provide a string explaining the origin of the bad value.
   static void AssertValid(int64_t index, const char* source) {
     if (index < 0 || index > kMaxIndex) {
-      throw std::runtime_error(
-          std::string(source) + " Type \"" +
-          drake::NiceTypeName::Get<TypeSafeIndex<Tag>>() +
-          "\", has an invalid value; it must lie in the range [0, 2³¹ - 1].");
+      internal::ThrowTypeSafeIndexAssertValidFailed(typeid(TypeSafeIndex),
+                                                    source);
     }
   }
 
@@ -509,10 +512,8 @@ class TypeSafeIndex {
   // the current index value.
   void AssertNoOverflow(int delta, const char* source) const {
     if (delta > 0 && index_ > kMaxIndex - delta) {
-      throw std::runtime_error(
-          std::string(source) + " Type \"" +
-          drake::NiceTypeName::Get<TypeSafeIndex<Tag>>() +
-          "\", has overflowed.");
+      internal::ThrowTypeSafeIndexAssertNoOverflowFailed(typeid(TypeSafeIndex),
+                                                         source);
     }
   }
 
@@ -580,9 +581,15 @@ operator>=(const U& value, const TypeSafeIndex<Tag>& tag) {
 }  // namespace drake
 
 namespace std {
-
 /// Enables use of the type-safe index to serve as a key in STL containers.
 /// @relates TypeSafeIndex
 template <typename Tag>
 struct hash<drake::TypeSafeIndex<Tag>> : public drake::DefaultHash {};
 }  // namespace std
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename Tag>
+struct formatter<drake::TypeSafeIndex<Tag>>
+    : drake::ostream_formatter {};
+}  // namespace fmt

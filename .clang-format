@@ -11,6 +11,13 @@ Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
 
+# Compress functions onto a single line (when they fit) iff they are defined
+# inline (inside a of class) or are empty.
+AllowShortFunctionsOnASingleLine: Inline
+
+# Compress lambdas onto a single line iff they are empty.
+AllowShortLambdasOnASingleLine: Empty
+
 # Specify the #include statement order.  This implements the order mandated by
 # the Google C++ Style Guide: related header, C headers, C++ headers, library
 # headers, and finally the project headers.

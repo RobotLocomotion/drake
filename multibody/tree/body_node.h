@@ -94,7 +94,7 @@ namespace internal {
 //
 // @tparam_default_scalar
 template <typename T>
-class BodyNode : public MultibodyElement<T, BodyNodeIndex> {
+class BodyNode : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(BodyNode)
 
@@ -117,7 +117,7 @@ class BodyNode : public MultibodyElement<T, BodyNodeIndex> {
   // for this node, which must outlive `this` BodyNode.
   BodyNode(const BodyNode<T>* parent_node,
            const Body<T>* body, const Mobilizer<T>* mobilizer)
-      : MultibodyElement<T, BodyNodeIndex>(body->model_instance()),
+      : MultibodyElement<T>(body->model_instance()),
         parent_node_(parent_node),
         body_(body),
         mobilizer_(mobilizer) {
@@ -135,6 +135,11 @@ class BodyNode : public MultibodyElement<T, BodyNodeIndex> {
   // MultibodyTree::Finalize() method call.
   void add_child_node(const BodyNode<T>* child) {
     children_.push_back(child);
+  }
+
+  // Returns this element's unique index.
+  BodyNodeIndex index() const {
+    return this->template index_impl<BodyNodeIndex>();
   }
 
   // Returns a constant reference to the body B associated with this node.
@@ -909,7 +914,7 @@ class BodyNode : public MultibodyElement<T, BodyNodeIndex> {
   //   velocity in its parent body P, expressed in world W) to this node's `nm`
   //   generalized velocities (or mobilities) `v_B` as `V_PB_W = H_PB_W * v_B`.
   // @param[in] diagonal_inertias
-  //   Vector of scalar diagonal inertia values for each degree of freedon.
+  //   Vector of scalar diagonal inertia values for each degree of freedom.
   // @param[out] abic
   //   A pointer to a valid, non nullptr, articulated body cache.
   //

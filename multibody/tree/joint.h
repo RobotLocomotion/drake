@@ -18,6 +18,13 @@
 namespace drake {
 namespace multibody {
 
+namespace internal {
+// This is a class used by MultibodyTree internals to create the implementation
+// for a particular joint object.
+template <typename T>
+class JointImplementationBuilder;
+}  // namespace internal
+
 /// A %Joint models the kinematical relationship which characterizes the
 /// possible relative motion between two bodies.
 /// The two bodies connected by this %Joint object are referred to as _parent_
@@ -67,7 +74,7 @@ namespace multibody {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class Joint : public MultibodyElement<T, JointIndex> {
+class Joint : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Joint)
 
@@ -119,7 +126,7 @@ class Joint : public MultibodyElement<T, JointIndex> {
         const VectorX<double>& vel_upper_limits,
         const VectorX<double>& acc_lower_limits,
         const VectorX<double>& acc_upper_limits)
-      : MultibodyElement<T, JointIndex>(frame_on_child.model_instance()),
+      : MultibodyElement<T>(frame_on_child.model_instance()),
         name_(name),
         frame_on_parent_(frame_on_parent),
         frame_on_child_(frame_on_child),
@@ -147,7 +154,7 @@ class Joint : public MultibodyElement<T, JointIndex> {
     // N.B. We cannot use `num_positions()` here because it is virtual.
     const int num_positions = pos_lower_limits.size();
 
-    // intialize the default positions.
+    // initialize the default positions.
     default_positions_ = VectorX<double>::Zero(num_positions);
   }
 
@@ -167,6 +174,9 @@ class Joint : public MultibodyElement<T, JointIndex> {
               acc_lower_limits, acc_upper_limits) {}
 
   virtual ~Joint() {}
+
+  /// Returns this element's unique index.
+  JointIndex index() const { return this->template index_impl<JointIndex>(); }
 
   /// Returns the name of this joint.
   const std::string& name() const { return name_; }

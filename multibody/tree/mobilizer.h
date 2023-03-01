@@ -209,7 +209,7 @@ template<typename T> class BodyNode;
 //
 // @tparam_default_scalar
 template <typename T>
-class Mobilizer : public MultibodyElement<T, MobilizerIndex> {
+class Mobilizer : public MultibodyElement<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Mobilizer)
 
@@ -227,6 +227,11 @@ class Mobilizer : public MultibodyElement<T, MobilizerIndex> {
       throw std::runtime_error(
           "The provided inboard and outboard frames reference the same object");
     }
+  }
+
+  /// Returns this element's unique index.
+  MobilizerIndex index() const {
+    return this->template index_impl<MobilizerIndex>();
   }
 
   // Returns the number of generalized coordinates granted by this mobilizer.
@@ -706,7 +711,7 @@ class Mobilizer : public MultibodyElement<T, MobilizerIndex> {
   void DoDeclareParameters(
       internal::MultibodyTreeSystem<T>* tree_system) override {
     // Declare parent class's parameters
-    MultibodyElement<T, MobilizerIndex>::DoDeclareParameters(tree_system);
+    MultibodyElement<T>::DoDeclareParameters(tree_system);
 
     is_locked_parameter_index_ =
         this->DeclareAbstractParameter(tree_system, Value<bool>(false));

@@ -15,6 +15,7 @@
 #include "drake/common/autodiff.h"
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/symbolic/expression.h"
 
 namespace drake {
@@ -25,7 +26,7 @@ namespace drake {
  * number of distinct Terms (variables raised to positive integer powers).
  *
  * Variables are identified by integer indices rather than symbolic names, but
- * an automatic facility is provided to covert variable names up to four
+ * an automatic facility is provided to convert variable names up to four
  * characters into unique integers, provided those variables are named using
  * only lowercase letters and the "@#_." characters followed by a number.  For
  * example, valid names include "dx4" and "m_x".
@@ -411,6 +412,7 @@ class Polynomial {
    */
   static Polynomial<T> FromExpression(const drake::symbolic::Expression& e);
 
+  // TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
   friend std::ostream& operator<<(std::ostream& os, const Monomial& m) {
     //    if (m.coefficient == 0) return os;
 
@@ -436,6 +438,7 @@ class Polynomial {
     return os;
   }
 
+  // TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization.
   friend std::ostream& operator<<(std::ostream& os, const Polynomial& poly) {
     if (poly.monomials_.empty()) {
       os << "0";
@@ -494,6 +497,8 @@ Polynomial<T> pow(
   }
 }
 
+// TODO(jwnimmer-tri) Rewrite this as a fmt::formatter specialization,
+// most likely just fmt_eigen without anything extra.
 template <typename T, int Rows, int Cols>
 std::ostream& operator<<(
     std::ostream& os,
@@ -514,6 +519,16 @@ typedef Polynomial<double> Polynomiald;
 /// A column vector of polynomials; used in several optimization classes.
 typedef Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> VectorXPoly;
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::Polynomial<T>>
+    : drake::ostream_formatter {};
+template <>
+struct formatter<drake::Polynomial<double>::Monomial>
+    : drake::ostream_formatter {};
+}  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class drake::Polynomial)

@@ -2,6 +2,8 @@
 
 #include <ostream>
 
+#include "drake/common/fmt_ostream.h"
+
 namespace drake {
 namespace yaml {
 
@@ -30,3 +32,11 @@ struct LoadYamlOptions {
 
 }  // namespace yaml
 }  // namespace drake
+
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::yaml::LoadYamlOptions>
+    : drake::ostream_formatter {};
+}  // namespace fmt

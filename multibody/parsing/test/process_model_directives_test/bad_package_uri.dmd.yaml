@@ -1,4 +1,4 @@
 directives:
 - add_model:
     name: homecart_bimanual
-    file: package://nonexistant/model.urdf
+    file: package://nonexistent/model.urdf

@@ -29,6 +29,7 @@ def _actually_find_packages():
     result = find_packages()
     result.extend([
         "pydrake.examples",
+        "pydrake.geometry",
         "pydrake.solvers",
         "pydrake.visualization",
     ])
@@ -74,7 +75,7 @@ See https://drake.mit.edu/pip.html for installation instructions and caveats.
         'Topic :: Scientific/Engineering',
         'Topic :: Software Development :: Libraries :: Python Modules'],
       license='Various',
-      platforms=['linux_x86_64', 'macosx_x86_64'],
+      platforms=['linux_x86_64', 'macosx_x86_64', 'macosx_arm64'],
       packages=_actually_find_packages(),
       # Add in any packaged data.
       include_package_data=True,

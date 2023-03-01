@@ -1,4 +1,4 @@
-#include "planning/body_shape_description.h"
+#include "drake/planning/body_shape_description.h"
 
 #include <gtest/gtest.h>
 
@@ -28,6 +28,13 @@ GTEST_TEST(BodyShapeDescriptionTest, Arbitrary) {
   EXPECT_TRUE(dut.pose_in_body().IsExactlyEqualTo(pose));
   EXPECT_EQ(dut.model_instance_name(), model);
   EXPECT_EQ(dut.body_name(), body);
+
+  // A moved-from object should reject any attempt at using it.
+  BodyShapeDescription other(std::move(dut));
+  EXPECT_THROW(dut.shape(), std::exception);
+  EXPECT_THROW(dut.pose_in_body(), std::exception);
+  EXPECT_THROW(dut.model_instance_name(), std::exception);
+  EXPECT_THROW(dut.body_name(), std::exception);
 }
 
 GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {
@@ -46,8 +53,8 @@ GTEST_TEST(BodyShapeDescriptionTest, FromPlant) {
   </model>
 </sdf>
 )""";
-  builder.mutable_parser().AddModelsFromString(model, "sdf");
-  auto diagram = builder.BuildDiagram();
+  builder.parser().AddModelsFromString(model, "sdf");
+  auto diagram = builder.Build();
   auto diagram_context = diagram->CreateDefaultContext();
   auto& plant = diagram->plant();
   auto& plant_context = diagram->plant_context(*diagram_context);

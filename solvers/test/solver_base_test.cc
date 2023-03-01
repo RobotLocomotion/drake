@@ -15,18 +15,23 @@ using ::testing::HasSubstr;
 // A stub subclass of SolverBase, so that we can instantiate and test it.
 class StubSolverBase final : public SolverBase {
  public:
+  // On 2023-06-01 upon completion of deprecation, remove this pragma and
+  // switch from &id to id() below.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StubSolverBase)
   StubSolverBase() : SolverBase(
       &id,
       [this](){ return available_; },
       [this](){ return enabled_; },
       [this](const auto& prog){ return satisfied_; }) {}
+#pragma GCC diagnostic pop
 
   // This overload passes the explain_unsatisfied functor to the base class,
   // in contrast to the above constructor which leaves it defaulted.
   explicit StubSolverBase(std::string explanation)
     : SolverBase(
-        &id,
+        id(),
         [this](){ return available_; },
         [this](){ return enabled_; },
         [this](const auto& prog){ return satisfied_; },

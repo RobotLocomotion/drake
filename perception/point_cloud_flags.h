@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 
 namespace drake {
 namespace perception {
@@ -199,3 +200,11 @@ inline Fields operator|(const DescriptorType& lhs, const Fields& rhs) {
 
 }  // namespace perception
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::perception::pc_flags::Fields>
+    : drake::ostream_formatter {};
+}  // namespace fmt
+

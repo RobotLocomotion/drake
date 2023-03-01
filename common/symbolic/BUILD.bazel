@@ -121,6 +121,13 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "ostream_test",
+    deps = [
+        ":generic_polynomial",
+    ],
+)
+
+drake_cc_googletest(
     name = "polynomial_basis_element_test",
     deps = [
         ":generic_polynomial",

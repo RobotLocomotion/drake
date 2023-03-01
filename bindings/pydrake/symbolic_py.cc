@@ -1,12 +1,11 @@
 #include <map>
 #include <string>
 
-#include "fmt/format.h"
-#include "fmt/ostream.h"
 #include "pybind11/eigen.h"
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include <fmt/format.h>
 
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
@@ -75,7 +74,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def("__repr__",
           [](const Variable& self) {
             return fmt::format(
-                "Variable('{}', {})", self.to_string(), self.get_type());
+                "Variable('{}', {})", self.get_name(), self.get_type());
           })
       .def("__hash__",
           [](const Variable& self) { return std::hash<Variable>{}(self); })
@@ -559,26 +558,12 @@ PYBIND11_MODULE(symbolic, m) {
       py::arg("e"), py::arg("sin_cos"), py::arg("t"),
       doc.SubstituteStereographicProjection.doc);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  m.def("SubstituteStereographicProjection",
-      WrapDeprecated(
-          "2023-02-01, use the other SubstituteStereographicProjection which "
-          "passes e as a sym.Polynomial",
-          [](const Expression& e, const std::unordered_map<symbolic::Variable,
-                                      symbolic::Variable>& subs) {
-            return symbolic::SubstituteStereographicProjection(e, subs);
-          }),
-      py::arg("e"), py::arg("subs"),
-      "2023-02-01, use the other SubstituteStereographicProjection which "
-      "passes e as a sym.Polynomial");
-#pragma GCC diagnostic pop
-
   {
     constexpr auto& cls_doc = doc.FormulaKind;
     py::enum_<FormulaKind>(m, "FormulaKind", doc.FormulaKind.doc)
-        .value("False", FormulaKind::False, cls_doc.False.doc)
-        .value("True", FormulaKind::True, cls_doc.True.doc)
+        // `True` and `False` are reserved keywords as of Python3.
+        .value("False_", FormulaKind::False, cls_doc.False.doc)
+        .value("True_", FormulaKind::True, cls_doc.True.doc)
         .value("Var", FormulaKind::Var, cls_doc.Var.doc)
         .value("Eq", FormulaKind::Eq, cls_doc.Eq.doc)
         .value("Neq", FormulaKind::Neq, cls_doc.Neq.doc)
@@ -649,9 +634,7 @@ PYBIND11_MODULE(symbolic, m) {
                          const Formula& other) { return !self.EqualTo(other); })
       .def("__hash__",
           [](const Formula& self) { return std::hash<Formula>{}(self); })
-      .def_static("True", &Formula::True, doc.FormulaTrue.doc)
-      .def_static("False", &Formula::False, doc.FormulaFalse.doc)
-      // `True` and `False` are reserved as of Python3
+      // `True` and `False` are reserved keywords as of Python3.
       .def_static("True_", &Formula::True, doc.FormulaTrue.doc)
       .def_static("False_", &Formula::False, doc.FormulaFalse.doc)
       .def("__nonzero__", [](const Formula&) {

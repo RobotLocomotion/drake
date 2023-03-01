@@ -12,7 +12,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-// Class to represent an interval [x_lower, x_upper] within wich we know there
+// Class to represent an interval [x_lower, x_upper] within which we know there
 // is a root. For a continuous function f(x) we know there is a root within the
 // given interval if sign(f(x_lower)) != sign(f(x_upper)).
 class Bracket {

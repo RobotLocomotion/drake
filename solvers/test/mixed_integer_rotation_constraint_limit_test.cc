@@ -42,7 +42,7 @@ class TestMinimumDistance
     s << d_(0), R_.col(0) - R_.col(1);
     prog_.AddLorentzConeConstraint(s);
 
-    // Miminize the distance.
+    // Minimize the distance.
     prog_.AddCost(d_(0));
   }
 

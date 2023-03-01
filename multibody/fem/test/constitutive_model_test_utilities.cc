@@ -135,6 +135,7 @@ the handcrafted derivative matches that produced by automatic differentiation.
 CorotatedModel. */
 template <class Model>
 void TestdPdFIsDerivativeOfP() {
+  constexpr int kSpaceDimension = 3;
   const double kTolerance = 1e-12;
   constexpr int num_locations = Model::Data::num_locations;
   constexpr double kYoungsModulus = 100.0;

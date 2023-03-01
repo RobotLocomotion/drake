@@ -12,6 +12,8 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/unused.h"
 
@@ -259,12 +261,19 @@ class VectorBase {
 /// RowVectorX<T>. This is useful for debugging purposes.
 template <typename T>
 std::ostream& operator<<(std::ostream& os, const VectorBase<T>& vec) {
-  os << vec.CopyToVector().transpose();
+  os << fmt::to_string(fmt_eigen(vec.CopyToVector().transpose()));
   return os;
 }
 
 }  // namespace systems
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <typename T>
+struct formatter<drake::systems::VectorBase<T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::systems::VectorBase)

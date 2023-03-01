@@ -30,12 +30,14 @@ drake_cc_package_library(
         ":diagnostic_policy",
         ":double",
         ":drake_bool",
+        ":drake_export",
         ":drake_path",
         ":dummy_value",
         ":essential",
         ":extract_double",
         ":find_resource",
         ":find_runfiles",
+        ":fmt",
         ":hash",
         ":identifier",
         ":is_approx_equal_abstol",
@@ -59,6 +61,23 @@ drake_cc_package_library(
     ],
 )
 
+drake_cc_library(
+    name = "fmt",
+    srcs = [
+        "fmt_eigen.cc",
+    ],
+    hdrs = [
+        "fmt.h",
+        "fmt_eigen.h",
+        "fmt_ostream.h",
+    ],
+    visibility = ["//common/test_utilities:__pkg__"],
+    deps = [
+        "@eigen",
+        "@fmt",
+    ],
+)
+
 # A library of things that EVERYONE should want and MUST EAT.
 # Be appropriately hesitant when adding new things here.
 drake_cc_library(
@@ -79,6 +98,7 @@ drake_cc_library(
         "text_logging.h",
     ],
     deps = [
+        ":fmt",
         "@eigen",
         "@fmt",
         "@spdlog",
@@ -189,6 +209,11 @@ drake_cc_library(
 )
 
 # Miscellaneous utilities.
+
+drake_cc_library(
+    name = "drake_export",
+    hdrs = ["drake_export.h"],
+)
 
 drake_cc_library(
     name = "identifier",
@@ -423,6 +448,7 @@ drake_cc_library(
 
 drake_cc_library(
     name = "type_safe_index",
+    srcs = ["type_safe_index.cc"],
     hdrs = ["type_safe_index.h"],
     deps = [
         ":essential",
@@ -879,6 +905,27 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "fmt_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fmt_eigen_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
+    name = "fmt_ostream_test",
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_googletest(
     name = "is_approx_equal_abstol_test",
     deps = [
         ":essential",
@@ -913,14 +960,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "openmp_test",
-    # TODO(jwnimmer-tri) Encapsulate unit test concurrency configuration into
-    # Drake's starlark macros, so that we don't have to repeat ourselves here.
-    env = {
-        "OMP_NUM_THREADS": "2",
-    },
-    tags = [
-        "cpu:2",
-    ],
+    num_threads = 2,
     deps = [
         "//common:essential",
     ],
@@ -959,14 +999,47 @@ drake_cc_googletest(
     ],
 )
 
+# Likewise (to the above test) for the ostream variation.
+drake_cc_googletest(
+    name = "text_logging_ostream_test",
+    defines = [
+        "TEXT_LOGGING_TEST_SPDLOG=1",
+    ],
+    use_default_main = False,
+    deps = [
+        ":essential",
+    ],
+)
+
 # This version of text_logging_test re-compiles all source files without
 # defining HAVE_SPDLOG, to ensure that the no-op stubs behave as desired.
 drake_cc_googletest(
     name = "text_logging_no_spdlog_test",
     srcs = [
         "drake_copyable.h",
+        "fmt.h",
         "never_destroyed.h",
         "test/text_logging_test.cc",
+        "text_logging.cc",
+        "text_logging.h",
+    ],
+    defines = [
+        "TEXT_LOGGING_TEST_SPDLOG=0",
+    ],
+    use_default_main = False,
+    deps = [
+        "@fmt",
+    ],
+)
+
+# Likewise (to the above test) for the ostream variation.
+drake_cc_googletest(
+    name = "text_logging_ostream_no_spdlog_test",
+    srcs = [
+        "drake_copyable.h",
+        "fmt.h",
+        "never_destroyed.h",
+        "test/text_logging_ostream_test.cc",
         "text_logging.cc",
         "text_logging.h",
     ],

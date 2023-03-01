@@ -4,8 +4,7 @@
 #include <sstream>
 #include <utility>
 
-#include "fmt/format.h"
-#include "fmt/ostream.h"
+#include <fmt/format.h>
 
 #include "drake/common/never_destroyed.h"
 

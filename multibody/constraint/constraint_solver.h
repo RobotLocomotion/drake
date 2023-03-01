@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/text_logging.h"
 #include "drake/multibody/constraint/constraint_problem_data.h"
 #include "drake/solvers/moby_lcp_solver.h"
@@ -1461,7 +1462,7 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
       // Transform the impulsive forces to non-impulsive forces.
       lambda = u.tail(num_eq_constraints) / dt;
       DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
-          lambda.transpose());
+          fmt_eigen(lambda.transpose()));
     }
 
     return;
@@ -1481,11 +1482,11 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
   cf->segment(num_contacts, num_spanning_vectors) = fD_plus - fD_minus;
   cf->segment(num_contacts + num_spanning_vectors, num_limits) = fL;
   DRAKE_LOGGER_DEBUG("Normal contact forces/impulses: {}",
-      fN.transpose());
+      fmt_eigen(fN.transpose()));
   DRAKE_LOGGER_DEBUG("Frictional contact forces/impulses: {}",
-      (fD_plus - fD_minus).transpose());
+      fmt_eigen((fD_plus - fD_minus).transpose()));
   DRAKE_LOGGER_DEBUG("Generic unilateral constraint "
-      "forces/impulses: {}", fL.transpose());
+      "forces/impulses: {}", fmt_eigen(fL.transpose()));
 
   // Determine the new velocity and the bilateral constraint forces/
   // impulses.
@@ -1516,7 +1517,7 @@ void ConstraintSolver<T>::PopulatePackedConstraintForcesFromLcpSolution(
     // Transform the impulsive forces back to non-impulsive forces.
     lambda = u.tail(num_eq_constraints) / dt;
     DRAKE_LOGGER_DEBUG("Bilateral constraint forces/impulses: {}",
-        lambda.transpose());
+        fmt_eigen(lambda.transpose()));
   }
 }
 
@@ -2443,11 +2444,11 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
 
     // Verify that the two directions are orthogonal.
     if (abs(contact_normal.dot(contact_tangent)) > loose_eps) {
-      std::ostringstream oss;
-      oss << "Contact normal (" << contact_normal.transpose() << ") and ";
-      oss << "contact tangent (" << contact_tangent.transpose() << ") ";
-      oss << "insufficiently orthogonal.";
-      throw std::logic_error(oss.str());
+      throw std::logic_error(fmt::format(
+          "Contact normal ({}) and contact tangent ({}) insufficiently "
+          "orthogonal.",
+          fmt_eigen(contact_normal.transpose()),
+          fmt_eigen(contact_tangent.transpose())));
     }
 
     // Initialize the contact force expressed in the global frame.
@@ -2535,11 +2536,11 @@ void ConstraintSolver<T>::CalcContactForcesInContactFrames(
 
     // Verify that the two directions are orthogonal.
     if (abs(contact_normal.dot(contact_tangent)) > loose_eps) {
-      std::ostringstream oss;
-      oss << "Contact normal (" << contact_normal.transpose() << ") and ";
-      oss << "contact tangent (" << contact_tangent.transpose() << ") ";
-      oss << "insufficiently orthogonal.";
-      throw std::logic_error(oss.str());
+      throw std::logic_error(fmt::format(
+          "Contact normal ({}) and contact tangent ({}) insufficiently "
+          "orthogonal.",
+          fmt_eigen(contact_normal.transpose()),
+          fmt_eigen(contact_tangent.transpose())));
     }
 
     // Compute the contact force expressed in the global frame.

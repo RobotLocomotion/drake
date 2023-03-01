@@ -938,6 +938,18 @@ std::vector<LinkInfo> AddLinksFromSpecification(
     // floating).
     plant->SetDefaultFreeBodyPose(body, X_WL);
 
+    const std::set<std::string> supported_geometry_elements{
+      "box",
+      "capsule",
+      "cylinder",
+      "drake:capsule",
+      "drake:ellipsoid",
+      "ellipsoid",
+      "empty",
+      "mesh",
+      "plane",
+      "sphere"};
+
     if (plant->geometry_source_is_registered()) {
       ResolveFilename resolve_filename = [&package_map, &root_dir](
           const DiagnosticPolicy& inner_diagnostic, std::string uri) {
@@ -947,6 +959,12 @@ std::vector<LinkInfo> AddLinksFromSpecification(
       for (uint64_t visual_index = 0; visual_index < link.VisualCount();
            ++visual_index) {
         const sdf::Visual& sdf_visual = *link.VisualByIndex(visual_index);
+        const sdf::Geometry& sdf_geometry = *sdf_visual.Geom();
+
+        sdf::ElementPtr geometry_element = sdf_geometry.Element();
+        CheckSupportedElements(
+            diagnostic, geometry_element, supported_geometry_elements);
+
         const RigidTransformd X_LG = ResolveRigidTransform(
             diagnostic, sdf_visual.SemanticPose());
         unique_ptr<GeometryInstance> geometry_instance =
@@ -972,6 +990,10 @@ std::vector<LinkInfo> AddLinksFromSpecification(
         const sdf::Collision& sdf_collision =
             *link.CollisionByIndex(collision_index);
         const sdf::Geometry& sdf_geometry = *sdf_collision.Geom();
+
+        sdf::ElementPtr geometry_element = sdf_geometry.Element();
+        CheckSupportedElements(
+            diagnostic, geometry_element, supported_geometry_elements);
 
         std::unique_ptr<geometry::Shape> shape =
             MakeShapeFromSdfGeometry(
@@ -1684,8 +1706,8 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
 }  // namespace
 
 std::optional<ModelInstanceIndex> AddModelFromSdf(
-    const DataSource& data_source,
-    const std::string& model_name_in,
+    const DataSource& data_source, const std::string& model_name_in,
+    const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
@@ -1705,8 +1727,13 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
   // Get the only model in the file.
   const sdf::Model& model = *root.Model();
 
-  const std::string model_name =
+  const std::string local_model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
+
+  const std::string model_name =
+      parent_model_name.has_value()
+          ? sdf::JoinName(*parent_model_name, local_model_name)
+          : local_model_name;
 
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
@@ -1720,6 +1747,7 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
 std::vector<ModelInstanceIndex> AddModelsFromSdf(
     const DataSource& data_source,
+    const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
@@ -1755,11 +1783,16 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     DRAKE_DEMAND(root.Model() != nullptr);
     const sdf::Model& model = *root.Model();
 
+    const std::string model_name =
+        parent_model_name.has_value()
+            ? sdf::JoinName(*parent_model_name, model.Name())
+            : model.Name();
+
     std::vector<ModelInstanceIndex> added_model_instances =
         AddModelsFromSpecification(
-            workspace.diagnostic, model, model.Name(), {}, workspace.plant,
-            workspace.collision_resolver,
-            workspace.package_map, data_source.GetRootDir());
+            workspace.diagnostic, model, model_name, {}, workspace.plant,
+            workspace.collision_resolver, workspace.package_map,
+            data_source.GetRootDir());
     model_instances.insert(model_instances.end(),
                            added_model_instances.begin(),
                            added_model_instances.end());
@@ -1784,11 +1817,16 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         ++model_index) {
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
+      const std::string model_name =
+          parent_model_name.has_value()
+              ? sdf::JoinName(*parent_model_name, model.Name())
+              : model.Name();
+
       std::vector<ModelInstanceIndex> added_model_instances =
           AddModelsFromSpecification(
-              workspace.diagnostic, model, model.Name(), {}, workspace.plant,
-              workspace.collision_resolver,
-              workspace.package_map, data_source.GetRootDir());
+              workspace.diagnostic, model, model_name, {}, workspace.plant,
+              workspace.collision_resolver, workspace.package_map,
+              data_source.GetRootDir());
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),
                              added_model_instances.end());
@@ -1831,17 +1869,14 @@ std::optional<ModelInstanceIndex> SdfParserWrapper::AddModel(
     const DataSource& data_source, const std::string& model_name,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
-  std::string full_name =
-      parsing::PrefixName(parent_model_name.value_or(""), model_name);
-  return AddModelFromSdf(data_source, full_name, workspace);
+  return AddModelFromSdf(data_source, model_name, parent_model_name, workspace);
 }
 
 std::vector<ModelInstanceIndex> SdfParserWrapper::AddAllModels(
     const DataSource& data_source,
-    const std::optional<std::string>&,
+    const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
-  // TODO(rpoyner-tri): parent_model_name dropped?
-  return AddModelsFromSdf(data_source, workspace);
+  return AddModelsFromSdf(data_source, parent_model_name, workspace);
 }
 
 }  // namespace internal

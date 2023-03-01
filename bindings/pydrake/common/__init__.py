@@ -2,6 +2,7 @@ import collections
 import functools
 import inspect
 import logging as _logging
+import typing
 
 import numpy as np
 
@@ -122,3 +123,128 @@ def _wrap_to_match_input_shape(f):
             return out
 
     return wrapper
+
+
+class _MangledName:
+    """Provides recipes for mangling and demangling names for templated code.
+
+    For example, the template instantiation expression LeafSystem_[AutoDiffXd]
+    refers to Python class named LeafSystem_𝓣AutoDiffXd𝓤. We refer to the
+    former as the "pretty" name and the latter as the "mangled" name.
+
+    We need to use name mangling because Python class and function names must
+    be valid identifiers (i.e., alphanumeric characters, with underscores).
+    The pretty name LeafSystem_[AutoDiffXd] is a valid *expression* but it is
+    not a valid *identifier*. In cases where an expression is allowed, we'll
+    prefer to use the pretty name, but in cases where we must use an identifier
+    (e.g., when declaring a class), we must use the mangled name.
+
+    To make code transformations easier, we'll create a bijection between
+    pretty names and mangled names. Any disallowed character that might appear
+    in a pretty name is mapped to an arcane unicode character in the mangled
+    name. (Refer to the constants below for details.)
+
+    See pretty_class_name() below for a demangling function to help display
+    "pretty" class names to the user.
+    """
+
+    # This is the mangled substitution for "[" in a pretty name.
+    # This letter is 'U+1D4E3 MATHEMATICAL BOLD SCRIPT CAPITAL T'.
+    UNICODE_LEFT_BRACKET = "𝓣"
+
+    # This is the mangled substitution for "]" in a pretty name.
+    # This letter is 'U+1D4E4 MATHEMATICAL BOLD SCRIPT CAPITAL U'.
+    UNICODE_RIGHT_BRACKET = "𝓤"
+
+    # This is the mangled substitution for "," in a pretty name.
+    # This letter is 'U+1D4EC MATHEMATICAL BOLD SCRIPT SMALL C'.
+    UNICODE_COMMA = "𝓬"
+
+    # This is the mangled substitution for "." in a pretty name.
+    # This letter is 'U+1D4F9 MATHEMATICAL BOLD SCRIPT SMALL P'.
+    UNICODE_PERIOD = "𝓹"
+
+    @staticmethod
+    def mangle(name: str) -> str:
+        """Given a pretty name (or partially-mangled name), returns the
+        corresponding fully-mangled name.
+
+        For example, ``LeafSystem_[AutoDiffXd]`` as input becomes
+        ``LeafSystem_𝓣AutoDiffXd𝓤`` as the return value.
+
+        Names that do not need mangling (i.e., are already valid identifiers)
+        are returned unchanged.
+
+        If part of the name is already partially-mangled, it will remain so.
+        For example, ``Image[PixelType𝓹kRgba8U]`` as input becomes
+        ``Image𝓣PixelType𝓹kRgba8U𝓤`` as the return value. This implies
+        that `demangle(mangle(name)) == name` does not always hold true.
+        """
+        name = name.replace("[", _MangledName.UNICODE_LEFT_BRACKET)
+        name = name.replace("]", _MangledName.UNICODE_RIGHT_BRACKET)
+        name = name.replace(",", _MangledName.UNICODE_COMMA)
+        name = name.replace(".", _MangledName.UNICODE_PERIOD)
+        # Sanity check that all of the characters are alpha-numeric (and
+        # N.B. ignoring the rule that identifiers cannot start with numbers).
+        assert ("_" + name).isidentifier(), name
+        return name
+
+    @staticmethod
+    def demangle(name: str) -> str:
+        """Given a mangled name, returns the pretty name.
+        """
+        name = name.replace(_MangledName.UNICODE_LEFT_BRACKET, "[")
+        name = name.replace(_MangledName.UNICODE_RIGHT_BRACKET, "]")
+        name = name.replace(_MangledName.UNICODE_COMMA, ",")
+        name = name.replace(_MangledName.UNICODE_PERIOD, ".")
+        return name
+
+    @staticmethod
+    def module_getattr(*, module_name: str,
+                       module_globals: typing.Mapping[str, typing.Any],
+                       name: str) -> typing.Any:
+        """Looks up a name in a module's globals(), accounting for mangling.
+        If the name is a pretty name, it's first converted to a mangled name.
+        Then, the name is looked up in the module_globals.
+        Unknown names are reported by raising an AttributeError.
+
+        This function is intended to help implement __getattr__ on a module
+        for backwards-compatibility with template unpickling vs prior versions
+        of Drake.
+
+        To make a module backwards-compatible with pickle loading, we place
+        the following code into each module that contains any pre-v1.12.0
+        pickled template classes.
+
+        def __getattr__(name):
+            return _MangledName.module_getattr(
+                module_name=__name__, module_globals=globals(), name=name)
+
+        Note that users cannot ``import`` names with, e.g., square brackets
+        anyway. The renaming only comes into play for calls to ``getattr``,
+        e.g., by the ``pickle`` module.
+        """
+        name = _MangledName.mangle(name)
+        if name in module_globals:
+            return module_globals[name]
+        raise AttributeError(
+            f"module {module_name!r} has no attribute {name!r}")
+
+
+def pretty_class_name(cls: type, *, use_qualname: bool = False) -> str:
+    """Given a class, returns its ``cls.__name__`` respelled to be suitable for
+    display to a user, in particular by respelling C++ template arguments using
+    their conventional ``FooBar_[AutoDiffXd]`` expression spelling instead of
+    the mangled unicode name. Note that the returned name might not be a valid
+    Python identifier, though it should still be a valid Python expression.
+
+    If the class is not a template, simply returns ``cls.__name__`` unchanged.
+
+    When ``use_qualname`` is true, uses ``cls.__qualname__`` instead of
+    ``cls.__name__``.
+    """
+    if use_qualname:
+        name = cls.__qualname__
+    else:
+        name = cls.__name__
+    return _MangledName.demangle(name)

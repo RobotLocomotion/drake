@@ -390,6 +390,11 @@ class GeometryState {
       SourceId source_id, FrameId frame_id,
       std::unique_ptr<GeometryInstance> geometry, double resolution_hint);
 
+  /** Implementation of SceneGraph::ChangeShape().  */
+  void ChangeShape(
+      SourceId source_id, GeometryId geometry_id, const Shape& shape,
+      std::optional<math::RigidTransform<double>> X_FG);
+
   /** Implementation of SceneGraph::RemoveGeometry().  */
   void RemoveGeometry(SourceId source_id, GeometryId geometry_id);
 
@@ -620,10 +625,7 @@ class GeometryState {
    scalar values initialized from the current values. If this is invoked on an
    instance already instantiated on AutoDiffXd, it is equivalent to cloning
    the instance.  */
-  template <typename T1 = T>
-  typename std::enable_if_t<!std::is_same_v<T1, symbolic::Expression>,
-                            std::unique_ptr<GeometryState<AutoDiffXd>>>
-  ToAutoDiffXd() const;
+  std::unique_ptr<GeometryState<AutoDiffXd>> ToAutoDiffXd() const;
 
   //@}
 
@@ -632,69 +634,9 @@ class GeometryState {
   template <typename>
   friend class GeometryState;
 
-  // Conversion constructor.
-  // It is _vitally_ important that all members are _explicitly_ accounted for
-  // (either in the initialization list or in the body). Failure to do so will
-  // lead to errors in the converted GeometryState instance.
-  //
-  // TODO(russt): Move this to the .cc file, support
-  // (T=AutoDiffXd,U=Expression), and remove the enable_if restriction on
-  // ToAutoDiffXd().
+  // Scalar-converting copy constructor.
   template <typename U>
-  explicit GeometryState(const GeometryState<U>& source)
-      : self_source_(source.self_source_),
-        source_frame_id_map_(source.source_frame_id_map_),
-        source_deformable_geometry_id_map_(
-            source.source_deformable_geometry_id_map_),
-        source_frame_name_map_(source.source_frame_name_map_),
-        source_root_frame_map_(source.source_root_frame_map_),
-        source_names_(source.source_names_),
-        source_anchored_geometry_map_(source.source_anchored_geometry_map_),
-        frames_(source.frames_),
-        geometries_(source.geometries_),
-        frame_index_to_id_map_(source.frame_index_to_id_map_),
-        geometry_engine_(
-            std::move(source.geometry_engine_->template ToScalarType<T>())),
-        render_engines_(source.render_engines_),
-        geometry_version_(source.geometry_version_) {
-    auto convert_pose_vector = [](const std::vector<math::RigidTransform<U>>& s,
-                                  std::vector<math::RigidTransform<T>>* d) {
-      std::vector<math::RigidTransform<T>>& dest = *d;
-      dest.resize(s.size());
-      for (size_t i = 0; i < s.size(); ++i) {
-        dest[i] = s[i].template cast<T>();
-      }
-    };
-    // TODO(xuchenhan-tri): The scalar conversion of KinematicsData should be
-    // handled by the KinematicsData class.
-    convert_pose_vector(source.kinematics_data_.X_PFs, &kinematics_data_.X_PFs);
-    convert_pose_vector(source.kinematics_data_.X_WFs, &kinematics_data_.X_WFs);
-
-    // Now convert the id -> pose map.
-    {
-      std::unordered_map<GeometryId, math::RigidTransform<T>>& dest =
-          kinematics_data_.X_WGs;
-      const std::unordered_map<GeometryId, math::RigidTransform<U>>& s =
-          source.kinematics_data_.X_WGs;
-      for (const auto& id_pose_pair : s) {
-        const GeometryId id = id_pose_pair.first;
-        const math::RigidTransform<U>& X_WG_source = id_pose_pair.second;
-        dest.insert({id, X_WG_source.template cast<T>()});
-      }
-    }
-
-    // Now convert the id -> configuration map.
-    {
-      std::unordered_map<GeometryId, VectorX<T>>& dest = kinematics_data_.q_WGs;
-      const std::unordered_map<GeometryId, VectorX<U>>& s =
-          source.kinematics_data_.q_WGs;
-      for (const auto& id_configuration_pair : s) {
-        const GeometryId id = id_configuration_pair.first;
-        const VectorX<U>& q_WG_source = id_configuration_pair.second;
-        dest.insert({id, q_WG_source.template cast<T>()});
-      }
-    }
-  }
+  explicit GeometryState(const GeometryState<U>& source);
 
   // Allow SceneGraph unique access to the state members to perform queries.
   friend class SceneGraph<T>;
@@ -841,12 +783,37 @@ class GeometryState {
   // @pre geometry_id maps to a registered geometry.
   bool RemoveRoleUnchecked(GeometryId geometry_id, Role role);
 
+  // Handles adding the given geometry to the proximity engine. The only
+  // GeometryState-level data structure modified is the proximity version. All
+  // other changes to GeometryState data must happen elsewhere.
+  void AddToProximityEngineUnchecked(
+      const internal::InternalGeometry& geometry);
+
+  // Handles removing the given geometry from the proximity engine. The only
+  // GeometryState-level data structure modified is the proximity version. All
+  // other changes to GeometryState data must happen elsewhere.
+  void RemoveFromProximityEngineUnchecked(
+      const internal::InternalGeometry& geometry);
+
   // Attempts to remove the geometry with the given `id` from the named
   // renderer. Returns true if removed (false doesn't imply "failure", just
   // nothing to remove). This does no checking on ownership.
   // @pre geometry_id maps to a registered geometry.
   bool RemoveFromRendererUnchecked(const std::string& renderer_name,
                                    GeometryId id);
+
+  // Attempts to add the given `geometry` to all compatible render engines. The
+  // only GeometryState-level data structure modified is the perception version.
+  // All other changes to GeometryState data must happen elsewhere.
+  // @returns `true` if the geometry was added to *any* renderer.
+  bool AddToCompatibleRenderersUnchecked(
+      const internal::InternalGeometry& geometry);
+
+  // Attempts to remove the geometry with the given id from *all* render
+  // engines. The only GeometryState-level data structure modified is the
+  // perception version. All other changes to GeometryState data must happen
+  // elsewhere.
+  void RemoveFromAllRenderersUnchecked(GeometryId id);
 
   bool RemoveProximityRole(GeometryId geometry_id);
   bool RemoveIllustrationRole(GeometryId geometry_id);

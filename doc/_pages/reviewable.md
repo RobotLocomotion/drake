@@ -112,6 +112,9 @@ Commits that implement a feature or a fix must be labeled with the
 corresponding tag, either ``release notes: feature`` or ``release notes: fix``
 but never both at once; choose whichever one is the best match.
 
+Commits that merely add missing pydrake bindings should be marked
+``release notes: fix``.
+
 **When combining release notes labels:**
 
 - ``none`` must not be combined with any other label.

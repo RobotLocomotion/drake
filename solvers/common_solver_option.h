@@ -2,6 +2,8 @@
 
 #include <ostream>
 
+#include "drake/common/fmt_ostream.h"
+
 namespace drake {
 namespace solvers {
 /**
@@ -31,3 +33,10 @@ std::ostream& operator<<(std::ostream& os,
                          CommonSolverOption common_solver_option);
 }  // namespace solvers
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::solvers::CommonSolverOption>
+    : drake::ostream_formatter {};
+}  // namespace fmt

@@ -549,6 +549,8 @@ void DoScalarDependentDefinitions(py::module m) {
           // Keep alive, ownership: `system` keeps `self` alive.
           py::keep_alive<3, 1>(), doc.DiagramBuilder.AddNamedSystem.doc)
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
+      .def("already_built", &DiagramBuilder<T>::already_built,
+          doc.DiagramBuilder.already_built.doc)
       .def(
           "GetSystems",
           [](DiagramBuilder<T>* self) {
@@ -641,11 +643,13 @@ void DoScalarDependentDefinitions(py::module m) {
           py::arg("name") = kUseDefaultName, py_rvp::reference_internal,
           doc.DiagramBuilder.ExportOutput.doc)
       .def("Build", &DiagramBuilder<T>::Build,
-          // Keep alive, ownership (tr.): `return` keeps `self` alive.
+          // Keep alive, ownership (tr.): `self` keeps `return` alive.
           py::keep_alive<1, 0>(), doc.DiagramBuilder.Build.doc)
       .def("BuildInto", &DiagramBuilder<T>::BuildInto, py::arg("target"),
           // Keep alive, ownership (tr.): `target` keeps `self` alive.
-          py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc);
+          py::keep_alive<2, 1>(), doc.DiagramBuilder.BuildInto.doc)
+      .def("IsConnectedOrExported", &DiagramBuilder<T>::IsConnectedOrExported,
+          py::arg("port"), doc.DiagramBuilder.IsConnectedOrExported.doc);
 
   DefineTemplateClassWithDefault<OutputPort<T>>(
       m, "OutputPort", GetPyParam<T>(), doc.OutputPort.doc)
@@ -771,7 +775,7 @@ void DoScalarDependentDefinitions(py::module m) {
           py::keep_alive<0, 2>(), doc.InputPort.FixValue.doc)
       .def("HasValue", &InputPort<T>::HasValue, py::arg("context"),
           doc.InputPort.HasValue.doc)
-      .def("Allocate", &InputPort<T>::Allocate, doc.InputPort.Allocate.doc)
+      .def("Allocate", &InputPort<T>::Allocate, doc.InputPortBase.Allocate.doc)
       .def("get_system", &InputPort<T>::get_system, py_rvp::reference,
           doc.InputPort.get_system.doc);
 
@@ -1007,14 +1011,19 @@ void DoScalarDependentDefinitions(py::module m) {
               &DiscreteValues<T>::set_value),
           py::arg("index"), py::arg("value"),
           doc.DiscreteValues.set_value.doc_2args)
-      .def("get_value",
-          overload_cast_explicit<Eigen::VectorBlock<const VectorX<T>>, int>(
-              &DiscreteValues<T>::get_value),
+      .def(
+          "get_value",
+          [](const DiscreteValues<T>* self,
+              int index) -> Eigen::Ref<const VectorX<T>> {
+            return self->get_value(index);
+          },
           py_rvp::reference_internal, py::arg("index") = 0,
           doc.DiscreteValues.get_value.doc_1args)
-      .def("get_mutable_value",
-          overload_cast_explicit<Eigen::VectorBlock<VectorX<T>>, int>(
-              &DiscreteValues<T>::get_mutable_value),
+      .def(
+          "get_mutable_value",
+          [](DiscreteValues<T>* self, int index) -> Eigen::Ref<VectorX<T>> {
+            return self->get_mutable_value(index);
+          },
           py_rvp::reference_internal, py::arg("index") = 0,
           doc.DiscreteValues.get_mutable_value.doc_1args)
       .def(

@@ -31,7 +31,7 @@ def _designate_wrapped_lines(lines):
 
     # Regexs to match various kinds of code patterns.
     is_include = re.compile(r'^\s*#\s*include\s*["<].*$')
-    is_preprocessor = re.compile(r'^\s*#\s*[a-zA-Z].*$')
+    is_preprocessor = re.compile(r'^\s*#.*$')
     is_blank = re.compile(r'^\s*$')
     is_blank_cpp_comment = re.compile(r'^\s*//.*$')
     is_blank_c_comment_begin = re.compile(r'^\s*/\*.*$')
@@ -149,8 +149,9 @@ def _rewrite_one_text(*, text, edit_include):
     """
     # Re-spell the project's own include statements.
     for old_inc, new_inc in edit_include:
-        text = text.replace(f'#include "{old_inc}', f'#include "{new_inc}')
-        text = text.replace(f'#include <{old_inc}', f'#include <{new_inc}')
+        pattern = r'^(\s*#\s*include\s*["<])' + re.escape(old_inc)
+        replacement = r'\1' + new_inc
+        text = re.sub(pattern, replacement, text, flags=re.MULTILINE)
 
     # If the file is a mixed C/C++ header, then we need to leave it alone.
     if '\nextern "C" {\n' in text:

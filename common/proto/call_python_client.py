@@ -390,7 +390,7 @@ class CallPythonClient:
                 assert arg.rows == 1
                 value = arg.data.decode('utf8')
             elif arg.data_type == lcmt_call_python_data.LOGICAL:
-                value = self._to_array(arg, np.bool)
+                value = self._to_array(arg, bool)
             elif arg.data_type == lcmt_call_python_data.INT:
                 value = self._to_array(arg, np.int32)
             else:

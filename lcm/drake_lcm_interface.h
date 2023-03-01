@@ -6,6 +6,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -24,9 +25,8 @@ class DrakeSubscriptionInterface;
 
 namespace internal {
 // Used by the drake::lcm::Subscribe() free function to report errors.
-void OnHandleSubscriptionsError(
-    DrakeLcmInterface* lcm,
-    const std::string& error_message);
+void OnHandleSubscriptionsError(DrakeLcmInterface* lcm,
+                                const std::string& error_message);
 }  // namespace internal
 
 /**
@@ -34,7 +34,7 @@ void OnHandleSubscriptionsError(
  *
  * Because it must be pure, in general it will receive breaking API changes
  * without notice.  Users should not subclass this interface directly, but
- * rather use one of the existing subclasses instead.
+ * rather use one of the existing subclasses such as DrakeLcmBase instead.
  *
  * Similarly, method arguments will receive breaking API changes without
  * notice.  Users should not call this interface directly, but rather use
@@ -106,11 +106,8 @@ class DrakeLcmInterface {
    * The handler should never throw an exception, because it is indirectly
    * called from C functions.
    *
-   * NOTE: Unlike upstream LCM, DrakeLcm does not support regexes for the
-   * `channel` argument.
-   *
-   * @param channel The channel to subscribe to.
-   * Must not be the empty string.
+   * @param channel The channel to subscribe to.  Must not be the empty string.
+   * To use a regex, see SubscribeMultichannel().
    *
    * @return the object used to manage the subscription if that is supported,
    * or else nullptr if not supported.  The unsubscribe-on-delete default is
@@ -119,6 +116,15 @@ class DrakeLcmInterface {
    */
   virtual std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
       const std::string& channel, HandlerFunction) = 0;
+
+  /**
+   * Subscribes to all channels whose name matches the given regular expression.
+   * The `regex` is treated as an anchored "match" not a "search", i.e., it must
+   * match the entire channel name. The specific regular expression grammar is
+   * left unspecified, so it's best to use only patterns that have identical
+   * semantics in all grammars, e.g., `".*"`. */
+  virtual std::shared_ptr<DrakeSubscriptionInterface> SubscribeMultichannel(
+      std::string_view regex, MultichannelHandlerFunction) = 0;
 
   /**
    * Subscribe to all channels; this is useful for logging and redirecting LCM
@@ -257,7 +263,7 @@ std::shared_ptr<DrakeSubscriptionInterface> Subscribe(
         // throw once it's safe (i.e., once C code is no longer on the stack).
         internal::OnHandleSubscriptionsError(
             lcm, fmt::format("Error from message handler callback on {}: {}",
-                channel, e.what()));
+                             channel, e.what()));
       }
     } else if (on_error) {
       on_error();
@@ -295,10 +301,12 @@ class Subscriber final {
   Subscriber(DrakeLcmInterface* lcm, const std::string& channel,
              std::function<void()> on_error = {}) {
     subscription_ = drake::lcm::Subscribe<Message>(
-        lcm, channel, [data = data_](const Message& message) {
+        lcm, channel,
+        [data = data_](const Message& message) {
           data->message = message;
           data->count++;
-        }, std::move(on_error));
+        },
+        std::move(on_error));
     if (subscription_) {
       subscription_->set_unsubscribe_on_delete(true);
     }
@@ -338,10 +346,9 @@ class Subscriber final {
 /// Convenience function that repeatedly calls `lcm->HandleSubscriptions()`
 /// with a timeout value of `timeout_millis`, until `finished()` returns true.
 /// Returns the total number of messages handled.
-int LcmHandleSubscriptionsUntil(
-    DrakeLcmInterface* lcm,
-    const std::function<bool(void)>& finished,
-    int timeout_millis = 100);
+int LcmHandleSubscriptionsUntil(DrakeLcmInterface* lcm,
+                                const std::function<bool(void)>& finished,
+                                int timeout_millis = 100);
 
 }  // namespace lcm
 }  // namespace drake

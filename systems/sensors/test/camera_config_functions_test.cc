@@ -446,26 +446,6 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-TEST_F(CameraConfigFunctionsTest, DeprecatedOverload) {
-  CameraConfig config;
-  config.name = "test_camera";
-
-  DrakeLcm expected_lcm;
-  const size_t previous_count = builder_.GetSystems().size();
-  ApplyCameraConfig(config, plant_, &builder_, scene_graph_, &expected_lcm);
-  EXPECT_GT(builder_.GetSystems().size(), previous_count);
-
-  const auto* publisher = GetSystem<LcmPublisherSystem>(
-      builder_, "LcmPublisherSystem(DRAKE_RGBD_CAMERA_IMAGES_test_camera)");
-  ASSERT_NE(publisher, nullptr);
-  const DrakeLcmInterface& actual_lcm =
-      const_cast<LcmPublisherSystem*>(publisher)->lcm();
-  EXPECT_TRUE(&actual_lcm == &expected_lcm);
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace sensors
 }  // namespace systems

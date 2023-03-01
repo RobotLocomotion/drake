@@ -10,6 +10,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/proximity/contact_surface_utility.h"
@@ -338,14 +339,16 @@ class MeshHalfSpaceValueTest : public ::testing::Test {
       const Scalar p_X_test = test_field_W.EvaluateCartesian(f, p_WX);
       const Scalar error = (p_X_test - p_X_expected);
       if (error > kPressureEps) {
-        return ::testing::AssertionFailure()
-               << "\nMesh face " << f
-               << " failed to provide the correct pressure for a point on the "
-                  "inside of the face: " << p_WX.transpose() << ".\n"
-               << "  Expected: " << p_X_expected << "\n"
-               << "  Found: " << p_X_test << "\n"
-               << "  tolerance: " << kPressureEps << "\n"
-               << "  error: " << error;
+        const std::string message = fmt::format(
+            "\nMesh face {} failed to provide the correct pressure for a "
+            "point on the inside of the face: {}.\n"
+            "  Expected: {}\n"
+            "  Found: {}\n"
+            "  tolerance: {}\n"
+            "  error: {}",
+            f, fmt_eigen(p_WX.transpose()), p_X_expected, p_X_test,
+            kPressureEps, error);
+        return ::testing::AssertionFailure() << message;
       }
     }
 
@@ -805,7 +808,7 @@ TYPED_TEST_P(MeshHalfSpaceValueTest, OutsideInsideOn) {
 }
 
 // Verifies that a triangle with one vertex inside the half space and two
-// vertices outside of the half space produces an interesected polygon that
+// vertices outside of the half space produces an intersected polygon that
 // is a triangle. This test covers Case 3.
 TYPED_TEST_P(MeshHalfSpaceValueTest, OneInsideTwoOutside) {
   using MeshType = TypeParam;

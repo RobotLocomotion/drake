@@ -139,17 +139,6 @@ cc_library(
     }),
 )
 
-# Depend on the shared libraries used by dReal iff dReal is enabled.
-cc_library(
-    name = "dreal_deps",
-    deps = select({
-        "//conditions:default": [
-            "@ibex",
-        ],
-        "//tools:no_dreal": [],
-    }),
-)
-
 # Depend on IPOPT's shared library iff IPOPT is enabled.
 cc_library(
     name = "ipopt_deps",
@@ -241,7 +230,6 @@ cc_library(
     name = "libdrake_runtime_so_deps",
     deps = [
         ":clp_deps",
-        ":dreal_deps",
         ":gurobi_deps",
         ":ipopt_deps",
         ":mosek_deps",

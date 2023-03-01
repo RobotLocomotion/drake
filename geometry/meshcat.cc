@@ -20,10 +20,11 @@
 
 #include <App.h>
 #include <common_robotics_utilities/base64_helpers.hpp>
+#include <drake_vendor/msgpack.hpp>
+#include <drake_vendor/uuid.h>
 #include <fmt/format.h>
-#include <msgpack.hpp>
-#include <uuid.h>
 
+#include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/never_destroyed.h"
@@ -361,16 +362,16 @@ class MeshcatShapeReifier : public ShapeReifier {
                               map_data));
           } else {
             drake::log()->warn(
-                "Meshcat: Failed to load texture. {} references {}, but "
-                "Meshcat could not open filename {}",
-                basedir / mtllib, map, basedir / map);
+                "Meshcat: Failed to load texture. \"{}\" references {}, but "
+                "Meshcat could not open filename \"{}\"",
+                (basedir / mtllib).string(), map, (basedir / map).string());
           }
         }
       } else {
         drake::log()->warn(
             "Meshcat: Failed to load texture. {} references {}, but Meshcat "
-            "could not open filename {}",
-            mesh.filename(), mtllib, basedir / mtllib);
+            "could not open filename \"{}\"",
+            mesh.filename(), mtllib, (basedir / mtllib).string());
       }
       Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
       matrix(0, 0) = mesh.scale();
@@ -1089,7 +1090,7 @@ class Meshcat::Impl {
   }
 
   // This function is public via the PIMPL.
-  void SetAnimation(const MeshcatAnimation& animation) {
+  DRAKE_NO_EXPORT void SetAnimation(const MeshcatAnimation& animation) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
 
     std::stringstream message_stream;
@@ -1793,7 +1794,7 @@ class Meshcat::Impl {
       // Quietly ignore messages that don't match our expected message type.
       // This violates the style guide, but msgpack does not provide any other
       // mechanism for checking the message type.
-      drake::log()->debug("Meshcat ignored an unparseable message");
+      drake::log()->debug("Meshcat ignored an unparsable message");
       return;
     }
     std::lock_guard<std::mutex> lock(controls_mutex_);

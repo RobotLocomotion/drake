@@ -7,10 +7,10 @@
 #include <typeinfo>
 #include <unordered_map>
 
-#include "fmt/ostream.h"
 #include <Eigen/Dense>
 
 #include "drake/common/copyable_unique_ptr.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/value.h"
 #include "drake/geometry/rgba.h"
@@ -501,3 +501,11 @@ class GeometryProperties {
 
 }  // namespace geometry
 }  // namespace drake
+
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::geometry::GeometryProperties>
+    : drake::ostream_formatter {};
+}  // namespace fmt

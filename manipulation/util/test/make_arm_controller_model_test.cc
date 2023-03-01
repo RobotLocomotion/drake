@@ -53,21 +53,20 @@ class MakeArmControllerModelTest : public ::testing::Test {
 
  protected:
   // Adds an Iiwa model into `sim_plant_` and returns its ModelInstanceInfo.
-  ModelInstanceInfo AddIiwaModel(const std::string& iiwa7_model_name) {
+  ModelInstanceInfo AddIiwaModel() {
     const ModelInstanceIndex iiwa7_instance =
-        Parser(sim_plant_)
-            .AddModelFromFile(iiwa7_model_path_, iiwa7_model_name);
-    return {.model_name = iiwa7_model_name,
+        Parser(sim_plant_).AddModels(iiwa7_model_path_).at(0);
+    return {.model_name = sim_plant_->GetModelInstanceName(iiwa7_instance),
             .model_path = iiwa7_model_path_,
             .child_frame_name = "iiwa_link_0",
             .model_instance = iiwa7_instance};
   }
 
   // Adds a Wsg model into `sim_plant_` and returns its ModelInstanceInfo.
-  ModelInstanceInfo AddWsgModel(const std::string& wsg_model_name) {
+  ModelInstanceInfo AddWsgModel() {
     const ModelInstanceIndex wsg_instance =
-        Parser(sim_plant_).AddModelFromFile(wsg_model_path_, wsg_model_name);
-    return {.model_name = wsg_model_name,
+        Parser(sim_plant_).AddModels(wsg_model_path_).at(0);
+    return {.model_name = sim_plant_->GetModelInstanceName(wsg_instance),
             .model_path = wsg_model_path_,
             .child_frame_name = "body",
             .model_instance = wsg_instance};
@@ -79,7 +78,7 @@ class MakeArmControllerModelTest : public ::testing::Test {
   const std::string wsg_model_path_;
 };
 
-// A helper funtion that uses plant.GetBodyIndices() internally to aggregate
+// A helper function that uses plant.GetBodyIndices() internally to aggregate
 // `BodyIndex`s across multiple `ModelInstanceIndex`s.
 std::vector<BodyIndex> GetBodyIndices(
     const MultibodyPlant<double>& plant,
@@ -104,12 +103,12 @@ TEST_F(MakeArmControllerModelTest, GetBodyIndices) {
   // An empty `models` should have zero bodies.
   EXPECT_EQ(GetBodyIndices(*sim_plant_, {}).size(), 0);
 
-  const ModelInstanceInfo iiwa7_info = AddIiwaModel("iiwa7_model");
+  const ModelInstanceInfo iiwa7_info = AddIiwaModel();
   EXPECT_EQ(GetBodyIndices(*sim_plant_, {iiwa7_info.model_instance}).size(), 8);
   // Query an empty `models` in a non-empty plant should still return zero.
   EXPECT_EQ(GetBodyIndices(*sim_plant_, {}).size(), 0);
 
-  const ModelInstanceInfo wsg_info = AddWsgModel("wsg_model");
+  const ModelInstanceInfo wsg_info = AddWsgModel();
   EXPECT_EQ(GetBodyIndices(*sim_plant_, {wsg_info.model_instance}).size(), 3);
 
   const std::vector<ModelInstanceIndex> wsg_iiwa7{wsg_info.model_instance,
@@ -123,7 +122,7 @@ TEST_F(MakeArmControllerModelTest, GetBodyIndices) {
 TEST_F(MakeArmControllerModelTest, SingleIiwaWithoutWsg) {
   // Manually add an Iiwa arm to `sim_plant_` MultibodyPlant and weld it to the
   // world frame.
-  const ModelInstanceInfo iiwa7_info = AddIiwaModel("iiwa7_model");
+  const ModelInstanceInfo iiwa7_info = AddIiwaModel();
   // Create an arbitrary transform for testing.
   const RigidTransform<double> X_WIiwa_sim(
       RollPitchYaw<double>(0.0, 0.0, M_PI / 2),

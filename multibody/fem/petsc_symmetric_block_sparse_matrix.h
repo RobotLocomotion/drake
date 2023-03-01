@@ -143,7 +143,7 @@ class PetscSymmetricBlockSparseMatrix {
    https://petsc.org/main/docs/manualpages/KSP/KSPSetTolerances.html. All the
    other tolerance parameters (e.g. absolute tolerance, maximum number of
    iterations, etc) are set to the default value specified in the PETSc
-   documentaion. */
+   documentation. */
   void set_relative_tolerance(double tolerance);
 
   /* Given a linear system of equations Mz = c that can be written in block form

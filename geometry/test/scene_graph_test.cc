@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/nice_type_name.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -428,13 +429,35 @@ TYPED_TEST_P(TypedSceneGraphTest, TransmogrifyContext) {
   DRAKE_EXPECT_NO_THROW(context_U->SetTimeStateAndParametersFrom(context_T));
 }
 
+// Tests Clone for a non-double SceneGraph.
+// We'll rely on the lack of any exceptions as the success criterion;
+// the cloning and conversion code has enough fail-fast checks built in.
+TYPED_TEST_P(TypedSceneGraphTest, NonDoubleClone) {
+  using U = TypeParam;
+  std::unique_ptr<SceneGraph<U>> scene_graph_U =
+      System<double>::ToScalarType<U>(this->scene_graph_);
+  std::unique_ptr<SceneGraph<U>> copy;
+  EXPECT_NO_THROW(copy = System<U>::Clone(*scene_graph_U));
+  ASSERT_NE(copy, nullptr);
+}
+
 REGISTER_TYPED_TEST_SUITE_P(TypedSceneGraphTest,
     TransmogrifyWithoutAllocation,
     TransmogrifyPorts,
-    TransmogrifyContext);
+    TransmogrifyContext,
+    NonDoubleClone);
 
 using NonDoubleScalarTypes = ::testing::Types<AutoDiffXd, Expression>;
 INSTANTIATE_TYPED_TEST_SUITE_P(My, TypedSceneGraphTest, NonDoubleScalarTypes);
+
+// Tests Clone for a non-double SceneGraph.
+// We'll rely on the lack of any exceptions as the success criterion;
+// the cloning and conversion code has enough fail-fast checks built in.
+TEST_F(SceneGraphTest, DoubleClone) {
+  std::unique_ptr<SceneGraph<double>> copy;
+  EXPECT_NO_THROW(copy = System<double>::Clone(scene_graph_));
+  ASSERT_NE(copy, nullptr);
+}
 
 // Tests the model inspector. Exercises a token piece of functionality. The
 // inspector is a wrapper on the GeometryState. It is assumed that GeometryState
@@ -542,6 +565,70 @@ TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
   EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kPerception), 1);
   EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kProximity), 1);
   EXPECT_EQ(scene_graph_.RemoveRole(s_id, g_id, Role::kIllustration), 1);
+}
+
+// For SceneGraph::ChangeShape to be correct, we need to make sure it invokes
+// GeometryState correctly. So, we'll invoke it and look for minimum evidence
+// that the change has happened (i.e., we report a different shape) and rely
+// on GeometryState tests to confirm that all other ancillary details are also
+// taken care of.
+TEST_F(SceneGraphTest, ChangeShape) {
+  const SourceId source_id = scene_graph_.RegisterSource();
+  const Sphere sphere(1.0);
+  const RigidTransformd X_WG_original(Eigen::Vector3d(1, 2, 3));
+  GeometryId g_id = scene_graph_.RegisterAnchoredGeometry(
+      source_id, make_unique<GeometryInstance>(
+                     X_WG_original, make_unique<Sphere>(sphere), "sphere"));
+  CreateDefaultContext();
+
+  const SceneGraphInspector<double>& model_inspector =
+      scene_graph_.model_inspector();
+  const SceneGraphInspector<double>& context_inspector =
+      query_object().inspector();
+
+  // Confirm the shape in the model and context is of the expected type.
+  ASSERT_EQ(ShapeName(sphere).name(),
+            ShapeName(model_inspector.GetShape(g_id)).name());
+  ASSERT_EQ(ShapeName(sphere).name(),
+            ShapeName(context_inspector.GetShape(g_id)).name());
+
+  // Change shape without changing pose.
+  const Box box(1.5, 2.5, 3.5);
+
+  scene_graph_.ChangeShape(source_id, g_id, box);
+  EXPECT_EQ(ShapeName(box).name(),
+            ShapeName(model_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_original.GetAsMatrix34(),
+                      model_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
+
+  scene_graph_.ChangeShape(context_.get(), source_id, g_id, box);
+  EXPECT_EQ(ShapeName(box).name(),
+            ShapeName(context_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_original.GetAsMatrix34(),
+                      context_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
+
+  // Change shape and pose.
+  const Cylinder cylinder(1.5, 2.5);
+  // We just need *some* different transformation that isn't the identity. So,
+  // we'll transform the original non-identity pose by itself to get something
+  // unique. The apparent frame anarchy is unimportant.
+  const RigidTransformd X_WG_new = X_WG_original * X_WG_original;
+
+  scene_graph_.ChangeShape(source_id, g_id, cylinder, X_WG_new);
+  EXPECT_EQ(ShapeName(cylinder).name(),
+            ShapeName(model_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_new.GetAsMatrix34(),
+                      model_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
+
+  scene_graph_.ChangeShape(context_.get(), source_id, g_id, cylinder, X_WG_new);
+  EXPECT_EQ(ShapeName(cylinder).name(),
+            ShapeName(context_inspector.GetShape(g_id)).name());
+  EXPECT_TRUE(
+      CompareMatrices(X_WG_new.GetAsMatrix34(),
+                      context_inspector.GetPoseInFrame(g_id).GetAsMatrix34()));
 }
 
 // Dummy system to serve as geometry source.

@@ -1,3 +1,6 @@
+// TODO(jwnimmer-tri) Rewrite the logging in this file to use spdlog.
+#undef EIGEN_NO_IO
+
 #include "drake/solvers/moby_lcp_solver.h"
 
 #include <algorithm>
@@ -1035,7 +1038,7 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
 
 template <typename T>
 MobyLCPSolver<T>::MobyLCPSolver()
-    : SolverBase(&id, &is_available, &is_enabled,
+    : SolverBase(id(), &is_available, &is_enabled,
                  &ProgramAttributesSatisfied) {}
 
 template <typename T>

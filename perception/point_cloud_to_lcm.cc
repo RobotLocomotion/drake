@@ -13,7 +13,7 @@
 //
 // - user configuration of the (width, height); the PointCloud itself only
 //   stores the total size, not the 2d structure; we could either add the
-//   2d structure metadata into PoindCloud directly, or else we could add
+//   2d structure metadata into PointCloud directly, or else we could add
 //   it as members of this class, with a cross-check vs the cloud size.
 //
 // - user configuration of whether to discard non-finite points;

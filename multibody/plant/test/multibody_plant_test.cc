@@ -100,27 +100,6 @@ class MultibodyPlantTester {
       const MultibodyPlant<T>& plant, GeometryId id) {
     return plant.FindBodyByGeometryId(id);
   }
-
-  static void CalcNormalAndTangentContactJacobians(
-      const MultibodyPlant<double>& plant, const Context<double>& context,
-      const std::vector<PenetrationAsPointPair<double>>& point_pairs,
-      MatrixX<double>* Jn, MatrixX<double>* Jt,
-      std::vector<RotationMatrix<double>>* R_WC_set) {
-    // We first convert point contact pairs to discrete contact pairs.
-    std::vector<internal::DiscreteContactPair<double>> discrete_pairs;
-    for (const PenetrationAsPointPair<double>& pair : point_pairs) {
-      const Vector3d p_WC = 0.5 * (pair.p_WCa + pair.p_WCb);
-      // fn0, k and d are irrelevant values for Jacobian computation. Thus we
-      // arbitrarily set them to zero.
-      const double fn0 = 0.0;
-      const double k = 0.0;
-      const double d = 0.0;
-      discrete_pairs.push_back(
-          {pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, fn0, k, d});
-    }
-    plant.CalcNormalAndTangentContactJacobians(
-        context, discrete_pairs, Jn, Jt, R_WC_set);
-  }
 };
 
 namespace {
@@ -159,8 +138,10 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
 
   // Add a split pendulum to the plant.
   const ModelInstanceIndex pendulum_model_instance =
-      Parser(plant.get()).AddModelFromFile(FindResourceOrThrow(
-          "drake/multibody/plant/test/split_pendulum.sdf"));
+      Parser(plant.get())
+          .AddModels(FindResourceOrThrow(
+              "drake/multibody/plant/test/split_pendulum.sdf"))
+          .at(0);
   EXPECT_EQ(plant->num_model_instances(), 3);
 
   plant->Finalize();
@@ -425,7 +406,7 @@ GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
       std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
   Parser parser(plant.get());
   multibody::ModelInstanceIndex iiwa_instance =
-      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa");
+      parser.AddModels(FindResourceOrThrow(kSdfPath)).at(0);
   plant->Finalize();
 
   // Use string to ensure that there is no heap allocation in the implicit
@@ -438,15 +419,15 @@ GTEST_TEST(MultibodyPlantTest, NoHeapAllocOnStringQueries) {
   drake::test::LimitMalloc dummy;
 
   // Check the HasX versions first. Note that functions that take no model
-  // instance argument delgate to model instance argument versions.
-  EXPECT_TRUE(plant->HasModelInstanceNamed("iiwa"));
+  // instance argument delegate to model instance argument versions.
+  EXPECT_TRUE(plant->HasModelInstanceNamed("iiwa14"));
   EXPECT_TRUE(plant->HasBodyNamed(kLinkName, iiwa_instance));
   EXPECT_TRUE(plant->HasFrameNamed(kLinkName, iiwa_instance));
   EXPECT_TRUE(plant->HasJointNamed(kJointName, iiwa_instance));
   EXPECT_TRUE(plant->HasJointActuatorNamed(kJointName, iiwa_instance));
 
   // Check the GetX versions now.
-  plant->GetModelInstanceByName("iiwa");
+  plant->GetModelInstanceByName("iiwa14");
   plant->GetBodyByName(kLinkName, iiwa_instance);
   plant->GetFrameByName(kLinkName, iiwa_instance);
   plant->GetJointByName(kJointName, iiwa_instance);
@@ -540,8 +521,9 @@ GTEST_TEST(ActuationPortsTest, CheckActuation) {
       "drake/multibody/benchmarks/acrobot/acrobot.sdf");
   const std::string cylinder_path = FindResourceOrThrow(
       "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf");
-  auto acrobot_instance = Parser(&plant).AddModelFromFile(acrobot_path);
-  auto cylinder_instance = Parser(&plant).AddModelFromFile(cylinder_path);
+  Parser parser(&plant);
+  auto acrobot_instance = parser.AddModels(acrobot_path).at(0);
+  auto cylinder_instance = parser.AddModels(cylinder_path).at(0);
   plant.Finalize();
 
   // Verify the number of actuators.
@@ -1130,9 +1112,9 @@ GTEST_TEST(MultibodyPlantTest, Graphviz) {
       FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf");
   const std::string cylinder_path = FindResourceOrThrow(
       "drake/multibody/benchmarks/free_body/uniform_solid_cylinder.urdf");
-  Parser(&plant).AddModelFromFile(acrobot_path);
-  Parser(&plant).AddModelFromFile(cylinder_path);
-  Parser(&plant).AddModelFromFile(cylinder_path, "cylinder2");
+  Parser(&plant).AddModels(acrobot_path);
+  Parser(&plant).AddModels(cylinder_path);
+  Parser(&plant, "cylinder2").AddModels(cylinder_path);
 
   plant.set_name("MyTestMBP");
   const std::string dot = std::regex_replace(plant.GetTopologyGraphvizString(),
@@ -1152,7 +1134,8 @@ GTEST_TEST(MultibodyPlantTest, Graphviz) {
   EXPECT_NE(std::string::npos, dot.find("uniformSolidCylinder", pos + 1))
       << dot;
   // Check for the second cylinder model instance.
-  EXPECT_NE(std::string::npos, dot.find("cylinder2")) << dot;
+  EXPECT_NE(std::string::npos,
+            dot.find("cylinder2::uniformSolidCylinder")) << dot;
   // Check for the Acrobot elbow joint.
   EXPECT_NE(std::string::npos, dot.find("ElbowJoint [revolute]")) << dot;
 
@@ -1391,27 +1374,35 @@ GTEST_TEST(MultibodyPlantTest, AutoBodySceneGraphRegistration) {
 // collision because the `expected_pairs` only accounts for collision
 // geometries.
 GTEST_TEST(MultibodyPlantTest, FilterAdjacentBodies) {
-  SphereChainScenario scenario(3);
-  scenario.Finalize();
-  std::vector<geometry::PenetrationAsPointPair<double>> contacts =
-      scenario.ComputePointPairPenetration();
+  for (bool do_filters : {false, true}) {
+    SphereChainScenario scenario(3);
+    scenario.mutable_plant()->set_adjacent_bodies_collision_filters(do_filters);
+    scenario.Finalize();
+    std::vector<geometry::PenetrationAsPointPair<double>> contacts =
+        scenario.ComputePointPairPenetration();
 
-  // The expected collisions.
-  const std::set<std::pair<GeometryId, GeometryId>>& expected_pairs =
-      scenario.unfiltered_collisions();
-  ASSERT_EQ(contacts.size(), expected_pairs.size());
-
-  auto expect_pair_in_set = [&expected_pairs](GeometryId id1, GeometryId id2) {
-    auto pair1 = std::make_pair(id1, id2);
-    auto pair2 = std::make_pair(id2, id1);
-    if (expected_pairs.count(pair1) == 0 && expected_pairs.count(pair2) == 0) {
-      GTEST_FAIL() << "The pair " << id1 << ", " << id2
-                   << " is not in the expected set";
+    // The expected collisions.
+    const std::set<std::pair<GeometryId, GeometryId>>& expected_pairs =
+        scenario.unfiltered_collisions();
+    if (do_filters) {
+      ASSERT_EQ(contacts.size(), expected_pairs.size());
+      auto expect_pair_in_set = [&expected_pairs](
+          GeometryId id1, GeometryId id2) {
+        auto pair1 = std::make_pair(id1, id2);
+        auto pair2 = std::make_pair(id2, id1);
+        if (expected_pairs.count(pair1) == 0 &&
+            expected_pairs.count(pair2) == 0) {
+          GTEST_FAIL() << "The pair " << id1 << ", " << id2
+                       << " is not in the expected set";
+        }
+      };
+      for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
+        const auto& point_pair = contacts[i];
+        expect_pair_in_set(point_pair.id_A, point_pair.id_B);
+      }
+    } else {
+      ASSERT_GT(contacts.size(), expected_pairs.size());
     }
-  };
-  for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
-    const auto& point_pair = contacts[i];
-    expect_pair_in_set(point_pair.id_A, point_pair.id_B);
   }
 }
 
@@ -2597,54 +2588,6 @@ class MultibodyPlantContactJacobianTests : public ::testing::Test {
   const double penetration_{0.01};
 };
 
-TEST_F(MultibodyPlantContactJacobianTests, NormalAndTangentJacobian) {
-  const double kTolerance = 5 * std::numeric_limits<double>::epsilon();
-
-  // Store the orientation of the contact frames so that we can use them later
-  // to compute the same Jacobian using autodifferentiation.
-  std::vector<RotationMatrix<double>> R_WC_set;
-
-  // Compute separation velocities Jacobian.
-  MatrixX<double> N, D;
-  MultibodyPlantTester::CalcNormalAndTangentContactJacobians(
-          plant_, *context_, penetrations_, &N, &D, &R_WC_set);
-
-  // Assert Jt has the right sizes.
-  const int nv = plant_.num_velocities();
-  const int nc = penetrations_.size();
-
-  ASSERT_EQ(N.rows(), nc);
-  ASSERT_EQ(N.cols(), nv);
-
-  ASSERT_EQ(D.rows(), 2 * nc);
-  ASSERT_EQ(D.cols(), nv);
-
-  // Scalar convert the plant and its context_.
-  unique_ptr<MultibodyPlant<AutoDiffXd>> plant_autodiff;
-  unique_ptr<Context<AutoDiffXd>> context_autodiff;
-  tie(plant_autodiff, context_autodiff) = ConvertPlantAndContextToAutoDiffXd();
-
-  // Automatically differentiate vn (with respect to v) to get the normal
-  // separation velocities Jacobian N.
-  VectorX<AutoDiffXd> vn_autodiff = CalcNormalVelocities(
-      *plant_autodiff, *context_autodiff, penetrations_);
-  const MatrixX<double> vn_derivs = math::ExtractGradient(vn_autodiff);
-
-  // Verify the result.
-  EXPECT_TRUE(CompareMatrices(
-      N, vn_derivs, kTolerance, MatrixCompareType::relative));
-
-  // Automatically differentiate vt (with respect to v) to get the tangent
-  // velocities Jacobian Jt.
-  VectorX<AutoDiffXd> vt_autodiff = CalcTangentVelocities(
-      *plant_autodiff, *context_autodiff, penetrations_, R_WC_set);
-  const MatrixX<double> vt_derivs = math::ExtractGradient(vt_autodiff);
-
-  // Verify the result.
-  EXPECT_TRUE(CompareMatrices(
-      D, vt_derivs, kTolerance, MatrixCompareType::relative));
-}
-
 // Verifies that we can obtain the indexes into the state vector for each joint
 // in the model of a Kuka arm.
 // For this topologically simple model with only one branch of bodies with root
@@ -2875,10 +2818,11 @@ TEST_P(KukaArmTest, InstanceStateAccess) {
           "iiwa14_no_collision.sdf";
   plant_ = std::make_unique<MultibodyPlant<double>>(this->GetParam());
   Parser parser(plant_.get());
-  multibody::ModelInstanceIndex arm1 = parser.AddModelFromFile(
-      FindResourceOrThrow(kSdfPath), "arm1");
-  multibody::ModelInstanceIndex arm2 = parser.AddModelFromFile(
-      FindResourceOrThrow(kSdfPath), "arm2");
+  const std::string sdf_resource = FindResourceOrThrow(kSdfPath);
+  multibody::ModelInstanceIndex arm1 =
+      Parser(plant_.get(), "arm1").AddModels(sdf_resource).at(0);
+  multibody::ModelInstanceIndex arm2 =
+      Parser(plant_.get(), "arm2").AddModels(sdf_resource).at(0);
   plant_->WeldFrames(plant_->world_frame(),
                      plant_->GetFrameByName("iiwa_link_0", arm1));
   plant_->WeldFrames(plant_->world_frame(),
@@ -3058,11 +3002,11 @@ GTEST_TEST(StateSelection, KukaWithSimpleGripper) {
   MultibodyPlant<double> plant(0.0);
   Parser parser(&plant);
   const ModelInstanceIndex arm_model =
-      parser.AddModelFromFile(FindResourceOrThrow(kArmSdfPath));
+      parser.AddModels(FindResourceOrThrow(kArmSdfPath)).at(0);
 
   // Add the gripper.
   const ModelInstanceIndex gripper_model =
-      parser.AddModelFromFile(FindResourceOrThrow(kWsg50SdfPath));
+      parser.AddModels(FindResourceOrThrow(kWsg50SdfPath)).at(0);
   const auto& end_effector = plant.GetBodyByName("iiwa_link_7", arm_model);
   const auto& gripper_body = plant.GetBodyByName("body", gripper_model);
   // We don't care for the actual pose of the gripper in the end effector frame
@@ -3290,15 +3234,15 @@ GTEST_TEST(StateSelection, FloatingBodies) {
   MultibodyPlant<double> plant(0.0);
 
   // Load a model of a table for the robot.
-  Parser parser(&plant);
+  Parser robot_parser(&plant, "robot");
   const ModelInstanceIndex robot_table_model =
-      parser.AddModelFromFile(table_sdf_path, "robot_table");
+      robot_parser.AddModels(table_sdf_path).at(0);
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", robot_table_model));
 
   // Load the robot and weld it on top of the robot table.
   const ModelInstanceIndex arm_model =
-      parser.AddModelFromFile(iiwa_sdf_path);
+      robot_parser.AddModels(iiwa_sdf_path).at(0);
 
   const double table_top_z_in_world =
       // table's top height
@@ -3311,8 +3255,9 @@ GTEST_TEST(StateSelection, FloatingBodies) {
       X_WLink0);
 
   // Load a second table for objects.
+  Parser objects_parser(&plant, "objects");
   const ModelInstanceIndex objects_table_model =
-      parser.AddModelFromFile(table_sdf_path, "objects_table");
+      objects_parser.AddModels(table_sdf_path).at(0);
   const RigidTransformd X_WT(Vector3d(0.8, 0.0, 0.0));
   plant.WeldFrames(plant.world_frame(),
                    plant.GetFrameByName("link", objects_table_model), X_WT);
@@ -3326,7 +3271,7 @@ GTEST_TEST(StateSelection, FloatingBodies) {
           X_TO));
 
   // Add a floating mug.
-  parser.AddModels(mug_sdf_path);
+  objects_parser.AddModels(mug_sdf_path);
   const Body<double>& mug = plant.GetBodyByName("simple_mug");
 
   plant.Finalize();
@@ -3935,8 +3880,9 @@ GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
   // Add a split pendulum to the plant.
   const ModelInstanceIndex pendulum_model_instance =
       Parser(plant.get())
-          .AddModelFromFile(FindResourceOrThrow(
-              "drake/multibody/plant/test/split_pendulum.sdf"));
+          .AddModels(FindResourceOrThrow(
+              "drake/multibody/plant/test/split_pendulum.sdf"))
+          .at(0);
   plant->Finalize();
   ASSERT_EQ(plant->num_actuated_dofs(default_model_instance()), 1);
   ASSERT_EQ(plant->num_actuated_dofs(pendulum_model_instance), 1);
@@ -3989,8 +3935,7 @@ GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
       "drake/manipulation/models/iiwa_description/sdf/"
       "iiwa14_no_collision.sdf";
   Parser parser(plant);
-  auto iiwa_instance =
-      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa");
+  auto iiwa_instance = parser.AddModels(FindResourceOrThrow(kSdfPath)).at(0);
   plant->Finalize();
   auto feedback =
       builder.AddSystem<systems::PassThrough<double>>(plant->num_velocities());
@@ -4087,11 +4032,11 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
       "iiwa14_no_collision.sdf";
   auto plant =
       std::make_unique<MultibodyPlant<double>>(0 /* plant type irrelevant */);
-  Parser parser(plant.get());
+  const std::string sdf_resource = FindResourceOrThrow(kSdfPath);
   multibody::ModelInstanceIndex iiwa0_instance =
-      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa0");
+      Parser(plant.get(), "iiwa0").AddModels(sdf_resource).at(0);
   multibody::ModelInstanceIndex iiwa1_instance =
-      parser.AddModelFromFile(FindResourceOrThrow(kSdfPath), "iiwa1");
+      Parser(plant.get(), "iiwa1").AddModels(sdf_resource).at(0);
   // Weld iiwa0 to the world, leave iiwa1 to be floating.
   plant->WeldFrames(plant->world_frame(),
                     plant->GetFrameByName("iiwa_link_0", iiwa0_instance));
@@ -4139,6 +4084,20 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
                               q.head<7>()));
   EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa1_instance),
                               q.tail<14>(), kTol));
+}
+
+GTEST_TEST(MultibodyPlantTest, GetMutableSceneGraphPreFinalize) {
+  MultibodyPlant<double> plant(0.0);
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetMutableSceneGraphPreFinalize(),
+                              ".*geometry_source_is_registered.*");
+
+  SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  EXPECT_EQ(plant.GetMutableSceneGraphPreFinalize(), &scene_graph);
+
+  plant.Finalize();
+  DRAKE_EXPECT_THROWS_MESSAGE(plant.GetMutableSceneGraphPreFinalize(),
+                              ".*!is_finalized.*");
 }
 
 }  // namespace

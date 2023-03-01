@@ -1,6 +1,8 @@
 import copy
 import unittest
 
+import numpy as np
+
 from pydrake.common import RandomGenerator
 import pydrake.common.schema as mut
 import pydrake.math
@@ -103,6 +105,22 @@ class TestSchema(unittest.TestCase):
         dut.max = [2.0, 20.0]
         self._check_distribution_vector(dut)
 
+    def test_sized_vectors(self):
+        """Spot check the fixed-size stochastic vectors."""
+        for size in [None, 1, 2, 3, 4, 5, 6]:
+            vec_data = [1.0] * (size or 3)
+            for template in [mut.DeterministicVector,
+                             mut.GaussianVector,
+                             mut.UniformVector]:
+                with self.subTest(template=template, size=size):
+                    dut_cls = template[size]
+                    if template == mut.DeterministicVector:
+                        init_args = [vec_data]
+                    else:
+                        init_args = [vec_data, vec_data]
+                    dut = dut_cls(*init_args)
+                    self._check_distribution_vector(dut)
+
     def test_distribution_vector_variant(self):
         """Confirms that the free functions that operate on a vector variant
         are bound."""
@@ -110,6 +128,9 @@ class TestSchema(unittest.TestCase):
             mut.DeterministicVectorX(value=[1.0]),
             mut.GaussianVectorX(mean=[1.0], stddev=[0.1]),
             mut.UniformVectorX(min=[-1.0], max=[1.0]),
+            mut.DeterministicVector[3](value=[1.0]*3),
+            mut.GaussianVector[3](mean=[1.0]*3, stddev=[0.1]*3),
+            mut.UniformVector[3](min=[-1.0]*3, max=[1.0]*3),
         ]
         for item in items:
             copied = mut.ToDistributionVector(item)
@@ -118,24 +139,80 @@ class TestSchema(unittest.TestCase):
                 mut.GetDeterministicValue(vec=item)
 
     def test_rotation(self):
-        mut.Rotation()
-        mut.Rotation(pydrake.math.RotationMatrix())
-        dut = mut.Rotation(pydrake.math.RollPitchYaw([0.0, 0.0, 0.0]))
-        copy.copy(dut)
-        copy.deepcopy(dut)
-        dut.IsDeterministic()
-        dut.GetDeterministicValue()
-        dut.ToSymbolic()
+        for dut in [mut.Rotation(),
+                    mut.Rotation(pydrake.math.RotationMatrix()),
+                    mut.Rotation(pydrake.math.RollPitchYaw([0.0, 0.0, 0.0]))]:
+            # The dut should be the identity.
+            self.assertTrue(dut.IsDeterministic())
+            rotmat = dut.GetDeterministicValue()
+            self.assertTrue(rotmat.IsExactlyIdentity())
+
+            # All getter functions work without crashing.
+            dut.ToSymbolic()
+
+            # The class is copyable and has a real repr.
+            mut.Rotation(other=dut)
+            copy.copy(dut)
+            copy.deepcopy(dut)
+            self.assertIn("value", repr(dut))
+
+        # Setters.
         dut.set_rpy_deg([0.1, 0.2, 0.3])
+        np.testing.assert_equal(dut.value.deg, [0.1, 0.2, 0.3])
+
+        # Attributes.
+        self.assertIsInstance(
+            mut.Rotation(value=mut.Rotation.AngleAxis()).value,
+            mut.Rotation.AngleAxis)
+
+    def test_rotation_nested_classes(self):
+        # The class is copyable and has a real repr.
+        for dut_cls in [mut.Rotation.Identity,
+                        mut.Rotation.Uniform,
+                        mut.Rotation.Rpy,
+                        mut.Rotation.AngleAxis]:
+            dut = dut_cls()
+            dut_cls(other=dut)
+            copy.copy(dut)
+            copy.deepcopy(dut)
+            self.assertNotIn("0x", repr(dut))
+
+        # Properties are bound.
+        np.testing.assert_equal(mut.Rotation.Rpy(deg=[1, 2, 3]).deg, [1, 2, 3])
+        self.assertEqual(mut.Rotation.AngleAxis(angle_deg=5).angle_deg, 5)
 
     def test_transform(self):
-        mut.Transform()
-        dut = mut.Transform(pydrake.math.RigidTransform())
-        copy.copy(dut)
-        copy.deepcopy(dut)
-        dut.set_rotation_rpy_deg([0.1, 0.2, 0.3])
-        dut.IsDeterministic()
-        dut.GetDeterministicValue()
-        dut.ToSymbolic()
-        dut.Sample(generator=RandomGenerator())
+        for dut in [mut.Transform(),
+                    mut.Transform(pydrake.math.RigidTransform())]:
+            # The dut should be the identity.
+            self.assertIsNone(dut.base_frame)
+            self.assertTrue(dut.IsDeterministic())
+            np.testing.assert_equal(dut.translation, [0, 0, 0])
+            rotmat = dut.rotation.GetDeterministicValue()
+            self.assertTrue(rotmat.IsExactlyIdentity())
+
+            # All getter functions work without crashing.
+            dut.ToSymbolic()
+            dut.Mean()
+            dut.Sample(generator=RandomGenerator())
+
+            # The class is copyable and has a real repr.
+            mut.Transform(other=dut)
+            copy.copy(dut)
+            copy.deepcopy(dut)
+            self.assertIn("base_frame", repr(dut))
+
+        # Setters.
         dut.base_frame = "name"
+        self.assertEqual(dut.base_frame, "name")
+
+        dut.translation = [1.0, 2.0, 3.0]
+        np.testing.assert_equal(dut.translation, [1.0, 2.0, 3.0])
+
+        dut.set_rotation_rpy_deg([0.1, 0.2, 0.3])
+        np.testing.assert_equal(dut.rotation.value.deg, [0.1, 0.2, 0.3])
+        dut.rotation.value.deg = [0.4, 0.5, 0.6]
+        np.testing.assert_equal(dut.rotation.value.deg, [0.4, 0.5, 0.6])
+
+        # Attributes.
+        self.assertEqual(mut.Transform(base_frame="base").base_frame, "base")

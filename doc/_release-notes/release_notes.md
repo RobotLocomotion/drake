@@ -1,6 +1,8 @@
 ---
 layout: default
 title: Release Notes
+supplemental: true
+hidden: true
 ---
 
 <div class="drake-page">
@@ -20,8 +22,18 @@ title: Release Notes
 Latest releases are first:
 
 {% for note in site.release-notes reversed %}
-{% if note.title != "Release Notes" %}
+{% if note.supplemental %}
+{% else %}
 * <a href="{{ note.url }}.html">{{ note.title }}</a> (released {{ note.released }})
+{% endif %}
+{% endfor %}
+
+{% for page in site.release-notes %}
+{% if page.supplemental %}
+{% if page.hidden %}
+{% else %}
+<h3><a href="{{ page.url }}.html">{{ page.title }}</a></h3>
+{% endif %}
 {% endif %}
 {% endfor %}
 

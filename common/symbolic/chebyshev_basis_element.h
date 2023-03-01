@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/hash.h"
 #include "drake/common/symbolic/polynomial_basis_element.h"
 
@@ -150,3 +151,10 @@ struct NumTraits<drake::symbolic::ChebyshevBasisElement>
 };
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::symbolic::ChebyshevBasisElement>
+    : drake::ostream_formatter {};
+}  // namespace fmt

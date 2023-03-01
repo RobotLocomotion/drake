@@ -145,8 +145,9 @@ drake_cc_library(
     deps = [
         ":collision_filter",
         ":proximity_utilities",
+        "//common:drake_export",
         "//geometry:geometry_ids",
-        "@fcl",
+        "@fcl_internal//:fcl",
     ],
 )
 
@@ -230,11 +231,12 @@ drake_cc_library(
     deps = [
         ":proximity_utilities",
         "//common:default_scalars",
+        "//common:drake_export",
         "//common:essential",
         "//geometry:geometry_ids",
         "//geometry/query_results:signed_distance_to_point",
         "//math:geometric_transform",
-        "@fcl",
+        "@fcl_internal//:fcl",
     ],
 )
 
@@ -251,6 +253,7 @@ drake_cc_library(
         ":distance_to_point_callback",
         ":proximity_utilities",
         "//common:default_scalars",
+        "//common:drake_export",
         "//common:nice_type_name",
         "//geometry/query_results:signed_distance_pair",
     ],
@@ -284,8 +287,9 @@ drake_cc_library(
     deps = [
         ":collision_filter",
         ":proximity_utilities",
+        "//common:drake_export",
         "//common:sorted_pair",
-        "@fcl",
+        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -308,11 +312,12 @@ drake_cc_library(
         ":proximity_utilities",
         ":triangle_surface_mesh",
         ":volume_mesh",
+        "//common:drake_export",
         "//common:hash",
         "//geometry:proximity_properties",
         "//geometry/query_results:contact_surface",
         "//math:geometric_transform",
-        "@fcl",
+        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -660,6 +665,7 @@ drake_cc_library(
     hdrs = ["obj_to_surface_mesh.h"],
     interface_deps = [
         ":triangle_surface_mesh",
+        "//common:diagnostic_policy",
     ],
     deps = [
         "//common:essential",
@@ -680,10 +686,11 @@ drake_cc_library(
         ":collision_filter",
         ":distance_to_point_callback",
         "//common:default_scalars",
+        "//common:drake_export",
         "//common:nice_type_name",
         "//geometry/query_results:penetration_as_point_pair",
         "//geometry/query_results:signed_distance_to_point",
-        "@fcl",
+        "@fcl_internal//:fcl",
     ],
 )
 
@@ -731,10 +738,11 @@ drake_cc_library(
     deps = [
         ":sorted_triplet",
         ":volume_mesh",
+        "//common:drake_export",
         "//common:sorted_pair",
         "//geometry:geometry_ids",
         "//geometry:shape_specification",
-        "@fcl",
+        "@fcl_internal//:fcl",
         "@fmt",
     ],
 )
@@ -863,6 +871,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":collision_filter",
+        "//common:drake_export",
         "//common:temp_directory",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -870,7 +879,7 @@ drake_cc_library(
         "//geometry:utilities",
         "//geometry/proximity:proximity_utilities",
         "//math:geometric_transform",
-        "@fcl",
+        "@fcl_internal//:fcl",
     ],
 )
 

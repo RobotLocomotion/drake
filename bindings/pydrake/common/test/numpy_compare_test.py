@@ -40,7 +40,7 @@ class TestNumpyCompareSimple(unittest.TestCase):
         self.assertEqual(xf.dtype, float)
         self.assertEqual(xi, xf)
         # Array.
-        Xi = np.array([1, 2, 3], np.int)
+        Xi = np.array([1, 2, 3], int)
         Xf = numpy_compare.to_float(Xi)
         self.assertEqual(Xf.dtype, float)
         np.testing.assert_equal(Xi, Xf)

@@ -18,6 +18,7 @@ string(ASCII 27 ESC)
 # be colored magenta (CSI 35m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_ERROR_EXCEPTION
   "^DEBUG: "
+  ": DrakeDeprecationWarning: "
   "^WARNING: "
   ": warning: "
   ":[0-9]+: Failure$"
@@ -41,6 +42,7 @@ list(APPEND CTEST_CUSTOM_WARNING_EXCEPTION
 # "WARNING" emitted by Bazel may be colored magenta (CSI 35m) and "warning"
 # emitted by Clang may be colored magenta (CSI 35m) and bolded (CSI 1m).
 list(APPEND CTEST_CUSTOM_WARNING_MATCH
+  ": DrakeDeprecationWarning: "
   "^WARNING: "
   ": warning: "
   "(^${ESC}\\[35mWARNING|: ${ESC}\\[0m${ESC}\\[0\;1\;35mwarning): ${ESC}\\[0m"

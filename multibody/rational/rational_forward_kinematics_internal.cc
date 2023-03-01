@@ -30,7 +30,7 @@ std::vector<BodyIndex> FindPath(const MultibodyPlant<double>& plant,
     // Try to insert `next` into the map; no-op in case it already existed.
     const bool inserted = ancestors.emplace(next, current).second;
     if (inserted) {
-      // next is just succesfully inserted into ancestors.
+      // next is just successfully inserted into ancestors.
       worklist.push(next);
     }
   };
@@ -91,7 +91,7 @@ BodyIndex FindBodyInTheMiddleOfChain(const MultibodyPlant<double>& plant,
   const std::vector<BodyIndex> path = FindPath(plant, start, end);
 
   // path_not_weld goes from start to end, it excludes the path[i] if path[i]
-  // and path[i-1] is conected through a welded joint.
+  // and path[i-1] is connected through a welded joint.
   std::vector<BodyIndex> path_not_weld;
   path_not_weld.reserve(path.size());
   path_not_weld.push_back(start);

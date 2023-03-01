@@ -15,6 +15,10 @@ From a Drake binary release (including pip releases), run this as::
 
   python3 -m pydrake.visualization.meldis
 
+For binary releases (except for pip) there is also a shortcut available as::
+
+  /opt/drake/bin/meldis
+
 In many cases, passing ``-w`` (i.e., ``--open-window``) to the program will be
 convenient::
 
@@ -24,28 +28,13 @@ convenient::
 import argparse
 import webbrowser
 
-from pydrake.common import configure_logging
+from pydrake.common import configure_logging as _configure_logging
 from pydrake.common.deprecation import _warn_deprecated
 from pydrake.visualization._meldis import Meldis as _Meldis
 
 
-class Meldis(_Meldis):
-    """(Deprecated.) The import path pydrake.visualization.meldis.Meldis is
-    deprecated. Use the import path pydrake.visualization.Meldis instead.
-    The deprecated code will be removed from Drake on or after 2023-02-01.
-    """
-
-    def __init__(self, **kwargs):
-        message = (
-            "The path pydrake.visualization.meldis.Meldis is deprecated."
-            " Use the shorter path pydrake.visualization.Meldis instead."
-        )
-        _warn_deprecated(message, date="2023-02-01", stacklevel=3)
-        super().__init__(**kwargs)
-
-
 def _main():
-    configure_logging()
+    _configure_logging()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--host", action="store",

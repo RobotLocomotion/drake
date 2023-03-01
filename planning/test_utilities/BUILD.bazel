@@ -1,0 +1,38 @@
+# -*- python -*-
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+    "drake_cc_package_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+package(default_visibility = ["//visibility:public"])
+
+drake_cc_package_library(
+    name = "test_utilities",
+    testonly = True,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":collision_checker_abstract_test_suite",
+    ],
+)
+
+drake_cc_library(
+    name = "collision_checker_abstract_test_suite",
+    testonly = True,
+    srcs = ["collision_checker_abstract_test_suite.cc"],
+    hdrs = ["collision_checker_abstract_test_suite.h"],
+    data = [
+        ":collision_ground_plane.sdf",
+        "//manipulation/models/iiwa_description:models",
+    ],
+    deps = [
+        "//planning:collision_avoidance",
+        "//planning:collision_checker",
+        "@common_robotics_utilities",
+        "@gtest//:without_main",
+    ],
+)
+
+add_lint_tests(enable_clang_format_lint = True)

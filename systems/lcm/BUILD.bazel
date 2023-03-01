@@ -154,6 +154,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "lcm_interface_system_test",
+    flaky = True,
     deps = [
         ":lcm_interface_system",
         ":lcm_subscriber_system",

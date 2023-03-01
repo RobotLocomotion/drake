@@ -22,6 +22,15 @@ TODO(russt): Add videos of a few relevant examples.
 
 # Manipulation
 
+The robotics team at TRI is exploring learning and by combining Drake with
+external high-fidelity rendering, we can generate highly realistic, both
+physically and visually, machine-learning training data to further our research.
+
+{% include video.html
+  url = "https://www.youtube.com/embed/5aVDWjWd0EU"
+  full_width = true
+%}
+
 The Robotics team at TRI is working hard to close the gap between simulation and
 reality.  For manipulation, one important piece is accurate simulation of
 rigid-body contact.
@@ -69,7 +78,7 @@ as described in
   Michael Posa, Scott Kuindersma, Russ Tedrake. "Optimization and
   Stabilization of Trajectories for Constrained Dynamical Systems." ICRA, 2016.
 
-*Source Code:* [https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization](https://github.com/DAIRLab/dairlib-public/tree/master/systems/trajectory_optimization)
+*Source Code:* [https://github.com/DAIRLab/dairlib/tree/master/systems/trajectory_optimization/dircon](https://github.com/DAIRLab/dairlib/tree/master/systems/trajectory_optimization/dircon)
 
 # Task and Motion Planning
 

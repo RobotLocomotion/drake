@@ -257,17 +257,18 @@ def deprecated_callable(message, *, date=None):
     However, if you are dealing with a C++ module (and are writing code inside
     of `_{module}_extra.py`), you should use this approach.
 
-    Example as decorator:
+    Example:
+        ::
 
-        @deprecated_callable("Please use `func_y` instead", date="2038-01-19")
-        def func_x():
-            ...
+            # As decorator
+            @deprecated_callable("Please use `func_y` instead", date="2038-01-19")  # noqa
+            def func_x():
+                ...
 
-    Example for alias:
-
-        my_alias = deprecated_callable(
-            "Please use `my_original` instead", date="2038-01-19"
-        )(my_original)
+            # As alias
+            deprecated_alias = deprecated_callable(
+                "Please use `real_callable` instead", date="2038-01-19"
+            )(real_callable)
     """
 
     def decorator(original):

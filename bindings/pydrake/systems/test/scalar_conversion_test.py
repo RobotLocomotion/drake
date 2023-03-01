@@ -253,4 +253,15 @@ class TestScalarConversion(unittest.TestCase):
         with self.assertRaises(RuntimeError) as cm:
             BadParenting_[float]
         self.assertIn("BadParenting_[float]", str(cm.exception))
-        self.assertIn("LeafSystem_[float]", str(cm.exception))
+        self.assertIn("LeafSystem", str(cm.exception))
+
+    def test_clone(self):
+        """Tests the System.Clone bindings. This is most convenient to do in
+        the scalar conversion test, because cloning uses scalar conversion
+        under the hood.
+        """
+        for T in SystemScalarConverter.SupportedScalars:
+            dut = Example_[T](0)
+            dut.Clone()
+            copy.copy(dut)
+            copy.deepcopy(dut)

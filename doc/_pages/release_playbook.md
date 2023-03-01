@@ -67,11 +67,10 @@ the main body of the document:
   not the "Multibody" heading.
 * Expand all acronyms (eg, MBP -> MultibodyPlant, SG -> SceneGraph).
 * Commits can be omitted if they only affect tests or non-installed examples. {% comment %}TODO(jwnimmer-tri) Explain how to check if something is installed.{% endcomment %}
-* In general you should mention new bindings and deprecated/removed classes and
-  methods using their exact name (for easier searching).
-   * In the pydrake and deprecation sections in fact you can just put the
-    fully-qualified name as the whole line item; the meaning is clear from
-    context.
+* In general you should mention deprecated/removed classes and methods using
+  their exact name (for easier searching).
+  * In the deprecation section you can provide the fully-qualified name as the
+    whole line item; the meaning is clear from context.
   * This may mean having a long list of items for a single commit.  That is
     fine.
 
@@ -109,10 +108,10 @@ the main body of the document:
       has nothing still running (modulo the ``*-coverage`` builds, which we can
       ignore)
    3. Open the latest builds from the following builds:
-      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
-      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-snopt-mosek-packaging/>
-      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-x86-monterey-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
-      4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-monterey-unprovisioned-clang-bazel-nightly-snopt-mosek-packaging/>
+      1. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-focal-unprovisioned-gcc-bazel-nightly-packaging/>
+      2. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/linux-jammy-unprovisioned-gcc-bazel-nightly-packaging/>
+      3. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-x86-monterey-unprovisioned-clang-bazel-nightly-packaging/>
+      4. <https://drake-jenkins.csail.mit.edu/view/Packaging/job/mac-arm-monterey-unprovisioned-clang-bazel-nightly-packaging/>
    4. Check the logs for those packaging builds and find the URLs they posted
       to (open the latest build, go to "View as plain text", and search for
       ``drake/nightly/drake-20``), and find the date.  It will be ``YYYYMMDD``
@@ -130,8 +129,8 @@ the main body of the document:
       - [Linux Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-wheel-staging-snopt-mosek-release/)
       - [macOS x86 Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-x86-monterey-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
       - [macOS arm Jenkins Wheel Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/mac-arm-monterey-unprovisioned-clang-wheel-staging-snopt-mosek-release/)
-      - [Focal Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
-      - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-snopt-mosek-packaging/)
+      - [Focal Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-focal-unprovisioned-gcc-bazel-staging-packaging/)
+      - [Jammy Packaging Staging](https://drake-jenkins.csail.mit.edu/view/Staging/job/linux-jammy-unprovisioned-gcc-bazel-staging-packaging/)
    2. In the upper right, click "log in" (unless you're already logged in). This
       will use your GitHub credentials.
    3. Click "Build with Parameters".
@@ -159,7 +158,7 @@ the main body of the document:
       [download_release_candidate.py](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/download_release_candidate.py).)
 6. Merge the release notes PR
    1. Take care when squashing not to accept github's auto-generated commit message if it is not appropriate.
-   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-focal-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
+   2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-jammy-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
 7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
    a new release".  Note that this page does has neither history nor undo.  Be

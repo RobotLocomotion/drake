@@ -49,8 +49,10 @@ drake_py_binary(
     srcs = ["vendor_cxx.py"],
     visibility = [
         # These should all be of the form "@foo_internal//:__pkg__".
+        "@fcl_internal//:__pkg__",
         "@gz_math_internal//:__pkg__",
         "@gz_utils_internal//:__pkg__",
+        "@msgpack_internal//:__pkg__",
         "@nlopt_internal//:__pkg__",
         "@qhull_internal//:__pkg__",
         "@sdformat_internal//:__pkg__",
@@ -76,17 +78,18 @@ drake_py_binary(
 )
 
 _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
-    "ccd",
+    "ccd_internal",
     "com_jidesoft_jide_oss",
     "common_robotics_utilities",
     "commons_io",
     "curl_internal",
-    "fcl",
+    "fcl_internal",
     "fmt",
     "gz_math_internal",
     "gz_utils_internal",
     "lcm",
     "meshcat",
+    "msgpack_internal",
     "net_sf_jchart2d",
     "nanoflann_internal",
     "nlopt_internal",
@@ -97,6 +100,8 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "sdformat_internal",
     "spdlog",
     "statsjs",
+    "stduuid_internal",
+    "suitesparse_internal",
     "tinyobjloader",
     "tinyxml2_internal",
     "usockets",
@@ -106,17 +111,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
 ]] + ["//tools/workspace/%s:install" % p for p in [
     "abseil_cpp_internal",
     "conex",
-    "cds",
     "drake_visualizer",
-    "dreal",
+    "gflags",
     "optitrack_driver",
-    "picosat",
 ]] + select({
     "//conditions:default": ["@csdp//:install"],
     "//tools:no_csdp": [],
-}) + select({
-    "//conditions:default": ["@ibex//:install"],
-    "//tools:no_dreal": [],
 }) + select({
     "//tools:with_gurobi": ["@gurobi//:install"],
     "//conditions:default": [],
@@ -128,12 +128,12 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "//conditions:default": [],
 }) + select({
     "//conditions:default": [
-        "@osqp//:install",
-        "@qdldl//:install",
+        "@osqp_internal//:install",
+        "@qdldl_internal//:install",
     ],
     "//tools:no_osqp": [],
 }) + select({
-    "//conditions:default": ["@scs//:install"],
+    "//conditions:default": ["@scs_internal//:install"],
     "//tools:no_scs": [],
 })
 

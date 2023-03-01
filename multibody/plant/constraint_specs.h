@@ -66,6 +66,28 @@ struct DistanceConstraintSpecs {
   double damping{0.0};  // Constraint damping c in N⋅s/m.
 };
 
+// Struct to store the specification for a ball constraint. A ball
+// constraint is modeled as a holonomic constraint:
+//   p_PQ_W(q) = 0
+// P is a point rigidly affixed to body A and Q is a point rigidly affixed to
+// body B. p_PQ_W(q) denotes the relative position of point Q with respect to
+// point P, expressed in the world frame, as a function of the configuration of
+// the model q. Imposing this constraint forces P and Q to be coincident, but
+// does not restrict the rotational degrees of freedom.
+//
+// @pre body_A != body_B. @see IsValid().
+struct BallConstraintSpecs {
+  // Returns `true` iff `this` specification is valid to define a ball
+  // constraint. A ball constraint specification is considered to be valid iff:
+  //   body_A != body_B.
+  bool IsValid() { return body_A != body_B; }
+
+  BodyIndex body_A;      // Index of body A.
+  Vector3<double> p_AP;  // Position of point P in body frame A.
+  BodyIndex body_B;      // Index of body B.
+  Vector3<double> p_BQ;  // Position of point Q in body frame B.
+};
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

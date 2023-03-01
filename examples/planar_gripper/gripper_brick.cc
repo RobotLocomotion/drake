@@ -1,6 +1,5 @@
 #include "drake/examples/planar_gripper/gripper_brick.h"
 
-#include "drake/common/find_resource.h"
 #include "drake/examples/planar_gripper/planar_gripper_common.h"
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
@@ -56,14 +55,14 @@ std::unique_ptr<systems::Diagram<T>> ConstructDiagram(
   systems::DiagramBuilder<T> builder;
   std::tie(*plant, *scene_graph) =
       multibody::AddMultibodyPlantSceneGraph(&builder, 0.0);
-  const std::string gripper_path =
-      FindResourceOrThrow("drake/examples/planar_gripper/planar_gripper.sdf");
+  const std::string gripper_url =
+      "package://drake/examples/planar_gripper/planar_gripper.sdf";
   multibody::Parser parser(*plant, *scene_graph);
-  parser.AddModels(gripper_path);
+  parser.AddModelsFromUrl(gripper_url);
   examples::planar_gripper::WeldGripperFrames(*plant);
-  const std::string brick_path =
-      FindResourceOrThrow("drake/examples/planar_gripper/planar_brick.sdf");
-  parser.AddModels(brick_path);
+  const std::string brick_url =
+      "package://drake/examples/planar_gripper/planar_brick.sdf";
+  parser.AddModelsFromUrl(brick_url);
   (*plant)->WeldFrames((*plant)->world_frame(),
                        (*plant)->GetFrameByName("brick_base"),
                        math::RigidTransformd());

@@ -12,6 +12,7 @@ from pydrake.common.test_utilities.pickle_compare import assert_pickle
 
 import copy
 import math
+import pickle
 import textwrap
 import unittest
 
@@ -80,6 +81,7 @@ class TestMath(unittest.TestCase):
             (mut.tanh, math.tanh),
             (mut.ceil, math.ceil),
             (mut.floor, math.floor),
+            (mut.isnan, math.isnan),
         ]
         binary = [
             (mut.min, min),
@@ -227,6 +229,23 @@ class TestMath(unittest.TestCase):
         # Test pickling.
         assert_pickle(self, X_AB, RigidTransform.GetAsMatrix4, T=T)
 
+    def test_legacy_unpickle(self):
+        """Checks that data pickled as RotationMatrix_[float] in Drake v1.12.0
+        can be unpickled as RotationMatrix_𝓣float𝓤 in newer versions of Drake.
+
+        Since the unpickling shim lives at the module level, testing one class
+        is sufficient even though our module has several pickle-able classes.
+        """
+        legacy_data = b"\x80\x04\x95\x18\x01\x00\x00\x00\x00\x00\x00\x8c\x0cpydrake.math\x94\x8c\x16RigidTransform_[float]\x94\x93\x94)\x81\x94\x8c\x15numpy.core.multiarray\x94\x8c\x0c_reconstruct\x94\x93\x94\x8c\x05numpy\x94\x8c\x07ndarray\x94\x93\x94K\x00\x85\x94C\x01b\x94\x87\x94R\x94(K\x01K\x03K\x04\x86\x94h\x07\x8c\x05dtype\x94\x93\x94\x8c\x02f8\x94\x89\x88\x87\x94R\x94(K\x03\x8c\x01<\x94NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK\x00t\x94b\x88C`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xbf\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x08@\x94t\x94bb."  # noqa
+        obj = pickle.loads(legacy_data)
+        self.assertIsInstance(obj, mut.RigidTransform_[float])
+        expected = np.array([
+            [0.0,  1.0, 0.0, 1.0],
+            [-1.0, 0.0, 0.0, 2.0],
+            [0.0,  0.0, 1.0, 3.0],
+        ])
+        numpy_compare.assert_float_equal(obj.GetAsMatrix34(), expected)
+
     @numpy_compare.check_all_types
     def test_rotation_matrix(self, T):
         # - Constructors.
@@ -333,7 +352,8 @@ class TestMath(unittest.TestCase):
           [{z}, {z}, {i}],
         ])"""))
         self.assertEqual(repr(RollPitchYaw(rpy=[2, 1, 0])),
-                         f"RollPitchYaw(roll={t}, pitch={i}, yaw={z})")
+                         f"RollPitchYaw{type_suffix}("
+                         f"roll={t}, pitch={i}, yaw={z})")
         if T == float:
             # TODO(jwnimmer-tri) Once AutoDiffXd and Expression implement an
             # eval-able repr, then we can test more than just T=float here.
@@ -503,6 +523,8 @@ class TestMath(unittest.TestCase):
         option = mut.NumericalGradientOption(
             method=mut.NumericalGradientMethod.kCentral,
             function_accuracy=1E-15)
+
+        self.assertIn("kCentral", repr(option))
 
         def foo(x):
             return np.array([x[0] ** 2, x[0] * x[1]])

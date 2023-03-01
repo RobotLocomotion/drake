@@ -1,5 +1,8 @@
 # -*- python -*-
 
+# TODO(SeanCurtis-TRI): 2023-05-01 this entire directory tree gets removed
+# upon completion of deprecation period.
+
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -23,162 +26,129 @@ drake_cc_package_library(
     ],
 )
 
+_STUB_HDRS = [
+    "direct_collocation.h",
+    "direct_transcription.h",
+    "integration_constraint.h",
+    "kinematic_trajectory_optimization.h",
+    "multiple_shooting.h",
+    "sequential_expression_manager.h",
+]
+
+[
+    genrule(
+        name = "_cp_" + hdr,
+        srcs = ["stub/" + hdr],
+        outs = [hdr],
+        cmd = "cp $< $@",
+        tags = ["nolint"],
+        visibility = ["//visibility:private"],
+    )
+    for hdr in _STUB_HDRS
+]
+
 drake_cc_library(
     name = "sequential_expression_manager",
-    srcs = ["sequential_expression_manager.cc"],
-    hdrs = [
-        "sequential_expression_manager.h",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:sequential_expression_manager instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
     ],
     deps = [
         "//common:essential",
-        "//common:unused",
-        "//common/symbolic:expression",
+        "//planning/trajectory_optimization:sequential_expression_manager",
     ],
 )
 
 drake_cc_library(
     name = "multiple_shooting",
-    srcs = ["multiple_shooting.cc"],
-    hdrs = ["multiple_shooting.h"],
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:multiple_shooting instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
     deps = [
         ":sequential_expression_manager",
         "//common:essential",
-        "//common/trajectories:piecewise_polynomial",
-        "//solvers:ipopt_solver",
-        "//solvers:mathematical_program",
-        "//solvers:solve",
+        "//planning/trajectory_optimization:multiple_shooting",
     ],
 )
 
 drake_cc_library(
     name = "direct_collocation",
-    srcs = [
-        "direct_collocation.cc",
-    ],
-    hdrs = [
-        "direct_collocation.h",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:direct_collocation instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
     ],
     deps = [
         ":multiple_shooting",
-        "//math:autodiff",
-        "//math:gradient",
-        "//systems/framework",
+        "//common:essential",
+        "//planning/trajectory_optimization:direct_collocation",
     ],
 )
 
 drake_cc_library(
     name = "direct_transcription",
-    srcs = [
-        "direct_transcription.cc",
-    ],
-    hdrs = [
-        "direct_transcription.h",
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:direct_transcription instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
     ],
     deps = [
         ":multiple_shooting",
-        "//common/symbolic:polynomial",
-        "//common/trajectories:piecewise_polynomial",
-        "//math:autodiff",
-        "//math:gradient",
-        "//systems/analysis:explicit_euler_integrator",
-        "//systems/analysis:integrator_base",
-        "//systems/framework",
-        "//systems/primitives:linear_system",
+        "//common:essential",
+        "//planning/trajectory_optimization:direct_transcription",
     ],
 )
 
 drake_cc_library(
     name = "kinematic_trajectory_optimization",
-    srcs = ["kinematic_trajectory_optimization.cc"],
-    hdrs = ["kinematic_trajectory_optimization.h"],
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:kinematic_trajectory_optimization instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
     deps = [
-        "//common",
-        "//common/trajectories:bspline_trajectory",
-        "//math:bspline_basis",
-        "//math:gradient",
-        "//math:matrix_util",
-        "//solvers:mathematical_program",
-        "//solvers:mathematical_program_result",
+        "//common:essential",
+        "//planning/trajectory_optimization:kinematic_trajectory_optimization",
     ],
 )
 
 drake_cc_library(
     name = "integration_constraint",
-    srcs = ["integration_constraint.cc"],
-    hdrs = ["integration_constraint.h"],
+    hdrs = _STUB_HDRS,
+    deprecation = "This label is deprecated and will be removed from Drake on 2023-05-01; as a replacement, use //planning/trajectory_optimization:integration_constraint instead.",  # noqa
+    tags = [
+        "manual",
+        "nolint",
+    ],
     deps = [
-        "//solvers:constraint",
+        "//common:essential",
+        "//planning/trajectory_optimization:integration_constraint",
     ],
 )
 
 # === test/ ===
 
+# TODO(SeanCurtis-TRI): 2023-05-01 remove along with deprecation.
 drake_cc_googletest(
-    name = "multiple_shooting_test",
-    deps = [
-        ":multiple_shooting",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//solvers:osqp_solver",
-        "//solvers:solve",
+    name = "deprecation_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
     ],
-)
-
-drake_cc_googletest(
-    name = "direct_collocation_test",
+    data = [
+        "//manipulation/models/iiwa_description:models",
+    ],
     deps = [
-        ":direct_collocation",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:expect_throws_message",
-        "//examples/rimless_wheel",
-        "//multibody/benchmarks/pendulum",
-        "//solvers:solve",
+        ":trajectory_optimization",
+        "//common/trajectories:piecewise_polynomial",
         "//systems/primitives:linear_system",
     ],
 )
-
-drake_cc_googletest(
-    name = "direct_transcription_test",
-    data = ["//examples/pendulum:prod_models"],
-    # This test has two duplicated long cases; run them in parallel.
-    shard_count = 4,
-    deps = [
-        ":direct_transcription",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//multibody/parsing",
-        "//multibody/plant",
-        "//solvers:snopt_solver",
-        "//solvers:solve",
-        "//systems/primitives:symbolic_vector_system",
-        "//systems/primitives:trajectory_linear_system",
-    ],
-)
-
-drake_cc_googletest(
-    name = "kinematic_trajectory_optimization_test",
-    deps = [
-        ":kinematic_trajectory_optimization",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//solvers:constraint",
-        "//solvers:solve",
-    ],
-)
-
-drake_cc_googletest(
-    name = "sequential_expression_manager_test",
-    deps = [
-        ":sequential_expression_manager",
-        "//common/test_utilities:expect_throws_message",
-        "@fmt",
-    ],
-)
-
-drake_cc_googletest(
-    name = "integration_constraint_test",
-    deps = [
-        ":integration_constraint",
-        "//common/test_utilities:eigen_matrix_compare",
-        "//math:gradient",
-    ],
-)
-
-add_lint_tests()

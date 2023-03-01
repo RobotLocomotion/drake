@@ -3,12 +3,15 @@
 #include <algorithm>
 #include <functional>
 #include <map>
+#include <optional>
 #include <ostream>
+#include <unordered_map>
 #include <utility>
 
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/symbolic/expression.h"
 #define DRAKE_COMMON_SYMBOLIC_POLYNOMIAL_H
 #include "drake/common/symbolic/monomial.h"
@@ -151,7 +154,7 @@ class Polynomial {
 
   /// Returns the mapping from a Monomial to its corresponding coefficient of
   /// this polynomial.
-  /// We maintain the invariance that for ancy [monomial, coeff] pair in
+  /// We maintain the invariance that for any [monomial, coeff] pair in
   /// monomial_to_coefficient_map(), symbolic:is_zero(coeff) is false.
   [[nodiscard]] const MapType& monomial_to_coefficient_map() const;
 
@@ -257,6 +260,46 @@ class Polynomial {
 
   /// Adds @p coeff * @p m to this polynomial.
   Polynomial& AddProduct(const Expression& coeff, const Monomial& m);
+
+  /// Substitute the monomials of this polynomial with new polynomial
+  /// expressions and expand the polynomial to the monomial basis. For example,
+  /// consider the substitution x = a(1-y) into the polynomial x¹⁴ +
+  /// (x−1)². Repeatedly expanding the powers of x can take a long time using
+  /// factory methods, so we store intermediate computations in the substitution
+  /// map to avoid recomputing very high powers.
+  /// @param indeterminate_substitution The substitutions of every indeterminate
+  /// with the new desired expression. This map must contain each element
+  /// of `indeterminates()`. For performance reasons, it is recommended that
+  /// this map contains Expanded polynomials as its values, but this is not
+  /// necessary.
+  /// @param[in,out] substitutions A map caching the higher order expansions of
+  /// the `indeterminate_substitutions`. Typically, the first time an
+  /// indeterminate_substitution is performed, substitutions will be either a
+  /// pointer to an empty map or a nullptr. If the same
+  /// indeterminate_substitutions is used for multiple polynomials, passing a
+  /// non nullptr value for substitutions will enable the user to re-use the
+  /// expansions across multiple calls. For example, suppose we wish to perform
+  /// the substitution x = a(1-y) into the polynomials p1 = x¹⁴ + (x−1)² and p2
+  /// = x⁷. A user map call p1.SubstituteAndExpand({x : a(1-y), substitutions})
+  /// where substitutions is a pointer to an empty map. As part of computing the
+  /// expansion of p1, the expansion of x⁷ may get computed and stored in
+  /// substitutions, and so a subsequent call of p2.SubstituteAndExpand({x :
+  /// a(1-y)}, substitutions) would be very fast.
+  ///
+  /// Never reuse substitutions if indeterminate_substitutions changes as this
+  /// function will then compute in an incorrect result.
+  ///
+  /// Note that this function is NOT responsible for ensuring that @param
+  /// substitutions is consistent i.e. this method will not throw an error if
+  /// substitutions = {x: y, x²: 2y}. To ensure correct results, ensure that the
+  /// passed substitution map is consistent with indeterminate_substitutions.
+  /// The easiest way to do this is to pass a pointer to an empty map or nullptr
+  /// to this function.
+  [[nodiscard]] Polynomial SubstituteAndExpand(
+      const std::unordered_map<Variable, Polynomial>&
+          indeterminate_substitution,
+      std::optional<std::map<Monomial, Polynomial, internal::CompareMonomial>*>
+          substitutions_optional = std::nullopt) const;
 
   /// Expands each coefficient expression and returns the expanded polynomial.
   /// If any coefficient is equal to 0 after expansion, then remove that term
@@ -395,7 +438,7 @@ class Polynomial {
 /// Returns `p / v`.
 [[nodiscard]] Polynomial operator/(Polynomial p, double v);
 
-/// Returns polynomial @p rasied to @p n.
+/// Returns polynomial @p raised to @p n.
 [[nodiscard]] Polynomial pow(const Polynomial& p, int n);
 
 std::ostream& operator<<(std::ostream& os, const Polynomial& p);
@@ -520,7 +563,7 @@ DRAKE_SYMBOLIC_SCALAR_SUM_DIFF_PRODUCT_CONJ_PRODUCT_TRAITS(
 //
 // Note that we inform Eigen that the return type of Monomial op Monomial is
 // Polynomial, not Monomial, while Monomial * Monomial gets a Monomial in our
-// implementation. This discrepency is due to the implementation of Eigen's
+// implementation. This discrepancy is due to the implementation of Eigen's
 // dot() method whose return type is scalar_product_op::ReturnType. For more
 // information, check line 67 of Eigen/src/Core/Dot.h and line 767 of
 // Eigen/src/Core/util/XprHelper.h.
@@ -555,6 +598,18 @@ EIGEN_DEVICE_FUNC inline drake::symbolic::Expression cast(
   return p.ToExpression();
 }
 }  // namespace internal
+namespace numext {
+template <>
+bool equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y);
+template <>
+EIGEN_STRONG_INLINE bool not_equal_strict(
+    const drake::symbolic::Polynomial& x,
+    const drake::symbolic::Polynomial& y) {
+  return !Eigen::numext::equal_strict(x, y);
+}
+}  // namespace numext
 }  // namespace Eigen
 #endif  // !defined(DRAKE_DOXYGEN_CXX)
 
@@ -621,3 +676,11 @@ CalcPolynomialWLowerTriangularPart(
 }
 }  // namespace symbolic
 }  // namespace drake
+
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <>
+struct formatter<drake::symbolic::Polynomial>
+    : drake::ostream_formatter {};
+}  // namespace fmt

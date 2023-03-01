@@ -10,6 +10,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/fmt_ostream.h"
 #include "drake/math/rotation_matrix.h"
 
 namespace drake {
@@ -310,3 +311,10 @@ std::ostream& operator<<(std::ostream& o,
 
 }  // namespace multibody
 }  // namespace drake
+
+// TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
+namespace fmt {
+template <template <typename> class SpatialQuantity, typename T>
+struct formatter<drake::multibody::SpatialVector<SpatialQuantity, T>>
+    : drake::ostream_formatter {};
+}  // namespace fmt

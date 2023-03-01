@@ -32,7 +32,7 @@ bazel run //examples/hydroelastic/python_nonconvex_mesh:drop_pepper_py \
 -- --simulation_time=0
 ```
 With `--simulation_time=0`, the simulation stops at the beginning, so we can 
-see the inital position of the bell pepper.
+see the initial position of the bell pepper.
 
 ![inspect_initial_condition](images/init.jpg)
 

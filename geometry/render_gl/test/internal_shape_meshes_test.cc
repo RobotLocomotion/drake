@@ -8,6 +8,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/fmt_eigen.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
@@ -484,7 +485,7 @@ GTEST_TEST(PrimitiveMeshTests, NormalCone) {
     const float cos_theta_expected = std::cos(theta);
     // Note: We're not using RotationMatrix because it cannot support `float`;
     // RotationMatrix::ThrowIfInvalid calls ExtractDoubleOrThrow which throws
-    // for T = float. It's not worthing supporting float just to support this
+    // for T = float. It's not worth supporting float just to support this
     // bizarre corner of computation.
     const AngleAxisf R(theta, Vector3f(-2, 1, 0).normalized());
     const Vector3f n0 = R * expected_ray;
@@ -579,8 +580,8 @@ void TestGenericPrimitiveTraits(const MeshData& mesh,
       ASSERT_GT(n_face.dot(c), 0) << "for triangle " << t;
     }
     const NormalCone cone(mesh, t);
-    ASSERT_TRUE(cone.Contains(n_face))
-        << "for triangle " << t << "\n  face normal: " << n_face.transpose();
+    ASSERT_TRUE(cone.Contains(n_face)) << fmt::format(
+        "for triangle {}\n  face normal: {}", t, fmt_eigen(n_face.transpose()));
   }
 
   // UVs lie in the expected range.

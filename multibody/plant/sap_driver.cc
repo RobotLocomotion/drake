@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 #include <memory>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -58,12 +59,20 @@ template <typename T>
 void SapDriver<T>::DeclareCacheEntries(
     CompliantContactManager<T>* mutable_manager) {
   DRAKE_DEMAND(mutable_manager == manager_);
+
+  const systems::DependencyTicket xd_ticket = systems::System<T>::xd_ticket();
+  const systems::DependencyTicket inputs_ticket =
+      plant().all_input_ports_ticket();
+  const systems::DependencyTicket parameters_ticket =
+      plant().all_parameters_ticket();
+  const std::set<systems::DependencyTicket> state_input_and_parameters = {
+      xd_ticket, inputs_ticket, parameters_ticket};
+
   const auto& contact_problem_cache_entry = mutable_manager->DeclareCacheEntry(
       "contact problem",
       systems::ValueProducer(this, ContactProblemCache<T>(plant().time_step()),
                              &SapDriver<T>::CalcContactProblemCache),
-      {plant().cache_entry_ticket(
-          manager().cache_indexes_.discrete_contact_pairs)});
+      state_input_and_parameters);
   contact_problem_ = contact_problem_cache_entry.cache_index();
 }
 
@@ -467,6 +476,105 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
 }
 
 template <typename T>
+void SapDriver<T>::AddBallConstraints(
+    const systems::Context<T>& context,
+    contact_solvers::internal::SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Ball constraints do not have impulse limits, they are bi-lateral
+  // constraints. Each ball constraint introduces three constraint
+  // equations.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  const Vector3<T> gamma_lower(-kInfinity, -kInfinity, -kInfinity);
+  const Vector3<T> gamma_upper(kInfinity, kInfinity, kInfinity);
+
+  // Stiffness and dissipation are set so that the constraint is in the
+  // "near-rigid" regime, [Castro et al., 2022].
+  const Vector3<T> stiffness(kInfinity, kInfinity, kInfinity);
+  const Vector3<T> relaxation_time = plant().time_step() * Vector3<T>::Ones();
+
+  const int nv = plant().num_velocities();
+  Matrix3X<T> Jv_WAp_W(3, nv);
+  Matrix3X<T> Jv_WBq_W(3, nv);
+  MatrixX<T> Jv_ApBq_W = MatrixX<T>::Zero(3, nv);
+
+  const Frame<T>& frame_W = plant().world_frame();
+  for (const BallConstraintSpecs& specs :
+       manager().ball_constraints_specs()) {
+    const Body<T>& body_A = plant().get_body(specs.body_A);
+    const Body<T>& body_B = plant().get_body(specs.body_B);
+
+    const math::RigidTransform<T>& X_WA =
+        plant().EvalBodyPoseInWorld(context, body_A);
+    const math::RigidTransform<T>& X_WB =
+        plant().EvalBodyPoseInWorld(context, body_B);
+    const Vector3<T> p_WP = X_WA * specs.p_AP.cast<T>();
+    const Vector3<T> p_WQ = X_WB * specs.p_BQ.cast<T>();
+
+    const Vector3<T> p_PQ_W = p_WQ - p_WP;
+
+    // Dense Jacobian.
+    // d(p_PQ_W)/dt = Jv_ApBq_W * v.
+    manager().internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_A.body_frame(), frame_W, p_WP,
+        frame_W, frame_W, &Jv_WAp_W);
+    manager().internal_tree().CalcJacobianTranslationalVelocity(
+        context, JacobianWrtVariable::kV, body_B.body_frame(), frame_W, p_WQ,
+        frame_W, frame_W, &Jv_WBq_W);
+    Jv_ApBq_W = (Jv_WBq_W - Jv_WAp_W);
+
+    // TODO(amcastro-tri): consider exposing this parameter.
+    const double beta = 0.1;
+    const typename SapHolonomicConstraint<T>::Parameters parameters{
+        gamma_lower, gamma_upper, stiffness, relaxation_time, beta};
+
+    const TreeIndex treeA_index =
+        tree_topology().body_to_tree_index(specs.body_A);
+    const TreeIndex treeB_index =
+        tree_topology().body_to_tree_index(specs.body_B);
+
+    // TODO(joemasterjohn): Move this exception up to the plant level so that it
+    // fails as fast as possible. Currently, the earliest this can happen is
+    // in MbP::Finalize() after the topology has been finalized.
+    if (!treeA_index.is_valid() && !treeB_index.is_valid()) {
+      const std::string msg = fmt::format(
+          "Creating a ball Constraint between bodies '{}' and '{}' where both "
+          "are welded to the world is not allowed.",
+          body_A.name(), body_B.name());
+      throw std::runtime_error(msg);
+    }
+
+    // Both bodies A and B belong to the same tree or one of them is the world.
+    const bool single_tree = !treeA_index.is_valid() ||
+                             !treeB_index.is_valid() ||
+                             treeA_index == treeB_index;
+
+    // Constraint function at current time step.
+    const Vector3<T> g0 = p_PQ_W;
+    if (single_tree) {
+      const TreeIndex tree_index =
+          treeA_index.is_valid() ? treeA_index : treeB_index;
+      const MatrixX<T> J = Jv_ApBq_W.middleCols(
+          tree_topology().tree_velocities_start(tree_index),
+          tree_topology().num_tree_velocities(tree_index));
+
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          tree_index, g0, std::move(J), parameters));
+    } else {
+      const MatrixX<T> JA = Jv_ApBq_W.middleCols(
+          tree_topology().tree_velocities_start(treeA_index),
+          tree_topology().num_tree_velocities(treeA_index));
+      const MatrixX<T> JB = Jv_ApBq_W.middleCols(
+          tree_topology().tree_velocities_start(treeB_index),
+          tree_topology().num_tree_velocities(treeB_index));
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          treeA_index, treeB_index, g0, std::move(JA), std::move(JB),
+          parameters));
+    }
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   SapContactProblem<T>& problem = *cache->sap_problem;
@@ -483,6 +591,7 @@ void SapDriver<T>::CalcContactProblemCache(
   AddLimitConstraints(context, problem.v_star(), &problem);
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
+  AddBallConstraints(context, &problem);
 }
 
 template <typename T>

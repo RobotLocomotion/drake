@@ -27,8 +27,7 @@ from pydrake.multibody.tree import (
     SpatialInertia,
 )
 import pydrake.multibody.inverse_kinematics as ik
-import pydrake.solvers.mathematicalprogram as mp
-from pydrake.solvers import SnoptSolver
+import pydrake.solvers as mp
 from pydrake.systems.framework import DiagramBuilder, DiagramBuilder_
 from pydrake.geometry import (
     Box,
@@ -119,7 +118,7 @@ def split_se3(q_se3):
 
 class TestStaticEquilibriumProblem(unittest.TestCase):
 
-    @unittest.skipUnless(SnoptSolver().available(), "Requires Snopt")
+    @unittest.skipUnless(mp.SnoptSolver().available(), "Requires Snopt")
     def test_one_box(self):
         # Test with a single box.
         masses = [1.]
@@ -147,7 +146,7 @@ class TestStaticEquilibriumProblem(unittest.TestCase):
 
         # Now set the complementarity tolerance.
         dut.UpdateComplementarityTolerance(0.002)
-        solver = SnoptSolver()
+        solver = mp.SnoptSolver()
         result = solver.Solve(dut.prog())
         self.assertTrue(result.is_success())
         q_sol = result.GetSolution(dut.q_vars())
@@ -330,15 +329,35 @@ class TestToppra(unittest.TestCase):
         constraint = toppra.AddFrameTranslationalSpeedLimit(
             constraint_frame=frame, upper_limit=1.)
         self.assertIsInstance(constraint, mp.Binding[mp.BoundingBoxConstraint])
-        constraint = toppra.AddFrameAccelerationLimit(
+
+        breaks = [path.start_time(), path.end_time()]
+
+        speed_limit_traj = PiecewisePolynomial.FirstOrderHold(
+            breaks, np.array(([[1, 1]])))
+        constraint = toppra.AddFrameTranslationalSpeedLimit(
+            constraint_frame=frame, upper_limit=speed_limit_traj)
+        self.assertIsInstance(constraint, mp.Binding[mp.BoundingBoxConstraint])
+
+        backward_con, forward_con = toppra.AddFrameAccelerationLimit(
             constraint_frame=frame, lower_limit=lower_limit,
             upper_limit=upper_limit,
             discretization=ToppraDiscretization.kCollocation)
         self.assertIsInstance(backward_con, mp.Binding[mp.LinearConstraint])
         self.assertIsInstance(forward_con, mp.Binding[mp.LinearConstraint])
-        constraint = toppra.AddFrameAccelerationLimit(
+        backward_con, forward_con = toppra.AddFrameAccelerationLimit(
             constraint_frame=frame, lower_limit=lower_limit,
             upper_limit=upper_limit,
+            discretization=ToppraDiscretization.kInterpolation)
+        self.assertIsInstance(backward_con, mp.Binding[mp.LinearConstraint])
+        self.assertIsInstance(forward_con, mp.Binding[mp.LinearConstraint])
+
+        upper_traj = PiecewisePolynomial.FirstOrderHold(breaks,
+                                                        np.ones((6, 2)))
+        lower_traj = PiecewisePolynomial.FirstOrderHold(breaks,
+                                                        -np.ones((6, 2)))
+        backward_con, forward_con = toppra.AddFrameAccelerationLimit(
+            constraint_frame=frame, lower_limit=lower_traj,
+            upper_limit=upper_traj,
             discretization=ToppraDiscretization.kInterpolation)
         self.assertIsInstance(backward_con, mp.Binding[mp.LinearConstraint])
         self.assertIsInstance(forward_con, mp.Binding[mp.LinearConstraint])

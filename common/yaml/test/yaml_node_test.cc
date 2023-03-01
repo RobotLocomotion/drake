@@ -1,7 +1,6 @@
 #include "drake/common/yaml/yaml_node.h"
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -83,7 +82,7 @@ class YamlNodeParamaterizedTest : public testing::TestWithParam<Param> {
   }
 
   // Given a function name, returns the expected exception message in case the
-  // runtime type of the Node is incorect.
+  // runtime type of the Node is incorrect.
   std::string GetExpectedCannot(std::string_view operation) {
     return fmt::format(
         ".*Cannot.*{}.*on a {}.*",

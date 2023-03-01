@@ -160,7 +160,7 @@ def drake_cc_vector_gen_library(
     with the given `name`, containing the generated BasicVector subclasses for
     those `srcs`.  The `deps` are passed through to the declared library.
 
-    This macro is inteded for use only within Drake itself.  Other projects
+    This macro is intended for use only within Drake itself.  Other projects
     using vector_gen should copy this macro and adapt it as necessary, e.g.,
     by setting drake_workspace_name correctly.
     """

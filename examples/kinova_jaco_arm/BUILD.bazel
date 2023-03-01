@@ -25,7 +25,7 @@ drake_cc_binary(
         "//common:find_resource",
         "//lcm",
         "//manipulation/kinova_jaco",
-        "//manipulation/planner:robot_plan_interpolator",
+        "//manipulation/util:robot_plan_interpolator",
         "//systems/analysis:simulator",
         "//systems/controllers:pid_controller",
         "//systems/lcm:lcm_pubsub_system",
@@ -46,7 +46,6 @@ drake_cc_binary(
     test_rule_args = ["--simulation_sec=0.1"],
     deps = [
         "//common:add_text_logging_gflags",
-        "//common:find_resource",
         "//geometry:drake_visualizer",
         "//geometry:scene_graph",
         "//manipulation/kinova_jaco",
