@@ -23,13 +23,13 @@
 #include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/parsing/detail_urdf_geometry.h"
 #include "drake/multibody/parsing/package_map.h"
-#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/fixed_offset_frame.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/scoped_name.h"
 #include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/universal_joint.h"
 #include "drake/multibody/tree/weld_joint.h"
@@ -914,8 +914,8 @@ std::optional<ModelInstanceIndex> UrdfParser::Parse() {
     return {};
   }
 
-  model_name = parsing::PrefixName(
-      parent_model_name_.value_or(""), model_name);
+  model_name = ScopedName::Join(
+      parent_model_name_.value_or(""), model_name).to_string();
 
   model_instance_ = w_.plant->AddModelInstance(model_name);
 

@@ -46,13 +46,6 @@ class CollisionFilterGroupResolverTest : public test::DiagnosticPolicyTestBase {
 // in the parsed text.  TODO(rpoyner-tri) Migrate actual filter construction
 // tests here from detail_{urdf,sdf}_parser_test.
 
-TEST_F(CollisionFilterGroupResolverTest, IllegalPair) {
-  resolver_.AddPair(diagnostic_policy_, "::a", "b::", {});
-  resolver_.Resolve(diagnostic_policy_);
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'::a'.*neither begin nor end.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'b::'.*neither begin nor end.*"));
-}
-
 TEST_F(CollisionFilterGroupResolverTest, BogusPairScoped) {
   ModelInstanceIndex r1 = plant_.AddModelInstance("r1");
   resolver_.AddPair(diagnostic_policy_, "a", "sub::b", r1);
@@ -66,19 +59,6 @@ TEST_F(CollisionFilterGroupResolverTest, BogusPairGlobal) {
   resolver_.Resolve(diagnostic_policy_);
   EXPECT_THAT(TakeError(), MatchesRegex(".*group.*'a'.*not found"));
   EXPECT_THAT(TakeError(), MatchesRegex(".*group.*'b'.*not found"));
-}
-
-TEST_F(CollisionFilterGroupResolverTest, IllegalGroupName) {
-  resolver_.AddGroup(diagnostic_policy_, "::a", {}, {});
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'::a'.*neither begin nor end.*"));
-  resolver_.AddGroup(diagnostic_policy_, "b::", {}, {});
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'b::'.*neither begin nor end.*"));
-}
-
-TEST_F(CollisionFilterGroupResolverTest, IllegalBodies) {
-  resolver_.AddGroup(diagnostic_policy_, "g", {"::a", "b::"}, {});
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'::a'.*neither begin nor end.*"));
-  EXPECT_THAT(TakeError(), MatchesRegex(".*'b::'.*neither begin nor end.*"));
 }
 
 TEST_F(CollisionFilterGroupResolverTest, BogusGroupName) {

@@ -11,6 +11,7 @@
 #include "drake/multibody/tree/frame_base.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
+#include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
 namespace multibody {
@@ -73,6 +74,10 @@ class Frame : public FrameBase<T> {
   const std::string& name() const {
     return name_;
   }
+
+  /// Returns scoped name of this frame. Neither of the two pieces of the name
+  /// will be empty (the scope name and the element name).
+  ScopedName scoped_name() const;
 
   /// Returns the pose `X_BF` of `this` frame F in the body frame B associated
   /// with this frame.
@@ -593,7 +598,8 @@ class Frame : public FrameBase<T> {
       const std::string& name, const Body<T>& body,
       std::optional<ModelInstanceIndex> model_instance = {})
       : FrameBase<T>(model_instance.value_or(body.model_instance())),
-        name_(internal::DeprecateWhenEmptyName(name, "Frame")), body_(body) {}
+        name_(internal::DeprecateWhenEmptyName(name, "Frame")),
+        body_(body) {}
 
   /// @name Methods to make a clone templated on different scalar types.
   ///

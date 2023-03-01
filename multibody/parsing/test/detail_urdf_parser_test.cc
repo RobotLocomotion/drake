@@ -115,6 +115,14 @@ TEST_F(UrdfParserTest, NoName) {
                   " be specified."));
 }
 
+TEST_F(UrdfParserTest, ModelRenameWithColons) {
+  std::optional<ModelInstanceIndex> index =  AddModelFromUrdfString(R"""(
+    <robot name='to-be-overwritten'>
+    </robot>)""", "left::robot");
+  ASSERT_NE(index, std::nullopt);
+  EXPECT_EQ(plant_.GetModelInstanceName(*index), "left::robot");
+}
+
 TEST_F(UrdfParserTest, ObsoleteLoopJoint) {
   EXPECT_NE(AddModelFromUrdfString("<robot name='a'><loop_joint/></robot>", ""),
             std::nullopt);
