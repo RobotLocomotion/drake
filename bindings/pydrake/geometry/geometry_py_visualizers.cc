@@ -231,6 +231,11 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("colors"), py::arg("wireframe") = false,
             py::arg("wireframe_line_width") = 1.0,
             cls_doc.SetTriangleColorMesh.doc)
+        .def("PlotSurface", &Class::PlotSurface, py::arg("path"), py::arg("X"),
+            py::arg("Y"), py::arg("Z"),
+            py::arg("rgba") = Rgba(0.1, 0.1, 0.9, 1.0),
+            py::arg("wireframe") = false, py::arg("wireframe_line_width") = 1.0,
+            cls_doc.PlotSurface.doc)
         .def("SetCamera",
             py::overload_cast<Meshcat::PerspectiveCamera, std::string>(
                 &Class::SetCamera),

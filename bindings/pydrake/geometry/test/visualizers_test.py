@@ -136,6 +136,18 @@ class TestGeometryVisualizers(unittest.TestCase):
             colors=np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]]).T,
             wireframe=False,
             wireframe_line_width=2.0)
+        # Plot the six-hump camel
+        xs = np.linspace(-2.2, 2.2, 51)
+        ys = np.linspace(-1.2, 1.2, 51)
+        [X, Y] = np.meshgrid(xs, ys)
+        P = 4 * X**2 + X * Y - 4 * Y**2 - 2.1 * X**4 + 4 * Y**4 + X**6 / 3
+        meshcat.PlotSurface(path="six_hump_camel",
+                            X=X,
+                            Y=Y,
+                            Z=P,
+                            rgba=mut.Rgba(0.3, 0.3, 0.3),
+                            wireframe=True,
+                            wireframe_line_width=2.0)
         meshcat.SetProperty(path="/Background",
                             property="visible",
                             value=True)

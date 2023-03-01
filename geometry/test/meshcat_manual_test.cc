@@ -147,6 +147,20 @@ int do_main() {
                           RigidTransformd(Vector3d{8.75, -.25, 0}));
   }
 
+  // PlotSurface.
+  {
+    constexpr int nx = 15, ny = 11;
+    Eigen::MatrixXd X =
+        Eigen::RowVectorXd::LinSpaced(nx, 0, 1).replicate<ny, 1>();
+    Eigen::MatrixXd Y = Eigen::VectorXd::LinSpaced(ny, 0, 1).replicate<1, nx>();
+    // z = y*sin(5*x)
+    Eigen::MatrixXd Z = (Y.array() * (5 * X.array()).sin()).matrix();
+
+    meshcat->PlotSurface("plot_surface", X, Y, Z, Rgba(0, 0, .9, 1.0), true);
+    meshcat->SetTransform("plot_surface",
+                          RigidTransformd(Vector3d{9.75, -.25, 0}));
+  }
+
   std::cout << R"""(
 Open up your browser to the URL above.
 
@@ -166,6 +180,7 @@ Open up your browser to the URL above.
   - a purple triangle mesh with 2 faces.
   - the same purple triangle mesh drawn as a wireframe.
   - the same triangle mesh drawn in multicolor.
+  - a blue mesh plot of the function y = sin(5*x).
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

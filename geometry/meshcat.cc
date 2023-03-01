@@ -2108,6 +2108,48 @@ void Meshcat::SetTriangleColorMesh(
                          wireframe_line_width);
 }
 
+void Meshcat::PlotSurface(std::string_view path,
+                          const Eigen::Ref<const Eigen::MatrixXd>& X,
+                          const Eigen::Ref<const Eigen::MatrixXd>& Y,
+                          const Eigen::Ref<const Eigen::MatrixXd>& Z,
+                          const Rgba& rgba, bool wireframe,
+                          double wireframe_line_width) {
+  DRAKE_DEMAND(Y.rows() == X.rows() && Y.cols() == X.cols());
+  DRAKE_DEMAND(Z.rows() == X.rows() && Z.cols() == X.cols());
+  const int rows = X.rows(), cols = X.cols();
+
+  Eigen::Matrix3Xd vertices(3, rows * cols);
+  vertices.row(0) = X.reshaped(1, rows * cols);
+  vertices.row(1) = Y.reshaped(1, rows * cols);
+  vertices.row(2) = Z.reshaped(1, rows * cols);
+
+  // Make a regular grid as in https://stackoverflow.com/q/44934631.
+  const int num_boxes = (rows - 1) * (cols - 1);
+  Eigen::Matrix3Xi faces(3, 2 * num_boxes);
+  Eigen::MatrixXi ids(rows, cols);
+  // Populate ids with [0, 1, ..., num vertices-1]
+  std::iota(ids.data(), ids.data() + rows*cols, 0);
+
+  // Upper left triangles.
+  faces.topLeftCorner(1, num_boxes) =
+      ids.topLeftCorner(rows - 1, cols - 1).reshaped(1, num_boxes);
+  faces.block(1, 0, 1, num_boxes) =
+      ids.topRightCorner(rows - 1, cols - 1).reshaped(1, num_boxes);
+  faces.bottomLeftCorner(1, num_boxes) =
+      ids.bottomLeftCorner(rows - 1, cols - 1).reshaped(1, num_boxes);
+
+  // Lower right triangles.
+  faces.topRightCorner(1, num_boxes) =
+      ids.topRightCorner(rows - 1, cols - 1).reshaped(1, num_boxes);
+  faces.block(1, num_boxes, 1, num_boxes) =
+      ids.bottomRightCorner(rows - 1, cols - 1).reshaped(1, num_boxes);
+  faces.bottomRightCorner(1, num_boxes) =
+      ids.bottomLeftCorner(rows - 1, cols - 1).reshaped(1, num_boxes);
+
+  impl().SetTriangleMesh(path, vertices, faces, rgba, wireframe,
+                         wireframe_line_width);
+}
+
 void Meshcat::SetCamera(PerspectiveCamera camera, std::string path) {
   impl().SetCamera(std::move(camera), std::move(path));
 }

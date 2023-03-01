@@ -271,7 +271,7 @@ class Meshcat {
                        double wireframe_line_width = 1.0);
 
   /** Sets the "object" at `path` in the scene tree to a triangular mesh with
-      per-vertex coloring.
+  per-vertex coloring.
 
   @param path a "/"-delimited string indicating the path in the scene tree. See
               @ref meshcat_path "Meshcat paths" for the semantics.
@@ -293,6 +293,29 @@ class Meshcat {
                        const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
                        bool wireframe = false,
                        double wireframe_line_width = 1.0);
+
+  // TODO(russt): Add support for per vertex colors / colormaps.
+  /** Sets the "object" at `path` to be a triangle surface mesh representing a
+  3D surface, via an API that roughly follows matplotlib's plot_surface()
+  method.
+
+  @param X 2D array of `x` coordinate values.
+  @param Y 2D array fo `y` coordinate values.
+  @param Z 2D array of `z` coordinate values.
+  @param rgba is the mesh face or wireframe color.
+  @param wireframe if "true", then only the triangle edges are visualized, not
+                   the faces.
+  @param wireframe_line_width is the width in pixels.  Due to limitations in
+                              WebGL implementations, the line width may be 1
+                              regardless of the set value.
+
+  @pre X,Y, and Z must be the same shape. */
+  void PlotSurface(std::string_view path,
+                   const Eigen::Ref<const Eigen::MatrixXd>& X,
+                   const Eigen::Ref<const Eigen::MatrixXd>& Y,
+                   const Eigen::Ref<const Eigen::MatrixXd>& Z,
+                   const Rgba& rgba = Rgba(0.1, 0.1, 0.9, 1.0),
+                   bool wireframe = false, double wireframe_line_width = 1.0);
 
   // TODO(russt): Provide a more general SetObject(std::string_view path,
   // msgpack::object object) that would allow users to pass through anything
