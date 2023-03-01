@@ -59,7 +59,6 @@ def skydio_2_mesh_files():
     return [
         "skydio_2/skydio_2_1000_poly.mtl",
         "skydio_2/skydio_2_1000_poly.obj",
-        "skydio_2/skydio_2.png",
         "skydio_2/LICENSE",
     ]
 
