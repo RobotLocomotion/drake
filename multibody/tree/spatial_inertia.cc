@@ -126,6 +126,18 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
+    const T& density, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  SpatialInertia<T> M_BBcm_B =
+      SpatialInertia<T>::SolidCylinderWithDensity(
+          density, radius, length, unit_vector);
+  const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
+  M_BBcm_B.ShiftInPlace(p_BcmBp_B);
+  return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
     const T& mass, const T& length, const Vector3<T>& unit_vector) {
   // Ensure mass and length are positive.
@@ -153,18 +165,6 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
   const UnitInertia<T> G_BBcm_B = UnitInertia<T>::ThinRod(length, unit_vector);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBcm_B);
-}
-
-template <typename T>
-SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
-    const T& density, const T& radius, const T& length,
-    const Vector3<T>& unit_vector) {
-  SpatialInertia<T> M_BBcm_B =
-      SpatialInertia<T>::SolidCylinderWithDensity(
-          density, radius, length, unit_vector);
-  const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
-  M_BBcm_B.ShiftInPlace(p_BcmBp_B);
-  return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
 }
 
 template <typename T>
