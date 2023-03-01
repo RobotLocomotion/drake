@@ -6,7 +6,6 @@ load(
 )
 load("@drake//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load("//tools/workspace/models_internal:files.bzl", "ycb_mesh_files")
 
 # This package is public so that other packages can refer to
@@ -15,15 +14,18 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-_YCB_MESHES = forward_files(
-    srcs = ["@models_internal//:" + x for x in ycb_mesh_files()],
-    dest_prefix = "",
-    strip_prefix = "@models_internal//:ycb/",
-    visibility = ["//visibility:private"],
+install_data(
+    name = "git_models",
 )
 
-install_data(
-    extra_prod_models = _YCB_MESHES,
+filegroup(
+    name = "models",
+    data = [
+        ":git_models",
+    ] + [
+        "@models_internal//:" + x
+        for x in ycb_mesh_files()
+    ],
 )
 
 # === test/ ===

@@ -54,7 +54,10 @@ drake_cc_library(
     name = "package_map",
     srcs = ["package_map.cc"],
     hdrs = ["package_map.h"],
-    data = ["//:package.xml"],
+    data = [
+        "//:package.xml",
+        "@models_internal//:package.xml",
+    ],
     visibility = ["//visibility:public"],
     interface_deps = [
         "//common:essential",

@@ -16,6 +16,7 @@
 #include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
@@ -30,7 +31,38 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 PackageMap::PackageMap()
-    : PackageMap{FindResourceOrThrow("drake/package.xml")} {}
+  : PackageMap{std::initializer_list<std::string>()} {
+  // FindResource is the source of truth for where Drake's first-party files
+  // live, no matter whether we're building from source or using a installed
+  // version of Drake.
+  const std::string drake_package = FindResourceOrThrow("drake/package.xml");
+  AddPackageXml(drake_package);
+
+  // For drake_models (i.e., https://github.com/RobotLocomotion/models) on the
+  // other hand, we need to do something different for source vs installed,
+  // hinging on whether or nor we have runfiles (i.e., running from source).
+  if (HasRunfiles()) {
+    // This is the case for Bazel-aware programs or tests, either first-party
+    // use of Bazel in Drake, or also for downstream Bazel projects that are
+    // using Drake as a dependency.
+    const RlocationOrError find = FindRunfile("models_internal/package.xml");
+    if (!find.error.empty()) {
+      throw std::runtime_error(fmt::format(
+          "PackageMap: Could not locate drake_models/package.xml in runfiles "
+          "at @models_internal//:package.xml: {}",
+          find.error));
+    }
+    AddPackageXml(find.abspath);
+  } else {
+    // This is the case for installed Drake. The models are installed under
+    //  $prefix/share/drake_models/package.xml
+    // which is a sibling to
+    //  $prefix/share/drake/package.xml
+    auto share_drake = std::filesystem::path(drake_package).parent_path();
+    auto share = share_drake.parent_path().lexically_normal();
+    AddPackageXml((share / "drake_models/package.xml").string());
+  }
+}
 
 PackageMap PackageMap::MakeEmpty() {
   return PackageMap(std::initializer_list<std::string>());
