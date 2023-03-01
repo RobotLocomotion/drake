@@ -361,7 +361,7 @@ namespace symbolic {
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if_t<is_eigen_scalar_same<DerivedA, Variable>::value &&
                               is_eigen_scalar_same<DerivedB, Variable>::value,
-                        bool>
+                          bool>
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
@@ -373,9 +373,7 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::symbolic::Variable>
-    : drake::ostream_formatter {};
+struct formatter<drake::symbolic::Variable> : drake::ostream_formatter {};
 template <>
-struct formatter<drake::symbolic::Variable::Type>
-    : drake::ostream_formatter {};
+struct formatter<drake::symbolic::Variable::Type> : drake::ostream_formatter {};
 }  // namespace fmt

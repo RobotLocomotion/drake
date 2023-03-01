@@ -12,41 +12,35 @@ namespace symbolic {
 namespace test {
 namespace {
 
-using Eigen::MatrixXd;
-using MatrixXE = MatrixX<Expression>;
-
 GTEST_TEST(SymbolicLdlt, DynamicSize) {
   // An arbitrary positive-definite matrix.
-  MatrixXd input_d(3, 3);
+  MatrixX<double> input_d(3, 3);
+  // clang-format off
   input_d << 81, -9, 63,
              -9 , 2, -5,
              63, -5, 69;
+  // clang-format on
   const auto ldlt_d = input_d.ldlt();
 
   // Perform LDLT decomposition, with Scalar = Expression.
-  const MatrixXE input_e = input_d.template cast<Expression>();
+  const MatrixX<Expression> input_e = input_d.template cast<Expression>();
   const auto ldlt_e = input_e.ldlt();
 
   // Check that Expression results match double results.
-  EXPECT_TRUE(CompareMatrices(
-      MatrixXE(ldlt_e.matrixL()),
-      MatrixXd(ldlt_d.matrixL())));
-  EXPECT_TRUE(CompareMatrices(
-      MatrixXE(ldlt_e.matrixU()),
-      MatrixXd(ldlt_d.matrixU())));
-  EXPECT_TRUE(CompareMatrices(
-      ldlt_e.transpositionsP().indices(),
-      ldlt_d.transpositionsP().indices()));
-  EXPECT_TRUE(CompareMatrices(
-      ldlt_e.vectorD(),
-      ldlt_d.vectorD()));
+  EXPECT_TRUE(CompareMatrices(MatrixX<Expression>(ldlt_e.matrixL()),
+                              MatrixX<double>(ldlt_d.matrixL())));
+  EXPECT_TRUE(CompareMatrices(MatrixX<Expression>(ldlt_e.matrixU()),
+                              MatrixX<double>(ldlt_d.matrixU())));
+  EXPECT_TRUE(CompareMatrices(ldlt_e.transpositionsP().indices(),
+                              ldlt_d.transpositionsP().indices()));
+  EXPECT_TRUE(CompareMatrices(ldlt_e.vectorD(), ldlt_d.vectorD()));
   EXPECT_TRUE(ldlt_e.isPositive());
   EXPECT_FALSE(ldlt_e.isNegative());
   EXPECT_EQ(ldlt_e.info(), ldlt_d.info());
 }
 
 GTEST_TEST(SymbolicLdlt, Exception) {
-  MatrixXE dut(1, 1);
+  MatrixX<Expression> dut(1, 1);
   dut(0, 0) = 0;
   DRAKE_EXPECT_NO_THROW(dut.ldlt());
   dut(0, 0) = Variable("a(0,0)");

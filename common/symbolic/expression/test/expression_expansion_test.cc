@@ -103,10 +103,10 @@ TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPolynomial) {
 }
 
 TEST_F(SymbolicExpansionTest, ExpressionAlreadyExpandedPow) {
-  EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(2, y_)));         // 3*2^y
-  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, y_)));            // x^y
-  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
-  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));            // x^(-1)
+  EXPECT_TRUE(CheckAlreadyExpanded(3 * pow(2, y_)));  // 3*2^y
+  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, y_)));     // x^y
+  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));     // x^(-1)
+  EXPECT_TRUE(CheckAlreadyExpanded(pow(x_, -1)));     // x^(-1)
 
   // The following are all already expanded. They do not yet detect and report
   // `is_expanded() == true` upon construction, but in any case they must not
@@ -208,6 +208,7 @@ TEST_F(SymbolicExpansionTest, MathFunctions) {
   // where '==' is structural equality (Expression::EqualTo).
   using F = function<Expression(const Expression&)>;
   vector<F> contexts;
+  // clang-format off
   contexts.push_back([](const Expression& x) { return log(x); });
   contexts.push_back([](const Expression& x) { return abs(x); });
   contexts.push_back([](const Expression& x) { return exp(x); });
@@ -229,6 +230,7 @@ TEST_F(SymbolicExpansionTest, MathFunctions) {
   contexts.push_back([](const Expression& x) { return floor(x); });
   contexts.push_back([&](const Expression& x) { return atan2(x, y_); });
   contexts.push_back([&](const Expression& x) { return atan2(y_, x); });
+  // clang-format on
 
   vector<Expression> expressions;
   expressions.push_back(5 * (3 + 2 * y_) + 30 * (7 + x_));

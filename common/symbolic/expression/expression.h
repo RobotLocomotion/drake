@@ -168,8 +168,7 @@ class Expression {
 
   /** Constructs a constant. */
   // NOLINTNEXTLINE(runtime/explicit): This conversion is desirable.
-  Expression(double constant)
-      : boxed_(std::isnan(constant) ? 0.0 : constant) {
+  Expression(double constant) : boxed_(std::isnan(constant) ? 0.0 : constant) {
     if (std::isnan(constant)) {
       ConstructExpressionCellNaN();
     }
@@ -182,9 +181,7 @@ class Expression {
   Expression(const Variable& var);
 
   /** Returns expression kind. */
-  [[nodiscard]] ExpressionKind get_kind() const {
-    return boxed_.get_kind();
-  }
+  [[nodiscard]] ExpressionKind get_kind() const { return boxed_.get_kind(); }
 
   /** Collects variables in expression. */
   [[nodiscard]] Variables GetVariables() const;
@@ -426,8 +423,7 @@ class Expression {
     // in that case. TODO(jwnimmer-tri) I don't understand why we need to throw
     // during division by zero. The result is typically well-defined (infinity).
     const double rhs_or_nan = rhs.boxed_.constant_or_nan();
-    const double speculative_value =
-        lhs.boxed_.constant_or_nan() / rhs_or_nan;
+    const double speculative_value = lhs.boxed_.constant_or_nan() / rhs_or_nan;
     if ((rhs_or_nan != 0.0) && !std::isnan(speculative_value)) {
       lhs.boxed_.update_constant(speculative_value);
     } else {
@@ -565,8 +561,8 @@ class Expression {
   friend const ExpressionCeiling& to_ceil(const Expression& e);
   friend const ExpressionFloor& to_floor(const Expression& e);
   friend const ExpressionIfThenElse& to_if_then_else(const Expression& e);
-  friend const ExpressionUninterpretedFunction&
-  to_uninterpreted_function(const Expression& e);
+  friend const ExpressionUninterpretedFunction& to_uninterpreted_function(
+      const Expression& e);
 
   // Cast functions which takes a pointer to a non-const Expression.
   friend ExpressionVar& to_variable(Expression* e);
@@ -595,8 +591,8 @@ class Expression {
   friend ExpressionCeiling& to_ceil(Expression* e);
   friend ExpressionFloor& to_floor(Expression* e);
   friend ExpressionIfThenElse& to_if_then_else(Expression* e);
-  friend ExpressionUninterpretedFunction&
-  to_uninterpreted_function(Expression* e);
+  friend ExpressionUninterpretedFunction& to_uninterpreted_function(
+      Expression* e);
 
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
@@ -614,9 +610,7 @@ class Expression {
 
   // Returns a const reference to the owned cell.
   // @pre This expression is not a Constant.
-  const ExpressionCell& cell() const {
-    return boxed_.cell();
-  }
+  const ExpressionCell& cell() const { return boxed_.cell(); }
 
   // Returns a mutable reference to the owned cell. This function may only be
   // called when this object is the sole owner of the cell (use_count == 1).
@@ -1452,9 +1446,8 @@ auto operator*(
 ///                           @p random_generator is `nullptr`.
 /// @pydrake_mkdoc_identifier{expression}
 template <typename Derived>
-std::enable_if_t<
-    std::is_same_v<typename Derived::Scalar, Expression>,
-    MatrixLikewise<double, Derived>>
+std::enable_if_t<std::is_same_v<typename Derived::Scalar, Expression>,
+                 MatrixLikewise<double, Derived>>
 Evaluate(const Eigen::MatrixBase<Derived>& m,
          const Environment& env = Environment{},
          RandomGenerator* random_generator = nullptr) {
@@ -1462,7 +1455,9 @@ Evaluate(const Eigen::MatrixBase<Derived>& m,
   // ubuntu).  Previously the implementation used `auto`, and placed  an `
   // .eval()` at the end to prevent lazy evaluation.
   if (random_generator == nullptr) {
-    return m.unaryExpr([&env](const Expression& e) { return e.Evaluate(env); });
+    return m.unaryExpr([&env](const Expression& e) {
+      return e.Evaluate(env);
+    });
   } else {
     // Construct an environment by extending `env` by sampling values for the
     // random variables in `m` which are unassigned in `env`.
@@ -1489,14 +1484,15 @@ Eigen::SparseMatrix<double> Evaluate(
 /// @returns a matrix of symbolic expressions whose size is the size of @p m.
 /// @throws std::exception if NaN is detected during substitution.
 template <typename Derived>
-MatrixLikewise<Expression, Derived>
-Substitute(const Eigen::MatrixBase<Derived>& m, const Substitution& subst) {
+MatrixLikewise<Expression, Derived> Substitute(
+    const Eigen::MatrixBase<Derived>& m, const Substitution& subst) {
   static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "Substitute only accepts a symbolic matrix.");
   // Note that the return type is written out explicitly to help gcc 5 (on
   // ubuntu).
-  return m.unaryExpr(
-      [&subst](const Expression& e) { return e.Substitute(subst); });
+  return m.unaryExpr([&subst](const Expression& e) {
+    return e.Substitute(subst);
+  });
 }
 
 /// Substitutes @p var with @p e in a symbolic matrix @p m.
@@ -1504,9 +1500,9 @@ Substitute(const Eigen::MatrixBase<Derived>& m, const Substitution& subst) {
 /// @returns a matrix of symbolic expressions whose size is the size of @p m.
 /// @throws std::exception if NaN is detected during substitution.
 template <typename Derived>
-MatrixLikewise<Expression, Derived>
-Substitute(const Eigen::MatrixBase<Derived>& m, const Variable& var,
-           const Expression& e) {
+MatrixLikewise<Expression, Derived> Substitute(
+    const Eigen::MatrixBase<Derived>& m, const Variable& var,
+    const Expression& e) {
   static_assert(std::is_same_v<typename Derived::Scalar, Expression>,
                 "Substitute only accepts a symbolic matrix.");
   // Note that the return type is written out explicitly to help gcc 5 (on
@@ -1612,7 +1608,7 @@ template <typename DerivedV, typename DerivedB>
 struct is_eigen_nonvector_expression_double_pair
     : std::bool_constant<
           is_eigen_nonvector_of<DerivedV, symbolic::Expression>::value &&
-              is_eigen_nonvector_of<DerivedB, double>::value> {};
+          is_eigen_nonvector_of<DerivedB, double>::value> {};
 
 /*
  * Determine if two EigenBase<> types are vectors of Expressions and doubles
@@ -1622,7 +1618,7 @@ template <typename DerivedV, typename DerivedB>
 struct is_eigen_vector_expression_double_pair
     : std::bool_constant<
           is_eigen_vector_of<DerivedV, symbolic::Expression>::value &&
-              is_eigen_vector_of<DerivedB, double>::value> {};
+          is_eigen_vector_of<DerivedB, double>::value> {};
 
 }  // namespace drake
 

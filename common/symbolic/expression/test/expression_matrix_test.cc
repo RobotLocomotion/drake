@@ -590,8 +590,8 @@ TEST_F(SymbolicExpressionMatrixTest, Inverse) {
   CheckSymbolicMatrixInversion<2>();
   CheckSymbolicMatrixInversion<3>();
   CheckSymbolicMatrixInversion<4>();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      CheckSymbolicMatrixInversion<5>(), kBadMatrixInversion);
+  DRAKE_EXPECT_THROWS_MESSAGE(CheckSymbolicMatrixInversion<5>(),
+                              kBadMatrixInversion);
 }
 
 // Shows that a purely numeric matrix of Expression is invertible.
@@ -602,10 +602,8 @@ void CheckNumericExpressionMatrixInversion() {
   // Statically sized.
   EXPECT_TRUE(CompareMatrices(M_f.inverse(), M_sym.inverse(), 1e-9));
   // Dynamically sized.
-  EXPECT_TRUE(CompareMatrices(
-      Eigen::MatrixXd(M_f).inverse(),
-      MatrixX<Expression>(M_sym).inverse(),
-      1e-9));
+  EXPECT_TRUE(CompareMatrices(Eigen::MatrixXd(M_f).inverse(),
+                              MatrixX<Expression>(M_sym).inverse(), 1e-9));
 }
 
 TEST_F(SymbolicExpressionMatrixTest, InverseNumeric) {

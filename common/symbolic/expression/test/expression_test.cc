@@ -168,8 +168,9 @@ TEST_F(SymbolicExpressionTest, AssignCopyFromConstant) {
 TEST_F(SymbolicExpressionTest, IsConstant1) {
   EXPECT_TRUE(is_constant(e_constant_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_constant(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_constant(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
@@ -188,8 +189,12 @@ TEST_F(SymbolicExpressionTest, IsZero) {
 TEST_F(SymbolicExpressionTest, IsOne) {
   EXPECT_TRUE(is_one(Expression::One()));
 }
-TEST_F(SymbolicExpressionTest, IsNegOne) { EXPECT_TRUE(is_neg_one(neg_one_)); }
-TEST_F(SymbolicExpressionTest, IsTwo) { EXPECT_TRUE(is_two(two_)); }
+TEST_F(SymbolicExpressionTest, IsNegOne) {
+  EXPECT_TRUE(is_neg_one(neg_one_));
+}
+TEST_F(SymbolicExpressionTest, IsTwo) {
+  EXPECT_TRUE(is_two(two_));
+}
 
 TEST_F(SymbolicExpressionTest, NaN) {
   // It's OK to have NaN expression.
@@ -207,205 +212,231 @@ TEST_F(SymbolicExpressionTest, NaN) {
 TEST_F(SymbolicExpressionTest, IsVariable) {
   EXPECT_TRUE(is_variable(e_var_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_variable(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_variable(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsAddition) {
   EXPECT_TRUE(is_addition(e_add_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_addition(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_addition(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsMultiplication) {
   EXPECT_TRUE(is_multiplication(e_mul_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_multiplication(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_multiplication(e);
+      })};
   EXPECT_EQ(cnt, 2);
 }
 
 TEST_F(SymbolicExpressionTest, IsDivision) {
   EXPECT_TRUE(is_division(e_div_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_division(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_division(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsLog) {
   EXPECT_TRUE(is_log(e_log_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_log(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_log(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsAbs) {
   EXPECT_TRUE(is_abs(e_abs_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_abs(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_abs(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 TEST_F(SymbolicExpressionTest, IsExp) {
   EXPECT_TRUE(is_exp(e_exp_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_exp(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_exp(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 TEST_F(SymbolicExpressionTest, IsSqrt) {
   EXPECT_TRUE(is_sqrt(e_sqrt_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_sqrt(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_sqrt(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 TEST_F(SymbolicExpressionTest, IsPow) {
   EXPECT_TRUE(is_pow(e_pow_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_pow(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_pow(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsSin) {
   EXPECT_TRUE(is_sin(e_sin_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_sin(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_sin(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsCos) {
   EXPECT_TRUE(is_cos(e_cos_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_cos(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_cos(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsTan) {
   EXPECT_TRUE(is_tan(e_tan_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_tan(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_tan(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsAsin) {
   EXPECT_TRUE(is_asin(e_asin_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_asin(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_asin(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsAcos) {
   EXPECT_TRUE(is_acos(e_acos_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_acos(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_acos(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsAtan) {
   EXPECT_TRUE(is_atan(e_atan_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_atan(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_atan(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsAtan2) {
   EXPECT_TRUE(is_atan2(e_atan2_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_atan2(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_atan2(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsSinh) {
   EXPECT_TRUE(is_sinh(e_sinh_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_sinh(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_sinh(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsCosh) {
   EXPECT_TRUE(is_cosh(e_cosh_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_cosh(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_cosh(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsTanh) {
   EXPECT_TRUE(is_tanh(e_tanh_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_tanh(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_tanh(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsMin) {
   EXPECT_TRUE(is_min(e_min_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_min(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_min(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsMax) {
   EXPECT_TRUE(is_max(e_max_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_max(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_max(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsCeil) {
   EXPECT_TRUE(is_ceil(e_ceil_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_ceil(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_ceil(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsFloor) {
   EXPECT_TRUE(is_floor(e_floor_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_floor(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_floor(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsIfThenElse) {
   EXPECT_TRUE(is_if_then_else(e_ite_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_if_then_else(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_if_then_else(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsNaN) {
   EXPECT_TRUE(is_nan(e_nan_));
   const vector<Expression>::difference_type cnt{
-      count_if(collection_.begin(), collection_.end(),
-               [](const Expression& e) { return is_nan(e); })};
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_nan(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
 TEST_F(SymbolicExpressionTest, IsUninterpretedFunction) {
   EXPECT_TRUE(is_uninterpreted_function(e_uf_));
-  const vector<Expression>::difference_type cnt{count_if(
-      collection_.begin(), collection_.end(),
-      [](const Expression& e) { return is_uninterpreted_function(e); })};
+  const vector<Expression>::difference_type cnt{
+      count_if(collection_.begin(), collection_.end(), [](const Expression& e) {
+        return is_uninterpreted_function(e);
+      })};
   EXPECT_EQ(cnt, 1);
 }
 
@@ -560,9 +591,13 @@ TEST_F(SymbolicExpressionTest, LessKind) {
                  e_floor_,    e_ite_,  e_nan_,  e_uf_});
 }
 
-TEST_F(SymbolicExpressionTest, LessConstant) { CheckOrdering({c1_, c2_, c3_}); }
+TEST_F(SymbolicExpressionTest, LessConstant) {
+  CheckOrdering({c1_, c2_, c3_});
+}
 
-TEST_F(SymbolicExpressionTest, LessVariable) { CheckOrdering({x_, y_, z_}); }
+TEST_F(SymbolicExpressionTest, LessVariable) {
+  CheckOrdering({x_, y_, z_});
+}
 
 TEST_F(SymbolicExpressionTest, LessNeg) {
   // Defined in the ascending order.
@@ -2645,10 +2680,8 @@ TEST_F(SymbolicExpressionTest, ExponentialDistribution) {
     const Expression& e, const Environment& env,
     RandomGenerator* const random_generator) {
   RandomGenerator random_generator_copy(*random_generator);
-  const double v1{
-      e.GetVariables().empty()
-          ? e.Evaluate(random_generator)
-          : e.Evaluate(env, random_generator)};
+  const double v1{e.GetVariables().empty() ? e.Evaluate(random_generator)
+                                           : e.Evaluate(env, random_generator)};
 
   const Environment env_extended{
       PopulateRandomVariables(env, e.GetVariables(), &random_generator_copy)};
