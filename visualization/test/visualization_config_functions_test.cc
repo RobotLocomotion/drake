@@ -17,6 +17,7 @@ using drake::geometry::SceneGraph;
 using drake::lcm::DrakeLcm;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::MultibodyPlant;
+using drake::multibody::meshcat::ContactVisualizerParams;
 using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
 using drake::systems::lcm::LcmBuses;
@@ -81,6 +82,12 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
             config.enable_alpha_sliders);
+
+  const ContactVisualizerParams contact_params =
+      ConvertVisualizationConfigToMeshcatContactParams(config);
+  EXPECT_EQ(contact_params.publish_period, config.publish_period);
+  EXPECT_EQ(contact_params.delete_on_initialization_event,
+            config.delete_on_initialization_event);
 }
 
 // Tests the mapping from non-default schema data to geometry params.
@@ -135,18 +142,37 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   LcmBuses lcm_buses;
   lcm_buses.Add("default", &drake_lcm);
 
-  // Add MbP and SG, then the default visualization.
+  // Add MbP and SG, then the default visualization (ensuring that we can pass
+  // an existing Meshcat instance).
   DiagramBuilder<double> builder;
   auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
   plant.Finalize();
-  // Check that we can pass an existing meshcat.
   std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
   const VisualizationConfig config;
   ApplyVisualizationConfig(config, &builder, &lcm_buses, &plant, &scene_graph,
                            meshcat);
-  Simulator<double> simulator(builder.Build());
+
+  // Check that systems that we expect to have been added were actually added.
+  for (const auto& name : {
+           // For Meldis.
+           "DrakeVisualizer",
+           "contact_results_publisher",
+           // For Meshcat.
+           "MeshcatVisualizer",
+           "ContactVisualizer",
+       }) {
+    SCOPED_TRACE(fmt::format("Checking for a system named like {}", name));
+    int count = 0;
+    for (const auto* system : builder.GetSystems()) {
+      if (system->get_name().find(name) != std::string::npos) {
+        ++count;
+      }
+    }
+    EXPECT_GE(count, 1);
+  }
 
   // Simulate for a moment and make sure everything showed up.
+  Simulator<double> simulator(builder.Build());
   simulator.AdvanceTo(0.25);
   while (drake_lcm.HandleSubscriptions(1) > 0) {
     // Loop until we're idle.
