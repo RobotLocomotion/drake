@@ -38,9 +38,6 @@ namespace internal {
 // compatible with msgpack, which wants to be able to unpack into the same
 // structure.
 
-// From https://github.com/mrdoob/three.js/blob/dev/src/constants.js
-enum ThreeSide { kFrontSide = 0, kBackSide = 1, kDoubleSide = 2 };
-
 // TODO(russt): We should expose these options to the user.
 // The documentation of the fields is adapted from
 // https://threejs.org/docs/#api/en/materials/Material and its derived classes.
@@ -74,7 +71,7 @@ struct MaterialData {
 
   // Defines which side of faces will be rendered - front, back or both. Default
   // is kFrontSide. Other options are kBackSide and kDoubleSide.
-  std::optional<ThreeSide> side;
+  std::optional<Meshcat::SideOfFaceToRender> side;
 
   // For PointsMaterial, sets the size of the points. The three.js default
   // is 1.0. Will be capped if it exceeds the hardware dependent parameter
@@ -487,7 +484,7 @@ struct UserInterfaceEvent {
 
 #ifndef DRAKE_DOXYGEN_CXX
 
-MSGPACK_ADD_ENUM(drake::geometry::internal::ThreeSide);
+MSGPACK_ADD_ENUM(drake::geometry::Meshcat::SideOfFaceToRender);
 MSGPACK_ADD_ENUM(drake::geometry::MeshcatAnimation::LoopMode);
 
 // We use the msgpack "non-intrusive" approach for packing types exposed in the
