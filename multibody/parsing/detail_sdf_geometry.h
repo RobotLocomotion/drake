@@ -29,7 +29,8 @@ using ResolveFilename = std::function<std::string (
  file, this method makes a new drake::geometry::Shape object from this
  specification.
  If no recognizable geometry is specified, nullptr is returned. If the geometry
- is recognized, but malformed, an exception is thrown.  */
+ is recognized, but malformed, emits an error. When the error policy is not set
+ to throw it returns std::nullopt. */
 std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
     const SDFormatDiagnostic& diagnostic,
     const sdf::Geometry& sdf_geometry,
@@ -42,6 +43,8 @@ std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
  to an uninterpreted geometry type:
  - `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
  - `sdf::GeometryType::HEIGHTMAP` (`<heightmap/>` SDF tag.)
+ If the geometry is malformed, emits an error. When the error policy is not
+ set to throw it returns an std::nullopt.
 
  <!-- TODO(SeanCurtis-TRI): Ultimately, a module for what we parse should be
   written outside of this _internal_ namespace. This should go there and
@@ -122,9 +125,11 @@ std::optional<std::unique_ptr<geometry::GeometryInstance>>
  </visual>
  @endcode
 
- An instance of geometry::IllustrationProperties will always be returned. If
- there is no material tag, no material property tags, or no successfully
- parsed material property tags, the property set will be empty.  */
+ An instance of geometry::IllustrationProperties will be returned. If there is
+ no material tag, no material property tags, or no successfully parsed material
+ property tags, the property set will be empty. If the material is malformed
+ an error will be emitted. If the error policy is not set to throw, an
+ std::nullopt will be returned. */
 std::optional<geometry::IllustrationProperties>
     MakeVisualPropertiesFromSdfVisual(
         const SDFormatDiagnostic& diagnostic,
@@ -149,10 +154,11 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
    <tag>real_value</tag>
  @endcode
 
- As long as no exceptions are thrown, the function is guaranteed to return
- a valid instance of ProximityProperties. There are not default values for these
- tags (except for friction -- see below); if the tag is missing, the
- corresponding property will be missing from the property set.
+ It returns a valid instance of ProximityProperties. There are not default
+ values for these tags (except for friction -- see below); if the tag is
+ missing, the corresponding property will be missing from the property set.
+ If the collision element is malformed it emits an error. If the error
+ policy is set to not throw an std::nullopt is returned instead.
 
  Mapping from SDF tag to geometry property. See
   @ref YET_TO_BE_WRITTEN_HYDROELASTIC_GEOMETRY_MODULE for details on the
@@ -212,8 +218,8 @@ std::optional<geometry::ProximityProperties>
      </surface>
    </collision>
  ```
- If mu or mu2 (or both) are not found, it returns the default coefficients of
- mu = mu2 = 1, consistent with the SDFormat specification. */
+ If mu or mu2 are not found, an error is emitted. If the error policy is not
+ set to throw an std::nullopt is returned. */
 std::optional<CoulombFriction<double>>
     MakeCoulombFrictionFromSdfCollisionOde(
         const SDFormatDiagnostic& diagnostic,
