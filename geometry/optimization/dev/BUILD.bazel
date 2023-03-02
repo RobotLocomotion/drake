@@ -6,10 +6,6 @@ load(
     "drake_cc_library",
     "drake_cc_package_library",
 )
-load(
-    "@drake//tools/skylark:test_tags.bzl",
-    "mosek_test_tags",
-)
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 exports_files(["cspace_free_polytope.cc"])
@@ -40,23 +36,6 @@ drake_cc_library(
     ],
 )
 
-# test
-drake_cc_googletest(
-    name = "cspace_free_polytope_with_mosek_test",
-    timeout = "long",
-    # This test launches 2 threads to test both serial and parallel code paths
-    # in CspaceFreePolytope.
-    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
-    use_default_main = False,
-    deps = [
-        "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:symbolic_test_util",
-        "//geometry/optimization:c_iris_test_utilities",
-        "//geometry/optimization:cspace_free_polytope",
-        "//solvers:mosek_solver",
-        "//solvers:sos_basis_generator",
-    ],
-)
 
 drake_cc_googletest(
     name = "cspace_free_path_test",
@@ -68,4 +47,5 @@ drake_cc_googletest(
     ],
 )
 
+# test
 add_lint_tests()
