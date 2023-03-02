@@ -300,9 +300,18 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
       SpatialInertia<double>::ThinRodWithMass(-1.23, length, unit_vec),
       "[^]* A thin rod's mass = .* or length = .* "
       "is negative or zero.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::ThinRodWithMass(0, length, unit_vec),
+      "[^]* A thin rod's mass = .* or length = .* "
+      "is negative or zero.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(mass, -4.56, unit_vec),
+      "[^]* A thin rod's mass = .* or length = .* "
+      "is negative or zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::ThinRodWithMass(mass, 0, unit_vec),
       "[^]* A thin rod's mass = .* or length = .* "
       "is negative or zero.");
 
