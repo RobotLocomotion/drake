@@ -17,6 +17,7 @@ def github_archive(
         extra_strip_prefix = "",
         local_repository_override = None,
         mirrors = None,
+        upgrade_advice = None,
         **kwargs):
     """A macro to be called in the WORKSPACE that adds an external from GitHub
     using a workspace rule.
@@ -87,6 +88,11 @@ def github_archive(
             )
         return
 
+    if upgrade_advice != None:
+        upgrade_advice = "\n".join(
+            [line.strip() for line in upgrade_advice.strip().split("\n")],
+        )
+
     # Once we've handled the "local_repository_override" sidestep, we delegate
     # to a rule (not a macro) so that we have more leeway in the actions we can
     # take (i.e., so we can do more than just a simple download-and-extract).
@@ -100,6 +106,7 @@ def github_archive(
         patches = patches,
         extra_strip_prefix = extra_strip_prefix,
         mirrors = mirrors,
+        upgrade_advice = upgrade_advice,
         **kwargs
     )
 
@@ -161,6 +168,8 @@ _github_archive_real = repository_rule(
         "patch_cmds": attr.string_list(
             default = [],
         ),
+        "upgrade_advice": attr.string(
+        ),
     },
 )
 """This is a rule() formulation of the github_archive() macro.  It is identical
@@ -185,6 +194,7 @@ def setup_github_repository(repository_ctx):
         mirrors = repository_ctx.attr.mirrors,
         sha256 = repository_ctx.attr.sha256,
         extra_strip_prefix = repository_ctx.attr.extra_strip_prefix,
+        upgrade_advice = repository_ctx.attr.upgrade_advice,
     )
 
     # Optionally apply source patches, using Bazel's utility helper.  Here we
@@ -225,6 +235,7 @@ def github_download_and_extract(
         output = "",
         sha256 = "0" * 64,
         extra_strip_prefix = "",
+        upgrade_advice = "",
         commit_pin = None):
     """Download an archive of the provided GitHub repository and commit to the
     output path and extract it.
@@ -270,6 +281,7 @@ def github_download_and_extract(
         version_pin = commit_pin,
         sha256 = sha256,
         urls = urls,
+        upgrade_advice = upgrade_advice,
     )
 
 def _sha256(sha256):

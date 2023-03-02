@@ -267,6 +267,7 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     if data["repository_rule_type"] != "github":
         raise RuntimeError(f"Cannot auto-upgrade {workspace_name}")
     repository = data["repository"]
+    upgrade_advice = data["upgrade_advice"]
 
     # Slurp the file we're supposed to modify.
     bzl_filename = f"tools/workspace/{workspace_name}/repository.bzl"
@@ -339,6 +340,12 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     # Copy the downloaded tarball into the repository cache.
     print("Populating repository cache ...")
     subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
+
+    # Check for additional instructions.
+    if len(upgrade_advice):
+        print("\n" + ("*" * 72))
+        print(upgrade_advice)
+        print(("*" * 72) + "\n")
 
     message = f"Upgrade {workspace_name} to latest"
     if _smells_like_a_git_commit(new_commit):
@@ -418,6 +425,9 @@ def main():
              " download new archives for the given externals"
              " and edit their bzl rules to match.")
     args = parser.parse_args()
+
+    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
+        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
 
     if not os.path.exists('WORKSPACE'):
         parser.error("Couldn't find WORKSPACE; this script must be run"
