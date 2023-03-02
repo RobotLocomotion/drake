@@ -3811,22 +3811,6 @@ GTEST_TEST(MultibodyPlantTests, FixedOffsetFrameFunctions) {
   X_WB = X_WWp * X_WpP * X_BP.inverse();
   X_WB_check = plant.EvalBodyPoseInWorld(*context, body_B);
   EXPECT_TRUE(X_WB_check.IsNearlyEqualTo(X_WB, kTolerance));
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Check that misnamed SetPoseInBodyFrame() works like SetPoseInParentFrame().
-  X_PF = RigidTransformd(RotationMatrixd::MakeZRotation(0),
-                         Vector3d(1, 1, 1));
-  frame_F.SetPoseInBodyFrame(context.get(), X_PF);
-
-  // Misnaming means SetPoseInBodyFrame() mismatches CalcPoseInBodyFrame().
-  X_BF_check = frame_F.CalcPoseInBodyFrame(*context.get());
-  EXPECT_FALSE(X_BF_check.IsNearlyEqualTo(X_PF, kTolerance));
-
-  // Misnaming means SetPoseInBodyFrame() matches GetPoseInParentFrame().
-  X_PF_check = frame_F.GetPoseInParentFrame(*context.get());
-  EXPECT_TRUE(X_PF_check.IsNearlyEqualTo(X_PF, kTolerance));
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
 }
 
 GTEST_TEST(MultibodyPlant, CombinePointContactParameters) {

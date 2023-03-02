@@ -2425,12 +2425,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                     {this->all_state_ticket()})
           .get_index();
 
-  this->DeprecateOutputPort(this->DeclareVectorOutputPort(
-      "continuous_state", num_multibody_states(),
-      &MultibodyPlant::CopyMultibodyStateOut, {this->all_state_ticket()}),
-      "Use the port named 'state' instead; the 'continuous_state' alias will "
-      "be removed on or after 2023-03-01.");
-
   // Declare the output port for the poses of all bodies in the world.
   body_poses_port_ =
       this->DeclareAbstractOutputPort(
@@ -2494,11 +2488,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                 instance_name + "_state", instance_num_states,
                 copy_instance_state_out, {this->all_state_ticket()})
             .get_index();
-    this->DeprecateOutputPort(this->DeclareVectorOutputPort(
-        instance_name + "_continuous_state", instance_num_states,
-        copy_instance_state_out, {this->all_state_ticket()}),
-        "Use the port suffixed with '_state' instead; the '_continuous_state' "
-        "alias will be removed on or after 2023-03-01.");
 
     const int instance_num_velocities =  // Might be zero.
         num_velocities(model_instance_index);

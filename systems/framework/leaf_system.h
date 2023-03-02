@@ -546,26 +546,6 @@ class LeafSystem : public System<T> {
   handler. */
   void DeclarePeriodicUnrestrictedUpdateNoHandler(double period_sec,
                                                   double offset_sec = 0);
-
-  DRAKE_DEPRECATED("2023-03-01",
-                   "Use DeclarePeriodicPublishNoHandler() instead")
-  void DeclarePeriodicPublish(double period_sec, double offset_sec = 0) {
-    DeclarePeriodicPublishNoHandler(period_sec, offset_sec);
-  }
-
-  DRAKE_DEPRECATED("2023-03-01",
-                   "Use DeclarePeriodicDiscreteUpdateNoHandler() instead")
-  void DeclarePeriodicDiscreteUpdate(double period_sec, double offset_sec = 0) {
-    DeclarePeriodicDiscreteUpdateNoHandler(period_sec, offset_sec);
-  }
-
-  DRAKE_DEPRECATED("2023-03-01",
-                   "Use DeclarePeriodicUnrestrictedUpdateNoHandler() instead")
-  void DeclarePeriodicUnrestrictedUpdate(double period_sec,
-                                         double offset_sec = 0) {
-    DeclarePeriodicUnrestrictedUpdateNoHandler(period_sec, offset_sec);
-  }
-
   //@}
 
   // =========================================================================
