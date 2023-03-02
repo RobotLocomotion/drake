@@ -208,16 +208,15 @@ class SpatialInertia {
   /// Creates a spatial inertia for a uniform-density thin rod B about its
   /// center of mass Bcm.
   /// @param[in] mass mass of the rod (units of kg).
-  /// @param[in] length length of the rod.
+  /// @param[in] length length of the rod (units of meters).
   /// @param[in] unit_vector unit vector defining the rod's axial direction,
   /// expressed in B.
-  /// @retval M_BBcm_B B's spatial inertia about Bcm, expressed in B.  Since B's
-  /// rotational inertia is axially symmetric, M_BBcm_B = M_BBcm_E, i.e., M_BBcm
-  /// expressed in frame B is equal to M_BBcm expressed in an arbitrary frame E.
+  /// @retval M_BBcm_B B's spatial inertia about Bcm, expressed in B.
   /// @note B's rotational inertia about Bcm is axially symmetric, meaning B has
   /// an equal moment of inertia about any line that both passes through Bcm and
   /// is perpendicular to unit_vector.
   /// @throws std::exception if length is zero or negative.
+  /// @pre ‖unit_vector‖ ≈ 1.
   static SpatialInertia<T> ThinRodWithMass(
       const T& mass, const T& length, const Vector3<T>& unit_vector);
 
