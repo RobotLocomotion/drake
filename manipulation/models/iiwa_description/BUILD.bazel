@@ -4,13 +4,25 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-# This package is public so that other packages can refer to
-# individual files in model from their bazel rules.
-package(
-    default_visibility = ["//visibility:public"],
+package(default_visibility = ["//visibility:public"])
+
+models_filegroup(
+    name = "models",
+    extra_srcs = [
+        "LICENSE.TXT",
+        "iiwa_stack.LICENSE.txt",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
 )
 
 # === test/ ===
@@ -23,13 +35,6 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//multibody/parsing",
-    ],
-)
-
-install_data(
-    extra_prod_models = [
-        "LICENSE.TXT",
-        "iiwa_stack.LICENSE.txt",
     ],
 )
 

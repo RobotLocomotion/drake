@@ -61,7 +61,6 @@ filegroup(
         "//examples/rimless_wheel:models",
         "//examples/scene_graph:models",
         "//examples/simple_gripper:simple_gripper_models",
-        "//examples/zmp:models",
         "//manipulation/models/allegro_hand_description:models",
         "//manipulation/models/franka_description:models",
         "//manipulation/models/iiwa_description:models",

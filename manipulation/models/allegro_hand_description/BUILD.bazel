@@ -4,11 +4,30 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-package(
-    default_visibility = [":__subpackages__"],
+package(default_visibility = [":__subpackages__"])
+
+models_filegroup(
+    name = "models",
+    extra_srcs = [
+        "LICENSE.TXT",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
+)
+
+# TODO(jwnimmer-tri) Fix Anzu to not need this.
+alias(
+    name = "prod_models",
+    actual = ":models",
 )
 
 # === test/ ===
@@ -20,12 +39,6 @@ drake_cc_googletest(
         "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
-    ],
-)
-
-install_data(
-    extra_prod_models = [
-        "LICENSE.TXT",
     ],
 )
 

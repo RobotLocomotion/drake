@@ -4,6 +4,7 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
@@ -12,11 +13,7 @@ load(
     "franka_description_mesh_files",
 )
 
-# This package is public so that other packages can refer to
-# individual files in model from their bazel rules.
-package(
-    default_visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:public"])
 
 _FRANKA_DESCRIPTION_MESHES = forward_files(
     srcs = [
@@ -28,12 +25,21 @@ _FRANKA_DESCRIPTION_MESHES = forward_files(
     visibility = ["//visibility:private"],
 )
 
-install_data(
-    extra_prod_models = _FRANKA_DESCRIPTION_MESHES + [
+models_filegroup(
+    name = "models",
+    extra_srcs = _FRANKA_DESCRIPTION_MESHES + [
         "LICENSE.TXT",
         "README.md",
     ],
+    visibility = ["//visibility:public"],
 )
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
+)
+
 # === test/ ===
 
 drake_cc_googletest(

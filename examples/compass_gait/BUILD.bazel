@@ -6,6 +6,7 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
@@ -14,6 +15,17 @@ load(
 )
 
 package(default_visibility = ["//visibility:private"])
+
+models_filegroup(
+    name = "models",
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
+)
 
 drake_cc_vector_gen_library(
     name = "compass_gait_vector_types",
@@ -86,7 +98,5 @@ drake_cc_googletest(
         ":compass_gait_geometry",
     ],
 )
-
-install_data()
 
 add_lint_tests()

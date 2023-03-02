@@ -308,7 +308,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "accelerometer_test",
-    data = ["//examples/pendulum:prod_models"],
+    data = ["//examples/pendulum:models"],
     deps = [
         ":accelerometer",
         "//common/test_utilities:eigen_matrix_compare",
@@ -370,7 +370,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "gyroscope_test",
-    data = ["//examples/pendulum:prod_models"],
+    data = ["//examples/pendulum:models"],
     deps = [
         ":gyroscope",
         "//common/test_utilities:eigen_matrix_compare",

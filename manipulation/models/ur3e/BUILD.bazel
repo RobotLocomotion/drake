@@ -4,31 +4,14 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load("//tools/workspace/models_internal:files.bzl", "ur3e_mesh_files")
 
-# This package is public so that other packages can refer to
-# individual files in these models from their bazel rules.
-package(
-    default_visibility = ["//visibility:public"],
-)
-
-# === test/ ===
-
-drake_cc_googletest(
-    name = "parse_test",
-    srcs = ["test/parse_test.cc"],
-    data = [
-        ":models",
-    ],
-    deps = [
-        "//common:find_resource",
-        "//multibody/parsing",
-    ],
-)
+package(default_visibility = ["//visibility:public"])
 
 xacro_file(
     name = "ur3e_spheres_collision.urdf",
@@ -55,10 +38,30 @@ _UR3E_MESHES = forward_files(
     visibility = ["//visibility:private"],
 )
 
-install_data(
-    extra_prod_models = _UR3E_MESHES + [
+models_filegroup(
+    name = "models",
+    extra_srcs = _UR3E_MESHES + [
         "ur3e_spheres_collision.urdf",
         "ur3e_cylinders_collision.urdf",
+    ],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+)
+
+# === test/ ===
+
+drake_cc_googletest(
+    name = "parse_test",
+    srcs = ["test/parse_test.cc"],
+    data = [
+        ":models",
+    ],
+    deps = [
+        "//common:find_resource",
+        "//multibody/parsing",
     ],
 )
 

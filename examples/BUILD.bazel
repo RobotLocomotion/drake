@@ -34,7 +34,7 @@ drake_cc_binary(
     ],
 )
 
-# The :prod_models in these packages are installed as part of the Drake release
+# The :models in these packages are installed as part of the Drake release
 # process, and loaded into drake_visualizer's model database by default.
 INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
@@ -49,12 +49,11 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/pr2",
     "//examples/quadrotor",
     "//examples/rimless_wheel",
-    "//examples/zmp",
 ]
 
 filegroup(
-    name = "prod_models",
-    data = [package + ":prod_models" for package in INSTALLED_MODEL_PACKAGES],
+    name = "models",
+    data = [package + ":models" for package in INSTALLED_MODEL_PACKAGES],
     visibility = ["//visibility:public"],
 )
 

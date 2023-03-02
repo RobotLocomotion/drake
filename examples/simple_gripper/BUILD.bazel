@@ -7,7 +7,6 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 # Place model files for this example within their own group.
