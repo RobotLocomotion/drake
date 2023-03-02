@@ -34,6 +34,7 @@ PYBIND11_MODULE(parsing, m) {
     py::class_<Class> cls(m, "PackageMap", cls_doc.doc);
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
+        .def(py::init<const Class&>(), py::arg("other"), "Copy constructor")
         .def("Add", &Class::Add, py::arg("package_name"),
             py::arg("package_path"), cls_doc.Add.doc)
         .def("AddMap", &Class::AddMap, py::arg("other_map"), cls_doc.AddMap.doc)
@@ -62,6 +63,7 @@ PYBIND11_MODULE(parsing, m) {
         .def("PopulateFromRosPackagePath", &Class::PopulateFromRosPackagePath,
             cls_doc.PopulateFromRosPackagePath.doc)
         .def_static("MakeEmpty", &Class::MakeEmpty, cls_doc.MakeEmpty.doc);
+    DefCopyAndDeepCopy(&cls);
   }
 
   // Parser

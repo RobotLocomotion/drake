@@ -3,6 +3,7 @@ import textwrap
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Meshcat
 import pydrake.visualization as mut
 
@@ -149,3 +150,9 @@ class TestModelVisualizer(unittest.TestCase):
         positions = [1, 0, 0, 0, 0, 0, 0] * 2  # Model is just doubled.
         dut.Finalize(position=positions)
         dut.Run(position=positions, loop_once=True)
+
+    def test_deprecated_run_with_reload(self):
+        dut = mut.ModelVisualizer()
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        with catch_drake_warnings(expected_count=1):
+            dut.RunWithReload(loop_once=True)
