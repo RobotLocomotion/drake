@@ -110,6 +110,10 @@ class CspaceFreePolytopeTester {
     return cspace_free_polytope_->plane_geometries_;
   }
 
+  [[nodiscard]] const symbolic::Variables& get_s_set() const {
+    return cspace_free_polytope_->get_s_set();
+  }
+
   template <typename T>
   [[nodiscard]] VectorX<symbolic::Polynomial> CalcDminusCs(
       const Eigen::Ref<const MatrixX<T>>& C,

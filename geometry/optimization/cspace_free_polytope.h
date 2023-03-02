@@ -452,6 +452,14 @@ class CspaceFreePolytope {
       const SeparationCertificateProgram& certificate_program,
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
+ protected:
+  [[nodiscard]] const symbolic::Variables& get_s_set() const { return s_set_; }
+
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries>&
+  get_mutable_plane_geometries() {
+    return plane_geometries_;
+  }
+
  private:
   // Forward declaration the tester class. This tester class will expose the
   // private members of CspaceFreePolytope for unit test.
