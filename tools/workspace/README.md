@@ -52,7 +52,7 @@ so that you can easily refer back to it as you proceed.
 
 ```
   bazel build //tools/workspace:new_release
-  bazel-bin/tools/workspace/new_release
+  bazel run //tools/workspace:new_release
 ```
 
 For each external in the report, add a commit that upgrades it, as follows:
@@ -60,16 +60,15 @@ For each external in the report, add a commit that upgrades it, as follows:
 Run the script to perform one upgrade (for some external "foo"):
 
 ```
-  bazel-bin/tools/workspace/new_release --lint --commit foo
+  bazel run //tools/workspace:new_release -- --lint --commit foo
 ```
 
 If the automated update doesn't succeed, then you'll need to make the edits
 manually.  Ask for help in drake developers slack channel for ``#build``.
 
-If the automated update succeeded, then inspect the modified ``repository.bzl``
-in your editor.  Some diffs will have an instructive comment nearby, e.g.,
-"If you change this commit, then you need to do X, Y, Z afterward."
-Follow any advice that you find.
+If the automated update succeeded, check the output of ``new_release`` for any
+additional steps that need to be manually performed to complete the upgrade.
+Follow any advice that is given.
 
 If you didn't use ``--lint`` earlier, or need to re-test, run
 ``bazel test --config lint //...`` as a sanity check of the changes.
@@ -83,11 +82,12 @@ list several externals to try to update at once, although this will complicate
 making changes to those commits if needed.
 
 Each external being upgraded should have exactly one commit that does the
-upgrade, and each commit should only impact exactly one external.  If we
+upgrade, and each commit should either a) only impact exactly one external, or
+b) impact exactly those externals of a cohort which need to be upgraded.  If we
 find any problem with an upgrade, we need to be able to revert the commit
 for just that one external upgrade, leaving the other upgrades intact.
-(However, if multiple externals need to be upgraded together due to
-interdependency, a single commit should be used in such cases.)
+The ``new_release`` will automatically upgrade all externals of a cohort in a
+single operation.
 
 Once all upgrades are ready, open a Drake pull request and label it
 ``status: commits are properly curated``.  Open the Reviewable page and
