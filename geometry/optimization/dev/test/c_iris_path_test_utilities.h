@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+#include <unordered_map>
+#include <vector>
+
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
 namespace drake {
@@ -30,9 +34,9 @@ class CspaceFreePathTester {
     return cspace_free_path_->mu_;
   }
 
-  [[nodiscard]] const std::unordered_map<symbolic::Variable,
-                                         symbolic::Polynomial>&
-  [[nodiscard]] const get_path() const {
+  [[nodiscard]] const std::unordered_map<
+      symbolic::Variable, symbolic::Polynomial>&
+      get_path() const {
     return cspace_free_path_->path_;
   }
 
@@ -52,4 +56,3 @@ class CspaceFreePathTester {
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
-

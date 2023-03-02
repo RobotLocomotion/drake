@@ -5,8 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
-#include "drake/geometry/geometry_ids.h"
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
+#include "drake/geometry/optimization/dev/test/c_iris_path_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/solvers/solve.h"
 
@@ -44,7 +43,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
       [&polytope_tester](
           int plane_index) -> std::optional<PlaneSeparatesGeometries> {
     for (const auto& plane_geometry :
-         polytope_tester.get_mutable_plane_geometries()) {
+         polytope_tester.plane_geometries()) {
       if (plane_geometry.plane_index == plane_index) {
         return std::optional{plane_geometry};
       }

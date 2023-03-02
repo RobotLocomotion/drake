@@ -30,6 +30,16 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "c_iris_path_test_utilities",
+    testonly = 1,
+    hdrs = ["test/c_iris_path_test_utilities.h"],
+    deps = [
+        ":cspace_free_path",
+        "@gtest//:without_main",
+    ],
+)
+
 # test
 drake_cc_googletest(
     name = "cspace_free_polytope_with_mosek_test",
@@ -45,6 +55,16 @@ drake_cc_googletest(
         "//geometry/optimization:cspace_free_polytope",
         "//solvers:mosek_solver",
         "//solvers:sos_basis_generator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_path_test",
+    deps = [
+        ":c_iris_path_test_utilities",
+        "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:c_iris_test_utilities",
+        "//geometry/optimization:cspace_free_polytope",
     ],
 )
 
