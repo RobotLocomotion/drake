@@ -105,10 +105,6 @@ struct Impl {
     using Base::get_mutable_forced_unrestricted_update_events;
     using Base::MakeWitnessFunction;
 
-    // Deprecated; remove 2023-03-01
-    using Base::DeclarePeriodicDiscreteUpdate;
-    using Base::DeclarePeriodicPublish;
-
     // Because `LeafSystem<T>::DoPublish` is protected, and we had to override
     // this method in `PyLeafSystem`, expose the method here for direct(-ish)
     // access.
@@ -559,31 +555,6 @@ Note: The above is for the C++ documentation. For Python, use
           return self->Clone();
         });
 
-// Deprecated; remove 2023-03-01
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    system_cls  // BR
-        .def("CalcDiscreteVariableUpdates",
-            WrapDeprecated(
-                doc.System.CalcDiscreteVariableUpdates.doc_deprecated_2args,
-                overload_cast_explicit<void, const Context<T>&,
-                    DiscreteValues<T>*>(
-                    &System<T>::CalcDiscreteVariableUpdates)),
-            py::arg("context"), py::arg("discrete_state"),
-            doc.System.CalcDiscreteVariableUpdates.doc_deprecated_2args)
-        .def("CalcUnrestrictedUpdate",
-            WrapDeprecated(doc.System.CalcUnrestrictedUpdate.doc_deprecated,
-                overload_cast_explicit<void, const Context<T>&, State<T>*>(
-                    &System<T>::CalcUnrestrictedUpdate)),
-            py::arg("context"), py::arg("state"),
-            doc.System.CalcUnrestrictedUpdate.doc_deprecated)
-        .def("Publish",
-            WrapDeprecated(doc.System.Publish.doc_deprecated,
-                overload_cast_explicit<void, const Context<T>&>(
-                    &System<T>::Publish)),
-            doc.System.Publish.doc_deprecated);
-#pragma GCC diagnostic pop
-
     auto def_to_scalar_type = [&system_cls, doc](auto dummy) {
       using U = decltype(dummy);
       AddTemplateMethod(
@@ -981,23 +952,6 @@ Note: The above is for the C++ documentation. For Python, use
             py::overload_cast<const AbstractValue&>(
                 &LeafSystemPublic::DeclareAbstractState),
             py::arg("model_value"), doc.LeafSystem.DeclareAbstractState.doc);
-
-// Deprecated; remove 2023-03-01
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    leaf_system_cls  // BR
-        .def("DeclarePeriodicPublish",
-            WrapDeprecated(doc.LeafSystem.DeclarePeriodicPublish.doc_deprecated,
-                &LeafSystemPublic::DeclarePeriodicPublish),
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicPublish.doc_deprecated)
-        .def("DeclarePeriodicDiscreteUpdate",
-            WrapDeprecated(
-                doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc_deprecated,
-                &LeafSystemPublic::DeclarePeriodicDiscreteUpdate),
-            py::arg("period_sec"), py::arg("offset_sec") = 0.,
-            doc.LeafSystem.DeclarePeriodicDiscreteUpdate.doc_deprecated);
-#pragma GCC diagnostic pop
 
     DefineTemplateClassWithDefault<Diagram<T>, PyDiagram, System<T>>(
         m, "Diagram", GetPyParam<T>(), doc.Diagram.doc)
