@@ -5,6 +5,7 @@ load(
     "drake_cc_googletest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 
 package(default_visibility = ["//visibility:public"])
@@ -31,6 +32,18 @@ _OBJS = [x[:-3] + "obj" for x in _STLS]
     for stl, obj in zip(_STLS, _OBJS)
 ]
 
+models_filegroup(
+    name = "models",
+    extra_srcs = _OBJS + [
+        "README.md",
+    ],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -38,12 +51,6 @@ drake_cc_googletest(
     data = [":models"],
     deps = [
         "//multibody/parsing",
-    ],
-)
-
-install_data(
-    extra_prod_models = _OBJS + [
-        "README.md",
     ],
 )
 

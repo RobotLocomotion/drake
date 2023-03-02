@@ -4,6 +4,7 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
@@ -12,15 +13,28 @@ load(
     "jaco_description_mesh_files",
 )
 
-package(
-    default_visibility = [":__subpackages__"],
-)
+package(default_visibility = [":__subpackages__"])
 
 _JACO_DESCRIPTION_MESHES = forward_files(
     srcs = ["@models_internal//:" + x for x in jaco_description_mesh_files()],
     dest_prefix = "",
     strip_prefix = "@models_internal//:jaco_description/",
     visibility = ["//visibility:private"],
+)
+
+models_filegroup(
+    name = "models",
+    extra_srcs = _JACO_DESCRIPTION_MESHES + [
+        "LICENSE.TXT",
+        "README.md",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
 )
 
 # === test/ ===
@@ -33,13 +47,6 @@ drake_cc_googletest(
         "//common:find_resource",
         "//multibody/parsing",
         "//multibody/plant",
-    ],
-)
-
-install_data(
-    extra_prod_models = _JACO_DESCRIPTION_MESHES + [
-        "LICENSE.TXT",
-        "README.md",
     ],
 )
 
