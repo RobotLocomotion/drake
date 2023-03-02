@@ -195,7 +195,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "zero_force_driver_functions_test",
     data = [
-        "//manipulation/models/wsg_50_description:prod_models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     deps = [
         ":zero_force_driver_functions",

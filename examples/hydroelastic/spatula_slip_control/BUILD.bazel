@@ -3,6 +3,7 @@
 
 load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("@drake//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load(
@@ -18,9 +19,17 @@ _WSG_50_HYDRO_BUBBLE_MESHES = forward_files(
     visibility = ["//visibility:private"],
 )
 
+models_filegroup(
+    name = "models",
+    extra_srcs = _WSG_50_HYDRO_BUBBLE_MESHES,
+    glob_exclude = ["images/**/*"],
+    visibility = ["//visibility:public"],
+)
+
 install_data(
-    extra_exclude_patterns = ["images/**/*"],
-    extra_prod_models = _WSG_50_HYDRO_BUBBLE_MESHES,
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_binary(

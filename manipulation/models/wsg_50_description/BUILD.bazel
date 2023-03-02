@@ -3,6 +3,7 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
@@ -11,9 +12,7 @@ load(
     "wsg_50_description_mesh_files",
 )
 
-package(
-    default_visibility = [":__subpackages__"],
-)
+package(default_visibility = [":__subpackages__"])
 
 _WSG_50_DESCRIPTION_MESHES = forward_files(
     srcs = [
@@ -25,7 +24,17 @@ _WSG_50_DESCRIPTION_MESHES = forward_files(
     visibility = ["//visibility:private"],
 )
 
-install_data(extra_prod_models = _WSG_50_DESCRIPTION_MESHES)
+models_filegroup(
+    name = "models",
+    extra_srcs = _WSG_50_DESCRIPTION_MESHES,
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
+)
 
 # === test/ ===
 

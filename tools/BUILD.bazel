@@ -29,7 +29,7 @@ py_binary(
     name = "drake_visualizer_py",
     srcs = [_VISUALIZER_MAIN],
     data = [
-        "//examples:prod_models",
+        "//examples:models",
         "@drake_visualizer",
     ] if _DRAKE_VISUALIZER_ENABLED else [],
     main = _VISUALIZER_MAIN,
