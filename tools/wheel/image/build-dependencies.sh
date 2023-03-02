@@ -21,4 +21,7 @@ if [[ "$(uname)" == "Linux" ]]; then
     mkdir -p /opt/drake-dependencies/licenses/mumps
     cp -t /opt/drake-dependencies/licenses/mumps \
         /usr/share/doc/libmumps-seq-dev/copyright
+    mkdir -p /opt/drake-dependencies/licenses/gcc
+    cp -t /opt/drake-dependencies/licenses/gcc \
+        /usr/share/doc/libgomp1/copyright
 fi

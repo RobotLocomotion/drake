@@ -25,6 +25,7 @@ build --test_env=PYTHONNOUSERSITE=1
 build:omp --copt=-DEIGEN_DONT_PARALLELIZE
 build:omp --copt=-fopenmp
 build:omp --linkopt=-fopenmp
+build:packaging --config=omp
 build:everything --config=omp
 
 # -- Options for explicitly using Clang.
