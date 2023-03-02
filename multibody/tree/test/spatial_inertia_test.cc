@@ -287,7 +287,7 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
   EXPECT_TRUE(CompareMatrices(
       M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
 
-  // Test a thin rod B with a different unit vector direction.
+  // Test a thin rod B with a different and less simple unit vector direction.
   unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
   G_BBcm_B = UnitInertia<double>::ThinRod(length, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBcm_B);
