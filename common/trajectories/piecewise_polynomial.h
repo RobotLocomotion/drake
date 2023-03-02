@@ -426,16 +426,6 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
       const Eigen::Ref<const MatrixX<T>>& samples,
       bool periodic_end_condition = false);
 
-  DRAKE_DEPRECATED("2023-03-01",
-                   "Please use CubicWithContinuousSecondDerivatives instead.")
-  static PiecewisePolynomial<T> Cubic(
-      const Eigen::Ref<const VectorX<T>>& breaks,
-      const Eigen::Ref<const MatrixX<T>>& samples,
-      bool periodic_end_condition = false) {
-    return CubicWithContinuousSecondDerivatives(breaks, samples,
-        periodic_end_condition);
-  }
-
   /**
    * Constructs a polynomial with a *single segment* of the lowest possible
    * degree that passes through all of the sample points.  See "polynomial
