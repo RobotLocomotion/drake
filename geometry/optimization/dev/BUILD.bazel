@@ -36,7 +36,6 @@ drake_cc_library(
     ],
 )
 
-
 drake_cc_googletest(
     name = "cspace_free_path_test",
     deps = [
