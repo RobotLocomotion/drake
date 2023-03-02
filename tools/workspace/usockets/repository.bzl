@@ -11,8 +11,10 @@ def usockets_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "uNetworking/uSockets",
+        # *** BEGIN new_release notice
         # NOTE: Do not upgrade without testing the tutorials on Deepnote.  See
         # Drake #18289.  v0.8.5 was tested and showed the same symptoms.
+        # *** END new_release notice
         commit = "v0.8.1",
         sha256 = "3b33b5924a92577854e2326b3e2d393849ec00beb865a1271bf24c0f210cc1d6",  # noqa
         build_file = ":package.BUILD.bazel",

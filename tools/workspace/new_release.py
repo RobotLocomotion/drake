@@ -230,6 +230,30 @@ def _check_for_upgrades(gh, args, metadata):
                 workspace_name, old_commit))
 
 
+def _extract_notices(lines):
+    """Look for new_release notices and extract their content.
+    """
+    notices = []
+    in_notice = False
+
+    notice_start_re = re.compile(r'\s*#\s*[*]*\s*BEGIN new_release notice')
+    notice_end_re = re.compile(r'\s*#\s*[*]*\s*END new_release notice')
+
+    for line in lines:
+        if in_notice:
+            if not line.strip().startswith('#') or notice_end_re.match(line):
+                in_notice = False
+                notices.append('\n'.join(notice_lines))
+            else:
+                # Remove whitespace and leading '#'.
+                notice_lines.append(line.strip()[1:].strip())
+        elif notice_start_re.match(line):
+            in_notice = True
+            notice_lines = []
+
+    return notices
+
+
 def _is_modified(repo, path):
     """Returns true iff the given `path` is modified in the working tree of the
     given `git.Repo`, `repo`.
@@ -340,6 +364,12 @@ def _do_upgrade(temp_dir, gh, local_drake_checkout, workspace_name, metadata):
     print("Populating repository cache ...")
     subprocess.check_call(["bazel", "fetch", "//...", f"--distdir={temp_dir}"])
 
+    # Check for additional instructions.
+    for notice in _extract_notices(lines):
+        print("\n" + ("*" * 72))
+        print(notice)
+        print(("*" * 72) + "\n")
+
     message = f"Upgrade {workspace_name} to latest"
     if _smells_like_a_git_commit(new_commit):
         message += " commit"
@@ -418,6 +448,9 @@ def main():
              " download new archives for the given externals"
              " and edit their bzl rules to match.")
     args = parser.parse_args()
+
+    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
+        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
 
     if not os.path.exists('WORKSPACE'):
         parser.error("Couldn't find WORKSPACE; this script must be run"
