@@ -29,6 +29,7 @@ _HDRS = glob([
     "include/curl/*.h",
     "lib/*.h",
     "lib/vauth/*.h",
+    "lib/vquic/*.h",
     "lib/vssh/*.h",
     "lib/vtls/*.h",
 ])
@@ -44,6 +45,8 @@ _INCLUDES = [
 _SRCS = [
     "lib/altsvc.c",
     "lib/base64.c",
+    "lib/cf-http.c",
+    "lib/cf-socket.c",
     "lib/cfilters.c",
     "lib/conncache.c",
     "lib/connect.c",
@@ -51,6 +54,7 @@ _SRCS = [
     "lib/cookie.c",
     "lib/curl_addrinfo.c",
     "lib/curl_get_line.c",
+    "lib/curl_log.c",
     "lib/curl_memrchr.c",
     "lib/doh.c",
     "lib/dynbuf.c",
