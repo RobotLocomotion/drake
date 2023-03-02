@@ -108,6 +108,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_make_model_name",
         ":detail_parsing_workspace",
         "//geometry/proximity:obj_to_surface_mesh",
         "//multibody/plant",
@@ -178,6 +179,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_make_model_name",
         ":detail_misc",
         ":detail_parsing_workspace",
         ":scoped_names",
@@ -193,6 +195,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_make_model_name",
         ":detail_misc",
         ":detail_parsing_workspace",
         "//multibody/plant",
@@ -208,6 +211,7 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_make_model_name",
         ":detail_misc",
         ":detail_parsing_workspace",
         ":model_directives",
@@ -216,6 +220,17 @@ drake_cc_library(
         "//common/yaml",
         "//multibody/plant",
         "@fmt",
+    ],
+)
+
+drake_cc_library(
+    name = "detail_make_model_name",
+    srcs = ["detail_make_model_name.cc"],
+    hdrs = ["detail_make_model_name.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        ":detail_parsing_workspace",
     ],
 )
 
@@ -472,6 +487,13 @@ drake_cc_googletest(
     deps = [
         ":detail_select_parser",
         ":diagnostic_policy_test_base",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_make_model_name_test",
+    deps = [
+        ":detail_make_model_name",
     ],
 )
 

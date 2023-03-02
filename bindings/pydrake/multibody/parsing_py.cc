@@ -109,7 +109,11 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
             py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("SetStrictParsing", &Class::SetStrictParsing,
-            cls_doc.SetStrictParsing.doc);
+            cls_doc.SetStrictParsing.doc)
+        .def("SetAutoRenaming", &Class::SetAutoRenaming, py::arg("value"),
+            cls_doc.SetAutoRenaming.doc)
+        .def("GetAutoRenaming", &Class::GetAutoRenaming,
+            cls_doc.GetAutoRenaming.doc);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
