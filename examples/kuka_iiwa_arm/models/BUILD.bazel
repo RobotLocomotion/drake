@@ -1,10 +1,18 @@
 # -*- python -*-
 
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:public"])
 
-install_data()
+models_filegroup(
+    name = "models",
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+)
 
 add_lint_tests()

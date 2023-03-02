@@ -13,9 +13,21 @@ load(
     "drake_py_library",
 )
 load("@drake//tools/skylark:test_tags.bzl", "vtk_test_tags")
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:test_tags.bzl", "vtk_test_tags")
+
+models_filegroup(
+    name = "models",
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
+)
 
 drake_cc_library(
     name = "manipulation_station",
@@ -238,7 +250,5 @@ drake_py_binary(
         "//bindings/pydrake",
     ],
 )
-
-install_data()
 
 add_lint_tests()
