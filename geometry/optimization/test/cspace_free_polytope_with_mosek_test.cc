@@ -61,7 +61,7 @@ void CheckPositivePolynomialBySamples(
           .all());
 }
 
-// Solve a sos program to check if a polynomial is sos.
+// Solve an sos program to check if a polynomial is sos.
 // @param tol We seek another polynomial p2 being sos, and the difference
 // between p1's coefficient and p2's coefficient is less than tol.
 bool IsPolynomialSos(const symbolic::Polynomial& p, double tol) {
@@ -131,8 +131,13 @@ void CheckLagrangians(const VectorX<symbolic::Polynomial>& lagrangians,
   }
 }
 
-// @param a Maps the plane index to the separating plane parameter {x| aᵀx+b=0}
-// @param b Maps the plane index to the separating plane parameter {x| aᵀx+b=0}
+// @param s_samples Each row of s_samples is a sampled configuration s.
+// @param C The c-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}.
+// @param d The c-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}.
+// @param a Maps the plane index to the separating plane parameter `a` in {x|
+// aᵀx+b=0}
+// @param b Maps the plane index to the separating plane parameter `b` in {x|
+// aᵀx+b=0}
 void CheckSeparationBySamples(
     const CspaceFreePolytopeTester& tester,
     const systems::Diagram<double>& diagram,
@@ -206,7 +211,7 @@ void CheckSosLagrangians(
 
 // Check if rationals are all positive in the C-space polytope. Note that for
 // some reason Mosek doesn't solve to a very high precision (the constraint
-// violation can be in the order of 1E-3, even if  Mosek reports success), so we
+// violation can be in the order of 1E-3, even if Mosek reports success), so we
 // could use a pretty large tolerance `tol`.
 void CheckRationalsPositiveInCspacePolytope(
     const std::vector<symbolic::RationalFunction>& rationals,
@@ -245,15 +250,15 @@ void TestConstructPlaneSearchProgram(
       &plant, &scene_graph, SeparatingPlaneOrder::kAffine, q_star, options);
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off
-  C << 1, 1, 0,
-       -1, -1, 0,
-       -1, 0, 1,
-       1, 0, -1,
-       0, 1, 1,
-       0, -1, -1,
-       1, 0, 1,
-       1, 1, -1,
-       1, -1, 1;
+  C <<  1,  1,  0,
+       -1, -1,  0,
+       -1,  0,  1,
+        1,  0, -1,
+        0,  1,  1,
+        0, -1, -1,
+        1,  0,  1,
+        1,  1, -1,
+        1, -1,  1;
   // clang-format on
   Eigen::Matrix<double, 9, 1> d;
   d << 0.1, 0.2, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.2;
@@ -333,16 +338,16 @@ void TestConstructPlaneSearchProgram(
 
   Eigen::Matrix<double, 10, 3> s_samples;
   // clang-format off
-    s_samples << 1, 2, -1,
-               -0.5, 0.3, 0.2,
-               0.2, 0.1, 0.4,
-               0.5, -1.2, 0.3,
-               0.2, 0.5, -0.4,
-               -0.3, 1.5, 2,
-               0.5, 0.2, 1,
-               -0.4, 0.5, 1,
-               0, 0, 0,
-               0.2, -1.5, 1;
+  s_samples <<   1,    2,   -1,
+              -0.5,  0.3,  0.2,
+               0.2,  0.1,  0.4,
+               0.5, -1.2,  0.3,
+               0.2,  0.5, -0.4,
+              -0.3,  1.5,    2,
+               0.5,  0.2,    1,
+              -0.4,  0.5,    1,
+                 0,    0,    0,
+               0.2, -1.5,    1;
   // clang-format on
 
   CheckSeparationBySamples(tester, diagram, s_samples, C, d,
@@ -787,7 +792,7 @@ TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
                               2E-2);
   }
 
-  // Now test the public InitializePolytopeSearchProgram function
+  // Now test the public InitializePolytopeSearchProgram function.
   // First find the separation certificate with a fixed C-space polytope using
   // the public FindSeparationCertificateGivenPolytope function.
   std::unordered_map<SortedPair<geometry::GeometryId>,
