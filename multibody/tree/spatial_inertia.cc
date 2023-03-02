@@ -152,17 +152,20 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
   // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
   using std::abs;
   constexpr double kTolerance = 1E-14;
-  if (abs(unit_vector.norm() - 1) > kTolerance) {
+  const T unit_vector_norm = unit_vector.norm();
+  if (abs(unit_vector_norm - 1) > kTolerance) {
     throw std::logic_error(
         fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
                     __func__, fmt_eigen(unit_vector.transpose())));
   }
 
-  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
-  // UnitInertia::ThinRod() allows for a near zero-vector due to code in
-  // UnitInertia::AxiallySymmetric() which normalizes unit_vector before use.
+  // Although a check is made that ‖unit_vector‖ ≈ 1, we normalize regardless.
+  // Note: UnitInertia::ThinRod() calls UnitInertia::AxiallySymmetric() which
+  // also normalizes unit_vector before use.
   // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
-  const UnitInertia<T> G_BBcm_B = UnitInertia<T>::ThinRod(length, unit_vector);
+  const Vector3<T> unit_vector_normalized = unit_vector / unit_vector_norm;
+  const UnitInertia<T> G_BBcm_B =
+      UnitInertia<T>::ThinRod(length, unit_vector_normalized);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBcm_B);
 }

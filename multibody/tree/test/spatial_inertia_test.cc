@@ -282,21 +282,20 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
   SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBcm_B);
   SpatialInertia<double> M =
       SpatialInertia<double>::ThinRodWithMass(mass, length, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  // Use an empirical tolerance of two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(
+      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
 
   // Test a thin rod B with a different unit vector direction.
   unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
   G_BBcm_B = UnitInertia<double>::ThinRod(length, unit_vec);
   M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBcm_B);
   M = SpatialInertia<double>::ThinRodWithMass(mass, length, unit_vec);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(
+      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
 
   // Ensure a negative or zero mass or length throws an exception.
-  // There is not an exhaustive test of each parameter being zero or negative.
-  // Instead, each parameter is tested with a single bad value, which is only
-  // a partial test of the full domain of invalid values.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(-1.23, length, unit_vec),
       "[^]* A thin rod's mass = .* or length = .* "
