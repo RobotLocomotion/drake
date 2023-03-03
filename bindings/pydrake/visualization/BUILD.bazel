@@ -147,10 +147,14 @@ drake_py_unittest(
     name = "model_visualizer_test",
     data = [
         ":model_visualizer",
+        "//geometry:meshcat_websocket_client",
         "//manipulation/util:test_models",
         "//multibody/benchmarks/acrobot:models",
     ],
-    deps = [":model_visualizer"],
+    deps = [
+        ":model_visualizer",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
+    ],
 )
 
 drake_py_unittest(
