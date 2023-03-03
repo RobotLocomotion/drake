@@ -90,7 +90,7 @@ class KukaIiwaArmTests : public ::testing::Test {
     plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
     // Load robot model from files.
-    const std::vector<ModelInstanceIndex> models = SetUpArmModel(1, &plant_);
+    const std::vector<ModelInstanceIndex> models = SetUpArmModel(&plant_);
     plant_.Finalize();
 
     // The model has a single coupler constraint.
@@ -112,9 +112,8 @@ class KukaIiwaArmTests : public ::testing::Test {
   // Sets up model of the Kuka iiwa arm with Schunk gripper. The model includes
   // reflected inertias. The gripper is modeled with a coupler constraint.
   std::vector<ModelInstanceIndex> SetUpArmModel(
-      int robot_number, MultibodyPlant<double>* plant) const {
-    std::vector<ModelInstanceIndex> models =
-        LoadIiwaWithGripper(robot_number, plant);
+      MultibodyPlant<double>* plant) const {
+    std::vector<ModelInstanceIndex> models = LoadIiwaWithGripper(plant);
     AddInReflectedInertia(plant, models, kRotorInertias, kGearRatios);
 
     // Constrain the gripper fingers to be coupled.
@@ -252,7 +251,7 @@ class KukaIiwaArmTests : public ::testing::Test {
 
  private:
   std::vector<ModelInstanceIndex> LoadIiwaWithGripper(
-      int robot_number, MultibodyPlant<double>* plant) const {
+      MultibodyPlant<double>* plant) const {
     DRAKE_DEMAND(plant != nullptr);
     const char kArmFilePath[] =
         "drake/manipulation/models/iiwa_description/urdf/"
@@ -262,14 +261,13 @@ class KukaIiwaArmTests : public ::testing::Test {
         "drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50.sdf";
 
     Parser parser(plant);
+    parser.SetAutoRenaming(true);
     ModelInstanceIndex arm_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kArmFilePath),
-                                "robot_" + std::to_string(robot_number));
+        parser.AddModels(FindResourceOrThrow(kArmFilePath)).at(0);
 
     // Add the gripper.
     ModelInstanceIndex gripper_model =
-        parser.AddModelFromFile(FindResourceOrThrow(kWsg50FilePath),
-                                "gripper_" + std::to_string(robot_number));
+        parser.AddModels(FindResourceOrThrow(kWsg50FilePath)).at(0);
 
     const auto& base_body = plant->GetBodyByName("base", arm_model);
     const auto& end_effector = plant->GetBodyByName("iiwa_link_7", arm_model);
@@ -540,8 +538,8 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
   plant_.set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
   // Load two robot models.
-  std::vector<ModelInstanceIndex> arm_gripper1 = SetUpArmModel(1, &plant_);
-  std::vector<ModelInstanceIndex> arm_gripper2 = SetUpArmModel(2, &plant_);
+  std::vector<ModelInstanceIndex> arm_gripper1 = SetUpArmModel(&plant_);
+  std::vector<ModelInstanceIndex> arm_gripper2 = SetUpArmModel(&plant_);
 
   // For testing purposes, we'll add a coupler constraint between joints in two
   // different arms.
