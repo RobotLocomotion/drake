@@ -109,7 +109,11 @@ PYBIND11_MODULE(parsing, m) {
         .def("AddModelFromFile", &Class::AddModelFromFile, py::arg("file_name"),
             py::arg("model_name") = "", cls_doc.AddModelFromFile.doc)
         .def("SetStrictParsing", &Class::SetStrictParsing,
-            cls_doc.SetStrictParsing.doc);
+            cls_doc.SetStrictParsing.doc)
+        .def("SetAutoRenaming", &Class::SetAutoRenaming, py::arg("value"),
+            cls_doc.SetAutoRenaming.doc)
+        .def("GetAutoRenaming", &Class::GetAutoRenaming,
+            cls_doc.GetAutoRenaming.doc);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -251,8 +255,14 @@ PYBIND11_MODULE(parsing, m) {
       py::keep_alive<0, 1>(),  // `return` keeps `plant` alive.
       doc.parsing.GetScopedFrameByName.doc);
 
-  m.def("GetScopedFrameName", &parsing::GetScopedFrameName, py::arg("plant"),
-      py::arg("frame"), doc.parsing.GetScopedFrameName.doc);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  m.def("GetScopedFrameName",
+      WrapDeprecated(doc.parsing.GetScopedFrameName.doc_deprecated,
+          &parsing::GetScopedFrameName),
+      py::arg("plant"), py::arg("frame"),
+      doc.parsing.GetScopedFrameName.doc_deprecated);
+#pragma GCC diagnostic push
 }
 
 }  // namespace pydrake

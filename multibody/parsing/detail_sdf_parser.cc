@@ -24,6 +24,7 @@
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_ignition.h"
+#include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/detail_sdf_diagnostic.h"
 #include "drake/multibody/parsing/detail_sdf_geometry.h"
@@ -36,6 +37,7 @@
 #include "drake/multibody/tree/prismatic_spring.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
+#include "drake/multibody/tree/scoped_name.h"
 #include "drake/multibody/tree/screw_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
@@ -58,6 +60,18 @@ using std::unique_ptr;
 
 // Unnamed namespace for free functions local to this file.
 namespace {
+
+// Returns the model instance name for the given `instance`, unless it's the
+// world model instance in which case returns the empty string.
+std::string GetInstanceScopeNameIgnoringWorld(
+    const MultibodyPlant<double>& plant,
+    ModelInstanceIndex instance) {
+  if (instance != plant.world_body().model_instance()) {
+    return plant.GetModelInstanceName(instance);
+  } else {
+    return "";
+  }
+}
 
 // Given a @p relative_nested_name to an object, this function returns the model
 // instance that is an immediate parent of the object and the local name of the
@@ -1019,9 +1033,9 @@ const Frame<double>& AddFrameFromSpecification(
   if (frame_spec.AttachedTo().empty()) {
     parent_frame = &default_frame;
   } else {
-    const std::string attached_to_absolute_name = parsing::PrefixName(
-        parsing::GetInstanceScopeName(*plant, model_instance),
-        frame_spec.AttachedTo());
+    const std::string attached_to_absolute_name = ScopedName::Join(
+        GetInstanceScopeNameIgnoringWorld(*plant, model_instance),
+        frame_spec.AttachedTo()).to_string();
 
     // If the attached_to refers to a model, we use the `__model__` frame
     // associated with the model.
@@ -1052,9 +1066,9 @@ const Frame<double>& AddFrameFromSpecification(
             resolved_attached_to_body_name);
         diagnostic.PropagateErrors(errors);
         const std::string resolved_attached_to_body_absolute_name =
-            parsing::PrefixName(
-                parsing::GetInstanceScopeName(*plant, model_instance),
-                resolved_attached_to_body_name);
+            ScopedName::Join(
+                GetInstanceScopeNameIgnoringWorld(*plant, model_instance),
+                resolved_attached_to_body_name).to_string();
         parent_frame = parsing::GetScopedFrameByNameMaybe(
             *plant, resolved_attached_to_body_absolute_name);
       }
@@ -1540,8 +1554,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
     const ParsingWorkspace& workspace,
     const sdf::NestedInclude& include, sdf::Errors* errors) {
   const sdf::ParserConfig parser_config = MakeSdfParserConfig(workspace);
-  auto& [package_map, diagnostic, plant, collision_resolver, parser_selector] =
-      workspace;
+  auto& [options, package_map, diagnostic, plant,
+         collision_resolver, parser_selector] = workspace;
   const std::string resolved_filename{include.ResolvedFileName()};
 
   // Do not attempt to parse anything other than URDF files.
@@ -1575,8 +1589,8 @@ sdf::InterfaceModelPtr ParseNestedInterfaceModel(
   ModelInstanceIndex main_model_instance;
   // New instances will have indices starting from cur_num_models
   int cur_num_models = plant->num_model_instances();
-  ParsingWorkspace subworkspace{
-    package_map, subdiagnostic, plant, collision_resolver, parser_selector};
+  ParsingWorkspace subworkspace{options, package_map, subdiagnostic, plant,
+    collision_resolver, parser_selector};
   const std::optional<ModelInstanceIndex> maybe_model =
       parser_selector(diagnostic, resolved_filename).
       AddModel(data_source, include.LocalModelName().value_or(""),
@@ -1716,6 +1730,23 @@ sdf::ParserConfig MakeSdfParserConfig(const ParsingWorkspace& workspace) {
 
   return parser_config;
 }
+
+const sdf::Model* get_only_model(const sdf::Root& root) {
+  const sdf::Model* maybe_model = root.Model();
+  if (maybe_model != nullptr) {
+    return maybe_model;
+  }
+  // If Model() is null, there still may be a single world with a single model
+  // (ignoring nested models). Try to find that.
+  if (root.WorldCount() != 1) {
+    return nullptr;
+  }
+  const sdf::World* world0 = root.WorldByIndex(0);
+  if (world0->ModelCount() != 1) {
+    return nullptr;
+  }
+  return world0->ModelByIndex(0);
+}
 }  // namespace
 
 std::optional<ModelInstanceIndex> AddModelFromSdf(
@@ -1736,21 +1767,20 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
     return std::nullopt;
   }
 
-  if (root.Model() == nullptr) {
+  const sdf::Model* maybe_model = get_only_model(root);
+  if (maybe_model == nullptr) {
     std::string message = "File must have a single <model> element.";
     diagnostic.Error(root.Element(), std::move(message));
     return std::nullopt;
   }
   // Get the only model in the file.
-  const sdf::Model& model = *root.Model();
+  const sdf::Model& model = *maybe_model;
 
   const std::string local_model_name =
       model_name_in.empty() ? model.Name() : model_name_in;
 
-  const std::string model_name =
-      parent_model_name.has_value()
-          ? sdf::JoinName(*parent_model_name, local_model_name)
-          : local_model_name;
+  std::string model_name =
+      MakeModelName(local_model_name, parent_model_name, workspace);
 
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
@@ -1804,10 +1834,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     DRAKE_DEMAND(root.Model() != nullptr);
     const sdf::Model& model = *root.Model();
 
-    const std::string model_name =
-        parent_model_name.has_value()
-            ? sdf::JoinName(*parent_model_name, model.Name())
-            : model.Name();
+    std::string model_name =
+        MakeModelName(model.Name(), parent_model_name, workspace);
 
     std::vector<ModelInstanceIndex> added_model_instances =
         AddModelsFromSpecification(
@@ -1838,10 +1866,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
         ++model_index) {
       // Get the model.
       const sdf::Model& model = *world.ModelByIndex(model_index);
-      const std::string model_name =
-          parent_model_name.has_value()
-              ? sdf::JoinName(*parent_model_name, model.Name())
-              : model.Name();
+      std::string model_name =
+          MakeModelName(model.Name(), parent_model_name, workspace);
 
       std::vector<ModelInstanceIndex> added_model_instances =
           AddModelsFromSpecification(

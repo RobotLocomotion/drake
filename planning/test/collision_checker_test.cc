@@ -441,8 +441,11 @@ GTEST_TEST(CollisionCheckerTest, ModelIntrospection) {
   EXPECT_THAT(checker->robot_model_instances(),
               testing::ElementsAre(robot_index));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   EXPECT_EQ(checker->GetScopedName(b1), "m3::b0");
   EXPECT_EQ(checker->GetScopedName(b1.body_frame()), "m3::b0");
+#pragma GCC diagnostic pop
 
   const auto q = checker->GetZeroConfiguration();
   EXPECT_EQ(q.size(), checker->plant().num_positions());

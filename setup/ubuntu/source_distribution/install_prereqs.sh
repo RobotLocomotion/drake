@@ -128,9 +128,10 @@ fi
 if [[ "${codename}" == "jammy" ]]; then
   status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgcc-12-dev 2>/dev/null || true)
   if [[ "${status}" == "ii " ]]; then
-    status=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-12-dev 2>/dev/null || true)
-    if [[ "${status}" != "ii " ]]; then
-      apt-get install ${maybe_yes} --no-install-recommends libgcc-12-dev libstdc++-12-dev
+    status_stdcxx=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libstdc++-12-dev 2>/dev/null || true)
+    status_fortran=$(dpkg-query --show --showformat='${db:Status-Abbrev}' libgfortran-12-dev 2>/dev/null || true)
+    if [[ "${status_stdcxx}" != "ii " || "${status_fortran}" != "ii " ]]; then
+      apt-get install ${maybe_yes} --no-install-recommends libgcc-12-dev libstdc++-12-dev libgfortran-12-dev
     fi
   fi
 fi

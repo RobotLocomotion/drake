@@ -13,6 +13,7 @@ load(
     "drake_py_test",
     "drake_py_unittest",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -21,6 +22,17 @@ load(
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 package(default_visibility = ["//visibility:private"])
+
+models_filegroup(
+    name = "models",
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
+)
 
 drake_cc_vector_gen_library(
     name = "acrobot_input",
@@ -423,7 +435,5 @@ drake_py_test(
         "//bindings/pydrake",
     ],
 )
-
-install_data()
 
 add_lint_tests()

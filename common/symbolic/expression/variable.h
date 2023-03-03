@@ -35,8 +35,7 @@ class Variable {
   typedef size_t Id;
 
   /** Supported types of symbolic variables. */
-  // TODO(soonho-tri): refines the following descriptions.
-  enum class Type {
+  enum class Type : uint8_t {
     CONTINUOUS,       ///< A CONTINUOUS variable takes a `double` value.
     INTEGER,          ///< An INTEGER variable takes an `int` value.
     BINARY,           ///< A BINARY variable takes an integer value from {0, 1}.
@@ -74,8 +73,12 @@ class Variable {
   /** Checks if this is a dummy variable (ID = 0) which is created by
    *  the default constructor. */
   [[nodiscard]] bool is_dummy() const { return get_id() == 0; }
-  [[nodiscard]] Id get_id() const;
-  [[nodiscard]] Type get_type() const;
+  [[nodiscard]] Id get_id() const { return id_; }
+  [[nodiscard]] Type get_type() const {
+    // We store the 1-byte Type enum in the upper byte of id_.
+    // See get_next_id() in the cc file for more details.
+    return static_cast<Type>(id_ >> (7 * 8));
+  }
   [[nodiscard]] std::string get_name() const;
   [[nodiscard]] std::string to_string() const;
 
@@ -95,18 +98,17 @@ class Variable {
                           const Variable& item) noexcept {
     using drake::hash_append;
     hash_append(hasher, item.id_);
-    // We do not send the type_ or name_ to the hasher, because the id_ is
-    // already unique across all instances, and two Variable instances with
-    // matching id_ will always have identical type_ and name_.
+    // We do not send the name_ to the hasher, because the id_ is already unique
+    // across all instances, so two Variable instances with matching id_ will
+    // always have identical names.
   }
 
   friend std::ostream& operator<<(std::ostream& os, const Variable& var);
 
  private:
-  // Produces a unique ID for a variable.
-  static Id get_next_id();
-  Id id_{};  // Unique identifier.
-  Type type_{Type::CONTINUOUS};
+  // Unique identifier for this Variable. The high-order byte stores the Type.
+  // See get_next_id() in the cc file for more details.
+  Id id_{};
 
   // Variable class has shared_ptr<const string> instead of string to be
   // drake::test::IsMemcpyMovable.
@@ -359,7 +361,7 @@ namespace symbolic {
 template <typename DerivedA, typename DerivedB>
 typename std::enable_if_t<is_eigen_scalar_same<DerivedA, Variable>::value &&
                               is_eigen_scalar_same<DerivedB, Variable>::value,
-                        bool>
+                          bool>
 CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
   EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(DerivedA, DerivedB);
   DRAKE_DEMAND(m1.rows() == m2.rows() && m1.cols() == m2.cols());
@@ -371,6 +373,7 @@ CheckStructuralEquality(const DerivedA& m1, const DerivedB& m2) {
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::symbolic::Variable>
-    : drake::ostream_formatter {};
+struct formatter<drake::symbolic::Variable> : drake::ostream_formatter {};
+template <>
+struct formatter<drake::symbolic::Variable::Type> : drake::ostream_formatter {};
 }  // namespace fmt

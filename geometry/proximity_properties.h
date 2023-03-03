@@ -179,9 +179,11 @@ void AddCompliantHydroelasticPropertiesForHalfSpace(
 }  // namespace geometry
 }  // namespace drake
 
+#ifndef DRAKE_DOXYGEN_CXX
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
 struct formatter<drake::geometry::internal::HydroelasticType>
     : drake::ostream_formatter {};
 }  // namespace fmt
+#endif

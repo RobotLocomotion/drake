@@ -44,7 +44,7 @@ class MujocoParserTest : public testing::Test {
       const std::string& file_name,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromMujocoXml(
         {DataSource::kFilename, &file_name}, model_name, {}, w);
@@ -56,7 +56,7 @@ class MujocoParserTest : public testing::Test {
       const std::string& file_contents,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromMujocoXml(
         {DataSource::kContents, &file_contents}, model_name, {}, w);
@@ -71,6 +71,7 @@ class MujocoParserTest : public testing::Test {
   }
 
  protected:
+  ParsingOptions options_;
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double> plant_{0.1};
@@ -437,8 +438,8 @@ TEST_F(BoxMeshTest, MeshFileAbsolutePathCompiler) {
   std::string mesh_asset =
       R"""(<mesh name="box" file="box.obj"/>)""";
   std::string compiler =
-      fmt::format(R"""(<compiler meshdir={}/>)""",
-                  std::filesystem::path(box_obj_).parent_path());
+      fmt::format(R"""(<compiler meshdir="{}"/>)""",
+                  std::filesystem::path(box_obj_).parent_path().string());
   TestBoxMesh(box_obj_, mesh_asset, compiler);
 }
 

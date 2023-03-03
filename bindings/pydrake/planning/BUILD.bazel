@@ -70,6 +70,7 @@ drake_py_unittest(
     ],
     deps = [
         ":planning",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )

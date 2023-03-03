@@ -397,7 +397,7 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    * an additional sample to connect the first and last segments. Only first
    * and second derivative continuity is enforced.
    * See https://en.wikipedia.org/wiki/Spline_interpolation and
-   * https://www.math.uh.edu/~jingqiu/math4364/spline.pdf
+   * https://web.archive.org/web/20140125011904/https://www.math.uh.edu/~jingqiu/math4364/spline.pdf
    * for more about cubic splines and their end conditions.
    * The MATLAB docs for methods "spline" and "csape" are also good
    * references.

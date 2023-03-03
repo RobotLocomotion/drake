@@ -44,7 +44,42 @@ void BenchmarkPolynomialEvaluatePartial(benchmark::State& state) {  // NOLINT
   }
 }
 
+void BenchmarkMatrixInnerProduct(benchmark::State& state) {  // NOLINT
+  const int n = state.range(0);
+  const bool sparse_Q = state.range(1);
+  Eigen::MatrixXd Q(n, n);
+  if (sparse_Q) {
+    Q.setZero();
+    for (int i = 0; i < n; ++i) {
+      Q(i, i) = std::sin(i);
+    }
+  } else {
+    for (int i = 0; i < n; ++i) {
+      Q(i, i) = std::sin(i);
+      for (int j = i + 1; j < n; ++j) {
+        Q(i, j) = std::cos(i + 2 * j);
+        Q(j, i) = Q(i, j);
+      }
+    }
+  }
+  MatrixX<symbolic::Variable> X(n, n);
+  for (int i = 0; i < n; ++i) {
+    X(i, i) = symbolic::Variable(fmt::format("X({}, {})", i, i));
+    for (int j = i + 1; j < n; ++j) {
+      X(i, j) = symbolic::Variable(fmt::format("X({}, {})", i, j));
+      X(j, i) = X(i, j);
+    }
+  }
+
+  for (auto _ : state) {
+    symbolic::Polynomial((Q * X).trace());
+  }
+}
+
 BENCHMARK(BenchmarkPolynomialEvaluatePartial)->Unit(benchmark::kMicrosecond);
+BENCHMARK(BenchmarkMatrixInnerProduct)
+    ->ArgsProduct({{10, 50, 100, 200}, {false, true}})
+    ->Unit(benchmark::kSecond);
 }  // namespace
 }  // namespace symbolic
 }  // namespace drake

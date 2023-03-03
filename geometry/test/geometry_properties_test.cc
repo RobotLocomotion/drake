@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/rgba.h"
 
@@ -216,6 +217,40 @@ GTEST_TEST(GeometryProperties, GetPropertyOrDefault) {
   string default_value_return = properties.GetPropertyOrDefault(
       "strings", "invalid_string", "rvalue_string");
   EXPECT_EQ("rvalue_string", default_value_return);
+}
+
+// Invocations of GetPropertyOrDefault() that don't throw should *never*
+// allocate. We steal successful lookups from the previous test and confirm that
+// none allocate. If allocation occurs, the whole test explodes, otherwise, we
+// expect silent success.
+GTEST_TEST(GeometryProperties, GetPropertyOrDefaultNoAlloc) {
+  // Do all of the allocation in setup.
+  TestProperties properties;
+
+  const double double_value{7};
+  const double default_value = double_value - 1;
+
+  const string group_name{"some_group"};
+  const string prop_name("some_property");
+  const string invalid_group("invalid_group");
+  const string invalid_prop("invalid_prop");
+
+  properties.AddProperty(group_name, prop_name, double_value);
+
+  test::LimitMalloc guard({.max_num_allocations = 0});
+
+  // Case: explicitly declaring type allows implicit conversions
+  // (int -> double).
+  properties.GetPropertyOrDefault<double>(group_name, prop_name, 3);
+
+  // Case: read an existing property.
+  properties.GetPropertyOrDefault(group_name, prop_name, default_value);
+
+  // Case: read from valid group, but invalid property.
+  properties.GetPropertyOrDefault(group_name, invalid_prop, default_value);
+
+  // Case: read from invalid group.
+  properties.GetPropertyOrDefault(invalid_group, invalid_prop, default_value);
 }
 
 // Tests the unsuccessful access to properties (successful access has been

@@ -33,8 +33,8 @@ PYBIND11_MODULE(eigen_geometry_test_util, m) {
   });
 
   m.def("create_translation",
-      []() { return Translation3<T>(Vector3<T>::Zero()); });
-  m.def("check_translation", [max_abs](const Translation3<T>& p) {
+      []() { return Eigen::Translation<T, 3>(Vector3<T>::Zero()); });
+  m.def("check_translation", [max_abs](const Eigen::Translation<T, 3>& p) {
     const T error = max_abs(p.vector());
     DRAKE_THROW_UNLESS(error < kTolerance);
   });

@@ -6,7 +6,6 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
@@ -86,7 +85,5 @@ drake_cc_googletest(
         ":compass_gait_geometry",
     ],
 )
-
-install_data()
 
 add_lint_tests()

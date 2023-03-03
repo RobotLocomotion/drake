@@ -51,7 +51,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_name,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kFilename, &file_name}, model_name, {}, w);
@@ -63,7 +63,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
       const std::string& file_contents,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
     auto result = AddModelFromUrdf(
         {DataSource::kContents, &file_contents}, model_name, {}, w);
@@ -78,6 +78,7 @@ class UrdfParserTest : public test::DiagnosticPolicyTestBase {
   }
 
  protected:
+  ParsingOptions options_;
   PackageMap package_map_;
   // Note: We currently use a discrete plant here to be able to test
   // Sap-specific features like the joint 'mimic' element.
@@ -113,6 +114,14 @@ TEST_F(UrdfParserTest, NoName) {
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*Your robot must have a name attribute or a model name must"
                   " be specified."));
+}
+
+TEST_F(UrdfParserTest, ModelRenameWithColons) {
+  std::optional<ModelInstanceIndex> index =  AddModelFromUrdfString(R"""(
+    <robot name='to-be-overwritten'>
+    </robot>)""", "left::robot");
+  ASSERT_NE(index, std::nullopt);
+  EXPECT_EQ(plant_.GetModelInstanceName(*index), "left::robot");
 }
 
 TEST_F(UrdfParserTest, ObsoleteLoopJoint) {

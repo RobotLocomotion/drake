@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <drake_vendor/fcl/fcl.h>
+#include <fmt/ostream.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"

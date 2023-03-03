@@ -93,9 +93,9 @@ export SNOPT_PATH=git
 
 declare -a bazel_args=(
     --repo_env=DRAKE_OS=macos_wheel
-    --define NO_DRAKE_VISUALIZER=ON
-    --define WITH_MOSEK=ON
-    --define WITH_SNOPT=ON
+    --define=NO_DRAKE_VISUALIZER=ON
+    --define=WITH_MOSEK=ON
+    --define=WITH_SNOPT=ON
     # See tools/wheel/wheel_builder/macos.py for more on this env variable.
     --macos_minimum_os="${MACOSX_DEPLOYMENT_TARGET}"
 )

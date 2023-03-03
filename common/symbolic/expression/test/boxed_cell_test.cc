@@ -24,15 +24,9 @@ class BoxedCellTest : public ::testing::Test {
   // use_count of the cell will reach zero and it will be deleted as part of the
   // BoxedCell destructor. If BoxedCell has any bugs with its reference counts,
   // that will show up as leaks in our memory checkers (e.g., LSan or Memcheck).
-  const ExpressionCell* MakeVarCell() {
-    return new ExpressionVar(x_);
-  }
-  const ExpressionCell* MakeSqrtCell() {
-    return new ExpressionSqrt(x_);
-  }
-  const ExpressionCell* MakeNaNCell() {
-    return new ExpressionNaN();
-  }
+  const ExpressionCell* MakeVarCell() { return new ExpressionVar(x_); }
+  const ExpressionCell* MakeSqrtCell() { return new ExpressionSqrt(x_); }
+  const ExpressionCell* MakeNaNCell() { return new ExpressionNaN(); }
 
   const BoxedCell zero_;
   const Variable x_{"x"};
@@ -131,6 +125,7 @@ TEST_F(BoxedCellTest, TriviallyEquals) {
   boxed_sqrt_cell.SetSharedCell(MakeSqrtCell());
   boxed_nan_cell.SetSharedCell(MakeSqrtCell());
   std::array<const BoxedCell*, 4> items{
+      // BR
       &zero_, &boxed_var_cell, &boxed_sqrt_cell, &boxed_nan_cell};
   for (const BoxedCell* first : items) {
     for (const BoxedCell* second : items) {

@@ -1,4 +1,4 @@
-#include <fmt/ostream.h>
+#include <fmt/format.h>
 
 #include "drake/common/eigen_types.h"
 #include "drake/examples/pendulum/gen/pendulum_input.h"

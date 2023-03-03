@@ -192,8 +192,7 @@ class BoxedCell {
   BoxedCell() : BoxedCell(0.0) {}
 
   /* Constructs a constant. */
-  explicit BoxedCell(double constant)
-      : value_(constant) {
+  explicit BoxedCell(double constant) : value_(constant) {
     DRAKE_ASSERT(!std::isnan(constant));
   }
 
@@ -269,9 +268,7 @@ class BoxedCell {
   }
 
   /* Returns true iff get_kind() == ExpressionKind::Constant. */
-  [[nodiscard]] bool is_constant() const {
-    return !std::isnan(value_);
-  }
+  [[nodiscard]] bool is_constant() const { return !std::isnan(value_); }
 
   /* Returns true iff get_kind() == kind.
   @pre kind is not ExpressionKind::Constant (use is_constant() instead) */
@@ -289,9 +286,7 @@ class BoxedCell {
   }
 
   /* If this is a Constant, then returns the value; otherwise, returns NaN. */
-  [[nodiscard]] double constant_or_nan() const {
-    return value_;
-  }
+  [[nodiscard]] double constant_or_nan() const { return value_; }
 
   /* Returns true iff this and other are "trivially" equal, i.e., they are
   either the both same Constant value, or else both point to the same cell. */
@@ -349,9 +344,7 @@ class BoxedCell {
   /* Returns the tag portion of our value_. If this is not a Constant, then the
   result will be our ExpressionKind. Refer to the BoxedCell class overview
   comment for additional details. */
-  std::uint16_t tag_bits() const {
-    return value_bits() >> 48;
-  }
+  std::uint16_t tag_bits() const { return value_bits() >> 48; }
 
   /* Returns the pointer portion of our value_. If this is not a Constant, then
   the result will be the pointer to the shared ExpressionCell.  Refer to the

@@ -16,6 +16,27 @@ SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::PointMass(
+    const T& mass, const Vector3<T>& position) {
+  // Ensure mass is non-negative.
+  if (mass < 0) {
+    std::string error_message = fmt::format(
+        "{}(): The mass of a particle is negative: {}.", __func__, mass);
+    throw std::logic_error(error_message);
+  }
+
+  // Upgrade to monogram notation: position is the position vector from
+  // point P to particle Q expressed in a frame B.
+  const Vector3<T> p_PQ_B = position;
+
+  // Form particle Q's unit inertia about point P, expressed in frame B.
+  const UnitInertia<T> G_QP_B = UnitInertia<T>::PointMass(p_PQ_B);
+
+  // Return particle Q's spatial inertia about point P, expressed in frame B.
+  return SpatialInertia<T>(mass, p_PQ_B, G_QP_B);
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
     const T& density, const T& lx, const T& ly, const T& lz) {
   // Ensure lx, ly, lz are positive.
@@ -30,6 +51,24 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidBox(lx, ly, lz);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
+    const T& density, const T& l) {
+  // Ensure l is positive.
+  if (l <= 0) {
+    std::string error_message = fmt::format(
+        "{}(): The length of a solid cube is negative or zero: {}.",
+        __func__, l);
+    throw std::logic_error(error_message);
+  }
+
+  const T volume = l * l * l;
+  const T mass = density * volume;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidCube(l);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 
@@ -87,6 +126,18 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
+    const T& density, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  SpatialInertia<T> M_BBcm_B =
+      SpatialInertia<T>::SolidCylinderWithDensity(
+          density, radius, length, unit_vector);
+  const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
+  M_BBcm_B.ShiftInPlace(p_BcmBp_B);
+  return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
     const T& density, const T& a, const T& b, const T& c) {
   // Ensure a, b, c are positive.
@@ -116,6 +167,22 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
   const T mass = density * volume;
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidSphere(r);
+  return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::HollowSphereWithDensity(
+    const T& area_density, const T& r) {
+  // Ensure r is positive.
+  if (r <= 0) {
+    std::string error_message = fmt::format("{}(): A hollow sphere's "
+      "radius = {} is negative or zero.", __func__, r);
+    throw std::logic_error(error_message);
+  }
+  const T area = 4.0 * M_PI * r * r;  // 4 π r²
+  const T mass = area_density * area;
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  const UnitInertia<T> G_BBo_B = UnitInertia<T>::HollowSphere(r);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 

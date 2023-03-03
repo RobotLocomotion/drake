@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <utility>
 
+#include <fmt/format.h>
 #include <fmt/ostream.h>
 
 #include "drake/common/drake_assert.h"
@@ -88,10 +89,11 @@ bool NaryFormulaCell::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
   DRAKE_ASSERT(get_kind() == f.get_kind());
   const auto& nary_f = static_cast<const NaryFormulaCell&>(f);
-  return equal(
-      formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
-      nary_f.formulas_.cend(),
-      [](const Formula& f1, const Formula& f2) { return f1.EqualTo(f2); });
+  return equal(formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
+               nary_f.formulas_.cend(),
+               [](const Formula& f1, const Formula& f2) {
+                 return f1.EqualTo(f2);
+               });
 }
 
 bool NaryFormulaCell::Less(const FormulaCell& f) const {
@@ -100,8 +102,9 @@ bool NaryFormulaCell::Less(const FormulaCell& f) const {
   const auto& nary_f = static_cast<const NaryFormulaCell&>(f);
   return lexicographical_compare(
       formulas_.cbegin(), formulas_.cend(), nary_f.formulas_.cbegin(),
-      nary_f.formulas_.cend(),
-      [](const Formula& f1, const Formula& f2) { return f1.Less(f2); });
+      nary_f.formulas_.cend(), [](const Formula& f1, const Formula& f2) {
+        return f1.Less(f2);
+      });
 }
 
 ostream& NaryFormulaCell::DisplayWithOp(ostream& os, const string& op) const {
@@ -123,7 +126,9 @@ FormulaTrue::FormulaTrue() : FormulaCell{FormulaKind::True} {}
 
 void FormulaTrue::HashAppendDetail(DelegatingHasher*) const {}
 
-Variables FormulaTrue::GetFreeVariables() const { return Variables{}; }
+Variables FormulaTrue::GetFreeVariables() const {
+  return Variables{};
+}
 
 bool FormulaTrue::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -138,19 +143,25 @@ bool FormulaTrue::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaTrue::Evaluate(const Environment&) const { return true; }
+bool FormulaTrue::Evaluate(const Environment&) const {
+  return true;
+}
 
 Formula FormulaTrue::Substitute(const Substitution&) const {
   return Formula::True();
 }
 
-ostream& FormulaTrue::Display(ostream& os) const { return os << "True"; }
+ostream& FormulaTrue::Display(ostream& os) const {
+  return os << "True";
+}
 
 FormulaFalse::FormulaFalse() : FormulaCell{FormulaKind::False} {}
 
 void FormulaFalse::HashAppendDetail(DelegatingHasher*) const {}
 
-Variables FormulaFalse::GetFreeVariables() const { return Variables{}; }
+Variables FormulaFalse::GetFreeVariables() const {
+  return Variables{};
+}
 
 bool FormulaFalse::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -165,13 +176,17 @@ bool FormulaFalse::Less(const FormulaCell& f) const {
   return false;
 }
 
-bool FormulaFalse::Evaluate(const Environment&) const { return false; }
+bool FormulaFalse::Evaluate(const Environment&) const {
+  return false;
+}
 
 Formula FormulaFalse::Substitute(const Substitution&) const {
   return Formula::False();
 }
 
-ostream& FormulaFalse::Display(ostream& os) const { return os << "False"; }
+ostream& FormulaFalse::Display(ostream& os) const {
+  return os << "False";
+}
 
 FormulaVar::FormulaVar(Variable v)
     : FormulaCell{FormulaKind::Var}, var_{std::move(v)} {
@@ -187,7 +202,9 @@ void FormulaVar::HashAppendDetail(DelegatingHasher* hasher) const {
   hash_append(*hasher, var_);
 }
 
-Variables FormulaVar::GetFreeVariables() const { return Variables{var_}; }
+Variables FormulaVar::GetFreeVariables() const {
+  return Variables{var_};
+}
 
 bool FormulaVar::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -223,9 +240,13 @@ Formula FormulaVar::Substitute(const Substitution&) const {
   return Formula{var_};
 }
 
-ostream& FormulaVar::Display(ostream& os) const { return os << var_; }
+ostream& FormulaVar::Display(ostream& os) const {
+  return os << var_;
+}
 
-const Variable& FormulaVar::get_variable() const { return var_; }
+const Variable& FormulaVar::get_variable() const {
+  return var_;
+}
 
 FormulaEq::FormulaEq(const Expression& e1, const Expression& e2)
     : RelationalFormulaCell{FormulaKind::Eq, e1, e2} {}
@@ -410,7 +431,9 @@ void FormulaNot::HashAppendDetail(DelegatingHasher* hasher) const {
   hash_append(*hasher, f_);
 }
 
-Variables FormulaNot::GetFreeVariables() const { return f_.GetFreeVariables(); }
+Variables FormulaNot::GetFreeVariables() const {
+  return f_.GetFreeVariables();
+}
 
 bool FormulaNot::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -506,7 +529,9 @@ void FormulaIsnan::HashAppendDetail(DelegatingHasher* hasher) const {
   hash_append(*hasher, e_);
 }
 
-Variables FormulaIsnan::GetFreeVariables() const { return e_.GetVariables(); }
+Variables FormulaIsnan::GetFreeVariables() const {
+  return e_.GetVariables();
+}
 
 bool FormulaIsnan::EqualTo(const FormulaCell& f) const {
   // Formula::EqualTo guarantees the following assertion.
@@ -646,8 +671,9 @@ bool FormulaPositiveSemidefinite::Evaluate(const Environment&) const {
 }
 
 Formula FormulaPositiveSemidefinite::Substitute(const Substitution& s) const {
-  return positive_semidefinite(
-      m_.unaryExpr([&s](const Expression& e) { return e.Substitute(s); }));
+  return positive_semidefinite(m_.unaryExpr([&s](const Expression& e) {
+    return e.Substitute(s);
+  }));
 }
 
 ostream& FormulaPositiveSemidefinite::Display(ostream& os) const {
@@ -659,7 +685,9 @@ bool is_false(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::False;
 }
 
-bool is_true(const FormulaCell& f) { return f.get_kind() == FormulaKind::True; }
+bool is_true(const FormulaCell& f) {
+  return f.get_kind() == FormulaKind::True;
+}
 
 bool is_variable(const FormulaCell& f) {
   return f.get_kind() == FormulaKind::Var;

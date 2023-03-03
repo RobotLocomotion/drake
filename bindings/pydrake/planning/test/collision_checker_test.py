@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Sphere
 from pydrake.math import RigidTransform
 from pydrake.multibody.plant import MultibodyPlant
@@ -239,11 +240,13 @@ class TestCollisionChecker(unittest.TestCase):
         num_bodies = 3
 
         self.assertIs(dut.get_body(body_index=body.index()), body)
-        self.assertEqual(dut.GetScopedName(frame=frame), "box::box")
-        self.assertEqual(dut.GetScopedName(body=body), "box::box")
         self.assertEqual(len(dut.robot_model_instances()), 1)
         self.assertTrue(dut.IsPartOfRobot(body=body))
         self.assertTrue(dut.IsPartOfRobot(body_index=body.index()))
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.GetScopedName(frame=frame), "box::box")
+        with catch_drake_warnings(expected_count=1):
+            self.assertEqual(dut.GetScopedName(body=body), "box::box")
 
         self.assertGreater(len(dut.GetZeroConfiguration()), 0)
         self.assertGreater(dut.num_allocated_contexts(), 0)

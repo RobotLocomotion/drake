@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/ranges.h>
 #include <gtest/gtest.h>
 
 namespace drake {
@@ -139,13 +140,24 @@ GTEST_TEST(SortedPair, MakeSortedPair) {
   EXPECT_EQ(SortedPair<int>(1, 2), MakeSortedPair(1, 2));
 }
 
+// Tests that formatting support is reasonable.
+GTEST_TEST(SortedPair, Format) {
+  SortedPair<int> pair{8, 7};
+  // We don't care exactly what fmt does here, just that it looks sensible.
+  // It's OK to to update this goal string in case fmt changes a bit over time.
+  EXPECT_EQ(fmt::to_string(pair), "(7, 8)");
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // Tests the streaming support.
-GTEST_TEST(SortedPair, WriteToStream) {
+GTEST_TEST(SortedPair, DeprecatedWriteToStream) {
   SortedPair<int> pair{8, 7};
   std::stringstream ss;
   ss << pair;
   EXPECT_EQ(ss.str(), "(7, 8)");
 }
+#pragma GCC diagnostic pop
 
 GTEST_TEST(SortedPair, StructuredBinding) {
   SortedPair<int> pair{8, 7};

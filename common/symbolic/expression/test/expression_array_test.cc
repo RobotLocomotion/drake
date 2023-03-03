@@ -525,7 +525,9 @@ TEST_F(SymbolicExpressionArrayTest, ArrayExprEqArrayExpr) {
   const Eigen::Array<Formula, 3, 2> a1{A_.array() == A_.array()};
   const Eigen::Array<Formula, 2, 3> a2{B_.array() == B_.array()};
   const Eigen::Array<Formula, 3, 2> a3{C_.array() == C_.array()};
-  auto is_true_lambda = [](const Formula& f) {return is_true(f);};
+  auto is_true_lambda = [](const Formula& f) {
+    return is_true(f);
+  };
   EXPECT_TRUE(a1.unaryExpr(is_true_lambda).all());
   EXPECT_TRUE(a2.unaryExpr(is_true_lambda).all());
   EXPECT_TRUE(a3.unaryExpr(is_true_lambda).all());
@@ -761,12 +763,10 @@ TEST_F(SymbolicExpressionArrayTest, ArrayOperatorReturnType) {
       (std::is_same_v<decltype(m1 != m2), Eigen::Array<Formula, 2, 2>>));
   EXPECT_TRUE(
       (std::is_same_v<decltype(m1 <= m2), Eigen::Array<Formula, 2, 2>>));
-  EXPECT_TRUE(
-      (std::is_same_v<decltype(m1 < m2), Eigen::Array<Formula, 2, 2>>));
+  EXPECT_TRUE((std::is_same_v<decltype(m1 < m2), Eigen::Array<Formula, 2, 2>>));
   EXPECT_TRUE(
       (std::is_same_v<decltype(m1 >= m2), Eigen::Array<Formula, 2, 2>>));
-  EXPECT_TRUE(
-      (std::is_same_v<decltype(m1 > m2), Eigen::Array<Formula, 2, 2>>));
+  EXPECT_TRUE((std::is_same_v<decltype(m1 > m2), Eigen::Array<Formula, 2, 2>>));
 }
 
 TEST_F(SymbolicExpressionArrayTest, ExpressionArraySegment) {

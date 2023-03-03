@@ -1,10 +1,12 @@
-/**
+/** @file
  This file is used in our C-IRIS algorithm, which certifies collision-free
  region in the configuration space, by finding separating planes for each pair
  of geometry over all configurations in a C-space region. For the detailed
  algorithm please refer to the paper
+ <pre>
  Certified Polyhedral Decompositions of Collision-Free Configuration Space
  by Hongkai Dai*, Alexandre Amice*, Peter Werner, Annan Zhang and Russ Tedrake.
+ </pre>
  */
 #pragma once
 

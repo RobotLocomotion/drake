@@ -2,9 +2,13 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/limit_malloc.h"
+
 namespace drake {
 namespace solvers {
 namespace {
+
+using test::LimitMalloc;
 
 GTEST_TEST(SolverId, Equality) {
   // An ID is equal to itself.
@@ -38,6 +42,19 @@ GTEST_TEST(SolverId, Move) {
   EXPECT_EQ(old_bar.name(), "");
   EXPECT_EQ(new_bar.name(), "bar");
   EXPECT_NE(new_bar, old_bar);
+}
+
+GTEST_TEST(SolverId, NoHeap) {
+  // Solver names that are <= 15 characters do not allocate.
+  LimitMalloc guard;
+  SolverId foo{"123456789012345"};
+  SolverId bar(foo);
+}
+
+GTEST_TEST(SolverId, WarningForVeryLongName) {
+  // Solver names that are > 15 characters will warn.
+  // We'll just make sure nothing crashes.
+  SolverId foo{"this_solver_name_is_way_too_long"};
 }
 
 }  // namespace

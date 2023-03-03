@@ -219,10 +219,10 @@ TEST_F(SymbolicDifferentiationTest, NotDifferentiable) {
 
   // if_then_else is differentiable on relational expressions where the
   // arms of the relation are unequal.
-  EXPECT_ANY_THROW(if_then_else(x == 0, y + 1, y)
-                  .Differentiate(var_x_).Evaluate(env));
-  EXPECT_NO_THROW(if_then_else(x == 1, y + 1, y)
-                  .Differentiate(var_x_).Evaluate(env));
+  EXPECT_ANY_THROW(
+      if_then_else(x == 0, y + 1, y).Differentiate(var_x_).Evaluate(env));
+  EXPECT_NO_THROW(
+      if_then_else(x == 1, y + 1, y).Differentiate(var_x_).Evaluate(env));
 
   // abs, min, max, ceil, and floor are not differentiable with respect to a
   // variable if an argument includes the variable and if the argument is at

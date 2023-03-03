@@ -160,12 +160,6 @@ alias(
     visibility = ["//visibility:public"],
 )
 
-alias(
-    name = "prod_models",
-    actual = "//examples/kuka_iiwa_arm/models:prod_models",
-    visibility = ["//visibility:public"],
-)
-
 # === test/ ===
 
 drake_cc_googletest(

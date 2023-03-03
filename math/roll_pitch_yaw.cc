@@ -3,7 +3,6 @@
 #include <string>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 
 #include "drake/common/cond.h"
 #include "drake/math/rotation_matrix.h"

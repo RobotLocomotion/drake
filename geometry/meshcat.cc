@@ -362,16 +362,16 @@ class MeshcatShapeReifier : public ShapeReifier {
                               map_data));
           } else {
             drake::log()->warn(
-                "Meshcat: Failed to load texture. {} references {}, but "
-                "Meshcat could not open filename {}",
-                basedir / mtllib, map, basedir / map);
+                "Meshcat: Failed to load texture. \"{}\" references {}, but "
+                "Meshcat could not open filename \"{}\"",
+                (basedir / mtllib).string(), map, (basedir / map).string());
           }
         }
       } else {
         drake::log()->warn(
             "Meshcat: Failed to load texture. {} references {}, but Meshcat "
-            "could not open filename {}",
-            mesh.filename(), mtllib, basedir / mtllib);
+            "could not open filename \"{}\"",
+            mesh.filename(), mtllib, (basedir / mtllib).string());
       }
       Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
       matrix(0, 0) = mesh.scale();

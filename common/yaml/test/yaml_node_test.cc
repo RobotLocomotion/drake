@@ -1,7 +1,6 @@
 #include "drake/common/yaml/yaml_node.h"
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 

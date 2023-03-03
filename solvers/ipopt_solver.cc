@@ -731,74 +731,9 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
   std::unordered_map<Binding<Constraint>, int> constraint_dual_start_index_;
 };
 
-template <typename T>
-bool HasOptionWithKey(const SolverOptions& solver_options,
-                      const std::string& key) {
-  return solver_options.GetOptions<T>(IpoptSolver::id()).count(key) > 0;
-}
-
-/**
- * If the key has been set in ipopt_options, then this function is an no-op.
- * Otherwise set this key with default_val.
- */
-template <typename T>
-void SetIpoptOptionsHelper(const std::string& key, const T& default_val,
-                           SolverOptions* ipopt_options) {
-  if (!HasOptionWithKey<T>(*ipopt_options, key)) {
-    ipopt_options->SetOption(IpoptSolver::id(), key, default_val);
-  }
-}
-
-void SetIpoptOptions(const MathematicalProgram& prog,
-                     const std::optional<SolverOptions>& user_solver_options,
-                     Ipopt::IpoptApplication* app) {
-  SolverOptions merged_solver_options = user_solver_options.has_value()
-                                            ? user_solver_options.value()
-                                            : SolverOptions();
-  merged_solver_options.Merge(prog.solver_options());
-
-  // The default tolerance.
-  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
-  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
-  // constr_viol_tol
-  SetIpoptOptionsHelper<double>("tol", tol, &merged_solver_options);
-  SetIpoptOptionsHelper<double>("constr_viol_tol", tol, &merged_solver_options);
-  SetIpoptOptionsHelper<double>("acceptable_tol", tol, &merged_solver_options);
-  SetIpoptOptionsHelper<double>("acceptable_constr_viol_tol", tol,
-                                &merged_solver_options);
-  SetIpoptOptionsHelper<std::string>("hessian_approximation", "limited-memory",
-                                     &merged_solver_options);
-  // Note: 0<= print_level <= 12, with higher numbers more verbose.  4 is very
-  // useful for debugging. Otherwise, we default to printing nothing. The user
-  // can always select an arbitrary print level, by setting the ipopt value
-  // directly in the solver options.
-  const int verbose_level = 4;
-  const int common_print_level =
-      merged_solver_options.get_print_to_console() ? verbose_level : 0;
-  SetIpoptOptionsHelper<int>("print_level", common_print_level,
-                             &merged_solver_options);
-
-  std::string print_file_name = merged_solver_options.get_print_file_name();
-  if (!print_file_name.empty()) {
-    SetIpoptOptionsHelper<std::string>("output_file", print_file_name,
-                                       &merged_solver_options);
-    SetIpoptOptionsHelper<int>("file_print_level", verbose_level,
-                               &merged_solver_options);
-  }
-
-  const auto& ipopt_options_double =
-      merged_solver_options.GetOptionsDouble(IpoptSolver::id());
-  const auto& ipopt_options_str =
-      merged_solver_options.GetOptionsStr(IpoptSolver::id());
-  const auto& ipopt_options_int =
-      merged_solver_options.GetOptionsInt(IpoptSolver::id());
-  for (const auto& it : ipopt_options_double) {
-    app->Options()->SetNumericValue(it.first, it.second);
-  }
-
-  for (const auto& it : ipopt_options_int) {
-    app->Options()->SetIntegerValue(it.first, it.second);
-  }
+void SetAppOptions(const SolverOptions& options, Ipopt::IpoptApplication* app) {
+  // Turn off the banner.
+  app->Options()->SetStringValue("sb", "yes");
 
   // The default linear solver is MA27, but it is not freely redistributable so
   // we cannot use it. MUMPS is the only compatible linear solver guaranteed to
@@ -808,9 +743,40 @@ void SetIpoptOptions(const MathematicalProgram& prog,
   // a nonexistent hsl library that would contain MA27.
   app->Options()->SetStringValue("linear_solver", "mumps");
 
-  app->Options()->SetStringValue("sb", "yes");  // Turn off the banner.
-  for (const auto& it : ipopt_options_str) {
-    app->Options()->SetStringValue(it.first, it.second);
+  // The default tolerance.
+  const double tol = 1.05e-10;  // Note: SNOPT is only 1e-6, but in #3712 we
+  // diagnosed that the CompareMatrices tolerance needed to be the sqrt of the
+  // constr_viol_tol
+  app->Options()->SetNumericValue("tol", tol);
+  app->Options()->SetNumericValue("constr_viol_tol", tol);
+  app->Options()->SetNumericValue("acceptable_tol", tol);
+  app->Options()->SetNumericValue("acceptable_constr_viol_tol", tol);
+
+  app->Options()->SetStringValue("hessian_approximation", "limited-memory");
+
+  // Note: 0 <= print_level <= 12, with higher numbers more verbose; 4 is very
+  // useful for debugging. Otherwise, we default to printing nothing. The user
+  // can always select an arbitrary print level, by setting the ipopt-specific
+  // option name directly.
+  const int verbose_level = 4;
+  const int print_level = options.get_print_to_console() ? verbose_level : 0;
+  app->Options()->SetIntegerValue("print_level", print_level);
+  const std::string& output_file = options.get_print_file_name();
+  if (!output_file.empty()) {
+    app->Options()->SetStringValue("output_file", output_file);
+    app->Options()->SetIntegerValue("file_print_level", verbose_level);
+  }
+
+  // The solver-specific options will trump our defaults.
+  const SolverId self = IpoptSolver::id();
+  for (const auto& [name, value] : options.GetOptionsDouble(self)) {
+    app->Options()->SetNumericValue(name, value);
+  }
+  for (const auto& [name, value] : options.GetOptionsInt(self)) {
+    app->Options()->SetIntegerValue(name, value);
+  }
+  for (const auto& [name, value] : options.GetOptionsStr(self)) {
+    app->Options()->SetStringValue(name, value);
   }
 }
 
@@ -888,7 +854,7 @@ void IpoptSolver::DoSolve(
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();
   app->RethrowNonIpoptException(true);
 
-  SetIpoptOptions(prog, merged_options, &(*app));
+  SetAppOptions(merged_options, &(*app));
 
   Ipopt::ApplicationReturnStatus status = app->Initialize();
   if (status != Ipopt::Solve_Succeeded) {

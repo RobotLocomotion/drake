@@ -244,7 +244,7 @@ using Variant4 = std::variant<
 
 std::ostream& operator<<(std::ostream& os, const Variant4& value) {
   if (value.index() == 0) {
-    fmt::print(os,  "std::string{{{}}}", std::get<0>(value));
+    fmt::print(os, "std::string{{{}}}", std::get<0>(value));
   } else if (value.index() == 1) {
     fmt::print(os, "double{{{}}}", std::get<1>(value));
   } else if (value.index() == 2) {

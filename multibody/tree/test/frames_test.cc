@@ -83,9 +83,12 @@ class FrameTests : public ::testing::Test {
     frameS_ = &model->AddFrame<FixedOffsetFrame>(
         "S", model->world_frame(), math::RigidTransformd::Identity(),
         extra_instance_);
+    EXPECT_EQ(frameS_->scoped_name().get_full(), "extra_instance::S");
     // Ensure that the model instance propagates implicitly.
     frameSChild_ = &model->AddFrame<FixedOffsetFrame>(
         "SChild", *frameS_, math::RigidTransformd::Identity());
+    EXPECT_EQ(frameSChild_->scoped_name().get_full(),
+              "extra_instance::SChild");
 
     // We are done adding modeling elements. Transfer tree to system and get
     // a Context.

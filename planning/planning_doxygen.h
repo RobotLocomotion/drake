@@ -7,18 +7,17 @@
    "MathematicalProgram" and the numerous @ref solver_evaluators.  There are
    also some useful classes in @ref manipulation_systems.
 
-   @defgroup planning_configuration
+   @defgroup planning_kinematics
    @defgroup planning_trajectory
    @defgroup planning_collision_checker
    @defgroup planning_infrastructure
  @}
 */
 
-/** @addtogroup planning_configuration Configurations
+/** @addtogroup planning_kinematics Inverse kinematics
  @{
-   These algorithms help define configurations of dynamical systems. While it
-   includes inverse kinematics (IK) algorithms, it also includes algorithms for
-   computing dynamically stable configurations.
+   These algorithms help define configurations of dynamical systems based on
+   inverse kinematics (IK).
  @}
 */
 

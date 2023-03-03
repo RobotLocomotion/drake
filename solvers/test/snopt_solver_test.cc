@@ -92,9 +92,7 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
 }
 
 GTEST_TEST(SnoptTest, NameTest) {
-  EXPECT_THAT(
-      SnoptSolver::id().name(),
-      testing::StartsWith("SNOPT/"));
+  EXPECT_EQ(SnoptSolver::id().name(), "SNOPT");
 }
 
 GTEST_TEST(SnoptTest, TestSetOption) {

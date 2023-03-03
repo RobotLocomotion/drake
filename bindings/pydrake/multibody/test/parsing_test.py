@@ -177,6 +177,24 @@ class TestParsing(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, r'.*version.*ignored.*'):
             parser.AddModelsFromString(file_contents=model, file_type='urdf')
 
+    def test_auto_renaming(self):
+        model = """<robot name='robot' version='0.99'>
+            <link name='a'/>
+            </robot>"""
+        plant = MultibodyPlant(time_step=0.01)
+        parser = Parser(plant=plant)
+        self.assertFalse(parser.GetAutoRenaming())
+        results = parser.AddModelsFromString(
+            file_contents=model, file_type='urdf')
+        self.assertIsInstance(results[0], ModelInstanceIndex)
+        # Reload without auto-renaming; fail.
+        with self.assertRaisesRegex(RuntimeError, r''):
+            parser.AddModelsFromString(model, 'urdf')
+        # Enable renaming and subsequently succeed with reload.
+        parser.SetAutoRenaming(value=True)
+        results = parser.AddModelsFromString(model, 'urdf')
+        self.assertTrue(plant.HasModelInstanceNamed('robot_1'))
+
     def test_model_instance_info(self):
         """Checks that ModelInstanceInfo bindings exist."""
         ModelInstanceInfo.model_name
@@ -189,7 +207,8 @@ class TestParsing(unittest.TestCase):
     def test_scoped_frame_names(self):
         plant = MultibodyPlant(time_step=0.01)
         frame = GetScopedFrameByName(plant, "world")
-        self.assertIsNotNone(GetScopedFrameName(plant, frame))
+        with catch_drake_warnings(expected_count=1):
+            self.assertIsNotNone(GetScopedFrameName(plant, frame))
 
     def _make_plant_parser_directives(self):
         """Returns a tuple (plant, parser, directives) for later testing."""

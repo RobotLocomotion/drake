@@ -768,7 +768,9 @@ TEST_F(SymbolicFormulaTest, DoubleNegationSimplification) {
                                    f_or_, not_f_or_, f_forall_, f_isnan_};
   vector<Formula> negated_collection{collection.size()};
   transform(collection.cbegin(), collection.cend(), negated_collection.begin(),
-            [](const Formula& f) { return !f; });
+            [](const Formula& f) {
+              return !f;
+            });
   for (size_t i = 0; i < collection.size(); ++i) {
     EXPECT_PRED2(FormulaEqual, collection[i], !(negated_collection[i]));
   }

@@ -705,41 +705,40 @@ TEST_F(SymbolicPolynomialTest, DifferentiateJacobian) {
 
 TEST_F(SymbolicPolynomialTest, Integrate) {
   // p = 2a²x²y + 3axy³.
-  const Polynomial p{2 * pow(a_, 2) * pow(x_, 2) * y_
-    + 3 * a_ * x_ * pow(y_, 3),
-    {var_x_, var_y_}};
+  const Polynomial p{
+      2 * pow(a_, 2) * pow(x_, 2) * y_ + 3 * a_ * x_ * pow(y_, 3),
+      {var_x_, var_y_}};
 
   // ∫ p dx = 2/3 a²x³y + 3/2 ax²y³.
-  const Polynomial int_p_dx{
-    2 * pow(a_, 2) * pow(x_, 3) * y_ / 3 + 3 * a_ * pow(x_, 2) * pow(y_, 3) / 2,
-    {var_x_, var_y_}};
+  const Polynomial int_p_dx{2 * pow(a_, 2) * pow(x_, 3) * y_ / 3 +
+                                3 * a_ * pow(x_, 2) * pow(y_, 3) / 2,
+                            {var_x_, var_y_}};
   EXPECT_PRED2(PolyEqual, p.Integrate(var_x_), int_p_dx);
 
   // ∫ p dx from 1 to 3 = 52/3 a²y + 12 ay³.
-  const Polynomial def_int_p_dx{
-    52 * pow(a_, 2) * y_ / 3 + 12 * a_ * pow(y_, 3),
-    {var_y_}};
+  const Polynomial def_int_p_dx{52 * pow(a_, 2) * y_ / 3 + 12 * a_ * pow(y_, 3),
+                                {var_y_}};
   EXPECT_PRED2(PolyEqual, p.Integrate(var_x_, 1, 3), def_int_p_dx);
   // ∫ from [a,b] = -∫ from [b,a]
   EXPECT_PRED2(PolyEqual, p.Integrate(var_x_, 3, 1), -def_int_p_dx);
 
   // ∫ p dy = a²x²y² + 3/4 axy⁴.
   const Polynomial int_p_dy{
-    pow(a_, 2) * pow(x_, 2) * pow(y_, 2) + 3 * a_ * x_ * pow(y_, 4) / 4,
-    {var_x_, var_y_}};
+      pow(a_, 2) * pow(x_, 2) * pow(y_, 2) + 3 * a_ * x_ * pow(y_, 4) / 4,
+      {var_x_, var_y_}};
   EXPECT_PRED2(PolyEqual, p.Integrate(var_y_), int_p_dy);
 
   // ∫ p dz = 2a²x²yz + 3axy³z.
   const Polynomial int_p_dz{
-    2 * pow(a_, 2) * pow(x_, 2) * y_ * z_ + 3 * a_ * x_ * pow(y_, 3) * z_,
-    {var_x_, var_y_, var_z_}};
+      2 * pow(a_, 2) * pow(x_, 2) * y_ * z_ + 3 * a_ * x_ * pow(y_, 3) * z_,
+      {var_x_, var_y_, var_z_}};
   EXPECT_TRUE(p.Integrate(var_z_).indeterminates().include(var_z_));
   EXPECT_PRED2(PolyEqual, p.Integrate(var_z_), int_p_dz);
 
   // ∫ p dz from -1 to 1 = 4a²x²y + 6axy³.
   const Polynomial def_int_p_dz{
-    4 * pow(a_, 2) * pow(x_, 2) * y_ + 6 * a_ * x_ * pow(y_, 3),
-    {var_x_, var_y_, var_z_}};
+      4 * pow(a_, 2) * pow(x_, 2) * y_ + 6 * a_ * x_ * pow(y_, 3),
+      {var_x_, var_y_, var_z_}};
   EXPECT_TRUE(p.Integrate(var_z_).indeterminates().include(var_z_));
   EXPECT_PRED2(PolyEqual, p.Integrate(var_z_, -1, 1), def_int_p_dz);
 
@@ -1085,7 +1084,7 @@ TEST_F(SymbolicPolynomialTest, EvaluateWithAffineCoefficients) {
 }
 
 TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
-  std::map<Monomial, Polynomial, internal::CompareMonomial> substitutions;
+  Polynomial::SubstituteAndExpandCacheData substitutions_cached_data;
   std::unordered_map<Variable, Polynomial> indeterminate_substitution;
 
   // A simple substitution.
@@ -1099,48 +1098,54 @@ TEST_F(SymbolicPolynomialTest, SubstituteAndExpandTest) {
 
   // A polynomial with only linear monomials.
   const Polynomial poly0{x_ + y_};
-  const Polynomial sub0 =
-      poly0.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub0 = poly0.SubstituteAndExpand(indeterminate_substitution,
+                                                    &substitutions_cached_data);
   const Polynomial sub0_expected{3 * a_ + a_ * b_};
   EXPECT_TRUE(sub0.EqualTo(sub0_expected));
   // We expect {1: 1, x: 2a, y: ab+a }
-  EXPECT_EQ(substitutions.size(), 3);
-  EXPECT_TRUE(substitutions.at(Monomial()).EqualTo(Polynomial(1)));
+  EXPECT_EQ(substitutions_cached_data.get_data()->size(), 3);
+  EXPECT_TRUE(substitutions_cached_data.get_data()
+                  ->at(Monomial())
+                  .EqualTo(Polynomial(1)));
 
   const Polynomial poly1{2 * x_ * x_};
-  const Polynomial sub1 =
-      poly1.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub1 = poly1.SubstituteAndExpand(indeterminate_substitution,
+                                                    &substitutions_cached_data);
   const Polynomial sub1_expected{8 * a_ * a_};
   EXPECT_TRUE(sub1.EqualTo(sub1_expected));
   // Expect {1: 1, x: 2a, y: ab+a, x²: 4a²}.
-  EXPECT_EQ(substitutions.size(), 4);
-  EXPECT_TRUE(
-      substitutions.at(Monomial(x_ * x_)).EqualTo(Polynomial(4 * a_ * a_)));
+  EXPECT_EQ(substitutions_cached_data.get_data()->size(), 4);
+  EXPECT_TRUE(substitutions_cached_data.get_data()
+                  ->at(Monomial(x_ * x_))
+                  .EqualTo(Polynomial(4 * a_ * a_)));
 
   const Polynomial poly2{x_ * x_ * y_};
-  const Polynomial sub2 =
-      poly2.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub2 = poly2.SubstituteAndExpand(indeterminate_substitution,
+                                                    &substitutions_cached_data);
   const Polynomial sub2_expected{4 * pow(a_, 3) * (b_ + 1)};
   EXPECT_TRUE(sub2.EqualTo(sub2_expected));
   // Expect {1: 1, x: 2a, y: ab+a, x²: 4a²,  x²y: 8a³(b+1)}.
-  EXPECT_EQ(substitutions.size(), 5);
+  EXPECT_EQ(substitutions_cached_data.get_data()->size(), 5);
   // Make sure this hasn't changed
-  EXPECT_TRUE(
-      substitutions.at(Monomial(x_ * x_)).EqualTo(Polynomial(4 * a_ * a_)));
-  EXPECT_TRUE(substitutions.at(Monomial(x_ * x_ * y_))
+  EXPECT_TRUE(substitutions_cached_data.get_data()
+                  ->at(Monomial(x_ * x_))
+                  .EqualTo(Polynomial(4 * a_ * a_)));
+  EXPECT_TRUE(substitutions_cached_data.get_data()
+                  ->at(Monomial(x_ * x_ * y_))
                   .EqualTo(Polynomial(4 * pow(a_, 3) * (b_ + 1))));
 
   const Polynomial poly3{pow(x_, 3) * z_};
-  const Polynomial sub3 =
-      poly3.SubstituteAndExpand(indeterminate_substitution, &substitutions);
+  const Polynomial sub3 = poly3.SubstituteAndExpand(indeterminate_substitution,
+                                                    &substitutions_cached_data);
   const Polynomial sub3_expected{pow(2 * a_, 3) *
                                  (pow(var_a_, 3) + 2 * var_a_ + 1)};
   EXPECT_TRUE(sub3.EqualTo(sub3_expected));
   // Expect {1: 1, x: 2a, y: ab+a, x²: 4a²,  x²y: 4a², xz: 2a + 4a² + 2a⁴, x³z:
   // 2a⁹+4a⁷+2a⁶}
-  EXPECT_EQ(substitutions.size(), 8);
-  EXPECT_TRUE(
-      substitutions.at(Monomial(pow(x_, 3) * z_)).EqualTo(sub3_expected));
+  EXPECT_EQ(substitutions_cached_data.get_data()->size(), 8);
+  EXPECT_TRUE(substitutions_cached_data.get_data()
+                  ->at(Monomial(pow(x_, 3) * z_))
+                  .EqualTo(sub3_expected));
 
   indeterminate_substitution.clear();
   const Polynomial::MapType a_poly_map{{Monomial(a_), pow(cos(z_) + 1, 2)}};

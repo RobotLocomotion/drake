@@ -23,6 +23,8 @@
 
 #include <Eigen/Dense>
 
+#include "drake/common/fmt_ostream.h"
+
 namespace Eigen {
 
 #if !defined(DRAKE_DOXYGEN_CXX)
@@ -550,3 +552,8 @@ inline const AutoDiffScalar<VectorXd> max(const AutoDiffScalar<VectorXd>& a,
 #endif
 
 }  // namespace Eigen
+
+namespace fmt {
+template <>
+struct formatter<drake::AutoDiffXd> : drake::ostream_formatter {};
+}  // namespace fmt

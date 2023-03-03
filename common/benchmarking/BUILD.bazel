@@ -13,6 +13,10 @@ drake_cc_googlebench_binary(
     name = "benchmark_polynomial",
     srcs = ["benchmark_polynomial.cc"],
     add_test_rule = True,
+    test_args = [
+        # When testing, skip over Args() that are >= 100.
+        "--benchmark_filter=-/.00+/.$$",
+    ],
     test_timeout = "moderate",
     deps = [
         "//common:add_text_logging_gflags",

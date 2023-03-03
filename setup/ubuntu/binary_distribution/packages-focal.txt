@@ -14,6 +14,7 @@ libglew2.1
 libglib2.0-0
 libglu1-mesa
 libglx0
+libgomp1
 libhdf5-103
 libjchart2d-java
 libjpeg-turbo8

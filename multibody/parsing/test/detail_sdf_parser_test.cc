@@ -85,7 +85,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
     std::optional<ModelInstanceIndex> result =
         AddModelFromSdf(data_source, model_name, parent_model_name, w);
@@ -99,7 +99,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kFilename, &file_name};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_,
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
@@ -111,8 +111,8 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
       const std::optional<std::string>& parent_model_name = {}) {
     const DataSource data_source{DataSource::kContents, &file_contents};
     internal::CollisionFilterGroupResolver resolver{&plant_};
-    ParsingWorkspace w{package_map_, diagnostic_policy_, &plant_,
-                       &resolver, TestingSelect};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+                       &plant_, &resolver, TestingSelect};
     auto result = AddModelsFromSdf(data_source, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
@@ -152,6 +152,7 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
   }
 
  protected:
+  ParsingOptions options_;
   PackageMap package_map_;
   DiagnosticPolicy diagnostic_;
   MultibodyPlant<double> plant_{0.0};
@@ -927,7 +928,7 @@ TEST_F(SdfParserTest, AddModelFromSdfNoModelError) {
 
   const DataSource data_source{DataSource::kContents, &sdf_string};
   internal::CollisionFilterGroupResolver resolver{&plant_};
-  ParsingWorkspace w{package_map_, diagnostic_policy_,
+  ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                       &plant_, &resolver, TestingSelect};
   std::optional<ModelInstanceIndex> result =
       AddModelFromSdf(data_source, "", "", w);
@@ -2996,6 +2997,43 @@ TEST_F(SdfParserTest, TestUnsupportedCollisionGeometry) {
   </model>)""");
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*Ignoring unsupported SDFormat element in geometry: polyline.*"));
+}
+
+// Regression test for #18878.
+TEST_F(SdfParserTest, TestSingleModelInWorld) {
+  const std::string full_sdf_filename = FindResourceOrThrow(
+      "drake/multibody/parsing/test/sdf_parser_test/table_in_world.sdf");
+
+  // Read in the SDF file.
+  AddModelFromSdfFile(full_sdf_filename, "");
+  plant_.Finalize();
+
+  // Verify the number of model instances.
+  EXPECT_EQ(plant_.num_model_instances(), 3);
+}
+
+// Test case discussed during solution of #18878. This error is caught by
+// sdformat library processing.
+TEST_F(SdfParserTest, TestSingleModelEnforcement) {
+  const std::string multi_models = R"""(
+  <sdf version='1.9'>
+  <model name='a'><link name='a'/></model>
+  <model name='b'><link name='b'/></model>
+  </sdf>
+)""";
+
+  const DataSource data_source{DataSource::kContents, &multi_models};
+  internal::CollisionFilterGroupResolver resolver{&plant_};
+  ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+    &plant_, &resolver, TestingSelect};
+  std::optional<ModelInstanceIndex> result =
+      AddModelFromSdf(data_source, "", {}, w);
+  resolver.Resolve(diagnostic_policy_);
+  EXPECT_FALSE(result.has_value());
+
+  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+      ".*Root object can only contain one model.*"));
+  ClearDiagnostics();
 }
 
 }  // namespace

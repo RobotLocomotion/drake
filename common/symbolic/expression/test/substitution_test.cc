@@ -88,8 +88,9 @@ void CheckHomomorphism(const function<Expression(const vector<Expression>&)>& f,
   // If every expression was a constant then the substitution is a partial
   // evaluation, so this is a convenient place to add unit tests for the
   // EvaluatePartial function as well.
-  if (std::all_of(args2.begin(), args2.end(),
-                  [](const Expression& e) { return is_constant(e); })) {
+  if (std::all_of(args2.begin(), args2.end(), [](const Expression& e) {
+        return is_constant(e);
+      })) {
     const Expression apply{f(args1)};
     Environment env;
     for (const auto& [subst_var, subst_expr] : s) {
@@ -169,6 +170,7 @@ class SymbolicSubstitutionTest : public ::testing::Test {
 TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
   using F = function<Expression(const Expression&)>;
 
+  // clang-format off
   vector<F> fns;
   fns.push_back([](const Expression& x) { return 3.0; });
   fns.push_back([](const Expression& x) { return x; });
@@ -212,6 +214,7 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
   fns.push_back([&](const Expression& x) {
     return if_then_else(x > y_ || z_ > x, x * y_, x / z_);
   });
+  // clang-format on
 
   vector<pair<Variable, Expression>> substs;
   substs.emplace_back(var_x_, x_);
@@ -242,6 +245,7 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionVarExpr) {
 TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
   using F = function<Expression(const vector<Expression>&)>;
 
+  // clang-format off
   vector<F> fns;
   fns.push_back([](const vector<Expression>& v) { return 3.0; });
   fns.push_back([](const vector<Expression>& v) { return v[0]; });
@@ -280,6 +284,7 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
   fns.push_back([](const vector<Expression>& v) {
     return if_then_else(v[0] > v[1], v[1] * v[2], v[0] - v[2]);
   });
+  // clang-format on
 
   vector<Substitution> substs;
   substs.push_back({{var_x_, 1.0}, {var_y_, 1.0}, {var_z_, 2.0}});
@@ -305,6 +310,7 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismExpressionSubstitution) {
 TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaVarExpr) {
   using F = function<Formula(const Expression&)>;
 
+  // clang-format off
   vector<F> fns;
   fns.push_back([](const Expression& x) { return Formula::True(); });
   fns.push_back([](const Expression& x) { return Formula::False(); });
@@ -332,6 +338,7 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaVarExpr) {
     // clang-format on
     return positive_semidefinite(m);
   });
+  // clang-format on
 
   vector<pair<Variable, Expression>> substs;
   substs.emplace_back(var_x_, x_);
@@ -363,8 +370,12 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaSubstitution) {
   using F = function<Formula(const vector<Expression>&)>;
 
   vector<F> fns;
-  fns.push_back([](const vector<Expression>& v) { return Formula::True(); });
-  fns.push_back([](const vector<Expression>& v) { return Formula::False(); });
+  fns.push_back([](const vector<Expression>& v) {
+    return Formula::True();
+  });
+  fns.push_back([](const vector<Expression>& v) {
+    return Formula::False();
+  });
   fns.push_back([](const vector<Expression>& v) {
     return (v[0] + v[1]) == (v[1] * v[2]);
   });
@@ -383,12 +394,18 @@ TEST_F(SymbolicSubstitutionTest, CheckHomomorphismFormulaSubstitution) {
   fns.push_back([](const vector<Expression>& v) {
     return (v[0] + v[1]) <= (v[1] * v[2]);
   });
-  fns.push_back(
-      [&](const vector<Expression>& v) { return fns[5](v) && fns[7](v); });
-  fns.push_back(
-      [&](const vector<Expression>& v) { return fns[2](v) || fns[4](v); });
-  fns.push_back([&](const vector<Expression>& v) { return !fns[8](v); });
-  fns.push_back([&](const vector<Expression>& v) { return !fns[9](v); });
+  fns.push_back([&](const vector<Expression>& v) {
+    return fns[5](v) && fns[7](v);
+  });
+  fns.push_back([&](const vector<Expression>& v) {
+    return fns[2](v) || fns[4](v);
+  });
+  fns.push_back([&](const vector<Expression>& v) {
+    return !fns[8](v);
+  });
+  fns.push_back([&](const vector<Expression>& v) {
+    return !fns[9](v);
+  });
   fns.push_back([](const vector<Expression>& v) {
     Eigen::Matrix<Expression, 2, 2> m;
     // clang-format off
