@@ -30,7 +30,7 @@
         <pose>-0.0018  0.051 -0.084 1.57 0.13 0.0</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/manipulation/models/ycb/meshes/005_tomato_soup_can_textured.obj</uri>
+            <uri>package://drake_models/ycb/meshes/005_tomato_soup_can_textured.obj</uri>
           </mesh>
         </geometry>
       </visual>

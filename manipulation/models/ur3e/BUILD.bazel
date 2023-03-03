@@ -7,7 +7,6 @@ load(
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load("//tools/workspace/models_internal:files.bzl", "ur3e_mesh_files")
 
 package(default_visibility = ["//visibility:public"])
@@ -30,24 +29,28 @@ xacro_file(
     ],
 )
 
-_UR3E_MESHES = forward_files(
-    srcs = ["@models_internal//:" + x for x in ur3e_mesh_files()],
-    dest_prefix = "",
-    strip_prefix = "@models_internal//:ur3e/",
-    visibility = ["//visibility:private"],
-)
-
 filegroup(
-    name = "models",
-    srcs = _UR3E_MESHES + [
-        "ur3e_spheres_collision.urdf",
+    name = "git_models",
+    srcs = [
         "ur3e_cylinders_collision.urdf",
+        "ur3e_spheres_collision.urdf",
     ],
+    visibility = ["//visibility:private"],
 )
 
 install_data(
     name = "install_data",
-    data = [":models"],
+    data = [":git_models"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":git_models",
+    ] + [
+        "@models_internal//:" + x
+        for x in ur3e_mesh_files()
+    ],
 )
 
 # === test/ ===

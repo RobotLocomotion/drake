@@ -19,7 +19,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/wsg_50_description/meshes/wsg_body.obj</uri>
+            <uri>package://drake_models/wsg_50_description/meshes/wsg_body.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -54,7 +54,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/wsg_50_description/meshes/finger_without_tip.obj</uri>
+            <uri>package://drake_models/wsg_50_description/meshes/finger_without_tip.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -86,7 +86,7 @@
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/wsg_50_description/meshes/finger_without_tip.obj</uri>
+            <uri>package://drake_models/wsg_50_description/meshes/finger_without_tip.obj</uri>
           </mesh>
         </geometry>
         <material>

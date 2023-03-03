@@ -141,9 +141,8 @@ class PackageMap final {
     std::optional<std::string> deprecated_message;
   };
 
-  /* A constructor that initializes a map by parsing a list of package.xml file
-  paths. */
-  explicit PackageMap(std::initializer_list<std::string> manifest_paths);
+  /* A constructor that creates an empty map . */
+  explicit PackageMap(std::nullopt_t);
 
   /* Recursively crawls through `path` looking for package.xml files. Adds the
   packages defined by these package.xml files to this PackageMap.

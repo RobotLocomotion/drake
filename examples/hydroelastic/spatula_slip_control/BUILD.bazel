@@ -11,24 +11,26 @@ load(
     "wsg_50_hydro_bubble_mesh_files",
 )
 
-_WSG_50_HYDRO_BUBBLE_MESHES = forward_files(
-    srcs = ["@models_internal//:" +
-            x for x in wsg_50_hydro_bubble_mesh_files()],
-    dest_prefix = "",
-    strip_prefix = "@models_internal//:wsg_50_hydro_bubble/",
-    visibility = ["//visibility:private"],
-)
-
 models_filegroup(
-    name = "models",
-    extra_srcs = _WSG_50_HYDRO_BUBBLE_MESHES,
+    name = "git_models",
     glob_exclude = ["images/**/*"],
-    visibility = ["//visibility:public"],
+    visibility = ["//visibility:private"],
 )
 
 install_data(
     name = "install_data",
-    data = [":models"],
+    data = [":git_models"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":git_models",
+    ] + [
+        "@models_internal//:" + x
+        for x in wsg_50_hydro_bubble_mesh_files()
+    ],
     visibility = ["//visibility:public"],
 )
 

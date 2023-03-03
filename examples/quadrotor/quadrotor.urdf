@@ -18,7 +18,7 @@
     <visual>
       <origin rpy="1.570796 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/examples/quadrotor/skydio_2_1000_poly.obj" scale=".00254"/>
+        <mesh filename="package://drake_models/skydio_2/skydio_2_1000_poly.obj" scale=".00254"/>
       </geometry>
     </visual>
     <collision>

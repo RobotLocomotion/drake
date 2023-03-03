@@ -40,7 +40,7 @@ class TestParsing(unittest.TestCase):
     def test_package_map(self):
         # Simple coverage test for default constructor
         dut = PackageMap()
-        self.assertEqual(dut.size(), 1)
+        self.assertEqual(dut.size(), 2)
 
         dut = PackageMap.MakeEmpty()
         dut2 = PackageMap.MakeEmpty()
