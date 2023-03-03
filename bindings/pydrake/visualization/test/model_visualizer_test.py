@@ -1,10 +1,13 @@
+import copy
 import subprocess
 import textwrap
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Meshcat
 import pydrake.visualization as mut
+import pydrake.visualization._model_visualizer as mut_private
 
 
 class TestModelVisualizerSubprocess(unittest.TestCase):
@@ -88,6 +91,18 @@ class TestModelVisualizer(unittest.TestCase):
     </sdf>
     """)
 
+    def setUp(self):
+        mut_private._webbrowser_open = self._mock_webbrowser_open
+        # When we want to allow webbrowser.open, this will be a list() that
+        # captures the kwargs it was called with.
+        self._webbrowser_opened = None
+
+    def _mock_webbrowser_open(self, *args, **kwargs):
+        self.assertEqual(args, tuple())
+        if self._webbrowser_opened is None:
+            self.fail("Unexpected webbrowser.open")
+        self._webbrowser_opened.append(copy.deepcopy(kwargs))
+
     def test_model_from_string(self):
         """Visualizes a model from a string buffer."""
         dut = mut.ModelVisualizer()
@@ -127,10 +142,15 @@ class TestModelVisualizer(unittest.TestCase):
             # SDFormat world file with multiple models.
             "drake/manipulation/util/test/simple_world_with_two_models.sdf",
         ]
-        for model_runpath in model_runpaths:
-            dut = mut.ModelVisualizer(visualize_frames=True)
-            dut.AddModels(FindResourceOrThrow(model_runpath))
-            dut.Run(loop_once=True)
+        for i, model_runpath in enumerate(model_runpaths):
+            with self.subTest(model=model_runpath):
+                dut = mut.ModelVisualizer(visualize_frames=True)
+                if i % 2 == 0:
+                    # Conditionally Ping the parser() here, so that we cover
+                    # both branching paths within AddModels().
+                    dut.parser()
+                dut.AddModels(FindResourceOrThrow(model_runpath))
+                dut.Run(loop_once=True)
 
     def test_methods_and_multiple_models(self):
         """
@@ -149,3 +169,64 @@ class TestModelVisualizer(unittest.TestCase):
         positions = [1, 0, 0, 0, 0, 0, 0] * 2  # Model is just doubled.
         dut.Finalize(position=positions)
         dut.Run(position=positions, loop_once=True)
+
+    def test_reload(self):
+        """
+        Checks that the _reload() function does not crash.
+        """
+        # Prepare a model that should allow reloading.
+        meshcat = Meshcat()
+        dut = mut.ModelVisualizer(meshcat=meshcat)
+        filename = "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        dut.AddModels(FindResourceOrThrow(filename))
+        dut.Finalize()
+
+        # Check that it allowed reloading.
+        self.assertIsNotNone(dut._reload_button_name)
+        button = dut._reload_button_name
+        self.assertEqual(meshcat.GetButtonClicks(button), 0)
+
+        # Remember the originally-created diagram.
+        orig_diagram = dut._diagram
+
+        # Click the reload button.
+        cli = FindResourceOrThrow("drake/geometry/meshcat_websocket_client")
+        message = f"""{{
+            "type": "button",
+            "name": "{button}"
+        }}"""
+        subprocess.check_call([
+            cli,
+            f"--ws_url={meshcat.ws_url()}",
+            f"--send_message={message}"])
+        self.assertEqual(meshcat.GetButtonClicks(button), 1)
+
+        # Run once. If a reload() happened, the diagram will have changed out.
+        dut.Run(loop_once=True)
+        self.assertNotEqual(id(orig_diagram), id(dut._diagram))
+
+    def test_webbrowser(self):
+        """
+        Checks that the webbrower launch command is properly invoked.
+        """
+        # If the browser is opened in this stanza, the test will fail.
+        dut = mut.ModelVisualizer(browser_new=True)
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        dut.Finalize()
+
+        # Now we allow (mocked) webbrowser.open.
+        self._webbrowser_opened = list()
+        dut.Run(loop_once=True)
+
+        # Check that was called exactly once, with correct kwargs.
+        self.assertEqual(len(self._webbrowser_opened), 1)
+        kwargs = self._webbrowser_opened[0]
+        self.assertEqual(kwargs["new"], True)
+        self.assertIn("localhost", kwargs["url"])
+        self.assertEqual(len(kwargs), 2)
+
+    def test_deprecated_run_with_reload(self):
+        dut = mut.ModelVisualizer()
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        with catch_drake_warnings(expected_count=1):
+            dut.RunWithReload(loop_once=True)

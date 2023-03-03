@@ -504,7 +504,9 @@ drake_py_binary(
     name = "meshcat_websocket_client",
     testonly = True,
     srcs = ["test/meshcat_websocket_client.py"],
-    visibility = ["//visibility:private"],
+    visibility = [
+        "//bindings/pydrake/visualization:__pkg__",
+    ],
 )
 
 drake_cc_googletest(

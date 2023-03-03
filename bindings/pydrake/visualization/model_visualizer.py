@@ -60,10 +60,6 @@ def _main():
         "--pyplot", action="store_true",
         help="Open a pyplot figure for rendering using "
              "PlanarSceneGraphVisualizer.")
-    # N.B.: There's no default for enable_reload; it's not an init argument.
-    args_parser.add_argument(
-        "-r", "--enable_reload", action="store_true",
-        help="Enable reloading of the model.")
     # TODO(russt): Consider supporting the PlanarSceneGraphVisualizer
     #  options as additional arguments.
     assert defaults["visualize_frames"] is False
@@ -115,7 +111,7 @@ def _main():
                                   browser_new=args.browser_new,
                                   pyplot=args.pyplot)
 
-    package_map = visualizer.parser().package_map()
+    package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
 
     # Resolve the filename if necessary.
@@ -130,11 +126,7 @@ def _main():
         args_parser.error(f"File does not exist: {filename}")
 
     visualizer.AddModels(filename)
-    if not args.loop_once and args.enable_reload:
-        # TODO(trowell-tri) Consider enabling reload by default in the future.
-        visualizer.RunWithReload(position=args.position)
-    else:
-        visualizer.Run(position=args.position, loop_once=args.loop_once)
+    visualizer.Run(position=args.position, loop_once=args.loop_once)
 
 
 if __name__ == '__main__':
