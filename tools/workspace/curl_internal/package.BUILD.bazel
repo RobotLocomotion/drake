@@ -117,6 +117,7 @@ _SRCS = [
     "lib/urlapi.c",
     "lib/vauth/digest.c",
     "lib/vauth/vauth.c",
+    "lib/vquic/vquic.c",
     "lib/vtls/vtls.c",
     "lib/warnless.c",
 ]
