@@ -38,9 +38,11 @@ from pydrake.multibody.plant import (
 class TestParsing(unittest.TestCase):
 
     def test_package_map(self):
-        # Simple coverage test for default constructor
+        # Simple coverage test for constructors.
         dut = PackageMap()
         self.assertEqual(dut.size(), 1)
+        PackageMap(other=dut)
+        copy.copy(dut)
 
         dut = PackageMap.MakeEmpty()
         dut2 = PackageMap.MakeEmpty()
