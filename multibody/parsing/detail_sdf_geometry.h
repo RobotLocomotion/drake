@@ -29,8 +29,8 @@ using ResolveFilename = std::function<std::string (
  file, this method makes a new drake::geometry::Shape object from this
  specification.
  If no recognizable geometry is specified, nullptr is returned. If the geometry
- is recognized, but malformed, emits an error. When the error policy is not set
- to throw it returns std::nullopt. */
+ is recognized, but malformed, emits an error. When the error policy is set to
+ not throw it returns std::nullopt. */
 std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
     const SDFormatDiagnostic& diagnostic,
     const sdf::Geometry& sdf_geometry,

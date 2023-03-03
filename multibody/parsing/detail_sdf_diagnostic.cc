@@ -62,6 +62,29 @@ DiagnosticPolicy SDFormatDiagnostic::MakePolicyForNode(
   return result;
 }
 
+bool SDFormatDiagnostic::PropagateErrors(
+    const sdf::Errors& errors) const {
+  bool result = false;
+  for (const auto& e : errors) {
+    DiagnosticDetail detail;
+    detail.filename = e.FilePath();
+    detail.line = e.LineNumber();
+    if (e.XmlPath().has_value()) {
+      detail.message = fmt::format(
+          "At XML path {}: {}", e.XmlPath().value(), e.Message());
+    } else {
+      detail.message = e.Message();
+    }
+    if (IsError(e)) {
+      diagnostic_->Error(detail);
+      result = true;
+    } else {
+      diagnostic_->Warning(detail);
+    }
+  }
+  return result;
+}
+
 bool IsError(const sdf::Error& report) {
   switch (report.Code()) {
     case sdf::ErrorCode::ELEMENT_DEPRECATED:
@@ -84,29 +107,6 @@ bool PropagateErrors(
       result = true;
     }
     output_errors->push_back(std::move(e));
-  }
-  return result;
-}
-
-bool SDFormatDiagnostic::PropagateErrors(
-    const sdf::Errors& errors) const {
-  bool result = false;
-  for (const auto& e : errors) {
-    DiagnosticDetail detail;
-    detail.filename = e.FilePath();
-    detail.line = e.LineNumber();
-    if (e.XmlPath().has_value()) {
-      detail.message = fmt::format(
-          "At XML path {}: {}", e.XmlPath().value(), e.Message());
-    } else {
-      detail.message = e.Message();
-    }
-    if (IsError(e)) {
-      diagnostic_->Error(detail);
-      result = true;
-    } else {
-      diagnostic_->Warning(detail);
-    }
   }
   return result;
 }

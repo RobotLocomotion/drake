@@ -16,9 +16,10 @@ namespace internal {
 class SDFormatDiagnostic {
  public:
   // Both @p diagnostic and @p data_source are aliased; their lifetime must
-  // exceed that of this object.  @p file_extension is only used for formatting
-  // diagnostics from file_contents sources. It is copied internally, so places
-  // no restrictions on the lifetime of the passed parameter.
+  // exceed that of this object.  @p file_extension is only used to indicate
+  // the type of source when @p data_source is a literal string. It is copied
+  // internally, so places no restrictions on the lifetime of the passed
+  // parameter.
   // @pre diagnostic cannot be nullptr.
   // @pre data_source cannot be nullptr.
   SDFormatDiagnostic(
@@ -35,7 +36,7 @@ class SDFormatDiagnostic {
              const std::string& message) const;
 
   // Make a temporary policy that can be passed to a node-unaware parsing
-  // function. The lifetime of this object, and the @p location should be
+  // function. The lifetime of this object, and the @p element should be
   // greater than the lifetime of the returned policy.
   drake::internal::DiagnosticPolicy MakePolicyForNode(
       const sdf::Element& element) const;
@@ -48,12 +49,12 @@ class SDFormatDiagnostic {
   void WarnUnsupportedAttribute(const sdf::ElementConstPtr element,
                                 const std::string& attribute) const;
 
-  // Copies all `errors` into `diagnostic`.
+  // Copies all `errors` into this Diagnostic object.
   // Returns true if there were any errors.
   bool PropagateErrors(const sdf::Errors& errors) const;
 
  private:
-  // Makes a diagnostic detail record based on an ElementConstPtr.
+  // Makes a diagnostic detail record based on an Element.
   drake::internal::DiagnosticDetail MakeDetail(
       const sdf::Element& element,
       const std::string& message) const;
@@ -87,7 +88,7 @@ void CheckSupportedElementValue(
     const std::string& expected);
 
 // Move-appends all `input_errors` onto `output_errors`.
-// Returns true if there were any errors.
+// Returns true if `input_errors` contains any error.
 bool PropagateErrors(
     sdf::Errors&& input_errors,
     sdf::Errors* output_errors);

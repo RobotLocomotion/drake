@@ -407,8 +407,8 @@ void AddJointActuatorFromSpecification(
     }
     if (joint_spec.Axis(1) != nullptr) {
       std::string message = fmt::format(
-          "An axis2 may not specified for ball joint '{}' and will be ignored",
-          joint_spec.Name());
+          "An axis2 may not be specified for ball joint '{}' and will be "
+          "ignored", joint_spec.Name());
       diagnostic.Warning(joint_spec.Element(), std::move(message));
     }
     return;
@@ -450,8 +450,8 @@ void AddJointActuatorFromSpecification(
   }
   if (joint_spec.Axis(1) != nullptr) {
     std::string message = fmt::format(
-        "An axis2 may not specified for 1-dof joint '{}' and will be ignored",
-        joint_spec.Name());
+        "An axis2 may not be specified for 1-dof joint '{}' and will be "
+        "ignored", joint_spec.Name());
     diagnostic.Warning(joint_spec.Element(), std::move(message));
   }
 }
@@ -499,7 +499,9 @@ void AddPrismaticSpringFromSpecification(const SDFormatDiagnostic& diagnostic,
 // corresponding spring reference if the spring stiffness is nonzero.
 // Only available for "revolute" and "continuous" joints. The units for spring
 // reference is radians and the units for spring stiffness is N⋅m/rad.
-void AddRevoluteSpringFromSpecification(
+// When the error diagnostic policy is not set to throw this function will
+// return false on errors, true otherwise.
+bool AddRevoluteSpringFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::Joint &joint_spec,
     const RevoluteJoint<double>& joint, MultibodyPlant<double>* plant) {
   DRAKE_THROW_UNLESS(plant != nullptr);
@@ -512,7 +514,7 @@ void AddRevoluteSpringFromSpecification(
     std::string message = "An axis must be specified for joint '"
         + joint_spec.Name() + "'";
     diagnostic.Error(joint_spec.Element(), std::move(message));
-    return;
+    return false;
   }
 
   const double spring_reference = axis->SpringReference();
@@ -525,6 +527,8 @@ void AddRevoluteSpringFromSpecification(
     plant->AddForceElement<RevoluteSpring>(
       joint, spring_reference, spring_stiffness);
   }
+
+  return true;
 }
 
 // Returns joint limits as the tuple (lower_limit, upper_limit,
@@ -535,8 +539,9 @@ void AddRevoluteSpringFromSpecification(
 // continuous, positions limits are infinities and velocity limits have units
 // rad/s. Velocity and acceleration limits are always >= 0.  This method throws
 // an exception if the joint type is not one of revolute, prismatic, or
-// continuous.
-std::tuple<double, double, double, double> ParseJointLimits(
+// continuous. When the diagnostic policy is set to not throw it will return
+// std::nullopt on errors.
+std::optional<std::tuple<double, double, double, double>> ParseJointLimits(
     const SDFormatDiagnostic& diagnostic,
     const sdf::Joint& joint_spec) {
   DRAKE_THROW_UNLESS(joint_spec.Type() == sdf::JointType::REVOLUTE ||
@@ -548,7 +553,7 @@ std::tuple<double, double, double, double> ParseJointLimits(
     std::string message = "An axis must be specified for joint '"
         + joint_spec.Name() + "'";
     diagnostic.Error(joint_spec.Element(), std::move(message));
-    return std::tuple<double, double, double, double>();
+    return std::nullopt;
   }
 
   // As of libsdformat13, ±∞ are used for axes with no position limits,
@@ -559,7 +564,7 @@ std::tuple<double, double, double, double> ParseJointLimits(
     std::string message = "The lower limit must be lower (or equal) than "
         "the upper limit for joint '" + joint_spec.Name() + "'.";
     diagnostic.Error(joint_spec.Element(), std::move(message));
-    return std::tuple<double, double, double, double>();
+    return std::nullopt;
   }
 
   // SDFormat internally interprets a negative velocity limit as infinite and
@@ -601,7 +606,9 @@ std::tuple<double, double, double, double> ParseJointLimits(
 // specification object. X_WM should be an identity when adding a world
 // joint (is_model_joint = false) since a world joint doesn't have a
 // containing model, hence M = W.
-void AddJointFromSpecification(
+// If the diagnostic error policy is not set to throw it returns false
+// when an error occurs, true otherwise.
+bool AddJointFromSpecification(
     const SDFormatDiagnostic& diagnostic, const RigidTransformd& X_WM,
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
     MultibodyPlant<double>* plant, std::set<sdf::JointType>* joint_types,
@@ -673,8 +680,11 @@ void AddJointFromSpecification(
     case sdf::JointType::PRISMATIC: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
       Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
-      std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
+      std::optional<std::tuple<double, double, double, double>> joint_limits =
           ParseJointLimits(diagnostic, joint_spec);
+      if (!joint_limits.has_value()) return false;
+      std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
+          *joint_limits;
       const auto& joint = plant->AddJoint<PrismaticJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
@@ -690,8 +700,11 @@ void AddJointFromSpecification(
     case sdf::JointType::REVOLUTE: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
       Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
-      std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
+      std::optional<std::tuple<double, double, double, double>> joint_limits =
           ParseJointLimits(diagnostic, joint_spec);
+      if (!joint_limits.has_value()) return false;
+      std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
+          *joint_limits;
       const auto& joint = plant->AddJoint<RevoluteJoint>(
           joint_spec.Name(),
           parent_body, X_PJ,
@@ -701,7 +714,10 @@ void AddJointFromSpecification(
       plant->get_mutable_joint(joint.index()).set_acceleration_limits(
           Vector1d(-acceleration_limit), Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
-      AddRevoluteSpringFromSpecification(diagnostic, joint_spec, joint, plant);
+      if (!AddRevoluteSpringFromSpecification(
+              diagnostic, joint_spec, joint, plant)) {
+        return false;
+      }
       break;
     }
     case sdf::JointType::UNIVERSAL: {
@@ -762,8 +778,11 @@ void AddJointFromSpecification(
     case sdf::JointType::CONTINUOUS: {
       const double damping = ParseJointDamping(diagnostic, joint_spec);
       Vector3d axis_J = ExtractJointAxis(diagnostic, joint_spec);
-      std::tie(std::ignore, std::ignore, velocity_limit, acceleration_limit) =
+      std::optional<std::tuple<double, double, double, double>> joint_limits =
           ParseJointLimits(diagnostic, joint_spec);
+      if (!joint_limits.has_value()) return false;
+      std::tie(lower_limit, upper_limit, velocity_limit, acceleration_limit) =
+          *joint_limits;
       const auto& joint =
           plant->AddJoint<RevoluteJoint>(joint_spec.Name(), parent_body, X_PJ,
                                          child_body, X_CJ, axis_J, damping);
@@ -774,7 +793,10 @@ void AddJointFromSpecification(
           .set_acceleration_limits(Vector1d(-acceleration_limit),
                                    Vector1d(acceleration_limit));
       AddJointActuatorFromSpecification(diagnostic, joint_spec, joint, plant);
-      AddRevoluteSpringFromSpecification(diagnostic, joint_spec, joint, plant);
+      if (!AddRevoluteSpringFromSpecification(
+              diagnostic, joint_spec, joint, plant)) {
+        return false;
+      }
       break;
     }
     case sdf::JointType::SCREW: {
@@ -815,6 +837,7 @@ void AddJointFromSpecification(
     }
   }
   joint_types->insert(joint_spec.Type());
+  return true;
 }
 
 // Helper method to load an SDF file and read the contents into an sdf::Root
@@ -1091,7 +1114,9 @@ const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
 
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
-void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
+// When diagnostic policy is not set to throw it returns false on errors
+// true otherwise.
+bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
                                     const sdf::ElementPtr node,
                                     ModelInstanceIndex model_instance,
                                     MultibodyPlant<double>* plant) {
@@ -1106,14 +1131,14 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     std::string message =
         "<drake:joint>: Unable to find the 'type' attribute.";
     diagnostic.Error(node, std::move(message));
-    return;
+    return false;
   }
   const std::string joint_type = node->Get<std::string>("type");
   if (!node->HasAttribute("name")) {
     std::string message =
         "<drake:joint>: Unable to find the 'name' attribute.";
     diagnostic.Error(node, std::move(message));
-    return;
+    return false;
   }
   const std::string joint_name = node->Get<std::string>("name");
 
@@ -1122,15 +1147,15 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     std::string message =
         "<drake:joint> does not yet support the <pose> child tag.";
     diagnostic.Error(node, std::move(message));
-    return;
+    return false;
   }
 
   const Frame<double>* parent_frame =
       ParseFrame(diagnostic, node, model_instance, plant, "drake:parent");
-  if (parent_frame == nullptr) { return; }
+  if (parent_frame == nullptr) { return false; }
   const Frame<double>* child_frame =
       ParseFrame(diagnostic, node, model_instance, plant, "drake:child");
-  if (child_frame == nullptr) { return; }
+  if (child_frame == nullptr) { return false; }
 
   if (joint_type == "planar") {
     // TODO(eric.cousineau): Error out when there are unused tags.
@@ -1141,8 +1166,9 @@ void AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
     std::string message = "ERROR: <drake:joint> '" + joint_name +
         "' has unrecognized value for 'type' attribute: " + joint_type;
     diagnostic.Error(node, std::move(message));
-    return;
+    return false;
   }
+  return true;
 }
 
 const LinearBushingRollPitchYaw<double>* AddBushingFromSpecification(
@@ -1347,8 +1373,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
        ++joint_index) {
     // Get a pointer to the SDF joint, and the joint axis information.
     const sdf::Joint& joint = *model.JointByIndex(joint_index);
-    AddJointFromSpecification(
-        diagnostic, X_WM, joint, model_instance, plant, &joint_types);
+    if (!AddJointFromSpecification(
+        diagnostic, X_WM, joint, model_instance, plant, &joint_types)) {
+        return {};
+      }
   }
 
   drake::log()->trace("sdf_parser: Add explicit frames");
@@ -1365,8 +1393,10 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     for (sdf::ElementPtr joint_node =
              model.Element()->GetElement("drake:joint");
          joint_node; joint_node = joint_node->GetNextElement("drake:joint")) {
-      AddDrakeJointFromSpecification(
-          diagnostic, joint_node, model_instance, plant);
+      if (!AddDrakeJointFromSpecification(
+          diagnostic, joint_node, model_instance, plant)) {
+          return {};
+        }
     }
   }
 
@@ -1836,9 +1866,11 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
     for (uint64_t joint_index = 0; joint_index < world.JointCount();
         ++joint_index) {
       const sdf::Joint& joint = *world.JointByIndex(joint_index);
-      AddJointFromSpecification(
+      if (!AddJointFromSpecification(
           diagnostic, {}, joint, world_model_instance(),
-          workspace.plant, &joint_types, false);
+          workspace.plant, &joint_types, false)) {
+          return {};
+        }
     }
 
     for (sdf::JointType joint_type : joint_types) {

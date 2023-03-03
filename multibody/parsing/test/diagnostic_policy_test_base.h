@@ -102,7 +102,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
       for (const auto& warning : warning_records_) {
         drake::log()->warn(warning.FormatWarning());
       }
-      EXPECT_TRUE(error_records_.size() > 0)
+      EXPECT_GT(error_records_.size(), 0)
           << "FormatFirstError did not get any errors";
       return {};
     }

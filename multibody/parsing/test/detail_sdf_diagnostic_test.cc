@@ -36,7 +36,7 @@ class SDFormatDiagnosticContentsTest : public SDFormatDiagnosticTest {
   SDFormatDiagnosticContentsTest() {
     sdf::Errors errors =
         root_.LoadSdfString(data_source_.contents(), parser_config_);
-    sdf_diagnostic_.PropagateErrors(errors);
+    EXPECT_FALSE(sdf_diagnostic_.PropagateErrors(errors));
   }
 
  protected:
