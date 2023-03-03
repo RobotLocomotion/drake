@@ -1,10 +1,13 @@
+import copy
 import subprocess
 import textwrap
 import unittest
 
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.geometry import Meshcat
 import pydrake.visualization as mut
+import pydrake.visualization._model_visualizer as mut_private
 
 
 class TestModelVisualizerSubprocess(unittest.TestCase):
@@ -88,6 +91,14 @@ class TestModelVisualizer(unittest.TestCase):
     </sdf>
     """)
 
+    def setUp(self):
+        self._webbrowser_opened = list()
+        mut_private._webbrowser_open = self._mock_webbrowser_open
+
+    def _mock_webbrowser_open(self, *args, **kwargs):
+        self.assertEqual(args, tuple())
+        self._webbrowser_opened.append(copy.deepcopy(kwargs))
+
     def test_model_from_string(self):
         """Visualizes a model from a string buffer."""
         dut = mut.ModelVisualizer()
@@ -127,10 +138,15 @@ class TestModelVisualizer(unittest.TestCase):
             # SDFormat world file with multiple models.
             "drake/manipulation/util/test/simple_world_with_two_models.sdf",
         ]
-        for model_runpath in model_runpaths:
-            dut = mut.ModelVisualizer(visualize_frames=True)
-            dut.AddModels(FindResourceOrThrow(model_runpath))
-            dut.Run(loop_once=True)
+        for i, model_runpath in enumerate(model_runpaths):
+            with self.subTest(model=model_runpath):
+                dut = mut.ModelVisualizer(visualize_frames=True)
+                if i % 2 == 0:
+                    # Conditionally Ping the parser() here, so that we cover
+                    # both branching paths within AddModels().
+                    dut.parser()
+                dut.AddModels(FindResourceOrThrow(model_runpath))
+                dut.Run(loop_once=True)
 
     def test_methods_and_multiple_models(self):
         """
@@ -149,3 +165,19 @@ class TestModelVisualizer(unittest.TestCase):
         positions = [1, 0, 0, 0, 0, 0, 0] * 2  # Model is just doubled.
         dut.Finalize(position=positions)
         dut.Run(position=positions, loop_once=True)
+
+    def test_deprecated_run_with_reload(self):
+        dut = mut.ModelVisualizer()
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        with catch_drake_warnings(expected_count=1):
+            dut.RunWithReload(loop_once=True)
+
+    def test_webbrowser(self):
+        dut = mut.ModelVisualizer(browser_new=True)
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        dut.Run(loop_once=True)
+        self.assertEqual(len(self._webbrowser_opened), 1)
+        kwargs = self._webbrowser_opened[0]
+        self.assertEqual(kwargs["new"], True)
+        self.assertIn("localhost", kwargs["url"])
+        self.assertEqual(len(kwargs), 2)
