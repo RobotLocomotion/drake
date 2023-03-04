@@ -12,6 +12,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+#include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
@@ -68,6 +69,14 @@ class Constraint : public EvaluatorBase {
     check(num_constraints);
     DRAKE_DEMAND(!lower_bound_.array().isNaN().any());
     DRAKE_DEMAND(!upper_bound_.array().isNaN().any());
+    for (int i = 0; i < lb.rows(); ++i) {
+      if (lb(i) > ub(i)) {
+        throw std::invalid_argument(fmt::format(
+            "Row {} of constraint {} has lower bound {}, larger than the upper "
+            "bound {}",
+            i, description, lb(i), ub(i)));
+      }
+    }
   }
 
   /**
