@@ -296,6 +296,18 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints1) {
   EXPECT_EQ(result.at(x_[1]).upper, 2);
   EXPECT_EQ(result.at(x_[2]).lower, 3);
   EXPECT_EQ(result.at(x_[2]).upper, 4);
+
+  // 2 <= x <= 1, expect throwing a warning.
+  bounding_box_constraints.clear();
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Vector1d(2), Vector1d(3)),
+      Vector1<symbolic::Variable>(x_[0]));
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Vector1d(0), Vector1d(1)),
+      Vector1<symbolic::Variable>(x_[0]));
+  result = AggregateBoundingBoxConstraints(bounding_box_constraints);
+  EXPECT_EQ(result.at(x_[0]).lower, 2);
+  EXPECT_EQ(result.at(x_[0]).upper, 1);
 }
 
 TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
@@ -308,6 +320,13 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
   Eigen::VectorXd lower, upper;
   AggregateBoundingBoxConstraints(prog, &lower, &upper);
   EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 1, 1)));
+  EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
+
+  // Now add a bounding box constraint whose lower bound is larger than the
+  // upper bound of other constraints.
+  prog.AddBoundingBoxConstraint(4, 5, x(2));
+  AggregateBoundingBoxConstraints(prog, &lower, &upper);
+  EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 4, 1)));
   EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
 }
 

@@ -18,6 +18,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/symbolic/expression.h"
+#include "drake/common/text_logging.h"
 #include "drake/solvers/decision_variable.h"
 #include "drake/solvers/evaluator_base.h"
 #include "drake/solvers/function.h"
@@ -68,6 +69,14 @@ class Constraint : public EvaluatorBase {
     check(num_constraints);
     DRAKE_DEMAND(!lower_bound_.array().isNaN().any());
     DRAKE_DEMAND(!upper_bound_.array().isNaN().any());
+    for (int i = 0; i < lb.rows(); ++i) {
+      if (lb(i) > ub(i)) {
+        drake::log()->warn(
+            "Row {} of constraint {} has lower bound {}, larger than the upper "
+            "bound {}",
+            i, description, lb(i), ub(i));
+      }
+    }
   }
 
   /**
