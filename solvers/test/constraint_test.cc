@@ -52,6 +52,16 @@ GTEST_TEST(TestConstraint, BoundSizeCheck) {
       "bound of size 2 and upper bound of size 3.");
 }
 
+GTEST_TEST(TestConstraint, InconsistentBoundCheck) {
+  // If the lower bound is larger than the upper bound, throw an error.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LinearConstraint(Eigen::Matrix2d::Identity(), Eigen::Vector2d(1, 3),
+                       Eigen::Vector2d(3, 2)),
+      fmt::format("Row 1 of constraint  has lower bound {}, larger than the "
+                  "upper bound {}",
+                  3.0, 2.0));
+}
+
 GTEST_TEST(TestConstraint, LinearConstraintSparse) {
   // Construct LinearConstraint with sparse A matrix.
   std::vector<Eigen::Triplet<double>> A_triplets;

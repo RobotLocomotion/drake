@@ -319,7 +319,7 @@ void TestSDPDualSolution1(const SolverInterface& solver, double tol) {
   auto X = prog.NewSymmetricContinuousVariables<2>();
   auto psd_con = prog.AddPositiveSemidefiniteConstraint(X);
   auto bb_con = prog.AddBoundingBoxConstraint(
-      Eigen::Vector2d(kInf, kInf), Eigen::Vector2d(4, 1),
+      Eigen::Vector2d(-kInf, -kInf), Eigen::Vector2d(4, 1),
       Vector2<symbolic::Variable>(X(0, 0), X(1, 1)));
   prog.AddLinearCost(X(1, 0));
   MathematicalProgramResult result;

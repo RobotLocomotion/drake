@@ -4,6 +4,7 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/math/wrap_to.h"
 #include "drake/multibody/inverse_kinematics/test/inverse_kinematics_test_utilities.h"
@@ -107,10 +108,12 @@ GTEST_TEST(InverseKinematicsTest, ConstructorWithJointLimits) {
     EXPECT_TRUE(check_q_without_joint_limits(q_good));
     Eigen::VectorXd q_bad = q_good;
     q_bad(i) = -0.01 * lower_limits(i) + 1.01 * upper_limits(i);
-    EXPECT_FALSE(check_q_with_joint_limits(q_bad));
+    DRAKE_EXPECT_THROWS_MESSAGE(check_q_with_joint_limits(q_bad),
+                                "AggregateBoundingBoxConstraints.*");
     EXPECT_TRUE(check_q_without_joint_limits(q_bad));
     q_bad(i) = 1.01 * lower_limits(i) - 0.01 * upper_limits(i);
-    EXPECT_FALSE(check_q_with_joint_limits(q_bad));
+    DRAKE_EXPECT_THROWS_MESSAGE(check_q_with_joint_limits(q_bad),
+                                "AggregateBoundingBoxConstraints.*");
     EXPECT_TRUE(check_q_without_joint_limits(q_bad));
   }
 }

@@ -347,6 +347,7 @@ drake_cc_googletest(
     deps = [
         ":inverse_kinematics_core",
         ":inverse_kinematics_test_utilities",
+        "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
         "//solvers:solve",
     ],

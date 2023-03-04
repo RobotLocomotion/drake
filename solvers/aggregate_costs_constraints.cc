@@ -179,6 +179,14 @@ std::unordered_map<symbolic::Variable, Bound> AggregateBoundingBoxConstraints(
       }
     }
   }
+  for (const auto& [var, bound] : bounds) {
+    if (bound.lower > bound.upper) {
+      throw std::invalid_argument(
+          fmt::format("AggregateBoundingBoxConstraints(): Variable {} has "
+                      "lower bound {}, larger than the upper bound {}",
+                      var.get_name(), bound.lower, bound.upper));
+    }
+  }
   return bounds;
 }
 
@@ -197,6 +205,14 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
       if (constraint.evaluator()->upper_bound()(i) < (*upper)(var_index)) {
         (*upper)(var_index) = constraint.evaluator()->upper_bound()(i);
       }
+    }
+  }
+  for (int i = 0; i < prog.num_vars(); ++i) {
+    if ((*lower)(i) > (*upper)(i)) {
+      throw std::invalid_argument(fmt::format(
+          "AggregateBoundingBoxConstraints(): Variable {} has lower bound {}, "
+          "larger than the upper bound {}",
+          prog.decision_variable(i).get_name(), (*lower)(i), (*upper)(i)));
     }
   }
 }

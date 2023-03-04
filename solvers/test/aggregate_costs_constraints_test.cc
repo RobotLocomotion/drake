@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/test_utilities/symbolic_test_util.h"
 
 using ::testing::HasSubstr;
@@ -282,20 +283,35 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints1) {
   EXPECT_EQ(result.at(x_[2]).lower, 3);
   EXPECT_EQ(result.at(x_[2]).upper, 4);
 
-  // -inf <= x1 <= 2. The returned bounds for x1 should be 4 <= x1 <= 2. This
+  // -inf <= x1 <= 2. The returned bounds for x1 should be 4 <= x1 <= 5. This
   // test that we can return the bounds even if the lower bound is higher than
   // the upper bound.
-  bounding_box_constraints.emplace_back(std::make_shared<BoundingBoxConstraint>(
-      Vector1d(-kInf), Vector1d(2)), Vector1<symbolic::Variable>(x_[1]));
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Vector1d(-kInf), Vector1d(5)),
+      Vector1<symbolic::Variable>(x_[1]));
   result = AggregateBoundingBoxConstraints(bounding_box_constraints);
   EXPECT_EQ(result.size(), 3);
   // Only the bound of x_[1] should change, the rest should be the same.
   EXPECT_EQ(result.at(x_[0]).lower, 1.5);
   EXPECT_EQ(result.at(x_[0]).upper, 2);
   EXPECT_EQ(result.at(x_[1]).lower, 4);
-  EXPECT_EQ(result.at(x_[1]).upper, 2);
+  EXPECT_EQ(result.at(x_[1]).upper, 5);
   EXPECT_EQ(result.at(x_[2]).lower, 3);
   EXPECT_EQ(result.at(x_[2]).upper, 4);
+
+  // 2 <= x <= 1, expect throwing a warning.
+  bounding_box_constraints.clear();
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Vector1d(2), Vector1d(3)),
+      Vector1<symbolic::Variable>(x_[0]));
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Vector1d(0), Vector1d(1)),
+      Vector1<symbolic::Variable>(x_[0]));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      result = AggregateBoundingBoxConstraints(bounding_box_constraints),
+      fmt::format("AggregateBoundingBoxConstraints.*Variable {} has lower "
+                  "bound {}, larger than the upper bound {}",
+                  x_[0].get_name(), 2.0, 1.0));
 }
 
 TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
@@ -309,6 +325,14 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints2) {
   AggregateBoundingBoxConstraints(prog, &lower, &upper);
   EXPECT_TRUE(CompareMatrices(lower, Eigen::Vector4d(-1, -kInf, 1, 1)));
   EXPECT_TRUE(CompareMatrices(upper, Eigen::Vector4d(2, kInf, 3, 2)));
+
+  // Now add a bounding box constraint whose lower bound is larger than the
+  // upper bound of other constraints.
+  prog.AddBoundingBoxConstraint(4, 5, x(2));
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AggregateBoundingBoxConstraints(prog, &lower, &upper),
+      fmt::format(".* has lower bound {}, larger than the upper bound {}", 4.0,
+                  3.0));
 }
 
 void CheckAggregateDuplicateVariables(const Eigen::SparseMatrix<double>& A,
