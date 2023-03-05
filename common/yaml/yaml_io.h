@@ -85,11 +85,9 @@ only one entry, whose key is `child_name` and value is the serialized `data`.
 @tparam Serializable must implement a @ref implementing_serialize "Serialize"
   function. */
 template <typename Serializable>
-void SaveYamlFile(
-    const std::string& filename,
-    const Serializable& data,
-    const std::optional<std::string>& child_name = std::nullopt,
-    const std::optional<Serializable>& defaults = std::nullopt);
+void SaveYamlFile(const std::string& filename, const Serializable& data,
+                  const std::optional<std::string>& child_name = std::nullopt,
+                  const std::optional<Serializable>& defaults = std::nullopt);
 
 /** Saves data as a YAML-formatted string.
 
@@ -122,10 +120,9 @@ namespace internal {
 void WriteFile(const std::string& filename, const std::string& data);
 
 template <typename Serializable>
-static Serializable LoadNode(
-    internal::Node node,
-    const std::optional<Serializable>& defaults,
-    const std::optional<LoadYamlOptions>& options) {
+static Serializable LoadNode(internal::Node node,
+                             const std::optional<Serializable>& defaults,
+                             const std::optional<LoadYamlOptions>& options) {
   // Reify our optional arguments.
   Serializable result = defaults.value_or(Serializable{});
   LoadYamlOptions new_options = options.value_or(LoadYamlOptions{});
@@ -145,12 +142,11 @@ static Serializable LoadNode(
 // inline because we need internal::LoadNode to be declared.)
 template <typename Serializable>
 static Serializable LoadYamlFile(
-    const std::string& filename,
-    const std::optional<std::string>& child_name,
+    const std::string& filename, const std::optional<std::string>& child_name,
     const std::optional<Serializable>& defaults,
     const std::optional<LoadYamlOptions>& options) {
-  internal::Node node = internal::YamlReadArchive::LoadFileAsNode(
-      filename, child_name);
+  internal::Node node =
+      internal::YamlReadArchive::LoadFileAsNode(filename, child_name);
   return internal::LoadNode(std::move(node), defaults, options);
 }
 
@@ -158,34 +154,29 @@ static Serializable LoadYamlFile(
 // inline because we need internal::LoadNode to be declared.)
 template <typename Serializable>
 static Serializable LoadYamlString(
-    const std::string& data,
-    const std::optional<std::string>& child_name,
+    const std::string& data, const std::optional<std::string>& child_name,
     const std::optional<Serializable>& defaults,
     const std::optional<LoadYamlOptions>& options) {
-  internal::Node node = internal::YamlReadArchive::LoadStringAsNode(
-      data, child_name);
+  internal::Node node =
+      internal::YamlReadArchive::LoadStringAsNode(data, child_name);
   return internal::LoadNode(std::move(node), defaults, options);
 }
 
 // (Implementation of a function declared above.  This cannot be defined
 // inline because we need SaveYamlString to be declared.)
 template <typename Serializable>
-void SaveYamlFile(
-    const std::string& filename,
-    const Serializable& data,
-    const std::optional<std::string>& child_name,
-    const std::optional<Serializable>& defaults) {
-  internal::WriteFile(filename,
-      SaveYamlString(data, child_name, defaults));
+void SaveYamlFile(const std::string& filename, const Serializable& data,
+                  const std::optional<std::string>& child_name,
+                  const std::optional<Serializable>& defaults) {
+  internal::WriteFile(filename, SaveYamlString(data, child_name, defaults));
 }
 
 // (Implementation of a function declared above.  This could be defined
 // inline, but we keep it with the others for consistency.)
 template <typename Serializable>
-std::string SaveYamlString(
-    const Serializable& data,
-    const std::optional<std::string>& child_name,
-    const std::optional<Serializable>& defaults) {
+std::string SaveYamlString(const Serializable& data,
+                           const std::optional<std::string>& child_name,
+                           const std::optional<Serializable>& defaults) {
   internal::YamlWriteArchive archive;
   archive.Accept(data);
   if (defaults.has_value()) {

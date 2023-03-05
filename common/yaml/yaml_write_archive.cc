@@ -16,8 +16,12 @@ namespace internal {
 namespace {
 
 // Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
 
 constexpr const char* const kKeyOrder = "__key_order";
 
@@ -33,59 +37,59 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
   const YAML::Mark no_mark;
   const YAML::anchor_t no_anchor = YAML::NullAnchor;
   node.Visit(overloaded{
-    [&](const internal::Node::ScalarData& data) {
-      sink->OnScalar(no_mark, node.GetTag(), no_anchor, data.scalar);
-    },
-    [&](const internal::Node::SequenceData& data) {
-      // If all children are scalars, then format this sequence onto a
-      // single line; otherwise, format as a bulleted list.
-      auto style = YAML::EmitterStyle::Flow;
-      for (const auto& child : data.sequence) {
-        if (!child.IsScalar()) {
-          style = YAML::EmitterStyle::Block;
+      [&](const internal::Node::ScalarData& data) {
+        sink->OnScalar(no_mark, node.GetTag(), no_anchor, data.scalar);
+      },
+      [&](const internal::Node::SequenceData& data) {
+        // If all children are scalars, then format this sequence onto a
+        // single line; otherwise, format as a bulleted list.
+        auto style = YAML::EmitterStyle::Flow;
+        for (const auto& child : data.sequence) {
+          if (!child.IsScalar()) {
+            style = YAML::EmitterStyle::Block;
+          }
         }
-      }
-      sink->OnSequenceStart(no_mark, node.GetTag(), no_anchor, style);
-      for (const auto& child : data.sequence) {
-        RecursiveEmit(child, sink);
-      }
-      sink->OnSequenceEnd();
-    },
-    [&](const internal::Node::MappingData& data) {
-      // If there are no children, then format this map onto a single line;
-      // otherwise, format over multiple "key: value\n" lines.
-      auto style = YAML::EmitterStyle::Block;
-      if (data.mapping.empty()) {
-        style = YAML::EmitterStyle::Flow;
-      }
-      sink->OnMapStart(no_mark, node.GetTag(), no_anchor, style);
-      // If there is a __key_order node inserted (as part of the Accept()
-      // member function in our header file), use it to specify output order;
-      // otherwise, use alphabetical order.
-      std::vector<std::string> key_order;
-      if (data.mapping.count(kKeyOrder)) {
-        const internal::Node& key_order_node = data.mapping.at(kKeyOrder);
-        // Use Accept()'s ordering.  (If EraseMatchingMaps has been called,
-        // some of the keys may have disappeared.)
-        for (const auto& item : key_order_node.GetSequence()) {
-          const std::string& key = item.GetScalar();
-          if (data.mapping.count(key)) {
+        sink->OnSequenceStart(no_mark, node.GetTag(), no_anchor, style);
+        for (const auto& child : data.sequence) {
+          RecursiveEmit(child, sink);
+        }
+        sink->OnSequenceEnd();
+      },
+      [&](const internal::Node::MappingData& data) {
+        // If there are no children, then format this map onto a single line;
+        // otherwise, format over multiple "key: value\n" lines.
+        auto style = YAML::EmitterStyle::Block;
+        if (data.mapping.empty()) {
+          style = YAML::EmitterStyle::Flow;
+        }
+        sink->OnMapStart(no_mark, node.GetTag(), no_anchor, style);
+        // If there is a __key_order node inserted (as part of the Accept()
+        // member function in our header file), use it to specify output order;
+        // otherwise, use alphabetical order.
+        std::vector<std::string> key_order;
+        if (data.mapping.count(kKeyOrder)) {
+          const internal::Node& key_order_node = data.mapping.at(kKeyOrder);
+          // Use Accept()'s ordering.  (If EraseMatchingMaps has been called,
+          // some of the keys may have disappeared.)
+          for (const auto& item : key_order_node.GetSequence()) {
+            const std::string& key = item.GetScalar();
+            if (data.mapping.count(key)) {
+              key_order.push_back(key);
+            }
+          }
+        } else {
+          // Use alphabetical ordering.
+          for (const auto& [key, value] : data.mapping) {
+            unused(value);
             key_order.push_back(key);
           }
         }
-      } else {
-        // Use alphabetical ordering.
-        for (const auto& [key, value] : data.mapping) {
-          unused(value);
-          key_order.push_back(key);
+        for (const auto& string_key : key_order) {
+          RecursiveEmit(internal::Node::MakeScalar(string_key), sink);
+          RecursiveEmit(data.mapping.at(string_key), sink);
         }
-      }
-      for (const auto& string_key : key_order) {
-        RecursiveEmit(internal::Node::MakeScalar(string_key), sink);
-        RecursiveEmit(data.mapping.at(string_key), sink);
-      }
-      sink->OnMapEnd();
-    },
+        sink->OnMapEnd();
+      },
   });
 }
 
@@ -134,8 +138,12 @@ void DoEraseMatchingMaps(internal::Node* x, const internal::Node* y) {
   // If their type is non-map, then we do not subtract them.  The reader's
   // retain_map_defaults mode only merges default maps; it does not, e.g.,
   // concatenate sequences.
-  if (!(x->IsMapping())) { return; }
-  if (!(y->IsMapping())) { return; }
+  if (!(x->IsMapping())) {
+    return;
+  }
+  if (!(y->IsMapping())) {
+    return;
+  }
   const std::map<std::string, internal::Node>& y_map = y->GetMapping();
 
   // Both x are y are maps.  Remove from x any key-value pair that is identical

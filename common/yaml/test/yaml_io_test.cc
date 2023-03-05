@@ -75,13 +75,13 @@ extra_junk: will_be_ignored
   const std::optional<StringStruct> no_defaults;
   LoadYamlOptions options;
   options.allow_yaml_with_no_cpp = true;
-  const auto result = LoadYamlString<StringStruct>(
-      data, no_child_name, no_defaults, options);
+  const auto result =
+      LoadYamlString<StringStruct>(data, no_child_name, no_defaults, options);
   EXPECT_EQ(result.value, "some_value");
   // Cross-check that the options actually were important.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      LoadYamlString<StringStruct>(
-          data, no_child_name, no_defaults, { /* no options */ }),
+      LoadYamlString<StringStruct>(data, no_child_name, no_defaults,
+                                   {/* no options */}),
       ".*extra_junk.*");
 }
 
@@ -96,8 +96,8 @@ extra_junk:
   const MapStruct defaults;  // The defaults contains kNominalDouble already.
   LoadYamlOptions options;
   options.allow_yaml_with_no_cpp = true;
-  const auto result = LoadYamlString<MapStruct>(
-      data, no_child_name, defaults, options);
+  const auto result =
+      LoadYamlString<MapStruct>(data, no_child_name, defaults, options);
   // When user options are provided, the implicit options that would otherwise
   // be used for defaults parsing are not in effect; thus, retain_map_defaults
   // will be false and kNominalDouble is not present in the result.
@@ -106,23 +106,23 @@ extra_junk:
 }
 
 GTEST_TEST(YamlIoTest, LoadFile) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/common/yaml/test/yaml_io_test_input_1.yaml");
+  const std::string filename =
+      FindResourceOrThrow("drake/common/yaml/test/yaml_io_test_input_1.yaml");
   const auto result = LoadYamlFile<StringStruct>(filename);
   EXPECT_EQ(result.value, "some_value_1");
 }
 
 GTEST_TEST(YamlIoTest, LoadFileChildName) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/common/yaml/test/yaml_io_test_input_2.yaml");
+  const std::string filename =
+      FindResourceOrThrow("drake/common/yaml/test/yaml_io_test_input_2.yaml");
   const std::string child_name = "some_string_struct";
   const auto result = LoadYamlFile<StringStruct>(filename, child_name);
   EXPECT_EQ(result.value, "some_value_2");
 }
 
 GTEST_TEST(YamlIoTest, LoadFileChildNameBad) {
-  const std::string filename = FindResourceOrThrow(
-      "drake/common/yaml/test/yaml_io_test_input_2.yaml");
+  const std::string filename =
+      FindResourceOrThrow("drake/common/yaml/test/yaml_io_test_input_2.yaml");
   const std::string child_name = "wrong_child_name";
   DRAKE_EXPECT_THROWS_MESSAGE(
       LoadYamlFile<StringStruct>(filename, child_name),
@@ -189,9 +189,8 @@ GTEST_TEST(YamlIoTest, SaveFileAllArgs) {
 
 GTEST_TEST(YamlIoTest, SaveFileBad) {
   const std::string filename = temp_directory() + "/no_such_dir/file.yaml";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      SaveYamlFile(filename, StringStruct{}),
-      ".* could not open .*/no_such_dir/.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(SaveYamlFile(filename, StringStruct{}),
+                              ".* could not open .*/no_such_dir/.*");
 }
 
 }  // namespace

@@ -16,8 +16,8 @@ namespace {
 
 // The source and destination are both of type Map.  Copy the key-value pairs
 // from source into destination, but don't overwrite any existing keys.
-void CopyWithMergeKeySemantics(
-    const YAML::Node& source, YAML::Node* destination) {
+void CopyWithMergeKeySemantics(const YAML::Node& source,
+                               YAML::Node* destination) {
   for (const auto& key_value : source) {
     const YAML::Node& key = key_value.first;
     const YAML::Node& value = key_value.second;
@@ -99,16 +99,16 @@ void RewriteMergeKeys(const YAML::Node& parent, YAML::Node* node) {
     keys.push_back(map_pair.first.as<std::string>());
   }
   std::sort(keys.begin(), keys.end());
-  throw std::runtime_error(fmt::format(
-      "YAML node of type Mapping (with size {} and keys {{{}}}) {}",
-      keys.size(), fmt::join(keys, ", "), error_message));
+  throw std::runtime_error(
+      fmt::format("YAML node of type Mapping (with size {} and keys {{{}}}) {}",
+                  keys.size(), fmt::join(keys, ", "), error_message));
 }
 
 // Convert a jbeder/yaml-cpp YAML::Node `node` to a Drake yaml::internal::Node.
 // See https://github.com/jbeder/yaml-cpp/wiki/Tutorial for a jbeder reference.
 // The `parent` is only used to provide context during error reporting.
-internal::Node ConvertJbederYamlNodeToDrakeYamlNode(
-    const YAML::Node& parent, const YAML::Node& node) {
+internal::Node ConvertJbederYamlNodeToDrakeYamlNode(const YAML::Node& parent,
+                                                    const YAML::Node& node) {
   switch (node.Type()) {
     case YAML::NodeType::Undefined: {
       throw std::runtime_error("A yaml-cpp node was unexpectedly Undefined");
@@ -137,8 +137,8 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(
       for (const auto& key_value : merged_node) {
         const YAML::Node& key = key_value.first;
         const YAML::Node& value = key_value.second;
-        result.Add(key.Scalar(), ConvertJbederYamlNodeToDrakeYamlNode(
-            node, value));
+        result.Add(key.Scalar(),
+                   ConvertJbederYamlNodeToDrakeYamlNode(node, value));
       }
       return result;
     }
@@ -148,9 +148,8 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(
 
 }  // namespace
 
-YamlReadArchive::YamlReadArchive(
-    internal::Node root,
-    const LoadYamlOptions& options)
+YamlReadArchive::YamlReadArchive(internal::Node root,
+                                 const LoadYamlOptions& options)
     : owned_root_(std::move(root)),
       root_(&owned_root_.value()),
       mapish_item_key_(nullptr),
@@ -164,8 +163,7 @@ YamlReadArchive::YamlReadArchive(
 // a separate file with more specific testing, but for the moment our use of
 // yaml-cpp in our public API makes that difficult.
 internal::Node YamlReadArchive::LoadFileAsNode(
-    const std::string& filename,
-    const std::optional<std::string>& child_name) {
+    const std::string& filename, const std::optional<std::string>& child_name) {
   YAML::Node root = YAML::LoadFile(filename);
   if (child_name.has_value()) {
     YAML::Node child_node = root[*child_name];
@@ -186,8 +184,7 @@ internal::Node YamlReadArchive::LoadFileAsNode(
 // a separate file with more specific testing, but for the moment our use of
 // yaml-cpp in our public API makes that difficult.
 internal::Node YamlReadArchive::LoadStringAsNode(
-    const std::string& data,
-    const std::optional<std::string>& child_name) {
+    const std::string& data, const std::optional<std::string>& child_name) {
   YAML::Node root = YAML::Load(data);
   if (child_name.has_value()) {
     YAML::Node child_node = root[*child_name];
@@ -209,8 +206,8 @@ void YamlReadArchive::ParseScalarImpl(const std::string& value, T* result) {
   // Generally, all of the POD types are supported.
   bool success = YAML::convert<T>::decode(YAML::Node(value), *result);
   if (!success) {
-    ReportError(fmt::format(
-        "could not parse {} value", drake::NiceTypeName::Get<T>()));
+    ReportError(
+        fmt::format("could not parse {} value", drake::NiceTypeName::Get<T>()));
   }
 }
 
@@ -242,8 +239,8 @@ void YamlReadArchive::ParseScalar(const std::string& value, uint64_t* result) {
   ParseScalarImpl<uint64_t>(value, result);
 }
 
-void YamlReadArchive::ParseScalar(
-    const std::string& value, std::string* result) {
+void YamlReadArchive::ParseScalar(const std::string& value,
+                                  std::string* result) {
   DRAKE_DEMAND(result != nullptr);
   *result = value;
 }
@@ -269,8 +266,8 @@ const internal::Node* YamlReadArchive::MaybeGetSubNode(const char* name) const {
 
 const internal::Node* YamlReadArchive::GetSubNodeScalar(
     const char* name) const {
-  const internal::Node* result = GetSubNodeAny(
-      name, internal::NodeType::kScalar);
+  const internal::Node* result =
+      GetSubNodeAny(name, internal::NodeType::kScalar);
   if ((result != nullptr) && (result->GetTag() == internal::Node::kTagNull)) {
     ReportError("has non-Scalar (Null)");
     result = nullptr;
@@ -305,8 +302,8 @@ const internal::Node* YamlReadArchive::GetSubNodeAny(
     if (result->GetTag() == internal::Node::kTagNull) {
       actual_type_string = "Null";
     }
-    ReportError(fmt::format(
-        "has non-{} ({})", expected_type_string, actual_type_string));
+    ReportError(fmt::format("has non-{} ({})", expected_type_string,
+                            actual_type_string));
     result = nullptr;
   }
   return result;
@@ -324,8 +321,7 @@ void YamlReadArchive::CheckAllAccepted() const {
   for (const auto& [key, value] : root_->GetMapping()) {
     unused(value);
     if (visited_names_.count(key) == 0) {
-      ReportError(fmt::format(
-          "key '{}' did not match any visited value", key));
+      ReportError(fmt::format("key '{}' did not match any visited value", key));
     }
   }
 }
@@ -369,8 +365,8 @@ void YamlReadArchive::PrintNodeSummary(std::ostream& s) const {
   }
 
   // Output the details of the keys.
-  fmt::print(s, " (with size {} and keys {{{}}})",
-             keys.size(), fmt::join(keys, ", "));
+  fmt::print(s, " (with size {} and keys {{{}}})", keys.size(),
+             fmt::join(keys, ", "));
 }
 
 void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
@@ -380,8 +376,7 @@ void YamlReadArchive::PrintVisitNameType(std::ostream& s) const {
   }
   DRAKE_DEMAND(debug_visit_name_ != nullptr);
   DRAKE_DEMAND(debug_visit_type_ != nullptr);
-  fmt::print(s, "{} {}",
-             drake::NiceTypeName::Get(*debug_visit_type_),
+  fmt::print(s, "{} {}", drake::NiceTypeName::Get(*debug_visit_type_),
              debug_visit_name_);
 }
 

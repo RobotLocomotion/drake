@@ -250,7 +250,6 @@ class Node final {
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::yaml::internal::Node>
-    : drake::ostream_formatter {};
+struct formatter<drake::yaml::internal::Node> : drake::ostream_formatter {};
 }  // namespace fmt
 #endif
