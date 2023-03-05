@@ -1,3 +1,6 @@
+# This file is licensed under the MIT-0 License.
+# See LICENSE-MIT-0.txt in the current directory.
+
 # This demo simulation shows an IIWA arm with an attached WSG gripper.
 Demo:
   directives:
@@ -7,8 +10,17 @@ Demo:
   - add_weld:
       parent: world
       child: amazon_table::amazon_table
-  - add_directives:
-      file: package://drake/examples/hardware_sim/example_iiwa_wsg.dmd.yaml
+  - add_model:
+      name: iiwa
+      file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_primitive_collision.urdf
+      default_joint_positions:
+        iiwa_joint_1: [-0.2]
+        iiwa_joint_2: [0.79]
+        iiwa_joint_3: [0.32]
+        iiwa_joint_4: [-1.76]
+        iiwa_joint_5: [-0.36]
+        iiwa_joint_6: [0.64]
+        iiwa_joint_7: [-0.73]
   - add_frame:
       name: iiwa_on_world
       X_PF:
@@ -18,6 +30,21 @@ Demo:
   - add_weld:
       parent: iiwa_on_world
       child: iiwa::base
+  - add_model:
+      name: wsg
+      file: package://drake/manipulation/models/wsg_50_description/sdf/schunk_wsg_50_with_tip.sdf
+      default_joint_positions:
+        left_finger_sliding_joint: [-0.02]
+        right_finger_sliding_joint: [0.02]
+  - add_frame:
+      name: wsg_on_iiwa
+      X_PF:
+        base_frame: iiwa_link_7
+        translation: [0, 0, 0.114]
+        rotation: !Rpy { deg: [90, 0, 90] }
+  - add_weld:
+      parent: wsg_on_iiwa
+      child: wsg::body
   cameras:
     oracular_view:
       name: camera_0

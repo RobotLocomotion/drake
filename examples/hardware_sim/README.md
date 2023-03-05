@@ -1,27 +1,74 @@
 
-This directory contains example programs that illustrate how to use Drake's
-YAML configuration fragments to set up and run a simulator.
+# Standalone Robot Simulations
 
-The same demo is available independently as either C++ or Python.
+This directory contains example programs that illustrate how to use Drake's YAML
+configuration fragments to set up and run your own robot simulation.
 
-To see the C++ demo, run:
+The example shows how to simulate a robot where joint command messages arrive
+from some external source. The simulation publishes simulated joint status
+messages and simulated camera image messages.
 
-$ cd drake
-$ bazel run //tools:meldis -- -w &
-$ bazel run //examples/hardware_sim:demo_cc
+The same demo is implemented in both Python and C++, for reference.
 
-To see the Python demo, run:
+Note that the demo its pretty boring on its own! The robot is uncommanded, so
+nothing is happening. All you'll see is the scene geometry, along with a display
+of the contact forces (green arrows).
 
+
+## Running the Python demo from a Drake binary release
+
+The demo is not installed as part of Drake releases. We expect and encourage you
+to copy these files into your own projects and customize them there.
+
+(1) Use https://drake.mit.edu/installation.html to install Drake. The ``pip``
+installation is a good option. Make sure your ``$PYTHONPATH`` is set correctly
+per the instructions.
+
+(2) Copy ``hardware_sim.py`` and ``example_scenarios.yaml`` into a temporary
+directory:
+
+* https://raw.githubusercontent.com/RobotLocomotion/drake/master/examples/hardware_sim/hardware_sim.py
+* https://raw.githubusercontent.com/RobotLocomotion/drake/master/examples/hardware_sim/example_scenarios.yaml
+
+(3) (Optional) Run the standalone visualizer:
+
+```
+python3 -m pydrake.visualization.meldis -w &
+```
+
+This command will open a new web browser window, initially showing an empty
+scene. This "standalone" visualizer can remain running even as you repeatedly
+start and stop the simulation.
+
+(4) Run the simulation.
+
+```
+python3 hardware_sim.py --scenario_file=example_scenarios.yaml \
+  --scenario_name=Demo --scenario_text='{ simulation_duration: 60 }'
+```
+
+If you didn't launch the visualizer in step (3), look for a log message like
+``Meshcat listening for connections at http://localhost:7000`` and click on that
+link to open a temporary visualizer (that will disappear when you close the
+simulation).
+
+
+## Running from a Drake source build
+
+To use Python, run these commands:
+
+```
 $ cd drake
 $ bazel run //tools:meldis -- -w &
 $ bazel run //examples/hardware_sim:demo_py
+```
 
-At the moment, the capabilities demonstrated by the example are somewhat
-limited. We will be adding more features in the near future.
+To use C++, run these commands:
 
-Note that neither the hardware_sim program nor its scenario schema are
-installed as part of Drake releases. We expect and encourage users to
-copy these files into their own projects and customize the code for
-their specific needs.
+Run these commands:
 
-TODO(jwnimmer-tri) Add demonstrations of using the extra scenario text.
+```
+$ cd drake
+$ bazel run //tools:meldis -- -w &
+$ bazel run //examples/hardware_sim:demo_cc
+```
