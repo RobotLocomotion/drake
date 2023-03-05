@@ -42,21 +42,20 @@ using Param = std::tuple<NodeType, std::string_view>;
 class YamlNodeParamaterizedTest : public testing::TestWithParam<Param> {
  protected:
   // Returns the test suite's desired type.
-  NodeType GetExpectedType() {
-    return std::get<0>(GetParam());
-  }
+  NodeType GetExpectedType() { return std::get<0>(GetParam()); }
 
   // Returns the test suite's desired type string.
-  std::string_view GetExpectedTypeString() {
-    return std::get<1>(GetParam());
-  }
+  std::string_view GetExpectedTypeString() { return std::get<1>(GetParam()); }
 
   // Returns a new, empty Node with using the test suite's desired type.
   Node MakeEmptyDut() {
     switch (GetExpectedType()) {
-      case NodeType::kScalar:   return Node::MakeScalar();
-      case NodeType::kSequence: return Node::MakeSequence();
-      case NodeType::kMapping:  return Node::MakeMapping();
+      case NodeType::kScalar:
+        return Node::MakeScalar();
+      case NodeType::kSequence:
+        return Node::MakeSequence();
+      case NodeType::kMapping:
+        return Node::MakeMapping();
     }
     DRAKE_UNREACHABLE();
   }
@@ -84,9 +83,8 @@ class YamlNodeParamaterizedTest : public testing::TestWithParam<Param> {
   // Given a function name, returns the expected exception message in case the
   // runtime type of the Node is incorrect.
   std::string GetExpectedCannot(std::string_view operation) {
-    return fmt::format(
-        ".*Cannot.*{}.*on a {}.*",
-        operation, GetExpectedTypeString());
+    return fmt::format(".*Cannot.*{}.*on a {}.*", operation,
+                       GetExpectedTypeString());
   }
 };
 
@@ -170,8 +168,8 @@ TEST_P(YamlNodeParamaterizedTest, ScalarOps) {
     EXPECT_FALSE(dut == dut2);
     EXPECT_EQ(dut2.GetScalar(), "foo");
   } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.GetScalar(), GetExpectedCannot("GetScalar"));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.GetScalar(),
+                                GetExpectedCannot("GetScalar"));
   }
 }
 
@@ -185,10 +183,10 @@ TEST_P(YamlNodeParamaterizedTest, SequenceOps) {
     ASSERT_EQ(dut2.GetSequence().size(), 1);
     EXPECT_EQ(dut2.GetSequence().front().GetScalar(), "item");
   } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.GetSequence(), GetExpectedCannot("GetSequence"));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.Add(Node::MakeNull()), GetExpectedCannot("Add"));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.GetSequence(),
+                                GetExpectedCannot("GetSequence"));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.Add(Node::MakeNull()),
+                                GetExpectedCannot("Add"));
   }
 }
 
@@ -197,42 +195,31 @@ TEST_P(YamlNodeParamaterizedTest, MappingOps) {
   Node dut = MakeEmptyDut();
   if (dut.IsMapping()) {
     EXPECT_TRUE(dut.GetMapping().empty());
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.Remove("quux"),
-        ".*No such key.*'quux'.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.Remove("quux"), ".*No such key.*'quux'.*");
     Node dut2 = MakeNonEmptyDut();
     EXPECT_FALSE(dut == dut2);
     ASSERT_EQ(dut2.GetMapping().size(), 1);
     EXPECT_EQ(dut2.GetMapping().begin()->first, "key");
     EXPECT_EQ(dut2.At("key").GetScalar(), "value");
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut2.Add("key", Node::MakeScalar()),
-        "Cannot .*Add.* duplicate key 'key'");
+    DRAKE_EXPECT_THROWS_MESSAGE(dut2.Add("key", Node::MakeScalar()),
+                                "Cannot .*Add.* duplicate key 'key'");
     dut2.Remove("key");
     EXPECT_TRUE(dut.GetMapping().empty());
   } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.GetMapping(), GetExpectedCannot("GetMapping"));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.Add("key", Node::MakeNull()), GetExpectedCannot("Add"));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.At("key"), GetExpectedCannot("At"));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        dut.Remove("key"), GetExpectedCannot("Remove"));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.GetMapping(),
+                                GetExpectedCannot("GetMapping"));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.Add("key", Node::MakeNull()),
+                                GetExpectedCannot("Add"));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.At("key"), GetExpectedCannot("At"));
+    DRAKE_EXPECT_THROWS_MESSAGE(dut.Remove("key"), GetExpectedCannot("Remove"));
   }
 }
 
 // Helper to check visiting.
 struct VisitorThatCopies {
-  void operator()(const Node::ScalarData& data) {
-    scalar = data.scalar;
-  }
-  void operator()(const Node::SequenceData& data) {
-    sequence = data.sequence;
-  }
-  void operator()(const Node::MappingData& data) {
-    mapping = data.mapping;
-  }
+  void operator()(const Node::ScalarData& data) { scalar = data.scalar; }
+  void operator()(const Node::SequenceData& data) { sequence = data.sequence; }
+  void operator()(const Node::MappingData& data) { mapping = data.mapping; }
 
   std::optional<std::string> scalar;
   std::optional<std::vector<Node>> sequence;
@@ -281,9 +268,18 @@ TEST_P(YamlNodeParamaterizedTest, ToString) {
   // substring within the printed result.
   std::string needle;
   switch (GetExpectedType()) {
-    case NodeType::kScalar:   { needle = "foo";  break; }
-    case NodeType::kSequence: { needle = "item"; break; }
-    case NodeType::kMapping:  { needle = "key";  break; }
+    case NodeType::kScalar: {
+      needle = "foo";
+      break;
+    }
+    case NodeType::kSequence: {
+      needle = "item";
+      break;
+    }
+    case NodeType::kMapping: {
+      needle = "key";
+      break;
+    }
   }
   EXPECT_THAT(fmt::format("{}", dut), testing::HasSubstr(needle));
 
@@ -292,10 +288,10 @@ TEST_P(YamlNodeParamaterizedTest, ToString) {
   EXPECT_THAT(fmt::format("{}", dut), testing::HasSubstr("MyTag"));
 }
 
-INSTANTIATE_TEST_SUITE_P(Suite, YamlNodeParamaterizedTest, testing::Values(
-    Param(NodeType::kScalar, "Scalar"),
-    Param(NodeType::kSequence, "Sequence"),
-    Param(NodeType::kMapping, "Mapping")));
+INSTANTIATE_TEST_SUITE_P(Suite, YamlNodeParamaterizedTest,
+                         testing::Values(Param(NodeType::kScalar, "Scalar"),
+                                         Param(NodeType::kSequence, "Sequence"),
+                                         Param(NodeType::kMapping, "Mapping")));
 
 }  // namespace
 }  // namespace internal
