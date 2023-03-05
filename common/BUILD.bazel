@@ -277,6 +277,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "find_cache",
+    srcs = ["find_cache.cc"],
+    hdrs = ["find_cache.h"],
+    internal = True,
+    visibility = ["//:__subpackages__"],
+    interface_deps = [],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
     name = "find_runfiles",
     srcs = ["find_runfiles.cc"],
     hdrs = ["find_runfiles.h"],
@@ -832,6 +844,14 @@ drake_cc_googletest(
         ":essential",
         ":extract_double",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "find_cache_test",
+    deps = [
+        ":find_cache",
+        ":temp_directory",
     ],
 )
 
