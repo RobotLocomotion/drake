@@ -65,6 +65,11 @@ class YamlWriteArchive final {
   // nullness is defined as above.
   std::string EmitString(const std::string& root_name = "root") const;
 
+  // Returns the JSON string for whatever Serializable was most recently passed
+  // into Accept. A std::optional<T> value that is set to std::nullopt will be
+  // entirely omitted from the result, not serialized as "null".
+  std::string ToJson() const;
+
   // Removes from this archive any map entries that are identical to an entry
   // in `other`, iff they reside at the same location within the node tree
   // hierarchy, and iff their parent nodes (and grandparent, etc., all the way
@@ -218,12 +223,20 @@ class YamlWriteArchive final {
       // ".0" when formatting integer-valued floating-point numbers.  Force
       // the ".0" in all cases by using the "#" option for floats.  Also be
       // sure to add the required leading period for special values.
-      root_.Add(nvp.name(),
-                internal::Node::MakeScalar(fmt::format(
-                    "{}{:#}", std::isfinite(value) ? "" : ".", value)));
+      auto scalar = internal::Node::MakeScalar(
+          fmt::format("{}{:#}", std::isfinite(value) ? "" : ".", value));
+      scalar.SetTag(internal::JsonSchemaTag::kFloat);
+      root_.Add(nvp.name(), std::move(scalar));
       return;
     }
-    root_.Add(nvp.name(), internal::Node::MakeScalar(fmt::format("{}", value)));
+    auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
+    if constexpr (std::is_same_v<T, bool>) {
+      scalar.SetTag(internal::JsonSchemaTag::kBool);
+    }
+    if constexpr (std::is_integral_v<T>) {
+      scalar.SetTag(internal::JsonSchemaTag::kInt);
+    }
+    root_.Add(nvp.name(), std::move(scalar));
   }
 
   // This is used for std::optional or similar.

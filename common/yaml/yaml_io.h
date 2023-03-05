@@ -115,6 +115,21 @@ std::string SaveYamlString(
     const std::optional<std::string>& child_name = std::nullopt,
     const std::optional<Serializable>& defaults = std::nullopt);
 
+/** Saves data as a JSON-formatted string.
+
+Refer to @ref yaml_serialization "YAML Serialization" for background.
+
+Note that there is no LoadJsonString() function, because LoadYamlString() can
+already load JSON data.
+
+@param data User data to be serialized.
+@returns the JSON data as a string.
+
+@tparam Serializable must implement a @ref implementing_serialize "Serialize"
+  function. */
+template <typename Serializable>
+std::string SaveJsonString(const Serializable& data);
+
 namespace internal {
 
 void WriteFile(const std::string& filename, const std::string& data);
@@ -185,6 +200,15 @@ std::string SaveYamlString(const Serializable& data,
     archive.EraseMatchingMaps(defaults_archive);
   }
   return archive.EmitString(child_name.value_or(std::string()));
+}
+
+// (Implementation of a function declared above.  This could be defined
+// inline, but we keep it with the others for consistency.)
+template <typename Serializable>
+std::string SaveJsonString(const Serializable& data) {
+  internal::YamlWriteArchive archive;
+  archive.Accept(data);
+  return archive.ToJson();
 }
 
 }  // namespace yaml
