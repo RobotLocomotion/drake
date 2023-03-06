@@ -366,7 +366,8 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      this->EvalUnlockedVelocityIndicesPerTree(context);
+      this->EvalJointLockingCache(context)
+          .unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
 
   // Fill in the point contact pairs.
@@ -460,7 +461,8 @@ void CompliantContactManager<T>::
       this->EvalContactSurfaces(context);
 
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      this->EvalUnlockedVelocityIndicesPerTree(context);
+      this->EvalJointLockingCache(context)
+          .unlocked_velocity_indices_per_tree;
   const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
 
   const int num_surfaces = surfaces.size();
@@ -919,7 +921,8 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
 
   const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
   const std::vector<std::vector<int>>& per_tree_unlocked_indices =
-      this->EvalUnlockedVelocityIndicesPerTree(context);
+      this->EvalJointLockingCache(context)
+          .unlocked_velocity_indices_per_tree;
 
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
