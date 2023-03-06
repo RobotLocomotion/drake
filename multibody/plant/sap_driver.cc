@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ranges.h>
+
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
@@ -17,6 +19,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 using drake::geometry::GeometryId;
 using drake::math::RotationMatrix;
@@ -605,22 +608,57 @@ void SapDriver<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+
+  // Clone the sap problem and project to reduced DOFs using the joint locking
+  // data.
+  const std::vector<int>& indices =
+      manager().EvalUnlockedVelocityIndices(context);
+  const std::vector<std::vector<int>> indices_per_tree =
+      manager().EvalUnlockedVelocityIndicesPerTree(context);
+  problem.ReduceToSelectedDofs(cache->sap_problem_locked.get_mutable(), indices,
+                               indices_per_tree);
 }
 
 template <typename T>
 void SapDriver<T>::PackContactSolverResults(
     const systems::Context<T>& context, const SapContactProblem<T>& problem,
-    int num_contacts, const SapSolverResults<T>& sap_results,
+    int num_contacts, const SapSolverResults<T>& sap_results_locked,
     ContactSolverResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  contact_results->Resize(sap_results.v.size(), num_contacts);
-  contact_results->v_next = sap_results.v;
+  const std::vector<int>& unlocked_indices =
+      manager().EvalUnlockedVelocityIndices(context);
+
+  // Unproject the resulting v_next, filling in 0 for the locked DOFs.
+  const int rigid_dofs = this->plant().num_velocities();
+  if constexpr (std::is_same_v<T, double>) {
+    if (manager().deformable_driver_ != nullptr) {
+      const int deformable_dofs =
+          manager().deformable_driver_->EvalParticipatingFreeMotionVelocities(
+              context).size();
+
+      contact_results->Resize(rigid_dofs + deformable_dofs, num_contacts);
+      contact_results->v_next.head(rigid_dofs) =
+          ExpandRows(sap_results_locked.v.head(unlocked_indices.size()), rigid_dofs,
+                     unlocked_indices);
+      contact_results->v_next.tail(deformable_dofs) =
+          sap_results_locked.v.tail(deformable_dofs);
+    } else {
+      contact_results->Resize(rigid_dofs, num_contacts);
+      contact_results->v_next =
+          ExpandRows(sap_results_locked.v, rigid_dofs, unlocked_indices);
+    }
+  } else {
+    contact_results->Resize(rigid_dofs, num_contacts);
+    contact_results->v_next =
+        ExpandRows(sap_results_locked.v, rigid_dofs, unlocked_indices);
+  }
+
   // The driver adds all contact constraints first and therefore we know the
   // head of the impulses corresponds to contact impulses.
   const Eigen::VectorBlock<const VectorX<T>> contact_impulses =
-      sap_results.gamma.head(3 * num_contacts);
+      sap_results_locked.gamma.head(3 * num_contacts);
   const Eigen::VectorBlock<const VectorX<T>> contact_velocities =
-      sap_results.vc.head(3 * num_contacts);
+      sap_results_locked.vc.head(3 * num_contacts);
   const double time_step = plant().time_step();
   ExtractNormal(contact_impulses, &contact_results->fn);
   ExtractTangent(contact_impulses, &contact_results->ft);
@@ -629,6 +667,9 @@ void SapDriver<T>::PackContactSolverResults(
   ExtractNormal(contact_velocities, &contact_results->vn);
   ExtractTangent(contact_velocities, &contact_results->vt);
 
+  // Project contact impulses into velocity space using the unlocked problem's
+  // constraint jacobians in order to correctly account for the contact forces
+  // acting on the locked DOFs.
   auto& tau_contact = contact_results->tau_contact;
   tau_contact.setZero();
   for (int i = 0; i < num_contacts; ++i) {
@@ -647,6 +688,7 @@ void SapDriver<T>::PackContactSolverResults(
       const auto impulse = contact_impulses.template segment<3>(3 * i);
       VectorX<T> tau_clique = VectorX<T>::Zero(Jic.cols());
       Jic.TransposeAndMultiplyAndAddTo(impulse, &tau_clique);
+
       AddCliqueContribution(context, c.second_clique(), tau_clique,
                             &tau_contact);
     }
@@ -690,11 +732,17 @@ void SapDriver<T>::CalcContactSolverResults(
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+  const SapContactProblem<T>& sap_problem_locked = *contact_problem_cache.sap_problem_locked;
 
   // We use the velocity stored in the current context as initial guess.
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
   VectorX<T> v0 = x0.bottomRows(this->plant().num_velocities());
+
+  // Project v0 to the reduced DOFs of the locked problem.
+  const auto& indices = manager().EvalUnlockedVelocityIndices(context);
+  v0 = SelectRows(v0, indices);
+
   if constexpr (std::is_same_v<T, double>) {
     if (manager().deformable_driver_ != nullptr) {
       const VectorX<double> deformable_v0 =
@@ -706,12 +754,13 @@ void SapDriver<T>::CalcContactSolverResults(
     }
   }
 
-  // Solve contact problem.
+  // Solve the reduced DOF locked problem.
   SapSolver<T> sap;
   sap.set_parameters(sap_parameters_);
-  SapSolverResults<T> sap_results;
+  SapSolverResults<T> sap_results_locked;
+
   const SapSolverStatus status =
-      sap.SolveWithGuess(sap_problem, v0, &sap_results);
+      sap.SolveWithGuess(sap_problem_locked, v0, &sap_results_locked);
   if (status != SapSolverStatus::kSuccess) {
     const std::string msg = fmt::format(
         "The SAP solver failed to converge at simulation time = {}. "
@@ -740,7 +789,9 @@ void SapDriver<T>::CalcContactSolverResults(
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
 
-  PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
+  // Pack the results of the locked problem, using the original problem data to
+  // project contact impulese to the original DOFs.
+  PackContactSolverResults(context, sap_problem, num_contacts, sap_results_locked,
                            results);
 }
 

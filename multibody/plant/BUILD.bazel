@@ -394,6 +394,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:matrix_block",
     ],
 )
 
@@ -986,6 +987,10 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//systems/analysis:simulator",
+        "//geometry/test_utilities:meshcat_environment",
+        "//geometry:meshcat",
+        "//geometry:meshcat_visualizer",
+        "//multibody/meshcat:contact_visualizer",
     ],
 )
 
