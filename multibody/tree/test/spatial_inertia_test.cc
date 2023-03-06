@@ -270,6 +270,58 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
       "[^]* The unit_vector argument .* is not a unit vector.");
 }
 
+// Tests the static method for the spatial inertia of a thin rod.
+GTEST_TEST(SpatialInertia, ThinRodWithMass) {
+  const double mass = 1.2;  // units of kg.
+  const double length = 2.0;
+  const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
+
+  // Test a thin rod B whose unit_vector is in the z-direction.
+  Vector3<double> unit_vec(0, 0, 1);
+  UnitInertia<double>G_BBcm_B = UnitInertia<double>::ThinRod(length, unit_vec);
+  SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBcm_B);
+  SpatialInertia<double> M =
+      SpatialInertia<double>::ThinRodWithMass(mass, length, unit_vec);
+  // Use an empirical tolerance of two bits = 2^2 times machine epsilon.
+  const double kTolerance = 4 * std::numeric_limits<double>::epsilon();
+  EXPECT_TRUE(CompareMatrices(
+      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+
+  // Test a thin rod B with a different and less simple unit vector direction.
+  unit_vec = Vector3<double>(0.5, -0.5, 1.0 / std::sqrt(2));
+  G_BBcm_B = UnitInertia<double>::ThinRod(length, unit_vec);
+  M_expected = SpatialInertia<double>(mass, p_BoBcm_B, G_BBcm_B);
+  M = SpatialInertia<double>::ThinRodWithMass(mass, length, unit_vec);
+  EXPECT_TRUE(CompareMatrices(
+      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure a negative or zero mass or length throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::ThinRodWithMass(-1.23, length, unit_vec),
+      "[^]* A thin rod's mass = .* or length = .* "
+      "is negative or zero.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::ThinRodWithMass(0, length, unit_vec),
+      "[^]* A thin rod's mass = .* or length = .* "
+      "is negative or zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::ThinRodWithMass(mass, -4.56, unit_vec),
+      "[^]* A thin rod's mass = .* or length = .* "
+      "is negative or zero.");
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::ThinRodWithMass(mass, 0, unit_vec),
+      "[^]* A thin rod's mass = .* or length = .* "
+      "is negative or zero.");
+
+  // Ensure a bad unit vector throws an exception.
+  const Vector3<double> bad_vec(1, 0.1, 0);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::ThinRodWithMass(mass, length, bad_vec),
+      "[^]* The unit_vector argument .* is not a unit vector.");
+}
+
 // Tests the static method for the spatial inertia of a solid ellipsoid.
 GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensity) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
