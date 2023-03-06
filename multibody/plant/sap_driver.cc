@@ -592,6 +592,9 @@ void SapDriver<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+
+  // TODO(sap_joint_locking): Clone the sap problem to one with joint's locked.
+  // Something like sap_problem.CalcReducedProblem(joint_locking_indices).
 }
 
 template <typename T>
@@ -678,6 +681,9 @@ void SapDriver<T>::CalcContactSolverResults(
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
   VectorX<T> v0 = x0.bottomRows(this->plant().num_velocities());
+
+  // TODO(sap_joint_locking): Project v0 for joint locking.
+
   if constexpr (std::is_same_v<T, double>) {
     if (manager().deformable_driver_ != nullptr) {
       const VectorX<double> deformable_v0 =
@@ -693,6 +699,10 @@ void SapDriver<T>::CalcContactSolverResults(
   SapSolver<T> sap;
   sap.set_parameters(sap_parameters_);
   SapSolverResults<T> sap_results;
+
+  // TODO(sap_joint_locking): Pass the reduced joint locking sap problem to the
+  // solver instad.
+
   const SapSolverStatus status =
       sap.SolveWithGuess(sap_problem, v0, &sap_results);
   if (status != SapSolverStatus::kSuccess) {
@@ -719,6 +729,11 @@ void SapDriver<T>::CalcContactSolverResults(
   const std::vector<DiscreteContactPair<T>>& discrete_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
+
+  // TODO(sap_joint_locking): Pass the results of the locked problem solve but the
+  // original sap_problem to PackContactSolverResults.
+  // I believe all we need to do here is to expand v_next to the original problem
+  // size. The original 
 
   PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
                            results);
