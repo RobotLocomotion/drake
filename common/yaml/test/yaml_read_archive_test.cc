@@ -31,15 +31,14 @@ using internal::YamlReadArchive;
 // TODO(jwnimmer-tri) Add a test case for reading UnorderedMapStruct.
 
 // A test fixture with common helpers.
-class YamlReadArchiveTest
-    : public ::testing::TestWithParam<LoadYamlOptions> {
+class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
  public:
   // Loads a single "doc: { ... }" map from `contents` and returns the nested
   // map (i.e., just the "{ ... }" part, not the "doc" part).  It is an error
   // for the "{ ... }" part not to be a map node.
   static internal::Node Load(const std::string& contents) {
-    const internal::Node loaded = YamlReadArchive::LoadStringAsNode(
-       contents, std::nullopt);
+    const internal::Node loaded =
+        YamlReadArchive::LoadStringAsNode(contents, std::nullopt);
     if (!loaded.IsMapping()) {
       throw std::logic_error("Bad contents parse " + contents);
     }
@@ -109,8 +108,8 @@ class YamlReadArchiveTest
       EXPECT_EQ(what, "");
     } else {
       EXPECT_TRUE(raised);
-      EXPECT_THAT(what, testing::MatchesRegex(
-          ".*missing entry for [^ ]* value.*"));
+      EXPECT_THAT(what,
+                  testing::MatchesRegex(".*missing entry for [^ ]* value.*"));
     }
     return result;
   }
@@ -336,7 +335,8 @@ doc:
   value:
     << : *template
     bar: 2.0
-)""", {{"foo", 1.0}, {"bar", 2.0}});
+)""",
+       {{"foo", 1.0}, {"bar", 2.0}});
 
   // A pre-existing value should win, though.
   test(R"""(
@@ -348,7 +348,8 @@ doc:
     << : *template
     foo: 1.0
     bar: 2.0
-)""", {{"foo", 1.0}, {"bar", 2.0}});
+)""",
+       {{"foo", 1.0}, {"bar", 2.0}});
 
   // A list of merges should also work.
   test(R"""(
@@ -360,7 +361,8 @@ doc:
   value:
     << : *template
     bar: 2.0
-)""", {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
+)""",
+       {{"foo", 1.0}, {"bar", 2.0}, {"baz", 3.0}});
 }
 
 TEST_P(YamlReadArchiveTest, StdMapWithBadMergeKey) {
@@ -515,8 +517,7 @@ TEST_P(YamlReadArchiveTest, Optional) {
 }
 
 TEST_P(YamlReadArchiveTest, Variant) {
-  const auto test = [](const std::string& doc,
-                       const Variant4& expected) {
+  const auto test = [](const std::string& doc, const Variant4& expected) {
     const auto& x = AcceptNoThrow<VariantStruct>(Load(doc));
     EXPECT_EQ(x.value, expected) << doc;
   };
@@ -561,12 +562,11 @@ TEST_P(YamlReadArchiveTest, EigenVectorX) {
 }
 
 TEST_P(YamlReadArchiveTest, EigenVectorOverflow) {
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AcceptIntoDummy<EigenVecUpTo3Struct>(Load(R"""(
+  DRAKE_EXPECT_THROWS_MESSAGE(AcceptIntoDummy<EigenVecUpTo3Struct>(Load(R"""(
 doc:
   value: [0, 0, 0, 0]
 )""")),
-      ".*maximum size is 3.*");
+                              ".*maximum size is 3.*");
 }
 
 TEST_P(YamlReadArchiveTest, EigenMatrix) {
@@ -585,13 +585,13 @@ doc:
   - [0.0, 1.0, 2.0, 3.0]
   - [4.0, 5.0, 6.0, 7.0]
   - [8.0, 9.0, 10.0, 11.0]
-)""", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+)""",
+       (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
 }
 
 TEST_P(YamlReadArchiveTest, EigenMatrixUpTo6) {
   using Matrix34d = Eigen::Matrix<double, 3, 4>;
-  const auto test = [](const std::string& doc,
-                       const Matrix34d& expected) {
+  const auto test = [](const std::string& doc, const Matrix34d& expected) {
     const auto& mat = AcceptNoThrow<EigenMatrixUpTo6Struct>(Load(doc));
     EXPECT_TRUE(drake::CompareMatrices(mat.value, expected));
   };
@@ -602,7 +602,8 @@ doc:
   - [0.0, 1.0, 2.0, 3.0]
   - [4.0, 5.0, 6.0, 7.0]
   - [8.0, 9.0, 10.0, 11.0]
-)""", (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
+)""",
+       (Matrix34d{} << 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).finished());
 }
 
 TEST_P(YamlReadArchiveTest, EigenMatrix00) {
@@ -652,8 +653,8 @@ TEST_P(YamlReadArchiveTest, NestedWithMergeKeys) {
   const auto test = [](const std::string& orig_doc) {
     std::string doc = orig_doc;
     if (!GetParam().allow_yaml_with_no_cpp) {
-      doc = std::regex_replace(
-          orig_doc, std::regex(" *ignored_key: ignored_value"), "");
+      doc = std::regex_replace(orig_doc,
+                               std::regex(" *ignored_key: ignored_value"), "");
     }
     SCOPED_TRACE("With doc = " + doc);
     const auto& x = AcceptNoThrow<OuterStruct>(Load(doc));
@@ -765,8 +766,7 @@ doc:
   inner_struct:
     inner_value_TYPO: 2.0
 )""");
-  if (GetParam().allow_cpp_with_no_yaml &&
-      GetParam().allow_yaml_with_no_cpp) {
+  if (GetParam().allow_cpp_with_no_yaml && GetParam().allow_yaml_with_no_cpp) {
     const auto& x = AcceptNoThrow<OuterStruct>(node);
     EXPECT_EQ(x.outer_value, 1.0);
     EXPECT_EQ(x.inner_struct.inner_value, kNominalDouble);
@@ -1066,9 +1066,8 @@ std::vector<LoadYamlOptions> MakeAllPossibleOptions() {
   return all;
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    AllOptions, YamlReadArchiveTest,
-    ::testing::ValuesIn(MakeAllPossibleOptions()));
+INSTANTIATE_TEST_SUITE_P(AllOptions, YamlReadArchiveTest,
+                         ::testing::ValuesIn(MakeAllPossibleOptions()));
 
 }  // namespace
 }  // namespace test

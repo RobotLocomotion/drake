@@ -106,8 +106,8 @@ TEST_F(YamlWriteArchiveTest, StdVector) {
   // "block" style, where each gets its own line(s).
   NonPodVectorStruct x;
   x.value = {
-    {.value = "foo"},
-    {.value = "bar"},
+      {.value = "foo"},
+      {.value = "bar"},
   };
   EXPECT_EQ(Save(x), R"""(doc:
   value:
@@ -139,7 +139,6 @@ TEST_F(YamlWriteArchiveTest, StdMap) {
 )""");
 }
 
-
 TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
   const auto test = [](const std::unordered_map<std::string, double>& value,
                        const std::string& expected) {
@@ -150,17 +149,14 @@ TEST_F(YamlWriteArchiveTest, StdUnorderedMap) {
   // The YamlWriteArchive API promises that the output must be deterministic.
   // Here, we test a stronger condition that it's always sorted.  (If in the
   // future we decide to use a different order, we can update here to match.)
-  test({
-    // Use many values to increase the chance that we'll detect implementations
-    // that fail to sort.
-    {"gulf", 6.0},
-    {"fox", 5.0},
-    {"echo", 4.0},
-    {"delta", 3.0},
-    {"charlie", 2.0},
-    {"bravo", 1.0},
-    {"alpha", 0.0},
-  }, R"""(doc:
+  const std::unordered_map<std::string, double> value{
+      // Use many values to increase the chance that we'll detect
+      // implementations that fail to sort.
+      {"gulf", 6.0},    {"fox", 5.0},   {"echo", 4.0},  {"delta", 3.0},
+      {"charlie", 2.0}, {"bravo", 1.0}, {"alpha", 0.0},
+  };
+  test(value,
+       R"""(doc:
   value:
     alpha: 0.0
     bravo: 1.0
