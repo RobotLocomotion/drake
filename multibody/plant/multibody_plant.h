@@ -1217,17 +1217,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                        const Joint<T>& joint1,
                                        double gear_ratio, double offset = 0.0);
 
-  template <typename U = T>
-  DRAKE_DEPRECATED("2023-03-01",
-                   "Only gear_ratio and offset of type double are supported.")
-  ConstraintIndex
-      AddCouplerConstraint(const Joint<U>& joint0, const Joint<U>& joint1,
-                           const U& gear_ratio, const U& offset = 0.0) {
-    return this->AddCouplerConstraint(joint0, joint1,
-                                      ExtractDoubleOrThrow(gear_ratio),
-                                      ExtractDoubleOrThrow(offset));
-  }
-
   /// Defines a distance constraint between a point P on a body A and a point Q
   /// on a body B.
   ///

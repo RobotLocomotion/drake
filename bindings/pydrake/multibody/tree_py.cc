@@ -271,15 +271,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.SetPoseInParentFrame.doc)
         .def("GetPoseInParentFrame", &Class::GetPoseInParentFrame,
             py::arg("context"), cls_doc.GetPoseInParentFrame.doc);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("SetPoseInBodyFrame",
-            WrapDeprecated(cls_doc.SetPoseInBodyFrame.doc_deprecated,
-                &Class::SetPoseInBodyFrame),
-            py::arg("context"), py::arg("X_PF"),
-            cls_doc.SetPoseInBodyFrame.doc_deprecated);
-#pragma GCC diagnostic pop  // pop -Wdeprecated-declarations
   }
 
   // Bodies.

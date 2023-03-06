@@ -111,13 +111,6 @@ class FixedOffsetFrame final : public Frame<T> {
             X_PF_parameter.get_value().data()));
   }
 
-  DRAKE_DEPRECATED("2023-03-01", "SetPoseInBodyFrame() was incorrectly named "
-                   "so it has been replaced by SetPoseInParentFrame().")
-  void SetPoseInBodyFrame(systems::Context<T>* context,
-                          const math::RigidTransform<T>& X_PF) const {
-    return SetPoseInParentFrame(context, X_PF);
-  }
-
   /// @returns The default fixed pose in the body frame.
   math::RigidTransform<T> GetFixedPoseInBodyFrame() const override {
     // X_BF = X_BP * X_PF

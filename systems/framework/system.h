@@ -271,13 +271,6 @@ class System : public SystemBase {
   @see Publish(), CalcForcedDiscreteVariableUpdate(),
        CalcForcedUnrestrictedUpdate() */
   void ForcedPublish(const Context<T>& context) const;
-
-  /** (Deprecated) See ForcedPublish()
-  @pydrake_mkdoc_identifier{deprecated} */
-  DRAKE_DEPRECATED("2023-03-01", "Use ForcedPublish() instead")
-  void Publish(const Context<T>& context) const {
-    ForcedPublish(context);
-  }
   //@}
 
   //----------------------------------------------------------------------------
@@ -592,17 +585,6 @@ class System : public SystemBase {
       const EventCollection<DiscreteUpdateEvent<T>>& events,
       DiscreteValues<T>* discrete_state) const;
 
-  /** (Deprecated) See CalcDiscreteVariableUpdate() (no final 's')
-  @pydrake_mkdoc_identifier{deprecated_3args} */
-  DRAKE_DEPRECATED("2023-03-01",
-                   "Use CalcDiscreteVariableUpdate() (no final 's') instead")
-  void CalcDiscreteVariableUpdates(
-      const Context<T>& context,
-      const EventCollection<DiscreteUpdateEvent<T>>& events,
-      DiscreteValues<T>* discrete_state) const {
-    CalcDiscreteVariableUpdate(context, events, discrete_state);
-  }
-
   /** Given the @p discrete_state results of a previous call to
   CalcDiscreteVariableUpdate() that dispatched the given collection of
   events, modifies the @p context to reflect the updated @p discrete_state.
@@ -640,15 +622,6 @@ class System : public SystemBase {
   @see CalcDiscreteVariableUpdate(), CalcForcedUnrestrictedUpdate() */
   void CalcForcedDiscreteVariableUpdate(
       const Context<T>& context, DiscreteValues<T>* discrete_state) const;
-
-  /** (Deprecated) See CalcForcedDiscreteVariableUpdate()
-  @pydrake_mkdoc_identifier{deprecated_2args} */
-  DRAKE_DEPRECATED("2023-03-01",
-                   "Use CalcForcedDiscreteVariableUpdate() instead")
-  void CalcDiscreteVariableUpdates(const Context<T>& context,
-                                   DiscreteValues<T>* discrete_state) const {
-    CalcForcedDiscreteVariableUpdate(context, discrete_state);
-  }
 
   /** This method is the public entry point for dispatching all unrestricted
   update event handlers. Using all the unrestricted update handlers in
@@ -700,14 +673,6 @@ class System : public SystemBase {
   @see CalcUnrestrictedUpdate() */
   void CalcForcedUnrestrictedUpdate(const Context<T>& context,
                                     State<T>* state) const;
-
-  /** (Deprecated) See CalcForcedUnrestrictedUpdate()
-  @pydrake_mkdoc_identifier{deprecated} */
-  DRAKE_DEPRECATED("2023-03-01", "Use CalcForcedUnrestrictedUpdate() instead")
-  void CalcUnrestrictedUpdate(const Context<T>& context,
-                              State<T>* state) const {
-    CalcForcedUnrestrictedUpdate(context, state);
-  }
 
   /** This method is called by a Simulator during its calculation of the size of
   the next continuous step to attempt. The System returns the next time at
