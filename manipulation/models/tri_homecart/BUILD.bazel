@@ -8,7 +8,6 @@ load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load("//tools/workspace/models_internal:files.bzl", "tri_homecart_mesh_files")
 
 package(default_visibility = ["//visibility:public"])
@@ -23,27 +22,31 @@ xacro_file(
     src = "homecart_cutting_board.sdf.xacro",
 )
 
-_TRI_HOMECART_MESHES = forward_files(
-    srcs = ["@models_internal//:" + x for x in tri_homecart_mesh_files()],
-    dest_prefix = "",
-    strip_prefix = "@models_internal//:tri_homecart/",
-    visibility = ["//visibility:private"],
-)
-
 models_filegroup(
-    name = "models",
+    name = "git_models",
     extra_srcs = [
         "homecart_bimanual.urdf",
         "homecart_cutting_board.sdf",
         "homecart_grippers.dmd.yaml",
         "homecart_no_grippers.dmd.yaml",
         "homecart.dmd.yaml",
-    ] + _TRI_HOMECART_MESHES,
+    ],
+    visibility = ["//visibility:private"],
 )
 
 install_data(
     name = "install_data",
-    data = [":models"],
+    data = [":git_models"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":git_models",
+    ] + [
+        "@models_internal//:" + x
+        for x in tri_homecart_mesh_files()
+    ],
 )
 
 # === test/ ===

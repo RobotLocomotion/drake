@@ -9,26 +9,28 @@ load(
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace:forward_files.bzl", "forward_files")
 load("//tools/workspace/models_internal:files.bzl", "skydio_2_mesh_files")
 
 package(default_visibility = ["//visibility:public"])
 
-_SKYDIO_2_MESHES = forward_files(
-    srcs = ["@models_internal//:" + x for x in skydio_2_mesh_files()],
-    dest_prefix = "",
-    strip_prefix = "@models_internal//:skydio_2/",
-    visibility = ["//visibility:private"],
-)
-
 models_filegroup(
-    name = "models",
-    extra_srcs = _SKYDIO_2_MESHES,
+    name = "git_models",
+    visibility = ["//visibility:private"],
 )
 
 install_data(
     name = "install_data",
-    data = [":models"],
+    data = [":git_models"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":git_models",
+    ] + [
+        "@models_internal//:" + x
+        for x in skydio_2_mesh_files()
+    ],
 )
 
 drake_cc_library(
