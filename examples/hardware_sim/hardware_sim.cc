@@ -1,3 +1,6 @@
+// This file is licensed under the MIT-0 License.
+// See LICENSE-MIT-0.txt in the current directory.
+
 /* This program serves as an example of a simulator for hardware, i.e., a
 simulator for robots that one might have in their lab. There is no controller
 built-in to this program -- it merely sends status and sensor messages, and
