@@ -2354,6 +2354,31 @@ void MultibodyPlant<T>::CalcUnlockedVelocityIndices(
 }
 
 template <typename T>
+void MultibodyPlant<T>::CalcJointLockingIndicesPerTree(
+    const systems::Context<T>& context,
+    std::vector<std::vector<int>>* unlocked_velocity_indices) const {
+  DRAKE_DEMAND(unlocked_velocity_indices != nullptr);
+
+  const auto& joint_locking_indices = this->EvalJointLockingIndices(context);
+  const auto& topology = internal_tree().get_topology();
+  auto& indices = *unlocked_velocity_indices;
+  indices.clear();
+  indices.resize(topology.num_trees());
+  int joint_index = 0;
+  internal::TreeIndex tree_index{0};
+  while (joint_index < static_cast<int>(joint_locking_indices.size())) {
+    while (joint_locking_indices[joint_index] >=
+           (topology.tree_velocities_start(tree_index) +
+               topology.num_tree_velocities(tree_index))) {
+      ++tree_index;
+    }
+    indices[tree_index].push_back(joint_locking_indices[joint_index] -
+                                  topology.tree_velocities_start(tree_index));
+    ++joint_index;
+  }
+}
+
+template <typename T>
 void MultibodyPlant<T>::CalcGeneralizedContactForcesContinuous(
     const Context<T>& context, VectorX<T>* tau_contact) const {
   this->ValidateContext(context);

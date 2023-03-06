@@ -217,6 +217,14 @@ DiscreteUpdateManager<T>::EvalUnlockedVelocityIndicesPerTree(
 }
 
 template <typename T>
+const std::vector<std::vector<int>>&
+DiscreteUpdateManager<T>::EvalJointLockingIndicesPerTree(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::EvalJointLockingIndicesPerTree(plant(), context);
+}
+
+template <typename T>
 const std::vector<internal::DistanceConstraintSpecs>&
 DiscreteUpdateManager<T>::distance_constraints_specs() const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<

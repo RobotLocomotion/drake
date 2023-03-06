@@ -47,6 +47,10 @@ template <typename T>
 VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
                       const std::vector<int>& indices);
 
+template <typename T>
+VectorX<T> ExpandRows(const Eigen::VectorBlock<const VectorX<T>>& v,
+                      int rows_out, const std::vector<int>& indices);
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake
