@@ -21,9 +21,10 @@ namespace {
 
 // Check that the tag constants exist.
 GTEST_TEST(YamlNodeTest, TagConstants) {
-  EXPECT_GT(Node::kTagFloat.size(), 0);
-  EXPECT_GT(Node::kTagInt.size(), 0);
   EXPECT_GT(Node::kTagNull.size(), 0);
+  EXPECT_GT(Node::kTagBool.size(), 0);
+  EXPECT_GT(Node::kTagInt.size(), 0);
+  EXPECT_GT(Node::kTagFloat.size(), 0);
   EXPECT_GT(Node::kTagStr.size(), 0);
 }
 
@@ -103,12 +104,25 @@ TEST_P(YamlNodeParamaterizedTest, StaticTypeString) {
   EXPECT_EQ(Node::GetTypeString(GetExpectedType()), GetExpectedTypeString());
 }
 
-// Check tag getting and setting.
+// Check generic tag getting and setting.
 TEST_P(YamlNodeParamaterizedTest, GetSetTag) {
   Node dut = MakeEmptyDut();
   EXPECT_EQ(dut.GetTag(), "");
   dut.SetTag("tag");
   EXPECT_EQ(dut.GetTag(), "tag");
+}
+
+// Check JSON Schema tag getting and setting.
+TEST_P(YamlNodeParamaterizedTest, JsonSchemaTag) {
+  Node dut = MakeEmptyDut();
+  dut.SetTag(JsonSchemaTag::kNull);
+  EXPECT_EQ(dut.GetTag(), Node::kTagNull);
+  dut.SetTag(JsonSchemaTag::kBool);
+  EXPECT_EQ(dut.GetTag(), Node::kTagBool);
+  dut.SetTag(JsonSchemaTag::kInt);
+  EXPECT_EQ(dut.GetTag(), Node::kTagInt);
+  dut.SetTag(JsonSchemaTag::kFloat);
+  EXPECT_EQ(dut.GetTag(), Node::kTagFloat);
 }
 
 // It is important for our YAML subsystem performance that the Node's move
@@ -156,8 +170,15 @@ TEST_P(YamlNodeParamaterizedTest, EqualityPerTag) {
   Node dut = MakeEmptyDut();
   Node dut2 = MakeEmptyDut();
   EXPECT_TRUE(dut == dut2);
+
+  // Different tag; not equal.
   dut2.SetTag("tag");
   EXPECT_FALSE(dut == dut2);
+
+  // Same tag, set via two different overloads; still equal.
+  dut.SetTag(JsonSchemaTag::kInt);
+  dut2.SetTag(std::string{Node::kTagInt});
+  EXPECT_TRUE(dut == dut2);
 }
 
 // Check Scalar-specific operations.

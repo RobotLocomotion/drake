@@ -1,6 +1,7 @@
 #include "drake/common/yaml/yaml_write_archive.h"
 
 #include <algorithm>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -36,9 +37,17 @@ constexpr const char* const kKeyOrder = "__key_order";
 void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
   const YAML::Mark no_mark;
   const YAML::anchor_t no_anchor = YAML::NullAnchor;
+  std::string tag{node.GetTag()};
+  if ((tag == internal::Node::kTagNull) || (tag == internal::Node::kTagBool) ||
+      (tag == internal::Node::kTagInt) || (tag == internal::Node::kTagFloat) ||
+      (tag == internal::Node::kTagStr)) {
+    // We don't need to emit the "JSON Schema" tags for YAML data. They are
+    // implied by default.
+    tag.clear();
+  }
   node.Visit(overloaded{
       [&](const internal::Node::ScalarData& data) {
-        sink->OnScalar(no_mark, node.GetTag(), no_anchor, data.scalar);
+        sink->OnScalar(no_mark, tag, no_anchor, data.scalar);
       },
       [&](const internal::Node::SequenceData& data) {
         // If all children are scalars, then format this sequence onto a
@@ -49,7 +58,7 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
             style = YAML::EmitterStyle::Block;
           }
         }
-        sink->OnSequenceStart(no_mark, node.GetTag(), no_anchor, style);
+        sink->OnSequenceStart(no_mark, tag, no_anchor, style);
         for (const auto& child : data.sequence) {
           RecursiveEmit(child, sink);
         }
@@ -62,7 +71,7 @@ void RecursiveEmit(const internal::Node& node, YAML::EmitFromEvents* sink) {
         if (data.mapping.empty()) {
           style = YAML::EmitterStyle::Flow;
         }
-        sink->OnMapStart(no_mark, node.GetTag(), no_anchor, style);
+        sink->OnMapStart(no_mark, tag, no_anchor, style);
         // If there is a __key_order node inserted (as part of the Accept()
         // member function in our header file), use it to specify output order;
         // otherwise, use alphabetical order.
@@ -126,6 +135,128 @@ std::string YamlWriteArchive::EmitString(const std::string& root_name) const {
     }
   }
   return result;
+}
+
+namespace {
+
+/* Returns a quoted and escaped JSON string literal per
+https://www.json.org/json-en.html. */
+std::string QuotedJsonString(std::string_view x) {
+  std::string result;
+  result.reserve(x.size() + 2);
+  result.push_back('"');
+  for (const char ch : x) {
+    if ((ch == '"') || (ch == '\\') || (ch < ' ')) {
+      // This character needs escaping.
+      result.append(fmt::format("\\u00{:02x}", static_cast<uint8_t>(ch)));
+    } else {
+      // No escaping required.
+      result.push_back(ch);
+    }
+  }
+  result.push_back('"');
+  return result;
+}
+
+/* Outputs the given `node` to `os`. This is the recursive implementation of
+YamlWriteArchive::ToJson. */
+void WriteJson(std::ostream& os, const internal::Node& node) {
+  const std::string_view tag = node.GetTag();
+  switch (node.GetType()) {
+    case internal::NodeType::kScalar: {
+      const std::string& scalar = node.GetScalar();
+      if ((tag == internal::Node::kTagNull) ||
+          (tag == internal::Node::kTagBool) ||
+          (tag == internal::Node::kTagInt)) {
+        // These values are spelled the same in YAML and JSON (without quotes).
+        os << scalar;
+        return;
+      }
+      if (tag == internal::Node::kTagFloat) {
+        // Floats are the same in YAML and JSON except for non-finite values.
+        if (scalar == ".nan") {
+          os << "NaN";
+          return;
+        }
+        if (scalar == ".inf") {
+          os << "Infinity";
+          return;
+        }
+        if (scalar == ".-inf") {
+          os << "-Infinity";
+          return;
+        }
+        os << scalar;
+        return;
+      }
+      if (tag.empty() || (tag == internal::Node::kTagStr)) {
+        // JSON strings are quoted and escaped.
+        os << QuotedJsonString(scalar);
+        return;
+      }
+      throw std::logic_error(fmt::format(
+          "SaveJsonString: Cannot save a YAML scalar '{}' with tag '{}' "
+          "to JSON",
+          scalar, tag));
+    }
+    case internal::NodeType::kSequence: {
+      if (!tag.empty()) {
+        // N.B. As currently written, yaml_write_archive can never add a tag to
+        // a sequence. We'll still fail-fast in case it ever does.
+        throw std::logic_error(fmt::format(
+            "SaveJsonString: Cannot save a YAML sequence with tag '{}' to JSON",
+            tag));
+      }
+      os << "[";
+      const auto& node_vector = node.GetSequence();
+      bool first = true;
+      for (const auto& sub_node : node_vector) {
+        if (first) {
+          first = false;
+        } else {
+          os << ",";
+        }
+        WriteJson(os, sub_node);
+      }
+      os << "]";
+      return;
+    }
+    case internal::NodeType::kMapping: {
+      if (!tag.empty()) {
+        throw std::logic_error(fmt::format(
+            "SaveJsonString: Cannot save a YAML mapping with tag '{}' to JSON",
+            tag));
+      }
+      os << "{";
+      const auto& string_node_map = node.GetMapping();
+      bool first = true;
+      for (const auto& [name, sub_node] : string_node_map) {
+        if (name == kKeyOrder) {
+          // We ignore the __key_order node, so always use alphabetical order.
+          continue;
+        }
+        if (first) {
+          first = false;
+        } else {
+          os << ",";
+        }
+        os << QuotedJsonString(name);
+        os << ":";
+        WriteJson(os, sub_node);
+      }
+      os << "}";
+      return;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+}  // namespace
+
+std::string YamlWriteArchive::ToJson() const {
+  std::stringstream result;
+  WriteJson(result, root_);
+  return result.str();
 }
 
 namespace {
