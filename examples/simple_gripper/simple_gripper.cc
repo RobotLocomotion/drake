@@ -220,7 +220,7 @@ int do_main() {
 
   // TAMSI does not support general constraints. If using TAMSI, we simplify the
   // model to have the right finger locked.
-  if (FLAGS_discrete_solver != "tamsi") {
+  if (FLAGS_discrete_solver != "sap") {
     plant.AddCouplerConstraint(left_slider, right_slider,
                                FLAGS_coupler_gear_ratio);
   }
@@ -298,7 +298,7 @@ int do_main() {
   // twice as much force as the grip force. This makes sense if we consider a
   // system of pulleys for this mechanism.
   const double grip_actuation_force =
-      FLAGS_discrete_solver == "tamsi"
+      FLAGS_discrete_solver == "sap"
           ? FLAGS_grip_force
           : (1.0 - FLAGS_coupler_gear_ratio) * FLAGS_grip_force;
 
@@ -350,7 +350,7 @@ int do_main() {
   translate_joint.set_translation(&plant_context, 0.0);
   translate_joint.set_translation_rate(&plant_context, v0);
 
-  if (FLAGS_discrete_solver == "tamsi") {
+  if (FLAGS_discrete_solver == "sap") {
     drake::log()->warn(
         "discrete_solver = 'tamsi'. Since TAMSI does not support coupler "
         "constraints to model the coupling of the fingers, this simple example "

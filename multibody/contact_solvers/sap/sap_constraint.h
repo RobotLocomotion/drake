@@ -160,6 +160,28 @@ class SapConstraint {
     return second_clique_jacobian_;
   }
 
+  void set_first_clique(int first_clique) { first_clique_ = first_clique; }
+
+  void set_second_clique(int second_clique) { second_clique_ = second_clique; }
+
+  void set_first_clique_jacobian(MatrixX<T>&& jacobian) {
+    first_clique_jacobian_ = MatrixBlock<T>(std::move(jacobian));
+  }
+
+  void set_first_clique_jacobian(MatrixBlock<T>& jacobian) {
+    first_clique_jacobian_ = std::move(jacobian);
+  }
+
+  void set_second_clique_jacobian(MatrixX<T>&& jacobian) {
+    DRAKE_DEMAND(num_cliques() > 1);
+    second_clique_jacobian_ = MatrixBlock<T>(std::move(jacobian));
+  }
+
+  void set_second_clique_jacobian(MatrixBlock<T>& jacobian) {
+    DRAKE_DEMAND(num_cliques() > 1);
+    second_clique_jacobian_ = std::move(jacobian);
+  }
+
   /* Computes the projection γ = P(y) onto the convex set specific to a
    constraint in the norm defined by the diagonal positive matrix R, i.e. the
    norm ‖x‖ = sqrt(xᵀ⋅R⋅x). Refer to [Castro et al., 2021] for details.

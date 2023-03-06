@@ -6,6 +6,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
 namespace multibody {
@@ -59,6 +60,73 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::Clone() const {
     clone->AddConstraint(c.Clone());
   }
   return clone;
+}
+
+// TODO(sap_joint_locking): Implement this function.
+template <typename T>
+void SapContactProblem<T>::ReduceToSelectedDofs(
+    SapContactProblem<T>* problem, std::vector<int> indices,
+    std::vector<std::vector<int>> indices_per_tree) const {
+  DRAKE_DEMAND(problem != nullptr);
+  DRAKE_DEMAND(problem->time_step_ == this->time_step_);
+
+  VectorX<T> v_star_reduced =
+      drake::multibody::internal::SelectRows(v_star_, indices);
+
+  std::vector<MatrixX<T>> A_reduced(A_.size());
+  for (int i = 0; i < static_cast<int>(indices_per_tree.size()); ++i) {
+    A_reduced[i] =
+        drake::multibody::internal::SelectRowsCols(A_[i], indices_per_tree[i]);
+  }
+
+  problem->Reset(A_reduced, v_star_reduced);
+
+  // Joint locking does not change any deformable dofs, therefore any cliques
+  // with non-dense Jacobians do not need to be reduced.
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = get_constraint(i);
+    std::unique_ptr<SapConstraint<T>> c_clone = c.Clone();
+
+    MatrixBlock<T> jacobians[2];
+    int cliques[2];
+    int idx = 0;
+
+    if (!c.first_clique_jacobian().is_dense()) {
+      cliques[idx] = c.first_clique();
+      jacobians[idx] = c.first_clique_jacobian();
+      ++idx;
+    } else if (indices_per_tree[c.first_clique()].size() > 0) {
+      cliques[idx] = c.first_clique();
+      jacobians[idx] = drake::multibody::internal::SelectCols(
+          c.first_clique_jacobian(), indices_per_tree[c.first_clique()]);
+      ++idx;
+    }
+
+    if (c.num_cliques() > 1) {
+      if (!c.second_clique_jacobian().is_dense()) {
+        cliques[idx] = c.second_clique();
+        jacobians[idx] = c.second_clique_jacobian();
+        ++idx;
+      } else if (indices_per_tree[c.second_clique()].size() > 0) {
+        cliques[idx] = c.second_clique();
+        jacobians[idx] = drake::multibody::internal::SelectCols(
+            c.second_clique_jacobian(), indices_per_tree[c.second_clique()]);
+        ++idx;
+      }
+    }
+
+    if (idx > 0) {
+      c_clone->set_first_clique(cliques[0]);
+      c_clone->set_first_clique_jacobian(jacobians[0]);
+      if (idx > 1) {
+        c_clone->set_first_clique(cliques[1]);
+        c_clone->set_first_clique_jacobian(jacobians[1]);
+      } else {
+        c_clone->set_second_clique(-1);
+      }
+      problem->AddConstraint(std::move(c_clone));
+    }
+  }
 }
 
 template <typename T>
