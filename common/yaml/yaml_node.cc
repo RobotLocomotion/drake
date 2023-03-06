@@ -57,7 +57,7 @@ Node Node::MakeMapping() {
 Node Node::MakeNull() {
   Node result;
   result.data_ = ScalarData{"null"};
-  result.tag_ = kTagNull;
+  result.tag_ = JsonSchemaTag::kNull;
   return result;
 }
 
@@ -113,7 +113,10 @@ bool Node::IsMapping() const {
 }
 
 bool operator==(const Node& a, const Node& b) {
-  return std::tie(a.tag_, a.data_) == std::tie(b.tag_, b.data_);
+  // We need to compare the canonical form of a tag (i.e., its string).
+  auto a_tag = a.GetTag();
+  auto b_tag = b.GetTag();
+  return std::tie(a_tag, a.data_) == std::tie(b_tag, b.data_);
 }
 
 bool operator==(const Node::ScalarData& a, const Node::ScalarData& b) {
@@ -128,12 +131,39 @@ bool operator==(const Node::MappingData& a, const Node::MappingData& b) {
   return a.mapping == b.mapping;
 }
 
-const std::string& Node::GetTag() const {
-  return tag_;
+std::string_view Node::GetTag() const {
+  return std::visit(  // BR
+      overloaded{
+          [](const std::string& tag) -> std::string_view {
+            return tag;
+          },
+          [](JsonSchemaTag tag) -> std::string_view {
+            switch (tag) {
+              case JsonSchemaTag::kNull:
+                return kTagNull;
+              case JsonSchemaTag::kBool:
+                return kTagBool;
+              case JsonSchemaTag::kInt:
+                return kTagInt;
+              case JsonSchemaTag::kFloat:
+                return kTagFloat;
+            }
+            DRAKE_UNREACHABLE();
+          },
+      },
+      tag_);
+}
+
+void Node::SetTag(JsonSchemaTag tag) {
+  tag_ = tag;
 }
 
 void Node::SetTag(std::string tag) {
-  tag_ = std::move(tag);
+  if (tag.empty()) {
+    tag_ = {};
+  } else {
+    tag_ = std::move(tag);
+  }
 }
 
 const std::string& Node::GetScalar() const {
