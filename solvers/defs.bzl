@@ -1,4 +1,4 @@
-# -*- python -*-
+#- * - python - * -
 
 load(
     "@drake//tools/skylark:drake_cc.bzl",
@@ -10,8 +10,8 @@ load(
     "cpplint_extra",
 )
 
-# This file contains macros that help abbreviate patterns that frequently
-# appear in the solvers folder.
+#This file contains macros that help abbreviate patterns that frequently
+#appear in the solvers folder.
 
 def _sync_conditions(condition1, condition2):
     """Asserts that one and only one condition is given. Sets the other
@@ -188,8 +188,8 @@ def drake_cc_optional_googletest(
     if use_default_main:
         opt_out_deps = []
     else:
-        # The `srcs` provide a main() function, but in the opt_out case we
-        # won't be linking them; to cope, we'll fall back to the default main.
+        #The `srcs` provide a main() function, but in the opt_out case we
+        #won 't be linking them; to cope, we' ll fall back to the default main.
         opt_out_deps = ["//common/test_utilities:drake_cc_googletest_main"]
     drake_cc_googletest(
         name = name,

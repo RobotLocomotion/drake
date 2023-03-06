@@ -26,7 +26,6 @@ using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;
 
-
 namespace {
 
 Binding<QuadraticCost> DoParseQuadraticCost(
@@ -45,8 +44,7 @@ Binding<QuadraticCost> DoParseQuadraticCost(
 }
 
 Binding<LinearCost> DoParseLinearCost(
-    const Expression &e,
-    const VectorXDecisionVariable& vars_vec,
+    const Expression& e, const VectorXDecisionVariable& vars_vec,
     const unordered_map<Variable::Id, int>& map_var_to_index) {
   Eigen::RowVectorXd c(vars_vec.size());
   double constant_term{};

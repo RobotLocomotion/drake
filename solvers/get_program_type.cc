@@ -161,26 +161,30 @@ Requirements MixedIntegerRequirements(
 }
 
 const Requirements& GetRequirementsMILP() {
-  static const drake::never_destroyed<Requirements> requirements{
-      []() { return MixedIntegerRequirements(GetRequirementsLP()); }()};
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsLP());
+  }()};
   return requirements.access();
 }
 
 const Requirements& GetRequirementsMIQP() {
-  static const drake::never_destroyed<Requirements> requirements{
-      []() { return MixedIntegerRequirements(GetRequirementsQP()); }()};
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsQP());
+  }()};
   return requirements.access();
 }
 
 const Requirements& GetRequirementsMISOCP() {
-  static const drake::never_destroyed<Requirements> requirements{
-      []() { return MixedIntegerRequirements(GetRequirementsSOCP()); }()};
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsSOCP());
+  }()};
   return requirements.access();
 }
 
 const Requirements& GetRequirementsMISDP() {
-  static const drake::never_destroyed<Requirements> requirements{
-      []() { return MixedIntegerRequirements(GetRequirementsSDP()); }()};
+  static const drake::never_destroyed<Requirements> requirements{[]() {
+    return MixedIntegerRequirements(GetRequirementsSDP());
+  }()};
   return requirements.access();
 }
 

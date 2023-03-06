@@ -393,8 +393,8 @@ Binding<Constraint> ParseConstraint(const Formula& f) {
     const std::set<Formula>& operands = get_operands(f);
     // TODO(jwnimmer-tri) We should use an absl::InlinedVector here.
     const std::vector<Formula> vec_operands(operands.begin(), operands.end());
-    const Eigen::Map<const VectorX<Formula>> map_operands(
-        vec_operands.data(), vec_operands.size());
+    const Eigen::Map<const VectorX<Formula>> map_operands(vec_operands.data(),
+                                                          vec_operands.size());
     return ParseConstraint(map_operands);
   }
   ostringstream oss;

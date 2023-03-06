@@ -114,11 +114,10 @@ void SetProgramSolution(const SdpaFreeFormat& sdpa_free_format,
   }
 }
 
-void SolveProgramWithNoFreeVariables(
-    const MathematicalProgram& prog,
-    const SdpaFreeFormat& sdpa_free_format,
-    const std::string& csdp_params_pathname,
-    MathematicalProgramResult* result) {
+void SolveProgramWithNoFreeVariables(const MathematicalProgram& prog,
+                                     const SdpaFreeFormat& sdpa_free_format,
+                                     const std::string& csdp_params_pathname,
+                                     MathematicalProgramResult* result) {
   DRAKE_ASSERT(sdpa_free_format.num_free_variables() == 0);
 
   csdp::blockmatrix C;
@@ -133,10 +132,9 @@ void SolveProgramWithNoFreeVariables(
                      C, rhs, constraints, &X, &y, &Z);
   double pobj, dobj;
   const int ret = csdp::cpp_easy_sdp(
-      csdp_params_pathname.c_str(),
-      sdpa_free_format.num_X_rows(), sdpa_free_format.g().rows(), C, rhs,
-      constraints, -sdpa_free_format.constant_min_cost_term(), &X, &y, &Z,
-      &pobj, &dobj);
+      csdp_params_pathname.c_str(), sdpa_free_format.num_X_rows(),
+      sdpa_free_format.g().rows(), C, rhs, constraints,
+      -sdpa_free_format.constant_min_cost_term(), &X, &y, &Z, &pobj, &dobj);
 
   // Set solver details.
   CsdpSolverDetails& solver_details =
@@ -160,7 +158,6 @@ void SolveProgramWithNoFreeVariables(
                       Z);
 }
 
-
 void SolveProgramThroughNullspaceApproach(
     const MathematicalProgram& prog, const SdpaFreeFormat& sdpa_free_format,
     const std::string& csdp_params_pathname,
@@ -181,9 +178,9 @@ void SolveProgramThroughNullspaceApproach(
   csdp::blockmatrix C_csdp;
   double* rhs_csdp{nullptr};
   csdp::constraintmatrix* constraints_csdp{nullptr};
-  ConvertSparseMatrixFormatToCsdpProblemData(sdpa_free_format.X_blocks(),
-                                              C_hat, A_hat, rhs_hat, &C_csdp,
-                                              &rhs_csdp, &constraints_csdp);
+  ConvertSparseMatrixFormatToCsdpProblemData(sdpa_free_format.X_blocks(), C_hat,
+                                             A_hat, rhs_hat, &C_csdp, &rhs_csdp,
+                                             &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
   double* y{nullptr};
   csdp::cpp_initsoln(sdpa_free_format.num_X_rows(), rhs_hat.rows(), C_csdp,
@@ -191,10 +188,10 @@ void SolveProgramThroughNullspaceApproach(
   double pobj{0};
   double dobj{0};
   const int ret = csdp::cpp_easy_sdp(
-      csdp_params_pathname.c_str(),
-      sdpa_free_format.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
-      constraints_csdp, -sdpa_free_format.constant_min_cost_term()
-          + sdpa_free_format.g().dot(y_hat),
+      csdp_params_pathname.c_str(), sdpa_free_format.num_X_rows(),
+      rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
+      -sdpa_free_format.constant_min_cost_term() +
+          sdpa_free_format.g().dot(y_hat),
       &X_csdp, &y, &Z, &pobj, &dobj);
   Eigen::SparseMatrix<double> X_hat(sdpa_free_format.num_X_rows(),
                                     sdpa_free_format.num_X_rows());
@@ -210,8 +207,7 @@ void SolveProgramThroughNullspaceApproach(
   // Set solver details.
   CsdpSolverDetails& solver_details =
       result->SetSolverDetailsType<CsdpSolverDetails>();
-  SetCsdpSolverDetails(ret, pobj, dobj, rhs_hat.rows(), y, Z,
-                       &solver_details);
+  SetCsdpSolverDetails(ret, pobj, dobj, rhs_hat.rows(), y, Z, &solver_details);
   // Retrieve the information back to result
   // Since CSDP solves a maximization problem max -cost, where "cost" is the
   // minimization cost in MathematicalProgram, we need to negate the cost.
@@ -267,8 +263,8 @@ void SolveProgramThroughTwoSlackVariablesApproach(
   double* rhs_csdp{nullptr};
   csdp::constraintmatrix* constraints_csdp{nullptr};
   ConvertSparseMatrixFormatToCsdpProblemData(X_hat_blocks, C_hat, A_hat,
-                                              sdpa_free_format.g(), &C_csdp,
-                                              &rhs_csdp, &constraints_csdp);
+                                             sdpa_free_format.g(), &C_csdp,
+                                             &rhs_csdp, &constraints_csdp);
   struct csdp::blockmatrix X_csdp, Z;
   double* y{nullptr};
   csdp::cpp_initsoln(num_X_hat_rows, sdpa_free_format.g().rows(), C_csdp,
@@ -276,10 +272,10 @@ void SolveProgramThroughTwoSlackVariablesApproach(
   double pobj{0};
   double dobj{0};
   const int ret = csdp::cpp_easy_sdp(
-      csdp_params_pathname.c_str(),
-      num_X_hat_rows, sdpa_free_format.g().rows(), C_csdp, rhs_csdp,
-      constraints_csdp, -sdpa_free_format.constant_min_cost_term(),
-      &X_csdp, &y, &Z, &pobj, &dobj);
+      csdp_params_pathname.c_str(), num_X_hat_rows, sdpa_free_format.g().rows(),
+      C_csdp, rhs_csdp, constraints_csdp,
+      -sdpa_free_format.constant_min_cost_term(), &X_csdp, &y, &Z, &pobj,
+      &dobj);
   Eigen::SparseMatrix<double> X_hat(num_X_hat_rows, num_X_hat_rows);
   ConvertCsdpBlockMatrixtoEigen(X_csdp, &X_hat);
   // Now retrieve the value for the free variable s as y⁺ - y⁻.
@@ -369,9 +365,8 @@ void SolveProgramThroughLorentzConeSlackApproach(
   double pobj{0};
   double dobj{0};
   const int ret = csdp::cpp_easy_sdp(
-      csdp_params_pathname.c_str(),
-      num_X_hat_rows, rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
-      -sdpa_free_format.constant_min_cost_term(),
+      csdp_params_pathname.c_str(), num_X_hat_rows, rhs_hat.rows(), C_csdp,
+      rhs_csdp, constraints_csdp, -sdpa_free_format.constant_min_cost_term(),
       &X_csdp, &y, &Z, &pobj, &dobj);
   Eigen::SparseMatrix<double> X_hat(num_X_hat_rows, num_X_hat_rows);
   ConvertCsdpBlockMatrixtoEigen(X_csdp, &X_hat);
@@ -428,8 +423,12 @@ std::string MaybeWriteCsdpParams(const SolverOptions& options) {
 
   // Choose a temporary filename.
   const char* dir = std::getenv("TEST_TMPDIR");
-  if (!dir) { dir = std::getenv("TMPDIR"); }
-  if (!dir) { dir = "/tmp"; }
+  if (!dir) {
+    dir = std::getenv("TMPDIR");
+  }
+  if (!dir) {
+    dir = "/tmp";
+  }
   std::filesystem::path path_template(dir);
   path_template.append("robotlocomotion_drake_XXXXXX");
   std::string result = path_template;
@@ -469,8 +468,8 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
   result->set_solver_id(CsdpSolver::id());
   const internal::SdpaFreeFormat sdpa_free_format(prog);
   if (sdpa_free_format.num_free_variables() == 0) {
-    internal::SolveProgramWithNoFreeVariables(
-        prog, sdpa_free_format, csdp_params_pathname, result);
+    internal::SolveProgramWithNoFreeVariables(prog, sdpa_free_format,
+                                              csdp_params_pathname, result);
   } else {
     const auto int_options = merged_options.GetOptionsInt(CsdpSolver::id());
     const auto it_method = int_options.find("drake::RemoveFreeVariableMethod");
@@ -504,6 +503,8 @@ void CsdpSolver::DoSolve(const MathematicalProgram& prog,
   }
 }
 
-bool CsdpSolver::is_available() { return true; }
+bool CsdpSolver::is_available() {
+  return true;
+}
 }  // namespace solvers
 }  // namespace drake
