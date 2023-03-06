@@ -30,7 +30,8 @@ SapContactProblem<T>::SapContactProblem(const T& time_step,
     const auto& Ac = A_[i];
     DRAKE_THROW_UNLESS(Ac.rows() == Ac.cols());
     const int clique_nv = Ac.rows();
-    if (i > 0) velocities_start_[i] = velocities_start_[i - 1] + clique_nv;
+    if (i < ssize(A_) - 1)
+      velocities_start_[i + 1] = velocities_start_[i] + clique_nv;
     nv_ += Ac.rows();
   }
   DRAKE_THROW_UNLESS(v_star_.size() == nv_);
@@ -60,8 +61,8 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::MakeReduced(
     ReducedMapping* mapping) const {
   DRAKE_ASSERT_VOID(drake::multibody::internal::DemandIndicesValid(
       known_free_motion_dofs, num_velocities()));
-  DRAKE_DEMAND(ssize(per_clique_known_free_motion_dofs) == num_cliques());
-  for (int i = 0; i < num_cliques(); ++i) {
+  DRAKE_DEMAND(ssize(per_clique_known_free_motion_dofs) <= num_cliques());
+  for (int i = 0; i < ssize(per_clique_known_free_motion_dofs); ++i) {
     DRAKE_ASSERT_VOID(drake::multibody::internal::DemandIndicesValid(
         per_clique_known_free_motion_dofs[i], num_velocities(i)));
   }
@@ -87,13 +88,21 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::MakeReduced(
 
   std::vector<MatrixX<T>> A_reduced;
   A_reduced.reserve(A_.size());
-  for (int i = 0; i < num_cliques(); ++i) {
+
+  // Map all cliques possibly having known DoFs.
+  for (int i = 0; i < ssize(per_clique_known_free_motion_dofs); ++i) {
     // Clique participates if at least one of its dofs is not locked.
     if (ssize(per_clique_known_free_motion_dofs[i]) < num_velocities(i)) {
       A_reduced.push_back(drake::multibody::internal::ExcludeRowsCols(
           A_[i], per_clique_known_free_motion_dofs[i]));
       mapping->clique_permutation.push(i);
     }
+  }
+  // Copy the rest of the cliques.
+  for (int i = ssize(per_clique_known_free_motion_dofs); i < num_cliques();
+       ++i) {
+    A_reduced.push_back(A_[i]);
+    mapping->clique_permutation.push(i);
   }
 
   // Construct a problem with reduced parameters.

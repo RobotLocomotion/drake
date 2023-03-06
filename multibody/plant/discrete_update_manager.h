@@ -31,6 +31,9 @@ namespace internal {
 template <typename T>
 class AccelerationKinematicsCache;
 
+template <typename T>
+struct JointLockingCacheData;
+
 /* This class is used to perform all calculations needed to advance state for a
  MultibodyPlant with discrete state.
 
@@ -245,10 +248,8 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<internal::CouplerConstraintSpecs>&
   coupler_constraints_specs() const;
 
-  const std::vector<int>& EvalUnlockedVelocityIndices(
-      const systems::Context<T>& context) const;
-
-  const std::vector<std::vector<int>>& EvalUnlockedVelocityIndicesPerTree(
+  const internal::JointLockingCacheData<T>&
+  EvalJointLockingCache(
       const systems::Context<T>& context) const;
 
   const std::vector<internal::DistanceConstraintSpecs>&
