@@ -295,6 +295,21 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
   EXPECT_TRUE(CompareMatrices(
       M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
 
+  // Test a thin rod B about Bp, where Bp is at an end of the rod.
+  const Vector3<double> p_BpBcm_B = 0.5 * length * unit_vec;
+  UnitInertia<double> G_BBp_B = G_BBcm_B.ShiftFromCenterOfMass(-p_BpBcm_B);
+  M_expected = SpatialInertia<double>(mass, p_BpBcm_B, G_BBp_B);
+  M = SpatialInertia<double>::ThinRodWithMassAboutEnd(mass, length, unit_vec);
+  EXPECT_TRUE(CompareMatrices(
+      M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+
+  // Another way to perform the previous calculation and test.
+  const SpatialInertia<double> M_BBp_B =
+        SpatialInertia<double>::MakeFromCentralInertia(
+            mass, p_BpBcm_B, mass * G_BBcm_B);
+  EXPECT_TRUE(CompareMatrices(
+      M_BBp_B.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
+
   // Ensure a negative or zero mass or length throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(-1.23, length, unit_vec),

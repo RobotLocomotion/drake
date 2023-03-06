@@ -184,6 +184,8 @@ class SpatialInertia {
   ///   and is perpendicular to unit_vector.
   /// @throws std::exception if r or l is zero or negative.
   /// @pre ‖unit_vector‖ ≈ 1.
+  /// @see SolidCylinderWithDensityAboutEnd() to calculate M_BBp_B, B's spatial
+  /// inertia about Bp (at the center of one of the cylinder's circular ends).
   static SpatialInertia<T> SolidCylinderWithDensity(
       const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
 
@@ -201,6 +203,8 @@ class SpatialInertia {
   ///   and is perpendicular to unit_vector.
   /// @throws std::exception if radius or length is zero or negative.
   /// @pre ‖unit_vector‖ ≈ 1.
+  /// @see SolidCylinderWithDensity() to calculate M_BBcm_B, B's spatial
+  /// inertia about Bcm (B's center of mass).
   static SpatialInertia<T> SolidCylinderWithDensityAboutEnd(
       const T& density, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
@@ -218,7 +222,28 @@ class SpatialInertia {
   /// the line that passes through Bcm and is parallel to unit_vector.
   /// @throws std::exception if length is zero or negative.
   /// @pre ‖unit_vector‖ ≈ 1.
+  /// @see ThinRodWithMassAboutEnd() to calculate M_BBp_B, B's spatial inertia
+  /// about Bp (one of the ends of rod B).
   static SpatialInertia<T> ThinRodWithMass(
+      const T& mass, const T& length, const Vector3<T>& unit_vector);
+
+  /// Creates a spatial inertia for a uniform-density thin rod B about one of
+  /// its ends.
+  /// @param[in] mass mass of the rod (units of kg).
+  /// @param[in] length length of the rod (units of meters).
+  /// @param[in] unit_vector unit vector defining the rod's axial direction,
+  /// expressed in B.
+  /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
+  /// @note The position from Bp to Bcm is length / 2 *unit_vector.
+  /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bp and
+  /// is perpendicular to unit_vector. B has no (zero) rotational inertia about
+  /// the line that passes through Bp and is parallel to unit_vector.
+  /// @throws std::exception if mass or length is zero or negative.
+  /// @pre ‖unit_vector‖ ≈ 1.
+  /// @see ThinRodWithMass() to calculate M_BBcm_B, B's spatial inertia about
+  /// Bcm (B's center of mass).
+  static SpatialInertia<T> ThinRodWithMassAboutEnd(
       const T& mass, const T& length, const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform density solid ellipsoid B about
