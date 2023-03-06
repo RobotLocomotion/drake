@@ -13,7 +13,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/hand.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/hand.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -50,7 +50,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/finger.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -75,7 +75,7 @@
     <visual>
       <origin rpy="1.57079632679 0 3.14159265359" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/finger.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/finger.obj"/>
       </geometry>
     </visual>
     <collision>

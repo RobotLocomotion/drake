@@ -30,7 +30,7 @@
         <pose>-0.0029 0.024 -0.015 -0.0085 -0.002 1.34</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/manipulation/models/ycb/meshes/009_gelatin_box_textured.obj</uri>
+            <uri>package://drake_models/ycb/meshes/009_gelatin_box_textured.obj</uri>
           </mesh>
         </geometry>
       </visual>
