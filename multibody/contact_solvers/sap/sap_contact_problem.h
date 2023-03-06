@@ -117,6 +117,13 @@ class SapContactProblem {
   /* Returns a deep-copy of `this` instance. */
   std::unique_ptr<SapContactProblem<T>> Clone() const;
 
+  // Project the contact problem stored in `problem` to a reduced DOF contact
+  // problem according to the set of contributing DOFs included in
+  // `indices` and `indices_per_tree` coming from joint locking.
+  void ReduceToSelectedDofs(
+      SapContactProblem<T>* problem, std::vector<int> indices,
+      std::vector<std::vector<int>> indices_per_tree) const;
+
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */
 

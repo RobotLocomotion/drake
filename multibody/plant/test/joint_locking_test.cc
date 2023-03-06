@@ -6,8 +6,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_visualizer.h"
 #include "drake/geometry/proximity_properties.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/rigid_body.h"
@@ -23,8 +27,13 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using systems::Context;
 using systems::Simulator;
+using geometry::Meshcat;
+using geometry::MeshcatVisualizerParams;
+using geometry::MeshcatVisualizer;
 
 namespace multibody {
+
+using meshcat::ContactVisualizer;
 
 class MultibodyPlantTester {
  public:
@@ -473,7 +482,8 @@ TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
 // test serves as a smoke test for SAP when joint locking is implemented.
 // TODO(joemasterjohn): Consider removing the smoke test when more robust SAP
 // joint locking tests land.
-std::vector<FilteredContactResultsConfig> MakeTestCases() {
+std::vector<FilteredContactResultsConfig>
+MakeFilteredContactResultsTestCases() {
   return std::vector<FilteredContactResultsConfig>{
       {.contact_model = ContactModel::kPoint,
        .solver = DiscreteContactSolver::kTamsi},
@@ -485,8 +495,194 @@ std::vector<FilteredContactResultsConfig> MakeTestCases() {
        .solver = DiscreteContactSolver::kSap}};
 }
 
-INSTANTIATE_TEST_SUITE_P(JointLockingTests, FilteredContactResultsTest,
-                         testing::ValuesIn(MakeTestCases()),
+INSTANTIATE_TEST_SUITE_P(
+    JointLockingTests, FilteredContactResultsTest,
+    testing::ValuesIn(MakeFilteredContactResultsTestCases()),
+    testing::PrintToStringParamName());
+
+struct JointLockingLadderTestConfig {
+  bool with_visualization{false};
+  bool locked{false};
+  DiscreteContactSolver solver{DiscreteContactSolver::kTamsi};
+};
+
+std::ostream& operator<<(std::ostream& out,
+                         const JointLockingLadderTestConfig& c) {
+  switch (c.solver) {
+    case DiscreteContactSolver::kTamsi:
+      out << "tamsi";
+      break;
+    case DiscreteContactSolver::kSap:
+      out << "sap";
+      break;
+  }
+  out << "_";
+  out << (c.locked ? "locked" : "unlocked");
+  return out;
+}
+
+const double kLMass = 10;      // [kg]
+const double kLLength = 0.5;   // [m]
+const double kLRadius = 0.05;  // [m]
+const double kLq = -1.2;       // [rad]
+const double kLVolume =
+    M_PI * kLRadius * kLRadius * ((4. / 3.) * kLRadius + kLLength);
+/*
+  Builds a simple acrobot model with capsule collision geometry above a
+  frictionless ground plane. Initializes the configuration such that the
+  acrobot forms a triangular shape with its furthest body (L_upper) in contact
+  with the ground. The generalized coordinate for the revolute joint between
+  the lower and upper body is denoted Lq and is set to kLq.
+
+                O
+               / \
+              /   \
+  L_lower -> /_Lq__\ <- L_upper
+            /       \
+           /         \
+          /           \
+  -------O-----------------------------
+
+  The simple test verifies with both TAMSI and SAP that the acrobot slides down
+  to a flat configuration during unlocked simulation and that when locked, the
+  acrobot retains its standing configuration and the nominal angle kLq.
+*/
+class JointLockingLadderTest
+    : public ::testing::TestWithParam<JointLockingLadderTestConfig> {
+ public:
+  void SetUp() {
+    systems::DiagramBuilder<double> builder;
+    std::tie(plant_, scene_graph_) =
+        multibody::AddMultibodyPlantSceneGraph(&builder, kTimestep);
+    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+    AddModel();
+
+    plant_->Finalize();
+
+    if (GetParam().with_visualization) {
+      std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+      MeshcatVisualizer<double>::AddToBuilder(&builder, *scene_graph_, meshcat);
+      ContactVisualizer<double>::AddToBuilder(&builder, *plant_, meshcat);
+    }
+
+    diagram_ = builder.Build();
+  }
+
+  void AddModel() {
+    const geometry::Box G_shape(10, 10, 1);
+    const CoulombFriction<double> G_mu(0.0, 0.0);
+    geometry::GeometryId G_gid = plant_->RegisterCollisionGeometry(
+        plant_->world_body(), RigidTransformd(Vector3d{0, 0, -0.5}), G_shape,
+        "ground_collision", G_mu);
+    plant_->RegisterVisualGeometry(
+        plant_->world_body(), RigidTransformd(Vector3d{0, 0, -0.5}), G_shape,
+        "ground_visual", Vector4<double>(0.3, 0.3, 0.3, 1.0));
+
+    const geometry::Capsule L_shape(kLRadius, kLLength);
+    const CoulombFriction<double> L_mu(0.0, 0.0);
+
+    const SpatialInertia<double> I_LLcm =
+        SpatialInertia<double>::SolidCapsuleWithDensity(
+            kLMass / kLVolume, kLRadius, kLLength, Vector3d{0, 0, 1});
+
+    const RigidBody<double>& L_lower = plant_->AddRigidBody("L_lower", I_LLcm);
+    const RigidBody<double>& L_upper = plant_->AddRigidBody("L_upper", I_LLcm);
+
+    geometry::GeometryId L_gid =
+        plant_->RegisterCollisionGeometry(L_lower, RigidTransformd::Identity(),
+                                          L_shape, "L_lower_collision", L_mu);
+    plant_->RegisterCollisionGeometry(L_upper, RigidTransformd::Identity(),
+                                      L_shape, "L_upper_collision", L_mu);
+    plant_->RegisterVisualGeometry(L_lower, RigidTransformd::Identity(),
+                                   L_shape, "L_lower_visual",
+                                   Vector4<double>(1, 0, 0, 1));
+    plant_->RegisterVisualGeometry(L_upper, RigidTransformd::Identity(),
+                                   L_shape, "L_upper_visual",
+                                   Vector4<double>(0, 1, 0, 1));
+
+    // Frame P on L_lower and frame Q on L_upper, coincident for the joint
+    // between them.
+    RigidTransformd X_LlowerP(Vector3d(0, 0, kLLength / 2));
+    RigidTransformd X_LupperQ = X_LlowerP;
+    // Relative transform between frame P and Q
+    RigidTransformd X_PQ(RotationMatrix<double>::MakeYRotation(kLq));
+    // Frame M on L_lower, coincident with frame N in the world for the revolute
+    // joint between world and L_lower.
+    RigidTransformd X_LlowerM(Vector3d(0, 0, -kLLength / 2));
+    RigidTransformd X_WN(Vector3d(0, 0, kLRadius));
+
+    const RevoluteJoint<double>& joint =
+        plant_->AddJoint<RevoluteJoint>("left_right", L_lower, X_LlowerP,
+                                        L_upper, X_LupperQ, Vector3d{0, 1, 0});
+    plant_->GetMutableJointByName<RevoluteJoint>(joint.name())
+        .set_default_angle(kLq);
+
+    const RevoluteJoint<double>& world_left = plant_->AddJoint<RevoluteJoint>(
+        "world_left", plant_->world_body(), X_WN, L_lower, X_LlowerM,
+        Vector3d{0, 1, 0});
+
+    plant_->GetMutableJointByName<RevoluteJoint>(world_left.name())
+        .set_default_angle(-kLq / 2);
+
+    plant_->GetMutableSceneGraphPreFinalize()->collision_filter_manager().Apply(
+        geometry::CollisionFilterDeclaration().ExcludeBetween(
+            geometry::GeometrySet(G_gid), geometry::GeometrySet(L_gid)));
+  }
+
+ protected:
+  MultibodyPlant<double>* plant_;
+  geometry::SceneGraph<double>* scene_graph_;
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+};
+
+TEST_P(JointLockingLadderTest, VerifyStandingWhenLocked) {
+  const double kEps = 1e2;
+  JointLockingLadderTestConfig config = GetParam();
+  std::unique_ptr<Context<double>> diagram_context =
+      diagram_->CreateDefaultContext();
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context.get());
+  if (config.locked) {
+    plant_->GetJointByName("left_right").Lock(&plant_context);
+  }
+  systems::Simulator<double> simulator(*diagram_, std::move(diagram_context));
+
+  if (config.with_visualization) {
+    simulator.set_target_realtime_rate(1);
+  }
+  simulator.Initialize();
+  simulator.AdvanceTo(10);
+
+  if (config.locked) {
+    EXPECT_EQ(plant_->GetJointByName<RevoluteJoint>("left_right")
+                  .get_angle(plant_context),
+              kLq);
+  } else {
+    EXPECT_NEAR(plant_->GetJointByName<RevoluteJoint>("left_right")
+                  .get_angle(plant_context),
+              -M_PI, kEps);
+  }
+}
+
+std::vector<JointLockingLadderTestConfig> MakeJointLockingLadderTestCases() {
+  return std::vector<JointLockingLadderTestConfig>{
+      {.with_visualization = true,
+       .locked = false,
+       .solver = DiscreteContactSolver::kTamsi},
+      {.with_visualization = true,
+       .locked = true,
+       .solver = DiscreteContactSolver::kTamsi},
+      {.with_visualization = true,
+       .locked = false,
+       .solver = DiscreteContactSolver::kSap},
+      {.with_visualization = true,
+       .locked = true,
+       .solver = DiscreteContactSolver::kSap}};
+}
+
+INSTANTIATE_TEST_SUITE_P(JointLockingTests, JointLockingLadderTest,
+                         testing::ValuesIn(MakeJointLockingLadderTestCases()),
                          testing::PrintToStringParamName());
 
 }  // namespace

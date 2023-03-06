@@ -25,7 +25,7 @@ class ShapeReifier;
  A class derived from the Shape class will invoke the parent's constructor as
  Shape(ShapeTag<DerivedShape>()). */
 template <typename ShapeType>
-struct ShapeTag{};
+struct ShapeTag {};
 
 /** The base interface for all shape specifications. It has no public
   constructor and cannot be instantiated directly. The Shape class has two

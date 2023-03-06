@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/slicing_and_indexing.h"
 
 #include <set>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
@@ -62,6 +63,19 @@ MatrixX<T> SelectCols(const MatrixX<T>& M, const std::vector<int>& indices) {
 }
 
 template <typename T>
+contact_solvers::internal::MatrixBlock<T> SelectCols(
+    const contact_solvers::internal::MatrixBlock<T>& M,
+    const std::vector<int>& indices) {
+  if (M.is_dense()) {
+    return contact_solvers::internal::MatrixBlock<T>(
+        std::move(SelectCols(M.MakeDenseMatrix(), indices)));
+  } else {
+    throw std::runtime_error(
+        "SelectCols only supports dense MatrixBlock arguments.");
+  }
+}
+
+template <typename T>
 VectorX<T> SelectRows(const VectorX<T>& v, const std::vector<int>& indices) {
   DRAKE_ASSERT_VOID(DemandIndicesValid(indices, v.size()));
   const int selected_count = indices.size();
@@ -99,8 +113,40 @@ VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
   return result;
 }
 
+template <typename T>
+VectorX<T> ExpandRows(const Eigen::VectorBlock<const VectorX<T>>& v,
+                      int rows_out, const std::vector<int>& indices) {
+  DRAKE_ASSERT(static_cast<int>(indices.size()) == v.rows());
+  DRAKE_ASSERT(rows_out >= v.rows());
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, rows_out));
+  if (rows_out == v.rows()) {
+    return v;
+  }
+  VectorX<T> result(rows_out);
+
+  int index_cursor = 0;
+  for (int i = 0; i < result.rows(); ++i) {
+    if (index_cursor >= v.rows() || i < indices[index_cursor]) {
+      result(i) = 0.;
+    } else {
+      result(indices[index_cursor]) = v(index_cursor);
+      ++index_cursor;
+    }
+  }
+  return result;
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&SelectRowsCols<T>, &SelectRows<T>, &SelectCols<T>, &ExpandRows<T>))
+    (&SelectRowsCols<T>, &SelectRows<T>,
+     static_cast<MatrixX<T> (*)(const MatrixX<T>&, const std::vector<int>&)>(
+         &SelectCols),
+     static_cast<contact_solvers::internal::MatrixBlock<T> (*)(
+         const contact_solvers::internal::MatrixBlock<T>&,
+         const std::vector<int>&)>(&SelectCols),
+     static_cast<VectorX<T> (*)(const Eigen::VectorBlock<const VectorX<T>>&,
+                                int, const std::vector<int>&)>(&ExpandRows),
+     static_cast<VectorX<T> (*)(const VectorX<T>&, int,
+                                const std::vector<int>&)>(&ExpandRows)))
 
 }  // namespace internal
 }  // namespace multibody
