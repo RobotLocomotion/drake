@@ -36,9 +36,15 @@ struct ContactProblemCache {
     sap_problem =
         std::make_unique<contact_solvers::internal::SapContactProblem<T>>(
             time_step);
+    sap_problem_locked =
+        std::make_unique<contact_solvers::internal::SapContactProblem<T>>(
+            time_step);
   }
   copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
       sap_problem;
+
+  copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
+      sap_problem_locked;
 
   // TODO(amcastro-tri): consider removing R_WC from the contact problem cache
   // and instead cache ContactPairKinematics separately.
@@ -169,7 +175,7 @@ class SapDriver {
       const systems::Context<T>& context,
       const contact_solvers::internal::SapContactProblem<T>& problem,
       int num_contacts,
-      const contact_solvers::internal::SapSolverResults<T>& sap_results,
+      const contact_solvers::internal::SapSolverResults<T>& sap_results_locked,
       contact_solvers::internal::ContactSolverResults<T>* contact_results)
       const;
 

@@ -6,6 +6,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
 namespace multibody {
@@ -59,6 +60,94 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::Clone() const {
     clone->AddConstraint(c.Clone());
   }
   return clone;
+}
+
+template <typename T>
+void SapContactProblem<T>::ReduceToSelectedDofs(
+    SapContactProblem<T>* problem, std::vector<int> locked_indices,
+    std::vector<std::vector<int>> unlocked_indices_per_tree) const {
+  DRAKE_DEMAND(problem != nullptr);
+  DRAKE_DEMAND(problem->time_step_ == this->time_step_);
+
+  const int num_trees = static_cast<int>(unlocked_indices_per_tree.size());
+
+  // Project v_star and A matrices to reduced DOFs.
+  VectorX<T> v_star_reduced =
+      drake::multibody::internal::ExcludeRows(v_star_, locked_indices);
+
+  std::vector<MatrixX<T>> A_reduced(A_.size());
+  for (int i = 0; i < static_cast<int>(unlocked_indices_per_tree.size()); ++i) {
+    A_reduced[i] = drake::multibody::internal::SelectRowsCols(
+        A_[i], unlocked_indices_per_tree[i]);
+  }
+
+  // DOFs for deformable cliques are not affected by joint locking
+  for (int i = static_cast<int>(unlocked_indices_per_tree.size());
+       i < static_cast<int>(A_.size()); ++i) {
+    A_reduced[i] = A_[i];
+  }
+
+  problem->Reset(A_reduced, v_star_reduced);
+
+  // Project constraints to reduced DOFs. If all DOFs of a clique have been
+  // eliminated its jacobian becomes zero size and no longer contributes,
+  // therefore we eliminate that clique from the constraint. In the case where
+  // both cliques have 0 DOF, we completely eliminate the constraint from the
+  // reduced contact problem.
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = get_constraint(i);
+    std::unique_ptr<SapConstraint<T>> c_clone = c.Clone();
+
+    MatrixBlock<T> jacobians[2];
+    int cliques[2];
+    int idx = 0;
+
+    // Joint locking does not change any deformable dofs, therefore there is no
+    // need to project constraint jacobians for deformable cliques
+    // (i.e. clique >= num_trees).
+    if (c.first_clique() >= num_trees) {
+      cliques[idx] = c.first_clique();
+      jacobians[idx] = c.first_clique_jacobian();
+      ++idx;
+    } else if (unlocked_indices_per_tree[c.first_clique()].size() > 0) {
+      cliques[idx] = c.first_clique();
+      jacobians[idx] = drake::multibody::internal::SelectCols(
+          c.first_clique_jacobian(),
+          unlocked_indices_per_tree[c.first_clique()]);
+      ++idx;
+    }
+
+    if (c.num_cliques() > 1) {
+      // Joint locking does not change any deformable dofs, therefore there is
+      // no need to project constraint jacobians for deformable cliques
+      // (i.e. clique >= num_trees).
+      if (c.second_clique() >= num_trees) {
+        cliques[idx] = c.second_clique();
+        jacobians[idx] = c.second_clique_jacobian();
+        ++idx;
+      } else if (unlocked_indices_per_tree[c.second_clique()].size() > 0) {
+        cliques[idx] = c.second_clique();
+        jacobians[idx] = drake::multibody::internal::SelectCols(
+            c.second_clique_jacobian(),
+            unlocked_indices_per_tree[c.second_clique()]);
+        ++idx;
+      }
+    }
+
+    // Determine the clique contributions and reset the jacbians to their
+    // reduced versions.
+    if (idx > 0) {
+      c_clone->set_first_clique(cliques[0]);
+      c_clone->set_first_clique_jacobian(jacobians[0]);
+      if (idx > 1) {
+        c_clone->set_second_clique(cliques[1]);
+        c_clone->set_second_clique_jacobian(jacobians[1]);
+      } else {
+        c_clone->set_second_clique(-1);
+      }
+      problem->AddConstraint(std::move(c_clone));
+    }
+  }
 }
 
 template <typename T>

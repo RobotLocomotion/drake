@@ -27,6 +27,13 @@ GTEST_TEST(SlicingAndIndexing, SelectRows) {
   EXPECT_EQ(S, S_expected);
 }
 
+GTEST_TEST(SlicingAndIndexing, ExcludeRows) {
+  const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
+  const MatrixXd S = ExcludeRows(M, indices);
+  const VectorXd S_expected = (VectorXd(2, 1) << 1, 3, 6).finished();
+  EXPECT_EQ(S, S_expected);
+}
+
 GTEST_TEST(SlicingAndIndexing, SelectCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 5);
   const MatrixXd S = SelectCols(M, indices);
