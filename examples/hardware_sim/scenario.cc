@@ -1,3 +1,6 @@
+// This file is licensed under the MIT-0 License.
+// See LICENSE-MIT-0.txt in the current directory.
+
 #include "drake/examples/hardware_sim/scenario.h"
 
 #include <utility>
