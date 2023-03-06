@@ -138,12 +138,15 @@ template <typename T>
 contact_solvers::internal::MatrixBlock<T> ExcludeCols(
     const contact_solvers::internal::MatrixBlock<T>& M,
     const std::vector<int>& indices) {
-  if (M.is_dense()) {
+  if (indices.size() == 0) {
+    return M;
+  } else if (M.is_dense()) {
     return contact_solvers::internal::MatrixBlock<T>(
         std::move(ExcludeCols(M.MakeDenseMatrix(), indices)));
   } else {
     throw std::runtime_error(
-        "ExcludeCols only supports dense MatrixBlock arguments.");
+        "ExcludeCols called with non-empty indices only supports dense "
+        "MatrixBlock arguments.");
   }
 }
 

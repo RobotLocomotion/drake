@@ -88,9 +88,18 @@ GTEST_TEST(SlicingAndIndexing, ExcludeCols) {
   {
     const contact_solvers::internal::MatrixBlock<double> M_block(
         contact_solvers::internal::Block3x3SparseMatrix<double>(0, 0));
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ExcludeCols(M_block, indices),
-        ".*ExcludeCols only supports dense MatrixBlock arguments.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(ExcludeCols(M_block, indices),
+                                ".*ExcludeCols called with non-empty indices "
+                                "only supports dense MatrixBlock arguments.*");
+  }
+
+  // Test sparse MatrixBlock variant with zero length indices.
+  {
+    const contact_solvers::internal::MatrixBlock<double> M_block_expected(
+        contact_solvers::internal::Block3x3SparseMatrix<double>(0, 0));
+    const contact_solvers::internal::MatrixBlock<double> M_block =
+        ExcludeCols(M_block_expected, std::vector<int>());
+    EXPECT_EQ(M_block.MakeDenseMatrix(), M_block_expected.MakeDenseMatrix());
   }
 }
 
