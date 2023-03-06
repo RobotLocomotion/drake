@@ -271,7 +271,7 @@ class SapConstraint {
     |     TRUE        |     TRUE        |   permuted(i)   |    permuted(j)   |
     |------------------------------------------------------------------------|
     Note: if both cliques do not participate, this function returns `nullptr`.
-    @pre clique_permutation.domain_size() == per_clique_known_dofs.size().
+    @pre per_clique_known_dofs.size() <= clique_permutation.domain_size() .
     @pre first_clique() < clique_permutation.domain_size().
     @pre if num_cliques() > 1,
       second_clique() < clique_permutation.domain_size().
