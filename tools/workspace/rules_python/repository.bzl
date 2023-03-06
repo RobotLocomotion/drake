@@ -15,7 +15,7 @@ def rules_python_repository(
         # The commit (version) and sha256 here should be identical to the
         # commit listed in
         # drake/tools/install/bazel/test/drake_bazel_installed_test.py.
-        commit = "0.17.3",
-        sha256 = "8c15896f6686beb5c631a4459a3aa8392daccaab805ea899c9d14215074b60ef",  # noqa
+        commit = "0.19.0",
+        sha256 = "ffc7b877c95413c82bfd5482c017edcf759a6250d8b24e82f41f3c8b8d9e287e",  # noqa
         mirrors = mirrors,
     )
