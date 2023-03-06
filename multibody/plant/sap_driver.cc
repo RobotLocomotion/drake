@@ -18,6 +18,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 using drake::geometry::GeometryId;
 using drake::math::RotationMatrix;
@@ -624,6 +625,30 @@ void SapDriver<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+
+  // Make a reduced version of the original contact problem using joint locking
+  // data.
+  const internal::JointLockingCacheData<T>& joint_locking_data =
+      manager().EvalLockedAndUnlockedVelocityIndices(context);
+  const std::vector<int>& locked_indices =
+      joint_locking_data.locked_velocity_indices;
+  const std::vector<std::vector<int>> locked_indices_per_tree =
+      joint_locking_data.locked_velocity_indices_per_tree;
+
+  std::vector<std::vector<int>> per_clique_known_dofs(locked_indices_per_tree);
+  // At the moment, joint locking is only supported for rigid tree DoFs. We add
+  // an empty vector for each clique not corresponding to rigid body trees to
+  // indicate that none of their DoFs are affected in the reduction.
+  //
+  // N.B. This depends on the ordering of cliques established by
+  // CalcLinearDynamicsMatrix(), assuming that all rigid tree cliques come
+  // before other cliques (deformable bodies, etc.).
+  for (int i = tree_topology().num_trees(); i < problem.num_cliques(); ++i) {
+    per_clique_known_dofs.push_back(std::vector<int>());
+  }
+
+  cache->sap_problem_locked = std::move(problem.MakeReduced(
+      locked_indices, per_clique_known_dofs, &cache->mapping));
 }
 
 template <typename T>
@@ -709,11 +734,20 @@ void SapDriver<T>::CalcContactSolverResults(
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+  const SapContactProblem<T>& sap_problem_locked =
+      *contact_problem_cache.sap_problem_locked;
 
   // We use the velocity stored in the current context as initial guess.
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
   VectorX<T> v0 = x0.bottomRows(this->plant().num_velocities());
+
+  // Project v0 to the reduced DOFs of the locked problem.
+  const auto& indices = manager()
+                            .EvalLockedAndUnlockedVelocityIndices(context)
+                            .unlocked_velocity_indices;
+  v0 = SelectRows(v0, indices);
+
   if constexpr (std::is_same_v<T, double>) {
     if (manager().deformable_driver_ != nullptr) {
       const VectorX<double> deformable_v0 =
@@ -725,12 +759,13 @@ void SapDriver<T>::CalcContactSolverResults(
     }
   }
 
-  // Solve contact problem.
+  // Solve the reduced DOF locked problem.
   SapSolver<T> sap;
   sap.set_parameters(sap_parameters_);
-  SapSolverResults<T> sap_results;
+  SapSolverResults<T> sap_results_locked;
+
   const SapSolverStatus status =
-      sap.SolveWithGuess(sap_problem, v0, &sap_results);
+      sap.SolveWithGuess(sap_problem_locked, v0, &sap_results_locked);
   if (status != SapSolverStatus::kSuccess) {
     const std::string msg = fmt::format(
         "The SAP solver failed to converge at simulation time = {}. "
@@ -755,10 +790,16 @@ void SapDriver<T>::CalcContactSolverResults(
     throw std::runtime_error(msg);
   }
 
+  SapSolverResults<T> sap_results;
+  sap_problem.ExpandContactSolverResults(contact_problem_cache.mapping,
+                                         sap_results_locked, &sap_results);
+
   const std::vector<DiscreteContactPair<T>>& discrete_pairs =
       manager().EvalDiscreteContactPairs(context);
   const int num_contacts = discrete_pairs.size();
 
+  // Pack the results of the locked problem, using the original problem data to
+  // project contact impulese to the original DOFs.
   PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
                            results);
 }

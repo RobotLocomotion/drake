@@ -988,6 +988,10 @@ drake_cc_googletest(
     name = "joint_locking_test",
     deps = [
         ":plant",
+        "//geometry:meshcat",
+        "//geometry:meshcat_visualizer",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/meshcat:contact_visualizer",
         "//systems/analysis:simulator",
     ],
 )
