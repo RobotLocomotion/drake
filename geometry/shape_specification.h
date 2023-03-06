@@ -25,7 +25,7 @@ class ShapeReifier;
  A class derived from the Shape class will invoke the parent's constructor as
  Shape(ShapeTag<DerivedShape>()). */
 template <typename ShapeType>
-struct ShapeTag{};
+struct ShapeTag {};
 
 /** The base interface for all shape specifications. It has no public
   constructor and cannot be instantiated directly. The Shape class has two
@@ -515,6 +515,5 @@ double CalcVolume(const Shape& shape);
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::geometry::ShapeName>
-    : drake::ostream_formatter {};
+struct formatter<drake::geometry::ShapeName> : drake::ostream_formatter {};
 }  // namespace fmt

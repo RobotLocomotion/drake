@@ -4510,6 +4510,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
+    systems::CacheIndex joint_locking_data_per_tree;
     systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
 
@@ -4708,6 +4709,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.joint_locking_data)
         .template Eval<std::vector<int>>(context);
+  }
+
+  // Computes the array of indices of velocities that are not locked in the
+  // current configuration for each tree in the plant's topology. The resulting
+  // index values in each element of @p unlocked_velocity_indices will be in
+  // ascending order, in the range [0, tree_M.num_velocities()), with the
+  // indices of the locked velocities removed.
+  void CalcJointLockingIndicesPerTree(
+      const systems::Context<T>& context,
+      std::vector<std::vector<int>>* unlocked_velocity_indices) const;
+
+  // Eval version of the method CalcJointLockingIndicesPerTree().
+  const std::vector<std::vector<int>>& EvalJointLockingIndicesPerTree(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.joint_locking_data_per_tree)
+        .template Eval<std::vector<std::vector<int>>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.

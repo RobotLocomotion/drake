@@ -163,7 +163,8 @@ int do_main() {
 
   MultibodyPlantConfig plant_config;
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
-  plant_config.discrete_contact_solver = FLAGS_discrete_solver;
+  //plant_config.discrete_contact_solver = FLAGS_discrete_solver;
+  plant_config.discrete_contact_solver = "sap";
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 

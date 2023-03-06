@@ -36,9 +36,16 @@ struct ContactProblemCache {
     sap_problem =
         std::make_unique<contact_solvers::internal::SapContactProblem<T>>(
             time_step);
+    sap_problem_locked =
+        std::make_unique<contact_solvers::internal::SapContactProblem<T>>(
+            time_step);
   }
   copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
       sap_problem;
+
+  // TODO(sap_joint_locking): Store another SapContactProblem for the joint locked version.
+  copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
+      sap_problem_locked;
 
   // TODO(amcastro-tri): consider removing R_WC from the contact problem cache
   // and instead cache ContactPairKinematics separately.

@@ -103,6 +103,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalJointLockingIndices(context);
   }
 
+  static const std::vector<std::vector<int>>& EvalJointLockingIndicesPerTree(
+      const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
+    return plant.EvalJointLockingIndicesPerTree(context);
+  }
+
   static const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs(const MultibodyPlant<T>& plant) {
     return plant.distance_constraints_specs_;

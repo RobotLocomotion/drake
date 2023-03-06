@@ -80,6 +80,7 @@ drake_cc_library(
         ":sap_constraint",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/plant:slicing_and_indexing"
     ],
 )
 

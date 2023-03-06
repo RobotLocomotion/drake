@@ -988,6 +988,10 @@ drake_cc_googletest(
     deps = [
         ":plant",
         "//systems/analysis:simulator",
+        "//geometry/test_utilities:meshcat_environment",
+        "//geometry:meshcat",
+        "//geometry:meshcat_visualizer",
+        "//multibody/meshcat:contact_visualizer",
     ],
 )
 

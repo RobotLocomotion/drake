@@ -117,6 +117,18 @@ class SapContactProblem {
   /* Returns a deep-copy of `this` instance. */
   std::unique_ptr<SapContactProblem<T>> Clone() const;
 
+  // TODO(sap_joint_locking): Add a function CalcReducedProblem(joint_locking_indices)
+  // that creates a clone of this problem that assumes all dofs *NOT* included
+  // in joint_locking_indices are locked.
+  // Steps:
+  //   - Project A and v_star
+  //   - Loop through and clone all contraints, projecting their Jacobians.
+  //   - *Ignore constraints where the Jacobian becomes null*
+  //     - Do we need to bookkeep this for un-projecting the results?
+  void ReduceToSelectedDofs(
+      SapContactProblem<T>* problem, std::vector<int> indices,
+      std::vector<std::vector<int>> indices_per_tree) const;
+
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */
 

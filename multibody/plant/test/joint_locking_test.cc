@@ -13,6 +13,10 @@
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/context.h"
+#include "drake/geometry/test_utilities/meshcat_environment.h"
+#include "drake/geometry/meshcat.h"
+#include "drake/geometry/meshcat_visualizer.h"
+#include "drake/multibody/meshcat/contact_visualizer.h"
 
 namespace drake {
 
@@ -22,8 +26,13 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using systems::Context;
 using systems::Simulator;
+using geometry::Meshcat;
+using geometry::MeshcatVisualizerParams;
+using geometry::MeshcatVisualizer;
 
 namespace multibody {
+
+using meshcat::ContactVisualizer;
 
 class MultibodyPlantTester {
  public:
@@ -308,6 +317,145 @@ GTEST_TEST(JointLockingTest, TrajectoryTest) {
               0);
   }
 }
+
+struct JointLockingSapTestConfig {
+  std::string joint_typename;
+  bool with_visualization{false};
+};
+
+std::ostream& operator<<(std::ostream& out, const JointLockingSapTestConfig& c) {
+    out << c.joint_typename;
+    return out;
+}
+
+const double kLadderMass = 10;      // [kg]
+const double kLadderLength = 0.5;  // [m]
+const double kLadderRadius = 0.05;  // [m]
+const double kLadderAngle = 0.8;   // [rad]
+const double kLadderVolume = M_PI * kLadderRadius * kLadderRadius *
+                             ((4. / 3.) * kLadderRadius + kLadderLength);
+class JointLockingSapTest
+    : public ::testing::TestWithParam<JointLockingSapTestConfig> {
+ public:
+  void SetUp() {
+    systems::DiagramBuilder<double> builder;
+    std::tie(plant_, scene_graph_) =
+        multibody::AddMultibodyPlantSceneGraph(&builder, kTimestep);
+    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
+
+    JointLockingSapTestConfig config = GetParam();
+
+    AddGround();
+    AddLadderModel(config.joint_typename);
+
+    plant_->Finalize();
+
+    if (config.with_visualization) {
+      std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
+      MeshcatVisualizer<double>::AddToBuilder(&builder, *scene_graph_, meshcat);
+      ContactVisualizer<double>::AddToBuilder(&builder, *plant_, meshcat);
+    }
+
+    diagram_ = builder.Build();
+  }
+
+  void AddGround() {
+    const geometry::Box G_shape(10, 10, 1);
+    const CoulombFriction<double> G_mu(1.0, 1.0);
+
+    const SpatialInertia<double> I_GGcm =
+        SpatialInertia<double>::SolidBoxWithDensity(1, 10, 10, 1);
+
+    const RigidBody<double>& ground = plant_->AddRigidBody("ground", I_GGcm);
+    plant_->RegisterCollisionGeometry(ground, RigidTransformd::Identity(),
+                                      G_shape, "ground_collision", G_mu);
+    plant_->RegisterVisualGeometry(ground, RigidTransformd::Identity(), G_shape,
+                                   "ground_visual",
+                                   Vector4<double>(0.3, 0.3, 0.3, 1.0));
+
+    plant_->WeldFrames(plant_->world_frame(), ground.body_frame(),
+                       RigidTransformd(Vector3d{0, 0, -0.5}));
+  }
+
+  void AddLadderModel(std::string joint_typename) {
+    const geometry::Capsule L_shape(kLadderRadius, kLadderLength);
+    const CoulombFriction<double> L_mu(1.0, 1.0);
+
+    const SpatialInertia<double> I_LLcm =
+        SpatialInertia<double>::SolidCapsuleWithDensity(
+            kLadderMass / kLadderVolume, kLadderRadius, kLadderLength,
+            Vector3d{0, 0, 1});
+
+    const RigidBody<double>& L_left = plant_->AddRigidBody("L_left", I_LLcm);
+    const RigidBody<double>& L_right = plant_->AddRigidBody("L_right", I_LLcm);
+
+    plant_->RegisterCollisionGeometry(L_left, RigidTransformd::Identity(),
+                                      L_shape, "L_left_collision", L_mu);
+    plant_->RegisterCollisionGeometry(L_right, RigidTransformd::Identity(),
+                                      L_shape, "L_right_collision", L_mu);
+    plant_->RegisterVisualGeometry(L_left, RigidTransformd::Identity(), L_shape,
+                                   "L_left_visual",
+                                   Vector4<double>(1, 0, 0, 1));
+    plant_->RegisterVisualGeometry(L_right, RigidTransformd::Identity(),
+                                   L_shape, "L_right_visual",
+                                   Vector4<double>(0, 1, 0, 1));
+
+    RigidTransformd X_LP(Vector3d(0, 0, kLadderLength / 2));
+    RigidTransformd X_PC(RotationMatrix<double>::MakeYRotation(kLadderAngle));
+
+    if (joint_typename == WeldJoint<double>::kTypeName) {
+      plant_->AddJoint<WeldJoint>("left_right", L_left, X_LP, L_right, X_LP,
+                                  X_PC);
+    } else if (joint_typename == RevoluteJoint<double>::kTypeName) {
+      const RevoluteJoint<double>& joint = plant_->AddJoint<RevoluteJoint>(
+          "left_right", L_left, X_LP, L_right, X_LP, Vector3d{0, 1, 0});
+      plant_->GetMutableJointByName<RevoluteJoint>(joint.name())
+          .set_default_angle(kLadderAngle);
+    }
+
+    const RigidTransformd X_L_left(
+        RotationMatrix<double>::MakeYRotation(-kLadderAngle / 2),
+        Vector3d(0, 0, kLadderRadius + 0.5 * kLadderLength * std::cos(kLadderAngle / 2)));
+    plant_->SetDefaultFreeBodyPose(L_left, X_L_left);
+  }
+
+ protected:
+  MultibodyPlant<double>* plant_;
+  geometry::SceneGraph<double>* scene_graph_;
+  std::unique_ptr<systems::Diagram<double>> diagram_;
+};
+
+TEST_P(JointLockingSapTest, VerifyEquilibrium) {
+  JointLockingSapTestConfig config = GetParam();
+  std::unique_ptr<Context<double>> diagram_context =
+      diagram_->CreateDefaultContext();
+  Context<double>& plant_context =
+      plant_->GetMyMutableContextFromRoot(diagram_context.get());
+
+  plant_->GetJointByName("left_right").Lock(&plant_context);
+
+  systems::Simulator<double> simulator(*diagram_, std::move(diagram_context));
+
+  if (config.with_visualization) {
+    simulator.set_target_realtime_rate(1);
+  }
+  simulator.Initialize();
+  simulator.AdvanceTo(10);
+}
+
+std::vector<JointLockingSapTestConfig> MakeTestCases() {
+  return std::vector<JointLockingSapTestConfig>{
+      {.joint_typename = WeldJoint<double>::kTypeName,
+       .with_visualization = true},
+      {.joint_typename = RevoluteJoint<double>::kTypeName,
+       .with_visualization = true}
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(JointLockingTests, JointLockingSapTest,
+                         testing::ValuesIn(MakeTestCases()),
+                         testing::PrintToStringParamName());
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
