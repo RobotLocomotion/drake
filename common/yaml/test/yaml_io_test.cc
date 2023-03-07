@@ -129,6 +129,17 @@ GTEST_TEST(YamlIoTest, LoadFileChildNameBad) {
       ".*yaml_io_test_input_2.yaml.* no such .*wrong_child_name.*");
 }
 
+GTEST_TEST(YamlIoTest, LoadFileSchemaBad) {
+  const std::string filename =
+      FindResourceOrThrow("drake/common/yaml/test/yaml_io_test_input_2.yaml");
+  using WrongSchema = std::map<std::string, DoubleStruct>;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      LoadYamlFile<WrongSchema>(filename),
+      ".*/test/yaml_io_test_input_2.yaml:2:3:"
+      " YAML node of type Mapping .*"
+      " could not parse double value entry for double value.*");
+}
+
 // Because we know that the LoadFile and LoadString implementations share a
 // helper function that implements handling of defaults and options, these
 // specific variations of File-based test cases are not needed because the

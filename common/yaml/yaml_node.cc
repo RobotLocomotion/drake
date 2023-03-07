@@ -113,7 +113,12 @@ bool Node::IsMapping() const {
 }
 
 bool operator==(const Node& a, const Node& b) {
-  return std::tie(a.tag_, a.data_) == std::tie(b.tag_, b.data_);
+  return std::tie(a.tag_, a.data_, a.mark_filename_, a.mark_) ==
+         std::tie(b.tag_, b.data_, b.mark_filename_, b.mark_);
+}
+
+bool operator==(const Node::Mark& a, const Node::Mark& b) {
+  return std::tie(a.line, a.column) == std::tie(b.line, b.column);
 }
 
 bool operator==(const Node::ScalarData& a, const Node::ScalarData& b) {
@@ -134,6 +139,22 @@ const std::string& Node::GetTag() const {
 
 void Node::SetTag(std::string tag) {
   tag_ = std::move(tag);
+}
+
+void Node::SetMarkFilename(std::optional<std::string> filename) {
+  mark_filename_ = std::move(filename);
+}
+
+const std::optional<std::string>& Node::GetMarkFilename() const {
+  return mark_filename_;
+}
+
+void Node::SetMark(std::optional<Mark> mark) {
+  mark_ = mark;
+}
+
+const std::optional<Node::Mark>& Node::GetMark() const {
+  return mark_;
 }
 
 const std::string& Node::GetScalar() const {
