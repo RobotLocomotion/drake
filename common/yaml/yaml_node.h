@@ -55,6 +55,19 @@ enum class NodeType {
   kMapping,
 };
 
+/* Denotes one of the "JSON Schema" tags.
+See https://yaml.org/spec/1.2.2/#json-schema. */
+enum class JsonSchemaTag {
+  // https://yaml.org/spec/1.2.2/#null
+  kNull,
+  // https://yaml.org/spec/1.2.2/#boolean
+  kBool,
+  // https://yaml.org/spec/1.2.2/#integer
+  kInt,
+  // https://yaml.org/spec/1.2.2/#floating-point
+  kFloat,
+};
+
 /* Data type that represents a YAML node.  A Node can hold one of three
 possible kinds of value at runtime:
 - Scalar
@@ -120,7 +133,11 @@ class Node final {
   /* Gets this node's YAML tag.
   See https://yaml.org/spec/1.2.2/#tags.
   By default (i.e., at construction time), the tag will be empty. */
-  const std::string& GetTag() const;
+  std::string_view GetTag() const;
+
+  /* Sets this node's YAML tag to one of the "JSON Schema" tags.
+  See https://yaml.org/spec/1.2.2/#json-schema. */
+  void SetTag(JsonSchemaTag);
 
   /* Sets this node's YAML tag.
   See https://yaml.org/spec/1.2.2/#tags.
@@ -128,14 +145,17 @@ class Node final {
   type nor value.  The caller is responsible for providing a valid tag. */
   void SetTag(std::string);
 
-  // https://yaml.org/spec/1.2.2/#floating-point
-  static constexpr std::string_view kTagFloat{"tag:yaml.org,2002:float"};
+  // https://yaml.org/spec/1.2.2/#null
+  static constexpr std::string_view kTagNull{"tag:yaml.org,2002:null"};
+
+  // https://yaml.org/spec/1.2.2/#boolean
+  static constexpr std::string_view kTagBool{"tag:yaml.org,2002:bool"};
 
   // https://yaml.org/spec/1.2.2/#integer
   static constexpr std::string_view kTagInt{"tag:yaml.org,2002:int"};
 
-  // https://yaml.org/spec/1.2.2/#null
-  static constexpr std::string_view kTagNull{"tag:yaml.org,2002:null"};
+  // https://yaml.org/spec/1.2.2/#floating-point
+  static constexpr std::string_view kTagFloat{"tag:yaml.org,2002:float"};
 
   // https://yaml.org/spec/1.2.2/#generic-string
   static constexpr std::string_view kTagStr{"tag:yaml.org,2002:str"};
@@ -237,9 +257,12 @@ class Node final {
   Node();
 
   using Variant = std::variant<ScalarData, SequenceData, MappingData>;
-
-  std::string tag_;
   Variant data_;
+
+  // The YAML tag is not required, but can be set to either a well-known enum or
+  // a bespoke string. The representation here is not canonical -- it's possible
+  // to set a string value that is equivalent to an enum's implied string.
+  std::variant<std::string, JsonSchemaTag> tag_;
 };
 
 }  // namespace internal

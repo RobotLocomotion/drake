@@ -282,13 +282,13 @@ class YamlReadArchive final {
       return;
     }
     // Figure out which variant<...> type we have based on the node's tag.
-    const std::string& tag = sub_node->GetTag();
+    const std::string_view tag = sub_node->GetTag();
     VariantHelper(tag, nvp.name(), nvp.value());
   }
 
   // Steps through Types to extract 'size_t I' and 'typename T' for the Impl.
   template <template <typename...> class Variant, typename... Types>
-  void VariantHelper(const std::string& tag, const char* name,
+  void VariantHelper(std::string_view tag, const char* name,
                      Variant<Types...>* storage) {
     if (tag == internal::Node::kTagNull) {
       // Our variant parsing does not yet support nulls.  When the tag indicates
@@ -307,7 +307,7 @@ class YamlReadArchive final {
   // Recursive case -- checks if `tag` matches `T` (which was the I'th type in
   // the template parameter pack), or else keeps looking.
   template <size_t I, typename Variant, typename T, typename... Remaining>
-  void VariantHelperImpl(const std::string& tag, const char* name,
+  void VariantHelperImpl(std::string_view tag, const char* name,
                          Variant* storage) {
     // For the first type declared in the variant<> (I == 0), the tag can be
     // absent; otherwise, the tag must match one of the variant's types.
@@ -322,13 +322,13 @@ class YamlReadArchive final {
 
   // Base case -- no match.
   template <size_t, typename Variant>
-  void VariantHelperImpl(const std::string& tag, const char*, Variant*) {
+  void VariantHelperImpl(std::string_view tag, const char*, Variant*) {
     ReportError(fmt::format(
         "has unsupported type tag {} while selecting a variant<>", tag));
   }
 
   // Checks if a NiceTypeName matches the yaml type tag.
-  bool IsTagMatch(const std::string& name, const std::string& tag) const {
+  bool IsTagMatch(std::string_view name, std::string_view tag) const {
     // Check for the "fail safe schema" YAML types and similar.
     if (name == "std::string") {
       return tag == internal::Node::kTagStr;
