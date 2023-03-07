@@ -13,7 +13,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link0.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link0.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -110,7 +110,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link1.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link1.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -166,7 +166,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link2.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link2.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -222,7 +222,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link3.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link3.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -272,7 +272,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link4.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link4.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -334,7 +334,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link5.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link5.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -426,7 +426,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link6.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link6.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -476,7 +476,7 @@
     <visual>
       <origin rpy="1.57079632679 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/franka_description/meshes/visual/link7.obj"/>
+        <mesh filename="package://drake_models/franka_description/meshes/visual/link7.obj"/>
       </geometry>
     </visual>
     <collision>

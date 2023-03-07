@@ -1,6 +1,17 @@
 # -*- python -*-
 
+load("@drake//tools/install:install.bzl", "install")
+
 package(default_visibility = ["//visibility:private"])
+
+# TODO(jwnimmer-tri) Add a real package.xml upstream.
+genrule(
+    name = "package.xml_genrule",
+    srcs = ["@drake//:package.xml"],
+    outs = ["package.xml"],
+    cmd = "sed -e 's#drake#drake_models#' $< > $@",
+    visibility = ["//visibility:public"],
+)
 
 exports_files(
     # Keep this list alpha-sorted.
@@ -16,5 +27,25 @@ exports_files(
         "wsg_50_hydro_bubble/**",
         "ycb/meshes/**",
     ], allow_empty = False),
+    visibility = ["//visibility:public"],
+)
+
+# Install a subset of the models.
+install(
+    name = "install",
+    data = [
+        ":package.xml",
+    ] + glob([
+        # Keep this list alpha-sorted.
+        "franka_description/**",
+        "jaco_description/**",
+        "skydio_2/**",
+        "tri_homecart/**",
+        "ur3e/**",
+        "wsg_50_description/**",
+        "wsg_50_hydro_bubble/**",
+        "ycb/meshes/**",
+    ], allow_empty = False),
+    data_dest = "share/drake_models",
     visibility = ["//visibility:public"],
 )

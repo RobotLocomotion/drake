@@ -14,6 +14,7 @@ load(
 
 package(default_visibility = ["//visibility:public"])
 
+# TODO(jwnimmer-tri) Convert this into drake_models somehow or another.
 _REALSENSE2_DESCRIPTION_FILES = forward_files(
     srcs = ["@intel_realsense_ros_internal//:" +
             x for x in realsense2_description_files()],

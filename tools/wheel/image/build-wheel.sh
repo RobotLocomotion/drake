@@ -40,7 +40,7 @@ chrpath()
 ###############################################################################
 
 readonly WHEEL_DIR=/opt/drake-wheel-build/wheel
-readonly WHEEL_DATA_DIR=${WHEEL_DIR}/pydrake/share/drake
+readonly WHEEL_SHARE_DIR=${WHEEL_DIR}/pydrake/share
 
 # TODO(mwoehlke-kitware) Most of this should move to Bazel.
 mkdir -p ${WHEEL_DIR}/drake
@@ -82,34 +82,33 @@ else
         /opt/drake/lib/libtbb*.so*
 fi
 
-# TODO(mwoehlke-kitware) We need a different way of shipping non-arch files
-# (examples, models).
-cp -r -t ${WHEEL_DATA_DIR} \
+cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /opt/drake/share/drake/.drake-find_resource-sentinel \
     /opt/drake/share/drake/package.xml \
     /opt/drake/share/drake/examples \
     /opt/drake/share/drake/geometry \
     /opt/drake/share/drake/manipulation \
     /opt/drake/share/drake/tutorials
+# TODO(#15774) Eventually we will download these at runtime, instead of shipping
+# them in the wheel.
+cp -r -t ${WHEEL_SHARE_DIR} \
+    /opt/drake/share/drake_models
 
 if [[ "$(uname)" == "Linux" ]]; then
-    mkdir -p ${WHEEL_DATA_DIR}/setup
-    cp -r -t ${WHEEL_DATA_DIR}/setup \
+    mkdir -p ${WHEEL_SHARE_DIR}/drake/setup
+    cp -r -t ${WHEEL_SHARE_DIR}/drake/setup \
         /opt/drake/share/drake/setup/deepnote
 fi
 
 # TODO(mwoehlke-kitware) We need to remove these to keep the wheel from being
-# too large, but (per above), the whole of share/drake shouldn't be in the
-# wheel.
+# too large, but (per above), the whole of share/drake_models shouldn't be in
+# the wheel (and atlas's meshes should move into drake_models).
 rm -rf \
-    ${WHEEL_DATA_DIR}/manipulation/models/franka_description/meshes \
-    ${WHEEL_DATA_DIR}/manipulation/models/tri-homecart/*.obj \
-    ${WHEEL_DATA_DIR}/manipulation/models/tri-homecart/*.png \
-    ${WHEEL_DATA_DIR}/manipulation/models/ur3e/*.obj \
-    ${WHEEL_DATA_DIR}/manipulation/models/ur3e/*.png \
-    ${WHEEL_DATA_DIR}/manipulation/models/ycb/meshes \
-    ${WHEEL_DATA_DIR}/examples/atlas \
-    ${WHEEL_DATA_DIR}/examples/hydroelastic/spatula_slip_control
+    ${WHEEL_SHARE_DIR}/drake_models/franka_description \
+    ${WHEEL_SHARE_DIR}/drake_models/ur3e \
+    ${WHEEL_SHARE_DIR}/drake_models/ycb \
+    ${WHEEL_SHARE_DIR}/drake/examples/atlas \
+    ${WHEEL_SHARE_DIR}/drake_models/wsg_50_hydro_bubble
 
 if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib

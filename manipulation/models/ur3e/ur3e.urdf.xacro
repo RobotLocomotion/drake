@@ -82,7 +82,7 @@
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
-          <mesh filename="base.obj"/>
+          <mesh filename="package://drake_models/ur3e/base.obj"/>
         </geometry>
         <material name="LightGrey">
           <color rgba="0.7 0.7 0.7 1.0"/>
@@ -161,7 +161,7 @@
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
-          <mesh filename="shoulder.obj"/>
+          <mesh filename="package://drake_models/ur3e/shoulder.obj"/>
         </geometry>
         <material name="LightGrey">
           <color rgba="0.7 0.7 0.7 1.0"/>
@@ -224,7 +224,7 @@
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
-          <mesh filename="upperarm.obj"/>
+          <mesh filename="package://drake_models/ur3e/upperarm.obj"/>
         </geometry>
         <material name="LightGrey">
           <color rgba="0.7 0.7 0.7 1.0"/>
@@ -341,7 +341,7 @@
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
-          <mesh filename="forearm.obj"/>
+          <mesh filename="package://drake_models/ur3e/forearm.obj"/>
         </geometry>
         <material name="LightGrey">
           <color rgba="0.7 0.7 0.7 1.0"/>
@@ -476,7 +476,7 @@
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
-          <mesh filename="wrist1.obj"/>
+          <mesh filename="package://drake_models/ur3e/wrist1.obj"/>
         </geometry>
         <material name="LightGrey">
           <color rgba="0.7 0.7 0.7 1.0"/>
@@ -552,7 +552,7 @@
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
-          <mesh filename="wrist2.obj"/>
+          <mesh filename="package://drake_models/ur3e/wrist2.obj"/>
         </geometry>
         <material name="LightGrey">
           <color rgba="0.7 0.7 0.7 1.0"/>
@@ -627,7 +627,7 @@
       <visual>
         <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
         <geometry>
-          <mesh filename="wrist3.obj"/>
+          <mesh filename="package://drake_models/ur3e/wrist3.obj"/>
         </geometry>
         <material name="LightGrey">
           <color rgba="0.7 0.7 0.7 1.0"/>

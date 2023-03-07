@@ -46,7 +46,7 @@
         <origin xyz="0 0 ${(num_plates-1)*arm_mount_stack_plate_height}"
                 rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_arm_mount_stack.obj"/>
+          <mesh filename="package://drake_models/tri_homecart/homecart_arm_mount_stack.obj"/>
         </geometry>
       </visual>
       <xacro:if value="${num_plates>1}">
@@ -57,7 +57,7 @@
       <visual>
         <origin xyz="0 0 0.0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_arm_mount_cantilever.obj"/>
+          <mesh filename="package://drake_models/tri_homecart/homecart_arm_mount_cantilever.obj"/>
         </geometry>
       </visual>
       <collision>
@@ -147,7 +147,7 @@
     <visual>
       <origin xyz="0 0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_baseplate.obj"/>
+        <mesh filename="package://drake_models/tri_homecart/homecart_baseplate.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -172,7 +172,7 @@
     <visual>
       <origin xyz="0 0 0.0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_basecart.obj"/>
+        <mesh filename="package://drake_models/tri_homecart/homecart_basecart.obj"/>
       </geometry>
     </visual>
     <collision>
@@ -224,7 +224,7 @@
     <visual>
     <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="package://drake/manipulation/models/tri_homecart/homecart_bimanual_upper_structure.obj"/>
+        <mesh filename="package://drake_models/tri_homecart/homecart_bimanual_upper_structure.obj"/>
       </geometry>
     </visual>
 
