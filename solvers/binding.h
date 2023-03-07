@@ -45,8 +45,9 @@ class Binding {
 
   template <typename U>
   Binding(const Binding<U>& b,
-          typename std::enable_if_t<std::is_convertible_v<
-              std::shared_ptr<U>, std::shared_ptr<C>>>* = nullptr)
+          typename std::enable_if_t<
+              std::is_convertible_v<std::shared_ptr<U>, std::shared_ptr<C>>>* =
+              nullptr)
       : Binding(b.evaluator(), b.variables()) {}
 
   [[nodiscard]] const std::shared_ptr<C>& evaluator() const {
@@ -173,7 +174,5 @@ struct hash<drake::solvers::Binding<C>> : public drake::DefaultHash {};
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <typename C>
-struct formatter<drake::solvers::Binding<C>>
-    : drake::ostream_formatter {};
+struct formatter<drake::solvers::Binding<C>> : drake::ostream_formatter {};
 }  // namespace fmt
-

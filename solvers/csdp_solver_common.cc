@@ -22,7 +22,9 @@ SolverId CsdpSolver::id() {
   return singleton.access();
 }
 
-bool CsdpSolver::is_enabled() { return true; }
+bool CsdpSolver::is_enabled() {
+  return true;
+}
 
 bool CsdpSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(

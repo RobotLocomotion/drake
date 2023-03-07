@@ -115,7 +115,6 @@ class Constraint : public EvaluatorBase {
   /** Number of rows in the output constraint. */
   int num_constraints() const { return num_outputs(); }
 
-
  protected:
   /** Updates the lower bound.
    * @note if the users want to expose this method in a sub-class, do
@@ -164,10 +163,12 @@ class Constraint : public EvaluatorBase {
                                 const double tol) const {
     AutoDiffVecXd y(num_constraints());
     DoEval(x, &y);
-    auto get_value = [](const AutoDiffXd& v) { return v.value(); };
-    return
-        (y.array().unaryExpr(get_value) >= lower_bound_.array() - tol).all() &&
-        (y.array().unaryExpr(get_value) <= upper_bound_.array() + tol).all();
+    auto get_value = [](const AutoDiffXd& v) {
+      return v.value();
+    };
+    return (y.array().unaryExpr(get_value) >= lower_bound_.array() - tol)
+               .all() &&
+           (y.array().unaryExpr(get_value) <= upper_bound_.array() + tol).all();
   }
 
   virtual symbolic::Formula DoCheckSatisfied(
@@ -666,9 +667,8 @@ class LinearEqualityConstraint : public LinearConstraint {
    * Overloads the constructor with a sparse matrix Aeq.
    * @pydrake_mkdoc_identifier{sparse_Aeq}
    */
-  LinearEqualityConstraint(
-      const Eigen::SparseMatrix<double>& Aeq,
-      const Eigen::Ref<const Eigen::VectorXd>& beq)
+  LinearEqualityConstraint(const Eigen::SparseMatrix<double>& Aeq,
+                           const Eigen::Ref<const Eigen::VectorXd>& beq)
       : LinearConstraint(Aeq, beq, beq) {}
 
   /**
@@ -694,9 +694,8 @@ class LinearEqualityConstraint : public LinearConstraint {
   /**
    * Overloads UpdateCoefficients but with a sparse A matrix.
    */
-  void UpdateCoefficients(
-      const Eigen::SparseMatrix<double>& Aeq,
-      const Eigen::Ref<const Eigen::VectorXd>& beq) {
+  void UpdateCoefficients(const Eigen::SparseMatrix<double>& Aeq,
+                          const Eigen::Ref<const Eigen::VectorXd>& beq) {
     LinearConstraint::UpdateCoefficients(Aeq, beq, beq);
   }
 

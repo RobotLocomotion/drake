@@ -62,12 +62,12 @@ class StaticSolverInterface {
     return std::make_unique<SomeSolver>();
   }
 
-  SolverId(*id_)() = nullptr;
-  bool(*is_available_)() = nullptr;
+  SolverId (*id_)() = nullptr;
+  bool (*is_available_)() = nullptr;
   bool (*is_enabled_)() = nullptr;
   bool (*are_program_attributes_satisfied_)(const MathematicalProgram& prog) =
       nullptr;
-  std::unique_ptr<SolverInterface>(*make_)() = nullptr;
+  std::unique_ptr<SolverInterface> (*make_)() = nullptr;
 };
 
 // The list of all solvers compiled in Drake.
@@ -88,8 +88,8 @@ constexpr std::array<StaticSolverInterface, 12> kKnownSolvers{
 constexpr int kNumberOfSolvers = kKnownSolvers.size();
 
 // The list of all solvers compiled in Drake, indexed by SolverId.
-using KnownSolversMap = std::unordered_map<
-    SolverId, const StaticSolverInterface*>;
+using KnownSolversMap =
+    std::unordered_map<SolverId, const StaticSolverInterface*>;
 const KnownSolversMap& GetKnownSolversMap() {
   static const never_destroyed<KnownSolversMap> result{[]() {
     KnownSolversMap prototype;

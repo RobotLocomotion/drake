@@ -28,8 +28,7 @@ SolverId GurobiSolver::id() {
 
 bool GurobiSolver::is_enabled() {
   const char* grb_license_file = std::getenv("GRB_LICENSE_FILE");
-  return ((grb_license_file != nullptr) &&
-          (std::strlen(grb_license_file) > 0));
+  return ((grb_license_file != nullptr) && (std::strlen(grb_license_file) > 0));
 }
 
 namespace {
