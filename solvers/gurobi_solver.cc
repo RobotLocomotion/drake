@@ -37,9 +37,8 @@ namespace {
 
 // Returns the (base) URL for Gurobi's online reference manual.
 std::string refman() {
-  return fmt::format(
-      "https://www.gurobi.com/documentation/{}.{}/refman",
-      GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
+  return fmt::format("https://www.gurobi.com/documentation/{}.{}/refman",
+                     GRB_VERSION_MAJOR, GRB_VERSION_MINOR);
 }
 
 // Information to be passed through a Gurobi C callback to
@@ -188,9 +187,9 @@ void SetSecondOrderConeDualSolution(
   }
 }
 
-void SetAllSecondOrderConeDualSolution(
-    const MathematicalProgram& prog, GRBmodel* model,
-    MathematicalProgramResult* result) {
+void SetAllSecondOrderConeDualSolution(const MathematicalProgram& prog,
+                                       GRBmodel* model,
+                                       MathematicalProgramResult* result) {
   const int num_soc = prog.lorentz_cone_constraints().size() +
                       prog.rotated_lorentz_cone_constraints().size();
   Eigen::VectorXd gurobi_qcp_dual_solutions(num_soc);
@@ -321,7 +320,6 @@ __attribute__((unused)) bool HasCorrectNumberOfVariables(
   return (num_vars == num_vars_expected);
 }
 
-
 // Adds a constraint of one of the following forms :
 // lb ≤ A*x ≤ ub
 // or
@@ -436,12 +434,11 @@ int AddLinearConstraintNoDuplication(
   return error;
 }
 
-
-int AddLinearConstraint(
-    const MathematicalProgram& prog, GRBmodel* model,
-    const Eigen::SparseMatrix<double>& A, const Eigen::VectorXd& lb,
-    const Eigen::VectorXd& ub, const VectorXDecisionVariable& vars,
-    bool is_equality, int* num_gurobi_linear_constraints) {
+int AddLinearConstraint(const MathematicalProgram& prog, GRBmodel* model,
+                        const Eigen::SparseMatrix<double>& A,
+                        const Eigen::VectorXd& lb, const Eigen::VectorXd& ub,
+                        const VectorXDecisionVariable& vars, bool is_equality,
+                        int* num_gurobi_linear_constraints) {
   const symbolic::Variables vars_set(vars);
   if (static_cast<int>(vars_set.size()) == vars.rows()) {
     return AddLinearConstraintNoDuplication(prog, model, A, lb, ub, vars,
@@ -878,14 +875,23 @@ void SetOptionOrThrow(GRBenv* model_env, const std::string& option,
     // Otherwise, identify all other cases of type-mismatches.
     const char* expected_type = nullptr;
     switch (param_type) {
-      case 1: { expected_type = "integer"; break; }
-      case 2: { expected_type = "floating-point"; break; }
-      case 3: { expected_type = "string"; break; }
+      case 1: {
+        expected_type = "integer";
+        break;
+      }
+      case 2: {
+        expected_type = "floating-point";
+        break;
+      }
+      case 3: {
+        expected_type = "string";
+        break;
+      }
     }
     if (expected_type != nullptr) {
-      throw std::runtime_error(fmt::format(
-          "GurobiSolver(): parameter {} should be a {} not a {}",
-          option, expected_type, actual_type));
+      throw std::runtime_error(
+          fmt::format("GurobiSolver(): parameter {} should be a {} not a {}",
+                      option, expected_type, actual_type));
     }
 
     // Otherwise, it was truly unknown not just wrongly-typed.
@@ -1018,7 +1024,9 @@ std::optional<int> ParseInt(std::string_view s) {
 }
 }  // anonymous namespace
 
-bool GurobiSolver::is_available() { return true; }
+bool GurobiSolver::is_available() {
+  return true;
+}
 
 /*
  * Implements RAII for a Gurobi license / environment.
@@ -1037,10 +1045,12 @@ class GurobiSolver::License {
       grb_load_env_error = GRBloadenv(&env_, nullptr);
     }
     if (grb_load_env_error) {
-      const char *grb_msg = GRBgeterrormsg(env_);
-      throw std::runtime_error("Could not create Gurobi environment because "
-          "Gurobi returned code " + std::to_string(grb_load_env_error) +
-          " with message \"" + grb_msg + "\".");
+      const char* grb_msg = GRBgeterrormsg(env_);
+      throw std::runtime_error(
+          "Could not create Gurobi environment because "
+          "Gurobi returned code " +
+          std::to_string(grb_load_env_error) + " with message \"" + grb_msg +
+          "\".");
     }
     DRAKE_DEMAND(env_ != nullptr);
   }
@@ -1050,9 +1060,7 @@ class GurobiSolver::License {
     env_ = nullptr;
   }
 
-  GRBenv* GurobiEnv() {
-    return env_;
-  }
+  GRBenv* GurobiEnv() { return env_; }
 
  private:
   GRBenv* env_ = nullptr;
@@ -1064,14 +1072,13 @@ std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
 
 // TODO(hongkai.dai@tri.global): break this large DoSolve function to smaller
 // ones.
-void GurobiSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void GurobiSolver::DoSolve(const MathematicalProgram& prog,
+                           const Eigen::VectorXd& initial_guess,
+                           const SolverOptions& merged_options,
+                           MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "GurobiSolver doesn't support the feature of variable scaling.");
+        "GurobiSolver doesn't support the feature of variable scaling.");
   }
 
   if (!license_) {

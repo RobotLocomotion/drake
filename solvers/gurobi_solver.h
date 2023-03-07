@@ -154,9 +154,8 @@ class GurobiSolver final : public SolverBase {
   /**
    * This type contains a valid Gurobi license environment, and is only to be
    * used from AcquireLicense().
-  */
+   */
   class License;
-
 
   /**
    * This acquires a Gurobi license environment shared among all GurobiSolver

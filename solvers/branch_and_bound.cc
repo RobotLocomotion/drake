@@ -201,8 +201,8 @@ MixedIntegerBranchAndBoundNode::ConstructRootNode(
   }
   MixedIntegerBranchAndBoundNode* node = new MixedIntegerBranchAndBoundNode(
       new_prog, binary_variables_list, solver_id);
-  node->solution_result_ = SolveProgramWithSolver(
-      *node->prog_, solver_id, node->prog_result_.get());
+  node->solution_result_ =
+      SolveProgramWithSolver(*node->prog_, solver_id, node->prog_result_.get());
   if (node->solution_result_ == SolutionResult::kSolutionFound) {
     node->CheckOptimalSolutionIsIntegral();
   }
@@ -299,12 +299,12 @@ void MixedIntegerBranchAndBoundNode::Branch(
   right_child_->FixBinaryVariable(binary_variable, 1);
   left_child_->parent_ = this;
   right_child_->parent_ = this;
-  left_child_->solution_result_ = SolveProgramWithSolver(
-      *left_child_->prog_, left_child_->solver_id_,
-      left_child_->prog_result_.get());
-  right_child_->solution_result_ = SolveProgramWithSolver(
-      *right_child_->prog_, right_child_->solver_id_,
-      right_child_->prog_result_.get());
+  left_child_->solution_result_ =
+      SolveProgramWithSolver(*left_child_->prog_, left_child_->solver_id_,
+                             left_child_->prog_result_.get());
+  right_child_->solution_result_ =
+      SolveProgramWithSolver(*right_child_->prog_, right_child_->solver_id_,
+                             right_child_->prog_result_.get());
   if (left_child_->solution_result_ == SolutionResult::kSolutionFound) {
     left_child_->CheckOptimalSolutionIsIntegral();
   }
@@ -327,10 +327,9 @@ MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
     // If an integral solution is found, then update the best solutions,
     // together with the best upper bound.
     if (root_->optimal_solution_is_integral()) {
-      UpdateIntegralSolution(
-          root_->prog_result()->GetSolution(
-              root_->prog()->decision_variables()),
-          root_->prog_result()->get_optimal_cost());
+      UpdateIntegralSolution(root_->prog_result()->GetSolution(
+                                 root_->prog()->decision_variables()),
+                             root_->prog_result()->get_optimal_cost());
     }
   }
 }
@@ -496,8 +495,8 @@ MixedIntegerBranchAndBoundNode* PickMinLowerBoundNodeInSubTree(
     if (left_min_lower_bound_node && right_min_lower_bound_node) {
       return (left_min_lower_bound_node->prog_result()->get_optimal_cost() <
               right_min_lower_bound_node->prog_result()->get_optimal_cost())
-          ? left_min_lower_bound_node
-          : right_min_lower_bound_node;
+                 ? left_min_lower_bound_node
+                 : right_min_lower_bound_node;
     } else if (left_min_lower_bound_node) {
       return left_min_lower_bound_node;
     } else if (right_min_lower_bound_node) {
@@ -667,9 +666,8 @@ void MixedIntegerBranchAndBound::BranchAndUpdate(
         child->optimal_solution_is_integral()) {
       const double child_node_optimal_cost =
           child->prog_result()->get_optimal_cost();
-      const Eigen::VectorXd x_sol =
-          child->prog_result()->GetSolution(
-              child->prog()->decision_variables());
+      const Eigen::VectorXd x_sol = child->prog_result()->GetSolution(
+          child->prog()->decision_variables());
       UpdateIntegralSolution(x_sol, child_node_optimal_cost);
     }
     if (search_integral_solution_by_rounding_) {
@@ -735,9 +733,8 @@ void MixedIntegerBranchAndBound::SearchIntegralSolutionByRounding(
          node.remaining_binary_variables()) {
       // Notice that roundoff_integer_val is of type double here. This is
       // because AddBoundingBoxConstraint(...) requires bounds of type double.
-      const double roundoff_integer_val =
-          std::round(node.prog_result()->GetSolution(
-              remaining_binary_variable));
+      const double roundoff_integer_val = std::round(
+          node.prog_result()->GetSolution(remaining_binary_variable));
       new_prog->AddBoundingBoxConstraint(roundoff_integer_val,
                                          roundoff_integer_val,
                                          remaining_binary_variable);
@@ -746,9 +743,8 @@ void MixedIntegerBranchAndBound::SearchIntegralSolutionByRounding(
     SolveProgramWithSolver(*new_prog, node.solver_id(), &result);
     if (result.is_success()) {
       // Found integral solution.
-      UpdateIntegralSolution(
-          result.GetSolution(new_prog->decision_variables()),
-          result.get_optimal_cost());
+      UpdateIntegralSolution(result.GetSolution(new_prog->decision_variables()),
+                             result.get_optimal_cost());
     }
   }
 }

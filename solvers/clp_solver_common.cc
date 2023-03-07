@@ -19,7 +19,9 @@ SolverId ClpSolver::id() {
   return singleton.access();
 }
 
-bool ClpSolver::is_enabled() { return true; }
+bool ClpSolver::is_enabled() {
+  return true;
+}
 
 namespace {
 // If the program is compatible with this solver, returns true and clears the

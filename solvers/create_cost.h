@@ -47,11 +47,10 @@ Binding<Cost> ParseCost(const symbolic::Expression& e);
  */
 template <typename F, typename C>
 struct is_binding_compatible
-    : std::bool_constant<
-          (std::is_convertible_v<F, C>) ||
-              (std::is_convertible_v<F, std::shared_ptr<C>>) ||
-              (std::is_convertible_v<F, std::unique_ptr<C>>) ||
-              (std::is_convertible_v<F, Binding<C>>)> {};
+    : std::bool_constant<(std::is_convertible_v<F, C>) ||
+                         (std::is_convertible_v<F, std::shared_ptr<C>>) ||
+                         (std::is_convertible_v<F, std::unique_ptr<C>>) ||
+                         (std::is_convertible_v<F, Binding<C>>)> {};
 
 /**
  * Template condition to check if @p F is a candidate to be used to construct a
@@ -63,8 +62,7 @@ struct is_binding_compatible
 template <typename F>
 struct is_cost_functor_candidate
     : std::bool_constant<(!is_binding_compatible<F, Cost>::value) &&
-                             (!std::is_convertible_v<
-                                 F, symbolic::Expression>)> {};
+                         (!std::is_convertible_v<F, symbolic::Expression>)> {};
 
 }  // namespace internal
 }  // namespace solvers

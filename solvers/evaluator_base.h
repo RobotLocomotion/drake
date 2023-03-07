@@ -133,7 +133,7 @@ class EvaluatorBase {
    * the gradient as potentially non-zero.
    */
   const std::optional<std::vector<std::pair<int, int>>>&
-      gradient_sparsity_pattern() const {
+  gradient_sparsity_pattern() const {
     return gradient_sparsity_pattern_;
   }
 

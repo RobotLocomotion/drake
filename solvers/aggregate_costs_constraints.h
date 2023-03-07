@@ -82,7 +82,6 @@ void AggregateBoundingBoxConstraints(const MathematicalProgram& prog,
                                      Eigen::VectorXd* lower,
                                      Eigen::VectorXd* upper);
 
-
 /**
  For linear expression A * vars where `vars` might contain duplicated entries,
  rewrite this linear expression as A_new * vars_new where vars_new doesn't
