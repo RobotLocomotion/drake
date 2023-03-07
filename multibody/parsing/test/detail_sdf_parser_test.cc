@@ -751,7 +751,7 @@ TEST_F(SdfParserTest, BallJointWithAxis2Error) {
 <model name='joint_no_axis'>
   <link name='a'/>
   <link name='b'/>
-  <joint name='should_have_axis' type='ball'>
+  <joint name='should_not_have_axis' type='ball'>
     <parent>a</parent>
     <child>b</child>
     <axis>
@@ -764,10 +764,11 @@ TEST_F(SdfParserTest, BallJointWithAxis2Error) {
 </model>)""");
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       R"(.*Actuation \(via non-zero effort limits\) for ball joint )"
-      R"('should_have_axis' is not implemented yet and will be ignored.*)"));
+      R"('should_not_have_axis' is not implemented yet and will be )"
+      R"(ignored.*)"));
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
-      ".*An axis2 may not be specified for ball joint 'should_have_axis' and "
-      "will be ignored.*"));
+      ".*An axis2 may not be specified for ball joint 'should_not_have_axis' "
+      "and will be ignored.*"));
 }
 
 // Joint axis upper limit should be lower than upper limit.

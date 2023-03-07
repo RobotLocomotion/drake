@@ -514,7 +514,7 @@ void AddPrismaticSpringFromSpecification(const SDFormatDiagnostic& diagnostic,
 // Only available for "revolute" and "continuous" joints. The units for spring
 // reference is radians and the units for spring stiffness is N⋅m/rad.
 // When the error diagnostic policy is not set to throw this function will
-// return false on errors, true otherwise.
+// return false on errors.
 bool AddRevoluteSpringFromSpecification(
     const SDFormatDiagnostic& diagnostic, const sdf::Joint &joint_spec,
     const RevoluteJoint<double>& joint, MultibodyPlant<double>* plant) {
@@ -553,7 +553,7 @@ bool AddRevoluteSpringFromSpecification(
 // continuous, positions limits are infinities and velocity limits have units
 // rad/s. Velocity and acceleration limits are always >= 0.  This method throws
 // an exception if the joint type is not one of revolute, prismatic, or
-// continuous. When the diagnostic policy is set to not throw it will return
+// continuous. When the diagnostic policy is not set to throw it will return
 // std::nullopt on errors.
 std::optional<std::tuple<double, double, double, double>> ParseJointLimits(
     const SDFormatDiagnostic& diagnostic,
@@ -621,7 +621,7 @@ std::optional<std::tuple<double, double, double, double>> ParseJointLimits(
 // joint (is_model_joint = false) since a world joint doesn't have a
 // containing model, hence M = W.
 // If the diagnostic error policy is not set to throw it returns false
-// when an error occurs, true otherwise.
+// when an error occurs.
 bool AddJointFromSpecification(
     const SDFormatDiagnostic& diagnostic, const RigidTransformd& X_WM,
     const sdf::Joint& joint_spec, ModelInstanceIndex model_instance,
@@ -1128,8 +1128,7 @@ const Frame<double>* ParseFrame(const SDFormatDiagnostic& diagnostic,
 
 // TODO(eric.cousineau): Update parsing pending resolution of
 // https://github.com/osrf/sdformat/issues/288
-// When diagnostic policy is not set to throw it returns false on errors
-// true otherwise.
+// When diagnostic policy is not set to throw it returns false on errors.
 bool AddDrakeJointFromSpecification(const SDFormatDiagnostic& diagnostic,
                                     const sdf::ElementPtr node,
                                     ModelInstanceIndex model_instance,
