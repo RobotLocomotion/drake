@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="four_bar_weld">
+    <!-- TODO(sherm1) This is aspirational as of 3/2023.
+
+    As compared to the 4-bar linkage in four_bar_loop.sdf (see it for info),
+    this sdf is different. It explicitly defines a model consisting of a
+    spanning tree (rooted at world) plus a loop-closing constraint. To break the
+    loop, it splits the coupler link C into two pieces, each with the same
+    dimensions but half the density. The coupler is the "main" link and the
+    other piece is called the "shadow" link S. A weld constraint is then added
+    to reconnect the pieces and recover the original mass properties.
+
+    We also have to ensure that the parent->child ordering forms a
+    valid spanning tree. As compared to four_bar_loop.sdf, the Dc-Co
+    (driver-coupler) revolute joint is still present, but the Cr-Rc
+    (coupler-rocker) revolute joint is gone. Instead we use an Rs-Sr
+    (rocker-shadow) revolute joint whose ordering rocker-shadow (not
+    shadow-rocker) is reversed to define a tree branch world-rocker-shadow.
+    (When automated we will preserve the user's parent->child ordering but model
+    using a reverse mobilizer.) The other tree branch is world-driver-coupler.
+
+                                                        * Rs
+            shadow S 4.8m 0.5kg    Scm                  |
+       So *------------------------x--------------------|--------* Sr
+                                                        |
+       Co *------------------------x------------------------------
+            coupler C 4.8m 0.5kg   Ccm                  |
+       Dc *                                             |
+          |                                    rocker R | 2m
+          |                                             | 2kg
+      1m  | driver D                                    |
+      1kg |                                             |      Wy
+          |                                             |      |
+          * Do                                       Ro *      |
+                                                               +----- Wx
+          *====================== Wo ===================*     /
+         Wd         2m          world W      2m        Wr    Wz
+
+    The weld constraint connects the centers of mass of the split coupler and
+    shadow links, at the points marked with an "x" above. -->
+
+    <!-- Define links & their attached frames. -->
+
+    <frame name="Wd" attached_to="world">
+      <pose relative_to="world">-2 0 0 0 0 0</pose>
+    </frame>
+    <frame name="Wr" attached_to="world">
+      <pose relative_to="world">2 0 0 0 0 0</pose>
+    </frame>
+
+    <link name="driver">
+      <inertial>
+        <pose>0 0.5 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.0833333333333333</ixx>
+          <iyy>0</iyy>
+          <izz>0.0833333333333333</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Dc" attached_to="driver">
+      <pose relative_to="driver">0 1 0 0 0 0</pose>
+    </frame>
+
+    <link name="rocker">
+      <inertial>
+        <pose>0 1 0 0 0 0</pose>
+        <mass>2</mass>
+        <inertia>
+          <ixx>0.6666666666666667</ixx>
+          <iyy>0</iyy>
+          <izz>0.6666666666666667</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Rs" attached_to="rocker">
+      <pose relative_to="rocker">0 2 0 0 0 0</pose>
+    </frame>
+
+    <!-- Since we split the coupler into two half-density links, the mass and
+    inertia are 50% of the original coupler. Welding the pieces together
+    recovers the full mass properties. -->
+
+    <link name="coupler">
+      <inertial>
+        <pose>2.4 0 0 0 0 0</pose>
+        <mass>0.5</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <iyy>0.96</iyy>
+          <izz>0.96</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Ccm" attached_to="coupler">
+      <pose relative_to="coupler">2.4 0 0 0 0 0</pose>
+    </frame>
+
+    <link name="shadow">
+      <inertial>
+        <pose>2.4 0 0 0 0 0</pose>
+        <mass>0.5</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <iyy>0.96</iyy>
+          <izz>0.96</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Scm" attached_to="shadow">
+      <pose relative_to="shadow">2.4 0 0 0 0 0</pose>
+    </frame>
+    <frame name="Sr" attached_to="shadow">
+      <pose relative_to="shadow">4.8 0 0 0 0 0</pose>
+    </frame>
+
+    <!-- Define the four joints -->
+
+    <joint name="world_driver" type="revolute">
+      <parent>Wd</parent>
+      <child>driver</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <joint name="world_rocker" type="revolute">
+      <parent>Wr</parent>
+      <child>rocker</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <joint name="driver_coupler" type="revolute">
+      <parent>Dc</parent>
+      <child>coupler</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <!-- As compared to the coupler-rocker revolute joint in four_bar_loop.sdf,
+    we form a world-rocker-shadow tree branch that requires an Rs-Sr
+    (rocker-shadow) revolute joint. -->
+
+    <joint name="rocker_shadow" type="revolute">
+      <parent>Rs</parent>
+      <child>Sr</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <!-- Add a weld constraint to join the half-density coupler and shadow
+    links. Note that a weld constraint looks exactly like a weld joint. The
+    parent/child ordering is arbitrary here. -->
+
+    <drake:weld_constraint>
+      <parent>Ccm</parent>
+      <child>Scm</child>
+    </drake:weld_constraint>
+
+  </model>
+</sdf>
