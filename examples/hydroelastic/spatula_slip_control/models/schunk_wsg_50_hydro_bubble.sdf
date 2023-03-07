@@ -33,7 +33,7 @@
         <pose>0 0 -0.036 -1.5708 0 -1.5708</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/manipulation/models/wsg_50_description/meshes/wsg_body.obj</uri>
+            <uri>package://drake_models/wsg_50_description/meshes/wsg_body.obj</uri>
             <scale>1 1 1</scale>
           </mesh>
         </geometry>
@@ -70,7 +70,7 @@
         <pose>0 0.0 0 1.5708 0 3.14159</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/examples/hydroelastic/spatula_slip_control/meshes/bubble_finger.obj</uri>
+            <uri>package://drake_models/wsg_50_hydro_bubble/meshes/bubble_finger.obj</uri>
             <scale>.001 .001 .001</scale>
           </mesh>
         </geometry>
@@ -80,7 +80,7 @@
         <pose>0 -0.03 -0.1095 0 1.5708 -1.5708</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/examples/hydroelastic/spatula_slip_control/meshes/ellipsoid_bubble_geometry.obj</uri>
+            <uri>package://drake_models/wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.obj</uri>
             <scale>.001 .001 .001</scale>
           </mesh>
         </geometry>
@@ -144,7 +144,7 @@
         <pose>0 0 0 1.5708 0 0</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/examples/hydroelastic/spatula_slip_control/meshes/bubble_finger.obj</uri>
+            <uri>package://drake_models/wsg_50_hydro_bubble/meshes/bubble_finger.obj</uri>
             <scale>.001 .001 .001</scale>
           </mesh>
         </geometry>
@@ -154,7 +154,7 @@
         <pose>0 0.03 -0.1095 0 1.5708 1.5708</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/examples/hydroelastic/spatula_slip_control/meshes/ellipsoid_bubble_geometry.obj</uri>
+            <uri>package://drake_models/wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.obj</uri>
             <scale>.001 .001 .001</scale>
           </mesh>
         </geometry>
