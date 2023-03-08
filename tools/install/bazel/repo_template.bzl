@@ -6,7 +6,8 @@
 
 def drake_repository(name, *, excludes = [], **kwargs):
     """Declares the @drake repository based on an installed Drake binary image,
-    along with repositories for its dependencies @eigen and @fmt.
+    along with repositories for its dependencies @eigen, @fmt, and
+    @models_internal.
 
     This enables downstream BUILD files to refer to certain Drake targets when
     using precompiled Drake releases.
@@ -30,6 +31,13 @@ def drake_repository(name, *, excludes = [], **kwargs):
         _eigen_repository(name = "eigen")
     if "fmt" not in excludes:
         _fmt_repository(name = "fmt", drake_name = name)
+    if "models_internal" not in excludes:
+        # TODO(jwnimmer-tri) I'm not sure whether or not we should allow users
+        # to supply their own flavor of this repository.
+        _models_internal_repository(
+            name = "models_internal",
+            drake_name = name,
+        )
 
 def _drake_impl(repo_ctx):
     # Obtain the root of the @drake_loader repository (i.e., wherever this
@@ -86,6 +94,13 @@ def _drake_impl(repo_ctx):
     for relpath in _MANIFEST["runfiles"]["drake"]:
         repo_ctx.symlink(str(share_drake) + "/" + relpath, relpath)
 
+    # Symlink the RobotLocomotions/models data into @drake, so that our
+    # repository rule for @models_internal can refer to it.
+    repo_ctx.symlink(
+        prefix.get_child("share").get_child("drake_models"),
+        ".share_drake_models",
+    )
+
     # Symlink all drake LCM types to this repository's root package, since it
     # should be named `drake` (see bazelbuild/bazel#3998).
     if repo_ctx.name != "drake":
@@ -130,10 +145,41 @@ cc_library(
     deps = ["@{}//:.fmt_headers"],
     visibility = ["//visibility:public"],
 )
-""".format(repo_ctx.attr.drake_name, executable = False))
+""".format(repo_ctx.attr.drake_name), executable = False)
 
 _fmt_repository = repository_rule(
     implementation = _fmt_impl,
+    attrs = {
+        "drake_name": attr.string(mandatory = True),
+    },
+)
+
+def _models_internal_impl(repo_ctx):
+    repo_ctx.file("BUILD.bazel", """
+load("@{drake}//:.manifest.bzl", "MANIFEST")
+
+# Copy the model files from prefix/share/... into this repository.
+PATHNAMES = MANIFEST["runfiles"]["models_internal"]
+[
+    genrule(
+        name = "genrule_" + str(i),
+        srcs = ["@{drake}//:.share_drake_models/" + x],
+        outs = [x],
+        cmd = "cp $< $@",
+    )
+    for i, x in enumerate(PATHNAMES)
+]
+
+# Export the model files as a group for use by @drake.
+filegroup(
+    name = ".installed_runfiles",
+    data = PATHNAMES,
+    visibility = ["@{drake}//:__subpackages__"],
+)
+""".format(drake = repo_ctx.attr.drake_name), executable = False)
+
+_models_internal_repository = repository_rule(
+    implementation = _models_internal_impl,
     attrs = {
         "drake_name": attr.string(mandatory = True),
     },
