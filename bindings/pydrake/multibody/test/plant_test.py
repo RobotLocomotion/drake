@@ -293,6 +293,9 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.num_joints(), benchmark.num_joints())
         self.assertEqual(plant.num_actuators(), benchmark.num_actuators())
         self.assertEqual(
+            plant.num_actuators(model_instance),
+            benchmark.num_actuators())
+        self.assertEqual(
             plant.num_model_instances(), benchmark.num_model_instances() + 1)
         self.assertEqual(plant.num_positions(), benchmark.num_positions())
         self.assertEqual(
@@ -384,9 +387,16 @@ class TestPlant(unittest.TestCase):
             joint_index=JointIndex(0)))
         self.assertEqual([JointIndex(0), JointIndex(1)],
                          plant.GetJointIndices(model_instance=model_instance))
+        elbow = plant.GetJointByName(name="ElbowJoint")
+        self.assertEqual(
+            [elbow.index()],
+            plant.GetActuatedJointIndices(model_instance=model_instance))
         joint_actuator = plant.get_joint_actuator(
             actuator_index=JointActuatorIndex(0))
         self.assertIsInstance(joint_actuator, JointActuator)
+        self.assertEqual(
+            [joint_actuator.index()],
+            plant.GetJointActuatorIndices(model_instance=model_instance))
         check_repr(
             joint_actuator,
             "<JointActuator_[float] name='ElbowJoint' index=0 "

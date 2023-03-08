@@ -78,6 +78,18 @@ GTEST_TEST(MultibodyPlantIntrospection, FloatingBodies) {
 
   plant.Finalize();
 
+  // Sanity check model sizes.
+  EXPECT_EQ(plant.num_velocities(atlas_model1), 36);
+  EXPECT_EQ(plant.num_positions(atlas_model1), 37);
+  EXPECT_EQ(plant.num_actuators(atlas_model1), 30);
+
+  EXPECT_EQ(plant.num_velocities(atlas_model2), 36);
+  EXPECT_EQ(plant.num_positions(atlas_model2), 37);
+
+  EXPECT_EQ(plant.num_velocities(mug_model), 6);
+  EXPECT_EQ(plant.num_positions(mug_model), 7);
+  EXPECT_EQ(plant.num_actuators(mug_model), 0);
+
   // Assert that the mug and the two Atlas robot pelvises are floating and
   // modeled with quaternions.
   ASSERT_TRUE(mug.is_floating());

@@ -173,10 +173,14 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(plant->num_velocities(), 3);
   EXPECT_EQ(plant->num_multibody_states(), 6);
 
+  // Acrobot is in the default model instance.
+  EXPECT_EQ(plant->num_actuators(default_model_instance()), 1);
   EXPECT_EQ(plant->num_actuated_dofs(default_model_instance()), 1);
   EXPECT_EQ(plant->num_positions(default_model_instance()), 2);
   EXPECT_EQ(plant->num_velocities(default_model_instance()), 2);
 
+  // Pendulum model instance.
+  EXPECT_EQ(plant->num_actuators(pendulum_model_instance), 1);
   EXPECT_EQ(plant->num_actuated_dofs(pendulum_model_instance), 1);
   EXPECT_EQ(plant->num_positions(pendulum_model_instance), 1);
   EXPECT_EQ(plant->num_velocities(pendulum_model_instance), 1);
@@ -285,7 +289,7 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   const ForceElementIndex invalid_force_index(plant->num_force_elements() + 1);
   EXPECT_ANY_THROW(plant->GetForceElement<RevoluteSpring>(invalid_force_index));
 
-  // Get joint indices by model instance
+  // Get joint indices by model instance.
   const std::vector<JointIndex> acrobot_joint_indices =
       plant->GetJointIndices(default_model_instance());
   EXPECT_EQ(acrobot_joint_indices.size(), 2);
@@ -297,6 +301,34 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(pendulum_joint_indices.size(), 2);  // pin joint + weld joint.
   EXPECT_EQ(pendulum_joint_indices[0], pin_joint.index());
   EXPECT_EQ(pendulum_joint_indices[1], weld_joint.index());
+
+  // Get actuated joint indices only, by model instance.
+  const std::vector<JointIndex> acrobot_actuated_joint_indices =
+      plant->GetActuatedJointIndices(default_model_instance());
+  EXPECT_EQ(acrobot_actuated_joint_indices.size(), 1);
+  EXPECT_EQ(acrobot_actuated_joint_indices[0], elbow_joint.index());
+
+  const std::vector<JointIndex> pendulum_actuated_joint_indices =
+      plant->GetActuatedJointIndices(pendulum_model_instance);
+  EXPECT_EQ(pendulum_actuated_joint_indices.size(), 1);  // pin joint
+  EXPECT_EQ(pendulum_actuated_joint_indices[0], pin_joint.index());
+
+  // Get actuated joint actuator indices by model instance.
+  const std::vector<JointActuatorIndex> acrobot_joint_actuator_indices =
+      plant->GetJointActuatorIndices(default_model_instance());
+  EXPECT_EQ(acrobot_joint_actuator_indices.size(), 1);
+  EXPECT_EQ(plant->get_joint_actuator(acrobot_joint_actuator_indices[0])
+                .joint()
+                .index(),
+            elbow_joint.index());
+
+  const std::vector<JointActuatorIndex> pendulum_joint_actuator_indices =
+      plant->GetJointActuatorIndices(pendulum_model_instance);
+  EXPECT_EQ(pendulum_joint_actuator_indices.size(), 1);  // pin joint
+  EXPECT_EQ(plant->get_joint_actuator(pendulum_joint_actuator_indices[0])
+                .joint()
+                .index(),
+            pin_joint.index());
 
   // Templatized version to obtain retrieve a particular known type of joint.
   const RevoluteJoint<double>& shoulder =
