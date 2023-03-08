@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -160,6 +161,31 @@ class Node final {
   // https://yaml.org/spec/1.2.2/#generic-string
   static constexpr std::string_view kTagStr{"tag:yaml.org,2002:str"};
 
+  /* Sets the filename where this Node was read from. A nullopt indicates that
+  the filename not known. */
+  void SetMarkFilename(std::optional<std::string> filename);
+
+  /* Gets the filename where this Node was read from. A nullopt indicates that
+  the filename not known. */
+  const std::optional<std::string>& GetMarkFilename() const;
+
+  /* An indication of where in a file or string this Node was read from.
+  The indexing is 1-based (the first character is line 1 column 1). */
+  struct Mark {
+    int line{};
+    int column{};
+
+    friend bool operator==(const Mark&, const Mark&);
+  };
+
+  /* Sets the line:column offset in the file or string where this Node was read
+  from. A nullopt indicates that the Node's position is unknown. */
+  void SetMark(std::optional<Mark> mark);
+
+  /* Gets the line:column offset in the file or string where this Node was read
+  from. A nullopt indicates that the Node's position is unknown. */
+  const std::optional<Mark>& GetMark() const;
+
   // @name Scalar-only Functions
   // These functions may only be called when IsScalar() is true;
   // otherwise, they will throw an exception.
@@ -263,6 +289,9 @@ class Node final {
   // a bespoke string. The representation here is not canonical -- it's possible
   // to set a string value that is equivalent to an enum's implied string.
   std::variant<std::string, JsonSchemaTag> tag_;
+
+  std::optional<Mark> mark_;
+  std::optional<std::string> mark_filename_;
 };
 
 }  // namespace internal
