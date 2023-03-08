@@ -6,6 +6,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
 namespace multibody {
@@ -59,6 +60,17 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::Clone() const {
     clone->AddConstraint(c.Clone());
   }
   return clone;
+}
+
+template <typename T>
+void ReduceToSelectedDofs(SapContactProblem<T>* problem,
+                          std::vector<int> indices,
+                          std::vector<std::vector<int>> indices_per_tree) const {
+  DRAKE_DEMAND(problem != null);
+  DRAKE_DEMAND(problem->time_step_ == this->time_step_);
+
+  VectorX<T> v_star_reduced = SelectRows(v_star_, indices);
+
 }
 
 template <typename T>

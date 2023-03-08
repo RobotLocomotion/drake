@@ -125,6 +125,9 @@ class SapContactProblem {
   //   - Loop through and clone all contraints, projecting their Jacobians.
   //   - *Ignore constraints where the Jacobian becomes null*
   //     - Do we need to bookkeep this for un-projecting the results?
+  void ReduceToSelectedDofs(
+      SapContactProblem<T>* problem, std::vector<int> indices,
+      std::vector<std::vector<int>> indices_per_tree) const;
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */

@@ -17,6 +17,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 using drake::geometry::GeometryId;
 using drake::math::RotationMatrix;
@@ -595,6 +596,9 @@ void SapDriver<T>::CalcContactProblemCache(
 
   // TODO(sap_joint_locking): Clone the sap problem to one with joint's locked.
   // Something like sap_problem.CalcReducedProblem(joint_locking_indices).
+  const std::vector<int>& indices = manager().EvalJointLockingIndices(context);
+  const std::vector<std::vector<int>> indices_per_tree = 
+  problem.ReduceToSelectedDofs(cache->sap_problem_locked.get(), indices);
 }
 
 template <typename T>
@@ -676,6 +680,7 @@ void SapDriver<T>::CalcContactSolverResults(
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
+  const SapContactProblem<T>& sap_problem_locked = *contact_problem_.sap_problem_locked;
 
   // We use the velocity stored in the current context as initial guess.
   const VectorX<T>& x0 =
@@ -683,6 +688,8 @@ void SapDriver<T>::CalcContactSolverResults(
   VectorX<T> v0 = x0.bottomRows(this->plant().num_velocities());
 
   // TODO(sap_joint_locking): Project v0 for joint locking.
+  const auto& indices = manager().EvalJointLockingIndices(context);
+  v0 = SelectRows(v0, indices);
 
   if constexpr (std::is_same_v<T, double>) {
     if (manager().deformable_driver_ != nullptr) {
@@ -702,9 +709,8 @@ void SapDriver<T>::CalcContactSolverResults(
 
   // TODO(sap_joint_locking): Pass the reduced joint locking sap problem to the
   // solver instad.
-
   const SapSolverStatus status =
-      sap.SolveWithGuess(sap_problem, v0, &sap_results);
+      sap.SolveWithGuess(sap_problem_locked, v0, &sap_results);
   if (status != SapSolverStatus::kSuccess) {
     const std::string msg = fmt::format(
         "The SAP solver failed to converge at simulation time = {}. "
@@ -733,7 +739,7 @@ void SapDriver<T>::CalcContactSolverResults(
   // TODO(sap_joint_locking): Pass the results of the locked problem solve but the
   // original sap_problem to PackContactSolverResults.
   // I believe all we need to do here is to expand v_next to the original problem
-  // size. The original 
+  // size.
 
   PackContactSolverResults(context, sap_problem, num_contacts, sap_results,
                            results);
