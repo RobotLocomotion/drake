@@ -8,8 +8,6 @@ load(
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
-exports_files(["cspace_free_polytope.cc"])
-
 drake_cc_library(
     name = "cspace_free_path",
     srcs = ["cspace_free_path.cc"],

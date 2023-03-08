@@ -93,7 +93,6 @@ drake_cc_library(
     name = "cspace_free_polytope",
     srcs = [
         "cspace_free_polytope.cc",
-        "//geometry/optimization/dev:cspace_free_polytope.cc",
     ],
     hdrs = ["cspace_free_polytope.h"],
     deps = [
