@@ -22,10 +22,6 @@ namespace perception {
 /// This is a mix between the philosophy of PCL (templated interface to
 /// provide a compile-time open set, run-time closed set) and VTK (non-templated
 /// interface to provide a very free form run-time open set).
-/// You may construct one PointCloud which will contain different sets of
-/// data, but you cannot change the contained data types after construction.
-/// However, you can mutate the data contained within the structure and resize
-/// the cloud.
 ///
 /// Definitions:
 ///
@@ -42,7 +38,7 @@ namespace perception {
 ///
 /// @note "contiguous" here means contiguous in memory. This was chosen to
 /// avoid ambiguity between PCL and Eigen, where in PCL "dense" implies that
-/// the point cloud corresponds to a cloud with invalid values, and in Eigen
+/// the point cloud corresponds to a cloud with only valid values, and in Eigen
 /// "dense" implies contiguous storage.
 ///
 /// @note The accessors / mutators for the point fields of this class returns
@@ -90,7 +86,7 @@ class PointCloud final {
   /// @param fields
   ///   Fields that the point cloud contains.
   /// @param skip_initialize
-  ///    Do not default-initialize new values.
+  ///   Do not default-initialize new values.
   explicit PointCloud(int new_size = 0,
                       pc_flags::Fields fields = pc_flags::kXYZs,
                       bool skip_initialize = false);
@@ -253,9 +249,9 @@ class PointCloud final {
   /// @param other
   ///    Other point cloud.
   /// @param fields_in
-  ///    Fields to copy. If this is `kInherit`, then both clouds must have the
-  ///    exact same fields. Otherwise, both clouds must support the fields
-  ///    indicated this parameter.
+  ///    Fields to copy. If this is `kInherit`, then `other`s fields will be
+  ///    copied. Otherwise, both clouds must support the fields indicated this
+  ///    parameter.
   /// @param allow_resize
   ///    Permit resizing to the other cloud's size.
   void SetFrom(
@@ -276,6 +272,16 @@ class PointCloud final {
 
   /// @name Fields
   /// @{
+
+  /// Updates the point cloud to a given set of fields. In the case of
+  /// introducing a new field, its container will be allocated with the current
+  /// size and default initialized. The data for all retained fields will remain
+  /// unchanged.
+  /// @param new_fields
+  ///    New fields to set to.
+  /// @param skip_initialize
+  ///    Do not default-initialize new values.
+  void SetFields(pc_flags::Fields new_fields, bool skip_initialize = false);
 
   /// Returns if a point cloud has a given set of fields.
   bool HasFields(pc_flags::Fields fields_in) const;
