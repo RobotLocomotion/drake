@@ -89,6 +89,7 @@ install(
         "//geometry:install",
         "//lcmtypes:install",
         "//manipulation/models:install_data",
+        "//multibody/parsing:install",
         "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",

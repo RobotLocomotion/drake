@@ -7,13 +7,15 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/common/name_value.h"
 
 namespace drake {
 namespace multibody {
 
 /** Maps ROS package names to their full path on the local file system. It is
 used by the SDF and URDF parsers when parsing files that reference ROS packages
-for resources like mesh files. */
+for resources like mesh files. This class can also to download remote packages
+from the internet on an as-needed basis via AddRemotePackage(). */
 class PackageMap final {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PackageMap)
@@ -60,13 +62,52 @@ class PackageMap final {
   void Add(const std::string& package_name, const std::string& package_path);
 
   /** Adds package->path mappings from another PackageMap `other_map`. Throws
-  if the other PackageMap contains the same package with a different path. */
+  if the other PackageMap contains the same package with a different path,
+  or if unable to merge overlapping remote packages. */
   void AddMap(const PackageMap& other_map);
 
   /** Adds an entry into this PackageMap for the given `package.xml` filename.
   Throws if `filename` does not exist or its embedded name already exists in
   this map. */
   void AddPackageXml(const std::string& filename);
+
+  /** Parameters used for AddRemotePackage(). */
+  struct RemotePackageParams {
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(urls));
+      a->Visit(DRAKE_NVP(sha256));
+      a->Visit(DRAKE_NVP(archive_type));
+      a->Visit(DRAKE_NVP(strip_prefix));
+    }
+
+    /** The list of remote URLs for this resource. The urls are used in the
+    other they appear here, so preferred mirror(s) should come first. Valid
+    methods are "http://" or "https://" or "file://". */
+    std::vector<std::string> urls;
+
+    /** The cryptographic checksum of the file to be downloaded, as a
+    64-character hexadecimal string. */
+    std::string sha256;
+
+    /** (Optional) The archive type of the downloaded file. By default, the
+    archive type is determined from the file extension of the URL. If the file
+    has no extension, you can explicitly specify one of the following: "zip",
+    "tar", "gztar", "bztar", or "xztar" */
+    std::optional<std::string> archive_type;
+
+    /** (Optional) A directory prefix to strip from the extracted files. If
+    there are files outside of this directory, they will be discarded and
+    inaccessible. */
+    std::optional<std::string> strip_prefix;
+  };
+
+  /** Adds an entry into this PackageMap for the given `package_name`, which
+  will be downloaded from the internet (with local caching). The data will not
+  be downloaded until necessary, i.e., when GetPath() is first called for the
+  `package_name`. Downloading requires a valid `/usr/bin/python3` interpreter,
+  which will be invoked as a subprocess. */
+  void AddRemotePackage(std::string package_name, RemotePackageParams params);
 
   /** Crawls down the directory tree starting at `path` searching for
   directories containing the file `package.xml`. For each of these directories,
@@ -134,10 +175,26 @@ class PackageMap final {
  private:
   /* Information about a package. */
   struct PackageData {
-    /* Directory in which the manifest resides. */
+    /* Directory in which the manifest resides. If this is an undownloaded
+    remote package, this path will be empty until it is downloaded. */
     std::string path;
+
     /* Optional message declaring deprecation of the package. */
     std::optional<std::string> deprecated_message;
+
+    /* Iff this is a remote package, this will contain the details. */
+    std::optional<RemotePackageParams> remote;
+
+    // Below, we have a few tiny "summary" getters for the struct fields,
+    // to make the call sites a bit more readable.
+
+    /* Returns true iff this package exists on disk (i.e., iff the `path`
+    has been set). */
+    bool is_fetched() const { return path.size() > 0; }
+
+    /* Returns `path` if it is known, or else (for unfetched packages) the
+    first of the `remote->urls` . */
+    std::string printable_path() const;
   };
 
   /* A constructor that creates an empty map . */
@@ -158,6 +215,9 @@ class PackageMap final {
   without adding the new path. Returns true otherwise. */
   bool AddPackageIfNew(const std::string& package_name,
                        const std::string& path);
+
+  /* Downloads the given package into the local cache and unpacks it. */
+  static void FetchContent(std::string_view package_name, PackageData* data);
 
   /* The key is the name of a ROS package and the value is a struct containing
   information about that package. */

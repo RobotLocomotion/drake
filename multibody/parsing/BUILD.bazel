@@ -12,6 +12,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("@drake//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load(
@@ -60,15 +61,22 @@ drake_cc_library(
     srcs = ["package_map.cc"],
     hdrs = ["package_map.h"],
     data = [
+        ":package_downloader.py",
         "//:package.xml",
         "@models_internal//:package.xml",
     ],
     visibility = ["//visibility:public"],
     interface_deps = [
         "//common:essential",
+        "//common:name_value",
     ],
     deps = [
-        "//common",
+        "//common:find_cache",
+        "//common:find_resource",
+        "//common:find_runfiles",
+        "//common:scope_exit",
+        "//common:unused",
+        "//common/yaml",
         "@tinyxml2_internal//:tinyxml2",
     ],
 )
@@ -616,6 +624,20 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "package_map_remote_test",
+    data = [
+        "test/package_map_test_packages/compressed.zip",
+    ],
+    deps = [
+        ":package_map",
+        "//common:find_cache",
+        "//common:find_resource",
+        "//common:scope_exit",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
     name = "drake_manifest_resolution_test",
     data = [
         ":test_models",
@@ -661,6 +683,13 @@ drake_cc_googletest(
         ":detail_misc",
         ":diagnostic_policy_test_base",
     ],
+)
+
+install_files(
+    name = "install",
+    dest = "share/drake/multibody/parsing",
+    files = ["package_downloader.py"],
+    visibility = ["//visibility:public"],
 )
 
 add_lint_tests()

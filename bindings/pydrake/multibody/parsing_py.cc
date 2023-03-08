@@ -32,12 +32,25 @@ PYBIND11_MODULE(parsing, m) {
     using Class = PackageMap;
     constexpr auto& cls_doc = doc.PackageMap;
     py::class_<Class> cls(m, "PackageMap", cls_doc.doc);
+    {
+      using Nested = PackageMap::RemotePackageParams;
+      constexpr auto& nested_doc = cls_doc.RemotePackageParams;
+      py::class_<Nested> nested(cls, "RemotePackageParams", nested_doc.doc);
+      nested.def(ParamInit<Nested>());
+      DefAttributesUsingSerialize(&nested, nested_doc);
+      DefReprUsingSerialize(&nested);
+      DefCopyAndDeepCopy(&nested);
+    }
     cls  // BR
         .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Class&>(), py::arg("other"), "Copy constructor")
         .def("Add", &Class::Add, py::arg("package_name"),
             py::arg("package_path"), cls_doc.Add.doc)
         .def("AddMap", &Class::AddMap, py::arg("other_map"), cls_doc.AddMap.doc)
+        .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
+            cls_doc.AddPackageXml.doc)
+        .def("AddRemotePackage", &Class::AddRemotePackage,
+            py::arg("package_name"), py::arg("params"))
         .def("Contains", &Class::Contains, py::arg("package_name"),
             cls_doc.Contains.doc)
         .def("Remove", &Class::Remove, py::arg("package_name"),
@@ -53,8 +66,6 @@ PYBIND11_MODULE(parsing, m) {
               return self.GetPath(package_name);
             },
             py::arg("package_name"), cls_doc.GetPath.doc)
-        .def("AddPackageXml", &Class::AddPackageXml, py::arg("filename"),
-            cls_doc.AddPackageXml.doc)
         .def("PopulateFromFolder", &Class::PopulateFromFolder, py::arg("path"),
             cls_doc.PopulateFromFolder.doc)
         .def("PopulateFromEnvironment", &Class::PopulateFromEnvironment,

@@ -35,6 +35,7 @@ _EXPECTED_DRAKE_RUNFILES_PACKAGES = [
     "examples",
     "geometry",
     "manipulation",
+    "multibody",
 ]
 
 _COVERED_DRAKE_RUNFILES = _DRAKE_ROOT_PACKAGE_RUNFILES + [

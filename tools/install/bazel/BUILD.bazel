@@ -29,6 +29,7 @@ _BUILD_FILES_DATA = [
     ":drake__examples.BUILD.bazel",
     ":drake__geometry.BUILD.bazel",
     ":drake__manipulation.BUILD.bazel",
+    ":drake__multibody.BUILD.bazel",
 ]
 
 # Create repo.bzl by combining repo_template.bzl and its data dependencies.

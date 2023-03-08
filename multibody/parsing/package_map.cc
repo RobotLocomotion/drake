@@ -1,6 +1,9 @@
 #include "drake/multibody/parsing/package_map.h"
 
+#include <unistd.h>
+
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <initializer_list>
@@ -13,12 +16,14 @@
 #include <drake_vendor/tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/find_cache.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace multibody {
@@ -79,9 +84,75 @@ void PackageMap::Add(const string& package_name, const string& package_path) {
 
 void PackageMap::AddMap(const PackageMap& other_map) {
   for (const auto& [package_name, data] : other_map.map_) {
-    Add(package_name, data.path);
-    SetDeprecated(package_name, data.deprecated_message);
+    if (data.is_fetched()) {
+      Add(package_name, data.path);
+      SetDeprecated(package_name, data.deprecated_message);
+    } else {
+      DRAKE_DEMAND(data.remote.has_value());
+      AddRemotePackage(package_name, *data.remote);
+    }
   }
+}
+
+void PackageMap::AddRemotePackage(std::string package_name,
+                                  RemotePackageParams params) {
+  // Validate our arguments.
+  auto iter = map_.find(package_name);
+  if (iter != map_.end()) {
+    // Adding a 100% identical package is supported (and a no-op).
+    // Otherwise, it's an error.
+    if (iter->second.remote.has_value()) {
+      const RemotePackageParams& old_params = iter->second.remote.value();
+      const std::string old_json = yaml::SaveJsonString(old_params);
+      const std::string new_json = yaml::SaveJsonString(params);
+      if (new_json == old_json) {
+        drake::log()->trace("AddRemotePackage skipping duplicate '{}'",
+                            package_name);
+        return;
+      }
+    }
+    throw std::logic_error(fmt::format(
+        "PackageMap::AddRemotePackage cannot add '{}' because a package of "
+        "that name has already been registered",
+        package_name));
+  }
+  if (params.urls.empty()) {
+    throw std::logic_error(fmt::format(
+        "PackageMap::AddRemotePackage on '{}' requires at least one URL",
+        package_name));
+  }
+  for (const std::string_view url : params.urls) {
+    if (!((url.substr(0, 8) == "https://") || (url.substr(0, 7) == "http://") ||
+          (url.substr(0, 7) == "file://"))) {
+      throw std::logic_error(fmt::format(
+          "PackageMap::AddRemotePackage on '{}' used an unsupported URL '{}'",
+          package_name, url));
+    }
+  }
+  if (!((params.sha256.size() == 64) &&
+        (std::all_of(params.sha256.begin(), params.sha256.end(), [](char ch) {
+          return std::isxdigit(ch);
+        })))) {
+    throw std::logic_error(fmt::format(
+        "PackageMap::AddRemotePackage on '{}' with invalid sha256 '{}'",
+        package_name, params.sha256));
+  }
+  if (params.archive_type.has_value()) {
+    const std::initializer_list<const char*> known_types = {
+        "zip", "tar", "gztar", "bztar", "xztar"};
+    if (std::count(known_types.begin(), known_types.end(),
+                   *params.archive_type) == 0) {
+      throw std::logic_error(fmt::format(
+          "PackageMap::AddRemotePackage on '{}' has unsupported archive "
+          "type '{}'",
+          package_name, *params.archive_type));
+    }
+  }
+
+  // Everything checks out, so we can add it now.
+  PackageData data;
+  data.remote = std::move(params);
+  map_.emplace_hint(iter, std::move(package_name), std::move(data));
 }
 
 bool PackageMap::Contains(const string& package_name) const {
@@ -146,6 +217,12 @@ const string& PackageMap::GetPath(
     drake::log()->warn("PackageMap: {}", *warning);
   }
 
+  // If this is a remote package and we haven't fetched it yet, do that now.
+  if (!package_data.is_fetched()) {
+    FetchContent(package_name, const_cast<PackageData*>(&package_data));
+  }
+
+  DRAKE_DEMAND(!package_data.path.empty());
   return package_data.path;
 }
 
@@ -279,7 +356,9 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
           "does not exist",
           package_name, path));
     }
-    map_.insert(make_pair(package_name, PackageData{path}));
+    PackageData data;
+    data.path = path;
+    map_.insert(make_pair(package_name, data));
   } else {
     // Don't warn if we've found the same path with a different spelling.
     const PackageData existing_data = map_.at(package_name);
@@ -287,7 +366,7 @@ bool PackageMap::AddPackageIfNew(const string& package_name,
       drake::log()->warn(
           "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
           " and will continue using the previously-known path at \"{}\".",
-          path, package_name, existing_data.path);
+          path, package_name, existing_data.printable_path());
       return false;
     }
   }
@@ -343,13 +422,94 @@ void PackageMap::AddPackageXml(const string& filename) {
   SetDeprecated(package_name, deprecated_message);
 }
 
+namespace {
+struct DownloaderArgs {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(package_name));
+    remote.Serialize(a);
+    a->Visit(DRAKE_NVP(output_dir));
+  }
+  std::string package_name;
+  PackageMap::RemotePackageParams remote;
+  std::string output_dir;
+};
+}  // namespace
+
+void PackageMap::FetchContent(std::string_view package_name,
+                              PackageData* data) {
+  DRAKE_DEMAND(!package_name.empty());
+  DRAKE_DEMAND(data != nullptr);
+  DRAKE_DEMAND(!data->is_fetched());
+  DRAKE_DEMAND(data->remote.has_value());
+  DRAKE_DEMAND(data->path.empty());
+
+  // Find and/or create the cache_dir.
+  auto try_cache = internal::FindOrCreateCache("package_map");
+  if (!try_cache.error.empty()) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap: when downloading '{}', could not create temporary cache "
+        "directory: {}",
+        package_name, try_cache.error));
+  }
+  const fs::path cache_dir = std::move(try_cache.abspath);
+
+  // See if the package has already been fetched.
+  const fs::path package_dir = cache_dir / data->remote->sha256;
+  std::error_code ec;
+  if (fs::is_directory(package_dir, ec)) {
+    data->path = package_dir.string();
+    return;
+  }
+
+  // Write the downloader arguments to a JSON file.
+  DownloaderArgs args{.package_name = std::string(package_name),
+                      .remote = *data->remote,
+                      .output_dir = package_dir.string()};
+  std::string json_filename = fs::path(cache_dir / ".fetch_XXXXXX").string();
+  const int temp_fd = ::mkstemp(json_filename.data());
+  ::close(temp_fd);
+  ScopeExit remove_yaml([&json_filename]() {
+    fs::remove(json_filename);
+  });
+  yaml::SaveJsonFile(json_filename, args);
+
+  // Shell out to the downloader to fetch the package.
+  const std::string downloader =
+      FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
+  const std::string command =
+      fmt::format("/usr/bin/python3 {} {}", downloader, json_filename);
+  const int returncode = std::system(command.c_str());
+  if (returncode != 0) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap: when downloading '{}', the downloader experienced an "
+        "error",
+        package_name));
+  }
+
+  // Confirm that it actually fetched.
+  if (!fs::is_directory(package_dir, ec)) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap: when downloading '{}', the downloader claimed success but "
+        "somehow did not actually download anything?!",
+        package_name));
+  }
+
+  // Success
+  data->path = package_dir.string();
+}
+
+std::string PackageMap::PackageData::printable_path() const {
+  return !path.empty() ? path : remote.value().urls.front();
+}
+
 std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
   out << "PackageMap:\n";
   if (package_map.size() == 0) {
     out << "  [EMPTY!]\n";
   }
-  for (const auto& entry : package_map.map_) {
-    out << "  - " << entry.first << ": " << entry.second.path << "\n";
+  for (const auto& [package_name, data] : package_map.map_) {
+    out << "  - " << package_name << ": " << data.printable_path() << "\n";
   }
   return out;
 }
