@@ -8,6 +8,27 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
+std::vector<JointActuatorIndex> ModelInstance<T>::GetJointActuatorIndices()
+    const {
+  std::vector<JointActuatorIndex> instance_actuator_indexes;
+  instance_actuator_indexes.reserve(joint_actuators_.size());
+  for (const JointActuator<T>* actuator : joint_actuators_) {
+    instance_actuator_indexes.push_back(actuator->index());
+  }
+  return instance_actuator_indexes;
+}
+
+template <typename T>
+std::vector<JointIndex> ModelInstance<T>::GetActuatedJointIndices() const {
+  std::vector<JointIndex> instance_actuated_joint_indexes;
+  instance_actuated_joint_indexes.reserve(joint_actuators_.size());
+  for (const JointActuator<T>* actuator : joint_actuators_) {
+    instance_actuated_joint_indexes.push_back(actuator->joint().index());
+  }
+  return instance_actuated_joint_indexes;
+}
+
+template <typename T>
 VectorX<T> ModelInstance<T>::GetActuationFromArray(
     const Eigen::Ref<const VectorX<T>>& u) const {
   if (u.size() != this->get_parent_tree().num_actuated_dofs())
