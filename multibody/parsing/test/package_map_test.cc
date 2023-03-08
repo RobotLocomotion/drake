@@ -19,6 +19,8 @@ namespace {
 
 namespace fs = std::filesystem;
 
+// N.B. See also package_map_remote_test.cc for additional test cases.
+
 string GetTestDataRoot() {
   const string desired_dir =
       "drake/multibody/parsing/test/package_map_test_packages/";
@@ -125,6 +127,16 @@ GTEST_TEST(PackageMapTest, TestManualPopulation) {
   VerifyMatch(package_map, std::map<string, string>());
 
   EXPECT_THROW(package_map.Remove("package_baz"), std::runtime_error);
+}
+
+// Default-constructed maps must always be merge-able.
+GTEST_TEST(PackageMapTest, AddDefauledMaps) {
+  const PackageMap foo;
+  const PackageMap bar;
+  PackageMap dut;
+  dut.AddMap(foo);
+  dut.AddMap(bar);
+  EXPECT_EQ(dut.size(), foo.size());
 }
 
 // Tests that PackageMaps can be combined via AddMap.
@@ -310,6 +322,10 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
+  const std::string url = "http://127.0.0.1/missing.zip";
+  package_map.AddRemotePackage("remote", {
+      .urls = {url},
+      .sha256 = std::string(64u, '0')});
 
   std::stringstream string_buffer;
   string_buffer << package_map;
@@ -322,10 +338,11 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
     EXPECT_NE(resulting_string.find(it.first), std::string::npos);
     EXPECT_NE(resulting_string.find(it.second), std::string::npos);
   }
+  EXPECT_NE(resulting_string.find(url), std::string::npos);
 
-  // Verifies that there are three lines in the resulting string.
+  // Verifies the number of lines in the resulting string.
   EXPECT_EQ(std::count(resulting_string.begin(), resulting_string.end(), '\n'),
-            3);
+            4);
 }
 
 // Tests that PackageMap is parsing deprecation messages
