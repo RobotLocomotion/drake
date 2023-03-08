@@ -25,7 +25,7 @@
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/linear_spring_damper.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/multibody_tree.h"  // `JacobianWrtVariable`
+#include "drake/multibody/tree/multibody_tree.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
@@ -147,6 +147,40 @@ void DoScalarIndependentDefinitions(py::module m) {
     enum_py  // BR
         .value("kQDot", Enum::kQDot, enum_doc.kQDot.doc)
         .value("kV", Enum::kV, enum_doc.kV.doc);
+  }
+
+  {
+    using Class = ScopedName;
+    constexpr auto& cls_doc = doc.ScopedName;
+    py::class_<Class> cls(m, "ScopedName", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<std::string_view, std::string_view>(),
+            py::arg("namespace_name"), py::arg("element_name"),
+            cls_doc.ctor.doc_2args)
+        .def_static("Make", &Class::Make, py::arg("namespace_name"),
+            py::arg("element_name"), cls_doc.Make.doc)
+        .def_static("Join", &Class::Join, py::arg("name1"), py::arg("name2"),
+            cls_doc.Join.doc)
+        .def_static(
+            "Parse", &Class::Parse, py::arg("scoped_name"), cls_doc.Parse.doc)
+        .def("get_namespace", &Class::get_namespace, cls_doc.get_namespace.doc)
+        .def("get_element", &Class::get_element, cls_doc.get_element.doc)
+        .def("get_full", &Class::get_full, cls_doc.get_full.doc)
+        .def("to_string", &Class::to_string, cls_doc.to_string.doc)
+        .def("set_namespace", &Class::set_namespace, py::arg("namespace_name"),
+            cls_doc.set_namespace.doc)
+        .def("set_element", &Class::set_element, py::arg("element_name"),
+            cls_doc.set_element.doc)
+        .def("__str__", &Class::to_string, cls_doc.to_string.doc)
+        .def("__repr__", [](const Class& self) {
+          py::str py_namespace = std::string{self.get_namespace()};
+          py::str py_element = std::string{self.get_element()};
+          return fmt::format("ScopedName({}, {})",
+              fmt_streamed(py::repr(py_namespace)),
+              fmt_streamed(py::repr(py_element)));
+        });
+    DefCopyAndDeepCopy(&cls);
   }
 }
 
