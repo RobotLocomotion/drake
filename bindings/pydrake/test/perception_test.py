@@ -77,6 +77,21 @@ class TestPerception(unittest.TestCase):
         pc.rgbs()
         pc.mutable_rgb(i=0)
         pc.rgb(i=0)
+        # Test morphying fields after PointCloud creation.
+        rgb_pc = mut.PointCloud(new_size=count,
+                                fields=mut.Fields(mut.BaseField.kRGBs))
+        all_fields_pc = mut.PointCloud(new_size=count, fields=all_fields)
+        test_rgbs = [[1, 2, 3]]
+        all_fields_pc.mutable_rgbs().T[:] = test_rgbs
+        self.assertFalse((rgb_pc.rgbs().T == test_rgbs).all())
+        self.assertFalse(rgb_pc.has_xyzs())
+        rgb_pc = all_fields_pc
+        self.assertTrue((rgb_pc.rgbs().T == test_rgbs).all())
+        self.assertTrue(rgb_pc.has_xyzs())
+        self.assertTrue(rgb_pc.has_normals())
+        rgb_pc.SetFields(mut.Fields(mut.BaseField.kNormals))
+        self.assertFalse(rgb_pc.has_rgbs())
+        self.assertTrue(rgb_pc.has_normals())
         # - Check for none.
         with self.assertRaises(RuntimeError) as ex:
             mut.PointCloud(new_size=0, fields=mut.Fields(mut.BaseField.kNone))
