@@ -71,7 +71,7 @@ namespace internal {
 template <typename T> class BodyNode;
 template <typename T> class ModelInstance;
 template <typename T> class Mobilizer;
-template <typename T> class QuaternionFloatingMobilizer;
+template <typename T> class FloatingMobilizerInterface;
 
 // %MultibodyTree provides a representation for a physical system consisting of
 // a collection of interconnected rigid and deformable bodies. As such, it owns
@@ -537,6 +537,12 @@ class MultibodyTree {
 
   // @}
   // Closes Doxygen section "Methods to add new MultibodyTree elements."
+
+  // See MultibodyPlant method.
+  const std::string& default_floating_joint_type() const;
+
+  // See MultibodyPlant method.
+  void set_default_floating_joint_type(const std::string& floating_joint_type);
 
   // See MultibodyPlant method.
   int num_frames() const {
@@ -2721,8 +2727,7 @@ class MultibodyTree {
   // @throws std::exception if `body` is not free in the model.
   // @throws std::exception if called pre-finalize.
   // @throws std::exception if called on the world body.
-  const QuaternionFloatingMobilizer<T>& GetFreeBodyMobilizerOrThrow(
-      const Body<T>& body) const;
+  const Mobilizer<T>& GetFloatingMobilizerOrThrow(const Body<T>& body) const;
 
   // Helper method for throwing an exception within public methods that should
   // not be called post-finalize. The invoking method should pass its name so
@@ -3075,6 +3080,9 @@ class MultibodyTree {
 
   // The discrete state index for the multibody state if the system is discrete.
   systems::DiscreteStateIndex discrete_state_index_;
+
+  // One of quaternion_floating, space_xyz_floating.
+  std::string default_floating_joint_type_{"quaternion_floating"};
 };
 
 }  // namespace internal

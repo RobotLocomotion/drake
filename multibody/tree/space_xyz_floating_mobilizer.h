@@ -153,6 +153,10 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   const SpaceXYZFloatingMobilizer<T>& set_angles(
       systems::Context<T>* context, const Vector3<T>& angles) const;
 
+  const SpaceXYZFloatingMobilizer<T>& set_angles(
+      const systems::Context<T>&, const Vector3<T>& angles,
+      systems::State<T>* state) const;
+
   // Stores in `context` the position `p_FM` of M in F.
   //
   // @param[in,out] context
@@ -162,6 +166,10 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // @returns a constant reference to `this` mobilizer.
   const SpaceXYZFloatingMobilizer<T>& set_translation(
       systems::Context<T>* context, const Vector3<T>& p_FM) const;
+
+  const SpaceXYZFloatingMobilizer<T>& set_translation(
+      const systems::Context<T>&, const Vector3<T>& p_FM,
+      systems::State<T>* state) const;
 
   // Sets in `context` the state for `this` mobilizer so that the angular
   // velocity of the outboard frame M in the inboard frame F is `w_FM`.
@@ -174,6 +182,10 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   const SpaceXYZFloatingMobilizer<T>& set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const;
 
+  const SpaceXYZFloatingMobilizer<T>& set_angular_velocity(
+      const systems::Context<T>& context, const Vector3<T>& w_FM,
+      systems::State<T>* state) const;
+
   // Stores in `context` the translational velocity `v_FM` of M in F.
   //
   // @param[in,out] context
@@ -183,6 +195,10 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // @returns a constant reference to `this` mobilizer.
   const SpaceXYZFloatingMobilizer<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector3<T>& v_FM) const;
+
+  const SpaceXYZFloatingMobilizer<T>& set_translational_velocity(
+      const systems::Context<T>& context, const Vector3<T>& v_FM,
+      systems::State<T>* state) const;
 
   // Sets `context` so this mobilizer's generalized coordinates (space x-y-z
   // angles θ₁, θ₂, θ₃ and position p_FM) represent the given rigid
@@ -196,13 +212,25 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
   // θ₂, θ₃, this specific method will generate roll-pitch-yaw angles in the
   // range `-π <= θ₁ <= π`, `-π/2 <= θ₂ <= π/2`, `-π <= θ₃ <= π`.
   const SpaceXYZFloatingMobilizer<T>& SetFromRigidTransform(
-      systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const;
+      systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
+    SetStateFromRigidTransformOrThrow(*context, X_FM,
+                                      &context->get_mutable_state());
+    return *this;                                      
+  }
+
+  void SetStateFromRigidTransformOrThrow(
+      const systems::Context<T>& context, const math::RigidTransform<T>& X_FM,
+      systems::State<T>* state) const override;
 
   // Computes the across-mobilizer transform `X_FM(q)` between the inboard
   // frame F and the outboard frame M as a function of the configuration q
   // stored in `context`.
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
+
+  void SetStateFromSpatialVelocityOrThrow(
+      const systems::Context<T>& context, const SpatialVelocity<T>& V_FM,
+      systems::State<T>* state) const override;
 
   // Computes the across-mobilizer velocity `V_FM(q, v)` of the outboard frame M
   // measured and expressed in frame F as a function of the configuration stored

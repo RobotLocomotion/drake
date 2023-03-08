@@ -14,12 +14,14 @@
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/tree/body_node_world.h"
 #include "drake/multibody/tree/multibody_tree-inl.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/quaternion_floating_mobilizer.h"
 #include "drake/multibody/tree/rigid_body.h"
+#include "drake/multibody/tree/space_xyz_floating_joint.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/multibody/tree/uniform_gravity_field_element.h"
 
@@ -30,6 +32,7 @@ namespace internal {
 using internal::BodyNode;
 using internal::BodyNodeWorld;
 using math::RigidTransform;
+using math::RollPitchYaw;
 using math::RotationMatrix;
 
 // Helper macro to throw an exception within methods that should not be called
@@ -86,6 +89,20 @@ MultibodyTree<T>::MultibodyTree() {
       AddForceElement<UniformGravityFieldElement>();
   DRAKE_DEMAND(num_force_elements() == 1);
   DRAKE_DEMAND(owned_force_elements_[0].get() == &new_field);
+}
+
+template <typename T>
+const std::string& MultibodyTree<T>::default_floating_joint_type() const {
+  return default_floating_joint_type_;
+}
+
+template <typename T>
+void MultibodyTree<T>::set_default_floating_joint_type(
+    const std::string& floating_joint_type) {
+  DRAKE_THROW_UNLESS(floating_joint_type ==
+                         QuaternionFloatingJoint<T>::kTypeName ||
+                     floating_joint_type == SpaceXYZFloatingJoint<T>::kTypeName);
+  default_floating_joint_type_ = floating_joint_type;
 }
 
 template <typename T>
@@ -678,8 +695,16 @@ void MultibodyTree<T>::CreateJointImplementations() {
     const Body<T>& body = get_body(body_index);
     const BodyTopology& body_topology = get_topology().get_body(body.index());
     if (!body_topology.inboard_mobilizer.is_valid()) {
-      this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
+      if (default_floating_joint_type() ==
+          QuaternionFloatingJoint<T>::kTypeName) {
+        this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
+                                                world_body(), {}, body, {});
+      }
+      if (default_floating_joint_type() ==
+          SpaceXYZFloatingJoint<T>::kTypeName) {
+        this->AddJoint<SpaceXYZFloatingJoint>("$world_" + body.name(),
                                               world_body(), {}, body, {});
+      }
     }
   }
 
@@ -701,20 +726,15 @@ void MultibodyTree<T>::CreateJointImplementations() {
 }
 
 template <typename T>
-const QuaternionFloatingMobilizer<T>&
-MultibodyTree<T>::GetFreeBodyMobilizerOrThrow(
+const Mobilizer<T>& MultibodyTree<T>::GetFloatingMobilizerOrThrow(
     const Body<T>& body) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
   DRAKE_DEMAND(body.index() != world_index());
   const BodyTopology& body_topology = get_topology().get_body(body.index());
-  const QuaternionFloatingMobilizer<T>* mobilizer =
-      dynamic_cast<const QuaternionFloatingMobilizer<T>*>(
-          &get_mobilizer(body_topology.inboard_mobilizer));
-  if (mobilizer == nullptr) {
-    throw std::logic_error(
-        "Body '" + body.name() + "' is not a free floating body.");
-  }
-  return *mobilizer;
+  const Mobilizer<T>& mobilizer =
+      get_mobilizer(body_topology.inboard_mobilizer);
+  DRAKE_THROW_UNLESS(mobilizer.is_floating());
+  return mobilizer;
 }
 
 template <typename T>
@@ -932,10 +952,11 @@ template <typename T>
 RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
     const systems::Context<T>& context, const Body<T>& body) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  const QuaternionFloatingMobilizer<T>& mobilizer =
-      GetFreeBodyMobilizerOrThrow(body);
-  return RigidTransform<T>(mobilizer.get_quaternion(context),
-                                 mobilizer.get_position(context));
+  if (!body.is_floating()) {
+    throw std::logic_error(
+        fmt::format("Body '{}' is not a floating body", body.name()));
+  }
+  return EvalBodyPoseInWorld(context, body);
 }
 
 template <typename T>
@@ -960,11 +981,8 @@ void MultibodyTree<T>::SetFreeBodyPoseOrThrow(
     const Body<T>& body, const RigidTransform<T>& X_WB,
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  const QuaternionFloatingMobilizer<T>& mobilizer =
-      GetFreeBodyMobilizerOrThrow(body);
-  const RotationMatrix<T>& R_WB = X_WB.rotation();
-  mobilizer.set_quaternion(context, R_WB.ToQuaternion(), state);
-  mobilizer.set_position(context, X_WB.translation(), state);
+  const Mobilizer<T>& mobilizer = GetFloatingMobilizerOrThrow(body);
+  mobilizer.SetStateFromRigidTransformOrThrow(context, X_WB, state);
 }
 
 template <typename T>
@@ -972,19 +990,17 @@ void MultibodyTree<T>::SetFreeBodySpatialVelocityOrThrow(
     const Body<T>& body, const SpatialVelocity<T>& V_WB,
     const systems::Context<T>& context, systems::State<T>* state) const {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  const QuaternionFloatingMobilizer<T>& mobilizer =
-      GetFreeBodyMobilizerOrThrow(body);
-  mobilizer.set_angular_velocity(context, V_WB.rotational(), state);
-  mobilizer.set_translational_velocity(context, V_WB.translational(), state);
+  const Mobilizer<T>& mobilizer = GetFloatingMobilizerOrThrow(body);
+  mobilizer.SetStateFromSpatialVelocityOrThrow(context, V_WB, state);
 }
 
 template <typename T>
 void MultibodyTree<T>::SetFreeBodyRandomPositionDistributionOrThrow(
     const Body<T>& body, const Vector3<symbolic::Expression>& position) {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  QuaternionFloatingMobilizer<T>& mobilizer =
-      get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
-  mobilizer.set_random_position_distribution(position);
+  Mobilizer<T>& mobilizer =
+      get_mutable_variant(GetFloatingMobilizerOrThrow(body));
+  mobilizer.SetFloatingMobilizerRandomPositionDistribution(position);
 }
 
 template <typename T>
@@ -992,9 +1008,9 @@ void MultibodyTree<T>::SetFreeBodyRandomRotationDistributionOrThrow(
     const Body<T>& body,
     const Eigen::Quaternion<symbolic::Expression>& rotation) {
   DRAKE_MBT_THROW_IF_NOT_FINALIZED();
-  QuaternionFloatingMobilizer<T>& mobilizer =
-      get_mutable_variant(GetFreeBodyMobilizerOrThrow(body));
-  mobilizer.set_random_quaternion_distribution(rotation);
+  Mobilizer<T>& mobilizer =
+      get_mutable_variant(GetFloatingMobilizerOrThrow(body));
+  mobilizer.SetFloatingMobilizerRandomQuaternionDistribution(rotation);
 }
 
 template <typename T>

@@ -198,8 +198,16 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
   // @name Mobilizer overrides
   // Refer to the Mobilizer class documentation for details.
   // @{
+  void SetStateFromRigidTransformOrThrow(
+      const systems::Context<T>& context, const math::RigidTransform<T>& X_FM,
+      systems::State<T>* state) const override;
+
   math::RigidTransform<T> CalcAcrossMobilizerTransform(
       const systems::Context<T>& context) const override;
+
+  void SetStateFromSpatialVelocityOrThrow(
+      const systems::Context<T>& context, const SpatialVelocity<T>& V_FM,
+      systems::State<T>* state) const override;
 
   SpatialVelocity<T> CalcAcrossMobilizerSpatialVelocity(
       const systems::Context<T>& context,
@@ -223,6 +231,16 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& qdot,
       EigenPtr<VectorX<T>> v) const override;
+
+  void SetFloatingMobilizerRandomPositionDistribution(
+      const Vector3<symbolic::Expression>& position) final {
+    set_random_position_distribution(position);
+  }
+
+  void SetFloatingMobilizerRandomQuaternionDistribution(
+      const Eigen::Quaternion<symbolic::Expression>& q_FM) final {
+    set_random_quaternion_distribution(q_FM);
+  }  
   // @}
 
  protected:

@@ -29,6 +29,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/quaternion_floating_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/space_xyz_floating_joint.h"
 #include "drake/multibody/triangle_quadrature/gaussian_triangle_quadrature_rule.h"
 
 namespace drake {
@@ -273,6 +274,8 @@ MultibodyPlant<T>::MultibodyPlant(double time_step)
                "hydroelastic_with_fallback");
   DRAKE_DEMAND(contact_solver_enum_ == DiscreteContactSolver::kTamsi);
   DRAKE_DEMAND(MultibodyPlantConfig{}.discrete_contact_solver == "tamsi");
+  DRAKE_DEMAND(get_default_floating_joint_type() ==
+               MultibodyPlantConfig{}.default_floating_joint_type);
 }
 
 template <typename T>
@@ -804,6 +807,19 @@ std::vector<BodyIndex> MultibodyPlant<T>::GetBodiesKinematicallyAffectedBy(
 }
 
 template <typename T>
+const std::string& MultibodyPlant<T>::get_default_floating_joint_type() const {
+  return internal_tree().default_floating_joint_type();
+}
+
+template <typename T>
+void MultibodyPlant<T>::set_default_floating_joint_type(
+    const std::string& default_floating_joint_type) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  this->mutable_tree().set_default_floating_joint_type(
+      default_floating_joint_type);
+}
+
+template <typename T>
 std::unordered_set<BodyIndex> MultibodyPlant<T>::GetFloatingBaseBodies() const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   std::unordered_set<BodyIndex> floating_bodies;
@@ -939,7 +955,7 @@ void MultibodyPlant<T>::Finalize() {
   // Add free joints created by tree's finalize to the multibody graph.
   // Until the call to Finalize(), all joints are added through calls to
   // MultibodyPlant APIs and therefore registered in the graph. This accounts
-  // for the QuaternionFloatingJoint added for each free body that was not
+  // for the free floating joints added for each free body that was not
   // explicitly given a parent joint. It is important that this loop happens
   // AFTER finalizing the internal tree.
   for (JointIndex i{multibody_graph_.num_joints()}; i < num_joints(); ++i) {
@@ -1167,7 +1183,9 @@ void MultibodyPlant<T>::ApplyDefaultCollisionFilters() {
       const Body<T>& child = joint.child_body();
       const Body<T>& parent = joint.parent_body();
       if (parent.index() == world_index()) continue;
-      if (joint.type_name() == QuaternionFloatingJoint<T>::kTypeName) continue;
+      if (joint.type_name() == QuaternionFloatingJoint<T>::kTypeName ||
+          joint.type_name() == SpaceXYZFloatingJoint<T>::kTypeName)
+        continue;
       std::optional<FrameId> child_id = GetBodyFrameIdIfExists(child.index());
       std::optional<FrameId> parent_id = GetBodyFrameIdIfExists(parent.index());
 

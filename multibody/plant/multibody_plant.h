@@ -2462,13 +2462,27 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// It is sometimes convenient for users to perform operations on Bodies
   /// ubiquitously through the APIs of the Joint class. For that reason we
-  /// implicitly construct a 6-dof joint, QuaternionFloatingJoint, for all free
-  /// bodies at the time of Finalize(). Using Joint APIs to affect a free body
-  /// (setting  state, changing parameters, etc.) has the same effect as using
-  /// the free body APIs below. Each implicitly created joint is named
-  /// "$world_<bodyname>" where "<bodyname>" is the name of the free body, given
-  /// by `Body::name()`.
+  /// implicitly construct a 6-dof joint, of type specified by
+  /// get_default_floating_joint_type(), for all free bodies at the time of
+  /// Finalize(). Using Joint APIs to affect a free body (setting  state,
+  /// changing parameters, etc.) has the same effect as using the free body APIs
+  /// below. Each implicitly created joint is named "$world_<bodyname>" where
+  /// "<bodyname>" is the name of the free body, given by `Body::name()`.
   /// @{
+
+  /// Returns the name of the floating joint type used by default for free
+  /// floating bodies. Base bodies with no joint specified explicitly will be
+  /// assigned a joint of this type.  
+  const std::string& get_default_floating_joint_type() const;
+
+  /// Sets the default floating joint type, see
+  /// get_default_floating_joint_type().
+  /// Valid strings are:
+  ///  - QuaternionFloatingJoint::kTypeName: quaternion_floating
+  ///  - SpaceXYZFloatingJoint::kTypeName: space_xyz_floating
+  /// @throws std::exception if called post-finalize.
+  void set_default_floating_joint_type(
+      const std::string& default_floating_joint_type);
 
   /// Returns the set of body indexes corresponding to the free (floating)
   /// bodies in the model, in no particular order.
@@ -5209,7 +5223,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Whether to apply collsion filters to adjacent bodies at Finalize().
   bool adjacent_bodies_collision_filters_{
-    MultibodyPlantConfig{}.adjacent_bodies_collision_filters};
+    MultibodyPlantConfig{}.adjacent_bodies_collision_filters};  
 };
 
 /// @cond

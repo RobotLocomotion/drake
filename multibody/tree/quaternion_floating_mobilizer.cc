@@ -436,6 +436,38 @@ QuaternionFloatingMobilizer<T>::DoCloneToScalar(
   return TemplatedDoCloneToScalar(tree_clone);
 }
 
+#if 0
+template <typename T>
+const QuaternionFloatingMobilizer<T>&
+QuaternionFloatingMobilizer<T>::SetFromRigidTransform(
+    systems::Context<T>* context,
+    const math::RigidTransform<T>& X_FM) const {
+  const Eigen::Quaternion<T> q_FM = X_FM.rotation().ToQuaternion();
+  set_position(context, X_FM.translation());
+  set_quaternion(context, q_FM);
+  return *this;
+}
+#endif
+
+template <typename T>
+void QuaternionFloatingMobilizer<T>::SetStateFromRigidTransformOrThrow(
+    const systems::Context<T>& context, const math::RigidTransform<T>& X_FM,
+    systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
+  const Eigen::Quaternion<T> q_FM = X_FM.rotation().ToQuaternion();
+  set_position(context, X_FM.translation(), state);
+  set_quaternion(context, q_FM, state);
+}
+
+template <typename T>
+void QuaternionFloatingMobilizer<T>::SetStateFromSpatialVelocityOrThrow(
+    const systems::Context<T>& context, const SpatialVelocity<T>& V_FM,
+    systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);      
+  set_angular_velocity(context, V_FM.rotational(), state);
+  set_translational_velocity(context, V_FM.translational(), state);
+}
+
 }  // namespace internal
 }  // namespace multibody
 }  // namespace drake

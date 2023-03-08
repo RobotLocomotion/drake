@@ -23,6 +23,7 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(discrete_contact_solver));
     a->Visit(DRAKE_NVP(contact_surface_representation));
     a->Visit(DRAKE_NVP(adjacent_bodies_collision_filters));
+    a->Visit(DRAKE_NVP(default_floating_joint_type));
   }
 
   /// Configures the MultibodyPlant::MultibodyPlant() constructor time_step.
@@ -66,6 +67,14 @@ struct MultibodyPlantConfig {
 
   /// Configures the MultibodyPlant::set_adjacent_bodies_collision_filters().
   bool adjacent_bodies_collision_filters{true};
+
+  /// The default joint type for free bodies.
+  /// Valid strings are:
+  ///  - quaternion_floating
+  ///  - space_xyz_floating
+  /// The space_xyz convention refers to extrinsic Euler angles, also known as
+  /// roll-pitch-yaw (or rpy) by roboticists.
+  std::string default_floating_joint_type{"quaternion_floating"};
 };
 
 }  // namespace multibody

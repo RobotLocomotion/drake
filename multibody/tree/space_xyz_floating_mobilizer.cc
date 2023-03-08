@@ -52,8 +52,19 @@ Vector3<T> SpaceXYZFloatingMobilizer<T>::get_translational_velocity(
 template <typename T>
 const SpaceXYZFloatingMobilizer<T>& SpaceXYZFloatingMobilizer<T>::set_angles(
     systems::Context<T>* context, const Vector3<T>& angles) const {
-  auto q = this->GetMutablePositions(context).template head<3>();
-  q = angles;
+  DRAKE_DEMAND(context != nullptr);
+  set_angles(*context, angles, &context->get_mutable_state());
+  return *this;
+}
+
+template <typename T>
+const SpaceXYZFloatingMobilizer<T>& SpaceXYZFloatingMobilizer<T>::set_angles(
+    const systems::Context<T>&, const Vector3<T>& angles,
+    systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
+  auto q = this->get_mutable_positions(&*state);
+  DRAKE_ASSERT(q.size() == kNq);
+  q.template head<3>() = angles;
   return *this;
 }
 
@@ -61,8 +72,21 @@ template <typename T>
 const SpaceXYZFloatingMobilizer<T>&
 SpaceXYZFloatingMobilizer<T>::set_translation(systems::Context<T>* context,
                                               const Vector3<T>& p_FM) const {
-  auto q = this->GetMutablePositions(context).template tail<3>();
-  q = p_FM;
+  DRAKE_DEMAND(context != nullptr);
+  set_translation(*context, p_FM, &context->get_mutable_state());
+  return *this;
+}
+
+template <typename T>
+const SpaceXYZFloatingMobilizer<T>&
+SpaceXYZFloatingMobilizer<T>::set_translation(const systems::Context<T>&,
+                                              const Vector3<T>& p_FM,
+                                              systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
+  auto q = this->get_mutable_positions(&*state);
+  DRAKE_ASSERT(q.size() == kNq);
+  // Note: see storage order notes in get_position().
+  q.template tail<3>() = p_FM;
   return *this;
 }
 
@@ -70,8 +94,18 @@ template <typename T>
 const SpaceXYZFloatingMobilizer<T>&
 SpaceXYZFloatingMobilizer<T>::set_angular_velocity(
     systems::Context<T>* context, const Vector3<T>& w_FM) const {
-  auto v = this->GetMutableVelocities(context).template head<3>();
-  v = w_FM;
+  DRAKE_DEMAND(context != nullptr);
+  return set_angular_velocity(*context, w_FM, &context->get_mutable_state());
+}
+
+template <typename T>
+const SpaceXYZFloatingMobilizer<T>&
+SpaceXYZFloatingMobilizer<T>::set_angular_velocity(
+    const systems::Context<T>&, const Vector3<T>& w_FM,
+    systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
+  auto v = this->get_mutable_velocities(&*state);
+  v.template head<3>() = w_FM;
   return *this;
 }
 
@@ -79,17 +113,18 @@ template <typename T>
 const SpaceXYZFloatingMobilizer<T>&
 SpaceXYZFloatingMobilizer<T>::set_translational_velocity(
     systems::Context<T>* context, const Vector3<T>& v_FM) const {
-  auto v = this->GetMutableVelocities(context).template tail<3>();
-  v = v_FM;
-  return *this;
+  DRAKE_DEMAND(context != nullptr);
+  return set_translational_velocity(*context, v_FM,
+                                    &context->get_mutable_state());
 }
 
 template <typename T>
 const SpaceXYZFloatingMobilizer<T>&
-SpaceXYZFloatingMobilizer<T>::SetFromRigidTransform(
-    systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-  set_angles(context, math::RollPitchYaw<T>(X_FM.rotation()).vector());
-  set_translation(context, X_FM.translation());
+SpaceXYZFloatingMobilizer<T>::set_translational_velocity(
+    const systems::Context<T>&, const Vector3<T>& v_FM,
+    systems::State<T>* state) const {
+  auto v = this->get_mutable_velocities(&*state);
+  v.template tail<3>() = v_FM;
   return *this;
 }
 
@@ -396,6 +431,25 @@ SpaceXYZFloatingMobilizer<T>::DoCloneToScalar(
     const MultibodyTree<symbolic::Expression>& tree_clone) const {
   return TemplatedDoCloneToScalar(tree_clone);
 }
+
+template <typename T>
+void SpaceXYZFloatingMobilizer<T>::SetStateFromRigidTransformOrThrow(
+    const systems::Context<T>& context, const math::RigidTransform<T>& X_FM,
+    systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);
+  set_angles(context, math::RollPitchYaw<T>(X_FM.rotation()).vector(), state);
+  set_translation(context, X_FM.translation(), state);
+}
+
+template <typename T>
+void SpaceXYZFloatingMobilizer<T>::SetStateFromSpatialVelocityOrThrow(
+    const systems::Context<T>& context, const SpatialVelocity<T>& V_FM,
+    systems::State<T>* state) const {
+  DRAKE_DEMAND(state != nullptr);      
+  set_angular_velocity(context, V_FM.rotational(), state);
+  set_translational_velocity(context, V_FM.translational(), state);
+}
+
 
 }  // namespace internal
 }  // namespace multibody

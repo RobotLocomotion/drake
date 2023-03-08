@@ -27,6 +27,8 @@ AddResult AddMultibodyPlant(
           config.contact_surface_representation));
   result.plant.set_adjacent_bodies_collision_filters(
       config.adjacent_bodies_collision_filters);
+  result.plant.set_default_floating_joint_type(
+      config.default_floating_joint_type);
   return result;
 }
 
