@@ -128,8 +128,17 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_misc",
         "//common:diagnostic_policy",
         "@sdformat_internal//:sdformat",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_sdf_diagnostic_test",
+    deps = [
+        ":detail_sdf_diagnostic",
+        ":diagnostic_policy_test_base",
     ],
 )
 
@@ -555,6 +564,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_geometry",
+        ":diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",

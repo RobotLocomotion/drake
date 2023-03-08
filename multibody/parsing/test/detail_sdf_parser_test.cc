@@ -63,7 +63,9 @@ const double kEps = std::numeric_limits<double>::epsilon();
 
 class SdfParserTest : public test::DiagnosticPolicyTestBase{
  public:
-  SdfParserTest() {}
+  SdfParserTest() {
+    RecordErrors();
+  }
 
   void AddSceneGraph() {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
@@ -126,35 +128,6 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
         "<sdf version='" + sdf_version.value_or("1.6") + "'>"
         + inner + "\n</sdf>\n";
     AddModelsFromSdfString(file_contents, parent_model_name);
-  }
-
-  // Returns the first error as a string (or else fails the test case,
-  // if there were no errors).
-  std::string FormatFirstError() {
-    if (error_records_.empty()) {
-      for (const auto& warning : warning_records_) {
-        drake::log()->warn(warning.FormatWarning());
-      }
-      EXPECT_TRUE(error_records_.size() > 0)
-          << "FormatFirstError did not get any errors";
-      return {};
-    }
-    return error_records_[0].FormatError();
-  }
-
-  // Returns the first warning as a string (or else fails the test case,
-  // if there were no warnings). Also fails if there were any errors.
-  std::string FormatFirstWarning() {
-    for (const auto& error : error_records_) {
-      drake::log()->error(error.FormatError());
-    }
-    EXPECT_TRUE(error_records_.empty());
-    if (warning_records_.empty()) {
-      EXPECT_TRUE(warning_records_.size() > 0)
-          << "FormatFirstWarning did not get any warnings";
-      return {};
-    }
-    return warning_records_[0].FormatWarning();
   }
 
   void VerifyCollisionFilters(
@@ -731,8 +704,7 @@ TEST_F(SdfParserTest, StaticModelWithJoints) {
       ".*sdformat_model_static.*");
 
   // Drake does not support "frozen" joints (#12227).
-  DRAKE_EXPECT_THROWS_MESSAGE(
-    ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='mixed_emotions'>
   <static>true</static>
   <link name='a'/>
@@ -744,8 +716,240 @@ TEST_F(SdfParserTest, StaticModelWithJoints) {
       <xyz>0 0 1</xyz>
     </axis>
   </joint>
-</model>)"""),
-    "Only fixed joints are permitted in static models.");
+</model>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Only fixed joints are permitted in static models."));
+}
+
+// Revolute joints should have an axis and 1-dof joints should have no axis2.
+TEST_F(SdfParserTest, JointWithNoAxisError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='revolute'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  // Two errors are recorded because of the error diagnostic policy
+  // not set to throw. The first error comes from ExtractJointAxis
+  // that has no breaking behavior while the second one comes from
+  // ParseJointLimits which mimics the throw behavior.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+}
+
+// Ball joints should not have an axis2.
+TEST_F(SdfParserTest, BallJointWithAxis2Error) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='should_not_have_axis' type='ball'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+    <axis2>
+      <xyz>0 0 1</xyz>
+    </axis2>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      R"(.*Actuation \(via non-zero effort limits\) for ball joint )"
+      R"('should_not_have_axis' is not implemented yet and will be )"
+      R"(ignored.*)"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*An axis2 may not be specified for ball joint 'should_not_have_axis' "
+      "and will be ignored.*"));
+}
+
+// Joint axis upper limit should be lower than upper limit.
+TEST_F(SdfParserTest, JointAxisLimitsError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <lower>2</lower>
+        <upper>1</upper>
+      </limit>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      R"(.*The lower limit must be lower \(or equal\) than the)"
+      R"( upper limit for joint 'no_axis'.*)"));
+}
+
+// Joint axis drake:acceleration should be non negative.
+TEST_F(SdfParserTest, JointAxisDrakeAccelerationError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+      <limit>
+        <drake:acceleration>-1</drake:acceleration>
+      </limit>
+    </axis>
+  </joint>
+</model>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*Acceleration limit is negative for joint 'no_axis'."
+      " Aceleration limit must be a non-negative number.*"));
+}
+
+// Check that prismatic joints must have an axis.
+TEST_F(SdfParserTest, PrismaticJointWithNoAxisError) {
+  ParseTestString(R"""(
+<model name='joint_no_axis'>
+  <link name='a'/>
+  <link name='b'/>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+  </joint>
+</model>)""");
+  // Two errors are recorded because of the error diagnostic policy
+  // not set to throw. The first error comes from ExtractJointAxis
+  // that has no breaking behavior while the second one comes from
+  // ParseJointLimits which mimics the throw behavior.
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*An axis must be specified for joint 'no_axis'.*"));
+}
+
+// Make sure world joints are fixed.
+TEST_F(SdfParserTest, WorldJointNotFixedError) {
+  ParseTestString(R"""(
+<world name='uno'>
+  <joint name='no_axis' type='prismatic'>
+    <parent>a</parent>
+    <child>b</child>
+    <axis>
+      <xyz>0 0 1</xyz>
+    </axis>
+  </joint>
+  <model name='a'>
+  <link name='l'/>
+  </model>
+  <model name='b'>
+  <link name='h'/>
+  </model>
+</world>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*Only fixed joints are permitted in world joints.*"));
+}
+
+
+// drake:joint should have a type.
+TEST_F(SdfParserTest, DrakeJointNoTypeError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <drake:joint>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:joint>: Unable to find the 'type' attribute.*"));
+}
+
+// drake:joint should have a name.
+TEST_F(SdfParserTest, DrakeJointNoNameError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <drake:joint type='nonetype'>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:joint>: Unable to find the 'name' attribute.*"));
+}
+
+// drake:joint does not support pose tags.
+TEST_F(SdfParserTest, DrakeJointPoseError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <drake:joint type='nonetype' name='joint_name'>
+    <pose></pose>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:joint> does not yet support the <pose> child tag.*"));
+}
+
+// Verify that drake:joint yields an error for unrecognized types.
+TEST_F(SdfParserTest, DrakeJointUnrecognizedTypeError) {
+  ParseTestString(R"""(
+<model name='good'>
+  <link name='a'/>
+  <link name='b'/>
+  <drake:joint type='nonetype' name='joint_name'>
+    <drake:parent>a</drake:parent>
+    <drake:child>b</drake:child>
+  </drake:joint>
+</model>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:joint> 'joint_name' has unrecognized value for"
+      " 'type' attribute: nonetype.*"));
+}
+
+// Verify error when no model is found.
+TEST_F(SdfParserTest, AddModelFromSdfNoModelError) {
+  const std::string sdf_string = R"""(
+<sdf version='1.6'>
+  <world name='empty_world'>
+  </world>
+</sdf>
+)""";
+
+  const DataSource data_source{DataSource::kContents, &sdf_string};
+  internal::CollisionFilterGroupResolver resolver{&plant_};
+  ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+                      &plant_, &resolver, TestingSelect};
+  std::optional<ModelInstanceIndex> result =
+      AddModelFromSdf(data_source, "", "", w);
+  resolver.Resolve(diagnostic_policy_);
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*File must have a single <model> element.*"));
+  EXPECT_FALSE(result.has_value());
+}
+
+// Verify error thrown when more than one world are present.
+TEST_F(SdfParserTest, MoreThanOneWorldOrModelError) {
+  ParseTestString(R"""(
+<world name='uno'>
+</world>
+<world name='dos'>
+</world>
+)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*File must have exactly one <model> or exactly one <world>,"
+      " but instead has 0 models and 2 worlds.*"));
 }
 
 // Verify that our SDF parser throws an exception when a user specifies a joint
@@ -755,9 +959,8 @@ TEST_F(SdfParserTest, ThrowsWhenJointDampingIsNegative) {
       "drake/multibody/parsing/test/sdf_parser_test/"
       "negative_damping_joint.sdf");
   AddModelFromSdfFile(sdf_file_path, "");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*damping is negative.*"));
-  ClearDiagnostics();
 }
 
 TEST_F(SdfParserTest, IncludeTags) {
@@ -1082,9 +1285,8 @@ TEST_F(SdfParserTest, ActuatedUniversalJointParsingTest) {
     </axis2>
   </joint>
 </model>)""");
-  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*effort limits.*universal joint.*not implemented.*"));
-  ClearDiagnostics();
 }
 
 // Tests the error handling when axis2 isn't specified for universal joints.
@@ -1100,10 +1302,10 @@ TEST_F(SdfParserTest, UniversalJointAxisParsingTest) {
     </axis>
   </joint>
 </model>)""");
-  EXPECT_THAT(FormatFirstError(),
-              ::testing::MatchesRegex(
-                  ".*Both axis and axis2 must be specified.*jerry.*"));
-  ClearDiagnostics();
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*Both axis and axis2 must be specified.*jerry.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*effort limits.*universal joint.*not implemented.*"));
 }
 
 // Tests the error handling for an non-orthogonal axis and axis2 in universal
@@ -1123,10 +1325,8 @@ TEST_F(SdfParserTest, UniversalJointNonOrthogonalAxisParsingTest) {
     </axis2>
   </joint>
 </model>)""");
-  EXPECT_THAT(
-      FormatFirstError(),
-      ::testing::MatchesRegex(".*axis and axis2 must be orthogonal.*jerry.*"));
-  ClearDiagnostics();
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*axis and axis2 must be orthogonal.*jerry.*"));
 }
 
 // Tests the error handling for axis and axis2 with incompatible damping
@@ -1159,12 +1359,11 @@ TEST_F(SdfParserTest, UniversalJointDampingCoeffParsingTest) {
   </joint>
 </model>)""");
   EXPECT_THAT(
-      FormatFirstWarning(),
+      TakeWarning(),
       ::testing::MatchesRegex(
           ".*damping must be equal.*jerry.*damping coefficient.*0.1.*is "
           "used.*0.2.*is ignored.*should be explicitly defined as 0.1 to "
           "match.*"));
-  ClearDiagnostics();
 }
 
 // Tests the error handling for an unsupported joint type (when actuated).
@@ -1183,9 +1382,8 @@ TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
     </axis>
   </joint>
 </model>)""");
-  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*effort limits.*ball joint.*not implemented.*"));
-  ClearDiagnostics();
 }
 
 // Tests the error handling for an unsupported joint type.
@@ -1198,9 +1396,8 @@ TEST_F(SdfParserTest, GearboxJointParsingTest) {
     <child>larry</child>
   </joint>
 </model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      ".*gearbox.*not supported.*jerry.*"));
-  ClearDiagnostics();
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+    ".*gearbox.*not supported.*jerry.*"));
 }
 
 // Tests the error handling for an unsupported joint type.
@@ -1213,9 +1410,8 @@ TEST_F(SdfParserTest, Revolute2JointParsingTest) {
     <child>larry</child>
   </joint>
 </model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*revolute2.*not supported.*jerry.*"));
-  ClearDiagnostics();
 }
 
 // Tests the error handling for a misspelled joint type.
@@ -1228,9 +1424,8 @@ TEST_F(SdfParserTest, MisspelledJointParsingTest) {
     <child>larry</child>
   </joint>
 </model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*revoluteqqq is invalid.*"));
-  ClearDiagnostics();
 }
 
 // Verifies that the SDF parser parses the joint actuator limit correctly.
@@ -1312,9 +1507,8 @@ TEST_F(SdfParserTest, NegativeStiffnessPrismaticSpringParsingTest) {
       </axis>
     </joint>
   </model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       ".*The stiffness specified for joint '.*' must be non-negative."));
-  ClearDiagnostics();
 }
 
 // Verifies that the SDF parser parses the revolute spring parameters correctly.
@@ -1430,7 +1624,7 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
   </frame>
 </model>
 )""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       R"(.*(attached_to|relative_to) name\[world\] specified by frame )"
       R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\].*)"));
@@ -1444,7 +1638,7 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
   </frame>
 </model>
 )""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       R"(.*(attached_to|relative_to) name\[world\] specified by frame )"
       R"(with name\[.*\] does not match a nested model, link, joint, or )"
       R"(frame name in model with name\[bad\].*)"));
@@ -1458,7 +1652,7 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
   <frame name='{}'/>  <!-- Invalid name -->
 </model>
 )""", bad_name));
-    EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+    EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
         R"(.*The supplied frame name \[.*\] is reserved..*)"));
     ClearDiagnostics();
   }
@@ -1468,7 +1662,7 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
   <pose relative_to='invalid_usage'/>
   <link name='dont_crash_plz'/>  <!-- Need at least one frame -->
 </model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       R"(.*Attribute //pose\[@relative_to\] of top level model )"
       R"(must be left empty.*)"));
   ClearDiagnostics();
@@ -1480,10 +1674,9 @@ TEST_F(SdfParserTest, TestUnsupportedFrames) {
     <inertial><pose relative_to='my_frame'/></inertial>
   </link>
 </model>)""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       R"(.*XML Attribute\[relative_to\] in element\[pose\] not )"
       R"(defined in SDF.*)"));
-  ClearDiagnostics();
 }
 
 // Tests Drake's usage of sdf::EnforcementPolicy.
@@ -1494,10 +1687,10 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
   <link name='a'/>
 </model>
 )""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
       R"(.*XML Attribute\[bad_attribute\] in element\[model\] not )"
       R"(defined in SDF.*)"));
-  ClearDiagnostics();
+  FlushDiagnostics();
 
   ParseTestString(R"""(
 <model name='model_with_too_many_top_level_elements'>
@@ -1507,9 +1700,9 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
   <link name='b'/>
 </model>
 )""");
-  EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
-      R"(.*Root object can only contain one model.*)"));
-  ClearDiagnostics();
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*Root object can only contain one model.*"));
+  FlushDiagnostics();
 
   // TODO(#15018): This throws a warning, make this an error.
   ParseTestString(R"""(
@@ -1518,10 +1711,10 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
   <bad_element/>
 </model>
 )""");
-  EXPECT_THAT(FormatFirstError(), testing::MatchesRegex(
-      ".*XML Element\\[bad_element\\], child of"
-      " element\\[model\\], not defined in SDF.*"));
-  ClearDiagnostics();
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      R"(.*XML Element\[bad_element\], child of)"
+      R"( element\[model\], not defined in SDF.*)"));
+  FlushDiagnostics();
 
   ParseTestString(R"""(
 <model name='model_with_initial_position'>
@@ -1535,10 +1728,10 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
     </axis>
   </joint>
 </model>)""", "1.9");
-  EXPECT_THAT(FormatFirstError(), testing::MatchesRegex(
-      ".*XML Element\\[initial_position\\], child of element"
-      "\\[axis\\], not defined in SDF.*"));
-  ClearDiagnostics();
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      R"(.*XML Element\[initial_position\], child of element)"
+      R"(\[axis\], not defined in SDF.*)"));
+  FlushDiagnostics();
 
   ParseTestString(R"""(
 <model name='deprecation_test'>
@@ -1546,9 +1739,9 @@ TEST_F(SdfParserTest, TestSdformatParserPolicies) {
 </model>
 <_drake_deprecation_unit_test_element/>
 )""", "1.9");
-  EXPECT_THAT(FormatFirstWarning(), testing::MatchesRegex(
+  EXPECT_THAT(TakeWarning(), testing::MatchesRegex(
       ".*drake_deprecation_unit_test_element.*is deprecated.*"));
-  ClearDiagnostics();
+  FlushDiagnostics();
 }
 
 // Reports if the frame with the given id has a geometry with the given role
@@ -1705,7 +1898,7 @@ TEST_F(SdfParserTest, BushingParsingGood) {
 TEST_F(SdfParserTest, BushingParsingBad1) {
   AddSceneGraph();
   // Test missing frame tag
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"""(
+  ParseTestString(R"""(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -1719,16 +1912,16 @@ TEST_F(SdfParserTest, BushingParsingBad1) {
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
-    </model>)"""),
-                              "<drake:linear_bushing_rpy>: Unable to find the "
-                              "<drake:bushing_frameC> child tag.");
+    </model>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:linear_bushing_rpy>: Unable to find the "
+      "<drake:bushing_frameC> child tag."));
 }
 
 TEST_F(SdfParserTest, BushingParsingBad2) {
   AddSceneGraph();
   // Test non-existent frame
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseTestString(R"""(
+  ParseTestString(R"""(
     <model name='BushingModel'>
       <link name='A'/>
       <link name='C'/>
@@ -1743,14 +1936,16 @@ TEST_F(SdfParserTest, BushingParsingBad2) {
         <drake:bushing_force_stiffness>7 8 9</drake:bushing_force_stiffness>
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
-    </model>)"""),
-      "<drake:linear_bushing_rpy>: Frame 'frameZ' specified for "
+    </model>)""");
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*<drake:linear_bushing_rpy>: Frame 'frameZ' specified for "
       "<drake:bushing_frameC> does not exist in "
-      "the model.");
+      "the model."));
 }
 
 TEST_F(SdfParserTest, BushingParsingBad3) {
   AddSceneGraph();
+  ThrowErrors();
   // Test missing constants tag
   DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"""(
     <model name='BushingModel'>
@@ -1767,8 +1962,8 @@ TEST_F(SdfParserTest, BushingParsingBad3) {
         <drake:bushing_force_damping>10 11 12</drake:bushing_force_damping>
       </drake:linear_bushing_rpy>
     </model>)"""),
-                              "<drake:linear_bushing_rpy>: Unable to find the "
-                              "<drake:bushing_torque_damping> child tag.");
+      ".*<drake:linear_bushing_rpy>: Unable to find the "
+      "<drake:bushing_torque_damping> child tag.");
 }
 
 TEST_F(SdfParserTest, ReflectedInertiaParametersParsing) {
@@ -2470,7 +2665,6 @@ TEST_F(SdfParserTest, ErrorsFromIncludedUrdf) {
     <name>arm</name>
  </include>
 </model>)""", "1.8");
-
   EXPECT_THAT(FormatFirstError(), ::testing::MatchesRegex(
       ".*bad.urdf.*XML_ERROR.*"));
   ClearDiagnostics();
@@ -2543,17 +2737,17 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingTest) {
 
 TEST_F(SdfParserTest, CollisionFilterGroupParsingErrorsTest) {
   AddSceneGraph();
-  DRAKE_EXPECT_NO_THROW(
-      ParseTestString(R"""(
+  DRAKE_EXPECT_NO_THROW(ParseTestString(R"""(
 <model name='error1'>
   <link name='a'/>
   <drake:collision_filter_group/>
 </model>)"""));
-  EXPECT_THAT(TakeError(), MatchesRegex(
-                  ".*The tag <drake:collision_filter_group> is "
-                  "missing the required attribute \"name\".*"));
+  EXPECT_THAT(TakeError(), ::testing::MatchesRegex(
+      ".*The tag <drake:collision_filter_group> is "
+      "missing the required attribute \"name\".*"));
   FlushDiagnostics();
 
+  // Testing several errors set to keep record instead of throwing
   DRAKE_EXPECT_NO_THROW(
       ParseTestString(R"""(
 <model name='error2'>
@@ -2580,6 +2774,7 @@ TEST_F(SdfParserTest, CollisionFilterGroupParsingErrorsTest) {
   EXPECT_THAT(TakeError(), MatchesRegex(
                   ".*The tag <drake:ignored_collision_filter_group> is missing"
                   " a required string value.*"));
+  FlushDiagnostics();
 }
 
 TEST_F(SdfParserTest, PoseWithRotationInDegreesOrQuaternions) {
@@ -2756,9 +2951,9 @@ TEST_F(SdfParserTest, TestUnsupportedVisualGeometry) {
       </visual>
     </link>
   </model>)""");
-  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*Ignoring unsupported SDFormat element in geometry: heightmap.*"));
-  ClearDiagnostics();
+  FlushDiagnostics();
 
   ParseTestString(R"""(
   <model name="polyline_model">
@@ -2770,9 +2965,8 @@ TEST_F(SdfParserTest, TestUnsupportedVisualGeometry) {
       </visual>
     </link>
   </model>)""");
-  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*Ignoring unsupported SDFormat element in geometry: polyline.*"));
-  ClearDiagnostics();
 }
 
 // Tests the error handling for an unsupported collision geometry.
@@ -2788,9 +2982,9 @@ TEST_F(SdfParserTest, TestUnsupportedCollisionGeometry) {
       </collision>
     </link>
   </model>)""");
-  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*Ignoring unsupported SDFormat element in geometry: heightmap.*"));
-  ClearDiagnostics();
+  FlushDiagnostics();
 
   ParseTestString(R"""(
   <model name="polyline_model">
@@ -2802,9 +2996,8 @@ TEST_F(SdfParserTest, TestUnsupportedCollisionGeometry) {
       </collision>
     </link>
   </model>)""");
-  EXPECT_THAT(FormatFirstWarning(), ::testing::MatchesRegex(
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*Ignoring unsupported SDFormat element in geometry: polyline.*"));
-  ClearDiagnostics();
 }
 
 // Regression test for #18878.
