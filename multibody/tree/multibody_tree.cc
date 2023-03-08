@@ -442,6 +442,18 @@ std::vector<JointIndex> MultibodyTree<T>::GetJointIndices(
 }
 
 template <typename T>
+std::vector<JointActuatorIndex> MultibodyTree<T>::GetJointActuatorIndices(
+    ModelInstanceIndex model_instance) const {
+  return model_instances_.at(model_instance)->GetJointActuatorIndices();
+}
+
+template <typename T>
+std::vector<JointIndex> MultibodyTree<T>::GetActuatedJointIndices(
+    ModelInstanceIndex model_instance) const {
+  return model_instances_.at(model_instance)->GetActuatedJointIndices();
+}
+
+template <typename T>
 std::vector<FrameIndex> MultibodyTree<T>::GetFrameIndices(
     ModelInstanceIndex model_instance) const {
   DRAKE_THROW_UNLESS(model_instance < instance_name_to_index_.size());

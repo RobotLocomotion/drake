@@ -4043,6 +4043,20 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return internal_tree().GetJointIndices(model_instance);
   }
 
+  /// Returns a list of joint actuator indices associated with `model_instance`.
+  /// @throws std::exception if called pre-finalize.
+  std::vector<JointActuatorIndex> GetJointActuatorIndices(
+      ModelInstanceIndex model_instance) const {
+    return internal_tree().GetJointActuatorIndices(model_instance);
+  }
+
+  /// Returns a list of actuated joint indices associated with `model_instance`.
+  /// @throws std::exception if called pre-finalize.
+  std::vector<JointIndex> GetActuatedJointIndices(
+      ModelInstanceIndex model_instance) const {
+    return internal_tree().GetActuatedJointIndices(model_instance);
+  }
+
   /// Returns a constant reference to a joint that is identified
   /// by the string `name` in `this` %MultibodyPlant.  If the optional
   /// template argument is supplied, then the returned value is downcast to
@@ -4136,6 +4150,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @see AddJointActuator().
   int num_actuators() const {
     return internal_tree().num_actuators();
+  }
+
+  /// Returns the number of actuators for a specific model instance.
+  /// @throws std::exception if called pre-finalize.
+  int num_actuators(ModelInstanceIndex model_instance) const {
+    return internal_tree().num_actuators(model_instance);
   }
 
   /// Returns the total number of actuated degrees of freedom.
