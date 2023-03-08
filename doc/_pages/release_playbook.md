@@ -31,8 +31,8 @@ Begin this process around 1 week prior to the intended release date.
    ```
    [doc] Add release notes v1.N.0
    ```
-   Make sure that "Allow edits from maintainers" on the GitHub PR page is
-   enabled (the checkbox is checked).
+   Make sure that "Allow edits by maintainers" on the GitHub PR page is
+   enabled (the checkbox is checked). Set label `release notes: none`.
 5. For release notes, on an ongoing basis, add recent commit messages to the
    release notes draft using the ``tools/release_engineering/relnotes`` tooling.
    (Instructions can be found atop its source code: [``relnotes.py``](https://github.com/RobotLocomotion/drake/blob/master/tools/release_engineering/relnotes.py))
@@ -89,7 +89,7 @@ the main body of the document:
     were upgraded in the same pull request, they each should get their own
     line in the release notes.
 
-* Some features under development (eg, hydroelastic as of this writing) may
+* Some features under development (eg, deformables as of this writing) may
   have no-release-notes policies, as their APIs although public are not yet
   fully supported.  Be sure to take note of which these are, or ask on
   `#platform_review` slack.
@@ -149,7 +149,7 @@ the main body of the document:
    them all.
    1. Update the github links within ``doc/_pages/from_binary.md`` to reflect
       the upcoming v1.N.0 and YYYYMMDD.
-4. Re-enable CI by reverting the commit you added way up above in step 3.
+4. Re-enable CI by reverting the commit you added way up above in step 3 of **Prior to release**.
 5. Wait for the wheel builds to complete, and then download release artifacts:
    1. Use the
       ``tools/release_engineering/download_release_candidate`` tool with the
@@ -161,10 +161,10 @@ the main body of the document:
    2. After merge, go to <https://drake-jenkins.csail.mit.edu/view/Documentation/job/linux-jammy-unprovisioned-gcc-bazel-nightly-documentation/> and push "Build now".
       * If you don't have "Build now" click "Log in" first in upper right.
 7. Open <https://github.com/RobotLocomotion/drake/releases> and choose "Draft
-   a new release".  Note that this page does has neither history nor undo.  Be
+   a new release".  Note that this page has neither history nor undo.  Be
    slow and careful!
    1. Tag version is: v1.N.0
-   2. Target is: [the git sha from above]
+   2. Target is: [the git sha from the `--find-git-sha` in step 1.v]
      *  You should select the commit from Target > Recent Commits. The search
         via commit does not work if you don't use the correct length.
    3. Release title is: Drake v1.N.0
@@ -177,7 +177,7 @@ the main body of the document:
       ``/tmp/drake-release/v1.N.0``:
       - 12: 4 `.tar.gz` + 8 checksums
       - 6: 2 `.deb` + 4 checksums
-      - 9: 4 linux `.whl` + 8 checksums
+      - 12: 4 linux `.whl` + 8 checksums
       - 3: 1 macOS x86 `.whl` + 2 checksums
       - 3: 1 macOS arm `.whl` + 2 checksums
    6. Choose "Save draft" and take a deep breath.
@@ -185,9 +185,9 @@ the main body of the document:
    1. Check that the link to drake.mit.edu docs from the GitHub release draft
       page actually works.
    2. Click "Publish release"
-   3. Notify `@BetsyMcPhail` via a GitHub comment to manually tag docker images
-      and upload the releases to S3. Be sure to provide her with the binary
-      date, commit SHA, and release tag in the same ping.
+   3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually 
+      tag docker images and upload the releases to S3. Be sure to provide her 
+      with the binary date, commit SHA, and release tag in the same ping.
    4. Announce on Drake Slack, ``#general``.
    5. Party on, Wayne.
 
