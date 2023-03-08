@@ -14,6 +14,7 @@ drake_cc_package_library(
     name = "contact_solvers",
     visibility = ["//visibility:public"],
     deps = [
+        ":block_3x3_sparse_matrix",
         ":block_sparse_matrix",
         ":contact_solver",
         ":contact_solver_results",
@@ -25,6 +26,16 @@ drake_cc_package_library(
         ":sparse_linear_operator",
         ":supernodal_solver",
         ":system_dynamics_data",
+    ],
+)
+
+drake_cc_library(
+    name = "block_3x3_sparse_matrix",
+    srcs = ["block_3x3_sparse_matrix.cc"],
+    hdrs = ["block_3x3_sparse_matrix.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -160,6 +171,14 @@ drake_cc_library(
     deps = [
         ":linear_operator",
         "//common:default_scalars",
+    ],
+)
+
+drake_cc_googletest(
+    name = "block_3x3_sparse_matrix_test",
+    deps = [
+        ":block_3x3_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
