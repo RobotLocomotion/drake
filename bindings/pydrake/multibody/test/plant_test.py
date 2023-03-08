@@ -45,6 +45,7 @@ from pydrake.multibody.tree import (
     RevoluteSpring_,
     RigidBody_,
     RotationalInertia_,
+    ScopedName,
     ScrewJoint,
     ScrewJoint_,
     SpatialInertia_,
@@ -397,6 +398,22 @@ class TestPlant(unittest.TestCase):
             model_instance=model_instance))
         self.assertIn("acrobot", plant.GetTopologyGraphvizString())
 
+    def test_scoped_name(self):
+        ScopedName()
+        ScopedName(namespace_name="foo", element_name="bar")
+        ScopedName.Make(namespace_name="foo", element_name="bar")
+        ScopedName.Join(name1="foo", name2="bar")
+        dut = ScopedName.Parse(scoped_name="foo::bar")
+        self.assertEqual(dut.get_namespace(), "foo")
+        self.assertEqual(dut.get_element(), "bar")
+        self.assertEqual(dut.get_full(), "foo::bar")
+        self.assertEqual(dut.to_string(), "foo::bar")
+        dut.set_namespace("robot1")
+        dut.set_element("torso")
+        self.assertEqual(str(dut), "robot1::torso")
+        self.assertEqual(repr(dut), "ScopedName('robot1', 'torso')")
+        copy.copy(dut)
+
     def _test_multibody_tree_element_mixin(self, T, element):
         cls = type(element)
         self.assertIsInstance(element.index(), get_index_class(cls, T))
@@ -413,6 +430,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(frame.is_world_frame(), bool)
         self.assertIsInstance(frame.is_body_frame(), bool)
         self.assertIsInstance(frame.name(), str)
+        self.assertIsInstance(frame.scoped_name(), ScopedName)
 
         self.assertIsInstance(
             frame.GetFixedPoseInBodyFrame(),
@@ -427,6 +445,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body, Body)
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
+        self.assertIsInstance(body.scoped_name(), ScopedName)
         self.assertIsInstance(body.get_num_flexible_positions(), int)
         self.assertIsInstance(body.get_num_flexible_velocities(), int)
         self.assertIsInstance(body.is_floating(), bool)
