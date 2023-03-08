@@ -75,6 +75,13 @@ py_test(
 )
 
 py_test(
+    name = "package_map_test",
+    srcs = ["package_map_test.py"],
+    size = "small",
+    deps = ["@drake//bindings/pydrake"],
+)
+
+py_test(
     name = "import_all_test",
     srcs = ["import_all_test.py"],
     size = "small",
@@ -99,6 +106,13 @@ int main(int argc, char** argv) {
 from pydrake.common import FindResourceOrThrow, _set_log_level
 _set_log_level("trace")
 FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
+""")
+
+    # This test case confirms that @drake_models still works.
+    with open(join(scratch_dir, "package_map_test.py"), "w") as f:
+        f.write("""
+from pydrake.multibody.parsing import PackageMap
+PackageMap()
 """)
 
     with open(join(scratch_dir, "import_all_test.py"), "w") as f:
