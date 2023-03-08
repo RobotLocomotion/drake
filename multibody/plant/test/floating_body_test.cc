@@ -19,7 +19,7 @@ class MultibodyTreeTester {
   MultibodyTreeTester() = delete;
   static const QuaternionFloatingMobilizer<double>& get_floating_mobilizer(
       const MultibodyTree<double>& model, const Body<double>& body) {
-    return model.GetFreeBodyMobilizerOrThrow(body);
+    return model.GetFloatingMobilizerInterfaceOrThrowOrThrow(body);
   }
 };
 }  // namespace internal

@@ -24,6 +24,9 @@ DEFINE_double(
 DEFINE_string(discrete_solver, "sap",
               "Discrete contact solver. Options are: 'tamsi', 'sap'.");
 
+DEFINE_string(default_floating_joint_type, "quaternion_floating",
+              "Floating base representation of rotations");
+
 namespace drake {
 namespace examples {
 namespace atlas {
@@ -48,6 +51,8 @@ int do_main() {
   plant_config.time_step = FLAGS_mbp_discrete_update_period;
   plant_config.stiction_tolerance = FLAGS_stiction_tolerance;
   plant_config.discrete_contact_solver = FLAGS_discrete_solver;
+  plant_config.default_floating_joint_type =
+      FLAGS_default_floating_joint_type;
   auto [plant, scene_graph] =
       multibody::AddMultibodyPlant(plant_config, &builder);
 
@@ -77,13 +82,15 @@ int do_main() {
 
   // Sanity check model size.
   DRAKE_DEMAND(plant.num_velocities() == 36);
-  DRAKE_DEMAND(plant.num_positions() == 37);
+  const int num_positions =
+      FLAGS_default_floating_joint_type == "quaternion_floating" ? 37 : 36;
+  DRAKE_DEMAND(plant.num_positions() == num_positions);
 
   // Verify the "pelvis" body is free and modeled with quaternions dofs before
   // moving on with that assumption.
   const drake::multibody::Body<double>& pelvis = plant.GetBodyByName("pelvis");
   DRAKE_DEMAND(pelvis.is_floating());
-  DRAKE_DEMAND(pelvis.has_quaternion_dofs());
+  //DRAKE_DEMAND(pelvis.has_quaternion_dofs());
   // Since there is a single floating body, we know that the positions for it
   // lie first in the state vector.
   DRAKE_DEMAND(pelvis.floating_positions_start() == 0);

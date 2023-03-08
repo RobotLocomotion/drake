@@ -11,6 +11,11 @@
 #include "drake/systems/lcm/lcm_publisher_system.h"
 #include "drake/visualization/visualization_config_functions.h"
 
+#include <iostream>
+
+#define PRINT_VAR(a) std::cout << #a": " << a << std::endl;
+#define PRINT_VARn(a) std::cout << #a":\n" << a << std::endl;
+
 namespace drake {
 namespace examples {
 namespace multibody {
@@ -49,6 +54,9 @@ DEFINE_double(time_step, 1.0e-3,
               "for the plant modeled as a discrete system."
               "This parameter must be non-negative.");
 
+DEFINE_string(default_floating_joint_type, "quaternion_floating",
+              "Floating base representation of rotations");
+
 using Eigen::Vector3d;
 using geometry::SceneGraph;
 
@@ -62,6 +70,7 @@ int do_main() {
 
   auto [plant, scene_graph] =
       AddMultibodyPlantSceneGraph(&builder, FLAGS_time_step);
+  plant.set_default_floating_joint_type(FLAGS_default_floating_joint_type);
 
   // Plant's parameters.
   const double radius = 0.05;          // The cylinder's radius, m
@@ -81,7 +90,9 @@ int do_main() {
   plant.set_stiction_tolerance(FLAGS_stiction_tolerance);
 
   DRAKE_DEMAND(plant.num_velocities() == 6);
-  DRAKE_DEMAND(plant.num_positions() == 7);
+  //DRAKE_DEMAND(plant.num_positions() == 7);
+
+  PRINT_VAR(plant.num_positions());
 
   visualization::AddDefaultVisualization(&builder);
 
@@ -102,6 +113,9 @@ int do_main() {
       SpatialVelocity<double>(
           Vector3<double>(FLAGS_wx0, 0.0, 0.0),
           Vector3<double>(FLAGS_vx0, 0.0, 0.0)));
+
+  PRINT_VAR(cylinder.is_floating());
+  PRINT_VAR(cylinder.has_quaternion_dofs());
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
 

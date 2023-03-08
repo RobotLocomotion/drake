@@ -37,6 +37,8 @@ void ApplyMultibodyPlantConfig(const MultibodyPlantConfig& config,
           config.contact_surface_representation));
   plant->set_adjacent_bodies_collision_filters(
       config.adjacent_bodies_collision_filters);
+  plant->set_default_floating_joint_type(
+      config.default_floating_joint_type);
 }
 
 namespace internal {

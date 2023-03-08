@@ -8,7 +8,9 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/random.h"
+#include "drake/common/unused.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/frame.h"
 #include "drake/multibody/tree/multibody_element.h"
@@ -330,6 +332,52 @@ class Mobilizer : public MultibodyElement<T> {
 
   // Returns `true` if `this` uses a quaternion parametrization of rotations.
   virtual bool has_quaternion_dofs() const { return false; }
+
+  // For floating mobilizers only, this method sets `state` to store the rigid
+  // transform X_FM across the mobilizer.
+  // The default implementation always throws iff is_floating() is `false`.
+  // The default implementation throws with an appropriate message if a
+  // floating mobilizer did not implement this function.
+  virtual void SetStateFromRigidTransformOrThrow(
+      const systems::Context<T>& context, const math::RigidTransform<T>& X_FM,
+      systems::State<T>* state) const {
+    unused(context);
+    unused(X_FM);
+    unused(state);
+    DRAKE_THROW_UNLESS(is_floating());
+    throw std::logic_error(
+        "This method must be implemented by floating mobilizers.");
+  }
+
+  // For floating mobilizers only, this method sets `state` to store the spatial
+  // velocity V_FM across the mobilizer.
+  // The default implementation throws iff is_floating() is `false`.
+  virtual void SetStateFromSpatialVelocityOrThrow(
+      const systems::Context<T>& context, const SpatialVelocity<T>& V_FM,
+      systems::State<T>* state) const {
+    unused(context);
+    unused(V_FM);
+    unused(state);
+    DRAKE_THROW_UNLESS(is_floating());
+    throw std::logic_error(
+        "This method must be implemented by floating mobilizers.");
+  }
+
+  virtual void SetFloatingMobilizerRandomPositionDistribution(
+      const Vector3<symbolic::Expression>& position) {
+    unused(position);
+    DRAKE_THROW_UNLESS(is_floating());
+    throw std::logic_error(
+        "This method must be implemented by floating mobilizers.");
+  }
+
+  virtual void SetFloatingMobilizerRandomQuaternionDistribution(
+      const Eigen::Quaternion<symbolic::Expression>& q_FM) {
+    unused(q_FM);
+    DRAKE_THROW_UNLESS(is_floating());
+    throw std::logic_error(
+        "This method must be implemented by floating mobilizers.");
+  }
 
   // Returns the topology information for this mobilizer. Users should not
   // need to call this method since MobilizerTopology is an internal

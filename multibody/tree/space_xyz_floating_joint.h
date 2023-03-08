@@ -10,9 +10,10 @@
 #include "drake/common/random.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/roll_pitch_yaw.h"
 #include "drake/multibody/tree/joint.h"
 #include "drake/multibody/tree/multibody_forces.h"
-#include "drake/multibody/tree/quaternion_floating_mobilizer.h"
+#include "drake/multibody/tree/space_xyz_floating_mobilizer.h"
 
 namespace drake {
 namespace multibody {
@@ -30,14 +31,14 @@ namespace multibody {
 ///
 /// @tparam_default_scalar
 template <typename T>
-class QuaternionFloatingJoint final : public Joint<T> {
+class SpaceXYZFloatingJoint final : public Joint<T> {
  public:
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(QuaternionFloatingJoint)
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SpaceXYZFloatingJoint)
 
   /// The name for this Joint type.  It resolves to "quaternion_floating".
   static const char kTypeName[];
 
-  /// Constructor for a %QuaternionFloatingJoint granting six degrees of
+  /// Constructor for a %SpaceXYZFloatingJoint granting six degrees of
   /// freedom to an outboard frame M attached to the child body B with respect
   /// to an inboard frame F attached to the parent body P. The orientation of
   /// frame M in F is represented by a quaternion `q_FM` while the position of F
@@ -69,19 +70,19 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///  damping force.
   /// @throws std::exception if angular_damping is negative.
   /// @throws std::exception if translational_damping is negative.
-  QuaternionFloatingJoint(const std::string& name,
-                          const Frame<T>& frame_on_parent,
-                          const Frame<T>& frame_on_child,
-                          double angular_damping = 0.0,
-                          double translational_damping = 0.0)
+  SpaceXYZFloatingJoint(const std::string& name,
+                        const Frame<T>& frame_on_parent,
+                        const Frame<T>& frame_on_child,
+                        double angular_damping = 0.0,
+                        double translational_damping = 0.0)
       : Joint<T>(name, frame_on_parent, frame_on_child,
                  (Vector6<double>() << angular_damping, angular_damping,
                   angular_damping, translational_damping, translational_damping,
                   translational_damping)
                      .finished(),
-                 Vector<double, 7>::Constant(
+                 Vector<double, 6>::Constant(
                      -std::numeric_limits<double>::infinity()),
-                 Vector<double, 7>::Constant(
+                 Vector<double, 6>::Constant(
                      std::numeric_limits<double>::infinity()),
                  Vector6d::Constant(-std::numeric_limits<double>::infinity()),
                  Vector6d::Constant(std::numeric_limits<double>::infinity()),
@@ -89,12 +90,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
                  Vector6d::Constant(std::numeric_limits<double>::infinity())) {
     DRAKE_THROW_UNLESS(angular_damping >= 0);
     DRAKE_THROW_UNLESS(translational_damping >= 0);
-    // Parent constructor sets all default positions to 0.
-    // Adjust quaternion default to identity.
-    this->set_default_quaternion(Quaternion<double>::Identity());
   }
 
-  /// Returns the name of this joint type: "quaternion_floating"
+  /// Returns the name of this joint type: "space_xyz_floating"
   const std::string& type_name() const override {
     static const never_destroyed<std::string> name{kTypeName};
     return name.access();
@@ -129,8 +127,8 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] context
   ///   The context of the model this joint belongs to.
   /// @returns The quaternion representing the orientation of frame M in F.
-  Quaternion<T> get_quaternion(const systems::Context<T>& context) const {
-    return get_mobilizer().get_quaternion(context);
+  Vector3<T> get_angles(const systems::Context<T>& context) const {
+    return get_mobilizer().get_angles(context);
   }
 
   /// Returns the position `p_FM` of the outboard frame M's origin as measured
@@ -140,7 +138,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The context of the model this joint belongs to.
   /// @returns The position vector of frame M's origin in frame F.
   Vector3<T> get_position(const systems::Context<T>& context) const {
-    return get_mobilizer().get_position(context);
+    // N.B. Though the mobilizer accessor is get_translation, this method is
+    // named get_position() for consistency with QuaternionFloatingJoint.
+    return get_mobilizer().get_translation(context);
   }
 
   /// Returns the pose `X_FM` of the outboard frame M as measured and expressed
@@ -150,7 +150,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   The context of the model this joint belongs to.
   /// @returns The pose of frame M in frame F.
   math::RigidTransform<T> get_pose(const systems::Context<T>& context) const {
-    return math::RigidTransform<T>(get_quaternion(context),
+    return math::RigidTransform<T>(math::RollPitchYaw(get_angles(context)),
                                    get_position(context));
   }
 
@@ -192,9 +192,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] q_FM
   ///   The desired orientation of M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
-  const QuaternionFloatingJoint<T>& set_quaternion(
-      systems::Context<T>* context, const Quaternion<T>& q_FM) const {
-    get_mobilizer().set_quaternion(context, q_FM);
+  const SpaceXYZFloatingJoint<T>& set_angles(systems::Context<T>* context,
+                                             const Vector3<T>& angles) const {
+    get_mobilizer().set_angles(context, angles);
     return *this;
   }
 
@@ -211,9 +211,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
   // Alternatively, set this joint's orientation with the two statements:
   // const Eigen::Quaternion<T> q_FM = RotationMatrix<T>::ToQuaternion( m );
   // set_quaternion(context, q_FM);
-  const QuaternionFloatingJoint<T>& SetFromRotationMatrix(
+  const SpaceXYZFloatingJoint<T>& SetFromRotationMatrix(
       systems::Context<T>* context, const math::RotationMatrix<T>& R_FM) const {
-    get_mobilizer().SetFromRotationMatrix(context, R_FM);
+    const math::RigidTransform<T> X_FM(R_FM, get_position(*context));
+    get_mobilizer().SetFromRigidTransform(context, X_FM);
     return *this;
   }
 
@@ -224,9 +225,11 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] p_FM
   ///   The desired position of frame M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
-  const QuaternionFloatingJoint<T>& set_position(systems::Context<T>* context,
-                                                 const Vector3<T>& p_FM) const {
-    get_mobilizer().set_position(context, p_FM);
+  const SpaceXYZFloatingJoint<T>& set_position(systems::Context<T>* context,
+                                               const Vector3<T>& p_FM) const {
+    // N.B. Though the mobilizer accessor is set_translation, this method is
+    // named set_position() for consistency with QuaternionFloatingJoint.
+    get_mobilizer().set_translation(context, p_FM);
     return *this;
   }
 
@@ -237,10 +240,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] X_FM
   ///   The desired pose of frame M in F to be stored in `context`.
   /// @returns a constant reference to `this` joint.
-  const QuaternionFloatingJoint<T>& set_pose(
+  const SpaceXYZFloatingJoint<T>& set_pose(
       systems::Context<T>* context, const math::RigidTransform<T>& X_FM) const {
-    get_mobilizer().set_position(context, X_FM.translation());
-    get_mobilizer().set_quaternion(context, X_FM.rotation().ToQuaternion());
+    set_position(context, X_FM.translation());
+    set_angles(context, X_FM.rotation().ToRollPitchYaw().vector());
     return *this;
   }
 
@@ -253,7 +256,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   parent frame F, expressed in F. Refer to this class's documentation for
   ///   further details and definitions of these frames.
   /// @returns a constant reference to `this` joint.
-  const QuaternionFloatingJoint<T>& set_angular_velocity(
+  const SpaceXYZFloatingJoint<T>& set_angular_velocity(
       systems::Context<T>* context, const Vector3<T>& w_FM) const {
     get_mobilizer().set_angular_velocity(context, w_FM);
     return *this;
@@ -268,7 +271,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   ///   origin in the parent frame F, expressed in F. Refer to this class's
   ///   documentation for further details and definitions of these frames.
   /// @returns a constant reference to `this` joint.
-  const QuaternionFloatingJoint<T>& set_translational_velocity(
+  const SpaceXYZFloatingJoint<T>& set_translational_velocity(
       systems::Context<T>* context, const Vector3<T>& v_FM) const {
     get_mobilizer().set_translational_velocity(context, v_FM);
     return *this;
@@ -278,11 +281,18 @@ class QuaternionFloatingJoint final : public Joint<T> {
 
   /// @name Random distribution setters
 
+  // TODO(amcastro-tri): implement these.
+
+#if 0
   /// Sets the random distribution that positions of this joint will be randomly
   /// sampled from. See get_position() for details on the position
   /// representation.
   void set_random_position_distribution(
       const Vector3<symbolic::Expression>& p_FM) {
+    // TODO(amcastro-tri): fix this here and in QuanternionFloatingMobilizer,
+    // since this mobilizer method mutates ALL positions (6 or 7) and the
+    // argument is size
+    // 3.
     get_mutable_mobilizer()->set_random_position_distribution(p_FM);
   }
 
@@ -294,7 +304,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// sphere. See `set_random_quaternion_distribution_to_uniform()` for the most
   /// common case of uniformly sampling rotations.
   void set_random_quaternion_distribution(
-      const Eigen::Quaternion<symbolic::Expression>& q_FM) {
+      const Vector3<symbolic::Expression>& rpy) {
     get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
   }
 
@@ -303,9 +313,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
   void set_random_quaternion_distribution_to_uniform() {
     RandomGenerator generator;
     auto q_FM =
-        math::UniformlyRandomQuaternion<symbolic::Expression>(&generator);
+        math::UniformlyRandomRPY<symbolic::Expression>(&generator);
     get_mutable_mobilizer()->set_random_quaternion_distribution(q_FM);
   }
+#endif
 
   /// @}
 
@@ -314,9 +325,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
 
   /// Gets the default quaternion `q_FM` for `this` joint.
   /// @returns The default quaternion `q_FM` of `this`.
-  Quaternion<double> get_default_quaternion() const {
-    const Vector4<double>& q_FM = this->default_positions().template head<4>();
-    return Quaternion<double>(q_FM[0], q_FM[1], q_FM[2], q_FM[3]);
+  Vector3<double> get_default_angles() const {
+    const Vector3<double>& rpy_FM =
+        this->default_positions().template head<3>();
+    return rpy_FM;
   }
 
   /// Gets the default position `p_FM` for `this` joint.
@@ -328,7 +340,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Gets the default pose `X_FM` for `this` joint.
   /// @returns The default pose `X_FM` of `this` joint.
   math::RigidTransform<double> get_default_pose() const {
-    return math::RigidTransform(get_default_quaternion(),
+    return math::RigidTransform(math::RollPitchYaw(get_default_angles()),
                                 get_default_position());
   }
 
@@ -340,14 +352,13 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// Sets the default quaternion `q_FM` of this joint.
   /// @param[in] q_FM
   ///   The desired default quaternion of the joint.
-  void set_default_quaternion(const Quaternion<double>& q_FM) {
+  void set_default_angles(const Vector3<double>& rpy) {
     VectorX<double> default_positions = this->default_positions();
     // @note we store the quaternion components consistently with
-    // `QuaternionFloatingMobilizer<T>::get_quaternion()`
-    default_positions[0] = q_FM.w();
-    default_positions[1] = q_FM.x();
-    default_positions[2] = q_FM.y();
-    default_positions[3] = q_FM.z();
+    // `SpaceXYZFloatingMobilizer<T>::get_quaternion()`
+    default_positions[0] = rpy[0];
+    default_positions[1] = rpy[1];
+    default_positions[2] = rpy[2];
     this->set_default_positions(default_positions);
   }
 
@@ -364,14 +375,9 @@ class QuaternionFloatingJoint final : public Joint<T> {
   /// @param[in] X_FM
   ///   The desired default pose of the joint.
   void SetDefaultPose(const math::RigidTransform<double>& X_FM) override {
-    Vector<double, 7> default_positions;
-    const Quaternion<double> q_FM = X_FM.rotation().ToQuaternion();
-    default_positions[0] = q_FM.w();
-    default_positions[1] = q_FM.x();
-    default_positions[2] = q_FM.y();
-    default_positions[3] = q_FM.z();
-    default_positions.template tail<3>() = X_FM.translation();
-    this->set_default_positions(default_positions);
+    Vector<double, 6> default_positions;
+    set_default_position(X_FM.translation());
+    set_default_angles(X_FM.rotation().ToRollPitchYaw().vector());
   }
 
   /// @}
@@ -405,7 +411,7 @@ class QuaternionFloatingJoint final : public Joint<T> {
     return get_mobilizer().position_start_in_q();
   }
 
-  int do_get_num_positions() const override { return 7; }
+  int do_get_num_positions() const override { return 6; }
 
   std::string do_get_position_suffix(int index) const override {
     return get_mobilizer().position_suffix(index);
@@ -435,29 +441,29 @@ class QuaternionFloatingJoint final : public Joint<T> {
   std::unique_ptr<Joint<symbolic::Expression>> DoCloneToScalar(
       const internal::MultibodyTree<symbolic::Expression>&) const override;
 
-  // Make QuaternionFloatingJoint templated on every other scalar type a friend
-  // of QuaternionFloatingJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can
-  // access private members of QuaternionFloatingJoint<T>.
+  // Make SpaceXYZFloatingJoint templated on every other scalar type a friend
+  // of SpaceXYZFloatingJoint<T> so that CloneToScalar<ToAnyOtherScalar>() can
+  // access private members of SpaceXYZFloatingJoint<T>.
   template <typename>
-  friend class QuaternionFloatingJoint;
+  friend class SpaceXYZFloatingJoint;
 
   // Returns the mobilizer implementing this joint.
   // The internal implementation of this joint could change in a future version.
   // However its public API should remain intact.
-  const internal::QuaternionFloatingMobilizer<T>& get_mobilizer() const {
+  const internal::SpaceXYZFloatingMobilizer<T>& get_mobilizer() const {
     // This implementation should only have one mobilizer.
     DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
-    const internal::QuaternionFloatingMobilizer<T>* mobilizer =
-        dynamic_cast<const internal::QuaternionFloatingMobilizer<T>*>(
+    const internal::SpaceXYZFloatingMobilizer<T>* mobilizer =
+        dynamic_cast<const internal::SpaceXYZFloatingMobilizer<T>*>(
             this->get_implementation().mobilizers_[0]);
     DRAKE_DEMAND(mobilizer != nullptr);
     return *mobilizer;
   }
 
-  internal::QuaternionFloatingMobilizer<T>* get_mutable_mobilizer() {
+  internal::SpaceXYZFloatingMobilizer<T>* get_mutable_mobilizer() {
     // This implementation should only have one mobilizer.
     DRAKE_DEMAND(this->get_implementation().num_mobilizers() == 1);
-    auto* mobilizer = dynamic_cast<internal::QuaternionFloatingMobilizer<T>*>(
+    auto* mobilizer = dynamic_cast<internal::SpaceXYZFloatingMobilizer<T>*>(
         this->get_implementation().mobilizers_[0]);
     DRAKE_DEMAND(mobilizer != nullptr);
     return mobilizer;
@@ -470,10 +476,10 @@ class QuaternionFloatingJoint final : public Joint<T> {
 };
 
 template <typename T>
-const char QuaternionFloatingJoint<T>::kTypeName[] = "quaternion_floating";
+const char SpaceXYZFloatingJoint<T>::kTypeName[] = "space_xyz_floating";
 
 }  // namespace multibody
 }  // namespace drake
 
 DRAKE_DECLARE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    class ::drake::multibody::QuaternionFloatingJoint)
+    class ::drake::multibody::SpaceXYZFloatingJoint)

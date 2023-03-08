@@ -459,6 +459,18 @@ class Joint : public MultibodyElement<T> {
     default_positions_ = default_positions;
     do_set_default_positions(default_positions);
   }
+
+  /// Sets the default pose `X_FM` of this joint. Only for free floating joints.
+  /// @param[in] X_FM
+  ///   The desired default pose of the joint.
+  /// The default implementation throws with an appropriate message if a
+  /// floating joint did not implement this function.
+  virtual void SetDefaultPose(const math::RigidTransform<double>& X_FM) {
+    unused(X_FM);
+    throw std::logic_error(
+        "This method must be implemented by floating joints.");
+  }
+
   /// @}
 
   /// Returns all damping coefficients for joints that model viscous damping, of
