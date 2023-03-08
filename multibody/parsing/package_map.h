@@ -1,6 +1,6 @@
 #pragma once
 
-#include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -16,11 +16,20 @@ used by the SDF and URDF parsers when parsing files that reference ROS packages
 for resources like mesh files. */
 class PackageMap final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PackageMap)
-
   /** A constructor that initializes a default map containing only the top-level
   `drake` manifest. See PackageMap::MakeEmpty() to create an empty map. */
   PackageMap();
+
+  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  MoveAssignable */
+  //@{
+  PackageMap(const PackageMap&);
+  PackageMap& operator=(const PackageMap&);
+  PackageMap(PackageMap&&);
+  PackageMap& operator=(PackageMap&&);
+  //@}
+
+  ~PackageMap();
 
   /** A factory method that initializes an empty map. */
   static class PackageMap MakeEmpty();
@@ -132,14 +141,6 @@ class PackageMap final {
                                   const PackageMap& package_map);
 
  private:
-  /* Information about a package. */
-  struct PackageData {
-    /* Directory in which the manifest resides. */
-    std::string path;
-    /* Optional message declaring deprecation of the package. */
-    std::optional<std::string> deprecated_message;
-  };
-
   /* A constructor that creates an empty map . */
   explicit PackageMap(std::nullopt_t);
 
@@ -159,9 +160,9 @@ class PackageMap final {
   bool AddPackageIfNew(const std::string& package_name,
                        const std::string& path);
 
-  /* The key is the name of a ROS package and the value is a struct containing
-  information about that package. */
-  std::map<std::string, PackageData> map_;
+  /* Our member data is forward declared to hide implementation details. */
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace multibody

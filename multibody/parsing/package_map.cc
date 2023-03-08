@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <initializer_list>
+#include <map>
 #include <optional>
 #include <regex>
 #include <sstream>
@@ -29,8 +30,37 @@ namespace fs = std::filesystem;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
-PackageMap::PackageMap(std::nullopt_t) {
-  // Any common initialization code for all constructors could go here.
+namespace {
+struct PackageData {
+  /* Directory in which the manifest resides. */
+  std::string path;
+
+  /* Optional message declaring deprecation of the package. */
+  std::optional<std::string> deprecated_message;
+};
+}  // namespace
+
+struct PackageMap::Impl {
+  /* The key is the name of a ROS package and the value is a struct containing
+  information about that package. */
+  std::map<std::string, PackageData> map;
+};
+
+PackageMap::PackageMap(std::nullopt_t) : impl_{std::make_unique<Impl>()} {}
+
+PackageMap::PackageMap(const PackageMap& other)
+    : impl_{std::make_unique<Impl>(*other.impl_)} {}
+
+PackageMap::PackageMap(PackageMap&& other)
+    : impl_{std::exchange(other.impl_, std::make_unique<Impl>())} {}
+
+PackageMap& PackageMap::operator=(const PackageMap& other) {
+  return *this = PackageMap(other);
+}
+
+PackageMap& PackageMap::operator=(PackageMap&& other) {
+  impl_ = std::exchange(other.impl_, std::make_unique<Impl>());
+  return *this;
 }
 
 PackageMap::PackageMap() : PackageMap{std::nullopt} {
@@ -63,6 +93,8 @@ PackageMap::PackageMap() : PackageMap{std::nullopt} {
   }
 }
 
+PackageMap::~PackageMap() = default;
+
 PackageMap PackageMap::MakeEmpty() {
   return PackageMap(std::nullopt);
 }
@@ -73,23 +105,23 @@ void PackageMap::Add(const std::string& package_name,
     throw std::runtime_error(fmt::format(
         "PackageMap already contains package \"{}\" with path \"{}\" that "
         "conflicts with provided path \"{}\"",
-        package_name, map_.at(package_name).path, package_path));
+        package_name, impl_->map.at(package_name).path, package_path));
   }
 }
 
 void PackageMap::AddMap(const PackageMap& other_map) {
-  for (const auto& [package_name, data] : other_map.map_) {
+  for (const auto& [package_name, data] : other_map.impl_->map) {
     Add(package_name, data.path);
     SetDeprecated(package_name, data.deprecated_message);
   }
 }
 
 bool PackageMap::Contains(const std::string& package_name) const {
-  return map_.find(package_name) != map_.end();
+  return impl_->map.find(package_name) != impl_->map.end();
 }
 
 void PackageMap::Remove(const std::string& package_name) {
-  if (map_.erase(package_name) == 0) {
+  if (impl_->map.erase(package_name) == 0) {
     throw std::runtime_error(fmt::format(
         "Could not find and remove package://{} from the search path.",
         package_name));
@@ -99,23 +131,24 @@ void PackageMap::Remove(const std::string& package_name) {
 void PackageMap::SetDeprecated(const std::string& package_name,
                                std::optional<std::string> deprecated_message) {
   DRAKE_DEMAND(Contains(package_name));
-  map_.at(package_name).deprecated_message = std::move(deprecated_message);
+  impl_->map.at(package_name).deprecated_message =
+      std::move(deprecated_message);
 }
 
 int PackageMap::size() const {
-  return map_.size();
+  return impl_->map.size();
 }
 
 std::optional<std::string> PackageMap::GetDeprecated(
     const std::string& package_name) const {
   DRAKE_DEMAND(Contains(package_name));
-  return map_.at(package_name).deprecated_message;
+  return impl_->map.at(package_name).deprecated_message;
 }
 
 std::vector<std::string> PackageMap::GetPackageNames() const {
   std::vector<std::string> package_names;
-  package_names.reserve(map_.size());
-  for (const auto& [package_name, data] : map_) {
+  package_names.reserve(impl_->map.size());
+  for (const auto& [package_name, data] : impl_->map) {
     unused(data);
     package_names.push_back(package_name);
   }
@@ -126,7 +159,7 @@ const std::string& PackageMap::GetPath(
     const std::string& package_name,
     std::optional<std::string>* deprecated_message) const {
   DRAKE_DEMAND(Contains(package_name));
-  const auto& package_data = map_.at(package_name);
+  const auto& package_data = impl_->map.at(package_name);
 
   // Check if we need to produce a deprecation warning.
   std::optional<std::string> warning;
@@ -280,10 +313,10 @@ bool PackageMap::AddPackageIfNew(const std::string& package_name,
           "does not exist",
           package_name, path));
     }
-    map_.insert(make_pair(package_name, PackageData{path}));
+    impl_->map.insert(make_pair(package_name, PackageData{path}));
   } else {
     // Don't warn if we've found the same path with a different spelling.
-    const PackageData existing_data = map_.at(package_name);
+    const PackageData existing_data = impl_->map.at(package_name);
     if (!fs::equivalent(existing_data.path, path)) {
       drake::log()->warn(
           "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
@@ -349,7 +382,7 @@ std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
   if (package_map.size() == 0) {
     out << "  [EMPTY!]\n";
   }
-  for (const auto& [package_name, data] : package_map.map_) {
+  for (const auto& [package_name, data] : package_map.impl_->map) {
     out << "  - " << package_name << ": " << data.path << "\n";
   }
   return out;

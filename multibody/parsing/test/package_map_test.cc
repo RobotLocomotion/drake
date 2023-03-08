@@ -83,6 +83,44 @@ void VerifyMatchWithTestDataRoot(const PackageMap& package_map) {
   VerifyMatch(package_map, expected_packages);
 }
 
+// We need to indirect self-move-assign through this function; doing it directly
+// in the test code generates a compiler warning.
+template <typename T>
+void MoveAssign(T* target, T* donor) {
+  *target = std::move(*donor);
+}
+
+// Tests the lifecycle operations.
+GTEST_TEST(PackageMapTest, Lifecycle) {
+  const PackageMap original;
+  const int default_size = original.size();
+
+  PackageMap copied(original);
+  EXPECT_EQ(copied.size(), default_size);
+  EXPECT_EQ(original.size(), default_size);
+
+  PackageMap donor;
+  EXPECT_EQ(donor.size(), default_size);
+  PackageMap moved(std::move(donor));
+  EXPECT_EQ(donor.size(), 0);
+  EXPECT_EQ(moved.size(), default_size);
+
+  auto copy_assigned = PackageMap::MakeEmpty();
+  EXPECT_EQ(copy_assigned.size(), 0);
+  copy_assigned = original;
+  EXPECT_EQ(copy_assigned.size(), default_size);
+  EXPECT_EQ(original.size(), default_size);
+
+  auto move_assigned = PackageMap::MakeEmpty();
+  EXPECT_EQ(move_assigned.size(), 0);
+  move_assigned = std::move(moved);
+  EXPECT_EQ(move_assigned.size(), default_size);
+  EXPECT_EQ(moved.size(), 0);
+
+  MoveAssign(&move_assigned, &move_assigned);
+  EXPECT_EQ(move_assigned.size(), default_size);
+}
+
 // Tests that the PackageMap can be manually populated and unpopulated.
 GTEST_TEST(PackageMapTest, TestManualPopulation) {
   fs::create_directory("package_foo");
