@@ -70,16 +70,56 @@ def sudo(*args, quiet=False):
         subprocess.run(new_args, stderr=subprocess.STDOUT, check=True)
 
 
-class CpuSpeedSettings:
-    """Routines for controlling CPU speed."""
-
+class IntelBoost:
     # This is the Linux kernel configuration file for Intel's "turbo boost".
     # https://www.kernel.org/doc/html/v4.12/admin-guide/pm/intel_pstate.html#no-turbo-attr
     NO_TURBO_CONTROL_FILE = "/sys/devices/system/cpu/intel_pstate/no_turbo"
 
+    def is_supported(self):
+        return os.path.exists(self.NO_TURBO_CONTROL_FILE)
+
+    def get_boost(self):
+        """Return the current boost state; True means boost is enabled."""
+        with open(self.NO_TURBO_CONTROL_FILE, 'r', encoding='utf-8') as fo:
+            return not int(fo.read().strip())  # Intel reverses the sense.
+
+    def set_boost(self, boost_value):
+        """Set the boost state; True means boost is enabled."""
+        no_turbo = int(not boost_value)  # Intel reverses the sense.
+        sudo('sh', '-c', f"echo {no_turbo} > {self.NO_TURBO_CONTROL_FILE}")
+
+
+class LinuxKernelBoost:
+    # This is the Linux kernel configuration file for chip-agnostic boost
+    # control.
+    # https://www.kernel.org/doc/html/v5.19/admin-guide/pm/cpufreq.html#frequency-boost-support
+    CPUFREQ_BOOST_FILE = "/sys/devices/system/cpu/cpufreq/boost"
+
+    def is_supported(self):
+        return os.path.exists(self.CPUFREQ_BOOST_FILE)
+
+    def get_boost(self):
+        """Return the current boost state; True means boost is enabled."""
+        with open(self.CPUFREQ_BOOST_FILE, 'r', encoding='utf-8') as fo:
+            return bool(fo.read().strip())
+
+    def set_boost(self, boost_value):
+        """Set the boost state; True means boost is enabled."""
+        sudo('sh', '-c',
+             f"echo {int(boost_value)} > {self.CPUFREQ_BOOST_FILE}")
+
+
+class CpuSpeedSettings:
+    """Routines for controlling CPU speed."""
+    def __init__(self):
+        self._boost = None
+        for boost in [LinuxKernelBoost, IntelBoost]:
+            if boost().is_supported():
+                self._boost = boost()
+
     def is_supported_cpu(self):
         """Returns True if the current CPU is supported for speed control."""
-        return os.path.exists(self.NO_TURBO_CONTROL_FILE)
+        return self._boost is not None
 
     def get_cpu_governor(self):
         """Return the current CPU governor name string."""
@@ -92,39 +132,43 @@ class CpuSpeedSettings:
         """Set the CPU governor to the given name string."""
         sudo('cpupower', 'frequency-set', '--governor', governor, quiet=True)
 
-    def get_no_turbo(self):
-        """Return the current no-turbo state as string, either '1' or '0'."""
-        with open(self.NO_TURBO_CONTROL_FILE, 'r', encoding='utf-8') as fo:
-            return fo.read().strip()
+    def get_boost(self):
+        """Return the current boost state; True means boost is enabled."""
+        return self._boost.get_boost()
 
-    def set_no_turbo(self, no_turbo):
-        """Set the no-turbo state to the given no_turbo string."""
-        sudo('sh', '-c', f"echo {no_turbo} > {self.NO_TURBO_CONTROL_FILE}")
+    def set_boost(self, boost_value):
+        """Set the boost state; True means boost is enabled."""
+        return self._boost.set_boost(boost_value)
 
     @contextlib.contextmanager
-    def scope(self, governor, no_turbo):
-        """Context manager that sets governor and no_turbo states and
+    def scope(self, governor, boost):
+        """Context manager that sets governor and boost states and
         restores the old state afterward.
         """
         say("Control CPU speed variation. [Note: sudo!]")
         old_gov = self.get_cpu_governor()
-        old_nt = self.get_no_turbo()
+        old_boost = self.get_boost()
         try:
             self.set_cpu_governor(governor)
-            self.set_no_turbo(no_turbo)
+            self.set_boost(boost)
             yield
         finally:
             say("Restore CPU speed settings. [Note: sudo!]")
-            self.set_no_turbo(old_nt)
+            self.set_boost(old_boost)
             self.set_cpu_governor(old_gov)
 
 
 def do_benchmark(args):
     if not CpuSpeedSettings().is_supported_cpu():
-        raise RuntimeError("""
-The intel_pstate Linux kernel driver is not running. Without it, there is no
-way to prevent Turbo Boost cpu frequency scaling, and experiment results will
-be invalid.
+        raise RuntimeError(f"""
+No method of controlling cpu frequency scaling was detected. Without it, there
+is no way to prevent arbitrary cpu frequency scaling, and experiment results
+will be invalid. Supported methods are:
+
+ * (newer) Linux kernels, controlled through
+   {LinuxKernelBoost().CPUFREQ_BOOST_FILE}.
+ * intel_pstate driver, controlled through
+   {IntelBoost().NO_TURBO_CONTROL_FILE}.
 """)
 
     command_prologue = []
@@ -149,7 +193,7 @@ be invalid.
     ]
     command = command_prologue + [args.binary] + default_args + args.extra_args
     with open(f'{args.output_dir}/summary.txt', 'wb') as summary:
-        with CpuSpeedSettings().scope(governor="performance", no_turbo="1"):
+        with CpuSpeedSettings().scope(governor="performance", boost=False):
             say("Run the experiment.")
             print('Running: ', shlex.join(command))
             popen = subprocess.Popen(command, stdout=subprocess.PIPE)
