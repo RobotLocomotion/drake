@@ -83,7 +83,10 @@ class PointCloud::Storage {
     normals_.conservativeResize(NoChange,
                                 f.contains(pc_flags::kNormals) ? size_ : 0);
     rgbs_.conservativeResize(NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
-    descriptors_.conservativeResize(NoChange, f.has_descriptor() ? size_ : 0);
+    // Note: The row number can change depends on whether 'f' contains a
+    // descriptor field and the type of the descriptor.
+    descriptors_.conservativeResize(f.descriptor_type().size(),
+                                    f.has_descriptor() ? size_ : 0);
     fields_ = f;
     CheckInvariants();
   }
@@ -132,25 +135,6 @@ pc_flags::Fields ResolveFields(
   }
 }
 
-// Resolves the fields from a pair of point clouds and desired fields.
-// Implements the resolution rules in `SetFrom`.
-// @pre Valid point clouds `a` and `b`.
-// @returns Fields that both point clouds have.
-pc_flags::Fields ResolvePairFields(
-    const PointCloud& a,
-    const PointCloud& b,
-    pc_flags::Fields fields) {
-  if (fields == pc_flags::kInherit) {
-    // If we do not permit a subset, expect the exact same fields.
-    a.RequireExactFields(b.fields());
-    return a.fields();
-  } else {
-    a.RequireFields(fields);
-    b.RequireFields(fields);
-    return fields;
-  }
-}
-
 }  // namespace
 
 PointCloud::PointCloud(
@@ -172,7 +156,7 @@ PointCloud::PointCloud(const PointCloud& other,
 }
 
 PointCloud::PointCloud(PointCloud&& other)
-    : PointCloud(0, other.fields(), true) {
+    : PointCloud(0, other.storage_->fields(), true) {
   // This has zero size. Directly swap storages.
   storage_.swap(other.storage_);
 }
@@ -183,8 +167,6 @@ PointCloud& PointCloud::operator=(const PointCloud& other) {
 }
 
 PointCloud& PointCloud::operator=(PointCloud&& other) {
-  // We may only take rvalue references if the fields match exactly.
-  RequireExactFields(other.fields());
   // Swap storages.
   storage_.swap(other.storage_);
   // Empty out the other cloud, but let it remain being a valid point cloud
@@ -215,6 +197,10 @@ void PointCloud::resize(int new_size, bool skip_initialization) {
   }
 }
 
+void PointCloud::SetFields(pc_flags::Fields new_fields) {
+  storage_->UpdateFields(new_fields);
+}
+
 void PointCloud::SetDefault(int start, int num) {
   auto set = [=](auto ref, auto value) {
     ref.middleCols(start, num).setConstant(value);
@@ -236,16 +222,31 @@ void PointCloud::SetDefault(int start, int num) {
 void PointCloud::SetFrom(const PointCloud& other,
                          pc_flags::Fields fields_in,
                          bool allow_resize) {
+  // Update or check the fields of the point cloud(s) if necessary.
+  if (fields_in == pc_flags::kInherit) {
+    if (storage_->fields() != other.storage_->fields()) {
+      SetFields(other.storage_->fields());
+    }
+  } else {
+    this->RequireFields(fields_in);
+    other.RequireFields(fields_in);
+  }
+
+  // Update `size_` of this point cloud if necessary.
   int old_size = size();
   int new_size = other.size();
-  if (allow_resize) {
-    resize(new_size);
-  } else if (new_size != old_size) {
-    throw std::runtime_error(
-        fmt::format("SetFrom: {} != {}", new_size, old_size));
+  if (old_size != new_size) {
+    if (allow_resize) {
+      resize(new_size);
+    } else {
+      throw std::runtime_error(
+          fmt::format("SetFrom: {} != {}", new_size, old_size));
+    }
   }
+
+  // Populate data from `other` to this point cloud.
   pc_flags::Fields fields_resolved =
-      ResolvePairFields(*this, other, fields_in);
+      (fields_in == pc_flags::kInherit) ? other.storage_->fields() : fields_in;
   if (fields_resolved.contains(pc_flags::kXYZs)) {
     mutable_xyzs() = other.xyzs();
   }

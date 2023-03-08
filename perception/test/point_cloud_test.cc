@@ -11,7 +11,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 
 using Eigen::Matrix3Xf;
-using Eigen::Matrix4Xf;
+using Eigen::RowVectorXf;
 using Eigen::Vector3f;
 
 using ::testing::AssertionResult;
@@ -55,6 +55,22 @@ struct check_helper<uint8_t> {
   }
 };
 
+void CompareClouds(const PointCloud& cloud_1, const PointCloud& cloud_2,
+                   pc_flags::Fields fields) {
+  if (fields.contains(pc_flags::kXYZs)) {
+    EXPECT_TRUE(CompareMatrices(cloud_1.xyzs(), cloud_2.xyzs()));
+  }
+  if (fields.contains(pc_flags::kRGBs)) {
+    EXPECT_TRUE((cloud_1.rgbs().array() == cloud_2.rgbs().array()).all());
+  }
+  if (fields.contains(pc_flags::kNormals)) {
+    EXPECT_TRUE(CompareMatrices(cloud_1.normals(), cloud_2.normals()));
+  }
+  if (fields.has_descriptor()) {
+    EXPECT_TRUE(CompareMatrices(cloud_1.descriptors(), cloud_2.descriptors()));
+  }
+}
+
 GTEST_TEST(PointCloudTest, TestExpectedNumThreads) {
 #if defined(_OPENMP)
   constexpr bool has_openmp = true;
@@ -75,6 +91,49 @@ GTEST_TEST(PointCloudTest, TestExpectedNumThreads) {
 
 GTEST_TEST(PointCloudTest, Basic) {
   const int count = 5;
+
+  // Declare default values for each field to facilitate testing.
+  Matrix3Xf xyzs_expected(3, count);
+  xyzs_expected.transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 300,
+    4, 5, 6,
+    40, 50, 60;
+  Matrix3Xf normals_expected(3, count);
+  normals_expected.transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 300,
+    4, 5, 6,
+    40, 50, 60;
+  Matrix3X<uint8_t> rgbs_expected(3, count);
+  rgbs_expected.transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 255,
+    4, 5, 6,
+    40, 50, 60;
+  RowVectorXf descriptors_expected(count);
+  descriptors_expected << 1, 2, 3, 4, 5;
+
+  // Create a point cloud with default values.
+  auto CreatePointCloud = [&](pc_flags::Fields fields) {
+    PointCloud cloud(count, fields);
+    if (fields.contains(pc_flags::kXYZs)) {
+      cloud.mutable_xyzs() = xyzs_expected;
+    }
+    if (fields.contains(pc_flags::kNormals)) {
+      cloud.mutable_rgbs() = rgbs_expected;
+    }
+    if (fields.contains(pc_flags::kRGBs)) {
+      cloud.mutable_normals() = normals_expected;
+    }
+    if (fields.has_descriptor()) {
+      cloud.mutable_descriptors() = descriptors_expected;
+    }
+    return cloud;
+  };
 
   auto CheckFields = [count](auto values_expected, pc_flags::Fields fields,
                              auto get_mutable_values, auto get_values,
@@ -164,14 +223,7 @@ GTEST_TEST(PointCloudTest, Basic) {
             get_values(cloud).middleCols(small_size, large_size - small_size)));
   };
 
-  // Points.
-  Matrix3Xf xyzs_expected(3, count);
-  xyzs_expected.transpose() <<
-    1, 2, 3,
-    10, 20, 30,
-    100, 200, 300,
-    4, 5, 6,
-    40, 50, 60;
+  // XYZs.
   CheckFields(xyzs_expected, pc_flags::kXYZs,
               [](PointCloud& cloud) { return cloud.mutable_xyzs(); },
               [](PointCloud& cloud) { return cloud.xyzs(); },
@@ -179,13 +231,6 @@ GTEST_TEST(PointCloudTest, Basic) {
               [](PointCloud& cloud, int i) { return cloud.xyz(i); });
 
   // Normals.
-  Matrix3Xf normals_expected(3, count);
-  normals_expected.transpose() <<
-    1, 2, 3,
-    10, 20, 30,
-    100, 200, 300,
-    4, 5, 6,
-    40, 50, 60;
   CheckFields(normals_expected, pc_flags::kNormals,
               [](PointCloud& cloud) { return cloud.mutable_normals(); },
               [](PointCloud& cloud) { return cloud.normals(); },
@@ -193,13 +238,6 @@ GTEST_TEST(PointCloudTest, Basic) {
               [](PointCloud& cloud, int i) { return cloud.normal(i); });
 
   // RGBs.
-  Matrix3X<uint8_t> rgbs_expected(3, count);
-  rgbs_expected.transpose() <<
-    1, 2, 3,
-    10, 20, 30,
-    100, 200, 255,
-    4, 5, 6,
-    40, 50, 60;
   CheckFields(rgbs_expected, pc_flags::kRGBs,
             [](PointCloud& cloud) { return cloud.mutable_rgbs(); },
             [](PointCloud& cloud) { return cloud.rgbs(); },
@@ -207,9 +245,6 @@ GTEST_TEST(PointCloudTest, Basic) {
             [](PointCloud& cloud, int i) { return cloud.rgb(i); });
 
   // Descriptors (Curvature).
-  Eigen::RowVectorXf descriptors_expected(count);
-  descriptors_expected <<
-    1, 2, 3, 4, 5;
   CheckFields(descriptors_expected, pc_flags::kDescriptorCurvature,
               [](PointCloud& cloud) { return cloud.mutable_descriptors(); },
               [](PointCloud& cloud) { return cloud.descriptors(); },
@@ -218,17 +253,40 @@ GTEST_TEST(PointCloudTest, Basic) {
               },
               [](PointCloud& cloud, int i) { return cloud.descriptor(i); });
 
-  {  // Crop
-    PointCloud cloud(count, pc_flags::kXYZs | pc_flags::kNormals |
-                                pc_flags::kRGBs |
-                                pc_flags::kDescriptorCurvature);
-    cloud.mutable_xyzs() = xyzs_expected;
-    cloud.mutable_rgbs() = rgbs_expected;
-    cloud.mutable_normals() = normals_expected;
-    cloud.mutable_descriptors() = descriptors_expected;
+  // Test operator= between two clouds with different fields.
+  {
+    pc_flags::Fields xyz_rgb_normals =
+        (pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
+    pc_flags::Fields all_fields =
+        (xyz_rgb_normals | pc_flags::kDescriptorCurvature);
 
-    PointCloud cropped =
-        cloud.Crop(Eigen::Vector3f{4, 5, 6}, Eigen::Vector3f{10, 20, 30});
+    const std::vector<std::pair<pc_flags::Fields, pc_flags::Fields>>
+        fields_pairs{{pc_flags::kXYZs, xyz_rgb_normals},
+                     {xyz_rgb_normals, pc_flags::kXYZs},
+                     {pc_flags::kXYZs, all_fields},
+                     {all_fields, pc_flags::kXYZs}};
+
+    for (const auto& [assign_to, assign_from] : fields_pairs) {
+      PointCloud cloud_to = CreatePointCloud(assign_to);
+      PointCloud cloud_from = CreatePointCloud(assign_from);
+
+      cloud_to = cloud_from;
+      CompareClouds(cloud_to, cloud_from, assign_from);
+
+      PointCloud cloud_move_to = CreatePointCloud(assign_to);
+      cloud_move_to = std::move(cloud_from);
+      CompareClouds(cloud_to, cloud_move_to, assign_from);
+      // Ensure the original cloud was emptied out.
+      EXPECT_EQ(0, cloud_from.size());
+    }
+  }
+
+  // Test point cloud cropping.
+  {
+    PointCloud cloud =
+        CreatePointCloud(pc_flags::kXYZs | pc_flags::kNormals |
+                         pc_flags::kRGBs | pc_flags::kDescriptorCurvature);
+    PointCloud cropped = cloud.Crop(Vector3f{4, 5, 6}, Vector3f{10, 20, 30});
     EXPECT_EQ(cropped.size(), 2);
     std::vector<int> indices{1, 3};
 
@@ -298,10 +356,34 @@ GTEST_TEST(PointCloudTest, Fields) {
     EXPECT_FALSE(simple_cloud.has_descriptors(pc_flags::kDescriptorCurvature));
 
     // Negative tests for construction.
-    EXPECT_THROW(PointCloud(1, pc_flags::kNone),
-                     std::runtime_error);
+    EXPECT_THROW(PointCloud(1, pc_flags::kNone), std::runtime_error);
     EXPECT_THROW(PointCloud(1, pc_flags::kDescriptorNone),
                  std::runtime_error);
+  }
+
+  // Check field updates.
+  {
+    PointCloud cloud(1, pc_flags::kXYZs);
+    EXPECT_TRUE(cloud.HasFields(pc_flags::kXYZs));
+    EXPECT_FALSE(cloud.has_normals());
+    EXPECT_FALSE(cloud.HasFields(pc_flags::kNormals));
+    EXPECT_THROW(cloud.RequireFields(pc_flags::kXYZs | pc_flags::kRGBs),
+                 std::runtime_error);
+
+    // Try to expand the fileds.
+    cloud.SetFields(pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
+    EXPECT_TRUE(cloud.HasFields(pc_flags::kXYZs));
+    EXPECT_TRUE(cloud.has_normals());
+    EXPECT_TRUE(cloud.HasFields(pc_flags::kNormals));
+    DRAKE_EXPECT_NO_THROW(cloud.RequireExactFields(
+        pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs));
+
+    // Try to remove some of the fields.
+    cloud.SetFields(pc_flags::kRGBs);
+    EXPECT_TRUE(cloud.HasFields(pc_flags::kRGBs));
+    EXPECT_FALSE(cloud.has_xyzs());
+    EXPECT_FALSE(cloud.HasFields(pc_flags::kXYZs));
+    DRAKE_EXPECT_NO_THROW(cloud.RequireExactFields(pc_flags::kRGBs));
   }
 }
 
@@ -350,7 +432,7 @@ GTEST_TEST(PointCloud, Concatenate) {
     EXPECT_EQ(merged.size(), 6);
 
     if (f.contains(pc_flags::kXYZs)) {
-      Eigen::Matrix3Xf xyzs_expected(3, 6);
+      Matrix3Xf xyzs_expected(3, 6);
       xyzs_expected << clouds[0].xyzs(), clouds[1].xyzs(), clouds[2].xyzs();
       EXPECT_TRUE(CompareMatrices(merged.xyzs(), xyzs_expected));
     }
@@ -362,14 +444,14 @@ GTEST_TEST(PointCloud, Concatenate) {
     }
 
     if (f.contains(pc_flags::kNormals)) {
-      Eigen::Matrix3Xf normals_expected(3, 6);
+      Matrix3Xf normals_expected(3, 6);
       normals_expected << clouds[0].normals(), clouds[1].normals(),
           clouds[2].normals();
       EXPECT_TRUE(CompareMatrices(merged.normals(), normals_expected));
     }
 
     if (f.has_descriptor()) {
-      Eigen::RowVectorXf descriptors_expected(6);
+      RowVectorXf descriptors_expected(6);
       descriptors_expected << clouds[0].descriptors(), clouds[1].descriptors(),
           clouds[2].descriptors();
       EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
@@ -399,7 +481,7 @@ GTEST_TEST(PointCloudTest, FlipNormals) {
   // of positive and negative z values.  The z values are taken to be larger
   // than the x,y values so that the normals are vertical enough that the z
   // component determines if they should flip.
-  Eigen::Matrix3Xf original_normals(3, num_points);
+  Matrix3Xf original_normals(3, num_points);
   // clang-format off
   original_normals.transpose() <<
     0.12, 0.32,  1.0,
@@ -424,7 +506,7 @@ GTEST_TEST(PointCloudTest, FlipNormals) {
 
   // Orient toward positive z.
   cloud.mutable_normals() = original_normals;
-  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, 1});
+  cloud.FlipNormalsTowardPoint(Vector3f{0, 0, 1});
 
   CheckNormal(0, false);
   CheckNormal(1, false);
@@ -436,7 +518,7 @@ GTEST_TEST(PointCloudTest, FlipNormals) {
 
   // Orient toward negative z.
   cloud.mutable_normals() = original_normals;
-  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, -1});
+  cloud.FlipNormalsTowardPoint(Vector3f{0, 0, -1});
 
   CheckNormal(0, true);
   CheckNormal(1, true);
@@ -543,9 +625,8 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
 
 // Checks that normal has unit magnitude and that normal == expected up to a
 // sign flip.
-void CheckNormal(const Eigen::Ref<const Eigen::Vector3f>& normal,
-                 const Eigen::Ref<const Eigen::Vector3f>& expected,
-                 double tolerance) {
+void CheckNormal(const Eigen::Ref<const Vector3f>& normal,
+                 const Eigen::Ref<const Vector3f>& expected, double tolerance) {
   EXPECT_NEAR(normal.norm(), 1.0, tolerance)
       << fmt::format("Normal {} does not have unit length.", fmt_eigen(normal));
   EXPECT_NEAR(std::abs(normal.dot(expected)), 1.0, tolerance)
