@@ -1,11 +1,14 @@
 import argparse
+import dataclasses as dc
 import lxml.etree as ET
 import os
 import sys
-from typing import Any, Dict
+from typing import List
 
-from pydrake.common.yaml import yaml_load_file
+from pydrake.common import schema
+from pydrake.common.yaml import yaml_load_typed
 from pydrake.multibody.parsing import (
+  ModelDirectives,
   PackageMap,
   Parser,
 )
@@ -106,29 +109,27 @@ def _levels_of_nesting(scope: str) -> int:
 
 
 class AddFrame:
-    def __init__(self, params):
-        self.params = params
-        x_pf = params['X_PF']
-        self.name = params['name']
-        self.base_frame = x_pf['base_frame']
+    def __init__(self, directive):
+        x_pf = directive.X_PF
+        self.name = directive.name
+        self.base_frame = x_pf.base_frame
         self.scoped_name = ScopedName(self.name)
         self.scoped_base_frame = ScopedName(self.base_frame)
 
         self.translation_str = '0 0 0'
-        if 'translation' in x_pf:
-            trans = x_pf['translation']
-            self.translation_str = f'{trans[0]} {trans[1]} {trans[2]}'
+        trans = x_pf.translation
+        self.translation_str = f'{trans[0]} {trans[1]} {trans[2]}'
 
         # Supporting !Rpy degree rotations for now.
         # See drake/common/schema/transform.h.
         self.rotation_str = '0 0 0'
 
-        if 'rotation' in x_pf:
-            rot = x_pf['rotation']
-            if rot['_tag'] != '!Rpy':
+        rot = x_pf.rotation.value
+        if not isinstance(rot, schema.Rotation.Identity):
+            if not isinstance(rot, schema.Rotation.Rpy):
                 raise ConversionError(
-                    f"Rotation of type {rot['_tag']} not suported.")
-            deg = rot['deg']
+                    f"Rotation of type {type(rot).__name__} not suported.")
+            deg = rot.deg
             self.rotation_str = f"{deg[0]} {deg[1]} {deg[2]}"
 
     def resolve_names(self, directives):
@@ -221,10 +222,9 @@ class AddFrame:
 # directly parsing each model directive individually, and checking
 # the resultant change against the MbP.
 class AddWeld:
-    def __init__(self, params):
-        self.params = params
-        self.parent_name = params['parent']
-        self.child_name = params['child']
+    def __init__(self, directive):
+        self.parent_name = directive.parent
+        self.child_name = directive.child
 
     def resolve_names(self, directives):
         self.resolved_parent_name = self._resolve(self.parent_name,
@@ -242,9 +242,9 @@ class AddWeld:
         if resolved_name is None:
             raise ConversionError(
                 f'Unable to resolve scope for '
-                f'frame: [{self.params["parent"]}]. When tring to add '
-                f'weld between: [{self.params["parent"]}] and: '
-                f'[{self.params["child"]}].')
+                f'frame: [{self.parent_name}]. When tring to add '
+                f'weld between: [{self.parent_name}] and: '
+                f'[{self.child_name}].')
         return ScopedName(resolved_name)
 
     def insert_into_root_sdformat_node(self, root, directives):
@@ -253,7 +253,7 @@ class AddWeld:
         tmp_child_name = self.resolved_child_name.full_name.replace(
             _SCOPE_DELIMITER, "__")
 
-        joint_name = f'{tmp_parent_name}___to___{tmp_child_name}___weld_joint'
+        joint_name = f'{tmp_parent_name}__to__{tmp_child_name}__weld_joint'
 
         joint_elem = ET.SubElement(root, 'joint', name=joint_name)
         joint_elem.set('type', 'fixed')
@@ -266,10 +266,9 @@ class AddWeld:
 
 
 class AddModel:
-    def __init__(self, params):
-        self.params = params
-        self.name = params['name']
-        self.file_name = params['file']
+    def __init__(self, directive):
+        self.name = directive.name
+        self.file_name = directive.file
 
     def insert_into_root_sdformat_node(self, root, directives):
         merge_include = False
@@ -312,25 +311,22 @@ class AddModel:
 
 
 class AddModelInstance:
-    def __init__(self, params: Dict):
-        self.params = params
-        self.name = params['name']
+    def __init__(self, directive):
+        self.name = directive.name
 
 
 class AddDirectives:
-
-    def __init__(self, params: Dict, expand_included: bool):
-        self.params = params
-        self.model_ns = params.get('model_namespace')
-        self.file_path = params['file']
+    def __init__(self, directive: bool):
+        self.model_ns = directive.model_namespace
+        self.file_path = directive.file
         self.sdformat_uri = self.file_path.replace('.yaml', '.sdf')
         if not self.sdformat_uri:
             raise ConversionError(
                 'Unable to guess guess SDFormat file name '
                 f'for add_directives: {self.params}')
-        self.expand_included = expand_included
 
-    def insert_into_root_sdformat_node(self, root, directives):
+    def insert_into_root_sdformat_node(self, root, directives,
+                                       expand_included):
         if self.model_ns is not None:
             # Check that the model instance has been created by
             # add_model_instance
@@ -348,10 +344,10 @@ class AddDirectives:
         uri_elem = ET.SubElement(include_elem, 'uri')
         uri_elem.text = self.sdformat_uri
 
-        if self.expand_included:
-            self._convert_nested_directive()
+        if expand_included:
+            self._convert_nested_directive(expand_included)
 
-    def _convert_nested_directive(self):
+    def _convert_nested_directive(self, expand_included):
         if self.file_path.startswith("package://"):
             package_map = PackageMap()
             package_map.PopulateFromRosPackagePath()
@@ -361,13 +357,14 @@ class AddDirectives:
                 resolved_file_path = os.path.join(package_map.GetPath(package),
                                                   relative_path)
             else:
-                raise ConversionError(f'Failed to find package [{package}] '
-                                      'in the provided path:')
+                raise ConversionError(f'Failed to find package [{package}] ')
         else:
-            resolved_file_path = self.file_path
+            raise ConversionError('File path is not a valid package path in '
+                                  'the form: [package://path_to_file/'
+                                  'file.yaml]')
 
         result_tree = convert_directive(resolved_file_path,
-                                        self.expand_included)
+                                        expand_included)
         if result_tree is None:
             raise ConversionError(
                 'Failed converting the file included through '
@@ -380,36 +377,31 @@ class AddDirectives:
                           encoding="unicode")
 
 
-def _create_directive_from_yaml(directive: Dict, expand_included: bool):
-    cmd, params = list(directive.items())[0]
-    if 'add_model_instance' == cmd:
-        return AddModelInstance(params)
-    elif 'add_weld' == cmd:
-        return AddWeld(params)
-    elif 'add_frame' == cmd:
-        return AddFrame(params)
-    elif 'add_model' == cmd:
-        return AddModel(params)
-    elif 'add_directives' == cmd:
-        return AddDirectives(params, expand_included)
+def _create_object_from_directive(directive, expand_included: bool):
+    if directive.add_model_instance:
+        return AddModelInstance(directive.add_model_instance)
+    elif directive.add_weld:
+        return AddWeld(directive.add_weld)
+    elif directive.add_frame:
+        return AddFrame(directive.add_frame)
+    elif directive.add_model:
+        return AddModel(directive.add_model)
+    elif directive.add_directives:
+        return AddDirectives(directive.add_directives)
     else:
-        raise ConversionError(f'Unknown directive {cmd}')
+        raise ConversionError(f'Unknown directive')
 
 
 def convert_directive(input_path: str,
                       expand_included: bool = False,
-                      check_sdf: bool = False,
-                      toplevel_entity: str = 'model') -> str:
+                      check_sdf: bool = False) -> str:
     # Read the directives file
-    yaml_dict = yaml_load_file(input_path)
-
-    if list(yaml_dict.keys())[0] != 'directives':
-        raise ConversionError('[directives] must be the first keyword in '
-                              'the yaml file, exiting.')
+    directives_data = yaml_load_typed(schema=ModelDirectives,
+                                      filename=input_path)
 
     all_directives = [
-        _create_directive_from_yaml(directive, expand_included)
-        for directive in yaml_dict['directives']
+        _create_object_from_directive(directive, expand_included)
+        for directive in directives_data.directives
     ]
 
     for dir_obj in _filter_directives(all_directives, (AddFrame, AddWeld)):
@@ -417,20 +409,19 @@ def convert_directive(input_path: str,
 
     # Initialize the sdformat XML root
     root = ET.Element('sdf', version=_SDF_VERSION)
-    root_world_name = os.path.splitext(os.path.basename(input_path))[0]
+    root_name = os.path.splitext(os.path.basename(input_path))[0]
 
-    # We only check the main file top level entity for now a world with a
-    # merge include will be generated at the final generation step if needed.
-    if (toplevel_entity == 'world'):
-        root_world_elem = ET.SubElement(root, 'world', name=root_world_name)
-    else:
-        root_world_elem = ET.SubElement(root, 'model', name=root_world_name)
+    root_elem = ET.SubElement(root, 'model', name=root_name)
 
     # Note, we need to process the directives in the correct order
     for cls in [AddDirectives, AddModel, AddFrame, AddWeld]:
         for dir_obj in _filter_directives(all_directives, cls):
-            dir_obj.insert_into_root_sdformat_node(
-                    root_world_elem, all_directives)
+            if cls == AddDirectives:
+                dir_obj.insert_into_root_sdformat_node(
+                        root_elem, all_directives, expand_included)
+            else:
+                dir_obj.insert_into_root_sdformat_node(
+                        root_elem, all_directives)
 
     # Check model validity by loading it through the SDFormat parser
     if check_sdf:
@@ -447,17 +438,31 @@ def convert_directive(input_path: str,
 
 
 def generate_output(result_tree: ET.ElementTree,
-                    output_path: str = '',
-                    toplevel_entity: str = 'model'):
+                    output_path: str = ''):
 
     if output_path:
-        if toplevel_entity == 'world':
-            if not output_path.endswith('.world'):
-                output_path = output_path + '.world'
-        else:
-            if not output_path.endswith('.sdf'):
-                output_path = output_path + '.sdf'
+        if not output_path.endswith('.sdf'):
+            output_path = output_path + '.sdf'
 
+        # Saving a world with a merge include to the model
+        # TODO(marcoag): Add a validty check that ensures the model
+        # is world-mergeable.
+        world_output_path = output_path.removesuffix('.sdf')
+        world_output_path += '_world.sdf'
+        world_root = ET.Element('sdf', version=_SDF_VERSION)
+        root_world_name = result_tree.find('model').get('name')
+        root_world_elem = ET.SubElement(world_root, 'world',
+                                        name=root_world_name)
+        root_world_elem.append(ET.Comment('Provides a direct inclusion of a'
+                                          'given model, with no nesting'))
+        include_elem = ET.SubElement(root_world_elem, 'include', merge='true')
+        uri_elem = ET.SubElement(include_elem, 'uri')
+        uri_elem.text = 'package://' + output_path
+        world_tree = ET.ElementTree(world_root)
+        world_tree.write(world_output_path,
+                         pretty_print=True)
+
+        # Saving the converted model
         result_tree.write(output_path,
                           pretty_print=True)
     else:
@@ -481,21 +486,16 @@ def main(argv=None) -> None:
         '-o', '--output', type=str,
         help='Output path including filename without extension for converted'
         ' SDFormat file.')
-    parser.add_argument(
-        '-t', '--toplevel_entity', default='model',
-        choices=['model', 'world'], help='Generates a top level entity that'
-        ' is either a world (.world) or a model (.sdf) '
-        '(default: %(default)s).')
     args = parser.parse_args(argv)
 
     result_tree = convert_directive(
         args.model_directives, args.expand_included,
-        args.check_sdf, args.toplevel_entity)
+        args.check_sdf)
 
     if result_tree is None:
         raise ConversionError('Failed to convert model directives.')
 
-    generate_output(result_tree, args.output, args.toplevel_entity)
+    generate_output(result_tree, args.output)
 
     return 0
 

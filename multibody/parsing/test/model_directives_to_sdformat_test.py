@@ -160,7 +160,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                for file_path in files_to_test])
     def test_through_plant_comparison(self, *, file_path):
         # Convert
-        sdformat_tree = convert_directive(file_path, toplevel_entity='world')
+        sdformat_tree = convert_directive(file_path)
         sfdormat_result = ET.tostring(
             sdformat_tree, pretty_print=True, encoding="unicode")
 
@@ -184,13 +184,18 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         sdformat_plant.Finalize()
 
         # Compare plants
-        self.assertEqual(sdformat_plant.num_model_instances(),
+        # The conversion process will create an extra top level
+        # model instance. This can be avoided using the generated
+        # world model with merge include.
+        self.assertEqual(sdformat_plant.num_model_instances() - 1,
                          directives_plant.num_model_instances())
 
         file_name = os.path.splitext(os.path.basename(file_path))[0]
 
         for i in range(2, directives_plant.num_model_instances()):
-            model_scoped_name = directives_plant.GetModelInstanceName(
+            model_scoped_name = file_name \
+                + _SCOPE_DELIMITER \
+                + directives_plant.GetModelInstanceName(
                     ModelInstanceIndex(i))
 
             sdformat_model_instances = get_model_instances_names(
@@ -215,7 +220,8 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             sdformat_context = sdformat_plant.CreateDefaultContext()
 
             for sdformat_body, directives_body in zip(sdformat_bodies,
-                                                      directives_bodies):
+                                                      directives_bodies,
+                                                      strict=True):
                 self.assertTrue(assert_bodies_same(
                     directives_plant, directives_context, directives_body,
                     sdformat_plant, sdformat_context, sdformat_body))
@@ -227,16 +233,16 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
     def test_error_no_directives(self):
         with self.assertRaisesRegex(
-                ConversionError, r'\[directives\] must be the first keyword'
-                ' in the yaml file, exiting.'):
+                RuntimeError, r'The fields \[\'something_not_directives'
+                r'\'\] were unknown to the schema'):
             convert_directive('multibody/parsing/test/'
                               'model_directives_to_sdformat_files/'
                               'something_not_directives.yaml')
 
-    def test_error_directives_not_frist(self):
+    def test_error_directives_not_first(self):
         with self.assertRaisesRegex(
-                ConversionError, r'\[directives\] must be the first keyword'
-                ' in the yaml file, exiting.'):
+                RuntimeError, r'The fields \[\'something_not_directives_'
+                r'first\'\] were unknown to the schema'):
             convert_directive('multibody/parsing/test/'
                               'model_directives_to_sdformat_files/'
                               'not_directives_first.yaml')
