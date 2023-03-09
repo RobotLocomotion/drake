@@ -62,15 +62,37 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::Clone() const {
   return clone;
 }
 
+// TODO(sap_joint_locking): Implement this function.
 template <typename T>
-void ReduceToSelectedDofs(SapContactProblem<T>* problem,
-                          std::vector<int> indices,
-                          std::vector<std::vector<int>> indices_per_tree) const {
-  DRAKE_DEMAND(problem != null);
+void SapContactProblem<T>::ReduceToSelectedDofs(
+    SapContactProblem<T>* problem, std::vector<int> indices,
+    std::vector<std::vector<int>> indices_per_tree) const {
+  DRAKE_DEMAND(problem != nullptr);
   DRAKE_DEMAND(problem->time_step_ == this->time_step_);
 
-  VectorX<T> v_star_reduced = SelectRows(v_star_, indices);
+  VectorX<T> v_star_reduced =
+      drake::multibody::internal::SelectRows(v_star_, indices);
 
+  std::vector<MatrixX<T>> A_reduced(A_.size());
+  for (int i = 0; i < static_cast<int>(indices_per_tree.size()); ++i) {
+    A_reduced[i] =
+        drake::multibody::internal::SelectRowsCols(A_[i], indices_per_tree[i]);
+  }
+
+  problem->Reset(A_reduced, v_star_reduced);
+
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = get_constraint(i);
+    std::unique_ptr<SapConstraint<T>> c_clone = c.Clone();
+    c_clone->reset_first_clique_jacobian(drake::multibody::internal::SelectCols(
+        c.first_clique_jacobian(), indices_per_tree[c.first_clique()]));
+    if (c.num_cliques() > 1) {
+      c_clone->reset_second_clique_jacobian(
+          drake::multibody::internal::SelectCols(
+              c.second_clique_jacobian(), indices_per_tree[c.second_clique()]));
+    }
+    problem->AddConstraint(std::move(c_clone));
+  }
 }
 
 template <typename T>

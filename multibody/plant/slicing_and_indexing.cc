@@ -99,8 +99,35 @@ VectorX<T> ExpandRows(const VectorX<T>& v, int rows_out,
   return result;
 }
 
+template <typename T>
+VectorX<T> ExpandRows(const Eigen::VectorBlock<const VectorX<T>>& v, int rows_out,
+                      const std::vector<int>& indices) {
+  DRAKE_ASSERT(static_cast<int>(indices.size()) == v.rows());
+  DRAKE_ASSERT(rows_out >= v.rows());
+  DRAKE_ASSERT_VOID(DemandIndicesValid(indices, rows_out));
+  if (rows_out == v.rows()) {
+    return v;
+  }
+  VectorX<T> result(rows_out);
+
+  int index_cursor = 0;
+  for (int i = 0; i < result.rows(); ++i) {
+    if (index_cursor >= v.rows() || i < indices[index_cursor]) {
+      result(i) = 0.;
+    } else {
+      result(indices[index_cursor]) = v(index_cursor);
+      ++index_cursor;
+    }
+  }
+  return result;
+}
+
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
-    (&SelectRowsCols<T>, &SelectRows<T>, &SelectCols<T>, &ExpandRows<T>))
+    (&SelectRowsCols<T>, &SelectRows<T>, &SelectCols<T>,
+     static_cast<VectorX<T> (*)(const Eigen::VectorBlock<const VectorX<T>>&,
+                                int, const std::vector<int>&)>(&ExpandRows),
+     static_cast<VectorX<T> (*)(const VectorX<T>&, int,
+                                const std::vector<int>&)>(&ExpandRows)))
 
 }  // namespace internal
 }  // namespace multibody

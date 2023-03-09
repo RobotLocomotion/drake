@@ -238,6 +238,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<int>& EvalJointLockingIndices(
       const systems::Context<T>& context) const;
 
+  const std::vector<std::vector<int>>& EvalJointLockingIndicesPerTree(
+      const systems::Context<T>& context) const;
+
   const std::vector<internal::DistanceConstraintSpecs>&
   distance_constraints_specs() const;
 

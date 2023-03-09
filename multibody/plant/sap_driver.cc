@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include <fmt/ranges.h>
+
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
@@ -597,8 +599,13 @@ void SapDriver<T>::CalcContactProblemCache(
   // TODO(sap_joint_locking): Clone the sap problem to one with joint's locked.
   // Something like sap_problem.CalcReducedProblem(joint_locking_indices).
   const std::vector<int>& indices = manager().EvalJointLockingIndices(context);
-  const std::vector<std::vector<int>> indices_per_tree = 
-  problem.ReduceToSelectedDofs(cache->sap_problem_locked.get(), indices);
+  const std::vector<std::vector<int>> indices_per_tree = manager().EvalJointLockingIndicesPerTree(context);
+  drake::log()->info(fmt::format("\n\n\nJoint Locking Indices:\n{}\n", indices));
+  drake::log()->info(fmt::format("\nJoint Locking Indices Per Tree:\n"));
+  for (const std::vector<int>& v : indices_per_tree) {
+    drake::log()->info(fmt::format("{}\n", v));
+  }
+  problem.ReduceToSelectedDofs(cache->sap_problem_locked.get_mutable(), indices, indices_per_tree);
 }
 
 template <typename T>
@@ -607,8 +614,34 @@ void SapDriver<T>::PackContactSolverResults(
     int num_contacts, const SapSolverResults<T>& sap_results,
     ContactSolverResults<T>* contact_results) const {
   DRAKE_DEMAND(contact_results != nullptr);
-  contact_results->Resize(sap_results.v.size(), num_contacts);
-  contact_results->v_next = sap_results.v;
+  const std::vector<int>& unlocked_indices =
+      manager().EvalJointLockingIndices(context);
+  // TODO(sap_joint_locking): Fix this to use the size of the original problem.
+  // Also unproject v_next, adding zeros for the locked dofs.
+  const int rigid_dofs = this->plant().num_velocities();
+  if constexpr (std::is_same_v<T, double>) {
+    if (manager().deformable_driver_ != nullptr) {
+      const int deformable_dofs =
+          manager().deformable_driver_->EvalParticipatingFreeMotionVelocities(
+              context).size();
+
+      contact_results->Resize(rigid_dofs + deformable_dofs, num_contacts);
+      contact_results->v_next.head(rigid_dofs) =
+          ExpandRows(sap_results.v.head(unlocked_indices.size()), rigid_dofs,
+                     unlocked_indices);
+      contact_results->v_next.tail(deformable_dofs) =
+          sap_results.v.tail(deformable_dofs);
+    } else {
+      contact_results->Resize(rigid_dofs, num_contacts);
+      contact_results->v_next =
+          ExpandRows(sap_results.v, rigid_dofs, unlocked_indices);
+    }
+  } else {
+    contact_results->Resize(rigid_dofs, num_contacts);
+    contact_results->v_next =
+        ExpandRows(sap_results.v, rigid_dofs, unlocked_indices);
+  }
+
   // The driver adds all contact constraints first and therefore we know the
   // head of the impulses corresponds to contact impulses.
   const Eigen::VectorBlock<const VectorX<T>> contact_impulses =
@@ -680,7 +713,7 @@ void SapDriver<T>::CalcContactSolverResults(
   const ContactProblemCache<T>& contact_problem_cache =
       EvalContactProblemCache(context);
   const SapContactProblem<T>& sap_problem = *contact_problem_cache.sap_problem;
-  const SapContactProblem<T>& sap_problem_locked = *contact_problem_.sap_problem_locked;
+  const SapContactProblem<T>& sap_problem_locked = *contact_problem_cache.sap_problem_locked;
 
   // We use the velocity stored in the current context as initial guess.
   const VectorX<T>& x0 =
