@@ -35,6 +35,24 @@ GTEST_TEST(SolveTest, LinearSystemSolverTest) {
   EXPECT_EQ(result.get_solver_id(), LinearSystemSolver::id());
 }
 
+GTEST_TEST(SolveTest, ParallelLinearSystemSolverTest) {
+  const int N = 10;
+  std::vector<MathematicalProgram> prog_list(N);
+  for(int i = 0; i < N; ++i) {
+    auto x = prog_list.at(i).NewContinuousVariables<2>();
+    prog_list.at(i).AddLinearEqualityConstraint(Eigen::Matrix2d::Identity(),
+                                     Eigen::Vector2d(1, 2), x);
+  }
+  auto result_list = SolveInParallel(prog_list, 3, true);
+  for(int i = 0; i < N; ++i) {
+    EXPECT_TRUE(result_list.at(i).is_success());
+    EXPECT_TRUE(
+        CompareMatrices(result_list.at(i).get_x_val(), Eigen::Vector2d(1, 2), 1E-12));
+    EXPECT_EQ(result_list.at(i).get_optimal_cost(), 0);
+    EXPECT_EQ(result_list.at(i).get_solver_id(), LinearSystemSolver::id());
+  }
+}
+
 GTEST_TEST(SolveTest, TestInitialGuessAndOptions) {
   // Test with gurobi solver, which accepts both initial guess and solver
   // options.

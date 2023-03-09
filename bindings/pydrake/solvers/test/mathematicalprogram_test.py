@@ -195,6 +195,20 @@ class TestMathematicalProgram(unittest.TestCase):
             prog_type=mp.ProgramType.kLP)
         self.assertGreater(len(linear_solvers), 0)
 
+    def test_solve_in_parallel(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(2, "x")
+
+        # Add linear equality constraints; make sure the solver works.
+        prog.AddLinearConstraint(x[0] + x[1] == 0)
+        prog.AddLinearConstraint(2 * x[0] - x[1] == 1)
+        solver_id = mp.ChooseBestSolver(prog)
+        self.assertEqual(solver_id.name(), "Linear system")
+        solver = mp.MakeSolver(solver_id)
+
+        prog_list = [prog.Clone() for _ in range(25)]
+        # result_list = mp.SolveInParallel(prog_list)
+
     def test_module_level_solve_function_and_result_accessors(self):
         qp = TestQP()
         x_expected = np.array([1, 1])

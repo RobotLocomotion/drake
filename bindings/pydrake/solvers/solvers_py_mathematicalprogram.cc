@@ -2065,6 +2065,10 @@ void BindFreeFunctions(py::module m) {
               const std::optional<SolverOptions>&>(&solvers::Solve),
           py::arg("prog"), py::arg("initial_guess") = py::none(),
           py::arg("solver_options") = py::none(), doc.Solve.doc_3args)
+//      .def("SolveInParallel",
+//          &solvers::SolveInParallel,
+//          py::arg("prog_list"), py::arg("num_threads") = -1,
+//          py::arg("verbose") = true)
       .def("GetProgramType", &solvers::GetProgramType, doc.GetProgramType.doc);
 }
 

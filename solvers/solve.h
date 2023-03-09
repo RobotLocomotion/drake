@@ -42,5 +42,10 @@ MathematicalProgramResult Solve(
     const Eigen::Ref<const Eigen::VectorXd>& initial_guess);
 
 MathematicalProgramResult Solve(const MathematicalProgram& prog);
+
+std::vector<MathematicalProgramResult> SolveInParallel(
+    const std::vector<MathematicalProgram>& prog_list,
+    int num_thread= -1,
+    bool verbose = true);
 }  // namespace solvers
 }  // namespace drake
