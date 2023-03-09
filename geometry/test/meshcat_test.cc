@@ -356,6 +356,27 @@ GTEST_TEST(MeshcatTest, SetObjectWithTriangleSurfaceMesh) {
   EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh_wireframe").empty());
 }
 
+GTEST_TEST(MeshcatTest, PlotSurface) {
+  Meshcat meshcat;
+
+  constexpr int nx = 15, ny = 11;
+  Eigen::MatrixXd X =
+      RowVector<double, nx>::LinSpaced(0, 1).replicate<ny, 1>();
+  Eigen::MatrixXd Y =
+      Vector<double, ny>::LinSpaced(0, 1).replicate<1, nx>();
+  // z = y*sin(5*x)
+  Eigen::MatrixXd Z = (Y.array() * (5*X.array()).sin()).matrix();
+
+  // Wireframe = false.
+  meshcat.PlotSurface("plot_surface", X, Y, Z, Rgba(0, 0, .9, 1.0), false);
+  EXPECT_FALSE(meshcat.GetPackedObject("plot_surface").empty());
+
+  // Wireframe = true.
+  meshcat.PlotSurface("plot_surface_wireframe", X, Y, Z, Rgba(0, 0, .9, 1.0),
+                      true);
+  EXPECT_FALSE(meshcat.GetPackedObject("plot_surface_wireframe").empty());
+}
+
 GTEST_TEST(MeshcatTest, SetLine) {
   Meshcat meshcat;
 
