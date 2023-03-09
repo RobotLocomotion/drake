@@ -155,7 +155,7 @@ GTEST_TEST(DualIiwaTest, ComInPolyhedronConstraintModelInstance) {
   const Eigen::Vector4d lb(0.1, 0.2, -0.4, -1.);
   const Eigen::Vector4d ub(0.5, 0.9, 1.5, 1.3);
   std::vector<ModelInstanceIndex> model_instances{
-      {plant->GetModelInstanceByName("iiwa0")}};
+      {plant->GetModelInstanceByName("iiwa14")}};
   TestComInPolyhedronConstraint(
       plant_autodiff.get(), plant_autodiff.get(), model_instances,
       plant_autodiff->world_frame().index(), plant_context_autodiff.get(),

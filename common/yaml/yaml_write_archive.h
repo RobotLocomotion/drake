@@ -65,6 +65,11 @@ class YamlWriteArchive final {
   // nullness is defined as above.
   std::string EmitString(const std::string& root_name = "root") const;
 
+  // Returns the JSON string for whatever Serializable was most recently passed
+  // into Accept. A std::optional<T> value that is set to std::nullopt will be
+  // entirely omitted from the result, not serialized as "null".
+  std::string ToJson() const;
+
   // Removes from this archive any map entries that are identical to an entry
   // in `other`, iff they reside at the same location within the node tree
   // hierarchy, and iff their parent nodes (and grandparent, etc., all the way
@@ -97,8 +102,8 @@ class YamlWriteArchive final {
 
   // This version applies when Serialize is member function.
   template <typename Serializable>
-  auto DoAccept(Serializable* serializable, int32_t) ->
-      decltype(serializable->Serialize(this)) {
+  auto DoAccept(Serializable* serializable, int32_t)
+      -> decltype(serializable->Serialize(this)) {
     return serializable->Serialize(this);
   }
 
@@ -121,18 +126,17 @@ class YamlWriteArchive final {
 
   // This version applies when the type has a Serialize member function.
   template <typename NVP, typename T>
-  auto DoVisit(const NVP& nvp, const T&, int32_t) ->
-      decltype(nvp.value()->Serialize(
+  auto DoVisit(const NVP& nvp, const T&, int32_t)
+      -> decltype(nvp.value()->Serialize(
           static_cast<YamlWriteArchive*>(nullptr))) {
     return this->VisitSerializable(nvp);
   }
 
   // This version applies when the type has an ADL Serialize function.
   template <typename NVP, typename T>
-  auto DoVisit(const NVP& nvp, const T&, int32_t) ->
-      decltype(Serialize(
-          static_cast<YamlWriteArchive*>(nullptr),
-          nvp.value())) {
+  auto DoVisit(const NVP& nvp, const T&, int32_t)
+      -> decltype(Serialize(static_cast<YamlWriteArchive*>(nullptr),
+                            nvp.value())) {
     return this->VisitSerializable(nvp);
   }
 
@@ -175,8 +179,8 @@ class YamlWriteArchive final {
   }
 
   // For Eigen::Matrix or Eigen::Vector.
-  template <typename NVP, typename T, int Rows, int Cols,
-      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
+  template <typename NVP, typename T, int Rows, int Cols, int Options = 0,
+            int MaxRows = Rows, int MaxCols = Cols>
   void DoVisit(const NVP& nvp,
                const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>&,
                int32_t) {
@@ -219,12 +223,20 @@ class YamlWriteArchive final {
       // ".0" when formatting integer-valued floating-point numbers.  Force
       // the ".0" in all cases by using the "#" option for floats.  Also be
       // sure to add the required leading period for special values.
-      root_.Add(nvp.name(), internal::Node::MakeScalar(
-          fmt::format("{}{:#}", std::isfinite(value) ? "" : ".", value)));
+      auto scalar = internal::Node::MakeScalar(
+          fmt::format("{}{:#}", std::isfinite(value) ? "" : ".", value));
+      scalar.SetTag(internal::JsonSchemaTag::kFloat);
+      root_.Add(nvp.name(), std::move(scalar));
       return;
     }
-    root_.Add(nvp.name(), internal::Node::MakeScalar(
-        fmt::format("{}", value)));
+    auto scalar = internal::Node::MakeScalar(fmt::format("{}", value));
+    if constexpr (std::is_same_v<T, bool>) {
+      scalar.SetTag(internal::JsonSchemaTag::kBool);
+    }
+    if constexpr (std::is_integral_v<T>) {
+      scalar.SetTag(internal::JsonSchemaTag::kInt);
+    }
+    root_.Add(nvp.name(), std::move(scalar));
   }
 
   // This is used for std::optional or similar.
@@ -258,13 +270,15 @@ class YamlWriteArchive final {
     const char* const name = nvp.name();
     auto& variant = *nvp.value();
     const size_t index = variant.index();
-    std::visit([this, name, index](auto&& unwrapped) {
-      this->Visit(drake::MakeNameValue(name, &unwrapped));
-      if (index != 0) {
-        using T = decltype(unwrapped);
-        root_.At(name).SetTag(YamlWriteArchive::GetVariantTag<T>());
-      }
-    }, variant);
+    std::visit(
+        [this, name, index](auto&& unwrapped) {
+          this->Visit(drake::MakeNameValue(name, &unwrapped));
+          if (index != 0) {
+            using T = decltype(unwrapped);
+            root_.At(name).SetTag(YamlWriteArchive::GetVariantTag<T>());
+          }
+        },
+        variant);
 
     // The above call to this->Visit() for the *unwrapped* value pushed our
     // name onto the visit_order a second time, duplicating work performed by
@@ -275,9 +289,8 @@ class YamlWriteArchive final {
   template <typename T>
   static std::string GetVariantTag() {
     const std::string full_name = NiceTypeName::GetFromStorage<T>();
-    if ((full_name == "std::string")
-        || (full_name == "double")
-        || (full_name == "int")) {
+    if ((full_name == "std::string") || (full_name == "double") ||
+        (full_name == "int")) {
       // TODO(jwnimmer-tri) Add support for well-known YAML primitive types
       // within variants (when placed other than at the 0'th index).  To do
       // that, we need to emit the tag as "!!str" instead of "!string" or
@@ -312,9 +325,10 @@ class YamlWriteArchive final {
     root_.Add(name, std::move(sub_node));
   }
 
-  template <typename T, int Rows, int Cols,
-      int Options = 0, int MaxRows = Rows, int MaxCols = Cols>
-  void VisitMatrix(const char* name,
+  template <typename T, int Rows, int Cols, int Options = 0, int MaxRows = Rows,
+            int MaxCols = Cols>
+  void VisitMatrix(
+      const char* name,
       const Eigen::Matrix<T, Rows, Cols, Options, MaxRows, MaxCols>* matrix) {
     auto sub_node = internal::Node::MakeSequence();
     for (int i = 0; i < matrix->rows(); ++i) {
@@ -326,7 +340,6 @@ class YamlWriteArchive final {
     root_.Add(name, std::move(sub_node));
   }
 
-
   // This is used for std::map, std::unordered_map, or similar.
   // The map key must be a string; the value can be anything that serializes.
   template <typename Key, typename Value, typename NVP>
@@ -336,8 +349,7 @@ class YamlWriteArchive final {
     // that was convertible to a string (int, double, string_view, etc.) if we
     // found that useful.  However, to remain compatible with JSON semantics,
     // we should never allow a YAML Sequence or Mapping to be a used as a key.
-    static_assert(std::is_same_v<Key, std::string>,
-                  "Map keys must be strings");
+    static_assert(std::is_same_v<Key, std::string>, "Map keys must be strings");
     auto sub_node = this->VisitMapDirectly(nvp.value());
     root_.Add(nvp.name(), std::move(sub_node));
   }

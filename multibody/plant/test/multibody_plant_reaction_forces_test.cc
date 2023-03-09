@@ -512,10 +512,10 @@ class SpinningRodTest : public ::testing::Test {
   void BuildModel(double discrete_update_period) {
     plant_ = std::make_unique<MultibodyPlant<double>>(discrete_update_period);
 
-    // We define the rod's frame origin to be located at the CoM.
-    const SpatialInertia<double> M_BBo_B(
-        kMass, Vector3d::Zero(),
-        UnitInertia<double>::ThinRod(kLength, Vector3d::UnitZ()));
+    // We define rod B's origin Bo to be located at the rod's center of mass.
+    const SpatialInertia<double> M_BBo_B =
+        SpatialInertia<double>::ThinRodWithMass(
+            kMass, kLength, Vector3d::UnitZ());
     rod_ = &plant_->AddRigidBody("rod", M_BBo_B);
 
     // Notice that axis Bz is aligned with the rod. We want to define frame Jb

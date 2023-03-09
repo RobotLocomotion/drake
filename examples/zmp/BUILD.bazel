@@ -3,10 +3,7 @@
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
-    "drake_cc_googletest",
-    "drake_cc_library",
 )
-load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 drake_cc_binary(
@@ -18,7 +15,5 @@ drake_cc_binary(
         "//systems/controllers:zmp_test_util",
     ],
 )
-
-install_data()
 
 add_lint_tests()

@@ -318,7 +318,9 @@ int ChooseScaling(const SolverOptions& options) {
 }
 }  // namespace
 
-bool ClpSolver::is_available() { return true; }
+bool ClpSolver::is_available() {
+  return true;
+}
 
 void ClpSolver::DoSolve(const MathematicalProgram& prog,
                         const Eigen::VectorXd& initial_guess,

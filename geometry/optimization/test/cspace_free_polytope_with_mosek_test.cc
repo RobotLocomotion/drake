@@ -7,7 +7,6 @@
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/optimization/cspace_free_polytope.h"  // NOLINT
-#include "drake/geometry/optimization/dev/test/c_iris_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/multibody/rational/rational_forward_kinematics_internal.h"
@@ -62,7 +61,7 @@ void CheckPositivePolynomialBySamples(
           .all());
 }
 
-// Solve a sos program to check if a polynomial is sos.
+// Solve an sos program to check if a polynomial is sos.
 // @param tol We seek another polynomial p2 being sos, and the difference
 // between p1's coefficient and p2's coefficient is less than tol.
 bool IsPolynomialSos(const symbolic::Polynomial& p, double tol) {
@@ -132,8 +131,13 @@ void CheckLagrangians(const VectorX<symbolic::Polynomial>& lagrangians,
   }
 }
 
-// @param a Maps the plane index to the separating plane parameter {x| aᵀx+b=0}
-// @param b Maps the plane index to the separating plane parameter {x| aᵀx+b=0}
+// @param s_samples Each row of s_samples is a sampled configuration s.
+// @param C The c-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}.
+// @param d The c-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}.
+// @param a Maps the plane index to the separating plane parameter `a` in {x|
+// aᵀx+b=0}
+// @param b Maps the plane index to the separating plane parameter `b` in {x|
+// aᵀx+b=0}
 void CheckSeparationBySamples(
     const CspaceFreePolytopeTester& tester,
     const systems::Diagram<double>& diagram,
@@ -193,21 +197,21 @@ void CheckSosLagrangians(
     const std::vector<CspaceFreePolytope::SeparatingPlaneLagrangians>&
         lagrangians_vec) {
   for (const auto& lagrangians : lagrangians_vec) {
-    for (int i = 0; i < lagrangians.polytope.rows(); ++i) {
-      EXPECT_TRUE(IsPolynomialSos(lagrangians.polytope(i), 0.0));
+    for (int i = 0; i < lagrangians.polytope().rows(); ++i) {
+      EXPECT_TRUE(IsPolynomialSos(lagrangians.polytope()(i), 0.0));
     }
-    for (int i = 0; i < lagrangians.s_lower.rows(); ++i) {
-      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_lower(i), 0.0));
+    for (int i = 0; i < lagrangians.s_lower().rows(); ++i) {
+      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_lower()(i), 0.0));
     }
-    for (int i = 0; i < lagrangians.s_upper.rows(); ++i) {
-      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_upper(i), 0.0));
+    for (int i = 0; i < lagrangians.s_upper().rows(); ++i) {
+      EXPECT_TRUE(IsPolynomialSos(lagrangians.s_upper()(i), 0.0));
     }
   }
 }
 
 // Check if rationals are all positive in the C-space polytope. Note that for
 // some reason Mosek doesn't solve to a very high precision (the constraint
-// violation can be in the order of 1E-3, even if  Mosek reports success), so we
+// violation can be in the order of 1E-3, even if Mosek reports success), so we
 // could use a pretty large tolerance `tol`.
 void CheckRationalsPositiveInCspacePolytope(
     const std::vector<symbolic::RationalFunction>& rationals,
@@ -226,9 +230,9 @@ void CheckRationalsPositiveInCspacePolytope(
     const symbolic::Polynomial rational_numerator =
         rationals[i].numerator().EvaluatePartial(env);
     const symbolic::Polynomial sos_poly =
-        rational_numerator - lagrangians_vec[i].polytope.dot(d_minus_Cs) -
-        lagrangians_vec[i].s_lower.dot(tester.s_minus_s_lower()) -
-        lagrangians_vec[i].s_upper.dot(tester.s_upper_minus_s());
+        rational_numerator - lagrangians_vec[i].polytope().dot(d_minus_Cs) -
+        lagrangians_vec[i].s_lower().dot(tester.s_minus_s_lower()) -
+        lagrangians_vec[i].s_upper().dot(tester.s_upper_minus_s());
     EXPECT_TRUE(IsPolynomialSos(sos_poly, tol));
   }
   CheckSosLagrangians(lagrangians_vec);
@@ -246,15 +250,15 @@ void TestConstructPlaneSearchProgram(
       &plant, &scene_graph, SeparatingPlaneOrder::kAffine, q_star, options);
   Eigen::Matrix<double, 9, 3> C;
   // clang-format off
-  C << 1, 1, 0,
-       -1, -1, 0,
-       -1, 0, 1,
-       1, 0, -1,
-       0, 1, 1,
-       0, -1, -1,
-       1, 0, 1,
-       1, 1, -1,
-       1, -1, 1;
+  C <<  1,  1,  0,
+       -1, -1,  0,
+       -1,  0,  1,
+        1,  0, -1,
+        0,  1,  1,
+        0, -1, -1,
+        1,  0,  1,
+        1,  1, -1,
+        1, -1,  1;
   // clang-format on
   Eigen::Matrix<double, 9, 1> d;
   d << 0.1, 0.2, 0.3, 0.2, 0.2, 0.2, 0.1, 0.1, 0.2;
@@ -334,16 +338,16 @@ void TestConstructPlaneSearchProgram(
 
   Eigen::Matrix<double, 10, 3> s_samples;
   // clang-format off
-    s_samples << 1, 2, -1,
-               -0.5, 0.3, 0.2,
-               0.2, 0.1, 0.4,
-               0.5, -1.2, 0.3,
-               0.2, 0.5, -0.4,
-               -0.3, 1.5, 2,
-               0.5, 0.2, 1,
-               -0.4, 0.5, 1,
-               0, 0, 0,
-               0.2, -1.5, 1;
+  s_samples <<   1,    2,   -1,
+              -0.5,  0.3,  0.2,
+               0.2,  0.1,  0.4,
+               0.5, -1.2,  0.3,
+               0.2,  0.5, -0.4,
+              -0.3,  1.5,    2,
+               0.5,  0.2,    1,
+              -0.4,  0.5,    1,
+                 0,    0,    0,
+               0.2, -1.5,    1;
   // clang-format on
 
   CheckSeparationBySamples(tester, diagram, s_samples, C, d,
@@ -645,22 +649,24 @@ void CompareLagrangians(
     bool compare_s_bounds) {
   EXPECT_EQ(lagrangians_vec1.size(), lagrangians_vec2.size());
   for (int i = 0; i < static_cast<int>(lagrangians_vec1.size()); ++i) {
-    EXPECT_EQ(lagrangians_vec1[i].polytope.size(),
-              lagrangians_vec2[i].polytope.size());
-    for (int j = 0; j < lagrangians_vec1[i].polytope.rows(); ++j) {
-      EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].polytope(j),
-                   lagrangians_vec2[i].polytope(j));
+    EXPECT_EQ(lagrangians_vec1[i].polytope().size(),
+              lagrangians_vec2[i].polytope().size());
+    for (int j = 0; j < lagrangians_vec1[i].polytope().rows(); ++j) {
+      EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].polytope()(j),
+                   lagrangians_vec2[i].polytope()(j));
     }
     if (compare_s_bounds) {
-      EXPECT_EQ(lagrangians_vec1[i].s_lower.size(),
-                lagrangians_vec2[i].s_lower.size());
-      EXPECT_EQ(lagrangians_vec1[i].s_upper.size(),
-                lagrangians_vec2[i].s_upper.size());
-      for (int j = 0; j < lagrangians_vec1[i].s_lower.rows(); ++j) {
-        EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].s_lower(j),
-                     lagrangians_vec2[i].s_lower(j));
-        EXPECT_PRED2(symbolic::test::PolyEqual, lagrangians_vec1[i].s_upper(j),
-                     lagrangians_vec2[i].s_upper(j));
+      EXPECT_EQ(lagrangians_vec1[i].s_lower().size(),
+                lagrangians_vec2[i].s_lower().size());
+      EXPECT_EQ(lagrangians_vec1[i].s_upper().size(),
+                lagrangians_vec2[i].s_upper().size());
+      for (int j = 0; j < lagrangians_vec1[i].s_lower().rows(); ++j) {
+        EXPECT_PRED2(symbolic::test::PolyEqual,
+                     lagrangians_vec1[i].s_lower()(j),
+                     lagrangians_vec2[i].s_lower()(j));
+        EXPECT_PRED2(symbolic::test::PolyEqual,
+                     lagrangians_vec1[i].s_upper()(j),
+                     lagrangians_vec2[i].s_upper()(j));
       }
     }
   }
@@ -788,7 +794,7 @@ TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
                               2E-2);
   }
 
-  // Now test the public InitializePolytopeSearchProgram function
+  // Now test the public InitializePolytopeSearchProgram function.
   // First find the separation certificate with a fixed C-space polytope using
   // the public FindSeparationCertificateGivenPolytope function.
   std::unordered_map<SortedPair<geometry::GeometryId>,

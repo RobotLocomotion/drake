@@ -254,41 +254,11 @@ void DoScalarDependentDefinitions(py::module m, T) {
                   std::move(force_element));
             },
             py::arg("force_element"), py_rvp::reference_internal,
-            cls_doc.AddForceElement.doc);
-    // TODO(amcastro-tri): Simplify this binding once the signature for
-    // parameters with T != double are fully removed. The lambda is only needed
-    // right now since otherwise def() cannot disambiguate between the
-    // overloads.
-    cls.def(
-        "AddCouplerConstraint",
-        [](Class* self, const Joint<T>& joint0, const Joint<T>& joint1,
-            double gear_ratio, double offset) {
-          return self->AddCouplerConstraint(joint0, joint1, gear_ratio, offset);
-        },
-        py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
-        py::arg("offset") = 0.0, py_rvp::reference_internal,
-        cls_doc.AddCouplerConstraint.doc);
-
-    if constexpr (!std::is_same_v<T, double>) {
-      // N.B. Deprecation when T != double only, since we no longer support
-      // gear_ratio and offset of type T != double in the signature for
-      // AddCouplerConstraint().
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      cls.def(
-          "AddCouplerConstraint",
-          [](Class* self, const Joint<T>& joint0, const Joint<T>& joint1,
-              const T& gear_ratio, const T& offset) {
-            WarnDeprecated(cls_doc.AddCouplerConstraint.doc_deprecated);
-            return self->AddCouplerConstraint(
-                joint0, joint1, gear_ratio, offset);
-          },
-          py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
-          py::arg("offset") = 0.0, py_rvp::reference_internal,
-          cls_doc.AddCouplerConstraint.doc_deprecated);
-#pragma GCC diagnostic pop
-    }
-
+            cls_doc.AddForceElement.doc)
+        .def("AddCouplerConstraint", &Class::AddCouplerConstraint,
+            py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
+            py::arg("offset") = 0.0, py_rvp::reference_internal,
+            cls_doc.AddCouplerConstraint.doc);
     // Mathy bits
     cls  // BR
         .def(
@@ -494,22 +464,35 @@ void DoScalarDependentDefinitions(py::module m, T) {
               return self->EvalBodySpatialVelocityInWorld(context, body_B);
             },
             py::arg("context"), py::arg("body"),
-            cls_doc.EvalBodySpatialVelocityInWorld.doc)
-        .def(
-            "CalcJacobianSpatialVelocity",
-            [](const Class* self, const systems::Context<T>& context,
-                JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
-                const Eigen::Ref<const Vector3<T>>& p_BP,
-                const Frame<T>& frame_A, const Frame<T>& frame_E) {
-              MatrixX<T> Js_V_ABp_E(
-                  6, GetVariableSize<T>(*self, with_respect_to));
-              self->CalcJacobianSpatialVelocity(context, with_respect_to,
-                  frame_B, p_BP, frame_A, frame_E, &Js_V_ABp_E);
-              return Js_V_ABp_E;
-            },
+            cls_doc.EvalBodySpatialVelocityInWorld.doc);
+
+    auto CalcJacobianSpatialVelocity =
+        [](const Class* self, const systems::Context<T>& context,
+            JacobianWrtVariable with_respect_to, const Frame<T>& frame_B,
+            const Eigen::Ref<const Vector3<T>>& p_BoBp_B,
+            const Frame<T>& frame_A, const Frame<T>& frame_E) {
+          MatrixX<T> Js_V_ABp_E(6, GetVariableSize<T>(*self, with_respect_to));
+          self->CalcJacobianSpatialVelocity(context, with_respect_to, frame_B,
+              p_BoBp_B, frame_A, frame_E, &Js_V_ABp_E);
+          return Js_V_ABp_E;
+        };
+    cls  // BR
+        .def("CalcJacobianSpatialVelocity", CalcJacobianSpatialVelocity,
+            py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
+            py::arg("p_BoBp_B"), py::arg("frame_A"), py::arg("frame_E"),
+            cls_doc.CalcJacobianSpatialVelocity.doc);
+    constexpr char doc_CalcJacobianSpatialVelocity_deprecated[] =
+        "CalcJacobianSpatialVelocity(*, p_BP) is deprecated, and will "
+        "be removed on or around 2023-06-01. Please use the variant with "
+        "the argument named `p_BoBp_B` instead.";
+    cls  // BR
+        .def("CalcJacobianSpatialVelocity",
+            WrapDeprecated(doc_CalcJacobianSpatialVelocity_deprecated,
+                CalcJacobianSpatialVelocity),
             py::arg("context"), py::arg("with_respect_to"), py::arg("frame_B"),
             py::arg("p_BP"), py::arg("frame_A"), py::arg("frame_E"),
-            cls_doc.CalcJacobianSpatialVelocity.doc)
+            doc_CalcJacobianSpatialVelocity_deprecated);
+    cls  // BR
         .def(
             "CalcJacobianAngularVelocity",
             [](const Class* self, const Context<T>& context,

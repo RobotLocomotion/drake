@@ -8,10 +8,22 @@ load(
     "drake_cc_googletest",
     "drake_cc_library",
 )
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load(
     "@drake//tools/vector_gen:vector_gen.bzl",
     "drake_cc_vector_gen_library",
+)
+
+models_filegroup(
+    name = "models",
+    visibility = ["//visibility:public"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
@@ -191,7 +203,5 @@ drake_cc_googletest(
         "//multibody/plant",
     ],
 )
-
-install_data()
 
 add_lint_tests()

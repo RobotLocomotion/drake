@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <drake_vendor/sdf/Collision.hh>
@@ -12,6 +13,7 @@
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/multibody/parsing/detail_sdf_diagnostic.h"
 #include "drake/multibody/parsing/package_map.h"
 #include "drake/multibody/plant/coulomb_friction.h"
 
@@ -21,16 +23,18 @@ namespace internal {
 
 /* Used for resolving URIs / filenames.  */
 using ResolveFilename = std::function<std::string (
-    const drake::internal::DiagnosticPolicy&, std::string)>;
+    const SDFormatDiagnostic&, std::string)>;
 
 /* Given an sdf::Geometry object representing a <geometry> element from an SDF
  file, this method makes a new drake::geometry::Shape object from this
  specification.
  If no recognizable geometry is specified, nullptr is returned. If the geometry
- is recognized, but malformed, an exception is thrown.  */
-std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
-    const drake::internal::DiagnosticPolicy& diagnostic,
-    const sdf::Geometry& sdf_geometry, ResolveFilename resolve_filename);
+ is recognized, but malformed, emits an error. When the error policy is set to
+ not throw it returns std::nullopt. */
+std::optional<std::unique_ptr<geometry::Shape>> MakeShapeFromSdfGeometry(
+    const SDFormatDiagnostic& diagnostic,
+    const sdf::Geometry& sdf_geometry,
+    ResolveFilename resolve_filename);
 
 /* Given an sdf::Visual object representing a <visual> element from an SDF
  file, this method makes a new drake::geometry::GeometryInstance object from
@@ -39,6 +43,8 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
  to an uninterpreted geometry type:
  - `sdf::GeometryType::EMPTY` (`<empty/>` SDF tag.)
  - `sdf::GeometryType::HEIGHTMAP` (`<heightmap/>` SDF tag.)
+ If the geometry is malformed, emits an error. When the error policy is not
+ set to throw it returns an std::nullopt.
 
  <!-- TODO(SeanCurtis-TRI): Ultimately, a module for what we parse should be
   written outside of this _internal_ namespace. This should go there and
@@ -68,10 +74,11 @@ std::unique_ptr<geometry::Shape> MakeShapeFromSdfGeometry(
 
  This feature is one way to provide multiple visual representations of a body.
  */
-std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
-    const drake::internal::DiagnosticPolicy& diagnostic,
-    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
-    const math::RigidTransformd& X_LG);
+std::optional<std::unique_ptr<geometry::GeometryInstance>>
+    MakeGeometryInstanceFromSdfVisual(
+        const SDFormatDiagnostic& diagnostic,
+        const sdf::Visual& sdf_visual, ResolveFilename resolve_filename,
+        const math::RigidTransformd& X_LG);
 
 /* Extracts the material properties from the given sdf::Visual object.
  The sdf::Visual object represents a corresponding <visual> tag from an SDF
@@ -118,12 +125,15 @@ std::unique_ptr<geometry::GeometryInstance> MakeGeometryInstanceFromSdfVisual(
  </visual>
  @endcode
 
- An instance of geometry::IllustrationProperties will always be returned. If
- there is no material tag, no material property tags, or no successfully
- parsed material property tags, the property set will be empty.  */
-geometry::IllustrationProperties MakeVisualPropertiesFromSdfVisual(
-    const drake::internal::DiagnosticPolicy& diagnostic,
-    const sdf::Visual& sdf_visual, ResolveFilename resolve_filename);
+ An instance of geometry::IllustrationProperties will be returned. If there is
+ no material tag, no material property tags, or no successfully parsed material
+ property tags, the property set will be empty. If the material is malformed
+ an error will be emitted. If the error policy is not set to throw, an
+ std::nullopt will be returned. */
+std::optional<geometry::IllustrationProperties>
+    MakeVisualPropertiesFromSdfVisual(
+        const SDFormatDiagnostic& diagnostic,
+        const sdf::Visual& sdf_visual, ResolveFilename resolve_filename);
 
 /* Computes the pose `X_LC` of frame C (the "canonical frame" of the geometry)
  relative to the link L containing the collision, given an `sdf_collision`
@@ -144,10 +154,11 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
    <tag>real_value</tag>
  @endcode
 
- As long as no exceptions are thrown, the function is guaranteed to return
- a valid instance of ProximityProperties. There are not default values for these
- tags (except for friction -- see below); if the tag is missing, the
- corresponding property will be missing from the property set.
+ It returns a valid instance of ProximityProperties. There are not default
+ values for these tags (except for friction -- see below); if the tag is
+ missing, the corresponding property will be missing from the property set.
+ If the collision element is malformed it emits an error. If the error
+ policy is set to not throw an std::nullopt is returned instead.
 
  Mapping from SDF tag to geometry property. See
   @ref YET_TO_BE_WRITTEN_HYDROELASTIC_GEOMETRY_MODULE for details on the
@@ -185,9 +196,10 @@ math::RigidTransformd MakeGeometryPoseFromSdfCollision(
       created (see default_friction()).
  As long as no exception is thrown, the resulting ProximityProperties will have
  the ('material', 'coulomb_friction') property.  */
-geometry::ProximityProperties MakeProximityPropertiesForCollision(
-    const drake::internal::DiagnosticPolicy& diagnostic,
-    const sdf::Collision& sdf_collision);
+std::optional<geometry::ProximityProperties>
+    MakeProximityPropertiesForCollision(
+        const SDFormatDiagnostic& diagnostic,
+        const sdf::Collision& sdf_collision);
 
 /* Parses friction coefficients from `sdf_collision`.
  This method looks for the definitions specific to ODE, as given by the SDF
@@ -206,10 +218,12 @@ geometry::ProximityProperties MakeProximityPropertiesForCollision(
      </surface>
    </collision>
  ```
- If mu or mu2 (or both) are not found, it returns the default coefficients of
- mu = mu2 = 1, consistent with the SDFormat specification. */
-CoulombFriction<double> MakeCoulombFrictionFromSdfCollisionOde(
-    const sdf::Collision& sdf_collision);
+ If mu or mu2 are not found, an error is emitted. If the error policy is not
+ set to throw an std::nullopt is returned. */
+std::optional<CoulombFriction<double>>
+    MakeCoulombFrictionFromSdfCollisionOde(
+        const SDFormatDiagnostic& diagnostic,
+        const sdf::Collision& sdf_collision);
 
 }  // namespace internal
 }  // namespace multibody

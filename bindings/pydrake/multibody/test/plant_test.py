@@ -45,6 +45,7 @@ from pydrake.multibody.tree import (
     RevoluteSpring_,
     RigidBody_,
     RotationalInertia_,
+    ScopedName,
     ScrewJoint,
     ScrewJoint_,
     SpatialInertia_,
@@ -397,6 +398,22 @@ class TestPlant(unittest.TestCase):
             model_instance=model_instance))
         self.assertIn("acrobot", plant.GetTopologyGraphvizString())
 
+    def test_scoped_name(self):
+        ScopedName()
+        ScopedName(namespace_name="foo", element_name="bar")
+        ScopedName.Make(namespace_name="foo", element_name="bar")
+        ScopedName.Join(name1="foo", name2="bar")
+        dut = ScopedName.Parse(scoped_name="foo::bar")
+        self.assertEqual(dut.get_namespace(), "foo")
+        self.assertEqual(dut.get_element(), "bar")
+        self.assertEqual(dut.get_full(), "foo::bar")
+        self.assertEqual(dut.to_string(), "foo::bar")
+        dut.set_namespace("robot1")
+        dut.set_element("torso")
+        self.assertEqual(str(dut), "robot1::torso")
+        self.assertEqual(repr(dut), "ScopedName('robot1', 'torso')")
+        copy.copy(dut)
+
     def _test_multibody_tree_element_mixin(self, T, element):
         cls = type(element)
         self.assertIsInstance(element.index(), get_index_class(cls, T))
@@ -413,6 +430,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(frame.is_world_frame(), bool)
         self.assertIsInstance(frame.is_body_frame(), bool)
         self.assertIsInstance(frame.name(), str)
+        self.assertIsInstance(frame.scoped_name(), ScopedName)
 
         self.assertIsInstance(
             frame.GetFixedPoseInBodyFrame(),
@@ -427,6 +445,7 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(body, Body)
         self._test_multibody_tree_element_mixin(T, body)
         self.assertIsInstance(body.name(), str)
+        self.assertIsInstance(body.scoped_name(), ScopedName)
         self.assertIsInstance(body.get_num_flexible_positions(), int)
         self.assertIsInstance(body.get_num_flexible_velocities(), int)
         self.assertIsInstance(body.is_floating(), bool)
@@ -983,9 +1002,17 @@ class TestPlant(unittest.TestCase):
 
             Js_V_ABp_E = plant.CalcJacobianSpatialVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
-                p_BP=np.zeros(3), frame_A=world_frame,
+                p_BoBp_B=np.zeros(3), frame_A=world_frame,
                 frame_E=world_frame)
             self.assert_sane(Js_V_ABp_E)
+
+            with catch_drake_warnings(expected_count=1) as w:
+                Js_V_ABp_E = plant.CalcJacobianSpatialVelocity(
+                    context=context, with_respect_to=wrt, frame_B=base_frame,
+                    p_BP=np.zeros(3), frame_A=world_frame,
+                    frame_E=world_frame)
+                self.assert_sane(Js_V_ABp_E)
+
             self.assertEqual(Js_V_ABp_E.shape, (6, nw))
             Js_w_AB_E = plant.CalcJacobianAngularVelocity(
                 context=context, with_respect_to=wrt, frame_B=base_frame,
@@ -2022,14 +2049,6 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_equal(
             frame.GetPoseInParentFrame(context).GetAsMatrix34(),
             numpy_compare.to_float(X_PF.GetAsMatrix34()))
-
-        # TODO(2023-03-01) Remove with completion of deprecation.
-        with catch_drake_warnings(expected_count=1) as w:
-            frame.SetPoseInBodyFrame(context=context, X_PF=X_PF)
-            numpy_compare.assert_float_equal(
-                frame.CalcPoseInBodyFrame(context).GetAsMatrix34(),
-                numpy_compare.to_float(X_PF.GetAsMatrix34()))
-        self.assertIn("2023-03-01", str(w[0].message))
 
     @numpy_compare.check_all_types
     def test_frame_context_methods(self, T):

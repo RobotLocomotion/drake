@@ -13,6 +13,7 @@
 #include "drake/multibody/tree/multibody_forces.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 #include "drake/multibody/tree/multibody_tree_topology.h"
+#include "drake/multibody/tree/scoped_name.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 #include "drake/systems/framework/context.h"
 
@@ -188,6 +189,10 @@ class Body : public MultibodyElement<T> {
 
   /// Gets the `name` associated with `this` body. The name will never be empty.
   const std::string& name() const { return name_; }
+
+  /// Returns scoped name of this frame. Neither of the two pieces of the name
+  /// will be empty (the scope name and the element name).
+  ScopedName scoped_name() const;
 
   /// (Not implemented) Returns the number of generalized positions q describing
   /// flexible deformations for this body. A rigid body will therefore return

@@ -30,7 +30,7 @@
         <pose>-0.014 0.103 0.013 1.57 -1.57 0</pose>
         <geometry>
           <mesh>
-            <uri>package://drake/manipulation/models/ycb/meshes/003_cracker_box_textured.obj</uri>
+            <uri>package://drake_models/ycb/meshes/003_cracker_box_textured.obj</uri>
           </mesh>
         </geometry>
       </visual>

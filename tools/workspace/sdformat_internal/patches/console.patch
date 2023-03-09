@@ -315,3 +315,40 @@ index c0f4c4ed..a2f82f5d 100644
 +      "Invalid diagnostic color code: " + std::to_string(color));
 +}
 +#endif
+diff --git include/sdf/Error.hh include/sdf/Error.hh
+index 5db10b39..511d200c 100644
+--- include/sdf/Error.hh
++++ include/sdf/Error.hh
+@@ -281,8 +281,13 @@ namespace sdf
+   /// ErrorCode in _error.
+   /// \param[out] _out ostream to use for printing errors.
+   /// \param[in] _error _error The error object to be printed
++#if 0
+   void SDFORMAT_VISIBLE throwOrPrintError(sdf::Console::ConsoleStream &_out,
+                                           const sdf::Error &_error);
++#else
++  void SDFORMAT_VISIBLE throwOrPrintError(sdf::Console::DiagnosticStream _out,
++                                          const sdf::Error &_error);
++#endif
+   }  // namespace internal
+   }  // namespace SDF_VERSION_NAMESPACE
+ }  // namespace sdf
+diff --git src/Error.cc src/Error.cc
+index 8a8325d0..5145faf5 100644
+--- src/Error.cc
++++ src/Error.cc
+@@ -165,8 +165,13 @@ std::ostream &operator<<(std::ostream &_out, const sdf::Error &_err)
+ namespace internal
+ {
+ 
++#if 0
+ void throwOrPrintError(sdf::Console::ConsoleStream &_out,
+                        const sdf::Error &_error)
++#else
++void throwOrPrintError(sdf::Console::DiagnosticStream _out,
++                       const sdf::Error &_error)
++#endif
+ {
+   if (_error.Code() == sdf::ErrorCode::FATAL_ERROR)
+   {
+

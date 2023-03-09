@@ -11,9 +11,9 @@ def sdformat_internal_repository(
         # drake/tools/workspace/new_release.py.  When practical, all members
         # of this cohort should be updated at the same time.
         repository = "gazebosim/sdformat",
-        commit = "sdformat13_13.2.0",
+        commit = "sdformat13_13.3.0",
         build_file = ":package.BUILD.bazel",
-        sha256 = "e1084091f65caf8aabd4cfca6df3a7bf3a9563de1715829810813840598d5de3",  # noqa
+        sha256 = "c21c70eb9a7d436d1cd083d9d5c4fce2ff645bdb27fc86332eab87d0ef081e6b",  # noqa
         patches = [
             ":patches/console.patch",
             ":patches/deprecation_unit_testing.patch",

@@ -812,6 +812,10 @@ PYBIND11_MODULE(symbolic, m) {
       .def("AddProduct", &Polynomial::AddProduct, py::arg("coeff"),
           py::arg("m"), doc.Polynomial.AddProduct.doc)
       .def("Expand", &Polynomial::Expand, doc.Polynomial.Expand.doc)
+      .def("SubstituteAndExpand", &Polynomial::SubstituteAndExpand,
+          py::arg("indeterminate_substitution"),
+          py::arg("substitutions_cached_data") = std::nullopt,
+          doc.Polynomial.SubstituteAndExpand.doc)
       .def("RemoveTermsWithSmallCoefficients",
           &Polynomial::RemoveTermsWithSmallCoefficients,
           py::arg("coefficient_tol"),
@@ -910,6 +914,13 @@ PYBIND11_MODULE(symbolic, m) {
             return p.Jacobian(vars);
           },
           py::arg("vars"), doc.Polynomial.Jacobian.doc);
+
+  py::class_<Polynomial::SubstituteAndExpandCacheData>(m,
+      "SubstituteAndExpandCacheData",
+      doc.Polynomial.SubstituteAndExpandCacheData.doc)
+      .def(py::init<>())
+      .def("get_data", &Polynomial::SubstituteAndExpandCacheData::get_data,
+          py_rvp::reference);
 
   // Bind CalcPolynomialWLowerTriangularPart
   m.def(

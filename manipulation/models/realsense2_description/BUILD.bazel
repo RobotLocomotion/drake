@@ -12,12 +12,9 @@ load(
     "realsense2_description_files",
 )
 
-# This package is public so that other packages can refer to
-# individual files in models from their bazel rules.
-package(
-    default_visibility = ["//visibility:public"],
-)
+package(default_visibility = ["//visibility:public"])
 
+# TODO(jwnimmer-tri) Convert this into drake_models somehow or another.
 _REALSENSE2_DESCRIPTION_FILES = forward_files(
     srcs = ["@intel_realsense_ros_internal//:" +
             x for x in realsense2_description_files()],
@@ -51,12 +48,18 @@ _OBJS = [x[:-3] + "obj" for x in _STLS]
     for stl, obj in zip(_STLS, _OBJS)
 ]
 
-install_data(
-    extra_prod_models = [
+filegroup(
+    name = "models",
+    srcs = [
         x
         for x in _REALSENSE2_DESCRIPTION_FILES + _OBJS
         if x not in _STLS
     ],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
 )
 
 drake_cc_googletest(

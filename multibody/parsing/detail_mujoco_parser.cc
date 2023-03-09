@@ -19,11 +19,12 @@
 #include "drake/geometry/shape_specification.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
-#include "drake/multibody/parsing/scoped_names.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
+#include "drake/multibody/tree/scoped_name.h"
 #include "drake/multibody/tree/weld_joint.h"
 
 namespace drake {
@@ -1247,9 +1248,7 @@ class MujocoParser {
           "ERROR: Your robot must have a name attribute or a model name "
           "must be specified.");
     }
-    model_name =
-        parsing::PrefixName(parent_model_name.value_or(""), model_name);
-
+    model_name = MakeModelName(model_name, parent_model_name, workspace_);
     model_instance_ = plant_->AddModelInstance(model_name);
 
     // Parse the compiler parameters.

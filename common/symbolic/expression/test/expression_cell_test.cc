@@ -155,8 +155,7 @@ TEST_F(SymbolicExpressionCellTest, CastFunctionsNonConst) {
   EXPECT_EQ(to_log(Expression{e_log_}).get_argument(), get_argument(e_log_));
   EXPECT_EQ(to_abs(Expression{e_abs_}).get_argument(), get_argument(e_abs_));
   EXPECT_EQ(to_exp(Expression{e_exp_}).get_argument(), get_argument(e_exp_));
-  EXPECT_EQ(to_sqrt(Expression{e_sqrt_}).get_argument(),
-            get_argument(e_sqrt_));
+  EXPECT_EQ(to_sqrt(Expression{e_sqrt_}).get_argument(), get_argument(e_sqrt_));
   EXPECT_EQ(to_pow(Expression{e_pow_}).get_first_argument(),
             get_first_argument(e_pow_));
   EXPECT_EQ(to_pow(Expression{e_pow_}).get_second_argument(),
@@ -164,22 +163,16 @@ TEST_F(SymbolicExpressionCellTest, CastFunctionsNonConst) {
   EXPECT_EQ(to_sin(Expression{e_sin_}).get_argument(), get_argument(e_sin_));
   EXPECT_EQ(to_cos(Expression{e_cos_}).get_argument(), get_argument(e_cos_));
   EXPECT_EQ(to_tan(Expression{e_tan_}).get_argument(), get_argument(e_tan_));
-  EXPECT_EQ(to_asin(Expression{e_asin_}).get_argument(),
-            get_argument(e_asin_));
-  EXPECT_EQ(to_acos(Expression{e_acos_}).get_argument(),
-            get_argument(e_acos_));
-  EXPECT_EQ(to_atan(Expression{e_atan_}).get_argument(),
-            get_argument(e_atan_));
+  EXPECT_EQ(to_asin(Expression{e_asin_}).get_argument(), get_argument(e_asin_));
+  EXPECT_EQ(to_acos(Expression{e_acos_}).get_argument(), get_argument(e_acos_));
+  EXPECT_EQ(to_atan(Expression{e_atan_}).get_argument(), get_argument(e_atan_));
   EXPECT_EQ(to_atan2(Expression{e_atan2_}).get_first_argument(),
             get_first_argument(e_atan2_));
   EXPECT_EQ(to_atan2(Expression{e_atan2_}).get_second_argument(),
             get_second_argument(e_atan2_));
-  EXPECT_EQ(to_sinh(Expression{e_sinh_}).get_argument(),
-            get_argument(e_sinh_));
-  EXPECT_EQ(to_cosh(Expression{e_cosh_}).get_argument(),
-            get_argument(e_cosh_));
-  EXPECT_EQ(to_tanh(Expression{e_tanh_}).get_argument(),
-            get_argument(e_tanh_));
+  EXPECT_EQ(to_sinh(Expression{e_sinh_}).get_argument(), get_argument(e_sinh_));
+  EXPECT_EQ(to_cosh(Expression{e_cosh_}).get_argument(), get_argument(e_cosh_));
+  EXPECT_EQ(to_tanh(Expression{e_tanh_}).get_argument(), get_argument(e_tanh_));
   EXPECT_EQ(to_min(Expression{e_min_}).get_first_argument(),
             get_first_argument(e_min_));
   EXPECT_EQ(to_min(Expression{e_min_}).get_second_argument(),
@@ -188,8 +181,7 @@ TEST_F(SymbolicExpressionCellTest, CastFunctionsNonConst) {
             get_first_argument(e_max_));
   EXPECT_EQ(to_max(Expression{e_max_}).get_second_argument(),
             get_second_argument(e_max_));
-  EXPECT_EQ(to_ceil(Expression{e_ceil_}).get_argument(),
-            get_argument(e_ceil_));
+  EXPECT_EQ(to_ceil(Expression{e_ceil_}).get_argument(), get_argument(e_ceil_));
   EXPECT_EQ(to_floor(Expression{e_floor_}).get_argument(),
             get_argument(e_floor_));
   EXPECT_PRED2(FormulaEqual,
@@ -203,11 +195,10 @@ TEST_F(SymbolicExpressionCellTest, CastFunctionsNonConst) {
                get_else_expression(e_ite_));
   EXPECT_EQ(to_uninterpreted_function(Expression{e_uf_}).get_name(),
             get_uninterpreted_function_name(e_uf_));
-  EXPECT_EQ(
-      to_uninterpreted_function(Expression{e_uf_}).get_arguments().size(), 2);
-  EXPECT_EQ(
-      to_uninterpreted_function(Expression{e_uf_}).get_arguments().size(),
-      get_uninterpreted_function_arguments(e_uf_).size());
+  EXPECT_EQ(to_uninterpreted_function(Expression{e_uf_}).get_arguments().size(),
+            2);
+  EXPECT_EQ(to_uninterpreted_function(Expression{e_uf_}).get_arguments().size(),
+            get_uninterpreted_function_arguments(e_uf_).size());
   EXPECT_EQ(to_uninterpreted_function(Expression{e_uf_}).get_arguments()[0],
             get_uninterpreted_function_arguments(e_uf_)[0]);
   EXPECT_EQ(to_uninterpreted_function(Expression{e_uf_}).get_arguments()[1],

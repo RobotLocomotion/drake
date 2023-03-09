@@ -13,11 +13,16 @@ namespace internal {
 namespace {
 
 // Boilerplate for std::visit.
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
 
 // Converts a type T from our variant<> into a string name for errors.
-template <typename T> std::string_view GetNiceVariantName(const T&) {
+template <typename T>
+std::string_view GetNiceVariantName(const T&) {
   if constexpr (std::is_same_v<T, Node::ScalarData>) {
     return "Scalar";
   } else if constexpr (std::is_same_v<T, Node::SequenceData>) {
@@ -52,22 +57,32 @@ Node Node::MakeMapping() {
 Node Node::MakeNull() {
   Node result;
   result.data_ = ScalarData{"null"};
-  result.tag_ = kTagNull;
+  result.tag_ = JsonSchemaTag::kNull;
   return result;
 }
 
 NodeType Node::GetType() const {
-  return std::visit(overloaded{
-    [](const ScalarData&) { return NodeType::kScalar; },
-    [](const SequenceData&) { return NodeType::kSequence; },
-    [](const MappingData&) { return NodeType::kMapping; },
-  }, data_);
+  return std::visit(  // BR
+      overloaded{
+          [](const ScalarData&) {
+            return NodeType::kScalar;
+          },
+          [](const SequenceData&) {
+            return NodeType::kSequence;
+          },
+          [](const MappingData&) {
+            return NodeType::kMapping;
+          },
+      },
+      data_);
 }
 
 std::string_view Node::GetTypeString() const {
-  return std::visit([](auto&& data) {
-    return GetNiceVariantName(data);
-  }, data_);
+  return std::visit(
+      [](auto&& data) {
+        return GetNiceVariantName(data);
+      },
+      data_);
 }
 
 std::string_view Node::GetTypeString(NodeType type) {
@@ -98,7 +113,10 @@ bool Node::IsMapping() const {
 }
 
 bool operator==(const Node& a, const Node& b) {
-  return std::tie(a.tag_, a.data_) == std::tie(b.tag_, b.data_);
+  // We need to compare the canonical form of a tag (i.e., its string).
+  auto a_tag = a.GetTag();
+  auto b_tag = b.GetTag();
+  return std::tie(a_tag, a.data_) == std::tie(b_tag, b.data_);
 }
 
 bool operator==(const Node::ScalarData& a, const Node::ScalarData& b) {
@@ -113,109 +131,153 @@ bool operator==(const Node::MappingData& a, const Node::MappingData& b) {
   return a.mapping == b.mapping;
 }
 
-const std::string& Node::GetTag() const {
-  return tag_;
+std::string_view Node::GetTag() const {
+  return std::visit(  // BR
+      overloaded{
+          [](const std::string& tag) -> std::string_view {
+            return tag;
+          },
+          [](JsonSchemaTag tag) -> std::string_view {
+            switch (tag) {
+              case JsonSchemaTag::kNull:
+                return kTagNull;
+              case JsonSchemaTag::kBool:
+                return kTagBool;
+              case JsonSchemaTag::kInt:
+                return kTagInt;
+              case JsonSchemaTag::kFloat:
+                return kTagFloat;
+            }
+            DRAKE_UNREACHABLE();
+          },
+      },
+      tag_);
+}
+
+void Node::SetTag(JsonSchemaTag tag) {
+  tag_ = tag;
 }
 
 void Node::SetTag(std::string tag) {
-  tag_ = std::move(tag);
+  if (tag.empty()) {
+    tag_ = {};
+  } else {
+    tag_ = std::move(tag);
+  }
 }
 
 const std::string& Node::GetScalar() const {
-  return std::visit(overloaded{
-    [](const ScalarData& data) -> const std::string& {
-      return data.scalar;
-    },
-    [](auto&& data) -> const std::string& {
-      throw std::logic_error(fmt::format(
-          "Cannot Node::GetScalar on a {}", GetNiceVariantName(data)));
-    },
-  }, data_);
+  return std::visit(
+      overloaded{
+          [](const ScalarData& data) -> const std::string& {
+            return data.scalar;
+          },
+          [](auto&& data) -> const std::string& {
+            throw std::logic_error(fmt::format("Cannot Node::GetScalar on a {}",
+                                               GetNiceVariantName(data)));
+          },
+      },
+      data_);
 }
 
 const std::vector<Node>& Node::GetSequence() const {
-  return std::visit(overloaded{
-    [](const SequenceData& data) -> const std::vector<Node>& {
-      return data.sequence;
-    },
-    [](auto&& data) -> const std::vector<Node>& {
-      throw std::logic_error(fmt::format(
-          "Cannot Node::GetSequence on a {}", GetNiceVariantName(data)));
-    },
-  }, data_);
+  return std::visit(
+      overloaded{
+          [](const SequenceData& data) -> const std::vector<Node>& {
+            return data.sequence;
+          },
+          [](auto&& data) -> const std::vector<Node>& {
+            throw std::logic_error(fmt::format(
+                "Cannot Node::GetSequence on a {}", GetNiceVariantName(data)));
+          },
+      },
+      data_);
 }
 
 void Node::Add(Node value) {
-  return std::visit(overloaded{
-    [&value](SequenceData& data) -> void {
-      data.sequence.push_back(std::move(value));
-    },
-    [](auto&& data) -> void {
-      throw std::logic_error(fmt::format(
-          "Cannot Node::Add(value) on a {}", GetNiceVariantName(data)));
-    },
-  }, data_);
+  return std::visit(
+      overloaded{
+          [&value](SequenceData& data) -> void {
+            data.sequence.push_back(std::move(value));
+          },
+          [](auto&& data) -> void {
+            throw std::logic_error(fmt::format(
+                "Cannot Node::Add(value) on a {}", GetNiceVariantName(data)));
+          },
+      },
+      data_);
 }
 
 const std::map<std::string, Node>& Node::GetMapping() const {
-  return std::visit(overloaded{
-    [](const MappingData& data) -> const std::map<std::string, Node>& {
-      return data.mapping;
-    },
-    [](auto&& data) -> const std::map<std::string, Node>& {
-      throw std::logic_error(fmt::format(
-          "Cannot Node::GetMapping on a {}", GetNiceVariantName(data)));
-    },
-  }, data_);
+  return std::visit(
+      overloaded{
+          [](const MappingData& data) -> const std::map<std::string, Node>& {
+            return data.mapping;
+          },
+          [](auto&& data) -> const std::map<std::string, Node>& {
+            throw std::logic_error(fmt::format(
+                "Cannot Node::GetMapping on a {}", GetNiceVariantName(data)));
+          },
+      },
+      data_);
 }
 
 void Node::Add(std::string key, Node value) {
-  return std::visit(overloaded{
-      [&key, &value](MappingData& data) -> void {
-      const auto result = data.mapping.insert({
-          std::move(key), std::move(value)});
-      const bool inserted = result.second;
-      if (!inserted) {
-        // Our 'key' argument is now empty (because it has been moved-from), so
-        // for the error message we need to dig the existing key out of the map.
-        const std::string& old_key = result.first->first;
-        throw std::logic_error(fmt::format(
-            "Cannot Node::Add(key, value) using duplicate key '{}'", old_key));
-      }
-    },
-    [](auto&& data) -> void {
-      throw std::logic_error(fmt::format(
-          "Cannot Node::Add(key, value) on a {}", GetNiceVariantName(data)));
-    },
-  }, data_);
+  return std::visit(
+      overloaded{
+          [&key, &value](MappingData& data) -> void {
+            const auto result =
+                data.mapping.insert({std::move(key), std::move(value)});
+            const bool inserted = result.second;
+            if (!inserted) {
+              // Our 'key' argument is now empty (because it has been
+              // moved-from), so for the error message we need to dig the
+              // existing key out of the map.
+              const std::string& old_key = result.first->first;
+              throw std::logic_error(fmt::format(
+                  "Cannot Node::Add(key, value) using duplicate key '{}'",
+                  old_key));
+            }
+          },
+          [](auto&& data) -> void {
+            throw std::logic_error(
+                fmt::format("Cannot Node::Add(key, value) on a {}",
+                            GetNiceVariantName(data)));
+          },
+      },
+      data_);
 }
 
 Node& Node::At(std::string_view key) {
-  return std::visit(overloaded{
-    [key](MappingData& data) -> Node& {
-      return data.mapping.at(std::string{key});
-    },
-    [](auto&& data) -> Node& {
-      throw std::logic_error(fmt::format(
-          "Cannot Node::At(key) on a {}", GetNiceVariantName(data)));
-    },
-  }, data_);
+  return std::visit(
+      overloaded{
+          [key](MappingData& data) -> Node& {
+            return data.mapping.at(std::string{key});
+          },
+          [](auto&& data) -> Node& {
+            throw std::logic_error(fmt::format("Cannot Node::At(key) on a {}",
+                                               GetNiceVariantName(data)));
+          },
+      },
+      data_);
 }
 
 void Node::Remove(std::string_view key) {
-  return std::visit(overloaded{
-    [key](MappingData& data) -> void {
-      auto erased = data.mapping.erase(std::string{key});
-      if (!erased) {
-        throw std::logic_error(fmt::format(
-            "No such key '{}' during Node::Remove(key)", key));
-      }
-    },
-    [](auto&& data) -> void {
-      throw std::logic_error(fmt::format(
-          "Cannot Node::Remove(key) on a {}", GetNiceVariantName(data)));
-    },
-  }, data_);
+  return std::visit(
+      overloaded{
+          [key](MappingData& data) -> void {
+            auto erased = data.mapping.erase(std::string{key});
+            if (!erased) {
+              throw std::logic_error(fmt::format(
+                  "No such key '{}' during Node::Remove(key)", key));
+            }
+          },
+          [](auto&& data) -> void {
+            throw std::logic_error(fmt::format(
+                "Cannot Node::Remove(key) on a {}", GetNiceVariantName(data)));
+          },
+      },
+      data_);
 }
 
 std::ostream& operator<<(std::ostream& os, const Node& node) {
@@ -223,33 +285,33 @@ std::ostream& operator<<(std::ostream& os, const Node& node) {
     os << "!<" << node.GetTag() << "> ";
   }
   node.Visit(overloaded{
-    [&](const Node::ScalarData& data) {
-      os << '"' << data.scalar << '"';
-    },
-    [&](const Node::SequenceData& data) {
-      os << "[";
-      bool first = true;
-      for (const auto& child : data.sequence) {
-        if (!first) {
-          os << ", ";
+      [&](const Node::ScalarData& data) {
+        os << '"' << data.scalar << '"';
+      },
+      [&](const Node::SequenceData& data) {
+        os << "[";
+        bool first = true;
+        for (const auto& child : data.sequence) {
+          if (!first) {
+            os << ", ";
+          }
+          first = false;
+          os << child;
         }
-        first = false;
-        os << child;
-      }
-      os << "]";
-    },
-    [&](const Node::MappingData& data) {
-      os << "{";
-      bool first = true;
-      for (const auto& [key, child] : data.mapping) {
-        if (!first) {
-          os << ", ";
+        os << "]";
+      },
+      [&](const Node::MappingData& data) {
+        os << "{";
+        bool first = true;
+        for (const auto& [key, child] : data.mapping) {
+          if (!first) {
+            os << ", ";
+          }
+          first = false;
+          os << '"' << key << '"' << ": " << child;
         }
-        first = false;
-        os << '"' << key << '"' << ": " << child;
-      }
-      os << "}";
-    },
+        os << "}";
+      },
   });
   return os;
 }

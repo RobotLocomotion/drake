@@ -22,12 +22,11 @@ package(default_visibility = ["//visibility:private"])
 filegroup(
     name = "demo_data",
     srcs = [
-        ":example_iiwa_wsg.dmd.yaml",
         ":example_scenarios.yaml",
-        "//examples/manipulation_station:prod_models",
-        "//examples/pendulum:prod_models",
-        "//manipulation/models/iiwa_description:prod_models",
-        "//manipulation/models/wsg_50_description:prod_models",
+        "//examples/manipulation_station:models",
+        "//examples/pendulum:models",
+        "//manipulation/models/iiwa_description:models",
+        "//manipulation/models/wsg_50_description:models",
     ],
     visibility = ["//:__pkg__"],
 )

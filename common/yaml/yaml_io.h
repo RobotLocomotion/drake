@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "drake/common/yaml/yaml_io_options.h"
@@ -85,11 +86,9 @@ only one entry, whose key is `child_name` and value is the serialized `data`.
 @tparam Serializable must implement a @ref implementing_serialize "Serialize"
   function. */
 template <typename Serializable>
-void SaveYamlFile(
-    const std::string& filename,
-    const Serializable& data,
-    const std::optional<std::string>& child_name = std::nullopt,
-    const std::optional<Serializable>& defaults = std::nullopt);
+void SaveYamlFile(const std::string& filename, const Serializable& data,
+                  const std::optional<std::string>& child_name = std::nullopt,
+                  const std::optional<Serializable>& defaults = std::nullopt);
 
 /** Saves data as a YAML-formatted string.
 
@@ -117,15 +116,45 @@ std::string SaveYamlString(
     const std::optional<std::string>& child_name = std::nullopt,
     const std::optional<Serializable>& defaults = std::nullopt);
 
+/** Saves data as a JSON-formatted file.
+
+Refer to @ref yaml_serialization "YAML Serialization" for background.
+
+Note that there is no matching `LoadJsonFile` function, because we haven't
+found any specific need for it yet in C++.
+
+@param data User data to be serialized.
+@returns the JSON data as a string.
+
+@tparam Serializable must implement a @ref implementing_serialize "Serialize"
+  function. */
+template <typename Serializable>
+void SaveJsonFile(const std::string& filename, const Serializable& data);
+
+/** Saves data as a JSON-formatted string.
+
+Refer to @ref yaml_serialization "YAML Serialization" for background.
+
+Note that there is no matching `LoadJsonString` function, because we haven't
+found any specific need for it yet in C++.
+
+@param data User data to be serialized.
+@returns the JSON data as a string.
+
+@tparam Serializable must implement a @ref implementing_serialize "Serialize"
+  function. */
+template <typename Serializable>
+std::string SaveJsonString(const Serializable& data);
+
 namespace internal {
 
-void WriteFile(const std::string& filename, const std::string& data);
+void WriteFile(std::string_view function_name, const std::string& filename,
+               const std::string& data);
 
 template <typename Serializable>
-static Serializable LoadNode(
-    internal::Node node,
-    const std::optional<Serializable>& defaults,
-    const std::optional<LoadYamlOptions>& options) {
+static Serializable LoadNode(internal::Node node,
+                             const std::optional<Serializable>& defaults,
+                             const std::optional<LoadYamlOptions>& options) {
   // Reify our optional arguments.
   Serializable result = defaults.value_or(Serializable{});
   LoadYamlOptions new_options = options.value_or(LoadYamlOptions{});
@@ -145,12 +174,11 @@ static Serializable LoadNode(
 // inline because we need internal::LoadNode to be declared.)
 template <typename Serializable>
 static Serializable LoadYamlFile(
-    const std::string& filename,
-    const std::optional<std::string>& child_name,
+    const std::string& filename, const std::optional<std::string>& child_name,
     const std::optional<Serializable>& defaults,
     const std::optional<LoadYamlOptions>& options) {
-  internal::Node node = internal::YamlReadArchive::LoadFileAsNode(
-      filename, child_name);
+  internal::Node node =
+      internal::YamlReadArchive::LoadFileAsNode(filename, child_name);
   return internal::LoadNode(std::move(node), defaults, options);
 }
 
@@ -158,34 +186,30 @@ static Serializable LoadYamlFile(
 // inline because we need internal::LoadNode to be declared.)
 template <typename Serializable>
 static Serializable LoadYamlString(
-    const std::string& data,
-    const std::optional<std::string>& child_name,
+    const std::string& data, const std::optional<std::string>& child_name,
     const std::optional<Serializable>& defaults,
     const std::optional<LoadYamlOptions>& options) {
-  internal::Node node = internal::YamlReadArchive::LoadStringAsNode(
-      data, child_name);
+  internal::Node node =
+      internal::YamlReadArchive::LoadStringAsNode(data, child_name);
   return internal::LoadNode(std::move(node), defaults, options);
 }
 
 // (Implementation of a function declared above.  This cannot be defined
 // inline because we need SaveYamlString to be declared.)
 template <typename Serializable>
-void SaveYamlFile(
-    const std::string& filename,
-    const Serializable& data,
-    const std::optional<std::string>& child_name,
-    const std::optional<Serializable>& defaults) {
-  internal::WriteFile(filename,
-      SaveYamlString(data, child_name, defaults));
+void SaveYamlFile(const std::string& filename, const Serializable& data,
+                  const std::optional<std::string>& child_name,
+                  const std::optional<Serializable>& defaults) {
+  internal::WriteFile("SaveYamlFile", filename,
+                      SaveYamlString(data, child_name, defaults));
 }
 
 // (Implementation of a function declared above.  This could be defined
 // inline, but we keep it with the others for consistency.)
 template <typename Serializable>
-std::string SaveYamlString(
-    const Serializable& data,
-    const std::optional<std::string>& child_name,
-    const std::optional<Serializable>& defaults) {
+std::string SaveYamlString(const Serializable& data,
+                           const std::optional<std::string>& child_name,
+                           const std::optional<Serializable>& defaults) {
   internal::YamlWriteArchive archive;
   archive.Accept(data);
   if (defaults.has_value()) {
@@ -194,6 +218,22 @@ std::string SaveYamlString(
     archive.EraseMatchingMaps(defaults_archive);
   }
   return archive.EmitString(child_name.value_or(std::string()));
+}
+
+// (Implementation of a function declared above.  This could be defined
+// inline, but we keep it with the others for consistency.)
+template <typename Serializable>
+void SaveJsonFile(const std::string& filename, const Serializable& data) {
+  internal::WriteFile("SaveJsonFile", filename, SaveJsonString(data));
+}
+
+// (Implementation of a function declared above.  This could be defined
+// inline, but we keep it with the others for consistency.)
+template <typename Serializable>
+std::string SaveJsonString(const Serializable& data) {
+  internal::YamlWriteArchive archive;
+  archive.Accept(data);
+  return archive.ToJson();
 }
 
 }  // namespace yaml

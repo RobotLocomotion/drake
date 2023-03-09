@@ -414,7 +414,7 @@ GTEST_TEST(FileParserTest, PackageMapTest) {
   // Attempt to read in the SDF file without setting the package map first.
   const std::string new_sdf_filename = sdf_path + "/box.sdf";
   DRAKE_EXPECT_THROWS_MESSAGE(parser.AddModelFromFile(new_sdf_filename),
-      "error.*unknown package.*box_model.*");
+      ".*error.*unknown package.*box_model.*");
 
   // Try again.
   parser.package_map().PopulateFromFolder(temp_dir);
@@ -450,6 +450,35 @@ GTEST_TEST(FileParserTest, StrictParsing) {
         parser.AddModelsFromString(model_provokes_warning, "urdf"),
         warning_pattern);
   }
+}
+
+GTEST_TEST(FileParserTest, AutoRenaming) {
+  std::string model = "<robot name='robot'><link name='a'/></robot>";
+  MultibodyPlant<double> plant(0.0);
+
+  Parser parser(&plant);
+  EXPECT_FALSE(parser.GetAutoRenaming());
+
+  // Load a model.
+  parser.AddModelsFromString(model, "urdf");
+  EXPECT_TRUE(plant.HasModelInstanceNamed("robot"));
+  // Auto renaming is off; fail to load it again.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModelsFromString(model, "urdf"),
+      ".*names must be unique.*");
+
+  // Load it again with auto renaming.
+  parser.SetAutoRenaming(true);
+  EXPECT_TRUE(parser.GetAutoRenaming());
+  parser.AddModelsFromString(model, "urdf");
+  EXPECT_TRUE(plant.HasModelInstanceNamed("robot_1"));
+
+  // Disable auto renaming and show repeat loading subsequently fails.
+  parser.SetAutoRenaming(false);
+  EXPECT_FALSE(parser.GetAutoRenaming());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      parser.AddModelsFromString(model, "urdf"),
+      ".*names must be unique.*");
 }
 
 }  // namespace

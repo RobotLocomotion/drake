@@ -143,6 +143,18 @@ class SpatialInertia {
   static SpatialInertia<T> SolidBoxWithDensity(
       const T& density, const T& lx, const T& ly, const T& lz);
 
+  /// Creates a spatial inertia for a uniform density solid cube B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] l The length of each of the cube's sides.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.  Since B's
+  /// rotational inertia is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo
+  /// expressed in frame B is equal to M_BBo expressed in an arbitrary frame E.
+  /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
+  /// B has an equal moment of inertia about any line passing through Bo.
+  /// @throws std::exception if l is zero or negative.
+  static SpatialInertia<T> SolidCubeWithDensity(const T& density, const T& l);
+
   /// Creates a spatial inertia for a uniform density solid capsule B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
@@ -174,6 +186,40 @@ class SpatialInertia {
   /// @pre ‖unit_vector‖ ≈ 1.
   static SpatialInertia<T> SolidCylinderWithDensity(
       const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
+
+  /// Creates a spatial inertia for a uniform-density solid cylinder B about an
+  /// end-point Bp (Bp is at the center of one of the cylinder's circular ends).
+  /// @param[in] density mass per volume (kg/m³).
+  /// @param[in] radius radius of the cylinder.
+  /// @param[in] length length of the cylinder in the unit_vector direction.
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  ///   cylinder, expressed in B.
+  /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
+  /// @note The position from Bp to Bcm is length / 2 *unit_vector.
+  /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
+  ///   an equal moment of inertia about any line that both passes through Bp
+  ///   and is perpendicular to unit_vector.
+  /// @throws std::exception if radius or length is zero or negative.
+  /// @pre ‖unit_vector‖ ≈ 1.
+  static SpatialInertia<T> SolidCylinderWithDensityAboutEnd(
+      const T& density, const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
+
+  /// Creates a spatial inertia for a uniform-density thin rod B about its
+  /// center of mass Bcm.
+  /// @param[in] mass mass of the rod (units of kg).
+  /// @param[in] length length of the rod (units of meters).
+  /// @param[in] unit_vector unit vector defining the rod's axial direction,
+  /// expressed in B.
+  /// @retval M_BBcm_B B's spatial inertia about Bcm, expressed in B.
+  /// @note B's rotational inertia about Bcm is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bcm and
+  /// is perpendicular to unit_vector. B has no (zero) rotational inertia about
+  /// the line that passes through Bcm and is parallel to unit_vector.
+  /// @throws std::exception if length is zero or negative.
+  /// @pre ‖unit_vector‖ ≈ 1.
+  static SpatialInertia<T> ThinRodWithMass(
+      const T& mass, const T& length, const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform density solid ellipsoid B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).

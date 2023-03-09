@@ -14,6 +14,7 @@
 #include "drake/common/diagnostic_policy.h"
 #include "drake/geometry/proximity/obj_to_surface_mesh.h"
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
+#include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/tree/geometry_spatial_inertia.h"
 
 namespace drake {
@@ -122,10 +123,8 @@ std::optional<ModelInstanceIndex> AddModelFromMesh(
 
   // Register model instance, body, and collision and visual geometries.
   MultibodyPlant<double>& plant = *workspace.plant;
-  const std::string model_instance_name =
-      parent_model_name.has_value()
-          ? fmt::format("{}::{}", *parent_model_name, candidate_name)
-          : candidate_name;
+  std::string model_instance_name =
+      MakeModelName(candidate_name, parent_model_name, workspace);
   const ModelInstanceIndex model_instance =
       plant.AddModelInstance(model_instance_name);
 

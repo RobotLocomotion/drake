@@ -3,6 +3,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/wrap_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
@@ -35,14 +36,6 @@ void DefinePlanningCollisionChecker(py::module m) {
             cls_doc.plant.doc)
         .def("get_body", &Class::get_body, py::arg("body_index"),
             py_rvp::reference_internal, cls_doc.get_body.doc)
-        .def("GetScopedName",
-            overload_cast_explicit<std::string, const Frame<double>&>(
-                &Class::GetScopedName),
-            py::arg("frame"), cls_doc.GetScopedName.doc_1args_frame)
-        .def("GetScopedName",
-            overload_cast_explicit<std::string, const Body<double>&>(
-                &Class::GetScopedName),
-            py::arg("body"), cls_doc.GetScopedName.doc_1args_body)
         .def("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
         .def("IsPartOfRobot",
@@ -255,6 +248,25 @@ void DefinePlanningCollisionChecker(py::module m) {
         .def("SupportsParallelChecking", &Class::SupportsParallelChecking,
             cls_doc.SupportsParallelChecking.doc);
     DefClone(&cls);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls  // BR
+        .def("GetScopedName",
+            WrapDeprecated(
+                cls_doc.GetScopedName.doc_deprecated_deprecated_1args_frame,
+                overload_cast_explicit<std::string, const Frame<double>&>(
+                    &Class::GetScopedName)),
+            py::arg("frame"),
+            cls_doc.GetScopedName.doc_deprecated_deprecated_1args_frame)
+        .def("GetScopedName",
+            WrapDeprecated(
+                cls_doc.GetScopedName.doc_deprecated_deprecated_1args_body,
+                overload_cast_explicit<std::string, const Body<double>&>(
+                    &Class::GetScopedName)),
+            py::arg("body"),
+            cls_doc.GetScopedName.doc_deprecated_deprecated_1args_body);
+#pragma GCC diagnostic pop
   }
 
   {

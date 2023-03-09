@@ -84,7 +84,9 @@ class CompositeParse;
 ///
 /// MultibodyPlant requires that model instances have unique names. To support
 /// loading multiple instances of the same model file(s) into a plant, Parser
-/// offers constructors that take a model name prefix, which gets applied to
+/// offers a few different strategies.
+///
+/// Parser has constructors that take a model name prefix, which gets applied to
 /// all models loaded with that Parser instance. The resulting workflow makes
 /// multiple parsers to build models for a single plant:
 /// @code
@@ -94,6 +96,22 @@ class CompositeParse;
 ///  right_parser.AddModels(arm_model);  // "right::arm"
 ///  left_parser.AddModels(gripper_model);  // "left::gripper"
 ///  right_parser.AddModels(gripper_model);  // "right::gripper"
+/// @endcode
+///
+/// For situations where it is convenient to load a model many times, Parser
+/// offers optional auto-renaming. When auto-renaming is enabled, name
+/// collisions will be resolved by adding a subscript to the name.
+/// @code
+///  Parser parser(plant);
+///  parser.SetAutoRenaming(true);
+///  // Subscripts are compact, and start at 1.
+///  parser.AddModels(rock);  // "rock"
+///  parser.AddModels(rock);  // "rock_1"
+///  parser.AddModels(rock);  // "rock_2"
+///  // Subscripts of different base names are independent.
+///  parser.AddModels(stone);  // "stone"
+///  parser.AddModels(stone);  // "stone_1"
+///  parser.AddModels(stone);  // "stone_2"
 /// @endcode
 ///
 /// (Advanced) In the rare case where the user is parsing into a MultibodyPlant
@@ -160,6 +178,14 @@ class Parser final {
   /// Cause all subsequent Add*Model*() operations to use strict parsing;
   /// warnings will be treated as errors.
   void SetStrictParsing() { is_strict_ = true; }
+
+  /// Enable or disable auto-renaming. It is disabled by default.
+  /// @see the Parser class documentation for more detail.
+  void SetAutoRenaming(bool value) { enable_auto_rename_ = value; }
+
+  /// Get the current state of auto-renaming.
+  /// @see the Parser class documentation for more detail.
+  bool GetAutoRenaming() const { return enable_auto_rename_; }
 
   /// Parses the input file named in @p file_name and adds all of its model(s)
   /// to @p plant.
@@ -239,6 +265,7 @@ class Parser final {
   friend class internal::CompositeParse;
 
   bool is_strict_{false};
+  bool enable_auto_rename_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;

@@ -20,12 +20,12 @@ GTEST_TEST(SymbolicMatricesTest, SparseMatrices) {
   const Variable x("x");
   std::vector<Eigen::Triplet<Expression>> triplets;
   triplets.push_back(Eigen::Triplet<Expression>(1, 1, 1.1));
-  triplets.push_back(Eigen::Triplet<Expression>(2, 2, x*2.0));
+  triplets.push_back(Eigen::Triplet<Expression>(2, 2, x * 2.0));
   Eigen::SparseMatrix<Expression> M(3, 3);
   M.setFromTriplets(triplets.begin(), triplets.end());
   EXPECT_PRED2(ExprEqual, M.coeff(0, 0), 0.0);
   EXPECT_PRED2(ExprEqual, M.coeff(1, 1), 1.1);
-  EXPECT_PRED2(ExprEqual, M.coeff(2, 2), x*2.0);
+  EXPECT_PRED2(ExprEqual, M.coeff(2, 2), x * 2.0);
 }
 
 }  // namespace

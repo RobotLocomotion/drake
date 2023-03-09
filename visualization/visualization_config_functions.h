@@ -7,6 +7,7 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
 #include "drake/geometry/scene_graph.h"
+#include "drake/multibody/meshcat/contact_visualizer_params.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_buses.h"
@@ -133,13 +134,17 @@ void AddDefaultVisualization(systems::DiagramBuilder<double>* builder);
 
 namespace internal {
 
-// (For unit testing only.)
+// (This function is declared in the header so that unit tests can call it.)
 std::vector<geometry::DrakeVisualizerParams>
 ConvertVisualizationConfigToDrakeParams(const VisualizationConfig&);
 
-// (For unit testing only.)
+// (This function is declared in the header so that unit tests can call it.)
 std::vector<geometry::MeshcatVisualizerParams>
 ConvertVisualizationConfigToMeshcatParams(const VisualizationConfig&);
+
+// (This function is declared in the header so that unit tests can call it.)
+multibody::meshcat::ContactVisualizerParams
+ConvertVisualizationConfigToMeshcatContactParams(const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization

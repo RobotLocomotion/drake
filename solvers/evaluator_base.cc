@@ -5,10 +5,10 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/nice_type_name.h"
 
-using std::make_shared;
-using std::shared_ptr;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
+using std::make_shared;
+using std::shared_ptr;
 
 namespace drake {
 namespace solvers {

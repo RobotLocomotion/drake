@@ -71,6 +71,7 @@ generate_file(
 _MOST_HDRS = [
     "include/sdf/Actor.hh",
     "include/sdf/AirPressure.hh",
+    "include/sdf/AirSpeed.hh",
     "include/sdf/Altimeter.hh",
     "include/sdf/Assert.hh",
     "include/sdf/Atmosphere.hh",
@@ -166,6 +167,7 @@ _HDRS = _MOST_HDRS + [
 _SRCS = [
     "src/Actor.cc",
     "src/AirPressure.cc",
+    "src/AirSpeed.cc",
     "src/Altimeter.cc",
     "src/Atmosphere.cc",
     "src/Box.cc",

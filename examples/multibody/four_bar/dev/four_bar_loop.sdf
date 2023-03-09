@@ -1,0 +1,134 @@
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="four_bar_loop">
+    <!-- TODO(sherm1) This is aspirational as of 3/2023.
+
+    A straightforward description of a planar 4-bar linkage, with no attempt to
+    specify a spanning tree. This is ideally what we would like Drake to be able
+    to work with, with no fuss.
+
+    There are three links (driver, coupler, rocker) plus world and four
+    revolute joints. The mechanism moves in the x-y plane; revolute axes all
+    point in the +z direction (towards you). In the figure below, the links are
+    shown as we are going to define them below, unassembled and conveniently
+    lined up with the World frame axes. "*" marks the connection points and the
+    frames are named. In sdf the frame at the link origin is indicated by the
+    link name (say "driver") rather than the monogram-named origin frame ("Do").
+    The additional frame's names start with a capital letter matching the link
+    to which they are fixed and a lower case letter for the connected link. All
+    frame axes are aligned with World in the description here.
+
+                                                        * Rc
+                                                        |
+                                                        |
+                             coupler C                  |
+       Co *------------------------------------------------------* Cr
+                              4.8m 1kg                  |
+          * Dc                                          |
+          |                                    rocker R | 2m
+          |                                             | 2kg
+      1m  | driver D                                    |
+      1kg |                                             |      Wy
+          |                                             |      |
+          * Do                                       Ro *      |
+                                                               +----- Wx
+          *====================== Wo ===================*     /
+         Wd         2m          world W      2m        Wr    Wz
+
+    In parent-child order, the joints will connect Wd-Do Wr-Ro Dc-Co Cr-Rc.
+    Link mass centers are at their midpoints. Lengths and masses are shown;
+    inertias are of thin rods (ML²/12). -->
+
+    <!-- Define links & their attached frames. -->
+
+    <frame name="Wd" attached_to="world">
+      <pose relative_to="world">-2 0 0 0 0 0</pose>
+    </frame>
+    <frame name="Wr" attached_to="world">
+      <pose relative_to="world">2 0 0 0 0 0</pose>
+    </frame>
+
+    <link name="driver">
+      <inertial>
+        <pose>0 0.5 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.0833333333333333</ixx>
+          <iyy>0</iyy>
+          <izz>0.0833333333333333</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Dc" attached_to="driver">
+      <pose relative_to="driver">0 1 0 0 0 0</pose>
+    </frame>
+
+    <link name="rocker">
+      <inertial>
+        <pose>0 1 0 0 0 0</pose>
+        <mass>2</mass>
+        <inertia>
+          <ixx>0.6666666666666667</ixx>
+          <iyy>0</iyy>
+          <izz>0.6666666666666667</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Rc" attached_to="rocker">
+      <pose relative_to="rocker">0 2 0 0 0 0</pose>
+    </frame>
+
+    <link name="coupler">
+      <inertial>
+        <pose>2.4 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0</ixx>
+          <iyy>1.92</iyy>
+          <izz>1.92</izz>
+          <ixy>0</ixy> <ixz>0</ixz> <iyz>0</iyz>
+        </inertia>
+      </inertial>
+    </link>
+    <frame name="Cr" attached_to="coupler">
+      <pose relative_to="coupler">4.8 0 0 0 0 0</pose>
+    </frame>
+
+    <!-- Define the four joints -->
+
+    <joint name="world_driver" type="revolute">
+      <parent>Wd</parent>
+      <child>driver</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <joint name="world_rocker" type="revolute">
+      <parent>Wr</parent>
+      <child>rocker</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <joint name="driver_coupler" type="revolute">
+      <parent>Dc</parent>
+      <child>coupler</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+    <joint name="coupler_rocker" type="revolute">
+      <parent>Cr</parent>
+      <child>Rc</child>
+      <axis>
+        <xyz expressed_in="__model__">0 0 1</xyz>
+      </axis>
+    </joint>
+
+  </model>
+</sdf>

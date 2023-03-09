@@ -236,7 +236,9 @@ Formula operator!(const Formula& f) {
   return Formula{make_shared<const FormulaNot>(f)};
 }
 
-Formula operator!(const Variable& v) { return !Formula(v); }
+Formula operator!(const Variable& v) {
+  return !Formula(v);
+}
 
 ostream& operator<<(ostream& os, const Formula& f) {
   DRAKE_ASSERT(f.ptr_ != nullptr);
@@ -331,16 +333,30 @@ Formula positive_semidefinite(const MatrixX<Expression>& m,
   }
 }
 
-bool is_false(const Formula& f) { return is_false(*f.ptr_); }
-bool is_true(const Formula& f) { return is_true(*f.ptr_); }
-bool is_variable(const Formula& f) { return is_variable(*f.ptr_); }
-bool is_equal_to(const Formula& f) { return is_equal_to(*f.ptr_); }
-bool is_not_equal_to(const Formula& f) { return is_not_equal_to(*f.ptr_); }
-bool is_greater_than(const Formula& f) { return is_greater_than(*f.ptr_); }
+bool is_false(const Formula& f) {
+  return is_false(*f.ptr_);
+}
+bool is_true(const Formula& f) {
+  return is_true(*f.ptr_);
+}
+bool is_variable(const Formula& f) {
+  return is_variable(*f.ptr_);
+}
+bool is_equal_to(const Formula& f) {
+  return is_equal_to(*f.ptr_);
+}
+bool is_not_equal_to(const Formula& f) {
+  return is_not_equal_to(*f.ptr_);
+}
+bool is_greater_than(const Formula& f) {
+  return is_greater_than(*f.ptr_);
+}
 bool is_greater_than_or_equal_to(const Formula& f) {
   return is_greater_than_or_equal_to(*f.ptr_);
 }
-bool is_less_than(const Formula& f) { return is_less_than(*f.ptr_); }
+bool is_less_than(const Formula& f) {
+  return is_less_than(*f.ptr_);
+}
 bool is_less_than_or_equal_to(const Formula& f) {
   return is_less_than_or_equal_to(*f.ptr_);
 }
@@ -349,14 +365,24 @@ bool is_relational(const Formula& f) {
          is_greater_than_or_equal_to(f) || is_less_than(f) ||
          is_less_than_or_equal_to(f);
 }
-bool is_conjunction(const Formula& f) { return is_conjunction(*f.ptr_); }
-bool is_disjunction(const Formula& f) { return is_disjunction(*f.ptr_); }
+bool is_conjunction(const Formula& f) {
+  return is_conjunction(*f.ptr_);
+}
+bool is_disjunction(const Formula& f) {
+  return is_disjunction(*f.ptr_);
+}
 bool is_nary(const Formula& f) {
   return is_conjunction(f) || is_disjunction(f);
 }
-bool is_negation(const Formula& f) { return is_negation(*f.ptr_); }
-bool is_forall(const Formula& f) { return is_forall(*f.ptr_); }
-bool is_isnan(const Formula& f) { return is_isnan(*f.ptr_); }
+bool is_negation(const Formula& f) {
+  return is_negation(*f.ptr_);
+}
+bool is_forall(const Formula& f) {
+  return is_forall(*f.ptr_);
+}
+bool is_isnan(const Formula& f) {
+  return is_isnan(*f.ptr_);
+}
 bool is_positive_semidefinite(const Formula& f) {
   return is_positive_semidefinite(*f.ptr_);
 }

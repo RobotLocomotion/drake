@@ -57,6 +57,7 @@ internal::fmt_eigen_ref<Derived> fmt_eigen(
 
 }  // namespace drake
 
+#ifndef DRAKE_DOXYGEN_CXX
 // Formatter specialization for drake::fmt_eigen.
 namespace fmt {
 template <typename Derived>
@@ -83,3 +84,4 @@ struct formatter<drake::internal::fmt_eigen_ref<Derived>>
   }
 };
 }  // namespace fmt
+#endif

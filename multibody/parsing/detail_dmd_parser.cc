@@ -5,8 +5,10 @@
 #include <set>
 
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
 #include "drake/multibody/parsing/scoped_names.h"
+#include "drake/multibody/tree/scoped_name.h"
 
 namespace drake {
 namespace multibody {
@@ -14,11 +16,7 @@ namespace internal {
 
 using parsing::ModelDirectives;
 using parsing::ModelInstanceInfo;
-using parsing::GetInstanceScopeName;
 using parsing::GetScopedFrameByName;
-using parsing::ParseScopedName;
-using parsing::PrefixName;
-using parsing::ScopedName;
 
 namespace {
 
@@ -54,7 +52,7 @@ void ParseModelDirectivesImpl(
     std::vector<ModelInstanceInfo>* added_models) {
   drake::log()->debug("ParseModelDirectivesImpl(MultibodyPlant)");
   DRAKE_DEMAND(added_models != nullptr);
-  auto& [package_map, diagnostic, plant,
+  auto& [options, package_map, diagnostic, plant,
          collision_resolver, parser_selector] = workspace;
   DRAKE_DEMAND(plant != nullptr);
   auto get_scoped_frame = [plant = plant, &model_namespace](
@@ -63,14 +61,16 @@ void ParseModelDirectivesImpl(
     if (name == "world") {
       return plant->world_frame();
     }
-    return GetScopedFrameByName(*plant, PrefixName(model_namespace, name));
+    return GetScopedFrameByName(
+        *plant, ScopedName::Join(model_namespace, name).to_string());
   };
 
   for (auto& directive : directives.directives) {
     if (directive.add_model) {
       ModelInstanceInfo info;
       auto& model = *directive.add_model;
-      const std::string name = PrefixName(model_namespace, model.name);
+      const std::string name =
+          ScopedName::Join(model_namespace, model.name).to_string();
       drake::log()->debug("  add_model: {}\n    {}", name, model.file);
       const std::string file =
           ResolveUri(diagnostic, model.file, package_map, {});
@@ -100,7 +100,8 @@ void ParseModelDirectivesImpl(
 
     } else if (directive.add_model_instance) {
       auto& instance = *directive.add_model_instance;
-      const std::string name = PrefixName(model_namespace, instance.name);
+      const std::string name =
+          MakeModelName(instance.name, model_namespace, workspace);
       drake::log()->debug("  add_model_instance: {}", name);
       plant->AddModelInstance(name);
 
@@ -114,17 +115,24 @@ void ParseModelDirectivesImpl(
       }
       // Only override instance if scope is explicitly specified.
       std::optional<ModelInstanceIndex> instance;
-      ScopedName parsed = ParseScopedName(frame.name);
-      if (!parsed.instance_name.empty()) {
-        parsed.instance_name = PrefixName(
-            model_namespace, parsed.instance_name);
-        instance = plant->GetModelInstanceByName(parsed.instance_name);
+      ScopedName parsed = ScopedName::Parse(frame.name);
+      if (!parsed.get_namespace().empty()) {
+        // N.B. Here we're using Join on two namespaces to make a new namespace,
+        // with no "element" involved. This is an atypical use of ScopedName,
+        // but effective for our needs.
+        parsed.set_namespace(
+            ScopedName::Join(model_namespace, parsed.get_namespace())
+                .get_full());
+        instance = plant->GetModelInstanceByName(parsed.get_namespace());
       }
       auto& added = plant->AddFrame(std::make_unique<FixedOffsetFrame<double>>(
-          parsed.name, get_scoped_frame(*frame.X_PF.base_frame),
+          std::string{parsed.get_element()},
+          get_scoped_frame(*frame.X_PF.base_frame),
           frame.X_PF.GetDeterministicValue(), instance));
-      const std::string resolved_name = PrefixName(
-          GetInstanceScopeName(*plant, added.model_instance()), added.name());
+      const std::string resolved_name =
+          ScopedName::Join(plant->GetModelInstanceName(added.model_instance()),
+                           added.name())
+              .to_string();
       drake::log()->debug("    resolved_name: {}", resolved_name);
 
     } else if (directive.add_weld) {
@@ -167,8 +175,8 @@ void ParseModelDirectivesImpl(
     } else {
       // Recurse.
       auto& sub = *directive.add_directives;
-      std::string new_model_namespace = PrefixName(
-          model_namespace, sub.model_namespace.value_or(""));
+      std::string new_model_namespace = ScopedName::Join(
+          model_namespace, sub.model_namespace.value_or("")).to_string();
       // Ensure we have a model instance for this namespace.
       drake::log()->debug("  add_directives: {}", sub.file);
       drake::log()->debug("    new_model_namespace: {}", new_model_namespace);

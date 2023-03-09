@@ -1189,6 +1189,24 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
   EXPECT_EQ(gs_tester_.get_frame_parent_poses().size(), kFrameCount + 1);
 }
 
+// The reported geometry ids should be inclusive and ordered.
+TEST_F(GeometryStateTest, GetAllGeometryIds) {
+  // We want to make sure the list spans sources.
+  const SourceId test_source = NewSource("all_ids");
+  const GeometryId local_anchored_id = geometry_state_.RegisterAnchoredGeometry(
+      test_source, make_unique<GeometryInstance>(
+                       RigidTransformd(), make_unique<Sphere>(1), "anchored"));
+  SetUpSingleSourceTree();
+
+  vector<GeometryId> expected_ids(geometries_);
+  expected_ids.push_back(local_anchored_id);
+  expected_ids.push_back(anchored_geometry_);
+  std::sort(expected_ids.begin(), expected_ids.end());
+
+  const vector<GeometryId> all_ids = geometry_state_.GetAllGeometryIds();
+  EXPECT_EQ(all_ids, expected_ids);
+}
+
 // Confirms that a GeometrySet can be converted into a set of geometry ids.
 TEST_F(GeometryStateTest, GetGeometryIds) {
   // Configure a scene where *every* geometry has a proximity role, but other
@@ -1801,6 +1819,38 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       geometry_state_.GetAllDeformableGeometryIds();
   ASSERT_EQ(deformable_ids.size(), 1);
   EXPECT_EQ(deformable_ids[0], g_id);
+}
+
+// GetAllDeformableGeometryIds should pull *only* deformable geometry ids and
+// should get them from all sources. Finally, the list should be ordered.
+TEST_F(GeometryStateTest, GetAllDeformableGeometryIds) {
+  /* Populate the world with some non-deformable geometries to ignore. */
+  SetUpSingleSourceTree();
+  const SourceId s1_id = NewSource("source1");
+  const SourceId s2_id = NewSource("source2");
+  const Sphere sphere(1.0);
+  constexpr double kRezHint = 0.5;
+
+  /* Add one deformable geometry per source. */
+  auto instance1 = make_unique<GeometryInstance>(RigidTransformd::Identity(),
+                                                 sphere.Clone(), "deformable1");
+  auto instance2 = make_unique<GeometryInstance>(RigidTransformd::Identity(),
+                                                 sphere.Clone(), "deformable2");
+
+  /* Our expected outcome. */
+  vector<GeometryId> expected_ids{instance1->id(), instance2->id()};
+  std::sort(expected_ids.begin(), expected_ids.end());
+
+  /* Register in counter-intuitive order. */
+  geometry_state_.RegisterDeformableGeometry(
+      s2_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
+  geometry_state_.RegisterDeformableGeometry(
+      s1_id, InternalFrame::world_frame_id(), move(instance1), kRezHint);
+
+  /* Confirm that we get the expected ids in the expected order. */
+  const vector<GeometryId> deformable_ids =
+      geometry_state_.GetAllDeformableGeometryIds();
+  ASSERT_EQ(deformable_ids, expected_ids);
 }
 
 /* This test covers the data maintenance *within* GeometryState. It confirms
