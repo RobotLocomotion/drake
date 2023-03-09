@@ -28,6 +28,7 @@ libtinyxml-dev
 libtool
 libvtk9-dev
 libx11-dev
+mold
 ocl-icd-opencl-dev
 opencl-headers
 openssh-client

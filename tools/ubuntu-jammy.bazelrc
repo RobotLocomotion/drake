@@ -35,3 +35,6 @@ build:clang --action_env=CC=clang-12
 build:clang --action_env=CXX=clang++-12
 build:clang --host_action_env=CC=clang-12
 build:clang --host_action_env=CXX=clang++-12
+
+# Experiment with mold.
+build --linkopt=-fuse-ld=mold
