@@ -20,6 +20,7 @@ drake_cc_package_library(
         ":contact_solver_results",
         ":contact_solver_utils",
         ":linear_operator",
+        ":matrix_block",
         ":newton_with_bisection",
         ":pgs_solver",
         ":point_contact_data",
@@ -104,6 +105,17 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:nice_type_name",
+    ],
+)
+
+drake_cc_library(
+    name = "matrix_block",
+    srcs = ["matrix_block.cc"],
+    hdrs = ["matrix_block.h"],
+    deps = [
+        ":block_3x3_sparse_matrix",
+        "//common:default_scalars",
+        "//common:essential",
     ],
 )
 
@@ -197,6 +209,14 @@ drake_cc_googletest(
         ":block_sparse_matrix",
         ":linear_operator",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "matrix_block_test",
+    deps = [
+        ":matrix_block",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
