@@ -1,5 +1,7 @@
 #include "drake/solvers/constraint.h"
 
+#include <limits>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -178,6 +180,10 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   QuadraticConstraint constraint1(Q, b, 0, 1);
   EXPECT_TRUE(CompareMatrices(constraint1.Q(), Q));
   EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+  EXPECT_EQ(constraint1.hessian_type(),
+            QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  // The constraint is non-convex due to the lower bound not being -inf.
+  EXPECT_FALSE(constraint1.is_convex());
   std::ostringstream os;
   constraint1.Display(os, symbolic::MakeVectorContinuousVariable(2, "x"));
   EXPECT_EQ(os.str(),
@@ -197,20 +203,49 @@ GTEST_TEST(testConstraint, testQuadraticConstraintHessian) {
   EXPECT_PRED2(FormulaEqual, constraint1.CheckSatisfied(x_sym),
                0 <= y_sym[0] && y_sym[0] <= 1);
 
-  // Updates constraint with a non-symmetric Hessian.
+  // Updates constraint with a non-symmetric negative definite Hessian.
   // clang-format off
-  Q << 1, 1,
-       0, 1;
+  Q << -1, 1,
+       0, -1;
   // clang-format on
   b << 1, 2;
   constraint1.UpdateCoefficients(Q, b);
   EXPECT_TRUE(CompareMatrices(constraint1.Q(), (Q + Q.transpose()) / 2));
   EXPECT_TRUE(CompareMatrices(constraint1.b(), b));
+  EXPECT_EQ(constraint1.hessian_type(),
+            QuadraticConstraint::HessianType::kNegativeSemidefinite);
+  EXPECT_FALSE(constraint1.is_convex());
 
   // Constructs a constraint with a non-symmetric Hessian.
-  QuadraticConstraint constraint2(Q, b, 0, 1);
+  QuadraticConstraint constraint2(
+      Q, b, 0, kInf, QuadraticConstraint::HessianType::kNegativeSemidefinite);
   EXPECT_TRUE(CompareMatrices(constraint2.Q(), (Q + Q.transpose()) / 2));
   EXPECT_TRUE(CompareMatrices(constraint2.b(), b));
+  EXPECT_EQ(constraint2.hessian_type(),
+            QuadraticConstraint::HessianType::kNegativeSemidefinite);
+  EXPECT_TRUE(constraint2.is_convex());
+
+  // Updates constraints with an indefinite Hessian.
+  // clang-format off
+  Q << 1, 2,
+       2, 3;
+  // clang-format on
+  constraint2.UpdateCoefficients(Q, b);
+  EXPECT_EQ(constraint2.hessian_type(),
+            QuadraticConstraint::HessianType::kIndefinite);
+  EXPECT_FALSE(constraint2.is_convex());
+
+  // Updates constraint with a specified Hessian type.
+  constraint2.UpdateCoefficients(
+      Eigen::Matrix2d::Identity(), b,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  EXPECT_EQ(constraint2.hessian_type(),
+            QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  EXPECT_FALSE(constraint2.is_convex());
+
+  // Construct a constraint with psd Hessian and lower bound being -inf.
+  QuadraticConstraint constraint3(Eigen::Matrix2d::Identity(), b, -kInf, 1);
+  EXPECT_TRUE(constraint3.is_convex());
 }
 
 void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
