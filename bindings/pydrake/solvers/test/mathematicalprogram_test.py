@@ -598,10 +598,20 @@ class TestMathematicalProgram(unittest.TestCase):
             constraint.upper_bound(), np.array([2., 3.]))
 
     def test_quadratic_constraint(self):
+        hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite
         constraint = mp.QuadraticConstraint(
-            Q0=np.eye(2), b=np.array([1, 2.]), lb=0.5, ub=1.)
+            Q0=np.eye(2), b=np.array([1, 2.]), lb=-np.inf, ub=1.,
+            hessian_type=hessian_type)
         np.testing.assert_array_equal(constraint.Q(), np.eye(2))
         np.testing.assert_array_equal(constraint.b(), np.array([1, 2.]))
+        self.assertEqual(constraint.hessian_type(), hessian_type)
+        self.assertTrue(constraint.is_convex())
+        hessian_type = mp.QuadraticConstraint.HessianType.kNegativeSemidefinite
+        constraint.UpdateCoefficients(
+            new_Q=-np.eye(2), new_b=np.array([1., -1.]),
+            hessian_type=hessian_type)
+        self.assertEqual(constraint.hessian_type(), hessian_type)
+        self.assertFalse(constraint.is_convex())
 
     def test_positive_semidefinite_constraint(self):
         constraint = mp.PositiveSemidefiniteConstraint(rows=3)
