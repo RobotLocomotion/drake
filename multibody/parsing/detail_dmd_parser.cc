@@ -17,6 +17,7 @@ namespace internal {
 using parsing::ModelDirectives;
 using parsing::ModelInstanceInfo;
 using parsing::GetScopedFrameByName;
+using parsing::GetScopedFrameName;
 
 namespace {
 
@@ -31,17 +32,36 @@ void AddWeld(
     std::vector<ModelInstanceInfo>* added_models) {
   plant->WeldFrames(parent_frame, child_frame, X_PC);
   if (added_models) {
+    auto try_recording_added_models = [plant, added_models](
+        const Frame<double>& record_parent,
+        const Frame<double>& record_child) {
+      drake::log()->debug(
+          "Trying to record weld info by finding "
+          "model instance {} in added_models",
+          plant->GetModelInstanceName(record_child.model_instance()));
+      for (auto& info : *added_models) {
+        drake::log()->debug(
+            "  check: {}", plant->GetModelInstanceName(info.model_instance));
+        if (info.model_instance == record_child.model_instance()) {
+          // See warning in ModelInstanceInfo about these members.
+          info.parent_frame_name = record_parent.name();
+          info.child_frame_name = record_child.name();
+          return true;
+        }
+      }
+      return false;
+    };
     // Record weld info into crappy ModelInstanceInfo struct.
-    bool found = false;
-    for (auto& info : *added_models) {
-      if (info.model_instance == child_frame.model_instance()) {
-        found = true;
-        // See warning in ModelInstanceInfo about these members.
-        info.parent_frame_name = parent_frame.name();
-        info.child_frame_name = child_frame.name();
+    if (!try_recording_added_models(parent_frame, child_frame)) {
+      if (!try_recording_added_models(child_frame, parent_frame)) {
+        throw std::runtime_error(fmt::format(
+            "Unable to record added_model info for weld:\n"
+            "  parent: {}\n"
+            "  child: {}",
+            GetScopedFrameName(*plant, parent_frame),
+            GetScopedFrameName(*plant, child_frame)));
       }
     }
-    DRAKE_DEMAND(found);
   }
 }
 
@@ -136,14 +156,19 @@ void ParseModelDirectivesImpl(
       drake::log()->debug("    resolved_name: {}", resolved_name);
 
     } else if (directive.add_weld) {
+      const auto& parent = get_scoped_frame(directive.add_weld->parent);
+      const auto& child = get_scoped_frame(directive.add_weld->child);
+      drake::log()->debug(
+          "  add_weld:\n"
+          "    parent: {}\n"
+          "    child: {}\n",
+          GetScopedFrameName(*plant, parent),
+          GetScopedFrameName(*plant, child));
       math::RigidTransform<double> X_PC{};
       if (directive.add_weld->X_PC) {
         X_PC = directive.add_weld->X_PC->GetDeterministicValue();
       }
-      AddWeld(
-          get_scoped_frame(directive.add_weld->parent),
-          get_scoped_frame(directive.add_weld->child),
-          X_PC, plant, added_models);
+      AddWeld(parent, child, X_PC, plant, added_models);
 
     } else if (directive.add_collision_filter_group) {
       // If there's no geometry registered, there's nothing to be done with
