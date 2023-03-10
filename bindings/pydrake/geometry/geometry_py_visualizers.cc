@@ -311,6 +311,8 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::arg("value"), cls_doc.SetSliderValue.doc)
         .def("GetSliderValue", &Class::GetSliderValue, py::arg("name"),
             cls_doc.GetSliderValue.doc)
+        .def("GetSliderNames", &Class::GetSliderNames,
+            cls_doc.GetSliderNames.doc)
         .def("DeleteSlider", &Class::DeleteSlider, py::arg("name"),
             cls_doc.DeleteSlider.doc)
         .def("DeleteAddedControls", &Class::DeleteAddedControls,

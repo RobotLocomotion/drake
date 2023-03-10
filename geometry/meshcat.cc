@@ -1396,6 +1396,18 @@ class Meshcat::Impl {
     return iter->second.value;
   }
 
+  std::vector<std::string> GetSliderNames() const {
+    DRAKE_DEMAND(IsThread(main_thread_id_));
+
+    std::lock_guard<std::mutex> lock(controls_mutex_);
+    std::vector<std::string> names;
+    names.reserve(sliders_.size());
+    for (const auto& [name, _] : sliders_) {
+      names.push_back(name);
+    }
+    return names;
+  }
+
   // This function is public via the PIMPL.
   void DeleteSlider(std::string name) {
     DRAKE_DEMAND(IsThread(main_thread_id_));
@@ -2252,6 +2264,10 @@ void Meshcat::SetSliderValue(std::string name, double value) {
 
 double Meshcat::GetSliderValue(std::string_view name) const {
   return impl().GetSliderValue(name);
+}
+
+std::vector<std::string> Meshcat::GetSliderNames() const {
+  return impl().GetSliderNames();
 }
 
 void Meshcat::DeleteSlider(std::string name) {

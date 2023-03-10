@@ -173,6 +173,7 @@ class TestGeometryVisualizers(unittest.TestCase):
                           value=0.5,
                           decrement_keycode="ArrowLeft",
                           increment_keycode="ArrowRight")
+        self.assertEqual(meshcat.GetSliderNames(), ["slider"])
         meshcat.SetSliderValue(name="slider", value=0.7)
         self.assertAlmostEqual(meshcat.GetSliderValue(
             name="slider"), 0.7, delta=1e-14)

@@ -20,6 +20,7 @@ namespace {
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using testing::ElementsAre;
 using ::testing::HasSubstr;
 
 // A small wrapper around std::system to ensure correct argument passing.
@@ -688,6 +689,10 @@ GTEST_TEST(MeshcatTest, Sliders) {
 
   meshcat.AddSlider("slider1", 2, 3, 0.01, 2.35);
   meshcat.AddSlider("slider2", 4, 5, 0.01, 4.56);
+
+  auto slider_names = meshcat.GetSliderNames();
+  EXPECT_THAT(slider_names, ElementsAre("slider1", "slider2"));
+
   meshcat.DeleteAddedControls();
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider1"),
@@ -695,6 +700,9 @@ GTEST_TEST(MeshcatTest, Sliders) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider2"),
       "Meshcat does not have any slider named slider2.");
+
+  slider_names = meshcat.GetSliderNames();
+  EXPECT_EQ(slider_names.size(), 0);
 }
 
 GTEST_TEST(MeshcatTest, DuplicateMixedControls) {
@@ -733,7 +741,7 @@ GTEST_TEST(MeshcatTest, Gamepad) {
       "type": "gamepad",
       "name": "",
       "gamepad": {
-        "index": 1, 
+        "index": 1,
         "button_values": [0, 0.5],
         "axes": [0.1, 0.2, 0.3, 0.4]
       }
