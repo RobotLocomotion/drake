@@ -15,8 +15,8 @@
 #include <utility>
 #include <vector>
 
-// NOLINTNEXTLINE(build/include)
-#include "snopt.h"
+// // NOLINTNEXTLINE(build/include)
+// #include "snopt.h"
 
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
@@ -26,6 +26,37 @@
 // TODO(jwnimmer-tri) Eventually resolve these warnings.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+
+// Put SNOPT's and F2C's typedefs into their own namespace.
+namespace snopt {
+extern "C" {
+
+// Include F2C's typedefs but revert its leaky defines.
+#include <f2c.h>
+#undef qbit_clear
+#undef qbit_set
+#undef TRUE_
+#undef FALSE_
+#undef Extern
+#undef VOID
+#undef abs
+#undef dabs
+#undef min
+#undef max
+#undef dmin
+#undef dmax
+#undef bit_test
+#undef bit_clear
+#undef bit_set
+
+// Include SNOPT's function declarations.
+#include <snopt.hh>
+#ifdef SNOPT_HAS_SNFILEWRAPPER
+#include <cexamples/snfilewrapper.h>
+#endif
+
+}  // extern C
+}  // namespace snopt
 
 // todo(sammy-tri) :  return more information that just the solution (INFO,
 // infeasible constraints, ...)
@@ -93,13 +124,13 @@ struct SnoptImpl<true> {
 #pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
-  static constexpr auto snend = ::f_snend;
-  static constexpr auto sninit = ::f_sninit;
-  static constexpr auto snkera = ::f_snkera;
-  static constexpr auto snmema = ::f_snmema;
-  static constexpr auto snseti = ::f_snseti;
-  static constexpr auto snsetr = ::f_snsetr;
-  static constexpr auto snset = ::f_snset;
+  // static constexpr auto snend = snopt::snend_;
+  static constexpr auto sninit = snopt::sninit_;
+  static constexpr auto snopta = snopt::snopta_;
+  static constexpr auto snmema = snopt::snmema_;
+  static constexpr auto snseti = snopt::snseti_;
+  static constexpr auto snsetr = snopt::snsetr_;
+  static constexpr auto snset = snopt::snset_;
 #pragma GCC diagnostic pop
 };
 
@@ -117,19 +148,21 @@ struct SnoptImpl<false> {
   // "Print file" option is not enabled, this is zero.
   thread_local inline static int g_iprint;
 
+  // template <typename Int>
+  // static void snend(
+  //     Int* iw, int leniw, double* rw, int lenrw) {
+  //   // Close the print file and then release its unit (if necessary).
+  //   Int iprint = g_iprint;
+  //   snopt::snend_(&iprint);
+  //   if (g_iprint) {
+  //     FortranUnitFactory::singleton().Release(g_iprint);
+  //     g_iprint = 0;
+  //   }
+  // }
   template <typename Int>
-  static void snend(Int* iw, int leniw, double* rw, int lenrw) {
-    // Close the print file and then release its unit (if necessary).
-    Int iprint = g_iprint;
-    ::f_snend(&iprint);
-    if (g_iprint) {
-      FortranUnitFactory::singleton().Release(g_iprint);
-      g_iprint = 0;
-    }
-  }
-  template <typename Int>
-  static void sninit(const char* name, int len, int summOn, Int* iw, int leniw,
-                     double* rw, int lenrw) {
+  static void sninit(
+      const char* name, int len, int summOn, char* cw, snopt::integer lencw,
+      Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw) {
     // Allocate a unit number for the "Print file" (if necessary); the code
     // within f_sninit will open the file.
     if (len == 0) {
@@ -137,76 +170,94 @@ struct SnoptImpl<false> {
     } else {
       g_iprint = FortranUnitFactory::singleton().Allocate();
     }
-    Int iprint = g_iprint;
-    ::f_sninit(name, &len, &iprint, &summOn, iw, &leniw, rw, &lenrw);
+    snopt::integer iprint = static_cast<snopt::integer>(g_iprint);
+    snopt::integer summ_on = static_cast<snopt::integer>(summOn);
+    snopt::sninit_(&iprint, &summ_on, cw, &lencw, iw, &leniw, rw, &lenrw, 8 * lencw);
   }
   // Turn clang-format off for readability.
   // clang-format off
   template <typename Int>
-  static void snkera(
-      int start, const char* name,
-      int nf, int n, double objadd, int objrow,
-      snFunA usrfun, isnLog snLog, isnLog2 snLog2,
-      isqLog sqLog, isnSTOP snSTOP,
-      int* iAfun, int* jAvar, int neA, double* A,
-      int* iGfun, int* jGvar, int neG,
+  static void snopta(
+      snopt::integer start, char* name,
+      snopt::integer nf, snopt::integer n, double objadd, snopt::integer objrow,
+      snopt::My_fp usrfun,
+      snopt::integer* iAfun, snopt::integer* jAvar, snopt::integer neA, double* A,
+      snopt::integer* iGfun, snopt::integer* jGvar, snopt::integer neG,
       double* xlow, double* xupp,
       double* flow, double* fupp,
-      double* x, int* xstate, double* xmul,
-      double* f, int* fstate, double* fmul,
-      int* inform, int* ns, int* ninf, double* sinf,
-      int* miniw, int* minrw,
-      int* iu, int leniu, double* ru, int lenru,
-      Int* iw, int leniw, double* rw, int lenrw) {
-    ::f_snkera(
-         &start, name,
-         &nf, &n, &objadd, &objrow,
-         usrfun, snLog, snLog2, sqLog, snSTOP,
-         iAfun, jAvar, &neA, A,
-         iGfun, jGvar, &neG,
-         xlow, xupp,
-         flow, fupp,
+      double* x, snopt::integer* xstate, double* xmul,
+      double* f, snopt::integer* fstate, double* fmul,
+      snopt::integer* inform, snopt::integer* ns, snopt::integer* ninf, double* sinf,
+      snopt::integer* mincw, snopt::integer* miniw, snopt::integer* minrw,
+      char* cw, snopt::integer lencw,
+      Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw) {
+        snopt::integer nxname = 1, nFname = 1, npname = strlen(name);
+        char xnames[8 * 1];  // should match nxname
+        char Fnames[8 * 1];  // should match nFname
+    snopt::snopta_(
+         &start,
+         &nf, &n, &nxname, &nFname, &objadd, &objrow,
+         name, usrfun,
+         iAfun, jAvar, &neA, &neA, A,
+         iGfun, jGvar, &neG, &neG,
+         xlow, xupp, xnames,
+         flow, fupp, Fnames,
          x, xstate, xmul,
          f, fstate, fmul,
-         inform, ns, ninf, sinf,
-         miniw,  minrw,
-         iu, &leniu,
-         ru, &lenru,
-         iw, &leniw,
-         rw, &lenrw);
+         inform,
+         mincw, miniw,  minrw,
+         ns, ninf, sinf,
+        //  iu, &leniu,
+        //  ru, &lenru,
+         cw, &lencw, iw, &leniw, rw, &lenrw,
+         cw, &lencw, iw, &leniw, rw, &lenrw,
+         npname, 8 * nxname, 8 * nFname, 8 * lencw, 8 * lencw);
   }
   // clang-format on
   template <typename Int>
-  static void snmema(int* info, int nf, int n, int neA, int neG, int* miniw,
-                     int* minrw, Int* iw, int leniw, double* rw, int lenrw) {
-    ::f_snmema(info, &nf, &n, &neA, &neG, miniw, minrw, iw, &leniw, rw, &lenrw);
+  static void snmema(
+      snopt::integer* info,
+      snopt::integer nf, snopt::integer n, snopt::integer neA, snopt::integer neG,
+      snopt::integer* mincw, snopt::integer* miniw, snopt::integer* minrw,
+      char* cw, snopt::integer lencw, Int* iw, snopt::integer leniw,
+      double* rw, snopt::integer lenrw) {
+        snopt::integer nxname = 1, nFname = 1;
+    snopt::snmema_(info, &nf, &n, &nxname, &nFname, &neA, &neG, mincw, miniw, minrw,
+                   cw, &lencw, iw, &leniw, rw, &lenrw, 8 * lencw);
   }
   template <typename Int>
-  static void snseti(const char* buffer, int len, int iopt, int* errors,
-                     Int* iw, int leniw, double* rw, int lenrw) {
-    ::f_snseti(buffer, &len, &iopt, errors, iw, &leniw, rw, &lenrw);
+  static void snseti(
+      const char* buffer, int len, int ival, snopt::integer* errors,
+      char* cw, snopt::integer lencw, Int* iw, snopt::integer leniw,
+      double* rw, snopt::integer lenrw) {
+        snopt::integer iPrint = -1;
+        snopt::integer iSumm = -1;
+        snopt::integer opt_val = static_cast<snopt::integer>(ival);
+    snopt::snseti_(buffer, &opt_val, &iPrint, &iSumm, errors, cw, &lencw,
+                   iw, &leniw, rw, &lenrw, len, 8 * lencw);
   }
   template <typename Int>
-  static void snsetr(const char* buffer, int len, double rvalue, int* errors,
-                     Int* iw, int leniw, double* rw, int lenrw) {
-    ::f_snsetr(buffer, &len, &rvalue, errors, iw, &leniw, rw, &lenrw);
-  }
-  template <typename Int>
-  static void snset(const char* buffer, int len, int* errors, Int* iw,
-                    int leniw, double* rw, int lenrw) {
-    ::f_snset(buffer, &len, errors, iw, &leniw, rw, &lenrw);
+  static void snsetr(
+      const char* buffer, int len, double rvalue, snopt::integer* errors,
+      char* cw, snopt::integer lencw, Int* iw, snopt::integer leniw,
+      double* rw, snopt::integer lenrw) {
+        snopt::integer iPrint = -1;
+        snopt::integer iSumm = -1;
+        snopt::doublereal r_val = static_cast<snopt::doublereal>(rvalue);
+    snopt::snsetr_(buffer, &r_val, &iPrint, &iSumm, errors, cw, &lencw,
+                  iw, &leniw, rw, &lenrw, len, 8 * lencw);
   }
 };
 
 // Choose the correct SnoptImpl specialization.
-#pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
-#pragma GCC diagnostic ignored "-Wpragmas"
-#pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
-void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
-#pragma GCC diagnostic pop
-const bool kIsSnopt76 =
-    std::is_same_v<decltype(&f_sninit), decltype(&f_sninit_76_prototype)>;
-using Snopt = SnoptImpl<kIsSnopt76>;
+// #pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
+// #pragma GCC diagnostic ignored "-Wpragmas"
+// #pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
+// void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
+// #pragma GCC diagnostic pop
+// const bool kIsSnopt76 = false;
+//     std::is_same_v<decltype(&f_sninit), decltype(&f_sninit_76_prototype)>;
+using Snopt = SnoptImpl<false>;
 
 }  // namespace
 
@@ -251,9 +302,9 @@ class SnoptUserFunInfo {
     return duplicate_to_G_index_map_;
   }
 
-  void set_lenG(int lenG) { lenG_ = lenG; }
+  void set_lenG(snopt::integer lenG) { lenG_ = lenG; }
 
-  [[nodiscard]] int lenG() const { return lenG_; }
+  [[nodiscard]] snopt::integer lenG() const { return lenG_; }
 
   // If and only if the userfun experiences an exception, the exception message
   // will be stashed here. All callers of snOptA or similar must check this to
@@ -268,7 +319,7 @@ class SnoptUserFunInfo {
   int leniu() const { return this_pointer_as_int_array_.size(); }
 
   // Converts the `int iu[]` data back into a reference to this class.
-  static SnoptUserFunInfo& GetFrom(const int* iu, int leniu) {
+  static SnoptUserFunInfo& GetFrom(const snopt::integer* iu, snopt::integer leniu) {
     DRAKE_ASSERT(iu != nullptr);
     DRAKE_ASSERT(leniu == kIntCount);
 
@@ -328,15 +379,20 @@ class WorkspaceStorage {
     DRAKE_DEMAND(user_info_ != nullptr);
     iw_.resize(500);
     rw_.resize(500);
+    cw_.resize(8 * 500);
   }
 
-  int* iw() { return iw_.data(); }
-  int leniw() const { return iw_.size(); }
+  snopt::integer* iw() { return reinterpret_cast<snopt::integer*>(iw_.data()); }
+  snopt::integer leniw() const { return iw_.size(); }
   void resize_iw(int size) { iw_.resize(size); }
 
   double* rw() { return rw_.data(); }
-  int lenrw() const { return rw_.size(); }
+  snopt::integer lenrw() const { return rw_.size(); }
   void resize_rw(int size) { rw_.resize(size); }
+
+  char* cw() { return cw_.data(); }
+  snopt::integer lencw() const { return cw_.size(); }
+  void resize_cw(int size) { cw_.resize(size); }
 
   int* iu() { return user_info_->iu(); }
   int leniu() const { return user_info_->leniu(); }
@@ -347,6 +403,7 @@ class WorkspaceStorage {
  private:
   std::vector<int> iw_;
   std::vector<double> rw_;
+  std::vector<char> cw_;
 
   const SnoptUserFunInfo* const user_info_;
 };
@@ -624,9 +681,13 @@ void EvaluateCostsConstraints(const SnoptUserFunInfo& info, int n, double x[],
 // otherwise macOS will immediately abort. Therefore, we need to catch all
 // exceptions and manually shepherd them back to our C++ code that called
 // into SNOPT.
-void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
-                   double F[], int* needG, int* neG, double G[], char* cu,
-                   int* lencu, int iu[], int* leniu, double ru[], int* lenru) {
+int snopt_userfun(snopt::integer* Status, snopt::integer* n,
+                  snopt::doublereal x[], snopt::integer* needF,
+                  snopt::integer* neF, snopt::doublereal F[],
+                  snopt::integer* needG, snopt::integer* neG,
+                  snopt::doublereal G[], char* cu, snopt::integer* lencu,
+                  snopt::integer iu[], snopt::integer* leniu,
+                  snopt::doublereal ru[], snopt::integer* lenru) {
   SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
   try {
     EvaluateCostsConstraints(info, *n, x, F, G);
@@ -637,6 +698,7 @@ void snopt_userfun(int* Status, int* n, double x[], int* needF, int* neF,
     // The SNOPT manual says "Set Status < -1 if you want snOptA to stop."
     *Status = -2;
   }
+  return 0;
 }
 
 /*
@@ -1090,11 +1152,9 @@ void UpdateNumConstraintsAndGradients(
 void PruneGradientDuplication(int nx, const std::vector<int>& iGfun_w_duplicate,
                               const std::vector<int>& jGvar_w_duplicate,
                               std::vector<int>* duplicate_to_G_index_map,
-                              std::vector<int>* iGfun,
-                              std::vector<int>* jGvar) {
-  auto gradient_index = [nx](int row, int col) {
-    return row * nx + col;
-  };
+                              std::vector<snopt::integer>* iGfun,
+                              std::vector<snopt::integer>* jGvar) {
+  auto gradient_index = [nx](int row, int col) { return row * nx + col; };
   std::unordered_map<int, int> gradient_index_to_G;
   duplicate_to_G_index_map->reserve(iGfun_w_duplicate.size());
   iGfun->reserve(iGfun_w_duplicate.size());
@@ -1106,8 +1166,8 @@ void PruneGradientDuplication(int nx, const std::vector<int>& iGfun_w_duplicate,
     if (it == gradient_index_to_G.end()) {
       duplicate_to_G_index_map->push_back(iGfun->size());
       gradient_index_to_G.emplace_hint(it, index, iGfun->size());
-      iGfun->push_back(iGfun_w_duplicate[i]);
-      jGvar->push_back(jGvar_w_duplicate[i]);
+      iGfun->push_back(static_cast<snopt::integer>(iGfun_w_duplicate[i]));
+      jGvar->push_back(static_cast<snopt::integer>(jGvar_w_duplicate[i]));
     } else {
       duplicate_to_G_index_map->push_back(it->second);
     }
@@ -1133,20 +1193,24 @@ void SolveWithGivenOptions(
   if (print_file_it != snopt_options_string.end()) {
     print_file_name = print_file_it->second;
   }
-  Snopt::sninit(print_file_name.c_str(), print_file_name.length(),
-                0 /* no summary */, storage.iw(), storage.leniw(), storage.rw(),
-                storage.lenrw());
-  ScopeExit guard([&storage]() {
-    Snopt::snend(storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
-  });
+  Snopt::sninit(
+      print_file_name.c_str(), print_file_name.length(), 0 /* no summary */,
+      storage.cw(), storage.lencw(),
+      storage.iw(), storage.leniw(),
+      storage.rw(), storage.lenrw());
+  // ScopeExit guard([&storage]() {
+  //   Snopt::snend_(
+  //       storage.iw(), storage.leniw(),
+  //       storage.rw(), storage.lenrw());
+  // });
 
-  int nx = prog.num_vars();
+  snopt::integer nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
   solver_details.xmul.resize(nx);
   solver_details.xmul.setZero();
-  std::vector<int> xstate(nx, 0);
+  std::vector<snopt::integer> xstate(nx, 0);
 
   // Initialize the guess for x.
   for (int i = 0; i < nx; ++i) {
@@ -1187,14 +1251,14 @@ void SolveWithGivenOptions(
                                    &constraint_dual_start_index);
 
   // Update the bound of the constraint.
-  int nF = 1 + num_nonlinear_constraints + num_linear_constraints;
+  snopt::integer nF = 1 + num_nonlinear_constraints + num_linear_constraints;
   solver_details.F.resize(nF);
   solver_details.F.setZero();
   std::vector<double> Flow(nF, -std::numeric_limits<double>::infinity());
   std::vector<double> Fupp(nF, std::numeric_limits<double>::infinity());
   solver_details.Fmul.resize(nF);
   solver_details.Fmul.setZero();
-  std::vector<int> Fstate(nF, 0);
+  std::vector<snopt::integer> Fstate(nF, 0);
 
   // Set up the gradient sparsity pattern.
   int lenG_w_duplicate = max_num_gradients;
@@ -1260,11 +1324,11 @@ void SolveWithGivenOptions(
   // setFromTriplets sums up the duplicated entries.
   linear_constraints_A.setFromTriplets(linear_constraints_triplets.begin(),
                                        linear_constraints_triplets.end());
-  int lenA = variable_to_linear_cost_coefficient.size() +
-             linear_constraints_A.nonZeros();
+  snopt::integer lenA = variable_to_linear_cost_coefficient.size() +
+                        linear_constraints_A.nonZeros();
   std::vector<double> A(lenA, 0.0);
-  std::vector<int> iAfun(lenA, 0);
-  std::vector<int> jAvar(lenA, 0);
+  std::vector<snopt::integer> iAfun(lenA, 0);
+  std::vector<snopt::integer> jAvar(lenA, 0);
   size_t A_index = 0;
   for (const auto& it : variable_to_linear_cost_coefficient) {
     A[A_index] = it.second;
@@ -1284,18 +1348,21 @@ void SolveWithGivenOptions(
     }
   }
 
-  std::vector<int> iGfun;
-  std::vector<int> jGvar;
+  std::vector<snopt::integer> iGfun;
+  std::vector<snopt::integer> jGvar;
   auto& duplicate_to_G_index_map = user_info.duplicate_to_G_index_map();
   PruneGradientDuplication(nx, iGfun_w_duplicate, jGvar_w_duplicate,
                            &duplicate_to_G_index_map, &iGfun, &jGvar);
-  const int lenG = iGfun.size();
+  const snopt::integer lenG = iGfun.size();
   user_info.set_lenG(lenG);
 
   for (const auto& it : snopt_options_double) {
-    int errors = 0;
-    Snopt::snsetr(it.first.c_str(), it.first.length(), it.second, &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
+    snopt::integer errors = 0;
+    Snopt::snsetr(
+        it.first.c_str(), it.first.length(), it.second, &errors,
+        storage.cw(), storage.lencw(),
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     if (errors > 0) {
       throw std::runtime_error("Error setting Snopt double parameter " +
                                it.first);
@@ -1303,68 +1370,62 @@ void SolveWithGivenOptions(
   }
 
   for (const auto& it : snopt_options_int) {
-    int errors = 0;
-    Snopt::snseti(it.first.c_str(), it.first.length(), it.second, &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
+    snopt::integer errors = 0;
+    Snopt::snseti(
+        it.first.c_str(), it.first.length(), it.second, &errors,
+        storage.cw(), storage.lencw(),
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     if (errors > 0) {
       throw std::runtime_error("Error setting Snopt integer parameter " +
                                it.first);
     }
   }
 
-  for (const auto& it : snopt_options_string) {
-    int errors = 0;
-    auto option_string = it.first + " " + it.second;
-    if (it.first == "Print file") {
-      // Already handled during sninit, above
-      continue;
-    }
-    Snopt::snset(option_string.c_str(), option_string.length(), &errors,
-                 storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
-    if (errors > 0) {
-      throw std::runtime_error("Error setting Snopt string parameter " +
-                               it.first);
-    }
-  }
-
-  int Cold = 0;
+  snopt::integer Cold = 0;
   double objective_constant = linear_cost_constant_term;
   // The index of the objective row among all function evaluation F (notice that
   // due to SNOPT using Fortran, this is 1-indexed).
-  int ObjRow = 1;
-  int nS = 0;
-  int nInf{0};
+  snopt::integer ObjRow = 1;
+  snopt::integer nS = 0;
+  snopt::integer nInf{0};
   double sInf{0.0};
 
+
   // Reallocate int and real workspace.
-  int miniw, minrw;
-  int snopt_status{0};
-  Snopt::snmema(&snopt_status, nF, nx, lenA, lenG, &miniw, &minrw, storage.iw(),
-                storage.leniw(), storage.rw(), storage.lenrw());
+  snopt::integer mincw, miniw, minrw;
+  snopt::integer snopt_status{0};
+  Snopt::snmema(&snopt_status, nF, nx, lenA, lenG, &mincw, &miniw, &minrw,
+                storage.cw(), storage.lencw(), storage.iw(), storage.leniw(),
+                storage.rw(), storage.lenrw());
   // TODO(jwnimmer-tri) Check snopt_status for errors.
   if (miniw > storage.leniw()) {
     storage.resize_iw(miniw);
     const std::string option = "Total int workspace";
-    int errors;
-    Snopt::snseti(option.c_str(), option.length(), storage.leniw(), &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
+    snopt::integer errors;
+    Snopt::snseti(
+        option.c_str(), option.length(), storage.leniw(), &errors,
+        storage.cw(), storage.lencw(),
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   if (minrw > storage.lenrw()) {
     storage.resize_rw(minrw);
     const std::string option = "Total real workspace";
-    int errors;
-    Snopt::snseti(option.c_str(), option.length(), storage.lenrw(), &errors,
-                  storage.iw(), storage.leniw(), storage.rw(), storage.lenrw());
+    snopt::integer errors;
+    Snopt::snseti(
+        option.c_str(), option.length(), storage.lenrw(), &errors,
+        storage.cw(), storage.lencw(),
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   // Actual solve.
-  const char problem_name[] = "drake_problem";
+  char problem_name[] = "drake_problem";
   // clang-format off
-  Snopt::snkera(Cold, problem_name, nF, nx, objective_constant, ObjRow,
-                snopt_userfun,
-                nullptr /* isnLog snLog */, nullptr /* isnLog2 snLog2 */,
-                nullptr /* isqLog sqLog */, nullptr /* isnSTOP snSTOP */,
+  Snopt::snopta(Cold, problem_name, nF, nx, objective_constant, ObjRow,
+                reinterpret_cast<snopt::My_fp>(&snopt_userfun),
                 iAfun.data(), jAvar.data(), lenA, A.data(),
                 iGfun.data(), jGvar.data(), lenG,
                 xlow.data(), xupp.data(),
@@ -1372,9 +1433,8 @@ void SolveWithGivenOptions(
                 x.data(), xstate.data(), solver_details.xmul.data(),
                 solver_details.F.data(), Fstate.data(),
                 solver_details.Fmul.data(),
-                &snopt_status, &nS, &nInf, &sInf, &miniw, &minrw,
-                storage.iu(), storage.leniu(),
-                storage.ru(), storage.lenru(),
+                &snopt_status, &nS, &nInf, &sInf, &mincw, &miniw, &minrw,
+                storage.cw(), storage.lencw(),
                 storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw());
   // clang-format on
