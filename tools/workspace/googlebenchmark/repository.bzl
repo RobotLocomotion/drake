@@ -11,4 +11,8 @@ def googlebenchmark_repository(
         commit = "v1.7.1",
         sha256 = "6430e4092653380d9dc4ccb45a1e2dc9259d581f4866dc0759713126056bc1d7",  # noqa
         mirrors = mirrors,
+        patches = [
+            ":patches/console_allocs.patch",
+            ":patches/string_precision.patch",
+        ],
     )
