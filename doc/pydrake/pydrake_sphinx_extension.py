@@ -137,26 +137,16 @@ class TemplateDocumenter(autodoc.ModuleLevelDocumenter):
     # Take priority over attributes.
     priority = 1 + autodoc.AttributeDocumenter.priority
 
-    option_spec = {
-        'show-all-instantiations': autodoc.bool_option,
-    }
-    # Permit propagation of class-specific properties.
-    option_spec.update(autodoc.ClassDocumenter.option_spec)
-
     @classmethod
     def can_document_member(cls, member, membername, isattr, parent):
         """Overrides base to check for template objects."""
         return isinstance(member, TemplateBase)
 
     def get_object_members(self, want_all):
-        """Overrides base to return instantiations from templates."""
-        members = []
-        for param in self.object.param_list:
-            instantiation = self.object[param]
-            members.append((instantiation.__name__, instantiation))
-            if not self.options.show_all_instantiations:
-                break
-        return False, members
+        """Overrides base; we shouldn't show any details beyond the list of
+        instantiations.
+        """
+        return False, []
 
     def check_module(self):
         """Overrides base to show template objects given the correct module."""
@@ -199,8 +189,7 @@ def tpl_attrgetter(obj, name, *defargs):
     """
     # N.B. Rather than try to evaluate parameters from the string, we instead
     # match based on instantiation name.
-    if "[" in name:
-        assert name.endswith(']'), name
+    if isinstance(obj, TemplateBase) and name[0] != "_":
         for param in obj.param_list:
             inst = obj[param]
             if inst.__name__ == name:
