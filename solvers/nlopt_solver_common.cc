@@ -19,7 +19,9 @@ SolverId NloptSolver::id() {
   return singleton.access();
 }
 
-bool NloptSolver::is_enabled() { return true; }
+bool NloptSolver::is_enabled() {
+  return true;
+}
 
 bool NloptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
@@ -36,15 +38,25 @@ bool NloptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
                                         solver_capabilities.access());
 }
 
-std::string NloptSolver::ConstraintToleranceName() { return "constraint_tol"; }
+std::string NloptSolver::ConstraintToleranceName() {
+  return "constraint_tol";
+}
 
-std::string NloptSolver::XRelativeToleranceName() { return "xtol_rel"; }
+std::string NloptSolver::XRelativeToleranceName() {
+  return "xtol_rel";
+}
 
-std::string NloptSolver::XAbsoluteToleranceName() { return "xtol_abs"; }
+std::string NloptSolver::XAbsoluteToleranceName() {
+  return "xtol_abs";
+}
 
-std::string NloptSolver::MaxEvalName() { return "max_eval"; }
+std::string NloptSolver::MaxEvalName() {
+  return "max_eval";
+}
 
-std::string NloptSolver::AlgorithmName() { return "algorithm"; }
+std::string NloptSolver::AlgorithmName() {
+  return "algorithm";
+}
 
 }  // namespace solvers
 }  // namespace drake

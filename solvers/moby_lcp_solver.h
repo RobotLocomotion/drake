@@ -81,7 +81,7 @@ class MobyLCPSolver final : public SolverBase {
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
     return M.rows() * M.template lpNorm<Eigen::Infinity>() *
-        (10 * std::numeric_limits<double>::epsilon());
+           (10 * std::numeric_limits<double>::epsilon());
   }
 
   /// Fast pivoting algorithm for LCPs of the form M = PAPᵀ, q = Pb, where
@@ -122,8 +122,8 @@ class MobyLCPSolver final : public SolverBase {
   /// * [Drumwright 2015]  E. Drumwright. Rapidly computable viscous friction
   ///                      and no-slip rigid contact models. arXiv:
   ///                      1504.00719v1. 2015.
-  bool SolveLcpFast(const MatrixX<T>& M, const VectorX<T>& q,
-                    VectorX<T>* z, const T& zero_tol = T(-1)) const;
+  bool SolveLcpFast(const MatrixX<T>& M, const VectorX<T>& q, VectorX<T>* z,
+                    const T& zero_tol = T(-1)) const;
 
   /// Regularized version of the fast pivoting algorithm for LCPs of the form
   /// M = PAPᵀ, q = Pb, where b ∈ ℝᵐ, P ∈ ℝⁿˣᵐ, and A ∈ ℝᵐˣᵐ (where A is
@@ -176,11 +176,10 @@ class MobyLCPSolver final : public SolverBase {
   ///
   /// * [Cottle, 1992]     R. Cottle, J.-S. Pang, and R. Stone. The Linear
   ///                      Complementarity Problem. Academic Press, 1992.
-  bool SolveLcpFastRegularized(const MatrixX<T>& M,
-                               const VectorX<T>& q, VectorX<T>* z,
-                               int min_exp = -20, unsigned step_exp = 4,
-                               int max_exp = 20, const T& zero_tol = T(-1))
-                               const;
+  bool SolveLcpFastRegularized(const MatrixX<T>& M, const VectorX<T>& q,
+                               VectorX<T>* z, int min_exp = -20,
+                               unsigned step_exp = 4, int max_exp = 20,
+                               const T& zero_tol = T(-1)) const;
 
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   /// all strictly semimonotone matrices, all P-matrices, and all strictly
@@ -224,9 +223,8 @@ class MobyLCPSolver final : public SolverBase {
   ///                      Complementarity Problem. Academic Press, 1992.
   /// * [LEMKE]          P. Fackler and M. Miranda. LEMKE.
   ///                    http://people.sc.fsu.edu/~burkardt/m\_src/lemke/lemke.m
-  bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q,
-                     VectorX<T>* z, const T& piv_tol = T(-1),
-                     const T& zero_tol = T(-1)) const;
+  bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q, VectorX<T>* z,
+                     const T& piv_tol = T(-1), const T& zero_tol = T(-1)) const;
 
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   /// all strictly semimonotone matrices, all P-matrices, and all strictly
@@ -260,10 +258,10 @@ class MobyLCPSolver final : public SolverBase {
   ///
   /// * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
   ///                      Complementarity Problem. Academic Press, 1992.
-  bool SolveLcpLemkeRegularized(const MatrixX<T>& M,
-                                const VectorX<T>& q, VectorX<T>* z,
-                                int min_exp = -20, unsigned step_exp = 1,
-                                int max_exp = 1, const T& piv_tol = T(-1),
+  bool SolveLcpLemkeRegularized(const MatrixX<T>& M, const VectorX<T>& q,
+                                VectorX<T>* z, int min_exp = -20,
+                                unsigned step_exp = 1, int max_exp = 1,
+                                const T& piv_tol = T(-1),
                                 const T& zero_tol = T(-1)) const;
 
   /// Returns the number of pivoting operations made by the last LCP solve.

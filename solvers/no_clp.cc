@@ -6,7 +6,9 @@
 
 namespace drake {
 namespace solvers {
-bool ClpSolver::is_available() { return false; }
+bool ClpSolver::is_available() {
+  return false;
+}
 
 void ClpSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
                         const SolverOptions&,

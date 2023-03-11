@@ -55,7 +55,9 @@ MosekSolverProgram::MosekSolverProgram(const MathematicalProgram& prog,
                &task_);
 }
 
-MosekSolverProgram::~MosekSolverProgram() { MSK_deletetask(&task_); }
+MosekSolverProgram::~MosekSolverProgram() {
+  MSK_deletetask(&task_);
+}
 
 MSKrescodee
 MosekSolverProgram::AddMatrixVariableEntryCoefficientMatrixIfNonExistent(
@@ -1257,7 +1259,9 @@ void ThrowForInvalidOption(MSKrescodee rescode, const std::string& option,
 // it will show PRSTATUS, PFEAS, DFEAS, etc. For more information, check out
 // https://docs.mosek.com/10.0/capi/solver-io.html. This printstr is copied
 // directly from https://docs.mosek.com/10.0/capi/solver-io.html#stream-logging.
-void MSKAPI printstr(void*, const char str[]) { printf("%s", str); }
+void MSKAPI printstr(void*, const char str[]) {
+  printf("%s", str);
+}
 
 }  // namespace
 

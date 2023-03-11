@@ -477,9 +477,9 @@ class MathematicalProgram {
    */
   enum class NonnegativePolynomial {
     // We reserve the 0 value as a tactic for identifying uninitialized enums.
-    kSos = 1,    ///< A sum-of-squares polynomial.
-    kSdsos,      ///< A scaled-diagonally dominant sum-of-squares polynomial.
-    kDsos,       ///< A diagonally dominant sum-of-squares polynomial.
+    kSos = 1,  ///< A sum-of-squares polynomial.
+    kSdsos,    ///< A scaled-diagonally dominant sum-of-squares polynomial.
+    kDsos,     ///< A diagonally dominant sum-of-squares polynomial.
   };
 
   /** Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,
@@ -1543,8 +1543,8 @@ class MathematicalProgram {
    * @tparam Derived An Eigen Array type of Formula.
    */
   Binding<LinearConstraint> AddLinearConstraint(
-      const Eigen::Ref<const Eigen::Array<
-          symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas);
+      const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                          Eigen::Dynamic>>& formulas);
 
   /**
    * Adds linear equality constraints referencing potentially a
@@ -2655,9 +2655,8 @@ class MathematicalProgram {
       MatrixLikewise<double, Derived>>
   GetInitialGuess(
       const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
-    MatrixLikewise<double, Derived>
-        decision_variable_values(decision_variable_mat.rows(),
-                                 decision_variable_mat.cols());
+    MatrixLikewise<double, Derived> decision_variable_values(
+        decision_variable_mat.rows(), decision_variable_mat.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
         decision_variable_values(i, j) =
