@@ -14,7 +14,9 @@ namespace solvers {
  * @param n A positive integer.
  * @return The minimal integer no smaller than log₂(n).
  */
-constexpr int CeilLog2(int n) { return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2); }
+constexpr int CeilLog2(int n) {
+  return n == 1 ? 0 : 1 + CeilLog2((n + 1) / 2);
+}
 
 /**
  * The size of the new binary variables in the compile time, for Special Ordered
@@ -172,10 +174,7 @@ AddLogarithmicSos1Constraint(MathematicalProgram* prog, int num_lambda);
  * variables, or linear number of binary variables. For more details, @see
  * AddLogarithmicSos2Constraint and AddSos2Constraint
  */
-enum class IntervalBinning {
-  kLogarithmic,
-  kLinear
-};
+enum class IntervalBinning { kLogarithmic, kLinear };
 
 std::string to_string(IntervalBinning interval_binning);
 
@@ -241,8 +240,8 @@ std::ostream& operator<<(std::ostream& os, const IntervalBinning& binning);
  * constraints are enforced.
  */
 template <typename DerivedPhiX, typename DerivedPhiY, typename DerivedBx,
-    typename DerivedBy>
-  typename std::enable_if_t<
+          typename DerivedBy>
+typename std::enable_if_t<
     is_eigen_vector_of<DerivedPhiX, double>::value &&
         is_eigen_vector_of<DerivedPhiY, double>::value &&
         is_eigen_vector_of<DerivedBx, symbolic::Expression>::value &&
@@ -302,10 +301,11 @@ AddBilinearProductMcCormickEnvelopeSos2(
       AddSos2Constraint(
           prog, lambda.template cast<symbolic::Expression>().rowwise().sum(),
           Bx);
-      AddSos2Constraint(prog, lambda.template cast<symbolic::Expression>()
-                                  .colwise()
-                                  .sum()
-                                  .transpose(),
+      AddSos2Constraint(prog,
+                        lambda.template cast<symbolic::Expression>()
+                            .colwise()
+                            .sum()
+                            .transpose(),
                         By);
       break;
   }

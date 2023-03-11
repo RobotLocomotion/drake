@@ -14,11 +14,13 @@ shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   return shared_ptr<MosekSolver::License>();
 }
 
-bool MosekSolver::is_available() { return false; }
+bool MosekSolver::is_available() {
+  return false;
+}
 
-void MosekSolver::DoSolve(
-    const MathematicalProgram&, const Eigen::VectorXd&,
-    const SolverOptions&, MathematicalProgramResult*) const {
+void MosekSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+                          const SolverOptions&,
+                          MathematicalProgramResult*) const {
   throw runtime_error(
       "Mosek is not installed in your build. You'll need to use a different "
       "solver.");

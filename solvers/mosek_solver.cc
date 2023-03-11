@@ -75,7 +75,9 @@ std::shared_ptr<MosekSolver::License> MosekSolver::AcquireLicense() {
   return GetScopedSingleton<MosekSolver::License>();
 }
 
-bool MosekSolver::is_available() { return true; }
+bool MosekSolver::is_available() {
+  return true;
+}
 
 void MosekSolver::DoSolve(const MathematicalProgram& prog,
                           const Eigen::VectorXd& initial_guess,
@@ -228,8 +230,11 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
   // integer/binary variables. See
   // https://docs.mosek.com/latest/rmosek/tutorial-mio-shared.html#specifying-an-initial-solution
   // for more details.
-  const bool has_any_finite_initial_guess =
-      initial_guess.unaryExpr([](double g) { return std::isfinite(g); }).any();
+  const bool has_any_finite_initial_guess = initial_guess
+                                                .unaryExpr([](double g) {
+                                                  return std::isfinite(g);
+                                                })
+                                                .any();
   if (has_any_finite_initial_guess) {
     DRAKE_ASSERT(initial_guess.size() == prog.num_vars());
     for (int i = 0; i < prog.num_vars(); ++i) {
