@@ -1,5 +1,3 @@
-# -*- python -*-
-
 licenses(["notice"])  # BSD-3-Clause
 
 config_setting(

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 licenses(["notice"])  # SGI-B-2.0
 
 cc_library(

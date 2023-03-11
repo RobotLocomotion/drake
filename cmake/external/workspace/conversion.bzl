@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This file contains some helper functions that are meant to be used with
 # CMake imported targets.
 

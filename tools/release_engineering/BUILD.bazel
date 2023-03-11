@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(
     "//tools/skylark:drake_py_per_os.bzl",
     "drake_py_binary_ubuntu_only",

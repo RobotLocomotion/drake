@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This file contains build macros and constants that help define Drake's
 # documentation targets (i.e., these should only be used for BUILD files
 # within @drake//doc/...).

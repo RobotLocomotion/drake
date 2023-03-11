@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/install:install.bzl", "install")
 
 licenses(["notice"])  # MIT

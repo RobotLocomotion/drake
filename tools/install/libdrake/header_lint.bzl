@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This file contains a linter rule that ensures that only our allowed set of
 # third-party dependencies are used as "interface deps". In almost all cases,
 # we should be using "implementation deps" when using third-party libraries.

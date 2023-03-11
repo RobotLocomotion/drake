@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # TODO(eric.cousineau): Deprecate and remove this when our binaries gain the
 # ability to use Rlocation from Python.
 

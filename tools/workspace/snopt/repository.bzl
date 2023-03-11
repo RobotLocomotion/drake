@@ -1,5 +1,3 @@
-# -*- python -*-
-
 """
 Either extracts an gzipped tar archive containing SNOPT source code located at
 SNOPT_PATH or if SNOPT_PATH is "git", clones a remote git repository

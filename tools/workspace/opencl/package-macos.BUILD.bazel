@@ -1,5 +1,3 @@
-# -*- python -*-
-
 licenses(["permissive"])  # BSD-2-Clause AND Expat
 
 cc_library(

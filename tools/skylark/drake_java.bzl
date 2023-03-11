@@ -1,5 +1,3 @@
-# -*- python -*-
-
 MainClassInfo = provider()
 
 # Generate a launcher file to run installed java binaries

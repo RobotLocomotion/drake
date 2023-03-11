@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def _xacro_impl(ctx):
     out = ctx.actions.declare_file(ctx.label.name)
     ctx.actions.run(

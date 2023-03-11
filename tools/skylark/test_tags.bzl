@@ -1,5 +1,3 @@
-# -*- mode: python -*-
-
 # These macros are intended to be used when declaring tests that either may-use
 # or must-use dependencies that have constraints (commercial licenses, or
 # peculiar behavior). For commercial dependnecies, these labels both account

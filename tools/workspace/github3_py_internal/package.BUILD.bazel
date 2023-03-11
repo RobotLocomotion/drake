@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/skylark:py.bzl", "py_library")
 
 licenses(["notice"])  # BSD-3-Clause

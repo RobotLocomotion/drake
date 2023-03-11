@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 def install_lint(

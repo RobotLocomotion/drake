@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(":vars.bzl", "LIBDIR")
 
 licenses(["notice"])  # IJG

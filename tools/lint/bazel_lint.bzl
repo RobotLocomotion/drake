@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 #------------------------------------------------------------------------------

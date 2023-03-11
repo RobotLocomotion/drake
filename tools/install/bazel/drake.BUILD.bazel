@@ -1,5 +1,4 @@
-# -*- mode: python -*-
-# vi: set ft=python :
+# -*- bazel -*-
 
 load("@rules_python//python:defs.bzl", "py_library")
 load("//:.manifest.bzl", "MANIFEST")

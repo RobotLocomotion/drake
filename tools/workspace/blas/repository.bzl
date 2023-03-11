@@ -1,5 +1,3 @@
-# -*- mode: python -*-
-
 load("@drake//tools/workspace:os.bzl", "os_specific_alias_repository")
 
 # TLDR: Use this repository (@blas) instead of @libblas or @openblas in the

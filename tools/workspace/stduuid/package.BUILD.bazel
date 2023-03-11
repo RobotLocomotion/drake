@@ -1,5 +1,3 @@
-# -*- python -*-
-
 licenses(["notice"])  # MIT
 
 package(default_visibility = ["//visibility:public"])

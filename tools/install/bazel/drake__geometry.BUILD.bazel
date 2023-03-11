@@ -1,5 +1,4 @@
-# -*- mode: python -*-
-# vi: set ft=python :
+# -*- bazel -*-
 
 # This is the @drake//geometry package.
 

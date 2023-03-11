@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def _generate_file_impl(ctx):
     out = ctx.actions.declare_file(ctx.label.name)
     ctx.actions.write(out, ctx.attr.content, ctx.attr.is_executable)

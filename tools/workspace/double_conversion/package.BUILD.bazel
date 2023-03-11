@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(":vars.bzl", "LIBDIR")
 
 licenses(["notice"])  # BSD-3-Clause

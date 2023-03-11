@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # Load the relevant upstream methods.
 load(
     "@intellij_aspect//:intellij_info_impl.bzl",

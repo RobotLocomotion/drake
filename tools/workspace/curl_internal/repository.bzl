@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def curl_internal_repository(

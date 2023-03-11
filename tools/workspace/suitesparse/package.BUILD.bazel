@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(":vars.bzl", "LIBDIR")
 
 package(default_visibility = ["//visibility:public"])

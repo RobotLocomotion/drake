@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This is a separate file from drake_py.bzl because the dependency on
 # @drake_detected_os is somewhat brittle and might present challenges
 # for users exploring novel platforms.

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This stub BUILD file for SNOPT contains the same public targets as the real
 # BUILD file, always reports an error (from error.txt) during compilation, but
 # does not report any loading-phase errors.  This is useful to defer error

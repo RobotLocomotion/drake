@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def forward_files(
         srcs = [],
         strip_prefix = None,
