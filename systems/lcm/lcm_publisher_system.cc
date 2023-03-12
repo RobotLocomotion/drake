@@ -46,7 +46,12 @@ LcmPublisherSystem::LcmPublisherSystem(
       &LcmPublisherSystem::PublishInputAsLcmMessage);
   }
 
-  DeclareAbstractInputPort("lcm_message", *serializer_->CreateDefaultValue());
+  lcm_message_input_port_ =
+      DeclareAbstractInputPort(
+          "lcm_message", *serializer_->CreateDefaultValue()).get_index();
+  should_publish_input_port_ =
+      DeclareAbstractInputPort(
+          "should_publish", Value<bool>(false)).get_index();
 
   set_name(make_name(channel_));
   if (publish_triggers.find(TriggerType::kPeriodic) != publish_triggers.end()) {
@@ -118,6 +123,14 @@ EventStatus LcmPublisherSystem::PublishInputAsLcmMessage(
     const Context<double>& context) const {
   DRAKE_LOGGER_TRACE("Publishing LCM {} message", channel_);
   DRAKE_ASSERT(serializer_ != nullptr);
+
+  if (get_should_publish_input_port().HasValue(context)) {
+    const bool should_publish =
+        get_should_publish_input_port().Eval<bool>(context);
+    if (!should_publish) {
+      return EventStatus::DidNothing();
+    }
+  }
 
   // Converts the input into LCM message bytes.
   const AbstractValue& input = get_input_port().Eval<AbstractValue>(context);
