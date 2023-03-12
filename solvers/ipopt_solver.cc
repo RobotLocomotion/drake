@@ -301,17 +301,20 @@ struct ResultCache {
   void SetX(const Index n, const Number* x_arg) {
     DRAKE_ASSERT(static_cast<Index>(x.size()) == n);
     grad_valid = false;
-    if (n == 0) { return; }
+    if (n == 0) {
+      return;
+    }
     DRAKE_ASSERT(x_arg != nullptr);
     std::memcpy(x.data(), x_arg, n * sizeof(Number));
   }
 
   // Sugar to copy one of our member fields into an IPOPT bare array.
-  static void Extract(
-      const std::vector<Number>& cache_data,
-      const Index dest_size, Number* dest) {
+  static void Extract(const std::vector<Number>& cache_data,
+                      const Index dest_size, Number* dest) {
     DRAKE_ASSERT(static_cast<Index>(cache_data.size()) == dest_size);
-    if (dest_size == 0) { return; }
+    if (dest_size == 0) {
+      return;
+    }
     DRAKE_ASSERT(dest != nullptr);
     std::memcpy(dest, cache_data.data(), dest_size * sizeof(Number));
   }
@@ -523,12 +526,12 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       DRAKE_ASSERT(jCol != nullptr);
 
       int constraint_idx = 0;  // Passed into GetGradientMatrix as
-                                  // the starting row number for the
-                                  // constraint being described.
+                               // the starting row number for the
+                               // constraint being described.
       int grad_idx = 0;        // Offset into iRow, jCol output variables.
-                                  // Incremented by the number of triplets
-                                  // populated by each call to
-                                  // GetGradientMatrix.
+                               // Incremented by the number of triplets
+                               // populated by each call to
+                               // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
         grad_idx +=
             GetGradientMatrix(*problem_, *(c.evaluator()), c.variables(),
@@ -839,16 +842,17 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
   return "Unknown enumerated SolverReturn value.";
 }
 
-bool IpoptSolver::is_available() { return true; }
+bool IpoptSolver::is_available() {
+  return true;
+}
 
-void IpoptSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void IpoptSolver::DoSolve(const MathematicalProgram& prog,
+                          const Eigen::VectorXd& initial_guess,
+                          const SolverOptions& merged_options,
+                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "IpoptSolver doesn't support the feature of variable scaling.");
+        "IpoptSolver doesn't support the feature of variable scaling.");
   }
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();

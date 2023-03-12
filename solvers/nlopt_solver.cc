@@ -357,16 +357,17 @@ nlopt::algorithm GetNloptAlgorithm(const SolverOptions& merged_options) {
 }
 }  // anonymous namespace
 
-bool NloptSolver::is_available() { return true; }
+bool NloptSolver::is_available() {
+  return true;
+}
 
-void NloptSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void NloptSolver::DoSolve(const MathematicalProgram& prog,
+                          const Eigen::VectorXd& initial_guess,
+                          const SolverOptions& merged_options,
+                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "NloptSolver doesn't support the feature of variable scaling.");
+        "NloptSolver doesn't support the feature of variable scaling.");
   }
 
   const int nx = prog.num_vars();
@@ -515,7 +516,9 @@ void NloptSolver::DoSolve(
         }
         break;
       }
-      default: { result->set_solution_result(SolutionResult::kUnknownError); }
+      default: {
+        result->set_solution_result(SolutionResult::kUnknownError);
+      }
     }
   } catch (std::invalid_argument&) {
     result->set_solution_result(SolutionResult::kInvalidInput);

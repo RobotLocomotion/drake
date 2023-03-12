@@ -19,7 +19,9 @@ SolverId IpoptSolver::id() {
   return singleton.access();
 }
 
-bool IpoptSolver::is_enabled() { return true; }
+bool IpoptSolver::is_enabled() {
+  return true;
+}
 
 bool IpoptSolver::ProgramAttributesSatisfied(const MathematicalProgram& prog) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(

@@ -65,8 +65,8 @@ VectorX<T> LinearSolve(const MatrixX<T>& M, const VectorX<T>& b) {
 // than the QR factorization necessary for AutoDiff support. It is assumed that
 // the matrix is full rank (see notes for generic LinearSolve() above).
 template <>
-VectorX<double> LinearSolve(
-    const MatrixX<double>& M, const VectorX<double>& b) {
+VectorX<double> LinearSolve(const MatrixX<double>& M,
+                            const VectorX<double>& b) {
   // Special case necessary because Eigen doesn't always handle empty matrices
   // properly.
   if (M.rows() == 0) {
@@ -101,8 +101,8 @@ void selectSubMat(const Eigen::MatrixBase<Derived>& in,
 
 // TODO(sammy-tri) this could also use a more efficient implementation.
 template <typename T>
-void selectSubVec(const VectorX<T>& in,
-                  const std::vector<unsigned>& rows, VectorX<T>* out) {
+void selectSubVec(const VectorX<T>& in, const std::vector<unsigned>& rows,
+                  VectorX<T>* out) {
   const int num_rows = rows.size();
   out->resize(num_rows);
   for (int i = 0; i < num_rows; i++) {
@@ -135,7 +135,8 @@ const double kSqrtEps = std::sqrt(std::numeric_limits<double>::epsilon());
 
 template <typename T>
 void MobyLCPSolver<T>::SetLoggingEnabled(bool enabled) {
-  log_enabled_ = enabled; }
+  log_enabled_ = enabled;
+}
 
 template <typename T>
 std::ostream& MobyLCPSolver<T>::Log() const {
@@ -157,8 +158,8 @@ void MobyLCPSolver<T>::ClearIndexVectors() const {
 
 template <>
 void MobyLCPSolver<Eigen::AutoDiffScalar<Vector1d>>::DoSolve(
-    const MathematicalProgram&, const Eigen::VectorXd&,
-    const SolverOptions&, MathematicalProgramResult*) const {
+    const MathematicalProgram&, const Eigen::VectorXd&, const SolverOptions&,
+    MathematicalProgramResult*) const {
   throw std::logic_error(
       "MobyLCPSolver cannot yet be used in a MathematicalProgram "
       "while templatized as an AutoDiff");
@@ -167,14 +168,13 @@ void MobyLCPSolver<Eigen::AutoDiffScalar<Vector1d>>::DoSolve(
 // TODO(edrumwri): Break the following code out into a special
 // MobyLcpMathematicalProgram class.
 template <typename T>
-void MobyLCPSolver<T>::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void MobyLCPSolver<T>::DoSolve(const MathematicalProgram& prog,
+                               const Eigen::VectorXd& initial_guess,
+                               const SolverOptions& merged_options,
+                               MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "MobyLCPSolver doesn't support the feature of variable scaling.");
+        "MobyLCPSolver doesn't support the feature of variable scaling.");
   }
 
   // Moby doesn't use initial guess or the solver options.
@@ -200,8 +200,8 @@ void MobyLCPSolver<T>::DoSolve(
     Eigen::VectorXd constraint_solution(binding.GetNumElements());
     const std::shared_ptr<LinearComplementarityConstraint> constraint =
         binding.evaluator();
-    bool solved = SolveLcpLemkeRegularized(
-        constraint->M(), constraint->q(), &constraint_solution);
+    bool solved = SolveLcpLemkeRegularized(constraint->M(), constraint->q(),
+                                           &constraint_solution);
     if (!solved) {
       result->set_solution_result(SolutionResult::kUnknownError);
       return;
@@ -218,9 +218,8 @@ void MobyLCPSolver<T>::DoSolve(
 }
 
 template <typename T>
-bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
-                                    const VectorX<T>& q, VectorX<T>* z,
-                                    const T& zero_tol) const {
+bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M, const VectorX<T>& q,
+                                    VectorX<T>* z, const T& zero_tol) const {
   using std::abs;
 
   // Variables that will be reused multiple times, thus hopefully allowing
@@ -245,8 +244,7 @@ bool MobyLCPSolver<T>::SolveLcpFast(const MatrixX<T>& M,
 
   // set zero tolerance if necessary
   T mod_zero_tol = zero_tol;
-  if (mod_zero_tol < 0)
-    mod_zero_tol = ComputeZeroTolerance(M);
+  if (mod_zero_tol < 0) mod_zero_tol = ComputeZeroTolerance(M);
 
   // prepare to setup basic and nonbasic variable indices for z
   nonbas_.clear();
@@ -591,9 +589,8 @@ void MobyLCPSolver<T>::FinishLemkeSolution(const MatrixType& M,
 }
 
 template <typename T>
-bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
-                                     const VectorX<T>& q, VectorX<T>* z,
-                                     const T& piv_tol,
+bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q,
+                                     VectorX<T>* z, const T& piv_tol,
                                      const T& zero_tol) const {
   using std::max;
 
@@ -625,8 +622,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   // come up with a sensible value for zero tolerance if none is given
   T mod_zero_tol = zero_tol;
-  if (mod_zero_tol <= 0)
-    mod_zero_tol = ComputeZeroTolerance(M);
+  if (mod_zero_tol <= 0) mod_zero_tol = ComputeZeroTolerance(M);
 
   if (CheckLemkeTrivial(n, mod_zero_tol, q, z)) {
     Log() << " -- trivial solution found" << std::endl;
@@ -714,7 +710,7 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 
   // use a new pivot tolerance if necessary
   const T naive_piv_tol = n * max(T(1), M.template lpNorm<Eigen::Infinity>()) *
-      std::numeric_limits<double>::epsilon();
+                          std::numeric_limits<double>::epsilon();
   const T mod_piv_tol = (piv_tol > 0) ? piv_tol : naive_piv_tol;
 
   // determine initial leaving variable
@@ -891,12 +887,9 @@ bool MobyLCPSolver<T>::SolveLcpLemke(const MatrixX<T>& M,
 }
 
 template <class T>
-bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
-                                                const VectorX<T>& q,
-                                                VectorX<T>* z, int min_exp,
-                                                unsigned step_exp, int max_exp,
-                                                const T& piv_tol,
-                                                const T& zero_tol) const {
+bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(
+    const MatrixX<T>& M, const VectorX<T>& q, VectorX<T>* z, int min_exp,
+    unsigned step_exp, int max_exp, const T& piv_tol, const T& zero_tol) const {
   // Variables that will be reused multiple times, thus hopefully allowing
   // Eigen to keep from freeing/reallocating memory repeatedly.
   VectorX<T> wx;
@@ -948,13 +941,13 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
         }
       } else {
         Log() << "  MobyLCPSolver::SolveLcpLemke() - 'w' not solved to desired "
-            "tolerance"
+                 "tolerance"
               << std::endl;
         Log() << "  minimum w: " << wx.minCoeff() << std::endl;
       }
     } else {
       Log() << "  MobyLCPSolver::SolveLcpLemke() - 'z' not solved to desired "
-          "tolerance"
+               "tolerance"
             << std::endl;
       Log() << "  minimum z: " << z->minCoeff() << std::endl;
     }
@@ -1010,13 +1003,13 @@ bool MobyLCPSolver<T>::SolveLcpLemkeRegularized(const MatrixX<T>& M,
           }
         } else {
           Log() << "  MobyLCPSolver::SolveLcpLemke() - 'w' not solved to "
-              "desired tolerance"
+                   "desired tolerance"
                 << std::endl;
           Log() << "  minimum w: " << wx.minCoeff() << std::endl;
         }
       } else {
         Log() << "  MobyLCPSolver::SolveLcpLemke() - 'z' not solved to desired "
-            "tolerance"
+                 "tolerance"
               << std::endl;
         Log() << "  minimum z: " << z->minCoeff() << std::endl;
       }
@@ -1085,8 +1078,8 @@ bool MobyLCPSolver<T>::ProgramAttributesSatisfied(
   //
   // Restriction 3 could reasonably be relaxed to simply let unbound
   // variables sit at 0.
-  if (prog.required_capabilities() != ProgramAttributes({
-        ProgramAttribute::kLinearComplementarityConstraint})) {
+  if (prog.required_capabilities() !=
+      ProgramAttributes({ProgramAttribute::kLinearComplementarityConstraint})) {
     return false;
   }
 
