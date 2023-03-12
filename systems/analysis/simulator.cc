@@ -77,14 +77,34 @@ SimulatorStatus Simulator<T>::Initialize(const InitializeParams& params) {
 
   // Process all the initialization events.
   merged_events_ = system_.AllocateCompositeEventCollection();
+
   if (!params.suppress_initialization_events) {
     system_.GetInitializationEvents(*context_, merged_events_.get());
+  } else {
+    DRAKE_THROW_UNLESS(!params.toposort_initialization_events);
+    DRAKE_DEMAND(merged_events_->Empty());
   }
 
-  // Do unrestricted updates first.
-  HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
-  // Do restricted (discrete variable) updates next.
-  HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+  if (!params.toposort_initialization_events) {
+    // Do unrestricted updates first.
+    HandleUnrestrictedUpdate(merged_events_->get_unrestricted_update_events());
+    // Do restricted (discrete variable) updates next.
+    HandleDiscreteUpdate(merged_events_->get_discrete_update_events());
+  } else {
+    std::vector<std::unique_ptr<CompositeEventCollection<T>>>
+        event_phases;
+    // How to recurse into inner diagrams?
+    // How to control level of recursion?
+    system_->ToposortAndPartitionInitializationEvents(
+        *merged_events_,
+        param.toposort_initialization_strict,
+        &event_phases);
+    // Process phases.
+    for (auto& event_phase : event_phases) {
+      HandleUnrestrictedUpdate(event_phases->get_unrestricted_update_events());
+      HandleDiscreteUpdate(event_phases->get_discrete_update_events());
+    }
+  }
 
   // Gets all per-step events to be handled.
   per_step_events_ = system_.AllocateCompositeEventCollection();

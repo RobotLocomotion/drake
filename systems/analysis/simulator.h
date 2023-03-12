@@ -38,6 +38,19 @@ struct InitializeParams {
   /// Whether to trigger initialization events. Events are triggered by
   /// default; it may be useful to suppress them when reusing a simulator.
   bool suppress_initialization_events{false};
+
+  // TODO(eric.cousineau): Is there a way to make this more granular, or happen
+  // outside of Simulator (e.g. at different Diagram levels)?
+  /// Perform topological sort of discrete and unrestricted initialization
+  /// events to allow for simultaneous initialization events. This is done
+  /// by partitioning said events into a set of (minimum) phases to process in
+  /// order.
+  bool toposort_initialization_events{false};
+
+  /// Require topological sort be free of all cycles. If true, will throw an
+  /// error. If false, partitioning may have simultaneous, interdependent
+  /// events that initialize the system to an invalid state.
+  bool toposort_initialization_strict{true};
 };
 
 /** @ingroup simulation
