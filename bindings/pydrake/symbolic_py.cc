@@ -7,9 +7,9 @@
 #include "pybind11/stl.h"
 #include <fmt/format.h>
 
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -145,7 +145,7 @@ PYBIND11_MODULE(symbolic, m) {
       .def(py::self != Expression())
       .def(py::self != py::self)
       .def(py::self != double());
-  internal::BindSymbolicMathOverloads<Variable>(&var_cls);
+  internal::BindMathOperators<Variable>(&var_cls);
   DefCopyAndDeepCopy(&var_cls);
 
   // Bind the free function TaylorExpand.
@@ -460,8 +460,8 @@ PYBIND11_MODULE(symbolic, m) {
       .def("Jacobian", &Expression::Jacobian, py::arg("vars"),
           doc.Expression.Jacobian.doc);
   // TODO(eric.cousineau): Clean this overload stuff up (#15041).
-  pydrake::internal::BindSymbolicMathOverloads<Expression>(&expr_cls);
-  pydrake::internal::BindSymbolicMathOverloads<Expression>(&m);
+  pydrake::internal::BindMathOperators<Expression>(&expr_cls);
+  pydrake::internal::BindMathOperators<Expression>(&m);
   DefCopyAndDeepCopy(&expr_cls);
 
   m.def("if_then_else", &symbolic::if_then_else, py::arg("f_cond"),
