@@ -13,6 +13,60 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+
+/**
+ * Contains the information for adding the constraint that a polynomial be
+ * positive on the unit interval. The polynomial is parametrized as some of
+ * its indeterminates need to be evaluated before being added to the program.
+ *
+ * @param poly The parametrized polynomial we will enforce positivity of.
+ * @param interval_variable The variable associated to the unit interval.
+ * @param parameters The parameters which must be evaluated before enforcing the
+ * positivity of poly.
+ * @param auxillary_variables If poly is the polynomial associated to a
+ * univariate matrix SOS program, these are the auxillary variables used to
+ * convert the matrix SOS to a single polynomial.
+ */
+struct ParametrizdPolynomialPositiveOnUnitInterval {
+ public:
+  ParametrizdPolynomialPositiveOnUnitInterval(
+      const symbolic::Polynomial& poly,
+      const symbolic::Variable& interval_variable,
+      const symbolic::Variables& parameters,
+      const std::optional<const symbolic::Variables>& auxillary_variables =
+          std::nullopt);
+
+  // Add the constraint that this parametrized polynomial is positive on the
+  // unit interval. The Environment env must contain an evaluation for all the
+  // parameters in parameters_.
+  void AddPositivityConstraintToProgram(solvers::MathematicalProgram* prog,
+                                        symbolic::Environment env);
+
+ private:
+  // TODO(Alexandre.Amice) make members const.
+  // A univariate polynomial q(μ) is nonnegative on [0, 1] if and
+  // only if q(μ) = λ(μ) + ν(μ)*μ*(1-μ) if deg(q) = 2d with deg(λ) ≤ 2d and
+  // deg(ν) ≤ 2d - 2 or q(μ) = λ(μ)*μ + ν(μ)*(1-μ) if deg(q) = 2d + 1 with
+  // deg(λ) ≤ 2d and deg(ν) ≤ 2d and λ, ν are SOS. We construct the polynomial
+  // p_(μ) = poly-q(μ) which we will later constrain to be equal
+  // to 0.
+  symbolic::Polynomial p_;
+
+  // A program which stores the psd variables and constraints associated to λ
+  // and ν. See the description of p_.
+  solvers::MathematicalProgram psatz_variables_and_psd_constraints_;
+
+
+
+
+
+
+
+  // The parameters in the polynomial p_ which must be evaluated before the
+  // positivity constraint is added.
+  const symbolic::Variables parameters_;
+};
+
 class CspaceFreePath : public CspaceFreePolytope {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePath);
@@ -37,8 +91,6 @@ class CspaceFreePath : public CspaceFreePolytope {
   ~CspaceFreePath() {}
 
   [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
-
-
 
  protected:
   /**

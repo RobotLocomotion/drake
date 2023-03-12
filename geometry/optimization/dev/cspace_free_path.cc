@@ -1,5 +1,7 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
+#include <iostream>
+
 #include "drake/common/symbolic/monomial_util.h"
 
 namespace drake {
@@ -80,6 +82,54 @@ void CspaceFreePath::GeneratePathRationals() {
         plane_geometry.plane_index);
   }
   this->get_mutable_plane_geometries() = std::move(path_plane_geometries);
+}
+
+ParametrizdPolynomialPositiveOnUnitInterval::
+    ParametrizdPolynomialPositiveOnUnitInterval(
+        const symbolic::Polynomial& poly,
+        const symbolic::Variable& interval_variable,
+        const symbolic::Variables& parameters,
+        const std::optional<const symbolic::Variables>& auxillary_variables)
+    : p_(poly), parameters_(parameters) {
+  // TODO(Alexandre.Amice) support matrix SOS polynomial correctly.
+  int d = poly.Degree(interval_variable);
+  const solvers::MathematicalProgram::NonnegativePolynomial type =
+      solvers::MathematicalProgram::NonnegativePolynomial::kSos;
+  // Constructs the multiplier polynomials and their associated Gram matrices as
+  // well as the polynomial p_.
+  if (d > 0) {
+    auto [lambda, Q_lambda] =
+        psatz_variables_and_psd_constraints_.NewSosPolynomial(
+            {interval_variable}, 2 * d, type, "Sl");
+    if (d % 2 == 0) {
+      auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
+          {interval_variable}, 2 * d - 2, type, "Sv");
+      p_ -= lambda + nu * interval_variable *
+                         (symbolic::Polynomial(1, {interval_variable}) -
+                          interval_variable);
+    } else {
+      auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
+          {interval_variable}, 2 * d, type, "Sv");
+      p_ -= lambda * interval_variable +
+            nu * (symbolic::Polynomial(1, {interval_variable}) -
+                  interval_variable);
+    }
+  }
+  // TODO(Alexandre.Amice) remove this once we use the auxillary variables.
+  if (auxillary_variables.has_value()) {
+    std::cout << "has value" << std::endl;
+  }
+}
+
+void ParametrizdPolynomialPositiveOnUnitInterval::
+    AddPositivityConstraintToProgram(solvers::MathematicalProgram* prog,
+                                     symbolic::Environment env) {
+  DRAKE_DEMAND(env.size() == parameters_.size());
+  for (const auto& parameter : parameters_) {
+    DRAKE_DEMAND(env.find(parameter) != env.cend());
+  }
+  prog->AddEqualityConstraintBetweenPolynomials(p_.EvaluatePartial(env),
+                                                symbolic::Polynomial());
 }
 
 }  // namespace optimization
