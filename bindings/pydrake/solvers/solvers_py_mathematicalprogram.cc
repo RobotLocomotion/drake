@@ -1039,6 +1039,24 @@ void BindMathematicalProgram(py::module m) {
           },
           doc.MathematicalProgram.AddBoundingBoxConstraint
               .doc_3args_double_double_constEigenMatrixBase)
+      .def("AddQuadraticConstraint",
+          static_cast<Binding<QuadraticConstraint> (MathematicalProgram::*)(
+              const Eigen::Ref<const Eigen::MatrixXd>&,
+              const Eigen::Ref<const Eigen::VectorXd>&, double, double,
+              const Eigen::Ref<const VectorXDecisionVariable>&,
+              std::optional<QuadraticConstraint::HessianType>)>(
+              &MathematicalProgram::AddQuadraticConstraint),
+          py::arg("Q"), py::arg("b"), py::arg("lb"), py::arg("ub"),
+          py::arg("vars"), py::arg("hessian_type") = std::nullopt,
+          doc.MathematicalProgram.AddQuadraticConstraint.doc_6args)
+      .def("AddQuadraticConstraint",
+          static_cast<Binding<QuadraticConstraint> (MathematicalProgram::*)(
+              const symbolic::Expression&, double, double,
+              std::optional<QuadraticConstraint::HessianType>)>(
+              &MathematicalProgram::AddQuadraticConstraint),
+          py::arg("e"), py::arg("lb"), py::arg("ub"),
+          py::arg("hessian_type") = std::nullopt,
+          doc.MathematicalProgram.AddQuadraticConstraint.doc_4args)
       .def("AddLorentzConeConstraint",
           static_cast<Binding<LorentzConeConstraint> (MathematicalProgram::*)(
               const Eigen::Ref<const VectorX<drake::symbolic::Expression>>&,
@@ -1366,6 +1384,8 @@ void BindMathematicalProgram(py::module m) {
           doc.MathematicalProgram.l2norm_costs.doc)
       .def("linear_constraints", &MathematicalProgram::linear_constraints,
           doc.MathematicalProgram.linear_constraints.doc)
+      .def("quadratic_constraints", &MathematicalProgram::quadratic_constraints,
+          doc.MathematicalProgram.quadratic_constraints.doc)
       .def("lorentz_cone_constraints",
           &MathematicalProgram::lorentz_cone_constraints,
           doc.MathematicalProgram.lorentz_cone_constraints.doc)
@@ -1876,6 +1896,7 @@ void BindEvaluatorsAndBindings(py::module m) {
   auto constraint_binding = RegisterBinding<Constraint>(&m);
   DefBindingCastConstructor<Constraint>(&constraint_binding);
   RegisterBinding<LinearConstraint>(&m);
+  RegisterBinding<QuadraticConstraint>(&m);
   RegisterBinding<LorentzConeConstraint>(&m);
   RegisterBinding<RotatedLorentzConeConstraint>(&m);
   RegisterBinding<LinearEqualityConstraint>(&m);

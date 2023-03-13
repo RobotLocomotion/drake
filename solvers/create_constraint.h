@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <optional>
 #include <set>
 #include <type_traits>
 #include <unordered_map>
@@ -186,7 +187,9 @@ ParseLinearEqualityConstraint(const Eigen::MatrixBase<DerivedV>& V,
  * constraint binding.
  */
 [[nodiscard]] Binding<QuadraticConstraint> ParseQuadraticConstraint(
-    const symbolic::Expression& e, double lower_bound, double upper_bound);
+    const symbolic::Expression& e, double lower_bound, double upper_bound,
+    std::optional<QuadraticConstraint::HessianType> hessian_type =
+        std::nullopt);
 
 /*
  * Assist MathematicalProgram::AddPolynomialConstraint(...).

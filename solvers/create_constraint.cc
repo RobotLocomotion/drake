@@ -493,7 +493,8 @@ Binding<LinearEqualityConstraint> DoParseLinearEqualityConstraint(
 }
 
 Binding<QuadraticConstraint> ParseQuadraticConstraint(
-    const symbolic::Expression& e, double lower_bound, double upper_bound) {
+    const symbolic::Expression& e, double lower_bound, double upper_bound,
+    std::optional<QuadraticConstraint::HessianType> hessian_type) {
   // First build an Eigen vector that contains all the bound variables.
   auto p = symbolic::ExtractVariablesFromExpression(e);
   const auto& vars_vec = p.first;
@@ -510,10 +511,10 @@ Binding<QuadraticConstraint> ParseQuadraticConstraint(
                                          &constant_term);
   // The constraint to be imposed is
   // lb - k ≤ 0.5 xᵀQx + bᵀx ≤ ub - k
-  return CreateBinding(
-      make_shared<QuadraticConstraint>(Q, b, lower_bound - constant_term,
-                                       upper_bound - constant_term),
-      vars_vec);
+  return CreateBinding(make_shared<QuadraticConstraint>(
+                           Q, b, lower_bound - constant_term,
+                           upper_bound - constant_term, hessian_type),
+                       vars_vec);
 }
 
 shared_ptr<Constraint> MakePolynomialConstraint(

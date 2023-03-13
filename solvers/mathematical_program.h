@@ -1865,6 +1865,52 @@ class MathematicalProgram {
         Eigen::Matrix<double, kSize, 1>::Constant(vars.size(), ub), flat_vars);
   }
 
+  /** Adds quadratic constraint.
+   The quadratic constraint is of the form
+   lb ≤ .5 xᵀQx + bᵀx ≤ ub
+   where `x` might be a subset of the decision variables in this
+   MathematicalProgram.
+   @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
+   */
+  Binding<QuadraticConstraint> AddConstraint(
+      const Binding<QuadraticConstraint>& binding);
+
+  /** Adds quadratic constraint
+   lb ≤ .5 xᵀQx + bᵀx ≤ ub
+   @param vars x in the documentation above.
+   @param hessian_type Whether the Hessian is positive semidefinite, negative
+   semidefinite or indefinite. Drake will check the type if
+   hessian_type=std::nullopt. For speed reason, please set hessian_type.
+   */
+  Binding<QuadraticConstraint> AddQuadraticConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& b, double lb, double ub,
+      const Eigen::Ref<const VectorXDecisionVariable>& vars,
+      std::optional<QuadraticConstraint::HessianType> hessian_type =
+          std::nullopt);
+
+  /** Adds quadratic constraint
+   lb ≤ .5 xᵀQx + bᵀx ≤ ub
+   @param vars x in the documentation above.
+   @param hessian_type Whether the Hessian is positive semidefinite, negative
+   semidefinite or indefinite. Drake will check the type if
+   hessian_type=std::nullopt. For speed reason, please set hessian_type.
+   */
+  Binding<QuadraticConstraint> AddQuadraticConstraint(
+      const Eigen::Ref<const Eigen::MatrixXd>& Q,
+      const Eigen::Ref<const Eigen::VectorXd>& b, double lb, double ub,
+      const VariableRefList& vars,
+      std::optional<QuadraticConstraint::HessianType> hessian_type =
+          std::nullopt);
+
+  /** Overloads AddQuadraticConstraint, impose lb <= e <= ub where `e` is a
+   quadratic expression.
+   */
+  Binding<QuadraticConstraint> AddQuadraticConstraint(
+      const symbolic::Expression& e, double lb, double ub,
+      std::optional<QuadraticConstraint::HessianType> hessian_type =
+          std::nullopt);
+
   /**
    * Adds Lorentz cone constraint referencing potentially a subset
    * of the decision variables.
@@ -2849,6 +2895,12 @@ class MathematicalProgram {
     return linear_constraints_;
   }
 
+  /** Getter for quadratic constraints. */
+  const std::vector<Binding<QuadraticConstraint>>& quadratic_constraints()
+      const {
+    return quadratic_constraints_;
+  }
+
   /** Getter for Lorentz cone constraints. */
   const std::vector<Binding<LorentzConeConstraint>>& lorentz_cone_constraints()
       const {
@@ -3431,13 +3483,13 @@ class MathematicalProgram {
   std::vector<Binding<QuadraticCost>> quadratic_costs_;
   std::vector<Binding<LinearCost>> linear_costs_;
   std::vector<Binding<L2NormCost>> l2norm_costs_;
-  // TODO(naveenoid) : quadratic_constraints_
 
   // note: linear_constraints_ does not include linear_equality_constraints_
   std::vector<Binding<Constraint>> generic_constraints_;
   std::vector<Binding<LinearConstraint>> linear_constraints_;
   std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
   std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;
+  std::vector<Binding<QuadraticConstraint>> quadratic_constraints_;
   std::vector<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
   std::vector<Binding<RotatedLorentzConeConstraint>>
       rotated_lorentz_cone_constraint_;
