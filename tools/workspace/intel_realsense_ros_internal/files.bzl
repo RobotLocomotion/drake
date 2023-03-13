@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # List files to be exported from the upstream
 # IntelRealsense/realsense-ros repository
 

@@ -374,8 +374,8 @@ void MathematicalProgram::AddIndeterminates(
 }
 
 Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
-    const VisualizationCallback::CallbackFunction &callback,
-    const Eigen::Ref<const VectorXDecisionVariable> &vars) {
+    const VisualizationCallback::CallbackFunction& callback,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   visualization_callbacks_.push_back(
       internal::CreateBinding<VisualizationCallback>(
           make_shared<VisualizationCallback>(vars.size(), callback), vars));
@@ -764,8 +764,8 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const Eigen::Ref<const Eigen::Array<
-        symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas) {
+    const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                        Eigen::Dynamic>>& formulas) {
   Binding<Constraint> binding = internal::ParseConstraint(formulas);
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
@@ -1448,10 +1448,10 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
     EigenPtr<Eigen::VectorXd> values) const {
   DRAKE_THROW_UNLESS(values != nullptr);
   DRAKE_THROW_UNLESS(values->size() == num_vars());
-  DRAKE_THROW_UNLESS(
-      decision_variables.rows() == decision_variables_new_values.rows());
-  DRAKE_THROW_UNLESS(
-      decision_variables.cols() == decision_variables_new_values.cols());
+  DRAKE_THROW_UNLESS(decision_variables.rows() ==
+                     decision_variables_new_values.rows());
+  DRAKE_THROW_UNLESS(decision_variables.cols() ==
+                     decision_variables_new_values.cols());
   for (int i = 0; i < decision_variables.rows(); ++i) {
     for (int j = 0; j < decision_variables.cols(); ++j) {
       const int index = FindDecisionVariableIndex(decision_variables(i, j));
@@ -1804,7 +1804,6 @@ std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
   }
   return os;
 }
-
 
 }  // namespace solvers
 }  // namespace drake

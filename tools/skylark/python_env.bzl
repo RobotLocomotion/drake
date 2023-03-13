@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def hermetic_python_env():
     # In general, we do not want to use Python's "user site-packages"
     # (e.g., $HOME/.local) directory because it's not hermetic.  Thus,

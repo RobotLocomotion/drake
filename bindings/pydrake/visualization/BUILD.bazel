@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/install:install.bzl", "install", "install_files")
 load(
     "@drake//tools/skylark:pybind.bzl",

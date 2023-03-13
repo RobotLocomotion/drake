@@ -15,7 +15,7 @@ Binding<LinearConstraint> CreateLogicalAndConstraint(
                                     b1_and_b2 <= b2 &&
                                     0 <= b1_and_b2 &&
                                     b1_and_b2 <= 1));
-      // clang-format on
+  // clang-format on
 }
 
 Binding<LinearConstraint> CreateLogicalOrConstraint(
@@ -28,7 +28,7 @@ Binding<LinearConstraint> CreateLogicalOrConstraint(
                                     b1_or_b2 >= b2 &&
                                     0 <= b1_or_b2 &&
                                     b1_or_b2 <= 1));
-      // clang-format on
+  // clang-format on
 }
 
 Binding<LinearConstraint> CreateLogicalXorConstraint(
@@ -42,7 +42,7 @@ Binding<LinearConstraint> CreateLogicalXorConstraint(
                                     b1_xor_b2 <= 2 - b1 - b2 &&
                                     0 <= b1_xor_b2 &&
                                     b1_xor_b2 <= 1));
-      // clang-format on
+  // clang-format on
 }
 
 Binding<LinearConstraint> CreateBinaryCodeMatchConstraint(

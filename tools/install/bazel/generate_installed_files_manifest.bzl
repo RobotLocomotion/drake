@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 load("@drake//tools/install:install.bzl", "InstallInfo")
 load("@drake//tools/skylark:pathutils.bzl", "basename")
 load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")
@@ -32,6 +29,8 @@ def _impl(ctx):
     ]
     drake_runfiles = []
     drake_prologue = "share/drake/"
+    models_internal_runfiles = []
+    models_internal_prologue = "share/drake_models/"
     lcmtypes_drake_py_files = []
     lcmtypes_drake_py_prologue = PYTHON_SITE_PACKAGES_RELPATH + "/drake/"
     for dest in ctx.attr.target[InstallInfo].installed_files:
@@ -47,12 +46,16 @@ def _impl(ctx):
             ]):
                 continue
             drake_runfiles.append(relative_path)
+        elif dest.startswith(models_internal_prologue):
+            relative_path = dest[len(models_internal_prologue):]
+            models_internal_runfiles.append(relative_path)
         elif dest.startswith(lcmtypes_drake_py_prologue):
             relative_path = dest[len(lcmtypes_drake_py_prologue):]
             lcmtypes_drake_py_files.append(relative_path)
     content = {
         "runfiles": {
             "drake": sorted(drake_runfiles),
+            "models_internal": sorted(models_internal_runfiles),
         },
         "lcmtypes_drake_py": sorted(lcmtypes_drake_py_files),
         "python_site_packages_relpath": PYTHON_SITE_PACKAGES_RELPATH,

@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 # On macOS, no targets should depend on @glx.
 cc_library(

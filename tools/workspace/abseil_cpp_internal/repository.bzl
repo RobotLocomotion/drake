@@ -1,4 +1,3 @@
-# -*- python -*-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def abseil_cpp_internal_repository(

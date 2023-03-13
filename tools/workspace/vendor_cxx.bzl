@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def cc_library_vendored(
         name,
         hdrs = None,

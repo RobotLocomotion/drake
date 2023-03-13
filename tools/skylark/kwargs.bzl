@@ -1,6 +1,3 @@
-# -*- python -*-
-# vi: set ft=python :
-
 def amend(
         kwargs,
         option_name,

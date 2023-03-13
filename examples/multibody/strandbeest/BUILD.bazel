@@ -1,6 +1,3 @@
-# -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
-
 load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_unittest")
 load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")

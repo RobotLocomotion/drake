@@ -8,14 +8,13 @@
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt_ostream.h"
 #include "drake/math/barycentric.h"
 #include "drake/math/bspline_basis.h"
@@ -36,7 +35,6 @@
 namespace drake {
 namespace pydrake {
 
-using std::pow;
 using symbolic::Expression;
 using symbolic::Variable;
 
@@ -354,13 +352,6 @@ void DoScalarDependentDefinitions(py::module m, T) {
   m.def("wrap_to", &wrap_to<T, T>, py::arg("value"), py::arg("low"),
       py::arg("high"), doc.wrap_to.doc);
 
-  // Add in query functions that we don't want to bind directly onto
-  // the scalar type classes, as mentioned below.
-  // TODO(eric.cousineau): Add other query functions.
-  // tODO(eric.cousineau): Should these belong on the class for NumPy UFuncs?
-  m.def(
-      "isnan", [](const T& x) { return isnan(x); }, py::arg("x"));
-
   // Cross product
   m.def(
       "VectorToSkewSymmetric",
@@ -517,46 +508,6 @@ void DoScalarIndependentDefinitions(py::module m) {
       .def("RealDiscreteLyapunovEquation", &RealDiscreteLyapunovEquation,
           py::arg("A"), py::arg("Q"), doc.RealDiscreteLyapunovEquation.doc);
 
-  // General scalar math overloads.
-  // N.B. Additional overloads will be added for AutoDiffXd and Expression
-  // via:
-  // - `BindAutoDiffMathOverloads` and `BindSymbolicMathOverloads` for
-  //   functions that should exist as both overloads in this module *and* as
-  //   class members so that NumPy UFuncs for dtype=object can use them, and
-  // - `DoScalarDependentDefinitions` defined above, for functions that should
-  //   only exist as module-level overloads.
-  // TODO(eric.cousineau): If possible, delegate these to explicit NumPy
-  // UFuncs, either using __array_ufunc__ or user dtypes.
-  // TODO(m-chaturvedi) Add Pybind11 documentation.
-  m  // BR
-      .def("log", [](double x) { return log(x); })
-      .def("abs", [](double x) { return fabs(x); })
-      .def("exp", [](double x) { return exp(x); })
-      .def("sqrt", [](double x) { return sqrt(x); })
-      .def("pow", [](double x, double y) { return pow(x, y); })
-      .def("sin", [](double x) { return sin(x); })
-      .def("cos", [](double x) { return cos(x); })
-      .def("tan", [](double x) { return tan(x); })
-      .def("asin", [](double x) { return asin(x); })
-      .def("acos", [](double x) { return acos(x); })
-      .def("atan", [](double x) { return atan(x); })
-      .def(
-          "atan2", [](double y, double x) { return atan2(y, x); }, py::arg("y"),
-          py::arg("x"))
-      .def("sinh", [](double x) { return sinh(x); })
-      .def("cosh", [](double x) { return cosh(x); })
-      .def("tanh", [](double x) { return tanh(x); })
-      .def("min", [](double x, double y) { return fmin(x, y); })
-      .def("max", [](double x, double y) { return fmax(x, y); })
-      .def("ceil", [](double x) { return ceil(x); })
-      .def("floor", [](double x) { return floor(x); });
-
-  // General vectorized / matrix overloads.
-  m  // BR
-      .def("inv", [](const Eigen::MatrixXd& X) -> Eigen::MatrixXd {
-        return X.inverse();
-      });
-
   {
     using Class = NumericalGradientMethod;
     constexpr auto& cls_doc = doc.NumericalGradientMethod;
@@ -602,10 +553,6 @@ void DoScalarIndependentDefinitions(py::module m) {
       py::arg("option") =
           NumericalGradientOption(NumericalGradientMethod::kForward),
       doc.ComputeNumericalGradient.doc);
-
-  // See TODO in corresponding header file - these should be removed soon!
-  pydrake::internal::BindAutoDiffMathOverloads(&m);
-  pydrake::internal::BindSymbolicMathOverloads<Expression>(&m);
 }
 }  // namespace
 
@@ -616,6 +563,12 @@ PYBIND11_MODULE(math, m) {
   py::module::import("pydrake.autodiffutils");
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.symbolic");
+
+  // Define math operations for all three scalar types.
+  // See TODO in corresponding header file - these should be removed soon!
+  pydrake::internal::BindMathOperators<double>(&m);
+  pydrake::internal::BindMathOperators<AutoDiffXd>(&m);
+  pydrake::internal::BindMathOperators<Expression>(&m);
 
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

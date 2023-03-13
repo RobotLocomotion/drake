@@ -9,10 +9,9 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(util, m) {
-  m.doc() = "Utility tools for manipulation";
-
+void DefineManipulationUtil(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation;
   constexpr auto& doc = pydrake_doc.drake.manipulation;
@@ -36,5 +35,6 @@ PYBIND11_MODULE(util, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

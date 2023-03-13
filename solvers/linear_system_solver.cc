@@ -20,18 +20,21 @@ LinearSystemSolver::LinearSystemSolver()
 
 LinearSystemSolver::~LinearSystemSolver() = default;
 
-bool LinearSystemSolver::is_available() { return true; }
+bool LinearSystemSolver::is_available() {
+  return true;
+}
 
-bool LinearSystemSolver::is_enabled() { return true; }
+bool LinearSystemSolver::is_enabled() {
+  return true;
+}
 
-void LinearSystemSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void LinearSystemSolver::DoSolve(const MathematicalProgram& prog,
+                                 const Eigen::VectorXd& initial_guess,
+                                 const SolverOptions& merged_options,
+                                 MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "LinearSystemSolver doesn't support the feature of variable scaling.");
+        "LinearSystemSolver doesn't support the feature of variable scaling.");
   }
 
   // The initial guess doesn't help us, and we don't offer any tuning options.
@@ -93,9 +96,8 @@ namespace {
 // If the program is compatible with this solver, returns true and clears the
 // explanation.  Otherwise, returns false and sets the explanation.  In either
 // case, the explanation can be nullptr in which case it is ignored.
-bool CheckAttributes(
-      const MathematicalProgram& prog,
-      std::string* explanation) {
+bool CheckAttributes(const MathematicalProgram& prog,
+                     std::string* explanation) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
           ProgramAttribute::kLinearEqualityConstraint});
@@ -106,7 +108,7 @@ bool CheckAttributes(
     if (explanation) {
       if (required_capabilities.empty()) {
         *explanation =
-          " a LinearEqualityConstraint is required but has not been declared";
+            " a LinearEqualityConstraint is required but has not been declared";
       }
       *explanation = fmt::format(
           "LinearSystemSolver is unable to solve because {}.", *explanation);

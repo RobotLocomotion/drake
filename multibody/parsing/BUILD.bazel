@@ -1,11 +1,14 @@
-# -*- python -*-
-
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
     "drake_cc_googletest",
     "drake_cc_library",
     "drake_cc_package_library",
+)
+load(
+    "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_library",
+    "drake_py_unittest",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
@@ -128,8 +131,17 @@ drake_cc_library(
     internal = True,
     visibility = ["//visibility:private"],
     deps = [
+        ":detail_misc",
         "//common:diagnostic_policy",
         "@sdformat_internal//:sdformat",
+    ],
+)
+
+drake_cc_googletest(
+    name = "detail_sdf_diagnostic_test",
+    deps = [
+        ":detail_sdf_diagnostic",
+        ":diagnostic_policy_test_base",
     ],
 )
 
@@ -555,6 +567,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_geometry",
+        ":diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
@@ -571,6 +584,19 @@ drake_cc_googletest(
         ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities",
+    ],
+)
+
+drake_py_library(
+    name = "package_downloader_lib",
+    testonly = True,
+    srcs = ["package_downloader.py"],
+)
+
+drake_py_unittest(
+    name = "package_downloader_test",
+    deps = [
+        ":package_downloader_lib",
     ],
 )
 

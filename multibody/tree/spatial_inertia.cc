@@ -171,6 +171,24 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
 }
 
 template <typename T>
+SpatialInertia<T> SpatialInertia<T>::ThinRodWithMassAboutEnd(
+    const T& mass, const T& length, const Vector3<T>& unit_vector) {
+  // Ensure mass and length are positive.
+  if (mass <= 0 || length <= 0) {
+    std::string error_message = fmt::format(
+        "{}(): A thin rod's mass = {} or length = {} is negative or zero.",
+        __func__, mass, length);
+    throw std::logic_error(error_message);
+  }
+
+  SpatialInertia<T> M_BBcm_B =
+      SpatialInertia<T>::ThinRodWithMass(mass, length, unit_vector);
+  const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
+  M_BBcm_B.ShiftInPlace(p_BcmBp_B);
+  return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
+}
+
+template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
     const T& density, const T& a, const T& b, const T& c) {
   // Ensure a, b, c are positive.

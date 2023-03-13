@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/lint:bazel_lint.bzl", "bazel_lint")
 load("//tools/lint:cpplint.bzl", "cpplint")
 load("//tools/lint:install_lint.bzl", "install_lint")

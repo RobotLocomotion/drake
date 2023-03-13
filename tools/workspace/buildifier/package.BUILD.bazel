@@ -1,4 +1,4 @@
-# -*- mode: python -*-
+# -*- bazel -*-
 
 licenses(["notice"])  # Apache-2.0
 

@@ -477,9 +477,9 @@ class MathematicalProgram {
    */
   enum class NonnegativePolynomial {
     // We reserve the 0 value as a tactic for identifying uninitialized enums.
-    kSos = 1,    ///< A sum-of-squares polynomial.
-    kSdsos,      ///< A scaled-diagonally dominant sum-of-squares polynomial.
-    kDsos,       ///< A diagonally dominant sum-of-squares polynomial.
+    kSos = 1,  ///< A sum-of-squares polynomial.
+    kSdsos,    ///< A scaled-diagonally dominant sum-of-squares polynomial.
+    kDsos,     ///< A diagonally dominant sum-of-squares polynomial.
   };
 
   /** Returns a pair of a SOS polynomial p = mᵀQm and the Gramian matrix Q,
@@ -1543,8 +1543,8 @@ class MathematicalProgram {
    * @tparam Derived An Eigen Array type of Formula.
    */
   Binding<LinearConstraint> AddLinearConstraint(
-      const Eigen::Ref<const Eigen::Array<
-          symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas);
+      const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                          Eigen::Dynamic>>& formulas);
 
   /**
    * Adds linear equality constraints referencing potentially a
@@ -2655,9 +2655,8 @@ class MathematicalProgram {
       MatrixLikewise<double, Derived>>
   GetInitialGuess(
       const Eigen::MatrixBase<Derived>& decision_variable_mat) const {
-    MatrixLikewise<double, Derived>
-        decision_variable_values(decision_variable_mat.rows(),
-                                 decision_variable_mat.cols());
+    MatrixLikewise<double, Derived> decision_variable_values(
+        decision_variable_mat.rows(), decision_variable_mat.cols());
     for (int i = 0; i < decision_variable_mat.rows(); ++i) {
       for (int j = 0; j < decision_variable_mat.cols(); ++j) {
         decision_variable_values(i, j) =
@@ -3267,56 +3266,6 @@ class MathematicalProgram {
    */
   void UpdateRequiredCapability(ProgramAttribute query_capability);
 
-  // maps the ID of a symbolic variable to the index of the variable stored
-  // in the optimization program.
-  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
-
-  // Use std::vector here instead of Eigen::VectorX because std::vector performs
-  // much better when pushing new variables into the container.
-  std::vector<symbolic::Variable> decision_variables_;
-
-  std::unordered_map<symbolic::Variable::Id, int> indeterminates_index_;
-  // Use std::vector here instead of Eigen::VectorX because std::vector performs
-  // much better when pushing new variables into the container.
-  std::vector<symbolic::Variable> indeterminates_;
-
-  std::vector<Binding<VisualizationCallback>> visualization_callbacks_;
-
-  std::vector<Binding<Cost>> generic_costs_;
-  std::vector<Binding<QuadraticCost>> quadratic_costs_;
-  std::vector<Binding<LinearCost>> linear_costs_;
-  std::vector<Binding<L2NormCost>> l2norm_costs_;
-  // TODO(naveenoid) : quadratic_constraints_
-
-  // note: linear_constraints_ does not include linear_equality_constraints_
-  std::vector<Binding<Constraint>> generic_constraints_;
-  std::vector<Binding<LinearConstraint>> linear_constraints_;
-  std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
-  std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;
-  std::vector<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
-  std::vector<Binding<RotatedLorentzConeConstraint>>
-      rotated_lorentz_cone_constraint_;
-  std::vector<Binding<PositiveSemidefiniteConstraint>>
-      positive_semidefinite_constraint_;
-  std::vector<Binding<LinearMatrixInequalityConstraint>>
-      linear_matrix_inequality_constraint_;
-  std::vector<Binding<ExponentialConeConstraint>> exponential_cone_constraints_;
-
-  // Invariant:  The bindings in this list must be non-overlapping, when calling
-  // Linear Complementarity solver like Moby. If this constraint is solved
-  // through a nonlinear optimization solver (like SNOPT) instead, then we allow
-  // the bindings to be overlapping.
-  // TODO(ggould-tri) can this constraint be relaxed?
-  std::vector<Binding<LinearComplementarityConstraint>>
-      linear_complementarity_constraints_;
-
-  Eigen::VectorXd x_initial_guess_;
-
-  // The actual per-solver customization options.
-  SolverOptions solver_options_;
-
-  ProgramAttributes required_capabilities_;
-
   template <typename T>
   void NewVariables_impl(
       VarType type, const T& names, bool is_symmetric,
@@ -3461,9 +3410,59 @@ class MathematicalProgram {
       // for just this tiny enum (e.g., use a bare int == 0,1,2 instead).
       symbolic::internal::DegreeType degree_type);
 
-  std::unordered_map<int, double> var_scaling_map_{};
-
   void CheckVariableType(VarType var_type);
+
+  // maps the ID of a symbolic variable to the index of the variable stored
+  // in the optimization program.
+  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index_{};
+
+  // Use std::vector here instead of Eigen::VectorX because std::vector performs
+  // much better when pushing new variables into the container.
+  std::vector<symbolic::Variable> decision_variables_;
+
+  std::unordered_map<symbolic::Variable::Id, int> indeterminates_index_;
+  // Use std::vector here instead of Eigen::VectorX because std::vector performs
+  // much better when pushing new variables into the container.
+  std::vector<symbolic::Variable> indeterminates_;
+
+  std::vector<Binding<VisualizationCallback>> visualization_callbacks_;
+
+  std::vector<Binding<Cost>> generic_costs_;
+  std::vector<Binding<QuadraticCost>> quadratic_costs_;
+  std::vector<Binding<LinearCost>> linear_costs_;
+  std::vector<Binding<L2NormCost>> l2norm_costs_;
+  // TODO(naveenoid) : quadratic_constraints_
+
+  // note: linear_constraints_ does not include linear_equality_constraints_
+  std::vector<Binding<Constraint>> generic_constraints_;
+  std::vector<Binding<LinearConstraint>> linear_constraints_;
+  std::vector<Binding<LinearEqualityConstraint>> linear_equality_constraints_;
+  std::vector<Binding<BoundingBoxConstraint>> bbox_constraints_;
+  std::vector<Binding<LorentzConeConstraint>> lorentz_cone_constraint_;
+  std::vector<Binding<RotatedLorentzConeConstraint>>
+      rotated_lorentz_cone_constraint_;
+  std::vector<Binding<PositiveSemidefiniteConstraint>>
+      positive_semidefinite_constraint_;
+  std::vector<Binding<LinearMatrixInequalityConstraint>>
+      linear_matrix_inequality_constraint_;
+  std::vector<Binding<ExponentialConeConstraint>> exponential_cone_constraints_;
+
+  // Invariant:  The bindings in this list must be non-overlapping, when calling
+  // Linear Complementarity solver like Moby. If this constraint is solved
+  // through a nonlinear optimization solver (like SNOPT) instead, then we allow
+  // the bindings to be overlapping.
+  // TODO(ggould-tri) can this constraint be relaxed?
+  std::vector<Binding<LinearComplementarityConstraint>>
+      linear_complementarity_constraints_;
+
+  Eigen::VectorXd x_initial_guess_;
+
+  // The actual per-solver customization options.
+  SolverOptions solver_options_;
+
+  ProgramAttributes required_capabilities_;
+
+  std::unordered_map<int, double> var_scaling_map_{};
 };
 
 std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog);

@@ -1,5 +1,3 @@
-# -*- mode: python -*-
-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def suitesparse_internal_repository(

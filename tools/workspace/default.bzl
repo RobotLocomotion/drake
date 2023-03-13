@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:deprecation.bzl", "add_deprecation")
 load("@drake//tools/workspace:mirrors.bzl", "DEFAULT_MIRRORS")
 load("@drake//tools/workspace:os.bzl", "os_repository")
