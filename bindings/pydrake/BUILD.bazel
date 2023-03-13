@@ -103,6 +103,7 @@ drake_pybind_library(
     cc_deps = [
         ":autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:math_operators_pybind",
     ],
     cc_srcs = ["autodiffutils_py.cc"],
     package_info = PACKAGE_INFO,
@@ -131,15 +132,22 @@ drake_pybind_library(
     py_srcs = ["_lcm_extra.py"],
 )
 
+drake_cc_library(
+    name = "math_operators_pybind",
+    hdrs = ["math_operators_pybind.h"],
+    declare_installed_headers = 0,
+    deps = ["//:drake_shared_library"],
+)
+
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
         "//bindings/pydrake:autodiff_types_pybind",
         "//bindings/pydrake:documentation_pybind",
+        "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake:symbolic_types_pybind",
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
         "//bindings/pydrake/common:eigen_pybind",
         "//bindings/pydrake/common:type_pack",
         "//bindings/pydrake/common:value_pybind",
@@ -212,7 +220,7 @@ drake_pybind_library(
     cc_deps = [
         ":symbolic_types_pybind",
         "//bindings/pydrake:documentation_pybind",
-        "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake:math_operators_pybind",
         "//bindings/pydrake/common:eigen_pybind",
     ],
     cc_srcs = [
