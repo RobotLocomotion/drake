@@ -93,8 +93,26 @@ void BindMathOperators(PyObject* obj) {
       .def("exp", [](const T& x) { return exp(x); })
       .def("floor", [](const T& x) { return floor(x); })
       .def("log", [](const T& x) { return log(x); })
-      .def("max", [](const T& x, const T& y) { return max(x, y); })
-      .def("min", [](const T& x, const T& y) { return min(x, y); })
+      .def("max",
+          [](const T& x, const T& y) {
+            if constexpr (std::is_same_v<T, Promoted>) {
+              return max(x, y);
+            } else {
+              // For types that use promotion, we need to promote prior to
+              // calling the operator, to avoid ADL confusion with std::max.
+              return max(Promoted{x}, Promoted{y});
+            }
+          })
+      .def("min",
+          [](const T& x, const T& y) {
+            if constexpr (std::is_same_v<T, Promoted>) {
+              return min(x, y);
+            } else {
+              // For types that use promotion, we need to promote prior to
+              // calling the operator, to avoid ADL confusion with std::max.
+              return min(Promoted{x}, Promoted{y});
+            }
+          })
       .def("pow", [](const T& x, double y) { return pow(x, y); })
       .def("sin", [](const T& x) { return sin(x); })
       .def("sinh", [](const T& x) { return sinh(x); })
