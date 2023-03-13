@@ -1,4 +1,5 @@
 import argparse
+import copy
 import dataclasses as dc
 import lxml.etree as ET
 import os
@@ -325,8 +326,7 @@ class AddDirectives:
                 'Unable to guess guess SDFormat file name '
                 f'for add_directives: {self.params}')
 
-    def insert_into_root_sdformat_node(self, root, directives,
-                                       expand_included):
+    def insert_into_root_sdformat_node(self, root, directives, args):
         if self.model_ns is not None:
             # Check that the model instance has been created by
             # add_model_instance
@@ -344,27 +344,30 @@ class AddDirectives:
         uri_elem = ET.SubElement(include_elem, 'uri')
         uri_elem.text = self.sdformat_uri
 
-        if expand_included:
-            self._convert_nested_directive(expand_included)
+        if args.expand_included:
+            self._convert_nested_directive(args)
 
-    def _convert_nested_directive(self, expand_included):
+    def _convert_nested_directive(self, args):
         if self.file_path.startswith("package://"):
             package_map = PackageMap()
             package_map.PopulateFromRosPackagePath()
             suffix = self.file_path[len("package://"):]
-            package, relative_path = suffix.split("/", maxsplit=1)
-            if package_map.Contains(package):
-                resolved_file_path = os.path.join(package_map.GetPath(package),
-                                                  relative_path)
+            package_name, relative_path = suffix.split("/", maxsplit=1)
+            if package_map.Contains(package_name):
+                resolved_file_path = os.path.join(
+                        package_map.GetPath(package_name), relative_path)
             else:
-                raise ConversionError(f'Failed to find package [{package}] ')
+                raise ConversionError('Failed to find package '
+                                      f'[{package_name}] ')
         else:
-            raise ConversionError('File path is not a valid package path in '
-                                  'the form: [package://path_to_file/'
+            raise ConversionError('The provided file path is invalid. It must'
+                                  ' be of the form: [package://path_to_file/'
                                   'file.yaml]')
 
-        result_tree = convert_directive(resolved_file_path,
-                                        expand_included)
+        # Update args with new target file
+        expanded_file_args = copy.deepcopy(args)
+        expanded_file_args.model_directives = resolved_file_path
+        result_tree = convert_directives(expanded_file_args)
         if result_tree is None:
             raise ConversionError(
                 'Failed converting the file included through '
@@ -372,9 +375,14 @@ class AddDirectives:
 
         sdformat_file_path = resolved_file_path.replace('.yaml', '.sdf')
 
-        result_tree.write(sdformat_file_path,
-                          pretty_print=True,
-                          encoding="unicode")
+        if args.output_path:
+            expanded_included_path = os.path.join(
+                    expanded_file_args.output_path, package_name)
+        else:
+            expanded_included_path = None
+
+        generate_output(result_tree, relative_path, expanded_included_path,
+                        generate_world=False)
 
 
 def _create_object_from_directive(directive, expand_included: bool):
@@ -392,15 +400,13 @@ def _create_object_from_directive(directive, expand_included: bool):
         raise ConversionError(f'Unknown directive')
 
 
-def convert_directive(input_path: str,
-                      expand_included: bool = False,
-                      check_sdf: bool = False) -> str:
+def convert_directives(args):
     # Read the directives file
     directives_data = yaml_load_typed(schema=ModelDirectives,
-                                      filename=input_path)
+                                      filename=args.model_directives)
 
     all_directives = [
-        _create_object_from_directive(directive, expand_included)
+        _create_object_from_directive(directive, args.expand_included)
         for directive in directives_data.directives
     ]
 
@@ -409,7 +415,8 @@ def convert_directive(input_path: str,
 
     # Initialize the sdformat XML root
     root = ET.Element('sdf', version=_SDF_VERSION)
-    root_name = os.path.splitext(os.path.basename(input_path))[0]
+    root_name = os.path.splitext(os.path.basename(
+            args.model_directives))[0]
 
     root_elem = ET.SubElement(root, 'model', name=root_name)
 
@@ -418,13 +425,13 @@ def convert_directive(input_path: str,
         for dir_obj in _filter_directives(all_directives, cls):
             if cls == AddDirectives:
                 dir_obj.insert_into_root_sdformat_node(
-                        root_elem, all_directives, expand_included)
+                        root_elem, all_directives, args)
             else:
                 dir_obj.insert_into_root_sdformat_node(
                         root_elem, all_directives)
 
     # Check model validity by loading it through the SDFormat parser
-    if check_sdf:
+    if args.check_sdf:
         try:
             directives_plant = MultibodyPlant(time_step=0.01)
             parser = Parser(plant=directives_plant)
@@ -438,32 +445,42 @@ def convert_directive(input_path: str,
 
 
 def generate_output(result_tree: ET.ElementTree,
-                    output_path: str = ''):
+                    input_path: str = '',
+                    output_path: str = '',
+                    generate_world: bool = True):
 
     if output_path:
-        if not output_path.endswith('.sdf'):
-            output_path = output_path + '.sdf'
+        filename = os.path.basename(input_path)
+        output_filename = os.path.join(
+                output_path, filename.removesuffix('.yaml') + '.sdf')
 
-        # Saving a world with a merge include to the model
-        # TODO(marcoag): Add a validty check that ensures the model
-        # is world-mergeable.
-        world_output_path = output_path.removesuffix('.sdf')
-        world_output_path += '_world.sdf'
-        world_root = ET.Element('sdf', version=_SDF_VERSION)
-        root_world_name = result_tree.find('model').get('name')
-        root_world_elem = ET.SubElement(world_root, 'world',
-                                        name=root_world_name)
-        root_world_elem.append(ET.Comment('Provides a direct inclusion of a'
-                                          'given model, with no nesting'))
-        include_elem = ET.SubElement(root_world_elem, 'include', merge='true')
-        uri_elem = ET.SubElement(include_elem, 'uri')
-        uri_elem.text = 'package://' + output_path
-        world_tree = ET.ElementTree(world_root)
-        world_tree.write(world_output_path,
-                         pretty_print=True)
+        # Create path if it does not exist
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+
+        if generate_world:
+            # Saving a world with a merge include to the model
+            # TODO(marcoag): Add a validty check that ensures the model
+            # is world-mergeable.
+            world_output_path = output_path + \
+                    filename.removesuffix('.yaml') + '_world.sdf'
+            world_root = ET.Element('sdf', version=_SDF_VERSION)
+            root_world_name = result_tree.find('model').get('name')
+            root_world_elem = ET.SubElement(world_root, 'world',
+                                            name=root_world_name)
+            root_world_elem.append(
+                    ET.Comment('Provides a direct inclusion of '
+                               'a given model, with no nesting'))
+            include_elem = ET.SubElement(root_world_elem, 'include',
+                                         merge='true')
+            uri_elem = ET.SubElement(include_elem, 'uri')
+            uri_elem.text = 'package://' + output_filename
+            world_tree = ET.ElementTree(world_root)
+            world_tree.write(world_output_path,
+                             pretty_print=True)
 
         # Saving the converted model
-        result_tree.write(output_path,
+        result_tree.write(output_filename,
                           pretty_print=True)
     else:
         print(ET.tostring(result_tree,
@@ -471,31 +488,33 @@ def generate_output(result_tree: ET.ElementTree,
                           encoding="unicode"))
 
 
-def main(argv=None) -> None:
+def _create_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '-c', '--check-sdf', action='store_true',
         help='Check and validate resulting SDFormat.')
     parser.add_argument(
-        '-e', '--expand_included', action='store_false',
+        '-e', '--expand-included', action='store_true',
         help='Convert files included through [add_directives].')
     parser.add_argument(
         '-m', '--model-directives', type=str, required=True,
         help='Path to model directives file to be converted.')
     parser.add_argument(
-        '-o', '--output', type=str,
-        help='Output path including filename without extension for converted'
-        ' SDFormat file.')
+        '-o', '--output-path', type=str,
+        help='Output path of directory where SDFormat files will be written.')
+    return parser
+
+
+def main(argv=None) -> None:
+    parser = _create_parser()
     args = parser.parse_args(argv)
 
-    result_tree = convert_directive(
-        args.model_directives, args.expand_included,
-        args.check_sdf)
+    result_tree = convert_directives(args)
 
     if result_tree is None:
         raise ConversionError('Failed to convert model directives.')
 
-    generate_output(result_tree, args.output)
+    generate_output(result_tree, args.model_directives, args.output_path)
 
     return 0
 
