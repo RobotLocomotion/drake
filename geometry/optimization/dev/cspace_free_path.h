@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -44,23 +45,20 @@ struct ParametrizdPolynomialPositiveOnUnitInterval {
 
  private:
   // TODO(Alexandre.Amice) make members const.
-  // A univariate polynomial q(μ) is nonnegative on [0, 1] if and
-  // only if q(μ) = λ(μ) + ν(μ)*μ*(1-μ) if deg(q) = 2d with deg(λ) ≤ 2d and
-  // deg(ν) ≤ 2d - 2 or q(μ) = λ(μ)*μ + ν(μ)*(1-μ) if deg(q) = 2d + 1 with
-  // deg(λ) ≤ 2d and deg(ν) ≤ 2d and λ, ν are SOS. We construct the polynomial
-  // p_(μ) = poly-q(μ) which we will later constrain to be equal
+
+  // A polynomial p(μ,y) = ∑ f(μ)yᵢyⱼ (where μ is univariate and y is
+  // multivariate) is positive on the interval μ ∈ [0,1] if and only if there
+  // exists biforms λ(μ,y) = ∑ λ(μ)yᵢyⱼ and ν(μ,y) = ∑ ν(μ)yᵢyⱼ such that λ(μ)
+  // and ν(μ) are SOS and q(μ,y) = λ(μ,y) + ν(μ,y)*μ*(1-μ) if deg(q) = 2d with
+  // deg(λ(μ)) ≤ 2d and deg(ν(μ)) ≤ 2d - 2 or q(μ,y) = λ(μ,y)*μ + ν(μ,y)*(1-μ)
+  // if deg(q) = 2d + 1 with deg(λ(μ)) ≤ 2d and deg(ν(μ)) ≤ 2d.  We construct
+  // the polynomial p_(μ) = poly-q(μ) which we will later constrain to be equal
   // to 0.
   symbolic::Polynomial p_;
 
   // A program which stores the psd variables and constraints associated to λ
   // and ν. See the description of p_.
   solvers::MathematicalProgram psatz_variables_and_psd_constraints_;
-
-
-
-
-
-
 
   // The parameters in the polynomial p_ which must be evaluated before the
   // positivity constraint is added.
@@ -105,14 +103,14 @@ class CspaceFreePath : public CspaceFreePolytope {
   // private members of CspaceFreePath for unit test.
   friend class CspaceFreePathTester;
 
-  // the path parametrization variable going between 0 and 1
+  // The path parametrization variable going between 0 and 1.
   const symbolic::Variable mu_;
 
-  // a map storing the substitutions from the s_set_ variables to the path
+  // A map storing the substitutions from the s_set_ variables to the path
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
 
-  // friend declaration for use in constructor to avoid large initialization
+  // Friend declaration for use in constructor to avoid large initialization
   // lambda.
   friend std::unordered_map<symbolic::Variable, symbolic::Polynomial>
   initialize_path_map(CspaceFreePath* cspace_free_path,

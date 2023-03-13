@@ -49,7 +49,7 @@ void CspaceFreePath::GeneratePathRationals() {
   // new one that has rationals in terms of the path variable.
   symbolic::Polynomial::SubstituteAndExpandCacheData cached_substitutions;
 
-  // add the auxilliary variables for matrix SOS constraints to the substitution
+  // Add the auxilliary variables for matrix SOS constraints to the substitution
   // map.
   std::unordered_map<symbolic::Variable, symbolic::Polynomial>
       path_with_y_subs = path_;
@@ -91,30 +91,61 @@ ParametrizdPolynomialPositiveOnUnitInterval::
         const symbolic::Variables& parameters,
         const std::optional<const symbolic::Variables>& auxillary_variables)
     : p_(poly), parameters_(parameters) {
-  // TODO(Alexandre.Amice) support matrix SOS polynomial correctly.
   int d = poly.Degree(interval_variable);
   const solvers::MathematicalProgram::NonnegativePolynomial type =
       solvers::MathematicalProgram::NonnegativePolynomial::kSos;
-  // Constructs the multiplier polynomials and their associated Gram matrices as
-  // well as the polynomial p_.
-  if (d > 0) {
+
+  auto make_lambda = [&d, &interval_variable, &type, this]() {
     auto [lambda, Q_lambda] =
-        psatz_variables_and_psd_constraints_.NewSosPolynomial(
+        this->psatz_variables_and_psd_constraints_.NewSosPolynomial(
             {interval_variable}, 2 * d, type, "Sl");
+    return lambda;
+  };
+
+  auto make_nu = [&d, &interval_variable, &type, this]() {
+    const int deg{d % 2 == 0 ? std::max(2 * d - 2, 0) : 2 * d};
+    auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
+        {interval_variable}, deg, type, "Sv");
+    return nu;
+  };
+  if(auxillary_variables.has_value())
+  {
+
+  }
+  else {
+    Polynomial lambda{make_lambda()};
+    Polynomial nu{make_nu()};
     if (d % 2 == 0) {
-      auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
-          {interval_variable}, 2 * d - 2, type, "Sv");
       p_ -= lambda + nu * interval_variable *
                          (symbolic::Polynomial(1, {interval_variable}) -
                           interval_variable);
-    } else {
-      auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
-          {interval_variable}, 2 * d, type, "Sv");
+    }
+    else {
       p_ -= lambda * interval_variable +
             nu * (symbolic::Polynomial(1, {interval_variable}) -
                   interval_variable);
     }
   }
+  // Constructs the multiplier polynomials and their associated Gram matrices as
+  // well as the polynomial p_.
+//  if (d > 0) {
+//    auto [lambda, Q_lambda] =
+//        psatz_variables_and_psd_constraints_.NewSosPolynomial(
+//            {interval_variable}, 2 * d, type, "Sl");
+//    if (d % 2 == 0) {
+//      auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
+//          {interval_variable}, 2 * d - 2, type, "Sv");
+//      p_ -= lambda + nu * interval_variable *
+//                         (symbolic::Polynomial(1, {interval_variable}) -
+//                          interval_variable);
+//    } else {
+//      auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
+//          {interval_variable}, 2 * d, type, "Sv");
+//      p_ -= lambda * interval_variable +
+//            nu * (symbolic::Polynomial(1, {interval_variable}) -
+//                  interval_variable);
+//    }
+//  }
   // TODO(Alexandre.Amice) remove this once we use the auxillary variables.
   if (auxillary_variables.has_value()) {
     std::cout << "has value" << std::endl;
