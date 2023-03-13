@@ -197,17 +197,19 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
     // velocities first, followed by translational velocities (and the
     // relative positions of the bodies).
     if (expected_num_cliques == 1) {
-      const MatrixXd& J = constraint->first_clique_jacobian();
+      const MatrixXd& J = constraint->first_clique_jacobian().MakeDenseMatrix();
       const MatrixXd J_expected =
           (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
       EXPECT_TRUE(CompareMatrices(J, J_expected));
     } else {
-      const MatrixXd& Ja = constraint->first_clique_jacobian();
+      const MatrixXd& Ja =
+          constraint->first_clique_jacobian().MakeDenseMatrix();
       const MatrixXd Ja_expected =
           (MatrixXd(1, 6) << 0, 0, 0, -1, 0, 0).finished();
       EXPECT_TRUE(CompareMatrices(Ja, Ja_expected));
 
-      const MatrixXd& Jb = constraint->second_clique_jacobian();
+      const MatrixXd& Jb =
+          constraint->second_clique_jacobian().MakeDenseMatrix();
       const MatrixXd Jb_expected =
           (MatrixXd(1, 6) << 0, 0, 0, 1, 0, 0).finished();
       EXPECT_TRUE(CompareMatrices(Jb, Jb_expected));

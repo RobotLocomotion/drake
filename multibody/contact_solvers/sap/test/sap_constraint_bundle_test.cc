@@ -141,30 +141,35 @@ TEST_F(SapConstraintBundleTest, VerifyJacobian) {
   BlockSparseMatrixBuilder<double> builder(3, 3, 5);
   // Cluster of constraints between cliques 0 and 2.
   MatrixXd J_cluster0_clique0(3, 1);
-  J_cluster0_clique0 << problem_->get_constraint(0).first_clique_jacobian(),
-      problem_->get_constraint(1).second_clique_jacobian();
+  J_cluster0_clique0
+      << problem_->get_constraint(0).first_clique_jacobian().MakeDenseMatrix(),
+      problem_->get_constraint(1).second_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(0, p.permuted_index(0), J_cluster0_clique0);
   MatrixXd J_cluster0_clique2(3, 3);
-  J_cluster0_clique2 << problem_->get_constraint(0).second_clique_jacobian(),
-      problem_->get_constraint(1).first_clique_jacobian();
+  J_cluster0_clique2
+      << problem_->get_constraint(0).second_clique_jacobian().MakeDenseMatrix(),
+      problem_->get_constraint(1).first_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(0, p.permuted_index(2), J_cluster0_clique2);
 
   // Cluster of constraints between cliques 0 and 1.
   MatrixXd J_cluster1_clique0(8, 1);
-  J_cluster1_clique0 << problem_->get_constraint(2).first_clique_jacobian(),
-      problem_->get_constraint(3).first_clique_jacobian(),
-      problem_->get_constraint(4).first_clique_jacobian();
+  J_cluster1_clique0
+      << problem_->get_constraint(2).first_clique_jacobian().MakeDenseMatrix(),
+      problem_->get_constraint(3).first_clique_jacobian().MakeDenseMatrix(),
+      problem_->get_constraint(4).first_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(1, p.permuted_index(0), J_cluster1_clique0);
   MatrixXd J_cluster1_clique1(8, 2);
-  J_cluster1_clique1 << problem_->get_constraint(2).second_clique_jacobian(),
-      problem_->get_constraint(3).second_clique_jacobian(),
-      problem_->get_constraint(4).second_clique_jacobian();
+  J_cluster1_clique1
+      << problem_->get_constraint(2).second_clique_jacobian().MakeDenseMatrix(),
+      problem_->get_constraint(3).second_clique_jacobian().MakeDenseMatrix(),
+      problem_->get_constraint(4).second_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(1, p.permuted_index(1), J_cluster1_clique1);
 
   // Cluster with only clique1.
   MatrixXd J_cluster2_clique1(6, 2);
-  J_cluster2_clique1 << problem_->get_constraint(5).first_clique_jacobian(),
-      problem_->get_constraint(6).first_clique_jacobian();
+  J_cluster2_clique1
+      << problem_->get_constraint(5).first_clique_jacobian().MakeDenseMatrix(),
+      problem_->get_constraint(6).first_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(2, p.permuted_index(1), J_cluster2_clique1);
 
   BlockSparseMatrix<double> Jblock = builder.Build();

@@ -57,7 +57,7 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraint) {
   EXPECT_EQ(c.first_clique(), clique);
   EXPECT_THROW(c.second_clique(), std::exception);
   EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(c.first_clique_jacobian(), J32);
+  EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(c.second_clique_jacobian(), std::exception);
   EXPECT_EQ(c.mu(), mu);
   EXPECT_EQ(c.parameters().mu, mu);
@@ -85,8 +85,8 @@ GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraint) {
   EXPECT_EQ(c.first_clique(), clique0);
   EXPECT_EQ(c.second_clique(), clique1);
   EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(c.first_clique_jacobian(), J32);
-  EXPECT_EQ(c.second_clique_jacobian(), J34);
+  EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
+  EXPECT_EQ(c.second_clique_jacobian().MakeDenseMatrix(), J34);
   EXPECT_EQ(c.mu(), mu);
   EXPECT_EQ(c.parameters().mu, mu);
   EXPECT_EQ(c.parameters().stiffness, stiffness);
@@ -344,7 +344,7 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
   EXPECT_EQ(clone->first_clique(), clique);
   EXPECT_THROW(clone->second_clique(), std::exception);
   EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(clone->first_clique_jacobian(), J32);
+  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
   EXPECT_EQ(clone->mu(), mu);
   EXPECT_EQ(clone->parameters().mu, mu);
@@ -374,8 +374,8 @@ GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraintClone) {
   EXPECT_EQ(clone->first_clique(), clique0);
   EXPECT_EQ(clone->second_clique(), clique1);
   EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
-  EXPECT_EQ(clone->first_clique_jacobian(), J32);
-  EXPECT_EQ(clone->second_clique_jacobian(), J34);
+  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
+  EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J34);
   EXPECT_EQ(clone->mu(), mu);
   EXPECT_EQ(clone->parameters().mu, mu);
   EXPECT_EQ(clone->parameters().stiffness, stiffness);

@@ -17,39 +17,45 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
-// For each i in [s, e], computes y(i, :) = g(i) * x(i, :),
-void LeftMultiplyByBlockDiagonal(const std::vector<MatrixXd>& g, int s, int e,
-                                 const MatrixXd& x, MatrixXd* y) {
-  int start = 0;
-  for (int index = s; index <= e; ++index) {
-    const int num_rows = g[index].rows();
-    y->middleRows(start, num_rows).noalias() =
-        g[index] * x.middleRows(start, num_rows);
-    start += num_rows;
-  }
-}
+/* Computes the dense matrix Jᵀ*G*J. Matrix J is a column-wise concatenation of
+ entries in `jacobian_row_data`. More specifically, the layout of J looks like
 
+ [ jacobian_row_data[0], jacobian_row_data[1], ..., jacobian_row_data.back()]
+
+ Matrix G is block diagonal with blocks on the diagonals being
+ `weight_matrix[w_start]`, ..., `weight_matrix[w_end]`. The result of the
+ product is written to the output parameter `result`. Previous values stored in
+ `result` are discarded.
+ @pre result != nullptr.
+ @pre All entries in `jacobian_row_data` have the same number of rows.
+ @pre Entries in weight_matrix with indices in [w_start, w_end] are square and
+ have rows that sum up to be the same as the rows of each entry in
+ `jacobian_row_data`. */
 template <typename MatrixType>
-void Compute_Ji_transpose_Gi_Ji(const vector<MatrixXd>& jacobian_row_data,
-                                const vector<MatrixXd>& weight_matrix,
-                                int w_start, int w_end, MatrixType* yptr,
-                                vector<MatrixXd>* temp) {
-  MatrixType& y = *yptr;
-  y.setZero();
+void ComputeWeightMatrixTerms(
+    const vector<MatrixBlock<double>>& jacobian_row_data,
+    const vector<MatrixXd>& weight_matrix, int w_start, int w_end,
+    MatrixType* result) {
+  std::vector<MatrixBlock<double>> GJs;
+  for (size_t k = 0; k < jacobian_row_data.size(); ++k) {
+    const MatrixBlock<double>& J = jacobian_row_data[k];
+    GJs.emplace_back(
+        J.LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end));
+  }
 
-  int r_offset = 0;
-  for (size_t i = 0; i < jacobian_row_data.size(); ++i) {
-    int c_offset = 0;
-    const MatrixXd& r = jacobian_row_data[i];
-    for (size_t j = 0; j < jacobian_row_data.size(); ++j) {
-      const MatrixXd& c = jacobian_row_data[j];
-      LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end, c,
-                                  &(*temp)[j]);
-      y.block(r_offset, c_offset, r.cols(), c.cols()).noalias() +=
-          r.transpose() * (*temp)[j];
-      c_offset += c.cols();
+  result->setZero();
+  int row_offset = 0;
+  for (size_t k = 0; k < jacobian_row_data.size(); ++k) {
+    int col_offset = 0;
+    const MatrixBlock<double>& J = jacobian_row_data[k];
+    for (size_t l = 0; l < jacobian_row_data.size(); ++l) {
+      const MatrixBlock<double>& GJ = GJs[l];
+      Eigen::Ref<MatrixXd> block =
+          result->block(row_offset, col_offset, J.cols(), GJ.cols());
+      J.TransposeAndMultiplyAndAddTo(GJ, &block);
+      col_offset += GJ.cols();
     }
-    r_offset += r.cols();
+    row_offset += J.cols();
   }
 }
 
@@ -206,16 +212,15 @@ class SuperNodalSolver::CliqueAssembler final
   int NumRows() { return jacobian_row_data_[0].rows(); }
 
   // Copies in J_i and allocates memory for temporaries.
-  void Initialize(std::vector<Eigen::MatrixXd>&& jacobian_row);
+  void Initialize(std::vector<MatrixBlock<double>>&& jacobian_row);
 
  private:
   void SetDenseData() override;
 
  private:
-  std::vector<Eigen::MatrixXd> jacobian_row_data_;
+  std::vector<MatrixBlock<double>> jacobian_row_data_;
   std::vector<int> mass_matrix_position_;
   std::vector<Eigen::MatrixXd> mass_matrix_;
-  std::vector<Eigen::MatrixXd> G_times_J_;
   // TODO(FrankPermenter): remove this and rely on Conex to allocate
   // its own memory (requires a Conex update).
   Eigen::VectorXd workspace_memory_;
@@ -232,8 +237,8 @@ void SuperNodalSolver::CliqueAssembler::SetDenseData() {
     throw std::runtime_error("Failed to add mass matrix.");
   }
 
-  Compute_Ji_transpose_Gi_Ji(jacobian_row_data_, *weight_matrix_, weight_start_,
-                             weight_end_, &submatrix_data_.G, &G_times_J_);
+  ComputeWeightMatrixTerms(jacobian_row_data_, *weight_matrix_, weight_start_,
+                           weight_end_, &submatrix_data_.G);
   int i = 0;
   for (const auto& pos : mass_matrix_position_) {
     submatrix_data_.G.block(pos, pos, mass_matrix_[i].rows(),
@@ -419,7 +424,7 @@ void SuperNodalSolver::Initialize(
       GetRowToTripletMapping(num_jacobian_row_blocks, jacobian_blocks);
   for (size_t i = 0; i < cliques.size(); ++i) {
     owned_clique_assemblers_[i] = std::make_unique<CliqueAssembler>();
-    std::vector<MatrixXd> jacobian_blocks_of_row;
+    std::vector<MatrixBlock<double>> jacobian_blocks_of_row;
     jacobian_blocks_of_row.reserve(row_to_triplet_list[i].size());
     for (const auto& j : row_to_triplet_list[i]) {
       jacobian_blocks_of_row.push_back(std::get<2>(jacobian_blocks[j]));
@@ -546,12 +551,10 @@ Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() const {
 }
 
 void SuperNodalSolver::CliqueAssembler::Initialize(
-    std::vector<Eigen::MatrixXd>&& r) {
-  G_times_J_.resize(r.size());
+    std::vector<MatrixBlock<double>>&& r) {
   int num_vars = 0;
   for (size_t j = 0; j < r.size(); ++j) {
     num_vars += r[j].cols();
-    G_times_J_[j].resize(r[j].rows(), r[j].cols());
   }
   jacobian_row_data_ = std::move(r);
 
