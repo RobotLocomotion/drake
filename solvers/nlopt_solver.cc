@@ -430,6 +430,10 @@ void NloptSolver::DoSolve(const MathematicalProgram& prog,
     WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
+  for (const auto& c : prog.quadratic_constraints()) {
+    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+  }
+
   for (const auto& c : prog.lorentz_cone_constraints()) {
     WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
@@ -490,6 +494,7 @@ void NloptSolver::DoSolve(const MathematicalProgram& prog,
         constraint_test(prog.bounding_box_constraints());
         constraint_test(prog.linear_constraints());
         constraint_test(prog.linear_equality_constraints());
+        constraint_test(prog.quadratic_constraints());
         constraint_test(prog.lorentz_cone_constraints());
         constraint_test(prog.rotated_lorentz_cone_constraints());
 

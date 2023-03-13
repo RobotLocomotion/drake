@@ -15,9 +15,12 @@ namespace drake {
 namespace solvers {
 namespace {
 
-void CheckParseQuadraticConstraint(const Expression& e, double lb, double ub) {
+void CheckParseQuadraticConstraint(
+    const Expression& e, double lb, double ub,
+    std::optional<QuadraticConstraint::HessianType> hessian_type,
+    QuadraticConstraint::HessianType hessian_type_expected) {
   Binding<QuadraticConstraint> binding =
-      internal::ParseQuadraticConstraint(e, lb, ub);
+      internal::ParseQuadraticConstraint(e, lb, ub, hessian_type);
 
   const Expression binding_expression{
       0.5 *
@@ -42,6 +45,7 @@ void CheckParseQuadraticConstraint(const Expression& e, double lb, double ub) {
   } else {
     EXPECT_TRUE(std::isinf(binding.evaluator()->upper_bound()(0)));
   }
+  EXPECT_EQ(binding.evaluator()->hessian_type(), hessian_type_expected);
 }
 
 class ParseQuadraticConstraintTest : public ::testing::Test {
@@ -58,19 +62,35 @@ class ParseQuadraticConstraintTest : public ::testing::Test {
 
 TEST_F(ParseQuadraticConstraintTest, Test0) {
   const double kInf = std::numeric_limits<double>::infinity();
-  CheckParseQuadraticConstraint(x0_ * x0_, 1, 1);
-  CheckParseQuadraticConstraint(x0_ * x1_, 1, 1);
-  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_, 0, 2);
-  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ + 3, 0, 2);
+  CheckParseQuadraticConstraint(
+      x0_ * x0_, 1, 1, QuadraticConstraint::HessianType::kPositiveSemidefinite,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  CheckParseQuadraticConstraint(x0_ * x1_, 1, 1,
+                                QuadraticConstraint::HessianType::kIndefinite,
+                                QuadraticConstraint::HessianType::kIndefinite);
+  CheckParseQuadraticConstraint(
+      x0_ * x0_ + 2 * x0_, 0, 2,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  CheckParseQuadraticConstraint(
+      x0_ * x0_ + 2 * x0_ + 3, 0, 2, std::nullopt,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
 
-  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_,
-                                -kInf, 1);
-  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_, 1,
-                                kInf);
-  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_ + 2,
-                                1, kInf);
-  CheckParseQuadraticConstraint(x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_ + 2,
-                                -kInf, 3);
+  CheckParseQuadraticConstraint(
+      x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_, -kInf, 1, std::nullopt,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  CheckParseQuadraticConstraint(
+      x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_, 1, kInf, std::nullopt,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  CheckParseQuadraticConstraint(
+      x0_ * x0_ + 2 * x0_ * x1_ + 4 * x1_ * x1_ + 2, 1, kInf, std::nullopt,
+      QuadraticConstraint::HessianType::kPositiveSemidefinite);
+  CheckParseQuadraticConstraint(
+      -x0_ * x0_ + 2 * x0_ * x1_ - 4 * x1_ * x1_ + 2, -kInf, 3, std::nullopt,
+      QuadraticConstraint::HessianType::kNegativeSemidefinite);
+  CheckParseQuadraticConstraint(
+      -x0_ * x0_ + 2 * x1_, -kInf, 3, std::nullopt,
+      QuadraticConstraint::HessianType::kNegativeSemidefinite);
 }
 
 void CheckParseLorentzConeConstraint(
