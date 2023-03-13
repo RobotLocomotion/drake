@@ -653,7 +653,8 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
           (VectorXd::Unit(kNumJoints, left_index) -
            kCouplerGearRatio * VectorXd::Unit(kNumJoints, right_index))
               .transpose();
-      EXPECT_EQ(constraint->first_clique_jacobian(), J_expected);
+      EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
+                J_expected);
     } else {
       // The third constraint couples the two robot arms.
       const MatrixXd J0_expected =
@@ -661,8 +662,10 @@ TEST_F(KukaIiwaArmTests, CouplerConstraints) {
       const MatrixXd J1_expected =
           -kCouplerGearRatio *
           VectorXd::Unit(kNumJoints, 5 /* sixth joint. */).transpose();
-      EXPECT_EQ(constraint->first_clique_jacobian(), J0_expected);
-      EXPECT_EQ(constraint->second_clique_jacobian(), J1_expected);
+      EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
+                J0_expected);
+      EXPECT_EQ(constraint->second_clique_jacobian().MakeDenseMatrix(),
+                J1_expected);
     }
 
     // N.B. Default values implemented in

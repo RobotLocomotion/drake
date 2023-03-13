@@ -55,6 +55,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:matrix_block",
     ],
 )
 

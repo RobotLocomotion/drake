@@ -106,9 +106,9 @@ std::vector<BlockMatrixTriplet> MakeBlockTriplets(
   for (int b = 0; b < num_blocks; ++b) {
     get<0>(triplets[b]) = block_positions[b].first;
     get<1>(triplets[b]) = block_positions[b].second;
-    get<2>(triplets[b]) =
+    get<2>(triplets[b]) = MatrixBlock<double>(
         A.block(dense_positions[b].first, dense_positions[b].second,
-                block_sizes[b].first, block_sizes[b].second);
+                block_sizes[b].first, block_sizes[b].second));
   }
   return triplets;
 }
@@ -505,25 +505,25 @@ GTEST_TEST(SupernodalSolver, FourStacks) {
   // clang-format on
   std::vector<BlockMatrixTriplet> Jtriplets;
   // Patch 0:
-  Jtriplets.push_back({0, 6, J3x6});
-  Jtriplets.push_back({0, 7, J3x6});
+  Jtriplets.push_back({0, 6, MatrixBlock<double>(J3x6)});
+  Jtriplets.push_back({0, 7, MatrixBlock<double>(J3x6)});
   // Patch 1:
-  Jtriplets.push_back({1, 4, J3x6});
-  Jtriplets.push_back({1, 5, J3x6});
+  Jtriplets.push_back({1, 4, MatrixBlock<double>(J3x6)});
+  Jtriplets.push_back({1, 5, MatrixBlock<double>(J3x6)});
   // Patch 2:
-  Jtriplets.push_back({2, 6, J3x6});
+  Jtriplets.push_back({2, 6, MatrixBlock<double>(J3x6)});
   // Patch 3:
-  Jtriplets.push_back({3, 0, J3x6});
+  Jtriplets.push_back({3, 0, MatrixBlock<double>(J3x6)});
   // Patch 4:
-  Jtriplets.push_back({4, 4, J3x6});
+  Jtriplets.push_back({4, 4, MatrixBlock<double>(J3x6)});
   // Patch 5:
-  Jtriplets.push_back({5, 2, J3x6});
+  Jtriplets.push_back({5, 2, MatrixBlock<double>(J3x6)});
   // Patch 6:
-  Jtriplets.push_back({6, 0, J3x6});
-  Jtriplets.push_back({6, 1, J3x6});
+  Jtriplets.push_back({6, 0, MatrixBlock<double>(J3x6)});
+  Jtriplets.push_back({6, 1, MatrixBlock<double>(J3x6)});
   // Patch 7:
-  Jtriplets.push_back({7, 2, J3x6});
-  Jtriplets.push_back({7, 3, J3x6});
+  Jtriplets.push_back({7, 2, MatrixBlock<double>(J3x6)});
+  Jtriplets.push_back({7, 3, MatrixBlock<double>(J3x6)});
   MatrixXd Gb(3, 3);
   // clang-format off
   Gb << 1, 2, 2,

@@ -559,14 +559,18 @@ class DummyModelTest : public ::testing::Test {
       {
         const int c = constraint.first_clique();
         const MatrixXd& A = sap_problem_->dynamics_matrix()[c];
-        const MatrixXd& J = constraint.first_clique_jacobian();
-        W_approximation[i] += J * A.ldlt().solve(J.transpose());
+        const VectorXd& A_diag_inv = A.diagonal().cwiseInverse();
+        const MatrixXd& J =
+            constraint.first_clique_jacobian().MakeDenseMatrix();
+        W_approximation[i] += J * A_diag_inv.asDiagonal() * J.transpose();
       }
       if (constraint.num_cliques() == 2) {
         const int c = constraint.second_clique();
         const MatrixXd& A = sap_problem_->dynamics_matrix()[c];
-        const MatrixXd& J = constraint.second_clique_jacobian();
-        W_approximation[i] += J * A.ldlt().solve(J.transpose());
+        const VectorXd& A_diag_inv = A.diagonal().cwiseInverse();
+        const MatrixXd& J =
+            constraint.second_clique_jacobian().MakeDenseMatrix();
+        W_approximation[i] += J * A_diag_inv.asDiagonal() * J.transpose();
       }
     }
 

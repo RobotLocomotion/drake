@@ -174,12 +174,12 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
               Vector3d(0., 0., pair_kinematics.phi));
     EXPECT_EQ(constraint->num_cliques(), pair_kinematics.jacobian.size());
     EXPECT_EQ(constraint->first_clique(), pair_kinematics.jacobian[0].tree);
-    EXPECT_EQ(constraint->first_clique_jacobian(),
-              pair_kinematics.jacobian[0].J);
+    EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
+              pair_kinematics.jacobian[0].J.MakeDenseMatrix());
     if (constraint->num_cliques() == 2) {
       EXPECT_EQ(constraint->second_clique(), pair_kinematics.jacobian[1].tree);
-      EXPECT_EQ(constraint->second_clique_jacobian(),
-                pair_kinematics.jacobian[1].J);
+      EXPECT_EQ(constraint->second_clique_jacobian().MakeDenseMatrix(),
+                pair_kinematics.jacobian[1].J.MakeDenseMatrix());
     }
     EXPECT_EQ(constraint->parameters().mu, discrete_pair.friction_coefficient);
     EXPECT_EQ(constraint->parameters().stiffness, discrete_pair.stiffness);

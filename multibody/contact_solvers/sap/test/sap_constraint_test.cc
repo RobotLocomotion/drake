@@ -67,7 +67,7 @@ GTEST_TEST(SapConstraint, SingleCliqueConstraint) {
   EXPECT_EQ(c.first_clique(), 12);
   EXPECT_THROW(c.second_clique(), std::exception);
   EXPECT_EQ(c.constraint_function(), Vector3d(1., 2., 3));
-  EXPECT_EQ(c.first_clique_jacobian(), J32);
+  EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(c.second_clique_jacobian(), std::exception);
 }
 
@@ -78,8 +78,8 @@ GTEST_TEST(SapConstraint, TwoCliquesConstraint) {
   EXPECT_EQ(c.first_clique(), 11);
   EXPECT_EQ(c.second_clique(), 7);
   EXPECT_EQ(c.constraint_function(), Vector3d(1., 2., 3));
-  EXPECT_EQ(c.first_clique_jacobian(), J32);
-  EXPECT_EQ(c.second_clique_jacobian(), J34);
+  EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
+  EXPECT_EQ(c.second_clique_jacobian().MakeDenseMatrix(), J34);
 }
 
 GTEST_TEST(SapConstraint, SingleCliqueConstraintWrongArguments) {
@@ -123,7 +123,7 @@ GTEST_TEST(SapConstraint, SingleCliqueConstraintClone) {
   EXPECT_EQ(clone->first_clique(), 12);
   EXPECT_THROW(clone->second_clique(), std::exception);
   EXPECT_EQ(clone->constraint_function(), Vector3d(1., 2., 3));
-  EXPECT_EQ(clone->first_clique_jacobian(), J32);
+  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
 }
 
@@ -135,8 +135,8 @@ GTEST_TEST(SapConstraint, TwoCliquesConstraintClone) {
   EXPECT_EQ(clone->first_clique(), 11);
   EXPECT_EQ(clone->second_clique(), 7);
   EXPECT_EQ(clone->constraint_function(), Vector3d(1., 2., 3));
-  EXPECT_EQ(clone->first_clique_jacobian(), J32);
-  EXPECT_EQ(clone->second_clique_jacobian(), J34);
+  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
+  EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J34);
 }
 
 }  // namespace
