@@ -170,6 +170,7 @@ drake_cc_library(
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
     interface_deps = [
+        ":matrix_block",
         "//common:essential",
     ],
     deps = [
