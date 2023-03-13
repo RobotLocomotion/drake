@@ -55,6 +55,19 @@ struct check_helper<uint8_t> {
   }
 };
 
+void CompareClouds(const PointCloud& cloud_1, const PointCloud& cloud_2,
+                   pc_flags::Fields fields) {
+  if (fields.contains(pc_flags::kXYZs)) {
+    EXPECT_TRUE(CompareMatrices(cloud_1.xyzs(), cloud_2.xyzs()));
+  }
+  if (fields.contains(pc_flags::kRGBs)) {
+    EXPECT_TRUE(CompareMatrices(cloud_1.rgbs(), cloud_2.rgbs()));
+  }
+  if (fields.contains(pc_flags::kNormals)) {
+    EXPECT_TRUE(CompareMatrices(cloud_1.normals(), cloud_2.normals()));
+  }
+}
+
 GTEST_TEST(PointCloudTest, TestExpectedNumThreads) {
 #if defined(_OPENMP)
   constexpr bool has_openmp = true;
@@ -75,6 +88,49 @@ GTEST_TEST(PointCloudTest, TestExpectedNumThreads) {
 
 GTEST_TEST(PointCloudTest, Basic) {
   const int count = 5;
+
+  // Declare default values for each field to facilitate testing.
+  Matrix3Xf xyzs_expected(3, count);
+  xyzs_expected.transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 300,
+    4, 5, 6,
+    40, 50, 60;
+  Matrix3Xf normals_expected(3, count);
+  normals_expected.transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 300,
+    4, 5, 6,
+    40, 50, 60;
+  Matrix3X<uint8_t> rgbs_expected(3, count);
+  rgbs_expected.transpose() <<
+    1, 2, 3,
+    10, 20, 30,
+    100, 200, 255,
+    4, 5, 6,
+    40, 50, 60;
+  Eigen::RowVectorXf descriptors_expected(count);
+  descriptors_expected << 1, 2, 3, 4, 5;
+
+  // Create a point cloud with default values.
+  auto CreatePointCloud = [&](pc_flags::Fields fields) {
+    PointCloud cloud(count, fields);
+    if (fields.contains(pc_flags::kXYZs)) {
+      cloud.mutable_xyzs() = xyzs_expected;
+    }
+    if (fields.contains(pc_flags::kNormals)) {
+      cloud.mutable_rgbs() = rgbs_expected;
+    }
+    if (fields.contains(pc_flags::kRGBs)) {
+      cloud.mutable_normals() = normals_expected;
+    }
+    if (fields.has_descriptor()) {
+      cloud.mutable_descriptors() = descriptors_expected;
+    }
+    return cloud;
+  };
 
   auto CheckFields = [count](auto values_expected, pc_flags::Fields fields,
                              auto get_mutable_values, auto get_values,
@@ -165,13 +221,6 @@ GTEST_TEST(PointCloudTest, Basic) {
   };
 
   // Points.
-  Matrix3Xf xyzs_expected(3, count);
-  xyzs_expected.transpose() <<
-    1, 2, 3,
-    10, 20, 30,
-    100, 200, 300,
-    4, 5, 6,
-    40, 50, 60;
   CheckFields(xyzs_expected, pc_flags::kXYZs,
               [](PointCloud& cloud) { return cloud.mutable_xyzs(); },
               [](PointCloud& cloud) { return cloud.xyzs(); },
@@ -179,13 +228,6 @@ GTEST_TEST(PointCloudTest, Basic) {
               [](PointCloud& cloud, int i) { return cloud.xyz(i); });
 
   // Normals.
-  Matrix3Xf normals_expected(3, count);
-  normals_expected.transpose() <<
-    1, 2, 3,
-    10, 20, 30,
-    100, 200, 300,
-    4, 5, 6,
-    40, 50, 60;
   CheckFields(normals_expected, pc_flags::kNormals,
               [](PointCloud& cloud) { return cloud.mutable_normals(); },
               [](PointCloud& cloud) { return cloud.normals(); },
@@ -193,13 +235,6 @@ GTEST_TEST(PointCloudTest, Basic) {
               [](PointCloud& cloud, int i) { return cloud.normal(i); });
 
   // RGBs.
-  Matrix3X<uint8_t> rgbs_expected(3, count);
-  rgbs_expected.transpose() <<
-    1, 2, 3,
-    10, 20, 30,
-    100, 200, 255,
-    4, 5, 6,
-    40, 50, 60;
   CheckFields(rgbs_expected, pc_flags::kRGBs,
             [](PointCloud& cloud) { return cloud.mutable_rgbs(); },
             [](PointCloud& cloud) { return cloud.rgbs(); },
@@ -207,9 +242,6 @@ GTEST_TEST(PointCloudTest, Basic) {
             [](PointCloud& cloud, int i) { return cloud.rgb(i); });
 
   // Descriptors (Curvature).
-  Eigen::RowVectorXf descriptors_expected(count);
-  descriptors_expected <<
-    1, 2, 3, 4, 5;
   CheckFields(descriptors_expected, pc_flags::kDescriptorCurvature,
               [](PointCloud& cloud) { return cloud.mutable_descriptors(); },
               [](PointCloud& cloud) { return cloud.descriptors(); },
@@ -218,24 +250,7 @@ GTEST_TEST(PointCloudTest, Basic) {
               },
               [](PointCloud& cloud, int i) { return cloud.descriptor(i); });
 
-  auto CreatePointCloud = [&](pc_flags::Fields fields) {
-    PointCloud cloud(count, fields);
-    if (fields.contains(pc_flags::kXYZs)) {
-      cloud.mutable_xyzs() = xyzs_expected;
-    }
-    if (fields.contains(pc_flags::kNormals)) {
-      cloud.mutable_rgbs() = rgbs_expected;
-    }
-    if (fields.contains(pc_flags::kRGBs)) {
-      cloud.mutable_normals() = normals_expected;
-    }
-    if (fields.has_descriptor()) {
-      cloud.mutable_descriptors() = descriptors_expected;
-    }
-    return cloud;
-  };
-
-  {  // Operations of morphing point cloud fields.
+  {  // Tests 'operator=' between two clouds with different fields.
     pc_flags::Fields xyz_rgb_normals =
         (pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
     // pc_flags::Fields all_fields =
@@ -246,34 +261,17 @@ GTEST_TEST(PointCloudTest, Basic) {
     // {all_fields, pc_flags::kXYZs}};
 
     for (const auto& [assign_to, assign_from] : field_pair) {
-      PointCloud cloud = CreatePointCloud(assign_to);
-      PointCloud complex_cloud = CreatePointCloud(assign_from);
+      PointCloud cloud_to = CreatePointCloud(assign_to);
+      PointCloud cloud_from = CreatePointCloud(assign_from);
 
-      cloud = complex_cloud;
-      if (assign_from.contains(pc_flags::kXYZs)) {
-        EXPECT_TRUE(CompareMatrices(cloud.xyzs(), complex_cloud.xyzs()));
-      }
-      if (assign_from.contains(pc_flags::kRGBs)) {
-        EXPECT_TRUE(CompareMatrices(cloud.rgbs(), complex_cloud.rgbs()));
-      }
-      if (assign_from.contains(pc_flags::kNormals)) {
-        EXPECT_TRUE(CompareMatrices(cloud.normals(), complex_cloud.normals()));
-      }
+      cloud_to = cloud_from;
+      CompareClouds(cloud_to, cloud_from, assign_from);
 
-      PointCloud cloud2 = CreatePointCloud(assign_to);
-      cloud2 = std::move(complex_cloud);
-      if (assign_from.contains(pc_flags::kXYZs)) {
-        EXPECT_TRUE(CompareMatrices(cloud.xyzs(), cloud2.xyzs()));
-      }
-      if (assign_from.contains(pc_flags::kRGBs)) {
-        EXPECT_TRUE(CompareMatrices(cloud.rgbs(), cloud2.rgbs()));
-      }
-      if (assign_from.contains(pc_flags::kNormals)) {
-        EXPECT_TRUE(CompareMatrices(cloud.normals(), cloud2.normals()));
-      }
-
+      PointCloud cloud_move_to = CreatePointCloud(assign_to);
+      cloud_move_to = std::move(cloud_from);
+      CompareClouds(cloud_to, cloud_move_to, assign_from);
       // Ensure the original cloud was emptied out.
-      EXPECT_EQ(0, complex_cloud.size());
+      EXPECT_EQ(0, cloud_from.size());
     }
   }
 
