@@ -267,6 +267,13 @@ class JointActuator final : public MultibodyElement<T> {
   }
   /// @} <!-- Reflected Inertia -->
 
+  /// @anchor pd_controlled_joint_actuator
+  /// @name                 PD Controlled Actuators
+  ///
+  /// Refer to @ref mbp_actuation "Actuation" for further details on the
+  /// modeling of PD controlled actuators.
+  ///@{
+
   /// Set controller gains for this joint actuator.
   /// This enables the modeling of a simple PD controller of the form:
   ///   ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
@@ -283,9 +290,7 @@ class JointActuator final : public MultibodyElement<T> {
 
   /// Returns `true` if controller gains have been specified with a call to
   /// set_controller_gains().
-  bool has_controller() const {
-    return pd_controller_gains_.has_value();
-  }
+  bool has_controller() const { return pd_controller_gains_.has_value(); }
 
   /// Returns a reference to the controller gains for this actuator.
   /// @pre has_controller() is `true`.
@@ -293,6 +298,7 @@ class JointActuator final : public MultibodyElement<T> {
     DRAKE_DEMAND(has_controller());
     return *pd_controller_gains_;
   }
+  /// @} <!-- PD Controlled Actuators -->
 
   /// @cond
   // For internal use only.

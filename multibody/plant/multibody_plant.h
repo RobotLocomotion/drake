@@ -166,6 +166,7 @@ input_ports:
 - applied_generalized_force
 - applied_spatial_force
 - <em style="color:gray">model_instance_name[i]</em>_actuation
+- <em style="color:gray">model_instance_name[i]</em>_desired_state
 - <span style="color:green">geometry_query</span>
 output_ports:
 - state
@@ -287,6 +288,72 @@ velocities v, [Seth 2010]. `N(q)` is an `nq x nv` matrix.
 The vector `τ ∈ ℝⁿᵛ` on the right hand side of Eq. (1) is
 the system's generalized forces. These incorporate gravity, springs,
 externally applied body forces, constraint forces, and contact forces.
+
+@anchor mbp_actuation
+                ### Actuation
+
+In a %MultibodyPlant model an actuator can be added as a JointActuator, see
+AddJointActuator(). For models with actuators, the plant will declare an
+actuation input port to provide feedforward actuation, see
+get_actuation_input_port(). Actuation ports can be requested for each individual
+@ref model_instances "model instance" in the %MultibodyPlant.
+
+Unless PD controllers are defined 
+(see @ref pd_controllers "PD controlled actuators" next), actuation input ports
+are required to be connected.
+
+@warning Effort limits (JointActuator::effort_limit()) are not enforced, unless
+PD controllers are defined. See @ref pd_controllers "PD controlled actuators".
+
+<!-- TODO(amcastro-tri): Consider enforcing effort limits whether PD controllers
+     are defined or not. -->
+
+@anchor pd_controllers
+  #### PD controlled actuators
+
+@warning Currently, this feature is only supported for discrete models,
+is_discrete().
+
+PD controlled joint actuators can be defined by setting PD gains for each joint
+actuator, see JointActuator::set_controller_gains(). Unless these gains are
+specified, joint actuators will not be PD controlled and
+JointActuator::has_controller() will return `false`.
+
+@warning For PD controlled models, all joint actuators in a model instance are
+required to have PD controllers defined. That is, a model instance must either
+have all actuators PD controlled or no PD controllers at all. An exception will
+be thrown when evaluating the actuation input ports if only a subset of the
+actuators in a model instance is PD controlled.
+
+For models with PD controllers, the actuation torque per actuator is computed
+according to: <pre>
+  ũ = -Kp⋅(q − qd) - Kd⋅(v − vd) + u_ff
+  u = max(−e, min(e, ũ))
+</pre>
+where qd and vd are desired configuration and velocity (see
+get_desired_state_input_port()) for the actuated joint (see
+JointActuator::joint()), Kp and Kd are the proportional and derivative gains of
+the actuator (see JointActuator::get_controller_gains()), `u_ff` is the
+feedforward actuation specified wiht get_actuation_input_port(), and `e`
+corresponds to effort limit (see JointActuator::effort_limit()).
+
+@anchor pd_controllers_and_ports
+  #### Actuation input ports requirements
+
+The following table specifies whether actuation ports are required to be
+connected or not:
+
+|               Port               |   without PD control  | with PD control |
+| :------------------------------: | :-------------------: | :-------------: |
+|  get_actuation_input_port()      |          yes          |       no¹       |
+|  get_desired_state_input_port()  |          N/A²         |       yes       |
+
+¹ Feedforward actuation is not required for models with PD controlled actuators.
+  This simplifies the diagram wiring for models that only rely on PD
+  controllers.
+
+² This port is not even declared if no PD controllers are specified.
+
 
 @anchor sdf_loading
                  ### Loading models from SDFormat files
@@ -670,28 +737,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const systems::OutputPort<T>& get_body_spatial_accelerations_output_port()
       const;
 
-  /// Returns a constant reference to the input port for external actuation for
-  /// a specific model instance.  This input port is a vector valued port, which
-  /// can be set with JointActuator::set_actuation_vector().
-  ///
-  /// @warning This port cannot be used together with get_actuation_input_port()
-  /// for the full multibody system. Either use the port for the full multibody
-  /// system or the port per model instance, never both.
-  ///
-  /// @note This is a vector valued port with as many elements as joint
-  /// actuators in the model instance. This port is provided so that we can
-  /// apply an external feedfoward torque to the entire model instance. In
-  /// addition, a joint actuator can have a PD controller defined, see
-  /// JointActuator and get_desired_state_input_port(). Actuation input ports
-  /// are required to be connected, unless all actuators in the model instance
-  /// have PD control, case in which this port will default to zero actuation.
-  ///
-  /// @pre Finalize() was already called on `this` plant.
-  /// @throws std::exception if called before Finalize().
-  /// @throws std::exception if the model instance does not exist.
-  const systems::InputPort<T>& get_actuation_input_port(
-      ModelInstanceIndex model_instance) const;
-
   /// Returns a constant reference to the input port for external actuations for
   /// all actuated dofs regardless the number of model instances that have
   /// actuated dofs. The input actuation is assumed to be ordered according to
@@ -702,19 +747,55 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if individual actuation ports are connected.
   const systems::InputPort<T>& get_actuation_input_port() const;
 
-  /// Returns the port to provide the desired state for the full
-  /// `model_instance`. It is required that at least one JointActuator in the
-  /// model instance has a PD controller defined. This is a vector valued port
-  /// with size equal to twice the number of joint actuators in the model
-  /// instance (one configuration and one velocity). Desired state is assumed to
-  /// be packed as xd = [qd, vd] that is, configurations first followed by
-  /// velocities. Entries in this vector corresponding to actuators without a PD
-  /// controller are ignored.
+  /// Returns a constant reference to the input port for external actuation for
+  /// a specific model instance.  This input port is a vector valued port, which
+  /// can be set with JointActuator::set_actuation_vector().
+  /// Refer to @ref mbp_actuation "Actuation" for further details.
   ///
-  /// @throws when evalauted if not connected for a `model_instance` with at
-  /// least one joint actuator with PD control. That is, if a model instance
-  /// does have at least one actuator with PD control, this port is required to
-  /// be connected.
+  /// @see GetJointActuatorIndices(), GetActuatedJointIndices().
+  ///
+  /// TODO: merge #18959 for num_actuators(model_instance).
+  /// @note This is a vector valued port of size num_actuators(model_instance)
+  /// (where we assume only 1-DOF joints are actuated.)
+  ///
+  // TODO: make sure the code enforces this.
+  /// @warning It is required to connect this input port unless the model
+  /// instance has PD controllers defined, see get_desired_state_input_port().
+  /// For models with PD controllers, actuation defaults to zero. This allows
+  /// the modeler to use PD controllers only, without the need to provide
+  /// feedforward torques.
+  ///
+  // TODO: enforce this, if not done already.
+  /// @warning This port cannot be used together with get_actuation_input_port()
+  /// for the full multibody system. Either use the port for the full multibody
+  /// system or the port per model instance, never both.
+  ///
+  /// @pre Finalize() was already called on `this` plant.
+  /// @throws std::exception if called before Finalize().
+  /// @throws std::exception if the model instance does not exist.
+  const systems::InputPort<T>& get_actuation_input_port(
+      ModelInstanceIndex model_instance) const;
+
+  /// For models with PD controlled joint actuators, returns the port to provide
+  /// the desired state for the full `model_instance`.
+  /// Refer to @ref mbp_actuation "Actuation" for further details.
+  ///
+  /// @note This input port is only defined for models with PD controlled joint
+  /// actuators, @see JointAcutator::set_controller_gains().
+  ///
+  /// @note This is a vector valued port of size
+  /// 2*num_actuators(model_instance), where we assumed 1-DOF actuated joints.
+  /// Therefore, the port must provide one desired position and one desired
+  /// velocity per joint actuator. Desired state is assumed to be packed as xd =
+  /// [qd, vd] that is, configurations first followed by velocities.
+  /// Configurations in qd are ordered by JointActuatorIndex, see
+  /// JointActuator::set_actuation_vector(). Similarly for velocities in vd.
+  ///
+  /// @warning Within a model instance, either all joint actuators are PD
+  /// controlled or none of them are actuated.
+  ///
+  /// @warning It is required to connect this port.
+  ///
   // TODO(amcastro-tri): warn or throw if connected to a model with no PD
   // control?. Right now we do nothing.
   const systems::InputPort<T>& get_desired_state_input_port(
