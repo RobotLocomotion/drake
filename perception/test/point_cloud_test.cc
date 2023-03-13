@@ -218,15 +218,69 @@ GTEST_TEST(PointCloudTest, Basic) {
               },
               [](PointCloud& cloud, int i) { return cloud.descriptor(i); });
 
-  {  // Crop
-    PointCloud cloud(count, pc_flags::kXYZs | pc_flags::kNormals |
-                                pc_flags::kRGBs |
-                                pc_flags::kDescriptorCurvature);
-    cloud.mutable_xyzs() = xyzs_expected;
-    cloud.mutable_rgbs() = rgbs_expected;
-    cloud.mutable_normals() = normals_expected;
-    cloud.mutable_descriptors() = descriptors_expected;
+  auto CreatePointCloud = [&](pc_flags::Fields fields) {
+    PointCloud cloud(count, fields);
+    if (fields.contains(pc_flags::kXYZs)) {
+      cloud.mutable_xyzs() = xyzs_expected;
+    }
+    if (fields.contains(pc_flags::kNormals)) {
+      cloud.mutable_rgbs() = rgbs_expected;
+    }
+    if (fields.contains(pc_flags::kRGBs)) {
+      cloud.mutable_normals() = normals_expected;
+    }
+    if (fields.has_descriptor()) {
+      cloud.mutable_descriptors() = descriptors_expected;
+    }
+    return cloud;
+  };
 
+  {  // Operations of morphing point cloud fields.
+    pc_flags::Fields xyz_rgb_normals =
+        (pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
+    // pc_flags::Fields all_fields =
+    //    (xyz_rgb_normals | pc_flags::kDescriptorCurvature);
+    const std::vector<std::pair<pc_flags::Fields, pc_flags::Fields>> field_pair{
+        {pc_flags::kXYZs, xyz_rgb_normals}, {xyz_rgb_normals, pc_flags::kXYZs}};
+    // {pc_flags::kXYZs, all_fields},
+    // {all_fields, pc_flags::kXYZs}};
+
+    for (const auto& [assign_to, assign_from] : field_pair) {
+      PointCloud cloud = CreatePointCloud(assign_to);
+      PointCloud complex_cloud = CreatePointCloud(assign_from);
+
+      cloud = complex_cloud;
+      if (assign_from.contains(pc_flags::kXYZs)) {
+        EXPECT_TRUE(CompareMatrices(cloud.xyzs(), complex_cloud.xyzs()));
+      }
+      if (assign_from.contains(pc_flags::kRGBs)) {
+        EXPECT_TRUE(CompareMatrices(cloud.rgbs(), complex_cloud.rgbs()));
+      }
+      if (assign_from.contains(pc_flags::kNormals)) {
+        EXPECT_TRUE(CompareMatrices(cloud.normals(), complex_cloud.normals()));
+      }
+
+      PointCloud cloud2 = CreatePointCloud(assign_to);
+      cloud2 = std::move(complex_cloud);
+      if (assign_from.contains(pc_flags::kXYZs)) {
+        EXPECT_TRUE(CompareMatrices(cloud.xyzs(), cloud2.xyzs()));
+      }
+      if (assign_from.contains(pc_flags::kRGBs)) {
+        EXPECT_TRUE(CompareMatrices(cloud.rgbs(), cloud2.rgbs()));
+      }
+      if (assign_from.contains(pc_flags::kNormals)) {
+        EXPECT_TRUE(CompareMatrices(cloud.normals(), cloud2.normals()));
+      }
+
+      // Ensure the original cloud was emptied out.
+      EXPECT_EQ(0, complex_cloud.size());
+    }
+  }
+
+  {  // Crop
+    PointCloud cloud =
+        CreatePointCloud(pc_flags::kXYZs | pc_flags::kNormals |
+                         pc_flags::kRGBs | pc_flags::kDescriptorCurvature);
     PointCloud cropped =
         cloud.Crop(Eigen::Vector3f{4, 5, 6}, Eigen::Vector3f{10, 20, 30});
     EXPECT_EQ(cropped.size(), 2);
