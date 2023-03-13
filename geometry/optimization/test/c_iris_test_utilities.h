@@ -106,8 +106,8 @@ class CspaceFreePolytopeTester {
     return cspace_free_polytope_->s_upper_minus_s_;
   }
 
-  std::vector<PlaneSeparatesGeometries>& plane_geometries() const {
-    return cspace_free_polytope_->get_mutable_plane_geometries();
+  const std::vector<PlaneSeparatesGeometries>& plane_geometries() const {
+    return cspace_free_polytope_->plane_geometries_;
   }
 
   [[nodiscard]] const symbolic::Variables& get_s_set() const {
