@@ -11,7 +11,7 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 
 using Eigen::Matrix3Xf;
-using Eigen::Matrix4Xf;
+using Eigen::RowVectorXf;
 using Eigen::Vector3f;
 
 using ::testing::AssertionResult;
@@ -114,7 +114,7 @@ GTEST_TEST(PointCloudTest, Basic) {
     100, 200, 255,
     4, 5, 6,
     40, 50, 60;
-  Eigen::RowVectorXf descriptors_expected(count);
+  RowVectorXf descriptors_expected(count);
   descriptors_expected << 1, 2, 3, 4, 5;
 
   // Create a point cloud with default values.
@@ -223,7 +223,7 @@ GTEST_TEST(PointCloudTest, Basic) {
             get_values(cloud).middleCols(small_size, large_size - small_size)));
   };
 
-  // Points.
+  // XYZs.
   CheckFields(xyzs_expected, pc_flags::kXYZs,
               [](PointCloud& cloud) { return cloud.mutable_xyzs(); },
               [](PointCloud& cloud) { return cloud.xyzs(); },
@@ -253,7 +253,8 @@ GTEST_TEST(PointCloudTest, Basic) {
               },
               [](PointCloud& cloud, int i) { return cloud.descriptor(i); });
 
-  {  // Tests 'operator=' between two clouds with different fields.
+  // Test operator= between two clouds with different fields.
+  {
     pc_flags::Fields xyz_rgb_normals =
         (pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
     pc_flags::Fields all_fields =
@@ -279,12 +280,12 @@ GTEST_TEST(PointCloudTest, Basic) {
     }
   }
 
-  {  // Crop
+  // Test point cloud cropping.
+  {
     PointCloud cloud =
         CreatePointCloud(pc_flags::kXYZs | pc_flags::kNormals |
                          pc_flags::kRGBs | pc_flags::kDescriptorCurvature);
-    PointCloud cropped =
-        cloud.Crop(Eigen::Vector3f{4, 5, 6}, Eigen::Vector3f{10, 20, 30});
+    PointCloud cropped = cloud.Crop(Vector3f{4, 5, 6}, Vector3f{10, 20, 30});
     EXPECT_EQ(cropped.size(), 2);
     std::vector<int> indices{1, 3};
 
@@ -406,7 +407,7 @@ GTEST_TEST(PointCloud, Concatenate) {
     EXPECT_EQ(merged.size(), 6);
 
     if (f.contains(pc_flags::kXYZs)) {
-      Eigen::Matrix3Xf xyzs_expected(3, 6);
+      Matrix3Xf xyzs_expected(3, 6);
       xyzs_expected << clouds[0].xyzs(), clouds[1].xyzs(), clouds[2].xyzs();
       EXPECT_TRUE(CompareMatrices(merged.xyzs(), xyzs_expected));
     }
@@ -418,14 +419,14 @@ GTEST_TEST(PointCloud, Concatenate) {
     }
 
     if (f.contains(pc_flags::kNormals)) {
-      Eigen::Matrix3Xf normals_expected(3, 6);
+      Matrix3Xf normals_expected(3, 6);
       normals_expected << clouds[0].normals(), clouds[1].normals(),
           clouds[2].normals();
       EXPECT_TRUE(CompareMatrices(merged.normals(), normals_expected));
     }
 
     if (f.has_descriptor()) {
-      Eigen::RowVectorXf descriptors_expected(6);
+      RowVectorXf descriptors_expected(6);
       descriptors_expected << clouds[0].descriptors(), clouds[1].descriptors(),
           clouds[2].descriptors();
       EXPECT_TRUE(CompareMatrices(merged.descriptors(), descriptors_expected));
@@ -455,7 +456,7 @@ GTEST_TEST(PointCloudTest, FlipNormals) {
   // of positive and negative z values.  The z values are taken to be larger
   // than the x,y values so that the normals are vertical enough that the z
   // component determines if they should flip.
-  Eigen::Matrix3Xf original_normals(3, num_points);
+  Matrix3Xf original_normals(3, num_points);
   // clang-format off
   original_normals.transpose() <<
     0.12, 0.32,  1.0,
@@ -480,7 +481,7 @@ GTEST_TEST(PointCloudTest, FlipNormals) {
 
   // Orient toward positive z.
   cloud.mutable_normals() = original_normals;
-  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, 1});
+  cloud.FlipNormalsTowardPoint(Vector3f{0, 0, 1});
 
   CheckNormal(0, false);
   CheckNormal(1, false);
@@ -492,7 +493,7 @@ GTEST_TEST(PointCloudTest, FlipNormals) {
 
   // Orient toward negative z.
   cloud.mutable_normals() = original_normals;
-  cloud.FlipNormalsTowardPoint(Eigen::Vector3f{0, 0, -1});
+  cloud.FlipNormalsTowardPoint(Vector3f{0, 0, -1});
 
   CheckNormal(0, true);
   CheckNormal(1, true);
@@ -599,9 +600,8 @@ GTEST_TEST(PointCloudTest, VoxelizedDownSample) {
 
 // Checks that normal has unit magnitude and that normal == expected up to a
 // sign flip.
-void CheckNormal(const Eigen::Ref<const Eigen::Vector3f>& normal,
-                 const Eigen::Ref<const Eigen::Vector3f>& expected,
-                 double tolerance) {
+void CheckNormal(const Eigen::Ref<const Vector3f>& normal,
+                 const Eigen::Ref<const Vector3f>& expected, double tolerance) {
   EXPECT_NEAR(normal.norm(), 1.0, tolerance)
       << fmt::format("Normal {} does not have unit length.", fmt_eigen(normal));
   EXPECT_NEAR(std::abs(normal.dot(expected)), 1.0, tolerance)

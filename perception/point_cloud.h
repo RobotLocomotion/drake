@@ -23,7 +23,7 @@ namespace perception {
 /// provide a compile-time open set, run-time closed set) and VTK (non-templated
 /// interface to provide a very free form run-time open set).
 /// You may construct one PointCloud with different sets of data, mutate the
-/// data contained within the structure and resize the cloud, or change the
+/// data contained within the structure, resize the cloud, and change the
 /// contained data types after the construction.
 ///
 /// Definitions:
@@ -250,7 +250,7 @@ class PointCloud final {
   /// @name Container Manipulation
   /// @{
 
-  /// Copies point data from another point cloud.
+  /// Copies all points from another point cloud.
   /// @param other
   ///    Other point cloud.
   /// @param fields_in
