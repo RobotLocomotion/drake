@@ -259,13 +259,14 @@ GTEST_TEST(PointCloudTest, Basic) {
         (pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
     pc_flags::Fields all_fields =
         (xyz_rgb_normals | pc_flags::kDescriptorCurvature);
-    const std::vector<std::pair<pc_flags::Fields, pc_flags::Fields>> field_pair{
-        {pc_flags::kXYZs, xyz_rgb_normals},
-        {xyz_rgb_normals, pc_flags::kXYZs},
-        {pc_flags::kXYZs, all_fields},
-        {all_fields, pc_flags::kXYZs}};
 
-    for (const auto& [assign_to, assign_from] : field_pair) {
+    const std::vector<std::pair<pc_flags::Fields, pc_flags::Fields>>
+        fields_pairs{{pc_flags::kXYZs, xyz_rgb_normals},
+                     {xyz_rgb_normals, pc_flags::kXYZs},
+                     {pc_flags::kXYZs, all_fields},
+                     {all_fields, pc_flags::kXYZs}};
+
+    for (const auto& [assign_to, assign_from] : fields_pairs) {
       PointCloud cloud_to = CreatePointCloud(assign_to);
       PointCloud cloud_from = CreatePointCloud(assign_from);
 
@@ -355,10 +356,26 @@ GTEST_TEST(PointCloudTest, Fields) {
     EXPECT_FALSE(simple_cloud.has_descriptors(pc_flags::kDescriptorCurvature));
 
     // Negative tests for construction.
-    EXPECT_THROW(PointCloud(1, pc_flags::kNone),
-                     std::runtime_error);
+    EXPECT_THROW(PointCloud(1, pc_flags::kNone), std::runtime_error);
     EXPECT_THROW(PointCloud(1, pc_flags::kDescriptorNone),
                  std::runtime_error);
+  }
+
+  // Check field updates.
+  {
+    PointCloud cloud(1, pc_flags::kXYZs);
+    EXPECT_TRUE(cloud.HasFields(pc_flags::kXYZs));
+    EXPECT_FALSE(cloud.has_normals());
+    EXPECT_FALSE(cloud.HasFields(pc_flags::kNormals));
+    EXPECT_THROW(cloud.RequireFields(pc_flags::kXYZs | pc_flags::kRGBs),
+                 std::runtime_error);
+
+    cloud.UpdateFields(pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
+    EXPECT_TRUE(cloud.HasFields(pc_flags::kXYZs));
+    EXPECT_TRUE(cloud.has_normals());
+    EXPECT_TRUE(cloud.HasFields(pc_flags::kNormals));
+    DRAKE_EXPECT_NO_THROW(
+        cloud.RequireFields(pc_flags::kXYZs | pc_flags::kRGBs));
   }
 }
 
