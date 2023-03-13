@@ -16,6 +16,7 @@
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/test/linear_program_examples.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
+#include "drake/solvers/test/optimization_examples.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 #include "drake/solvers/test/second_order_cone_program_examples.h"
 
@@ -647,6 +648,13 @@ GTEST_TEST(SnoptTest, TestCostExceptionHandling) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         solver.Solve(prog),
         "Exception.*SNOPT.*ThrowCost.*");
+  }
+}
+
+TEST_F(QuadraticEqualityConstrainedProgram1, test) {
+  SnoptSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-6);
   }
 }
 

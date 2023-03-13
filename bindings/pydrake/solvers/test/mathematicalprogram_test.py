@@ -1191,6 +1191,20 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.SetDecisionVariableValueInVector(x_matrix, x0_matrix, guess)
         self.assertFalse(any([np.isnan(i) for i in guess]))
 
+    def test_quadratic_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite
+        constraint1 = prog.AddQuadraticConstraint(
+            Q=np.eye(2), b=np.array([1., 2.]), lb=0., ub=1., vars=x[:2],
+            hessian_type=hessian_type)
+        self.assertEqual(len(prog.quadratic_constraints()), 1)
+
+        hessian_type = mp.QuadraticConstraint.HessianType.kIndefinite
+        constraint2 = prog.AddQuadraticConstraint(
+            x[0] * x[0] - x[2] * x[2], 1, 2, hessian_type=hessian_type)
+        self.assertEqual(len(prog.quadratic_constraints()), 2)
+
     @unittest.skipIf(
         SNOPT_NO_GUROBI,
         "SNOPT is unable to solve this problem (#10653).")

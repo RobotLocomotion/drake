@@ -56,6 +56,14 @@ GTEST_TEST(NloptSolverTest, SetAlgorithm) {
       solver.Solve(prog, Eigen::VectorXd::Ones(2), solver_options);
   ASSERT_TRUE(result.is_success());
 }
+
+TEST_F(QuadraticEqualityConstrainedProgram1, Test) {
+  NloptSolver solver;
+  if (solver.is_available()) {
+    CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-4,
+                  false /* check dual */);
+  }
+}
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
