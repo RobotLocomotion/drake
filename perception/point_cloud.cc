@@ -80,7 +80,10 @@ class PointCloud::Storage {
     normals_.conservativeResize(NoChange,
                                 f.contains(pc_flags::kNormals) ? size_ : 0);
     rgbs_.conservativeResize(NoChange, f.contains(pc_flags::kRGBs) ? size_ : 0);
-    descriptors_.conservativeResize(NoChange, f.has_descriptor() ? size_ : 0);
+    // Note: The row number can change depends on whether 'f' contains a
+    // descriptor field and the type of the descriptor.
+    descriptors_.conservativeResize(f.descriptor_type().size(),
+                                    f.has_descriptor() ? size_ : 0);
     fields_ = f;
     CheckInvariants();
   }

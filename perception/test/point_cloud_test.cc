@@ -66,6 +66,9 @@ void CompareClouds(const PointCloud& cloud_1, const PointCloud& cloud_2,
   if (fields.contains(pc_flags::kNormals)) {
     EXPECT_TRUE(CompareMatrices(cloud_1.normals(), cloud_2.normals()));
   }
+  if (fields.has_descriptor()) {
+    EXPECT_TRUE(CompareMatrices(cloud_1.descriptors(), cloud_2.descriptors()));
+  }
 }
 
 GTEST_TEST(PointCloudTest, TestExpectedNumThreads) {
@@ -253,12 +256,13 @@ GTEST_TEST(PointCloudTest, Basic) {
   {  // Tests 'operator=' between two clouds with different fields.
     pc_flags::Fields xyz_rgb_normals =
         (pc_flags::kXYZs | pc_flags::kNormals | pc_flags::kRGBs);
-    // pc_flags::Fields all_fields =
-    //    (xyz_rgb_normals | pc_flags::kDescriptorCurvature);
+    pc_flags::Fields all_fields =
+        (xyz_rgb_normals | pc_flags::kDescriptorCurvature);
     const std::vector<std::pair<pc_flags::Fields, pc_flags::Fields>> field_pair{
-        {pc_flags::kXYZs, xyz_rgb_normals}, {xyz_rgb_normals, pc_flags::kXYZs}};
-    // {pc_flags::kXYZs, all_fields},
-    // {all_fields, pc_flags::kXYZs}};
+        {pc_flags::kXYZs, xyz_rgb_normals},
+        {xyz_rgb_normals, pc_flags::kXYZs},
+        {pc_flags::kXYZs, all_fields},
+        {all_fields, pc_flags::kXYZs}};
 
     for (const auto& [assign_to, assign_from] : field_pair) {
       PointCloud cloud_to = CreatePointCloud(assign_to);
