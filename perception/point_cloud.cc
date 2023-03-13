@@ -54,6 +54,9 @@ class PointCloud::Storage {
     resize(new_size);
   }
 
+  // Return a reference to the fields provided by this storage.
+  const pc_flags::Fields& fields() const { return fields_; }
+
   // Returns size of the storage.
   int size() const { return size_; }
 
@@ -148,16 +151,14 @@ pc_flags::Fields ResolvePairFields(
 }  // namespace
 
 PointCloud::PointCloud(
-    int new_size, pc_flags::Fields fields, bool skip_initialize)
-    : size_(new_size),
-      fields_(fields) {
-  if (fields_ == pc_flags::kNone)
+    int new_size, pc_flags::Fields fields, bool skip_initialize) {
+  if (fields == pc_flags::kNone)
     throw std::runtime_error("Cannot construct a PointCloud without fields");
-  if (fields_.contains(pc_flags::kInherit))
+  if (fields.contains(pc_flags::kInherit))
     throw std::runtime_error("Cannot construct a PointCloud with kInherit");
-  storage_.reset(new Storage(size_, fields_));
+  storage_.reset(new Storage(new_size, fields));
   if (!skip_initialize) {
-    SetDefault(0, size_);
+    SetDefault(0, new_size);
   }
 }
 
@@ -171,8 +172,6 @@ PointCloud::PointCloud(PointCloud&& other)
     : PointCloud(0, other.fields(), true) {
   // This has zero size. Directly swap storages.
   storage_.swap(other.storage_);
-  std::swap(size_, other.size_);
-  DRAKE_DEMAND(storage_->size() == size());
 }
 
 PointCloud& PointCloud::operator=(const PointCloud& other) {
@@ -184,9 +183,7 @@ PointCloud& PointCloud::operator=(PointCloud&& other) {
   // We may only take rvalue references if the fields match exactly.
   RequireExactFields(other.fields());
   // Swap storages.
-  size_ = other.size_;
   storage_.swap(other.storage_);
-  DRAKE_DEMAND(storage_->size() == size());
   // Empty out the other cloud, but let it remain being a valid point cloud
   // (with non-null storage).
   other.resize(0, false);
@@ -196,14 +193,21 @@ PointCloud& PointCloud::operator=(PointCloud&& other) {
 // Define destructor here to use complete definition of `Storage`.
 PointCloud::~PointCloud() {}
 
+pc_flags::Fields PointCloud::fields() const {
+  return storage_->fields();
+}
+
+int PointCloud::size() const {
+  return storage_->size();
+}
+
 void PointCloud::resize(int new_size, bool skip_initialization) {
   DRAKE_DEMAND(new_size >= 0);
-  int old_size = size();
-  size_ = new_size;
+  const int old_size = size();
   storage_->resize(new_size);
   DRAKE_DEMAND(storage_->size() == new_size);
   if (new_size > old_size && !skip_initialization) {
-    int size_diff = new_size - old_size;
+    const int size_diff = new_size - old_size;
     SetDefault(old_size, size_diff);
   }
 }
@@ -262,7 +266,7 @@ void PointCloud::Expand(
 }
 
 bool PointCloud::has_xyzs() const {
-  return fields_.contains(pc_flags::kXYZs);
+  return storage_->fields().contains(pc_flags::kXYZs);
 }
 Eigen::Ref<const Matrix3X<T>> PointCloud::xyzs() const {
   DRAKE_DEMAND(has_xyzs());
@@ -274,7 +278,7 @@ Eigen::Ref<Matrix3X<T>> PointCloud::mutable_xyzs() {
 }
 
 bool PointCloud::has_normals() const {
-  return fields_.contains(pc_flags::kNormals);
+  return storage_->fields().contains(pc_flags::kNormals);
 }
 Eigen::Ref<const Matrix3X<T>> PointCloud::normals() const {
   DRAKE_DEMAND(has_normals());
@@ -286,7 +290,7 @@ Eigen::Ref<Matrix3X<T>> PointCloud::mutable_normals() {
 }
 
 bool PointCloud::has_rgbs() const {
-  return fields_.contains(pc_flags::kRGBs);
+  return storage_->fields().contains(pc_flags::kRGBs);
 }
 Eigen::Ref<const Matrix3X<C>> PointCloud::rgbs() const {
   DRAKE_DEMAND(has_rgbs());
@@ -298,11 +302,14 @@ Eigen::Ref<Matrix3X<C>> PointCloud::mutable_rgbs() {
 }
 
 bool PointCloud::has_descriptors() const {
-  return fields_.has_descriptor();
+  return storage_->fields().has_descriptor();
 }
 bool PointCloud::has_descriptors(
     const pc_flags::DescriptorType& descriptor_type) const {
-  return fields_.contains(descriptor_type);
+  return storage_->fields().contains(descriptor_type);
+}
+const pc_flags::DescriptorType& PointCloud::descriptor_type() const {
+  return storage_->fields().descriptor_type();
 }
 Eigen::Ref<const MatrixX<D>> PointCloud::descriptors() const {
   DRAKE_DEMAND(has_descriptors());
@@ -316,7 +323,7 @@ Eigen::Ref<MatrixX<D>> PointCloud::mutable_descriptors() {
 bool PointCloud::HasFields(
     pc_flags::Fields fields_in) const {
   DRAKE_DEMAND(!fields_in.contains(pc_flags::kInherit));
-  return fields_.contains(fields_in);
+  return storage_->fields().contains(fields_in);
 }
 
 void PointCloud::RequireFields(
@@ -325,13 +332,13 @@ void PointCloud::RequireFields(
     throw std::runtime_error(
         fmt::format("PointCloud does not have expected fields.\n"
                     "Expected {}, got {}",
-                    fields_in, fields()));
+                    fields_in, storage_->fields()));
   }
 }
 
 bool PointCloud::HasExactFields(
     pc_flags::Fields fields_in) const {
-  return fields() == fields_in;
+  return storage_->fields() == fields_in;
 }
 
 void PointCloud::RequireExactFields(
@@ -340,7 +347,7 @@ void PointCloud::RequireExactFields(
     throw std::runtime_error(
         fmt::format("PointCloud does not have the exact expected fields."
                     "\nExpected {}, got {}",
-                    fields_in, fields()));
+                    fields_in, storage_->fields()));
   }
 }
 
@@ -350,9 +357,9 @@ PointCloud PointCloud::Crop(const Eigen::Ref<const Vector3<T>>& lower_xyz,
   if (!has_xyzs()) {
     throw std::runtime_error("PointCloud must have xyzs in order to Crop");
   }
-  PointCloud crop(size_, fields(), true);
+  PointCloud crop(size(), storage_->fields(), true);
   int index = 0;
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size(); ++i) {
     if (((xyzs().col(i).array() >= lower_xyz.array()) &&
          (xyzs().col(i).array() <= upper_xyz.array()))
             .all()) {
@@ -378,7 +385,7 @@ void PointCloud::FlipNormalsTowardPoint(
   DRAKE_THROW_UNLESS(has_xyzs());
   DRAKE_THROW_UNLESS(has_normals());
 
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size(); ++i) {
     // Note: p_CP - xyz could be arbitrarily close to zero; but this behavior
     // is still reasonable.
     if ((p_CP - xyz(i)).dot(normal(i)) < 0.0) {
@@ -430,12 +437,12 @@ PointCloud PointCloud::VoxelizedDownSample(
   const std::vector<int> default_chunk_value;
   // By providing an initial estimated number of chunks, we reduce reallocation
   // and rehashing in the DSHVG.
-  const size_t num_expected_chunks = static_cast<size_t>(size_ / 16);
+  const size_t num_expected_chunks = static_cast<size_t>(size() / 16);
   DynamicSpatialHashedVoxelGrid<std::vector<int>> dynamic_voxel_grid(
       chunk_sizes, default_chunk_value, num_expected_chunks);
 
   // Add points into the voxel grid.
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size(); ++i) {
     if (xyz(i).array().isFinite().all()) {
       auto chunk_query =
           dynamic_voxel_grid.GetLocationMutable3d(xyz(i).cast<double>());
@@ -454,7 +461,8 @@ PointCloud PointCloud::VoxelizedDownSample(
 
   // Initialize downsampled cloud.
   PointCloud down_sampled(
-      dynamic_voxel_grid.GetImmutableInternalChunks().size(), fields());
+      dynamic_voxel_grid.GetImmutableInternalChunks().size(),
+      storage_->fields());
 
   // Helper lambda to process a single voxel cell.
   const auto process_voxel = [this, &down_sampled](
@@ -557,8 +565,7 @@ bool PointCloud::EstimateNormals(
   const double squared_radius = radius * radius;
 
   if (!has_normals()) {
-    fields_ |= pc_flags::kNormals;
-    storage_->UpdateFields(fields_);
+    storage_->UpdateFields(storage_->fields() | pc_flags::kNormals);
   }
 
   const Eigen::MatrixX3f data = xyzs().transpose();
@@ -570,7 +577,7 @@ bool PointCloud::EstimateNormals(
   std::atomic<bool> all_points_have_at_least_three_neighbors(true);
 
   CRU_OMP_PARALLEL_FOR_IF(parallelize)
-  for (int i = 0; i < size_; ++i) {
+  for (int i = 0; i < size(); ++i) {
     VectorX<Eigen::Index> indices(num_closest);
     Eigen::VectorXf distances(num_closest);
 
