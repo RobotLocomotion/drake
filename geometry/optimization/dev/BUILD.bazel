@@ -27,6 +27,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "polynomial_positive_on_path",
+    srcs = ["polynomial_positive_on_path.cc"],
+    hdrs = ["polynomial_positive_on_path.h"],
+    deps = [
+        "//common/symbolic:monomial_util",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "c_iris_path_test_utilities",
     testonly = 1,
     hdrs = ["test/c_iris_path_test_utilities.h"],
