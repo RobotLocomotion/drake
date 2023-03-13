@@ -356,6 +356,13 @@ GTEST_TEST(TestLP, PoorScaling) {
   TestLPPoorScaling2(solver, true, 1E-4);
 }
 
+TEST_F(QuadraticConstrainedProgram1, test) {
+  IpoptSolver solver;
+  if (solver.available()) {
+    CheckSolution(solver, Eigen::Vector2d(0.5, 0.8), std::nullopt, 1E-6);
+  }
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

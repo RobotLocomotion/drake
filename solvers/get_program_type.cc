@@ -203,7 +203,7 @@ bool IsNLP(const MathematicalProgram& prog) {
   // 2. It is not an LCP (A program with only linear complementarity
   // constraints).
   // 3. It has at least one of : generic costs, generic constraints, non-convex
-  // quadratic cost, linear complementarity constraints.
+  // quadratic cost, linear complementarity constraints, quadratic constraints.
   const bool has_generic_cost =
       prog.required_capabilities().count(ProgramAttribute::kGenericCost) > 0;
   const bool has_nonconvex_quadratic_cost =
@@ -211,6 +211,9 @@ bool IsNLP(const MathematicalProgram& prog) {
   const bool has_generic_constraint =
       prog.required_capabilities().count(ProgramAttribute::kGenericConstraint) >
       0;
+  const bool has_quadratic_constraint =
+      prog.required_capabilities().count(
+          ProgramAttribute::kQuadraticConstraint) > 0;
   const bool no_binary_variable = prog.required_capabilities().count(
                                       ProgramAttribute::kBinaryVariable) == 0;
   const bool has_linear_complementarity_constraint =
@@ -220,7 +223,8 @@ bool IsNLP(const MathematicalProgram& prog) {
       SatisfiesProgramType(GetRequirementsLCP(), prog.required_capabilities());
   return no_binary_variable && !is_LCP &&
          (has_generic_cost || has_nonconvex_quadratic_cost ||
-          has_generic_constraint || has_linear_complementarity_constraint);
+          has_generic_constraint || has_quadratic_constraint ||
+          has_linear_complementarity_constraint);
 }
 }  // namespace
 

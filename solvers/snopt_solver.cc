@@ -370,10 +370,10 @@ int SingleNonlinearConstraintSize<LinearComplementarityConstraint>(
 }
 
 // Evaluate a single nonlinear constraints. For generic Constraint,
-// LorentzConeConstraint, RotatedLorentzConeConstraint, we call Eval function
-// of the constraint directly. For some other constraint, such as
-// LinearComplementaryConstraint, we will evaluate its nonlinear constraint
-// differently, than its Eval function.
+// QuadraticConstraint, LorentzConeConstraint, RotatedLorentzConeConstraint, we
+// call Eval function of the constraint directly. For some other constraint,
+// such as LinearComplementaryConstraint, we will evaluate its nonlinear
+// constraint differently, than its Eval function.
 template <typename C>
 void EvaluateSingleNonlinearConstraint(
     const C& constraint, const Eigen::Ref<const AutoDiffVecXd>& tx,
@@ -606,6 +606,9 @@ void EvaluateCostsConstraints(
   EvaluateNonlinearConstraints(
       current_problem, current_problem.generic_constraints(), F, &G_w_duplicate,
       &constraint_index, &grad_index, xvec);
+  EvaluateNonlinearConstraints(
+      current_problem, current_problem.quadratic_constraints(), F,
+      &G_w_duplicate, &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
       current_problem, current_problem.lorentz_cone_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
@@ -983,6 +986,8 @@ void SetConstraintDualSolutions(
     MathematicalProgramResult* result) {
   SetConstraintDualSolution(prog.generic_constraints(), Fmul,
                             constraint_dual_start_index, result);
+  SetConstraintDualSolution(prog.quadratic_constraints(), Fmul,
+                            constraint_dual_start_index, result);
   SetConstraintDualSolution(prog.lorentz_cone_constraints(), Fmul,
                             constraint_dual_start_index, result);
   SetConstraintDualSolution(prog.rotated_lorentz_cone_constraints(), Fmul,
@@ -1052,6 +1057,9 @@ void UpdateNumConstraintsAndGradients(
   UpdateNumNonlinearConstraintsAndGradients(
       prog.generic_constraints(), num_nonlinear_constraints, max_num_gradients,
       constraint_dual_start_index);
+  UpdateNumNonlinearConstraintsAndGradients(
+      prog.quadratic_constraints(), num_nonlinear_constraints,
+      max_num_gradients, constraint_dual_start_index);
   UpdateNumNonlinearConstraintsAndGradients(
       prog.lorentz_cone_constraints(), num_nonlinear_constraints,
       max_num_gradients, constraint_dual_start_index);
@@ -1212,6 +1220,9 @@ void SolveWithGivenOptions(
   size_t constraint_index = 1;
   UpdateConstraintBoundsAndGradients(
       prog, prog.generic_constraints(), &Flow, &Fupp, &iGfun_w_duplicate,
+      &jGvar_w_duplicate, &constraint_index, &grad_index);
+  UpdateConstraintBoundsAndGradients(
+      prog, prog.quadratic_constraints(), &Flow, &Fupp, &iGfun_w_duplicate,
       &jGvar_w_duplicate, &constraint_index, &grad_index);
   UpdateConstraintBoundsAndGradients(
       prog, prog.lorentz_cone_constraints(), &Flow, &Fupp, &iGfun_w_duplicate,
