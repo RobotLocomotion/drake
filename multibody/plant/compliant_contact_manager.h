@@ -274,6 +274,7 @@ class CompliantContactManager final
   // Only one of these drivers will be non-nullptr.
   std::unique_ptr<SapDriver<T>> sap_driver_;
   std::unique_ptr<TamsiDriver<T>> tamsi_driver_;
+  std::vector<internal::PdControllerConstraintSpecs> pd_controller_specs_;
 };
 
 // N.B. These geometry queries are not supported when T = symbolic::Expression

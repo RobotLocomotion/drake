@@ -673,6 +673,19 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns a constant reference to the input port for external actuation for
   /// a specific model instance.  This input port is a vector valued port, which
   /// can be set with JointActuator::set_actuation_vector().
+  ///
+  /// @warning This port cannot be used together with get_actuation_input_port()
+  /// for the full multibody system. Either use the port for the full multibody
+  /// system or the port per model instance, never both.
+  ///
+  /// @note This is a vector valued port with as many elements as joint
+  /// actuators in the model instance. This port is provided so that we can
+  /// apply an external feedfoward torque to the entire model instance. In
+  /// addition, a joint actuator can have a PD controller defined, see
+  /// JointActuator and get_desired_state_input_port(). Actuation input ports
+  /// are required to be connected, unless all actuators in the model instance
+  /// have PD control, case in which this port will default to zero actuation.
+  ///
   /// @pre Finalize() was already called on `this` plant.
   /// @throws std::exception if called before Finalize().
   /// @throws std::exception if the model instance does not exist.
@@ -688,6 +701,24 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// @throws std::exception if called before Finalize().
   /// @throws std::exception if individual actuation ports are connected.
   const systems::InputPort<T>& get_actuation_input_port() const;
+
+  /// Returns the port to provide the desired state for the full
+  /// `model_instance`. It is required that at least one JointActuator in the
+  /// model instance has a PD controller defined. This is a vector valued port
+  /// with size equal to twice the number of joint actuators in the model
+  /// instance (one configuration and one velocity). Desired state is assumed to
+  /// be packed as xd = [qd, vd] that is, configurations first followed by
+  /// velocities. Entries in this vector corresponding to actuators without a PD
+  /// controller are ignored.
+  ///
+  /// @throws when evalauted if not connected for a `model_instance` with at
+  /// least one joint actuator with PD control. That is, if a model instance
+  /// does have at least one actuator with PD control, this port is required to
+  /// be connected.
+  // TODO(amcastro-tri): warn or throw if connected to a model with no PD
+  // control?. Right now we do nothing.
+  const systems::InputPort<T>& get_desired_state_input_port(
+      ModelInstanceIndex model_instance) const;
 
   /// Returns a constant reference to the vector-valued input port for applied
   /// generalized forces, and the vector will be added directly into `tau` (see
@@ -1195,7 +1226,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                             ball_constraints_specs_.size());
   }
 
-  /// Defines a holonomic constraint between two single-dof joints `joint0`
+  /// Defines a holonomic constraint between two single-dof constraints `joint0`
   /// and `joint1` with positions q₀ and q₁, respectively, such that q₀ = ρ⋅q₁ +
   /// Δq, where ρ is the gear ratio and Δq is a fixed offset. The gear ratio
   /// can have units if the units of q₀ and q₁ are different. For instance,
@@ -4619,6 +4650,12 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   VectorX<T> AssembleActuationInput(
       const systems::Context<T>& context) const;
 
+  // For models with joint actuators with PD control, this method helps to
+  // assemble desired states for the full model from the input ports for
+  // individual model instances.
+  VectorX<T> AssembleDesiredStateInput(
+      const systems::Context<T>& context) const;
+
   // Computes all non-contact applied forces including:
   //  - Force elements.
   //  - Joint actuation.
@@ -5113,6 +5150,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // The actuation port for all actuated dofs.
   systems::InputPortIndex actuation_port_;
 
+  std::vector<systems::InputPortIndex> instance_desired_state_ports_;
+
   // A port for externally applied generalized forces u.
   systems::InputPortIndex applied_generalized_force_input_port_;
 
@@ -5175,7 +5214,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   std::vector<internal::CouplerConstraintSpecs> coupler_constraints_specs_;
 
   // Vector of distance constraints specifications.
-  std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;
+  std::vector<internal::DistanceConstraintSpecs> distance_constraints_specs_;  
 
   // Vector of ball constraint specifications.
   std::vector<internal::BallConstraintSpecs> ball_constraints_specs_;

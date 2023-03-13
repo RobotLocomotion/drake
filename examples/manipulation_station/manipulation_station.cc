@@ -20,6 +20,7 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/perception/depth_image_to_point_cloud.h"
+#include "drake/systems/controllers/inverse_dynamics.h"
 #include "drake/systems/controllers/inverse_dynamics_controller.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/primitives/adder.h"
@@ -29,6 +30,7 @@
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/linear_system.h"
 #include "drake/systems/primitives/matrix_gain.h"
+#include "drake/systems/primitives/multiplexer.h"
 #include "drake/systems/primitives/pass_through.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 
@@ -281,6 +283,7 @@ ManipulationStation<T>::ManipulationStation(double time_step)
   plant_->RegisterAsSourceForSceneGraph(scene_graph_);
   scene_graph_->set_name("scene_graph");
   plant_->set_name("plant");
+  plant_->set_discrete_contact_solver(multibody::DiscreteContactSolver::kSap);
 
   this->set_name("manipulation_station");
 }
@@ -555,6 +558,45 @@ void ManipulationStation<T>::Finalize(
 
   MakeIiwaControllerModel();
 
+  // Setup gripper controller. (before Finalize()).
+  {
+    const auto& left_slider =
+        plant_->GetJointByName("left_finger_sliding_joint");
+    const auto& right_slider =
+        plant_->GetJointByName("right_finger_sliding_joint");
+    plant_->AddCouplerConstraint(left_slider, right_slider, -1.0);
+
+    const auto& actuator =
+        plant_->GetJointActuatorByName("right_finger_sliding_joint");
+    auto& mutable_actuator =
+        plant_->get_mutable_joint_actuator(actuator.index());
+    mutable_actuator.set_controller_gains({wsg_kp_, wsg_kd_});
+  }
+
+  // Setup PD control for the arm (before Finalize())
+  {
+    if (iiwa_kp_.size() == 0) {
+      iiwa_kp_ = VectorXd::Constant(7, 100.0);
+    }
+
+    if (iiwa_kd_.size() == 0) {
+      iiwa_kd_.resize(7);
+      for (int i = 0; i < 7; i++) {
+        // Critical damping gains.
+        iiwa_kd_[i] = 2 * std::sqrt(iiwa_kp_[i]);
+      }
+    }
+
+    for (int joint_index = 1; joint_index <= 7; ++joint_index) {
+      const std::string name = fmt::format("iiwa_joint_{}", joint_index);
+      const auto& actuator = plant_->GetJointActuatorByName(name);
+      auto& mutable_actuator =
+          plant_->get_mutable_joint_actuator(actuator.index());
+      mutable_actuator.set_controller_gains(
+          {iiwa_kp_[joint_index - 1], iiwa_kd_[joint_index - 1]});
+    }
+  }
+
   // Note: This deferred diagram construction method/workflow exists because we
   //   - cannot finalize plant until all of my objects are added, and
   //   - cannot wire up my diagram until we have finalized the plant.
@@ -666,34 +708,12 @@ void ManipulationStation<T>::Finalize(
   {
     owned_controller_plant_->Finalize();
 
-    auto check_gains = [](const VectorX<double>& gains, int size) {
-      return (gains.size() == size) && (gains.array() >= 0).all();
-    };
-
-    // Set default gains if.
-    if (iiwa_kp_.size() == 0) {
-      iiwa_kp_ = VectorXd::Constant(num_iiwa_positions, 100);
-    }
-    DRAKE_THROW_UNLESS(check_gains(iiwa_kp_, num_iiwa_positions));
-
-    if (iiwa_kd_.size() == 0) {
-      iiwa_kd_.resize(num_iiwa_positions);
-      for (int i = 0; i < num_iiwa_positions; i++) {
-        // Critical damping gains.
-        iiwa_kd_[i] = 2 * std::sqrt(iiwa_kp_[i]);
-      }
-    }
-    DRAKE_THROW_UNLESS(check_gains(iiwa_kd_, num_iiwa_positions));
-
-    if (iiwa_ki_.size() == 0) {
-      iiwa_ki_ = VectorXd::Constant(num_iiwa_positions, 1);
-    }
-    DRAKE_THROW_UNLESS(check_gains(iiwa_ki_, num_iiwa_positions));
-
-    // Add the inverse dynamics controller.
-    auto iiwa_controller = builder.template AddSystem<
-        systems::controllers::InverseDynamicsController>(
-        *owned_controller_plant_, iiwa_kp_, iiwa_ki_, iiwa_kd_, false);
+    // Add gravity compensation.
+    auto iiwa_controller =
+        builder.template AddSystem<systems::controllers::InverseDynamics>(
+            owned_controller_plant_.get(),
+            systems::controllers::InverseDynamics<
+                double>::InverseDynamicsMode::kGravityCompensation);
     iiwa_controller->set_name("iiwa_controller");
     builder.Connect(plant_->get_state_output_port(iiwa_model_.model_instance),
                     iiwa_controller->get_input_port_estimated_state());
@@ -701,7 +721,7 @@ void ManipulationStation<T>::Finalize(
     // Add in feedforward torque.
     auto adder =
         builder.template AddSystem<systems::Adder>(2, num_iiwa_positions);
-    builder.Connect(iiwa_controller->get_output_port_control(),
+    builder.Connect(iiwa_controller->get_output_port_force(),
                     adder->get_input_port(0));
     // Use a passthrough to make the port optional.  (Will provide zero values
     // if not connected).
@@ -718,46 +738,39 @@ void ManipulationStation<T>::Finalize(
     // position command input port.
     auto desired_state_from_position = builder.template AddSystem<
         systems::StateInterpolatorWithDiscreteDerivative>(
-            num_iiwa_positions, plant_->time_step(),
-            true /* suppress_initial_transient */);
+        num_iiwa_positions, plant_->time_step(),
+        true /* suppress_initial_transient */);
     desired_state_from_position->set_name("desired_state_from_position");
-    builder.Connect(desired_state_from_position->get_output_port(),
-                    iiwa_controller->get_input_port_desired_state());
     builder.Connect(iiwa_position->get_output_port(),
                     desired_state_from_position->get_input_port());
+    builder.Connect(
+        desired_state_from_position->get_output_port(),
+        plant_->get_desired_state_input_port(iiwa_model_.model_instance));
 
     // Export commanded torques:
     builder.ExportOutput(adder->get_output_port(), "iiwa_torque_commanded");
     builder.ExportOutput(adder->get_output_port(), "iiwa_torque_measured");
   }
 
+  // Gripper ports.
   {
-    auto wsg_controller = builder.template AddSystem<
-        manipulation::schunk_wsg::SchunkWsgPositionController>(
-        manipulation::schunk_wsg::kSchunkWsgLcmStatusPeriod, wsg_kp_, wsg_kd_);
-    wsg_controller->set_name("wsg_controller");
+    // For now, create a desired state for the gripper with zero velocities.
+    auto wsg_qd_passthrough =
+        builder.template AddSystem<systems::PassThrough>(1);
+    auto mux = builder.template AddSystem<systems::Multiplexer>(2);
+    builder.Connect(wsg_qd_passthrough->get_output_port(),
+                    mux->get_input_port(0));
+    auto wsg_zero_vd =
+        builder.template AddSystem<systems::ConstantVectorSource>(0.0);
+    builder.Connect(wsg_zero_vd->get_output_port(), mux->get_input_port(1));
 
+    // Connect command to the plant
     builder.Connect(
-        wsg_controller->get_generalized_force_output_port(),
-        plant_->get_actuation_input_port(wsg_model_.model_instance));
-    builder.Connect(plant_->get_state_output_port(wsg_model_.model_instance),
-                    wsg_controller->get_state_input_port());
+        mux->get_output_port(0),
+        plant_->get_desired_state_input_port(wsg_model_.model_instance));
 
-    builder.ExportInput(wsg_controller->get_desired_position_input_port(),
-                        "wsg_position");
-    builder.ExportInput(wsg_controller->get_force_limit_input_port(),
-                        "wsg_force_limit");
-
-    auto wsg_mbp_state_to_wsg_state = builder.template AddSystem(
-        manipulation::schunk_wsg::MakeMultibodyStateToWsgStateSystem<double>());
-    builder.Connect(plant_->get_state_output_port(wsg_model_.model_instance),
-                    wsg_mbp_state_to_wsg_state->get_input_port());
-
-    builder.ExportOutput(wsg_mbp_state_to_wsg_state->get_output_port(),
-                         "wsg_state_measured");
-
-    builder.ExportOutput(wsg_controller->get_grip_force_output_port(),
-                         "wsg_force_measured");
+    // Export an input of a vector of size one.
+    builder.ExportInput(wsg_qd_passthrough->get_input_port(), "wsg_position");
   }
 
   // System to compute generalized forces due to externally applied spatial

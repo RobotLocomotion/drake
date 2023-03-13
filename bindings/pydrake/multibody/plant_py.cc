@@ -258,7 +258,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("AddCouplerConstraint", &Class::AddCouplerConstraint,
             py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
             py::arg("offset") = 0.0, py_rvp::reference_internal,
-            cls_doc.AddCouplerConstraint.doc);
+            cls_doc.AddCouplerConstraint.doc)
+        .def("AddDistanceConstraint", &Class::AddDistanceConstraint,
+            py::arg("body_A"), py::arg("p_AP"), py::arg("body_B"),
+            py::arg("p_BQ"), py::arg("distance"),
+            py::arg("stiffness") = std::numeric_limits<double>::infinity(),
+            py::arg("damping") = 0.0, py_rvp::reference_internal,
+            cls_doc.AddDistanceConstraint.doc);
+
     // Mathy bits
     cls  // BR
         .def(
@@ -867,6 +874,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::get_actuation_input_port),
             py::arg("model_instance"), py_rvp::reference_internal,
             cls_doc.get_actuation_input_port.doc_1args)
+        .def("get_desired_state_input_port",
+            overload_cast_explicit<const systems::InputPort<T>&,
+                multibody::ModelInstanceIndex>(
+                &Class::get_desired_state_input_port),
+            py::arg("model_instance"), py_rvp::reference_internal,
+            cls_doc.get_desired_state_input_port.doc)
         .def("get_applied_generalized_force_input_port",
             overload_cast_explicit<const systems::InputPort<T>&>(
                 &Class::get_applied_generalized_force_input_port),

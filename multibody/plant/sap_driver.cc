@@ -575,6 +575,69 @@ void SapDriver<T>::AddBallConstraints(
 }
 
 template <typename T>
+void SapDriver<T>::AddPdControllerConstraints(
+    const systems::Context<T>& context, SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Do nothing if not PD controllers were specified.
+  if (manager_->pd_controller_specs_.size() == 0) return;
+
+  // Previous time step positions.
+  const VectorX<T> q0 = plant().GetPositions(context);
+
+  // Desired positions & velocities.
+  const int num_actuators = plant().num_actuators();
+  // TODO(amcastro-tri): makes these EvalFoo() instead to avoid heap
+  // allocations.
+  const VectorX<T> desired_state = manager_->AssembleDesiredStateInput(context);
+  const VectorX<T> feed_forward_actuation =
+      manager_->AssembleActuationInput(context);
+
+  // TODO(amcastro-tri): consider exposing this parameter.
+  const double beta = 0.1;
+
+  for (const PdControllerConstraintSpecs& info :
+       manager_->pd_controller_specs_) {
+    const JointActuator<T>& actuator =
+        plant().get_joint_actuator(info.actuator_index);
+    const Joint<T>& joint = actuator.joint();
+    const double effort_limit = actuator.effort_limit();
+    DRAKE_DEMAND(effort_limit > 0.0);
+    const T& qd = desired_state[actuator.index()];
+    const T& vd = desired_state[num_actuators + actuator.index()];
+    const T& u0 = feed_forward_actuation[info.actuator_index];
+
+    const int dof = joint.velocity_start();
+    const TreeIndex tree = tree_topology().velocity_to_tree_index(dof);
+    const int tree_dof = dof - tree_topology().tree_velocities_start(tree);
+
+    // Set constraint impulse limits so that feed forward actuation plus PD
+    // controller actuation is within limits.
+    const T gamma_lower = -(u0 + effort_limit) * plant().time_step();
+    const T gamma_upper = (effort_limit - u0) * plant().time_step();
+
+    // Controller gains.
+    // TODO(amcastro-tri): consider getting these from the actuator?
+    const T& Kp = info.proportional_gain;
+    const T& Kd = info.derivative_gain;
+
+    typename SapHolonomicConstraint<T>::Parameters parameters{
+        Vector1<T>(gamma_lower), Vector1<T>(gamma_upper), Vector1<T>(Kp),
+        Vector1<T>(Kd / Kp), beta};
+
+    const int nv = tree_topology().num_tree_velocities(tree);
+
+    // Constraint function defined as g = q - qd with qd the desired position.
+    const Vector1<T> g0(q0[dof] - qd);
+    MatrixX<T> J = MatrixX<T>::Zero(1, nv);
+    const Vector1<T> bias(-vd);
+    J(0, tree_dof) = 1.0;
+    problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+        tree, g0, std::move(J), std::move(bias), std::move(parameters)));
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   SapContactProblem<T>& problem = *cache->sap_problem;
@@ -592,6 +655,7 @@ void SapDriver<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+  AddPdControllerConstraints(context, &problem);
 }
 
 template <typename T>
