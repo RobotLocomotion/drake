@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 load("@drake//tools/install:install.bzl", "InstallInfo")
 load("@drake//tools/skylark:pathutils.bzl", "basename")
 load("@python//:version.bzl", "PYTHON_SITE_PACKAGES_RELPATH")

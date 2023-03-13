@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/skylark:py.bzl", "py_library")
 load(
     "@drake//tools/workspace:generate_include_header.bzl",

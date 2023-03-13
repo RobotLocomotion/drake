@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 # Note that we do NOT install a LICENSE file as part of the Drake install

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def path(repo_ctx, additional_search_paths = []):
     """Return the value of the PATH environment variable that would be used by
     the which() command."""

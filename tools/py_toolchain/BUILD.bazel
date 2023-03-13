@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@rules_python//python:defs.bzl", "py_runtime", "py_runtime_pair")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load(

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This is a list of all *.lcm files in this folder.
 # Our BUILD.bazel rules cross-check that it remains up-to-date.
 ALL_LCM_SRCS = [

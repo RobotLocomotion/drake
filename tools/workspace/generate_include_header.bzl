@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/skylark:pathutils.bzl", "output_path")
 
 # Generate a header that includes a set of other headers

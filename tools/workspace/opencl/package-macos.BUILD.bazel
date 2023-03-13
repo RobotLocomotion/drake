@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 licenses(["permissive"])  # BSD-2-Clause AND Expat
 

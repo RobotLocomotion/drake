@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This file exists to make our directory into a Bazel package, so that our
 # neighboring *.bzl file can be loaded elsewhere.
 

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:execute.bzl", "path", "which")
 load("@drake//tools/workspace:os.bzl", "determine_os")
 

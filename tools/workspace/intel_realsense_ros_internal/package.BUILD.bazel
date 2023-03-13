@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
 

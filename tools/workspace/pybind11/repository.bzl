@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/workspace:generate_file.bzl", "generate_file")
 load("@drake//tools/workspace:github.bzl", "github_archive")
 

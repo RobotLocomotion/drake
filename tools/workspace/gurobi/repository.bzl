@@ -1,4 +1,3 @@
-# -*- python -*-
 # This is a Bazel repository_rule for the Gurobi solver.  See
 # https://www.bazel.io/versions/master/docs/skylark/repository_rules.html
 

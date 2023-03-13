@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 load(":fortran.bzl", "fortran_library")
 

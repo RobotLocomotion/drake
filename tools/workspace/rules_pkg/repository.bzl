@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 # Note that for rules_pkg, we do NOT install its LICENSE file as part of the
