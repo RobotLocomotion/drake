@@ -61,7 +61,7 @@ void CompareClouds(const PointCloud& cloud_1, const PointCloud& cloud_2,
     EXPECT_TRUE(CompareMatrices(cloud_1.xyzs(), cloud_2.xyzs()));
   }
   if (fields.contains(pc_flags::kRGBs)) {
-    EXPECT_TRUE(CompareMatrices(cloud_1.rgbs(), cloud_2.rgbs()));
+    EXPECT_TRUE((cloud_1.rgbs().array() == cloud_2.rgbs().array()).all());
   }
   if (fields.contains(pc_flags::kNormals)) {
     EXPECT_TRUE(CompareMatrices(cloud_1.normals(), cloud_2.normals()));
