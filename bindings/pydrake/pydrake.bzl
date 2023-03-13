@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
 def add_lint_tests_pydrake(**kwargs):

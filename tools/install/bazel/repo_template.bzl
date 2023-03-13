@@ -1,5 +1,4 @@
-# -*- mode: python -*-
-# vi: set ft=python :
+# -*- bazel -*-
 
 # * # Comment lines beginning with a "# * #" are stripped out as part of the
 # * # conversion from repo_template.bzl to repo.bzl via the repo_gen tool.

@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 load(
     "@bazel_tools//tools/build_defs/repo:utils.bzl",
     "workspace_and_buildfile",

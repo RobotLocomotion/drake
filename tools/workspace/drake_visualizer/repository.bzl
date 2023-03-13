@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 """
 Downloads and unpacks a precompiled version of drake-visualizer (a subset of
 Director, https://git.io/vNKjq) and makes it available to be used as a

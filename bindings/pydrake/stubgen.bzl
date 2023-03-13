@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def _impl(ctx):
     ruledir = ctx.genfiles_dir.path + "/" + ctx.label.package
     ctx.actions.run(

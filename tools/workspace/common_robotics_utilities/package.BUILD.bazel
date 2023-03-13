@@ -1,5 +1,4 @@
-# -*- mode: python -*-
-# vi: set ft=python :
+# -*- bazel -*-
 
 load("@drake//tools/install:install.bzl", "install")
 

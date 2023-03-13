@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary", "drake_cc_test")
 load("@drake//tools/skylark:py.bzl", "py_binary")
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")

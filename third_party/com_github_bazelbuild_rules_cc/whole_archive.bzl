@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # Copyright 2019 The Bazel Authors. All rights reserved.
 # Copyright 2019 Toyota Research Institute. All rights reserved.
 #

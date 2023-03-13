@@ -1,7 +1,5 @@
-# -*- python -*-
-
-# This file marks a workspace root for the Bazel build system. see
-# https://bazel.build/ .
+# This file marks a workspace root for the Bazel build system.
+# See `https://bazel.build/`.
 
 workspace(name = "drake")
 

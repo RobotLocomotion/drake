@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 load("@drake//tools/install:install.bzl", "install")
 

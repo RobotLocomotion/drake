@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def models_filegroup(
         name,
         extra_srcs = [],

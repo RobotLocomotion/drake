@@ -1,5 +1,3 @@
-# -*- mode: python -*-
-
 load("@drake//tools/workspace:os.bzl", "os_specific_alias_repository")
 
 # TLDR: Use this repository (@lapack) instead of @liblapack or @openblas in the
