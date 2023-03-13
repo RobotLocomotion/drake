@@ -178,6 +178,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//math:geometric_transform",
+        "//multibody/contact_solvers:matrix_block",
         "//multibody/tree:multibody_tree_indexes",
     ],
 )

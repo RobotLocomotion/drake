@@ -25,6 +25,7 @@ using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
 using drake::math::RotationMatrix;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
+using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::internal::DiscreteContactPair;
 using drake::multibody::internal::MultibodyTreeTopology;
 using drake::systems::Context;
@@ -230,7 +231,7 @@ CompliantContactManager<T>::CalcContactKinematics(
                       Jv_AcBc_W.middleCols(
                           tree_topology().tree_velocities_start(treeA_index),
                           tree_topology().num_tree_velocities(treeA_index));
-      jacobian_blocks.emplace_back(treeA_index, std::move(J));
+      jacobian_blocks.emplace_back(treeA_index, MatrixBlock<T>(std::move(J)));
     }
 
     // Tree B contribution to contact Jacobian Jv_W_AcBc_C.
@@ -241,7 +242,7 @@ CompliantContactManager<T>::CalcContactKinematics(
                       Jv_AcBc_W.middleCols(
                           tree_topology().tree_velocities_start(treeB_index),
                           tree_topology().num_tree_velocities(treeB_index));
-      jacobian_blocks.emplace_back(treeB_index, std::move(J));
+      jacobian_blocks.emplace_back(treeB_index, MatrixBlock<T>(std::move(J)));
     }
 
     contact_kinematics.emplace_back(point_pair.phi0, std::move(jacobian_blocks),

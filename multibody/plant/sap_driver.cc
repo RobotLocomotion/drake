@@ -23,6 +23,7 @@ using drake::math::RotationMatrix;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::ExtractNormal;
 using drake::multibody::contact_solvers::internal::ExtractTangent;
+using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::SapConstraint;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
@@ -621,17 +622,21 @@ void SapDriver<T>::PackContactSolverResults(
   for (int i = 0; i < num_contacts; ++i) {
     const SapConstraint<T>& c = problem.get_constraint(i);
     {
-      const MatrixX<T>& Jic = c.first_clique_jacobian();
+      const MatrixBlock<T>& Jic = c.first_clique_jacobian();
       const auto impulse = contact_impulses.template segment<3>(3 * i);
-      AddCliqueContribution(context, c.first_clique(),
-                            Jic.transpose() * impulse, &tau_contact);
+      VectorX<T> tau_clique = VectorX<T>::Zero(Jic.cols());
+      Jic.TransposeAndMultiplyAndAddTo(impulse, &tau_clique);
+      AddCliqueContribution(context, c.first_clique(), tau_clique,
+                            &tau_contact);
     }
 
     if (c.num_cliques() == 2) {
-      const MatrixX<T>& Jic = c.second_clique_jacobian();
+      const MatrixBlock<T>& Jic = c.second_clique_jacobian();
       const auto impulse = contact_impulses.template segment<3>(3 * i);
-      AddCliqueContribution(context, c.second_clique(),
-                            Jic.transpose() * impulse, &tau_contact);
+      VectorX<T> tau_clique = VectorX<T>::Zero(Jic.cols());
+      Jic.TransposeAndMultiplyAndAddTo(impulse, &tau_clique);
+      AddCliqueContribution(context, c.second_clique(), tau_clique,
+                            &tau_contact);
     }
   }
   tau_contact /= time_step;

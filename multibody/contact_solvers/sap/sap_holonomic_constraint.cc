@@ -35,7 +35,7 @@ SapHolonomicConstraint<T>::Parameters::Parameters(
 
 template <typename T>
 SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
-                                                  MatrixX<T> J,
+                                                  MatrixBlock<T> J,
                                                   Parameters parameters)
     : SapConstraint<T>(clique, std::move(g), std::move(J)),
       parameters_(std::move(parameters)) {
@@ -47,12 +47,10 @@ SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
 }
 
 template <typename T>
-SapHolonomicConstraint<T>::SapHolonomicConstraint(int first_clique,
-                                                  int second_clique,
-                                                  VectorX<T> g,
-                                                  MatrixX<T> J_first_clique,
-                                                  MatrixX<T> J_second_clique,
-                                                  Parameters parameters)
+SapHolonomicConstraint<T>::SapHolonomicConstraint(
+    int first_clique, int second_clique, VectorX<T> g,
+    MatrixBlock<T> J_first_clique, MatrixBlock<T> J_second_clique,
+    Parameters parameters)
     : SapConstraint<T>(first_clique, second_clique, std::move(g),
                        std::move(J_first_clique), std::move(J_second_clique)),
       parameters_(std::move(parameters)) {
@@ -65,7 +63,8 @@ SapHolonomicConstraint<T>::SapHolonomicConstraint(int first_clique,
 
 template <typename T>
 SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
-                                                  MatrixX<T> J, VectorX<T> b,
+                                                  MatrixBlock<T> J,
+                                                  VectorX<T> b,
                                                   Parameters parameters)
     : SapConstraint<T>(clique, std::move(g), std::move(J)),
       parameters_(std::move(parameters)),

@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/contact_solvers/matrix_block.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -25,7 +26,8 @@ struct ContactPairKinematics {
   struct JacobianTreeBlock {
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(JacobianTreeBlock);
 
-    JacobianTreeBlock(TreeIndex tree_in, Matrix3X<T> J_in)
+    JacobianTreeBlock(TreeIndex tree_in,
+                      contact_solvers::internal::MatrixBlock<T> J_in)
         : tree(tree_in), J(std::move(J_in)) {}
 
     // Index of the tree for this block.
@@ -33,7 +35,7 @@ struct ContactPairKinematics {
 
     // J.cols() must equal the number of generalized velocities for
     // the corresponding tree.
-    Matrix3X<T> J;
+    contact_solvers::internal::MatrixBlock<T> J;
   };
 
   ContactPairKinematics(T phi_in, std::vector<JacobianTreeBlock> jacobian_in,
