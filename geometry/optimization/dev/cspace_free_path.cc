@@ -27,6 +27,18 @@ initialize_path_map(CspaceFreePath* cspace_free_path,
   return ret;
 }
 
+const std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
+  RationalsToParametrizedCondition(
+      PlaneSeparatesGeometriesOnPath* plane_separates_geometries_on_path,
+      const std::vector<symbolic::RationalFunction>& rationals,
+      symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions) {
+  std::vector<ParametrizedPolynomialPositiveOnUnitInterval> ret;
+  ret.reserve(rationals.size());
+  for(const auto& rational : rationals) {
+
+  }
+}
+
 CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const geometry::SceneGraph<double>* scene_graph,
                                SeparatingPlaneOrder plane_order,

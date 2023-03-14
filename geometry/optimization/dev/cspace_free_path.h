@@ -10,10 +10,38 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
+
+/**
+ Contains the information to enforce a pair of geometries are separated by a
+ plane. The conditions are that certain rational functions should be always
+ positive.
+ */
+class PlaneSeparatesGeometriesOnPath {
+ public:
+  PlaneSeparatesGeometriesOnPath(
+      PlaneSeparatesGeometries plane_separate_geometries,
+      std::unordered_map<symbolic::Variable, symbolic::Polynomial> path,
+      symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions);
+
+ private:
+  std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
+      positive_side_conditions;
+  std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
+      negative_side_conditions;
+  int plane_index;
+
+  friend
+  const std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
+  RationalsToParametrizedCondition(
+      PlaneSeparatesGeometriesOnPath* plane_separates_geometries_on_path,
+      const std::vector<symbolic::RationalFunction>& rationals,
+      symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions);
+};
 
 class CspaceFreePath : public CspaceFreePolytope {
  public:
@@ -59,6 +87,30 @@ class CspaceFreePath : public CspaceFreePolytope {
   // A map storing the substitutions from the s_set_ variables to the path
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
+
+  /**
+   Constructs the program which searches for the plane separating a pair of
+   geometries, for all configuration in the set {s | C * s <= d, s_lower <= s
+   <= s_upper}.
+   @param[in] plane_geometries Contain the conditions that need to be
+   non-negative on the region C * s <= d and s_lower <= s <= s_upper.
+   @param[in] d_minus_Cs d - C*s.
+   @param[in] s_minus_s_lower s - s_lower.
+   @param[in] s_upper_minus_s s_upper - s.
+   @param[in] C_redundant_indices In the polyhedron C*s <= d, s_lower <= s <=
+   s_upper, some rows of C*s<=d might be redundant. We store the indices of the
+   redundant rows in C_redundant_indices.
+   @param[in] s_lower_redundant_indices. Store the indices of the redundant rows
+   in s >= s_lower.
+   @param[in] s_upper_redundant_indices. Store the indices of the redundant rows
+   in s <= s_upper.
+   */
+  [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgramForPair(
+      const PlaneSeparatesGeometries& plane_geometries,
+      const VectorX<symbolic::Polynomial>& d_minus_Cs,
+      const std::unordered_set<int>& C_redundant_indices,
+      const std::unordered_set<int>& s_lower_redundant_indices,
+      const std::unordered_set<int>& s_upper_redundant_indices) const;
 
   // Friend declaration for use in constructor to avoid large initialization
   // lambda.
