@@ -29,6 +29,8 @@ namespace optimization {
  */
 class ParametrizedPolynomialPositiveOnUnitInterval {
  public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ParametrizedPolynomialPositiveOnUnitInterval)
+
   ParametrizedPolynomialPositiveOnUnitInterval(
       const symbolic::Polynomial& poly,
       const symbolic::Variable& interval_variable);
