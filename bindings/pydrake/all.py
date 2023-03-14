@@ -39,7 +39,6 @@ from . import getDrakePath
 from .autodiffutils import *
 from .forwarddiff import *
 from .lcm import *
-from .manipulation import *
 from .math import *
 from .perception import *
 from .planning import *
@@ -52,6 +51,7 @@ from .trajectories import *
 from .common.all import *
 from .geometry.all import *
 # - `examples` does not offer public Drake library symbols.
+from .manipulation.all import *
 from .multibody.all import *
 from .systems.all import *
 from .visualization import *

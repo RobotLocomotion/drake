@@ -600,6 +600,11 @@ PYI_FILES = [
     "pydrake/geometry/__init__.pyi",
     "pydrake/lcm.pyi",
     "pydrake/manipulation/__init__.pyi",
+    "pydrake/manipulation/all.pyi",
+    "pydrake/manipulation/kuka_iiwa.pyi",
+    "pydrake/manipulation/planner.pyi",  # 2023-06-01 Delete this.
+    "pydrake/manipulation/schunk_wsg.pyi",
+    "pydrake/manipulation/util.pyi",
     "pydrake/math.pyi",
     "pydrake/multibody/__init__.pyi",
     "pydrake/multibody/all.pyi",
