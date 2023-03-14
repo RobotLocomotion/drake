@@ -11,7 +11,7 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
-SapConstraint<T>::SapConstraint(int clique, VectorX<T> g, MatrixX<T> J)
+SapConstraint<T>::SapConstraint(int clique, VectorX<T> g, MatrixBlock<T> J)
     : first_clique_(clique),
       g_(std::move(g)),
       first_clique_jacobian_(std::move(J)) {
@@ -23,8 +23,8 @@ SapConstraint<T>::SapConstraint(int clique, VectorX<T> g, MatrixX<T> J)
 
 template <typename T>
 SapConstraint<T>::SapConstraint(int first_clique, int second_clique,
-                                VectorX<T> g, MatrixX<T> J_first_clique,
-                                MatrixX<T> J_second_clique)
+                                VectorX<T> g, MatrixBlock<T> J_first_clique,
+                                MatrixBlock<T> J_second_clique)
     : first_clique_(first_clique),
       second_clique_(second_clique),
       g_(std::move(g)),
