@@ -24,7 +24,7 @@ GTEST_TEST(ParametrizedPolyPositive, CtorDegreeZero) {
   const Polynomial poly{coeff, symbolic::Variables()};
 
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
-      poly, interval_variable, parameters};
+      poly, interval_variable};
 
   const Polynomial lambda{poly_prog.get_lambda()};
   const Polynomial nu{poly_prog.get_nu()};
@@ -74,7 +74,7 @@ GTEST_TEST(ParametrizedPolyPositive, CtorScalarDegreeOdd) {
   const Variables parameters{poly.decision_variables()};
 
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
-      poly, interval_variable, parameters};
+      poly, interval_variable};
 
   const Polynomial lambda{poly_prog.get_lambda()};
   const Polynomial nu{poly_prog.get_nu()};
@@ -129,7 +129,7 @@ GTEST_TEST(ParametrizedPolyPositive, CtorScalarDegreeEven) {
   const Variables parameters{poly.decision_variables()};
 
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
-      poly, interval_variable, parameters};
+      poly, interval_variable};
 
   const Polynomial lambda{poly_prog.get_lambda()};
   const Polynomial nu{poly_prog.get_nu()};
@@ -198,7 +198,7 @@ GTEST_TEST(ParametrizedPolyPositive, CtorMatrix2DegreeOdd) {
   const Variables parameters{poly.decision_variables()};
 
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
-      poly, interval_variable, parameters, auxillary_variables};
+      poly, interval_variable};
 
   const Polynomial lambda{poly_prog.get_lambda()};
   const Polynomial nu{poly_prog.get_nu()};
@@ -283,7 +283,7 @@ GTEST_TEST(ParametrizedPolyPositive, CtorMatrix2DegreeEven) {
   const Variables parameters{poly.decision_variables()};
 
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
-      poly, interval_variable, parameters, auxillary_variables};
+      poly, interval_variable};
 
   const Polynomial lambda{poly_prog.get_lambda()};
   const Polynomial nu{poly_prog.get_nu()};
