@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -34,6 +35,14 @@ class UniformGravityFieldElement : public ForceElement<T> {
   /// acceleration of gravity vector `g_W`, expressed in the world frame W.
   explicit UniformGravityFieldElement(Vector3<double> g_W);
 
+  /// Constructs a uniform gravity field element with a strength given by the
+  /// acceleration of gravity vector `g_W`, expressed in the world frame W.
+  /// Gravity is diabled for the set of model instances
+  /// `disabled_model_instances`.
+  UniformGravityFieldElement(
+      Vector3<double> g_W,
+      std::set<ModelInstanceIndex> disabled_model_instances);
+
   /// Returns the acceleration of the gravity vector in m/s², expressed in the
   /// world frame W.
   const Vector3<double>& gravity_vector() const { return g_W_; }
@@ -43,6 +52,21 @@ class UniformGravityFieldElement : public ForceElement<T> {
   void set_gravity_vector(const Vector3<double>& g_W) {
     g_W_ = g_W;
   }
+
+  /// @returns `true` iff gravity is enabled for `model_instance`.
+  /// @see enable(), disable().
+  bool is_enabled(ModelInstanceIndex model_instance) const {
+    return disabled_model_instances_.count(model_instance) == 0;
+  }
+
+  /// Enables gravity for `model_instance`. No-op if gravity is already enabled.
+  /// @throws if the parent model is finalized.
+  void enable(ModelInstanceIndex model_instance);
+
+  /// Disables gravity for `model_instance`, effectively making gravity zero for
+  /// this model instance. No-op if gravity is already disabled.
+  /// @throws if the parent model is finalized.
+  void disable(ModelInstanceIndex model_instance);
 
   /// Computes the generalized forces `tau_g(q)` due to `this` gravity field
   /// element as a function of the generalized positions `q` stored in the input
@@ -108,6 +132,8 @@ class UniformGravityFieldElement : public ForceElement<T> {
 
  private:
   Vector3<double> g_W_;
+  // Set of model instances for which gravity is disabled.
+  std::set<ModelInstanceIndex> disabled_model_instances_;
 };
 
 }  // namespace multibody

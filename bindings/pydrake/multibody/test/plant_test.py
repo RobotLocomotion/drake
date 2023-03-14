@@ -2505,10 +2505,23 @@ class TestPlant(unittest.TestCase):
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
         # N.B. PD controllers below are only supported by discrete models.
         plant_f = MultibodyPlant_[float](0.01)
-        Parser(plant_f).AddModels(file_name)
+        model_instance, = Parser(plant_f).AddModels(file_name)
         # Getting ready for when we set foot on Mars :-).
         gravity_vector = np.array([0.0, 0.0, -3.71])
         plant_f.mutable_gravity_field().set_gravity_vector(gravity_vector)
+
+        # MultibodyPlant APIs to enable/disable gravity.
+        self.assertTrue(plant_f.gravity_is_enabled(model_instance))
+        plant_f.disable_gravity(model_instance)
+        self.assertFalse(plant_f.gravity_is_enabled(model_instance))
+        plant_f.enable_gravity(model_instance)
+
+        # UniformGravityField APIs to enable/disable gravity.
+        gravity = plant_f.gravity_field()
+        self.assertTrue(gravity.is_enabled(model_instance))
+        gravity.disable(model_instance)
+        self.assertFalse(gravity.is_enabled(model_instance))
+        gravity.enable(model_instance)
 
         # Smoke test PD controllers APIs.
         elbow = plant_f.GetJointActuatorByName("ElbowJoint")

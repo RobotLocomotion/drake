@@ -4744,11 +4744,26 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
         force_element_index);
   }
 
+  /// Enable gravity for `model_instance`. No-op if already enabled.
+  /// @throws std::exception if called post-finalize.
+  void enable_gravity(ModelInstanceIndex model_instance);
+
+  /// Disable gravity for `model_instance`, effectively making gravity zero for
+  /// this model instance. No-op if already disabled.
+  /// @throws std::exception if called post-finalize.
+  void disable_gravity(ModelInstanceIndex model_instance);
+
+  /// @returns `true` iff gravity is enabled for `model_instance`.
+  /// @see enable_gravity(), disable_gravity().
+  bool gravity_is_enabled(ModelInstanceIndex model_instance) const;
+
   /// An accessor to the current gravity field.
   const UniformGravityFieldElement<T>& gravity_field() const {
     return internal_tree().gravity_field();
   }
 
+  // TODO(amastro-tri): mutation of the model should only be allowed
+  // pre-finalize.
   /// A mutable accessor to the current gravity field.
   UniformGravityFieldElement<T>& mutable_gravity_field() {
     return this->mutable_tree().mutable_gravity_field();

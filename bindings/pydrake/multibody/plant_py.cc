@@ -726,6 +726,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.gravity_field.doc)
         .def("mutable_gravity_field", &Class::mutable_gravity_field,
             py_rvp::reference_internal, cls_doc.mutable_gravity_field.doc)
+        .def("enable_gravity", &Class::enable_gravity,
+            py::arg("model_instance"), cls_doc.enable_gravity.doc)
+        .def("disable_gravity", &Class::disable_gravity,
+            py::arg("model_instance"), cls_doc.disable_gravity.doc)
+        .def("gravity_is_enabled", &Class::gravity_is_enabled,
+            py::arg("model_instance"), cls_doc.gravity_is_enabled.doc)
         .def("GetJointIndices", &Class::GetJointIndices,
             py::arg("model_instance"), cls_doc.GetJointIndices.doc)
         .def("GetJointActuatorIndices", &Class::GetJointActuatorIndices,

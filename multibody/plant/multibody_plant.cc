@@ -3562,6 +3562,24 @@ MultibodyPlant<T>::FindSubgraphsOfWeldedBodies() const {
 }
 
 template <typename T>
+void MultibodyPlant<T>::enable_gravity(ModelInstanceIndex model_instance) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  mutable_gravity_field().enable(model_instance);
+}
+
+template <typename T>
+void MultibodyPlant<T>::disable_gravity(ModelInstanceIndex model_instance) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  mutable_gravity_field().disable(model_instance);
+}
+
+template <typename T>
+bool MultibodyPlant<T>::gravity_is_enabled(
+    ModelInstanceIndex model_instance) const {
+  return gravity_field().is_enabled(model_instance);
+}
+
+template <typename T>
 T MultibodyPlant<T>::StribeckModel::ComputeFrictionCoefficient(
     const T& speed_BcAc,
     const CoulombFriction<double>& friction) const {
