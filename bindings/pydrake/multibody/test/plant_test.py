@@ -328,7 +328,7 @@ class TestPlant(unittest.TestCase):
         self._test_joint_api(T, shoulder)
         check_repr(
             shoulder,
-            "<RevoluteJoint_[float] name='ShoulderJoint' index=0 "
+            "<RevoluteJoint name='ShoulderJoint' index=0 "
             "model_instance=2>")
         np.testing.assert_array_equal(
             shoulder.position_lower_limits(), [-np.inf])
@@ -352,12 +352,12 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(len(plant.GetBodyIndices(model_instance)), 2)
         check_repr(
             link1,
-            "<RigidBody_[float] name='Link1' index=1 model_instance=2>")
+            "<RigidBody name='Link1' index=1 model_instance=2>")
         self._test_frame_api(T, plant.GetFrameByName(name="Link1"))
         link1_frame = plant.GetFrameByName(name="Link1")
         check_repr(
             link1_frame,
-            "<BodyFrame_[float] name='Link1' index=1 model_instance=2>")
+            "<BodyFrame name='Link1' index=1 model_instance=2>")
         self.assertIs(
             link1_frame,
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
@@ -400,7 +400,7 @@ class TestPlant(unittest.TestCase):
             plant.GetJointActuatorIndices(model_instance=model_instance))
         check_repr(
             joint_actuator,
-            "<JointActuator_[float] name='ElbowJoint' index=0 "
+            "<JointActuator name='ElbowJoint' index=0 "
             "model_instance=2>")
         self.assertIsInstance(
             plant.get_frame(frame_index=world_frame_index()), Frame)
@@ -806,7 +806,7 @@ class TestPlant(unittest.TestCase):
         if T == float:
             self.assertEqual(
                 repr(linear_spring),
-                "<LinearSpringDamper_[float] index=1 model_instance=1>")
+                "<LinearSpringDamper index=1 model_instance=1>")
         revolute_joint = plant.AddJoint(RevoluteJoint_[T](
                 name="revolve_joint", frame_on_parent=body_a.body_frame(),
                 frame_on_child=body_b.body_frame(), axis=[0, 0, 1],

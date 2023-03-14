@@ -11,21 +11,13 @@ def _indented_repr(o):
     return repr(o).replace("\n", "\n  ")
 
 
-def _remove_float_suffix(typename):
-    suffix = "_[float]"
-    if typename.endswith(suffix):
-        return typename[:-len(suffix)]
-    return typename
-
-
 def _spatial_vector_repr(rotation_name, translation_name):
 
     def repr_with_closure(self):
-        cls_name = _remove_float_suffix(_pretty_class_name(type(self)))
         rotation = self.rotational().tolist()
         translation = self.translational().tolist()
         return (
-            f"{cls_name}(\n"
+            f"{_pretty_class_name(type(self))}(\n"
             f"  {rotation_name}={_indented_repr(rotation)},\n"
             f"  {translation_name}={_indented_repr(translation)},\n"
             f")")
