@@ -122,6 +122,16 @@ Defines an SDF model with various types of joints used for testing the parser.
       <joint name="ball_joint" type="ball">
         <child>link5</child>
         <parent>link4</parent>
+        <axis>
+          <dynamics>
+            <damping>0.1</damping>
+          </dynamics>
+          <xyz expressed_in="__model__">0 0 1</xyz>
+          <limit>
+            <!-- not actuated -->
+            <effort>0</effort>
+          </limit>
+        </axis>
       </joint>
       <link name="link6">
         <inertial>

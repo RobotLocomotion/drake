@@ -406,15 +406,22 @@ void AddJointActuatorFromSpecification(
                joint_spec.Type() == sdf::JointType::REVOLUTE ||
                joint_spec.Type() == sdf::JointType::CONTINUOUS);
 
-  // Ball joints cannot specify an axis (nor actuation) per SDFormat. However,
-  // Drake still permits the first axis in order to specify damping, but it
-  // should not have actuation, nor should there be a second axis.
+  // Ball joints do not have an axis (nor actuation). However, Drake still
+  // permits the declaration of a first axis in order to specify damping, but
+  // it should not have actuation, nor should there be a second axis.
   if (joint_spec.Type() == sdf::JointType::BALL) {
     if (joint_spec.Axis(0) != nullptr) {
       std::string message = fmt::format(
-          "An axis may not be specified for ball joint '{}' and will be "
-          "ignored", joint_spec.Name());
+          "A ball joint axis will be ignored. Only the dynamic parameters"
+          " and limits will be considered.", joint_spec.Name());
       diagnostic.Warning(joint_spec.Element(), std::move(message));
+      if (GetEffortLimit(diagnostic, joint_spec, 0) != 0) {
+        std::string effort_message = fmt::format(
+            "Actuation (via non-zero effort limits) for ball joint '{}' is"
+            " not implemented yet and will be ignored.",
+            joint_spec.Name());
+        diagnostic.Warning(joint_spec.Element(), std::move(effort_message));
+      }
     }
     if (joint_spec.Axis(1) != nullptr) {
       std::string message = fmt::format(
