@@ -5,7 +5,43 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/symbolic_test_util.h"
-#include "drake/geometry/optimization/dev/test/c_iris_path_test_utilities.h"
-#include "drake/geometry/optimization/test/c_iris_test_utilities.h"
-#include "drake/solvers/solve.h"
 
+namespace drake {
+namespace geometry {
+namespace optimization {
+
+GTEST_TEST(ParametrizedPolyPositive, DegreeZero) {
+  const symbolic::Variable mu{"mu"};
+  const symbolic::Variables parameters{};
+  const symbolic::
+
+
+}
+
+GTEST_TEST(ParametrizedPolyPositive, ScalarDegreeOdd) {
+
+}
+
+GTEST_TEST(ParametrizedPolyPositive, ScalarDegreeEven) {
+
+}
+
+GTEST_TEST(ParametrizedPolyPositive, Matrix2DegreeOdd) {
+
+}
+
+GTEST_TEST(ParametrizedPolyPositive, Matrix2DegreeEven) {
+
+}
+
+GTEST_TEST(ParametrizedPolyPositive, Matrix3DegreeOdd) {
+
+}
+
+GTEST_TEST(ParametrizedPolyPositive, Matrix3DegreeEven) {
+
+}
+
+}  // namespace optimization
+}  // namespace geometry
+}  // namespace drakes

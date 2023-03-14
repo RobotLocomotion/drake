@@ -11,7 +11,10 @@ ParametrizedPolynomialPositiveOnUnitInterval::
         const symbolic::Variable& interval_variable,
         const symbolic::Variables& parameters,
         const std::optional<const symbolic::Variables>& auxillary_variables)
-    : p_(poly), parameters_(parameters) {
+    : p_(poly), parameters_(parameters), psatz_variables_and_psd_constraints_() {
+
+  psatz_variables_and_psd_constraints_.AddIndeterminates(Vector1<symbolic::Variable>(interval_variable));
+
   int d = poly.Degree(interval_variable);
   const solvers::MathematicalProgram::NonnegativePolynomial type =
       solvers::MathematicalProgram::NonnegativePolynomial::kSos;
@@ -59,24 +62,29 @@ ParametrizedPolynomialPositiveOnUnitInterval::
     p_ -= lambda(0);
   }
 }
-//
-//void ParametrizedPolynomialPositiveOnUnitInterval::
-//    AddPositivityConstraintToProgram(const symbolic::Environment& env,
-//                                     solvers::MathematicalProgram* prog) {
-//  DRAKE_DEMAND(env.size() == parameters_.size());
-//  for (const auto& parameter : parameters_) {
-//    DRAKE_DEMAND(env.find(parameter) != env.cend());
-//  }
-//
-//  prog->AddDecisionVariables(
-//      psatz_variables_and_psd_constraints_.decision_variables());
-//  for (const auto& binding :
-//       psatz_variables_and_psd_constraints_.GetAllConstraints()) {
-//    prog->AddConstraint(binding);
-//  }
-//  prog->AddEqualityConstraintBetweenPolynomials(p_.EvaluatePartial(env),
-//                                                symbolic::Polynomial());
-//}
+
+void ParametrizedPolynomialPositiveOnUnitInterval::
+    AddPositivityConstraintToProgram(const symbolic::Environment& env,
+                                     solvers::MathematicalProgram* prog) {
+  DRAKE_DEMAND(env.size() == parameters_.size());
+  for (const auto& parameter : parameters_) {
+    DRAKE_DEMAND(env.find(parameter) != env.cend());
+  }
+  for(const auto& var: psatz_variables_and_psd_constraints_.indeterminates()) {
+    // Check that prog contains the indeterminates of this program.
+    DRAKE_DEMAND(prog->indeterminates_index().count(var.get_id()) > 0);
+  }
+
+
+  prog->AddDecisionVariables(
+      psatz_variables_and_psd_constraints_.decision_variables());
+  for (const auto& binding :
+       psatz_variables_and_psd_constraints_.GetAllConstraints()) {
+    prog->AddConstraint(binding);
+  }
+  prog->AddEqualityConstraintBetweenPolynomials(p_.EvaluatePartial(env),
+                                                symbolic::Polynomial());
+}
 
 }  // namespace optimization
 }  // namespace geometry
