@@ -787,7 +787,17 @@ void BindMathematicalProgram(py::module m) {
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "X",
           doc.MathematicalProgram.NewIndeterminates.doc_3args)
-      .def("AddIndeterminates", &MathematicalProgram::AddIndeterminates,
+      .def("AddIndeterminate", &MathematicalProgram::AddIndeterminate,
+          py::arg("new_indeterminate"),
+          doc.MathematicalProgram.AddIndeterminate.doc)
+      .def("AddIndeterminates",
+          py::overload_cast<const Eigen::Ref<const MatrixXIndeterminate>&>(
+              &MathematicalProgram::AddIndeterminates),
+          py::arg("new_indeterminates"),
+          doc.MathematicalProgram.AddIndeterminates.doc)
+      .def("AddIndeterminates",
+          py::overload_cast<const symbolic::Variables&>(
+              &MathematicalProgram::AddIndeterminates),
           py::arg("new_indeterminates"),
           doc.MathematicalProgram.AddIndeterminates.doc)
       .def("AddVisualizationCallback",

@@ -812,6 +812,19 @@ class MathematicalProgram {
   MatrixXIndeterminate NewIndeterminates(int rows, int cols,
                                          const std::string& name = "X");
 
+  /** Adds indeterminate.
+   * This method appends an indeterminate to the end of the program's old
+   * indeterminates.
+   * @param new_indeterminate The indeterminate to be appended to the
+   * program's old indeterminates.
+   * @pre `new_indeterminate` should not intersect with the program's old
+   * indeterminates or decision variables.
+   * @pre new_indeterminate should not be dummy.
+   * @pre new_indeterminate should be of CONTINUOUS type.
+   */
+  void AddIndeterminate(
+      const symbolic::Variable& new_indeterminate);
+
   /** Adds indeterminates.
    * This method appends some indeterminates to the end of the program's old
    * indeterminates.
@@ -825,6 +838,19 @@ class MathematicalProgram {
   // TODO(hongkai.dai): check if new_indeterminates contain duplicate entries.
   void AddIndeterminates(
       const Eigen::Ref<const MatrixXIndeterminate>& new_indeterminates);
+
+  /** Adds indeterminates.
+   * This method appends some indeterminates to the end of the program's old
+   * indeterminates.
+   * @param new_indeterminates The indeterminates to be appended to the
+   * program's old indeterminates.
+   * @pre `new_indeterminates` should not intersect with the program's old
+   * indeterminates or decision variables.
+   * @pre Each entry in new_indeterminates should not be dummy.
+   * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
+   */
+  void AddIndeterminates(
+      const symbolic::Variables& new_indeterminates);
 
   /**
    * Adds a callback method to visualize intermediate results of the
