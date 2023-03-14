@@ -34,10 +34,14 @@ using math::RotationMatrix;
 
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
+// This macro is constant-time and, per Drake's style guide, we allow to call
+// it from within snake_case functions.
 #define DRAKE_MBT_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
 
 // Helper macro to throw an exception within methods that should not be called
 // pre-finalize.
+// This macro is constant-time and, per Drake's style guide, we allow to call
+// it from within snake_case functions.
 #define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 
 template <typename T>
