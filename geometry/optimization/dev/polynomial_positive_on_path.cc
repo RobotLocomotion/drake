@@ -1,4 +1,5 @@
 #include "polynomial_positive_on_path.h"
+
 #include "drake/common/symbolic/monomial_util.h"
 
 namespace drake {
@@ -11,9 +12,11 @@ ParametrizedPolynomialPositiveOnUnitInterval::
         const symbolic::Variable& interval_variable,
         const symbolic::Variables& parameters,
         const std::optional<const symbolic::Variables>& auxillary_variables)
-    : p_(poly), parameters_(parameters), psatz_variables_and_psd_constraints_() {
-
-  psatz_variables_and_psd_constraints_.AddIndeterminates(Vector1<symbolic::Variable>(interval_variable));
+    : p_(poly),
+      parameters_(parameters),
+      psatz_variables_and_psd_constraints_() {
+  psatz_variables_and_psd_constraints_.AddIndeterminates(
+      solvers::VectorIndeterminate<1>(interval_variable));
 
   int d = poly.Degree(interval_variable);
   const solvers::MathematicalProgram::NonnegativePolynomial type =
@@ -37,17 +40,20 @@ ParametrizedPolynomialPositiveOnUnitInterval::
     auto [lambda, Q_lambda] =
         psatz_variables_and_psd_constraints_.NewSosPolynomial(
             multiplier_basis_2d, type, "Sl");
+    lambda_ = lambda;
     if (d % 2 == 0) {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
           multiplier_basis_2d.tail(multiplier_basis_2d.size() -
                                    1),  // exclude μᵈ monomial
           type, "Sv");
+      nu_ = nu;
       p_ -= lambda + nu * interval_variable *
                          (symbolic::Polynomial(1, {interval_variable}) -
                           interval_variable);
     } else {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
           multiplier_basis_2d, type, "Sv");
+      nu_ = nu;
       p_ -= lambda * interval_variable +
             nu * (symbolic::Polynomial(1, {interval_variable}) -
                   interval_variable);
@@ -59,6 +65,7 @@ ParametrizedPolynomialPositiveOnUnitInterval::
         psatz_variables_and_psd_constraints_.NewContinuousVariables(1, "Sl")};
     psatz_variables_and_psd_constraints_.AddBoundingBoxConstraint(
         0, std::numeric_limits<double>::infinity(), lambda);
+    lambda_ = symbolic::Polynomial{lambda(0), symbolic::Variables()};
     p_ -= lambda(0);
   }
 }
@@ -70,11 +77,11 @@ void ParametrizedPolynomialPositiveOnUnitInterval::
   for (const auto& parameter : parameters_) {
     DRAKE_DEMAND(env.find(parameter) != env.cend());
   }
-  for(const auto& var: psatz_variables_and_psd_constraints_.indeterminates()) {
+  for (const auto& var :
+       psatz_variables_and_psd_constraints_.indeterminates()) {
     // Check that prog contains the indeterminates of this program.
     DRAKE_DEMAND(prog->indeterminates_index().count(var.get_id()) > 0);
   }
-
 
   prog->AddDecisionVariables(
       psatz_variables_and_psd_constraints_.decision_variables());

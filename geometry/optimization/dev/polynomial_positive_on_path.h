@@ -41,6 +41,15 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   void AddPositivityConstraintToProgram(const symbolic::Environment& env,
                                         solvers::MathematicalProgram* prog);
 
+  const symbolic::Polynomial& get_p() const { return p_; }
+  const symbolic::Polynomial& get_lambda() const { return lambda_; }
+  const symbolic::Polynomial& get_nu() const { return nu_; }
+
+  const solvers::MathematicalProgram* get_psatz_variables_and_psd_constraints()
+      const {
+    return &psatz_variables_and_psd_constraints_;
+  }
+
  private:
   // TODO(Alexandre.Amice) make members const.
 
@@ -54,6 +63,11 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // construct the polynomial p_(μ,y) = poly(μ,y)-q(μ,y) which we will later
   // constrain to be equal to 0.
   symbolic::Polynomial p_;
+
+  // The λ(μ,y) in the documentation of p_
+  symbolic::Polynomial lambda_{0};
+  // The ν(μ,y) in the documentation of p_
+  symbolic::Polynomial nu_{0};
 
   // The parameters in the polynomial p_ which must be evaluated before the
   // positivity constraint is added.
