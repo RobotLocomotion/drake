@@ -1,4 +1,6 @@
-#include "polynomial_positive_on_path.h"
+#include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
+
+#include <limits>
 
 #include "drake/common/symbolic/monomial_util.h"
 
@@ -19,20 +21,22 @@ ParametrizedPolynomialPositiveOnUnitInterval::
       solvers::VectorIndeterminate<1>(interval_variable));
 
   const int deg = poly.Degree(interval_variable);
-  const int d = static_cast<int>(std::floor(deg/2));
+  const int d = static_cast<int>(std::floor(deg / 2));
   const solvers::MathematicalProgram::NonnegativePolynomial type =
       solvers::MathematicalProgram::NonnegativePolynomial::kSos;
 
   // This basis is [μᵈ, ... μ, 1, y₁, ..., yₙ]
   VectorX<symbolic::Monomial> multiplier_basis_d{
       d + 1 + (auxillary_variables.value_or(symbolic::Variables())).size()};
-  multiplier_basis_d.head(d+1) = symbolic::MonomialBasis({interval_variable}, d);
+  multiplier_basis_d.head(d + 1) =
+      symbolic::MonomialBasis({interval_variable}, d);
   if (auxillary_variables.has_value()) {
-    int i = d+1;
-    for(const auto& var : auxillary_variables.value()) {
+    int i = d + 1;
+    for (const auto& var : auxillary_variables.value()) {
       multiplier_basis_d(i) = symbolic::Monomial(var);
       ++i;
-      psatz_variables_and_psd_constraints_.AddIndeterminates(solvers::VectorIndeterminate<1>(var));
+      psatz_variables_and_psd_constraints_.AddIndeterminates(
+          solvers::VectorIndeterminate<1>(var));
     }
   }
 
@@ -47,7 +51,7 @@ ParametrizedPolynomialPositiveOnUnitInterval::
     if (deg % 2 == 0) {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
           multiplier_basis_d.tail(multiplier_basis_d.size() -
-                                   1),  // exclude μᵈ monomial
+                                  1),  // exclude μᵈ monomial
           type, "Sv");
       nu_ = nu;
       p_ -= lambda + nu * interval_variable *
