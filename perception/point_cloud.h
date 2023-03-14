@@ -120,10 +120,10 @@ class PointCloud final {
   // shallow copies.
 
   /// Returns the fields provided by this point cloud.
-  pc_flags::Fields fields() const { return fields_; }
+  pc_flags::Fields fields() const;
 
   /// Returns the number of points in this point cloud.
-  int size() const { return size_; }
+  int size() const;
 
   /// Conservative resize; will maintain existing data, and initialize new
   /// data to their invalid values.
@@ -224,9 +224,7 @@ class PointCloud final {
   bool has_descriptors(const pc_flags::DescriptorType& descriptor_type) const;
 
   /// Returns the descriptor type.
-  const pc_flags::DescriptorType& descriptor_type() const {
-    return fields_.descriptor_type();
-  }
+  const pc_flags::DescriptorType& descriptor_type() const;
 
   /// Returns access to descriptor values.
   /// @pre `has_descriptors()` must be true.
@@ -363,10 +361,6 @@ class PointCloud final {
   // Provides PIMPL encapsulation of storage mechanism.
   class Storage;
 
-  // Represents the size of the point cloud.
-  int size_{};
-  // Represents which fields are enabled for this point cloud.
-  pc_flags::Fields fields_{pc_flags::kXYZs};
   // Owns storage used for the point cloud.
   std::unique_ptr<Storage> storage_;
 };
