@@ -40,6 +40,8 @@ class PlaneSeparatesGeometriesOnPath {
   RationalsToParametrizedCondition(
       PlaneSeparatesGeometriesOnPath* plane_separates_geometries_on_path,
       const std::vector<symbolic::RationalFunction>& rationals,
+      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
+      path_with_y_subs,
       symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions);
 };
 

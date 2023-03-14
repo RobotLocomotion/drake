@@ -31,11 +31,17 @@ const std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
   RationalsToParametrizedCondition(
       PlaneSeparatesGeometriesOnPath* plane_separates_geometries_on_path,
       const std::vector<symbolic::RationalFunction>& rationals,
+      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
+      path_with_y_subs,
       symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions) {
   std::vector<ParametrizedPolynomialPositiveOnUnitInterval> ret;
   ret.reserve(rationals.size());
+  const symbolic::Variables indeterminates{path_with_y_subs.begin};
   for(const auto& rational : rationals) {
-
+  const symbolic::Polynomial path_numerator{
+                rational.numerator().SubstituteAndExpand(path_with_y_subs,
+                                                         cached_substitutions),
+                                                         };
   }
 }
 
