@@ -43,6 +43,7 @@ SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
   // Jacobian.
   DRAKE_DEMAND(this->constraint_function().size() ==
                parameters_.num_constraint_equations());
+  bias_.setZero(parameters_.num_constraint_equations());
 }
 
 template <typename T>
@@ -55,6 +56,20 @@ SapHolonomicConstraint<T>::SapHolonomicConstraint(int first_clique,
     : SapConstraint<T>(first_clique, second_clique, std::move(g),
                        std::move(J_first_clique), std::move(J_second_clique)),
       parameters_(std::move(parameters)) {
+  // N.B. SapConstraint's constructor already checked the sizes of g and its
+  // Jacobian.
+  DRAKE_DEMAND(this->constraint_function().size() ==
+               parameters_.num_constraint_equations());
+  bias_.setZero(parameters_.num_constraint_equations());
+}
+
+template <typename T>
+SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
+                                                  MatrixX<T> J, VectorX<T> b,
+                                                  Parameters parameters)
+    : SapConstraint<T>(clique, std::move(g), std::move(J)),
+      parameters_(std::move(parameters)),
+      bias_(std::move(b)) {
   // N.B. SapConstraint's constructor already checked the sizes of g and its
   // Jacobian.
   DRAKE_DEMAND(this->constraint_function().size() ==
@@ -90,7 +105,9 @@ VectorX<T> SapHolonomicConstraint<T>::CalcBiasTerm(const T& time_step,
     }
   }
 
-  return -this->constraint_function().array() / (time_step + tau.array());
+  return -VectorX<T>(this->constraint_function().array() /
+                     (time_step + tau.array())) -
+         bias_;
 }
 
 template <typename T>
