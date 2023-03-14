@@ -18,32 +18,35 @@ ParametrizedPolynomialPositiveOnUnitInterval::
   psatz_variables_and_psd_constraints_.AddIndeterminates(
       solvers::VectorIndeterminate<1>(interval_variable));
 
-  int d = poly.Degree(interval_variable);
+  const int deg = poly.Degree(interval_variable);
+  const int d = static_cast<int>(std::floor(deg/2));
   const solvers::MathematicalProgram::NonnegativePolynomial type =
       solvers::MathematicalProgram::NonnegativePolynomial::kSos;
 
   // This basis is [μᵈ, ... μ, 1, y₁, ..., yₙ]
-  VectorX<symbolic::Monomial> multiplier_basis_2d{
+  VectorX<symbolic::Monomial> multiplier_basis_d{
       d + 1 + (auxillary_variables.value_or(symbolic::Variables())).size()};
-  multiplier_basis_2d << symbolic::MonomialBasis({interval_variable}, d);
+  multiplier_basis_d.head(d+1) = symbolic::MonomialBasis({interval_variable}, d);
   if (auxillary_variables.has_value()) {
-    const VectorX<symbolic::Monomial> aux_basis{
-        symbolic::MonomialBasis(auxillary_variables.value(), d)};
-    // don't include the 1 basis element twice.
-    multiplier_basis_2d << aux_basis.topRows(d);
+    int i = d+1;
+    for(const auto& var : auxillary_variables.value()) {
+      multiplier_basis_d(i) = symbolic::Monomial(var);
+      ++i;
+      psatz_variables_and_psd_constraints_.AddIndeterminates(solvers::VectorIndeterminate<1>(var));
+    }
   }
 
   // Constructs the multiplier polynomials and their associated Gram matrices as
   // well as the polynomial p_. Recall that p_ has already been initialized to
   // poly(μ,y).
-  if (d > 0) {
+  if (deg > 0) {
     auto [lambda, Q_lambda] =
         psatz_variables_and_psd_constraints_.NewSosPolynomial(
-            multiplier_basis_2d, type, "Sl");
+            multiplier_basis_d, type, "Sl");
     lambda_ = lambda;
-    if (d % 2 == 0) {
+    if (deg % 2 == 0) {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
-          multiplier_basis_2d.tail(multiplier_basis_2d.size() -
+          multiplier_basis_d.tail(multiplier_basis_d.size() -
                                    1),  // exclude μᵈ monomial
           type, "Sv");
       nu_ = nu;
@@ -52,7 +55,7 @@ ParametrizedPolynomialPositiveOnUnitInterval::
                           interval_variable);
     } else {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
-          multiplier_basis_2d, type, "Sv");
+          multiplier_basis_d, type, "Sv");
       nu_ = nu;
       p_ -= lambda * interval_variable +
             nu * (symbolic::Polynomial(1, {interval_variable}) -
