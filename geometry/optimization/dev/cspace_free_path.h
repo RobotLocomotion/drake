@@ -1,10 +1,10 @@
 #pragma once
 
+#include <list>
 #include <map>
 #include <optional>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 #include "geometry/optimization/cspace_free_polytope.h"
 
@@ -21,28 +21,22 @@ namespace optimization {
  plane. The conditions are that certain rational functions should be always
  positive.
  */
-class PlaneSeparatesGeometriesOnPath {
- public:
+struct PlaneSeparatesGeometriesOnPath {
   PlaneSeparatesGeometriesOnPath(
-      PlaneSeparatesGeometries plane_separate_geometries,
-      std::unordered_map<symbolic::Variable, symbolic::Polynomial> path,
+      const PlaneSeparatesGeometries& plane_geometries,
+      const symbolic::Variable& mu,
+      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
+          path_with_y_subs,
+      const symbolic::Variables& indeterminates,
       symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions);
 
- private:
-  std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
+  // We use lists instead of vectors since
+  // ParametrizedPolynomialPositiveOnUnitInterval is NO_COPY_NO_MOVE_NO_ASSIGN
+  std::list<ParametrizedPolynomialPositiveOnUnitInterval>
       positive_side_conditions;
-  std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
+  std::list<ParametrizedPolynomialPositiveOnUnitInterval>
       negative_side_conditions;
   int plane_index;
-
-  friend
-  const std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
-  RationalsToParametrizedCondition(
-      PlaneSeparatesGeometriesOnPath* plane_separates_geometries_on_path,
-      const std::vector<symbolic::RationalFunction>& rationals,
-      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
-      path_with_y_subs,
-      symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions);
 };
 
 class CspaceFreePath : public CspaceFreePolytope {
@@ -89,6 +83,11 @@ class CspaceFreePath : public CspaceFreePolytope {
   // A map storing the substitutions from the s_set_ variables to the path
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
+
+  // We have the invariant plane_geometries_on_path_[i].plane_index == i. We use
+  // a list instead of a vector as PlaneSeparatesGeometriesOnPath contains
+  // objects which cannot be copied or moved.
+  std::vector<PlaneSeparatesGeometriesOnPath> plane_geometries_on_path_;
 
   /**
    Constructs the program which searches for the plane separating a pair of

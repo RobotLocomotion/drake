@@ -27,21 +27,27 @@ initialize_path_map(CspaceFreePath* cspace_free_path,
   return ret;
 }
 
-const std::vector<ParametrizedPolynomialPositiveOnUnitInterval>
-  RationalsToParametrizedCondition(
-      PlaneSeparatesGeometriesOnPath* plane_separates_geometries_on_path,
-      const std::vector<symbolic::RationalFunction>& rationals,
-      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
-      path_with_y_subs,
-      symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions) {
-  std::vector<ParametrizedPolynomialPositiveOnUnitInterval> ret;
-  ret.reserve(rationals.size());
-  const symbolic::Variables indeterminates{path_with_y_subs.begin};
-  for(const auto& rational : rationals) {
-  const symbolic::Polynomial path_numerator{
-                rational.numerator().SubstituteAndExpand(path_with_y_subs,
-                                                         cached_substitutions),
-                                                         };
+PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
+    const PlaneSeparatesGeometries& plane_geometries,
+    const symbolic::Variable& mu,
+    const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
+        path_with_y_subs,
+    const symbolic::Variables& indeterminates,
+    symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions)
+    : plane_index{plane_geometries.plane_index} {
+  for (const auto& rational : plane_geometries.positive_side_rationals) {
+    symbolic::Polynomial path_numerator{
+        rational.numerator().SubstituteAndExpand(path_with_y_subs,
+                                                 cached_substitutions)};
+    path_numerator.SetIndeterminates(indeterminates);
+    positive_side_conditions.emplace_back(path_numerator, mu);
+  }
+  for (const auto& rational : plane_geometries.negative_side_rationals) {
+    symbolic::Polynomial path_numerator{
+        rational.numerator().SubstituteAndExpand(path_with_y_subs,
+                                                 cached_substitutions)};
+    path_numerator.SetIndeterminates(indeterminates);
+    negative_side_conditions.emplace_back(path_numerator, mu);
   }
 }
 
@@ -59,43 +65,25 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
 
 void CspaceFreePath::GeneratePathRationals() {
   // plane_geometries_ currently has rationals in terms of the configuration
-  // space variable. We replace each of these PlaneSeparatesGeometries with a
-  // new one that has rationals in terms of the path variable.
+  // space variable. We create PlaneSeparatesGeometriesOnPath objects which can
+  // be used to construct the program once a path is chosen.
   symbolic::Polynomial::SubstituteAndExpandCacheData cached_substitutions;
 
   // Add the auxilliary variables for matrix SOS constraints to the substitution
   // map.
   std::unordered_map<symbolic::Variable, symbolic::Polynomial>
       path_with_y_subs = path_;
+  symbolic::Variables indeterminates{mu_};
   for (int i = 0; i < y_slack().size(); ++i) {
     path_with_y_subs.emplace(y_slack()(i), symbolic::Polynomial(y_slack()(i)));
+    indeterminates.insert(y_slack()(i));
   }
 
-  auto generate_substituted_rationals =
-      [&path_with_y_subs, &cached_substitutions](
-          const std::vector<symbolic::RationalFunction>& rationals) {
-        std::vector<symbolic::RationalFunction> path_rationals;
-        path_rationals.reserve(rationals.size());
-        for (const auto& rational : rationals) {
-          const symbolic::Polynomial path_numerator{
-              rational.numerator().SubstituteAndExpand(path_with_y_subs,
-                                                       &cached_substitutions)};
-          const symbolic::Polynomial path_denominator{
-              rational.denominator().SubstituteAndExpand(
-                  path_with_y_subs, &cached_substitutions)};
-          path_rationals.emplace_back(path_numerator, path_denominator);
-        }
-        return path_rationals;
-      };
-
-  std::vector<PlaneSeparatesGeometries> path_plane_geometries;
   for (const auto& plane_geometry : this->get_mutable_plane_geometries()) {
-    path_plane_geometries.emplace_back(
-        generate_substituted_rationals(plane_geometry.positive_side_rationals),
-        generate_substituted_rationals(plane_geometry.negative_side_rationals),
-        plane_geometry.plane_index);
+    plane_geometries_on_path_.emplace_back(plane_geometry, mu_,
+                                           path_with_y_subs, indeterminates,
+                                           &cached_substitutions);
   }
-  this->get_mutable_plane_geometries() = std::move(path_plane_geometries);
 }
 
 }  // namespace optimization

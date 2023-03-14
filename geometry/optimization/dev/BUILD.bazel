@@ -17,6 +17,7 @@ drake_cc_library(
         "//geometry/optimization:c_iris_collision_geometry",
         "//geometry/optimization:c_iris_separating_plane",
         "//geometry/optimization:cspace_free_polytope",
+        "//geometry/optimization/dev:polynomial_positive_on_path",
         "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
         "//solvers:mosek_solver",
