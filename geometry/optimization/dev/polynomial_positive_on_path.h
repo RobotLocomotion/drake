@@ -4,7 +4,6 @@
 
 #include "drake/solvers/mathematical_program.h"
 
-
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -37,7 +36,8 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
 
   // Add the constraint that this parametrized polynomial is positive on the
   // unit interval. The Environment env must contain an evaluation for all the
-  // parameters in parameters_.
+  // parameters in parameters_. The MathematicalProgram prog must already
+  // contain the indeterminates of psatz_variables_and_psd_constraints_.
   void AddPositivityConstraintToProgram(const symbolic::Environment& env,
                                         solvers::MathematicalProgram* prog);
 
@@ -55,13 +55,13 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // constrain to be equal to 0.
   symbolic::Polynomial p_;
 
-  // A program which stores the psd variables and constraints associated to λ
-  // and ν. See the description of p_.
-  solvers::MathematicalProgram psatz_variables_and_psd_constraints_;
-
   // The parameters in the polynomial p_ which must be evaluated before the
   // positivity constraint is added.
   const symbolic::Variables parameters_;
+
+  // A program which stores the psd variables and constraints associated to λ
+  // and ν. See the description of p_.
+  solvers::MathematicalProgram psatz_variables_and_psd_constraints_;
 };
 
 }  // namespace optimization

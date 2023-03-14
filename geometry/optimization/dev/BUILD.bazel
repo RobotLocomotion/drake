@@ -57,7 +57,7 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
-    name = "polynomial_positive_on_path",
+    name = "polynomial_positive_on_path_test",
     deps = [
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization/dev:polynomial_positive_on_path",
