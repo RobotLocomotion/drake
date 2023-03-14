@@ -17,7 +17,9 @@ namespace optimization {
  * as some of its indeterminates needing to be evaluated before being added to
  * the program.
  *
- * @param poly The parametrized polynomial we will enforce positivity of.
+ * @param poly The parametrized polynomial which we will enforce positivity of.
+ * This polynomial can be arbitrary degree in the interval variable and must be
+ * quadratic in all other indeterminates.
  * @param interval_variable The variable μ associated to the unit interval.
  * @param parameters The parameters which must be evaluated before enforcing the
  * positivity of poly.
@@ -29,10 +31,7 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
  public:
   ParametrizedPolynomialPositiveOnUnitInterval(
       const symbolic::Polynomial& poly,
-      const symbolic::Variable& interval_variable,
-      const symbolic::Variables& parameters,
-      const std::optional<const symbolic::Variables>& auxillary_variables =
-          std::nullopt);
+      const symbolic::Variable& interval_variable);
 
   // Add the constraint that this parametrized polynomial is positive on the
   // unit interval. The Environment env must contain an evaluation for all the
@@ -68,10 +67,6 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   symbolic::Polynomial lambda_{0};
   // The ν(μ,y) in the documentation of p_
   symbolic::Polynomial nu_{0};
-
-  // The parameters in the polynomial p_ which must be evaluated before the
-  // positivity constraint is added.
-  const symbolic::Variables parameters_;
 
   // A program which stores the psd variables and constraints associated to λ
   // and ν. See the description of p_.
