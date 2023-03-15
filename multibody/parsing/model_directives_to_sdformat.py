@@ -445,7 +445,7 @@ def convert_directives(args):
 # Saves a world with a merge include to the model
 # TODO(marcoag): Add a validty check that ensures the model
 # is world-mergeable. The package name for the include
-# is infered from the directory that contains the output file.
+# is inferred from the directory that contains the output file.
 def _save_world(root_world_name, world_output_path, output_filename):
     world_root = ET.Element('sdf', version=_SDF_VERSION)
     root_world_elem = ET.SubElement(world_root, 'world',
