@@ -1,0 +1,11 @@
+directives:
+
+- add_model:
+    name: top_level_model
+    file: package://model_directives_to_sdformat_files/model_with_directly_nested_models.sdf
+
+- add_frame:
+    name: top_injected_frame
+    X_PF:
+      base_frame: top_level_model::robot1::tool_frame
+      translation: [1, 2, 3]

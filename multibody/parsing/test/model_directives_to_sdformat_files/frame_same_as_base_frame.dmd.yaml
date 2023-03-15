@@ -1,0 +1,11 @@
+directives:
+- add_model:
+    name: simple_model
+    file: package://process_model_directives_test/simple_model.sdf
+
+- add_frame:
+    # This will implicitly resolve to the `simple_model` instance.
+    name: frame
+    X_PF:
+      base_frame: frame
+      translation: [10, 20, 30]

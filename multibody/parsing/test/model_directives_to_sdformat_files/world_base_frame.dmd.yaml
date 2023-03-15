@@ -1,0 +1,10 @@
+directives:
+- add_model:
+    name: simple_model
+    file: package://process_model_directives_test/simple_model.sdf
+- add_frame:
+    name: frame
+    X_PF:
+      base_frame: world
+      translation: [1, 2, 3]
+      rotation: !Rpy { deg: [0, 0, 0] }
