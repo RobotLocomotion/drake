@@ -18,8 +18,6 @@ namespace drake {
 namespace examples {
 namespace manipulation_station {
 
-template<typename T> class ManipulationStation;
-
 // This system computes the generalized forces on the IIWA arm of the
 // manipulation resulting from externally applied spatial forces.
 //
