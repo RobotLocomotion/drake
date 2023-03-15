@@ -380,8 +380,9 @@ class AddDirectives:
         else:
             expanded_included_path = None
 
-        generate_output(result_tree, relative_path, expanded_included_path,
-                        generate_world=False)
+        _generate_output(result_tree, resolved_file_path,
+                         expanded_included_path, args.print_only,
+                         generate_world=False)
 
 
 def _create_object_from_directive(directive, expand_included: bool):
@@ -441,48 +442,65 @@ def convert_directives(args):
     return ET.ElementTree(root)
 
 
-def generate_output(result_tree: ET.ElementTree,
-                    input_path: str = '',
-                    output_path: str = '',
-                    generate_world: bool = True):
+# Saves a world with a merge include to the model
+# TODO(marcoag): Add a validty check that ensures the model
+# is world-mergeable. The package name for the include
+# is infered from the directory that contains the output file.
+def _save_world(root_world_name, world_output_path, output_filename):
+    world_root = ET.Element('sdf', version=_SDF_VERSION)
+    root_world_elem = ET.SubElement(world_root, 'world',
+                                    name=root_world_name)
+    root_world_elem.append(
+            ET.Comment('Provides a direct inclusion of '
+                       'a given model, with no nesting'))
+    include_elem = ET.SubElement(root_world_elem, 'include',
+                                 merge='true')
+    uri_elem = ET.SubElement(include_elem, 'uri')
+    package_name = os.path.basename(os.path.dirname(output_filename))
+    uri_elem.text = 'package://' + package_name + '/' + \
+        os.path.basename(output_filename)
+    world_tree = ET.ElementTree(world_root)
+    world_tree.write(world_output_path,
+                     pretty_print=True)
 
+
+def _generate_output(result_tree: ET.ElementTree,
+                     input_path: str = '',
+                     output_path: str = '',
+                     print_only: bool = False,
+                     generate_world: bool = True):
+
+    if print_only:
+        print(ET.tostring(result_tree, pretty_print=True, encoding="unicode"))
+        return
+
+    # if an output path was selected the files will be
+    # generated there otherwise al '.sdf' will be gnerated
+    # along side the '.dmd.yaml' files with the same name
     if output_path:
-        filename = os.path.basename(input_path)
-        output_filename = os.path.join(
-                output_path, _remove_suffix(filename, '.dmd.yaml') + '.sdf')
-
         # Create path if it does not exist
         if not os.path.exists(output_path):
             os.makedirs(output_path)
 
+        file_no_extension = _remove_suffix(os.path.basename(input_path),
+                                           '.dmd.yaml')
+        output_filename_path = os.path.join(output_path,
+                                            file_no_extension + '.sdf')
         if generate_world:
-            # Saving a world with a merge include to the model
-            # TODO(marcoag): Add a validty check that ensures the model
-            # is world-mergeable.
-            world_output_path = output_path + \
-                    _remove_suffix(filename, '.dmd.yaml') + '_world.sdf'
-            world_root = ET.Element('sdf', version=_SDF_VERSION)
-            root_world_name = result_tree.find('model').get('name')
-            root_world_elem = ET.SubElement(world_root, 'world',
-                                            name=root_world_name)
-            root_world_elem.append(
-                    ET.Comment('Provides a direct inclusion of '
-                               'a given model, with no nesting'))
-            include_elem = ET.SubElement(root_world_elem, 'include',
-                                         merge='true')
-            uri_elem = ET.SubElement(include_elem, 'uri')
-            uri_elem.text = 'package://' + output_filename
-            world_tree = ET.ElementTree(world_root)
-            world_tree.write(world_output_path,
-                             pretty_print=True)
-
-        # Saving the converted model
-        result_tree.write(output_filename,
-                          pretty_print=True)
+            world_output_path = os.path.join(output_path,
+                                             file_no_extension + '_world.sdf')
     else:
-        print(ET.tostring(result_tree,
-                          pretty_print=True,
-                          encoding="unicode"))
+        file_no_extension = _remove_suffix(input_path, '.dmd.yaml')
+        output_filename_path = file_no_extension + '.sdf'
+        if generate_world:
+            world_output_path = file_no_extension + '_world.sdf'
+
+    # Save sdf files
+    if generate_world:
+        root_world_name = result_tree.find('model').get('name')
+        _save_world(root_world_name, world_output_path, output_filename_path)
+    # Saving the converted model
+    result_tree.write(output_filename_path, pretty_print=True)
 
 
 def _create_parser():
@@ -499,6 +517,9 @@ def _create_parser():
     parser.add_argument(
         '-o', '--output-path', type=str,
         help='Output path of directory where SDFormat files will be written.')
+    parser.add_argument(
+        '-p', '--print-only', action='store_true',
+        help='Print the result instead of saving it to a file.')
     return parser
 
 
@@ -511,7 +532,8 @@ def main(argv=None) -> None:
     if result_tree is None:
         raise ConversionError('Failed to convert model directives.')
 
-    generate_output(result_tree, args.model_directives, args.output_path)
+    _generate_output(result_tree, args.model_directives, args.output_path,
+                     args.print_only)
 
     return 0
 
