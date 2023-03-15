@@ -28,7 +28,7 @@ class ScopedName:
 
     def __init__(self, full_name: str):
         self.full_name = full_name
-        pos = full_name.rfind(_SCOPE_DELIMITER)
+        pos = full_name.find(_SCOPE_DELIMITER)
         if pos == -1:
             self.name = full_name
             self.instance_name = ""
@@ -109,6 +109,12 @@ def _levels_of_nesting(scope: str) -> int:
     return len(scope.split(_SCOPE_DELIMITER))
 
 
+def _remove_suffix(input: str, suffix: str) -> str:
+    if suffix and input.endswith(suffix):
+        return input[:-len(suffix)]
+    return input
+
+
 class AddFrame:
     def __init__(self, directive):
         x_pf = directive.X_PF
@@ -154,13 +160,6 @@ class AddFrame:
                     f'Frame named: [{self.name}] has a different '
                     'scope in its name and its base_frame: '
                     f'[{self.base_frame}].')
-
-        # Construct the model scope if necessary.
-        # Only one level of nesting is allowed for models.
-        if _levels_of_nesting(self.base_frame) > 2:
-            raise ConversionError(
-                f'Too many nested models in frame: [{self.base_frame}]. '
-                'Only one level of nesting is allowed.')
 
     def _resolve(self, name, directives):
         resolved_name = _resolve_and_scope_frame(name, directives)
@@ -320,7 +319,7 @@ class AddDirectives:
     def __init__(self, directive: bool):
         self.model_ns = directive.model_namespace
         self.file_path = directive.file
-        self.sdformat_uri = self.file_path.replace('.yaml', '.sdf')
+        self.sdformat_uri = self.file_path.replace('.dmd.yaml', '.sdf')
         if not self.sdformat_uri:
             raise ConversionError(
                 'Unable to guess guess SDFormat file name '
@@ -362,7 +361,7 @@ class AddDirectives:
         else:
             raise ConversionError('The provided file path is invalid. It must'
                                   ' be of the form: [package://path_to_file/'
-                                  'file.yaml]')
+                                  'file.dmd.yaml]')
 
         # Update args with new target file
         expanded_file_args = copy.deepcopy(args)
@@ -373,7 +372,7 @@ class AddDirectives:
                 'Failed converting the file included through '
                 f' add_directives: {self.params}')
 
-        sdformat_file_path = resolved_file_path.replace('.yaml', '.sdf')
+        sdformat_file_path = resolved_file_path.replace('.dmd.yaml', '.sdf')
 
         if args.output_path:
             expanded_included_path = os.path.join(
@@ -415,20 +414,18 @@ def convert_directives(args):
 
     # Initialize the sdformat XML root
     root = ET.Element('sdf', version=_SDF_VERSION)
-    root_name = os.path.splitext(os.path.basename(
-            args.model_directives))[0]
+    root_name = os.path.basename(_remove_suffix(
+        args.model_directives, '.dmd.yaml'))
 
     root_elem = ET.SubElement(root, 'model', name=root_name)
 
-    # Note, we need to process the directives in the correct order
-    for cls in [AddDirectives, AddModel, AddFrame, AddWeld]:
-        for dir_obj in _filter_directives(all_directives, cls):
-            if cls == AddDirectives:
-                dir_obj.insert_into_root_sdformat_node(
-                        root_elem, all_directives, args)
-            else:
-                dir_obj.insert_into_root_sdformat_node(
-                        root_elem, all_directives)
+    for dir_obj in all_directives:
+        if isinstance(dir_obj, AddDirectives):
+            dir_obj.insert_into_root_sdformat_node(
+                    root_elem, all_directives, args)
+        elif not isinstance(dir_obj, AddModelInstance):
+            dir_obj.insert_into_root_sdformat_node(
+                    root_elem, all_directives)
 
     # Check model validity by loading it through the SDFormat parser
     if args.check_sdf:
@@ -452,7 +449,7 @@ def generate_output(result_tree: ET.ElementTree,
     if output_path:
         filename = os.path.basename(input_path)
         output_filename = os.path.join(
-                output_path, filename.removesuffix('.yaml') + '.sdf')
+                output_path, _remove_suffix(filename, '.dmd.yaml') + '.sdf')
 
         # Create path if it does not exist
         if not os.path.exists(output_path):
@@ -463,7 +460,7 @@ def generate_output(result_tree: ET.ElementTree,
             # TODO(marcoag): Add a validty check that ensures the model
             # is world-mergeable.
             world_output_path = output_path + \
-                    filename.removesuffix('.yaml') + '_world.sdf'
+                    _remove_suffix(filename, '.dmd.yaml') + '_world.sdf'
             world_root = ET.Element('sdf', version=_SDF_VERSION)
             root_world_name = result_tree.find('model').get('name')
             root_world_elem = ET.SubElement(world_root, 'world',

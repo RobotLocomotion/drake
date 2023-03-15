@@ -160,15 +160,19 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
 
     files_to_test = [
         'multibody/parsing/test/model_directives_to_sdformat_files/'
-        'inject_frames.yaml',
+        'inject_frames.dmd.yaml',
         'multibody/parsing/test/model_directives_to_sdformat_files/'
-        'hidden_frame.yaml',
+        'hidden_frame.dmd.yaml',
         'multibody/parsing/test/model_directives_to_sdformat_files/'
-        'frame_attached_to_frame.yaml',
+        'frame_attached_to_frame.dmd.yaml',
         'multibody/parsing/test/model_directives_to_sdformat_files/'
-        'weld_frames_from_models.yaml',
+        'weld_frames_from_models.dmd.yaml',
         'multibody/parsing/test/model_directives_to_sdformat_files/'
-        'scoped_frame_name.yaml',
+        'scoped_frame_name.dmd.yaml',
+        'multibody/parsing/test/model_directives_to_sdformat_files/'
+        'deep_frame.dmd.yaml',
+        'multibody/parsing/test/model_directives_to_sdformat_files/'
+        'deep_weld.dmd.yaml',
     ]
 
     def setUp(self):
@@ -209,7 +213,9 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         self.assertEqual(sdformat_plant.num_model_instances() - 1,
                          directives_plant.num_model_instances())
 
-        file_name = os.path.splitext(os.path.basename(file_path))[0]
+        file_name = os.path.basename(
+            model_directives_to_sdformat._remove_suffix(
+                args.model_directives, '.dmd.yaml'))
 
         for i in range(2, directives_plant.num_model_instances()):
             model_scoped_name = file_name \
@@ -253,30 +259,30 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         with self.assertRaisesRegex(
                 RuntimeError, r'The fields \[\'something_not_directives'
                 r'\'\] were unknown to the schema'):
-            args = self.parser.parse_args(['-m',
-                                           'multibody/parsing/test/model_'
-                                           'directives_to_sdformat_files/'
-                                           'something_not_directives.yaml'])
+            args = self.parser.parse_args(['-m', 'multibody/parsing/test/'
+                                           'model_directives_to_sdformat_'
+                                           'files/something_not_directives'
+                                           '.dmd.yaml'])
             convert_directives(args)
 
     def test_error_directives_not_first(self):
         with self.assertRaisesRegex(
                 RuntimeError, r'The fields \[\'something_not_directives_'
                 r'first\'\] were unknown to the schema'):
-            args = self.parser.parse_args(['-m',
-                                           'multibody/parsing/test/model_'
-                                           'directives_to_sdformat_files/'
-                                           'not_directives_first.yaml'])
+            args = self.parser.parse_args(['-m', 'multibody/parsing/test/'
+                                           'model_directives_to_sdformat'
+                                           '_files/not_directives_first'
+                                           '.dmd.yaml'])
             convert_directives(args)
 
     def test_error_implicit_hidden_base_frame(self):
         with self.assertRaisesRegex(
                 ConversionError, 'Unable to find scope for frame: '
                 r'\[frame\] while adding frame: \[frame_name\].'):
-            args = self.parser.parse_args(['-m',
-                                           'multibody/parsing/test/model_'
-                                           'directives_to_sdformat_files/'
-                                           'implicit_hidden_base_frame.yaml'])
+            args = self.parser.parse_args(['-m', 'multibody/parsing/test/'
+                                           'model_directives_to_sdformat'
+                                           '_files/implicit_hidden_base_frame'
+                                           '.dmd.yaml'])
             convert_directives(args)
 
     def test_error_different_scopes_frame(self):
@@ -288,7 +294,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             args = self.parser.parse_args(['-m',
                                            'multibody/parsing/test/model_'
                                            'directives_to_sdformat_files/'
-                                           'different_scopes_frame.yaml'])
+                                           'different_scopes_frame.dmd.yaml'])
             convert_directives(args)
 
     def test_error_world_base(self):
@@ -299,7 +305,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             args = self.parser.parse_args(['-m',
                                            'multibody/parsing/test/model_'
                                            'directives_to_sdformat_files/'
-                                           'world_base_frame.yaml'])
+                                           'world_base_frame.dmd.yaml'])
             convert_directives(args)
 
     def test_error_frame_name_same_base_name(self):
@@ -307,10 +313,10 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                 ConversionError, r'Frame: \[frame\] has the same name as '
                 'it\'s base frame. This case is not '
                 'supported.'):
-            args = self.parser.parse_args(['-m',
-                                           'multibody/parsing/test/model_'
-                                           'directives_to_sdformat_files/'
-                                           'frame_same_as_base_frame.yaml'])
+            args = self.parser.parse_args(['-m', 'multibody/parsing/test/'
+                                           'model_directives_to_sdformat'
+                                           '_files/frame_same_as_base_frame'
+                                           '.dmd.yaml'])
             convert_directives(args)
 
     def test_error_frames_same_name(self):
@@ -321,18 +327,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
             args = self.parser.parse_args(['-m',
                                            'multibody/parsing/test/model_'
                                            'directives_to_sdformat_files/'
-                                           'frames_same_name.yaml'])
-            convert_directives(args)
-
-    def test_error_too_many_model_scopes(self):
-        with self.assertRaisesRegex(
-                ConversionError, 'Too many nested models in frame: '
-                r'\[top_level_model::inner_model::base\]. Only one level of '
-                'nesting is allowed.'):
-            args = self.parser.parse_args(['-m',
-                                           'multibody/parsing/test/model_'
-                                           'directives_to_sdformat_files/'
-                                           'too_many_models.yaml'])
+                                           'frames_same_name.dmd.yaml'])
             convert_directives(args)
 
     def test_add_model_instance_add_directives(self):
@@ -386,7 +381,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         model_directives_to_sdformat.main(['-m',
                                            'multibody/parsing/test/model_'
                                            'directives_to_sdformat_files/'
-                                           'add_directives.yaml',
+                                           'add_directives.dmd.yaml',
                                            '--expand-included',
                                            '-o', tempdir])
         self.assertEqual(expected_sdf, open(
@@ -417,17 +412,17 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         <pose degrees="true">1.0 2.0 3.0   0 0 0</pose>
       </frame>
     </model>
+    <joint name="top_level_model__top_injected_frame__to__mid_level_model__""" \
+            """base__weld_joint" type="fixed">
+      <parent>top_level_model::top_injected_frame</parent>
+      <child>mid_level_model::base</child>
+    </joint>
     <include>
       <name>bottom_level_model</name>
       <uri>package://process_model_directives_test/simple_model.sdf</uri>
       <placement_frame>base</placement_frame>
       <pose relative_to="mid_level_model::mid_injected_frame"/>
     </include>
-    <joint name="top_level_model__top_injected_frame__to__mid_level_model__""" \
-            """base__weld_joint" type="fixed">
-      <parent>top_level_model::top_injected_frame</parent>
-      <child>mid_level_model::base</child>
-    </joint>
     <joint name="mid_level_model__mid_injected_frame__to__bottom_level_""" \
             """model__base__weld_joint" type="fixed">
       <parent>mid_level_model::mid_injected_frame</parent>
@@ -439,7 +434,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         args = self.parser.parse_args(['-m',
                                        'multibody/parsing/test/model_'
                                        'directives_to_sdformat_files/'
-                                       'inject_frames.yaml'])
+                                       'inject_frames.dmd.yaml'])
         result = convert_directives(args)
         self.assertEqual(expected_xml,
                          ET.tostring(result, pretty_print=True,
