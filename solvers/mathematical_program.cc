@@ -351,17 +351,23 @@ void MathematicalProgram::AddIndeterminate(
     const symbolic::Variable& new_indeterminate) {
   if (new_indeterminate.is_dummy()) {
     throw std::runtime_error(
-        fmt::format("new_indeterminate should not be a dummy variable."));
+        fmt::format("{} should not be a dummy variable.", new_indeterminate));
   }
   if (indeterminates_index_.find(new_indeterminate.get_id()) !=
-          indeterminates_index_.end() ||
-      decision_variable_index_.find(new_indeterminate.get_id()) !=
-          decision_variable_index_.end()) {
+      indeterminates_index_.end()) {
     throw std::runtime_error(fmt::format(
-        "{} already exists in the optimization program.", new_indeterminate));
+        "{} is already an indeterminate in the optimization program.",
+        new_indeterminate));
+  }
+  if (decision_variable_index_.find(new_indeterminate.get_id()) !=
+      decision_variable_index_.end()) {
+    throw std::runtime_error(
+        fmt::format("{} is a decision variable in the optimization program.",
+                    new_indeterminate));
   }
   if (new_indeterminate.get_type() != symbolic::Variable::Type::CONTINUOUS) {
-    throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
+    throw std::runtime_error(
+        fmt::format("{} should be of type CONTINUOUS.", new_indeterminate));
   }
   const int var_index = indeterminates_.size();
   indeterminates_index_.insert(

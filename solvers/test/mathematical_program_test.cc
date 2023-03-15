@@ -536,7 +536,7 @@ GTEST_TEST(NewIndeterminates, StaticSizeVector) {
 }
 
 GTEST_TEST(TestAddIndeterminate, AddIndeterminate1) {
-  // Call AddIndeterminates on an empty program.
+  // Call AddIndeterminate on an empty program.
   MathematicalProgram prog;
   const Variable x("x", Variable::Type::CONTINUOUS);
   prog.AddIndeterminate(x);
@@ -551,7 +551,7 @@ GTEST_TEST(TestAddIndeterminate, AddIndeterminate1) {
 }
 
 GTEST_TEST(TestAddIndeterminate, AddIndeterminate2) {
-  // Call AddIndeterminates on a program with some indeterminates
+  // Call AddIndeterminate on a program with some indeterminates
   MathematicalProgram prog;
   auto y = prog.NewIndeterminates<2>("y");
 
@@ -569,24 +569,27 @@ GTEST_TEST(TestAddIndeterminate, AddIndeterminate2) {
   }
 }
 
-GTEST_TEST(TestAddIndeterminate, AddIndeterminates3) {
+GTEST_TEST(TestAddIndeterminate, AddIndeterminate3) {
   // Call with erroneous inputs.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<2>("y");
-  const Variable x0("x0", Variable::Type::CONTINUOUS);
-  const Variable x1("x1", Variable::Type::BINARY);
+  const Variable z("z", Variable::Type::BINARY);
   // Call AddIndeterminate with an input that intersects with old
   // indeterminates.
-  EXPECT_THROW(prog.AddIndeterminate(y(0)), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(y(0)),
+                              ".*is already an indeterminate.*");
   // Call AddIndeterminate with an input that intersects with old decision
   // variables.
-  EXPECT_THROW(prog.AddIndeterminate(x(0)), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(x(0)),
+                              ".*is a decision variable.*");
   // Call AddIndeterminates with an input of type BINARY.
-  EXPECT_THROW(prog.AddIndeterminate(x1), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(z),
+                              ".*should be of type CONTINUOUS.*");
   // Call AddIndeterminates with a dummy variable.
   Variable dummy;
-  EXPECT_THROW(prog.AddIndeterminate(dummy), std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(dummy),
+                              ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec1) {
@@ -638,19 +641,23 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec3) {
   const Variable x1("x1", Variable::Type::BINARY);
   // Call AddIndeterminates with an input that intersects with old
   // indeterminates.
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, y(0))),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(y(0), x0)),
+      ".*is already an indeterminate.*");
   // Call AddIndeterminates with an input that intersects with old decision
   // variables.
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, x(0))),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(x(0), x0)),
+      ".*is a decision variable.*");
   // Call AddIndeterminates with an input of type BINARY.
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, x1)),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(x1, x0)),
+      ".*should be of type CONTINUOUS.*");
   // Call AddIndeterminates with a dummy variable.
   Variable dummy;
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(dummy, x0)),
+      ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars1) {
@@ -715,19 +722,23 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars3) {
   const Variable x1("x1", Variable::Type::BINARY);
   // Call AddIndeterminates with an input that intersects with old
   // indeterminates.
-  EXPECT_THROW(prog.AddIndeterminates(symbolic::Variables({x0, y(0)})),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, y(0)})),
+      ".*is already an indeterminate.*");
   // Call AddIndeterminates with an input that intersects with old decision
   // variables.
-  EXPECT_THROW(prog.AddIndeterminates(symbolic::Variables({x0, x(0)})),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, x(0)})),
+      ".*is a decision variable.*");
   // Call AddIndeterminates with an input of type BINARY.
-  EXPECT_THROW(prog.AddIndeterminates(symbolic::Variables({x0, x1})),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, x1})),
+      ".*should be of type CONTINUOUS.*");
   // Call AddIndeterminates with a dummy variable.
   Variable dummy;
-  EXPECT_THROW(prog.AddIndeterminates(symbolic::Variables({x0, dummy})),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, dummy})),
+      ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, MatrixInput) {
