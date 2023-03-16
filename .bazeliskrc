@@ -4,4 +4,4 @@
 # These files should also be updated:
 # drake/tools/workspace/drake_visualizer/image/provision.sh
 # drake/tools/wheel/image/provision-base.sh
-USE_BAZEL_VERSION=6.0.0
+USE_BAZEL_VERSION=6.1.1
