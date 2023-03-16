@@ -22,10 +22,7 @@ namespace optimization {
  * quadratic in all other indeterminates.
  * @param interval_variable The variable μ associated to the unit interval.
  * @param parameters The parameters which must be evaluated before enforcing the
- * positivity of poly.
- * @param auxillary_variables If poly is the polynomial associated to a
- * univariate matrix SOS program, these are the auxillary variables used to
- * convert the matrix SOS to a single polynomial.
+ * positivity of poly. This is a subset of the polynomial's decision variables.
  */
 class ParametrizedPolynomialPositiveOnUnitInterval {
  public:
@@ -33,27 +30,31 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
 
   ParametrizedPolynomialPositiveOnUnitInterval(
       const symbolic::Polynomial& poly,
-      const symbolic::Variable& interval_variable);
+      const symbolic::Variable& interval_variable,
+      const symbolic::Variables& parameters);
 
   // Add the constraint that this parametrized polynomial is positive on the
   // unit interval. The Environment env must contain an evaluation for all the
   // parameters in parameters_. The MathematicalProgram prog must already
   // contain the indeterminates of psatz_variables_and_psd_constraints_.
-  void AddPositivityConstraintToProgram(const symbolic::Environment& env,
-                                        solvers::MathematicalProgram* prog);
+  void AddPositivityConstraintToProgram(
+      const symbolic::Environment& env,
+      solvers::MathematicalProgram* prog) const;
 
+  const symbolic::Variable& get_mu() const { return mu_; }
   const symbolic::Polynomial& get_p() const { return p_; }
   const symbolic::Polynomial& get_lambda() const { return lambda_; }
   const symbolic::Polynomial& get_nu() const { return nu_; }
+  const symbolic::Variables& get_parameters() const { return parameters_; }
 
-  const solvers::MathematicalProgram* get_psatz_variables_and_psd_constraints()
+  const solvers::MathematicalProgram& get_psatz_variables_and_psd_constraints()
       const {
-    return &psatz_variables_and_psd_constraints_;
+    return psatz_variables_and_psd_constraints_;
   }
 
  private:
-  // TODO(Alexandre.Amice) make members const.
-
+  // TODO(Alexandre.Amice) make all members const.
+  const symbolic::Variable mu;
   // A polynomial q(μ,y) = ∑ f(μ)yᵢyⱼ (where μ is univariate and y is
   // multivariate) is positive on the interval μ ∈ [0,1] if and only if there
   // exists biforms λ(μ,y) = ∑ ϕᵢ²(μ,y) and ν(μ,y) = ∑ ψᵢ²(μ,y) such that
@@ -65,13 +66,18 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // constrain to be equal to 0.
   symbolic::Polynomial p_;
 
+  // The subset of the decision variables in p_ which must be evaluated before
+  // we enforce it's positivity in a Mathematical Program.
+  const symbolic::Variables parameters_;
+
   // The λ(μ,y) in the documentation of p_
   symbolic::Polynomial lambda_{0};
   // The ν(μ,y) in the documentation of p_
   symbolic::Polynomial nu_{0};
 
   // A program which stores the psd variables and constraints associated to λ
-  // and ν. See the description of p_.
+  // and ν. See the description of p_. The use of this member is idiosyncratic,
+  // so it is not recommended to provide an accessor to it.
   solvers::MathematicalProgram psatz_variables_and_psd_constraints_;
 };
 
