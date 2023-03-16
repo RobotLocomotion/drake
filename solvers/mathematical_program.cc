@@ -347,29 +347,48 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
   return NewIndeterminates(rows, cols, names);
 }
 
+void MathematicalProgram::AddIndeterminate(
+    const symbolic::Variable& new_indeterminate) {
+  if (new_indeterminate.is_dummy()) {
+    throw std::runtime_error(
+        fmt::format("{} should not be a dummy variable.", new_indeterminate));
+  }
+  if (indeterminates_index_.find(new_indeterminate.get_id()) !=
+      indeterminates_index_.end()) {
+    throw std::runtime_error(fmt::format(
+        "{} is already an indeterminate in the optimization program.",
+        new_indeterminate));
+  }
+  if (decision_variable_index_.find(new_indeterminate.get_id()) !=
+      decision_variable_index_.end()) {
+    throw std::runtime_error(
+        fmt::format("{} is a decision variable in the optimization program.",
+                    new_indeterminate));
+  }
+  if (new_indeterminate.get_type() != symbolic::Variable::Type::CONTINUOUS) {
+    throw std::runtime_error(
+        fmt::format("{} should be of type CONTINUOUS.", new_indeterminate));
+  }
+  const int var_index = indeterminates_.size();
+  indeterminates_index_.insert(
+      std::make_pair(new_indeterminate.get_id(), var_index));
+  indeterminates_.push_back(new_indeterminate);
+}
+
 void MathematicalProgram::AddIndeterminates(
     const Eigen::Ref<const MatrixXDecisionVariable>& new_indeterminates) {
   for (int i = 0; i < new_indeterminates.rows(); ++i) {
     for (int j = 0; j < new_indeterminates.cols(); ++j) {
       const auto& var = new_indeterminates(i, j);
-      if (var.is_dummy()) {
-        throw std::runtime_error(fmt::format(
-            "new_indeterminates({},{}) should not be a dummy variable.", i, j));
-      }
-      if (indeterminates_index_.find(var.get_id()) !=
-              indeterminates_index_.end() ||
-          decision_variable_index_.find(var.get_id()) !=
-              decision_variable_index_.end()) {
-        throw std::runtime_error(
-            fmt::format("{} already exists in the optimization program.", var));
-      }
-      if (var.get_type() != symbolic::Variable::Type::CONTINUOUS) {
-        throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
-      }
-      const int var_index = indeterminates_.size();
-      indeterminates_index_.insert(std::make_pair(var.get_id(), var_index));
-      indeterminates_.push_back(var);
+      this->AddIndeterminate(var);
     }
+  }
+}
+
+void MathematicalProgram::AddIndeterminates(
+    const symbolic::Variables& new_indeterminates) {
+  for (const auto& var : new_indeterminates) {
+    this->AddIndeterminate(var);
   }
 }
 
