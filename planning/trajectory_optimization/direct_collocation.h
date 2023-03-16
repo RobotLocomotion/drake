@@ -1,7 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/planning/trajectory_optimization/multiple_shooting.h"
@@ -87,9 +89,12 @@ class DirectCollocation : public MultipleShooting {
   // trajectory reconstruction.
   const systems::System<double>* system_{nullptr};
   const std::unique_ptr<systems::Context<double>> context_;
-  const std::unique_ptr<systems::ContinuousState<double>> continuous_state_;
-  const systems::InputPort<double>* input_port_{nullptr};
-  systems::FixedInputPortValue* input_port_value_{nullptr};
+  const std::variant<systems::InputPortSelection, systems::InputPortIndex>
+      input_port_index_;
+
+  std::unique_ptr<systems::System<AutoDiffXd>> system_ad_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> context_ad_;
+  std::vector<std::unique_ptr<systems::Context<AutoDiffXd>>> sample_contexts_;
 };
 
 /// Implements the direct collocation constraints for a first-order hold on
@@ -107,9 +112,31 @@ class DirectCollocationConstraint : public solvers::Constraint {
   /// @see DirectCollocation constructor for a description of the parameters.
   /// @throws std::exception if `system` is not supported by this direct
   /// collocation method.
+  /// @pydrake_mkdoc_identifier{double}
   DirectCollocationConstraint(
       const systems::System<double>& system,
       const systems::Context<double>& context,
+      std::variant<systems::InputPortSelection, systems::InputPortIndex>
+          input_port_index =
+              systems::InputPortSelection::kUseFirstInputIfItExists,
+      bool assume_non_continuous_states_are_fixed = false);
+
+  /// Constructor which supports passing different mutable contexts for the
+  /// different evaluation times. This can be used to facilitate caching (for
+  /// instance, if the `context_segment_start` of one constraint uses the
+  /// `context_segment_end` of the previous constraint).
+  ///
+  /// @see DirectCollocation constructor for a description of the remaining
+  /// parameters.
+  ///
+  /// @throws std::exception if `system` is not supported by this direct
+  /// collocation method.
+  /// @pydrake_mkdoc_identifier{autodiff}
+  DirectCollocationConstraint(
+      const systems::System<AutoDiffXd>& system,
+      systems::Context<AutoDiffXd>* context_sample,
+      systems::Context<AutoDiffXd>* context_next_sample,
+      systems::Context<AutoDiffXd>* context_collocation,
       std::variant<systems::InputPortSelection, systems::InputPortIndex>
           input_port_index =
               systems::InputPortSelection::kUseFirstInputIfItExists,
@@ -122,8 +149,14 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
  protected:
   DirectCollocationConstraint(
-      const systems::System<double>& system,
-      const systems::Context<double>& context, int num_states, int num_inputs,
+      std::pair<std::unique_ptr<systems::System<AutoDiffXd>>,
+                std::unique_ptr<systems::Context<AutoDiffXd>>>
+          owned_pair,
+      const systems::System<AutoDiffXd>* system,
+      systems::Context<AutoDiffXd>* context_sample,
+      systems::Context<AutoDiffXd>* context_next_sample,
+      systems::Context<AutoDiffXd>* context_collocation, int num_states,
+      int num_inputs,
       std::variant<systems::InputPortSelection, systems::InputPortIndex>
           input_port_index,
       bool assume_non_continuous_states_are_fixed);
@@ -139,13 +172,17 @@ class DirectCollocationConstraint : public solvers::Constraint {
 
  private:
   void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                systems::Context<AutoDiffXd>* context,
                 AutoDiffVecXd* xdot) const;
 
-  const std::unique_ptr<systems::System<AutoDiffXd>> system_;
-  std::unique_ptr<systems::Context<AutoDiffXd>> context_;
-  const systems::InputPort<AutoDiffXd>* input_port_{nullptr};
-  systems::FixedInputPortValue* input_port_value_{nullptr};
-  std::unique_ptr<systems::ContinuousState<AutoDiffXd>> derivatives_;
+  std::unique_ptr<systems::System<AutoDiffXd>> owned_system_;
+  std::unique_ptr<systems::Context<AutoDiffXd>> owned_context_;
+
+  const systems::System<AutoDiffXd>& system_;
+  systems::Context<AutoDiffXd>* context_sample_;
+  systems::Context<AutoDiffXd>* context_next_sample_;
+  systems::Context<AutoDiffXd>* context_collocation_;
+  const systems::InputPort<AutoDiffXd>* input_port_;
 
   const int num_states_{0};
   const int num_inputs_{0};

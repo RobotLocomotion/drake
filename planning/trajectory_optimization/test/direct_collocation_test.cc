@@ -48,6 +48,33 @@ std::unique_ptr<LinearSystem<double>> MakeDoubleIntegrator() {
   return std::make_unique<LinearSystem<double>>(A, B, C, D);
 }
 
+GTEST_TEST(DirectCollocationConstraint, DoubleConstructor) {
+  const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
+
+  // Make sure that the constraint can be constructed and evaluated.
+  DirectCollocationConstraint constraint(*system, *context);
+  const Eigen::VectorXd x = Eigen::VectorXd(constraint.num_vars());
+  Eigen::VectorXd y(constraint.num_constraints());
+  constraint.Eval(x, &y);
+}
+
+GTEST_TEST(DirectCollocationConstraint, AutoDiffXdConstructor) {
+  const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
+  const auto system_ad = system->ToAutoDiffXd();
+  auto context_ad = system_ad->CreateDefaultContext();
+
+  // Make sure that the constraint can be constructed and evaluated.
+  DirectCollocationConstraint constraint(*system_ad, context_ad.get(),
+                                         context_ad.get(), context_ad.get());
+  const Eigen::VectorXd x = Eigen::VectorXd(constraint.num_vars());
+  Eigen::VectorXd y(constraint.num_constraints());
+  constraint.Eval(x, &y);
+}
+
 GTEST_TEST(DirectCollocation, TestAddRunningCost) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const std::unique_ptr<Context<double>> context =
