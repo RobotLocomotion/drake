@@ -125,6 +125,20 @@ TEST_P(YamlNodeParamaterizedTest, JsonSchemaTag) {
   EXPECT_EQ(dut.GetTag(), Node::kTagFloat);
 }
 
+// Check mark getting and setting.
+TEST_P(YamlNodeParamaterizedTest, GetSetMark) {
+  Node dut = MakeEmptyDut();
+
+  EXPECT_FALSE(dut.GetFilename().has_value());
+  EXPECT_FALSE(dut.GetMark().has_value());
+
+  dut.SetFilename("example.yaml");
+  dut.SetMark(Node::Mark{2, 3});
+  EXPECT_EQ(dut.GetFilename().value(), "example.yaml");
+  EXPECT_EQ(dut.GetMark().value().line, 2);
+  EXPECT_EQ(dut.GetMark().value().column, 3);
+}
+
 // It is important for our YAML subsystem performance that the Node's move
 // operations actually move the stored data, instead of copying it.
 TEST_P(YamlNodeParamaterizedTest, EfficientMoveConstructor) {
@@ -178,6 +192,28 @@ TEST_P(YamlNodeParamaterizedTest, EqualityPerTag) {
   // Same tag, set via two different overloads; still equal.
   dut.SetTag(JsonSchemaTag::kInt);
   dut2.SetTag(std::string{Node::kTagInt});
+  EXPECT_TRUE(dut == dut2);
+}
+
+// Check (non-)equality as affected by the mark filename.
+TEST_P(YamlNodeParamaterizedTest, EqualityPerFilename) {
+  Node dut = MakeEmptyDut();
+  Node dut2 = MakeEmptyDut();
+  EXPECT_TRUE(dut == dut2);
+  dut2.SetFilename("example.yaml");
+  EXPECT_FALSE(dut == dut2);
+}
+
+// Check (non-)equality as affected by the mark line.
+TEST_P(YamlNodeParamaterizedTest, EqualityPerMarkLineCol) {
+  Node dut = MakeEmptyDut();
+  Node dut2 = MakeEmptyDut();
+  EXPECT_TRUE(dut == dut2);
+  dut2.SetMark(Node::Mark{1, 2});
+  EXPECT_FALSE(dut == dut2);
+  dut.SetMark(Node::Mark{3, 4});
+  EXPECT_FALSE(dut == dut2);
+  dut2.SetMark(Node::Mark{3, 4});
   EXPECT_TRUE(dut == dut2);
 }
 

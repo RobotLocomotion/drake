@@ -116,7 +116,12 @@ bool operator==(const Node& a, const Node& b) {
   // We need to compare the canonical form of a tag (i.e., its string).
   auto a_tag = a.GetTag();
   auto b_tag = b.GetTag();
-  return std::tie(a_tag, a.data_) == std::tie(b_tag, b.data_);
+  return std::tie(a_tag, a.data_, a.filename_, a.mark_) ==
+         std::tie(b_tag, b.data_, b.filename_, b.mark_);
+}
+
+bool operator==(const Node::Mark& a, const Node::Mark& b) {
+  return std::tie(a.line, a.column) == std::tie(b.line, b.column);
 }
 
 bool operator==(const Node::ScalarData& a, const Node::ScalarData& b) {
@@ -164,6 +169,22 @@ void Node::SetTag(std::string tag) {
   } else {
     tag_ = std::move(tag);
   }
+}
+
+void Node::SetFilename(std::optional<std::string> filename) {
+  filename_ = std::move(filename);
+}
+
+const std::optional<std::string>& Node::GetFilename() const {
+  return filename_;
+}
+
+void Node::SetMark(std::optional<Mark> mark) {
+  mark_ = mark;
+}
+
+const std::optional<Node::Mark>& Node::GetMark() const {
+  return mark_;
 }
 
 const std::string& Node::GetScalar() const {
