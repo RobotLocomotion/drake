@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:os.bzl", "determine_os")
 
 def _impl(repository_ctx):

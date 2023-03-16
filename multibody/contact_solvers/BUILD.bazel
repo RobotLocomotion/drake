@@ -1,6 +1,3 @@
-# -*- python -*-
-# This file contains rules for Bazel; see drake/doc/bazel.rst.
-
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
@@ -17,7 +14,6 @@ drake_cc_package_library(
     name = "contact_solvers",
     visibility = ["//visibility:public"],
     deps = [
-        ":block_sparse_linear_operator",
         ":block_sparse_matrix",
         ":contact_solver",
         ":contact_solver_results",
@@ -29,18 +25,6 @@ drake_cc_package_library(
         ":sparse_linear_operator",
         ":supernodal_solver",
         ":system_dynamics_data",
-    ],
-)
-
-drake_cc_library(
-    name = "block_sparse_linear_operator",
-    srcs = ["block_sparse_linear_operator.cc"],
-    hdrs = ["block_sparse_linear_operator.h"],
-    deps = [
-        ":block_sparse_matrix",
-        ":linear_operator",
-        "//common:default_scalars",
-        "//common:essential",
     ],
 )
 
@@ -176,15 +160,6 @@ drake_cc_library(
     deps = [
         ":linear_operator",
         "//common:default_scalars",
-    ],
-)
-
-drake_cc_googletest(
-    name = "block_sparse_linear_operator_test",
-    deps = [
-        ":block_sparse_linear_operator",
-        ":block_sparse_matrix",
-        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 

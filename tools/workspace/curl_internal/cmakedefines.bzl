@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # The upstream lib/curl_config.h.cmake has a bajillion settings that it
 # measures from the host platform. In order to have a reproducible build,
 # we set them manually for Drake rather than measuring them.

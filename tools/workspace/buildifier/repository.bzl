@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 """
 Downloads a precompiled version of buildifier and makes it available to the
 WORKSPACE.

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def fortran_library(
         name,
         srcs = [],

@@ -1,5 +1,3 @@
-# -*- mode: python -*-
-
 load(
     "@drake//tools/workspace:os.bzl",
     "determine_os",

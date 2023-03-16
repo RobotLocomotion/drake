@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def check_lists_consistency(
         *,
         files,

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:os.bzl", "determine_os")
 load(
     "@drake//tools/workspace:github.bzl",

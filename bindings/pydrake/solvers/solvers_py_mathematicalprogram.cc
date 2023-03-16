@@ -787,7 +787,17 @@ void BindMathematicalProgram(py::module m) {
               const std::string&)>(&MathematicalProgram::NewIndeterminates),
           py::arg("rows"), py::arg("cols"), py::arg("name") = "X",
           doc.MathematicalProgram.NewIndeterminates.doc_3args)
-      .def("AddIndeterminates", &MathematicalProgram::AddIndeterminates,
+      .def("AddIndeterminate", &MathematicalProgram::AddIndeterminate,
+          py::arg("new_indeterminate"),
+          doc.MathematicalProgram.AddIndeterminate.doc)
+      .def("AddIndeterminates",
+          py::overload_cast<const Eigen::Ref<const MatrixXIndeterminate>&>(
+              &MathematicalProgram::AddIndeterminates),
+          py::arg("new_indeterminates"),
+          doc.MathematicalProgram.AddIndeterminates.doc)
+      .def("AddIndeterminates",
+          py::overload_cast<const symbolic::Variables&>(
+              &MathematicalProgram::AddIndeterminates),
           py::arg("new_indeterminates"),
           doc.MathematicalProgram.AddIndeterminates.doc)
       .def("AddVisualizationCallback",
@@ -1778,17 +1788,52 @@ void BindEvaluatorsAndBindings(py::module m) {
           py::arg("lb"), py::arg("ub"), doc.BoundingBoxConstraint.ctor.doc);
 
   py::class_<QuadraticConstraint, Constraint,
-      std::shared_ptr<QuadraticConstraint>>(
-      m, "QuadraticConstraint", doc.QuadraticConstraint.doc)
+      std::shared_ptr<QuadraticConstraint>>
+      quadratic_constraint_cls(
+          m, "QuadraticConstraint", doc.QuadraticConstraint.doc);
+
+  py::enum_<QuadraticConstraint::HessianType>(quadratic_constraint_cls,
+      "HessianType", doc.QuadraticConstraint.HessianType.doc)
+      .value("kPositiveSemidefinite",
+          QuadraticConstraint::HessianType::kPositiveSemidefinite,
+          doc.QuadraticConstraint.HessianType.kPositiveSemidefinite.doc)
+      .value("kNegativeSemidefinite",
+          QuadraticConstraint::HessianType::kNegativeSemidefinite,
+          doc.QuadraticConstraint.HessianType.kNegativeSemidefinite.doc)
+      .value("kIndefinite", QuadraticConstraint::HessianType::kIndefinite,
+          doc.QuadraticConstraint.HessianType.kIndefinite.doc);
+
+  quadratic_constraint_cls
       .def(py::init([](const Eigen::Ref<const Eigen::MatrixXd>& Q0,
                         const Eigen::Ref<const Eigen::VectorXd>& b, double lb,
-                        double ub) {
-        return std::make_unique<QuadraticConstraint>(Q0, b, lb, ub);
+                        double ub,
+                        std::optional<QuadraticConstraint::HessianType>
+                            hessian_type) {
+        return std::make_unique<QuadraticConstraint>(
+            Q0, b, lb, ub, hessian_type);
       }),
           py::arg("Q0"), py::arg("b"), py::arg("lb"), py::arg("ub"),
+          py::arg("hessian_type") = std::nullopt,
           doc.QuadraticConstraint.ctor.doc)
-      .def("Q", &QuadraticConstraint::Q, doc.QuadraticConstraint.Q.doc)
-      .def("b", &QuadraticConstraint::b, doc.QuadraticConstraint.b.doc);
+      .def("Q", &QuadraticConstraint::Q, py_rvp::reference_internal,
+          doc.QuadraticConstraint.Q.doc)
+      .def("b", &QuadraticConstraint::b, py_rvp::reference_internal,
+          doc.QuadraticConstraint.b.doc)
+      .def("is_convex", &QuadraticConstraint::is_convex,
+          doc.QuadraticConstraint.is_convex.doc)
+      .def(
+          "UpdateCoefficients",
+          [](QuadraticConstraint& self,
+              const Eigen::Ref<const Eigen::MatrixXd>& new_Q,
+              const Eigen::Ref<const Eigen::VectorXd>& new_b,
+              std::optional<QuadraticConstraint::HessianType> hessian_type) {
+            self.UpdateCoefficients(new_Q, new_b, hessian_type);
+          },
+          py::arg("new_Q"), py::arg("new_b"),
+          py::arg("hessian_type") = std::nullopt,
+          doc.QuadraticConstraint.UpdateCoefficients.doc)
+      .def("hessian_type", &QuadraticConstraint::hessian_type,
+          doc.QuadraticConstraint.hessian_type.doc);
 
   py::class_<PositiveSemidefiniteConstraint, Constraint,
       std::shared_ptr<PositiveSemidefiniteConstraint>>(m,

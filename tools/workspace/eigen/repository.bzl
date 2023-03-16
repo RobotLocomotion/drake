@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(
     "@drake//tools/workspace:pkg_config.bzl",
     "pkg_config_repository",

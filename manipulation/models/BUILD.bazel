@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/install:install.bzl", "install")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 

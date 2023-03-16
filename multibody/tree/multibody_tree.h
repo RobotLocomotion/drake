@@ -610,6 +610,12 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
+  int num_actuators(ModelInstanceIndex model_instance) const {
+    DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+    return model_instances_.at(model_instance)->num_actuators();
+  }
+
+  // See MultibodyPlant method.
   int num_actuated_dofs(ModelInstanceIndex model_instance) const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
     return model_instances_.at(model_instance)->num_actuated_dofs();
@@ -820,6 +826,14 @@ class MultibodyTree {
   // Returns a list of joint indices associated with `model_instance`.
   std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
   const;
+
+  // See MultibodyPlant method.
+  std::vector<JointActuatorIndex> GetJointActuatorIndices(
+      ModelInstanceIndex model_instance) const;
+
+  // See MultibodyPlant method.
+  std::vector<JointIndex> GetActuatedJointIndices(
+      ModelInstanceIndex model_instance) const;
 
   // Returns a list of frame indices associated with `model_instance`
   std::vector<FrameIndex> GetFrameIndices(ModelInstanceIndex model_instance)

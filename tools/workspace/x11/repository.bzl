@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 load(
     "@drake//tools/workspace:os.bzl",
     "determine_os",

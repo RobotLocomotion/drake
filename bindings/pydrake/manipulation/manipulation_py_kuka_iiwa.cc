@@ -16,18 +16,15 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(kuka_iiwa, m) {
-  using drake::systems::Diagram;
-  using drake::systems::LeafSystem;
+using systems::Diagram;
+using systems::LeafSystem;
 
-  m.doc() = "Tools for kuka iiwa.";
-
+void DefineManipulationKukaIiwa(py::module m) {
   // NOLINTNEXTLINE(build/namespaces): Emulate placement in namespace.
   using namespace drake::manipulation::kuka_iiwa;
   constexpr auto& doc = pydrake_doc.drake.manipulation.kuka_iiwa;
-
-  py::module::import("pydrake.systems.framework");
 
   // Constants.
   m.attr("kIiwaArmNumJoints") = kIiwaArmNumJoints;
@@ -186,5 +183,6 @@ PYBIND11_MODULE(kuka_iiwa, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

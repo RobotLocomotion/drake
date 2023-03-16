@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 # Between v1.7.0 and v1.7.1, @googlebenchmark added an optional dependency on
 # @libpfm. This rule just satisfies the dependency graph at fetch time, without
 # providing any actual code for @libpfm.

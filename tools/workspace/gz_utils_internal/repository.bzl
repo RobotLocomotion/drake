@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/workspace:github.bzl", "github_archive")
 
 def gz_utils_internal_repository(

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def _impl(repo_ctx):
     name = repo_ctx.attr.name
     date = repo_ctx.attr.date

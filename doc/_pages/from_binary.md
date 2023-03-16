@@ -31,12 +31,12 @@ Mac are available to download as attachments from Drake's GitHub
 [releases](https://github.com/RobotLocomotion/drake/releases) page.
 
 The most recent release is
-[v1.13.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.13.0):
+[v1.14.0](https://github.com/RobotLocomotion/drake/releases/tag/v1.14.0):
 
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-focal.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-jammy.tar.gz)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-mac.tar.gz) (for x86_64)
-* [https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-mac-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230215-mac-arm64.tar.gz) (for arm64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.14.0/drake-20230315-focal.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230315-focal.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.14.0/drake-20230315-jammy.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230315-jammy.tar.gz)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.14.0/drake-20230315-mac.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230315-mac.tar.gz) (for x86_64)
+* [https://github.com/RobotLocomotion/drake/releases/download/v1.14.0/drake-20230315-mac-arm64.tar.gz](https://github.com/RobotLocomotion/drake/releases/download/v1.13.0/drake-20230315-mac-arm64.tar.gz) (for arm64)
 
 Users of macOS must download using a command-line tool such as ``curl`` instead
 of using a web browser, to avoid hassles from Gatekeeper checks for malicious

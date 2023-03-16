@@ -227,6 +227,13 @@ class _MangledName:
         name = _MangledName.mangle(name)
         if name in module_globals:
             return module_globals[name]
+        float_tag = "_{}float{}".format(
+            _MangledName.UNICODE_LEFT_BRACKET,
+            _MangledName.UNICODE_RIGHT_BRACKET)
+        if name.endswith(float_tag):
+            shorter_name = name[:-len(float_tag)]
+            if shorter_name in module_globals:
+                return module_globals[shorter_name]
         raise AttributeError(
             f"module {module_name!r} has no attribute {name!r}")
 
