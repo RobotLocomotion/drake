@@ -187,7 +187,7 @@ the main body of the document:
    2. Click "Publish release"
    3. Notify `@BetsyMcPhail` by creating a GitHub issue asking her to manually 
       tag docker images and upload the releases to S3. Be sure to provide her 
-      with the binary date, commit SHA, and release tag in the same ping.
+      with the binary date and release tag in the same ping.
    4. Announce on Drake Slack, ``#general``.
    5. Party on, Wayne.
 
