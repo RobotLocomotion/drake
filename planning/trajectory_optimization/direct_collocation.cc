@@ -17,6 +17,8 @@ using solvers::Constraint;
 using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using systems::Context;
+using systems::FixedInputPortValue;
+using systems::InputPort;
 using systems::InputPortIndex;
 using systems::InputPortSelection;
 using systems::PortDataType;
@@ -32,6 +34,21 @@ int CheckAndReturnStates(int states) {
   }
   return states;
 }
+
+typedef std::pair<std::unique_ptr<System<AutoDiffXd>>,
+          std::unique_ptr<Context<AutoDiffXd>>> OwnedPair;
+
+OwnedPair MakeAutoDiffXd(const systems::System<double>& system,
+                       const systems::Context<double>& context) {
+  auto system_ad = System<double>::ToAutoDiffXd(system);
+  auto context_ad = system_ad->CreateDefaultContext();
+  // TODO(russt): Add support for time-varying dynamics OR check for
+  // time-invariance.
+  context_ad->SetTimeStateAndParametersFrom(context);
+  system_ad->FixInputPortsFrom(system, context, context_ad.get());
+  return OwnedPair{std::move(system_ad), std::move(context_ad)};
+}
+
 }  // namespace
 
 DirectCollocationConstraint::DirectCollocationConstraint(
@@ -39,38 +56,59 @@ DirectCollocationConstraint::DirectCollocationConstraint(
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
     : DirectCollocationConstraint(
-          system, context, context.num_continuous_states(),
+          MakeAutoDiffXd(system, context), nullptr, nullptr, nullptr, nullptr,
+          context.num_continuous_states(),
           system.get_input_port_selection(input_port_index)
               ? system.get_input_port_selection(input_port_index)->size()
               : 0,
           input_port_index, assume_non_continuous_states_are_fixed) {}
 
 DirectCollocationConstraint::DirectCollocationConstraint(
-    const System<double>& system, const Context<double>& context,
-    int num_states, int num_inputs,
+    const systems::System<AutoDiffXd>& system,
+    systems::Context<AutoDiffXd>* context_sample,
+    systems::Context<AutoDiffXd>* context_next_sample,
+    systems::Context<AutoDiffXd>* context_collocation,
+    std::variant<systems::InputPortSelection, systems::InputPortIndex>
+        input_port_index,
+    bool assume_non_continuous_states_are_fixed)
+    : DirectCollocationConstraint(
+          OwnedPair{nullptr, nullptr}, &system, context_sample,
+          context_next_sample, context_collocation,
+          context_sample->num_continuous_states(),
+          system.get_input_port_selection(input_port_index)
+              ? system.get_input_port_selection(input_port_index)->size()
+              : 0,
+          input_port_index, assume_non_continuous_states_are_fixed) {}
+
+DirectCollocationConstraint::DirectCollocationConstraint(
+    OwnedPair owned_pair, const systems::System<AutoDiffXd>* system,
+    systems::Context<AutoDiffXd>* context_sample,
+    systems::Context<AutoDiffXd>* context_next_sample,
+    systems::Context<AutoDiffXd>* context_collocation, int num_states,
+    int num_inputs,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed)
     : Constraint(CheckAndReturnStates(num_states),
                  1 + (2 * num_states) + (2 * num_inputs),
                  Eigen::VectorXd::Zero(num_states),
                  Eigen::VectorXd::Zero(num_states)),
-      system_(System<double>::ToAutoDiffXd(system)),
-      context_(system_->CreateDefaultContext()),
-      input_port_(system_->get_input_port_selection(input_port_index)),
-      // Don't allocate the input port value until we're past the point
-      // where we might throw.
-      derivatives_(system_->AllocateTimeDerivatives()),
+      owned_system_(std::move(owned_pair.first)),
+      owned_context_(std::move(owned_pair.second)),
+      system_(owned_system_ ? *owned_system_ : *system),
+      context_sample_(owned_context_ ? owned_context_.get() : context_sample),
+      context_next_sample_(owned_context_ ? owned_context_.get()
+                                          : context_next_sample),
+      context_collocation_(owned_context_ ? owned_context_.get()
+                                          : context_collocation),
+      input_port_(system_.get_input_port_selection(input_port_index)),
       num_states_(num_states),
       num_inputs_(num_inputs) {
+  system_.ValidateContext(context_sample_);
+  system_.ValidateContext(context_next_sample_);
+  system_.ValidateContext(context_collocation_);
   if (!assume_non_continuous_states_are_fixed) {
-    DRAKE_THROW_UNLESS(context.has_only_continuous_state());
+    DRAKE_THROW_UNLESS(context_sample_->has_only_continuous_state());
   }
-
-  // TODO(russt): Add support for time-varying dynamics OR check for
-  // time-invariance.
-
-  context_->SetTimeStateAndParametersFrom(context);
-  system_->FixInputPortsFrom(system, context, context_.get());
 
   if (input_port_) {
     // Verify that the input port is not abstract valued.
@@ -80,23 +118,18 @@ DirectCollocationConstraint::DirectCollocationConstraint(
           "only supports vector-valued input ports.  Did you perhaps forget to "
           "pass a non-default `input_port_index` argument?");
     }
-
-    // Provide a fixed value for the input port and keep an alias around.
-    input_port_value_ = &input_port_->FixValue(
-        context_.get(),
-        system_->AllocateInputVector(*input_port_)->get_value());
   }
 }
 
 void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
                                            const AutoDiffVecXd& input,
+                                           Context<AutoDiffXd>* context,
                                            AutoDiffVecXd* xdot) const {
   if (input_port_) {
-    input_port_value_->GetMutableVectorData<AutoDiffXd>()->SetFromVector(input);
+    input_port_->FixValue(context, input);
   }
-  context_->SetContinuousState(state);
-  system_->CalcTimeDerivatives(*context_, derivatives_.get());
-  *xdot = derivatives_->CopyToVector();
+  context->SetContinuousState(state);
+  *xdot = system_.EvalTimeDerivatives(*context).CopyToVector();
 }
 
 void DirectCollocationConstraint::DoEval(
@@ -123,21 +156,18 @@ void DirectCollocationConstraint::DoEval(
   const auto u0 = x.segment(1 + (2 * num_states_), num_inputs_);
   const auto u1 = x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_);
 
-  // TODO(sam.creasey): Use caching to avoid recomputing the dynamics.
-  // Currently the dynamics evaluated here as {u1,x1} are recomputed in the
-  // next constraint as {u0,x0}.
   AutoDiffVecXd xdot0;
-  dynamics(x0, u0, &xdot0);
+  dynamics(x0, u0, context_sample_, &xdot0);
 
   AutoDiffVecXd xdot1;
-  dynamics(x1, u1, &xdot1);
+  dynamics(x1, u1, context_next_sample_, &xdot1);
 
   // Cubic interpolation to get xcol and xdotcol.
   const AutoDiffVecXd xcol = 0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1);
   const AutoDiffVecXd xdotcol = -1.5 * (x0 - x1) / h - .25 * (xdot0 + xdot1);
 
   AutoDiffVecXd g;
-  dynamics(xcol, 0.5 * (u0 + u1), &g);
+  dynamics(xcol, 0.5 * (u0 + u1), context_collocation_, &g);
   *y = xdotcol - g;
 }
 
@@ -178,38 +208,35 @@ DirectCollocation::DirectCollocation(
           num_time_samples, minimum_timestep, maximum_timestep),
       system_(system),
       context_(context.Clone()),
-      continuous_state_(system_->AllocateTimeDerivatives()),
-      input_port_(system->get_input_port_selection(input_port_index)) {
+      input_port_index_(input_port_index), sample_contexts_(num_time_samples) {
+  system->ValidateContext(context);
   if (!assume_non_continuous_states_are_fixed) {
     DRAKE_DEMAND(context.has_only_continuous_state());
   }
 
-  if (input_port_) {
-    // Verify that the input port is not abstract valued.
-    if (input_port_->get_data_type() == PortDataType::kAbstractValued) {
-      throw std::logic_error(
-          "The specified input port is abstract-valued, but DirectCollocation "
-          "only supports vector-valued input ports.  Did you perhaps forget to "
-          "pass a non-default `input_port_index` argument?");
-    }
+  auto system_and_context = MakeAutoDiffXd(*system, context);
+  system_ad_ = std::move(system_and_context.first);
+  context_ad_ = std::move(system_and_context.second);
 
-    // Allocate the input port and keep an alias around.
-    input_port_value_ = &input_port_->FixValue(
-        context_.get(),
-        system_->AllocateInputVector(*input_port_)->get_value());
+  // Allocated contexts for each sample time. We share contexts across multiple
+  // constraints in order to exploit caching (the dynamics at time k are
+  // evaluated both in constraint k and k+1). Note that the constraints cannot
+  // be evaluated in parallel.
+  for (int i = 0; i < N(); ++i) {
+    sample_contexts_[i] = context_ad_->Clone();
   }
+  // We don't expect to have cache hits for the collocation contexts, so can
+  // just use the one context_ad.
 
   // Add the dynamic constraints.
-  auto constraint = std::make_shared<DirectCollocationConstraint>(
-      *system, context, input_port_index,
-      assume_non_continuous_states_are_fixed);
-
-  DRAKE_ASSERT(static_cast<int>(constraint->num_constraints()) == num_states());
-
   // For N-1 timesteps, add a constraint which depends on the breakpoint
   // along with the state and input vectors at that breakpoint and the
   // next.
-  for (int i = 0; i < N() - 1; i++) {
+  for (int i = 0; i < N() - 1; ++i) {
+    auto constraint = std::make_shared<DirectCollocationConstraint>(
+        *system_ad_, sample_contexts_[i].get(), sample_contexts_[i + 1].get(),
+        context_ad_.get(), input_port_index,
+        assume_non_continuous_states_are_fixed);
     prog()
         .AddConstraint(constraint,
                        {h_vars().segment<1>(i),
@@ -238,7 +265,12 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
 
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
     const solvers::MathematicalProgramResult& result) const {
-  DRAKE_DEMAND(input_port_ != nullptr);
+  const InputPort<double>* input_port =
+      system_->get_input_port_selection(input_port_index_);
+  if (!input_port) {
+    return PiecewisePolynomial<double>();
+  }
+
   Eigen::VectorXd times = GetSampleTimes(result);
   std::vector<double> times_vec(N());
   std::vector<Eigen::MatrixXd> inputs(N());
@@ -257,16 +289,25 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
   std::vector<Eigen::MatrixXd> states(N());
   std::vector<Eigen::MatrixXd> derivatives(N());
 
+  // Provide a fixed value for the input port and keep an alias around.
+  const InputPort<double>* input_port =
+      system_->get_input_port_selection(input_port_index_);
+  FixedInputPortValue* input_port_value{nullptr};
+  if (input_port) {
+    input_port_value = &input_port->FixValue(
+      context_.get(),
+      system_->AllocateInputVector(*input_port)->get_value());
+  }
+
   for (int i = 0; i < N(); i++) {
     times_vec[i] = times(i);
     states[i] = result.GetSolution(state(i));
-    if (input_port_) {
-      input_port_value_->GetMutableVectorData<double>()->SetFromVector(
+    if (input_port) {
+      input_port_value->GetMutableVectorData<double>()->SetFromVector(
           result.GetSolution(input(i)));
     }
     context_->SetContinuousState(states[i]);
-    system_->CalcTimeDerivatives(*context_, continuous_state_.get());
-    derivatives[i] = continuous_state_->CopyToVector();
+    derivatives[i] = system_->EvalTimeDerivatives(*context_).CopyToVector();
   }
   return PiecewisePolynomial<double>::CubicHermite(times_vec, states,
                                                    derivatives);
