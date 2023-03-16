@@ -1810,6 +1810,11 @@ class TestPlant(unittest.TestCase):
                 self.assertTrue(plant.HasJointActuatorNamed(
                     "tau", default_model_instance()))
                 self.assertIsInstance(actuator, JointActuator_[T])
+
+            if joint.name() in ["prismatic", "revolute"]:
+                # This must be checked pre-Finalize().
+                joint.set_default_damping(damping=damping)
+
             plant.Finalize()
             self._test_joint_api(T, joint)
             if joint.num_velocities() == 1 and T == float:
