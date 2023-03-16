@@ -560,6 +560,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("translation_axis", &Class::translation_axis,
             cls_doc.translation_axis.doc)
         .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("set_default_damping", &Class::set_default_damping,
+            py::arg("damping"), cls_doc.set_default_damping.doc)
         .def("position_lower_limit", &Class::position_lower_limit,
             cls_doc.position_lower_limit.doc)
         .def("position_upper_limit", &Class::position_upper_limit,
@@ -674,6 +676,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("damping") = 0.0, cls_doc.ctor.doc_7args)
         .def("revolute_axis", &Class::revolute_axis, cls_doc.revolute_axis.doc)
         .def("damping", &Class::damping, cls_doc.damping.doc)
+        .def("set_default_damping", &Class::set_default_damping,
+            py::arg("damping"), cls_doc.set_default_damping.doc)
         .def("position_lower_limit", &Class::position_lower_limit,
             cls_doc.position_lower_limit.doc)
         .def("position_upper_limit", &Class::position_upper_limit,
