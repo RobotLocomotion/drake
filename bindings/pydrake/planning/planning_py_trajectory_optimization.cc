@@ -236,7 +236,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("input_port_index") =
                 systems::InputPortSelection::kUseFirstInputIfItExists,
             py::arg("assume_non_continuous_states_are_fixed") = false,
-            cls_doc.ctor.doc);
+            cls_doc.ctor.doc_double);
   }
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,

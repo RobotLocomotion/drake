@@ -11,15 +11,6 @@ namespace drake {
 namespace multibody {
 namespace internal {
 /*
- * Determines if a and b are equal. a equals to b if they have the same value
- * and gradients.
- * TODO(hongkai.dai) implement and use std::equal_to<> for comparing Eigen
- * vector of AutoDiffXd.
- */
-bool AreAutoDiffVecXdEqual(const Eigen::Ref<const AutoDiffVecXd>& a,
-                           const Eigen::Ref<const AutoDiffVecXd>& b);
-
-/*
  * Check if the generalized positions in @p context are the same as @p q.
  * If they are not the same, then reset @p context's generalized positions
  * to @p q. Otherwise, leave @p context unchanged.

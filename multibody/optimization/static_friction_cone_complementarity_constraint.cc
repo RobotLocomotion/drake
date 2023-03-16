@@ -73,7 +73,7 @@ void StaticFrictionConeComplementarityNonlinearConstraint::DoEval(
       // context, this const_cast wouldn't be necessary.
       const_cast<systems::Context<AutoDiffXd>&>(
           contact_wrench_evaluator_->context());
-  if (!internal::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {
+  if (!math::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {
     plant.SetPositions(&context, q);
   }
 
