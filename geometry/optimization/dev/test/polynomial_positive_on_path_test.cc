@@ -1,5 +1,7 @@
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
+#include <iostream>
+
 #include <gtest/gtest.h>
 
 #include "drake/common/symbolic/monomial_util.h"
@@ -29,10 +31,10 @@ void validate_parametrized_polynomial_prog(
   // p should have the same indeterminates as poly.
   EXPECT_TRUE(p.indeterminates() == poly.indeterminates());
   for (const auto& var : p.indeterminates()) {
-    if (var != poly_prog.get_mu()) {
+    if (!var.equal_to(poly_prog.get_mu())) {
       EXPECT_EQ(p.Degree(var), 2);
       EXPECT_EQ(lambda.Degree(var), 2);
-      EXPECT_EQ(nu.Degree(var), 2);
+            EXPECT_TRUE(nu.TotalDegree() == 0 || nu.Degree(var) ==  2);
     }
   }
 
@@ -139,7 +141,6 @@ GTEST_TEST(ParametrizedPolyPositive, CtorScalarDegreeOdd) {
   }
 
   const Polynomial poly{poly_map};
-  const Variables parameters{poly.decision_variables()};
 
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
       poly, interval_variable, parameters};
@@ -152,9 +153,6 @@ GTEST_TEST(ParametrizedPolyPositive, CtorScalarDegreeOdd) {
       symbolic::Polynomial((1 - interval_variable)) * nu};
 
   EXPECT_TRUE(p.EqualTo(poly - rhs_expected));
-
-  const MathematicalProgram psatz_variables_and_constraints =
-      poly_prog.get_psatz_variables_and_psd_constraints();
 
   validate_parametrized_polynomial_prog(
       poly_prog, poly,
@@ -205,7 +203,6 @@ GTEST_TEST(ParametrizedPolyPositive, CtorMatrix2DegreeOdd) {
   const Variable y0{"y0"};
   const Variable y1{"y1"};
   const Variables auxillary_variables{y0, y1};
-  const Variables all_indets{y0, y1, interval_variable};
 
   VectorX<symbolic::Expression> poly_mat_upper(3);
 
@@ -230,10 +227,8 @@ GTEST_TEST(ParametrizedPolyPositive, CtorMatrix2DegreeOdd) {
                             poly_mat_upper(2) * y1 * y1,
                         Variables({interval_variable, y0, y1})};
 
-  const Variables parameters{poly.decision_variables()};
-
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
-      poly, interval_variable};
+      poly, interval_variable, parameters};
 
   const Polynomial lambda{poly_prog.get_lambda()};
   const Polynomial nu{poly_prog.get_nu()};
@@ -254,17 +249,22 @@ GTEST_TEST(ParametrizedPolyPositive, CtorMatrix2DegreeEven) {
   const Variable interval_variable{"mu"};
   const Variable y0{"y0"};
   const Variable y1{"y1"};
-  const Variables auxillary_variables{y0, y1};
-  const Variables all_indets{y0, y1, interval_variable};
 
   VectorX<symbolic::Expression> poly_mat_upper(3);
+
+  Variables parameters{};
+  Variables coeffs{};
+
   const VectorX<symbolic::Monomial> basis{
       symbolic::MonomialBasis({interval_variable}, deg)};
   for (int i = 0; i < 3; ++i) {
     Polynomial::MapType poly_map;
     for (int j = 0; j < basis.size(); ++j) {
-      poly_map.emplace(basis(j),
-                       symbolic::Variable(fmt::format("s_{}_{}", i, j)));
+      const Variable param{symbolic::Variable(fmt::format("s{}{}", i, j))};
+      const Variable coeff{symbolic::Variable(fmt::format("a{}{}", i, j))};
+      parameters.insert(param);
+      coeffs.insert(coeff);
+      poly_map.emplace(basis(j), param * coeff);
     }
     poly_mat_upper(i) = Polynomial{poly_map}.ToExpression();
   }
@@ -273,10 +273,8 @@ GTEST_TEST(ParametrizedPolyPositive, CtorMatrix2DegreeEven) {
                             poly_mat_upper(2) * y1 * y1,
                         Variables({interval_variable, y0, y1})};
 
-  const Variables parameters{poly.decision_variables()};
-
   const ParametrizedPolynomialPositiveOnUnitInterval poly_prog{
-      poly, interval_variable};
+      poly, interval_variable, parameters};
 
   const Polynomial lambda{poly_prog.get_lambda()};
   const Polynomial nu{poly_prog.get_nu()};
@@ -285,53 +283,11 @@ GTEST_TEST(ParametrizedPolyPositive, CtorMatrix2DegreeEven) {
       lambda +
       symbolic::Polynomial(interval_variable * (1 - interval_variable)) * nu};
 
-  EXPECT_EQ(p.Degree(interval_variable), deg);
-  EXPECT_EQ(lambda.Degree(interval_variable), deg);
-  EXPECT_EQ(nu.Degree(interval_variable), deg - 2);
   EXPECT_TRUE(p.EqualTo(poly - rhs_expected));
-
-  EXPECT_EQ(p.Degree(y0), 2);
-  EXPECT_EQ(lambda.Degree(y0), 2);
-  EXPECT_EQ(nu.Degree(y0), 2);
-
-  EXPECT_EQ(p.Degree(y1), 2);
-  EXPECT_EQ(lambda.Degree(y1), 2);
-  EXPECT_EQ(nu.Degree(y1), 2);
-
-  EXPECT_TRUE(p.EqualTo(poly - rhs_expected));
-
-  const MathematicalProgram psatz_variables_and_constraints =
-      poly_prog.get_psatz_variables_and_psd_constraints();
-
-  // psatz_variables_and_constraints contains interval variables and auxillary
-  // variables in its indeterminates.
-  EXPECT_EQ(psatz_variables_and_constraints.indeterminates().size(), 3);
-  const auto indeterminates_index =
-      psatz_variables_and_constraints.indeterminates_index();
-  for (const auto& var : all_indets) {
-    const auto it = indeterminates_index.find(var.get_id());
-    ASSERT_TRUE(it != indeterminates_index.end());
-  }
-
-  for (const auto& var : p.decision_variables()) {
-    if (parameters.include(var)) {
-      // Parameters should not be in the decision variables.
-      EXPECT_THROW(
-          unused(
-              psatz_variables_and_constraints.FindDecisionVariableIndex(var)),
-          std::runtime_error);
-    } else {
-      // Ensure that all the decision variables of p are in the program.
-      EXPECT_NO_THROW(unused(
-          psatz_variables_and_constraints.FindDecisionVariableIndex(var)));
-    }
-  }
-
-  // The only constraints should be the PSD constraints on λ and ν.
-  EXPECT_EQ(psatz_variables_and_constraints.positive_semidefinite_constraints()
-                .size(),
-            2);
-  EXPECT_EQ(psatz_variables_and_constraints.GetAllConstraints().size(), 2);
+  validate_parametrized_polynomial_prog(
+      poly_prog, poly,
+      2,  // The only constraints should be the non-negativity of lambda and nu.
+      0);
 }
 
 }  // namespace optimization

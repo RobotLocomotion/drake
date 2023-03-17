@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
 #include <limits>
+#include <utility>
 
 #include "drake/common/symbolic/monomial_util.h"
 
