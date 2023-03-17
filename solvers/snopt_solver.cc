@@ -15,6 +15,8 @@
 #include <utility>
 #include <vector>
 
+#include <iostream>
+
 // // NOLINTNEXTLINE(build/include)
 // #include "snopt.h"
 
@@ -51,9 +53,9 @@ extern "C" {
 
 // Include SNOPT's function declarations.
 #include <snopt.hh>
-#ifdef SNOPT_HAS_SNFILEWRAPPER
-#include <cexamples/snfilewrapper.h>
-#endif
+// #ifdef SNOPT_HAS_SNFILEWRAPPER
+#include <snfilewrapper.hh>
+// #endif
 
 }  // extern C
 }  // namespace snopt
@@ -124,7 +126,7 @@ struct SnoptImpl<true> {
 #pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
 #pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
-  // static constexpr auto snend = snopt::snend_;
+  static constexpr auto snclose = snopt::snclose_;
   static constexpr auto sninit = snopt::sninit_;
   static constexpr auto snopta = snopt::snopta_;
   static constexpr auto snmema = snopt::snmema_;
@@ -148,17 +150,15 @@ struct SnoptImpl<false> {
   // "Print file" option is not enabled, this is zero.
   thread_local inline static int g_iprint;
 
-  // template <typename Int>
-  // static void snend(
-  //     Int* iw, int leniw, double* rw, int lenrw) {
-  //   // Close the print file and then release its unit (if necessary).
-  //   Int iprint = g_iprint;
-  //   snopt::snend_(&iprint);
-  //   if (g_iprint) {
-  //     FortranUnitFactory::singleton().Release(g_iprint);
-  //     g_iprint = 0;
-  //   }
-  // }
+  static void snclose() {
+    // Close the print file and then release its unit (if necessary).
+    snopt::integer iprint = g_iprint;
+    snopt::snclose_(&iprint);
+    if (g_iprint) {
+      FortranUnitFactory::singleton().Release(g_iprint);
+      g_iprint = 0;
+    }
+  }
   template <typename Int>
   static void sninit(
       const char* name, int len, int summOn, char* cw, snopt::integer lencw,
@@ -1198,11 +1198,11 @@ void SolveWithGivenOptions(
       storage.cw(), storage.lencw(),
       storage.iw(), storage.leniw(),
       storage.rw(), storage.lenrw());
-  // ScopeExit guard([&storage]() {
-  //   Snopt::snend_(
-  //       storage.iw(), storage.leniw(),
-  //       storage.rw(), storage.lenrw());
-  // });
+  ScopeExit guard([&storage]() {
+    std::cout << "\n\tyo, I'm here!\n";
+    Snopt::snclose();
+    std::cout << "\n\tdone done done!\n";
+  });
 
   snopt::integer nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
@@ -1398,10 +1398,24 @@ void SolveWithGivenOptions(
   Snopt::snmema(&snopt_status, nF, nx, lenA, lenG, &mincw, &miniw, &minrw,
                 storage.cw(), storage.lencw(), storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw());
+
   // TODO(jwnimmer-tri) Check snopt_status for errors.
+  if (mincw > storage.lencw()) {
+    mincw = storage.lencw();
+    storage.resize_cw(mincw);
+    const std::string option = "Total character workspace";
+    snopt::integer errors;
+    Snopt::snseti(
+        option.c_str(), option.length(), storage.lencw(), &errors,
+        storage.cw(), storage.lencw(),
+        storage.iw(), storage.leniw(),
+        storage.rw(), storage.lenrw());
+    // TODO(hongkai.dai): report the error in SnoptSolverDetails.
+  }
   if (miniw > storage.leniw()) {
+    miniw = storage.leniw();
     storage.resize_iw(miniw);
-    const std::string option = "Total int workspace";
+    const std::string option = "Total integer workspace";
     snopt::integer errors;
     Snopt::snseti(
         option.c_str(), option.length(), storage.leniw(), &errors,
@@ -1411,6 +1425,7 @@ void SolveWithGivenOptions(
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   if (minrw > storage.lenrw()) {
+    minrw = storage.lenrw();
     storage.resize_rw(minrw);
     const std::string option = "Total real workspace";
     snopt::integer errors;
@@ -1443,6 +1458,11 @@ void SolveWithGivenOptions(
   }
 
   Eigen::VectorXd x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
+  std::cout << "\n\tSolution: ";
+  for (int i=0; i<x_val.size(); i++)
+    std::cout << x_val[i] << " ";
+  std::cout << std::endl;
+
   // Scale solution back
   for (const auto& member : scale_map) {
     x_val(member.first) *= member.second;
@@ -1452,6 +1472,8 @@ void SolveWithGivenOptions(
   SetMathematicalProgramResult(
       prog, snopt_status, x_val, bb_con_dual_variable_indices,
       constraint_dual_start_index, objective_constant, result);
+
+  std::cout << "\n\tSo far, so good!\n";
 }
 
 }  // namespace
@@ -1487,6 +1509,8 @@ void SnoptSolver::DoSolve(const MathematicalProgram& prog,
   SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
                         int_options, merged_options.GetOptionsDouble(id()),
                         merged_options.get_print_file_name(), result);
+
+  std::cout << "\n\tDang!\n";
 }
 
 bool SnoptSolver::is_bounded_lp_broken() {
