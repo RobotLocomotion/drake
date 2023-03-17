@@ -172,6 +172,7 @@ struct SnoptImpl<false> {
     }
     snopt::integer iprint = static_cast<snopt::integer>(g_iprint);
     snopt::integer summ_on = static_cast<snopt::integer>(summOn);
+    std::cout << "\n\tlencw: " << lencw << ", leniw: " << leniw <<  ", lenrw: " << lenrw << "\n";
     snopt::sninit_(&iprint, &summ_on, cw, &lencw, iw, &leniw, rw, &lenrw, 8 * lencw);
   }
   // Turn clang-format off for readability.
@@ -190,10 +191,12 @@ struct SnoptImpl<false> {
       snopt::integer* inform, snopt::integer* ns, snopt::integer* ninf, double* sinf,
       snopt::integer* mincw, snopt::integer* miniw, snopt::integer* minrw,
       char* cw, snopt::integer lencw,
-      Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw) {
-        snopt::integer nxname = 1, nFname = 1, npname = strlen(name);
+      Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw,
+      snopt::integer nxname, snopt::integer nFname) {
+        snopt::integer npname = strlen(name);
         char xnames[8 * 1];  // should match nxname
         char Fnames[8 * 1];  // should match nFname
+  std::cout << "\n\tCheck 1-1\n";
     snopt::snopta_(
          &start,
          &nf, &n, &nxname, &nFname, &objadd, &objrow,
@@ -212,6 +215,7 @@ struct SnoptImpl<false> {
          cw, &lencw, iw, &leniw, rw, &lenrw,
          cw, &lencw, iw, &leniw, rw, &lenrw,
          npname, 8 * nxname, 8 * nFname, 8 * lencw, 8 * lencw);
+  std::cout << "\n\tCheck 1-2\n";
   }
   // clang-format on
   template <typename Int>
@@ -220,9 +224,9 @@ struct SnoptImpl<false> {
       snopt::integer nf, snopt::integer n, snopt::integer neA, snopt::integer neG,
       snopt::integer* mincw, snopt::integer* miniw, snopt::integer* minrw,
       char* cw, snopt::integer lencw, Int* iw, snopt::integer leniw,
-      double* rw, snopt::integer lenrw) {
-        snopt::integer nxname = 1, nFname = 1;
-    snopt::snmema_(info, &nf, &n, &nxname, &nFname, &neA, &neG, mincw, miniw, minrw,
+      double* rw, snopt::integer lenrw,
+      snopt::integer* nxname, snopt::integer* nFname) {
+    snopt::snmema_(info, &nf, &n, nxname, nFname, &neA, &neG, mincw, miniw, minrw,
                    cw, &lencw, iw, &leniw, rw, &lenrw, 8 * lencw);
   }
   template <typename Int>
@@ -377,21 +381,21 @@ class WorkspaceStorage {
   explicit WorkspaceStorage(const SnoptUserFunInfo* user_info)
       : user_info_(user_info) {
     DRAKE_DEMAND(user_info_ != nullptr);
-    iw_.resize(500);
-    rw_.resize(500);
-    cw_.resize(8 * 500);
+    iw_.resize(500 * 1000);
+    rw_.resize(500 * 1000);
+    cw_.resize(500);
   }
 
   snopt::integer* iw() { return reinterpret_cast<snopt::integer*>(iw_.data()); }
-  snopt::integer leniw() const { return iw_.size(); }
+  int leniw() const { return iw_.size(); }
   void resize_iw(int size) { iw_.resize(size); }
 
   double* rw() { return rw_.data(); }
-  snopt::integer lenrw() const { return rw_.size(); }
+  int lenrw() const { return rw_.size(); }
   void resize_rw(int size) { rw_.resize(size); }
 
   char* cw() { return cw_.data(); }
-  snopt::integer lencw() const { return cw_.size(); }
+  int lencw() const { return cw_.size(); }
   void resize_cw(int size) { cw_.resize(size); }
 
   int* iu() { return user_info_->iu(); }
@@ -623,10 +627,14 @@ void EvaluateAllNonlinearCosts(
   }
 }
 
-void EvaluateCostsConstraints(const SnoptUserFunInfo& info, int n, double x[],
-                              double F[], double G[]) {
+void EvaluateCostsConstraints(
+    const SnoptUserFunInfo& info, int n, double x[], double F[], double G[]) {
+  std::cout << "\n\tUSRFUN 2!\n";
+  std::cout << "info: " << info.leniu() << "\n";
   const MathematicalProgram& current_problem = info.mathematical_program();
-  const auto& scale_map = current_problem.GetVariableScaling();
+  std::cout << "\n\tUSRFUN 3!\n";
+  const auto & scale_map = current_problem.GetVariableScaling();
+  std::cout << "\n\tUSRFUN 4!\n";
 
   Eigen::VectorXd xvec(n);
   for (int i = 0; i < n; i++) {
@@ -689,6 +697,18 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::integer iu[], snopt::integer* leniu,
                   snopt::doublereal ru[], snopt::integer* lenru) {
   SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
+  // SnoptUserFunInfo& snopt_userfun_info = NULL;
+  // {
+  //   char* const p_snopt_userfun_info =
+  //       reinterpret_cast<char*>(&snopt_userfun_info);
+  //   char const* const cu_snopt_userfun_info = cu + 8 * 500;
+  //   std::copy(cu_snopt_userfun_info,
+  //             cu_snopt_userfun_info + sizeof(snopt_userfun_info),
+  //             p_snopt_userfun_info);
+  // }
+  // SnoptUserFunInfo& snopt_userfun_info
+  std::cout << "\n\tUSRFUN 1!\n";
+
   try {
     EvaluateCostsConstraints(info, *n, x, F, G);
   } catch (const std::exception& e) {
@@ -698,6 +718,8 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     // The SNOPT manual says "Set Status < -1 if you want snOptA to stop."
     *Status = -2;
   }
+
+  std::cout << "\n\tUSRFUN X!\n";
   return 0;
 }
 
@@ -1199,10 +1221,23 @@ void SolveWithGivenOptions(
       storage.iw(), storage.leniw(),
       storage.rw(), storage.lenrw());
   ScopeExit guard([&storage]() {
-    std::cout << "\n\tyo, I'm here!\n";
     Snopt::snclose();
     std::cout << "\n\tdone done done!\n";
   });
+
+    // // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
+    // // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
+    // // expressed in Fortran array slicing.  Use the space to pass the pointer
+    // // to SnoptUserFunInfo.
+    // Snopt::snseti("User character workspace", 501);
+    // {
+    //   char const* const p_snopt_userfun_info =
+    //       reinterpret_cast<char*>(&snopt_userfun_info);
+    //   char* const cu_snopt_userfun_info = storage.cw() + 8 * 500;
+    //   std::copy(p_snopt_userfun_info,
+    //             p_snopt_userfun_info + sizeof(snopt_userfun_info),
+    //             cu_snopt_userfun_info);
+    // }
 
   snopt::integer nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
@@ -1395,13 +1430,19 @@ void SolveWithGivenOptions(
   // Reallocate int and real workspace.
   snopt::integer mincw, miniw, minrw;
   snopt::integer snopt_status{0};
+  snopt::integer nxname = 1, nFname = 1;
   Snopt::snmema(&snopt_status, nF, nx, lenA, lenG, &mincw, &miniw, &minrw,
                 storage.cw(), storage.lencw(), storage.iw(), storage.leniw(),
-                storage.rw(), storage.lenrw());
+                storage.rw(), storage.lenrw(), &nxname, &nFname);
 
+  std::cout << "\n\n\tlencw: " << storage.lencw()
+            << ", leniw: " << storage.leniw() << ", lenrw: " << storage.lenrw() << "\n";
+  std::cout << "\n\tmincw: " << mincw << ", miniw: " << miniw <<  ", minrw: " << minrw << "\n";
+
+  std::cout << "\n\tCheck 1\n";
   // TODO(jwnimmer-tri) Check snopt_status for errors.
   if (mincw > storage.lencw()) {
-    mincw = storage.lencw();
+    // mincw = storage.lencw();
     storage.resize_cw(mincw);
     const std::string option = "Total character workspace";
     snopt::integer errors;
@@ -1412,9 +1453,12 @@ void SolveWithGivenOptions(
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
+  std::cout << "\n\tCheck 2\n";
   if (miniw > storage.leniw()) {
-    miniw = storage.leniw();
+    // miniw = storage.leniw();
+    std::cout << "\n\tsize iw 1: " << storage.leniw() << "\n";
     storage.resize_iw(miniw);
+    std::cout << "\n\tsize iw 2: " << storage.leniw() << "\n";
     const std::string option = "Total integer workspace";
     snopt::integer errors;
     Snopt::snseti(
@@ -1424,8 +1468,9 @@ void SolveWithGivenOptions(
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
+  std::cout << "\n\tCheck 3\n";
   if (minrw > storage.lenrw()) {
-    minrw = storage.lenrw();
+    // minrw = storage.lenrw();
     storage.resize_rw(minrw);
     const std::string option = "Total real workspace";
     snopt::integer errors;
@@ -1436,6 +1481,8 @@ void SolveWithGivenOptions(
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
+  std::cout << "\n\tCheck 4\n";
+
   // Actual solve.
   char problem_name[] = "drake_problem";
   // clang-format off
@@ -1451,7 +1498,7 @@ void SolveWithGivenOptions(
                 &snopt_status, &nS, &nInf, &sInf, &mincw, &miniw, &minrw,
                 storage.cw(), storage.lencw(),
                 storage.iw(), storage.leniw(),
-                storage.rw(), storage.lenrw());
+                storage.rw(), storage.lenrw(), nxname, nFname);
   // clang-format on
   if (user_info.userfun_error_message().has_value()) {
     throw std::runtime_error(*user_info.userfun_error_message());
