@@ -54,7 +54,10 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
 
  private:
   // TODO(Alexandre.Amice) make all members const.
-  const symbolic::Variable mu;
+  // The variable parametrizing the path. We will enforce that a certain
+  // polynomial is positive for μ ∈ [0,1].
+  const symbolic::Variable mu_;
+
   // A polynomial q(μ,y) = ∑ f(μ)yᵢyⱼ (where μ is univariate and y is
   // multivariate) is positive on the interval μ ∈ [0,1] if and only if there
   // exists biforms λ(μ,y) = ∑ ϕᵢ²(μ,y) and ν(μ,y) = ∑ ψᵢ²(μ,y) such that
@@ -63,7 +66,9 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // deg(ϕᵢ, y) = 1, and and deg(ψᵢ, y) = 1. In the first case
   // deg(ψᵢ, μ) ≤ d - 1, and in the second deg(ψᵢ, μ) ≤ d. If deg(poly,μ) > 0 we
   // construct the polynomial p_(μ,y) = poly(μ,y)-q(μ,y) which we will later
-  // constrain to be equal to 0.
+  // constrain to be equal to 0. If deg(poly,μ) = 0, then either q is either
+  // constrained to be a positive scalar if it has no other indeterminates, or
+  // it is constrained to be a sum-of-squares if it is a quadratic form in y.
   symbolic::Polynomial p_;
 
   // The subset of the decision variables in p_ which must be evaluated before
