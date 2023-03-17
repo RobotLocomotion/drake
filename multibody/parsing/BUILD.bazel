@@ -600,6 +600,12 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "package_downloader_stress_test",
+    data = ["package_downloader.py"],
+    tags = ["cpu:8"],
+)
+
 drake_cc_googletest(
     name = "package_map_test",
     data = [

@@ -18,12 +18,14 @@ will delete and/or overwrite these files and/or directories:
 import hashlib
 import json
 import logging
-import os.path
+from pathlib import Path
+import os
 import urllib.parse
 import urllib.request as request
 import shutil
 import sys
 import tempfile
+from typing import List
 
 
 def _fail(message):
@@ -31,8 +33,8 @@ def _fail(message):
     sys.exit(1)
 
 
-def _run(*, temp_dir, package_name, urls, sha256, output_dir,
-         archive_type=None, strip_prefix=None):
+def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
+         output_dir: Path, archive_type: str = None, strip_prefix: str = None):
     """Runs the download and extract logic, assuming already-validated args.
 
     Args:
@@ -44,9 +46,9 @@ def _run(*, temp_dir, package_name, urls, sha256, output_dir,
         sha256: The cryptographic checksum of the file to be downloaded, as a
             64-character hexadecimal string.
         output_dir: The root directory to extract into. Its parent must exist,
-            but the output_dir itself must not already exist. This script will
-            create the output_dir only if the download and extraction was
-            successful, i.e., as a single atomic transaction.
+            but the output_dir itself generally will not already exist. This
+            script will create the output_dir if and only if the download and
+            extraction was successful, i.e., as a single atomic transaction.
         archive_type: The archive type of the downloaded file. When not given,
             the archive type is determined from the file extension of the URL.
         strip_prefix: A directory prefix to strip from the extracted files. If
@@ -54,24 +56,29 @@ def _run(*, temp_dir, package_name, urls, sha256, output_dir,
             and inaccessible.
     """
     # Add a README nearby to help explain the fetched data.
-    with open(f"{output_dir}.README", "wt", encoding="utf-8") as f:
-        f.write(f"Our sibling directory ./{os.path.basename(output_dir)} "
-                f"contains package://{package_name}.\n\n")
-        f.write("It was downloaded by Drake from one of these URLs:\n")
+    # To avoid stomping on concurrently-running download of the same package
+    # from another process, we need to write into a tempfile and then rename
+    # it into place as a final step. (Renames are atomic; writes are not.)
+    readme = output_dir.with_name(output_dir.name + ".README")
+    fd, temp = tempfile.mkstemp(
+        dir=readme.parent,
+        prefix=f"temp.{readme.name}.")
+    temp = Path(temp)
+    with os.fdopen(fd, "w") as f:
+        f.write(f"Our sibling directory ./{output_dir.name} contains "
+                f"package://{package_name}.\n\n"
+                f"It was downloaded by Drake from one of these URLs:\n")
         for url in urls:
             f.write(f" {url}\n")
-
-    # Erase any spurious lingering data from a prior attempt at extraction.
-    output_dir_tmp = f"{output_dir}.tmp"
-    if os.path.exists(output_dir_tmp):
-        shutil.rmtree(output_dir_tmp)
+    temp.chmod(0o644)  # Upgrade permissions to 'rw-r--r--' (from 'rw-------').
+    temp.rename(readme)
 
     # Try each url in turn.
     success = False
     errors = []
     for url in urls:
         basename = urllib.parse.urlparse(url).path.split("/")[-1] or "empty"
-        temp_filename = os.path.join(temp_dir, basename)
+        temp_filename = temp_dir / basename
         hasher = hashlib.sha256()
         with open(temp_filename, "wb") as f:
             try:
@@ -89,7 +96,6 @@ def _run(*, temp_dir, package_name, urls, sha256, output_dir,
         if download_sha256 == sha256:
             success = True
             break
-        os.remove(temp_filename)
         errors.append(
             f"Candidate {url} failed:\n"
             f"Checksum mismatch; was {download_sha256} but wanted {sha256}.")
@@ -99,18 +105,36 @@ def _run(*, temp_dir, package_name, urls, sha256, output_dir,
         messages = "\n\n".join(errors)
         _fail(f"All downloads failed:\n\n{messages}")
 
-    # Unpack and atomically move into place.
-    shutil.unpack_archive(filename=temp_filename, extract_dir=output_dir_tmp,
+    # Unpack and check that the strip_prefix was valid.
+    unpack_dir = temp_dir / "unpack"
+    shutil.unpack_archive(filename=temp_filename, extract_dir=unpack_dir,
                           format=archive_type)
-    src = os.path.join(output_dir_tmp, strip_prefix or "")
-    if not os.path.exists(src):
+    unpack_package_dir = unpack_dir / (strip_prefix or "")
+    if not unpack_package_dir.is_dir():
         _fail(f"The strip_prefix='{strip_prefix}' does not exist "
-              f"within {output_dir_tmp}")
-    os.rename(src=src, dst=output_dir)
-    try:
-        shutil.rmtree(output_dir_tmp)
-    except OSError:
-        pass
+              f"within {basename}")
+
+    # Now comes the really tricky part. Moving a directory is atomic but only
+    # on the same filesystem! We need to move it from the temporary directory
+    # into the output directory (under a temporary name), and then atomically
+    # rename it back to the real name.
+    with tempfile.TemporaryDirectory(
+            dir=output_dir.parent,
+            prefix=f"temp.{output_dir.name}.") as output_dir_temp:
+        move_destination = Path(output_dir_temp) / "incoming"
+        shutil.move(src=unpack_package_dir, dst=move_destination)
+        try:
+            move_destination.rename(output_dir)
+        except OSError:
+            # This can happen if some *other* downloader process succeeded with
+            # its download & extract & move & rename while we were still only
+            # partway done. If that occurs, then the other downloader succeeded
+            # and we can declare "mission accomplished" for ourself, too.
+            pass
+
+    # Double-check that we've met our victory condition: the output_dir that we
+    # were supposed to create using the downloaded archive actually exists now.
+    assert output_dir.is_dir()
 
 
 def _main(argv):
@@ -130,12 +154,11 @@ def _main(argv):
     assert len(sha256) == 64
     int(f"0x{sha256}", 16)
     assert "/drake/package_map/" in output_dir, output_dir
-    assert not os.path.exists(output_dir), output_dir
-    kwargs["output_dir"] = os.path.realpath(output_dir)
+    kwargs["output_dir"] = Path(output_dir).resolve()
 
     # Download and extract.
     with tempfile.TemporaryDirectory(prefix="drake_downloader_") as temp_dir:
-        _run(temp_dir=temp_dir, **kwargs)
+        _run(temp_dir=Path(temp_dir), **kwargs)
 
 
 if __name__ == "__main__":
