@@ -22,9 +22,9 @@ void ThrowIfFilesMissing(const FileFieldsMap& file_fields) {
   }
 
   if (missing_files.size() > 0) {
-    throw std::runtime_error(
-        fmt::format("Provided file fields had missing file(s): {}.",
-                    fmt::join(missing_files, ", ")));
+    throw std::runtime_error(fmt::format(
+        "RenderClient: Provided file fields had missing file(s): {}.",
+        fmt::join(missing_files, ", ")));
   }
 }
 
