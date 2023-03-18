@@ -1,8 +1,3 @@
-# Import some helper configurations.
-import %workspace%/tools/cc_toolchain/bazel.rc
-import %workspace%/tools/dynamic_analysis/bazel.rc
-import %workspace%/tools/lint/bazel.rc
-
 # Disable native Python rules in Bazel versions before 4.0.
 build --incompatible_load_python_rules_from_bzl=yes
 

@@ -1,0 +1,24 @@
+workspace(name = "drake")
+
+load("//tools/workspace:default.bzl", "add_default_workspace")
+load("//tools/workspace/python:repository.bzl", "python_repository")
+load("//:cmake/external/workspace/conversion.bzl", "split_cmake_list")
+
+python_repository(
+    name = "python",
+    linux_interpreter_path = "@Python_EXECUTABLE@",
+    macos_interpreter_path = "@Python_EXECUTABLE@",
+)
+
+register_toolchains(
+    "@cmake_python//:cmake_python_toolchain",
+)
+
+BAZEL_WORKSPACE_EXCLUDES = split_cmake_list("@BAZEL_WORKSPACE_EXCLUDES@")
+
+@BAZEL_WORKSPACE_EXTRA@
+
+add_default_workspace(
+    repository_excludes = ["python"] + BAZEL_WORKSPACE_EXCLUDES,
+    toolchain_excludes = ["py"],
+)

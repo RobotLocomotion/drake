@@ -1,3 +1,7 @@
+# Use C++17 by default.
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+
 build --fission=dbg
 build --features=per_object_debug_info
 
