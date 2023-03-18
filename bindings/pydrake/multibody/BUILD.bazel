@@ -340,6 +340,7 @@ drake_py_unittest(
     name = "plant_test",
     data = [
         ":models",
+        "//examples/multibody/four_bar:models",
         "//manipulation/models/iiwa_description:models",
         "//manipulation/models/wsg_50_description:models",
         "//multibody:models",

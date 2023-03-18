@@ -2181,6 +2181,88 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.num_constraints(), 1)
 
     @numpy_compare.check_all_types
+    def test_distance_constraint_api(self, T):
+        MultibodyPlantConfig()
+        config = MultibodyPlantConfig(time_step=0.01,
+                                      discrete_contact_solver="sap")
+        self.assertEqual(config.time_step, 0.01)
+        self.assertEqual(config.discrete_contact_solver, "sap")
+
+        # Create a MultibodyPlant of the four_bar model.
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlant(config, builder)
+        self.assertIsNotNone(plant)
+        self.assertIsNotNone(scene_graph)
+
+        four_bar_sdf_path = FindResourceOrThrow(
+            "drake/examples/multibody/four_bar/four_bar.sdf")
+
+        parser = Parser(plant)
+        parser.AddModels(file_name=four_bar_sdf_path)
+        # Add distance constraint.
+        link_B = plant.GetBodyByName("B")
+        link_Bc_bushing = plant.GetFrameByName("Bc_bushing")
+        p_AP = link_Bc_bushing.GetFixedPoseInBodyFrame().translation()
+        link_C = plant.GetBodyByName("C")
+        link_Cb_bushing = plant.GetFrameByName("Cb_bushing")
+        p_BQ = link_Cb_bushing.GetFixedPoseInBodyFrame().translation()
+
+        dist_0_index = plant.AddDistanceConstraint(
+            body_A=link_B, p_AP=p_AP, body_B=link_C, p_BQ=p_BQ, distance=0.01)
+        dist_1_index = plant.AddDistanceConstraint(
+            body_A=link_B, p_AP=[0, 0, 0], body_B=link_C,
+            p_BQ=p_BQ, distance=4, stiffness=1e5, damping=0)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(dist_0_index, ConstraintIndex(0))
+        self.assertEqual(dist_1_index, ConstraintIndex(1))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 2)
+
+    @numpy_compare.check_all_types
+    def test_ball_constraint_api(self, T):
+        MultibodyPlantConfig()
+        config = MultibodyPlantConfig(time_step=0.01,
+                                      discrete_contact_solver="sap")
+        self.assertEqual(config.time_step, 0.01)
+        self.assertEqual(config.discrete_contact_solver, "sap")
+
+        # Create a MultibodyPlant of the four_bar model.
+        builder = DiagramBuilder_[float]()
+        plant, scene_graph = AddMultibodyPlant(config, builder)
+        self.assertIsNotNone(plant)
+        self.assertIsNotNone(scene_graph)
+
+        four_bar_sdf_path = FindResourceOrThrow(
+            "drake/examples/multibody/four_bar/four_bar.sdf")
+
+        parser = Parser(plant)
+        parser.AddModels(file_name=four_bar_sdf_path)
+        # Add ball constraint.
+        link_B = plant.GetBodyByName("B")
+        link_Bc_bushing = plant.GetFrameByName("Bc_bushing")
+        p_AP = link_Bc_bushing.GetFixedPoseInBodyFrame().translation()
+        link_C = plant.GetBodyByName("C")
+        link_Cb_bushing = plant.GetFrameByName("Cb_bushing")
+        p_BQ = link_Cb_bushing.GetFixedPoseInBodyFrame().translation()
+
+        ball_index = plant.AddBallConstraint(
+            body_A=link_B, p_AP=p_AP, body_B=link_C, p_BQ=p_BQ)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(ball_index, ConstraintIndex(0))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         MultibodyForces = MultibodyForces_[T]

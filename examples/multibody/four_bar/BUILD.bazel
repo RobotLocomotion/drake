@@ -3,13 +3,18 @@ load(
     "drake_cc_binary",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
+load("//tools/skylark:drake_data.bzl", "models_filegroup")
+load("//tools/install:install_data.bzl", "install_data")
 
-filegroup(
+package(default_visibility = ["//visibility:public"])
+
+models_filegroup(
     name = "models",
-    srcs = glob([
-        "**/*.sdf",
-    ]),
-    visibility = ["//:__pkg__"],
+)
+
+install_data(
+    name = "install_data",
+    data = [":models"],
 )
 
 drake_cc_binary(
