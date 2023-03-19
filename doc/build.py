@@ -9,7 +9,7 @@ import sys
 import urllib.parse
 
 from bazel_tools.tools.python.runfiles import runfiles
-import lxml.etree as ET
+import xml.etree.ElementTree as ET
 
 from drake.doc.defs import check_call, main
 
@@ -134,9 +134,9 @@ def _build_sitemap(site_dir: str) -> None:
         loc = ET.SubElement(url, "loc")
         loc.text = location
     sitemap = ET.ElementTree(urlset)
+    ET.indent(sitemap)
     sitemap.write(os.path.join(site_dir, "sitemap.xml"),
                   encoding="utf-8",
-                  pretty_print=True,
                   xml_declaration=True)
 
 

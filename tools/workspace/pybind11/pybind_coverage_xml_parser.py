@@ -1,15 +1,22 @@
-from lxml import etree as ET
-import pandas
-import os
 import logging
+import os
+import xml.etree.ElementTree as ET
+
+import pandas
 
 
 XPATHS = {
-    "class_decl": ".//Node[@kind='CursorKind.CLASS_DECL' or "
-    "@kind='CursorKind.CLASS_TEMPLATE' or @kind='CursorKind.STRUCT_DECL']"
-    "[@ignore='0']",
-    "file_names": ".//Node",
-    "doc_var_xpath": ".//Node[@ignore='0' and @doc_var]",
+    "class_decl": [
+        ".//Node[@kind='CursorKind.CLASS_DECL'][@ignore='0']",
+        ".//Node[@kind='CursorKind.CLASS_TEMPLATE'][@ignore='0']",
+        ".//Node[@kind='CursorKind.STRUCT_DECL'][@ignore='0']",
+    ],
+    "file_names": [
+        ".//Node",
+    ],
+    "doc_var_xpath": [
+        ".//Node[@ignore='0'][@doc_var]"
+    ],
 }
 
 all_kinds = [
@@ -162,7 +169,9 @@ class ClassCoverage:
         """Writes class-wise coverage to a CSV file.
 
         """
-        class_nodes = self.xml_root.xpath(XPATHS["class_decl"])
+        class_nodes = []
+        for xpath in XPATHS["class_decl"]:
+            class_nodes.extend(self.xml_root.findall(xpath))
         self.df = pandas.DataFrame(
                 columns=["ClassName", "Coverage"] + all_kinds)
         self.get_class_coverage(class_nodes)
@@ -181,7 +190,9 @@ class ClassCoverage:
 
         for c in class_nodes:
             # All nodes which are not ignored and have a doc_var
-            doc_var_nodes = c.xpath(XPATHS["doc_var_xpath"])
+            doc_var_nodes = []
+            for xpath in XPATHS["doc_var_xpath"]:
+                doc_var_nodes.extend(c.findall(xpath))
             row = CommonUtils.get_node_coverage(
                     doc_var_nodes, self.pybind_strings)
 
@@ -191,6 +202,7 @@ class ClassCoverage:
 
         self.df_pruned = CommonUtils.prune_dataframe(
                 self.df, ["ClassName", "Coverage"])
+        self.df_pruned = self.df_pruned.sort_values(by=["ClassName"])
 
 
 class FileCoverage:
@@ -216,7 +228,9 @@ class FileCoverage:
         """Writes file-wise coverage to a CSV file.
 
         """
-        file_nodes = self.xml_root.xpath(XPATHS["doc_var_xpath"])
+        file_nodes = []
+        for xpath in XPATHS["doc_var_xpath"]:
+            file_nodes.extend(self.xml_root.findall(xpath))
         self.df = pandas.DataFrame(
                 columns=["DirCoverage", "FileName", "Coverage"] + all_kinds)
 
@@ -300,7 +314,7 @@ class FileCoverage:
         filenames, coverage = df.loc[:, "FileName"], df.loc[:, "Coverage"]
         file_coverage = dict(zip(filenames, coverage))
         root = self.make_tree(file_coverage)
-        XP = root.xpath
+        XP = root.findall
         dirname = None
         final_row = {}
 
@@ -312,10 +326,12 @@ class FileCoverage:
             if dirname != os.path.dirname(str(row["FileName"])):
                 dirname = os.path.dirname(str(row["FileName"]))
                 total_num = sum([
-                        int(n) for n in XP('.//{}/*/@num'.format(dirname))
+                        int(n.get("num"))
+                        for n in XP('.//{}/*/[@num]'.format(dirname))
                     ])
                 total_den = sum([
-                        int(d) for d in XP('.//{}/*/@den'.format(dirname))
+                        int(d.get("den"))
+                        for d in XP('.//{}/*/[@den]'.format(dirname))
                     ])
             row["DirCoverage"] = Coverage(total_num, total_den)
 
