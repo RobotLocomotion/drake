@@ -87,11 +87,3 @@ build:everything --define=WITH_MOSEK=ON
 build:snopt --define=WITH_SNOPT=ON
 build:packaging --define=WITH_SNOPT=ON
 build:everything --define=WITH_SNOPT=ON
-
-# -- Options for explicitly using GCC.
-common:gcc --repo_env=CC=gcc
-common:gcc --repo_env=CXX=g++
-build:gcc --action_env=CC=gcc
-build:gcc --action_env=CXX=g++
-build:gcc --host_action_env=CC=gcc
-build:gcc --host_action_env=CXX=g++

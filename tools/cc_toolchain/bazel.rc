@@ -1,10 +1,6 @@
 # Disable ccache due to incompatibility with Bazel.
 build --action_env=CCACHE_DISABLE=1
 
-# Add C++17 compiler flags.
-build --cxxopt=-std=c++17
-build --host_cxxopt=-std=c++17
-
 # When compiling with Drake as the main WORKSPACE (i.e., if and only if this
 # rcfile is loaded), we enable -Werror by default for Drake's *own* targets,
 # but not for our externals.

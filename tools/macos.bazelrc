@@ -16,7 +16,7 @@ build:ubsan_everything --copt=-Wno-macro-redefined
 # https://github.com/bazelbuild/bazel/issues/14294
 build --notrim_test_configuration
 
-# -- Options for explicitly using Clang.
+# Options for explicitly using Clang.
 common:clang --repo_env=CC=clang
 common:clang --repo_env=CXX=clang++
 build:clang --action_env=CC=clang
