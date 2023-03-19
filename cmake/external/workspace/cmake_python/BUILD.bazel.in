@@ -1,0 +1,20 @@
+# -*- bazel -*-
+
+load("@rules_python//python:defs.bzl", "py_runtime", "py_runtime_pair")
+
+py_runtime(
+    name = "cmake_python_runtime",
+    interpreter_path = "@Python_EXECUTABLE@",
+    python_version = "PY3",
+)
+
+py_runtime_pair(
+    name = "cmake_python_runtime_pair",
+    py3_runtime = ":cmake_python_runtime",
+)
+
+toolchain(
+    name = "cmake_python_toolchain",
+    toolchain = ":cmake_python_runtime_pair",
+    toolchain_type = "@rules_python//python:toolchain_type",
+)

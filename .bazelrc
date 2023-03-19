@@ -1,5 +1,10 @@
-# Import legacy .bazelrc file.
+# Import default settings (also shared with CMake builds).
 import %workspace%/tools/bazel.rc
+
+# Import some helper configurations (not shared with CMake builds).
+import %workspace%/tools/cc_toolchain/bazel.rc
+import %workspace%/tools/dynamic_analysis/bazel.rc
+import %workspace%/tools/lint/bazel.rc
 
 # Import environment-specific configuration.
 import %workspace%/gen/environment.bazelrc
