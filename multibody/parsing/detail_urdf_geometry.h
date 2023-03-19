@@ -140,8 +140,9 @@ constexpr int kDefaultNumericSuffixLimit = 10000;
  can be used by later visual elements.  Material definitions may be
  repeated if the material properties are identical.
  @param[in,out] geometry_names The list of geometry names already used within
- the current MbP body (i.e., link), so that this function can be sure not to
- reuse an already-used name. The name used by this geometry is added to it.
+ the current MbP body (i.e., link) with the illustration role, so that this
+ function can be sure not to reuse an already-used name. The name used by this
+ geometry is added to it.
  @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
                                       numeric suffixes.
 */
@@ -218,8 +219,9 @@ std::optional<geometry::GeometryInstance> ParseVisual(
  @param[in] root_dir The root directory of the containing URDF file.
  @param[in] node The node corresponding to the <collision> tag.
  @param[in,out] geometry_names The list of geometry names already used within
- the current MbP body (i.e., link), so that this function can be sure not to
- reuse an already-used name. The name used by this geometry is added to it.
+ the current MbP body (i.e., link) with the proximity role, so that this
+ function can be sure not to reuse an already-used name. The name used by this
+ geometry is added to it.
  @param[in] numeric_name_suffix_limit (optional) The upper bound for choosing
                                       numeric suffixes.
 */

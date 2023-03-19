@@ -244,8 +244,8 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
 
   if (w_.plant->geometry_source_is_registered()) {
     const RigidBody<double>& body = *body_pointer;
-    std::unordered_set<std::string> geometry_names;
 
+    std::unordered_set<std::string> geometry_names;
     for (XMLElement* visual_node = node->FirstChildElement("visual");
          visual_node;
          visual_node = visual_node->NextSiblingElement("visual")) {
@@ -262,6 +262,7 @@ void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
           *geometry_instance->illustration_properties());
     }
 
+    geometry_names.clear();
     for (XMLElement* collision_node = node->FirstChildElement("collision");
          collision_node;
          collision_node = collision_node->NextSiblingElement("collision")) {

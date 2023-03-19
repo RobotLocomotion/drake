@@ -1099,6 +1099,24 @@ TEST_F(UrdfParsedGeometryTest, VisualGeometryParsing) {
       geometry::Role::kPerception);
 }
 
+TEST_F(UrdfParserTest, TestDuplicateVisualName) {
+  // The visual and collision namespaces are distinct; you can use the same name
+  // for both without triggering any warnings related to renaming.
+  std::string robot = R"""(
+    <robot name='a'>
+      <link name='b'>
+        <visual name='hello'>
+          <geometry><box size='1 2 3'/></geometry>
+        </visual>
+        <collision name='hello'>
+          <geometry><box size='1 2 3'/></geometry>
+        </collision>
+      </link>
+    </robot>)""";
+  EXPECT_NE(AddModelFromUrdfString(robot, ""), std::nullopt);
+  // The test criterion is no warnings, which is already automatically checked.
+}
+
 TEST_F(UrdfParserTest, EntireInertialTagOmitted) {
   // Test that parsing a link with no inertial tag yields the expected result
   // (mass = 0, ixx = ixy = ixz = iyy = iyz = izz = 0).
