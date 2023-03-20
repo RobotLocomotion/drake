@@ -2244,6 +2244,10 @@ class TestPlant(unittest.TestCase):
             user_to_joint_index_map=[sample_joint.index()])
         numpy_compare.assert_float_equal(Bj, np.array([[1.]]))
 
+        S = plant.MakeStateSelectorMatrix(
+            user_to_joint_index_map=[sample_joint.index()])
+        numpy_compare.assert_float_equal(S, np.mat("0 1.0 0 0; 0 0 0 1.0"))
+
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)
         copy.copy(forces)
