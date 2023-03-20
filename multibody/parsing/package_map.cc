@@ -14,13 +14,11 @@
 #include <drake_vendor/tinyxml2.h>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_path.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/text_logging.h"
-#include "drake/common/unused.h"
 
 namespace drake {
 namespace multibody {
@@ -31,16 +29,99 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
 namespace {
-struct PackageData {
-  /* Directory in which the manifest resides. */
-  std::string path;
 
-  /* Optional message declaring deprecation of the package. */
-  std::optional<std::string> deprecated_message;
+/* PackageData encapsulates everything we know about an added package:
+ - The settings that were given to us when it was added.
+ - A deprecation status that can be added after construction. */
+class PackageData {
+ public:
+  /* Declares a local package (with a local filesystem path). */
+  static PackageData MakeLocal(std::string path) {
+    PackageData result;
+    result.path_ = std::move(path);
+    return result;
+  }
+
+  // Supports copy and move.
+  PackageData(const PackageData&) = default;
+  PackageData(PackageData&&) = default;
+
+  // Does not support assignment.
+  void operator=(const PackageData&) = delete;
+
+  /* Returns true iff this package is deprecated. */
+  bool is_deprecated() const { return deprecation_.has_value(); }
+
+  /* Returns the (non-empty) deprecation message for this package, or nullopt
+  when it's not deprecated. */
+  const std::optional<std::string> get_deprecation() const {
+    return deprecation_;
+  }
+
+  /* Sets the deprecation status and message for this package; if deprecated
+  using an empty message, a default message will be provided instead. */
+  void set_deprecation(std::optional<std::string> new_value) {
+    if (new_value.has_value() && new_value->empty()) {
+      deprecation_ = "(no explanation given)";
+    } else {
+      deprecation_ = std::move(new_value);
+    }
+  }
+
+  /* Returns the path suitable for use in error messages. */
+  const std::string& display_path() const { return path_; }
+
+  /* Returns true iff `other` specifies a suitably identical package to `this`
+  such that we can fold the two together: the path specification
+  must match, but the deprecation or fetch status can differ. In
+  case they do not match, the error (if provided) will be reset to describe
+  the incompatibility. */
+  bool CanMerge(const PackageData& other, std::string* error = nullptr) const;
+
+  /* Merges `other` into `this`. Throws an exception if CanMerge() is false.
+  The `package_name` is non-functional (only used when reporting errors). */
+  void Merge(std::string_view package_name, const PackageData& other);
+
+  /* Returns the local filesystem path for this package.
+  TODO(jwnimmer-tri) We should fetch remote packages here. */
+  const std::string& GetPath() const { return path_; }
+
+ private:
+  PackageData() = default;
+
+  /* Directory in which the manifest resides. */
+  std::string path_;
+
+  /* Optional message declaring deprecation of the package. If it is non-nullopt
+  then it is also guaranteed to be non-empty. */
+  std::optional<std::string> deprecation_;
 };
+
 }  // namespace
 
 struct PackageMap::Impl {
+  /* Adds the given `package_name, data` pair to the map while guarding for
+  duplicates. Throws an exception if the package_name has already been added
+  with different details. */
+  void Emplace(std::string package_name, PackageData data) {
+    // Reject packages with the same name but different details.
+    auto iter = map.find(package_name);
+    if (iter != map.end()) {
+      std::string error;
+      if (!iter->second.CanMerge(data, &error)) {
+        throw std::runtime_error(fmt::format(
+            "PackageMap::Add() cannot add '{}' {}", package_name, error));
+      }
+      // The package already exists; since the new package cannot have a
+      // deprecation annotation yet, there's nothing more to do.
+      DRAKE_DEMAND(data.is_deprecated() == false);
+      return;
+    }
+
+    // Everything checks out, so we can add it now.
+    map.emplace_hint(iter, std::move(package_name), std::move(data));
+  }
+
   /* The key is the name of a ROS package and the value is a struct containing
   information about that package. */
   std::map<std::string, PackageData> map;
@@ -101,18 +182,57 @@ PackageMap PackageMap::MakeEmpty() {
 
 void PackageMap::Add(const std::string& package_name,
                      const std::string& package_path) {
-  if (!AddPackageIfNew(package_name, package_path)) {
+  drake::log()->trace("PackageMap.Add('{}', '{}')", package_name, package_path);
+
+  // Reject missing directories.
+  if (!fs::is_directory(package_path)) {
     throw std::runtime_error(fmt::format(
-        "PackageMap already contains package \"{}\" with path \"{}\" that "
-        "conflicts with provided path \"{}\"",
-        package_name, impl_->map.at(package_name).path, package_path));
+        "PackageMap::Add cannot add '{}' because directory '{}' does not exist",
+        package_name, package_path));
+  }
+
+  // Add it now. Emplace will handle rejection of duplicates.
+  impl_->Emplace(package_name, PackageData::MakeLocal(package_path));
+}
+
+bool PackageData::CanMerge(const PackageData& other, std::string* error) const {
+  // The paths must resolve to the same dir.
+  if (!fs::equivalent(this->path_, other.path_)) {
+    if (error != nullptr) {
+      *error = fmt::format(
+          "because the local paths are not equivalent ('{}' vs '{}')",
+          this->display_path(), other.display_path());
+    }
+    return false;
+  }
+  return true;
+}
+
+void PackageData::Merge(std::string_view package_name,
+                        const PackageData& other) {
+  // Check whether `this` and `other` specify equivalent paths.
+  std::string error;
+  if (!CanMerge(other, &error)) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap::AddMap cannot merge the package definition for '{}' {}",
+        package_name, error));
+  }
+
+  // The paths are equivalent. The only thing remaining to merge is the
+  // deprecation status. For that data, we'll take it from either party.
+  if (!this->is_deprecated() && other.is_deprecated()) {
+    set_deprecation(other.get_deprecation());
   }
 }
 
 void PackageMap::AddMap(const PackageMap& other_map) {
   for (const auto& [package_name, data] : other_map.impl_->map) {
-    Add(package_name, data.path);
-    SetDeprecated(package_name, data.deprecated_message);
+    auto iter = impl_->map.find(package_name);
+    if (iter == impl_->map.end()) {
+      impl_->map.emplace_hint(iter, package_name, data);
+    } else {
+      iter->second.Merge(package_name, data);
+    }
   }
 }
 
@@ -130,9 +250,8 @@ void PackageMap::Remove(const std::string& package_name) {
 
 void PackageMap::SetDeprecated(const std::string& package_name,
                                std::optional<std::string> deprecated_message) {
-  DRAKE_DEMAND(Contains(package_name));
-  impl_->map.at(package_name).deprecated_message =
-      std::move(deprecated_message);
+  DRAKE_THROW_UNLESS(Contains(package_name));
+  impl_->map.at(package_name).set_deprecation(std::move(deprecated_message));
 }
 
 int PackageMap::size() const {
@@ -141,15 +260,14 @@ int PackageMap::size() const {
 
 std::optional<std::string> PackageMap::GetDeprecated(
     const std::string& package_name) const {
-  DRAKE_DEMAND(Contains(package_name));
-  return impl_->map.at(package_name).deprecated_message;
+  DRAKE_THROW_UNLESS(Contains(package_name));
+  return impl_->map.at(package_name).get_deprecation();
 }
 
 std::vector<std::string> PackageMap::GetPackageNames() const {
   std::vector<std::string> package_names;
   package_names.reserve(impl_->map.size());
-  for (const auto& [package_name, data] : impl_->map) {
-    unused(data);
+  for (const auto& [package_name, _] : impl_->map) {
     package_names.push_back(package_name);
   }
   return package_names;
@@ -158,38 +276,34 @@ std::vector<std::string> PackageMap::GetPackageNames() const {
 const std::string& PackageMap::GetPath(
     const std::string& package_name,
     std::optional<std::string>* deprecated_message) const {
-  DRAKE_DEMAND(Contains(package_name));
-  const auto& package_data = impl_->map.at(package_name);
+  DRAKE_THROW_UNLESS(Contains(package_name));
+  const auto& data = impl_->map.at(package_name);
 
   // Check if we need to produce a deprecation warning.
   std::optional<std::string> warning;
-  if (package_data.deprecated_message.has_value()) {
-    if (package_data.deprecated_message->empty()) {
-      warning = fmt::format("Package \"{}\" is deprecated.", package_name);
-    } else {
-      warning = fmt::format("Package \"{}\" is deprecated: {}", package_name,
-                            *package_data.deprecated_message);
-    }
+  if (data.is_deprecated()) {
+    warning = fmt::format("Package '{}' is deprecated: {}", package_name,
+                          *data.get_deprecation());
   }
 
   // Copy the warning to the output parameter, or else the logger.
   if (deprecated_message != nullptr) {
-    *deprecated_message = warning;
+    *deprecated_message = std::move(warning);
   } else if (warning.has_value()) {
     drake::log()->warn("PackageMap: {}", *warning);
   }
 
-  return package_data.path;
+  return data.GetPath();
 }
 
 void PackageMap::PopulateFromFolder(const std::string& path) {
-  DRAKE_DEMAND(!path.empty());
+  DRAKE_THROW_UNLESS(!path.empty());
   CrawlForPackages(path);
 }
 
 void PackageMap::PopulateFromEnvironment(
     const std::string& environment_variable) {
-  DRAKE_DEMAND(!environment_variable.empty());
+  DRAKE_THROW_UNLESS(!environment_variable.empty());
   if (environment_variable == "ROS_PACKAGE_PATH") {
     throw std::logic_error(
         "PackageMap::PopulateFromEnvironment() must not be used to load a "
@@ -299,39 +413,10 @@ std::tuple<std::string, std::optional<std::string>> ParsePackageManifest(
 
 }  // namespace
 
-bool PackageMap::AddPackageIfNew(const std::string& package_name,
-                                 const std::string& path) {
-  DRAKE_DEMAND(!package_name.empty());
-  DRAKE_DEMAND(!path.empty());
-  // Don't overwrite entries in the map.
-  if (!Contains(package_name)) {
-    drake::log()->trace("PackageMap: Adding package://{}: {}", package_name,
-                        path);
-    if (!fs::is_directory(path)) {
-      throw std::runtime_error(fmt::format(
-          "Could not add package://{} to the search path because directory {} "
-          "does not exist",
-          package_name, path));
-    }
-    impl_->map.insert(make_pair(package_name, PackageData{path}));
-  } else {
-    // Don't warn if we've found the same path with a different spelling.
-    const PackageData existing_data = impl_->map.at(package_name);
-    if (!fs::equivalent(existing_data.path, path)) {
-      drake::log()->warn(
-          "PackageMap is ignoring newly-found path \"{}\" for package \"{}\""
-          " and will continue using the previously-known path at \"{}\".",
-          path, package_name, existing_data.path);
-      return false;
-    }
-  }
-  return true;
-}
-
 void PackageMap::CrawlForPackages(
     const std::string& path, bool stop_at_package,
     const std::vector<std::string_view>& stop_markers) {
-  DRAKE_DEMAND(!path.empty());
+  DRAKE_THROW_UNLESS(!path.empty());
   fs::path dir = fs::path(path).lexically_normal();
   if (std::any_of(stop_markers.begin(), stop_markers.end(),
                   [dir](std::string_view name) {
@@ -343,9 +428,19 @@ void PackageMap::CrawlForPackages(
   if (fs::exists(manifest)) {
     const auto [package_name, deprecated_message] =
         ParsePackageManifest(manifest.string());
-    const std::string package_path = dir.string();
-    if (AddPackageIfNew(package_name, package_path + "/")) {
+    const std::string package_path = dir.string() + "/";
+    if (!Contains(package_name)) {
+      Add(package_name, package_path);
       SetDeprecated(package_name, deprecated_message);
+    } else {
+      // Warn if we've found the same path with a different spelling.
+      const PackageData& existing_data = impl_->map.at(package_name);
+      if (!existing_data.CanMerge(PackageData::MakeLocal(package_path))) {
+        drake::log()->warn(
+            "PackageMap is ignoring newly-found path '{}' for package '{}'"
+            " and will continue using the previously-known path at '{}'.",
+            path, package_name, existing_data.display_path());
+      }
     }
     if (stop_at_package) {
       return;
@@ -370,6 +465,7 @@ void PackageMap::CrawlForPackages(
 }
 
 void PackageMap::AddPackageXml(const std::string& filename) {
+  DRAKE_THROW_UNLESS(!filename.empty());
   const auto [package_name, deprecated_message] =
       ParsePackageManifest(filename);
   const std::string package_path = GetParentDirectory(filename);
@@ -383,7 +479,7 @@ std::ostream& operator<<(std::ostream& out, const PackageMap& package_map) {
     out << "  [EMPTY!]\n";
   }
   for (const auto& [package_name, data] : package_map.impl_->map) {
-    out << "  - " << package_name << ": " << data.path << "\n";
+    out << "  - " << package_name << ": " << data.display_path() << "\n";
   }
   return out;
 }
