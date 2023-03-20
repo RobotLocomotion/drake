@@ -2900,6 +2900,51 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddQuadraticConstraint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto constraint1 = prog.AddConstraint(Binding<QuadraticConstraint>(
+      std::make_shared<QuadraticConstraint>(Eigen::Matrix2d::Identity(),
+                                            Eigen::Vector2d::Ones(), 0, 1),
+      x.head<2>()));
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  ASSERT_EQ(prog.quadratic_constraints().size(), 1);
+  EXPECT_EQ(prog.quadratic_constraints()[0].evaluator().get(),
+            constraint1.evaluator().get());
+  EXPECT_EQ(prog.quadratic_constraints()[0].variables(), x.head<2>());
+
+  auto constraint2 = prog.AddQuadraticConstraint(
+      -Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(), 0, 1, x.tail<2>(),
+      QuadraticConstraint::HessianType::kNegativeSemidefinite);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  EXPECT_EQ(prog.quadratic_constraints().size(), 2);
+
+  auto constraint3 =
+      prog.AddQuadraticConstraint(x(0) * x(0) - x(1) * x(1), 0, 1);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  EXPECT_EQ(prog.quadratic_constraints().size(), 3);
+  EXPECT_EQ(constraint3.evaluator()->hessian_type(),
+            QuadraticConstraint::HessianType::kIndefinite);
+
+  prog.RemoveConstraint(constraint2);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  EXPECT_EQ(prog.quadratic_constraints().size(), 2);
+  prog.RemoveConstraint(constraint1);
+  prog.RemoveConstraint(constraint3);
+  EXPECT_TRUE(prog.quadratic_constraints().empty());
+  EXPECT_EQ(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+}
+
 GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
   MathematicalProgram prog{};
   auto x = prog.NewContinuousVariables<2>();

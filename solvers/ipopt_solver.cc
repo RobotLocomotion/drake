@@ -115,6 +115,10 @@ void SetAllConstraintDualSolution(
     SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
                               result);
   }
+  for (const auto& binding : prog.quadratic_constraints()) {
+    SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
+                              result);
+  }
   for (const auto& binding : prog.lorentz_cone_constraints()) {
     SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
                               result);
@@ -361,6 +365,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
       nnz_jac_g += num_grad;
     }
+    for (const auto& c : problem_->quadratic_constraints()) {
+      m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
     for (const auto& c : problem_->lorentz_cone_constraints()) {
       m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
       nnz_jac_g += num_grad;
@@ -429,6 +437,12 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     size_t constraint_idx = 0;  // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
+      SetConstraintDualVariableIndex(c, constraint_idx,
+                                     &constraint_dual_start_index_);
+      constraint_idx += GetConstraintBounds(
+          *(c.evaluator()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->quadratic_constraints()) {
       SetConstraintDualVariableIndex(c, constraint_idx,
                                      &constraint_dual_start_index_);
       constraint_idx += GetConstraintBounds(
@@ -533,6 +547,12 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
                                // populated by each call to
                                // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*problem_, *(c.evaluator()), c.variables(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.evaluator()->num_constraints();
+      }
+      for (const auto& c : problem_->quadratic_constraints()) {
         grad_idx +=
             GetGradientMatrix(*problem_, *(c.evaluator()), c.variables(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
@@ -691,6 +711,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     Number* grad = eval_gradient ? constraint_cache_->grad.data() : nullptr;
 
     for (const auto& c : problem_->generic_constraints()) {
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
+      result += c.evaluator()->num_constraints();
+    }
+    for (const auto& c : problem_->quadratic_constraints()) {
       grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
