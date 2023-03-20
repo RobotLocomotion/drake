@@ -1,0 +1,20 @@
+# -*- bazel -*-
+
+# This is the @drake//multibody package.
+
+load("//:.manifest.bzl", "MANIFEST")
+
+package(default_visibility = ["//:__subpackages__"])
+
+_subdir = "multibody/"
+
+_runfiles = [
+    x[len(_subdir):]
+    for x in MANIFEST["runfiles"]["drake"]
+    if x.startswith(_subdir)
+]
+
+filegroup(
+    name = ".installed_runfiles",
+    data = _runfiles,
+)
