@@ -272,7 +272,7 @@ HttpResponse HttpServiceCurl::DoPostForm(
   if (fs::exists(temp_bin_out)) {
     cleanup_curl(curl, form, headerlist);
     throw std::runtime_error(fmt::format(
-        "HttpServiceCurl: refusing to overwrite temporary file '{}' that "
+        "RenderClient: refusing to overwrite temporary file '{}' that "
         "already exists, please cleanup temporary directory '{}'.",
         bin_out_path, temp_directory));
   }
@@ -282,7 +282,7 @@ HttpResponse HttpServiceCurl::DoPostForm(
   if (!bin_out.good()) {
     cleanup_curl(curl, form, headerlist);
     throw std::runtime_error(fmt::format(
-        "HttpServiceCurl: unable to open temporary file '{}'.", bin_out_path));
+        "RenderClient: unable to open temporary file '{}'.", bin_out_path));
   }
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &WriteFileData);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, &bin_out);
@@ -292,7 +292,7 @@ HttpResponse HttpServiceCurl::DoPostForm(
   if (!bin_out.good()) {
     cleanup_curl(curl, form, headerlist);
     throw std::runtime_error(fmt::format(
-        "HttpServiceCurl: unable to wtite temporary file '{}'.", bin_out_path));
+        "RenderClient: unable to wtite temporary file '{}'.", bin_out_path));
   }
   if (verbose) {
     LogCurlDebugData(debug_data);

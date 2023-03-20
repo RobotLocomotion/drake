@@ -392,7 +392,7 @@ TEST_F(RenderClientTest, RenderOnServerNoFileReturn) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       client.RenderOnServer(color_camera_.core(), RenderImageType::kColorRgba8U,
                             fake_scene_path_),
-      "ERROR doing POST.*supposed to respond with a file but did not.");
+      ".*ERROR doing POST.*supposed to respond with a file but did not.");
 }
 
 TEST_F(RenderClientTest, RenderOnServerInvalidImageReturn) {
@@ -590,7 +590,7 @@ TEST_F(RenderClientTest, LoadDepthImageBad) {
   // Failure case 1: invalid extension.
   DRAKE_EXPECT_THROWS_MESSAGE(
       RenderClient::LoadDepthImage("/no/such/file_ext.foo", &ignored),
-      "Unsupported file extension");
+      ".*unsupported file extension");
 
   // Failure case 2: not a valid image file.
   DRAKE_EXPECT_THROWS_MESSAGE(
