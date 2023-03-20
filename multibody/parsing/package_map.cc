@@ -1,6 +1,10 @@
 #include "drake/multibody/parsing/package_map.h"
 
+#include <unistd.h>
+
 #include <algorithm>
+#include <atomic>
+#include <cctype>
 #include <cstdlib>
 #include <filesystem>
 #include <initializer_list>
@@ -15,10 +19,13 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/find_cache.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/never_destroyed.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
+#include "drake/common/yaml/yaml_io.h"
 
 namespace drake {
 namespace multibody {
@@ -28,11 +35,52 @@ namespace fs = std::filesystem;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 
+std::string PackageMap::RemoteParams::ToJson() const {
+  return yaml::SaveJsonString(*this);
+}
+
+bool operator==(const PackageMap::RemoteParams& left,
+                const PackageMap::RemoteParams& right) {
+  return left.ToJson() == right.ToJson();
+}
+
 namespace {
+
+/* Provides a little encapsulation for whether a package is both remote and
+unfetched, especially in terms of enabling PackageData to use the default
+implementations of the special member functions (i.e., copy & move). */
+class NeedsFetch {
+ public:
+  /* Default constructs to `false`. */
+  NeedsFetch() : needs_fetch_{false} {}
+
+  /* Copying preserves the value, but produces a distinct atomic variable. */
+  NeedsFetch(const NeedsFetch& other)
+      : needs_fetch_(other.needs_fetch_.load()) {}
+
+  // Does not support copy-assignment nor move-assignment.
+  NeedsFetch& operator=(const NeedsFetch&) = delete;
+
+  /* Returns true iff the package is both remote and unfetched. */
+  operator bool() const { return needs_fetch_.load(); }
+
+  /* Sets this to a new value. */
+  void store(bool value) { needs_fetch_ = value; }
+
+  /* Returns a lock_guard for our encapsulated mutex. */
+  [[nodiscard]] auto lock_guard() const { return std::lock_guard(mutex_); }
+
+ private:
+  std::atomic<bool> needs_fetch_;
+  mutable std::mutex mutex_;
+};
 
 /* PackageData encapsulates everything we know about an added package:
  - The settings that were given to us when it was added.
- - A deprecation status that can be added after construction. */
+ - A deprecation status that can be added after construction.
+ - For remote packages, whether it's been fetched locally yet.
+ - Atomic access and a mutex to guard the above.
+*/
 class PackageData {
  public:
   /* Declares a local package (with a local filesystem path). */
@@ -42,12 +90,32 @@ class PackageData {
     return result;
   }
 
+  /* Declares a remote package (with URLs, etc). Does not fetch anything. */
+  static PackageData MakeRemote(PackageMap::RemoteParams params) {
+    PackageData result;
+    result.remote_params_ = std::move(params);
+    result.needs_fetch_.store(true);
+    return result;
+  }
+
   // Supports copy and move.
   PackageData(const PackageData&) = default;
   PackageData(PackageData&&) = default;
 
   // Does not support copy-assignment nor move-assignment.
   void operator=(const PackageData&) = delete;
+
+  /* Returns true iff this package was added using a local path, e.g.,
+  Add() or AddPackageXml() or PopulateFrom... etc. */
+  bool is_local() const { return !remote_params_.has_value(); }
+
+  /* Returns true iff this package was added using AddRemote(). */
+  bool is_remote() const { return remote_params_.has_value(); }
+
+  /* Returns the remote params; throws when is_remote() is false. */
+  const PackageMap::RemoteParams& remote_params() const {
+    return remote_params_.value();
+  }
 
   /* Returns true iff this package is deprecated. */
   bool is_deprecated() const { return deprecation_.has_value(); }
@@ -69,33 +137,147 @@ class PackageData {
     }
   }
 
-  /* Returns the path suitable for use in error messages. */
-  const std::string& display_path() const { return path_; }
+  /* Returns the path suitable for use in error messages. For local packages,
+  returns the local path; for remote packages, returns the first URL. */
+  const std::string& display_path() const {
+    return remote_params_.has_value() ? remote_params_.value().urls.front()
+                                      : path_;
+  }
 
   /* Returns true iff `other` specifies a suitably identical package to `this`
-  such that we can fold the two together: the path specification must match, but
-  the deprecation status can differ. In case they do not match, the error (if
-  provided) will be reset to describe the incompatibility. */
+  such that we can fold the two together: the path specification (whether local
+  or remote) must match, but the deprecation or fetch status can differ. In case
+  they do not match, the error (if provided) will be reset to describe the
+  incompatibility. */
   bool CanMerge(const PackageData& other, std::string* error = nullptr) const;
 
   /* Merges `other` into `this`. Throws an exception if CanMerge() is false.
   The `package_name` is non-functional (only used when reporting errors). */
   void Merge(std::string_view package_name, const PackageData& other);
 
-  /* Returns the local filesystem path for this package.
-  TODO(jwnimmer-tri) We should fetch remote packages here. */
-  const std::string& GetPath() const { return path_; }
+  /* Returns the local filesystem path for this package. In case this package
+  is remote and not already fetched, this function will fetch before returning.
+  The `package_name` is non-functional (only used when reporting errors). */
+  const std::string& GetPathWithAutomaticFetching(
+      std::string_view package_name) const;
 
  private:
   PackageData() = default;
 
-  /* Directory in which the manifest resides. */
+  /* When a package is added using AddRemote(), this starts out 'true'.
+  After the downloader finishes successfully, it changes to 'false'.
+  For local packages, this is always 'false'. */
+  NeedsFetch needs_fetch_;
+
+  /* Directory in which the manifest resides. When needs_fetch() is true, it is
+  NOT ALLOWED to access this member field (to avoid race conditions). */
   std::string path_;
+
+  /* If this was added using AddRemote(), this will contain the details, even
+  after the package has been fetched and is_remote has changed to 'false'. In
+  other words, this is a record of what was declared, even if `path_` has since
+  been changed to point to the downloaded copy.) */
+  std::optional<PackageMap::RemoteParams> remote_params_;
 
   /* Optional message declaring deprecation of the package. If it is non-nullopt
   then it is also guaranteed to be non-empty. */
   std::optional<std::string> deprecation_;
 };
+
+/* A little helper struct that gathers the args for package_downloader into a
+single place to make it easy to convert to JSON. */
+struct DownloaderArgs {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(package_name));
+    remote_params.Serialize(a);
+    a->Visit(DRAKE_NVP(output_dir));
+  }
+  std::string package_name;
+  PackageMap::RemoteParams remote_params;
+  std::string output_dir;
+};
+
+const std::string& PackageData::GetPathWithAutomaticFetching(
+    std::string_view package_name) const {
+  DRAKE_DEMAND(!package_name.empty());
+
+  if (!needs_fetch_) {
+    DRAKE_DEMAND(!path_.empty());
+    return path_;
+  }
+  DRAKE_DEMAND(is_remote());
+
+  // Note that we are a *const* member function, but we're about to start
+  // modifying member data as we fetch the package. Everything from here on
+  // needs to have exclusive access to this package's PackageData object.
+  auto guard = needs_fetch_.lock_guard();
+  auto* mutable_this = const_cast<PackageData*>(this);
+
+  // We need to do the "double-checked locking" pattern; the bool might have
+  // changed value while we were waiting for the lock.
+  if (!needs_fetch_) {
+    DRAKE_DEMAND(!path_.empty());
+    return path_;
+  }
+
+  // Find and/or create the cache_dir.
+  auto try_cache = internal::FindOrCreateCache("package_map");
+  if (!try_cache.error.empty()) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap: when downloading '{}', could not create temporary cache "
+        "directory: {}",
+        package_name, try_cache.error));
+  }
+  const fs::path cache_dir = std::move(try_cache.abspath);
+
+  // See if the package has already been fetched.
+  const fs::path package_dir = cache_dir / remote_params().sha256;
+  std::error_code ec;
+  if (fs::is_directory(package_dir, ec)) {
+    mutable_this->path_ = package_dir.string();
+    mutable_this->needs_fetch_.store(false);
+    return path_;
+  }
+
+  // Write the downloader arguments to a JSON file.
+  DownloaderArgs args{.package_name = std::string(package_name),
+                      .remote_params = remote_params(),
+                      .output_dir = package_dir.string()};
+  std::string json_filename = fs::path(cache_dir / ".fetch_XXXXXX").string();
+  const int temp_fd = ::mkstemp(json_filename.data());
+  ::close(temp_fd);
+  ScopeExit remove_yaml([&json_filename]() {
+    fs::remove(json_filename);
+  });
+  yaml::SaveJsonFile(json_filename, args);
+
+  // Shell out to the downloader to fetch the package.
+  const std::string downloader =
+      FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
+  const std::string command =
+      fmt::format("/usr/bin/python3 {} {}", downloader, json_filename);
+  const int returncode = std::system(command.c_str());
+  if (returncode != 0) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap: when downloading '{}', the downloader experienced an "
+        "error",
+        package_name));
+  }
+
+  // Confirm that it actually fetched.
+  if (!fs::is_directory(package_dir, ec)) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap: when downloading '{}', the downloader claimed success but "
+        "somehow did not actually download anything?!",
+        package_name));
+  }
+
+  // Success!
+  mutable_this->path_ = package_dir.string();
+  mutable_this->needs_fetch_.store(false);
+  return path_;
+}
 
 }  // namespace
 
@@ -156,8 +338,9 @@ class PackageMap::Impl {
     if (iter != map_.end()) {
       std::string error;
       if (!iter->second.CanMerge(data, &error)) {
-        throw std::runtime_error(fmt::format(
-            "PackageMap::Add() cannot add '{}' {}", package_name, error));
+        throw std::runtime_error(
+            fmt::format("PackageMap::Add{}() cannot add '{}' {}",
+                        data.is_remote() ? "Remote" : "", package_name, error));
       }
       return;
     }
@@ -241,16 +424,41 @@ void PackageMap::Add(const std::string& package_name,
 }
 
 bool PackageData::CanMerge(const PackageData& other, std::string* error) const {
-  // The paths must resolve to the same dir.
-  if (!fs::equivalent(this->path_, other.path_)) {
-    if (error != nullptr) {
-      *error = fmt::format(
-          "because the local paths are not equivalent ('{}' vs '{}')",
-          this->display_path(), other.display_path());
+  // When both packages are local, the paths must resolve to the same dir.
+  if (this->is_local() && other.is_local()) {
+    if (!fs::equivalent(this->path_, other.path_)) {
+      if (error != nullptr) {
+        *error = fmt::format(
+            "because the local paths are not equivalent ('{}' vs '{}')",
+            this->display_path(), other.display_path());
+      }
+      return false;
     }
-    return false;
+    return true;
   }
-  return true;
+
+  // When both packages are remote, the specification must match exactly.
+  if (this->is_remote() && other.is_remote()) {
+    if (!(this->remote_params() == other.remote_params())) {
+      if (error != nullptr) {
+        *error = fmt::format(
+            "because the remote package parameters differ ({} vs {})",
+            this->remote_params().ToJson(), other.remote_params().ToJson());
+      }
+      return false;
+    }
+    return true;
+  }
+
+  // Cannot merge local paths with remote params.
+  if (error != nullptr) {
+    *error = fmt::format(
+        "because the existing path is {} ('{}') "
+        "but the the new path is {} ('{}')",
+        this->is_local() ? "local" : "remote", this->display_path(),
+        other.is_local() ? "local" : "remote", other.display_path());
+  }
+  return false;
 }
 
 void PackageData::Merge(std::string_view package_name,
@@ -273,6 +481,47 @@ void PackageData::Merge(std::string_view package_name,
 
 void PackageMap::AddMap(const PackageMap& other_map) {
   impl_->AddMap(*other_map.impl_);
+}
+
+void PackageMap::AddRemote(std::string package_name, RemoteParams params) {
+  drake::log()->trace("PackageMap.AddRemote('{}', '{}', ...)", package_name,
+                      params.urls.empty() ? "" : params.urls.front());
+
+  // Validate our arguments.
+  if (params.urls.empty()) {
+    throw std::logic_error(
+        fmt::format("PackageMap::AddRemote on '{}' requires at least one URL",
+                    package_name));
+  }
+  for (const std::string_view url : params.urls) {
+    if (!((url.substr(0, 8) == "https://") || (url.substr(0, 7) == "http://") ||
+          (url.substr(0, 7) == "file://"))) {
+      throw std::logic_error(
+          fmt::format("PackageMap::AddRemote on '{}' has unsupported URL '{}'",
+                      package_name, url));
+    }
+  }
+  if (!((params.sha256.size() == 64) &&
+        (std::all_of(params.sha256.begin(), params.sha256.end(), [](char ch) {
+          return std::isxdigit(ch);
+        })))) {
+    throw std::logic_error(
+        fmt::format("PackageMap::AddRemote on '{}' has invalid sha256 '{}'",
+                    package_name, params.sha256));
+  }
+  if (params.archive_type.has_value()) {
+    const std::initializer_list<const char*> known_types = {
+        "zip", "tar", "gztar", "bztar", "xztar"};
+    if (std::count(known_types.begin(), known_types.end(),
+                   *params.archive_type) == 0) {
+      throw std::logic_error(fmt::format(
+          "PackageMap::AddRemote on '{}' has unsupported archive type '{}'",
+          package_name, *params.archive_type));
+    }
+  }
+
+  // Add it now. Emplace will handle rejection of duplicates.
+  impl_->Emplace(package_name, PackageData::MakeRemote(std::move(params)));
 }
 
 bool PackageMap::Contains(const std::string& package_name) const {
@@ -328,7 +577,8 @@ const std::string& PackageMap::GetPath(
     drake::log()->warn("PackageMap: {}", *warning);
   }
 
-  return data.GetPath();
+  // If this is a remote package and we haven't fetched it yet, do that now.
+  return data.GetPathWithAutomaticFetching(package_name);
 }
 
 void PackageMap::PopulateFromFolder(const std::string& path) {
