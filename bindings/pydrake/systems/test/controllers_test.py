@@ -26,7 +26,9 @@ from pydrake.systems.controllers import (
     PidControlledSystem,
     PidController,
 )
-from pydrake.systems.framework import DiagramBuilder, InputPortSelection
+from pydrake.systems.framework import (
+    DiagramBuilder, InputPortSelection, InputPort, OutputPort,
+)
 from pydrake.systems.primitives import Integrator, LinearSystem
 from pydrake.trajectories import Trajectory
 
@@ -138,10 +140,23 @@ class TestControllers(unittest.TestCase):
                          plant.GetFrameByName("iiwa_link_0"))
         plant.Finalize()
 
-        # Just test that the constructor doesn't throw.
+        controller = InverseDynamics(plant=plant)
+        self.assertIsInstance(controller.get_input_port_estimated_state(),
+                              InputPort)
+        self.assertIsInstance(controller.get_input_port_desired_acceleration(),
+                              InputPort)
+        self.assertIsInstance(controller.get_output_port_force(),
+                              OutputPort)
+        self.assertFalse(controller.is_pure_gravity_compensation())
+
         controller = InverseDynamics(
             plant=plant,
             mode=InverseDynamics.InverseDynamicsMode.kGravityCompensation)
+        self.assertIsInstance(controller.get_input_port_estimated_state(),
+                              InputPort)
+        self.assertIsInstance(controller.get_output_port_force(),
+                              OutputPort)
+        self.assertTrue(controller.is_pure_gravity_compensation())
 
     def test_inverse_dynamics_controller(self):
         sdf_path = FindResourceOrThrow(

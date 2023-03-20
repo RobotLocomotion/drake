@@ -654,6 +654,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("user_to_joint_index_map"),
             cls_doc.MakeActuatorSelectorMatrix
                 .doc_1args_user_to_joint_index_map)
+        .def("MakeStateSelectorMatrix", &Class::MakeStateSelectorMatrix,
+            py::arg("user_to_joint_index_map"),
+            cls_doc.MakeStateSelectorMatrix.doc)
         .def(
             "MapVelocityToQDot",
             [](const Class* self, const Context<T>& context,
