@@ -66,7 +66,8 @@ drake_cc_library(
         "//common:essential",
     ],
     deps = [
-        "//common",
+        "//common:find_resource",
+        "//common:find_runfiles",
         "@tinyxml2_internal//:tinyxml2",
     ],
 )
