@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/temp_directory.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
@@ -60,10 +61,10 @@ int do_main() {
                   .25));
   meshcat->SetTransform("obj", RigidTransformd(Vector3d{2, 0, 0}));
 
-  meshcat->SetObject(
-      "mustard",
-      Mesh(FindResourceOrThrow("drake/manipulation/models/ycb/meshes/"
-                               "006_mustard_bottle_textured.obj"), 3.0));
+  auto mustard_obj =
+      FindRunfile("models_internal/ycb/meshes/006_mustard_bottle_textured.obj")
+          .abspath;
+  meshcat->SetObject("mustard", Mesh(mustard_obj, 3.0));
   meshcat->SetTransform("mustard", RigidTransformd(Vector3d{3, 0, 0}));
 
   {
