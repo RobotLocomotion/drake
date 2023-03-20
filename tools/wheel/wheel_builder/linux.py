@@ -2,6 +2,7 @@
 # //tools/wheel:builder for the user interface.
 
 import atexit
+import io
 import os
 import pathlib
 import subprocess
@@ -138,14 +139,29 @@ def _create_source_tar(path):
     """
     Creates a tarball of the repository working tree.
     """
+    print('[-] Creating source archive', end='', flush=True)
     out = tarfile.open(path, "w:xz")
 
-    repo_dir = _git_root(resource_root)
+    # Add an rcfile that's compatible with our Dockerfile base.
+    rc_lines = [
+        "import %workspace%/tools/ubuntu.bazelrc",
+        "import %workspace%/tools/ubuntu-focal.bazelrc",
+    ]
+    rc_bytes = "\n".join(rc_lines).encode("utf-8")
+    tarinfo = tarfile.TarInfo("gen/environment.bazelrc")
+    tarinfo.size = len(rc_bytes)
+    out.addfile(tarinfo, io.BytesIO(rc_bytes))
 
-    print('[-] Creating source archive', end='', flush=True)
+    # Walk the git root and archive almost every file we find.
+    repo_dir = _git_root(resource_root)
     for f in sorted(os.listdir(repo_dir)):
         # Exclude build and VCS directories.
         if f == '.git' or f == 'user.bazelrc' or f.startswith('bazel-'):
+            continue
+
+        # Exclude host-generated setup files; we want the container-relevant
+        # setup file (already added atop this function).
+        if f == "gen":
             continue
 
         print('.', end='', flush=True)
