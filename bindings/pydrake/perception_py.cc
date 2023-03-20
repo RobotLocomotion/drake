@@ -119,6 +119,8 @@ void init_perception(py::module m) {
               self->SetFrom(other);
             },
             py::arg("other"), cls_doc.SetFrom.doc)
+        .def("SetFields", &Class::SetFields, py::arg("new_fields"),
+            py::arg("skip_initialize") = false, cls_doc.SetFields.doc)
         .def("Crop", &Class::Crop, py::arg("lower_xyz"), py::arg("upper_xyz"),
             cls_doc.Crop.doc)
         .def("FlipNormalsTowardPoint", &Class::FlipNormalsTowardPoint,

@@ -25,9 +25,6 @@ from drake import (
 from pydrake.common import (
     FindResourceOrThrow,
 )
-from pydrake.common.value import (
-    Value,
-)
 from pydrake.geometry import (
     DrakeVisualizer,
     DrakeVisualizerParams,
@@ -119,8 +116,7 @@ class TestMeldis(unittest.TestCase):
         # Set input and publish the point cloud.
         context = diagram.CreateDefaultContext()
         cloud_context = cloud_to_lcm.GetMyContextFromRoot(context)
-        cloud_to_lcm.get_input_port().FixValue(
-            cloud_context, Value[PointCloud](cloud))
+        cloud_to_lcm.get_input_port().FixValue(cloud_context, cloud)
         diagram.ForcedPublish(context)
 
     def test_viewer_applet(self):
