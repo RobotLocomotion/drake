@@ -18,5 +18,6 @@ codename=$(lsb_release -sc)
 
 mkdir -p "$(dirname "${bazelrc}")"
 cat > "${bazelrc}" <<EOF
+import %workspace%/tools/ubuntu.bazelrc
 import %workspace%/tools/ubuntu-${codename}.bazelrc
 EOF
