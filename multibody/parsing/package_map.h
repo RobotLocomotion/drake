@@ -154,14 +154,8 @@ class PackageMap final {
   void CrawlForPackages(const std::string& path, bool stop_at_package = false,
                         const std::vector<std::string_view>& stop_markers = {});
 
-  /* This method is the same as Add() except if package_name is already present
-  with a different path, then this method prints a warning and returns false
-  without adding the new path. Returns true otherwise. */
-  bool AddPackageIfNew(const std::string& package_name,
-                       const std::string& path);
-
   /* Our member data is forward declared to hide implementation details. */
-  struct Impl;
+  class Impl;
   std::unique_ptr<Impl> impl_;
 };
 
