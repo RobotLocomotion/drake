@@ -53,6 +53,32 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
 }  // namespace
 
 template <typename T>
+RotationMatrix<T>::RotationMatrix(const RollPitchYaw<T>& rpy) {
+  // TODO(@mitiguy) Add publicly viewable documentation on how Sherm and
+  // Goldstein like to visualize/conceptualize rotation sequences.
+  const T& r = rpy.roll_angle();
+  const T& p = rpy.pitch_angle();
+  const T& y = rpy.yaw_angle();
+  using std::sin;
+  using std::cos;
+  const T c0 = cos(r), c1 = cos(p), c2 = cos(y);
+  const T s0 = sin(r), s1 = sin(p), s2 = sin(y);
+  const T c2_s1 = c2 * s1, s2_s1 = s2 * s1;
+  const T Rxx = c2 * c1;
+  const T Rxy = c2_s1 * s0 - s2 * c0;
+  const T Rxz = c2_s1 * c0 + s2 * s0;
+  const T Ryx = s2 * c1;
+  const T Ryy = s2_s1 * s0 + c2 * c0;
+  const T Ryz = s2_s1 * c0 - c2 * s0;
+  const T Rzx = -s1;
+  const T Rzy = c1 * s0;
+  const T Rzz = c1 * c0;
+  SetFromOrthonormalRows(Vector3<T>(Rxx, Rxy, Rxz),
+                         Vector3<T>(Ryx, Ryy, Ryz),
+                         Vector3<T>(Rzx, Rzy, Rzz));
+}
+
+template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeFromOneUnitVector(
     const Vector3<T>& u_A, int axis_index) {
   // In Debug builds, verify axis_index is 0 or 1 or 2 and u_A is unit length.
