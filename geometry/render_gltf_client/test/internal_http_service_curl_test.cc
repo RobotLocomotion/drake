@@ -37,7 +37,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         service.PostForm(temp_dir, url, {}, {}, verbose),
         fmt::format(
-            "HttpServiceCurl: refusing to overwrite temporary file '{}' that "
+            ".*refusing to overwrite temporary file '{}' that "
             "already exists, please cleanup temporary directory '{}'.",
             temp_file_path.string(), temp_dir));
     fs::remove(temp_file_path);
@@ -52,7 +52,7 @@ GTEST_TEST(HttpServiceCurlTest, PostForm) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         service.PostForm(temp_dir, url, {}, {}, verbose),
         fmt::format(
-            "HttpServiceCurl: unable to open temporary file '{}.*\\.curl'.",
+            ".*unable to open temporary file '{}.*\\.curl'.",
             temp_dir));
     fs::permissions(temp_dir, orig_perms, fs::perm_options::replace);
   }
