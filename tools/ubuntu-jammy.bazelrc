@@ -29,9 +29,9 @@ build:packaging --config=omp
 build:everything --config=omp
 
 # -- Options for explicitly using Clang.
-common:clang --repo_env=CC=clang-12
-common:clang --repo_env=CXX=clang++-12
-build:clang --action_env=CC=clang-12
-build:clang --action_env=CXX=clang++-12
-build:clang --host_action_env=CC=clang-12
-build:clang --host_action_env=CXX=clang++-12
+common:clang --repo_env=CC=clang-14
+common:clang --repo_env=CXX=clang++-14
+build:clang --action_env=CC=clang-14
+build:clang --action_env=CXX=clang++-14
+build:clang --host_action_env=CC=clang-14
+build:clang --host_action_env=CXX=clang++-14

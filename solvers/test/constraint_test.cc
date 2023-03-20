@@ -318,7 +318,7 @@ void TestLorentzConeEvalNonconvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
-  bool is_in_cone_expected = (y(0) >= 0) & (y(1) >= 0);
+  bool is_in_cone_expected = (y(0) >= 0) && (y(1) >= 0);
   EXPECT_EQ(is_in_cone, is_in_cone_expected);
   EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 
@@ -364,7 +364,7 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
   bool is_in_cone_expected =
-      (z(0) >= 0) & (z(1) >= 0) & (z(0) * z(1) >= z.tail(z.size() - 2).norm());
+      (z(0) >= 0) & (z(1) >= 0) && (z(0) * z(1) >= z.tail(z.size() - 2).norm());
   EXPECT_EQ(is_in_cone, is_in_cone_expected);
   EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 

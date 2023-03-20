@@ -1,2 +1,2 @@
-clang-12
-libomp-12-dev
+clang-14
+libomp-14-dev
