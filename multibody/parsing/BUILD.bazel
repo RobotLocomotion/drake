@@ -23,12 +23,13 @@ filegroup(
     testonly = 1,
     srcs = glob([
         "test/**/*.config",
+        "test/**/*.dmd.yaml",
         "test/**/*.obj",
+        "test/**/*.png",
         "test/**/*.sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
-        "test/**/*.dmd.yaml",
-        "test/**/*.png",
+        "test/**/*.zip",
         "test/**/COLCON_IGNORE",
     ]),
     visibility = ["//visibility:public"],
@@ -66,10 +67,14 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     interface_deps = [
         "//common:essential",
+        "//common:name_value",
     ],
     deps = [
+        "//common:find_cache",
         "//common:find_resource",
         "//common:find_runfiles",
+        "//common:scope_exit",
+        "//common/yaml",
         "@tinyxml2_internal//:tinyxml2",
     ],
 )
@@ -616,6 +621,20 @@ drake_cc_googletest(
     ],
     deps = [
         ":package_map",
+        "//common:find_resource",
+        "//common:scope_exit",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "package_map_remote_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":package_map",
+        "//common:find_cache",
         "//common:find_resource",
         "//common:scope_exit",
         "//common/test_utilities:expect_throws_message",
