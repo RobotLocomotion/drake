@@ -152,7 +152,12 @@ if __name__ == "__main__":
     with open(sys.argv[1], 'r', encoding='utf-8') as f:
         s = f.read()
 
-    s = process_doxygen_system_tags(s)
-
-    # Print the entire file to stdout
-    print(s)
+    try:
+        s = process_doxygen_system_tags(s)
+    finally:
+        # Print the entire file to stdout, whether or not we've crashed with an
+        # exception. Doxygen ignores crashes from INPUT_FILTER, so if we print
+        # nothing to stdout during a crash, it effectively skips this file when
+        # generating API docs. Having un-processed `@system` markup is better
+        # then losing the entire file.
+        print(s)
