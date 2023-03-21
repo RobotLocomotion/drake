@@ -70,7 +70,7 @@ class TestDownloader(unittest.TestCase):
 
         # Wrap a call to main.
         try:
-            mut._main([filename])
+            mut._main([filename, ""])
             returncode = 0
         except SystemExit as e:
             returncode = e.code

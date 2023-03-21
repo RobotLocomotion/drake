@@ -147,8 +147,13 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
 
 
 def _main(argv):
+    # We expect exactly two command-line arguments to this program:
+    # - The filename containing JSON data with our *actual* arguments.
+    # - A dummy argument that we'll ignore. (It's sometimes used by our caller
+    #    to suppress valgrind when we're called from C++ code).
+    config_json, _ = argv
+
     # Read our config file.
-    config_json, = argv
     with open(config_json, "r") as f:
         kwargs = json.load(f)
 
