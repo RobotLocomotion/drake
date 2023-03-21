@@ -31,9 +31,8 @@ output_ports:
 The output port is of size `plant.num_positions()`, and the order of its
 elements matches `plant.GetPositions()`.
 
-At the moment, any positions that are not associated with joints (e.g.,
-floating-base "mobilizers") are held fixed at a nominal value.  In the future,
-this class might add in sliders for a floating base as well.
+Only positions associated with joints get sliders. All other positions are fixed
+at nominal values.
 
 Beware that the output port of this system always provides the sliders' current
 values, even if evaluated by multiple different downstream input ports during a
@@ -147,7 +146,9 @@ class JointSliders final : public systems::LeafSystem<T> {
   std::shared_ptr<geometry::Meshcat> meshcat_;
   const MultibodyPlant<T>* const plant_;
   const std::map<int, std::string> position_names_;
-  Eigen::VectorXd initial_value_;
+  /* The nominal values for all positions; positions with sliders will not use
+   their nominal value except for defining the slider's initial value. */
+  Eigen::VectorXd nominal_value_;
   std::atomic<bool> is_registered_;
 };
 
