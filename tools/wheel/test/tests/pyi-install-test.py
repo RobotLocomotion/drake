@@ -4,7 +4,7 @@ import os
 import pydrake
 
 def assert_exists(path):
-    assert os.path.exists(path), f"{path!r} does not exist!"
+    assert os.path.exists(path), f'{path!r} does not exist!'
     print(path)
 
 # Check that type information files are present.

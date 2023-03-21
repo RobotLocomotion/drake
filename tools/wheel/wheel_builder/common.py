@@ -108,15 +108,17 @@ def do_main(args, platform):
     parser.add_argument(
         '-n', '--no-extract', dest='extract', action='store_false',
         help='build images but do not extract wheels')
+    parser.add_argument(
+        '--no-test', dest='test', action='store_false',
+        help='build images but do not run tests')
+    # TODO(jwnimmer-tri) Remove this argument after we've updated CI not to
+    # provide it anymore.
+    parser.add_argument(
+        '-t', dest='_', action='store_true',
+        help='ignored for backwards compatibility')
 
     if platform is not None:
         platform.add_build_arguments(parser)
-
-    parser.add_argument(
-        '-t', '--test', action='store_true',
-        help='run tests on wheels')
-
-    if platform is not None:
         platform.add_selection_arguments(parser)
 
     parser.add_argument(
@@ -125,6 +127,8 @@ def do_main(args, platform):
 
     # Parse arguments.
     options = parser.parse_args(args)
+    if not options.extract:
+        options.test = False
     if platform is not None:
         platform.fixup_options(options)
 
@@ -140,3 +144,4 @@ def do_main(args, platform):
     else:
         die('Building wheels is not supported on this platform '
             f'(\'{sys.platform}\')')
+    print('wheel_builder: SUCCESS')
