@@ -26,6 +26,7 @@
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/yaml/yaml_io.h"
+#include "drake/multibody/parsing/package_map_models.h"
 
 namespace drake {
 namespace multibody {
@@ -424,13 +425,7 @@ PackageMap::PackageMap() : PackageMap{std::nullopt} {
     DRAKE_DEMAND(find.error.empty());
     AddPackageXml(find.abspath);
   } else {
-    // This is the case for installed Drake. The models are installed under
-    //  $prefix/share/drake_models/package.xml
-    // which is a sibling to
-    //  $prefix/share/drake/package.xml
-    auto share_drake = std::filesystem::path(drake_package).parent_path();
-    auto share = share_drake.parent_path().lexically_normal();
-    AddPackageXml((share / "drake_models/package.xml").string());
+    AddRemotePackage("drake_models", GetDrakeModelsParams());
   }
 }
 

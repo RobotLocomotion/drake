@@ -4,6 +4,11 @@ load("@drake//tools/install:install.bzl", "install")
 
 package(default_visibility = ["//visibility:private"])
 
+exports_files(
+    ["drake_repository_metadata.json"],
+    visibility = ["@drake//multibody/parsing:__pkg__"],
+)
+
 # TODO(jwnimmer-tri) Add a real package.xml upstream.
 genrule(
     name = "package.xml_genrule",

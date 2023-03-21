@@ -7,6 +7,7 @@ load(
 )
 load(
     "@drake//tools/skylark:drake_py.bzl",
+    "drake_py_binary",
     "drake_py_library",
     "drake_py_unittest",
 )
@@ -55,6 +56,28 @@ drake_cc_package_library(
     ],
 )
 
+drake_py_binary(
+    name = "package_map_models_generator",
+    srcs = ["package_map_models_generator.py"],
+    main = "package_map_models_generator.py",
+)
+
+genrule(
+    name = "package_map_models_genrule",
+    srcs = ["@models_internal//:drake_repository_metadata.json"],
+    outs = ["package_map_models.h"],
+    cmd = "$(execpath :package_map_models_generator) --input=$< --output=$@",
+    tools = [":package_map_models_generator"],
+)
+
+drake_cc_library(
+    name = "package_map_models",
+    hdrs = ["package_map_models.h"],
+    internal = True,
+    tags = ["nolint"],
+    visibility = ["//visibility:private"],
+)
+
 drake_cc_library(
     name = "package_map",
     srcs = ["package_map.cc"],
@@ -70,6 +93,7 @@ drake_cc_library(
         "//common:name_value",
     ],
     deps = [
+        ":package_map_models",
         "//common:find_cache",
         "//common:find_resource",
         "//common:find_runfiles",
