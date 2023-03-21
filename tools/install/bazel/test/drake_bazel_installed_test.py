@@ -108,11 +108,22 @@ _set_log_level("trace")
 FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
 """)
 
-    # This test case confirms that @drake_models still works.
+    # This test case confirms that package://drake_models still works.
     with open(join(scratch_dir, "package_map_test.py"), "w") as f:
         f.write("""
+# The install_test runner provides a prepoulated XDG_CACHE_HOME.
+# Use it for our package_map cache to prevent hitting the internet.
+import os
+from pathlib import Path
+test_tmpdir = Path(os.environ["TEST_TMPDIR"])
+xdg_cache_home = Path(os.environ["XDG_CACHE_HOME"])
+(test_tmpdir / ".cache").symlink_to(xdg_cache_home)
+
+# Now we can check that drake_models works.
+from pydrake.common import _set_log_level
 from pydrake.multibody.parsing import PackageMap
-PackageMap()
+_set_log_level("trace")
+PackageMap().GetPath("drake_models")
 """)
 
     with open(join(scratch_dir, "import_all_test.py"), "w") as f:
@@ -136,6 +147,8 @@ import pydrake.all
         "--max_idle_secs=1",
         # Run all of the tests from the BUILD.bazel generated above.
         command, "//...", "--jobs=1",
+        # Allow reuse of the install_test's pre-populated cache.
+        "--test_env=XDG_CACHE_HOME",
         # Enable verbosity.
         "--announce_rc",
         "--test_output=streamed",

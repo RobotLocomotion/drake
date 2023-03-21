@@ -90,10 +90,6 @@ cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /opt/drake/share/drake/manipulation \
     /opt/drake/share/drake/multibody \
     /opt/drake/share/drake/tutorials
-# TODO(#15774) Eventually we will download these at runtime, instead of shipping
-# them in the wheel.
-cp -r -t ${WHEEL_SHARE_DIR} \
-    /opt/drake/share/drake_models
 
 if [[ "$(uname)" == "Linux" ]]; then
     mkdir -p ${WHEEL_SHARE_DIR}/drake/setup
@@ -101,15 +97,10 @@ if [[ "$(uname)" == "Linux" ]]; then
         /opt/drake/share/drake/setup/deepnote
 fi
 
-# TODO(mwoehlke-kitware) We need to remove these to keep the wheel from being
-# too large, but (per above), the whole of share/drake_models shouldn't be in
-# the wheel (and atlas's meshes should move into drake_models).
+# TODO(mwoehlke-kitware) We need to remove this to keep the wheel from being
+# too large, but atlas's meshes should move drake_models anyway.
 rm -rf \
-    ${WHEEL_SHARE_DIR}/drake_models/franka_description \
-    ${WHEEL_SHARE_DIR}/drake_models/ur3e \
-    ${WHEEL_SHARE_DIR}/drake_models/ycb \
-    ${WHEEL_SHARE_DIR}/drake/examples/atlas \
-    ${WHEEL_SHARE_DIR}/drake_models/wsg_50_hydro_bubble
+    ${WHEEL_SHARE_DIR}/drake/examples/atlas
 
 if [[ "$(uname)" == "Linux" ]]; then
     export LD_LIBRARY_PATH=${WHEEL_DIR}/pydrake/lib:/opt/drake-dependencies/lib
