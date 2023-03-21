@@ -53,9 +53,13 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
             extraction was successful, i.e., as a single atomic transaction.
         archive_type: The archive type of the downloaded file. When not given,
             the archive type is determined from the file extension of the URL.
-        strip_prefix: A directory prefix to strip from the extracted files. If
-            there are files outside of this directory, they will be discarded
-            and inaccessible.
+        strip_prefix: A directory prefix to remove from the extracted files. In
+            many cases, an archive will prefix all filenames with something
+            like "package-v1.2.3/" so that it extracts into a convenient
+            directory. This option will discard that common prefix when
+            extracting the archive. It is an error if the archive does not
+            contain any diectory with this prefix, but if there are files
+            outside of this directory they will be silently discarded.
     """
     # Add a README nearby to help explain the fetched data.
     # To avoid stomping on concurrently-running download of the same package
@@ -147,8 +151,13 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
 
 
 def _main(argv):
+    # We expect exactly two command-line arguments to this program:
+    # - The filename containing JSON data with our *actual* arguments.
+    # - A dummy argument that we'll ignore. (It's sometimes used by our caller
+    #    to suppress valgrind when we're called from C++ code).
+    config_json, _ = argv
+
     # Read our config file.
-    config_json, = argv
     with open(config_json, "r") as f:
         kwargs = json.load(f)
 
