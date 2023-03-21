@@ -43,13 +43,24 @@ namespace internal {
     P(y) = max(γₗ, min(γᵤ, y))
   independent of the compliant regularization.
 
+  On SAP regularization and bias:
+   Here we provide details on the computation of the regularization terms R
+   performed by CalcDiagonalRegularization() and the velocity bias v̂ performed
+   by CalcBiasTerm(). SAP approximates the constraint fuction as:
+     g(v) ≈ g₀ + δt⋅ġ(v) = g₀ + δt⋅(J⋅v + b)
+   With this approximation the unprojected impulses y(v) = −δt⋅k⋅(g + τ⋅ġ) can
+   be written as:
+     y(v) = −R⁻¹⋅(J⋅v − v̂)
+   with the regularization R defined as:
+     R⁻¹ = δt⋅(δt + τ)⋅k
+   and the velocity bias v̂ as:
+     v̂ = −g₀/(δt + τ) − b
+
  [Castro et al., 2022] Castro A., Permenter F. and Han X., 2021. An
    Unconstrained Convex Formulation of Compliant Contact. Available at
    https://arxiv.org/abs/2110.10107
 
  @tparam_nonsymbolic_scalar */
-// TODO(amcastro-tri): allow to instantiate holonomic constraints with a nonzero
-// bias term b = ∂g/∂t.
 template <typename T>
 class SapHolonomicConstraint final : public SapConstraint<T> {
  public:
@@ -105,7 +116,8 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
     double beta_{0.1};
   };
 
-  /* Constructs a holonomic constraint involving a single clique.
+  /* Constructs a holonomic constraint involving a single clique. The bias term
+   b is zero.
    @param[in] clique The clique involved in the constraint.
    @param[in] g The value of the constraint function.
    @param[in] J The Jacobian w.r.t. to the clique's generalized velocities.
@@ -116,7 +128,8 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
   SapHolonomicConstraint(int clique, VectorX<T> g, MatrixX<T> J,
                          Parameters parameters);
 
-  /* Constructs a holonomic constraint involving two cliques.
+  /* Constructs a holonomic constraint involving two cliques. The bias term b is
+   zero.
    @param[in] first_clique First clique involved in the constraint.
    @param[in] second_clique Second clique involved in the constraint.
    @param[in] g The value of the constraint function.
@@ -133,7 +146,22 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
                          MatrixX<T> J_first_clique, MatrixX<T> J_second_clique,
                          Parameters parameters);
 
+  /* Single clique holonomic constraints with non-zero bias.
+   @param[in] clique The clique involved in the constraint.
+   @param[in] g The value of the constraint function.
+   @param[in] J The Jacobian w.r.t. to the clique's generalized velocities.
+   @param[in] b The bias term, such that ġ = J⋅v + b.
+   @param[in] parameters Constraint parameters. See Parameters for details.
+
+   @pre clique is non-negative.
+   @pre g.size() == J.rows() == parameters.num_constraint_equations(). */
+  SapHolonomicConstraint(int clique, VectorX<T> g, MatrixX<T> J, VectorX<T> b,
+                         Parameters parameters);
+
   const Parameters& parameters() const { return parameters_; }
+
+  /* Returns the holonomic constraint bias b. */
+  const VectorX<T>& bias() const { return bias_; }
 
   /* Implements the projection operation P(y) = max(γₗ, min(γᵤ, y)). For this
    specific constraint, the result is independent of the regularization R. Refer
@@ -154,6 +182,7 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
 
  private:
   Parameters parameters_;
+  VectorX<T> bias_;
 };
 
 }  // namespace internal
