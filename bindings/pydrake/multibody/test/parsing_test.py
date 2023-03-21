@@ -68,6 +68,26 @@ class TestParsing(unittest.TestCase):
         dut.PopulateFromEnvironment(environment_variable='TEST_TMPDIR')
         dut.PopulateFromFolder(path=tmpdir)
 
+    def test_package_map_remote_params(self):
+        dut = PackageMap.RemoteParams(
+            urls=["file:///tmp/missing.zip"],
+            sha256="0" * 64,
+            archive_type="zip",
+            strip_prefix="prefix",)
+        self.assertIn("missing.zip", dut.ToJson())
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_package_map_add_remote(self):
+        dut = PackageMap.MakeEmpty()
+        package_name = "gibberish"
+        dut.AddRemote(package_name=package_name,
+                      params=PackageMap.RemoteParams(
+                          urls=["file:///tmp/missing.zip"],
+                          sha256="0" * 64))
+        with self.assertRaisesRegex(RuntimeError, "downloader.*error"):
+            dut.GetPath(package_name)
+
     def test_parser_file(self):
         """Calls every combination of arguments for the Parser methods which
         use a file_name (not contents) and inspects their return type.
