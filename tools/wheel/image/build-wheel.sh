@@ -88,6 +88,7 @@ cp -r -t ${WHEEL_SHARE_DIR}/drake \
     /opt/drake/share/drake/examples \
     /opt/drake/share/drake/geometry \
     /opt/drake/share/drake/manipulation \
+    /opt/drake/share/drake/multibody \
     /opt/drake/share/drake/tutorials
 # TODO(#15774) Eventually we will download these at runtime, instead of shipping
 # them in the wheel.
