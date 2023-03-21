@@ -443,17 +443,7 @@ class RotationMatrix {
   /// @retval R_BC where R_BC = this⁻¹ * other.
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
-  RotationMatrix<T> InvertAndCompose(const RotationMatrix<T>& other) const {
-    const RotationMatrix<T>& R_AC = other;  // Nicer name.
-    RotationMatrix<T> R_BC(internal::DoNotInitializeMemberFields{});
-    if constexpr (std::is_same_v<T, double>) {
-      internal::ComposeRinvR(*this, R_AC, &R_BC);
-    } else {
-      const RotationMatrix<T> R_BA = inverse();
-      R_BC = R_BA * R_AC;
-    }
-    return R_BC;
-  }
+  RotationMatrix<T> InvertAndCompose(const RotationMatrix<T>& other) const;
 
   /// Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
   /// Vector3 expressed in the B frame.
@@ -647,23 +637,7 @@ class RotationMatrix {
   /// returned by this method cannot construct a valid %RotationMatrix.
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
   static Eigen::Quaternion<T> ToQuaternion(
-      const Eigen::Ref<const Matrix3<T>>& M) {
-    Eigen::Quaternion<T> q = RotationMatrixToUnnormalizedQuaternion(M);
-
-    // Since the quaternions q and -q correspond to the same rotation matrix,
-    // choose to return a canonical quaternion, i.e., with q(0) >= 0.
-    const T canonical_factor = if_then_else(q.w() < 0, T(-1), T(1));
-
-    // The quantity q calculated thus far in this algorithm is not a quaternion
-    // with magnitude 1.  It differs from a quaternion in that all elements of
-    // q are scaled by the same factor. To return a valid quaternion, q must be
-    // normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
-    const T scale = canonical_factor / q.norm();
-    q.coeffs() *= scale;
-
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, T(2))));
-    return q;
-  }
+      const Eigen::Ref<const Matrix3<T>>& M);
 
   /// Utility method to return the Vector4 associated with ToQuaternion().
   /// @see ToQuaternion().
@@ -705,8 +679,7 @@ class RotationMatrix {
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality{
-      128 * std::numeric_limits<double>::epsilon() };
-
+      128 * std::numeric_limits<double>::epsilon()};
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.

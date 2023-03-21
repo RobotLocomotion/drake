@@ -397,6 +397,40 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
   return u;
 }
 
+template <typename T>
+RotationMatrix<T> RotationMatrix<T>::InvertAndCompose(
+    const RotationMatrix<T>& other) const {
+  const RotationMatrix<T>& R_AC = other;  // Nicer name.
+  RotationMatrix<T> R_BC(internal::DoNotInitializeMemberFields{});
+  if constexpr (std::is_same_v<T, double>) {
+    internal::ComposeRinvR(*this, R_AC, &R_BC);
+  } else {
+    const RotationMatrix<T> R_BA = inverse();
+    R_BC = R_BA * R_AC;
+  }
+  return R_BC;
+}
+
+template <typename T>
+Eigen::Quaternion<T> RotationMatrix<T>::ToQuaternion(
+    const Eigen::Ref<const Matrix3<T>>& M) {
+  Eigen::Quaternion<T> q = RotationMatrixToUnnormalizedQuaternion(M);
+
+  // Since the quaternions q and -q correspond to the same rotation matrix,
+  // choose to return a canonical quaternion, i.e., with q(0) >= 0.
+  const T canonical_factor = if_then_else(q.w() < 0, T(-1), T(1));
+
+  // The quantity q calculated thus far in this algorithm is not a quaternion
+  // with magnitude 1.  It differs from a quaternion in that all elements of
+  // q are scaled by the same factor. To return a valid quaternion, q must be
+  // normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
+  const T scale = canonical_factor / q.norm();
+  q.coeffs() *= scale;
+
+  DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, T(2))));
+  return q;
+}
+
 }  // namespace math
 }  // namespace drake
 
