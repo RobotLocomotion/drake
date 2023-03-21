@@ -3,9 +3,9 @@ build --cxxopt=-std=c++20
 build --host_cxxopt=-std=c++20
 
 # Options for explicitly using Clang.
-common:clang --repo_env=CC=clang-12
-common:clang --repo_env=CXX=clang++-12
-build:clang --action_env=CC=clang-12
-build:clang --action_env=CXX=clang++-12
-build:clang --host_action_env=CC=clang-12
-build:clang --host_action_env=CXX=clang++-12
+common:clang --repo_env=CC=clang-14
+common:clang --repo_env=CXX=clang++-14
+build:clang --action_env=CC=clang-14
+build:clang --action_env=CXX=clang++-14
+build:clang --host_action_env=CC=clang-14
+build:clang --host_action_env=CXX=clang++-14
