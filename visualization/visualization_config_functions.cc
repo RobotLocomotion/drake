@@ -102,8 +102,13 @@ void ApplyVisualizationConfig(const VisualizationConfig& config,
                                builder);
 }
 
-void AddDefaultVisualization(DiagramBuilder<double>* builder) {
-  ApplyVisualizationConfig(VisualizationConfig{}, builder);
+void AddDefaultVisualization(DiagramBuilder<double>* builder,
+                             std::shared_ptr<geometry::Meshcat> meshcat) {
+  ApplyVisualizationConfig(VisualizationConfig{}, builder,
+                           nullptr,  // lcm_buses
+                           nullptr,  // plant
+                           nullptr,  // scene_graph
+                           meshcat);
 }
 
 namespace internal {
