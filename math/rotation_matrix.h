@@ -195,18 +195,7 @@ class RotationMatrix {
   /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
   ///        ⎣ 0   sin(theta)    cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeXRotation(const T& theta) {
-    Matrix3<T> R;
-    using std::sin;
-    using std::cos;
-    const T c = cos(theta), s = sin(theta);
-    // clang-format off
-    R << 1,  0,  0,
-         0,  c, -s,
-         0,  s,  c;
-    // clang-format on
-    return RotationMatrix(R);
-  }
+  static RotationMatrix<T> MakeXRotation(const T& theta);
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ay = By`.
@@ -220,18 +209,7 @@ class RotationMatrix {
   /// R_AB = ⎢          0    1           0  ⎥
   ///        ⎣ -sin(theta)   0   cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeYRotation(const T& theta) {
-    Matrix3<T> R;
-    using std::sin;
-    using std::cos;
-    const T c = cos(theta), s = sin(theta);
-    // clang-format off
-    R <<  c,  0,  s,
-          0,  1,  0,
-         -s,  0,  c;
-    // clang-format on
-    return RotationMatrix(R);
-  }
+  static RotationMatrix<T> MakeYRotation(const T& theta);
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
@@ -245,18 +223,7 @@ class RotationMatrix {
   /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
   ///        ⎣         0            0    1 ⎦
   /// ```
-  static RotationMatrix<T> MakeZRotation(const T& theta) {
-    Matrix3<T> R;
-    using std::sin;
-    using std::cos;
-    const T c = cos(theta), s = sin(theta);
-    // clang-format off
-    R << c, -s,  0,
-         s,  c,  0,
-         0,  0,  1;
-    // clang-format on
-    return RotationMatrix(R);
-  }
+  static RotationMatrix<T> MakeZRotation(const T& theta);
 
   /// Creates a 3D right-handed orthonormal basis B from a given vector b_A,
   /// returned as a rotation matrix R_AB. It consists of orthogonal unit vectors
@@ -681,12 +648,23 @@ class RotationMatrix {
   static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon()};
 
+  // Constructs an uninitialized %RotationMatrix.
+  // @note The first parameter is just a dummy to distinguish this constructor
+  // from any of the other constructors.
+  explicit RotationMatrix(bool) {}
+
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   // @note The second parameter is just a dummy to distinguish this constructor
-  // from one of the public constructors.
+  // from any of the other constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
+
+  // Make an uninitialized %RotationMatrix.
+  // @note Internal use only -- for speed.
+  static RotationMatrix<T> MakeUninitialized() {
+    return RotationMatrix( /* dummyArgumentCanBeTrueOrFalse = */ true);
+  }
 
   // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
   // test whether or not the parameter R is a valid rotation matrix.

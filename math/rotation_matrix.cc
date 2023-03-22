@@ -53,6 +53,54 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
 }  // namespace
 
 template <typename T>
+RotationMatrix<T> RotationMatrix<T>::MakeXRotation(const T& theta) {
+  using std::isfinite;
+  DRAKE_DEMAND(isfinite(theta));
+  RotationMatrix<T> R = RotationMatrix<T>::MakeUninitialized();
+  using std::cos;
+  using std::sin;
+  const T c = cos(theta), s = sin(theta);
+  // clang-format off
+  R.R_AB_ << 1,  0,  0,
+             0,  c, -s,
+             0,  s,  c;
+  // clang-format on
+  return R;
+}
+
+template <typename T>
+RotationMatrix<T> RotationMatrix<T>::MakeYRotation(const T& theta) {
+  using std::isfinite;
+  DRAKE_DEMAND(isfinite(theta));
+  RotationMatrix<T> R = RotationMatrix<T>::MakeUninitialized();
+  using std::cos;
+  using std::sin;
+  const T c = cos(theta), s = sin(theta);
+  // clang-format off
+  R.R_AB_ <<  c,  0,  s,
+              0,  1,  0,
+             -s,  0,  c;
+  // clang-format on
+  return R;
+}
+
+template <typename T>
+RotationMatrix<T> RotationMatrix<T>::MakeZRotation(const T& theta) {
+  using std::isfinite;
+  DRAKE_DEMAND(isfinite(theta));
+  RotationMatrix<T> R = RotationMatrix<T>::MakeUninitialized();
+  using std::cos;
+  using std::sin;
+  const T c = cos(theta), s = sin(theta);
+  // clang-format off
+  R.R_AB_ << c, -s,  0,
+             s,  c,  0,
+             0,  0,  1;
+  // clang-format on
+  return RotationMatrix(R);
+}
+
+template <typename T>
 RotationMatrix<T>::RotationMatrix(const RollPitchYaw<T>& rpy) {
   // TODO(@mitiguy) Add publicly viewable documentation on how Sherm and
   // Goldstein like to visualize/conceptualize rotation sequences.
