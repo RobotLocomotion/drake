@@ -88,7 +88,9 @@ def _get_most_distal_parent_frame_directive(frame, directives):
 
 
 def _resolve_and_scope_frame(frame_name: str, directives) -> str:
-    """Returns the frame scoped, None if the scope could not be found."""
+    """Returns the frame scoped and if it is deeply nested, """
+    """None is returned if the scope could not be found."""
+    deeply_nested = False
     frame = _find_frame(frame_name, directives)
     # Frame with the same name as base frame are not supported
     if frame is not None and frame_name == frame.base_frame:
@@ -100,9 +102,13 @@ def _resolve_and_scope_frame(frame_name: str, directives) -> str:
     final_frame = _get_most_distal_parent_frame_directive(frame, directives)
 
     if final_frame is None:
-        return None
+        return None, deeply_nested
 
-    return _join_name(final_frame.scoped_base_frame.instance_name, frame_name)
+    if _SCOPE_DELIMITER in final_frame.scoped_base_frame.name:
+        deeply_nested = True
+
+    return _join_name(final_frame.scoped_base_frame.instance_name,
+                      frame_name), deeply_nested
 
 
 def _levels_of_nesting(scope: str) -> int:
@@ -162,7 +168,8 @@ class AddFrame:
                     f'[{self.base_frame}].')
 
     def _resolve(self, name, directives):
-        resolved_name = _resolve_and_scope_frame(name, directives)
+        resolved_name, depely_nested = _resolve_and_scope_frame(name,
+                                                                directives)
         if resolved_name is None:
             raise ConversionError(
                 f'Unable to find scope for frame: [{name}]'
@@ -227,25 +234,41 @@ class AddWeld:
         self.child_name = directive.child
 
     def resolve_names(self, directives):
-        self.resolved_parent_name = self._resolve(self.parent_name,
-                                                  directives)
-        self.resolved_child_name = self._resolve(self.child_name,
-                                                 directives)
+        self.resolved_parent_name, deeply_nested = self._resolve(
+                self.parent_name, directives)
+        self.resolved_child_name, deeply_nested = self._resolve(
+                self.child_name, directives)
+        if deeply_nested:
+            raise ConversionError(f'Found weld with deeply nested child frame'
+                                  f' [{self.resolved_child_name.full_name}]. '
+                                  f'Welds with deeply nested childs are not '
+                                  f'suported.')
+
+        if self.resolved_parent_name.full_name == \
+                self.resolved_child_name.full_name:
+            raise ConversionError(f'Weld must specify different name for '
+                                  f'parent and child, while '
+                                  f'[{self.resolved_child_name.full_name}] '
+                                  f'was specified for both.')
 
     def _resolve(self, name, directives):
         scoped_name = ScopedName(name)
+        deeply_nested = False
         # Resolve scope if the frame is implicit
         if scoped_name.instance_name != "":
-            return scoped_name
+            if _SCOPE_DELIMITER in scoped_name.name:
+                deeply_nested = True
+            return scoped_name, deeply_nested
 
-        resolved_name = _resolve_and_scope_frame(name, directives)
+        resolved_name, deeply_nested = _resolve_and_scope_frame(name,
+                                                                directives)
         if resolved_name is None:
             raise ConversionError(
                 f'Unable to resolve scope for '
                 f'frame: [{self.parent_name}]. When tring to add '
                 f'weld between: [{self.parent_name}] and: '
                 f'[{self.child_name}].')
-        return ScopedName(resolved_name)
+        return ScopedName(resolved_name), deeply_nested
 
     def insert_into_root_sdformat_node(self, root, directives):
         tmp_parent_name = self.resolved_parent_name.full_name.replace(

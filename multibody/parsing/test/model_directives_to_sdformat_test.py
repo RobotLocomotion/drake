@@ -330,6 +330,39 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                            'frames_same_name.dmd.yaml'])
             convert_directives(args)
 
+    def test_error_add_weld_child_frame_too_deep(self):
+        with self.assertRaisesRegex(
+                ConversionError, 'Found weld with deeply nested child frame'
+                r' \[top_level_model::top_injected_frame\]. Welds with deeply'
+                ' nested childs are not suported.'):
+            args = self.parser.parse_args(['-m',
+                                           'multibody/parsing/test/model_'
+                                           'directives_to_sdformat_files/'
+                                           'deep_child_frame_weld.dmd.yaml'])
+            convert_directives(args)
+
+    def test_error_add_weld_child_too_deep(self):
+        with self.assertRaisesRegex(
+                ConversionError, 'Found weld with deeply nested child frame'
+                r' \[top_level_model::robot1::robot_base\]. Welds with deeply'
+                ' nested childs are not suported.'):
+            args = self.parser.parse_args(['-m',
+                                           'multibody/parsing/test/model_'
+                                           'directives_to_sdformat_files/'
+                                           'deep_child_weld.dmd.yaml'])
+            convert_directives(args)
+
+    def test_error_add_weld_same_parent_child(self):
+        with self.assertRaisesRegex(
+                ConversionError, 'Weld must specify different name for '
+                r'parent and child, while \[simple_model::base\] was '
+                'specified for both.'):
+            args = self.parser.parse_args(['-m',
+                                           'multibody/parsing/test/model_'
+                                           'directives_to_sdformat_files/'
+                                           'weld_same_parent_child.dmd.yaml'])
+            convert_directives(args)
+
     def test_add_model_instance_add_directives(self):
         os.environ['ROS_PACKAGE_PATH'] = 'multibody/parsing/'
         tempdir = temp_directory()
