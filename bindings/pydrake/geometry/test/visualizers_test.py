@@ -103,7 +103,9 @@ class TestGeometryVisualizers(unittest.TestCase):
         meshcat.SetObject(path="/test/box",
                           shape=mut.Box(1, 1, 1),
                           rgba=mut.Rgba(.5, .5, .5))
-        meshcat.SetTransform(path="/test/box", X_ParentPath=RigidTransform())
+        meshcat.SetTransform(path="/test/box",
+                             X_ParentPath=RigidTransform(),
+                             time_in_recording=0.2)
         meshcat.SetTransform(path="/test/box", matrix=np.eye(4))
         self.assertTrue(meshcat.HasPath("/test/box"))
         cloud = PointCloud(4)
@@ -155,11 +157,16 @@ class TestGeometryVisualizers(unittest.TestCase):
                             wireframe_line_width=2.0)
         meshcat.SetProperty(path="/Background",
                             property="visible",
-                            value=True)
+                            value=True,
+                            time_in_recording=0.2)
         meshcat.SetProperty(path="/Lights/DirectionalLight/<object>",
-                            property="intensity", value=1.0)
-        meshcat.SetProperty(path="/Background", property="top_color",
-                            value=[0, 0, 0])
+                            property="intensity",
+                            value=1.0,
+                            time_in_recording=0.2)
+        meshcat.SetProperty(path="/Background",
+                            property="top_color",
+                            value=[0, 0, 0],
+                            time_in_recording=0.2)
         meshcat.Set2dRenderMode(
             X_WC=RigidTransform(), xmin=-1, xmax=1, ymin=-1, ymax=1)
         meshcat.ResetRenderMode()
@@ -188,6 +195,14 @@ class TestGeometryVisualizers(unittest.TestCase):
         self.assertEqual(len(gamepad.axes), 0)
         meshcat.SetRealtimeRate(1.0)
         meshcat.Flush()
+
+        meshcat.StartRecording(frames_per_second=64.0,
+                               set_visualizations_while_recording=False)
+        ani = meshcat.get_mutable_recording()
+        self.assertEqual(ani.frames_per_second(), 64.0)
+        meshcat.StopRecording()
+        meshcat.PublishRecording()
+        meshcat.DeleteRecording()
 
         # PerspectiveCamera
         camera = mut.Meshcat.PerspectiveCamera(fov=80,
