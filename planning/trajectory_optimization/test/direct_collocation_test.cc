@@ -48,6 +48,33 @@ std::unique_ptr<LinearSystem<double>> MakeDoubleIntegrator() {
   return std::make_unique<LinearSystem<double>>(A, B, C, D);
 }
 
+GTEST_TEST(DirectCollocationConstraint, DoubleConstructor) {
+  const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
+
+  // Make sure that the constraint can be constructed and evaluated.
+  DirectCollocationConstraint constraint(*system, *context);
+  const Eigen::VectorXd x = Eigen::VectorXd(constraint.num_vars());
+  Eigen::VectorXd y(constraint.num_constraints());
+  constraint.Eval(x, &y);
+}
+
+GTEST_TEST(DirectCollocationConstraint, AutoDiffXdConstructor) {
+  const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
+  const auto system_ad = system->ToAutoDiffXd();
+  auto context_ad = system_ad->CreateDefaultContext();
+
+  // Make sure that the constraint can be constructed and evaluated.
+  DirectCollocationConstraint constraint(*system_ad, context_ad.get(),
+                                         context_ad.get(), context_ad.get());
+  const Eigen::VectorXd x = Eigen::VectorXd(constraint.num_vars());
+  Eigen::VectorXd y(constraint.num_constraints());
+  constraint.Eval(x, &y);
+}
+
 GTEST_TEST(DirectCollocation, TestAddRunningCost) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const std::unique_ptr<Context<double>> context =
@@ -131,6 +158,65 @@ GTEST_TEST(DirectCollocation, TestCollocationConstraint) {
     EXPECT_TRUE(
         CompareMatrices(prog.EvalBindingAtInitialGuess(binding), defect, 1e-6));
   }
+}
+
+class EvaluationCounterSystem : public systems::LeafSystem<AutoDiffXd> {
+ public:
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(EvaluationCounterSystem)
+
+  EvaluationCounterSystem() {
+    DeclareContinuousState(1);
+    DeclareVectorInputPort("u", 1);
+  }
+
+  int evaluation_count() const { return evaluation_count_; }
+
+ private:
+  void DoCalcTimeDerivatives(
+      const Context<AutoDiffXd>& context,
+      systems::ContinuousState<AutoDiffXd>* derivatives) const override {
+    evaluation_count_++;
+    AutoDiffXd x = context.get_continuous_state_vector()[0];
+    AutoDiffXd u = this->get_input_port().Eval(context)[0];
+    (*derivatives)[0] = x + u;
+  }
+
+  mutable int evaluation_count_{0};
+};
+
+// Confirm that we can avoid evaluating the system derivatives using caching.
+GTEST_TEST(DirectCollocation, TestCollocationConstraintCaching) {
+  EvaluationCounterSystem system;
+  const int kNumContexts = 3;
+  std::vector<std::unique_ptr<Context<AutoDiffXd>>> sample_context(
+      kNumContexts);
+  for (int i = 0; i < kNumContexts; ++i) {
+    sample_context[i] = system.CreateDefaultContext();
+  }
+  auto collocation_context = system.CreateDefaultContext();
+
+  DirectCollocationConstraint constraint(system, sample_context[0].get(),
+                                         sample_context[1].get(),
+                                         collocation_context.get());
+
+  VectorX<AutoDiffXd> x(5), y(1);
+  x << 0.1, 1.2, 2.3, 3.4, 4.56;
+  EXPECT_EQ(system.evaluation_count(), 0);
+  constraint.Eval(x, &y);
+  EXPECT_EQ(system.evaluation_count(), 3);
+  // Same x, so this should not evaluate the dynamics.
+  constraint.Eval(x, &y);
+  EXPECT_EQ(system.evaluation_count(), 3);
+
+  // A second constraint using shifted contexts
+  DirectCollocationConstraint next_constraint(system, sample_context[1].get(),
+                                              sample_context[2].get(),
+                                              collocation_context.get());
+  x << 0.1, x[2], 0.52, x[4], 0.25;
+  // This should have a cache hit on sample_context[1], and so will evaluate
+  // the dynamics 2 times instead of 3.
+  next_constraint.Eval(x, &y);
+  EXPECT_EQ(system.evaluation_count(), 5);
 }
 
 // Checks the collocation constraint value against the interpolation used

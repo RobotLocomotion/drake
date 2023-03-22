@@ -3,22 +3,6 @@
 namespace drake {
 namespace multibody {
 namespace internal {
-bool AreAutoDiffVecXdEqual(const Eigen::Ref<const VectorX<AutoDiffXd>>& a,
-                           const Eigen::Ref<const VectorX<AutoDiffXd>>& b) {
-  if (a.rows() != b.rows()) {
-    return false;
-  }
-  if (math::ExtractValue(a) != math::ExtractValue(b)) {
-    return false;
-  }
-  const Eigen::MatrixXd a_gradient = math::ExtractGradient(a);
-  const Eigen::MatrixXd b_gradient = math::ExtractGradient(b);
-  if (a_gradient.rows() != b_gradient.rows() ||
-      a_gradient.cols() != b_gradient.cols()) {
-    return false;
-  }
-  return a_gradient == b_gradient;
-}
 
 void UpdateContextConfiguration(drake::systems::Context<double>* context,
                                 const MultibodyPlant<double>& plant,
@@ -39,7 +23,7 @@ void UpdateContextConfiguration(systems::Context<AutoDiffXd>* context,
                                 const MultibodyPlant<AutoDiffXd>& plant,
                                 const Eigen::Ref<const AutoDiffVecXd>& q) {
   DRAKE_ASSERT(context != nullptr);
-  if (!AreAutoDiffVecXdEqual(q, plant.GetPositions(*context))) {
+  if (!math::AreAutoDiffVecXdEqual(q, plant.GetPositions(*context))) {
     plant.SetPositions(context, q);
   }
 }
@@ -65,7 +49,8 @@ void UpdateContextPositionsAndVelocities(
     const MultibodyPlant<AutoDiffXd>& plant,
     const Eigen::Ref<const AutoDiffVecXd>& q_v) {
   DRAKE_ASSERT(context != nullptr);
-  if (!AreAutoDiffVecXdEqual(q_v, plant.GetPositionsAndVelocities(*context))) {
+  if (!math::AreAutoDiffVecXdEqual(q_v,
+                                   plant.GetPositionsAndVelocities(*context))) {
     plant.SetPositionsAndVelocities(context, q_v);
   }
 }
