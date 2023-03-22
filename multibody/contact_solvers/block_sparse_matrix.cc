@@ -92,7 +92,7 @@ void BlockSparseMatrixBuilder<T>::PushBlock(int i, int j,
         "Exceeded the maximum number of non-zero blocks capacity specified at "
         "construction.");
   }
-  if (Bij.size() > 0) {
+  if (Bij.size() >= 0) {
     if (block_row_size_[i] >= 0) {
       // A block was added before to this row. Verify that Bij.rows() ==
       // block_row_size_[i].

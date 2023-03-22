@@ -84,12 +84,6 @@ int SapContactProblem<T>::AddConstraint(std::unique_ptr<SapConstraint<T>> c) {
         "Jacobian does not match the number of velocities in this problem for "
         "the second clique.");
   }
-  if (num_velocities(c->first_clique()) == 0 ||
-      (c->num_cliques() == 2 && num_velocities(c->second_clique()) == 0)) {
-    throw std::runtime_error(
-        "Adding constraint to a clique with zero number of velocities is not "
-        "allowed.");
-  }
 
   // Update graph.
   const int ni = c->num_constraint_equations();

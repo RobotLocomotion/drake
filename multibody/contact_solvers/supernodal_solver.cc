@@ -139,11 +139,6 @@ std::vector<int> GetJacobianBlockSizesVerifyTriplets(
   for (const auto& j : jacobian_blocks) {
     int col_index = std::get<1>(j);
 
-    if ((std::get<2>(j).cols() == 0) || (std::get<2>(j).rows() == 0)) {
-      throw std::runtime_error(
-          "Invalid Jacobian triplets: a triplet contains an empty matrix");
-    }
-
     if (block_column_size[col_index] == -1) {
       block_column_size[col_index] = std::get<2>(j).cols();
     } else {

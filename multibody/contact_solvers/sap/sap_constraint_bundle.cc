@@ -100,13 +100,17 @@ void SapConstraintBundle<T>::MakeConstraintBundleJacobian(
       // Therefore below we must check to what clique in the original constraint
       // the group's cliques correspond to.
 
-      J0.middleRows(row_start, ni) = c0 == c.first_clique()
-                                         ? c.first_clique_jacobian()
-                                         : c.second_clique_jacobian();
-      if (c1 != c0) {
-        J1.middleRows(row_start, ni) = c1 == c.first_clique()
+      if (nv0 > 0) {
+        J0.middleRows(row_start, ni) = c0 == c.first_clique()
                                            ? c.first_clique_jacobian()
                                            : c.second_clique_jacobian();
+      }
+      if (c1 != c0) {
+        if (problem.num_velocities(c1) > 0) {
+          J1.middleRows(row_start, ni) = c1 == c.first_clique()
+                                             ? c.first_clique_jacobian()
+                                             : c.second_clique_jacobian();
+        }
       }
       row_start += ni;
     }

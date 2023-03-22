@@ -414,7 +414,9 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.first_clique());
         const MatrixX<T>& Jic = constraint.first_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
+        if(A[c].rows() != 0 && Jic.rows() != 0) {
+          W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
+        }
       }
 
       // Adds clique 1 contribution, if present.
@@ -422,7 +424,9 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
         const int c =
             cliques_permutation.permuted_index(constraint.second_clique());
         const MatrixX<T>& Jic = constraint.second_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
+        if(A[c].rows() != 0 && Jic.rows() != 0) {
+          W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
+        }
       }
     }
   }
