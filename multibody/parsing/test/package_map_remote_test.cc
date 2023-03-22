@@ -54,7 +54,8 @@ TEST_F(PackageMapRemoteTest, GetPathPrepopulated) {
   dut.AddRemote(package_name, params);
 
   // Only a call to GetPath kicks off the resolution, and even then nothing is
-  // downloaded (the missing URL would have been a 404 error).
+  // downloaded (the missing URL would have been a 404 error, or rejected by
+  // the DRAKE_ALLOW_NETWORK policy for unit tests).
   const fs::path package_dir = PrepopulateCache(package_name, sha256);
   const std::string resolved = dut.GetPath(package_name);
   EXPECT_EQ(resolved, package_dir.string());
@@ -94,6 +95,32 @@ TEST_F(PackageMapRemoteTest, ActuallyFetch) {
   std::stringstream buffer;
   buffer << readme.rdbuf();
   EXPECT_EQ(buffer.str(), "This package is empty.\n");
+}
+
+// When DRAKE_ALLOW_NETWORK denies package_map, only file:// URLs are allowed
+// and others (like http://) are quietly ignored. (Note that our Bazel config
+// runs unit tests as "denied by default"; our BUILD rule doesn't need any
+// special magic in support of this test case.)
+TEST_F(PackageMapRemoteTest, GetPathEnvironmentDenied) {
+  // Prepare a remote package that specifies both http and file.
+  PackageMap::RemoteParams params = MakeGoodParams();
+  const std::string file_url = params.urls.front();
+  const std::string http_url = "http://127.0.0.1/missing.zip";
+  params.urls = {http_url, file_url};
+
+  // Add and fetch it.
+  PackageMap dut = PackageMap::MakeEmpty();
+  dut.AddRemote("ok", params);
+  EXPECT_NO_THROW(dut.GetPath("ok"));
+
+  // Without the file url to fall back on, http-only is an error (when network
+  // is denied). Note that we need to clear the sha256 to avoid caching. Only
+  // actually hitting the network is denied.
+  params.urls = {http_url};
+  params.sha256 = std::string(64u, 'f');
+  dut = PackageMap::MakeEmpty();
+  dut.AddRemote("bad", params);
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.GetPath("bad"), ".*DRAKE_ALLOW_NETWORK.*");
 }
 
 // Cannot duplicate another package, even if its local-only.
