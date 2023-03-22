@@ -4,7 +4,7 @@ import copy
 import unittest
 
 from pydrake.geometry import (
-    Rgba,
+    Meshcat, Rgba,
 )
 
 from pydrake.lcm import (
@@ -55,4 +55,5 @@ class TestConfig(unittest.TestCase):
         builder = DiagramBuilder()
         plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
         plant.Finalize()
-        config = mut.AddDefaultVisualization(builder=builder)
+        meshcat = Meshcat()
+        config = mut.AddDefaultVisualization(builder=builder, meshcat=meshcat)
