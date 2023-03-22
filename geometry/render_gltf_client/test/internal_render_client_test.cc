@@ -315,13 +315,13 @@ TEST_F(RenderClientTest, RenderOnServerFieldsCheck) {
   image_type = RenderImageType::kColorRgba8U;
   DRAKE_EXPECT_THROWS_MESSAGE(
       client.RenderOnServer(color_camera_.core(), image_type, fake_scene_path_),
-      "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
+      "[\\s\\S]*POST:[\\s\\S]*");
 
   // Check fields for a label render.
   image_type = RenderImageType::kLabel16I;
   DRAKE_EXPECT_THROWS_MESSAGE(
       client.RenderOnServer(color_camera_.core(), image_type, fake_scene_path_),
-      "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
+      "[\\s\\S]*POST:[\\s\\S]*");
 
   /* Check fields for a depth render.  This test also includes a verification
    that the provided mime_type is propagated correctly.  There is no special
@@ -331,7 +331,7 @@ TEST_F(RenderClientTest, RenderOnServerFieldsCheck) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       client.RenderOnServer(depth_camera_.core(), image_type, fake_scene_path_,
                             mime_type, depth_range),
-      "[\\s\\S]*ERROR doing POST:[\\s\\S]*");
+      "[\\s\\S]*POST:[\\s\\S]*");
 }
 
 /* Tests bad `HttpResponse`s that have a server message provided. Edge cases
@@ -392,7 +392,7 @@ TEST_F(RenderClientTest, RenderOnServerNoFileReturn) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       client.RenderOnServer(color_camera_.core(), RenderImageType::kColorRgba8U,
                             fake_scene_path_),
-      "ERROR doing POST.*supposed to respond with a file but did not.");
+      ".*POST.*supposed to respond with a file but did not.");
 }
 
 TEST_F(RenderClientTest, RenderOnServerInvalidImageReturn) {
@@ -590,7 +590,7 @@ TEST_F(RenderClientTest, LoadDepthImageBad) {
   // Failure case 1: invalid extension.
   DRAKE_EXPECT_THROWS_MESSAGE(
       RenderClient::LoadDepthImage("/no/such/file_ext.foo", &ignored),
-      "Unsupported file extension");
+      ".*unsupported file extension");
 
   // Failure case 2: not a valid image file.
   DRAKE_EXPECT_THROWS_MESSAGE(

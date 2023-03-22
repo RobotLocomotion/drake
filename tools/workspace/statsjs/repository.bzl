@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def statsjs_repository(

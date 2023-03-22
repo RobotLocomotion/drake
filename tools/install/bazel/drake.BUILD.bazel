@@ -1,5 +1,4 @@
-# -*- mode: python -*-
-# vi: set ft=python :
+# -*- bazel -*-
 
 load("@rules_python//python:defs.bzl", "py_library")
 load("//:.manifest.bzl", "MANIFEST")
@@ -35,6 +34,7 @@ _EXPECTED_DRAKE_RUNFILES_PACKAGES = [
     "examples",
     "geometry",
     "manipulation",
+    "multibody",
 ]
 
 _COVERED_DRAKE_RUNFILES = _DRAKE_ROOT_PACKAGE_RUNFILES + [

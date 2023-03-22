@@ -212,8 +212,18 @@ class TestModelVisualizer(unittest.TestCase):
         self.assertEqual(meshcat.GetButtonClicks(button), 1)
 
         # Run once. If a reload() happened, the diagram will have changed out.
-        dut.Run(loop_once=True)
+        # Use a non-default position so we can check that it is maintained.
+        original_q = [1.0, 2.0]
+        dut.Run(position=original_q, loop_once=True)
         self.assertNotEqual(id(orig_diagram), id(dut._diagram))
+
+        # Ensure the reloaded slider and joint values are the same.
+        slider_q = dut._sliders.get_output_port().Eval(
+            dut._sliders.GetMyContextFromRoot(dut._context))
+        self.assertListEqual(list(original_q), list(slider_q))
+        joint_q = dut._diagram.plant().GetPositions(
+            dut._diagram.plant().GetMyContextFromRoot(dut._context))
+        self.assertListEqual(list(original_q), list(joint_q))
 
     def test_webbrowser(self):
         """

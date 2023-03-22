@@ -347,35 +347,54 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
   return NewIndeterminates(rows, cols, names);
 }
 
+void MathematicalProgram::AddIndeterminate(
+    const symbolic::Variable& new_indeterminate) {
+  if (new_indeterminate.is_dummy()) {
+    throw std::runtime_error(
+        fmt::format("{} should not be a dummy variable.", new_indeterminate));
+  }
+  if (indeterminates_index_.find(new_indeterminate.get_id()) !=
+      indeterminates_index_.end()) {
+    throw std::runtime_error(fmt::format(
+        "{} is already an indeterminate in the optimization program.",
+        new_indeterminate));
+  }
+  if (decision_variable_index_.find(new_indeterminate.get_id()) !=
+      decision_variable_index_.end()) {
+    throw std::runtime_error(
+        fmt::format("{} is a decision variable in the optimization program.",
+                    new_indeterminate));
+  }
+  if (new_indeterminate.get_type() != symbolic::Variable::Type::CONTINUOUS) {
+    throw std::runtime_error(
+        fmt::format("{} should be of type CONTINUOUS.", new_indeterminate));
+  }
+  const int var_index = indeterminates_.size();
+  indeterminates_index_.insert(
+      std::make_pair(new_indeterminate.get_id(), var_index));
+  indeterminates_.push_back(new_indeterminate);
+}
+
 void MathematicalProgram::AddIndeterminates(
     const Eigen::Ref<const MatrixXDecisionVariable>& new_indeterminates) {
   for (int i = 0; i < new_indeterminates.rows(); ++i) {
     for (int j = 0; j < new_indeterminates.cols(); ++j) {
       const auto& var = new_indeterminates(i, j);
-      if (var.is_dummy()) {
-        throw std::runtime_error(fmt::format(
-            "new_indeterminates({},{}) should not be a dummy variable.", i, j));
-      }
-      if (indeterminates_index_.find(var.get_id()) !=
-              indeterminates_index_.end() ||
-          decision_variable_index_.find(var.get_id()) !=
-              decision_variable_index_.end()) {
-        throw std::runtime_error(
-            fmt::format("{} already exists in the optimization program.", var));
-      }
-      if (var.get_type() != symbolic::Variable::Type::CONTINUOUS) {
-        throw std::runtime_error("indeterminate should of type CONTINUOUS.\n");
-      }
-      const int var_index = indeterminates_.size();
-      indeterminates_index_.insert(std::make_pair(var.get_id(), var_index));
-      indeterminates_.push_back(var);
+      this->AddIndeterminate(var);
     }
   }
 }
 
+void MathematicalProgram::AddIndeterminates(
+    const symbolic::Variables& new_indeterminates) {
+  for (const auto& var : new_indeterminates) {
+    this->AddIndeterminate(var);
+  }
+}
+
 Binding<VisualizationCallback> MathematicalProgram::AddVisualizationCallback(
-    const VisualizationCallback::CallbackFunction &callback,
-    const Eigen::Ref<const VectorXDecisionVariable> &vars) {
+    const VisualizationCallback::CallbackFunction& callback,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars) {
   visualization_callbacks_.push_back(
       internal::CreateBinding<VisualizationCallback>(
           make_shared<VisualizationCallback>(vars.size(), callback), vars));
@@ -680,6 +699,9 @@ Binding<Constraint> MathematicalProgram::AddConstraint(
   } else if (dynamic_cast<LorentzConeConstraint*>(constraint)) {
     return AddConstraint(
         internal::BindingDynamicCast<LorentzConeConstraint>(binding));
+  } else if (dynamic_cast<QuadraticConstraint*>(constraint)) {
+    return AddConstraint(
+        internal::BindingDynamicCast<QuadraticConstraint>(binding));
   } else if (dynamic_cast<LinearConstraint*>(constraint)) {
     return AddConstraint(
         internal::BindingDynamicCast<LinearConstraint>(binding));
@@ -764,8 +786,8 @@ Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
 }
 
 Binding<LinearConstraint> MathematicalProgram::AddLinearConstraint(
-    const Eigen::Ref<const Eigen::Array<
-        symbolic::Formula, Eigen::Dynamic, Eigen::Dynamic>>& formulas) {
+    const Eigen::Ref<const Eigen::Array<symbolic::Formula, Eigen::Dynamic,
+                                        Eigen::Dynamic>>& formulas) {
   Binding<Constraint> binding = internal::ParseConstraint(formulas);
   Constraint* constraint = binding.evaluator().get();
   if (dynamic_cast<LinearConstraint*>(constraint)) {
@@ -947,6 +969,32 @@ Binding<BoundingBoxConstraint> MathematicalProgram::AddBoundingBoxConstraint(
       make_shared<BoundingBoxConstraint>(Flatten(lb), Flatten(ub));
   return AddConstraint(
       Binding<BoundingBoxConstraint>(constraint, Flatten(vars)));
+}
+
+Binding<QuadraticConstraint> MathematicalProgram::AddConstraint(
+    const Binding<QuadraticConstraint>& binding) {
+  DRAKE_DEMAND(CheckBinding(binding));
+  required_capabilities_.insert(ProgramAttribute::kQuadraticConstraint);
+  quadratic_constraints_.push_back(binding);
+  return quadratic_constraints_.back();
+}
+
+Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticConstraint(
+    const Eigen::Ref<const Eigen::MatrixXd>& Q,
+    const Eigen::Ref<const Eigen::VectorXd>& b, double lb, double ub,
+    const Eigen::Ref<const VectorXDecisionVariable>& vars,
+    std::optional<QuadraticConstraint::HessianType> hessian_type) {
+  auto constraint =
+      std::make_shared<QuadraticConstraint>(Q, b, lb, ub, hessian_type);
+
+  return AddConstraint(Binding<QuadraticConstraint>(constraint, vars));
+}
+
+Binding<QuadraticConstraint> MathematicalProgram::AddQuadraticConstraint(
+    const symbolic::Expression& e, double lb, double ub,
+    std::optional<QuadraticConstraint::HessianType> hessian_type) {
+  return AddConstraint(
+      internal::ParseQuadraticConstraint(e, lb, ub, hessian_type));
 }
 
 Binding<LinearComplementarityConstraint> MathematicalProgram::AddConstraint(
@@ -1246,6 +1294,7 @@ std::vector<Binding<Constraint>> MathematicalProgram::GetAllConstraints()
   auto extend = [&conlist](auto container) {
     conlist.insert(conlist.end(), container.begin(), container.end());
   };
+  extend(quadratic_constraints_);
   extend(linear_constraints_);
   extend(linear_equality_constraints_);
   extend(bbox_constraints_);
@@ -1448,10 +1497,10 @@ void MathematicalProgram::SetDecisionVariableValueInVector(
     EigenPtr<Eigen::VectorXd> values) const {
   DRAKE_THROW_UNLESS(values != nullptr);
   DRAKE_THROW_UNLESS(values->size() == num_vars());
-  DRAKE_THROW_UNLESS(
-      decision_variables.rows() == decision_variables_new_values.rows());
-  DRAKE_THROW_UNLESS(
-      decision_variables.cols() == decision_variables_new_values.cols());
+  DRAKE_THROW_UNLESS(decision_variables.rows() ==
+                     decision_variables_new_values.rows());
+  DRAKE_THROW_UNLESS(decision_variables.cols() ==
+                     decision_variables_new_values.cols());
   for (int i = 0; i < decision_variables.rows(); ++i) {
     for (int j = 0; j < decision_variables.cols(); ++j) {
       const int index = FindDecisionVariableIndex(decision_variables(i, j));
@@ -1608,11 +1657,10 @@ void MathematicalProgram::UpdateRequiredCapability(
       break;
     }
     case ProgramAttribute::kQuadraticConstraint: {
-      // Currently we store quadratic constraint as generic constraint. We
-      // don't enable kQuadraticConstraint capability.
-      throw std::runtime_error(
-          "UpdateRequiredCapability(): should not handle quadratic constraint "
-          "capability.");
+      UpdateRequiredCapabilityImpl(query_capability,
+                                   this->quadratic_constraints(),
+                                   &required_capabilities_);
+      break;
     }
     case ProgramAttribute::kL2NormCost: {
       UpdateRequiredCapabilityImpl(query_capability, this->l2norm_costs(),
@@ -1691,6 +1739,10 @@ int MathematicalProgram::RemoveConstraint(
             constraint),
         ProgramAttribute::kPositiveSemidefiniteConstraint,
         &positive_semidefinite_constraint_);
+  } else if (dynamic_cast<QuadraticConstraint*>(constraint_evaluator)) {
+    return RemoveCostOrConstraintImpl(
+        internal::BindingDynamicCast<QuadraticConstraint>(constraint),
+        ProgramAttribute::kQuadraticConstraint, &quadratic_constraints_);
   } else if (dynamic_cast<RotatedLorentzConeConstraint*>(
                  constraint_evaluator)) {
     return RemoveCostOrConstraintImpl(
@@ -1804,7 +1856,6 @@ std::ostream& operator<<(std::ostream& os, const MathematicalProgram& prog) {
   }
   return os;
 }
-
 
 }  // namespace solvers
 }  // namespace drake

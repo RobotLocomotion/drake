@@ -10,11 +10,13 @@ std::shared_ptr<GurobiSolver::License> GurobiSolver::AcquireLicense() {
   return {};
 }
 
-bool GurobiSolver::is_available() { return false; }
+bool GurobiSolver::is_available() {
+  return false;
+}
 
-void GurobiSolver::DoSolve(
-    const MathematicalProgram&, const Eigen::VectorXd&,
-    const SolverOptions&, MathematicalProgramResult*) const {
+void GurobiSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+                           const SolverOptions&,
+                           MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The Gurobi bindings were not compiled.  You'll need to use a different "
       "solver.");

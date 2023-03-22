@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(
     "@drake//tools/skylark:pybind.bzl",
     "get_pybind_package_info",

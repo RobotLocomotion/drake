@@ -7,7 +7,9 @@
 namespace drake {
 namespace solvers {
 
-bool CsdpSolver::is_available() { return false; }
+bool CsdpSolver::is_available() {
+  return false;
+}
 
 void CsdpSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
                          const SolverOptions&,

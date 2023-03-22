@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 # This stub BUILD file for SNOPT contains the same public targets as the real
 # BUILD file, always reports an error (from error.txt) during compilation, but

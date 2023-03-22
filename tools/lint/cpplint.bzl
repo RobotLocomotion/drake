@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/skylark:drake_py.bzl", "py_test_isolated")
 
 # From https://bazel.build/versions/master/docs/be/c-cpp.html#cc_library.srcs

@@ -173,7 +173,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("time_step", &Class::time_step, cls_doc.time_step.doc)
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
         .def("num_joints", &Class::num_joints, cls_doc.num_joints.doc)
-        .def("num_actuators", &Class::num_actuators, cls_doc.num_actuators.doc)
+        .def("num_actuators",
+            overload_cast_explicit<int>(&Class::num_actuators),
+            cls_doc.num_actuators.doc_0args)
+        .def("num_actuators",
+            overload_cast_explicit<int, ModelInstanceIndex>(
+                &Class::num_actuators),
+            py::arg("model_instance"), cls_doc.num_actuators.doc_1args)
         .def("num_force_elements", &Class::num_force_elements,
             cls_doc.num_force_elements.doc)
         .def("num_constraints", &Class::num_constraints,
@@ -648,6 +654,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("user_to_joint_index_map"),
             cls_doc.MakeActuatorSelectorMatrix
                 .doc_1args_user_to_joint_index_map)
+        .def("MakeStateSelectorMatrix", &Class::MakeStateSelectorMatrix,
+            py::arg("user_to_joint_index_map"),
+            cls_doc.MakeStateSelectorMatrix.doc)
         .def(
             "MapVelocityToQDot",
             [](const Class* self, const Context<T>& context,
@@ -690,6 +699,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.mutable_gravity_field.doc)
         .def("GetJointIndices", &Class::GetJointIndices,
             py::arg("model_instance"), cls_doc.GetJointIndices.doc)
+        .def("GetJointActuatorIndices", &Class::GetJointActuatorIndices,
+            py::arg("model_instance"), cls_doc.GetJointActuatorIndices.doc)
+        .def("GetActuatedJointIndices", &Class::GetActuatedJointIndices,
+            py::arg("model_instance"), cls_doc.GetActuatedJointIndices.doc)
         .def("GetModelInstanceName",
             overload_cast_explicit<const string&, ModelInstanceIndex>(
                 &Class::GetModelInstanceName),

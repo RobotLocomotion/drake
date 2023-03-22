@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
 def fcl_internal_repository(
@@ -8,8 +6,8 @@ def fcl_internal_repository(
     github_archive(
         name = name,
         repository = "flexible-collision-library/fcl",
-        commit = "df2702ca5e703dec98ebd725782ce13862e87fc8",
-        sha256 = "3ebcf2470a3ee372440cdec4cb78d1723411c3cf84f419679c2c85317c4c2dae",  # noqa
+        commit = "b6d1a78b87df474b760af8c86ace9b34ab40612b",
+        sha256 = "fe1fc37921983877f3b264a23005f76e18786a939a8a6108d97f3d970ccb2ccc",  # noqa
         build_file = ":package.BUILD.bazel",
         patches = [
             ":patches/cassert.patch",

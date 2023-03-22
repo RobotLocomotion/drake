@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(
     "//tools/workspace/lcm:lcm.bzl",
     "lcm_cc_library",

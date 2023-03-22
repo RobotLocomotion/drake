@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # This file is named BUILD.bazel instead of the more typical BUILD, so that on
 # OSX it won't conflict with a build artifacts directory named "build".
 
@@ -89,6 +87,7 @@ install(
         "//geometry:install",
         "//lcmtypes:install",
         "//manipulation/models:install_data",
+        "//multibody/parsing:install",
         "//setup:install",
         "//tools/install/libdrake:install",
         "//tools/workspace:install_external_packages",

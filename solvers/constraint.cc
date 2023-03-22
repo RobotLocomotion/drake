@@ -94,6 +94,40 @@ symbolic::Formula Constraint::DoCheckSatisfied(
   return f;
 }
 
+bool QuadraticConstraint::is_convex() const {
+  switch (hessian_type_) {
+    case HessianType::kPositiveSemidefinite: {
+      // lower_bound is -inf
+      return std::isinf(lower_bound()(0)) && lower_bound()(0) < 0;
+    }
+    case HessianType::kNegativeSemidefinite: {
+      // upper bound is inf
+      return std::isinf(upper_bound()(0)) && upper_bound()(0) > 0;
+    }
+    case HessianType::kIndefinite: {
+      return false;
+    }
+  }
+  DRAKE_UNREACHABLE();
+}
+
+void QuadraticConstraint::UpdateHessianType(
+    std::optional<HessianType> hessian_type) {
+  if (hessian_type.has_value()) {
+    hessian_type_ = hessian_type.value();
+    return;
+  }
+  Eigen::LDLT<Eigen::MatrixXd> ldlt_solver;
+  ldlt_solver.compute(Q_);
+  if (ldlt_solver.isPositive()) {
+    hessian_type_ = HessianType::kPositiveSemidefinite;
+  } else if (ldlt_solver.isNegative()) {
+    hessian_type_ = HessianType::kNegativeSemidefinite;
+  } else {
+    hessian_type_ = HessianType::kIndefinite;
+  }
+}
+
 template <typename DerivedX, typename ScalarY>
 void QuadraticConstraint::DoEvalGeneric(const Eigen::MatrixBase<DerivedX>& x,
                                         VectorX<ScalarY>* y) const {

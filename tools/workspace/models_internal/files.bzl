@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # Keep the macros sorted alphabetically by macro name.
 # Keep the lists of files sorted alphabetically by filename.
 

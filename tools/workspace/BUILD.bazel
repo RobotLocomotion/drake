@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/skylark:py.bzl", "py_library")
 load("@drake//tools/install:check_licenses.bzl", "check_licenses")
 load("@drake//tools/install:install.bzl", "install")

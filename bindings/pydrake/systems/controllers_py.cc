@@ -97,7 +97,16 @@ PYBIND11_MODULE(controllers, m) {
             cls_doc.ctor.doc)
         .def("is_pure_gravity_compensation",
             &Class::is_pure_gravity_compensation,
-            cls_doc.is_pure_gravity_compensation.doc);
+            cls_doc.is_pure_gravity_compensation.doc)
+        .def("get_input_port_estimated_state",
+            &Class::get_input_port_estimated_state, py_rvp::reference_internal,
+            cls_doc.get_input_port_estimated_state.doc)
+        .def("get_input_port_desired_acceleration",
+            &Class::get_input_port_desired_acceleration,
+            py_rvp::reference_internal,
+            cls_doc.get_input_port_desired_acceleration.doc)
+        .def("get_output_port_force", &Class::get_output_port_force,
+            py_rvp::reference_internal, cls_doc.get_output_port_force.doc);
   }
 
   // TODO(eric.cousineau): Expose multiple inheritance from

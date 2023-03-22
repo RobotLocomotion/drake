@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 # This constant contains Drake's default lists of mirrors.  It is keyed by the
 # repository type using magic strings ("github", etc.), and has values of type
 # list-of-string; each string is a pattern for a mirror URL.

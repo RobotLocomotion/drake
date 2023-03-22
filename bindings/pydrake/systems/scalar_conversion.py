@@ -145,8 +145,8 @@ class TemplateSystem(TemplateClass):
 
         return decorator
 
-    def _on_add(self, param, cls):
-        TemplateClass._on_add(self, param, cls)
+    def _on_add(self, param, cls, skip_rename):
+        TemplateClass._on_add(self, param, cls, skip_rename)
         T, = param
 
         # Check that the user has not defined `__init__`, and has defined

@@ -294,6 +294,9 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.num_joints(), benchmark.num_joints())
         self.assertEqual(plant.num_actuators(), benchmark.num_actuators())
         self.assertEqual(
+            plant.num_actuators(model_instance),
+            benchmark.num_actuators())
+        self.assertEqual(
             plant.num_model_instances(), benchmark.num_model_instances() + 1)
         self.assertEqual(plant.num_positions(), benchmark.num_positions())
         self.assertEqual(
@@ -325,7 +328,7 @@ class TestPlant(unittest.TestCase):
         self._test_joint_api(T, shoulder)
         check_repr(
             shoulder,
-            "<RevoluteJoint_[float] name='ShoulderJoint' index=0 "
+            "<RevoluteJoint name='ShoulderJoint' index=0 "
             "model_instance=2>")
         np.testing.assert_array_equal(
             shoulder.position_lower_limits(), [-np.inf])
@@ -349,12 +352,12 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(len(plant.GetBodyIndices(model_instance)), 2)
         check_repr(
             link1,
-            "<RigidBody_[float] name='Link1' index=1 model_instance=2>")
+            "<RigidBody name='Link1' index=1 model_instance=2>")
         self._test_frame_api(T, plant.GetFrameByName(name="Link1"))
         link1_frame = plant.GetFrameByName(name="Link1")
         check_repr(
             link1_frame,
-            "<BodyFrame_[float] name='Link1' index=1 model_instance=2>")
+            "<BodyFrame name='Link1' index=1 model_instance=2>")
         self.assertIs(
             link1_frame,
             plant.GetFrameByName(name="Link1", model_instance=model_instance))
@@ -385,12 +388,19 @@ class TestPlant(unittest.TestCase):
             joint_index=JointIndex(0)))
         self.assertEqual([JointIndex(0), JointIndex(1)],
                          plant.GetJointIndices(model_instance=model_instance))
+        elbow = plant.GetJointByName(name="ElbowJoint")
+        self.assertEqual(
+            [elbow.index()],
+            plant.GetActuatedJointIndices(model_instance=model_instance))
         joint_actuator = plant.get_joint_actuator(
             actuator_index=JointActuatorIndex(0))
         self.assertIsInstance(joint_actuator, JointActuator)
+        self.assertEqual(
+            [joint_actuator.index()],
+            plant.GetJointActuatorIndices(model_instance=model_instance))
         check_repr(
             joint_actuator,
-            "<JointActuator_[float] name='ElbowJoint' index=0 "
+            "<JointActuator name='ElbowJoint' index=0 "
             "model_instance=2>")
         self.assertIsInstance(
             plant.get_frame(frame_index=world_frame_index()), Frame)
@@ -796,7 +806,7 @@ class TestPlant(unittest.TestCase):
         if T == float:
             self.assertEqual(
                 repr(linear_spring),
-                "<LinearSpringDamper_[float] index=1 model_instance=1>")
+                "<LinearSpringDamper index=1 model_instance=1>")
         revolute_joint = plant.AddJoint(RevoluteJoint_[T](
                 name="revolve_joint", frame_on_parent=body_a.body_frame(),
                 frame_on_child=body_b.body_frame(), axis=[0, 0, 1],
@@ -1800,6 +1810,11 @@ class TestPlant(unittest.TestCase):
                 self.assertTrue(plant.HasJointActuatorNamed(
                     "tau", default_model_instance()))
                 self.assertIsInstance(actuator, JointActuator_[T])
+
+            if joint.name() in ["prismatic", "revolute"]:
+                # This must be called pre-Finalize().
+                joint.set_default_damping(damping=damping)
+
             plant.Finalize()
             self._test_joint_api(T, joint)
             if joint.num_velocities() == 1 and T == float:
@@ -2233,6 +2248,10 @@ class TestPlant(unittest.TestCase):
         Bj = plant.MakeActuatorSelectorMatrix(
             user_to_joint_index_map=[sample_joint.index()])
         numpy_compare.assert_float_equal(Bj, np.array([[1.]]))
+
+        S = plant.MakeStateSelectorMatrix(
+            user_to_joint_index_map=[sample_joint.index()])
+        numpy_compare.assert_float_equal(S, np.mat("0 1.0 0 0; 0 0 0 1.0"))
 
         forces = MultibodyForces(plant=plant)
         plant.CalcForceElementsContribution(context=context, forces=forces)

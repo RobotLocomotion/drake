@@ -598,10 +598,24 @@ class TestMathematicalProgram(unittest.TestCase):
             constraint.upper_bound(), np.array([2., 3.]))
 
     def test_quadratic_constraint(self):
+        hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite
         constraint = mp.QuadraticConstraint(
-            Q0=np.eye(2), b=np.array([1, 2.]), lb=0.5, ub=1.)
+            Q0=np.eye(2), b=np.array([1, 2.]), lb=-np.inf, ub=1.,
+            hessian_type=hessian_type)
         np.testing.assert_array_equal(constraint.Q(), np.eye(2))
         np.testing.assert_array_equal(constraint.b(), np.array([1, 2.]))
+        self.assertEqual(constraint.hessian_type(), hessian_type)
+        self.assertTrue(constraint.is_convex())
+        hessian_type = mp.QuadraticConstraint.HessianType.kNegativeSemidefinite
+        constraint.UpdateCoefficients(
+            new_Q=-np.eye(2), new_b=np.array([1., -1.]),
+            hessian_type=hessian_type)
+        self.assertEqual(constraint.hessian_type(), hessian_type)
+        self.assertFalse(constraint.is_convex())
+        constraint.UpdateCoefficients(
+            new_Q=np.array([[1, 0], [0, -1.]]), new_b=np.array([1., -1]))
+        hessian_type = mp.QuadraticConstraint.HessianType.kIndefinite
+        self.assertEqual(constraint.hessian_type(), hessian_type)
 
     def test_positive_semidefinite_constraint(self):
         constraint = mp.PositiveSemidefiniteConstraint(rows=3)
@@ -1177,6 +1191,20 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.SetDecisionVariableValueInVector(x_matrix, x0_matrix, guess)
         self.assertFalse(any([np.isnan(i) for i in guess]))
 
+    def test_quadratic_constraint(self):
+        prog = mp.MathematicalProgram()
+        x = prog.NewContinuousVariables(3)
+        hessian_type = mp.QuadraticConstraint.HessianType.kPositiveSemidefinite
+        constraint1 = prog.AddQuadraticConstraint(
+            Q=np.eye(2), b=np.array([1., 2.]), lb=0., ub=1., vars=x[:2],
+            hessian_type=hessian_type)
+        self.assertEqual(len(prog.quadratic_constraints()), 1)
+
+        hessian_type = mp.QuadraticConstraint.HessianType.kIndefinite
+        constraint2 = prog.AddQuadraticConstraint(
+            x[0] * x[0] - x[2] * x[2], 1, 2, hessian_type=hessian_type)
+        self.assertEqual(len(prog.quadratic_constraints()), 2)
+
     @unittest.skipIf(
         SNOPT_NO_GUROBI,
         "SNOPT is unable to solve this problem (#10653).")
@@ -1357,10 +1385,15 @@ class TestMathematicalProgram(unittest.TestCase):
         prog = mp.MathematicalProgram()
         x0 = sym.Variable("x0")
         x1 = sym.Variable("x1")
+        y0 = sym.Variable("y0")
+        y1 = sym.Variable("y1")
+        z = sym.Variable("z")
         a0 = sym.Variable("a0")
         a1 = sym.Variable("a1")
-        prog.AddIndeterminates(np.array([x0, x1]))
-        self.assertEqual(prog.num_indeterminates(), 2)
+        prog.AddIndeterminates(new_indeterminates=np.array([x0, x1]))
+        prog.AddIndeterminates(new_indeterminates=sym.Variables([y0, y1]))
+        prog.AddIndeterminate(new_indeterminate=z)
+        self.assertEqual(prog.num_indeterminates(), 5)
         self.assertEqual(prog.FindIndeterminateIndex(x0), 0)
         prog.AddDecisionVariables(np.array([a0, a1]))
         numpy_compare.assert_equal(prog.decision_variable(0), a0)

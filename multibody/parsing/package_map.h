@@ -1,26 +1,37 @@
 #pragma once
 
-#include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/fmt_ostream.h"
+#include "drake/common/name_value.h"
 
 namespace drake {
 namespace multibody {
 
 /** Maps ROS package names to their full path on the local file system. It is
 used by the SDF and URDF parsers when parsing files that reference ROS packages
-for resources like mesh files. */
+for resources like mesh files. This class can also download remote packages from
+the internet on an as-needed basis via AddRemote(). */
 class PackageMap final {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PackageMap)
-
   /** A constructor that initializes a default map containing only the top-level
   `drake` manifest. See PackageMap::MakeEmpty() to create an empty map. */
   PackageMap();
+
+  /** @name Implements CopyConstructible, CopyAssignable, MoveConstructible,
+  MoveAssignable */
+  //@{
+  PackageMap(const PackageMap&);
+  PackageMap& operator=(const PackageMap&);
+  PackageMap(PackageMap&&);
+  PackageMap& operator=(PackageMap&&);
+  //@}
+
+  ~PackageMap();
 
   /** A factory method that initializes an empty map. */
   static class PackageMap MakeEmpty();
@@ -59,14 +70,64 @@ class PackageMap final {
   if `package_path` does not exist. */
   void Add(const std::string& package_name, const std::string& package_path);
 
-  /** Adds package->path mappings from another PackageMap `other_map`. Throws
-  if the other PackageMap contains the same package with a different path. */
+  /** Adds all packages from `other_map` into `this`. Throws if `other` contains
+  a package with the same `package_name` as one already in this map but with
+  incompatible details (e.g., a different local path). */
   void AddMap(const PackageMap& other_map);
 
   /** Adds an entry into this PackageMap for the given `package.xml` filename.
   Throws if `filename` does not exist or its embedded name already exists in
   this map. */
   void AddPackageXml(const std::string& filename);
+
+  /** Parameters used for AddRemote(). */
+  struct RemoteParams {
+    template <typename Archive>
+    void Serialize(Archive* a) {
+      a->Visit(DRAKE_NVP(urls));
+      a->Visit(DRAKE_NVP(sha256));
+      a->Visit(DRAKE_NVP(archive_type));
+      a->Visit(DRAKE_NVP(strip_prefix));
+    }
+
+    /** Returns the JSON serialization of these params. */
+    std::string ToJson() const;
+
+    /** Equality operator. */
+    friend bool operator==(const RemoteParams&, const RemoteParams&);
+
+    /** The list of remote URLs for this resource. The urls are used in the
+    other they appear here, so preferred mirror(s) should come first. Valid
+    methods are "http://" or "https://" or "file://". */
+    std::vector<std::string> urls;
+
+    /** The cryptographic checksum of the file to be downloaded, as a
+    64-character hexadecimal string. */
+    std::string sha256;
+
+    /** (Optional) The archive type of the downloaded file. Valid options are
+    "zip", "tar", "gztar", "bztar", or "xztar". By default, the archive type is
+    determined from the file extension of the URL; in case the URL has no
+    filename extension, you should explicitly specify one here. */
+    std::optional<std::string> archive_type;
+
+    /** (Optional) A directory prefix to remove from the extracted files. In
+    many cases, an archive will prefix all filenames with something like
+    "package-v1.2.3/" so that it extracts into a convenient directory. This
+    option will discard that common prefix when extracting the archive for the
+    PackageMap. It is an error if the archive does not contain any diectory with
+    this prefix, but if there are files outside of this directory they will be
+    silently discarded. */
+    std::optional<std::string> strip_prefix;
+  };
+
+  /** Adds an entry into this PackageMap for the given `package_name`, which
+  will be downloaded from the internet (with local caching). The data will not
+  be downloaded until necessary, i.e., when GetPath() is first called for the
+  `package_name`. Throws if the `package_name` or `params` are invalid.
+  Downloading requires a valid `/usr/bin/python3` interpreter, which will be
+  invoked as a subprocess. */
+  void AddRemote(std::string package_name, RemoteParams params);
 
   /** Crawls down the directory tree starting at `path` searching for
   directories containing the file `package.xml`. For each of these directories,
@@ -132,14 +193,6 @@ class PackageMap final {
                                   const PackageMap& package_map);
 
  private:
-  /* Information about a package. */
-  struct PackageData {
-    /* Directory in which the manifest resides. */
-    std::string path;
-    /* Optional message declaring deprecation of the package. */
-    std::optional<std::string> deprecated_message;
-  };
-
   /* A constructor that creates an empty map . */
   explicit PackageMap(std::nullopt_t);
 
@@ -153,15 +206,9 @@ class PackageMap final {
   void CrawlForPackages(const std::string& path, bool stop_at_package = false,
                         const std::vector<std::string_view>& stop_markers = {});
 
-  /* This method is the same as Add() except if package_name is already present
-  with a different path, then this method prints a warning and returns false
-  without adding the new path. Returns true otherwise. */
-  bool AddPackageIfNew(const std::string& package_name,
-                       const std::string& path);
-
-  /* The key is the name of a ROS package and the value is a struct containing
-  information about that package. */
-  std::map<std::string, PackageData> map_;
+  /* Our member data is forward declared to hide implementation details. */
+  class Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace multibody

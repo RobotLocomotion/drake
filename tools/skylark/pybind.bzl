@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/skylark:py.bzl", "py_library")
 load("@cc//:compiler.bzl", "COMPILER_ID")
 load("@python//:version.bzl", "PYTHON_EXTENSION_SUFFIX")

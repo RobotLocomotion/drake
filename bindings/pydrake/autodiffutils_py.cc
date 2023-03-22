@@ -6,6 +6,7 @@
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/math_operators_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/drake_throw.h"
 #include "drake/math/autodiff.h"
@@ -100,7 +101,7 @@ PYBIND11_MODULE(autodiffutils, m) {
   py::implicitly_convertible<double, AutoDiffXd>();
   py::implicitly_convertible<int, AutoDiffXd>();
 
-  pydrake::internal::BindAutoDiffMathOverloads(&autodiff);
+  pydrake::internal::BindMathOperators<AutoDiffXd>(&autodiff);
 
   // Mirror for numpy.
   autodiff.attr("arcsin") = autodiff.attr("asin");

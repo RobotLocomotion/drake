@@ -13,13 +13,13 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
       "solver.");
 }
 
-bool IpoptSolver::is_available() { return false; }
+bool IpoptSolver::is_available() {
+  return false;
+}
 
-void IpoptSolver::DoSolve(
-    const MathematicalProgram&,
-    const Eigen::VectorXd&,
-    const SolverOptions&,
-    MathematicalProgramResult*) const {
+void IpoptSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
+                          const SolverOptions&,
+                          MathematicalProgramResult*) const {
   throw std::runtime_error(
       "The IPOPT bindings were not compiled.  You'll need to use a different "
       "solver.");

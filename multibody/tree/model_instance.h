@@ -70,6 +70,7 @@ class ModelInstance : public MultibodyElement<T> {
   int num_positions() const { return num_positions_; }
   int num_velocities() const { return num_velocities_; }
   int num_states() const { return num_positions_ + num_velocities_; }
+  int num_actuators() const { return joint_actuators_.size(); }
   int num_actuated_dofs() const { return num_actuated_dofs_; }
 
   void add_mobilizer(const Mobilizer<T>* mobilizer) {
@@ -82,6 +83,10 @@ class ModelInstance : public MultibodyElement<T> {
     num_actuated_dofs_ += joint_actuator->joint().num_velocities();
     joint_actuators_.push_back(joint_actuator);
   }
+
+  std::vector<JointActuatorIndex> GetJointActuatorIndices() const;
+
+  std::vector<JointIndex> GetActuatedJointIndices() const;
 
   // Returns an Eigen vector of the actuation for `this` model instance from a
   // vector `u` of actuator forces for the entire model.

@@ -27,7 +27,7 @@ bool IsElementwiseNonpositive(const Eigen::MatrixXi& A) {
  * coordinate from specified upper and lower bounds, e.g., a lower bound and
  * upper bound of -1, 2 translates to the alphabet [-1, 0, 1, 2]. This function
  * exists only to simplify the external interface.
-*/
+ */
 IntegerVectorList BuildAlphabetFromBounds(const Eigen::VectorXi& lower_bound,
                                           const Eigen::VectorXi& upper_bound) {
   DRAKE_ASSERT(lower_bound.size() == upper_bound.size());
@@ -90,8 +90,7 @@ SolutionList CartesianProduct(const SolutionList& V, int z) {
   return cart_products;
 }
 
-SolutionList VerticalStack(const SolutionList& A,
-                              const SolutionList& B) {
+SolutionList VerticalStack(const SolutionList& A, const SolutionList& B) {
   DRAKE_ASSERT(A.cols() == B.cols());
   if (A.rows() == 0) {
     return B;
@@ -114,14 +113,13 @@ on values larger than z (in the ordering).  We assume the function
 "ProcessInputs" was previously called to sort the alphabet in ascending order.
 */
 // TODO(frankpermenter):  Update to use preallocated memory
-SolutionList FeasiblePoints(const Eigen::MatrixXi& A,
-                               const Eigen::VectorXi& b,
-                               const IntegerVectorList& column_alphabets,
-                               const std::vector<ColumnType>& column_type,
-                               int last_free_var_pos) {
+SolutionList FeasiblePoints(const Eigen::MatrixXi& A, const Eigen::VectorXi& b,
+                            const IntegerVectorList& column_alphabets,
+                            const std::vector<ColumnType>& column_type,
+                            int last_free_var_pos) {
   DRAKE_ASSERT((last_free_var_pos >= 0) && (last_free_var_pos < A.cols()));
-  DRAKE_ASSERT(column_type.size() == static_cast<std::vector<ColumnType>
-                                                    ::size_type>(A.cols()));
+  DRAKE_ASSERT(column_type.size() ==
+               static_cast<std::vector<ColumnType>::size_type>(A.cols()));
 
   SolutionList feasible_points(0, last_free_var_pos + 1);
   for (const auto& value : column_alphabets[last_free_var_pos]) {
@@ -134,11 +132,9 @@ SolutionList FeasiblePoints(const Eigen::MatrixXi& A,
       }
     } else {
       new_feasible_points = CartesianProduct(
-          FeasiblePoints(A,
-                        b - A.col(last_free_var_pos) * value,
-                        column_alphabets,
-                        column_type,
-                        last_free_var_pos - 1), value);
+          FeasiblePoints(A, b - A.col(last_free_var_pos) * value,
+                         column_alphabets, column_type, last_free_var_pos - 1),
+          value);
     }
 
     if (new_feasible_points.rows() > 0) {
@@ -171,7 +167,7 @@ SolutionList EnumerateIntegerSolutions(
   // columns and sorts the variable alphabet accordingly.
   auto column_type = ProcessInputs(A, &variable_alphabets);
 
-  return FeasiblePoints(A, b, variable_alphabets, column_type, A.cols()-1);
+  return FeasiblePoints(A, b, variable_alphabets, column_type, A.cols() - 1);
 }
 
 }  // namespace solvers

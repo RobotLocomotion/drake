@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_binary",
@@ -13,6 +11,7 @@ load(
     "drake_py_library",
     "drake_py_unittest",
 )
+load("@drake//tools/install:install.bzl", "install_files")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace:forward_files.bzl", "forward_files")
 load(
@@ -25,12 +24,13 @@ filegroup(
     testonly = 1,
     srcs = glob([
         "test/**/*.config",
+        "test/**/*.dmd.yaml",
         "test/**/*.obj",
+        "test/**/*.png",
         "test/**/*.sdf",
         "test/**/*.urdf",
         "test/**/*.xml",
-        "test/**/*.dmd.yaml",
-        "test/**/*.png",
+        "test/**/*.zip",
         "test/**/COLCON_IGNORE",
     ]),
     visibility = ["//visibility:public"],
@@ -78,15 +78,21 @@ drake_cc_library(
     srcs = ["package_map.cc"],
     hdrs = ["package_map.h"],
     data = [
+        ":package_downloader.py",
         "//:package.xml",
         "@models_internal//:package.xml",
     ],
     visibility = ["//visibility:public"],
     interface_deps = [
         "//common:essential",
+        "//common:name_value",
     ],
     deps = [
-        "//common",
+        "//common:find_cache",
+        "//common:find_resource",
+        "//common:find_runfiles",
+        "//common:scope_exit",
+        "//common/yaml",
         "@tinyxml2_internal//:tinyxml2",
     ],
 )
@@ -620,6 +626,12 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "package_downloader_stress_test",
+    data = ["package_downloader.py"],
+    tags = ["cpu:8"],
+)
+
 drake_cc_googletest(
     name = "package_map_test",
     data = [
@@ -627,6 +639,20 @@ drake_cc_googletest(
     ],
     deps = [
         ":package_map",
+        "//common:find_resource",
+        "//common:scope_exit",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "package_map_remote_test",
+    data = [
+        ":test_models",
+    ],
+    deps = [
+        ":package_map",
+        "//common:find_cache",
         "//common:find_resource",
         "//common:scope_exit",
         "//common/test_utilities:expect_throws_message",
@@ -692,6 +718,12 @@ drake_py_unittest(
         "//bindings/pydrake",
         "//bindings/pydrake/common/test_utilities:meta_py",
     ],
+
+install_files(
+    name = "install",
+    dest = "share/drake/multibody/parsing",
+    files = ["package_downloader.py"],
+    visibility = ["//visibility:public"],
 )
 
 add_lint_tests()

@@ -68,6 +68,34 @@ class TestParsing(unittest.TestCase):
         dut.PopulateFromEnvironment(environment_variable='TEST_TMPDIR')
         dut.PopulateFromFolder(path=tmpdir)
 
+    def test_package_map_remote_params(self):
+        dut = PackageMap.RemoteParams(
+            urls=["file:///tmp/missing.zip"],
+            sha256="0" * 64,
+            archive_type="zip",
+            strip_prefix="prefix",)
+        self.assertIn("missing.zip", dut.ToJson())
+        copy.copy(dut)
+        copy.deepcopy(dut)
+
+    def test_package_map_add_remote(self):
+        """Runs a full lifecycle of AddRemote + GetPath to check that Python
+        bindings calling C++ code that shells out to Python all plays nice.
+        """
+        dut = PackageMap.MakeEmpty()
+        zipfile = FindResourceOrThrow(
+            "drake/multibody/parsing/test/package_map_test_packages/"
+            "compressed.zip")
+        dut.AddRemote(package_name="compressed",
+                      params=PackageMap.RemoteParams(
+                          urls=[f"file://{zipfile}"],
+                          sha256=("b4bdbad313293ca61fe8f4ed1b5579da"
+                                  "dadb3a5c08f0a6d06a8e39e5f97f1bd1"),
+                          strip_prefix="compressed_prefix"))
+        path = dut.GetPath("compressed")
+        with open(f"{path}/README", encoding="utf-8") as f:
+            self.assertEqual(f.read(), "This package is empty.\n")
+
     def test_parser_file(self):
         """Calls every combination of arguments for the Parser methods which
         use a file_name (not contents) and inspects their return type.

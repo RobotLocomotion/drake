@@ -240,21 +240,19 @@ std::string RenderClient::RenderOnServer(
     const std::string service_error_message =
         response.service_error_message.value_or("None.");
     throw std::runtime_error(fmt::format(
-        R"""(
-        ERROR doing POST:
-          URL:             {}
-          Service Message: {}
-          HTTP Code:       {}
-          Server Message:  {}
-        )""",
+        R"""(RenderClient: error from POST:
+  URL:             {}
+  Service Message: {}
+  HTTP Code:       {}
+  Server Message:  {})""",
         url, service_error_message, response.http_code, server_message));
   }
 
   // If the server did not respond with a file, there is nothing to load.
   if (!response.data_path.has_value()) {
     throw std::runtime_error(fmt::format(
-        "ERROR doing POST to {}, HTTP code={}: the server was supposed to "
-        "respond with a file but did not.",
+        "RenderClient: error from POST to {}, HTTP code={}: the server was "
+        "supposed to respond with a file but did not.",
         url, response.http_code));
   }
   const std::string bin_out_path = response.data_path.value();
@@ -293,7 +291,7 @@ std::string RenderClient::ComputeSha256(const std::string& path) {
   std::ifstream f_in(path, std::ios::binary);
   if (!f_in.good()) {
     throw std::runtime_error(
-        fmt::format("ComputeSha256: cannot open file '{}'.", path));
+        fmt::format("RenderClient: cannot open file '{}'.", path));
   }
   std::vector<unsigned char> hash(picosha2::k_digest_size);
   picosha2::hash256(f_in, hash.begin(), hash.end());
@@ -397,7 +395,7 @@ void RenderClient::LoadDepthImage(const std::string& path,
   } else if (ext == ".tiff") {
     ReadTiffFile(path, image_exporter);
   } else {
-    throw std::runtime_error("Unsupported file extension");
+    throw std::runtime_error("RenderClient: unsupported file extension");
   }
 
   const int width = depth_image_out->width();
@@ -434,7 +432,7 @@ void RenderClient::LoadDepthImage(const std::string& path,
     }
   } else {
     /* no cover */
-    throw std::runtime_error("Unsupported channel type");
+    throw std::runtime_error("RenderClient: unsupported channel type");
   }
 }
 

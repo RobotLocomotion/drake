@@ -1,5 +1,3 @@
-# -*- python -*-
-
 """Declares a repository that names the parent directory of the Drake
 workspace.  This repository contains no rules; just a single file named
 `path.bzl` which has a variable `additional_transitive_quote_include_directory`

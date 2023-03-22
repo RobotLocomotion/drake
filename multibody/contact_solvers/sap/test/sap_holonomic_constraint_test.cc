@@ -23,7 +23,7 @@ class SapHolonomicConstraintTests : public ::testing::Test {
     SapHolonomicConstraint<double>::Parameters parameters =
         MakeArbitraryParameters();
     dut_ = std::make_unique<SapHolonomicConstraint<double>>(
-        clique1_, g_, J_, std::move(parameters));
+        clique1_, g_, J_, b_, std::move(parameters));
   }
 
   static SapHolonomicConstraint<double>::Parameters MakeArbitraryParameters(
@@ -58,6 +58,7 @@ class SapHolonomicConstraintTests : public ::testing::Test {
   int clique1_{12};
   MatrixXd J_{1.5 * MatrixXd::Ones(3, 3)};
   VectorXd g_{VectorXd::LinSpaced(3, 1.0, 3.0)};
+  VectorXd b_{Vector3d(1.0, 2.0, 3.0)};
   std::unique_ptr<SapHolonomicConstraint<double>> dut_;
 };
 
@@ -70,6 +71,7 @@ TEST_F(SapHolonomicConstraintTests, SingleCliqueConstruction) {
   EXPECT_EQ(dut_->constraint_function(), g_);
   EXPECT_EQ(dut_->first_clique_jacobian(), J_);
   EXPECT_THROW(dut_->second_clique_jacobian(), std::exception);
+  EXPECT_EQ(dut_->bias(), b_);
   const SapHolonomicConstraint<double>::Parameters p =
       MakeArbitraryParameters();
   EXPECT_EQ(dut_->parameters().impulse_lower_limits(),
@@ -101,6 +103,7 @@ TEST_F(SapHolonomicConstraintTests, TwoCliquesConstruction) {
   EXPECT_EQ(dut_->constraint_function(), g);
   EXPECT_EQ(dut_->first_clique_jacobian(), J1);
   EXPECT_EQ(dut_->second_clique_jacobian(), J2);
+  EXPECT_EQ(dut_->bias(), Vector3d::Zero());
   EXPECT_EQ(dut_->parameters().impulse_lower_limits(),
             p.impulse_lower_limits());
   EXPECT_EQ(dut_->parameters().impulse_upper_limits(),
@@ -252,7 +255,7 @@ TEST_F(SapHolonomicConstraintTests, CalcBiasTerm) {
   const double beta = 1.5;
   SapHolonomicConstraint<double>::Parameters parameters =
       MakeArbitraryParameters(beta);
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(clique1_, g_, J_,
+  dut_ = std::make_unique<SapHolonomicConstraint<double>>(clique1_, g_, J_, b_,
                                                           parameters);
 
   const double time_step = 0.01;
@@ -263,12 +266,12 @@ TEST_F(SapHolonomicConstraintTests, CalcBiasTerm) {
   // Expected bias for the provided parameters of compliance.
   const VectorXd& tau = dut_->parameters().relaxation_times();
   const VectorXd& g0 = dut_->constraint_function();
-  VectorXd vhat_expected = -g0.array() / (time_step + tau.array());
+  VectorXd vhat_expected = -g0.array() / (time_step + tau.array()) - b_.array();
 
   // For this case we expect only the stiffer constraint, the third one, to be
   // in the rigid regime. In the near-rigid regime we set the relaxation time to
   // equal the time step, for a critically damped constraint.
-  vhat_expected(2) = -g0(2) / (2.0 * time_step);
+  vhat_expected(2) = -g0(2) / (2.0 * time_step) - b_(2);
 
   EXPECT_TRUE(
       CompareMatrices(vhat, vhat_expected, kEps, MatrixCompareType::relative));
@@ -288,6 +291,7 @@ TEST_F(SapHolonomicConstraintTests, Clone) {
   EXPECT_EQ(clone->constraint_function(), dut_->constraint_function());
   EXPECT_EQ(clone->first_clique_jacobian(), dut_->first_clique_jacobian());
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
+  EXPECT_EQ(clone->bias(), dut_->bias());
   const SapHolonomicConstraint<double>::Parameters& p = dut_->parameters();
   EXPECT_EQ(clone->parameters().num_constraint_equations(),
             p.num_constraint_equations());

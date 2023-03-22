@@ -131,6 +131,10 @@ class Meshcat {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Meshcat)
 
+  // Defines which side of faces will be rendered - front, back or both.
+  // From https://github.com/mrdoob/three.js/blob/dev/src/constants.js
+  enum SideOfFaceToRender { kFrontSide = 0, kBackSide = 1, kDoubleSide = 2 };
+
   /** Constructs the %Meshcat instance on `port`. If no port is specified,
   it will listen on the first available port starting at 7000 (up to 7099).
   @pre We require `port` >= 1024.
@@ -210,7 +214,8 @@ class Meshcat {
   */
   void SetObject(std::string_view path, const TriangleSurfaceMesh<double>& mesh,
                  const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0),
-                 bool wireframe = false, double wireframe_line_width = 1.0);
+                 bool wireframe = false, double wireframe_line_width = 1.0,
+                 SideOfFaceToRender side = kDoubleSide);
 
   /** Sets the "object" at `path` in the scene tree to a piecewise-linear
   interpolation between the `vertices`.
@@ -268,10 +273,11 @@ class Meshcat {
                        const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
                        const Rgba& rgba = Rgba(0.1, 0.1, 0.1, 1.0),
                        bool wireframe = false,
-                       double wireframe_line_width = 1.0);
+                       double wireframe_line_width = 1.0,
+                       SideOfFaceToRender side = kDoubleSide);
 
   /** Sets the "object" at `path` in the scene tree to a triangular mesh with
-      per-vertex coloring.
+  per-vertex coloring.
 
   @param path a "/"-delimited string indicating the path in the scene tree. See
               @ref meshcat_path "Meshcat paths" for the semantics.
@@ -288,11 +294,49 @@ class Meshcat {
                               WebGL implementations, the line width may be 1
                               regardless of the set value. */
   void SetTriangleColorMesh(std::string_view path,
-                       const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
-                       const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
-                       const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
-                       bool wireframe = false,
-                       double wireframe_line_width = 1.0);
+                            const Eigen::Ref<const Eigen::Matrix3Xd>& vertices,
+                            const Eigen::Ref<const Eigen::Matrix3Xi>& faces,
+                            const Eigen::Ref<const Eigen::Matrix3Xd>& colors,
+                            bool wireframe = false,
+                            double wireframe_line_width = 1.0,
+                            SideOfFaceToRender side = kDoubleSide);
+
+  // TODO(russt): Add support for per vertex colors / colormaps.
+  /** Sets the "object" at `path` to be a triangle surface mesh representing a
+  3D surface, via an API that roughly follows matplotlib's plot_surface()
+  method.
+
+  @param X matrix of `x` coordinate values defining the vertices of the mesh.
+  @param Y matrix of `y` coordinate values.
+  @param Z matrix of `z` coordinate values.
+  @param rgba is the mesh face or wireframe color.
+  @param wireframe if "true", then only the triangle edges are visualized, not
+                   the faces.
+  @param wireframe_line_width is the width in pixels.  Due to limitations in
+                              WebGL implementations, the line width may be 1
+                              regardless of the set value.
+
+  Typically, X and Y are obtained via, e.g.
+  @code
+  constexpr int nx = 15, ny = 11;
+  X = RowVector<double, nx>::LinSpaced(0, 1).replicate<ny, 1>();
+  Y = Vector<double, ny>::LinSpaced(0, 1).replicate<1, nx>();
+  @code
+  in C++ or e.g.
+  @code
+  xs = np.linspace(0, 1, 15)
+  ys = np.linspace(0, 1, 11)
+  [X, Y] = np.meshgrid(xs, ys)
+  @code
+  in Python, and Z is the surface evaluated on each X, Y value.
+
+  @pre X, Y, and Z must be the same shape. */
+  void PlotSurface(std::string_view path,
+                   const Eigen::Ref<const Eigen::MatrixXd>& X,
+                   const Eigen::Ref<const Eigen::MatrixXd>& Y,
+                   const Eigen::Ref<const Eigen::MatrixXd>& Z,
+                   const Rgba& rgba = Rgba(0.1, 0.1, 0.9, 1.0),
+                   bool wireframe = false, double wireframe_line_width = 1.0);
 
   // TODO(russt): Provide a more general SetObject(std::string_view path,
   // msgpack::object object) that would allow users to pass through anything
@@ -549,6 +593,9 @@ class Meshcat {
   /** Gets the current `value` of the slider `name`.
    @throws std::exception if `name` is not a registered slider. */
   double GetSliderValue(std::string_view name) const;
+
+  /** Returns the names of all sliders. */
+  std::vector<std::string> GetSliderNames() const;
 
   /** Removes the slider `name` from the GUI.
    @throws std::exception if `name` is not a registered slider. */

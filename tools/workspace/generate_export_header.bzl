@@ -1,5 +1,3 @@
-# -*- python -*-
-
 def _make_identifier(s):
     result = ""
     for i in range(len(s)):

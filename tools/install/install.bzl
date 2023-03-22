@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/skylark:py.bzl", "py_binary")
 load("@drake//tools/skylark:drake_java.bzl", "MainClassInfo")
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_test")

@@ -5,6 +5,7 @@
 #include <thread>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/temp_directory.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_animation.h"
@@ -60,10 +61,10 @@ int do_main() {
                   .25));
   meshcat->SetTransform("obj", RigidTransformd(Vector3d{2, 0, 0}));
 
-  meshcat->SetObject(
-      "mustard",
-      Mesh(FindResourceOrThrow("drake/manipulation/models/ycb/meshes/"
-                               "006_mustard_bottle_textured.obj"), 3.0));
+  auto mustard_obj =
+      FindRunfile("models_internal/ycb/meshes/006_mustard_bottle_textured.obj")
+          .abspath;
+  meshcat->SetObject("mustard", Mesh(mustard_obj, 3.0));
   meshcat->SetTransform("mustard", RigidTransformd(Vector3d{3, 0, 0}));
 
   {
@@ -147,6 +148,20 @@ int do_main() {
                           RigidTransformd(Vector3d{8.75, -.25, 0}));
   }
 
+  // PlotSurface.
+  {
+    constexpr int nx = 15, ny = 11;
+    Eigen::MatrixXd X =
+        Eigen::RowVectorXd::LinSpaced(nx, 0, 1).replicate<ny, 1>();
+    Eigen::MatrixXd Y = Eigen::VectorXd::LinSpaced(ny, 0, 1).replicate<1, nx>();
+    // z = y*sin(5*x)
+    Eigen::MatrixXd Z = (Y.array() * (5 * X.array()).sin()).matrix();
+
+    meshcat->PlotSurface("plot_surface", X, Y, Z, Rgba(0, 0, .9, 1.0), true);
+    meshcat->SetTransform("plot_surface",
+                          RigidTransformd(Vector3d{9.75, -.25, 0}));
+  }
+
   std::cout << R"""(
 Open up your browser to the URL above.
 
@@ -166,6 +181,7 @@ Open up your browser to the URL above.
   - a purple triangle mesh with 2 faces.
   - the same purple triangle mesh drawn as a wireframe.
   - the same triangle mesh drawn in multicolor.
+  - a blue mesh plot of the function z = y*sin(5*x).
 )""";
   std::cout << "[Press RETURN to continue]." << std::endl;
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');

@@ -1,5 +1,3 @@
-# -*- python -*-
-
 # 2023-06-01 Remove this entire file upon deprecation completion.
 
 load(

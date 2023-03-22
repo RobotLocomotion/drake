@@ -535,7 +535,64 @@ GTEST_TEST(NewIndeterminates, StaticSizeVector) {
   CheckAddedIndeterminates(prog, x, "x(0)\nx(1)\nx(2)\nx(3)");
 }
 
-GTEST_TEST(TestAddIndeterminates, AddIndeterminates1) {
+GTEST_TEST(TestAddIndeterminate, AddIndeterminate1) {
+  // Call AddIndeterminate on an empty program.
+  MathematicalProgram prog;
+  const Variable x("x", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminate(x);
+  EXPECT_EQ(prog.indeterminates().rows(), 1);
+
+  EXPECT_TRUE(prog.indeterminates()(0).equal_to(x));
+  EXPECT_EQ(prog.FindIndeterminateIndex(x), 0);
+
+  const auto it = prog.indeterminates_index().find(x.get_id());
+  EXPECT_TRUE(it != prog.indeterminates_index().end());
+  EXPECT_EQ(it->second, prog.FindIndeterminateIndex(x));
+}
+
+GTEST_TEST(TestAddIndeterminate, AddIndeterminate2) {
+  // Call AddIndeterminate on a program with some indeterminates
+  MathematicalProgram prog;
+  auto y = prog.NewIndeterminates<2>("y");
+
+  const Variable x("x", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminate(x);
+
+  EXPECT_EQ(prog.indeterminates().rows(), 3);
+
+  VectorIndeterminate<3> indeterminates_expected;
+  indeterminates_expected << y(0), y(1), x;
+
+  for (int i = 0; i < 3; ++i) {
+    EXPECT_TRUE(prog.indeterminates()(i).equal_to(indeterminates_expected(i)));
+    EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates_expected(i)), i);
+  }
+}
+
+GTEST_TEST(TestAddIndeterminate, AddIndeterminate3) {
+  // Call with erroneous inputs.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  const Variable z("z", Variable::Type::BINARY);
+  // Call AddIndeterminate with an input that intersects with old
+  // indeterminates.
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(y(0)),
+                              ".*is already an indeterminate.*");
+  // Call AddIndeterminate with an input that intersects with old decision
+  // variables.
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(x(0)),
+                              ".*is a decision variable.*");
+  // Call AddIndeterminates with an input of type BINARY.
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(z),
+                              ".*should be of type CONTINUOUS.*");
+  // Call AddIndeterminates with a dummy variable.
+  Variable dummy;
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(dummy),
+                              ".*should not be a dummy variable.*");
+}
+
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec1) {
   // Call AddIndeterminates on an empty program.
   MathematicalProgram prog;
   const Variable x0("x0", Variable::Type::CONTINUOUS);
@@ -558,7 +615,7 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminates1) {
   }
 }
 
-GTEST_TEST(TestAddIndeterminates, AddIndeterminates2) {
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec2) {
   // Call AddIndeterminates on a program with some indeterminates.
   MathematicalProgram prog;
   auto y = prog.NewIndeterminates<2>("y");
@@ -575,28 +632,113 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminates2) {
   }
 }
 
-GTEST_TEST(TestAddIndeterminates, AddIndeterminates3) {
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec3) {
   // Call with erroneous inputs.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<2>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::BINARY);
-  // Call AddIndeterminates with a input that intersects with old
+  // Call AddIndeterminates with an input that intersects with old
   // indeterminates.
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, y(0))),
-               std::runtime_error);
-  // Call AddIndeterminates with a input that intersects with old decision
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(y(0), x0)),
+      ".*is already an indeterminate.*");
+  // Call AddIndeterminates with an input that intersects with old decision
   // variables.
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, x(0))),
-               std::runtime_error);
-  // Call AddIndeterminates with a input of type BINARY.
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, x1)),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(x(0), x0)),
+      ".*is a decision variable.*");
+  // Call AddIndeterminates with an input of type BINARY.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(x1, x0)),
+      ".*should be of type CONTINUOUS.*");
   // Call AddIndeterminates with a dummy variable.
   Variable dummy;
-  EXPECT_THROW(prog.AddIndeterminates(VectorIndeterminate<2>(x0, dummy)),
-               std::runtime_error);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(VectorIndeterminate<2>(dummy, x0)),
+      ".*should not be a dummy variable.*");
+}
+
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars1) {
+  // Call AddIndeterminates on an empty program.
+  MathematicalProgram prog;
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  const Variable x2("x2", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminates(symbolic::Variables({x0, x1, x2}));
+  const VectorIndeterminate<3> indeterminates_expected(x0, x1, x2);
+  EXPECT_EQ(prog.indeterminates().rows(), 3);
+
+  const auto indeterminates_index = prog.indeterminates_index();
+  for (int i = 0; i < 3; ++i) {
+    // the indeterminate is in the program, but in arbitrary place so we don't
+    // test its index.
+    const auto it =
+        indeterminates_index.find(indeterminates_expected(i).get_id());
+    ASSERT_TRUE(it != indeterminates_index.end());
+    EXPECT_EQ(it->second,
+              prog.FindIndeterminateIndex(indeterminates_expected(i)));
+  }
+}
+
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars2) {
+  // Call AddIndeterminates on a program with some indeterminates.
+  MathematicalProgram prog;
+  auto y = prog.NewIndeterminates<2>("y");
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  const Variable x2("x2", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminates(symbolic::Variables({x0, x1, x2}));
+  VectorIndeterminate<5> indeterminates_expected;
+  indeterminates_expected << y(0), y(1), x0, x1, x2;
+  EXPECT_EQ(prog.indeterminates().rows(), 5);
+
+  const auto indeterminates_index = prog.indeterminates_index();
+  for (int i = 0; i < 5; ++i) {
+    if (i < 3) {
+      // The variables already in the program should be in order.
+      EXPECT_TRUE(
+          prog.indeterminates()(i).equal_to(indeterminates_expected(i)));
+      EXPECT_EQ(prog.FindIndeterminateIndex(indeterminates_expected(i)), i);
+    } else {
+      // The remaining variables were added using an unordered set so we can't
+      // expect an order.
+      const auto it =
+          indeterminates_index.find(indeterminates_expected(i).get_id());
+      ASSERT_TRUE(it != indeterminates_index.end());
+      EXPECT_EQ(it->second,
+                prog.FindIndeterminateIndex(indeterminates_expected(i)));
+    }
+  }
+}
+
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars3) {
+  // Call with erroneous inputs.
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>("x");
+  auto y = prog.NewIndeterminates<2>("y");
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::BINARY);
+  // Call AddIndeterminates with an input that intersects with old
+  // indeterminates.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, y(0)})),
+      ".*is already an indeterminate.*");
+  // Call AddIndeterminates with an input that intersects with old decision
+  // variables.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, x(0)})),
+      ".*is a decision variable.*");
+  // Call AddIndeterminates with an input of type BINARY.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, x1})),
+      ".*should be of type CONTINUOUS.*");
+  // Call AddIndeterminates with a dummy variable.
+  Variable dummy;
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      prog.AddIndeterminates(symbolic::Variables({x0, dummy})),
+      ".*should not be a dummy variable.*");
 }
 
 GTEST_TEST(TestAddIndeterminates, MatrixInput) {
@@ -2758,6 +2900,51 @@ GTEST_TEST(TestMathematicalProgram, AddL2NormCost) {
   EXPECT_EQ(new_prog->l2norm_costs().size(), 1u);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddQuadraticConstraint) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  auto constraint1 = prog.AddConstraint(Binding<QuadraticConstraint>(
+      std::make_shared<QuadraticConstraint>(Eigen::Matrix2d::Identity(),
+                                            Eigen::Vector2d::Ones(), 0, 1),
+      x.head<2>()));
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  ASSERT_EQ(prog.quadratic_constraints().size(), 1);
+  EXPECT_EQ(prog.quadratic_constraints()[0].evaluator().get(),
+            constraint1.evaluator().get());
+  EXPECT_EQ(prog.quadratic_constraints()[0].variables(), x.head<2>());
+
+  auto constraint2 = prog.AddQuadraticConstraint(
+      -Eigen::Matrix2d::Identity(), Eigen::Vector2d::Ones(), 0, 1, x.tail<2>(),
+      QuadraticConstraint::HessianType::kNegativeSemidefinite);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  EXPECT_EQ(prog.quadratic_constraints().size(), 2);
+
+  auto constraint3 =
+      prog.AddQuadraticConstraint(x(0) * x(0) - x(1) * x(1), 0, 1);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  EXPECT_EQ(prog.quadratic_constraints().size(), 3);
+  EXPECT_EQ(constraint3.evaluator()->hessian_type(),
+            QuadraticConstraint::HessianType::kIndefinite);
+
+  prog.RemoveConstraint(constraint2);
+  EXPECT_GT(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+  EXPECT_EQ(prog.quadratic_constraints().size(), 2);
+  prog.RemoveConstraint(constraint1);
+  prog.RemoveConstraint(constraint3);
+  EXPECT_TRUE(prog.quadratic_constraints().empty());
+  EXPECT_EQ(prog.required_capabilities().count(
+                ProgramAttribute::kQuadraticConstraint),
+            0);
+}
+
 GTEST_TEST(TestMathematicalProgram, AddL2NormCostUsingConicConstraint) {
   MathematicalProgram prog{};
   auto x = prog.NewContinuousVariables<2>();
@@ -3131,6 +3318,7 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   bindings.emplace_back(
       prog.AddLinearEqualityConstraint(y[0] == 3 * x[0] + 2 * x[1]));
 
+  const double tol = std::numeric_limits<double>::epsilon();
   Vector3d x_guess = Vector3d::Constant(.39);
   Vector2d y_guess = Vector2d::Constant(4.99);
   y_guess[0] = 3*x_guess[0] + 2*x_guess[1];
@@ -3138,21 +3326,21 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfied(bindings[0], prog.initial_guess(), 0));
   EXPECT_TRUE(prog.CheckSatisfied(bindings[1], prog.initial_guess(), 0));
-  EXPECT_TRUE(prog.CheckSatisfied(bindings[2], prog.initial_guess(), 1e-16));
+  EXPECT_TRUE(prog.CheckSatisfied(bindings[2], prog.initial_guess(), tol));
 
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[1], 0));
-  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[2], 1e-16));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[2], tol));
 
-  EXPECT_TRUE(prog.CheckSatisfied(bindings, prog.initial_guess(), 1e-16));
-  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings, 1e-16));
+  EXPECT_TRUE(prog.CheckSatisfied(bindings, prog.initial_guess(), tol));
+  EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings, tol));
 
   x_guess[2] = .41;
   prog.SetInitialGuess(x, x_guess);
   EXPECT_FALSE(prog.CheckSatisfied(bindings[0], prog.initial_guess(), 0));
   EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
-  EXPECT_FALSE(prog.CheckSatisfied(bindings, prog.initial_guess(), 1e-16));
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings, 1e-16));
+  EXPECT_FALSE(prog.CheckSatisfied(bindings, prog.initial_guess(), tol));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings, tol));
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[1], 0));
 
   x_guess[2] = .39;
@@ -3160,10 +3348,10 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   prog.SetInitialGuess(x, x_guess);
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
-  EXPECT_FALSE(prog.CheckSatisfied(bindings[2], prog.initial_guess(), 1e-16));
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings[2], 1e-16));
-  EXPECT_FALSE(prog.CheckSatisfied(bindings, prog.initial_guess(), 1e-16));
-  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings, 1e-16));
+  EXPECT_FALSE(prog.CheckSatisfied(bindings[2], prog.initial_guess(), tol));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings[2], tol));
+  EXPECT_FALSE(prog.CheckSatisfied(bindings, prog.initial_guess(), tol));
+  EXPECT_FALSE(prog.CheckSatisfiedAtInitialGuess(bindings, tol));
 }
 
 GTEST_TEST(TestMathematicalProgram, TestSetAndGetInitialGuess) {

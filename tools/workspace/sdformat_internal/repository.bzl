@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/workspace:github.bzl", "github_archive")
 
 def sdformat_internal_repository(

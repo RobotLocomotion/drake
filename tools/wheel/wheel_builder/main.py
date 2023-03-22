@@ -4,7 +4,6 @@
 
 import sys
 
-from drake.tools.wheel.wheel_builder.common import die
 from drake.tools.wheel.wheel_builder.common import do_main as main
 
 

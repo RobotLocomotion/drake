@@ -50,6 +50,7 @@ using std::make_unique;
 using std::unique_ptr;
 
 using Eigen::Vector4d;
+using testing::ContainsRegex;
 using testing::MatchesRegex;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
@@ -698,7 +699,7 @@ TEST_F(UrdfGeometryTest, TestCollisionNameExhaustion) {
   numeric_name_suffix_limit_ = 0;
   geometry_names_.insert("Box");
   DRAKE_EXPECT_NO_THROW(ParseCollisionDoc(""));
-  EXPECT_THAT(TakeError(), MatchesRegex(".*Too many identical.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Too many.*identical.*"));
 }
 
 TEST_F(UrdfGeometryTest, TestVisualNameExhaustion) {
@@ -715,7 +716,49 @@ TEST_F(UrdfGeometryTest, TestVisualNameExhaustion) {
       </link>
     </robot>)""";
   DRAKE_EXPECT_NO_THROW(ParseUrdfGeometryString(robot));
-  EXPECT_THAT(TakeError(), MatchesRegex(".*Too many identical.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Too many.*identical.*"));
+}
+
+TEST_F(UrdfGeometryTest, TestDuplicateVisualName) {
+  // Duplicate visual names are allowed by URDF, but not by SceneGraph.
+  // They should produce a warning (with automatic renaming).
+  std::string robot = R"""(
+    <robot name='a'>
+      <link name='b'>
+        <visual name='hello'>
+          <geometry><box size='1 2 3'/></geometry>
+        </visual>
+        <visual name='hello'>
+          <geometry><box size='3 2 1'/></geometry>
+        </visual>
+      </link>
+    </robot>)""";
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometryString(robot));
+  ASSERT_EQ(visual_instances_.size(), 2);
+  EXPECT_EQ(visual_instances_[0].name(), "hello");
+  EXPECT_EQ(visual_instances_[1].name(), "hello_1");
+  EXPECT_THAT(TakeWarning(), ContainsRegex("visual.*hello.*renam.*hello_1"));
+}
+
+TEST_F(UrdfGeometryTest, TestDuplicateCollisionName) {
+  // Duplicate visual names are allowed by URDF, but not by SceneGraph.
+  // They should produce a warning (with automatic renaming).
+  std::string robot = R"""(
+    <robot name='a'>
+      <link name='b'>
+        <collision name='hello'>
+          <geometry><box size='1 2 3'/></geometry>
+        </collision>
+        <collision name='hello'>
+          <geometry><box size='3 2 1'/></geometry>
+        </collision>
+      </link>
+    </robot>)""";
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometryString(robot));
+  ASSERT_EQ(collision_instances_.size(), 2);
+  EXPECT_EQ(collision_instances_[0].name(), "hello");
+  EXPECT_EQ(collision_instances_[1].name(), "hello_1");
+  EXPECT_THAT(TakeWarning(), ContainsRegex("collision.*hello.*renam.*hello_1"));
 }
 
 TEST_F(UrdfGeometryTest, TestBadCollision) {
@@ -1110,7 +1153,7 @@ TEST_F(UrdfGeometryTest, TwoUnnamedBoxes) {
 
   ASSERT_EQ(collision_instances_.size(), 2);
   EXPECT_EQ(collision_instances_[0].name(), "Box");
-  EXPECT_EQ(collision_instances_[1].name(), "Box1");
+  EXPECT_EQ(collision_instances_[1].name(), "Box_1");
 }
 
 }  // namespace

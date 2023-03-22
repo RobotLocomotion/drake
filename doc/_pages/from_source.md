@@ -14,10 +14,10 @@ officially supports:
 
 | Operating System ⁽¹⁾               | Architecture | Python ⁽²⁾ | Bazel | CMake | C/C++ Compiler ⁽³⁾           | Java                          |
 |------------------------------------|--------------|------------|-------|-------|------------------------------|-------------------------------|
-| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8        | 6.0   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
-| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 6.0   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
-| macOS Monterey (12)                | x86_64       | 3.11       | 6.0   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
-| macOS Monterey (12)                | arm64        | 3.11       | 6.0   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| Ubuntu 20.04 LTS (Focal Fossa)     | x86_64       | 3.8        | 6.1   | 3.16  | GCC 9 (default) or Clang 12  | OpenJDK 11                    |
+| Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10       | 6.1   | 3.22  | GCC 11 (default) or Clang 12 | OpenJDK 11                    |
+| macOS Monterey (12)                | x86_64       | 3.11       | 6.1   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
+| macOS Monterey (12)                | arm64        | 3.11       | 6.1   | 3.24  | Apple LLVM 14 (Xcode 14)     | AdoptOpenJDK 16 (HotSpot JVM) |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.

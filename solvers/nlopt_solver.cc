@@ -357,16 +357,17 @@ nlopt::algorithm GetNloptAlgorithm(const SolverOptions& merged_options) {
 }
 }  // anonymous namespace
 
-bool NloptSolver::is_available() { return true; }
+bool NloptSolver::is_available() {
+  return true;
+}
 
-void NloptSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void NloptSolver::DoSolve(const MathematicalProgram& prog,
+                          const Eigen::VectorXd& initial_guess,
+                          const SolverOptions& merged_options,
+                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "NloptSolver doesn't support the feature of variable scaling.");
+        "NloptSolver doesn't support the feature of variable scaling.");
   }
 
   const int nx = prog.num_vars();
@@ -426,6 +427,10 @@ void NloptSolver::DoSolve(
   // TODO(sam.creasey): Missing test coverage for generic constraints
   // with >1 output.
   for (const auto& c : prog.generic_constraints()) {
+    WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
+  }
+
+  for (const auto& c : prog.quadratic_constraints()) {
     WrapConstraint(prog, c, constraint_tol, &opt, &wrapped_vector);
   }
 
@@ -489,6 +494,7 @@ void NloptSolver::DoSolve(
         constraint_test(prog.bounding_box_constraints());
         constraint_test(prog.linear_constraints());
         constraint_test(prog.linear_equality_constraints());
+        constraint_test(prog.quadratic_constraints());
         constraint_test(prog.lorentz_cone_constraints());
         constraint_test(prog.rotated_lorentz_cone_constraints());
 
@@ -515,7 +521,9 @@ void NloptSolver::DoSolve(
         }
         break;
       }
-      default: { result->set_solution_result(SolutionResult::kUnknownError); }
+      default: {
+        result->set_solution_result(SolutionResult::kUnknownError);
+      }
     }
   } catch (std::invalid_argument&) {
     result->set_solution_result(SolutionResult::kInvalidInput);

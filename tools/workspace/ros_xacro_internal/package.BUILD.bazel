@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 load("@drake//tools/skylark:py.bzl", "py_binary")
 load("@drake//tools/workspace:generate_file.bzl", "generate_file")

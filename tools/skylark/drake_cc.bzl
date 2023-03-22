@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
 load("//tools/skylark:kwargs.bzl", "incorporate_num_threads")
 

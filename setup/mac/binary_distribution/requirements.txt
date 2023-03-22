@@ -1,5 +1,4 @@
 ipywidgets
-lxml
 matplotlib
 notebook
 Pillow

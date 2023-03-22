@@ -1,6 +1,3 @@
-# -*- mode: python -*-
-# vi: set ft=python :
-
 load(
     "@drake//tools/workspace:github.bzl",
     "github_archive",
@@ -18,8 +15,8 @@ def common_robotics_utilities_repository(
         updated in ToyotaResearchInstitute/common_robotics_utilities/test/ or
         ToyotaResearchInstitute/common_robotics_utilities/CMakeLists.txt.ros2
         """,
-        commit = "d8b1a861d07e7c526e2a7dd3123d351498b53636",
-        sha256 = "8d3357221aeacabc538391b1ab53bd848a8f29ddae75896912c23b7bb9c3d8d8",  # noqa
+        commit = "89435ebf4621f4e92d3b4c2a18aec7fa91e0cb75",
+        sha256 = "7577ccf13db9111a90be946996d512d3a9693b356a7e26e4ab9a1ffb90c8ea2b",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

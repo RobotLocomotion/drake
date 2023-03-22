@@ -15,15 +15,13 @@
 
 namespace drake {
 namespace pydrake {
+namespace internal {
 
-PYBIND11_MODULE(schunk_wsg, m) {
-  using drake::systems::Diagram;
-  using drake::systems::LeafSystem;
+using systems::Diagram;
+using systems::LeafSystem;
 
-  m.doc() = "Tools for schunk wsg.";
+void DefineManipulationSchunkWsg(py::module m) {
   constexpr auto& doc = pydrake_doc.drake.manipulation.schunk_wsg;
-
-  py::module::import("pydrake.systems.framework");
 
   {
     using Class = manipulation::schunk_wsg::SchunkWsgPositionController;
@@ -158,5 +156,6 @@ PYBIND11_MODULE(schunk_wsg, m) {
   }
 }
 
+}  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

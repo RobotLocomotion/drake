@@ -974,6 +974,23 @@ class DuplicatedVariableNonlinearProgram1 : public ::testing::Test {
   std::unique_ptr<MathematicalProgram> prog_;
   Vector2<symbolic::Variable> x_;
 };
+
+// Test a nonlinear program with quadratic constraints.
+// max x + 2*y
+// s.t x² + y² = 1
+class QuadraticEqualityConstrainedProgram1 : public ::testing::Test {
+ public:
+  QuadraticEqualityConstrainedProgram1();
+
+  void CheckSolution(
+      const SolverInterface& solver, const Eigen::Vector2d& x_init,
+      const std::optional<SolverOptions>& solver_options = std::nullopt,
+      double tol = 1E-7, bool check_dual = true) const;
+
+ protected:
+  std::unique_ptr<MathematicalProgram> prog_;
+  Vector2<symbolic::Variable> x_;
+};
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake

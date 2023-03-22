@@ -109,6 +109,12 @@ void RewriteMergeKeys(const YAML::Node& parent, YAML::Node* node) {
 // The `parent` is only used to provide context during error reporting.
 internal::Node ConvertJbederYamlNodeToDrakeYamlNode(const YAML::Node& parent,
                                                     const YAML::Node& node) {
+  std::optional<Node::Mark> mark;
+  if (node.Mark().line >= 0 && node.Mark().column >= 0) {
+    // The jbeder convention is 0-based numbering; we want 1-based.
+    mark = Node::Mark{.line = node.Mark().line + 1,
+                      .column = node.Mark().column + 1};
+  }
   switch (node.Type()) {
     case YAML::NodeType::Undefined: {
       throw std::runtime_error("A yaml-cpp node was unexpectedly Undefined");
@@ -119,11 +125,13 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(const YAML::Node& parent,
     case YAML::NodeType::Scalar: {
       auto result = internal::Node::MakeScalar(node.Scalar());
       result.SetTag(node.Tag());
+      result.SetMark(mark);
       return result;
     }
     case YAML::NodeType::Sequence: {
       auto result = internal::Node::MakeSequence();
       result.SetTag(node.Tag());
+      result.SetMark(mark);
       for (size_t i = 0; i < node.size(); ++i) {
         result.Add(ConvertJbederYamlNodeToDrakeYamlNode(node, node[i]));
       }
@@ -134,6 +142,7 @@ internal::Node ConvertJbederYamlNodeToDrakeYamlNode(const YAML::Node& parent,
       RewriteMergeKeys(parent, &merged_node);
       auto result = internal::Node::MakeMapping();
       result.SetTag(merged_node.Tag());
+      result.SetMark(mark);
       for (const auto& key_value : merged_node) {
         const YAML::Node& key = key_value.first;
         const YAML::Node& value = key_value.second;
@@ -164,6 +173,7 @@ YamlReadArchive::YamlReadArchive(internal::Node root,
 // yaml-cpp in our public API makes that difficult.
 internal::Node YamlReadArchive::LoadFileAsNode(
     const std::string& filename, const std::optional<std::string>& child_name) {
+  internal::Node result = internal::Node::MakeNull();
   YAML::Node root = YAML::LoadFile(filename);
   if (child_name.has_value()) {
     YAML::Node child_node = root[*child_name];
@@ -172,10 +182,12 @@ internal::Node YamlReadArchive::LoadFileAsNode(
           "When loading '{}', there was no such top-level map entry '{}'",
           filename, *child_name));
     }
-    return ConvertJbederYamlNodeToDrakeYamlNode({}, child_node);
+    result = ConvertJbederYamlNodeToDrakeYamlNode({}, child_node);
   } else {
-    return ConvertJbederYamlNodeToDrakeYamlNode({}, root);
+    result = ConvertJbederYamlNodeToDrakeYamlNode({}, root);
   }
+  result.SetFilename(filename);
+  return result;
 }
 
 // N.B. This is unit tested via yaml_io_test with calls to LoadYamlString (and
@@ -328,9 +340,37 @@ void YamlReadArchive::CheckAllAccepted() const {
 
 void YamlReadArchive::ReportError(const std::string& note) const {
   std::ostringstream e;  // A buffer for the error message text.
+  // Output the filename.
+  bool found_filename = false;
+  for (auto* archive = this; archive != nullptr; archive = archive->parent_) {
+    if ((archive->root_ != nullptr) &&
+        (archive->root_->GetFilename().has_value())) {
+      const std::string& filename = archive->root_->GetFilename().value();
+      fmt::print(e, "{}:", filename);
+      found_filename = true;
+      break;
+    }
+  }
+  if (!found_filename) {
+    e << "<string>:";
+  }
+  // Output the nearby line and column number. It's usually the mark for `this`
+  // but for a "mapish item" can a nearby ancestor.
+  for (auto* archive = this; archive != nullptr; archive = archive->parent_) {
+    if (archive->root_ != nullptr) {
+      if (archive->root_->GetMark().has_value()) {
+        const Node::Mark& mark = archive->root_->GetMark().value();
+        fmt::print(e, "{}:{}:", mark.line, mark.column);
+      }
+      break;
+    }
+  }
+  e << " ";
+  // Describe this node.
   this->PrintNodeSummary(e);
   fmt::print(e, " {} entry for ", note);
   PrintVisitNameType(e);
+  // Describe its parents.
   for (auto* archive = parent_; archive; archive = archive->parent_) {
     fmt::print(e, " while accepting ");
     archive->PrintNodeSummary(e);

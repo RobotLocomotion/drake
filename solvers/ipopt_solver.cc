@@ -115,6 +115,10 @@ void SetAllConstraintDualSolution(
     SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
                               result);
   }
+  for (const auto& binding : prog.quadratic_constraints()) {
+    SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
+                              result);
+  }
   for (const auto& binding : prog.lorentz_cone_constraints()) {
     SetConstraintDualSolution(binding, lambda, constraint_dual_start_index,
                               result);
@@ -301,17 +305,20 @@ struct ResultCache {
   void SetX(const Index n, const Number* x_arg) {
     DRAKE_ASSERT(static_cast<Index>(x.size()) == n);
     grad_valid = false;
-    if (n == 0) { return; }
+    if (n == 0) {
+      return;
+    }
     DRAKE_ASSERT(x_arg != nullptr);
     std::memcpy(x.data(), x_arg, n * sizeof(Number));
   }
 
   // Sugar to copy one of our member fields into an IPOPT bare array.
-  static void Extract(
-      const std::vector<Number>& cache_data,
-      const Index dest_size, Number* dest) {
+  static void Extract(const std::vector<Number>& cache_data,
+                      const Index dest_size, Number* dest) {
     DRAKE_ASSERT(static_cast<Index>(cache_data.size()) == dest_size);
-    if (dest_size == 0) { return; }
+    if (dest_size == 0) {
+      return;
+    }
     DRAKE_ASSERT(dest != nullptr);
     std::memcpy(dest, cache_data.data(), dest_size * sizeof(Number));
   }
@@ -355,6 +362,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     nnz_jac_g = 0;
     Index num_grad = 0;
     for (const auto& c : problem_->generic_constraints()) {
+      m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
+      nnz_jac_g += num_grad;
+    }
+    for (const auto& c : problem_->quadratic_constraints()) {
       m += GetNumGradients(*(c.evaluator()), c.variables().rows(), &num_grad);
       nnz_jac_g += num_grad;
     }
@@ -426,6 +437,12 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
 
     size_t constraint_idx = 0;  // offset into g_l and g_u output arrays
     for (const auto& c : problem_->generic_constraints()) {
+      SetConstraintDualVariableIndex(c, constraint_idx,
+                                     &constraint_dual_start_index_);
+      constraint_idx += GetConstraintBounds(
+          *(c.evaluator()), g_l + constraint_idx, g_u + constraint_idx);
+    }
+    for (const auto& c : problem_->quadratic_constraints()) {
       SetConstraintDualVariableIndex(c, constraint_idx,
                                      &constraint_dual_start_index_);
       constraint_idx += GetConstraintBounds(
@@ -523,13 +540,19 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       DRAKE_ASSERT(jCol != nullptr);
 
       int constraint_idx = 0;  // Passed into GetGradientMatrix as
-                                  // the starting row number for the
-                                  // constraint being described.
+                               // the starting row number for the
+                               // constraint being described.
       int grad_idx = 0;        // Offset into iRow, jCol output variables.
-                                  // Incremented by the number of triplets
-                                  // populated by each call to
-                                  // GetGradientMatrix.
+                               // Incremented by the number of triplets
+                               // populated by each call to
+                               // GetGradientMatrix.
       for (const auto& c : problem_->generic_constraints()) {
+        grad_idx +=
+            GetGradientMatrix(*problem_, *(c.evaluator()), c.variables(),
+                              constraint_idx, iRow + grad_idx, jCol + grad_idx);
+        constraint_idx += c.evaluator()->num_constraints();
+      }
+      for (const auto& c : problem_->quadratic_constraints()) {
         grad_idx +=
             GetGradientMatrix(*problem_, *(c.evaluator()), c.variables(),
                               constraint_idx, iRow + grad_idx, jCol + grad_idx);
@@ -691,6 +714,10 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
       grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
     }
+    for (const auto& c : problem_->quadratic_constraints()) {
+      grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
+      result += c.evaluator()->num_constraints();
+    }
     for (const auto& c : problem_->lorentz_cone_constraints()) {
       grad += EvaluateConstraint(*problem_, xvec, c, result, grad);
       result += c.evaluator()->num_constraints();
@@ -839,16 +866,17 @@ const char* IpoptSolverDetails::ConvertStatusToString() const {
   return "Unknown enumerated SolverReturn value.";
 }
 
-bool IpoptSolver::is_available() { return true; }
+bool IpoptSolver::is_available() {
+  return true;
+}
 
-void IpoptSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void IpoptSolver::DoSolve(const MathematicalProgram& prog,
+                          const Eigen::VectorXd& initial_guess,
+                          const SolverOptions& merged_options,
+                          MathematicalProgramResult* result) const {
   if (!prog.GetVariableScaling().empty()) {
     static const logging::Warn log_once(
-      "IpoptSolver doesn't support the feature of variable scaling.");
+        "IpoptSolver doesn't support the feature of variable scaling.");
   }
 
   Ipopt::SmartPtr<Ipopt::IpoptApplication> app = IpoptApplicationFactory();

@@ -36,7 +36,11 @@ class YamlReadArchiveTest : public ::testing::TestWithParam<LoadYamlOptions> {
   // Loads a single "doc: { ... }" map from `contents` and returns the nested
   // map (i.e., just the "{ ... }" part, not the "doc" part).  It is an error
   // for the "{ ... }" part not to be a map node.
-  static internal::Node Load(const std::string& contents) {
+  static internal::Node Load(std::string contents) {
+    while (contents.size() > 0 && contents.at(0) == '\n') {
+      // Strip off leading newlines.
+      contents.erase(0, 1);
+    }
     const internal::Node loaded =
         YamlReadArchive::LoadStringAsNode(contents, std::nullopt);
     if (!loaded.IsMapping()) {
@@ -773,7 +777,8 @@ doc:
   } else if (GetParam().allow_cpp_with_no_yaml) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         AcceptIntoDummy<OuterStruct>(node),
-        "YAML node of type Mapping"
+        "<string>:4:5:"
+        " YAML node of type Mapping"
         " \\(with size 1 and keys \\{inner_value_TYPO\\}\\)"
         " key 'inner_value_TYPO' did not match any visited value entry for"
         " <root> while accepting YAML node of type Mapping"
@@ -782,7 +787,8 @@ doc:
   } else {
     DRAKE_EXPECT_THROWS_MESSAGE(
         AcceptIntoDummy<OuterStruct>(node),
-        "YAML node of type Mapping"
+        "<string>:4:5:"
+        " YAML node of type Mapping"
         " \\(with size 1 and keys \\{inner_value_TYPO\\}\\)"
         " is missing entry for double inner_value"
         " while accepting YAML node of type Mapping"
@@ -800,7 +806,8 @@ doc:
   inner_struct:
     inner_value: [2.0, 3.0]
 )""")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{inner_value\\}\\)"
+      "<string>:4:5:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{inner_value\\}\\)"
       " has non-Scalar \\(Sequence\\) entry for double inner_value"
       " while accepting YAML node of type Mapping"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -817,7 +824,8 @@ doc:
     inner_value:
        key: 2.0
 )""")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{inner_value\\}\\)"
+      "<string>:4:5:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{inner_value\\}\\)"
       " has non-Scalar \\(Mapping\\) entry for double inner_value"
       " while accepting YAML node of type Mapping"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
@@ -828,7 +836,8 @@ doc:
 TEST_P(YamlReadArchiveTest, VisitArrayFoundNothing) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<ArrayStruct>(LoadSingleValue("")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Null\\) entry for std::array<.*> value\\.");
 }
 
@@ -836,7 +845,8 @@ TEST_P(YamlReadArchiveTest, VisitArrayFoundNothing) {
 TEST_P(YamlReadArchiveTest, VisitArrayFoundScalar) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<ArrayStruct>(LoadSingleValue("1.0")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Scalar\\) entry for std::array<.*> value\\.");
 }
 
@@ -848,7 +858,8 @@ doc:
   value:
     inner_value: 1.0
 )""")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Mapping\\) entry for std::array<.*> value\\.");
 }
 
@@ -856,7 +867,8 @@ doc:
 TEST_P(YamlReadArchiveTest, VisitVectorFoundNothing) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VectorStruct>(LoadSingleValue("")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Null\\) entry for std::vector<.*> value\\.");
 }
 
@@ -864,7 +876,8 @@ TEST_P(YamlReadArchiveTest, VisitVectorFoundNothing) {
 TEST_P(YamlReadArchiveTest, VisitVectorFoundScalar) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VectorStruct>(LoadSingleValue("1.0")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Scalar\\) entry for std::vector<.*> value\\.");
 }
 
@@ -876,7 +889,8 @@ doc:
   value:
     inner_value: 1.0
 )""")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Mapping\\) entry for std::vector<.*> value\\.");
 }
 
@@ -884,7 +898,8 @@ doc:
 TEST_P(YamlReadArchiveTest, VisitOptionalScalarFoundSequence) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<OptionalStruct>(LoadSingleValue("[1.0]")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Sequence\\) entry for std::optional<double>"
       " value\\.");
 }
@@ -894,10 +909,12 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
           Load("doc:\n  inner:\n    value:")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:3:5:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Null\\) entry for std::string value"
-      " while accepting YAML node of type Mapping \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
+      " while accepting YAML node of type Mapping"
+      " \\(with size 1 and keys \\{inner\\}\\)"
+      " while visiting drake::yaml::test::VariantStruct inner.");
 
   // std::string values should load correctly even without a YAML type tag.
   const auto& str = AcceptNoThrow<VariantWrappingStruct>(
@@ -907,24 +924,29 @@ TEST_P(YamlReadArchiveTest, VisitVariantFoundNoTag) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
           Load("doc:\n  inner:\n    value: [foo, bar]")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:3:5:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Sequence\\) entry for std::string value"
-      " while accepting YAML node of type Mapping \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
+      " while accepting YAML node of type Mapping"
+      " \\(with size 1 and keys \\{inner\\}\\)"
+      " while visiting drake::yaml::test::VariantStruct inner.");
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantWrappingStruct>(
           Load("doc:\n  inner:\n    value: {foo: bar}")),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:3:5:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Scalar \\(Mapping\\) entry for std::string value\\"
-      " while accepting YAML node of type Mapping \\(with size 1 and keys"
-      " \\{inner\\}\\) while visiting drake::yaml::test::VariantStruct inner.");
+      " while accepting YAML node of type Mapping"
+      " \\(with size 1 and keys \\{inner\\}\\)"
+      " while visiting drake::yaml::test::VariantStruct inner.");
 }
 
 // This finds an unknown tag when a variant was wanted.
 TEST_P(YamlReadArchiveTest, VisitVariantFoundUnknownTag) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<VariantStruct>(Load("doc:\n  value: !UnknownTag foo")),
+      "<string>:2:3: "
       "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\) "
       "has unsupported type tag !UnknownTag "
       "while selecting a variant<> entry for "
@@ -937,19 +959,23 @@ TEST_P(YamlReadArchiveTest, VisitEigenFoundNothing) {
   const std::string value;
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenVecStruct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Null\\) entry for Eigen::VectorXd value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenVec3Struct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Null\\) entry for Eigen::Vector3d value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrixStruct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Null\\) entry for Eigen::MatrixXd value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrix34Struct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Null\\) entry for Eigen::Matrix.*3,4.* value\\.");
 }
 
@@ -958,19 +984,23 @@ TEST_P(YamlReadArchiveTest, VisitEigenFoundScalar) {
   const std::string value{"1.0"};
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenVecStruct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Scalar\\) entry for Eigen::VectorXd value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenVec3Struct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Scalar\\) entry for Eigen::Vector3d value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrixStruct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Scalar\\) entry for Eigen::MatrixXd value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrix34Struct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has non-Sequence \\(Scalar\\) entry for Eigen::Matrix.* value\\.");
 }
 
@@ -979,12 +1009,14 @@ TEST_P(YamlReadArchiveTest, VisitEigenMatrixFoundOneDimensional) {
   const std::string value{"[1.0, 2.0, 3.0, 4.0]"};
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrixStruct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " is Sequence-of-Scalar \\(not Sequence-of-Sequence\\)"
       " entry for Eigen::MatrixXd value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrix34Struct>(LoadSingleValue(value)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " is Sequence-of-Scalar \\(not Sequence-of-Sequence\\)"
       " entry for Eigen::Matrix.* value\\.");
 }
@@ -1000,11 +1032,13 @@ doc:
 )""");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrixStruct>(Load(doc)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has inconsistent cols dimensions entry for Eigen::MatrixXd value\\.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       AcceptIntoDummy<EigenMatrix34Struct>(Load(doc)),
-      "YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
+      "<string>:2:3:"
+      " YAML node of type Mapping \\(with size 1 and keys \\{value\\}\\)"
       " has inconsistent cols dimensions entry for Eigen::Matrix.* value\\.");
 }
 
@@ -1021,7 +1055,9 @@ TEST_P(YamlReadArchiveTest, VisitStructFoundNothing) {
   } else {
     DRAKE_EXPECT_THROWS_MESSAGE(
         AcceptIntoDummy<OuterStruct>(node),
-        "YAML node of type Mapping \\(with size 1 and keys \\{outer_value\\}\\)"
+        "<string>:2:5:"
+        " YAML node of type Mapping"
+        " \\(with size 1 and keys \\{outer_value\\}\\)"
         " is missing entry for [^ ]*InnerStruct inner_struct\\.");
   }
 }
@@ -1034,7 +1070,8 @@ doc:
   outer_value: 1.0
   inner_struct: 2.0
 )""")),
-      "YAML node of type Mapping"
+      "<string>:2:3:"
+      " YAML node of type Mapping"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
       " has non-Mapping \\(Scalar\\) entry for"
       " [^ ]*InnerStruct inner_struct\\.");
@@ -1048,7 +1085,8 @@ doc:
   outer_value: 1.0
   inner_struct: [2.0, 3.0]
 )""")),
-      "YAML node of type Mapping"
+      "<string>:2:3:"
+      " YAML node of type Mapping"
       " \\(with size 2 and keys \\{inner_struct, outer_value\\}\\)"
       " has non-Mapping \\(Sequence\\) entry for"
       " [^ ]*InnerStruct inner_struct\\.");

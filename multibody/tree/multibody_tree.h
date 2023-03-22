@@ -55,10 +55,14 @@ enum class JacobianWrtVariable {
 /// @cond
 // Helper macro to throw an exception within methods that should not be called
 // post-finalize.
+// This macro is constant-time and, per Drake's style guide, we allow to call
+// it from within snake_case functions.
 #define DRAKE_MBT_THROW_IF_FINALIZED() ThrowIfFinalized(__func__)
 
 // Helper macro to throw an exception within methods that should not be called
 // pre-finalize.
+// This macro is constant-time and, per Drake's style guide, we allow to call
+// it from within snake_case functions.
 #define DRAKE_MBT_THROW_IF_NOT_FINALIZED() ThrowIfNotFinalized(__func__)
 /// @endcond
 
@@ -610,6 +614,12 @@ class MultibodyTree {
   }
 
   // See MultibodyPlant method.
+  int num_actuators(ModelInstanceIndex model_instance) const {
+    DRAKE_MBT_THROW_IF_NOT_FINALIZED();
+    return model_instances_.at(model_instance)->num_actuators();
+  }
+
+  // See MultibodyPlant method.
   int num_actuated_dofs(ModelInstanceIndex model_instance) const {
     DRAKE_MBT_THROW_IF_NOT_FINALIZED();
     return model_instances_.at(model_instance)->num_actuated_dofs();
@@ -820,6 +830,14 @@ class MultibodyTree {
   // Returns a list of joint indices associated with `model_instance`.
   std::vector<JointIndex> GetJointIndices(ModelInstanceIndex model_instance)
   const;
+
+  // See MultibodyPlant method.
+  std::vector<JointActuatorIndex> GetJointActuatorIndices(
+      ModelInstanceIndex model_instance) const;
+
+  // See MultibodyPlant method.
+  std::vector<JointIndex> GetActuatedJointIndices(
+      ModelInstanceIndex model_instance) const;
 
   // Returns a list of frame indices associated with `model_instance`
   std::vector<FrameIndex> GetFrameIndices(ModelInstanceIndex model_instance)

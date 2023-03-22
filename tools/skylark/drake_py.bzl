@@ -1,5 +1,3 @@
-# -*- python -*-
-
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
 load("//tools/skylark:kwargs.bzl", "amend", "incorporate_num_threads")
 

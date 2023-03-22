@@ -1,4 +1,4 @@
-# -*- python -*-
+# -*- bazel -*-
 
 load(
     "@drake//tools/workspace:cmake_configure_file.bzl",
