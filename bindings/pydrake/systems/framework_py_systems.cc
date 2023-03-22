@@ -349,7 +349,7 @@ struct Impl {
         .def("CreateDefaultContext", &System<T>::CreateDefaultContext,
             doc.System.CreateDefaultContext.doc)
         .def("SetDefaultContext", &System<T>::SetDefaultContext,
-            doc.System.SetDefaultContext.doc)
+            py::arg("context"), doc.System.SetDefaultContext.doc)
         .def("SetRandomContext", &System<T>::SetRandomContext,
             py::arg("context"), py::arg("generator"),
             doc.System.SetRandomContext.doc)
@@ -371,7 +371,8 @@ struct Impl {
         .def("EvalTimeDerivatives", &System<T>::EvalTimeDerivatives,
             py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
-            py::keep_alive<0, 2>(), doc.System.EvalTimeDerivatives.doc)
+            py::keep_alive<0, 2>(), py::arg("context"),
+            doc.System.EvalTimeDerivatives.doc)
         .def("EvalPotentialEnergy", &System<T>::EvalPotentialEnergy,
             py::arg("context"), doc.System.EvalPotentialEnergy.doc)
         .def("EvalKineticEnergy", &System<T>::EvalKineticEnergy,
@@ -381,7 +382,7 @@ struct Impl {
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalVectorInput(arg1, arg2);
             },
-            py_rvp::reference,
+            py::arg("context"), py::arg("port_index"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.EvalVectorInput.doc)
         // Calculations.
@@ -446,25 +447,25 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetSubsystemContext",
             overload_cast_explicit<const Context<T>&, const System<T>&,
                 const Context<T>&>(&System<T>::GetSubsystemContext),
-            py_rvp::reference,
+            py::arg("subsystem"), py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
         .def("GetMutableSubsystemContext",
             overload_cast_explicit<Context<T>&, const System<T>&, Context<T>*>(
                 &System<T>::GetMutableSubsystemContext),
-            py_rvp::reference,
+            py::arg("subsystem"), py::arg("context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 3>(), doc.System.GetMutableSubsystemContext.doc)
         .def("GetMyContextFromRoot",
             overload_cast_explicit<const Context<T>&, const Context<T>&>(
                 &System<T>::GetMyContextFromRoot),
-            py_rvp::reference,
+            py::arg("root_context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         .def("GetMyMutableContextFromRoot",
             overload_cast_explicit<Context<T>&, Context<T>*>(
                 &System<T>::GetMyMutableContextFromRoot),
-            py_rvp::reference,
+            py::arg("root_context"), py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.System.GetMyMutableContextFromRoot.doc)
         // Utility methods.
@@ -548,6 +549,7 @@ Note: The above is for the C++ documentation. For Python, use
             [](const System<T>* self, const Context<T>& arg1, int arg2) {
               return self->EvalAbstractInput(arg1, arg2);
             },
+            py::arg("context"), py::arg("port_index"),
             py_rvp::reference,
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 2>(), doc.SystemBase.EvalAbstractInput.doc)

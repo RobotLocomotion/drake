@@ -155,7 +155,7 @@ class TestGeneral(unittest.TestCase):
             context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
-        system.SetDefaultContext(context)
+        system.SetDefaultContext(context=context)
 
         # Check random context method.
         system.SetRandomContext(context=context, generator=RandomGenerator())
