@@ -1,5 +1,10 @@
 load("//tools/skylark:py.bzl", "py_binary", "py_library", "py_test")
-load("//tools/skylark:kwargs.bzl", "amend", "incorporate_num_threads")
+load(
+    "//tools/skylark:kwargs.bzl",
+    "amend",
+    "incorporate_allow_network",
+    "incorporate_num_threads",
+)
 
 def drake_py_library(
         name,
@@ -174,6 +179,9 @@ def drake_py_unittest(
     contain a __main__ handler nor a shebang line.  By default, sets test size
     to "small" to indicate a unit test.
 
+    @param allow_network (optional, default is ["meshcat"])
+        See drake/tools/skylark/README.md for details.
+
     @param num_threads (optional, default is 1)
         See drake/tools/skylark/README.md for details.
     """
@@ -182,6 +190,8 @@ def drake_py_unittest(
         fail("Changing srcs= is not allowed by drake_py_unittest." +
              " Use drake_py_test instead, if you need something weird.")
     srcs = ["test/%s.py" % name, helper]
+    allow_network = kwargs.pop("allow_network", None)
+    kwargs = incorporate_allow_network(kwargs, allow_network = allow_network)
     num_threads = kwargs.pop("num_threads", 1)
     kwargs = incorporate_num_threads(kwargs, num_threads = num_threads)
     drake_py_test(
@@ -203,6 +213,7 @@ def drake_py_test(
         deps = None,
         isolate = True,
         allow_import_unittest = False,
+        allow_network = None,
         num_threads = None,
         **kwargs):
     """A wrapper to insert Drake-specific customizations.
@@ -219,6 +230,9 @@ def drake_py_test(
         tests should use the `drake_py_unittest` macro instead of this one
         (thus disabling this interlock), but can override this parameter in
         case something unique is happening and the other macro can't be used.
+
+    @param allow_network (optional, default is ["meshcat"])
+        See drake/tools/skylark/README.md for details.
 
     @param num_threads (optional, default is 1)
         See drake/tools/skylark/README.md for details.

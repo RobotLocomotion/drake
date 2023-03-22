@@ -27,6 +27,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/network_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
@@ -546,6 +547,11 @@ class Meshcat::Impl {
         main_thread_id_(std::this_thread::get_id()),
         params_(params) {
     DRAKE_THROW_UNLESS(params.port.value_or(7000) >= 1024);
+    if (!drake::internal::IsNetworkingAllowed("meshcat")) {
+      throw std::runtime_error(
+          "Meshcat has been disabled via the DRAKE_ALLOW_NETWORK environment "
+          "variable");
+    }
 
     // Sanity-check the pattern, by passing it (along with dummy host and port
     // values) through to fmt to allow any fmt-specific exception to percolate.
