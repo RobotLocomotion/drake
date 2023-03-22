@@ -219,6 +219,7 @@ namespace solvers {
  - <b>\ref drake::common::FindResource() "DRAKE_RESOURCE_ROOT"</b>
  - <b>\ref drake::solvers::GurobiSolver "GRB_LICENSE_FILE"</b> (see also 
    <a href="https://support.gurobi.com/hc/en-us/articles/360013417211-Where-do-I-place-the-Gurobi-license-file-gurobi-lic-">upstream documentation</a>)
+ - <b>\ref drake::solvers::GurobiSolver "GUROBI_NUM_THREADS"</b>
  - <b>HOME</b>
  - <b>\ref drake::solvers::MosekSolver "MOSEKLM_LICENSE_FILE"</b> (see also
    <a href="https://docs.mosek.com/latest/licensing/client-setup.html">upstream documentation</a>)

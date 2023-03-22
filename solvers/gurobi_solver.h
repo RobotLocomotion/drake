@@ -60,6 +60,10 @@ struct GurobiSolverDetails {
 ///    for more details. Often this method is called together with
 ///    setting GRBwrite to "FILENAME.ilp" to write IIS to a file with extension
 ///    "ilp". Default is not to compute IIS.
+///
+/// If the "Threads" integer solver option has not been set by the user, then
+/// %GurobiSolver uses environment variable GUROBI_NUM_THREADS (if set) as a
+/// default value for "Threads".
 class GurobiSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(GurobiSolver)
