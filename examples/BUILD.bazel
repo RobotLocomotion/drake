@@ -45,7 +45,6 @@ INSTALLED_MODEL_PACKAGES = [
     "//examples/planar_gripper",
     "//examples/pr2",
     "//examples/quadrotor",
-    "//examples/multibody/four_bar",
 ]
 
 filegroup(
