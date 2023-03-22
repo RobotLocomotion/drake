@@ -663,7 +663,7 @@ class RotationMatrix {
   // Make an uninitialized %RotationMatrix.
   // @note Internal use only -- for speed.
   static RotationMatrix<T> MakeUninitialized() {
-    return RotationMatrix( /* dummyArgumentCanBeTrueOrFalse = */ true);
+    return RotationMatrix(/* dummy_argument_can_be_true_or_false = */ true);
   }
 
   // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
