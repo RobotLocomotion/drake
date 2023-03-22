@@ -99,26 +99,22 @@ void ApplyVisualizationConfig(
     std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
-/** Adds LCM visualization publishers to communicate to drake_visualizer
-and/or meldis, using all of the default configuration settings.
+/** Adds LCM visualization publishers to communicate to Meshcat,
+drake_visualizer and/or meldis, using all of the default configuration
+settings.
 
 <dl><dt>Example</dt><dd>
 @code
-// Create a builder.
-DiagramBuilder<double> builder;
+// Create a builder. DiagramBuilder<double> builder;
 
-// Add the MultibodyPlant and SceneGraph.
-const MultibodyPlantConfig plant_config = ...;
-MultibodyPlant<double>& plant = AddMultibodyPlant(plant_config, &builder);
-// ... populate the plant, e.g., with a Parser, ...
-plant.Finalize();
+// Add the MultibodyPlant and SceneGraph. const MultibodyPlantConfig
+plant_config = ...; MultibodyPlant<double>& plant =
+AddMultibodyPlant(plant_config, &builder); // ... populate the plant, e.g.,
+with a Parser, ... plant.Finalize();
 
-// Add the visualization.
-AddDefaultVisualization(&builder);
+// Add the visualization. AddDefaultVisualization(&builder);
 
-// Simulate.
-Simulator<double> simulator(builder.Build());
-// ... etc ...
+// Simulate. Simulator<double> simulator(builder.Build()); // ... etc ...
 @endcode
 </dd></dl>
 
@@ -130,7 +126,9 @@ Simulator<double> simulator(builder.Build());
 
 @see drake::visualization::ApplyVisualizationConfig()
 @see drake::multibody::AddMultibodyPlant() */
-void AddDefaultVisualization(systems::DiagramBuilder<double>* builder);
+void AddDefaultVisualization(
+    systems::DiagramBuilder<double>* builder,
+    std::shared_ptr<geometry::Meshcat> meshcat = nullptr);
 
 namespace internal {
 
