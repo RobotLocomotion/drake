@@ -2152,26 +2152,13 @@ class TestPlant(unittest.TestCase):
         FixedOffsetFrame(name="name", P=P, X_PF=X, model_instance=None)
         FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
 
-    @numpy_compare.check_all_types
-    def test_coupler_constraint_api(self, T):
-        MultibodyPlantConfig()
-        config = MultibodyPlantConfig(time_step=0.01,
-                                      discrete_contact_solver="sap")
-        self.assertEqual(config.time_step, 0.01)
-        self.assertEqual(config.discrete_contact_solver, "sap")
-
+    def test_coupler_constraint_api(self):
         # Create a MultibodyPlant with only a WSG gripper.
-        builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlant(config, builder)
-        self.assertIsNotNone(plant)
-        self.assertIsNotNone(scene_graph)
-
-        wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
+        plant = MultibodyPlant_[float](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        Parser(plant).AddModelsFromUrl(
+            "package://drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
-
-        parser = Parser(plant)
-        gripper_model, = parser.AddModels(file_name=wsg50_sdf_path)
 
         # Add coupler constraint.
         left_slider = plant.GetJointByName("left_finger_sliding_joint")
