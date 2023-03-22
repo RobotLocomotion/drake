@@ -790,6 +790,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetJointActuatorByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetJointActuatorByName.doc_1args)
+        .def("GetJointActuatorByName",
+            overload_cast_explicit<const JointActuator<T>&, string_view,
+                ModelInstanceIndex>(&Class::GetJointActuatorByName),
+            py::arg("name"), py::arg("model_instance"),
+            py_rvp::reference_internal,
+            cls_doc.GetJointActuatorByName.doc_2args)
         .def("GetModelInstanceByName",
             overload_cast_explicit<ModelInstanceIndex, string_view>(
                 &Class::GetModelInstanceByName),
