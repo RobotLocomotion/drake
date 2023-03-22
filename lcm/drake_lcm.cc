@@ -12,6 +12,7 @@
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/network_policy.h"
 #include "drake/common/text_logging.h"
 
 namespace drake {
@@ -46,6 +47,14 @@ class DrakeLcm::Impl {
       }
       if (lcm_url_.empty()) {
         lcm_url_ = kLcmDefaultUrl;
+      }
+    }
+    if (lcm_url_.substr(0, 7) != "memq://") {
+      if (!IsNetworkingAllowed("lcm")) {
+        throw std::runtime_error(fmt::format(
+            "LCM URL {} has been disabled via the DRAKE_ALLOW_NETWORK "
+            "environment variable",
+            lcm_url_));
       }
     }
   }

@@ -78,3 +78,13 @@ def incorporate_num_threads(kwargs, *, num_threads):
         "GUROBI_NUM_THREADS": str(num_threads),
     })
     return kwargs
+
+def incorporate_allow_network(kwargs, *, allow_network):
+    if allow_network == None or len(allow_network) == 0:
+        allow_network = "meshcat"
+    else:
+        allow_network = ":".join(allow_network)
+    kwargs = amend(kwargs, "env", update = {
+        "DRAKE_ALLOW_NETWORK": allow_network,
+    })
+    return kwargs

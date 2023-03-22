@@ -22,6 +22,7 @@
 #include "drake/common/find_cache.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
+#include "drake/common/network_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
@@ -270,11 +271,27 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
     return path_.get_without_fetching();
   }
 
+  PackageMap::RemoteParams safe_params = remote_params();
+  if (!IsNetworkingAllowed("package_map")) {
+    safe_params.urls.erase(
+        std::remove_if(safe_params.urls.begin(), safe_params.urls.end(),
+                       [](const auto& url) {
+                         return url.substr(0, 7) != "file://";
+                       }),
+        safe_params.urls.end());
+  }
+  if (safe_params.urls.empty()) {
+    throw std::runtime_error(fmt::format(
+        "PackageMap: remote download of '{}' has been disabled via the "
+        "DRAKE_ALLOW_NETWORK environment variable",
+        display_path()));
+  }
+
   drake::log()->info("PackageMap: Downloading {}", display_path());
 
   // Write the downloader arguments to a JSON file.
   DownloaderArgs args{.package_name = std::string(package_name),
-                      .remote_params = remote_params(),
+                      .remote_params = std::move(safe_params),
                       .output_dir = package_dir.string()};
   std::string json_filename = fs::path(cache_dir / ".fetch_XXXXXX").string();
   const int temp_fd = ::mkstemp(json_filename.data());

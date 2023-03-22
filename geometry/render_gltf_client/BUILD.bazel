@@ -35,6 +35,7 @@ drake_cc_library(
     ],
     deps = [
         ":internal_render_engine_gltf_client",
+        "//common:network_policy",
     ],
 )
 
@@ -125,6 +126,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "factory_test",
+    allow_network = ["render_gltf_client"],
     deps = [
         ":factory",
         ":internal_render_engine_gltf_client",
@@ -282,6 +284,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "integration_test",
     size = "medium",
+    allow_network = ["render_gltf_client"],
     data = [
         ":client_demo",
         ":server_demo",

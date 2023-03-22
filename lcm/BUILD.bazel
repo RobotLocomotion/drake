@@ -76,6 +76,7 @@ drake_cc_library(
         "//common:essential",
     ],
     deps = [
+        "//common:network_policy",
         "@glib",
         "@lcm",
     ],
@@ -136,6 +137,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "drake_lcm_test",
+    allow_network = ["lcm"],
     flaky = True,
     deps = [
         ":drake_lcm",
@@ -169,6 +171,7 @@ drake_cc_binary(
 
 drake_py_unittest(
     name = "initialization_sequence_test",
+    allow_network = ["lcm"],
     data = [
         ":initialization_sequence_test_stub",
     ],

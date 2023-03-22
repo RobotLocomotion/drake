@@ -467,6 +467,7 @@ drake_cc_library(
     deps = [
         "//common:drake_export",
         "//common:find_resource",
+        "//common:network_policy",
         "//common:scope_exit",
         "//common:unused",
         "@common_robotics_utilities",
