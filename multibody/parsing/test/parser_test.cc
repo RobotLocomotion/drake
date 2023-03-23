@@ -344,7 +344,7 @@ GTEST_TEST(FileParserTest, BadStringTest) {
   // error message matching here will be less than convincing.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelsFromString("bad", "xml"),
-      "Failed to parse XML string: XML_ERROR_PARSING_TEXT");
+      ".*Failed to parse XML string: XML_ERROR_PARSING_TEXT");
 
   // Malformed DMD string is an error.
   // TODO(#18052): Until the underlying parser supports diagnostic policy, the
