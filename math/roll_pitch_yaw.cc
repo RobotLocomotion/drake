@@ -275,9 +275,8 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
         " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock."
         " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
         " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
-        " orientation singularity, use a quaternion -- not RollPitchYaw."
-        " ({}:{}).", function_name, pitch_radians * 180 / M_PI,
-        tolerance_degrees);
+        " orientation singularity, use a quaternion -- not RollPitchYaw.",
+        function_name, pitch_radians * 180 / M_PI, tolerance_degrees);
     throw std::runtime_error(message);
 }
 

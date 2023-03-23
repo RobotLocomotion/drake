@@ -269,12 +269,10 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   // CalcRpyDtFromAngularVelocityInChild() throw near gimbal lock.
   const char* expected_message_parentB =
       "RollPitchYaw::CalcRpyDtFromAngularVelocityInParent()"
-      ".*gimbal-lock.*"
-      "roll_pitch_yaw.h.*";
+      ".*gimbal-lock.*";
   const char* expected_message_childB =
       "RollPitchYaw::CalcRpyDtFromAngularVelocityInChild()"
-      ".*gimbal-lock.*"
-      "roll_pitch_yaw.h.*";
+      ".*gimbal-lock.*";
   DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInParent(w_AD_A),
                               expected_message_parentB);
   DRAKE_EXPECT_THROWS_MESSAGE(rpyA.CalcRpyDtFromAngularVelocityInChild(w_AD_D),
@@ -382,7 +380,6 @@ GTEST_TEST(RollPitchYaw, PrecisionOfAngularVelocityFromRpyDtAndViceVersa) {
   }
   EXPECT_TRUE(number_of_precise_cases > 0  &&  number_of_imprecise_cases > 0);
 }
-
 
 // For a RollPitchYaw rpy that relates orientation of a frame A to a frame D,
 // calculate conversion from rpy and its time-derivative rpyDt to w_AD_D
