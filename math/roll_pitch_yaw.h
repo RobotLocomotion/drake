@@ -280,11 +280,11 @@ class RollPitchYaw {
   /// Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
-  /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in A.
-  /// In other words, returns [ωx; ωy; ωz]ᴀ, where frame D's angular velocity in
-  /// "parent" frame A is `w_AD_A = ωx Ax + ωy Ay + ωz Az`, where [ωx; ωy; ωz]ᴀ
-  /// is calculated via the the 3x3 matrix Np⁻¹ (the inverse of the matrix Np
-  /// documented in CalcMatrixRelatingRpyDtToAngularVelocityInParent()).
+  /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in
+  /// "parent" frame A. In other words, returns [ωx; ωy; ωz]ᴀ, where
+  /// `w_AD_A = ωx Ax + ωy Ay + ωz Az`, and where [ωx; ωy; ωz]ᴀ is calculated
+  /// via the the 3x3 matrix Np⁻¹ (the inverse of the matrix Np documented in
+  /// CalcMatrixRelatingRpyDtToAngularVelocityInParent()).
   /// ```
   /// ⌈ ωx ⌉         ⌈ ṙ ⌉            ⌈ cos(y)*cos(p)  -sin(y)  0 ⌉
   /// | ωy |  = Np⁻¹ | ṗ |     Np⁻¹ = | sin(y)*cos(p)   cos(y)  0 |
@@ -299,14 +299,20 @@ class RollPitchYaw {
     return M * rpyDt;
   }
 
+  /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in
+  /// "parent" frame A. In other words, returns [ωx; ωy; ωz]ᴀ, where
+  /// `w_AD_A = ωx Ax + ωy Ay + ωz Az`, and where [ωx; ωy; ωz]ᴀ is calculated
+  /// via the 3x3 matrix Np⁻¹ (the inverse of the matrix Np documented in
+  /// CalcMatrixRelatingRpyDtToAngularVelocityInParent()).
+
   /// Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
-  /// @returns w_AD_D, frame D's angular velocity in frame A, expressed in D.
-  /// In other words, returns [ω0; ω1; ω2]ᴅ, where frame D's angular velocity in
-  /// "child" frame D is `w_AD_D = ω0 Dx + ω1 Dy + ω2 Dz`, where [ω0; ω1; ω2]ᴅ
-  /// is calculated via the the 3x3 matrix Nc⁻¹ (the inverse of the matrix Nc
-  /// documented in CalcMatrixRelatingRpyDtToAngularVelocityInChild()).
+  /// @returns w_AD_D, frame D's angular velocity in frame A, expressed in
+  /// "child" frame D. In other words, returns [ω0; ω1; ω2]ᴅ, where
+  /// `w_AD_D = ω0 Dx + ω1 Dy + ω2 Dz`, and where [ω0; ω1; ω2]ᴅ is calculated
+  /// via the 3x3 matrix Nc⁻¹ (the inverse of the matrix Nc documented in
+  /// CalcMatrixRelatingRpyDtToAngularVelocityInChild()).
   /// ```
   /// ⌈ ω0 ⌉         ⌈ ṙ ⌉            ⌈ 1      0        -sin(p)    ⌉
   /// | ω1 |  = Nc⁻¹ | ṗ |     Nc⁻¹ = | 0   cos(r)   sin(r)*cos(p) |
