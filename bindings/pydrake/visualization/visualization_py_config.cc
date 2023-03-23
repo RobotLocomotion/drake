@@ -34,7 +34,8 @@ void DefineVisualizationConfig(py::module m) {
           py::arg("meshcat") = nullptr, py::arg("lcm") = nullptr,
           doc.ApplyVisualizationConfig.doc)
       .def("AddDefaultVisualization", &AddDefaultVisualization,
-          py::arg("builder"), doc.AddDefaultVisualization.doc);
+          py::arg("builder"), py::arg("meshcat") = nullptr,
+          doc.AddDefaultVisualization.doc);
 }
 
 }  // namespace internal

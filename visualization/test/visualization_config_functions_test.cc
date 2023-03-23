@@ -289,6 +289,21 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
   simulator.AdvanceTo(0.25);
 }
 
+// The AddDefault... sugar should respect our passed-in Meshcat.
+GTEST_TEST(VisualizationConfigFunctionsTest, AddDefaultWithMeshcat) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
+  EXPECT_EQ(meshcat.use_count(), 1);
+  AddDefaultVisualization(&builder, meshcat);
+  Simulator<double> simulator(builder.Build());
+  // Our meshcat was actually used.
+  EXPECT_GE(meshcat.use_count(), 2);
+  // Nothing crashes.
+  simulator.AdvanceTo(0.25);
+}
+
 // A missing plant causes an exception.
 GTEST_TEST(VisualizationConfigFunctionsTest, NoPlant) {
   DiagramBuilder<double> builder;
