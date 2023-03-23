@@ -10,6 +10,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # Make python and pip available to meet the requirements for deepnote.com:
 # https://docs.deepnote.com/environment/custom-environments#custom-image-requirements
     python3-pip python-is-python3 \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+# Bake model data into the image up-front, instead of fetching on demand.
+  && PYTHONPATH=/opt/drake/lib/python3.10/site-packages python3 -c \
+    'from pydrake.all import PackageMap; PackageMap().GetPath("drake_models") ' \
 ENV PATH="/opt/drake/bin:${PATH}" \
   PYTHONPATH="/opt/drake/lib/python3.10/site-packages:${PYTHONPATH}"

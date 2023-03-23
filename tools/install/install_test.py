@@ -1,6 +1,8 @@
 import argparse
 import functools
+import json
 import os
+from pathlib import Path
 import re
 import sys
 import unittest
@@ -19,6 +21,23 @@ class InstallTest(unittest.TestCase):
         assert not os.path.exists(cls._installation_folder)
         install_test_helper.install()
         assert os.path.isdir(cls._installation_folder)
+
+        # Locate the drake_models metadata.
+        drake_models = Path(os.environ["TEST_SRCDIR"]) / "models_internal"
+        with open(drake_models / "drake_repository_metadata.json") as f:
+            sha256 = json.load(f)["sha256"]
+
+        # Pre-populate the PackageMap cache directory with the drake_models
+        # data, so we don't hit the internet all the time while testing. Plumb
+        # it through as $XDG_CACHE_HOME for nested bazel tests (which have
+        # their own unique $TEST_TMPDIR) to refer to.
+        test_tmpdir = Path(os.environ["TEST_TMPDIR"])
+        assert test_tmpdir.exists()
+        xdg_cache_home = test_tmpdir / ".cache"
+        package_map = xdg_cache_home / "drake" / "package_map"
+        package_map.mkdir(parents=True)
+        (package_map / sha256).symlink_to(drake_models)
+        os.environ["XDG_CACHE_HOME"] = str(xdg_cache_home)
 
     def test_basic_paths(self):
         # Verify install directory content.

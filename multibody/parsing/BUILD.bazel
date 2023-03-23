@@ -55,11 +55,19 @@ drake_cc_package_library(
     ],
 )
 
+genrule(
+    name = "drake_models_json",
+    srcs = ["@models_internal//:drake_repository_metadata.json"],
+    outs = ["drake_models.json"],
+    cmd = "cp $< $@",
+)
+
 drake_cc_library(
     name = "package_map",
     srcs = ["package_map.cc"],
     hdrs = ["package_map.h"],
     data = [
+        ":drake_models.json",
         ":package_downloader.py",
         "//:package.xml",
         "@models_internal//:package.xml",
@@ -693,7 +701,10 @@ drake_cc_googletest(
 install_files(
     name = "install",
     dest = "share/drake/multibody/parsing",
-    files = ["package_downloader.py"],
+    files = [
+        "drake_models.json",
+        "package_downloader.py",
+    ],
     visibility = ["//visibility:public"],
 )
 
