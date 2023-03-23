@@ -2177,6 +2177,54 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.num_constraints(), 1)
 
     @numpy_compare.check_all_types
+    def test_distance_constraint_api(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+
+        # Add a distance constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M_BBo_B = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+        p_AP = [0.0, 0.0, 0.0]
+        p_BQ = [0.0, 0.0, 0.0]
+        index = plant.AddDistanceConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(index, ConstraintIndex(0))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
+    def test_ball_constraint_api(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+
+        # Add ball constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M_BBo_B = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+        p_AP = [0.0, 0.0, 0.0]
+        p_BQ = [0.0, 0.0, 0.0]
+        index = plant.AddBallConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(index, ConstraintIndex(0))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
     def test_multibody_dynamics(self, T):
         MultibodyPlant = MultibodyPlant_[T]
         MultibodyForces = MultibodyForces_[T]
