@@ -55,8 +55,8 @@ GTEST_TEST(DirectCollocationConstraint, DoubleConstructor) {
 
   // Make sure that the constraint can be constructed and evaluated.
   DirectCollocationConstraint constraint(*system, *context);
-  const Eigen::VectorXd x = Eigen::VectorXd(constraint.num_vars());
-  Eigen::VectorXd y(constraint.num_constraints());
+  const Eigen::VectorXd x = Eigen::VectorXd::Zero(constraint.num_vars());
+  Eigen::VectorXd y = Eigen::VectorXd::Zero(constraint.num_constraints());
   constraint.Eval(x, &y);
 }
 
@@ -70,8 +70,8 @@ GTEST_TEST(DirectCollocationConstraint, AutoDiffXdConstructor) {
   // Make sure that the constraint can be constructed and evaluated.
   DirectCollocationConstraint constraint(*system_ad, context_ad.get(),
                                          context_ad.get(), context_ad.get());
-  const Eigen::VectorXd x = Eigen::VectorXd(constraint.num_vars());
-  Eigen::VectorXd y(constraint.num_constraints());
+  const Eigen::VectorXd x = Eigen::VectorXd::Zero(constraint.num_vars());
+  Eigen::VectorXd y = Eigen::VectorXd::Zero(constraint.num_constraints());
   constraint.Eval(x, &y);
 }
 
