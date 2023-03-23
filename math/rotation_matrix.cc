@@ -55,7 +55,7 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
 template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeXRotation(const T& theta) {
   using std::isfinite;
-  DRAKE_DEMAND(isfinite(theta));
+  DRAKE_THROW_UNLESS(isfinite(theta));
   RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
   using std::cos;
   using std::sin;
@@ -71,7 +71,7 @@ RotationMatrix<T> RotationMatrix<T>::MakeXRotation(const T& theta) {
 template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeYRotation(const T& theta) {
   using std::isfinite;
-  DRAKE_DEMAND(isfinite(theta));
+  DRAKE_THROW_UNLESS(isfinite(theta));
   RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
   using std::cos;
   using std::sin;
@@ -87,7 +87,7 @@ RotationMatrix<T> RotationMatrix<T>::MakeYRotation(const T& theta) {
 template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeZRotation(const T& theta) {
   using std::isfinite;
-  DRAKE_DEMAND(isfinite(theta));
+  DRAKE_THROW_UNLESS(isfinite(theta));
   RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
   using std::cos;
   using std::sin;
