@@ -26,7 +26,9 @@ namespace geometry {
    [`curl_global_init(CURL_GLOBAL_ALL | CURL_GLOBAL_ACK_EINTR)`][libcurl_init],
    the implication for consuming applications being:
  @note
-   1. If you intend to have your rendering take place in a threaded context,
+   1. See \ref allow_network "DRAKE_ALLOW_NETWORK" for an environment variable
+      option to deny remote rendering entirely.
+   2. If you intend to have your rendering take place in a threaded context,
       you **must** instantiate this RenderEngine via %MakeRenderEngineGltfClient
       from the main thread **before** spawning your threaded workers.  As soon
       as one of these RenderEngine instances has been constructed, libcurl will
@@ -41,7 +43,7 @@ namespace geometry {
       // After MakeRenderEngineGltfClient() function call, libcurl has been
       // initialized and you may now create threads if desired.
       @endcode
-   2. If you need to use a different initialization strategy for libcurl in your
+   3. If you need to use a different initialization strategy for libcurl in your
       application, you should first create the RenderEngine using
       %MakeRenderEngineGltfClient, then manually call
       [`curl_global_cleanup()`][libcurl_cleanup], followed by manually calling

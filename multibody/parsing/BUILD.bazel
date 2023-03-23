@@ -73,6 +73,7 @@ drake_cc_library(
         "//common:find_cache",
         "//common:find_resource",
         "//common:find_runfiles",
+        "//common:network_policy",
         "//common:scope_exit",
         "//common/yaml",
         "@tinyxml2_internal//:tinyxml2",
