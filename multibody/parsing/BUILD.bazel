@@ -573,6 +573,7 @@ drake_cc_googletest(
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",
+        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
