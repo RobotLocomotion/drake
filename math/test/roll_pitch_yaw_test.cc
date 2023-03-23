@@ -194,12 +194,17 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
 
   // Form the matrix Np relating ṙ, ṗ, ẏ to ωx, ωy, ωz, where frame D's angular
   // velocity in A, expressed in "parent" A is `w_AD_A = ωx Ax + ωy Ay + ωz Az`.
-  // Similarly, calculate the matrix Nc relating ṙ, ṗ, ẏ to w_AD_D (in child).
   // ⌈ ṙ ⌉      ⌈ ωx ⌉          ⌈ cos(y)/cos(p)  sin(y)/cos(p)   0 ⌉
   // | ṗ | = Np | ωy |     Np = |   −sin(y)          cos(y)      0 |
   // ⌊ ẏ ⌋      ⌊ ωz ⌋ᴀ         ⌊ cos(y)*tan(p)   sin(y)*tan(p)  1 ⌋
   const Matrix3<double> Np =
       rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent();
+
+  // Form the matrix Np relating ṙ, ṗ, ẏ to ω0, ω1, ω2, where frame D's angular
+  // velocity in A, expressed in "child" D is `w_AD_D = ω0 Dx + ω1 Dy + ω2 Dz`.
+  // ⌈ ṙ ⌉      ⌈ ω0 ⌉          ⌈ 1  sin(r)*tan(p)  cos(r)*tan(p) ⌉
+  // | ṗ | = Nc | ω1 |     Nc = | 0      cos(r)        −sin(r)    |
+  // ⌊ ẏ ⌋      ⌊ ω2 ⌋ᴅ         ⌊ 0  sin(r)/cos(p)  cos(r)/cos(p) ⌋
   const Matrix3<double> Nc =
       rpy.CalcMatrixRelatingRpyDtToAngularVelocityInChild();
 
@@ -237,12 +242,10 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const RollPitchYaw<double> rpyA(0.2, M_PI / 2, 0.4);
   const char* expected_message_parentA =
       "RollPitchYaw::CalcMatrixRelatingRpyDtToAngularVelocityInParent()"
-      ".*gimbal-lock.*"
-      "roll_pitch_yaw.h.*";
+      ".*gimbal-lock.*";
   const char* expected_message_childA =
       "RollPitchYaw::CalcMatrixRelatingRpyDtToAngularVelocityInChild()"
-      ".*gimbal-lock.*"
-      "roll_pitch_yaw.h.*";
+      ".*gimbal-lock.*";
   DRAKE_EXPECT_THROWS_MESSAGE(
       rpyA.CalcMatrixRelatingRpyDtToAngularVelocityInParent(),
       expected_message_parentA);

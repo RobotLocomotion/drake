@@ -153,7 +153,7 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
 
 template <typename T>
 Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-    const char* function_name, const char* file_name, int line_number) const {
+    const char* function_name) const {
   using std::cos;
   using std::sin;
   const T& p = pitch_angle();
@@ -161,19 +161,18 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInParent(
   const T sp = sin(p), cp = cos(p);
   // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
   if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
-    ThrowPitchAngleViolatesGimbalLockTolerance(function_name, file_name,
-                                                 line_number, p);
+    ThrowPitchAngleViolatesGimbalLockTolerance(function_name, p);
   }
   const T one_over_cp = T(1)/cp;
   const T sy = sin(y), cy = cos(y);
   const T cy_over_cp = cy * one_over_cp;
   const T sy_over_cp = sy * one_over_cp;
   Matrix3<T> M;
-  // clang-format on
+  // clang-format off
   M <<     cy_over_cp,       sy_over_cp,  T(0),
                   -sy,               cy,  T(0),
       cy_over_cp * sp,  sy_over_cp * sp,  T(1);
-  // clang-format off
+  // clang-format on
   return M;
 }
 
@@ -195,11 +194,11 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInChild(
   const T cr_over_cp = cr * one_over_cp;
   const T sr_over_cp = sr * one_over_cp;
   Matrix3<T> M;
-  // clang-format on
+  // clang-format off
   M << T(1), sr_over_cp * sp,  cr_over_cp * sp,
        T(0),              cr,              -sr,
        T(0),      sr_over_cp,       cr_over_cp;
-  // clang-format off
+  // clang-format on
   return M;
 }
 
@@ -234,7 +233,7 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
         " more than {:G} from the corresponding element of the RotationMatrix"
         " formed by the Quaternion passed to this method.  To avoid this"
         " inconsistency, ensure the orientation of R and Quaternion align."
-        " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
+        " ({}:{}).", __func__, tolerance);
     throw std::runtime_error(message);
   }
 

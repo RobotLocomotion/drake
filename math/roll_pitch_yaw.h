@@ -281,6 +281,15 @@ class RollPitchYaw {
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in A.
+  /// In other words, returns [ωx; ωy; ωz]ᴀ, where frame D's angular velocity in
+  /// "parent" frame A is `w_AD_A = ωx Ax + ωy Ay + ωz Az`, where [ωx; ωy; ωz]ᴀ
+  /// is calculated via the the 3x3 matrix Np⁻¹ (the inverse of the matrix Np
+  /// documented in CalcMatrixRelatingRpyDtToAngularVelocityInParent()).
+  /// ```
+  /// ⌈ ωx ⌉         ⌈ ṙ ⌉            ⌈ cos(y)*cos(p)  -sin(y)  0 ⌉
+  /// | ωy |  = Np⁻¹ | ṗ |     Np⁻¹ = | sin(y)*cos(p)   cos(y)  0 |
+  /// ⌊ ωz ⌋ᴀ        ⌊ ẏ ⌋            ⌊   -sin(p)         0     1 ⌋
+  /// ```
   Vector3<T> CalcAngularVelocityInParentFromRpyDt(
       const Vector3<T>& rpyDt) const {
     // Get the 3x3 coefficient matrix M that contains the partial derivatives of
@@ -294,6 +303,15 @@ class RollPitchYaw {
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
   /// @returns w_AD_D, frame D's angular velocity in frame A, expressed in D.
+  /// In other words, returns [ω0; ω1; ω2]ᴅ, where frame D's angular velocity in
+  /// "child" frame D is `w_AD_D = ω0 Dx + ω1 Dy + ω2 Dz`, where [ω0; ω1; ω2]ᴅ
+  /// is calculated via the the 3x3 matrix Nc⁻¹ (the inverse of the matrix Nc
+  /// documented in CalcMatrixRelatingRpyDtToAngularVelocityInChild()).
+  /// ```
+  /// ⌈ ω0 ⌉         ⌈ ṙ ⌉            ⌈ 1      0        -sin(p)    ⌉
+  /// | ω1 |  = Nc⁻¹ | ṗ |     Nc⁻¹ = | 0   cos(r)   sin(r)*cos(p) |
+  /// ⌊ ω2 ⌋ᴅ        ⌊ ẏ ⌋            ⌊ 0  -sin(r)   cos(r)*cos(p) ⌋
+  /// ```
   Vector3<T> CalcAngularVelocityInChildFromRpyDt(
       const Vector3<T>& rpyDt) const {
     // Get the 3x3 coefficient matrix M that contains the partial derivatives of
@@ -308,11 +326,8 @@ class RollPitchYaw {
   /// @param[in] w_AD_A, frame D's angular velocity in frame A, expressed in A.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
-  /// @note This method has a divide-by-zero error (singularity) when the cosine
-  /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
-  /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
-  /// There are associated precision problems (inaccuracies) in the neighborhood
-  /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
+  /// @note Enhanced documentation for this method and its gimbal-lock (divide-
+  /// by-zero error) is in CalcMatrixRelatingRpyDtToAngularVelocityInParent().
   /// @see CalcRpyDtFromAngularVelocityInChild()
   Vector3<T> CalcRpyDtFromAngularVelocityInParent(
       const Vector3<T>& w_AD_A) const {
@@ -322,7 +337,7 @@ class RollPitchYaw {
     // TODO(Mitiguy) Improve speed -- last column of M is (0, 0, 1).
     // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
     const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-        __func__, __FILE__, __LINE__);
+        __func__);
     return M * w_AD_A;
   }
 
@@ -331,29 +346,31 @@ class RollPitchYaw {
   /// @param[in] w_AD_D, frame D's angular velocity in frame A, expressed in D.
   /// @returns `[ṙ; ṗ; ẏ]`, the 1ˢᵗ time-derivative of `this` %RollPitchYaw.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
-  /// @note This method has a divide-by-zero error (singularity) when the cosine
-  /// of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
-  /// "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
-  /// There are associated precision problems (inaccuracies) in the neighborhood
-  /// of these pitch angles, i.e., when `cos(p) ≈ 0`.
+  /// @note Enhanced documentation for this method and its gimbal-lock (divide-
+  /// by-zero error) is in CalcMatrixRelatingRpyDtToAngularVelocityInChild().
   /// @see CalcRpyDtFromAngularVelocityInParent()
   Vector3<T> CalcRpyDtFromAngularVelocityInChild(
       const Vector3<T>& w_AD_D) const {
     // Get the 3x3 M matrix containing the partial derivatives of [ṙ, ṗ, ẏ] with
-    // respect to [wx; wy; wz]ᴅ (which is w_AD_A expressed in "child" frame D).
+    // respect to [wx; wy; wz]ᴅ (which is w_AD_D expressed in "child" frame D).
     // In other words, `rpyDt = M * w_AD_D`.
     // TODO(Mitiguy) Improve speed -- first column of M is (1, 0, 0).
     // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
     const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInChild(
-        __func__, __FILE__, __LINE__);
+        __func__);
     return M * w_AD_D;
   }
 
-  /// For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
-  /// relate the orientation of two generic frames A and D, returns the 3x3
-  /// matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
-  /// to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in "parent" frame A).
-  /// In other words, `rpyDt = M * w_AD_A`.
+  /// For `this` %RollPitchYaw with roll-pitch-yaw angles [r; p; y] which relate
+  /// the orientation of two generic frames A and D, returns the 3x3 matrix Np
+  /// relating ṙ, ṗ, ẏ to ωx, ωy, ωz, where frame D's angular velocity in A,
+  /// expressed in "parent" A is `w_AD_A = ωx Ax + ωy Ay + ωz Az`. Hence, Np
+  /// contains partial derivatives of [ṙ, ṗ, ẏ] with respect to [ωx; ωy; ωz]ᴀ.
+  /// ```
+  /// ⌈ ṙ ⌉      ⌈ ωx ⌉          ⌈ cos(y)/cos(p)  sin(y)/cos(p)   0 ⌉
+  /// | ṗ | = Np | ωy |     Np = |   −sin(y)          cos(y)      0 |
+  /// ⌊ ẏ ⌋      ⌊ ωz ⌋ᴀ         ⌊ cos(y)*tan(p)   sin(y)*tan(p)  1 ⌋
+  /// ```
   /// @param[in] function_name name of the calling function/method.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
@@ -364,15 +381,20 @@ class RollPitchYaw {
   /// @see CalcMatrixRelatingRpyDtToAngularVelocityInChild()
   const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent() const {
     const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-        __func__, __FILE__, __LINE__);
+        __func__);
     return M;
   }
 
-  /// For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
-  /// relate the orientation of two generic frames A and D, returns the 3x3
-  /// matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
-  /// to `[wx; wy; wz]ₐ` (which is w_AD_D expressed in "child" frame D).
-  /// In other words, `rpyDt = M * w_AD_D`.
+  /// For `this` %RollPitchYaw with roll-pitch-yaw angles [r; p; y] which relate
+  /// the orientation of two generic frames A and D, returns the 3x3 matrix Nc
+  /// relating ṙ, ṗ, ẏ to ω0, ω1, ω2, where frame D's angular velocity in A,
+  /// expressed in "child" D is `w_AD_D = ω0 Dx + ω1 Dy + ω2 Dz`. Hence, Nc
+  /// contains partial derivatives of [ṙ, ṗ, ẏ] with respect to [ω0; ω1; ω2]ᴅ.
+  /// ```
+  /// ⌈ ṙ ⌉      ⌈ ω0 ⌉          ⌈ 1  sin(r)*tan(p)  cos(r)*tan(p) ⌉
+  /// | ṗ | = Nc | ω1 |     Nc = | 0      cos(r)        −sin(r)    |
+  /// ⌊ ẏ ⌋      ⌊ ω2 ⌋ᴅ         ⌊ 0  sin(r)/cos(p)  cos(r)/cos(p) ⌋
+  /// ```
   /// @param[in] function_name name of the calling function/method.
   /// @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
   /// @note This method has a divide-by-zero error (singularity) when the cosine
@@ -383,7 +405,7 @@ class RollPitchYaw {
   /// @see CalcMatrixRelatingRpyDtToAngularVelocityInParent()
   const Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInChild() const {
     const Matrix3<T> M = CalcMatrixRelatingRpyDtToAngularVelocityInChild(
-        __func__, __FILE__, __LINE__);
+        __func__);
     return M;
   }
 
@@ -405,7 +427,7 @@ class RollPitchYaw {
     // TODO(Mitiguy) Improve speed: The last column of M is (0, 0, 1), the last
     // column of MDt is (0, 0, 1) and there are repeated sin/cos calculations.
     const Matrix3<T> Minv = CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-        __func__, __FILE__, __LINE__);
+        __func__);
     const Matrix3<T> MDt =
         CalcDtMatrixRelatingAngularVelocityInParentToRpyDt(rpyDt);
     return Minv * (alpha_AD_A - MDt * rpyDt);
@@ -432,8 +454,7 @@ class RollPitchYaw {
     const T sr = sin(r), cr = cos(r);
     const T sp = sin(p), cp = cos(p);
     if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
-      ThrowPitchAngleViolatesGimbalLockTolerance(__func__, __FILE__, __LINE__,
-                                                 p);
+      ThrowPitchAngleViolatesGimbalLockTolerance(__func__, p);
     }
     const T one_over_cp = T(1)/cp;
     const T cr_over_cp = cr * one_over_cp;
@@ -482,13 +503,10 @@ class RollPitchYaw {
   // internally-defined gimbal-lock tolerance, which occurs when `cos(p) ≈ 0`,
   // which means `p ≈ (n*π + π/2)` where `n = 0, ±1, ±2, ...`.
   // @param[in] function_name name of the calling function/method.
-  // @param[in] file_name name of the file with the calling function/method.
-  // @param[in] line_number the line number in file_name that made the call.
   // @param[in] pitch_angle pitch angle `p` (in radians).
   // @throws std::exception with a message that `p` is too near gimbal-lock.
   static void ThrowPitchAngleViolatesGimbalLockTolerance(
-    const char* function_name, const char* file_name, const int line_number,
-    const T& pitch_angle);
+    const char* function_name, const T& pitch_angle);
 
   // Uses a quaternion and its associated rotation matrix `R` to accurately
   // and efficiently set the roll-pitch-yaw angles (SpaceXYZ Euler angles)
@@ -602,47 +620,23 @@ class RollPitchYaw {
     return M;
   }
 
-  // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
-  // relate the orientation of two generic frames A and D, returns the 3x3
-  // matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
-  // to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in A).
-  // In other words, `rpyDt = M * w_AD_A`.
   // @param[in] function_name name of the calling function/method.
-  // @param[in] file_name name of the file with the calling function/method.
-  // @param[in] line_number the line number in file_name that made the call.
   // @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
-  // @note This method has a divide-by-zero error (singularity) when the cosine
-  // of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
-  // "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
-  // There are associated precision problems (inaccuracies) in the neighborhood
-  // of these pitch angles, i.e., when `cos(p) ≈ 0`.
-  // @note This utility method typically gets called from a user-relevant API
-  // so it provides the ability to detect gimbal-lock and throws an error
-  // message that includes information from the calling function (rather than
-  // less useful information from within this method itself).
+  // @note Detailed information about this function, is in the public method
+  // CalcMatrixRelatingRpyDtToAngularVelocityInParent(). Generally, this utility
+  // method is called from a user-relevant API. If gimbal-lock is detected, the
+  // issued error message includes the calling function's name.
   Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInParent(
-      const char* function_name, const char* file_name, int line_number) const;
+      const char* function_name) const;
 
-  // For `this` %RollPitchYaw with roll-pitch-yaw angles `[r; p; y]` which
-  // relate the orientation of two generic frames A and D, returns the 3x3
-  // matrix M that contains the partial derivatives of [ṙ, ṗ, ẏ] with respect
-  // to `[wx; wy; wz]ₐ` (which is w_AD_A expressed in D).
-  // In other words, `rpyDt = M * w_AD_D`.
   // @param[in] function_name name of the calling function/method.
-  // @param[in] file_name name of the file with the calling function/method.
-  // @param[in] line_number the line number in file_name that made the call.
   // @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
-  // @note This method has a divide-by-zero error (singularity) when the cosine
-  // of the pitch angle `p` is zero [i.e., `cos(p) = 0`].  This problem (called
-  // "gimbal lock") occurs when `p = n π  + π / 2`, where n is any integer.
-  // There are associated precision problems (inaccuracies) in the neighborhood
-  // of these pitch angles, i.e., when `cos(p) ≈ 0`.
-  // @note This utility method typically gets called from a user-relevant API
-  // so it provides the ability to detect gimbal-lock and throws an error
-  // message that includes information from the calling function (rather than
-  // less useful information from within this method itself).
+  // @note Detailed information about this function, is in the public method
+  // CalcMatrixRelatingRpyDtToAngularVelocityInChild(). Generally, this utility
+  // method is called from a user-relevant API. If gimbal-lock is detected, the
+  // issued error message includes the calling function's name.
   Matrix3<T> CalcMatrixRelatingRpyDtToAngularVelocityInChild(
-      const char* function_name, const char* file_name, int line_number) const;
+      const char* function_name) const;
 
   // Sets `this` %RollPitchYaw from a Vector3.
   // @param[in] rpy allegedly valid roll-pitch-yaw angles.
