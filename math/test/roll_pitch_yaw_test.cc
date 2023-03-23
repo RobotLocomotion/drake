@@ -208,10 +208,12 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const Matrix3<double> Nc =
       rpy.CalcMatrixRelatingRpyDtToAngularVelocityInChild();
 
-  // Help verify Np by ensuring Np * Np_inv produces an identity matrix, where
-  // Np_inv is the matrix inverse of Np, (not just the pseudo inverse).
-  // Note: The results for Np_inv below were calculated by-hand/MotionGenesis.
-  // Similarly for Nc * Nc_inv.
+  // Verify Np by ensuring Np * Np_inv produces an identity matrix, with Np
+  // calculated by a Drake function and Np_inv (the matrix inverse of Np)
+  // calculated by-hand/MotionGenesis. Since Np and Np_inv are from different
+  // sources, their product being the identity matrix is not a tautology.
+  // Similarly for Nc * Nc_inv, where Nc_inv is also available on pg. 428 of
+  // Spacecraft Dynamics, by Kane & Levinson, 1983.
   const double r = rpy.roll_angle();
   const double p = rpy.pitch_angle();
   const double y = rpy.yaw_angle();

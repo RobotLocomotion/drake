@@ -178,7 +178,7 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInParent(
 
 template <typename T>
 Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInChild(
-    const char* function_name, const char* file_name, int line_number) const {
+    const char* function_name) const {
   using std::cos;
   using std::sin;
   const T& p = pitch_angle();
@@ -186,8 +186,7 @@ Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInChild(
   const T sp = sin(p), cp = cos(p);
   // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
   if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
-    ThrowPitchAngleViolatesGimbalLockTolerance(function_name, file_name,
-                                                 line_number, p);
+    ThrowPitchAngleViolatesGimbalLockTolerance(function_name, p);
   }
   const T one_over_cp = T(1)/cp;
   const T sr = sin(r), cr = cos(r);
@@ -266,8 +265,7 @@ boolean<T> RollPitchYaw<T>::IsNearlySameOrientation(
 
 template <typename T>
 void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
-    const char* function_name, const char* file_name, const int line_number,
-    const T& pitch_angle) {
+    const char* function_name, const T& pitch_angle) {
     const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
     const double cos_pitch_angle = std::cos(pitch_radians);
     DRAKE_ASSERT(DoesCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
@@ -279,7 +277,7 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
         " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
         " orientation singularity, use a quaternion -- not RollPitchYaw."
         " ({}:{}).", function_name, pitch_radians * 180 / M_PI,
-                     tolerance_degrees, file_name, line_number);
+        tolerance_degrees);
     throw std::runtime_error(message);
 }
 
