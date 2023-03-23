@@ -126,7 +126,13 @@ class PackageMap final {
   be downloaded until necessary, i.e., when GetPath() is first called for the
   `package_name`. Throws if the `package_name` or `params` are invalid.
   Downloading requires a valid `/usr/bin/python3` interpreter, which will be
-  invoked as a subprocess. */
+  invoked as a subprocess.
+
+  See \ref allow_network "DRAKE_ALLOW_NETWORK" for an environment variable
+  option to disable network fetching. %AddRemote may still be used even with
+  network fetching disabled -- in that case, the urls must contain a `file:`
+  URL or the download cache must already contain a previously-downloaded copy
+  of the package (with the same sha256 checksum). */
   void AddRemote(std::string package_name, RemoteParams params);
 
   /** Crawls down the directory tree starting at `path` searching for
