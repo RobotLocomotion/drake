@@ -22,6 +22,7 @@
 #include "drake/common/find_cache.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
+#include "drake/common/network_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
@@ -91,7 +92,8 @@ class PathWithMutex {
 
   /* Sets the path for a (currently-unfetched) path.
   @pre needs_fetch() is true.
-  @pre the lock() is currently held. */
+  @pre either the lock() is currently held or the caller has exclusive
+  ownership of `this` */
   void set_fetched_path(std::string path) {
     DRAKE_DEMAND(needs_fetch_);
     DRAKE_DEMAND(path_.empty());
@@ -194,6 +196,12 @@ class PackageData {
   The `package_name` is non-functional (only used when reporting errors). */
   void Merge(std::string_view package_name, const PackageData& other);
 
+  /* Checks whether a remote package is already in the cache and if so updates
+  this object so that GetPathWithAutomaticFetching() will return the already-
+  cached path instead of fetching anything.
+  @pre is_remote() is true. */
+  bool FindInCache();
+
   /* Returns the local filesystem path for this package. In case this package
   is remote and not already fetched, this function will fetch before returning.
   The `package_name` is non-functional (only used when reporting errors). */
@@ -218,6 +226,24 @@ class PackageData {
   std::optional<std::string> deprecation_;
 };
 
+/* Given a list of urls (i.e., the RemoteParams::urls), returns a copy of the
+list that reflects the current network policy (i.e., by removing any that are
+not allowed). */
+std::vector<std::string> GetAllowedUrls(std::vector<std::string> urls) {
+  if (drake::internal::IsNetworkingAllowed("package_map")) {
+    return urls;
+  }
+  auto should_deny = [](const auto& url) {
+    const bool is_allowed = url.substr(0, 7) == "file://";
+    if (!is_allowed) {
+      log()->trace("PackageMap ignoring '{}' due to DRAKE_ALLOW_NETWORK", url);
+    }
+    return !is_allowed;
+  };
+  urls.erase(std::remove_if(urls.begin(), urls.end(), should_deny), urls.end());
+  return urls;
+}
+
 /* A little helper struct that gathers the args for package_downloader into a
 single place to make it easy to convert to JSON. */
 struct DownloaderArgs {
@@ -231,6 +257,24 @@ struct DownloaderArgs {
   PackageMap::RemoteParams remote_params;
   std::string output_dir;
 };
+
+bool PackageData::FindInCache() {
+  DRAKE_DEMAND(is_remote());
+  if (!path_.needs_fetch()) {
+    return true;
+  }
+  internal::PathOrError cache = internal::FindOrCreateCache("package_map");
+  if (!cache.error.empty()) {
+    return false;
+  }
+  const fs::path package_dir = cache.abspath / remote_params_->sha256;
+  std::error_code ec;
+  if (!fs::is_directory(package_dir, ec)) {
+    return false;
+  }
+  path_.set_fetched_path(package_dir.string());
+  return true;
+}
 
 const std::string& PackageData::GetPathWithAutomaticFetching(
     std::string_view package_name) const {
@@ -276,6 +320,7 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   DownloaderArgs args{.package_name = std::string(package_name),
                       .remote_params = remote_params(),
                       .output_dir = package_dir.string()};
+  args.remote_params.urls = GetAllowedUrls(args.remote_params.urls);
   std::string json_filename = fs::path(cache_dir / ".fetch_XXXXXX").string();
   const int temp_fd = ::mkstemp(json_filename.data());
   ::close(temp_fd);
@@ -554,8 +599,24 @@ void PackageMap::AddRemote(std::string package_name, RemoteParams params) {
     }
   }
 
+  // We've finished checking that the params are well-formed.
+  auto package_data = PackageData::MakeRemote(std::move(params));
+
+  // If the user has denied networking AND there are no file:// urls AND the
+  // package is not yet cached, then we should fail-fast.
+  if (GetAllowedUrls(package_data.remote_params().urls).empty()) {
+    if (!package_data.FindInCache()) {
+      throw std::runtime_error(fmt::format(
+          "PackageMap::AddRemote on '{}' only provides network URLs (i.e., no "
+          "file:// fallbacks) but PackageMap networking has been disabled via "
+          "the DRAKE_ALLOW_NETWORK environment variable and the download cache "
+          "does not contain any matching file",
+          package_name));
+    }
+  }
+
   // Add it now. Emplace will handle rejection of duplicates.
-  impl_->Emplace(package_name, PackageData::MakeRemote(std::move(params)));
+  impl_->Emplace(package_name, std::move(package_data));
 }
 
 bool PackageMap::Contains(const std::string& package_name) const {

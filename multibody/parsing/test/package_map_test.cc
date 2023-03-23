@@ -395,7 +395,7 @@ GTEST_TEST(PackageMapTest, TestStreamingToString) {
   for (const auto& it : expected_packages) {
     package_map.Add(it.first, it.second);
   }
-  const std::string url = "http://127.0.0.1/missing.zip";
+  const std::string url = "file:///tmp/missing.zip";
   package_map.AddRemote("remote", {
       .urls = {url},
       .sha256 = std::string(64u, '0')});

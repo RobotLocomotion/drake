@@ -54,6 +54,7 @@ drake_cc_binary(
 drake_py_unittest(
     name = "run_twisting_mug_test",
     timeout = "moderate",
+    allow_network = ["lcm"],
     args = select({
         "//tools/cc_toolchain:debug": ["--compilation_mode=dbg"],
         "//conditions:default": ["--compilation_mode=opt"],

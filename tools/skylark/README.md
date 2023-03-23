@@ -17,6 +17,19 @@ etc.) provide for additional options beyond what is built-in to Bazel.  In
 cases where those options are shared across several different rules, we
 document the option here to avoid repetition.
 
+**allow_network**
+
+A list of components allowed to use the network, per IsNetworkingAllowed()
+in drake/common/network_policy.h. When empty or not set, defaults to allowing
+["meshcat"] but nothing else. You can set it to ["none"] to deny everything.
+
+We allow meshcat by default because it's mostly harmless, a bajillion tests use
+it by default, and it doesn't seem worthwhile to try to allow-list them all.
+
+Note that this does not affect network sandboxing (i.e., Bazel's block-network
+tag). Code outside of Drake purview can still access the network in tests (e.g.,
+license servers for commercial solvers).
+
 **num_threads**
 
 Can either be None, or else an integer.
