@@ -485,6 +485,18 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "mesh_to_model_test",
+    data = [
+        ":mesh_to_model",
+        "//geometry/render:test_models",
+    ],
+    deps = [
+        ":mesh_model_maker_py",
+        "//bindings/pydrake/common",
+    ],
+)
+
 add_pybind_coverage_data()
 
 add_lint_tests_pydrake(
