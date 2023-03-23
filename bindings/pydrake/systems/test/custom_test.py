@@ -76,7 +76,7 @@ class CustomAdder(LeafSystem):
         sum = sum_data.get_mutable_value()
         sum[:] = 0
         for i in range(context.num_input_ports()):
-            input_vector = self.EvalVectorInput(context, i)
+            input_vector = self.EvalVectorInput(context=context, port_index=i)
             sum += input_vector.get_value()
 
 
@@ -804,14 +804,17 @@ class TestCustom(unittest.TestCase):
         # Existence check.
         self.assertIsNot(
             diagram.GetMutableSubsystemState(system, context), None)
-        subcontext = diagram.GetMutableSubsystemContext(system, context)
+        subcontext = diagram.GetMutableSubsystemContext(subsystem=system,
+                                                        context=context)
         self.assertIsNot(subcontext, None)
         self.assertIs(
-            diagram.GetSubsystemContext(system, context), subcontext)
-        subcontext2 = system.GetMyMutableContextFromRoot(context)
+            diagram.GetSubsystemContext(subsystem=system, context=context),
+            subcontext)
+        subcontext2 = system.GetMyMutableContextFromRoot(root_context=context)
         self.assertIsNot(subcontext2, None)
         self.assertIs(subcontext2, subcontext)
-        self.assertIs(system.GetMyContextFromRoot(context), subcontext2)
+        self.assertIs(system.GetMyContextFromRoot(root_context=context),
+                      subcontext2)
 
     def test_continuous_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
@@ -847,7 +850,8 @@ class TestCustom(unittest.TestCase):
                 self.assertEqual(
                     context.get_continuous_state_vector().size(), 6)
                 self.assertEqual(system.AllocateTimeDerivatives().size(), 6)
-                self.assertEqual(system.EvalTimeDerivatives(context).size(), 6)
+                self.assertEqual(
+                    system.EvalTimeDerivatives(context=context).size(), 6)
 
     def test_discrete_state_api(self):
         # N.B. Since this has trivial operations, we can test all scalar types.
@@ -902,7 +906,7 @@ class TestCustom(unittest.TestCase):
 
                 def DoCalcAbstractOutput(self, context, y_data):
                     input_value = self.EvalAbstractInput(
-                        context, 0).get_value()
+                        context=context, port_index=0).get_value()
                     # The allocator function will populate the output with
                     # the "input"
                     assert_value_equal(input_value, expected_input_value)
