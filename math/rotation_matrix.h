@@ -410,7 +410,17 @@ class RotationMatrix {
   /// @retval R_BC where R_BC = this⁻¹ * other.
   /// @note It is possible (albeit improbable) to create an invalid rotation
   /// matrix by accumulating round-off error with a large number of multiplies.
-  RotationMatrix<T> InvertAndCompose(const RotationMatrix<T>& other) const;
+  RotationMatrix<T> InvertAndCompose(const RotationMatrix<T>& other) const {
+    const RotationMatrix<T>& R_AC = other;  // Nicer name.
+    RotationMatrix<T> R_BC(internal::DoNotInitializeMemberFields{});
+    if constexpr (std::is_same_v<T, double>) {
+      internal::ComposeRinvR(*this, R_AC, &R_BC);
+    } else {
+      const RotationMatrix<T> R_BA = inverse();
+      R_BC = R_BA * R_AC;
+    }
+    return R_BC;
+  }
 
   /// Calculates `this` rotation matrix `R_AB` multiplied by an arbitrary
   /// Vector3 expressed in the B frame.
@@ -632,7 +642,7 @@ class RotationMatrix {
   }
 
   /// (Internal use only) Constructs a RotationMatrix without initializing the
-  /// underlying 3x3 matrix. Here for use by RigidTransform but no one else.
+  /// underlying 3x3 matrix. For use by RigidTransform and RotationMatrix only.
   explicit RotationMatrix(internal::DoNotInitializeMemberFields) {}
 
  private:
@@ -648,23 +658,12 @@ class RotationMatrix {
   static constexpr double kInternalToleranceForOrthonormality{
       128 * std::numeric_limits<double>::epsilon()};
 
-  // Constructs an uninitialized %RotationMatrix.
-  // @note The first parameter is just a dummy to distinguish this constructor
-  // from any of the other constructors.
-  explicit RotationMatrix(bool) {}
-
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   // @note The second parameter is just a dummy to distinguish this constructor
   // from any of the other constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
-
-  // Make an uninitialized %RotationMatrix.
-  // @note Internal use only -- for speed.
-  static RotationMatrix<T> MakeUninitialized() {
-    return RotationMatrix(/* dummy_argument_can_be_true_or_false = */ true);
-  }
 
   // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to
   // test whether or not the parameter R is a valid rotation matrix.

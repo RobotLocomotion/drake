@@ -56,7 +56,7 @@ template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeXRotation(const T& theta) {
   using std::isfinite;
   DRAKE_DEMAND(isfinite(theta));
-  RotationMatrix<T> R = RotationMatrix<T>::MakeUninitialized();
+  RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
   using std::cos;
   using std::sin;
   const T c = cos(theta), s = sin(theta);
@@ -72,7 +72,7 @@ template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeYRotation(const T& theta) {
   using std::isfinite;
   DRAKE_DEMAND(isfinite(theta));
-  RotationMatrix<T> R = RotationMatrix<T>::MakeUninitialized();
+  RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
   using std::cos;
   using std::sin;
   const T c = cos(theta), s = sin(theta);
@@ -88,7 +88,7 @@ template <typename T>
 RotationMatrix<T> RotationMatrix<T>::MakeZRotation(const T& theta) {
   using std::isfinite;
   DRAKE_DEMAND(isfinite(theta));
-  RotationMatrix<T> R = RotationMatrix<T>::MakeUninitialized();
+  RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
   using std::cos;
   using std::sin;
   const T c = cos(theta), s = sin(theta);
@@ -443,20 +443,6 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
     unused(function_name);
   }
   return u;
-}
-
-template <typename T>
-RotationMatrix<T> RotationMatrix<T>::InvertAndCompose(
-    const RotationMatrix<T>& other) const {
-  const RotationMatrix<T>& R_AC = other;  // Nicer name.
-  RotationMatrix<T> R_BC(internal::DoNotInitializeMemberFields{});
-  if constexpr (std::is_same_v<T, double>) {
-    internal::ComposeRinvR(*this, R_AC, &R_BC);
-  } else {
-    const RotationMatrix<T> R_BA = inverse();
-    R_BC = R_BA * R_AC;
-  }
-  return R_BC;
 }
 
 template <typename T>
