@@ -622,7 +622,7 @@ class RollPitchYaw {
 
   // @param[in] function_name name of the calling function/method.
   // @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
-  // @note Detailed information about this function, is in the public method
+  // @note Detailed information about this function is in the public method
   // CalcMatrixRelatingRpyDtToAngularVelocityInParent(). Generally, this utility
   // method is called from a user-relevant API. If gimbal-lock is detected, the
   // issued error message includes the calling function's name.
@@ -631,7 +631,7 @@ class RollPitchYaw {
 
   // @param[in] function_name name of the calling function/method.
   // @throws std::exception if `cos(p) ≈ 0` (`p` is near gimbal-lock).
-  // @note Detailed information about this function, is in the public method
+  // @note Detailed information about this function is in the public method
   // CalcMatrixRelatingRpyDtToAngularVelocityInChild(). Generally, this utility
   // method is called from a user-relevant API. If gimbal-lock is detected, the
   // issued error message includes the calling function's name.
