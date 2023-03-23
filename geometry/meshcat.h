@@ -126,7 +126,13 @@ in the visualizer.
 - All user objects can easily be cleared by a single, parameter-free call to
 Delete(). You are welcome to use absolute paths to organize your data, but the
 burden on tracking and cleaning them up lie on you.
-*/
+
+@section network_access Network access
+
+See MeshcatParams for options to control the hostname and port to bind to.
+
+See \ref allow_network "DRAKE_ALLOW_NETWORK" for an environment variable
+option to deny %Meshcat entirely. */
 class Meshcat {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(Meshcat)

@@ -31,10 +31,11 @@ drake_cc_library(
     visibility = ["//visibility:public"],
     interface_deps = [
         ":render_engine_gltf_client_params",
-        "//geometry/render:render_camera",
+        "//geometry/render:render_engine",
     ],
     deps = [
         ":internal_render_engine_gltf_client",
+        "//common:network_policy",
     ],
 )
 
@@ -125,11 +126,21 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "factory_test",
+    allow_network = ["render_gltf_client"],
     deps = [
         ":factory",
         ":internal_render_engine_gltf_client",
         ":render_engine_gltf_client_params",
         "//geometry/render:render_camera",
+    ],
+)
+
+drake_cc_googletest(
+    name = "factory_denied_test",
+    allow_network = ["none"],
+    deps = [
+        ":factory",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -282,6 +293,7 @@ drake_py_unittest(
 drake_py_unittest(
     name = "integration_test",
     size = "medium",
+    allow_network = ["render_gltf_client"],
     data = [
         ":client_demo",
         ":server_demo",

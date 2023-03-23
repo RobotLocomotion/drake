@@ -42,6 +42,7 @@ drake_cc_package_library(
         ":is_cloneable",
         ":is_less_than_comparable",
         ":name_value",
+        ":network_policy",
         ":nice_type_name",
         ":pointer_cast",
         ":polynomial",
@@ -349,6 +350,15 @@ drake_cc_library(
 drake_cc_library(
     name = "name_value",
     hdrs = ["name_value.h"],
+    deps = [
+        ":essential",
+    ],
+)
+
+drake_cc_library(
+    name = "network_policy",
+    srcs = ["network_policy.cc"],
+    hdrs = ["network_policy.h"],
     deps = [
         ":essential",
     ],
@@ -955,6 +965,13 @@ drake_cc_googletest(
     name = "name_value_test",
     deps = [
         ":name_value",
+    ],
+)
+
+drake_cc_googletest(
+    name = "network_policy_test",
+    deps = [
+        ":network_policy",
     ],
 )
 
