@@ -299,12 +299,6 @@ class RollPitchYaw {
     return M * rpyDt;
   }
 
-  /// @returns w_AD_A, frame D's angular velocity in frame A, expressed in
-  /// "parent" frame A. In other words, returns [ωx; ωy; ωz]ᴀ, where
-  /// `w_AD_A = ωx Ax + ωy Ay + ωz Az`, and where [ωx; ωy; ωz]ᴀ is calculated
-  /// via the 3x3 matrix Np⁻¹ (the inverse of the matrix Np documented in
-  /// CalcMatrixRelatingRpyDtToAngularVelocityInParent()).
-
   /// Calculates angular velocity from `this` %RollPitchYaw whose roll-pitch-yaw
   /// angles `[r; p; y]` relate the orientation of two generic frames A and D.
   /// @param[in] rpyDt Time-derivative of `[r; p; y]`, i.e., `[ṙ; ṗ; ẏ]`.
