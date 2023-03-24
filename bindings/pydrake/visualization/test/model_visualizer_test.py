@@ -225,6 +225,17 @@ class TestModelVisualizer(unittest.TestCase):
             dut._diagram.plant().GetMyContextFromRoot(dut._context))
         self.assertListEqual(list(original_q), list(joint_q))
 
+    def test_traffic_cone(self):
+        """
+        Checks that the traffic cone helpers don't crash.
+        """
+        meshcat = Meshcat()
+        dut = mut.ModelVisualizer(meshcat=meshcat)
+        for _ in range(2):
+            dut._add_traffic_cone()
+        for _ in range(3):
+            dut._remove_traffic_cone()
+
     def test_webbrowser(self):
         """
         Checks that the webbrowser launch command is properly invoked.

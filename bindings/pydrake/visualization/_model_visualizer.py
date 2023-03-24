@@ -1,5 +1,6 @@
 import copy
 from enum import Enum
+import logging
 import time
 from webbrowser import open as _webbrowser_open
 
@@ -7,9 +8,12 @@ import numpy as np
 
 from pydrake.common.deprecation import deprecated
 from pydrake.geometry import (
+    Box,
     Cylinder,
     GeometryInstance,
     MakePhongIllustrationProperties,
+    MeshcatCone,
+    Rgba,
     StartMeshcat,
 )
 from pydrake.math import RigidTransform, RotationMatrix
@@ -328,13 +332,25 @@ class ModelVisualizer:
         self._diagram = None
         self._sliders = None
         self._context = None
+        self._remove_traffic_cone()
 
         # Populate the diagram builder again with the same packages and models.
         self._builder = RobotDiagramBuilder()
         self._builder.parser().package_map().AddMap(self._original_package_map)
+        try:
+            for filename in self._model_filenames:
+                self._builder.parser().AddModels(filename)
+            logging.info(f"Reload was successful")
+        except Exception as e:
+            # If there's a parsing error, show it; don't crash.
+            logging.error(e)
+            logging.warning(f"Click '{self._reload_button_name}' to try again")
+            # Clear the display to help the indicate the failure to the user.
+            self._builder = RobotDiagramBuilder()
+            self._builder.parser().package_map().AddMap(
+                self._original_package_map)
+            self._add_traffic_cone()
         self._original_package_map = None
-        for filename in self._model_filenames:
-            self._builder.parser().AddModels(filename)
 
         # Finalize the rest of the systems and widgets.
         self.Finalize()
@@ -377,7 +393,7 @@ class ModelVisualizer:
         # Wait for the user to cancel us.
         stop_button_name = "Stop Running"
         if not loop_once:
-            print(f"Click '{stop_button_name}' or press Esc to quit")
+            logging.info(f"Click '{stop_button_name}' or press Esc to quit")
 
         try:
             self._meshcat.AddButton(stop_button_name, "Escape")
@@ -514,3 +530,26 @@ class ModelVisualizer:
         )
         self._builder.scene_graph().RegisterGeometry(
             self._builder.plant().get_source_id(), frame_id, geom)
+
+    def _add_traffic_cone(self):
+        """Adds a traffic cone to the scene, indicating a parsing error."""
+        base_width = 0.4
+        base_thickness = 0.01
+        base = Box(base_width, base_width, base_thickness)
+        cone_height = 0.6
+        cone_radius = 0.75 * (base_width / 2)
+        cone = MeshcatCone(cone_height, cone_radius, cone_radius)
+
+        path = "/PARSE_ERROR"
+        orange = Rgba(1.0, 0.33, 0)
+        self._meshcat.SetObject(path=f"{path}/base", shape=base, rgba=orange)
+        self._meshcat.SetObject(path=f"{path}/cone", shape=cone, rgba=orange)
+        self._meshcat.SetTransform(f"{path}/base", RigidTransform(
+            [0, 0, base_thickness * 0.5]))
+        self._meshcat.SetTransform(f"{path}/cone", RigidTransform(
+            RotationMatrix.MakeYRotation(np.pi),
+            [0, 0, base_thickness + cone_height]))
+
+    def _remove_traffic_cone(self):
+        """Removes the traffic cone from the scene."""
+        self._meshcat.Delete("/PARSE_ERROR")
