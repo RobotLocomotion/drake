@@ -1,4 +1,5 @@
 #include <gflags/gflags.h>
+#include <iostream>
 
 #include "drake/common/find_resource.h"
 #include "drake/multibody/inverse_kinematics/inverse_kinematics.h"
@@ -92,9 +93,28 @@ int DoMain() {
     for (int j = 0; j < kNumRandInitGuess; ++j) {
       // Set the initial guess.
       prog->SetInitialGuess(relaxed_ik.q(), q0.col(j));
+      std::cout << "\n\tq0: ";
+      for (int xi=0; xi<q0.size(); xi++)
+        std::cout << q0(xi) << " ";
+      std::cout << std::endl;
 
       // Solve the problem.
-      snopt.Solve(*prog);
+      std::cout << "\nRef. pose:\n" << ee_pose_goal[i] << "\n";
+      auto result = snopt.Solve(*prog);
+
+      auto x_val = result.GetSolution();
+
+      std::cout << "\n\tSolution: ";
+      for (int xi=0; xi<x_val.size(); xi++)
+        std::cout << x_val[xi] << " ";
+      std::cout << std::endl;
+
+      // Evaluate the corresponding end-effector pose.
+      context->get_mutable_continuous_state()
+          .get_mutable_generalized_position()
+          .SetFromVector(x_val);
+      auto ee_pose = plant.EvalBodyPoseInWorld(*context, ee_body);
+      std::cout << "\nAct. pose:\n" << ee_pose << "\n";
     }
   }
 
