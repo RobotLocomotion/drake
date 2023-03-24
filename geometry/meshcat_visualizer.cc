@@ -224,6 +224,7 @@ template <typename T>
 systems::EventStatus MeshcatVisualizer<T>::OnInitialization(
     const systems::Context<T>&) const {
   Delete();
+  meshcat_->SetProperty(params_.prefix, "visible", params_.visible_by_default);
   return systems::EventStatus::Succeeded();
 }
 

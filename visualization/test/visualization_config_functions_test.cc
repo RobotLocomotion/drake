@@ -74,6 +74,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider,
             config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(0).visible_by_default, true);
 
   EXPECT_EQ(meshcat_params.at(1).role, Role::kProximity);
   EXPECT_EQ(meshcat_params.at(1).publish_period, config.publish_period);
@@ -82,6 +83,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
             config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(1).visible_by_default, false);
 
   const ContactVisualizerParams contact_params =
       ConvertVisualizationConfigToMeshcatContactParams(config);

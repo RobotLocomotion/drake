@@ -151,6 +151,7 @@ std::vector<MeshcatVisualizerParams> ConvertVisualizationConfigToMeshcatParams(
     illustration.delete_on_initialization_event =
         config.delete_on_initialization_event;
     illustration.enable_alpha_slider = config.enable_alpha_sliders;
+    illustration.visible_by_default = true;
     result.push_back(illustration);
   }
 
@@ -163,6 +164,7 @@ std::vector<MeshcatVisualizerParams> ConvertVisualizationConfigToMeshcatParams(
     proximity.delete_on_initialization_event =
         config.delete_on_initialization_event;
     proximity.enable_alpha_slider = config.enable_alpha_sliders;
+    proximity.visible_by_default = false;
     result.push_back(proximity);
   }
 
