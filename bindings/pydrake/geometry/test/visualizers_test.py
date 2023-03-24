@@ -274,6 +274,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         params.default_color = mut.Rgba(0.5, 0.5, 0.5)
         params.prefix = "py_visualizer"
         params.delete_on_initialization_event = False
+        params.visible_by_default = True
         self.assertIn("publish_period", repr(params))
         copy.copy(params)
         vis = mut.MeshcatVisualizer_[T](meshcat=meshcat, params=params)
