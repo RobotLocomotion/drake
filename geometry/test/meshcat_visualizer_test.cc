@@ -1,9 +1,11 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
+#include <drake_vendor/msgpack.hpp>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/meshcat_types.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -154,6 +156,30 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/drake/foo/iiwa14"));
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
+}
+
+TEST_F(MeshcatVisualizerWithIiwaTest, NotVisibleByDefault) {
+  // Set "visible" to start out false.
+  MeshcatVisualizerParams params;
+  params.visible_by_default = false;
+
+  // Create the diagram and publish both the initialization and periodic event.
+  SetUpDiagram(params);
+  {
+    auto events = diagram_->AllocateCompositeEventCollection();
+    diagram_->GetInitializationEvents(*context_, events.get());
+    diagram_->Publish(*context_, events->get_publish_events());
+    diagram_->ForcedPublish(*context_);
+  }
+
+  // Confirm that the path was added but was set to be invisible.
+  ASSERT_TRUE(meshcat_->HasPath("/drake/visualizer"));
+  const std::string property =
+      meshcat_->GetPackedProperty("/drake/visualizer", "visible");
+  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
+  auto data = oh.get().as<internal::SetPropertyData<bool>>();
+  EXPECT_EQ(data.property, "visible");
+  EXPECT_EQ(data.value, false);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {

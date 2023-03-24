@@ -313,10 +313,6 @@ class ModelVisualizer:
         # Publish draw messages with current state.
         self._diagram.ForcedPublish(self._context)
 
-        # Disable the proximity geometry at the start; it can be enabled by
-        # the checkbox in the meshcat controls.
-        self._meshcat.SetProperty("proximity", "visible", False)
-
         self._check_rep(finalized=True)
 
     def _reload(self):
