@@ -21,6 +21,7 @@ struct MeshcatVisualizerParams {
     a->Visit(DRAKE_NVP(prefix));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
     a->Visit(DRAKE_NVP(enable_alpha_slider));
+    a->Visit(DRAKE_NVP(visible_by_default));
   }
 
   /** The duration (in simulation seconds) between attempts to update poses in
@@ -50,6 +51,9 @@ struct MeshcatVisualizerParams {
 
   /** Determines whether to enable the alpha slider for geometry display. */
   bool enable_alpha_slider{false};
+
+  /** Determines whether our meshcat path should be default to being visible. */
+  bool visible_by_default{true};
 };
 
 }  // namespace geometry
