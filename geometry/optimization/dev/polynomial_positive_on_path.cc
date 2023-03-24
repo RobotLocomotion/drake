@@ -1,10 +1,10 @@
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
+#include <iostream>
 #include <limits>
 #include <utility>
 
 #include "drake/common/symbolic/monomial_util.h"
-
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -19,6 +19,13 @@ ParametrizedPolynomialPositiveOnUnitInterval::
       parameters_(parameters),
       psatz_variables_and_psd_constraints_() {
   psatz_variables_and_psd_constraints_.AddIndeterminates(poly.indeterminates());
+  for (const auto& var : poly.decision_variables()) {
+    // Add the decision variables of poly which are not parameters.
+    if (!parameters_.include(var)) {
+      psatz_variables_and_psd_constraints_.AddDecisionVariables(
+          solvers::VectorDecisionVariable<1>(var));
+    }
+  }
 
   const int deg = poly.Degree(mu_);
   if (poly.TotalDegree() == 0) {
@@ -99,8 +106,19 @@ void ParametrizedPolynomialPositiveOnUnitInterval::
        psatz_variables_and_psd_constraints_.GetAllConstraints()) {
     prog->AddConstraint(binding);
   }
-  prog->AddEqualityConstraintBetweenPolynomials(p_.EvaluatePartial(env),
-                                                symbolic::Polynomial());
+  // Add the p_ == 0 constraint after evaluation. Do this manually to avoid a
+  // call to Reparse that occurs in AddEqualityConstraintBetweenPolynomials.
+  const symbolic::Polynomial p_evaled{p_.EvaluatePartial(env)};
+
+  for (const auto& item : p_evaled.monomial_to_coefficient_map()) {
+    prog->AddLinearEqualityConstraint(item.second, 0);
+  }
+  //  std::cout << "adding equality constraint" << std::endl;
+  //  std::cout << p_ << std::endl;
+  //  std::cout << *prog << std::endl;
+  //  prog->AddEqualityConstraintBetweenPolynomials(p_.EvaluatePartial(env),
+  //                                                symbolic::Polynomial());
+  //  std::cout << "after adding equality" << std::endl;
 }
 
 }  // namespace optimization

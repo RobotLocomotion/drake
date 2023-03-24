@@ -59,6 +59,7 @@ drake_cc_googletest(
     deps = [
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization/dev:polynomial_positive_on_path",
+        "//solvers:solve",
     ],
 )
 
