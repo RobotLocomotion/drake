@@ -196,7 +196,7 @@ struct SnoptImpl<false> {
         snopt::integer npname = strlen(name);
         char xnames[8 * 1];  // should match nxname
         char Fnames[8 * 1];  // should match nFname
-  std::cout << "\n\tCheck 1-1\n";
+  std::cout << "\n\tCalling snopta_\n";
     snopt::snopta_(
          &start,
          &nf, &n, &nxname, &nFname, &objadd, &objrow,
@@ -215,7 +215,7 @@ struct SnoptImpl<false> {
          cw, &lencw, iw, &leniw, rw, &lenrw,
          cw, &lencw, iw, &leniw, rw, &lenrw,
          npname, 8 * nxname, 8 * nFname, 8 * lencw, 8 * lencw);
-  std::cout << "\n\tCheck 1-2\n";
+  std::cout << "\n\tCompleted snopta_\n";
   }
   // clang-format on
   template <typename Int>
@@ -381,9 +381,10 @@ class WorkspaceStorage {
   explicit WorkspaceStorage(const SnoptUserFunInfo* user_info)
       : user_info_(user_info) {
     DRAKE_DEMAND(user_info_ != nullptr);
+    std::cout << "\n\tInitializing the workspace storage\n";
     iw_.resize(500 * 1000);
     rw_.resize(500 * 1000);
-    cw_.resize(500);
+    cw_.resize(8 * 501);
   }
 
   snopt::integer* iw() { return reinterpret_cast<snopt::integer*>(iw_.data()); }
@@ -465,7 +466,10 @@ void EvaluateNonlinearConstraints(
     const std::vector<Binding<C>>& constraint_list, double F[],
     std::vector<double>* G_w_duplicate, size_t* constraint_index,
     size_t* grad_index, const Eigen::VectorXd& xvec) {
-  const auto& scale_map = prog.GetVariableScaling();
+
+  std::cout << "\n\tEvalConstraints 1!\n";
+
+  const auto & scale_map = prog.GetVariableScaling();
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.evaluator();
@@ -481,6 +485,7 @@ void EvaluateNonlinearConstraints(
           prog.FindDecisionVariableIndex(binding.variables()(i));
       this_x(i) = xvec(binding_var_indices[i]);
     }
+  std::cout << "\n\tEvalConstraints 2!\n";
 
     // Scale this_x
     auto this_x_scaled = math::InitializeAutoDiff(this_x);
@@ -498,18 +503,22 @@ void EvaluateNonlinearConstraints(
     for (int i = 0; i < num_constraints; i++) {
       F[(*constraint_index)++] = ty(i).value();
     }
+  std::cout << "\n\tEvalConstraints 3!\n";
 
     const std::optional<std::vector<std::pair<int, int>>>&
         gradient_sparsity_pattern =
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
+  std::cout << "\n\tEvalConstraints 4 if 1!\n";
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         (*G_w_duplicate)[(*grad_index)++] =
             ty(nonzero_entry.first).derivatives().size() > 0
                 ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
                 : 0.0;
       }
+  std::cout << "\n\tEvalConstraints 4 if 2!\n";
     } else {
+  std::cout << "\n\tEvalConstraints 4 else 1!\n";
       for (int i = 0; i < num_constraints; i++) {
         if (ty(i).derivatives().size() > 0) {
           for (int j = 0; j < num_variables; ++j) {
@@ -521,8 +530,11 @@ void EvaluateNonlinearConstraints(
           }
         }
       }
+  std::cout << "\n\tEvalConstraints 4 else 2!\n";
     }
+  std::cout << "\n\tEvalConstraints 5!\n";
   }
+  std::cout << "\n\tEvalConstraints X!\n";
 }
 
 // Find the variables with non-zero gradient in @p costs, and add the indices of
@@ -632,6 +644,9 @@ void EvaluateCostsConstraints(
   std::cout << "\n\tUSRFUN 2!\n";
   std::cout << "info: " << info.leniu() << "\n";
   const MathematicalProgram& current_problem = info.mathematical_program();
+
+  std::cout << "Num. of decision vars: " << current_problem.num_vars() << "\n";
+
   std::cout << "\n\tUSRFUN 3!\n";
   const auto & scale_map = current_problem.GetVariableScaling();
   std::cout << "\n\tUSRFUN 4!\n";
@@ -640,10 +655,12 @@ void EvaluateCostsConstraints(
   for (int i = 0; i < n; i++) {
     xvec(i) = x[i];
   }
+  std::cout << "\n\tUSRFUN 5!\n";
 
   F[0] = 0.0;
   memset(G, 0, info.lenG() * sizeof(double));
   std::vector<double> G_w_duplicate(info.duplicate_to_G_index_map().size(), 0);
+  std::cout << "\n\tUSRFUN 6!\n";
 
   size_t grad_index = 0;
 
@@ -657,6 +674,7 @@ void EvaluateCostsConstraints(
   EvaluateAllNonlinearCosts(current_problem, xvec,
                             info.nonlinear_cost_gradient_indices(), F,
                             &G_w_duplicate, &grad_index);
+  std::cout << "\n\tUSRFUN 7!\n";
 
   // The constraint index starts at 1 because the cost is the
   // first row.
@@ -665,18 +683,22 @@ void EvaluateCostsConstraints(
   EvaluateNonlinearConstraints(
       current_problem, current_problem.generic_constraints(), F, &G_w_duplicate,
       &constraint_index, &grad_index, xvec);
+  std::cout << "\n\tUSRFUN 8!\n";
   EvaluateNonlinearConstraints(
       current_problem, current_problem.quadratic_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
       current_problem, current_problem.lorentz_cone_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
+  std::cout << "\n\tUSRFUN 9!\n";
   EvaluateNonlinearConstraints(
       current_problem, current_problem.rotated_lorentz_cone_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
+  std::cout << "\n\tUSRFUN 10!\n";
   EvaluateNonlinearConstraints(
       current_problem, current_problem.linear_complementarity_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
+  std::cout << "\n\tUSRFUN 11!\n";
 
   for (int i = 0; i < static_cast<int>(info.duplicate_to_G_index_map().size());
        ++i) {
@@ -696,16 +718,18 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::doublereal G[], char* cu, snopt::integer* lencu,
                   snopt::integer iu[], snopt::integer* leniu,
                   snopt::doublereal ru[], snopt::integer* lenru) {
-  SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
-  // SnoptUserFunInfo& snopt_userfun_info = NULL;
-  // {
-  //   char* const p_snopt_userfun_info =
-  //       reinterpret_cast<char*>(&snopt_userfun_info);
-  //   char const* const cu_snopt_userfun_info = cu + 8 * 500;
-  //   std::copy(cu_snopt_userfun_info,
-  //             cu_snopt_userfun_info + sizeof(snopt_userfun_info),
-  //             p_snopt_userfun_info);
-  // }
+  // SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(cu, *lencu);
+  SnoptUserFunInfo* snopt_userfun_info = nullptr;
+  {
+    char* const p_snopt_userfun_info =
+        reinterpret_cast<char*>(&snopt_userfun_info);
+    char const* const cu_snopt_userfun_info = cu + 8 * 500;
+    std::copy(cu_snopt_userfun_info,
+              cu_snopt_userfun_info + sizeof(snopt_userfun_info),
+              p_snopt_userfun_info);
+  }
+  SnoptUserFunInfo& info = *snopt_userfun_info;
+
   // SnoptUserFunInfo& snopt_userfun_info
   std::cout << "\n\tUSRFUN 1!\n";
 
@@ -1225,19 +1249,31 @@ void SolveWithGivenOptions(
     std::cout << "\n\tdone done done!\n";
   });
 
-    // // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
-    // // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
-    // // expressed in Fortran array slicing.  Use the space to pass the pointer
-    // // to SnoptUserFunInfo.
-    // Snopt::snseti("User character workspace", 501);
-    // {
-    //   char const* const p_snopt_userfun_info =
-    //       reinterpret_cast<char*>(&snopt_userfun_info);
-    //   char* const cu_snopt_userfun_info = storage.cw() + 8 * 500;
-    //   std::copy(p_snopt_userfun_info,
-    //             p_snopt_userfun_info + sizeof(snopt_userfun_info),
-    //             cu_snopt_userfun_info);
-    // }
+  std::cout << "\n\tCheck -1\n";
+  // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
+  // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
+  // expressed in Fortran array slicing.  Use the space to pass the pointer
+  // to SnoptUserFunInfo.
+  {
+      const std::string option = "User character workspace";
+      snopt::integer errors;
+      Snopt::snseti(
+          option.c_str(), option.length(), 500 + 1, &errors,
+          storage.cw(), storage.lencw(),
+          storage.iw(), storage.leniw(),
+          storage.rw(), storage.lenrw());
+      {
+        std::cout << "\n\tSo far, so good\n";
+        char const* const p_snopt_userfun_info =
+            reinterpret_cast<char*>(&user_info);
+        char* const cu_snopt_userfun_info = storage.cw() + 8 * 500;
+        std::copy(p_snopt_userfun_info,
+                  p_snopt_userfun_info + sizeof(user_info),
+                  cu_snopt_userfun_info);
+        std::cout << "\n\tSo far, not so good\n";
+      }
+  }
+  std::cout << "\n\tCheck 0\n";
 
   snopt::integer nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
@@ -1426,8 +1462,7 @@ void SolveWithGivenOptions(
   snopt::integer nInf{0};
   double sInf{0.0};
 
-
-  // Reallocate int and real workspace.
+  // Reallocate char, int and real workspace.
   snopt::integer mincw, miniw, minrw;
   snopt::integer snopt_status{0};
   snopt::integer nxname = 1, nFname = 1;
@@ -1441,7 +1476,9 @@ void SolveWithGivenOptions(
 
   std::cout << "\n\tCheck 1\n";
   // TODO(jwnimmer-tri) Check snopt_status for errors.
-  if (mincw > storage.lencw()) {
+  // if (mincw > storage.lencw()) {
+  {
+    std::cout << "\n\t\tResizing cw\n";
     // mincw = storage.lencw();
     storage.resize_cw(mincw);
     const std::string option = "Total character workspace";
@@ -1454,8 +1491,11 @@ void SolveWithGivenOptions(
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   std::cout << "\n\tCheck 2\n";
-  if (miniw > storage.leniw()) {
+  // if (miniw > storage.leniw()) {
+  {
+    std::cout << "\n\t\tResizing iw\n";
     // miniw = storage.leniw();
+    std::cout << "\n\tmin iw: " << miniw << "\n";
     std::cout << "\n\tsize iw 1: " << storage.leniw() << "\n";
     storage.resize_iw(miniw);
     std::cout << "\n\tsize iw 2: " << storage.leniw() << "\n";
@@ -1469,7 +1509,9 @@ void SolveWithGivenOptions(
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   std::cout << "\n\tCheck 3\n";
-  if (minrw > storage.lenrw()) {
+  // if (minrw > storage.lenrw()) {
+  {
+    std::cout << "\n\t\tResizing rw\n";
     // minrw = storage.lenrw();
     storage.resize_rw(minrw);
     const std::string option = "Total real workspace";
