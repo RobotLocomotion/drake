@@ -64,27 +64,27 @@ std::ostream& operator<<(std::ostream&, const ProgramAttributes&);
  * we have a specific solver for equality-constrained convex QP.
  */
 enum class ProgramType {
-  kLP,       ///< Linear Programming, with a linear cost and linear constraints.
-  kQP,       ///< Quadratic Programming, with a convex quadratic cost and linear
-             ///< constraints.
-  kSOCP,     ///< Second-order Cone Programming, with a linear cost and
-             ///< second-order cone constraints.
-  kSDP,      ///< Semidefinite Programming, with a linear cost and positive
-             ///< semidefinite matrix constraints.
-  kGP,       ///< Geometric Programming, with a linear cost and exponential cone
-             ///< constraints.
-  kCGP,      ///< Conic Geometric Programming, this is a superset that unifies
-             ///< GP and SDP. Refer to
-             ///< http://people.lids.mit.edu/pari/cgp_preprint.pdf for more
-             ///< details.
-  kMILP,     ///< Mixed-integer Linear Programming. LP with some variables
-             ///< taking binary values.
-  kMIQP,     ///< Mixed-integer Quadratic Programming. QP with some variables
-             ///< taking binary values.
-  kMISOCP,   ///< Mixed-integer Second-order Cone Programming. SOCP with some
-             ///< variables taking binary values.
-  kMISDP,    ///< Mixed-integer Semidefinite Programming. SDP with some
-             ///< variables taking binary values.
+  kLP,      ///< Linear Programming, with a linear cost and linear constraints.
+  kQP,      ///< Quadratic Programming, with a convex quadratic cost and linear
+            ///< constraints.
+  kSOCP,    ///< Second-order Cone Programming, with a linear cost and
+            ///< second-order cone constraints.
+  kSDP,     ///< Semidefinite Programming, with a linear cost and positive
+            ///< semidefinite matrix constraints.
+  kGP,      ///< Geometric Programming, with a linear cost and exponential cone
+            ///< constraints.
+  kCGP,     ///< Conic Geometric Programming, this is a superset that unifies
+            ///< GP and SDP. Refer to
+            ///< http://people.lids.mit.edu/pari/cgp_preprint.pdf for more
+            ///< details.
+  kMILP,    ///< Mixed-integer Linear Programming. LP with some variables
+            ///< taking binary values.
+  kMIQP,    ///< Mixed-integer Quadratic Programming. QP with some variables
+            ///< taking binary values.
+  kMISOCP,  ///< Mixed-integer Second-order Cone Programming. SOCP with some
+            ///< variables taking binary values.
+  kMISDP,   ///< Mixed-integer Semidefinite Programming. SDP with some
+            ///< variables taking binary values.
   kQuadraticCostConicConstraint,  ///< convex quadratic cost with nonlinear
                                   ///< conic constraints.
   kNLP,      ///< nonlinear programming. Programs with generic costs or
@@ -102,12 +102,11 @@ std::ostream& operator<<(std::ostream&, const ProgramType&);
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::solvers::ProgramAttribute>
-    : drake::ostream_formatter {};
+struct formatter<drake::solvers::ProgramAttribute> : drake::ostream_formatter {
+};
 template <>
-struct formatter<drake::solvers::ProgramAttributes>
-    : drake::ostream_formatter {};
+struct formatter<drake::solvers::ProgramAttributes> : drake::ostream_formatter {
+};
 template <>
-struct formatter<drake::solvers::ProgramType>
-    : drake::ostream_formatter {};
+struct formatter<drake::solvers::ProgramType> : drake::ostream_formatter {};
 }  // namespace fmt

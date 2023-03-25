@@ -14,8 +14,8 @@ bool AreRequiredAttributesSupported(const ProgramAttributes& required,
                                     const ProgramAttributes& supported,
                                     std::string* unsupported_message) {
   // Quick short-circuit if we're guaranteed to fail.
-  if ((required.size() > supported.size())
-      && (unsupported_message == nullptr)) {
+  if ((required.size() > supported.size()) &&
+      (unsupported_message == nullptr)) {
     return false;
   }
 
@@ -60,11 +60,9 @@ bool AreRequiredAttributesSupported(const ProgramAttributes& required,
     }
     noun_phrase += to_string(unsupported_enums[i]);
   }
-  *unsupported_message = fmt::format(
-      "a {} {} declared but {} not supported",
-      noun_phrase,
-      (size == 1) ? "was" : "were",
-      (size == 1) ? "is" : "are");
+  *unsupported_message =
+      fmt::format("a {} {} declared but {} not supported", noun_phrase,
+                  (size == 1) ? "was" : "were", (size == 1) ? "is" : "are");
   return false;
 }
 

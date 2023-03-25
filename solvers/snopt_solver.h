@@ -51,7 +51,7 @@ struct SnoptSolverDetails {
  * There is no license configuration required to use SNOPT, so
  * SolverInterface::enabled() will always return true.
  */
-class SnoptSolver final : public SolverBase  {
+class SnoptSolver final : public SolverBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SnoptSolver)
 

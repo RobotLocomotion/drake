@@ -33,8 +33,8 @@ class SolverBase : public SolverInterface {
 
   // Implement the SolverInterface methods.
   void Solve(const MathematicalProgram&, const std::optional<Eigen::VectorXd>&,
-      const std::optional<SolverOptions>&, MathematicalProgramResult*) const
-      override;
+             const std::optional<SolverOptions>&,
+             MathematicalProgramResult*) const override;
   bool available() const override;
   bool enabled() const override;
   SolverId solver_id() const override;
@@ -50,22 +50,18 @@ class SolverBase : public SolverInterface {
   functors. Any of the functors can be nullptr, in which case the subclass must
   override the matching virtual method instead, except for `explain_unsatisfied`
   which already has a default implementation. */
-  SolverBase(
-      const SolverId& id,
-      std::function<bool()> available,
-      std::function<bool()> enabled,
-      std::function<bool(const MathematicalProgram&)> are_satisfied,
-      std::function<std::string(const MathematicalProgram&)>
-          explain_unsatisfied = nullptr);
+  SolverBase(const SolverId& id, std::function<bool()> available,
+             std::function<bool()> enabled,
+             std::function<bool(const MathematicalProgram&)> are_satisfied,
+             std::function<std::string(const MathematicalProgram&)>
+                 explain_unsatisfied = nullptr);
 
   DRAKE_DEPRECATED("2023-06-01", "Pass SolverId directly as the first argument")
-  SolverBase(
-      std::function<SolverId()> id,
-      std::function<bool()> available,
-      std::function<bool()> enabled,
-      std::function<bool(const MathematicalProgram&)> are_satisfied,
-      std::function<std::string(const MathematicalProgram&)>
-          explain_unsatisfied = nullptr);
+  SolverBase(std::function<SolverId()> id, std::function<bool()> available,
+             std::function<bool()> enabled,
+             std::function<bool(const MathematicalProgram&)> are_satisfied,
+             std::function<std::string(const MathematicalProgram&)>
+                 explain_unsatisfied = nullptr);
 
   /** Hook for subclasses to implement Solve. Prior to the SolverBase's call to
   this method, the solver's availability and capabilities vs the program
@@ -73,11 +69,10 @@ class SolverBase : public SolverInterface {
   set_decision_variable_index() have already been set. The options and initial
   guess are already merged, i.e., the DoSolve implementation should ignore
   prog's solver options and prog's initial guess. */
-  virtual void DoSolve(
-      const MathematicalProgram& prog,
-      const Eigen::VectorXd& initial_guess,
-      const SolverOptions& merged_options,
-      MathematicalProgramResult* result) const = 0;
+  virtual void DoSolve(const MathematicalProgram& prog,
+                       const Eigen::VectorXd& initial_guess,
+                       const SolverOptions& merged_options,
+                       MathematicalProgramResult* result) const = 0;
 
  private:
   SolverId solver_id_;
