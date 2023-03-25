@@ -19,11 +19,13 @@ bool PiecewiseQuaternionSlerp<T>::is_approx(
     const PiecewiseQuaternionSlerp<T>& other, double tol) const {
   // Velocities are derived from the quaternions, and I don't want to
   // overload units for tol, so I am skipping the checks on velocities.
-  if (!this->SegmentTimesEqual(other, tol))
+  if (!this->SegmentTimesEqual(other, tol)) {
     return false;
+  }
 
-  if (quaternions_.size() != other.quaternions_.size())
+  if (quaternions_.size() != other.quaternions_.size()) {
     return false;
+  }
 
   for (size_t i = 0; i < quaternions_.size(); ++i) {
     // A quick reference:
@@ -80,16 +82,14 @@ void PiecewiseQuaternionSlerp<T>::Initialize(
 
 template <typename T>
 PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
-    const std::vector<T>& breaks,
-    const std::vector<Quaternion<T>>& quaternions)
+    const std::vector<T>& breaks, const std::vector<Quaternion<T>>& quaternions)
     : PiecewiseTrajectory<T>(breaks) {
   Initialize(breaks, quaternions);
 }
 
 template <typename T>
 PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
-    const std::vector<T>& breaks,
-    const std::vector<Matrix3<T>>& rot_matrices)
+    const std::vector<T>& breaks, const std::vector<Matrix3<T>>& rot_matrices)
     : PiecewiseTrajectory<T>(breaks) {
   std::vector<Quaternion<T>> quaternions(rot_matrices.size());
   for (size_t i = 0; i < rot_matrices.size(); ++i) {
@@ -112,8 +112,7 @@ PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
 
 template <typename T>
 PiecewiseQuaternionSlerp<T>::PiecewiseQuaternionSlerp(
-    const std::vector<T>& breaks,
-    const std::vector<AngleAxis<T>>& ang_axes)
+    const std::vector<T>& breaks, const std::vector<AngleAxis<T>>& ang_axes)
     : PiecewiseTrajectory<T>(breaks) {
   std::vector<Quaternion<T>> quaternions(ang_axes.size());
   for (size_t i = 0; i < ang_axes.size(); ++i) {
@@ -129,7 +128,7 @@ std::unique_ptr<Trajectory<T>> PiecewiseQuaternionSlerp<T>::Clone() const {
 
 template <typename T>
 T PiecewiseQuaternionSlerp<T>::ComputeInterpTime(int segment_index,
-                                                  const T& time) const {
+                                                 const T& time) const {
   T interp_time =
       (time - this->start_time(segment_index)) / this->duration(segment_index);
   interp_time = max(interp_time, T(0.0));
@@ -163,16 +162,16 @@ Vector3<T> PiecewiseQuaternionSlerp<T>::angular_acceleration(const T&) const {
 }
 
 template <typename T>
-void PiecewiseQuaternionSlerp<T>::Append(
-    const T& time, const Quaternion<T>& quaternion) {
+void PiecewiseQuaternionSlerp<T>::Append(const T& time,
+                                         const Quaternion<T>& quaternion) {
   DRAKE_DEMAND(this->breaks().empty() || time > this->breaks().back());
   if (quaternions_.empty()) {
     quaternions_.push_back(quaternion.normalized());
   } else {
     angular_velocities_.push_back(internal::ComputeAngularVelocity(
         time - this->breaks().back(), quaternions_.back(), quaternion));
-    quaternions_.push_back(math::ClosestQuaternion(
-        quaternions_.back(), quaternion));
+    quaternions_.push_back(
+        math::ClosestQuaternion(quaternions_.back(), quaternion));
   }
   this->get_mutable_breaks().push_back(time);
 }
@@ -184,8 +183,8 @@ void PiecewiseQuaternionSlerp<T>::Append(
 }
 
 template <typename T>
-void PiecewiseQuaternionSlerp<T>::Append(
-    const T& time, const AngleAxis<T>& angle_axis) {
+void PiecewiseQuaternionSlerp<T>::Append(const T& time,
+                                         const AngleAxis<T>& angle_axis) {
   Append(time, Quaternion<T>(angle_axis));
 }
 
@@ -196,7 +195,7 @@ bool PiecewiseQuaternionSlerp<T>::do_has_derivative() const {
 
 template <typename T>
 MatrixX<T> PiecewiseQuaternionSlerp<T>::DoEvalDerivative(
-  const T& t, int derivative_order) const {
+    const T& t, int derivative_order) const {
   if (derivative_order == 0) {
     return value(t);
   } else if (derivative_order == 1) {
@@ -208,15 +207,15 @@ MatrixX<T> PiecewiseQuaternionSlerp<T>::DoEvalDerivative(
 
 template <typename T>
 std::unique_ptr<Trajectory<T>> PiecewiseQuaternionSlerp<T>::DoMakeDerivative(
-      int derivative_order) const {
+    int derivative_order) const {
   if (derivative_order == 0) {
     return this->Clone();
   } else if (derivative_order == 1) {
     std::vector<MatrixX<T>> m(angular_velocities_.begin(),
                               angular_velocities_.end());
     m.push_back(Vector3<T>::Zero());
-    return PiecewisePolynomial<T>::ZeroOrderHold(
-      this->get_segment_times(), m).Clone();
+    return PiecewisePolynomial<T>::ZeroOrderHold(this->get_segment_times(), m)
+        .Clone();
   }
   // All higher derivatives are zero.
   return std::make_unique<PiecewisePolynomial<T>>(Vector3<T>::Zero());

@@ -12,11 +12,11 @@
 #include "drake/common/drake_throw.h"
 #include "drake/math/matrix_util.h"
 
-using std::runtime_error;
-using std::vector;
 using std::abs;
 using std::clamp;
 using std::max;
+using std::runtime_error;
+using std::vector;
 
 namespace drake {
 namespace trajectories {
@@ -43,8 +43,7 @@ PiecewisePolynomial<T>::PiecewisePolynomial(
 
 template <typename T>
 PiecewisePolynomial<T>::PiecewisePolynomial(
-    const std::vector<Polynomial<T>>& polynomials,
-    const std::vector<T>& breaks)
+    const std::vector<Polynomial<T>>& polynomials, const std::vector<T>& breaks)
     : PiecewiseTrajectory<T>(breaks) {
   DRAKE_ASSERT(breaks.size() == (polynomials.size() + 1));
 
@@ -61,8 +60,8 @@ std::unique_ptr<Trajectory<T>> PiecewisePolynomial<T>::Clone() const {
 }
 
 template <typename T>
-PiecewisePolynomial<T>
-PiecewisePolynomial<T>::derivative(int derivative_order) const {
+PiecewisePolynomial<T> PiecewisePolynomial<T>::derivative(
+    int derivative_order) const {
   DRAKE_DEMAND(derivative_order >= 0);
   PiecewisePolynomial ret = *this;
   if (derivative_order == 0) {
@@ -80,8 +79,8 @@ PiecewisePolynomial<T>::derivative(int derivative_order) const {
 }
 
 template <typename T>
-PiecewisePolynomial<T>
-PiecewisePolynomial<T>::integral(const T& value_at_start_time) const {
+PiecewisePolynomial<T> PiecewisePolynomial<T>::integral(
+    const T& value_at_start_time) const {
   MatrixX<T> matrix_value_at_start_time =
       MatrixX<T>::Constant(rows(), cols(), value_at_start_time);
   return integral(matrix_value_at_start_time);
@@ -137,8 +136,7 @@ MatrixX<T> PiecewisePolynomial<T>::DoEvalDerivative(
 
 template <typename T>
 const typename PiecewisePolynomial<T>::PolynomialMatrix&
-PiecewisePolynomial<T>::getPolynomialMatrix(
-    int segment_index) const {
+PiecewisePolynomial<T>::getPolynomialMatrix(int segment_index) const {
   return polynomials_[segment_index];
 }
 
@@ -150,15 +148,16 @@ const Polynomial<T>& PiecewisePolynomial<T>::getPolynomial(
 }
 
 template <typename T>
-int PiecewisePolynomial<T>::getSegmentPolynomialDegree(
-    int segment_index, Eigen::Index row, Eigen::Index col) const {
+int PiecewisePolynomial<T>::getSegmentPolynomialDegree(int segment_index,
+                                                       Eigen::Index row,
+                                                       Eigen::Index col) const {
   this->segment_number_range_check(segment_index);
   return polynomials_[segment_index](row, col).GetDegree();
 }
 
 template <typename T>
-PiecewisePolynomial<T>& PiecewisePolynomial<T>::
-operator+=(const PiecewisePolynomial<T>& other) {
+PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator+=(
+    const PiecewisePolynomial<T>& other) {
   if (!this->SegmentTimesEqual(other))
     throw runtime_error(
         "Addition not yet implemented when segment times are not equal");
@@ -168,8 +167,8 @@ operator+=(const PiecewisePolynomial<T>& other) {
 }
 
 template <typename T>
-PiecewisePolynomial<T>& PiecewisePolynomial<T>::
-operator-=(const PiecewisePolynomial<T>& other) {
+PiecewisePolynomial<T>& PiecewisePolynomial<T>::operator-=(
+    const PiecewisePolynomial<T>& other) {
   if (!this->SegmentTimesEqual(other))
     throw runtime_error(
         "Subtraction not yet implemented when segment times are not equal");
@@ -288,8 +287,8 @@ void PiecewisePolynomial<T>::ConcatenateInTime(
     DRAKE_THROW_UNLESS(this->cols() == other.cols());
     const T time_offset = other.start_time() - this->end_time();
     // Absolute tolerance is scaled along with the time scale.
-    const T absolute_tolerance = max(abs(this->end_time()), 1.) *
-                                      std::numeric_limits<double>::epsilon();
+    const T absolute_tolerance = max(abs(this->end_time()), 1.0) *
+                                 std::numeric_limits<double>::epsilon();
     DRAKE_THROW_UNLESS(abs(time_offset) < absolute_tolerance);
     // Gets instance breaks.
     std::vector<T>& breaks = this->get_mutable_breaks();
@@ -301,8 +300,7 @@ void PiecewisePolynomial<T>::ConcatenateInTime(
       breaks.push_back(other_break - time_offset);
     }
     // Concatenates other polynomials.
-    polynomials_.insert(polynomials_.end(),
-                        other.polynomials_.begin(),
+    polynomials_.insert(polynomials_.end(), other.polynomials_.begin(),
                         other.polynomials_.end());
   } else {
     std::vector<T>& breaks = this->get_mutable_breaks();
@@ -329,13 +327,13 @@ void PiecewisePolynomial<T>::AppendCubicHermiteSegment(
 
   for (int row = 0; row < rows(); ++row) {
     for (int col = 0; col < cols(); ++col) {
-      const T start = EvaluateSegmentAbsoluteTime(
-          segment_index, this->end_time(), row, col);
+      const T start = EvaluateSegmentAbsoluteTime(segment_index,
+                                                  this->end_time(), row, col);
       const int derivative_order = 1;
       const T start_dot = EvaluateSegmentAbsoluteTime(
           segment_index, this->end_time(), row, col, derivative_order);
       Vector4<T> coeffs = ComputeCubicSplineCoeffs(
-            dt, start, sample(row, col), start_dot, sample_dot(row, col));
+          dt, start, sample(row, col), start_dot, sample_dot(row, col));
       matrix(row, col) = Polynomial<T>(coeffs);
     }
   }
@@ -358,8 +356,8 @@ void PiecewisePolynomial<T>::AppendFirstOrderSegment(
 
   for (int row = 0; row < rows(); ++row) {
     for (int col = 0; col < cols(); ++col) {
-      const T start = EvaluateSegmentAbsoluteTime(
-          segment_index, this->end_time(), row, col);
+      const T start = EvaluateSegmentAbsoluteTime(segment_index,
+                                                  this->end_time(), row, col);
       matrix(row, col) = Polynomial<T>(
           Eigen::Matrix<T, 2, 1>(start, (sample(row, col) - start) / dt));
     }
@@ -449,8 +447,7 @@ void PiecewisePolynomial<T>::shiftRight(const T& offset) {
 
 template <typename T>
 void PiecewisePolynomial<T>::setPolynomialMatrixBlock(
-    const typename PiecewisePolynomial<T>::PolynomialMatrix&
-        replacement,
+    const typename PiecewisePolynomial<T>::PolynomialMatrix& replacement,
     int segment_number, Eigen::Index row_start, Eigen::Index col_start) {
   this->segment_number_range_check(segment_number);
   polynomials_[segment_number].block(row_start, col_start, replacement.rows(),
@@ -458,8 +455,8 @@ void PiecewisePolynomial<T>::setPolynomialMatrixBlock(
 }
 
 template <typename T>
-PiecewisePolynomial<T>
-PiecewisePolynomial<T>::slice(int start_segment_index, int num_segments) const {
+PiecewisePolynomial<T> PiecewisePolynomial<T>::slice(int start_segment_index,
+                                                     int num_segments) const {
   this->segment_number_range_check(start_segment_index);
   this->segment_number_range_check(start_segment_index + num_segments - 1);
 
@@ -473,8 +470,7 @@ PiecewisePolynomial<T>::slice(int start_segment_index, int num_segments) const {
   auto polynomials_slice = vector<PolynomialMatrix>(
       polynomials_start_it, polynomials_start_it + num_segments);
 
-  return PiecewisePolynomial<T>(polynomials_slice,
-                                              breaks_slice);
+  return PiecewisePolynomial<T>(polynomials_slice, breaks_slice);
 }
 
 template <typename T>
@@ -556,11 +552,9 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::Block(int start_row,
 //  `breaks` is not strictly increasing by at least kEpsilonTime per break,
 //  `breaks` has length smaller than `min_length`.
 template <typename T>
-void PiecewisePolynomial<T>::
-    CheckSplineGenerationInputValidityOrThrow(
-        const std::vector<T>& breaks,
-        const std::vector<MatrixX<T>>& samples,
-        int min_length) {
+void PiecewisePolynomial<T>::CheckSplineGenerationInputValidityOrThrow(
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples,
+    int min_length) {
   const std::vector<T>& times = breaks;
   const std::vector<MatrixX<T>>& Y = samples;
   if (times.size() != Y.size()) {
@@ -599,10 +593,8 @@ void PiecewisePolynomial<T>::
 // The value for each segment is set to the value at the beginning of each
 // segment.
 template <typename T>
-PiecewisePolynomial<T>
-PiecewisePolynomial<T>::ZeroOrderHold(
-    const std::vector<T>& breaks,
-    const std::vector<MatrixX<T>>& samples) {
+PiecewisePolynomial<T> PiecewisePolynomial<T>::ZeroOrderHold(
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples) {
   CheckSplineGenerationInputValidityOrThrow(breaks, samples, 2);
 
   std::vector<PolynomialMatrix> polys;
@@ -614,8 +606,8 @@ PiecewisePolynomial<T>::ZeroOrderHold(
 
     for (int j = 0; j < samples[i].rows(); ++j) {
       for (int k = 0; k < samples[i].cols(); ++k) {
-        poly_matrix(j, k) = Polynomial<T>(
-            Eigen::Matrix<T, 1, 1>(samples[i](j, k)));
+        poly_matrix(j, k) =
+            Polynomial<T>(Eigen::Matrix<T, 1, 1>(samples[i](j, k)));
       }
     }
     polys.push_back(poly_matrix);
@@ -625,10 +617,8 @@ PiecewisePolynomial<T>::ZeroOrderHold(
 
 // Makes a piecewise linear polynomial.
 template <typename T>
-PiecewisePolynomial<T>
-PiecewisePolynomial<T>::FirstOrderHold(
-    const std::vector<T>& breaks,
-    const std::vector<MatrixX<T>>& samples) {
+PiecewisePolynomial<T> PiecewisePolynomial<T>::FirstOrderHold(
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples) {
   CheckSplineGenerationInputValidityOrThrow(breaks, samples, 2);
 
   std::vector<PolynomialMatrix> polys;
@@ -642,7 +632,7 @@ PiecewisePolynomial<T>::FirstOrderHold(
       for (int k = 0; k < samples[i].cols(); ++k) {
         poly_matrix(j, k) = Polynomial<T>(Eigen::Matrix<T, 2, 1>(
             samples[i](j, k), (samples[i + 1](j, k) - samples[i](j, k)) /
-                                (breaks[i + 1] - breaks[i])));
+                                  (breaks[i + 1] - breaks[i])));
       }
     }
     polys.push_back(poly_matrix);
@@ -679,7 +669,7 @@ MatrixX<T> ComputePchipEndSlope(const T& dt0, const T& dt1,
           sign(slope0(i, j), kSlopeEpsilon)) {
         deriv(i, j) = 0.;
       } else if (sign(slope0(i, j), kSlopeEpsilon) !=
-                 sign(slope1(i, j), kSlopeEpsilon) &&
+                     sign(slope1(i, j), kSlopeEpsilon) &&
                  abs(deriv(i, j)) > abs(3. * slope0(i, j))) {
         deriv(i, j) = 3. * slope0(i, j);
       }
@@ -699,10 +689,8 @@ MatrixX<T> ComputePchipEndSlope(const T& dt0, const T& dt1,
 // See pg 9 in http://home.uchicago.edu/~sctchoi/courses/cs138/interp.pdf for
 // more details.
 template <typename T>
-PiecewisePolynomial<T>
-PiecewisePolynomial<T>::CubicShapePreserving(
-    const std::vector<T>& breaks,
-    const std::vector<MatrixX<T>>& samples,
+PiecewisePolynomial<T> PiecewisePolynomial<T>::CubicShapePreserving(
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples,
     bool zero_end_point_derivatives) {
   const std::vector<T>& times = breaks;
   const std::vector<MatrixX<T>>& Y = samples;
@@ -755,9 +743,9 @@ PiecewisePolynomial<T>::CubicShapePreserving(
         } else {
           // Computed with using weighted harmonic mean.
           T common = dt[t] + dt[t + 1];
-          Ydot[t + 1](j, k) =
-              3 * common / ((common + dt[t + 1]) / slope[t](j, k) +
-                            (common + dt[t]) / slope[t + 1](j, k));
+          Ydot[t + 1](j, k) = 3 * common /
+                              ((common + dt[t + 1]) / slope[t](j, k) +
+                               (common + dt[t]) / slope[t + 1](j, k));
         }
       }
 
@@ -780,10 +768,8 @@ PiecewisePolynomial<T>::CubicShapePreserving(
 // Makes a cubic piecewise polynomial using the given samples and their
 // derivatives at each break.
 template <typename T>
-PiecewisePolynomial<T>
-PiecewisePolynomial<T>::CubicHermite(
-    const std::vector<T>& breaks,
-    const std::vector<MatrixX<T>>& samples,
+PiecewisePolynomial<T> PiecewisePolynomial<T>::CubicHermite(
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples,
     const std::vector<MatrixX<T>>& samples_dot) {
   const std::vector<T>& times = breaks;
   const std::vector<MatrixX<T>>& Y = samples;
@@ -824,13 +810,10 @@ PiecewisePolynomial<T>::CubicHermite(
 // coefficients.
 // See the header file for more information.
 template <typename T>
-int PiecewisePolynomial<T>::
-    SetupCubicSplineInteriorCoeffsLinearSystem(
-        const std::vector<T>& breaks,
-        const std::vector<MatrixX<T>>& samples,
-        int row, int col,
-        std::vector<Eigen::Triplet<T>>* triplet_list,
-        VectorX<T>* b) {
+int PiecewisePolynomial<T>::SetupCubicSplineInteriorCoeffsLinearSystem(
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples,
+    int row, int col, std::vector<Eigen::Triplet<T>>* triplet_list,
+    VectorX<T>* b) {
   const std::vector<T>& times = breaks;
   const std::vector<MatrixX<T>>& Y = samples;
   int N = static_cast<int>(times.size());
@@ -882,8 +865,7 @@ int PiecewisePolynomial<T>::
 template <typename T>
 PiecewisePolynomial<T>
 PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-    const std::vector<T>& breaks,
-    const std::vector<MatrixX<T>>& samples,
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples,
     const MatrixX<T>& sample_dot_at_start,
     const MatrixX<T>& sample_dot_at_end) {
   const std::vector<T>& times = breaks;
@@ -971,8 +953,7 @@ PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
 template <typename T>
 PiecewisePolynomial<T>
 PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-    const std::vector<T>& breaks,
-    const std::vector<MatrixX<T>>& samples,
+    const std::vector<T>& breaks, const std::vector<MatrixX<T>>& samples,
     bool periodic_end_condition) {
   const std::vector<T>& times = breaks;
   const std::vector<MatrixX<T>>& Y = samples;
@@ -1111,7 +1092,7 @@ PiecewisePolynomial<T> PiecewisePolynomial<T>::LagrangeInterpolatingPolynomial(
     const T relative_time = times[i] - times[0];
     A(i, 0) = 1.0;
     for (size_t j = 1; j < times.size(); ++j) {
-      A(i, j) = A(i, j-1)*relative_time;
+      A(i, j) = A(i, j - 1) * relative_time;
     }
   }
   Eigen::ColPivHouseholderQR<MatrixX<T>> Aqr(A);

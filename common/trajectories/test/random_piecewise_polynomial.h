@@ -15,11 +15,11 @@ namespace test {
  * Obtains a random PiecewisePolynomial with the given @p segment_times.  Each
  * segment will have a matrix of random Polynomials of the specified size.
  */
-template<typename T = double>
-PiecewisePolynomial<T>
-MakeRandomPiecewisePolynomial(Eigen::Index rows, Eigen::Index cols,
-                              Eigen::Index num_coefficients_per_polynomial,
-                              const std::vector<double> &segment_times) {
+template <typename T = double>
+PiecewisePolynomial<T> MakeRandomPiecewisePolynomial(
+    Eigen::Index rows, Eigen::Index cols,
+    Eigen::Index num_coefficients_per_polynomial,
+    const std::vector<double>& segment_times) {
   Eigen::Index num_segments =
       static_cast<Eigen::Index>(segment_times.size() - 1);
   typedef Polynomial<T> PolynomialType;
@@ -28,12 +28,10 @@ MakeRandomPiecewisePolynomial(Eigen::Index rows, Eigen::Index cols,
   std::vector<PolynomialMatrix> polynomials;
   for (Eigen::Index segment_index = 0; segment_index < num_segments;
        ++segment_index) {
-    polynomials.push_back(
-        drake::test::RandomPolynomialMatrix<T>(
-            num_coefficients_per_polynomial, rows, cols));
+    polynomials.push_back(drake::test::RandomPolynomialMatrix<T>(
+        num_coefficients_per_polynomial, rows, cols));
   }
-  return PiecewisePolynomial<T>(polynomials,
-                                                            segment_times);
+  return PiecewisePolynomial<T>(polynomials, segment_times);
 }
 
 }  // namespace test

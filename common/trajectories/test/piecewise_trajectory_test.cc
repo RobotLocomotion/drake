@@ -17,15 +17,11 @@ template <typename T = double>
 class PiecewiseTrajectoryTester : public PiecewiseTrajectory<T> {
  public:
   explicit PiecewiseTrajectoryTester(const std::vector<T>& times)
-      : PiecewiseTrajectory<T>(times) { }
+      : PiecewiseTrajectory<T>(times) {}
   Eigen::Index rows() const override { return 0; }
   Eigen::Index cols() const override { return 0; }
-  MatrixX<T> value(const T& t) const override {
-    return MatrixX<T>(0, 0);
-  }
-  std::unique_ptr<Trajectory<T>> Clone() const override {
-    return nullptr;
-  }
+  MatrixX<T> value(const T& t) const override { return MatrixX<T>(0, 0); }
+  std::unique_ptr<Trajectory<T>> Clone() const override { return nullptr; }
 };
 
 void TestPiecewiseTrajectoryTimeRelatedGetters(
@@ -120,7 +116,6 @@ GTEST_TEST(PiecewiseTrajectoryTest, ScalarTypes) {
   TestScalarType<AutoDiffXd>();
   TestScalarType<symbolic::Expression>();
 }
-
 
 }  // namespace
 }  // namespace trajectories
