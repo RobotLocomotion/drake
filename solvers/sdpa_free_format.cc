@@ -119,19 +119,18 @@ void SdpaFreeFormat::AddLinearEqualityConstraint(
       if (std::holds_alternative<DecisionVariableInSdpaX>(
               prog_var_in_sdpa_[prog_var_index])) {
         // This variable is an entry in X.
-        const auto& decision_var_in_X =
-            std::get<DecisionVariableInSdpaX>(
-                prog_var_in_sdpa_[prog_var_index]);
+        const auto& decision_var_in_X = std::get<DecisionVariableInSdpaX>(
+            prog_var_in_sdpa_[prog_var_index]);
         g_(constraint_index) -= coeff_prog_vars[i] * decision_var_in_X.offset;
         const double coeff = decision_var_in_X.coeff_sign == Sign::kPositive
                                  ? coeff_prog_vars[i]
                                  : -coeff_prog_vars[i];
         AddTermToTriplets(decision_var_in_X.entry_in_X, coeff, &Ai_triplets);
       } else if (std::holds_alternative<double>(
-          prog_var_in_sdpa_[prog_var_index])) {
+                     prog_var_in_sdpa_[prog_var_index])) {
         // This variable has a constant value.
-        const double var_value = std::get<double>(
-            prog_var_in_sdpa_[prog_var_index]);
+        const double var_value =
+            std::get<double>(prog_var_in_sdpa_[prog_var_index]);
         g_(constraint_index) -= coeff_prog_vars[i] * var_value;
       } else if (std::holds_alternative<FreeVariableIndex>(
                      prog_var_in_sdpa_[prog_var_index])) {
@@ -310,7 +309,6 @@ void SdpaFreeFormat::RegisterMathematicalProgramDecisionVariables(
     if (!has_var_registered) {
       RegisterSingleMathematicalProgramDecisionVariable(
 
-
           lower_bound(i), upper_bound(i), i, block_index, &new_X_var_count);
     } else {
       AddBoundsOnRegisteredDecisionVariable(lower_bound(i), upper_bound(i), i,
@@ -345,7 +343,7 @@ void SdpaFreeFormat::AddLinearCostsFromProgram(
               linear_cost.evaluator()->a()(i) * decision_var_in_X.offset;
           AddTermToTriplets(decision_var_in_X.entry_in_X, coeff, &C_triplets_);
         } else if (std::holds_alternative<double>(
-            prog_var_in_sdpa_[var_index])) {
+                       prog_var_in_sdpa_[var_index])) {
           const double val = std::get<double>(prog_var_in_sdpa_[var_index]);
           constant_min_cost_term_ += linear_cost.evaluator()->a()(i) * val;
         } else if (std::holds_alternative<FreeVariableIndex>(
@@ -946,8 +944,8 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
     }
 
   } else {
-    drake::log()->warn(
-        "GenerateSDPA(): Cannot open the file {}.dat-s", file_name);
+    drake::log()->warn("GenerateSDPA(): Cannot open the file {}.dat-s",
+                       file_name);
     return false;
   }
   sdpa_file.close();

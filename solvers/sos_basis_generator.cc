@@ -105,7 +105,7 @@ void Intersection(const ExponentList& A, ExponentList* B) {
  * Sum-of-Squares Programs in Practice Johan Löfberg, IEEE Transactions on
  * Automatic Control, 2009." After execution, all exponents of inconsistent
  * monomials are removed from exponents_of_basis.
-*/
+ */
 void RemoveDiagonallyInconsistentExponents(const ExponentList& exponents_of_p,
                                            ExponentList* exponents_of_basis) {
   while (1) {
@@ -144,7 +144,9 @@ Hyperplanes RandomSupportingHyperplanes(const ExponentList& exponents_of_p,
   std::default_random_engine generator(seed);
   std::uniform_int_distribution<int> distribution(normal_vector_component_min,
                                                   normal_vector_component_max);
-  auto get_random = [&]() { return distribution(generator); };
+  auto get_random = [&]() {
+    return distribution(generator);
+  };
 
   // Number of hyperplanes currently picked heuristically.
   int num_hyperplanes = 10 * exponents_of_p.cols();

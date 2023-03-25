@@ -7,10 +7,10 @@
 
 #include "drake/common/symbolic/expression.h"
 
-using std::numeric_limits;
 using drake::symbolic::Expression;
-using Eigen::VectorXd;
 using Eigen::MatrixXi;
+using Eigen::VectorXd;
+using std::numeric_limits;
 
 namespace drake {
 namespace solvers {

@@ -403,7 +403,7 @@ class SdpaFreeFormat {
    * into SDPA free format yet.
    */
   std::vector<std::variant<DecisionVariableInSdpaX, FreeVariableIndex, double,
-                      std::nullptr_t>>
+                           std::nullptr_t>>
       prog_var_in_sdpa_;
 
   int num_X_rows_{0};

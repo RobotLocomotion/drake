@@ -122,9 +122,8 @@ std::string SolverBase::ExplainUnsatisfiedProgramAttributes(
   if (AreProgramAttributesSatisfied(prog)) {
     return {};
   }
-  return fmt::format(
-      "{} is unable to solve a MathematicalProgram with {}.",
-      ShortName(*this), to_string(prog.required_capabilities()));
+  return fmt::format("{} is unable to solve a MathematicalProgram with {}.",
+                     ShortName(*this), to_string(prog.required_capabilities()));
 }
 
 }  // namespace solvers
