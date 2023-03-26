@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 import pickle
+from textwrap import dedent
 import unittest
 
 from pydrake.common import ToleranceType
@@ -8,6 +9,7 @@ from pydrake.common.eigen_geometry import AngleAxis_, Quaternion_
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue
+from pydrake.common.yaml import yaml_load_typed
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
@@ -207,6 +209,39 @@ class TestTrajectories(unittest.TestCase):
         # Ensure we can copy.
         self.assertEqual(copy.copy(pp).rows(), 1)
         self.assertEqual(copy.deepcopy(pp).rows(), 1)
+
+    def test_piecewise_polynomial_serialize(self):
+        PiecewisePolynomial = PiecewisePolynomial_[float]
+        breaks = [0, 0.5, 1]
+        sample0 = np.array([[1, 1, 2], [2, 0, 3]])
+        sample1 = np.array([[3, 4, 5], [6, 7, 8]])
+        sample2 = np.zeros((2, 3))
+        expected = PiecewisePolynomial.ZeroOrderHold(
+            breaks=breaks,
+            samples=[sample0, sample1, sample2])
+        data = dedent("""
+        breaks: [0.0, 0.5, 1.0]
+        polynomials:
+          -
+            - [[1], [1], [2]]
+            - [[2], [0], [3]]
+          -
+            - [[3], [4], [5]]
+            - [[6], [7], [8]]
+        """)
+        dut = yaml_load_typed(schema=PiecewisePolynomial, data=data)
+        self.assertEqual(dut.get_number_of_segments(), 2)
+        self.assertEqual(dut.rows(), 2)
+        self.assertEqual(dut.cols(), 3)
+        self.assertTrue(dut.isApprox(expected, tol=0))
+
+    def test_piecewise_polynomial_serialize_empty(self):
+        data = dedent("""
+        breaks: []
+        polynomials: []
+        """)
+        dut = yaml_load_typed(schema=PiecewisePolynomial_[float], data=data)
+        self.assertEqual(dut.get_number_of_segments(), 0)
 
     @numpy_compare.check_all_types
     def test_zero_order_hold_vector(self, T):

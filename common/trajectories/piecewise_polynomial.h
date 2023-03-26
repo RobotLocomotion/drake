@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <tuple>
 #include <vector>
 
 #include <Eigen/Core>
@@ -10,6 +11,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/name_value.h"
 #include "drake/common/polynomial.h"
 #include "drake/common/trajectories/piecewise_trajectory.h"
 
@@ -764,6 +766,24 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
    */
   PiecewisePolynomial slice(int start_segment_index, int num_segments) const;
 
+  /** Passes this object to an Archive.
+   * Refer to @ref yaml_serialization "YAML Serialization" for background.
+   * This method is only available when T = double. */
+  template <typename Archive>
+#ifdef DRAKE_DOXYGEN_CXX
+  void
+#else
+  // Restrict this method to T = double only; we must mix "Archive" into the
+  // conditional type for SFINAE to work, so we just check it against void.
+  std::enable_if_t<std::is_same_v<T, double> && !std::is_void_v<Archive>>
+#endif
+  Serialize(Archive* a) {
+    auto [breaks, polynomials] = this->GetSerialized();
+    a->Visit(DRAKE_NVP(breaks));
+    a->Visit(DRAKE_NVP(polynomials));
+    SetSerialized(breaks, polynomials);
+  }
+
  private:
   // Evaluates the %PiecwisePolynomial derivative at the given time @p t.
   // Returns the nth derivative, where `n` is the value of @p derivative_order.
@@ -782,6 +802,16 @@ class PiecewisePolynomial final : public PiecewiseTrajectory<T> {
   T EvaluateSegmentAbsoluteTime(int segment_index, const T& t, Eigen::Index row,
                                 Eigen::Index col,
                                 int derivative_order = 0) const;
+
+  /* Returns (breaks_, polynomials_) in serializable form, where each Polynomial
+  in PolynomialMatrix serializes its coefficients as a vector indexed by the
+  variable power. */
+  std::tuple<std::vector<double>, std::vector<MatrixX<Eigen::VectorXd>>>
+  GetSerialized() const;
+
+  /* Resets `this` to the data returned by a previous call to GetSerialized. */
+  void SetSerialized(const std::vector<double>& breaks,
+                     const std::vector<MatrixX<Eigen::VectorXd>>& polynomials);
 
   // a PolynomialMatrix for each piece (segment).
   std::vector<PolynomialMatrix> polynomials_;

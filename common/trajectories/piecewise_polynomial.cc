@@ -10,8 +10,10 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
+#include "drake/common/unused.h"
 #include "drake/math/matrix_util.h"
 
+using Eigen::VectorXd;
 using std::abs;
 using std::clamp;
 using std::max;
@@ -57,6 +59,88 @@ PiecewisePolynomial<T>::PiecewisePolynomial(
 template <typename T>
 std::unique_ptr<Trajectory<T>> PiecewisePolynomial<T>::Clone() const {
   return std::make_unique<PiecewisePolynomial<T>>(*this);
+}
+
+template <typename T>
+std::tuple<std::vector<double>, std::vector<MatrixX<VectorXd>>>
+PiecewisePolynomial<T>::GetSerialized() const {
+  if constexpr (!std::is_same_v<T, double>) {
+    DRAKE_UNREACHABLE();
+  } else {
+    std::vector<MatrixX<VectorXd>> polynomials(polynomials_.size());
+    // Copy the polynomials_'s coefficients into polynomials.
+    int max_degree = 0;
+    for (int i = 0; i < static_cast<int>(polynomials.size()); ++i) {
+      const MatrixX<Polynomial<double>>& ith_in = polynomials_[i];
+      MatrixX<VectorXd>& ith_out = polynomials[i];
+      ith_out.resize(ith_in.rows(), ith_in.cols());
+      for (int j = 0; j < ith_in.rows(); ++j) {
+        for (int k = 0; k < ith_in.cols(); ++k) {
+          ith_out(j, k) = ith_in(j, k).GetCoefficients();
+          max_degree = std::max(max_degree, ith_in(j, k).GetDegree());
+        }
+      }
+    }
+    // Always output a square ndarray with shape=(npoly, nrow, ncol, ncoeff).
+    for (int i = 0; i < static_cast<int>(polynomials.size()); ++i) {
+      MatrixX<VectorXd>& ith_out = polynomials[i];
+      for (int j = 0; j < ith_out.rows(); ++j) {
+        for (int k = 0; k < ith_out.cols(); ++k) {
+          const int old_size = ith_out(j, k).size();
+          ith_out(j, k).conservativeResize(max_degree + 1);
+          for (int z = old_size; z < max_degree + 1; ++z) {
+            ith_out(j, k)(z) = 0.0;
+          }
+        }
+      }
+    }
+    return std::make_tuple(this->breaks(), std::move(polynomials));
+  }
+}
+
+template <typename T>
+void PiecewisePolynomial<T>::SetSerialized(
+    const std::vector<double>& breaks,
+    const std::vector<MatrixX<VectorXd>>& polynomials) {
+  if constexpr (!std::is_same_v<T, double>) {
+    unused(breaks, polynomials);
+    DRAKE_UNREACHABLE();
+  } else {
+    if (breaks.empty() && polynomials.empty()) {
+      *this = PiecewisePolynomial<double>();
+      return;
+    }
+    if (breaks.size() != polynomials.size() + 1) {
+      throw std::logic_error(fmt::format(
+          "PiecewisePolynomial deserialization must provide "
+          "len(breaks) == len(polynomials) + 1, but had len(breaks) == {} and "
+          "len(polynomials) == {}",
+          breaks.size(), polynomials.size()));
+    }
+    for (int n = 1; n < static_cast<int>(polynomials.size()); ++n) {
+      if ((polynomials[n].rows() != polynomials[0].rows()) ||
+          (polynomials[n].cols() != polynomials[0].cols())) {
+        throw std::logic_error(fmt::format(
+            "PiecewisePolynomial deserialization must provide consistently "
+            "sized polynomial matrices, but polynomials[{}] had shape ({}, {}) "
+            "yet all prior polynomials had shape ({}, {})",
+            n, polynomials[n].rows(), polynomials[n].cols(),
+            polynomials[0].rows(), polynomials[0].cols()));
+      }
+    }
+    this->get_mutable_breaks() = breaks;
+    polynomials_.resize(polynomials.size());
+    for (int i = 0; i < static_cast<int>(polynomials.size()); ++i) {
+      const MatrixX<VectorXd>& ith_in = polynomials[i];
+      MatrixX<Polynomial<double>>& ith_out = polynomials_[i];
+      ith_out.resize(ith_in.rows(), ith_in.cols());
+      for (int j = 0; j < ith_in.rows(); ++j) {
+        for (int k = 0; k < ith_in.cols(); ++k) {
+          ith_out(j, k) = Polynomial<double>(ith_in(j, k));
+        }
+      }
+    }
+  }
 }
 
 template <typename T>
