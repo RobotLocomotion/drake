@@ -134,13 +134,14 @@ T StackedTrajectory<T>::end_time() const {
 
 template <typename T>
 bool StackedTrajectory<T>::do_has_derivative() const {
-  return std::all_of(children_.begin(), children_.end(),
-                     [](const auto& child) { return child->has_derivative(); });
+  return std::all_of(children_.begin(), children_.end(), [](const auto& child) {
+    return child->has_derivative();
+  });
 }
 
 template <typename T>
-MatrixX<T> StackedTrajectory<T>::DoEvalDerivative(
-    const T& t, int derivative_order) const {
+MatrixX<T> StackedTrajectory<T>::DoEvalDerivative(const T& t,
+                                                  int derivative_order) const {
   MatrixX<T> result(rows(), cols());
   Index row = 0;
   Index col = 0;

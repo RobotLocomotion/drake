@@ -13,8 +13,8 @@
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
 #include "drake/math/autodiff_gradient.h"
 
-using drake::math::ExtractGradient;
 using drake::math::DiscardGradient;
+using drake::math::ExtractGradient;
 using Eigen::Matrix;
 using std::default_random_engine;
 using std::normal_distribution;
@@ -27,7 +27,7 @@ namespace drake {
 namespace trajectories {
 namespace {
 
-template<typename T>
+template <typename T>
 void testIntegralAndDerivative() {
   int num_coefficients = 5;
   int num_segments = 3;
@@ -37,9 +37,8 @@ void testIntegralAndDerivative() {
   default_random_engine generator;
   vector<double> segment_times =
       PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
-  PiecewisePolynomial<T> piecewise =
-      test::MakeRandomPiecewisePolynomial<T>(
-          rows, cols, num_coefficients, segment_times);
+  PiecewisePolynomial<T> piecewise = test::MakeRandomPiecewisePolynomial<T>(
+      rows, cols, num_coefficients, segment_times);
 
   // derivative(0) should be same as original piecewise.
   EXPECT_TRUE(
@@ -61,13 +60,13 @@ void testIntegralAndDerivative() {
 
   // check continuity at sample points
   for (int i = 0; i < piecewise.get_number_of_segments() - 1; ++i) {
-    EXPECT_EQ(integral.getPolynomial(i)
-                  .EvaluateUnivariate(integral.duration(i)),
-              integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
+    EXPECT_EQ(
+        integral.getPolynomial(i).EvaluateUnivariate(integral.duration(i)),
+        integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
   }
 }
 
-template<typename T>
+template <typename T>
 void testBasicFunctionality() {
   int max_num_coefficients = 6;
   int num_tests = 100;
@@ -119,8 +118,8 @@ void testBasicFunctionality() {
     // aligned at the connecting ends is a failure.
     PiecewisePolynomial<T> piecewise2_shifted_twice = piecewise2;
     piecewise2_shifted_twice.shiftRight(2. * total_time);
-    EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
-        piecewise2_shifted_twice), std::runtime_error);
+    EXPECT_THROW(piecewise2_twice.ConcatenateInTime(piecewise2_shifted_twice),
+                 std::runtime_error);
 
     // Checks that concatenation of trajectories that have different
     // row counts is a failure.
@@ -128,7 +127,8 @@ void testBasicFunctionality() {
         piecewise3_not_matching_rows;
     piecewise3_not_matching_rows_shifted.shiftRight(total_time);
     EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
-        piecewise3_not_matching_rows_shifted), std::runtime_error);
+                     piecewise3_not_matching_rows_shifted),
+                 std::runtime_error);
 
     // Checks that concatenation of trajectories that have different
     // col counts is a failure.
@@ -136,7 +136,8 @@ void testBasicFunctionality() {
         piecewise4_not_matching_cols;
     piecewise4_not_matching_cols_shifted.shiftRight(total_time);
     EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
-        piecewise4_not_matching_cols_shifted), std::runtime_error);
+                     piecewise4_not_matching_cols_shifted),
+                 std::runtime_error);
 
     piecewise2_twice.ConcatenateInTime(piecewise2_shifted);
 
@@ -177,13 +178,13 @@ void testBasicFunctionality() {
     // R(t) = P(t) for t0 <= t <= t1, R(t) = Q(t) for t1 <= t <= t2,
     // Q(t) = P(t - d) for t1 <= t <= t2, d = t1 - t0 = t2 - t1 and
     // t0 < tₓ < t1, with P, Q and R functions being piecewise polynomials.
-    EXPECT_TRUE(CompareMatrices(
-        piecewise2_twice.value(t), piecewise2_twice.value(t + total_time),
-        1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(piecewise2_twice.value(t),
+                                piecewise2_twice.value(t + total_time), 1e-8,
+                                MatrixCompareType::absolute));
   }
 }
 
-template<typename T>
+template <typename T>
 void testValueOutsideOfRange() {
   default_random_engine generator;
   vector<double> segment_times =
@@ -208,12 +209,14 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
+  // clang-format off
   Eigen::MatrixXd samples(3, 5);
   samples << 1, 1, 1,
-        2, 2, 2,
-        0, 3, 3,
-        -2, 2, 2,
-        1, 1, 1;
+             2, 2, 2,
+             0, 3, 3,
+            -2, 2, 2,
+             1, 1, 1;
+  // clang-format on
   const bool periodic_endpoint = true;
 
   PiecewisePolynomial<double> periodic_spline =
@@ -249,12 +252,14 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
+  // clang-format off
   Eigen::MatrixXd samples(3, 5);
   samples << 1, 1, 1,
-        2, 2, 2,
-        0, 3, 3,
-        -2, 2, 2,
-        1, 1, 1;
+             2, 2, 2,
+             0, 3, 3,
+            -2, 2, 2,
+             1, 1, 1;
+  // clang-format on
 
   // No throw with monotonic breaks.
   PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
@@ -307,9 +312,11 @@ GTEST_TEST(testPiecewisePolynomial, VectorValueTest) {
 GTEST_TEST(testPiecewisePolynomial, RemoveFinalSegmentTest) {
   Eigen::VectorXd breaks(3);
   breaks << 0, .5, 1.;
+  // clang-format off
   Eigen::MatrixXd samples(2, 3);
   samples << 1, 1, 2,
              2, 0, 3;
+  // clang-format on
 
   PiecewisePolynomial<double> pp =
       PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
@@ -359,13 +366,14 @@ void TestScaling(const PiecewisePolynomial<double>& pp_orig,
   }
 }
 
-
 GTEST_TEST(testPiecewisePolynomial, ReverseAndScaleTimeTest) {
   Eigen::VectorXd breaks(3);
   breaks << 0, .5, 1.;
+  // clang-format off
   Eigen::MatrixXd samples(2, 3);
   samples << 1, 1, 2,
              2, 0, 3;
+  // clang-format on
 
   const PiecewisePolynomial<double> zoh =
       PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
@@ -458,8 +466,8 @@ void TestScalarType() {
   samples << 1, 1, 2, 2, 0, 3;
 
   const PiecewisePolynomial<T> spline =
-      PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-          breaks, samples);
+      PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(breaks,
+                                                                   samples);
 
   const MatrixX<T> value = spline.value(0.5);
   EXPECT_NEAR(ExtractDoubleOrThrow(value(0)),
@@ -544,4 +552,3 @@ GTEST_TEST(PiecewiseTrajectoryTest, AutoDiffDerivativesTest) {
 }  // namespace
 }  // namespace trajectories
 }  // namespace drake
-

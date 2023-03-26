@@ -34,8 +34,7 @@ Quaternion<double> EulerIntegrateQuaternion(const Quaternion<Scalar>& q0,
 
 // Checks q[n].dot(q[n-1]) >= 0
 template <typename Scalar>
-bool CheckClosest(
-    const std::vector<Quaternion<Scalar>>& quaternions) {
+bool CheckClosest(const std::vector<Quaternion<Scalar>>& quaternions) {
   if (quaternions.size() <= 1) return true;
   for (size_t i = 1; i < quaternions.size(); ++i) {
     if (quaternions[i].dot(quaternions[i - 1]) < 0) return false;
@@ -130,9 +129,9 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
   incremental_angle_axes.is_approx(rot_spline, 1e-14);
   for (double t = time.front(); t < time.back(); t += 0.1) {
     EXPECT_TRUE(CompareMatrices(incremental_rotation_matrices.EvalDerivative(t),
-              rot_spline.EvalDerivative(t), 1e-12));
+                                rot_spline.EvalDerivative(t), 1e-12));
     EXPECT_TRUE(CompareMatrices(incremental_angle_axes.EvalDerivative(t),
-              rot_spline.EvalDerivative(t), 1e-12));
+                                rot_spline.EvalDerivative(t), 1e-12));
   }
 }
 
@@ -188,14 +187,12 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp,
 
   const std::vector<Quaternion<double>>& internal_quats =
       rot_spline.get_quaternion_samples();
-  EXPECT_TRUE(CompareMatrices(
-      rot_spline.orientation(t).coeffs(),
-      internal_quats[0].coeffs(), 1e-10,
-      MatrixCompareType::absolute));
-  EXPECT_TRUE(CompareMatrices(
-      rot_spline.orientation(t).coeffs(),
-      internal_quats[1].coeffs(), 1e-10,
-      MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(rot_spline.orientation(t).coeffs(),
+                              internal_quats[0].coeffs(), 1e-10,
+                              MatrixCompareType::absolute));
+  EXPECT_TRUE(CompareMatrices(rot_spline.orientation(t).coeffs(),
+                              internal_quats[1].coeffs(), 1e-10,
+                              MatrixCompareType::absolute));
 }
 
 GTEST_TEST(TestPiecewiseQuaternionSlerp, TestIsApprox) {
@@ -243,24 +240,22 @@ GTEST_TEST(TestPiecewiseQuaternionSlerp, TestDerivatives) {
     EXPECT_EQ(rot_spline.value(t).rows(), rot_spline.rows());
     EXPECT_EQ(rot_spline.value(t).cols(), rot_spline.cols());
     // Test zeroth derivative.
-    EXPECT_TRUE(CompareMatrices(
-      rot_spline.value(t), zeroth_derivative->value(t), 1e-14));
-    EXPECT_TRUE(CompareMatrices(
-      rot_spline.value(t), rot_spline.EvalDerivative(t, 0), 1e-14));
+    EXPECT_TRUE(CompareMatrices(rot_spline.value(t),
+                                zeroth_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(rot_spline.value(t),
+                                rot_spline.EvalDerivative(t, 0), 1e-14));
 
     // Test first derivative.
-    EXPECT_TRUE(CompareMatrices(
-      rot_spline.angular_velocity(t), first_derivative->value(t), 1e-14));
-    EXPECT_TRUE(CompareMatrices(
-      rot_spline.angular_velocity(t), rot_spline.EvalDerivative(t, 1),
-      1e-14));
+    EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(t),
+                                first_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(rot_spline.angular_velocity(t),
+                                rot_spline.EvalDerivative(t, 1), 1e-14));
 
     // Test second derivative.
-    EXPECT_TRUE(CompareMatrices(
-      rot_spline.angular_acceleration(t), second_derivative->value(t), 1e-14));
-    EXPECT_TRUE(CompareMatrices(
-      rot_spline.angular_acceleration(t), rot_spline.EvalDerivative(t, 2),
-      1e-14));
+    EXPECT_TRUE(CompareMatrices(rot_spline.angular_acceleration(t),
+                                second_derivative->value(t), 1e-14));
+    EXPECT_TRUE(CompareMatrices(rot_spline.angular_acceleration(t),
+                                rot_spline.EvalDerivative(t, 2), 1e-14));
   }
 }
 

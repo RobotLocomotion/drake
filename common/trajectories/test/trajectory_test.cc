@@ -16,21 +16,15 @@ class TrajectoryTester : public Trajectory<T> {
   explicit TrajectoryTester(bool has_derivative)
       : has_derivative_(has_derivative) {}
 
-  MatrixX<T> value(const T& t) const override {
-    return MatrixX<T>(0, 0);
-  }
-  std::unique_ptr<Trajectory<T>> Clone() const override {
-    return nullptr;
-  }
+  MatrixX<T> value(const T& t) const override { return MatrixX<T>(0, 0); }
+  std::unique_ptr<Trajectory<T>> Clone() const override { return nullptr; }
   Eigen::Index rows() const override { return 0; }
   Eigen::Index cols() const override { return 0; }
   T start_time() const override { return 0; }
   T end_time() const override { return 1; }
 
  private:
-  bool do_has_derivative() const override {
-    return has_derivative_;
-  }
+  bool do_has_derivative() const override { return has_derivative_; }
 
   bool has_derivative_;
 };
@@ -52,15 +46,13 @@ GTEST_TEST(TrajectoryTest, EvalDerivativesTest) {
 GTEST_TEST(TrajectoryTest, MakeDerivativesTest) {
   TrajectoryTester traj_yes_deriv(true);
   EXPECT_TRUE(traj_yes_deriv.has_derivative());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      traj_yes_deriv.MakeDerivative(),
-      ".* must implement .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(traj_yes_deriv.MakeDerivative(),
+                              ".* must implement .*");
 
   TrajectoryTester traj_no_deriv(false);
   EXPECT_FALSE(traj_no_deriv.has_derivative());
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      traj_no_deriv.MakeDerivative(),
-      ".* does not support .*");
+  DRAKE_EXPECT_THROWS_MESSAGE(traj_no_deriv.MakeDerivative(),
+                              ".* does not support .*");
 }
 
 template <typename T>

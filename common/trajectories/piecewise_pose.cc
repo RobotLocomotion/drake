@@ -100,7 +100,7 @@ Vector6<T> PiecewisePose<T>::GetAcceleration(const T& time) const {
 
 template <typename T>
 bool PiecewisePose<T>::IsApprox(const PiecewisePose<T>& other,
-                                 double tol) const {
+                                double tol) const {
   bool ret = position_.isApprox(other.position_, tol);
   ret &= orientation_.is_approx(other.orientation_, tol);
   return ret;

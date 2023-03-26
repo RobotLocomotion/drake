@@ -6,9 +6,8 @@ namespace drake {
 namespace trajectories {
 
 template <typename T>
-BezierCurve<T>::BezierCurve(
-    double start_time, double end_time,
-    const Eigen::Ref<const MatrixX<T>>& control_points)
+BezierCurve<T>::BezierCurve(double start_time, double end_time,
+                            const Eigen::Ref<const MatrixX<T>>& control_points)
     : start_time_{start_time},
       end_time_{end_time},
       control_points_{control_points},
@@ -44,8 +43,7 @@ MatrixX<T> BezierCurve<T>::value(const T& time) const {
 }
 
 template <typename T>
-MatrixX<T> BezierCurve<T>::CalcDerivativePoints(
-    int derivative_order) const {
+MatrixX<T> BezierCurve<T>::CalcDerivativePoints(int derivative_order) const {
   DRAKE_DEMAND(derivative_order <= order_);
   int n = order_;
   MatrixX<T> points =
@@ -60,8 +58,8 @@ MatrixX<T> BezierCurve<T>::CalcDerivativePoints(
 }
 
 template <typename T>
-MatrixX<T> BezierCurve<T>::DoEvalDerivative(
-        const T& time, int derivative_order) const {
+MatrixX<T> BezierCurve<T>::DoEvalDerivative(const T& time,
+                                            int derivative_order) const {
   DRAKE_DEMAND(derivative_order >= 0);
   if (derivative_order == 0) {
     return this->value(time);

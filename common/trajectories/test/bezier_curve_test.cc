@@ -37,7 +37,6 @@ GTEST_TEST(BezierCurveTest, Linear) {
       CompareMatrices(curve.EvalDerivative(2.5), Eigen::Vector2d(1, 4), 1e-14));
 }
 
-
 // Quadratic curve: [ (1-t)²; t^2 ]
 GTEST_TEST(BezierCurveTest, Quadratic) {
   Eigen::Matrix<double, 2, 3> points;
@@ -119,10 +118,8 @@ GTEST_TEST(BezierCurve, ScalarTypes) {
   BezierCurve<symbolic::Expression> curve_sym(
       0, 1, points.cast<symbolic::Expression>());
 
-  EXPECT_TRUE(CompareMatrices(
-      curve.value(0.5), curve_ad.value(0.5), 1e-14));
-  EXPECT_TRUE(CompareMatrices(
-      curve.value(0.5), curve_sym.value(0.5), 1e-14));
+  EXPECT_TRUE(CompareMatrices(curve.value(0.5), curve_ad.value(0.5), 1e-14));
+  EXPECT_TRUE(CompareMatrices(curve.value(0.5), curve_sym.value(0.5), 1e-14));
 }
 
 }  // namespace

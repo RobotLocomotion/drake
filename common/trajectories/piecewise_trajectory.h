@@ -51,7 +51,7 @@ class PiecewiseTrajectory : public Trajectory<T> {
 
   static std::vector<T> RandomSegmentTimes(
       // TODO(#2274) Fix this NOLINTNEXTLINE(runtime/references)
-      int num_segments, std::default_random_engine &generator);
+      int num_segments, std::default_random_engine& generator);
 
  protected:
   // Final subclasses are allowed to make copy/move/assign public.

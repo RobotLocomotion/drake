@@ -18,8 +18,8 @@ using Eigen::Vector2d;
 using Eigen::Vector4d;
 using Vector1d = Vector1<double>;
 
-DiscreteTimeTrajectory<double> MakeDiscrete(
-    double t0, const MatrixXd& value0, double t1, const MatrixXd& value1) {
+DiscreteTimeTrajectory<double> MakeDiscrete(double t0, const MatrixXd& value0,
+                                            double t1, const MatrixXd& value1) {
   std::vector<double> times{t0, t1};
   std::vector<MatrixXd> values{value0, value1};
   return DiscreteTimeTrajectory<double>(times, values);
@@ -225,6 +225,7 @@ GTEST_TEST(StackedTrajectoryTest, EvalDerivative) {
     const double tf = 0.8;
 
     // Create a stack of arbitrary polynomials.
+    // clang-format off
     auto make_poly = [&](const std::vector<MatrixXd>& samples) {
       return PiecewisePolynomial<double>::CubicShapePreserving(
           {t0, t1, t2, tf}, samples);
@@ -240,6 +241,7 @@ GTEST_TEST(StackedTrajectoryTest, EvalDerivative) {
         Vector2d(50, -2),
         Vector2d(100, -4),
         Vector2d(200, -8)}));
+    // clang-format on
 
     // We'll assume that MakeDerivative is correct and use its values as the
     // gold standard.

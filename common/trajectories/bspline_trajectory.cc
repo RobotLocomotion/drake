@@ -43,10 +43,9 @@ bool BsplineTrajectory<T>::do_has_derivative() const {
   return true;
 }
 
-
 template <typename T>
-MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
-        const T& time, int derivative_order) const {
+MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(const T& time,
+                                                  int derivative_order) const {
   if (derivative_order == 0) {
     return this->value(time);
   } else if (derivative_order >= basis_.order()) {
@@ -59,8 +58,8 @@ MatrixX<T> BsplineTrajectory<T>::DoEvalDerivative(
     // This differs from DoMakeDerivative, which takes O(nk) time.
     std::vector<T> derivative_knots(basis_.knots().begin() + derivative_order,
                                     basis_.knots().end() - derivative_order);
-    BsplineBasis<T> lower_order_basis = BsplineBasis<T>(
-        basis_.order() - derivative_order, derivative_knots);
+    BsplineBasis<T> lower_order_basis =
+        BsplineBasis<T>(basis_.order() - derivative_order, derivative_knots);
     std::vector<MatrixX<T>> coefficients(control_points());
     std::vector<int> base_indices =
         basis_.ComputeActiveBasisFunctionIndices(clamped_time);
@@ -204,8 +203,10 @@ BsplineTrajectory<T> BsplineTrajectory<T>::CopyWithSelector(
 }
 
 template <typename T>
-BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(
-    int start_row, int start_col, int block_rows, int block_cols) const {
+BsplineTrajectory<T> BsplineTrajectory<T>::CopyBlock(int start_row,
+                                                     int start_col,
+                                                     int block_rows,
+                                                     int block_cols) const {
   return CopyWithSelector([&start_row, &start_col, &block_rows,
                            &block_cols](const MatrixX<T>& full) {
     return full.block(start_row, start_col, block_rows, block_cols);
@@ -227,7 +228,7 @@ boolean<T> BsplineTrajectory<T>::operator==(
     boolean<T> result{true};
     for (int i = 0; i < this->num_control_points(); ++i) {
       result = result && drake::all(this->control_points()[i].array() ==
-                             other.control_points()[i].array());
+                                    other.control_points()[i].array());
       if (std::equal_to<boolean<T>>{}(result, boolean<T>{false})) {
         break;
       }

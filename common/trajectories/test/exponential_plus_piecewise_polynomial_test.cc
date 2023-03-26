@@ -31,17 +31,14 @@ void testSimpleCase() {
   auto polynomial_part = test::MakeRandomPiecewisePolynomial<T>(
       1, 1, num_coefficients, segment_times);
 
-  ExponentialPlusPiecewisePolynomial<T> expPlusPp(
-      K, A, alpha, polynomial_part);
-  ExponentialPlusPiecewisePolynomial<T> derivative =
-      expPlusPp.derivative();
+  ExponentialPlusPiecewisePolynomial<T> expPlusPp(K, A, alpha, polynomial_part);
+  ExponentialPlusPiecewisePolynomial<T> derivative = expPlusPp.derivative();
 
   uniform_real_distribution<T> uniform(expPlusPp.start_time(),
-                                                     expPlusPp.end_time());
+                                       expPlusPp.end_time());
   double t = uniform(generator);
-  auto check =
-      K(0) * std::exp(A(0) * (t - expPlusPp.start_time())) * alpha(0) +
-      polynomial_part.scalarValue(t);
+  auto check = K(0) * std::exp(A(0) * (t - expPlusPp.start_time())) * alpha(0) +
+               polynomial_part.scalarValue(t);
   auto derivative_check =
       K(0) * A(0) * std::exp(A(0) * (t - expPlusPp.start_time())) * alpha(0) +
       polynomial_part.derivative().scalarValue(t);

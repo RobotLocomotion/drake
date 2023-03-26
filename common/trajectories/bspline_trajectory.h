@@ -105,8 +105,8 @@ class BsplineTrajectory final : public trajectories::Trajectory<T> {
   whose control points are the result of calling
   `point.block(start_row, start_col, block_rows, block_cols)` on each `point`
   in `this->control_points()`.*/
-  BsplineTrajectory<T> CopyBlock(int start_row, int start_col,
-                                       int block_rows, int block_cols) const;
+  BsplineTrajectory<T> CopyBlock(int start_row, int start_col, int block_rows,
+                                 int block_cols) const;
 
   /** Returns a new BsplineTrajectory that uses the same basis as `this`, and
   whose control points are the result of calling `point.head(n)` on each `point`
