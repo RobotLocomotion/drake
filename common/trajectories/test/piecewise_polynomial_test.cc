@@ -11,10 +11,12 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/math/autodiff_gradient.h"
 
 using drake::math::DiscardGradient;
 using drake::math::ExtractGradient;
+using drake::yaml::SaveYamlString;
 using Eigen::Matrix;
 using std::default_random_engine;
 using std::normal_distribution;
@@ -547,6 +549,109 @@ GTEST_TEST(PiecewiseTrajectoryTest, AutoDiffDerivativesTest) {
     EXPECT_TRUE(CompareMatrices(derivative_value, expected_derivative_value,
                                 tolerance));
   }
+}
+
+// Check roundtrip serialization to YAML of an empty trajectory, including a
+// golden answer for the serialized form.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoEmpty) {
+  const PiecewisePolynomial<double> empty;
+  const std::string yaml = R"""(
+breaks: []
+polynomials: []
+)""" + 1;
+
+  EXPECT_EQ(SaveYamlString(empty), yaml);
+  auto readback = yaml::LoadYamlString<PiecewisePolynomial<double>>(yaml);
+  EXPECT_TRUE(readback.empty());
+}
+
+// Check roundtrip serialization to YAML of a ZOH, including a golden answer for
+// the serialized form.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoZoh) {
+  // clang-format off
+  std::vector<double> breaks{0, 0.5, 1.0};
+  std::vector<Eigen::MatrixXd> samples(3);
+  samples[0].resize(2, 3);
+  samples[0] << 1, 1, 2,
+                2, 0, 3;
+  samples[1].resize(2, 3);
+  samples[1] << 3, 4, 5,
+                6, 7, 8;
+  samples[2].setZero(2, 3);
+  // clang-format on
+
+  const PiecewisePolynomial<double> zoh =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+  const std::string yaml = R"""(
+breaks: [0.0, 0.5, 1.0]
+polynomials:
+  -
+    -
+      - [1.0]
+      - [1.0]
+      - [2.0]
+    -
+      - [2.0]
+      - [0.0]
+      - [3.0]
+  -
+    -
+      - [3.0]
+      - [4.0]
+      - [5.0]
+    -
+      - [6.0]
+      - [7.0]
+      - [8.0]
+)""" + 1;
+
+  EXPECT_EQ(SaveYamlString(zoh), yaml);
+  auto readback = yaml::LoadYamlString<PiecewisePolynomial<double>>(yaml);
+  const double tolerance = 0.0;
+  EXPECT_TRUE(readback.isApprox(zoh, tolerance));
+}
+
+// Check roundtrip serialization to YAML for a more complicated trajectory.
+// Here we don't check the YAML string, just that it goes through unchanged.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoComplicated) {
+  // clang-format off
+  Eigen::VectorXd breaks(5);
+  breaks << 0, 1, 2, 3, 4;
+  Eigen::MatrixXd samples(3, 5);
+  samples << 1, 1, 1,
+             2, 2, 2,
+             0, 3, 3,
+            -2, 2, 2,
+             1, 1, 1;
+  // clang-format on
+  const auto dut =
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+  const std::string yaml = SaveYamlString(dut);
+  const auto readback = yaml::LoadYamlString<PiecewisePolynomial<double>>(yaml);
+  const double tolerance = 0.0;
+  EXPECT_TRUE(readback.isApprox(dut, tolerance)) << fmt::format(
+      "=== original ===\n{}\n"
+      "=== readback ===\n{}",
+      yaml, SaveYamlString(readback));
+}
+
+// Check that mixed-degree polynomials get padded out to the max degree.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoRagged) {
+  Polynomial<double> poly0(Eigen::Vector2d(1.0, 2.0));
+  Polynomial<double> poly1(Eigen::Vector3d(3.0, 4.0, 5.0));
+  const PiecewisePolynomial<double> dut({poly0, poly1}, {0.0, 1.0, 2.0});
+  const std::string yaml = R"""(
+breaks: [0.0, 1.0, 2.0]
+polynomials:
+  -
+    -
+      - [1.0, 2.0, 0.0]
+  -
+    -
+      - [3.0, 4.0, 5.0]
+)""" + 1;
+  EXPECT_EQ(SaveYamlString(dut), yaml);
 }
 
 }  // namespace

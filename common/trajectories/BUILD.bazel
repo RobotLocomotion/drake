@@ -85,6 +85,7 @@ drake_cc_library(
         ":piecewise_trajectory",
         "//common:default_scalars",
         "//common:essential",
+        "//common:name_value",
         "//common:polynomial",
         "//math:matrix_util",
         "@fmt",
@@ -219,6 +220,7 @@ drake_cc_googletest(
         ":random_piecewise_polynomial",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//common/yaml",
         "//math:gradient",
     ],
 )
