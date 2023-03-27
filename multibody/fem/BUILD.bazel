@@ -40,6 +40,7 @@ drake_cc_package_library(
         ":quadrature",
         ":schur_complement",
         ":simplex_gaussian_quadrature",
+        ":symmetric_block_sparse_matrix",
         ":velocity_newmark_scheme",
         ":volumetric_element",
         ":volumetric_model",
@@ -349,6 +350,19 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "symmetric_block_sparse_matrix",
+    srcs = [
+        "symmetric_block_sparse_matrix.cc",
+    ],
+    hdrs = [
+        "symmetric_block_sparse_matrix.h",
+    ],
+    deps = [
+        "//common:unused",
     ],
 )
 
@@ -688,6 +702,14 @@ drake_cc_googletest(
     name = "simplex_gaussian_quadrature_test",
     deps = [
         ":simplex_gaussian_quadrature",
+    ],
+)
+
+drake_cc_googletest(
+    name = "symmetric_block_sparse_matrix_test",
+    deps = [
+        ":symmetric_block_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
