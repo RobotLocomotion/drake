@@ -6,5 +6,5 @@ mydir=$(dirname "$me")
 # clang without this option.
 export UBSAN_OPTIONS="$UBSAN_OPTIONS:halt_on_error=1:strip_path_prefix=/proc/self/cwd/:suppressions=$mydir/ubsan.supp"
 # Ensure executable named llvm-symbolizer is on the PATH.
-export PATH="$PATH:/usr/lib/llvm-12/bin:/usr/local/opt/llvm/bin"
+export PATH="$PATH:/usr/lib/llvm-14/bin:/usr/lib/llvm-12/bin:/usr/local/opt/llvm/bin"
 "$@"
