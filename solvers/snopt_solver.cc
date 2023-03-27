@@ -172,8 +172,14 @@ struct SnoptImpl<false> {
     }
     snopt::integer iprint = static_cast<snopt::integer>(g_iprint);
     snopt::integer summ_on = static_cast<snopt::integer>(summOn);
-    std::cout << "\n\tlencw: " << lencw << ", leniw: " << leniw <<  ", lenrw: " << lenrw << "\n";
+
     snopt::sninit_(&iprint, &summ_on, cw, &lencw, iw, &leniw, rw, &lenrw, 8 * lencw);
+
+    // Set the print file name if enabled.
+    if (iprint > 0) {
+      snopt::integer errors;
+      snopt::snopenappend_(&iprint, const_cast<char*>(name), &errors, len);
+    }
   }
   // Turn clang-format off for readability.
   // clang-format off
@@ -197,7 +203,6 @@ struct SnoptImpl<false> {
         snopt::integer npname = strlen(name);
         char xnames[8 * 1];  // should match nxname
         char Fnames[8 * 1];  // should match nFname
-  std::cout << "\n\tCalling snopta_\n";
     snopt::snopta_(
          &start,
          &nf, &n, &nxname, &nFname, &objadd, &objrow,
@@ -211,12 +216,9 @@ struct SnoptImpl<false> {
          inform,
          mincw, miniw,  minrw,
          ns, ninf, sinf,
-        //  iu, &leniu,
-        //  ru, &lenru,
          cw, &lencw, iu, &leniu, ru, &lenru,
          cw, &lencw, iw, &leniw, rw, &lenrw,
          npname, 8 * nxname, 8 * nFname, 8 * lencw, 8 * lencw);
-  std::cout << "\n\tCompleted snopta_\n";
   }
   // clang-format on
   template <typename Int>
@@ -255,14 +257,14 @@ struct SnoptImpl<false> {
 };
 
 // Choose the correct SnoptImpl specialization.
-// #pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
-// #pragma GCC diagnostic ignored "-Wpragmas"
-// #pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
-// void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
-// #pragma GCC diagnostic pop
-// const bool kIsSnopt76 = false;
-//     std::is_same_v<decltype(&f_sninit), decltype(&f_sninit_76_prototype)>;
-using Snopt = SnoptImpl<false>;
+#pragma GCC diagnostic push  // Silence spurious warnings from macOS llvm.
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunneeded-internal-declaration"
+void f_sninit_76_prototype(const char*, int, int, int[], int, double[], int) {}
+#pragma GCC diagnostic pop
+const bool kIsSnopt76 =
+    std::is_same_v<decltype(&snopt::sninit_), decltype(&f_sninit_76_prototype)>;
+using Snopt = SnoptImpl<kIsSnopt76>;
 
 }  // namespace
 
@@ -336,8 +338,6 @@ class SnoptUserFunInfo {
               reinterpret_cast<const char*>(iu) + sizeof(result),
               reinterpret_cast<char*>(&result));
 
-    std::cout << "\n\t\tprog num vars:" << result->mathematical_program().num_vars() << "\n";
-
     DRAKE_ASSERT(result != nullptr);
     return *result;
   }
@@ -387,7 +387,6 @@ class WorkspaceStorage {
   explicit WorkspaceStorage(const SnoptUserFunInfo* user_info)
       : user_info_(user_info) {
     DRAKE_DEMAND(user_info_ != nullptr);
-    std::cout << "\n\tInitializing the workspace storage\n";
     iw_.resize(500 * 1000);
     rw_.resize(500 * 1000);
     cw_.resize(8 * 501);
@@ -415,9 +414,9 @@ class WorkspaceStorage {
   // int lencu() const { return user_info_->lencu(); }
 
  private:
+  std::vector<char> cw_;
   std::vector<int> iw_;
   std::vector<double> rw_;
-  std::vector<char> cw_;
 
   const SnoptUserFunInfo* const user_info_;
 };
@@ -475,20 +474,10 @@ void EvaluateNonlinearConstraints(
     const std::vector<Binding<C>>& constraint_list, double F[],
     std::vector<double>* G_w_duplicate, size_t* constraint_index,
     size_t* grad_index, const Eigen::VectorXd& xvec) {
-
-  std::cout << "\n\tEvalConstraints 1!\n";
-
   const auto & scale_map = prog.GetVariableScaling();
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.evaluator();
-
-    // std::cout << "binding: " << binding <<
-    //              ", null? " << (binding == NULL) << "\n";
-
-    // std::cout << "evaluator: " << binding.evaluator() <<
-    //              ", null? " << (binding.evaluator() == NULL) << "\n";
-
     int num_constraints = SingleNonlinearConstraintSize(*c);
 
     const int num_variables = binding.GetNumElements();
@@ -501,7 +490,6 @@ void EvaluateNonlinearConstraints(
           prog.FindDecisionVariableIndex(binding.variables()(i));
       this_x(i) = xvec(binding_var_indices[i]);
     }
-  std::cout << "\n\tEvalConstraints 2!\n";
 
     // Scale this_x
     auto this_x_scaled = math::InitializeAutoDiff(this_x);
@@ -519,22 +507,18 @@ void EvaluateNonlinearConstraints(
     for (int i = 0; i < num_constraints; i++) {
       F[(*constraint_index)++] = ty(i).value();
     }
-  std::cout << "\n\tEvalConstraints 3!\n";
 
     const std::optional<std::vector<std::pair<int, int>>>&
         gradient_sparsity_pattern =
             binding.evaluator()->gradient_sparsity_pattern();
     if (gradient_sparsity_pattern.has_value()) {
-  std::cout << "\n\tEvalConstraints 4 if 1!\n";
       for (const auto& nonzero_entry : gradient_sparsity_pattern.value()) {
         (*G_w_duplicate)[(*grad_index)++] =
             ty(nonzero_entry.first).derivatives().size() > 0
                 ? ty(nonzero_entry.first).derivatives()(nonzero_entry.second)
                 : 0.0;
       }
-  std::cout << "\n\tEvalConstraints 4 if 2!\n";
     } else {
-  std::cout << "\n\tEvalConstraints 4 else 1!\n";
       for (int i = 0; i < num_constraints; i++) {
         if (ty(i).derivatives().size() > 0) {
           for (int j = 0; j < num_variables; ++j) {
@@ -546,11 +530,8 @@ void EvaluateNonlinearConstraints(
           }
         }
       }
-  std::cout << "\n\tEvalConstraints 4 else 2!\n";
     }
-  std::cout << "\n\tEvalConstraints 5!\n";
   }
-  std::cout << "\n\tEvalConstraints X!\n";
 }
 
 // Find the variables with non-zero gradient in @p costs, and add the indices of
@@ -657,25 +638,17 @@ void EvaluateAllNonlinearCosts(
 
 void EvaluateCostsConstraints(
     const SnoptUserFunInfo& info, int n, double x[], double F[], double G[]) {
-  std::cout << "\n\tUSRFUN 2!\n";
   const MathematicalProgram& current_problem = info.mathematical_program();
-
-  std::cout << "Num. of decision vars: " << current_problem.num_vars() << "\n";
-
-  std::cout << "\n\tUSRFUN 3!\n";
   const auto & scale_map = current_problem.GetVariableScaling();
-  std::cout << "\n\tUSRFUN 4!\n";
 
   Eigen::VectorXd xvec(n);
   for (int i = 0; i < n; i++) {
     xvec(i) = x[i];
   }
-  std::cout << "\n\tUSRFUN 5!\n";
 
   F[0] = 0.0;
   memset(G, 0, info.lenG() * sizeof(double));
   std::vector<double> G_w_duplicate(info.duplicate_to_G_index_map().size(), 0);
-  std::cout << "\n\tUSRFUN 6!\n";
 
   size_t grad_index = 0;
 
@@ -689,7 +662,6 @@ void EvaluateCostsConstraints(
   EvaluateAllNonlinearCosts(current_problem, xvec,
                             info.nonlinear_cost_gradient_indices(), F,
                             &G_w_duplicate, &grad_index);
-  std::cout << "\n\tUSRFUN 7!\n";
 
   // The constraint index starts at 1 because the cost is the
   // first row.
@@ -698,22 +670,18 @@ void EvaluateCostsConstraints(
   EvaluateNonlinearConstraints(
       current_problem, current_problem.generic_constraints(), F, &G_w_duplicate,
       &constraint_index, &grad_index, xvec);
-  std::cout << "\n\tUSRFUN 8!\n";
   EvaluateNonlinearConstraints(
       current_problem, current_problem.quadratic_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
   EvaluateNonlinearConstraints(
       current_problem, current_problem.lorentz_cone_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
-  std::cout << "\n\tUSRFUN 9!\n";
   EvaluateNonlinearConstraints(
       current_problem, current_problem.rotated_lorentz_cone_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
-  std::cout << "\n\tUSRFUN 10!\n";
   EvaluateNonlinearConstraints(
       current_problem, current_problem.linear_complementarity_constraints(), F,
       &G_w_duplicate, &constraint_index, &grad_index, xvec);
-  std::cout << "\n\tUSRFUN 11!\n";
 
   for (int i = 0; i < static_cast<int>(info.duplicate_to_G_index_map().size());
        ++i) {
@@ -734,20 +702,6 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::integer iu[], snopt::integer* leniu,
                   snopt::doublereal ru[], snopt::integer* lenru) {
   SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
-  // SnoptUserFunInfo* snopt_userfun_info = nullptr;
-  // {
-  //   char* const p_snopt_userfun_info =
-  //       reinterpret_cast<char*>(&snopt_userfun_info);
-  //   char const* const cu_snopt_userfun_info = cu + 8 * 500;
-  //   std::copy(cu_snopt_userfun_info,
-  //             cu_snopt_userfun_info + sizeof(snopt_userfun_info),
-  //             p_snopt_userfun_info);
-  // }
-  // SnoptUserFunInfo& info = *snopt_userfun_info;
-
-  // SnoptUserFunInfo& snopt_userfun_info
-  std::cout << "\n\tUSRFUN 1!\n";
-
   try {
     EvaluateCostsConstraints(info, *n, x, F, G);
   } catch (const std::exception& e) {
@@ -757,8 +711,6 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
     // The SNOPT manual says "Set Status < -1 if you want snOptA to stop."
     *Status = -2;
   }
-
-  std::cout << "\n\tUSRFUN X!\n";
   return 0;
 }
 
@@ -1255,13 +1207,12 @@ void SolveWithGivenOptions(
     print_file_name = print_file_it->second;
   }
   Snopt::sninit(
-      print_file_name.c_str(), print_file_name.length(), 0 /* no summary */,
+      print_file_name.c_str(), print_file_name.length(), 6 /* no summary */,
       storage.cw(), storage.lencw(),
       storage.iw(), storage.leniw(),
       storage.rw(), storage.lenrw());
   ScopeExit guard([&storage]() {
     Snopt::snclose();
-    std::cout << "\n\tdone done done!\n";
   });
 
   snopt::integer nx = prog.num_vars();
@@ -1458,16 +1409,8 @@ void SolveWithGivenOptions(
   Snopt::snmema(&snopt_status, nF, nx, lenA, lenG, &mincw, &miniw, &minrw,
                 storage.cw(), storage.lencw(), storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw(), &nxname, &nFname);
-
-  std::cout << "\n\n\tlencw: " << storage.lencw()
-            << ", leniw: " << storage.leniw() << ", lenrw: " << storage.lenrw() << "\n";
-  std::cout << "\n\tmincw: " << mincw << ", miniw: " << miniw <<  ", minrw: " << minrw << "\n";
-
-  std::cout << "\n\tCheck 1\n";
   // TODO(jwnimmer-tri) Check snopt_status for errors.
   if (mincw > storage.lencw()) {
-    std::cout << "\n\t\tResizing cw\n";
-    // mincw = storage.lencw();
     storage.resize_cw(mincw);
     const std::string option = "Total character workspace";
     snopt::integer errors;
@@ -1478,14 +1421,8 @@ void SolveWithGivenOptions(
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
-  std::cout << "\n\tCheck 2\n";
   if (miniw > storage.leniw()) {
-    std::cout << "\n\t\tResizing iw\n";
-    // miniw = storage.leniw();
-    std::cout << "\n\tmin iw: " << miniw << "\n";
-    std::cout << "\n\tsize iw 1: " << storage.leniw() << "\n";
     storage.resize_iw(miniw);
-    std::cout << "\n\tsize iw 2: " << storage.leniw() << "\n";
     const std::string option = "Total integer workspace";
     snopt::integer errors;
     Snopt::snseti(
@@ -1495,10 +1432,7 @@ void SolveWithGivenOptions(
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
-  std::cout << "\n\tCheck 3\n";
   if (minrw > storage.lenrw()) {
-    std::cout << "\n\t\tResizing rw\n";
-    // minrw = storage.lenrw();
     storage.resize_rw(minrw);
     const std::string option = "Total real workspace";
     snopt::integer errors;
@@ -1509,45 +1443,6 @@ void SolveWithGivenOptions(
         storage.rw(), storage.lenrw());
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
-  std::cout << "\n\tCheck 4\n";
-
-
-  std::cout << "\n\tCheck -1\n";
-  // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
-  // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
-  // expressed in Fortran array slicing.  Use the space to pass the pointer
-  // to SnoptUserFunInfo.
-  {
-      const std::string option = "User character workspace";
-      snopt::integer errors;
-      Snopt::snseti(
-          option.c_str(), option.length(), 500 + 1, &errors,
-          storage.cw(), storage.lencw(),
-          storage.iw(), storage.leniw(),
-          storage.rw(), storage.lenrw());
-  //     {
-  //       std::cout << "\n\tSo far, so good\n";
-  //       std::cout << "\n\n\tlencw: " << storage.lencw()
-  //           << ", leniw: " << storage.leniw() << ", lenrw: " << storage.lenrw() << "\n";
-
-  //       const SnoptUserFunInfo* const p_snopt_userfun_info = user_info;
-  //       // char* const cu_snopt_userfun_info = storage.cw() + 8 * 500;
-
-  //       static constexpr size_t kCharCount =
-  //           (sizeof(SnoptUserFunInfo*) + sizeof(char) - 1) / sizeof(char);
-  //       std::array<char, kCharCount> cu_snopt_userfun_info;
-  //       cu_snopt_userfun_info.fill('');
-  //       std::copy(reinterpret_cast<const char*>(&p_snopt_userfun_info),
-  //                 reinterpret_cast<const char*>(&p_snopt_userfun_info) + sizeof(p_snopt_userfun_info),
-  //                 cu_snopt_userfun_info);
-  //       std::cout << "user info size: " << sizeof(user_info) << "\n";
-  //       // std::cout << "p_snopt_userfun_info: " << std::atoi(p_snopt_userfun_info) << "\n";
-  //       // std::cout << "cu_snopt_userfun_info: " << std::atoi(cu_snopt_userfun_info) << "\n";
-  //       std::cout << "\n\tSo far, not so good\n";
-  //     }
-  }
-  std::cout << "\n\tCheck 0\n";
-
   // Actual solve.
   char problem_name[] = "drake_problem";
   // clang-format off
@@ -1572,11 +1467,6 @@ void SolveWithGivenOptions(
   }
 
   Eigen::VectorXd x_val = Eigen::Map<Eigen::VectorXd>(x.data(), nx);
-  std::cout << "\n\tSolution: ";
-  for (int i=0; i<x_val.size(); i++)
-    std::cout << x_val[i] << " ";
-  std::cout << std::endl;
-
   // Scale solution back
   for (const auto& member : scale_map) {
     x_val(member.first) *= member.second;
@@ -1586,8 +1476,6 @@ void SolveWithGivenOptions(
   SetMathematicalProgramResult(
       prog, snopt_status, x_val, bb_con_dual_variable_indices,
       constraint_dual_start_index, objective_constant, result);
-
-  std::cout << "\n\tSo far, so good!\n";
 }
 
 }  // namespace
@@ -1623,8 +1511,6 @@ void SnoptSolver::DoSolve(const MathematicalProgram& prog,
   SolveWithGivenOptions(prog, initial_guess, merged_options.GetOptionsStr(id()),
                         int_options, merged_options.GetOptionsDouble(id()),
                         merged_options.get_print_file_name(), result);
-
-  std::cout << "\n\tDang!\n";
 }
 
 bool SnoptSolver::is_bounded_lp_broken() {
