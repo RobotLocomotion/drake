@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace internal {
@@ -91,6 +92,7 @@ PathOrError FindOrCreateCache(std::string_view subdir) {
   if (!cache_dir_drake.error.empty()) {
     return cache_dir_drake;
   }
+  log()->debug("FindCache found {}", cache_dir_drake.abspath.string());
 
   // Create the requested subdirectory.
   return CreateDirectory(cache_dir_drake.abspath / subdir);

@@ -264,12 +264,13 @@ def github_download_and_extract(
         mirrors = mirrors,
     )
 
+    strip_prefix = _strip_prefix(repository, commit, extra_strip_prefix)
     repository_ctx.download_and_extract(
         urls,
         output = output,
         sha256 = _sha256(sha256),
         type = "tar.gz",
-        stripPrefix = _strip_prefix(repository, commit, extra_strip_prefix),
+        stripPrefix = strip_prefix,
     )
 
     upgrade_advice = "\n".join(
@@ -285,6 +286,7 @@ def github_download_and_extract(
         version_pin = commit_pin,
         sha256 = sha256,
         urls = urls,
+        strip_prefix = strip_prefix,
         upgrade_advice = upgrade_advice,
     )
 
