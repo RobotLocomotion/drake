@@ -152,6 +152,56 @@ Vector3<T> CalcRollPitchYawFromQuaternionAndRotationMatrix(
 }
 
 template <typename T>
+Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInParent(
+    const char* function_name) const {
+  using std::cos;
+  using std::sin;
+  const T& p = pitch_angle();
+  const T& y = yaw_angle();
+  const T sp = sin(p), cp = cos(p);
+  // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
+  if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
+    ThrowPitchAngleViolatesGimbalLockTolerance(function_name, p);
+  }
+  const T one_over_cp = T(1)/cp;
+  const T sy = sin(y), cy = cos(y);
+  const T cy_over_cp = cy * one_over_cp;
+  const T sy_over_cp = sy * one_over_cp;
+  Matrix3<T> M;
+  // clang-format off
+  M <<     cy_over_cp,       sy_over_cp,  T(0),
+                  -sy,               cy,  T(0),
+      cy_over_cp * sp,  sy_over_cp * sp,  T(1);
+  // clang-format on
+  return M;
+}
+
+template <typename T>
+Matrix3<T> RollPitchYaw<T>::CalcMatrixRelatingRpyDtToAngularVelocityInChild(
+    const char* function_name) const {
+  using std::cos;
+  using std::sin;
+  const T& p = pitch_angle();
+  const T& r = roll_angle();
+  const T sp = sin(p), cp = cos(p);
+  // TODO(Mitiguy) Improve accuracy when `cos(p) ≈ 0`.
+  if (DoesCosPitchAngleViolateGimbalLockTolerance(cp)) {
+    ThrowPitchAngleViolatesGimbalLockTolerance(function_name, p);
+  }
+  const T one_over_cp = T(1)/cp;
+  const T sr = sin(r), cr = cos(r);
+  const T cr_over_cp = cr * one_over_cp;
+  const T sr_over_cp = sr * one_over_cp;
+  Matrix3<T> M;
+  // clang-format off
+  M << T(1), sr_over_cp * sp,  cr_over_cp * sp,
+       T(0),              cr,              -sr,
+       T(0),      sr_over_cp,       cr_over_cp;
+  // clang-format on
+  return M;
+}
+
+template <typename T>
 void RollPitchYaw<T>::SetFromRotationMatrix(const RotationMatrix<T>& R) {
   SetFromQuaternionAndRotationMatrix(R.ToQuaternion(), R);
 }
@@ -181,8 +231,8 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
         " An element of the RotationMatrix R passed to this method differs by"
         " more than {:G} from the corresponding element of the RotationMatrix"
         " formed by the Quaternion passed to this method.  To avoid this"
-        " inconsistency, ensure the orientation of R and Quaternion align."
-        " ({}:{}).", __func__, tolerance, __FILE__, __LINE__);
+        " inconsistency, ensure the orientation of R and Quaternion align.",
+        __func__, tolerance);
     throw std::runtime_error(message);
   }
 
@@ -215,8 +265,7 @@ boolean<T> RollPitchYaw<T>::IsNearlySameOrientation(
 
 template <typename T>
 void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
-    const char* function_name, const char* file_name, const int line_number,
-    const T& pitch_angle) {
+    const char* function_name, const T& pitch_angle) {
     const double pitch_radians = ExtractDoubleOrThrow(pitch_angle);
     const double cos_pitch_angle = std::cos(pitch_radians);
     DRAKE_ASSERT(DoesCosPitchAngleViolateGimbalLockTolerance(cos_pitch_angle));
@@ -226,9 +275,8 @@ void RollPitchYaw<T>::ThrowPitchAngleViolatesGimbalLockTolerance(
         " Pitch angle p = {:G} degrees is within {:G} degrees of gimbal-lock."
         " There is a divide-by-zero error (singularity) at gimbal-lock.  Pitch"
         " angles near gimbal-lock cause numerical inaccuracies.  To avoid this"
-        " orientation singularity, use a quaternion -- not RollPitchYaw."
-        " ({}:{}).", function_name, pitch_radians * 180 / M_PI,
-                     tolerance_degrees, file_name, line_number);
+        " orientation singularity, use a quaternion -- not RollPitchYaw.",
+        function_name, pitch_radians * 180 / M_PI, tolerance_degrees);
     throw std::runtime_error(message);
 }
 

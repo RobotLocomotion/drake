@@ -117,6 +117,7 @@ class RotationMatrix {
   /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
   /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
   /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @retval R_AD, rotation matrix relating frame A to frame D.
   /// @note Denoting roll `r`, pitch `p`, yaw `y`, this method returns a
   /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
   /// ```
