@@ -132,6 +132,18 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
     return {};
   }
 
+  const XMLElement* drake_diffuse_map_node =
+      node->FirstChildElement("drake:diffuse_map");
+  if (drake_diffuse_map_node) {
+    // Error condition: #2: an SDFormat-specific Drake extension,
+    // <drake:diffuse_map>, specified in a URDF.
+    diagnostic.Error(
+        *node,
+        "<drake:diffuse_map> is not supported in URDF. Use the built-in tag "
+        "`//robot/link/visual/material/texture` instead.");
+    return {};
+  }
+
   // Test for texture information.
   std::optional<std::string> texture_path;
   const XMLElement* texture_node = node->FirstChildElement("texture");
@@ -164,7 +176,7 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
 
   if (!rgba && !texture_path) {
     if (!name.empty() && materials->find(name) == materials->end()) {
-      // Error condition: #2: name with no properties has not been previously
+      // Error condition: #3: name with no properties has not been previously
       // defined.
       diagnostic.Error(
           *node, fmt::format("Material '{}' not previously defined, but has no"
@@ -176,7 +188,7 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
   UrdfMaterial material{rgba, texture_path};
 
   if (!name.empty()) {
-    // Error condition: #3.
+    // Error condition: #4.
     // If a name is *required*, then simply matching names should lead to an
     // error.
     material = AddMaterialToMaterialMap(
