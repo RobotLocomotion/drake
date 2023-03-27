@@ -52,11 +52,11 @@ namespace internal {
 namespace fs = std::filesystem;
 
 using Params = RenderEngineGltfClientParams;
-using geometry::render::ClippingRange;
-using geometry::render::ColorRenderCamera;
-using geometry::render::DepthRange;
-using geometry::render::DepthRenderCamera;
-using geometry::render::RenderCameraCore;
+using render::ClippingRange;
+using render::ColorRenderCamera;
+using render::DepthRange;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
 using systems::sensors::CameraInfo;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -106,7 +106,7 @@ class RenderClientTest : public ::testing::Test {
 
  protected:
   // A per-test-case temporary directory.
-  const fs::path scratch_{drake::temp_directory()};
+  const fs::path scratch_{temp_directory()};
   const std::string fake_scene_path_{scratch_ / "fake_scene.gltf"};
 
   /* The params to create the test RenderClient are to help ensure nothing

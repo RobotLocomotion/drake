@@ -108,11 +108,11 @@ namespace render_gltf_client {
 namespace internal {
 namespace {
 
-using drake::geometry::render::internal::ShaderCallback;
-using drake::systems::sensors::ImageDepth32F;
-using drake::systems::sensors::ImageRgba8U;
-using drake::systems::sensors::ImageTraits;
-using drake::systems::sensors::PixelType;
+using render::internal::ShaderCallback;
+using systems::sensors::ImageDepth32F;
+using systems::sensors::ImageRgba8U;
+using systems::sensors::ImageTraits;
+using systems::sensors::PixelType;
 
 // Imported from internal_render_engine_vtk.cc, for converting the depth image.
 float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
@@ -130,13 +130,13 @@ float CheckRangeAndConvertToMeters(float z_buffer_value, double z_near,
 bool ValidateOutputExtension() {
   if (FLAGS_image_type == "depth") {
     if (std::filesystem::path(FLAGS_output_path).extension() == ".png") {
-      drake::log()->debug("Depth images must have a .tiff extension.");
+      log()->debug("Depth images must have a .tiff extension.");
       return false;
     }
   } else {
     const std::filesystem::path output_path{FLAGS_output_path};
     if (output_path.extension() != ".png") {
-      drake::log()->debug("Color and label images must have a .png extension.");
+      log()->debug("Color and label images must have a .png extension.");
       return false;
     }
   }
