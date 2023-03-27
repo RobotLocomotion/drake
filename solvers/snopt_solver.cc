@@ -190,7 +190,8 @@ struct SnoptImpl<false> {
       double* f, snopt::integer* fstate, double* fmul,
       snopt::integer* inform, snopt::integer* ns, snopt::integer* ninf, double* sinf,
       snopt::integer* mincw, snopt::integer* miniw, snopt::integer* minrw,
-      char* cw, snopt::integer lencw, char* cu, snopt::integer lencu,
+      snopt::integer* iu, snopt::integer leniu, double* ru, snopt::integer lenru,
+      char* cw, snopt::integer lencw,
       Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw,
       snopt::integer nxname, snopt::integer nFname) {
         snopt::integer npname = strlen(name);
@@ -212,7 +213,7 @@ struct SnoptImpl<false> {
          ns, ninf, sinf,
         //  iu, &leniu,
         //  ru, &lenru,
-         cu, &lencu, iw, &leniw, rw, &lenrw,
+         cw, &lencw, iu, &leniu, ru, &lenru,
          cw, &lencw, iw, &leniw, rw, &lenrw,
          npname, 8 * nxname, 8 * nFname, 8 * lencw, 8 * lencw);
   std::cout << "\n\tCompleted snopta_\n";
@@ -287,7 +288,7 @@ class SnoptUserFunInfo {
   // are retained internally, so the supplied objects must have lifetimes longer
   // than the SnoptUserFuncInfo object.
   explicit SnoptUserFunInfo(const MathematicalProgram* prog)
-      : this_pointer_as_char_array_(MakeThisAsChars()),
+      : this_pointer_as_int_array_(MakeThisAsInts()),
         prog_(*prog) {}
 
   const MathematicalProgram& mathematical_program() const { return prog_; }
@@ -318,21 +319,21 @@ class SnoptUserFunInfo {
     return userfun_error_message_;
   }
 
-  char* cu() const {
-    return const_cast<char*>(this_pointer_as_char_array_.data());
+  int* iu() const {
+    return const_cast<int*>(this_pointer_as_int_array_.data());
   }
-  int lencu() const {
-    return this_pointer_as_char_array_.size();
+  int leniu() const {
+    return this_pointer_as_int_array_.size();
   }
 
   // Converts the `int iu[]` data back into a reference to this class.
-  static SnoptUserFunInfo& GetFrom(const char* cu, int lencu) {
-    DRAKE_ASSERT(cu != nullptr);
-    DRAKE_ASSERT(lencu == kCharCount);
+  static SnoptUserFunInfo& GetFrom(const snopt::integer* iu, int leniu) {
+    DRAKE_ASSERT(iu != nullptr);
+    DRAKE_ASSERT(leniu == kIntCount);
 
     SnoptUserFunInfo* result = nullptr;
-    std::copy(reinterpret_cast<const char*>(cu),
-              reinterpret_cast<const char*>(cu) + sizeof(result),
+    std::copy(reinterpret_cast<const char*>(iu),
+              reinterpret_cast<const char*>(iu) + sizeof(result),
               reinterpret_cast<char*>(&result));
 
     std::cout << "\n\t\tprog num vars:" << result->mathematical_program().num_vars() << "\n";
@@ -344,13 +345,13 @@ class SnoptUserFunInfo {
  private:
   // We need this many `int`s to store a pointer.  Round up any fractional
   // remainder.
-  static constexpr size_t kCharCount =
-      (sizeof(SnoptUserFunInfo*) + sizeof(char) - 1) / sizeof(char);
+  static constexpr size_t kIntCount =
+      (sizeof(SnoptUserFunInfo*) + sizeof(int) - 1) / sizeof(int);
 
   // Converts the `this` pointer into an integer array.
-  std::array<char, kCharCount> MakeThisAsChars() {
-    std::array<char, kCharCount> result;
-    result.fill(' ');
+  std::array<int, kIntCount> MakeThisAsInts() {
+    std::array<int, kIntCount> result;
+    result.fill(0);
 
     const SnoptUserFunInfo* const value = this;
     std::copy(reinterpret_cast<const char*>(&value),
@@ -360,7 +361,7 @@ class SnoptUserFunInfo {
     return result;
   }
 
-  const std::array<char, kCharCount> this_pointer_as_char_array_;
+  const std::array<int, kIntCount> this_pointer_as_int_array_;
   const MathematicalProgram& prog_;
   std::set<int> nonlinear_cost_gradient_indices_;
   // When evaluating the nonlinear costs/constraints, the Binding could contain
@@ -404,14 +405,14 @@ class WorkspaceStorage {
   int lencw() const { return cw_.size(); }
   void resize_cw(int size) { cw_.resize(size); }
 
-  // int* iu() { return user_info_->iu(); }
-  // int leniu() const { return user_info_->leniu(); }
+  snopt::integer* iu() { return reinterpret_cast<snopt::integer*>(user_info_->iu()); }
+  int leniu() const { return user_info_->leniu(); }
 
-  // double* ru() { return nullptr; }
-  // int lenru() const { return 0; }
+  double* ru() { return nullptr; }
+  int lenru() const { return 0; }
 
-  char* cu() { return user_info_->cu(); }
-  int lencu() const { return user_info_->lencu(); }
+  // char* cu() { return user_info_->cu(); }
+  // int lencu() const { return user_info_->lencu(); }
 
  private:
   std::vector<int> iw_;
@@ -732,7 +733,7 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::doublereal G[], char* cu, snopt::integer* lencu,
                   snopt::integer iu[], snopt::integer* leniu,
                   snopt::doublereal ru[], snopt::integer* lenru) {
-  SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(cu, *lencu);
+  SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(iu, *leniu);
   // SnoptUserFunInfo* snopt_userfun_info = nullptr;
   // {
   //   char* const p_snopt_userfun_info =
@@ -1464,8 +1465,7 @@ void SolveWithGivenOptions(
 
   std::cout << "\n\tCheck 1\n";
   // TODO(jwnimmer-tri) Check snopt_status for errors.
-  // if (mincw > storage.lencw()) {
-  {
+  if (mincw > storage.lencw()) {
     std::cout << "\n\t\tResizing cw\n";
     // mincw = storage.lencw();
     storage.resize_cw(mincw);
@@ -1479,8 +1479,7 @@ void SolveWithGivenOptions(
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   std::cout << "\n\tCheck 2\n";
-  // if (miniw > storage.leniw()) {
-  {
+  if (miniw > storage.leniw()) {
     std::cout << "\n\t\tResizing iw\n";
     // miniw = storage.leniw();
     std::cout << "\n\tmin iw: " << miniw << "\n";
@@ -1497,8 +1496,7 @@ void SolveWithGivenOptions(
     // TODO(hongkai.dai): report the error in SnoptSolverDetails.
   }
   std::cout << "\n\tCheck 3\n";
-  // if (minrw > storage.lenrw()) {
-  {
+  if (minrw > storage.lenrw()) {
     std::cout << "\n\t\tResizing rw\n";
     // minrw = storage.lenrw();
     storage.resize_rw(minrw);
@@ -1563,7 +1561,8 @@ void SolveWithGivenOptions(
                 solver_details.F.data(), Fstate.data(),
                 solver_details.Fmul.data(),
                 &snopt_status, &nS, &nInf, &sInf, &mincw, &miniw, &minrw,
-                storage.cu(), storage.lencu(),
+                storage.iu(), storage.leniu(),
+                storage.ru(), storage.lenru(),
                 storage.cw(), storage.lencw(),
                 storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw(), nxname, nFname);
