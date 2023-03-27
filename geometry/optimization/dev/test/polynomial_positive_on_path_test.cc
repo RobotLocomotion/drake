@@ -34,6 +34,16 @@ void validate_parametrized_polynomial_prog(
       EXPECT_EQ(p.Degree(var), 2);
       EXPECT_EQ(lambda.Degree(var), 2);
       EXPECT_TRUE(nu.TotalDegree() == 0 || nu.Degree(var) == 2);
+    } else {
+      const int deg = poly.Degree(var);
+      EXPECT_EQ(p.Degree(var), deg);
+      if (deg % 2 == 0) {
+        EXPECT_EQ(lambda.Degree(var), deg);
+        EXPECT_EQ(nu.Degree(var), deg - 2);
+      } else {
+        EXPECT_EQ(lambda.Degree(var), deg - 1);
+        EXPECT_EQ(nu.Degree(var), deg - 1);
+      }
     }
   }
 

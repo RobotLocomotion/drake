@@ -18,8 +18,8 @@ namespace optimization {
  * the program.
  *
  * @param poly The parametrized polynomial which we will enforce positivity of.
- * This polynomial can be arbitrary degree in the interval variable and must be
- * quadratic in all other indeterminates.
+ * This polynomial can be arbitrary degree in the interval variable μ and must be
+ * quadratic in all other indeterminates y.
  * @param interval_variable The variable μ associated to the unit interval.
  * @param parameters The parameters which must be evaluated before enforcing the
  * positivity of poly. This is a subset of the polynomial's decision variables.
@@ -58,7 +58,7 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // polynomial is positive for μ ∈ [0,1].
   const symbolic::Variable mu_;
 
-  // A polynomial q(μ,y) = ∑ f(μ)yᵢyⱼ (where μ is univariate and y is
+  // A polynomial q(μ,y) = yᵀP(μ;s)y (where μ is univariate and y is
   // multivariate) is positive on the interval μ ∈ [0,1] if and only if there
   // exists biforms λ(μ,y) = ∑ ϕᵢ²(μ,y) and ν(μ,y) = ∑ ψᵢ²(μ,y) such that
   // q(μ,y) = λ(μ,y) + ν(μ,y)*μ*(1-μ) if deg(q, μ) = 2d or q(μ,y) = λ(μ,y)*μ +
@@ -66,7 +66,7 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // deg(ϕᵢ, y) = 1, and and deg(ψᵢ, y) = 1. In the first case
   // deg(ψᵢ, μ) ≤ d - 1, and in the second deg(ψᵢ, μ) ≤ d. If deg(poly,μ) > 0 we
   // construct the polynomial p_(μ,y) = poly(μ,y)-q(μ,y) which we will later
-  // constrain to be equal to 0. If deg(poly,μ) = 0, then either q is either
+  // constrain to be equal to 0. If deg(poly,μ) = 0, then q is either
   // constrained to be a positive scalar if it has no other indeterminates, or
   // it is constrained to be a sum-of-squares if it is a quadratic form in y.
   symbolic::Polynomial p_;

@@ -113,12 +113,6 @@ void ParametrizedPolynomialPositiveOnUnitInterval::
   for (const auto& item : p_evaled.monomial_to_coefficient_map()) {
     prog->AddLinearEqualityConstraint(item.second, 0);
   }
-  //  std::cout << "adding equality constraint" << std::endl;
-  //  std::cout << p_ << std::endl;
-  //  std::cout << *prog << std::endl;
-  //  prog->AddEqualityConstraintBetweenPolynomials(p_.EvaluatePartial(env),
-  //                                                symbolic::Polynomial());
-  //  std::cout << "after adding equality" << std::endl;
 }
 
 }  // namespace optimization
