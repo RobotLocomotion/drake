@@ -60,6 +60,7 @@ genrule(
     srcs = ["@models_internal//:drake_repository_metadata.json"],
     outs = ["drake_models.json"],
     cmd = "cp $< $@",
+    visibility = ["//visibility:public"],
 )
 
 drake_cc_library(
