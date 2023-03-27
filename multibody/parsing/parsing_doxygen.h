@@ -414,14 +414,15 @@ be drake::geometry::Convex, rather than drake::geometry::Mesh.
 @subsection tag_drake_diffuse_map drake:diffuse_map
 
 - SDFormat path: `//model/link/visual/material/drake:diffuse_map`
-- URDF path: N/A
+- URDF path: N/A (see a note below).
 - Syntax: URI.
 
 @subsubsection tag_drake_diffuse_map_semantics Semantics
 
 If present, this element indicates (by filename or `package:` URI) a PNG file
 to use as a diffuse texture map. The resolved path name is stored in a
-PerceptionProperties object under `(phong, diffuse_map)`.
+PerceptionProperties object under `(phong, diffuse_map)`. URDF provides a
+built-in tag, i.e., <texture>, to specify a diffuse texture map for a link.
 
 @see drake::geometry::PerceptionProperties, drake::multibody::PackageMap,
 @ref render_engine_vtk_properties "Geometry perception properties"
