@@ -118,6 +118,23 @@ Polynomial<T>::Polynomial(const T& coeff,
 }
 
 template <typename T>
+Polynomial<T>::Polynomial(const WithCoefficients& coefficients) {
+  const Eigen::Ref<const VectorX<T>>& coeffs = coefficients.coefficients;
+  const VarType v = VariableNameToId("t");
+  monomials_.reserve(coeffs.size());
+  for (int i = 0; i < coeffs.size(); ++i) {
+    Monomial m;
+    m.coefficient = coeffs(i);
+    if (i > 0) {
+      m.terms.reserve(1);
+      m.terms.push_back(Term{v, i});
+    }
+    monomials_.push_back(std::move(m));
+  }
+  is_univariate_ = true;
+}
+
+template <typename T>
 int Polynomial<T>::GetNumberOfCoefficients() const {
   return static_cast<int>(monomials_.size());
 }
@@ -200,24 +217,17 @@ Polynomial<T>::GetMonomials() const {
 }
 
 template <typename T>
-Matrix<T, Dynamic, 1>
-Polynomial<T>::GetCoefficients() const {
-  if (!is_univariate_)
+VectorX<T> Polynomial<T>::GetCoefficients() const {
+  if (!is_univariate_) {
     throw runtime_error(
-        "getCoefficients is only defined for univariate polynomials");
-
-  int deg = GetDegree();
-
-  Matrix<T, Dynamic, 1> coefficients =
-      Matrix<T, Dynamic, 1>::Zero(deg + 1);
-  for (typename vector<Monomial>::const_iterator iter = monomials_.begin();
-       iter != monomials_.end(); iter++) {
-    if (iter->terms.empty())
-      coefficients[0] = iter->coefficient;
-    else
-      coefficients[iter->terms[0].power] = iter->coefficient;
+        "GetCoefficients is only defined for univariate polynomials");
   }
-  return coefficients;
+  VectorX<T> result = VectorX<T>::Zero(GetDegree() + 1);
+  for (const auto& monomial : monomials_) {
+    const int power = monomial.terms.empty() ? 0 : monomial.terms[0].power;
+    result[power] = monomial.coefficient;
+  }
+  return result;
 }
 
 template <typename T>

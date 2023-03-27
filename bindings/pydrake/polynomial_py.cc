@@ -25,7 +25,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
       .def(py::init<>(), cls_doc.ctor.doc_0args)
       .def(py::init<const T&>(), cls_doc.ctor.doc_1args_scalar)
       .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(),
-          cls_doc.ctor.doc_1args_constEigenMatrixBase)
+          py::arg("coefficients"), cls_doc.ctor.doc_1args_constEigenMatrixBase)
       .def("GetNumberOfCoefficients", &Class::GetNumberOfCoefficients,
           cls_doc.GetNumberOfCoefficients.doc)
       .def("GetDegree", &Class::GetDegree, cls_doc.GetDegree.doc)

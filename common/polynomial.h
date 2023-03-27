@@ -144,24 +144,12 @@ class Polynomial {
   /// Construct a single Monomial of the given coefficient and variable.
   Polynomial(const T& coeff, const VarType& v);
 
-  /// A legacy constructor for univariate polynomials:  Takes a vector
-  /// of coefficients for the constant, x, x**2, x**3... Monomials.
+  /// A constructor for univariate polynomials: takes a vector of coefficients
+  /// for the x**0, x**1, x**2, x**3... Monomials. All terms are always added,
+  /// even if a coefficient is zero.
   template <typename Derived>
-  explicit Polynomial(Eigen::MatrixBase<Derived> const& coefficients) {
-    VarType v = VariableNameToId("t");
-    for (int i = 0; i < coefficients.size(); i++) {
-      Monomial m;
-      m.coefficient = coefficients(i);
-      if (i > 0) {
-        Term t;
-        t.var = v;
-        t.power = i;
-        m.terms.push_back(t);
-      }
-      monomials_.push_back(m);
-    }
-    is_univariate_ = true;
-  }
+  explicit Polynomial(const Eigen::MatrixBase<Derived>& coefficients)
+      : Polynomial(WithCoefficients{coefficients.template cast<T>()}) {}
 
   /// Returns the number of unique Monomials (and thus the number of
   /// coefficients) in this Polynomial.
@@ -182,7 +170,7 @@ class Polynomial {
 
   const std::vector<Monomial>& GetMonomials() const;
 
-  Eigen::Matrix<T, Eigen::Dynamic, 1> GetCoefficients() const;
+  VectorX<T> GetCoefficients() const;
 
   /// Returns a set of all of the variables present in this Polynomial.
   std::set<VarType> GetVariables() const;
@@ -470,6 +458,13 @@ class Polynomial {
                            typename Polynomial<U>::PowerType n);
 
  private:
+  // A wrapper struct to help guide constructor overload resolution.
+  struct WithCoefficients {
+    Eigen::Ref<const VectorX<T>> coefficients;
+  };
+
+  explicit Polynomial(const WithCoefficients& coefficients);
+
   /// The Monomial atoms of the Polynomial.
   std::vector<Monomial> monomials_;
 
