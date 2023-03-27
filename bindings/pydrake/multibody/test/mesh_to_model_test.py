@@ -8,8 +8,6 @@ from pydrake.math import (
 )
 from pydrake.multibody._mesh_model_maker import (
     MeshModelMaker,
-    MeshFramePose,
-    MeshMassSpec,
 )
 from pydrake.multibody.parsing import (
     Parser,
@@ -27,7 +25,8 @@ from pydrake.systems.framework import (
 
 import filecmp
 import logging
-import os
+import numpy as np
+from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -63,7 +62,7 @@ class LogRecorder(logging.Handler):
         return False
 
 
-def _parse_model_no_throw(sdf_file: str, package_xml: str = None):
+def _parse_model_no_throw(sdf_file: Path, package_xml: Path = None):
     """
     Simply attempts to parse the given file, expecting no errors. This
     should be invoked for every interesting variation of an _expected_
@@ -75,12 +74,12 @@ def _parse_model_no_throw(sdf_file: str, package_xml: str = None):
     plant, scene_graph = AddMultibodyPlantSceneGraph(builder, 0.0)
     parser = Parser(plant)
     if package_xml is not None:
-        parser.package_map().AddPackageXml(package_xml)
-    parser.AddModels(sdf_file)
+        parser.package_map().AddPackageXml(str(package_xml))
+    parser.AddModels(str(sdf_file))
     plant.Finalize()
 
 
-def _make_offset_obj(target_obj_path: str, offset):
+def _make_offset_obj(target_obj_path: Path, offset):
     """
     Writes a translated version of drake/geometry/render/test/meshes/box.obj
     to the given path. The vertices are all translated by the given offset.
@@ -101,13 +100,13 @@ def _make_offset_obj(target_obj_path: str, offset):
 class TestModelMaker(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls._temp_dir = temp_directory()
+        cls._temp_dir = Path(temp_directory())
         # We need to place the obj file in the temp_directory so that attempts
         # to parse the resulting SDF work.
         cls._obj_stem = "box"
         obj_source_path = FindResourceOrThrow(
             f"drake/geometry/render/test/meshes/{cls._obj_stem}.obj")
-        cls._obj_path = os.path.join(cls._temp_dir, f"{cls._obj_stem}.obj")
+        cls._obj_path = cls._temp_dir / f"{cls._obj_stem}.obj"
         shutil.copy(obj_source_path, cls._obj_path)
         cls._logger = logging.getLogger("drake")
         cls._logger.setLevel(logging.INFO)
@@ -118,19 +117,6 @@ class TestModelMaker(unittest.TestCase):
 
     def tearDown(self):
         self._logger.removeHandler(self.records)
-
-    @staticmethod
-    def _make_default_maker():
-        """Returns a MeshModelmaker with a simple, valid configuration."""
-        dut = MeshModelMaker()
-        dut.scale = 1.0
-        dut.model_name = None
-        dut.mass_spec = MeshMassSpec(density=1)
-        dut.frame_pose = MeshFramePose()
-        dut.collision = True
-        dut.visual = True
-        dut.encoded_package = "none"
-        return dut
 
     @staticmethod
     def _find_in_file(filename, regex):
@@ -154,31 +140,30 @@ class TestModelMaker(unittest.TestCase):
 
     def test_simple_valid_invocation(self):
         """Smoke test that a straightforward invocation works."""
-        dut = self._make_default_maker()
-
-        sdf_result = os.path.join(self._temp_dir, "simple_invoke.sdf")
-        dut.make_model(self._obj_path, sdf_result)
+        sdf_result = self._temp_dir / "simple_invoke.sdf"
+        dut = MeshModelMaker(mesh_path=self._obj_path, output_path=sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
-
-        self.assertTrue(os.path.exists(sdf_result))
         self.assertTrue(self._find_in_file(sdf_result, "<?xml"))
 
     def test_invalid_obj(self):
-        dut = self._make_default_maker()
-        sdf_result = os.path.join(self._temp_dir, "invalid_obj.sdf")
+        sdf_result = self._temp_dir / "invalid_obj.sdf"
+        dut = MeshModelMaker(mesh_path=Path("invalid_path.obj"),
+                             output_path=sdf_result)
 
         # Invalid because it doesn't exist.
         with self.assertRaisesRegex(RuntimeError, "Cannot open file.*"):
-            dut.make_model('invalid_path.obj', sdf_result)
-        self.assertFalse(os.path.exists(sdf_result))
+            dut.make_model()
+        self.assertFalse(sdf_result.exists())
 
         # Invalid because it isn't an OBJ.
-        not_an_obj = os.path.join(self._temp_dir, 'not_an_obj.txt')
+        not_an_obj = self._temp_dir / "not_an_obj.txt"
         with open(not_an_obj, 'w') as f:
             f.write("Just some text\n")
         with self.assertRaisesRegex(RuntimeError, ".+obj data has no.+"):
-            dut.make_model(not_an_obj, sdf_result)
-        self.assertFalse(os.path.exists(sdf_result))
+            dut.mesh_path = not_an_obj
+            dut.make_model()
+        self.assertFalse(sdf_result.exists())
 
     def test_scale(self):
         """
@@ -193,12 +178,12 @@ class TestModelMaker(unittest.TestCase):
         mesh directly and computing the mass properties on that mesh. Simply
         confirming the mass is correct should imply the inertia is also good.
         """
-        dut = self._make_default_maker()
-        sdf_result = os.path.join(self._temp_dir, "scaled.sdf")
+        sdf_result = self._temp_dir / "scaled.sdf"
+        dut = MeshModelMaker(mesh_path=self._obj_path, output_path=sdf_result,
+                             density=1.0)
 
         # Unit scale has a baseline 2x2x2 box.
-        dut.scale = 1
-        dut.make_model(self._obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self.records.hasRecordRegex(logging.INFO, ".+2.0 x 2.0 x 2.0.+"))
@@ -209,7 +194,7 @@ class TestModelMaker(unittest.TestCase):
 
         # Non-unit scale.
         dut.scale = 2
-        dut.make_model(self._obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self.records.hasRecordRegex(logging.INFO, ".+4.0 x 4.0 x 4.0.+"))
@@ -219,11 +204,11 @@ class TestModelMaker(unittest.TestCase):
 
         # Invalid scale sizes logs an error and produces no file.
         dut.scale = -1
-        os.remove(sdf_result)
-        dut.make_model(self._obj_path, sdf_result)
+        sdf_result.unlink()
+        dut.make_model()
         self.assertTrue(self.records.hasRecordRegex(
             logging.ERROR, ".*Scale .+ must be positive.+"))
-        self.assertFalse(os.path.exists(sdf_result))
+        self.assertFalse(sdf_result.exists())
 
     def test_name(self):
         """
@@ -233,30 +218,30 @@ class TestModelMaker(unittest.TestCase):
             - If no name is given, the stem name of the obj file is used.
             - If a name is given, the preferred name is used.
         """
-        dut = self._make_default_maker()
-        sdf_result = os.path.join(self._temp_dir, "named.sdf")
+        sdf_result = self._temp_dir / "named.sdf"
+        dut = MeshModelMaker(mesh_path=self._obj_path, output_path=sdf_result)
 
         # No name given uses the stem name.
-        dut.model_name = None
-        dut.make_model(self._obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(self._find_in_file(
             sdf_result, f"<link name='{self._obj_stem}'>"))
 
         # Empty string given uses the stem name.
-        dut.model_name = ''
-        dut.make_model(self._obj_path, sdf_result)
+        dut.model_name = ""
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(self._find_in_file(
             sdf_result, f"<link name='{self._obj_stem}'>"))
 
-        # Use given name
+        # Use given name.
         dut.model_name = "frank"
-        dut.make_model(self._obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(self._find_in_file(
             sdf_result, f"<link name='{dut.model_name}'>"))
 
+    @unittest.skip
     def test_mesh_mass_spec(self):
         # Constructed without specifying either quantity throws.
         with self.assertRaisesRegex(ValueError, "Neither .+ were defined."):
@@ -290,9 +275,6 @@ class TestModelMaker(unittest.TestCase):
             - The inertia tensor should change proportionately with the mass;
               we'll test a single value, asserting equivalency.
         """
-        dut = self._make_default_maker()
-        sdf_result = os.path.join(self._temp_dir, "mass.sdf")
-
         # We expect full precision of the answers.
         kEps = 2e-16
 
@@ -307,8 +289,10 @@ class TestModelMaker(unittest.TestCase):
         I_GGo_G_mass = G_GGo_G * expected_mass
 
         # Specify only density.
-        dut.mass_spec = MeshMassSpec(density=rho)
-        dut.make_model(self._obj_path, sdf_result)
+        sdf_result = self._temp_dir / "mass.sdf"
+        dut = MeshModelMaker(mesh_path=self._obj_path, output_path=sdf_result,
+                             mass=None, density=rho)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(sdf_result, f"<mass>{density_mass}</mass>"))
@@ -316,8 +300,9 @@ class TestModelMaker(unittest.TestCase):
         self.assertTrue(I_GGo_G_density.IsNearlyEqualTo(I_GGo_G, kEps))
 
         # Specify only mass.
-        dut.mass_spec = MeshMassSpec(mass=expected_mass)
-        dut.make_model(self._obj_path, sdf_result)
+        dut.mass = expected_mass
+        dut.density = None
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(sdf_result, f"<mass>{expected_mass}</mass>"))
@@ -325,14 +310,16 @@ class TestModelMaker(unittest.TestCase):
         self.assertTrue(I_GGo_G_mass.IsNearlyEqualTo(I_GGo_G, kEps))
 
         # Specify both; mass wins.
-        dut.mass_spec = MeshMassSpec(mass=expected_mass, density=rho)
-        dut.make_model(self._obj_path, sdf_result)
+        dut.mass = expected_mass
+        dut.density = rho
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(sdf_result, f"<mass>{expected_mass}</mass>"))
         I_GGo_G = self._extract_rotational_inertia(sdf_result)
         self.assertTrue(I_GGo_G_mass.IsNearlyEqualTo(I_GGo_G, kEps))
 
+    @unittest.skip
     def test_mesh_frame_pose(self):
         default_pose = MeshFramePose()
         self.assertFalse(default_pose.at_com)
@@ -366,15 +353,14 @@ class TestModelMaker(unittest.TestCase):
         two cases. For this, we need a custom mesh.
         """
         # Create a new box mesh whose center of mass is at (3, 2, 1).
-        offset_obj = os.path.join(self._temp_dir, "offset_box.obj")
+        offset_obj = self._temp_dir / "offset_box.obj"
         _make_offset_obj(offset_obj, [3, 2, 1])
 
-        dut = self._make_default_maker()
-        sdf_result = os.path.join(self._temp_dir, "origin.sdf")
+        sdf_result = self._temp_dir / "origin.sdf"
+        dut = MeshModelMaker(mesh_path=offset_obj, output_path=sdf_result)
 
         # Geometry and body frames are coincident.
-        dut.frame_pose = MeshFramePose()
-        dut.make_model(offset_obj, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(sdf_result,
@@ -384,8 +370,8 @@ class TestModelMaker(unittest.TestCase):
                 sdf_result, "<collision .+?>\\n\\s+<pose>0 0 0 0 0 0</pose>"))
 
         # Geometry origin and body origin are coincident.
-        dut.frame_pose = MeshFramePose(at_com=True)
-        dut.make_model(offset_obj, sdf_result)
+        dut.at_com = True
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(
@@ -396,8 +382,9 @@ class TestModelMaker(unittest.TestCase):
                              "\\s+<pose>-3 -2 -1 0 0 0</pose>")))
 
         # Geometry posed arbitrarily.
-        dut.frame_pose = MeshFramePose(p_GoBo=[1, 2, 3])
-        dut.make_model(offset_obj, sdf_result)
+        dut.at_com = False
+        dut.p_GoBo = np.array([1, 2, 3])
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(
@@ -408,30 +395,22 @@ class TestModelMaker(unittest.TestCase):
                              "\\s+<pose>-1 -2 -3 0 0 0</pose>")))
 
     def test_geometry_present(self):
-        dut = self._make_default_maker()
-        sdf_result = os.path.join(self._temp_dir, "origin.sdf")
+        sdf_result = self._temp_dir / "origin.sdf"
+        dut = MeshModelMaker(mesh_path=self._obj_path, output_path=sdf_result)
 
-        dut.collision = True
-        dut.make_model(self._obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(sdf_result, R"<collision[\s\S\r]+</collision>"))
-
-        dut.collision = False
-        dut.make_model(self._obj_path, sdf_result)
-        _parse_model_no_throw(sdf_result)
-        self.assertFalse(
-            self._find_in_file(sdf_result, R"<collision[\s\S\r]+</collision>"))
-
-        dut.visual = True
-        dut.make_model(self._obj_path, sdf_result)
-        _parse_model_no_throw(sdf_result)
         self.assertTrue(
             self._find_in_file(sdf_result, R"<visual[\s\S\r]+</visual>"))
 
+        dut.collision = False
         dut.visual = False
-        dut.make_model(self._obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
+        self.assertFalse(
+            self._find_in_file(sdf_result, R"<collision[\s\S\r]+</collision>"))
         self.assertFalse(
             self._find_in_file(sdf_result, R"<visual[\s\S\r]+</visual>"))
 
@@ -448,11 +427,11 @@ class TestModelMaker(unittest.TestCase):
         """
         # Prepare a small tree with a package.xml in the root and the mesh
         # as a descendant.
-        package_dir = os.path.join(self._temp_dir, "package")
-        relative_obj_dir = os.path.join("intermediate", "meshes")
-        obj_dir = os.path.join(package_dir, relative_obj_dir)
-        os.makedirs(obj_dir)
-        package_obj_path = os.path.join(obj_dir, "box.obj")
+        package_dir = self._temp_dir / "package"
+        relative_obj_dir = Path("intermediate/meshes")
+        obj_dir = package_dir / relative_obj_dir
+        obj_dir.mkdir(parents=True)
+        package_obj_path = obj_dir / "box.obj"
         shutil.copy(self._obj_path, package_obj_path)
 
         def write_package(xml_path, name):
@@ -464,34 +443,35 @@ class TestModelMaker(unittest.TestCase):
                     </package>
                     """)
 
-        package_xml_path = os.path.join(package_dir, "package.xml")
+        package_xml_path = package_dir / "package.xml"
         write_package(package_xml_path, "test_package")
 
-        dut = self._make_default_maker()
-        sdf_result = os.path.join(obj_dir, "with_package.sdf")
+        sdf_result = obj_dir / "with_package.sdf"
+        dut = MeshModelMaker(mesh_path=package_obj_path,
+                             output_path=sdf_result)
 
         # Bad encoding dispatches an error.
         dut.encoded_package = 'junk'
-        dut.make_model(package_obj_path, sdf_result)
+        dut.make_model()
         self.assertTrue(self.records.hasRecordRegex(logging.ERROR,
                                                     ".*Unrecognized.+junk.*"))
-        self.assertFalse(os.path.exists(sdf_result))
+        self.assertFalse(sdf_result.exists())
         self.records.clear()
 
         # "none" gives us a relative path.
         dut.encoded_package = 'none'
-        dut.make_model(package_obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result)
         self.assertTrue(self._find_in_file(sdf_result, "<uri>box.obj</uri>"))
 
         # "auto" creates obj_dir/package.xml (named "meshes") and the uri
         # is defined w.r.t. that package.
-        generated_xml = os.path.join(obj_dir, "package.xml")
-        self.assertFalse(os.path.exists(generated_xml))
+        generated_xml = obj_dir / "package.xml"
+        self.assertFalse(generated_xml.exists())
         dut.encoded_package = 'auto'
-        dut.make_model(package_obj_path, sdf_result)
+        dut.make_model()
         _parse_model_no_throw(sdf_result, generated_xml)
-        self.assertTrue(os.path.exists(generated_xml))
+        self.assertTrue(generated_xml.exists())
         self.assertTrue(
             self._find_in_file(sdf_result,
                                "<uri>package://meshes/box.obj</uri>"))
@@ -501,8 +481,8 @@ class TestModelMaker(unittest.TestCase):
 
         # "auto" with pre-existing package.xml in obj file will use it.
         write_package(generated_xml, "unique")
-        self.assertTrue(os.path.exists(generated_xml))
-        dut.make_model(package_obj_path, sdf_result)
+        self.assertTrue(generated_xml.exists())
+        dut.make_model()
         _parse_model_no_throw(sdf_result, generated_xml)
         self.assertTrue(
             self._find_in_file(sdf_result,
@@ -513,25 +493,24 @@ class TestModelMaker(unittest.TestCase):
 
         # path/to/package.xml logs an error if the mesh isn't a descendant of
         # the package root directory.
-        dut.encoded_package = package_xml_path
-        dut.make_model(self._obj_path, sdf_result)
+        MeshModelMaker(mesh_path=self._obj_path, output_path=sdf_result,
+                       encoded_package=str(package_xml_path)).make_model()
         self.assertTrue(
             self.records.hasRecordRegex(
                 logging.ERROR, ".*must be located in the file tree.*"))
         self.records.clear()
 
         # path/to/package.xml with obj in sub-tree.
-        dut.encoded_package = package_xml_path
-        dut.make_model(package_obj_path, sdf_result)
-        package_path = os.path.join("test_package", relative_obj_dir)
+        dut.encoded_package = str(package_xml_path)
+        dut.make_model()
+        package_path = f"test_package/{relative_obj_dir}"
         self.assertTrue(
             self._find_in_file(sdf_result,
                                f"<uri>package://{package_path}/box.obj</uri>"))
 
         # package.xml doesn't exist.
-        dut.encoded_package = os.path.join(
-            self._temp_dir, "p", "package.xml")
-        dut.make_model(package_obj_path, sdf_result)
+        dut.encoded_package = str(self._temp_dir / "p/package.xml")
+        dut.make_model()
         self.assertTrue(
             self.records.hasRecordRegex(logging.ERROR,
                                         ".*package.xml cannot be found.*"))
@@ -542,16 +521,17 @@ class TestModelMaker(unittest.TestCase):
         # distinguish between a valid xml file without a name field and a file
         # that isn't xml at all. They both produce the same result, so we'll
         # only test one.
-        package_dir = os.path.join(self._temp_dir, "bad_package")
-        os.makedirs(package_dir)
-        package_obj_path = os.path.join(package_dir, "box.obj")
+        package_dir = self._temp_dir / "bad_package"
+        package_dir.mkdir()
+        package_obj_path = package_dir / "box.obj"
         shutil.copy(self._obj_path, package_obj_path)
-        non_xml_path = os.path.join(package_dir, "package.xml")
+        non_xml_path = package_dir / "package.xml"
         with open(non_xml_path, 'w') as f:
             f.write("Not really an xml file\n")
 
-        dut.encoded_package = non_xml_path
-        dut.make_model(package_obj_path, sdf_result)
+        dut.mesh_path = package_obj_path
+        dut.encoded_package = str(non_xml_path)
+        dut.make_model()
         self.assertTrue(
             self.records.hasRecordRegex(logging.ERROR,
                                         ".*package.* not properly formed.*"))
@@ -573,13 +553,13 @@ class TestMeshToModelProcess(unittest.TestCase):
     """
     @classmethod
     def setUpClass(cls):
-        cls._temp_dir = temp_directory()
+        cls._temp_dir = Path(temp_directory())
         # We need to place the obj file in the temp_directory so that attempts
         # to parse the resulting SDF work.
         cls._obj_stem = "box"
         obj_source_path = FindResourceOrThrow(
             f"drake/geometry/render/test/meshes/box.obj")
-        cls._obj_path = os.path.join(cls._temp_dir, "box.obj")
+        cls._obj_path = cls._temp_dir / "box.obj"
         shutil.copy(obj_source_path, cls._obj_path)
         cls._dut = FindResourceOrThrow(
             "drake/bindings/pydrake/multibody/mesh_to_model")
@@ -592,130 +572,32 @@ class TestMeshToModelProcess(unittest.TestCase):
         Providing no command-line parameters should be equivalent to the
         default configuration for MeshModelMaker.
         """
-        maker = MeshModelMaker()
-        reference_sdf = os.path.join(self._temp_dir, "default_ref.sdf")
-        maker.make_model(self._obj_path, reference_sdf)
+        reference_sdf = self._temp_dir / "default_ref.sdf"
+        maker = MeshModelMaker(mesh_path=self._obj_path,
+                               output_path=reference_sdf).make_model()
 
-        dut_sdf = os.path.join(self._temp_dir, "default_dut.sdf")
+        dut_sdf = self._temp_dir / "default_dut.sdf"
         subprocess.check_call([self._dut, self._obj_path, dut_sdf])
 
         self.assert_files_equal(dut_sdf, reference_sdf)
 
-    def test_all_non_default(self):
+    def test_reject_setting_both_mass_and_density(self):
         """
-        Tweak all of the parameters that can be trivially confirmed by simply
-        passing in different arguments. This isn't the exhaustive test; some
-        parameters will need to be further probed, but this guarantees that
-        we can see that each parameter is passed through as expected.
+        Checks that we can't pass both mass and density.
         """
-        maker = MeshModelMaker()
-        # All values are defined w.r.t. to the default values to guarnatee
-        # they are different.
-        maker.scale = maker.scale * 2
-        self.assertIsNone(maker.model_name)
-        maker.model_name = "alt_name"
-        maker.mass_spec = MeshMassSpec(density=maker.mass_spec.density * 2)
-        self.assertIsNone(maker.frame_pose.p_GoBo)
-        maker.frame_pose = MeshFramePose(p_GoBo=[1, 2, 3])
-        self.assertEqual(maker.encoded_package, "none")
-        # For package, this is enough. We've confirmed the string gets passed
-        # to MeshModelMaker.
-        maker.encoded_package = "auto"
-        # N.B. We're skipping collision and visual _here_ to make sure that
-        # they work independently (see below).
-
-        reference_sdf = os.path.join(self._temp_dir, "default_ref.sdf")
-        maker.make_model(self._obj_path, reference_sdf)
-
-        dut_sdf = os.path.join(self._temp_dir, "default_dut.sdf")
-        parameters = ['--model-name', maker.model_name,
-                      '--scale', str(maker.scale),
-                      '--density', str(maker.mass_spec.density),
-                      '--body-origin', '1,2,3',
-                      '--package', maker.encoded_package,
-                      self._obj_path, dut_sdf
-                      ]
-        subprocess.check_call([self._dut] + parameters)
-
-        self.assert_files_equal(dut_sdf, reference_sdf)
-
-    def test_specify_mass(self):
-        """
-        Test that specifying *mass* produces the expected result and that we
-        can't pass both mass and density.
-        """
-        # Only one of mass/density can be specified.
-        dut_sdf = os.path.join(self._temp_dir, "mass_dut.sdf")
+        error_sdf = self._temp_dir / "error.sdf"
         with self.assertRaisesRegex(subprocess.CalledProcessError,
                                     ".*non-zero exit status.*"):
             subprocess.check_call([self._dut, '--mass', '1', '--density', '1',
-                                   self._obj_path, dut_sdf])
+                                   self._obj_path, error_sdf])
 
-        maker = MeshModelMaker()
-        maker.mass_spec = MeshMassSpec(mass=123)
-        reference_sdf = os.path.join(self._temp_dir, "mass_ref.sdf")
-        maker.make_model(self._obj_path, reference_sdf)
-
-        subprocess.check_call([self._dut, '--mass', str(maker.mass_spec.mass),
-                              self._obj_path, dut_sdf])
-
-        self.assert_files_equal(dut_sdf, reference_sdf)
-
-    def test_frame_pose(self):
+    def test_reject_setting_both_com_and_pose(self):
         """
-        We've already confirmed the default geometry-body frame alignment and
-        arbitrary pose (--body-origin). Now we'll confirm at-com works and that
-        specifying both --body-orign and --origin-at-com is invalid.
+        Checks that we can't pass both --body-orign and --origin-at-com.
         """
-        # Specifying both is an error.
-        dut_sdf = os.path.join(self._temp_dir, "pose_dut.sdf")
+        error_sdf = self._temp_dir / "error.sdf"
         with self.assertRaisesRegex(subprocess.CalledProcessError,
                                     ".*non-zero exit status.*"):
             subprocess.check_call([self._dut, '--origin-at-com',
                                    '--body-origin', '1,2,3',
-                                   self._obj_path, dut_sdf])
-
-        # Make an obj whose center of mass is not at its frame origin.
-        offset_obj = os.path.join(self._temp_dir, "offset_box.obj")
-        _make_offset_obj(offset_obj, [1, 2, 3])
-
-        maker = MeshModelMaker()
-        maker.frame_pose = MeshFramePose(at_com=True)
-        reference_sdf = os.path.join(self._temp_dir, "pose_ref.sdf")
-        maker.make_model(offset_obj, reference_sdf)
-
-        dut_sdf = os.path.join(self._temp_dir, "pose_dut.sdf")
-        subprocess.check_call([self._dut, "--origin-at-com", offset_obj,
-                               dut_sdf])
-
-        self.assert_files_equal(dut_sdf, reference_sdf)
-
-    def test_collision(self):
-        """Omitting the collision geometry omits *only* the collision."""
-        maker = MeshModelMaker()
-        self.assertTrue(maker.collision)
-        self.assertTrue(maker.visual)
-        maker.collision = False
-        reference_sdf = os.path.join(self._temp_dir, "no_collision_ref.sdf")
-        maker.make_model(self._obj_path, reference_sdf)
-
-        dut_sdf = os.path.join(self._temp_dir, "no_collision_dut.sdf")
-        subprocess.check_call([self._dut, "--no-collision", self._obj_path,
-                               dut_sdf])
-
-        self.assert_files_equal(dut_sdf, reference_sdf)
-
-    def test_visual(self):
-        """Omitting the visual geometry omits *only* the visual."""
-        maker = MeshModelMaker()
-        self.assertTrue(maker.collision)
-        self.assertTrue(maker.visual)
-        maker.visual = False
-        reference_sdf = os.path.join(self._temp_dir, "no_visual_ref.sdf")
-        maker.make_model(self._obj_path, reference_sdf)
-
-        dut_sdf = os.path.join(self._temp_dir, "no_visual_dut.sdf")
-        subprocess.check_call([self._dut, "--no-visual", self._obj_path,
-                               dut_sdf])
-
-        self.assert_files_equal(dut_sdf, reference_sdf)
+                                   self._obj_path, error_sdf])

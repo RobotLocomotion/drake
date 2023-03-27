@@ -123,13 +123,13 @@ Running::
 
 import argparse
 import logging
+import numpy as np
 import os
+from pathlib import Path
 
 from pydrake.common import configure_logging as _configure_logging
 from pydrake.multibody._mesh_model_maker import (
     MeshModelMaker as _MeshModelMaker,
-    MeshMassSpec as _MeshMassSpec,
-    MeshFramePose as _MeshFramePose,
 )
 
 _logger = logging.getLogger("drake")
@@ -138,7 +138,7 @@ _logger = logging.getLogger("drake")
 def _CommaSeparatedXYZ(arg: str):
     """An argparse parser for an x,y,z vector."""
     x, y, z = [float(item) for item in arg.split(',')]
-    return (x, y, z)
+    return np.array([x, y, z])
 
 
 # In the event that the user passes in a malformed value for --body-origin,
@@ -152,49 +152,50 @@ _CommaSeparatedXYZ.__name__ = "comma-separated triple"
 def _main():
     _configure_logging()
 
-    maker = _MeshModelMaker()
+    default_maker = _MeshModelMaker(mesh_path=None, output_path=None)
 
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
-        "--model-name", action="store", metavar="NAME",
+        "--model-name", metavar="NAME",
         help=("The optional name to assign to both model and body. If none "
               "is given, the mesh file name is used."))
     parser.add_argument(
-        "--scale", action="store", default=maker.scale, type=float,
+        "--scale", default=default_maker.scale, type=float,
         metavar="FACTOR",
         help=("The scale for scaling the mesh vertex positions to meters. "
               "Must be positive."))
 
     mass_group = parser.add_mutually_exclusive_group()
     mass_group.add_argument(
-        "--density", action="store", default=maker.mass_spec.density,
+        "--density", default=default_maker.density,
         type=float, metavar="KG/M3",
         help=("The density of the object in kg/m³. Only specify one of "
               "--density and --mass. If neither is specified, the default "
               "density of water is used."))
     mass_group.add_argument(
-        "--mass", action="store", type=float, metavar="KG",
+        "--mass", type=float, metavar="KG",
         help=("The mass of the object in kg. Only specify one of --density "
               "and --mass. If neither is specified, default density of water "
               "is used."))
 
     com_group = parser.add_mutually_exclusive_group()
     com_group.add_argument(
-        "--origin-at-com", action="store_true",
+        "--origin-at-com", action="store_true", dest="at_com",
         help=("If requested, the body's origin is defined at the geometry's "
               "center of mass. Only specify one of --body-origin and "
               "--origin-at-com."))
     com_group.add_argument(
-        "--body-origin", type=_CommaSeparatedXYZ, action="store",
+        "--body-origin", type=_CommaSeparatedXYZ, dest="p_GoBo",
         metavar="X,Y,Z",
         help=("Specify the body origin in the mesh's canonical frame "
               "(p_GoBo_G). Only specify one of --body-origin and "
               "--origin-at-com."))
 
     parser.add_argument(
-        "--package", type=str, action="store", default=maker.encoded_package,
+        "--package", type=str, dest="encoded_package",
+        default=default_maker.encoded_package,
         metavar="ENCODING",
         help=("Specify the package semantics used in the resulting SDFormat "
               "file. Options are: 'none' (default): the mesh will be "
@@ -214,25 +215,20 @@ def _main():
         help="If specified, the model will have no visual geometry.")
 
     parser.add_argument(
-        "mesh", help="The path to the mesh file to process.")
+        "mesh_path", type=Path,
+        help="The path to the mesh file to process.")
 
     parser.add_argument(
-        "output", help="The path where the SDFormat model will be written.")
+        "output_path", type=Path,
+        help="The path where the SDFormat model will be written.")
 
     args = parser.parse_args()
 
     if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
         os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
 
-    maker.model_name = args.model_name
-    maker.scale = args.scale
-    maker.mass_spec = _MeshMassSpec(mass=args.mass, density=args.density)
-    maker.frame_pose = _MeshFramePose(at_com=args.origin_at_com,
-                                      p_GoBo=args.body_origin)
-    maker.collision = args.collision
-    maker.visual = args.visual
-    maker.encoded_package = args.package
-    maker.make_model(args.mesh, args.output)
+    maker = _MeshModelMaker(**vars(args))
+    maker.make_model()
 
 
 if __name__ == "__main__":

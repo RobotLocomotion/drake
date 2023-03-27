@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-import os
+from pathlib import Path
 import re
 try:
     # Focal uses python 3.8; later versions allow us to do tuple[...] directly.
@@ -88,53 +88,55 @@ _SDF_TEMPLATE = """<?xml version='1.0'?>
 """
 
 
-class MeshMassSpec:
-    """Controls how the mass is to be computed: density or absolute mass."""
-    def __init__(self, density: float = None, mass: float = None):
+class MeshModelMaker:
+    """Converts a mesh file into a model, documenting the work as it goes."""
+
+    def __init__(self, *,
+                 mesh_path: Path,
+                 output_path: Path,
+                 scale: float = 1.0,
+                 model_name: str = None,
+                 density: float = 1000.0,
+                 mass: float = None,
+                 at_com: bool = False,
+                 p_GoBo: np.array = None,
+                 encoded_package: str = 'none',
+                 collision: bool = True,
+                 visual: bool = True):
         """
-        Defines how the mass is specified -- via density *or* mass. At least
-        one value must be defined. If mass is provided, it will be used.
-        """
-        if density is None and mass is None:
-            raise ValueError("Neither mass nor density were defined.")
-        self.density = density
-        self.mass = mass
+        XXX more comments here
 
+        Either ``density`` or ``mass`` defines how the mass is specified. At
+        least one must be provided. If mass is provided, it will be used and
+        density will be ignored.
 
-class MeshFramePose:
-    """
-    Controls the relative positions of geometry and body frames.
-
-    There are three options:
-
+        Either ``at_com`` or ``p_GoBo`` controls the relative positions of
+        geometry and body frames. There are three options:
         - Body origin at geometry origin (at_com=False, p_GoBo=None).
         - Body origin at geometry center of mass (at_com=False, p_GoBo=None).
         - Body origin at arbitrary point (measured and expressed in geometry
           frame) (at_com=False, p_GoBo=[x_cm, y_cm, z_cm]).
-
-    It is an error to define at_com=True and p_GoBo not None.
-    """
-    def __init__(self, at_com: bool = False,
-                 p_GoBo: TupleType[float, float, float] = None):
+        It is an error to define at_com=True and p_GoBo not None.
+        """
+        if density is None and mass is None:
+            raise ValueError("Neither mass nor density were provided.")
+        if density is not None and mass is not None:
+            density = None
         if at_com and p_GoBo is not None:
-            raise ValueError(
-                "Specify either at_com = True or p_GoBo, not both.")
+            raise ValueError("Specify either at_com=True or p_GoBo, not both.")
+        self.mesh_path = mesh_path
+        self.output_path = output_path
+        self.scale = scale
+        self.model_name = model_name
+        self.density = density
+        self.mass = mass
         self.at_com = at_com
-        self.p_GoBo = None if p_GoBo is None else np.array(p_GoBo)
+        self.p_GoBo = p_GoBo
+        self.encoded_package = encoded_package
+        self.collision = collision
+        self.visual = visual
 
-
-class MeshModelMaker:
-    """Converts a mesh file into a model, documenting the work as it goes."""
-    def __init__(self):
-        self.scale = 1.0
-        self.model_name = None
-        self.mass_spec = MeshMassSpec(density=1000)
-        self.frame_pose = MeshFramePose()
-        self.collision = True
-        self.visual = True
-        self.encoded_package = 'none'
-
-    def make_model(self, mesh_path: str, model_path: str):
+    def make_model(self):
         """
         Creates a model from the mesh given at mesh_path and writes the
         corresponding model to the file at model_path based on the maker's
@@ -143,11 +145,11 @@ class MeshModelMaker:
         See the documentation for mesh_to_model.py for a discussion of the
         configuration parameters.
         """
-        _logger.info(f"Creating a model from: {mesh_path}")
+        _logger.info(f"Creating a model from: {self.mesh_path}")
 
         # Figure out the mesh URI and model names.
         mesh_uri = MeshModelMaker._make_mesh_uri(self.encoded_package,
-                                                 mesh_path)
+                                                 self.mesh_path)
         if mesh_uri is None:
             # No package uri was determined; explanation already output to
             # log, so, we can simply return.
@@ -157,7 +159,7 @@ class MeshModelMaker:
             _logger.error(f"Scale value must be positive, given {self.scale}.")
             return
 
-        mesh_G = ReadObjToTriangleSurfaceMesh(filename=mesh_path,
+        mesh_G = ReadObjToTriangleSurfaceMesh(filename=str(self.mesh_path),
                                               scale=self.scale)
         p_GoMin, p_GoMax = mesh_G.CalcBoundingBox()
         size = p_GoMax - p_GoMin
@@ -167,19 +169,19 @@ class MeshModelMaker:
 
         # TODO(SeanCurtis-TRI): Confirm that the mesh is watertight.
 
-        if self.mass_spec.mass is not None:
+        if self.mass is not None:
             # If mass is defined, it wins.
             # Neither the unit inertia nor the center of mass depend on the
             # density. So, we can compute those quantities for an arbitrary
             # density and then reconfigure the SpatialInertia with the desired
             # mass.
             M_GGo_G = CalcSpatialInertia(mesh=mesh_G, density=1.0)
-            M_GGo_G = SpatialInertia_[float](mass=self.mass_spec.mass,
+            M_GGo_G = SpatialInertia_[float](mass=self.mass,
                                              p_PScm_E=M_GGo_G.get_com(),
                                              G_SP_E=M_GGo_G.get_unit_inertia())
         else:
             M_GGo_G = CalcSpatialInertia(mesh=mesh_G,
-                                         density=self.mass_spec.density)
+                                         density=self.density)
 
         p_GoGcm = M_GGo_G.get_com()
         M_GGcm_G = M_GGo_G.Shift(p_GoGcm)
@@ -187,8 +189,8 @@ class MeshModelMaker:
 
         _logger.info(f"    Mass: {mass} kg")
 
-        if self.frame_pose.p_GoBo is None:
-            if self.frame_pose.at_com:
+        if self.p_GoBo is None:
+            if self.at_com:
                 p_BoGo = -p_GoGcm
                 p_BoBcm = (0.0, 0.0, 0.0)
             else:
@@ -196,8 +198,8 @@ class MeshModelMaker:
                 p_BoGo = (0.0, 0.0, 0.0)
                 p_BoBcm = p_GoGcm
         else:
-            p_BoGo = -self.frame_pose.p_GoBo
-            p_BoBcm = p_GoGcm - self.frame_pose.p_GoBo
+            p_BoGo = -self.p_GoBo
+            p_BoBcm = p_GoGcm - self.p_GoBo
 
         _logger.info(f"    p_GoGcm: [{p_GoGcm[0]}, {p_GoGcm[1]}, "
                      f"{p_GoGcm[2]}]")
@@ -210,13 +212,9 @@ class MeshModelMaker:
         moments = I_GGcm_G.get_moments()
         products = I_GGcm_G.get_products()
 
-        # Possible model name.
-        mesh_file_name = os.path.basename(mesh_path)
-        mesh_stem = os.path.splitext(mesh_file_name)[0]
-
         subs = dict()
         # model_name is None *or* model_name == "" prefers mesh_stem.
-        subs["name"] = self.model_name or mesh_stem
+        subs["name"] = self.model_name or self.mesh_path.stem
         # With zero rotation, this is simply the position of com in B.
         p_BoBcm_str = " ".join([str(x) for x in p_BoBcm])
         subs["inertial_pose"] = f"{p_BoBcm_str} 0 0 0"
@@ -237,11 +235,11 @@ class MeshModelMaker:
         subs["collision"] = \
             _COLLISION_TEMPLATE.format(**subs) if self.collision else ""
 
-        with open(model_path, "w") as f:
+        with open(self.output_path, "w") as f:
             f.write(_SDF_TEMPLATE.format(**subs))
 
     @staticmethod
-    def _make_mesh_uri(package_spec: str, mesh_path: str):
+    def _make_mesh_uri(package_spec: str, mesh_path: Path):
         """
         Given an encoded package protocol and path to the mesh, creates the
         uri to be used. May create a package.xml file in the same directory as
@@ -261,7 +259,7 @@ class MeshModelMaker:
             A string representing the uri to use the SDFormat file to reference
             the mesh. None if no such string can be produced.
         """
-        mesh_name = os.path.basename(mesh_path)
+        mesh_name = mesh_path.name
 
         if package_spec == "none":
             return mesh_name
@@ -269,16 +267,17 @@ class MeshModelMaker:
         package_path = None
         if package_spec.endswith("package.xml"):
             # The mesh must lie in the tree rooted at the package.
-            if not os.path.exists(package_spec):
+            package_spec = Path(package_spec)
+            if not package_spec.exists():
                 _logger.error(
                     "The indicated package.xml cannot be found: "
                     f"'{package_spec}'")
                 return None
-            abs_package = os.path.abspath(package_spec)
-            abs_package_dir = os.path.split(abs_package)[0]
-            abs_mesh = os.path.abspath(mesh_path)
-            mesh_rel_path = os.path.relpath(abs_mesh, start=abs_package_dir)
-            if mesh_rel_path.startswith('..'):
+            abs_package = package_spec.resolve().absolute()
+            abs_mesh = mesh_path.resolve().absolute()
+            try:
+                mesh_rel_path = abs_mesh.relative_to(abs_package.parent)
+            except ValueError:
                 _logger.error(
                     "When specifying the package, the mesh must be located in "
                     f"the file tree of the package.\n  package: {abs_package}"
@@ -287,12 +286,12 @@ class MeshModelMaker:
             package_name = MeshModelMaker._read_package_name(package_spec)
             if package_name is None:
                 return None
-            package_path = os.path.join(package_name, mesh_rel_path)
+            package_path = f"package://{package_name}/{mesh_rel_path}"
 
         if package_spec == "auto":
-            mesh_dir = os.path.dirname(os.path.abspath(mesh_path))
-            candidate_package_path = os.path.join(mesh_dir, "package.xml")
-            if os.path.exists(candidate_package_path):
+            mesh_dir = mesh_path.resolve().absolute().parent
+            candidate_package_path = mesh_dir / "package.xml"
+            if candidate_package_path.exists():
                 package_name = MeshModelMaker._read_package_name(
                     candidate_package_path)
                 if package_name is None:
@@ -300,15 +299,14 @@ class MeshModelMaker:
             else:
                 # The name of the *package* is the name of the mesh file's
                 # directory.
-                package_name = os.path.split(mesh_dir)[-1]
-                subs = {"name": package_name,
-                        "mesh_name": mesh_path.split()[-1]}
+                package_name = mesh_dir.name
+                subs = {"name": package_name, "mesh_name": mesh_name}
                 with open(candidate_package_path, "w") as f:
                     f.write(_PACKAGE_TEMPLATE.format(**subs))
-            package_path = os.path.join(package_name, mesh_name)
+            package_path = f"package://{package_name}/{mesh_name}"
 
         if package_path is not None:
-            return f"package://{package_path}"
+            return package_path
 
         _logger.error(f"Unrecognized package specification: '{package_spec}'.")
         return None
