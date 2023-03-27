@@ -351,7 +351,8 @@ void DoScalarIndependentDefinitions(py::module m) {
       doc_geometry.MakeRenderEngineVtk.doc);
 
   {
-    using Class = RenderEngineGlParams;
+    // TODO(zachfang): Remove `geometry` ns once the deprecation is removed.
+    using Class = geometry::RenderEngineGlParams;
     constexpr auto& cls_doc = doc_geometry.RenderEngineGlParams;
     py::class_<Class> cls(m, "RenderEngineGlParams", cls_doc.doc);
     cls  // BR
@@ -361,8 +362,9 @@ void DoScalarIndependentDefinitions(py::module m) {
     DefCopyAndDeepCopy(&cls);
   }
 
-  m.def("MakeRenderEngineGl", &MakeRenderEngineGl,
-      py::arg("params") = RenderEngineGlParams(),
+  // TODO(zachfang): Remove `geometry` ns once the deprecation is removed.
+  m.def("MakeRenderEngineGl", &geometry::MakeRenderEngineGl,
+      py::arg("params") = geometry::RenderEngineGlParams(),
       doc_geometry.MakeRenderEngineGl.doc);
 
   {

@@ -85,6 +85,7 @@ drake_cc_library_ubuntu_only(
     ],
 )
 
+# TODO(zachfang): Remove this along with deprecation on 2023-08-01.
 drake_cc_library(
     name = "factory",
     srcs = select({
@@ -127,6 +128,7 @@ drake_cc_library(
     ],
 )
 
+# TODO(zachfang): Remove this along with deprecation on 2023-08-01.
 drake_cc_library(
     name = "render_engine_gl_params",
     hdrs = ["render_engine_gl_params.h"],
@@ -245,6 +247,7 @@ drake_cc_googletest(
     ],
 )
 
+# TODO(zachfang): Remove this along with deprecation on 2023-08-01.
 drake_cc_googletest(
     name = "deprecation_test",
     copts = [
