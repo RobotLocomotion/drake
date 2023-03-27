@@ -132,6 +132,16 @@ UrdfMaterial ParseMaterial(const TinyXml2Diagnostic& diagnostic,
     return {};
   }
 
+  // Warn if a <drake:diffuse_map> is included in the node.
+  const XMLElement* drake_diffuse_map_node =
+      node->FirstChildElement("drake:diffuse_map");
+  if (drake_diffuse_map_node) {
+    diagnostic.Warning(
+        *node,
+        "<drake:diffuse_map> is not supported in URDF. Use the built-in tag "
+        "<texture> instead.");
+  }
+
   // Test for texture information.
   std::optional<std::string> texture_path;
   const XMLElement* texture_node = node->FirstChildElement("texture");
