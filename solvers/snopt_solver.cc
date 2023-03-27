@@ -190,7 +190,7 @@ struct SnoptImpl<false> {
       double* f, snopt::integer* fstate, double* fmul,
       snopt::integer* inform, snopt::integer* ns, snopt::integer* ninf, double* sinf,
       snopt::integer* mincw, snopt::integer* miniw, snopt::integer* minrw,
-      char* cw, snopt::integer lencw,
+      char* cw, snopt::integer lencw, char* cu, snopt::integer lencu,
       Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw,
       snopt::integer nxname, snopt::integer nFname) {
         snopt::integer npname = strlen(name);
@@ -212,7 +212,7 @@ struct SnoptImpl<false> {
          ns, ninf, sinf,
         //  iu, &leniu,
         //  ru, &lenru,
-         cw, &lencw, iw, &leniw, rw, &lenrw,
+         cu, &lencu, iw, &leniw, rw, &lenrw,
          cw, &lencw, iw, &leniw, rw, &lenrw,
          npname, 8 * nxname, 8 * nFname, 8 * lencw, 8 * lencw);
   std::cout << "\n\tCompleted snopta_\n";
@@ -287,7 +287,8 @@ class SnoptUserFunInfo {
   // are retained internally, so the supplied objects must have lifetimes longer
   // than the SnoptUserFuncInfo object.
   explicit SnoptUserFunInfo(const MathematicalProgram* prog)
-      : this_pointer_as_int_array_(MakeThisAsInts()), prog_(*prog) {}
+      : this_pointer_as_char_array_(MakeThisAsChars()),
+        prog_(*prog) {}
 
   const MathematicalProgram& mathematical_program() const { return prog_; }
 
@@ -317,20 +318,24 @@ class SnoptUserFunInfo {
     return userfun_error_message_;
   }
 
-  int* iu() const {
-    return const_cast<int*>(this_pointer_as_int_array_.data());
+  char* cu() const {
+    return const_cast<char*>(this_pointer_as_char_array_.data());
   }
-  int leniu() const { return this_pointer_as_int_array_.size(); }
+  int lencu() const {
+    return this_pointer_as_char_array_.size();
+  }
 
   // Converts the `int iu[]` data back into a reference to this class.
-  static SnoptUserFunInfo& GetFrom(const snopt::integer* iu, snopt::integer leniu) {
-    DRAKE_ASSERT(iu != nullptr);
-    DRAKE_ASSERT(leniu == kIntCount);
+  static SnoptUserFunInfo& GetFrom(const char* cu, int lencu) {
+    DRAKE_ASSERT(cu != nullptr);
+    DRAKE_ASSERT(lencu == kCharCount);
 
     SnoptUserFunInfo* result = nullptr;
-    std::copy(reinterpret_cast<const char*>(iu),
-              reinterpret_cast<const char*>(iu) + sizeof(result),
+    std::copy(reinterpret_cast<const char*>(cu),
+              reinterpret_cast<const char*>(cu) + sizeof(result),
               reinterpret_cast<char*>(&result));
+
+    std::cout << "\n\t\tprog num vars:" << result->mathematical_program().num_vars() << "\n";
 
     DRAKE_ASSERT(result != nullptr);
     return *result;
@@ -339,13 +344,13 @@ class SnoptUserFunInfo {
  private:
   // We need this many `int`s to store a pointer.  Round up any fractional
   // remainder.
-  static constexpr size_t kIntCount =
-      (sizeof(SnoptUserFunInfo*) + sizeof(int) - 1) / sizeof(int);
+  static constexpr size_t kCharCount =
+      (sizeof(SnoptUserFunInfo*) + sizeof(char) - 1) / sizeof(char);
 
   // Converts the `this` pointer into an integer array.
-  std::array<int, kIntCount> MakeThisAsInts() {
-    std::array<int, kIntCount> result;
-    result.fill(0);
+  std::array<char, kCharCount> MakeThisAsChars() {
+    std::array<char, kCharCount> result;
+    result.fill(' ');
 
     const SnoptUserFunInfo* const value = this;
     std::copy(reinterpret_cast<const char*>(&value),
@@ -355,7 +360,7 @@ class SnoptUserFunInfo {
     return result;
   }
 
-  const std::array<int, kIntCount> this_pointer_as_int_array_;
+  const std::array<char, kCharCount> this_pointer_as_char_array_;
   const MathematicalProgram& prog_;
   std::set<int> nonlinear_cost_gradient_indices_;
   // When evaluating the nonlinear costs/constraints, the Binding could contain
@@ -399,11 +404,14 @@ class WorkspaceStorage {
   int lencw() const { return cw_.size(); }
   void resize_cw(int size) { cw_.resize(size); }
 
-  int* iu() { return user_info_->iu(); }
-  int leniu() const { return user_info_->leniu(); }
+  // int* iu() { return user_info_->iu(); }
+  // int leniu() const { return user_info_->leniu(); }
 
-  double* ru() { return nullptr; }
-  int lenru() const { return 0; }
+  // double* ru() { return nullptr; }
+  // int lenru() const { return 0; }
+
+  char* cu() { return user_info_->cu(); }
+  int lencu() const { return user_info_->lencu(); }
 
  private:
   std::vector<int> iw_;
@@ -473,6 +481,13 @@ void EvaluateNonlinearConstraints(
   Eigen::VectorXd this_x;
   for (const auto& binding : constraint_list) {
     const auto& c = binding.evaluator();
+
+    // std::cout << "binding: " << binding <<
+    //              ", null? " << (binding == NULL) << "\n";
+
+    // std::cout << "evaluator: " << binding.evaluator() <<
+    //              ", null? " << (binding.evaluator() == NULL) << "\n";
+
     int num_constraints = SingleNonlinearConstraintSize(*c);
 
     const int num_variables = binding.GetNumElements();
@@ -642,7 +657,6 @@ void EvaluateAllNonlinearCosts(
 void EvaluateCostsConstraints(
     const SnoptUserFunInfo& info, int n, double x[], double F[], double G[]) {
   std::cout << "\n\tUSRFUN 2!\n";
-  std::cout << "info: " << info.leniu() << "\n";
   const MathematicalProgram& current_problem = info.mathematical_program();
 
   std::cout << "Num. of decision vars: " << current_problem.num_vars() << "\n";
@@ -718,17 +732,17 @@ int snopt_userfun(snopt::integer* Status, snopt::integer* n,
                   snopt::doublereal G[], char* cu, snopt::integer* lencu,
                   snopt::integer iu[], snopt::integer* leniu,
                   snopt::doublereal ru[], snopt::integer* lenru) {
-  // SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(cu, *lencu);
-  SnoptUserFunInfo* snopt_userfun_info = nullptr;
-  {
-    char* const p_snopt_userfun_info =
-        reinterpret_cast<char*>(&snopt_userfun_info);
-    char const* const cu_snopt_userfun_info = cu + 8 * 500;
-    std::copy(cu_snopt_userfun_info,
-              cu_snopt_userfun_info + sizeof(snopt_userfun_info),
-              p_snopt_userfun_info);
-  }
-  SnoptUserFunInfo& info = *snopt_userfun_info;
+  SnoptUserFunInfo& info = SnoptUserFunInfo::GetFrom(cu, *lencu);
+  // SnoptUserFunInfo* snopt_userfun_info = nullptr;
+  // {
+  //   char* const p_snopt_userfun_info =
+  //       reinterpret_cast<char*>(&snopt_userfun_info);
+  //   char const* const cu_snopt_userfun_info = cu + 8 * 500;
+  //   std::copy(cu_snopt_userfun_info,
+  //             cu_snopt_userfun_info + sizeof(snopt_userfun_info),
+  //             p_snopt_userfun_info);
+  // }
+  // SnoptUserFunInfo& info = *snopt_userfun_info;
 
   // SnoptUserFunInfo& snopt_userfun_info
   std::cout << "\n\tUSRFUN 1!\n";
@@ -1249,32 +1263,6 @@ void SolveWithGivenOptions(
     std::cout << "\n\tdone done done!\n";
   });
 
-  std::cout << "\n\tCheck -1\n";
-  // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
-  // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
-  // expressed in Fortran array slicing.  Use the space to pass the pointer
-  // to SnoptUserFunInfo.
-  {
-      const std::string option = "User character workspace";
-      snopt::integer errors;
-      Snopt::snseti(
-          option.c_str(), option.length(), 500 + 1, &errors,
-          storage.cw(), storage.lencw(),
-          storage.iw(), storage.leniw(),
-          storage.rw(), storage.lenrw());
-      {
-        std::cout << "\n\tSo far, so good\n";
-        char const* const p_snopt_userfun_info =
-            reinterpret_cast<char*>(&user_info);
-        char* const cu_snopt_userfun_info = storage.cw() + 8 * 500;
-        std::copy(p_snopt_userfun_info,
-                  p_snopt_userfun_info + sizeof(user_info),
-                  cu_snopt_userfun_info);
-        std::cout << "\n\tSo far, not so good\n";
-      }
-  }
-  std::cout << "\n\tCheck 0\n";
-
   snopt::integer nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
@@ -1525,6 +1513,43 @@ void SolveWithGivenOptions(
   }
   std::cout << "\n\tCheck 4\n";
 
+
+  std::cout << "\n\tCheck -1\n";
+  // Set the "maxcu" value to tell snopt to reserve one 8-char entry of user
+  // workspace.  We are then allowed to use cw(snopt_mincw+1:maxcu), as
+  // expressed in Fortran array slicing.  Use the space to pass the pointer
+  // to SnoptUserFunInfo.
+  {
+      const std::string option = "User character workspace";
+      snopt::integer errors;
+      Snopt::snseti(
+          option.c_str(), option.length(), 500 + 1, &errors,
+          storage.cw(), storage.lencw(),
+          storage.iw(), storage.leniw(),
+          storage.rw(), storage.lenrw());
+  //     {
+  //       std::cout << "\n\tSo far, so good\n";
+  //       std::cout << "\n\n\tlencw: " << storage.lencw()
+  //           << ", leniw: " << storage.leniw() << ", lenrw: " << storage.lenrw() << "\n";
+
+  //       const SnoptUserFunInfo* const p_snopt_userfun_info = user_info;
+  //       // char* const cu_snopt_userfun_info = storage.cw() + 8 * 500;
+
+  //       static constexpr size_t kCharCount =
+  //           (sizeof(SnoptUserFunInfo*) + sizeof(char) - 1) / sizeof(char);
+  //       std::array<char, kCharCount> cu_snopt_userfun_info;
+  //       cu_snopt_userfun_info.fill('');
+  //       std::copy(reinterpret_cast<const char*>(&p_snopt_userfun_info),
+  //                 reinterpret_cast<const char*>(&p_snopt_userfun_info) + sizeof(p_snopt_userfun_info),
+  //                 cu_snopt_userfun_info);
+  //       std::cout << "user info size: " << sizeof(user_info) << "\n";
+  //       // std::cout << "p_snopt_userfun_info: " << std::atoi(p_snopt_userfun_info) << "\n";
+  //       // std::cout << "cu_snopt_userfun_info: " << std::atoi(cu_snopt_userfun_info) << "\n";
+  //       std::cout << "\n\tSo far, not so good\n";
+  //     }
+  }
+  std::cout << "\n\tCheck 0\n";
+
   // Actual solve.
   char problem_name[] = "drake_problem";
   // clang-format off
@@ -1538,6 +1563,7 @@ void SolveWithGivenOptions(
                 solver_details.F.data(), Fstate.data(),
                 solver_details.Fmul.data(),
                 &snopt_status, &nS, &nInf, &sInf, &mincw, &miniw, &minrw,
+                storage.cu(), storage.lencu(),
                 storage.cw(), storage.lencw(),
                 storage.iw(), storage.leniw(),
                 storage.rw(), storage.lenrw(), nxname, nFname);
