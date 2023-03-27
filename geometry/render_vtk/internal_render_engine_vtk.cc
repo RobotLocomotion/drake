@@ -28,13 +28,21 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_vtk {
+namespace internal {
 
 using Eigen::Vector2d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderLabel;
+using render::vtk_util::ConvertToVtkTransform;
+using render::vtk_util::CreateSquarePlane;
+using render::vtk_util::MakeVtkPointerArray;
 using std::make_unique;
-using internal::ImageType;
 using systems::sensors::CameraInfo;
 using systems::sensors::ColorD;
 using systems::sensors::ColorI;
@@ -43,9 +51,6 @@ using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
-using vtk_util::ConvertToVtkTransform;
-using vtk_util::CreateSquarePlane;
-using vtk_util::MakeVtkPointerArray;
 
 namespace {
 
@@ -95,20 +100,15 @@ std::string RemoveFileExtension(const std::string& filepath) {
 
 }  // namespace
 
-namespace internal {
-
 ShaderCallback::ShaderCallback() :
     // These values are arbitrary "reasonable" values, but we expect them to
     // *both* be overwritten upon every usage.
     z_near_(0.01),
     z_far_(100.0) {}
 
-}  // namespace internal
+vtkNew<ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
 
-vtkNew<internal::ShaderCallback> RenderEngineVtk::uniform_setting_callback_;
-
-RenderEngineVtk::RenderEngineVtk(
-    const geometry::RenderEngineVtkParams& parameters)
+RenderEngineVtk::RenderEngineVtk(const RenderEngineVtkParams& parameters)
     : RenderEngine(parameters.default_label ? *parameters.default_label
                                             : RenderLabel::kUnspecified),
       pipelines_{{make_unique<RenderingPipeline>(),
@@ -478,8 +478,8 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   vtkOpenGLShaderProperty* shader_prop = vtkOpenGLShaderProperty::SafeDownCast(
       actors[ImageType::kDepth]->GetShaderProperty());
   DRAKE_DEMAND(shader_prop != nullptr);
-  shader_prop->SetVertexShaderCode(shaders::kDepthVS);
-  shader_prop->SetFragmentShaderCode(shaders::kDepthFS);
+  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
+  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
   mappers[ImageType::kDepth]->AddObserver(
       vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
 
@@ -640,6 +640,7 @@ void RenderEngineVtk::UpdateWindow(const DepthRenderCamera& camera,
   UpdateWindow(camera.core(), false, p, "");
 }
 
-}  // namespace render
+}  // namespace internal
+}  // namespace render_vtk
 }  // namespace geometry
 }  // namespace drake
