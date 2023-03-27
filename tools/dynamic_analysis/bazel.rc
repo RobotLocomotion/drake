@@ -217,7 +217,7 @@ build:ubsan_everything --test_timeout=120,600,1800,7200
 
 ### Memcheck build. ###
 build:memcheck --build_tests_only
-build:memcheck --copt -g
+build:memcheck --copt -gdwarf-4
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck --copt -O2
 build:memcheck --copt=-DNDEBUG                # Disable third-party asserts.
@@ -238,7 +238,7 @@ build:memcheck_everything --build_tests_only
 build:memcheck_everything --define=WITH_GUROBI=ON
 build:memcheck_everything --define=WITH_MOSEK=ON
 build:memcheck_everything --define=WITH_SNOPT=ON
-build:memcheck_everything --copt -g
+build:memcheck_everything --copt -gdwarf-4
 # https://sourceforge.net/p/valgrind/mailman/valgrind-developers/?viewmonth=201806&viewday=11&style=flat
 build:memcheck_everything --copt -O2
 build:memcheck_everything --copt=-DNDEBUG                # Disable third-party asserts.
