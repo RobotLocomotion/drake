@@ -278,6 +278,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcRpyDtFromAngularVelocityInParent",
             &Class::CalcRpyDtFromAngularVelocityInParent, py::arg("w_AD_A"),
             cls_doc.CalcRpyDtFromAngularVelocityInParent.doc)
+        .def("CalcRpyDtFromAngularVelocityInChild",
+            &Class::CalcRpyDtFromAngularVelocityInChild, py::arg("w_AD_D"),
+            cls_doc.CalcRpyDtFromAngularVelocityInChild.doc)
         .def("CalcRpyDDtFromRpyDtAndAngularAccelInParent",
             &Class::CalcRpyDDtFromRpyDtAndAngularAccelInParent,
             py::arg("rpyDt"), py::arg("alpha_AD_A"),
