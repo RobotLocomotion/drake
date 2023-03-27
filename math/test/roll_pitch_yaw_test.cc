@@ -200,7 +200,7 @@ GTEST_TEST(RollPitchYaw, CalcAngularVelocityFromRpyDtAndViceVersa) {
   const Matrix3<double> Np =
       rpy.CalcMatrixRelatingRpyDtToAngularVelocityInParent();
 
-  // Form the matrix Np relating ṙ, ṗ, ẏ to ω0, ω1, ω2, where frame D's angular
+  // Form the matrix Nc relating ṙ, ṗ, ẏ to ω0, ω1, ω2, where frame D's angular
   // velocity in A, expressed in "child" D is `w_AD_D = ω0 Dx + ω1 Dy + ω2 Dz`.
   // ⌈ ṙ ⌉      ⌈ ω0 ⌉          ⌈ 1  sin(r)*tan(p)  cos(r)*tan(p) ⌉
   // | ṗ | = Nc | ω1 |     Nc = | 0      cos(r)        −sin(r)    |

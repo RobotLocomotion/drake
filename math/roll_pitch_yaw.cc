@@ -231,8 +231,8 @@ void RollPitchYaw<T>::SetFromQuaternionAndRotationMatrix(
         " An element of the RotationMatrix R passed to this method differs by"
         " more than {:G} from the corresponding element of the RotationMatrix"
         " formed by the Quaternion passed to this method.  To avoid this"
-        " inconsistency, ensure the orientation of R and Quaternion align."
-        " ({}:{}).", __func__, tolerance);
+        " inconsistency, ensure the orientation of R and Quaternion align.",
+        __func__, tolerance);
     throw std::runtime_error(message);
   }
 
