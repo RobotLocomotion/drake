@@ -5,11 +5,6 @@ load("//:.manifest.bzl", "MANIFEST")
 
 package(default_visibility = ["//:__subpackages__"])
 
-exports_files(
-    glob([".share_drake_models/**"], allow_empty = False),
-    visibility = ["@models_internal//:__pkg__"],
-)
-
 _DRAKE_RUNFILES = MANIFEST["runfiles"]["drake"]
 
 _DRAKE_SHLIBS = glob([
@@ -62,7 +57,6 @@ filegroup(
     name = ".all_runfiles",
     data = [
         "//:.installed_runfiles",
-        "@models_internal//:.installed_runfiles",
     ] + [
         "//{}:.installed_runfiles".format(x)
         for x in _EXPECTED_DRAKE_RUNFILES_PACKAGES

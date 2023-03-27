@@ -451,6 +451,44 @@ PackageMap& PackageMap::operator=(PackageMap&& other) {
   return *this;
 }
 
+namespace {
+
+/* The schema used by tools/workspace/github.bzl to save the repository details.
+We only need a subset of the fields, so only those few are declared here. */
+struct RepositoryMetadataSchema {
+  template <typename Archive>
+  void Serialize(Archive* a) {
+    a->Visit(DRAKE_NVP(urls));
+    a->Visit(DRAKE_NVP(sha256));
+    a->Visit(DRAKE_NVP(strip_prefix));
+  }
+  std::vector<std::string> urls;
+  std::string sha256;
+  std::string strip_prefix;
+};
+
+/* Loads and parses the metadata from tools/workspace/models_internal into the
+RemoteParams structure needed by PackageMap. */
+PackageMap::RemoteParams GetDrakeModelsRemoteParams() {
+  const std::string json_filename =
+      FindResourceOrThrow("drake/multibody/parsing/drake_models.json");
+  const yaml::LoadYamlOptions options{
+      // Ignore any data that we don't need.
+      .allow_yaml_with_no_cpp = true,
+      // Require all data that we do need.
+      .allow_cpp_with_no_yaml = false,
+  };
+  auto json_contents = yaml::LoadYamlFile<RepositoryMetadataSchema>(
+      json_filename, {}, {}, options);
+  PackageMap::RemoteParams result;
+  result.urls = std::move(json_contents.urls);
+  result.sha256 = std::move(json_contents.sha256);
+  result.strip_prefix = std::move(json_contents.strip_prefix);
+  return result;
+}
+
+}  // namespace
+
 PackageMap::PackageMap() : PackageMap{std::nullopt} {
   // FindResource is the source of truth for where Drake's first-party files
   // live, no matter whether we're building from source or using a installed
@@ -458,26 +496,22 @@ PackageMap::PackageMap() : PackageMap{std::nullopt} {
   const std::string drake_package = FindResourceOrThrow("drake/package.xml");
   AddPackageXml(drake_package);
 
-  // For drake_models (i.e., https://github.com/RobotLocomotion/models), we need
-  // to do something different for source vs installed, hinging on whether or
-  // not we have runfiles. When running from source, we have bazel runfiles and
-  // will find our drake_models there. Otherwise, we're using installed Drake,
-  // in which case the drake_models package is a sibling to the drake package.
-  if (HasRunfiles()) {
-    // This is the case for Bazel-aware programs or tests, either first-party
-    // use of Bazel in Drake, or also for downstream Bazel projects that are
-    // using Drake as a dependency.
-    const RlocationOrError find = FindRunfile("models_internal/package.xml");
-    DRAKE_DEMAND(find.error.empty());
-    AddPackageXml(find.abspath);
+  // Prepare the params for fetching remote drake_models. We do this outside of
+  // the if-else to ensure it receives test coverage under bazel (i.e., even if
+  // we're never going to download anything).
+  static const never_destroyed<RemoteParams> memoized_params(
+      GetDrakeModelsRemoteParams());
+
+  // For drake_models (i.e., https://github.com/RobotLocomotion/models), the
+  // location where we find the data will vary. If we have Bazel runfiles with
+  // an appropriately-declared external, we'll use that. Otherwise, we'll fetch
+  // the data on demand from the internet.
+  const RlocationOrError maybe_models_package_xml =
+      FindRunfile("models_internal/package.xml");
+  if (maybe_models_package_xml.error.empty()) {
+    AddPackageXml(maybe_models_package_xml.abspath);
   } else {
-    // This is the case for installed Drake. The models are installed under
-    //  $prefix/share/drake_models/package.xml
-    // which is a sibling to
-    //  $prefix/share/drake/package.xml
-    auto share_drake = std::filesystem::path(drake_package).parent_path();
-    auto share = share_drake.parent_path().lexically_normal();
-    AddPackageXml((share / "drake_models/package.xml").string());
+    AddRemote("drake_models", memoized_params.access());
   }
 }
 
