@@ -13,7 +13,7 @@ class TestPolynomial(unittest.TestCase):
 
         p1 = Polynomial()
         p2 = Polynomial(5)
-        p3 = Polynomial([1, 2, 3])
+        p3 = Polynomial(coefficients=[1, 2, 3])
 
     @numpy_compare.check_all_types
     def test_analysis_methods(self, T):

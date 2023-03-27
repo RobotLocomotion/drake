@@ -211,6 +211,26 @@ void testPolynomialMatrix() {
   C.setZero();  // this was a problem before
 }
 
+GTEST_TEST(PolynomialTest, CoefficientsConstructor) {
+  const VectorXd coefficients = Eigen::Vector3d(0.25, 0.0, 2.0);
+  Polynomial<double> dut(coefficients);
+  EXPECT_TRUE(CompareMatrices(dut.GetCoefficients(), coefficients));
+}
+
+GTEST_TEST(PolynomialTest, CoefficientsConstructorEmpty) {
+  // An empty coefficients vector is promoted to a single zero.
+  const VectorXd coefficients;
+  Polynomial<double> dut(coefficients);
+  const VectorXd expected = VectorXd::Constant(1, 0.0);
+  EXPECT_TRUE(CompareMatrices(dut.GetCoefficients(), expected));
+}
+
+GTEST_TEST(PolynomialTest, CoefficientsConstructorNoMatrix) {
+  // Non-vector matrices are rejected.
+  const Eigen::MatrixXd coefficients = Eigen::MatrixXd::Zero(3, 5);
+  EXPECT_THROW(Polynomial<double>{coefficients}, std::exception);
+}
+
 GTEST_TEST(PolynomialTest, IntegralAndDerivative) {
   testIntegralAndDerivative<double>();
 }
