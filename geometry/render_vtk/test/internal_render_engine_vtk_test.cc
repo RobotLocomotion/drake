@@ -22,7 +22,6 @@
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/shape_specification.h"
-#include "drake/geometry/test_utilities/dummy_render_engine.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/rotation_matrix.h"
 #include "drake/systems/sensors/image.h"
@@ -37,7 +36,6 @@ using Eigen::AngleAxisd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-// using geometry::internal::DummyRenderEngine;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using render::ColorRenderCamera;

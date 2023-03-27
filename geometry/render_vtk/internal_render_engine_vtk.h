@@ -176,8 +176,8 @@ class RenderEngineVtk : public render::RenderEngine,
   static void PerformVtkUpdate(const RenderingPipeline& p);
 
   /** Provides access to the private data member pipelines_ by returning a
-   mutable RenderingPipeline reference. Only image types in internal::ImageType
-   enum are valid. */
+   mutable RenderingPipeline reference. Only image types in ImageType enum are
+   valid. */
   RenderingPipeline& get_mutable_pipeline(ImageType image_type) const;
 
  private:
