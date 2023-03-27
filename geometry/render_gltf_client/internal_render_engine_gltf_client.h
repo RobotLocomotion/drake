@@ -16,7 +16,7 @@ namespace internal {
 /* A RenderEngine that exports
  <a href="https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html">glTF
  </a> scenes, uploads to a render server, and retrieves the renderings back. */
-class RenderEngineGltfClient : public render::RenderEngineVtk {
+class RenderEngineGltfClient : public render_vtk::internal::RenderEngineVtk {
  public:
   /* @name Does not allow copy, move, or assignment  */
   //@{
@@ -52,7 +52,7 @@ class RenderEngineGltfClient : public render::RenderEngineVtk {
    inversion for the specified image_type.
    TODO(zachfang): Remove this after VTK is updated. */
   Eigen::Matrix4d CameraModelViewTransformMatrix(
-      render::internal::ImageType image_type) const;
+      render_vtk::internal::ImageType image_type) const;
 
  protected:
   /* Copy constructor for the purpose of cloning. */
@@ -80,7 +80,7 @@ class RenderEngineGltfClient : public render::RenderEngineVtk {
   /* Exports the `RenderEngineVtk::pipelines_[image_type]` VTK scene to a
    glTF file given `export_path`. */
   void ExportScene(const std::string& export_path,
-                   render::internal::ImageType image_type) const;
+                   render_vtk::internal::ImageType image_type) const;
 
   std::unique_ptr<RenderClient> render_client_;
 };
