@@ -29,17 +29,22 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
+namespace render_vtk {
+namespace internal {
 namespace {
 
 using Eigen::AngleAxisd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::RenderEngineVtkParams;
-using geometry::internal::DummyRenderEngine;
+// using geometry::internal::DummyRenderEngine;
 using math::RigidTransformd;
 using math::RotationMatrixd;
+using render::ColorRenderCamera;
+using render::DepthRenderCamera;
+using render::RenderCameraCore;
+using render::RenderEngine;
+using render::RenderLabel;
 using std::make_unique;
 using std::unique_ptr;
 using std::unordered_map;
@@ -1184,7 +1189,7 @@ TEST_F(RenderEngineVtkTest, DifferentCameras) {
   const auto& ref_core = depth_camera_.core();
   const std::string& ref_name = ref_core.renderer_name();
   const RigidTransformd ref_X_BS = ref_core.sensor_pose_in_camera_body();
-  const ClippingRange& ref_clipping = ref_core.clipping();
+  const render::ClippingRange& ref_clipping = ref_core.clipping();
   const auto& ref_intrinsics = ref_core.intrinsics();
   const int ref_w = ref_intrinsics.width();
   const int ref_h = ref_intrinsics.height();
@@ -1705,6 +1710,7 @@ TEST_F(RenderEngineVtkTest, IntrinsicsAndRenderProperties) {
 }
 
 }  // namespace
-}  // namespace render
+}  // namespace internal
+}  // namespace render_vtk
 }  // namespace geometry
 }  // namespace drake
