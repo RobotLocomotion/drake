@@ -108,7 +108,7 @@ namespace render_gltf_client {
 namespace internal {
 namespace {
 
-using render::internal::ShaderCallback;
+using render_vtk::internal::ShaderCallback;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageRgba8U;
 using systems::sensors::ImageTraits;

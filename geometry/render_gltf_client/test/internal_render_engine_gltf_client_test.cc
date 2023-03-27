@@ -34,7 +34,7 @@ using math::RollPitchYawd;
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
 using render::RenderEngine;
-using render::internal::ImageType;
+using render_vtk::internal::ImageType;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
