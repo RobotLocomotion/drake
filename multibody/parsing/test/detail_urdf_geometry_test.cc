@@ -740,6 +740,22 @@ TEST_F(UrdfGeometryTest, TestDuplicateVisualName) {
   EXPECT_THAT(TakeWarning(), ContainsRegex("visual.*hello.*renam.*hello_1"));
 }
 
+TEST_F(UrdfGeometryTest, TestDrakeDiffuseMapWarning) {
+  // If <drake:diffuse_map> is specified, it should be ignored with a warning.
+  std::string robot = R"""(
+    <robot name='a'>
+      <link name='b'>
+        <visual name='hello'>
+          <geometry><box size='1 2 3'/></geometry>
+          <material><drake:diffuse_map value="abc.png"/></material>
+        </visual>
+      </link>
+    </robot>)""";
+  DRAKE_EXPECT_NO_THROW(ParseUrdfGeometryString(robot));
+  EXPECT_THAT(TakeWarning(),
+              ContainsRegex("<drake:diffuse_map> is not supported.*"));
+}
+
 TEST_F(UrdfGeometryTest, TestDuplicateCollisionName) {
   // Duplicate visual names are allowed by URDF, but not by SceneGraph.
   // They should produce a warning (with automatic renaming).
