@@ -68,7 +68,7 @@ int DoMain() {
     // does not violate any of the joint position limits.
     context->get_mutable_continuous_state()
         .get_mutable_generalized_position()
-        .SetFromVector(Eigen::VectorXd::Random(plant.num_positions()));
+        .SetFromVector(Eigen::VectorXd::Ones(plant.num_positions()));
     // Evaluate the corresponding end-effector pose.
     ee_pose_goal[i] = plant.EvalBodyPoseInWorld(*context, ee_body);
   }
@@ -76,7 +76,7 @@ int DoMain() {
   // Sample random initial guesses assuming that the random range [-1, 1] rad
   // does not violate any of the joint position limits.
   const Eigen::MatrixXd q0(
-      Eigen::MatrixXd::Random(plant.num_positions(), kNumRandInitGuess));
+      1e-1 * Eigen::MatrixXd::Ones(plant.num_positions(), kNumRandInitGuess));
 
   // Create the task in terms of position constraints on the end effector.
   auto pos_constraint = std::make_shared<multibody::PositionConstraint>(
