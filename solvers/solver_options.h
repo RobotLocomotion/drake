@@ -190,6 +190,5 @@ std::ostream& operator<<(std::ostream&, const SolverOptions&);
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <>
-struct formatter<drake::solvers::SolverOptions>
-    : drake::ostream_formatter {};
+struct formatter<drake::solvers::SolverOptions> : drake::ostream_formatter {};
 }  // namespace fmt

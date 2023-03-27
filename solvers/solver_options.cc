@@ -116,9 +116,15 @@ bool SolverOptions::get_print_to_console() const {
 
 std::unordered_set<SolverId> SolverOptions::GetSolverIds() const {
   std::unordered_set<SolverId> result;
-  for (const auto& pair : solver_options_double_) { result.insert(pair.first); }
-  for (const auto& pair : solver_options_int_) { result.insert(pair.first); }
-  for (const auto& pair : solver_options_str_) { result.insert(pair.first); }
+  for (const auto& pair : solver_options_double_) {
+    result.insert(pair.first);
+  }
+  for (const auto& pair : solver_options_int_) {
+    result.insert(pair.first);
+  }
+  for (const auto& pair : solver_options_str_) {
+    result.insert(pair.first);
+  }
   return result;
 }
 
@@ -147,8 +153,7 @@ void SolverOptions::Merge(const SolverOptions& other) {
   MergeHelper(other.solver_options_double_, &solver_options_double_);
   MergeHelper(other.solver_options_int_, &solver_options_int_);
   MergeHelper(other.solver_options_str_, &solver_options_str_);
-  MergeHelper(
-      other.common_solver_options_, &common_solver_options_);
+  MergeHelper(other.common_solver_options_, &common_solver_options_);
 }
 
 bool SolverOptions::operator==(const SolverOptions& other) const {
@@ -165,8 +170,8 @@ bool SolverOptions::operator!=(const SolverOptions& other) const {
 namespace {
 template <typename T>
 void Summarize(const SolverId& id,
-           const std::unordered_map<std::string, T>& keyvals,
-           std::map<std::string, std::string>* pairs) {
+               const std::unordered_map<std::string, T>& keyvals,
+               std::map<std::string, std::string>* pairs) {
   for (const auto& keyval : keyvals) {
     (*pairs)[fmt::format("{}:{}", id.name(), keyval.first)] =
         fmt::format("{}", keyval.second);

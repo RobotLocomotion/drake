@@ -32,4 +32,3 @@ std::ostream& operator<<(std::ostream& os, SolutionResult solution_result) {
 }
 }  // namespace solvers
 }  // namespace drake
-
