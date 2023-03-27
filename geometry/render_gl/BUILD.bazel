@@ -245,6 +245,18 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "deprecation_test",
+    copts = [
+        "-Wno-cpp",
+        "-Wno-deprecated-declarations",
+    ],
+    deps = [
+        ":factory",
+        ":render_engine_gl_params",
+    ],
+)
+
 drake_cc_googletest_ubuntu_only(
     name = "internal_shape_meshes_test",
     data = [

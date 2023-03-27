@@ -30,5 +30,13 @@ struct RenderEngineGlParams {
   Rgba default_clear_color{204 / 255., 229 / 255., 255 / 255., 1.0};
 };
 
+namespace render {
+
+using RenderEngineGlParams
+    DRAKE_DEPRECATED("2023-08-01", "Use the geometry namespace instead.")
+    = geometry::RenderEngineGlParams;
+
+}  // namespace render
+
 }  // namespace geometry
 }  // namespace drake
