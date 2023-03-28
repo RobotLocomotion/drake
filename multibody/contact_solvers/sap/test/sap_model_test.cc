@@ -572,6 +572,8 @@ class DummyModelTest : public ::testing::Test {
 
     // Now we compute a diagonal scaling for each constraints by taking the RMS
     // norm of the diagonal block for that constraint.
+    // The i-th entry in W_diagonal_approximation must contain the approximation
+    // corresponding to the i-th constraint.
     VectorXd W_diagonal_approximation =
         VectorXd::Zero(sap_problem_->num_constraints());
     for (int i = 0; i < sap_problem_->num_constraints(); ++i) {
@@ -579,19 +581,26 @@ class DummyModelTest : public ::testing::Test {
           W_approximation[i].norm() / W_approximation[i].rows();
     }
 
-    // Since SapModel permutes the constraints, we must ensure the result is in
-    // the same ordering.
+    // We make cluster_indexes store constraint indexes in the order specified
+    // by the SapModel (by clusters).
+    std::vector<int> cluster_indexes(sap_problem_->num_constraints());
     const ContactProblemGraph& graph = sap_problem_->graph();
-    VectorXd W_diag_expected(sap_problem_->num_constraints());
     int i_permuted = 0;
     for (const auto& cluster : graph.clusters()) {
       for (int i : cluster.constraint_index()) {
-        W_diag_expected[i_permuted] = W_diagonal_approximation[i];
-        ++i_permuted;
+        cluster_indexes[i_permuted++] = i;
       }
     }
 
-    return W_diag_expected;
+    // We verify this problem leads to constraints shuffling.
+    // In this way we ensure we stress test the ordering logic building the
+    // Delassus approximation. If the check below changes for any reason, then
+    // this test should be updated accordingly so that we ensure
+    // W_diagonal_approximation is indexed by constraint index.
+    EXPECT_FALSE(
+        std::is_sorted(cluster_indexes.begin(), cluster_indexes.end()));
+
+    return W_diagonal_approximation;
   }
 
  protected:
