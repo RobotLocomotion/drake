@@ -194,11 +194,7 @@ class RigidTransform {
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
-  explicit RigidTransform(const Matrix4<T>& pose) {
-    DRAKE_ASSERT_VOID(ThrowIfInvalidBottomRow(pose));
-    set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
-    set_translation(pose.template block<3, 1>(0, 3));
-  }
+  explicit RigidTransform(const Matrix4<T>& pose);
 
   /// Constructs a %RigidTransform from an appropriate Eigen <b>expression</b>.
   /// @param[in] pose Generic Eigen matrix <b>expression</b>.
@@ -352,13 +348,7 @@ class RigidTransform {
   ///  │   0      1     │
   ///  └                ┘
   /// </pre>
-  Matrix4<T> GetAsMatrix4() const {
-    Matrix4<T> pose;
-    pose.template topLeftCorner<3, 3>() = rotation().matrix();
-    pose.template topRightCorner<3, 1>() = translation();
-    pose.row(3) = Vector4<T>(0, 0, 0, 1);
-    return pose;
-  }
+  Matrix4<T> GetAsMatrix4() const;
 
   /// Returns the 3x4 matrix associated with this %RigidTransform, i.e., X_AB.
   /// <pre>
@@ -366,24 +356,10 @@ class RigidTransform {
   ///  │ R_AB  p_AoBo_A │
   ///  └                ┘
   /// </pre>
-  Eigen::Matrix<T, 3, 4> GetAsMatrix34() const {
-    Eigen::Matrix<T, 3, 4> pose;
-    pose.template topLeftCorner<3, 3>() = rotation().matrix();
-    pose.template topRightCorner<3, 1>() = translation();
-    return pose;
-  }
+  Eigen::Matrix<T, 3, 4> GetAsMatrix34() const;
 
   /// Returns the isometry in ℜ³ that is equivalent to a %RigidTransform.
-  Isometry3<T> GetAsIsometry3() const {
-    // pose.linear() returns a mutable reference to the 3x3 rotation matrix part
-    // of Isometry3 and pose.translation() returns a mutable reference to the
-    // 3x1 position vector part of the Isometry3.
-    Isometry3<T> pose;
-    pose.linear() = rotation().matrix();
-    pose.translation() = translation();
-    pose.makeAffine();
-    return pose;
-  }
+  Isometry3<T> GetAsIsometry3() const;
 
   /// Sets `this` %RigidTransform so it corresponds to aligning the two frames
   /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
@@ -446,11 +422,7 @@ class RigidTransform {
   /// @note: The square-root of a %RigidTransform's condition number is roughly
   /// the magnitude of the position vector.  The accuracy of the calculation for
   /// the inverse of a %RigidTransform drops off with the sqrt condition number.
-  RigidTransform<T> inverse() const {
-    // @internal This method's name was chosen to mimic Eigen's inverse().
-    const RotationMatrix<T> R_BA = R_AB_.inverse();
-    return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
-  }
+  RigidTransform<T> inverse() const;
 
   /// Calculates the product of `this` inverted and another %RigidTransform.
   /// If you consider `this` to be the transform X_AB, and `other` to be
