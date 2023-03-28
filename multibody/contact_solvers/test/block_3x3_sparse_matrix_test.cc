@@ -56,7 +56,7 @@ GTEST_TEST(Block3x3SparseMatrixTest, Size) {
 
 GTEST_TEST(Block3x3SparseMatrixTest, SetFromTriplets) {
   Block3x3SparseMatrix<double> sparse_matrix = MakeBlockSparseMatrix();
-  MatrixXd expected_matrix(12, 9);
+  MatrixXd expected_matrix = MatrixXd::Zero(12, 9);
   expected_matrix.topLeftCorner<3, 3>() = MakeMatrix(3.0);
   expected_matrix.block<3, 3>(0, 3) = MakeMatrix(7.0);
   expected_matrix.block<3, 3>(6, 3) = MakeMatrix(5.0);
