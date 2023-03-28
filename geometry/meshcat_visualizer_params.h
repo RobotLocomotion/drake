@@ -54,6 +54,24 @@ struct MeshcatVisualizerParams {
 
   /** Determines whether our meshcat path should be default to being visible. */
   bool visible_by_default{true};
+
+  /** When using the hydroelastic contact model, collision geometries that are
+  _declared_ as geometric primitives are frequently represented by some
+  discretely tessellated mesh when computing contact. It can be quite helpful
+  in assessing contact behavior to visualize these discrete meshes (in place of
+  the idealized primitives).
+
+  To visualize these representations it is necessary to request visualization
+  of geometries with the Role::kProximity role (see the role field). It is
+  further necessary to explicitly request the hydroelastic meshes where
+  available (setting show_hydroelastic to `true`).
+
+  Setting this `show_hydroelastic` to `true` will have no apparent effect if
+  none of the collision meshes have a hydroelastic mesh associated with them.
+
+  This option is ignored by MeshcatVisualizer<T> when T is not `double`, e.g.
+  if T == AutoDiffXd. */
+  bool show_hydroelastic{false};
 };
 
 }  // namespace geometry
