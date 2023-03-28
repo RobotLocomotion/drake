@@ -430,13 +430,8 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   // Compute Delassus_diagonal as the rms norm of the diagonal block for the
   // i-th constraint.
   delassus_diagonal->resize(num_constraints);
-  int permuted_constraint_index = 0;
-  for (const ContactProblemGraph::ConstraintCluster& e :
-       problem().graph().clusters()) {
-    for (int i : e.constraint_index()) {
-      (*delassus_diagonal)[permuted_constraint_index++] =
-          W[i].norm() / W[i].rows();
-    }
+  for (int i = 0; i < num_constraints; ++i) {
+    (*delassus_diagonal)[i] = W[i].norm() / W[i].rows();
   }
 }
 
