@@ -129,6 +129,10 @@ const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
   DRAKE_THROW_UNLESS(builder != nullptr);
   auto& result = *builder->template AddSystem<ContactVisualizer<T>>(
       std::move(meshcat), std::move(params));
+  const std::string aspirational_name = "meshcat_contact_visualizer";
+  if (!builder->HasSubsystemNamed(aspirational_name)) {
+    result.set_name(aspirational_name);
+  }
   builder->Connect(contact_results_port, result.contact_results_input_port());
   builder->Connect(query_object_port, result.query_object_input_port());
   return result;
@@ -141,6 +145,10 @@ const ContactVisualizer<T>& ContactVisualizer<T>::AddToBuilder(
   DRAKE_THROW_UNLESS(builder != nullptr);
   auto& result = *builder->template AddSystem<ContactVisualizer<T>>(
       std::move(meshcat), std::move(params));
+  const std::string aspirational_name = "meshcat_contact_visualizer";
+  if (!builder->HasSubsystemNamed(aspirational_name)) {
+    result.set_name(aspirational_name);
+  }
   builder->Connect(contact_results_port, result.contact_results_input_port());
   return result;
 }

@@ -716,6 +716,9 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
   DiagramBuilder<double> builder;
   auto adder = builder.AddNamedSystem<Adder>("adder", 1, 1);
   auto pass = builder.AddNamedSystem<PassThrough>("pass", 1);
+  EXPECT_TRUE(builder.HasSubsystemNamed("adder"));
+  EXPECT_TRUE(builder.HasSubsystemNamed("pass"));
+  EXPECT_FALSE(builder.HasSubsystemNamed("no-such-name"));
 
   // Plain by-name.
   EXPECT_EQ(&builder.GetSubsystemByName("adder"), adder);
@@ -755,12 +758,14 @@ GTEST_TEST(DiagramBuilderTest, GetByName) {
   // not the "pass" anymore
   auto bonus_pass = builder.AddNamedSystem<PassThrough>("pass", 1);
   EXPECT_EQ(&builder.GetSubsystemByName("adder"), adder);
+  EXPECT_TRUE(builder.HasSubsystemNamed("pass"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       builder.GetMutableSubsystemByName("pass"),
       ".*multiple subsystems.*pass.*unique.*");
 
   // Once the system is reset to use unique name, both lookups succeed.
   bonus_pass->set_name("bonus_pass");
+  EXPECT_TRUE(builder.HasSubsystemNamed("bonus_pass"));
   EXPECT_EQ(&builder.GetSubsystemByName("pass"), pass);
   EXPECT_EQ(&builder.GetSubsystemByName("bonus_pass"), bonus_pass);
 }

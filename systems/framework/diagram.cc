@@ -352,6 +352,16 @@ void Diagram<T>::DoCalcImplicitTimeDerivativesResidual(
 }
 
 template <typename T>
+bool Diagram<T>::HasSubsystemNamed(std::string_view name) const {
+  for (const auto& child : registered_systems_) {
+    if (child->get_name() == name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+template <typename T>
 const System<T>& Diagram<T>::GetSubsystemByName(std::string_view name) const {
   for (const auto& child : registered_systems_) {
     if (child->get_name() == name) {

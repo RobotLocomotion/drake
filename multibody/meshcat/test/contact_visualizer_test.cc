@@ -109,6 +109,7 @@ class ContactVisualizerTest : public ::testing::Test {
 
   void PublishAndCheck(
       bool expect_geometry_names = false) {
+    EXPECT_EQ(visualizer_->get_name(), "meshcat_contact_visualizer");
     diagram_->ForcedPublish(*context_);
     if (expect_geometry_names) {
       EXPECT_TRUE(meshcat_->HasPath(

@@ -157,11 +157,11 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   // Check that systems that we expect to have been added were actually added.
   for (const auto& name : {
            // For Meldis.
-           "DrakeVisualizer",
+           "drake_visualizer",
            "contact_results_publisher",
            // For Meshcat.
-           "MeshcatVisualizer",
-           "ContactVisualizer",
+           "meshcat_visualizer",
+           "meshcat_contact_visualizer",
        }) {
     SCOPED_TRACE(fmt::format("Checking for a system named like {}", name));
     int count = 0;
@@ -253,7 +253,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoMeshcat) {
   int meshcat_count = 0;
   for (const auto* system : builder.GetSystems()) {
     const std::string& name = system->get_name();
-    if (name.find("MeshcatVisualizer") != std::string::npos) {
+    if (name.find("meshcat_visualizer") != std::string::npos) {
       ++meshcat_count;
     }
   }

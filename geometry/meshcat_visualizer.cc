@@ -100,8 +100,13 @@ MeshcatVisualizer<T>& MeshcatVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder,
     const systems::OutputPort<T>& query_object_port,
     std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params) {
+  const std::string aspirational_name =
+      fmt::format("meshcat_visualizer({})", params.prefix);
   auto& visualizer = *builder->template AddSystem<MeshcatVisualizer<T>>(
       std::move(meshcat), std::move(params));
+  if (!builder->HasSubsystemNamed(aspirational_name)) {
+    visualizer.set_name(aspirational_name);
+  }
   builder->Connect(query_object_port, visualizer.query_object_input_port());
   return visualizer;
 }

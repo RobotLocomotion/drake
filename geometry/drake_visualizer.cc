@@ -526,8 +526,13 @@ const DrakeVisualizer<T>& DrakeVisualizer<T>::AddToBuilder(
     systems::DiagramBuilder<T>* builder,
     const systems::OutputPort<T>& query_object_port,
     lcm::DrakeLcmInterface* lcm, DrakeVisualizerParams params) {
+  const std::string aspirational_name =
+      fmt::format("drake_visualizer({})", params.role);
   auto& visualizer =
       *builder->template AddSystem<DrakeVisualizer<T>>(lcm, std::move(params));
+  if (!builder->HasSubsystemNamed(aspirational_name)) {
+    visualizer.set_name(aspirational_name);
+  }
   builder->Connect(query_object_port, visualizer.query_object_input_port());
   return visualizer;
 }

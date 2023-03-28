@@ -579,6 +579,8 @@ void DoScalarDependentDefinitions(py::module m) {
             return out;
           },
           doc.DiagramBuilder.GetMutableSystems.doc)
+      .def("HasSubsystemNamed", &DiagramBuilder<T>::HasSubsystemNamed,
+          py::arg("name"), doc.DiagramBuilder.HasSubsystemNamed.doc)
       .def("GetSubsystemByName", &DiagramBuilder<T>::GetSubsystemByName,
           py::arg("name"), py_rvp::reference_internal,
           doc.DiagramBuilder.GetSubsystemByName.doc)

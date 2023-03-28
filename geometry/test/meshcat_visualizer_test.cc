@@ -144,6 +144,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   // Absolute path.
   params.prefix = "/foo";
   SetUpDiagram(params);
+  EXPECT_EQ(visualizer_->get_name(), "meshcat_visualizer(/foo)");
   EXPECT_FALSE(meshcat_->HasPath("/foo/iiwa14"));
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/foo/iiwa14"));
@@ -153,6 +154,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   params.prefix = "foo";
   EXPECT_FALSE(meshcat_->HasPath("/drake/foo/iiwa14"));
   SetUpDiagram(params);
+  EXPECT_EQ(visualizer_->get_name(), "meshcat_visualizer(foo)");
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/drake/foo/iiwa14"));
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
