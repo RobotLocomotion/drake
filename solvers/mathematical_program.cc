@@ -113,6 +113,7 @@ VectorX<T> Flatten(const Eigen::Ref<const MatrixX<T>>& mat) {
 
 void MathematicalProgram::AddDecisionVariables(
     const Eigen::Ref<const MatrixXDecisionVariable>& decision_variables) {
+  int new_var_count = 0;
   for (int i = 0; i < decision_variables.rows(); ++i) {
     for (int j = 0; j < decision_variables.cols(); ++j) {
       const auto& var = decision_variables(i, j);
@@ -122,8 +123,7 @@ void MathematicalProgram::AddDecisionVariables(
       }
       if (decision_variable_index_.find(var.get_id()) !=
           decision_variable_index_.end()) {
-        throw std::runtime_error(
-            fmt::format("{} is already a decision variable.", var));
+        continue;
       }
       if (indeterminates_index_.find(var.get_id()) !=
           indeterminates_index_.end()) {
@@ -134,9 +134,10 @@ void MathematicalProgram::AddDecisionVariables(
       decision_variables_.push_back(var);
       const int var_index = decision_variables_.size() - 1;
       decision_variable_index_.insert(std::make_pair(var.get_id(), var_index));
+      new_var_count++;
     }
   }
-  AppendNanToEnd(decision_variables.size(), &x_initial_guess_);
+  AppendNanToEnd(new_var_count, &x_initial_guess_);
 }
 
 symbolic::Polynomial MathematicalProgram::NewFreePolynomialImpl(
@@ -347,7 +348,7 @@ MatrixXIndeterminate MathematicalProgram::NewIndeterminates(
   return NewIndeterminates(rows, cols, names);
 }
 
-void MathematicalProgram::AddIndeterminate(
+int MathematicalProgram::AddIndeterminate(
     const symbolic::Variable& new_indeterminate) {
   if (new_indeterminate.is_dummy()) {
     throw std::runtime_error(
@@ -355,9 +356,6 @@ void MathematicalProgram::AddIndeterminate(
   }
   if (indeterminates_index_.find(new_indeterminate.get_id()) !=
       indeterminates_index_.end()) {
-    throw std::runtime_error(fmt::format(
-        "{} is already an indeterminate in the optimization program.",
-        new_indeterminate));
   }
   if (decision_variable_index_.find(new_indeterminate.get_id()) !=
       decision_variable_index_.end()) {
@@ -369,10 +367,17 @@ void MathematicalProgram::AddIndeterminate(
     throw std::runtime_error(
         fmt::format("{} should be of type CONTINUOUS.", new_indeterminate));
   }
-  const int var_index = indeterminates_.size();
-  indeterminates_index_.insert(
-      std::make_pair(new_indeterminate.get_id(), var_index));
-  indeterminates_.push_back(new_indeterminate);
+  auto it = indeterminates_index_.find(new_indeterminate.get_id());
+  if (it == indeterminates_index_.end()) {
+    const int var_index = indeterminates_.size();
+    indeterminates_index_.insert(
+        std::make_pair(new_indeterminate.get_id(), var_index));
+    indeterminates_.push_back(new_indeterminate);
+    indeterminates_index_.emplace(new_indeterminate.get_id(), var_index);
+    return var_index;
+  } else {
+    return it->second;
+  }
 }
 
 void MathematicalProgram::AddIndeterminates(

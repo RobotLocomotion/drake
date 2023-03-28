@@ -418,13 +418,11 @@ class MathematicalProgram {
 
   /** Appends new variables to the end of the existing variables.
    * @param decision_variables The newly added decision_variables.
-   * @pre `decision_variables` should not intersect with the existing variables
-   * or indeterminates in the optimization program.
+   * @pre `decision_variables` should not intersect with the existing
+   * indeterminates in the optimization program.
    * @pre Each entry in `decision_variables` should not be a dummy variable.
    * @throws std::exception if the preconditions are not satisfied.
    */
-  // TODO(hongkai.dai): also check if decision_variables contain duplicate
-  // entries.
   void AddDecisionVariables(
       const Eigen::Ref<const MatrixXDecisionVariable>& decision_variables);
 
@@ -814,16 +812,18 @@ class MathematicalProgram {
 
   /** Adds indeterminate.
    * This method appends an indeterminate to the end of the program's old
+   * indeterminates, if `new_indeterminate` is not already in the program's old
    * indeterminates.
    * @param new_indeterminate The indeterminate to be appended to the
    * program's old indeterminates.
-   * @pre `new_indeterminate` should not intersect with the program's old
-   * indeterminates or decision variables.
+   * @return indeterminate_index prog.indeterminates()(indeterminate_index) =
+   * new_indeterminate.
+   * @pre `new_indeterminate` should not intersect with the program's
+   * decision variables.
    * @pre new_indeterminate should not be dummy.
    * @pre new_indeterminate should be of CONTINUOUS type.
    */
-  void AddIndeterminate(
-      const symbolic::Variable& new_indeterminate);
+  int AddIndeterminate(const symbolic::Variable& new_indeterminate);
 
   /** Adds indeterminates.
    * This method appends some indeterminates to the end of the program's old
@@ -831,11 +831,10 @@ class MathematicalProgram {
    * @param new_indeterminates The indeterminates to be appended to the
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
-   * indeterminates or decision variables.
+   * decision variables.
    * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
-  // TODO(hongkai.dai): check if new_indeterminates contain duplicate entries.
   void AddIndeterminates(
       const Eigen::Ref<const MatrixXIndeterminate>& new_indeterminates);
 
@@ -845,7 +844,7 @@ class MathematicalProgram {
    * @param new_indeterminates The indeterminates to be appended to the
    * program's old indeterminates.
    * @pre `new_indeterminates` should not intersect with the program's old
-   * indeterminates or decision variables.
+   * decision variables.
    * @pre Each entry in new_indeterminates should not be dummy.
    * @pre Each entry in new_indeterminates should be of CONTINUOUS type.
    */
