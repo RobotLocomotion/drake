@@ -518,6 +518,7 @@ drake_py_unittest(
         ":math_py",
         ":trajectories_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake/common:yaml_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
