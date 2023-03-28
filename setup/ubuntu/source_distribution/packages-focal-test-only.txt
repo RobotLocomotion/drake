@@ -14,9 +14,9 @@ python3-pandas
 python3-psutil
 python3-requests
 python3-six
+python3-u-msgpack
 python3-uritemplate
 python3-websockets
 python3-yaml-dbg
-python3-zmq-dbg
 valgrind
 valgrind-dbg
