@@ -199,12 +199,12 @@ TEST_F(PackageMapRemoteTest, CouldNotFetch) {
 
   // Fetching the package throws.
   DRAKE_EXPECT_THROWS_MESSAGE(dut.GetPath(package_name),
-                              ".*downloader.*error.*");
+                              ".*downloader.*error[^]*Checksum[^]*");
 
   // An incomplete download should not corrupt the cache dir. Trying again
   // should still fail.
   DRAKE_EXPECT_THROWS_MESSAGE(dut.GetPath(package_name),
-                              ".*downloader.*error.*");
+                              ".*downloader.*error[^]*Checksum[^]*");
 }
 
 // Merge an unfetched remote package into the the current map. Our purpose here
