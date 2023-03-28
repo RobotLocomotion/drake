@@ -133,14 +133,20 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /** Adds a MeshcatVisualizer and connects it to the given SceneGraph's
    QueryObject-valued output port. See
    MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
-   MeshcatVisualizerParams) for details. */
+   MeshcatVisualizerParams) for details.
+   The %MeshcatVisualizer's name (see systems::SystemBase::set_name) will be set
+   to a sensible default value, unless the default name was already in use by
+   another system. */
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
       std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
 
   /** Adds a MeshcatVisualizer and connects it to the given QueryObject-valued
    output port. See MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
-   MeshcatVisualizerParams) for details. */
+   MeshcatVisualizerParams) for details.
+   The %MeshcatVisualizer's name (see systems::SystemBase::set_name) will be set
+   to a sensible default value, unless the default name was already in use by
+   another system. */
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,

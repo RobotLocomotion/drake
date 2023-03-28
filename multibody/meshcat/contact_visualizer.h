@@ -89,7 +89,10 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
 
   /** Adds a ContactVisualizer and connects it to the given
   MultibodyPlant's multibody::ContactResults-valued output port and
-  geometry::QueryObject-valued output port. */
+  geometry::QueryObject-valued output port.
+  The %ContactVisualizer's name (see systems::SystemBase::set_name) will be set
+  to a sensible default value, unless the default name was already in use by
+  another system. */
   static const ContactVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const MultibodyPlant<T>& plant,
       std::shared_ptr<geometry::Meshcat> meshcat,
@@ -97,7 +100,10 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
 
   /** Adds a ContactVisualizer and connects it to the given
   multibody::ContactResults-valued output port and the given
-  geometry::QueryObject-valued output port. */
+  geometry::QueryObject-valued output port.
+  The %ContactVisualizer's name (see systems::SystemBase::set_name) will be set
+  to a sensible default value, unless the default name was already in use by
+  another system. */
   static const ContactVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& contact_results_port,
@@ -107,6 +113,9 @@ class ContactVisualizer final : public systems::LeafSystem<T> {
 
   /** Adds a ContactVisualizer and connects it to the given
   multibody::ContactResults-valued output port.
+  The %ContactVisualizer's name (see systems::SystemBase::set_name) will be set
+  to a sensible default value, unless the default name was already in use by
+  another system.
   @warning This overload is dispreferred because it cannot show any geometry
   names in the visualizer. */
   static const ContactVisualizer<T>& AddToBuilder(

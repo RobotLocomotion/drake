@@ -199,13 +199,19 @@ class DrakeVisualizer final : public systems::LeafSystem<T> {
   //@{
 
   /** Connects the newly added DrakeVisualizer to the given SceneGraph's
-   QueryObject-valued output port.  */
+   QueryObject-valued output port.
+   The %DrakeVisualizer's name (see systems::SystemBase::set_name) will be set
+   to a sensible default value, unless the default name was already in use by
+   another system. */
   static const DrakeVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
       lcm::DrakeLcmInterface* lcm = nullptr, DrakeVisualizerParams params = {});
 
   /** Connects the newly added DrakeVisualizer to the given QueryObject-valued
-   output port.  */
+   output port.
+   The %DrakeVisualizer's name (see systems::SystemBase::set_name) will be set
+   to a sensible default value, unless the default name was already in use by
+   another system. */
   static const DrakeVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
