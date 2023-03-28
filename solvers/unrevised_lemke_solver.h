@@ -125,7 +125,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LCPVariable)
     LCPVariable() {}
-    LCPVariable(bool z, int index) : z_{z}, index_{index} {}
+    LCPVariable(bool z, int index) : index_{index}, z_{z} {}
 
     bool is_z() const { return z_; }
     int index() const { return index_; }
@@ -162,10 +162,10 @@ class UnrevisedLemkeSolver final : public SolverBase {
     }
 
    private:
-    bool z_{true};   // Is this a z variable or a w variable?
     int index_{-1};  // Index of the variable in the problem, 0...n. n
                      // indicates that the variable is artificial. -1
                      // indicates that the index is uninitialized.
+    bool z_{true};   // Is this a z variable or a w variable?
   };
 
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
