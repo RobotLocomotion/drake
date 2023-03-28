@@ -215,10 +215,10 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
     # The target can be either a dictionary or a dataclass.
     assert target is not None
     if isinstance(target, collections.abc.Mapping):
-        old_value = target[name]
+        getter = functools.partial(target.__getitem__, name)
         setter = functools.partial(target.__setitem__, name)
     else:
-        old_value = getattr(target, name)
+        getter = functools.partial(getattr, target, name)
         setter = functools.partial(setattr, target, name)
 
     # Handle all of the plain YAML scalars:
@@ -241,6 +241,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
             setter(None)
             return
         # Create a non-null default value, if necessary.
+        old_value = getter()
         if old_value is None:
             setter(_create_from_schema(
                 schema=nested_optional_type,
@@ -290,6 +291,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
         (key_type, value_type) = generic_args
         assert key_type == str
         if options.retain_map_defaults:
+            old_value = getter()
             new_value = copy.deepcopy(old_value)
         else:
             new_value = dict()
@@ -360,6 +362,7 @@ def _merge_yaml_dict_item_into_target(*, options, name, yaml_value,
 
     # If the value_schema is neither primitive nor generic, then we'll assume
     # it's a directly-nested subclass.
+    old_value = getter()
     new_value = copy.deepcopy(old_value)
     _merge_yaml_dict_into_target(
         options=options, yaml_dict=yaml_value,
