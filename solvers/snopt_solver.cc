@@ -200,9 +200,9 @@ struct SnoptImpl<false> {
       char* cw, snopt::integer lencw,
       Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw,
       snopt::integer nxname, snopt::integer nFname) {
-        snopt::integer npname = strlen(name);
-        char xnames[8 * 1];  // should match nxname
-        char Fnames[8 * 1];  // should match nFname
+    snopt::integer npname = strlen(name);
+    char xnames[8 * 1];  // should match nxname
+    char Fnames[8 * 1];  // should match nFname
     snopt::snopta_(
          &start,
          &nf, &n, &nxname, &nFname, &objadd, &objrow,
@@ -310,9 +310,9 @@ class SnoptUserFunInfo {
     return duplicate_to_G_index_map_;
   }
 
-  void set_lenG(snopt::integer lenG) { lenG_ = lenG; }
+  void set_lenG(int lenG) { lenG_ = lenG; }
 
-  [[nodiscard]] snopt::integer lenG() const { return lenG_; }
+  [[nodiscard]] int lenG() const { return lenG_; }
 
   // If and only if the userfun experiences an exception, the exception message
   // will be stashed here. All callers of snOptA or similar must check this to
@@ -409,9 +409,6 @@ class WorkspaceStorage {
 
   double* ru() { return nullptr; }
   int lenru() const { return 0; }
-
-  // char* cu() { return user_info_->cu(); }
-  // int lencu() const { return user_info_->lencu(); }
 
  private:
   std::vector<char> cw_;
@@ -1215,7 +1212,7 @@ void SolveWithGivenOptions(
     Snopt::snclose();
   });
 
-  snopt::integer nx = prog.num_vars();
+  int nx = prog.num_vars();
   std::vector<double> x(nx, 0.0);
   std::vector<double> xlow(nx, -std::numeric_limits<double>::infinity());
   std::vector<double> xupp(nx, std::numeric_limits<double>::infinity());
@@ -1262,7 +1259,7 @@ void SolveWithGivenOptions(
                                    &constraint_dual_start_index);
 
   // Update the bound of the constraint.
-  snopt::integer nF = 1 + num_nonlinear_constraints + num_linear_constraints;
+  int nF = 1 + num_nonlinear_constraints + num_linear_constraints;
   solver_details.F.resize(nF);
   solver_details.F.setZero();
   std::vector<double> Flow(nF, -std::numeric_limits<double>::infinity());
@@ -1335,8 +1332,8 @@ void SolveWithGivenOptions(
   // setFromTriplets sums up the duplicated entries.
   linear_constraints_A.setFromTriplets(linear_constraints_triplets.begin(),
                                        linear_constraints_triplets.end());
-  snopt::integer lenA = variable_to_linear_cost_coefficient.size() +
-                        linear_constraints_A.nonZeros();
+  int lenA = variable_to_linear_cost_coefficient.size() +
+             linear_constraints_A.nonZeros();
   std::vector<double> A(lenA, 0.0);
   std::vector<snopt::integer> iAfun(lenA, 0);
   std::vector<snopt::integer> jAvar(lenA, 0);
@@ -1364,7 +1361,7 @@ void SolveWithGivenOptions(
   auto& duplicate_to_G_index_map = user_info.duplicate_to_G_index_map();
   PruneGradientDuplication(nx, iGfun_w_duplicate, jGvar_w_duplicate,
                            &duplicate_to_G_index_map, &iGfun, &jGvar);
-  const snopt::integer lenG = iGfun.size();
+  const int lenG = iGfun.size();
   user_info.set_lenG(lenG);
 
   for (const auto& it : snopt_options_double) {
