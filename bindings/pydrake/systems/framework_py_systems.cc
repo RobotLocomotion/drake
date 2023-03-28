@@ -1041,6 +1041,8 @@ Note: The above is for the C++ documentation. For Python, use
             // Keep alive, ownership: `return` keeps `Context` alive.
             py::keep_alive<0, 3>(),
             doc.Diagram.GetMutableSubsystemState.doc_2args_subsystem_context)
+        .def("HasSubsystemNamed", &Diagram<T>::HasSubsystemNamed,
+            py::arg("name"), doc.Diagram.HasSubsystemNamed.doc)
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_rvp::reference_internal,
             doc.Diagram.GetSubsystemByName.doc)

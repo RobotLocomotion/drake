@@ -974,11 +974,13 @@ TEST_F(DiagramTest, AllocateInputs) {
 }
 
 TEST_F(DiagramTest, GetSubsystemByName) {
+  EXPECT_TRUE(diagram_->HasSubsystemNamed("stateless"));
   const System<double>& stateless = diagram_->GetSubsystemByName("stateless");
   EXPECT_NE(
       dynamic_cast<const StatelessSystem<double>*>(&stateless),
       nullptr);
 
+  EXPECT_FALSE(diagram_->HasSubsystemNamed("not_a_subsystem"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       diagram_->GetSubsystemByName("not_a_subsystem"),
       "System .* does not have a subsystem named not_a_subsystem");
