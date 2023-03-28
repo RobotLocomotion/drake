@@ -406,6 +406,9 @@ class TestMath(unittest.TestCase):
             rpy.CalcRpyDtFromAngularVelocityInParent(w_AD_A=[0, 0, 0]),
             [0., 0., 0.])
         numpy_compare.assert_float_equal(
+            rpy.CalcRpyDtFromAngularVelocityInChild(w_AD_D=[0, 0, 0]),
+            [0., 0., 0.])
+        numpy_compare.assert_float_equal(
             rpy.CalcRpyDDtFromRpyDtAndAngularAccelInParent(
                 rpyDt=[0, 0, 0], alpha_AD_A=[0, 0, 0]), [0., 0., 0.])
         numpy_compare.assert_float_equal(rpy.CalcRpyDDtFromAngularAccelInChild(
