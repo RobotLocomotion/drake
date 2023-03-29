@@ -1,6 +1,5 @@
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
-#include <iostream>
 #include <limits>
 #include <utility>
 

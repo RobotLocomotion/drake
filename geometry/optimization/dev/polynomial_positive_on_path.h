@@ -10,16 +10,16 @@ namespace optimization {
 
 /**
  * Certifying a path as collision free will require certifying that many matrix
- * SOS conditions yᵀP(μ;s)y ≥ 0 for μ ∈ [0,1] where the s is a multivariate
- * parameter which must be evaluated before the optimization program is solved.
- * This class contains the information for adding the constraint that a
- * polynomial be positive on the unit interval. The polynomial is parametrized
- * as some of its indeterminates needing to be evaluated before being added to
- * the program.
+ * SOS conditions [1;y]ᵀP(μ;s)[1;y] ≥ 0 for μ ∈ [0,1] where the s is a
+ * multivariate parameter which must be evaluated before the optimization
+ * program is solved. This class contains the information for adding the
+ * constraint that a polynomial be positive on the unit interval. The polynomial
+ * is parametrized as some of its indeterminates needing to be evaluated before
+ * being added to the program.
  *
  * @param poly The parametrized polynomial which we will enforce positivity of.
- * This polynomial can be arbitrary degree in the interval variable μ and must be
- * quadratic in all other indeterminates y.
+ * This polynomial can be arbitrary degree in the interval variable μ and must
+ * be quadratic in all other indeterminates y.
  * @param interval_variable The variable μ associated to the unit interval.
  * @param parameters The parameters which must be evaluated before enforcing the
  * positivity of poly. This is a subset of the polynomial's decision variables.
@@ -58,7 +58,7 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // polynomial is positive for μ ∈ [0,1].
   const symbolic::Variable mu_;
 
-  // A polynomial q(μ,y) = yᵀP(μ;s)y (where μ is univariate and y is
+  // A polynomial q(μ,y) = [1;y]ᵀP(μ;s)[1;y] (where μ is univariate and y is
   // multivariate) is positive on the interval μ ∈ [0,1] if and only if there
   // exists biforms λ(μ,y) = ∑ ϕᵢ²(μ,y) and ν(μ,y) = ∑ ψᵢ²(μ,y) such that
   // q(μ,y) = λ(μ,y) + ν(μ,y)*μ*(1-μ) if deg(q, μ) = 2d or q(μ,y) = λ(μ,y)*μ +
