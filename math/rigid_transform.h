@@ -194,7 +194,11 @@ class RigidTransform {
   /// @note No attempt is made to orthogonalize the 3x3 rotation matrix part of
   /// `pose`.  As needed, use RotationMatrix::ProjectToRotationMatrix().
   /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.}
-  explicit RigidTransform(const Matrix4<T>& pose);
+  explicit RigidTransform(const Matrix4<T>& pose) {
+    DRAKE_ASSERT_VOID(ThrowIfInvalidBottomRow(pose));
+    set_rotation(RotationMatrix<T>(pose.template block<3, 3>(0, 0)));
+    set_translation(pose.template block<3, 1>(0, 3));
+  }
 
   /// Constructs a %RigidTransform from an appropriate Eigen <b>expression</b>.
   /// @param[in] pose Generic Eigen matrix <b>expression</b>.
@@ -348,7 +352,13 @@ class RigidTransform {
   ///  │   0      1     │
   ///  └                ┘
   /// </pre>
-  Matrix4<T> GetAsMatrix4() const;
+  Matrix4<T> GetAsMatrix4() const {
+    Matrix4<T> pose;
+    pose.template topLeftCorner<3, 3>() = rotation().matrix();
+    pose.template topRightCorner<3, 1>() = translation();
+    pose.row(3) = Vector4<T>(0, 0, 0, 1);
+    return pose;
+  }
 
   /// Returns the 3x4 matrix associated with this %RigidTransform, i.e., X_AB.
   /// <pre>
@@ -356,7 +366,12 @@ class RigidTransform {
   ///  │ R_AB  p_AoBo_A │
   ///  └                ┘
   /// </pre>
-  Eigen::Matrix<T, 3, 4> GetAsMatrix34() const;
+  Eigen::Matrix<T, 3, 4> GetAsMatrix34() const {
+    Eigen::Matrix<T, 3, 4> pose;
+    pose.template topLeftCorner<3, 3>() = rotation().matrix();
+    pose.template topRightCorner<3, 1>() = translation();
+    return pose;
+  }
 
   /// Returns the isometry in ℜ³ that is equivalent to a %RigidTransform.
   Isometry3<T> GetAsIsometry3() const;
@@ -422,7 +437,14 @@ class RigidTransform {
   /// @note: The square-root of a %RigidTransform's condition number is roughly
   /// the magnitude of the position vector.  The accuracy of the calculation for
   /// the inverse of a %RigidTransform drops off with the sqrt condition number.
-  RigidTransform<T> inverse() const;
+  RigidTransform<T> inverse() const {
+    // @internal This method's name was chosen to mimic Eigen's inverse().
+    RigidTransform<T> X_BA(internal::DoNotInitializeMemberFields{});
+    X_BA.set_rotation(R_AB_.inverse());
+    const RotationMatrix<T>& R_BA = X_BA.rotation();
+    X_BA.set_translation(R_BA * (-p_AoBo_A_));
+    return X_BA;
+  }
 
   /// Calculates the product of `this` inverted and another %RigidTransform.
   /// If you consider `this` to be the transform X_AB, and `other` to be
