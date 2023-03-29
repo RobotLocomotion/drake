@@ -413,6 +413,11 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
                 vtk_config.renderer_name)),
             "RenderEngineVtk");
 
+  // Specifying the same config again should not produce a new render engine.
+  int current_renderer_count = scene_graph_->RendererCount();
+  ApplyCameraConfig(vtk_config, &builder_);
+  EXPECT_EQ(current_renderer_count, scene_graph_->RendererCount());
+
   // Using an existing name but the wrong render engine type throws.
   DRAKE_EXPECT_THROWS_MESSAGE(
       ApplyCameraConfig(
@@ -425,15 +430,15 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
   // ApplyCameraConfig doesn't throw, and the renderer count doesn't change.
   // This test assumes that this behavior doesn't depend on the type of the
   // RenderEngine.
-  const int renderer_count = scene_graph_->RendererCount();
+  current_renderer_count = scene_graph_->RendererCount();
   ApplyCameraConfig(CameraConfig{.renderer_name = "vtk_renderer"}, &builder_);
-  EXPECT_EQ(renderer_count, scene_graph_->RendererCount());
+  EXPECT_EQ(current_renderer_count, scene_graph_->RendererCount());
 
   // Now explicitly request a new RenderEngineGl -- whether it throws depends
   // on whether GL is available.
   const CameraConfig gl_config{.renderer_name = "gl_renderer",
                                .renderer_class = "RenderEngineGl"};
-  if (geometry::render::kHasRenderEngineGl) {
+  if (geometry::kHasRenderEngineGl) {
     ASSERT_FALSE(scene_graph_->HasRenderer(gl_config.renderer_name));
     ApplyCameraConfig(gl_config, &builder_);
     ASSERT_EQ(NiceTypeName::RemoveNamespaces(

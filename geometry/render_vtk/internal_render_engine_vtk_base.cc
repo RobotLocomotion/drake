@@ -21,12 +21,11 @@
 
 namespace drake {
 namespace geometry {
-namespace render {
-
-using Eigen::Vector2d;
-
+namespace render_vtk {
+namespace internal {
 namespace {
 
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 // TODO(SeanCurtis-TRI): The semantics of this textured box needs to be
@@ -310,6 +309,7 @@ void TransformToDrakeCylinder(vtkTransform* transform,
   transform_filter->Update();
 }
 
-}  // namespace render
+}  // namespace internal
+}  // namespace render_vtk
 }  // namespace geometry
 }  // namespace drake
