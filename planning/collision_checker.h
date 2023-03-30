@@ -9,12 +9,14 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/planning/body_shape_description.h"
 #include "drake/planning/collision_checker_context.h"
 #include "drake/planning/collision_checker_params.h"
+#include "drake/planning/distance_interpolation_provider.h"
 #include "drake/planning/edge_measure.h"
 #include "drake/planning/robot_clearance.h"
 #include "drake/planning/robot_collision_type.h"
@@ -1349,6 +1351,38 @@ class CollisionChecker {
     mutable std::mutex standalone_contexts_mutex_;
   };
 
+  class TransitionalDistanceAndInterpolationProvider final
+      : public DistanceAndInterpolationProvider {
+    ;
+   private:
+    std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const final {
+      ;
+    }
+
+    double DoComputeConfigurationDistance(
+        const Eigen::VectorXd& from, const Eigen::VectorXd& to) const final {
+      if (distance_function_) {
+        return distance_function_(from, to);
+      } else {
+        return provider_->DoComputeConfigurationDistance(from, to);
+      }
+    }
+
+    Eigen::VectorXd DoInterpolateBetweenConfigurations(
+        const Eigen::VectorXd& from, const Eigen::VectorXd& to,
+        double ratio) const final {
+      if (interpolation_function_) {
+        return interpolation_function_(from, to, ratio);
+      } else {
+        return provider_->DoInterpolateBetweenConfigurations(from, to, ratio);
+      }
+    }
+
+    drake::copyable_unique_ptr<DistanceAndInterpolationProvider> provider_;
+    ConfigurationDistanceFunction distance_function_;
+    ConfigurationInterpolationFunction interpolation_function_;
+  };
+
   /* Model of the robot used during initial setup only. */
   std::shared_ptr<RobotDiagram<double>> setup_model_;
 
@@ -1372,11 +1406,8 @@ class CollisionChecker {
    base). In many cases this vector will be empty. */
   const std::vector<int> uncontrolled_dofs_that_kinematically_affect_the_robot_;
 
-  /* Function to compute distance between two configurations. */
-  ConfigurationDistanceFunction configuration_distance_function_;
-
-  /* Function to interpolate between two configurations. */
-  ConfigurationInterpolationFunction configuration_interpolation_function_;
+  /* Provider for distance and interpolation functions */
+  drake::copyable_unique_ptr<TransitionalDistanceAndInterpolationProvider>
 
   /* Step size for edge collision checking. */
   double edge_step_size_ = 0.0;

@@ -57,11 +57,13 @@ drake_cc_library(
         ":body_shape_description",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":distance_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
-        ":robot_diagram_builder",
+        ":robot_diagram",
         "//common:essential",
         "//geometry",
+        "//multibody/parsing",
         "//multibody/plant",
     ],
     deps = [
@@ -83,8 +85,18 @@ drake_cc_library(
     name = "collision_checker_params",
     hdrs = ["collision_checker_params.h"],
     deps = [
+        ":distance_interpolation_provider",
         ":robot_diagram",
         "//multibody/tree:multibody_tree_indexes",
+    ],
+)
+
+drake_cc_library(
+    name = "distance_interpolation_provider",
+    srcs = ["distance_interpolation_provider.cc"],
+    hdrs = ["distance_interpolation_provider.h"],
+    deps = [
+        "//common:essential",
     ],
 )
 
@@ -164,7 +176,7 @@ drake_cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":collision_checker",
-        ":robot_diagram",
+        ":robot_diagram_builder",
         "//multibody/parsing",
     ],
 )
@@ -258,6 +270,7 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "unimplemented_collision_checker_test",
     deps = [
+        ":robot_diagram_builder",
         ":unimplemented_collision_checker",
         "//common/test_utilities:expect_throws_message",
     ],

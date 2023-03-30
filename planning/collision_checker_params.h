@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 
 #include "drake/multibody/tree/multibody_tree_indexes.h"
+#include "drake/planning/distance_interpolation_provider.h"
 #include "drake/planning/robot_diagram.h"
 
 namespace drake {
@@ -53,6 +54,9 @@ struct CollisionCheckerParams {
   belong to the robot. The list must be non-empty and must not include the
   world model instance. */
   std::vector<drake::multibody::ModelInstanceIndex> robot_model_instances;
+
+  std::unique_ptr<DistanceAndInterpolationProvider>
+      distance_and_interpolation_provider;
 
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** Configuration (probably weighted) distance function.
