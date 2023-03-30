@@ -250,6 +250,7 @@ drake_cc_googletest(
         "-Wno-cpp",
         "-Wno-deprecated-declarations",
     ],
+    tags = vtk_test_tags(),
     deps = [
         ":factory",
         ":render_engine_gl_params",
