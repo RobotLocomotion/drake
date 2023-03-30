@@ -184,16 +184,26 @@ class ImageWriter : public LeafSystem<double> {
                             are written in calls to Publish().
    @param start_time        The minimum value for the context's time at which
                             images will be written in calls to Publish().
-   @tparam kPixelType       The representation of the per-pixel data (see
+   @param pixel_type        The representation of the per-pixel data (see
                             PixelType). Must be one of {PixelType::kRgba8U,
                             PixelType::kDepth32F, PixelType::kLabel16I,
                             PixelType::kDepth16U, or PixelType::kGrey8U}.
    @throws std::exception   if (1) the directory encoded in the
                             `file_name_format` is not "valid" (see
                             documentation above for definition),
-                            (2) `publish_period` is not positive, or
-                            (3) `port_name` is used by a previous input port.
+                            (2) `publish_period` is not positive,
+                            (3) `port_name` is used by a previous input port, or
+                            (4) `pixel_type` is not supported.
   */
+  const InputPort<double>& DeclareImageInputPort(PixelType pixel_type,
+                                                 std::string port_name,
+                                                 std::string file_name_format,
+                                                 double publish_period,
+                                                 double start_time);
+
+  /** (Advanced) An overload where PixelType is a template parameter instead of
+   a runtime parameter.
+   @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.} */
   template <PixelType kPixelType>
   const InputPort<double>& DeclareImageInputPort(std::string port_name,
                                                  std::string file_name_format,
