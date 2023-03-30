@@ -29,12 +29,12 @@ using Eigen::Matrix4d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderEngine;
+using geometry::render::internal::ImageType;
 using math::RigidTransformd;
 using math::RollPitchYawd;
-using render::ColorRenderCamera;
-using render::DepthRenderCamera;
-using render::RenderEngine;
-using render_vtk::internal::ImageType;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;

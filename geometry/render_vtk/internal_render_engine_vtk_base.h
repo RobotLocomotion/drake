@@ -11,8 +11,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_vtk {
-namespace internal {
+namespace render {
 
 // Creates a z-axis aligned VTK capsule.
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule);
@@ -40,7 +39,6 @@ void TransformToDrakeCylinder(vtkTransform* transform,
                               vtkTransformPolyDataFilter* transform_filter,
                               vtkCylinderSource* vtk_cylinder);
 
-}  // namespace internal
-}  // namespace render_vtk
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

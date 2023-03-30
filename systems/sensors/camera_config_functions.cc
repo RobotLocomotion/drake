@@ -26,9 +26,9 @@ namespace sensors {
 using drake::lcm::DrakeLcmInterface;
 using drake::systems::lcm::LcmBuses;
 using Eigen::Vector3d;
-using geometry::MakeRenderEngineGl;
+using geometry::render::MakeRenderEngineGl;
+using geometry::render::RenderEngineGlParams;
 using geometry::MakeRenderEngineVtk;
-using geometry::RenderEngineGlParams;
 using geometry::RenderEngineVtkParams;
 using geometry::SceneGraph;
 using geometry::render::ColorRenderCamera;
@@ -53,10 +53,9 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
   using Dict = std::map<std::string, std::string>;
   static const never_destroyed<Dict> type_lookup(
       std::initializer_list<Dict::value_type>{
-          {"RenderEngineVtk",
-           "drake::geometry::render_vtk::internal::RenderEngineVtk"},
+          {"RenderEngineVtk", "drake::geometry::render::RenderEngineVtk"},
           {"RenderEngineGl",
-           "drake::geometry::render_gl::internal::RenderEngineGl"}});
+           "drake::geometry::render::internal::RenderEngineGl"}});
 
   DRAKE_DEMAND(scene_graph != nullptr);
 
@@ -82,7 +81,7 @@ void ValidateEngineAndMaybeAdd(const CameraConfig& config,
 
   // Now we know we need to add one. Confirm we can add the specified class.
   if (config.renderer_class == "RenderEngineGl") {
-    if (!geometry::kHasRenderEngineGl) {
+    if (!geometry::render::kHasRenderEngineGl) {
       throw std::logic_error(
           "Invalid camera configuration; renderer_class = 'RenderEngineGl' "
           "is not supported in current build.");

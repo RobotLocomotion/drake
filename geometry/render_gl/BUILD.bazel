@@ -243,20 +243,6 @@ drake_cc_googletest(
     ],
 )
 
-# TODO(zachfang): Remove this along with deprecation on 2023-07-01.
-drake_cc_googletest(
-    name = "deprecation_test",
-    copts = [
-        "-Wno-cpp",
-        "-Wno-deprecated-declarations",
-    ],
-    deps = [
-        ":factory",
-        ":render_engine_gl_params",
-        "//common/test_utilities:expect_throws_message",
-    ],
-)
-
 drake_cc_googletest_ubuntu_only(
     name = "internal_shape_meshes_test",
     data = [

@@ -32,10 +32,10 @@ VTK_AUTOINIT_DECLARE(vtkRenderingOpenGL2)
 
 namespace drake {
 namespace geometry {
-namespace render_vtk {
-namespace internal {
+namespace render {
 
 #ifndef DRAKE_DOXYGEN_CXX
+namespace internal {
 struct ModuleInitVtkRenderingOpenGL2 {
   ModuleInitVtkRenderingOpenGL2(){
     VTK_AUTOINIT_CONSTRUCT(vtkRenderingOpenGL2)
@@ -84,11 +84,13 @@ enum ImageType {
   kDepth = 2,
 };
 
+}  // namespace internal
+
 #endif  // !DRAKE_DOXYGEN_CXX
 
 /** See documentation of MakeRenderEngineVtk().  */
-class RenderEngineVtk : public render::RenderEngine,
-                        private ModuleInitVtkRenderingOpenGL2 {
+class RenderEngineVtk : public RenderEngine,
+                        private internal::ModuleInitVtkRenderingOpenGL2 {
  public:
   /** @name Does not allow copy, move, or assignment  */
   //@{
@@ -107,8 +109,8 @@ class RenderEngineVtk : public render::RenderEngine,
    When one of the optional parameters is omitted, the constructed value will be
    as documented elsewhere in @ref render_engine_vtk_properties "this class".
   */
-  explicit RenderEngineVtk(
-      const RenderEngineVtkParams& parameters = RenderEngineVtkParams());
+  explicit RenderEngineVtk(const geometry::RenderEngineVtkParams& parameters =
+      geometry::RenderEngineVtkParams());
 
   /** @see RenderEngine::UpdateViewpoint().  */
   void UpdateViewpoint(const math::RigidTransformd& X_WR) override;
@@ -134,7 +136,7 @@ class RenderEngineVtk : public render::RenderEngine,
 
   const Eigen::Vector4d& default_diffuse() const { return default_diffuse_; }
 
-  using render::RenderEngine::default_render_label;
+  using RenderEngine::default_render_label;
   //@}
 
  protected:
@@ -162,12 +164,13 @@ class RenderEngineVtk : public render::RenderEngine,
   /** Configures the VTK model to reflect the given `camera`, this includes
    render size camera intrinsics, visible windows, etc. If `show_window` is set
    to true, a named VTK window will be displayed. */
-  void UpdateWindow(const render::RenderCameraCore& camera, bool show_window,
-                    const RenderingPipeline& p, const char* name) const;
+  void UpdateWindow(const RenderCameraCore& camera,
+                    bool show_window, const RenderingPipeline& p,
+                    const char* name) const;
 
   /** Variant of configuring the VTK model (see previous function) that *also*
    configures the depth range. */
-  void UpdateWindow(const render::DepthRenderCamera& camera,
+  void UpdateWindow(const DepthRenderCamera& camera,
                     const RenderingPipeline& p) const;
 
   /** Updates VTK rendering related objects including vtkRenderWindow,
@@ -176,9 +179,9 @@ class RenderEngineVtk : public render::RenderEngine,
   static void PerformVtkUpdate(const RenderingPipeline& p);
 
   /** Provides access to the private data member pipelines_ by returning a
-   mutable RenderingPipeline reference. Only image types in ImageType enum are
-   valid. */
-  RenderingPipeline& get_mutable_pipeline(ImageType image_type) const;
+   mutable RenderingPipeline reference. Only image types in internal::ImageType
+   enum are valid. */
+  RenderingPipeline& get_mutable_pipeline(internal::ImageType image_type) const;
 
  private:
   // @see RenderEngine::DoRegisterVisual().
@@ -198,17 +201,17 @@ class RenderEngineVtk : public render::RenderEngine,
 
   // @see RenderEngine::DoRenderColorImage().
   void DoRenderColorImage(
-      const render::ColorRenderCamera& camera,
+      const ColorRenderCamera& camera,
       systems::sensors::ImageRgba8U* color_image_out) const override;
 
   // @see RenderEngine::DoRenderDepthImage().
   void DoRenderDepthImage(
-      const render::DepthRenderCamera& render_camera,
+      const DepthRenderCamera& render_camera,
       systems::sensors::ImageDepth32F* depth_image_out) const override;
 
   // @see RenderEngine::DoRenderLabelImage().
   void DoRenderLabelImage(
-      const render::ColorRenderCamera& camera,
+      const ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
   // Initializes the VTK pipelines.
@@ -245,7 +248,7 @@ class RenderEngineVtk : public render::RenderEngine,
   // formal thread safe mechanism so that it doesn't rely on that in the future.
   // TODO(SeanCurtis-TRI): This is not threadsafe; investigate mechanisms to
   // prevent undesirable behaviors if used in multi-threaded application.
-  static vtkNew<ShaderCallback> uniform_setting_callback_;
+  static vtkNew<internal::ShaderCallback> uniform_setting_callback_;
 
   // Obnoxious bright orange.
   Eigen::Vector4d default_diffuse_{0.9, 0.45, 0.1, 1.0};
@@ -259,7 +262,6 @@ class RenderEngineVtk : public render::RenderEngine,
       actors_;
 };
 
-}  // namespace internal
-}  // namespace render_vtk
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

@@ -29,14 +29,14 @@ namespace {
 
 namespace fs = std::filesystem;
 
-using render::ClippingRange;
-using render::DepthRange;
-using render::RenderCameraCore;
-using systems::sensors::CameraInfo;
-using systems::sensors::ImageDepth16U;
-using systems::sensors::ImageDepth32F;
-using systems::sensors::ImageLabel16I;
-using systems::sensors::ImageRgba8U;
+using drake::geometry::render::ClippingRange;
+using drake::geometry::render::DepthRange;
+using drake::geometry::render::RenderCameraCore;
+using drake::systems::sensors::CameraInfo;
+using drake::systems::sensors::ImageDepth16U;
+using drake::systems::sensors::ImageDepth32F;
+using drake::systems::sensors::ImageLabel16I;
+using drake::systems::sensors::ImageRgba8U;
 
 /* Adds field_name = field_data to the map, assumes data_map does **not**
  already have the key `field_name`. */
@@ -167,13 +167,14 @@ RenderClient::~RenderClient() {
     } catch (const std::exception& e) {
       // Note: Catching an exception is generally verboten.  However, since
       // exceptions can't be thrown in a destructor, doing so is allowed here.
-      log()->debug("RenderClient: could not delete '{}'. {}", temp_directory_,
-                   e.what());
+      drake::log()->debug("RenderClient: could not delete '{}'. {}",
+                          temp_directory_, e.what());
     }
   } else if (params_.verbose) {
     // NOTE: This gets printed twice because of cloning, cannot be avoided.
-    log()->debug("RenderClient: temporary directory '{}' was *NOT* deleted.",
-                 temp_directory_);
+    drake::log()->debug(
+        "RenderClient: temporary directory '{}' was *NOT* deleted.",
+        temp_directory_);
   }
 }
 

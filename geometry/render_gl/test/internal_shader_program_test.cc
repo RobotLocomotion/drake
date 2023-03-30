@@ -15,14 +15,10 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 class ShaderProgramTest;
 namespace {
-
-using render::DepthRange;
-using render::DepthRenderCamera;
-using render::RenderCameraCore;
 
 /* A simple shader implementation that exercises all of the virtual API and
  reports if it has been called.  */
@@ -61,7 +57,7 @@ class TestShader final : public ShaderProgram {
   }
 
  private:
-  friend class drake::geometry::render_gl::internal::ShaderProgramTest;
+  friend class drake::geometry::render::internal::ShaderProgramTest;
 
   std::unique_ptr<ShaderProgram> DoClone() const final {
     return std::make_unique<TestShader>(*this);
@@ -433,6 +429,6 @@ TEST_F(ShaderProgramTest, Cloning) {
 }
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

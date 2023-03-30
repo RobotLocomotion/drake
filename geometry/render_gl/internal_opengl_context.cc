@@ -19,7 +19,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 
 namespace {
@@ -326,6 +326,6 @@ GLint OpenGlContext::max_allowable_texture_size() {
 }
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

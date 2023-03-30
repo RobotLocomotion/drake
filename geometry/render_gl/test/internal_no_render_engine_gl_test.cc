@@ -5,6 +5,7 @@
 
 namespace drake {
 namespace geometry {
+namespace render {
 namespace {
 
 // Tests that attempting to use the unsupported RenderEngineGl throws.
@@ -15,5 +16,6 @@ GTEST_TEST(RenderEngineGl, NoRenderEngineGlSupport) {
 }
 
 }  // namespace
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

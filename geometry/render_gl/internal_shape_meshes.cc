@@ -19,7 +19,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 
 using Eigen::Vector2d;
@@ -1077,6 +1077,6 @@ MeshData MakeCapsule(int samples, double radius, double length) {
 }
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

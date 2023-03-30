@@ -13,8 +13,8 @@
 
 namespace drake {
 namespace geometry {
-namespace render_vtk {
-namespace internal {
+namespace render {
+namespace vtk_util {
 /// An array type for vtkSmartPointer.
 ///
 /// @tparam T The VTK class type stored in vtkSmartPointer.
@@ -47,7 +47,7 @@ const vtkPointerArray<T, N> MakeVtkPointerArray(
       vtkSmartPointer<Ts>(elements.GetPointer())...}};
 }
 
-}  // namespace internal
-}  // namespace render_vtk
+}  // namespace vtk_util
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

@@ -16,7 +16,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 
 TextureLibrary::TextureLibrary(const OpenGlContext* context)
@@ -101,6 +101,6 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
 }
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

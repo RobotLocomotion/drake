@@ -15,7 +15,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 namespace {
 
@@ -848,6 +848,6 @@ GTEST_TEST(PrimitiveMeshTests, MakeCapsule) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

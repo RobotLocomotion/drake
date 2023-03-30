@@ -14,7 +14,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 
 /* TODO(SeanCurtis-TRI) This implies a compile-time shader definition. It may
@@ -117,7 +117,7 @@ class ShaderProgram {
    properties. This should *not* include model -> camera -> device transforms.
    they are handled elsewhere.  */
   virtual void SetDepthCameraParameters(
-      const render::DepthRenderCamera& /* camera */) const {}
+      const DepthRenderCamera& /* camera */) const {}
 
   /* Sets the direction of the directional light (if supported).
    @pre light_dir_C.norm() == 1.0.  */
@@ -205,6 +205,6 @@ class ShaderProgram {
 };
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

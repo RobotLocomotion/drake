@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 
 /* Simple class for recording the dimensions of a render target. Serves as a
@@ -57,7 +57,7 @@ struct RenderTarget {
 };
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake
 
@@ -65,6 +65,6 @@ namespace std {
 
 /* Provides std::hash<BufferDim>.  */
 template <>
-struct hash<drake::geometry::render_gl::internal::BufferDim>
+struct hash<drake::geometry::render::internal::BufferDim>
     : public drake::DefaultHash {};
 }  // namespace std

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/name_value.h"
 #include "drake/geometry/render/render_label.h"
 #include "drake/geometry/rgba.h"
 
 namespace drake {
 namespace geometry {
+namespace render {
 
 /** Construction parameters for RenderEngineGl.  */
 struct RenderEngineGlParams {
@@ -21,7 +21,7 @@ struct RenderEngineGlParams {
 
   /** Default render label to apply to a geometry when none is otherwise
    specified.  */
-  render::RenderLabel default_label{render::RenderLabel::kUnspecified};
+  RenderLabel default_label{RenderLabel::kUnspecified};
 
   /** Default diffuse color to apply to a geometry when none is otherwise
    specified in the (phong, diffuse) property.  */
@@ -31,13 +31,6 @@ struct RenderEngineGlParams {
   Rgba default_clear_color{204 / 255., 229 / 255., 255 / 255., 1.0};
 };
 
-namespace render {
-
-using RenderEngineGlParams
-    DRAKE_DEPRECATED("2023-07-01", "Use the geometry namespace instead.")
-    = geometry::RenderEngineGlParams;
-
 }  // namespace render
-
 }  // namespace geometry
 }  // namespace drake

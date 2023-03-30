@@ -21,12 +21,12 @@ namespace internal {
 
 namespace fs = std::filesystem;
 
-using render::ColorRenderCamera;
-using render::DepthRenderCamera;
-using render::RenderCameraCore;
-using render::RenderEngine;
-using render_vtk::internal::ImageType;
-using render_vtk::internal::RenderEngineVtk;
+using geometry::render::ColorRenderCamera;
+using geometry::render::DepthRenderCamera;
+using geometry::render::RenderCameraCore;
+using geometry::render::RenderEngine;
+using geometry::render::RenderEngineVtk;
+using geometry::render::internal::ImageType;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -41,7 +41,7 @@ namespace {
  https://github.com/RobotLocomotion/drake/blob/master/common/identifier.h
  */
 int64_t GetNextSceneId() {
-  static never_destroyed<std::atomic<int64_t>> global_scene_id;
+  static drake::never_destroyed<std::atomic<int64_t>> global_scene_id;
   return ++(global_scene_id.access());
 }
 
@@ -118,17 +118,17 @@ std::string_view ImageTypeToString(ImageType image_type) {
 }
 
 void LogFrameStart(ImageType image_type, int64_t scene_id) {
-  log()->debug("RenderEngineGltfClient: rendering {} scene id {}.",
-               ImageTypeToString(image_type), scene_id);
+  drake::log()->debug("RenderEngineGltfClient: rendering {} scene id {}.",
+                      ImageTypeToString(image_type), scene_id);
 }
 
 void LogFrameGltfExportPath(ImageType image_type, const std::string& path) {
-  log()->debug("RenderEngineGltfClient: {} scene exported to '{}'.",
-               ImageTypeToString(image_type), path);
+  drake::log()->debug("RenderEngineGltfClient: {} scene exported to '{}'.",
+                      ImageTypeToString(image_type), path);
 }
 
 void LogFrameServerResponsePath(ImageType image_type, const std::string& path) {
-  log()->debug(
+  drake::log()->debug(
       "RenderEngineGltfClient: {} server response image saved to '{}'.",
       ImageTypeToString(image_type), path);
 }
@@ -140,8 +140,9 @@ void CleanupFrame(const std::string& scene_path, const std::string& image_path,
   fs::remove(scene_path);
   fs::remove(image_path);
   if (verbose) {
-    log()->debug("RenderEngineGltfClient: deleted unused files {} and {}.",
-                 scene_path, image_path);
+    drake::log()->debug(
+        "RenderEngineGltfClient: deleted unused files {} and {}.", scene_path,
+        image_path);
   }
 }
 

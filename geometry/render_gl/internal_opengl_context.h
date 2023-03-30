@@ -6,7 +6,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 
 /* Handle OpenGL context initialization, clean-up, and generic OpenGL queries.
@@ -66,6 +66,6 @@ class OpenGlContext {
 };
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake

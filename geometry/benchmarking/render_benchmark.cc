@@ -39,6 +39,7 @@ using render::DepthRange;
 using render::DepthRenderCamera;
 using render::RenderCameraCore;
 using render::RenderEngine;
+using render::RenderEngineGlParams;
 using render::RenderEngineTester;
 using render::RenderLabel;
 using systems::sensors::ImageDepth32F;

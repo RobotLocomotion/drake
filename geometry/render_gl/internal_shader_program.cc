@@ -10,7 +10,7 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
+namespace render {
 namespace internal {
 
 using Eigen::Vector3d;
@@ -148,6 +148,6 @@ void ShaderProgram::Unuse() const {
 }
 
 }  // namespace internal
-}  // namespace render_gl
+}  // namespace render
 }  // namespace geometry
 }  // namespace drake
