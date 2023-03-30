@@ -9,17 +9,10 @@ exports_files(
     visibility = ["@drake//multibody/parsing:__pkg__"],
 )
 
-# TODO(jwnimmer-tri) Add a real package.xml upstream.
-genrule(
-    name = "package.xml_genrule",
-    srcs = ["@drake//:package.xml"],
-    outs = ["package.xml"],
-    cmd = "sed -e 's#drake#drake_models#' $< > $@",
-    visibility = ["//visibility:public"],
-)
-
 # Keep this list alpha-sorted.
-_SRCS = glob([
+_SRCS = [
+    "package.xml",
+] + glob([
     "dishes/**",
     "franka_description/**",
     "jaco_description/**",
@@ -41,7 +34,6 @@ filegroup(
     name = "all",
     srcs = _SRCS + [
         "drake_repository_metadata.json",
-        "package.xml",
     ],
     visibility = ["@drake//:__pkg__"],
 )
