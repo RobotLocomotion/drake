@@ -7,7 +7,6 @@ load(
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("//tools/workspace/models_internal:files.bzl", "skydio_2_mesh_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -25,9 +24,8 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-    ] + [
-        "@models_internal//:" + x
-        for x in skydio_2_mesh_files()
+        "@drake_models//:skydio_2/skydio_2_1000_poly.mtl",
+        "@drake_models//:skydio_2/skydio_2_1000_poly.obj",
     ],
 )
 

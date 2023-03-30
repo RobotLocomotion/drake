@@ -19,6 +19,7 @@ load("@drake//tools/workspace/curl_internal:repository.bzl", "curl_internal_repo
 load("@drake//tools/workspace/double_conversion:repository.bzl", "double_conversion_repository")  # noqa
 load("@drake//tools/workspace/doxygen:repository.bzl", "doxygen_repository")
 load("@drake//tools/workspace/dm_control_internal:repository.bzl", "dm_control_internal_repository")  # noqa
+load("@drake//tools/workspace/drake_models:repository.bzl", "drake_models_repository")  # noqa
 load("@drake//tools/workspace/drake_visualizer:repository.bzl", "drake_visualizer_repository")  # noqa
 load("@drake//tools/workspace/eigen:repository.bzl", "eigen_repository")
 load("@drake//tools/workspace/expat:repository.bzl", "expat_repository")
@@ -51,7 +52,6 @@ load("@drake//tools/workspace/libpfm:repository.bzl", "libpfm_repository")
 load("@drake//tools/workspace/libpng:repository.bzl", "libpng_repository")
 load("@drake//tools/workspace/libtiff:repository.bzl", "libtiff_repository")
 load("@drake//tools/workspace/meshcat:repository.bzl", "meshcat_repository")
-load("@drake//tools/workspace/models_internal:repository.bzl", "models_internal_repository")  # noqa
 load("@drake//tools/workspace/mosek:repository.bzl", "mosek_repository")
 load("@drake//tools/workspace/msgpack:repository.bzl", "msgpack_repository")
 load("@drake//tools/workspace/msgpack_internal:repository.bzl", "msgpack_internal_repository")  # noqa
@@ -152,6 +152,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         dm_control_internal_repository(name = "dm_control_internal", mirrors = mirrors)  # noqa
     if "drake_detected_os" not in excludes:
         os_repository(name = "drake_detected_os")
+    if "drake_models" not in excludes:
+        drake_models_repository(name = "drake_models", mirrors = mirrors)
     if "drake_visualizer" not in excludes:
         drake_visualizer_repository(name = "drake_visualizer", mirrors = mirrors)  # noqa
     if "eigen" not in excludes:
@@ -218,8 +220,6 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         libtiff_repository(name = "libtiff")
     if "meshcat" not in excludes:
         meshcat_repository(name = "meshcat", mirrors = mirrors)
-    if "models_internal" not in excludes:
-        models_internal_repository(name = "models_internal", mirrors = mirrors)
     if "mosek" not in excludes:
         mosek_repository(name = "mosek")
     if "msgpack" not in excludes:

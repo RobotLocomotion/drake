@@ -114,7 +114,6 @@ install_test(
     data = [
         ":install",
         _INSTALL_TEST_COMMANDS,
-        "@models_internal//:all",
     ],
     tags = [
         # Running acceptance tests under coverage (kcov) can fail for presently

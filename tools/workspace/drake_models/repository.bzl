@@ -1,6 +1,6 @@
 load("@drake//tools/workspace:github.bzl", "github_archive")
 
-def models_internal_repository(
+def drake_models_repository(
         name,
         mirrors = None):
     github_archive(

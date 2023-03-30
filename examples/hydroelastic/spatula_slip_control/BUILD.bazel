@@ -2,11 +2,6 @@ load("@drake//tools/skylark:drake_cc.bzl", "drake_cc_binary")
 load("@drake//tools/lint:lint.bzl", "add_lint_tests")
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
-load(
-    "//tools/workspace/models_internal:files.bzl",
-    "wsg_50_hydro_bubble_mesh_files",
-)
 
 models_filegroup(
     name = "glob_models",
@@ -24,9 +19,10 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-    ] + [
-        "@models_internal//:" + x
-        for x in wsg_50_hydro_bubble_mesh_files()
+        "@drake_models//:wsg_50_hydro_bubble/meshes/bubble_finger.mtl",
+        "@drake_models//:wsg_50_hydro_bubble/meshes/bubble_finger.obj",
+        "@drake_models//:wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.mtl",  # noqa
+        "@drake_models//:wsg_50_hydro_bubble/meshes/ellipsoid_bubble_geometry.obj",  # noqa
     ],
     visibility = ["//visibility:public"],
 )

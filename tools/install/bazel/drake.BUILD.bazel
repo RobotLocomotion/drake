@@ -57,6 +57,7 @@ filegroup(
     name = ".all_runfiles",
     data = [
         "//:.installed_runfiles",
+        "@drake_models",
     ] + [
         "//{}:.installed_runfiles".format(x)
         for x in _EXPECTED_DRAKE_RUNFILES_PACKAGES
