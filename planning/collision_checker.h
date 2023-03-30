@@ -818,6 +818,14 @@ class CollisionChecker {
    applying appropriate padding. */
   //@{
 
+  void SetDistanceAndInterpolationProvider(
+      std::unique_ptr<DistanceAndInterpolationProvider> provider) {
+    distance_and_interpolation_provider_->SetProvider(std::move(provider));
+  }
+
+  const DistanceAndInterpolationProvider& distance_and_interpolation_provider()
+      const { return *distance_and_interpolation_provider_; }
+
   /** Sets the configuration distance function to `distance_function`.
    @pre distance_function satisfies the requirements documented on
    ConfigurationDistanceFunction.
@@ -832,7 +840,8 @@ class CollisionChecker {
    time or via SetConfigurationDistanceFunction(). */
   double ComputeConfigurationDistance(const Eigen::VectorXd& q1,
                                       const Eigen::VectorXd& q2) const {
-    return configuration_distance_function_(q1, q2);
+    return distance_and_interpolation_provider_->ComputeConfigurationDistance(
+        q1, q2);
   }
 
   /** @returns a functor that captures this object, so it can be used like a
@@ -867,8 +876,8 @@ class CollisionChecker {
   Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& q1,
                                                    const Eigen::VectorXd& q2,
                                                    double ratio) const {
-    DRAKE_THROW_UNLESS(ratio >= 0.0 && ratio <= 1.0);
-    return configuration_interpolation_function_(q1, q2, ratio);
+    return distance_and_interpolation_provider_->
+        InterpolateBetweenConfigurations(q1, q2, ratio);
   }
 
   /** @returns a functor that captures this object, so it can be used like a
@@ -1353,10 +1362,51 @@ class CollisionChecker {
 
   class TransitionalDistanceAndInterpolationProvider final
       : public DistanceAndInterpolationProvider {
-    ;
+   public:
+    TransitionalDistanceAndInterpolationProvider(
+        std::unique_ptr<DistanceAndInterpolationProvider> provider)
+        : provider_(std::move(provider)) {
+      DRAKE_THROW_UNLESS(provider_ != nullptr);
+    }
+
+    TransitionalDistanceAndInterpolationProvider(
+        const ConfigurationDistanceFunction& distance_function,
+        const ConfigurationInterpolationFunction& interpolation_function)
+        : distance_function_(distance_function),
+          interpolation_function_(interpolation_function) {
+      DRAKE_THROW_UNLESS(distance_function_ != nullptr);
+      DRAKE_THROW_UNLESS(interpolation_function_ != nullptr);
+    }
+
+    TransitionalDistanceAndInterpolationProvider(
+        const TransitionalDistanceAndInterpolationProvider& other) = default;
+
+    ~TransitionalDistanceAndInterpolationProvider() final = default;
+
+    void SetProvider(
+        std::unique_ptr<DistanceAndInterpolationProvider> provider) {
+      DRAKE_THROW_UNLESS(provider != nullptr);
+      provider_ = std::move(provider);
+      distance_function_ = nullptr;
+      interpolation_function_ = nullptr;
+    }
+
+    void SetConfigurationDistanceFunction(
+        const ConfigurationDistanceFunction& distance_function) {
+      DRAKE_THROW_UNLESS(distance_function != nullptr);
+      distance_function_ = distance_function;
+    }
+
+    void SetConfigurationInterpolationFunction(
+        const ConfigurationInterpolationFunction& interpolation_function) {
+      DRAKE_THROW_UNLESS(interpolation_function != nullptr);
+      interpolation_function_ = interpolation_function;
+    }
+
    private:
     std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const final {
-      ;
+      return std::unique_ptr<DistanceAndInterpolationProvider>(
+          new TransitionalDistanceAndInterpolationProvider(*this));
     }
 
     double DoComputeConfigurationDistance(
@@ -1364,7 +1414,7 @@ class CollisionChecker {
       if (distance_function_) {
         return distance_function_(from, to);
       } else {
-        return provider_->DoComputeConfigurationDistance(from, to);
+        return provider_->ComputeConfigurationDistance(from, to);
       }
     }
 
@@ -1374,7 +1424,7 @@ class CollisionChecker {
       if (interpolation_function_) {
         return interpolation_function_(from, to, ratio);
       } else {
-        return provider_->DoInterpolateBetweenConfigurations(from, to, ratio);
+        return provider_->InterpolateBetweenConfigurations(from, to, ratio);
       }
     }
 
@@ -1408,6 +1458,7 @@ class CollisionChecker {
 
   /* Provider for distance and interpolation functions */
   drake::copyable_unique_ptr<TransitionalDistanceAndInterpolationProvider>
+      distance_and_interpolation_provider_;
 
   /* Step size for edge collision checking. */
   double edge_step_size_ = 0.0;

@@ -41,6 +41,27 @@ using multibody::world_model_instance;
 using std::move;
 using systems::Context;
 
+namespace {
+void SanityCheckConfigurationDistanceFunction(
+    const ConfigurationDistanceFunction& distance_function,
+    const Eigen::VectorXd& zero_configuration) {
+  const double test_distance =
+      distance_function(zero_configuration, zero_configuration);
+  DRAKE_THROW_UNLESS(test_distance == 0.0);
+}
+
+void SanityCheckConfigurationInterpolationFunction(
+    const ConfigurationInterpolationFunction& interpolation_function,
+    const Eigen::VectorXd& zero_configuration) {
+  const Eigen::VectorXd test_interpolated_q =
+      interpolation_function(zero_configuration, zero_configuration, 0.0);
+  DRAKE_THROW_UNLESS(test_interpolated_q.size() == zero_configuration.size());
+  for (int index = 0; index < test_interpolated_q.size(); ++index) {
+    DRAKE_THROW_UNLESS(test_interpolated_q(index) == zero_configuration(index));
+  }
+}
+}  // namespace
+
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
 // LERP for everything else. See the documentation in CollisionChecker's
 // edge checking group.
@@ -498,10 +519,10 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
 void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
   DRAKE_THROW_UNLESS(distance_function != nullptr);
-  const double test_distance =
-      distance_function(GetZeroConfiguration(), GetZeroConfiguration());
-  DRAKE_THROW_UNLESS(test_distance == 0.0);
-  configuration_distance_function_ = distance_function;
+  SanityCheckConfigurationDistanceFunction(
+      distance_function, GetZeroConfiguration());
+  distance_and_interpolation_provider_->SetConfigurationDistanceFunction(
+      distance_function);
 }
 
 ConfigurationDistanceFunction
@@ -519,15 +540,10 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
             GetQuaternionDofStartIndices(plant())));
     return;
   }
-  const Eigen::VectorXd test_interpolated_q = interpolation_function(
-      GetZeroConfiguration(), GetZeroConfiguration(), 0.0);
-  DRAKE_THROW_UNLESS(test_interpolated_q.size() ==
-                     GetZeroConfiguration().size());
-  for (int index = 0; index < test_interpolated_q.size(); ++index) {
-    DRAKE_THROW_UNLESS(test_interpolated_q(index) ==
-                       GetZeroConfiguration()(index));
-  }
-  configuration_interpolation_function_ = interpolation_function;
+  SanityCheckConfigurationInterpolationFunction(
+      interpolation_function, GetZeroConfiguration());
+  distance_and_interpolation_provider_->SetConfigurationInterpolationFunction(
+      interpolation_function);
 }
 
 ConfigurationInterpolationFunction
@@ -785,19 +801,50 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
       supports_parallel_checking_(supports_parallel_checking) {
   // Initialize the zero configuration.
   zero_configuration_ = Eigen::VectorXd::Zero(plant().num_positions());
+
   // Initialize the collision padding matrix.
   collision_padding_ =
       Eigen::MatrixXd::Zero(plant().num_bodies(), plant().num_bodies());
-  // Set parameters with safety checks.
-  SetConfigurationDistanceFunction(
-      move(params.configuration_distance_function));
-  set_edge_step_size(params.edge_step_size);
   SetPaddingAllRobotEnvironmentPairs(params.env_collision_padding);
   SetPaddingAllRobotRobotPairs(params.self_collision_padding);
-  // Generate the default interpolation function.
-  SetConfigurationInterpolationFunction(
-      MakeDefaultConfigurationInterpolationFunction(
-          GetQuaternionDofStartIndices(plant())));
+
+  // Set distance and interpolation provider/functions.
+  const bool params_has_provider =
+      params.distance_and_interpolation_provider != nullptr;
+  const bool params_has_distance_function =
+      params.configuration_distance_function != nullptr;
+
+  if (params_has_provider && params_has_distance_function) {
+    SanityCheckConfigurationDistanceFunction(
+        params.configuration_distance_function, GetZeroConfiguration());
+    distance_and_interpolation_provider_ =
+        std::make_unique<TransitionalDistanceAndInterpolationProvider>(
+            std::move(params.distance_and_interpolation_provider));
+    distance_and_interpolation_provider_->SetConfigurationDistanceFunction(
+        params.configuration_distance_function);
+  } else if (params_has_provider) {
+    distance_and_interpolation_provider_ =
+        std::make_unique<TransitionalDistanceAndInterpolationProvider>(
+            std::move(params.distance_and_interpolation_provider));
+  } else if (params_has_distance_function) {
+    SanityCheckConfigurationDistanceFunction(
+        params.configuration_distance_function, GetZeroConfiguration());
+    // Generate the default interpolation function.
+    const ConfigurationInterpolationFunction default_interpolation_fn =
+        MakeDefaultConfigurationInterpolationFunction(
+            GetQuaternionDofStartIndices(plant()));
+    distance_and_interpolation_provider_ =
+        std::make_unique<TransitionalDistanceAndInterpolationProvider>(
+            params.configuration_distance_function, default_interpolation_fn);
+  } else {
+    throw std::runtime_error(
+        "CollisionCheckerParams must contain a DistanceAndInterpolationProvider"
+        " and/or a ConfigurationdistanceFunction");
+  }
+
+  // Set edge step size.
+  set_edge_step_size(params.edge_step_size);
+
   // Generate the filtered collision matrix.
   nominal_filtered_collisions_ = GenerateFilteredCollisionMatrix();
   filtered_collisions_ = nominal_filtered_collisions_;
