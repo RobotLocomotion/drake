@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <initializer_list>
 #include <map>
 #include <optional>
@@ -324,25 +325,45 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
                       .output_dir = package_dir.string()};
   args.remote_params.urls = GetAllowedUrls(args.remote_params.urls);
   std::string json_filename = fs::path(cache_dir / ".fetch_XXXXXX").string();
-  const int temp_fd = ::mkstemp(json_filename.data());
-  ::close(temp_fd);
-  ScopeExit remove_yaml([&json_filename]() {
+  {
+    const int temp_fd = ::mkstemp(json_filename.data());
+    ::close(temp_fd);
+  }
+  ScopeExit remove_json_file([&json_filename]() {
     fs::remove(json_filename);
   });
   yaml::SaveJsonFile(json_filename, args);
+
+  // Prepare an output file for the download to write error messages into.
+  std::string error_filename = fs::path(cache_dir / ".error_XXXXXX").string();
+  {
+    const int temp_fd = ::mkstemp(error_filename.data());
+    ::close(temp_fd);
+  }
+  ScopeExit remove_error_file([&error_filename]() {
+    fs::remove(error_filename);
+  });
 
   // Shell out to the downloader to fetch the package.
   const std::string downloader =
       FindResourceOrThrow("drake/multibody/parsing/package_downloader.py");
   const std::string command =
-      fmt::format("/usr/bin/python3 {} {} {}", downloader, json_filename,
-                  "--disable-drake-valgrind-tracing");
+      fmt::format("/usr/bin/python3 {} {} {} {}", downloader, json_filename,
+                  error_filename, "--disable-drake-valgrind-tracing");
   const int returncode = std::system(command.c_str());
   if (returncode != 0) {
+    // Try to read the error message text from the downloader.
+    std::ifstream error_file(error_filename);
+    std::stringstream error_stream;
+    error_stream << error_file.rdbuf();
+    std::string error = error_stream.str();
+    if (error.empty()) {
+      error = fmt::format("returncode == {}", returncode);
+    }
     throw std::runtime_error(fmt::format(
         "PackageMap: when downloading '{}', the downloader experienced an "
-        "error",
-        package_name));
+        "error: {}",
+        package_name, error));
   }
 
   // Confirm that it actually fetched.
