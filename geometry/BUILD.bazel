@@ -591,6 +591,7 @@ drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
         "//manipulation/models/iiwa_description:models",
+        "//multibody/meshcat:models",
     ],
     deps = [
         ":meshcat_visualizer",
