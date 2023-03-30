@@ -29,6 +29,8 @@ class DistanceAndInterpolationProvider {
       double ratio) const;
 
  protected:
+  DistanceAndInterpolationProvider();
+
   /// Copy constructor for use in Clone().
   DistanceAndInterpolationProvider(
       const DistanceAndInterpolationProvider& other);
