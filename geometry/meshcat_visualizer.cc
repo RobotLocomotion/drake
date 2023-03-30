@@ -8,10 +8,16 @@
 #include <fmt/format.h>
 
 #include "drake/common/extract_double.h"
+#include "drake/geometry/proximity/volume_to_surface_mesh.h"
 #include "drake/geometry/utilities.h"
 
 namespace drake {
 namespace geometry {
+namespace {
+// Boilerplate for std::visit.
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+}  // namespace
 
 template <typename T>
 MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
@@ -184,8 +190,29 @@ void MeshcatVisualizer<T>::SetObjects(
           fmt::format("{}/{}", frame_path, geom_id.get_value());
       const Rgba rgba = inspector.GetProperties(geom_id, params_.role)
           ->GetPropertyOrDefault("phong", "diffuse", params_.default_color);
-
-      meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba);
+      bool used_hydroelastic = false;
+      if constexpr (std::is_same_v<T, double>) {
+        if (params_.show_hydroelastic) {
+          auto maybe_mesh = inspector.maybe_get_hydroelastic_mesh(geom_id);
+          std::visit(
+              overloaded{[](std::monostate) -> void {},
+                         [&](const TriangleSurfaceMesh<double>* mesh) -> void {
+                           DRAKE_DEMAND(mesh != nullptr);
+                           meshcat_->SetObject(path, *mesh, rgba);
+                           used_hydroelastic = true;
+                         },
+                         [&](const VolumeMesh<double>* mesh) -> void {
+                           DRAKE_DEMAND(mesh != nullptr);
+                           meshcat_->SetObject(
+                               path, ConvertVolumeToSurfaceMesh(*mesh), rgba);
+                           used_hydroelastic = true;
+                         }},
+              maybe_mesh);
+        }
+      }
+      if (!used_hydroelastic) {
+        meshcat_->SetObject(path, inspector.GetShape(geom_id), rgba);
+      }
       meshcat_->SetTransform(path, inspector.GetPoseInFrame(geom_id));
       geometries_[geom_id] = path;
       colors_[geom_id] = rgba;

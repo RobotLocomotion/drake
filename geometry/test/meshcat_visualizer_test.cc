@@ -337,6 +337,54 @@ TEST_F(MeshcatVisualizerWithIiwaTest, UpdateAlphaSliders) {
   diagram_->ForcedPublish(*context_);
 }
 
+// When opted-in by the user, we should display the hydroelastic tessellation
+// instead of the primitive shape.
+GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
+  auto meshcat = std::make_shared<Meshcat>();
+  for (bool show_hydroelastic : {false, true}) {
+    // Load a scene with hydroelastic geometry.
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] =
+        multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+    multibody::Parser(&plant).AddModelsFromUrl(
+        "package://drake/multibody/meshcat/test/hydroelastic.sdf");
+    plant.Finalize();
+
+    // Dig out a GeometryId that we just loaded.
+    const auto& inspector = scene_graph.model_inspector();
+    const auto& collision_pairs = inspector.GetCollisionCandidates();
+    ASSERT_GT(collision_pairs.size(), 0);
+    const GeometryId sphere1 = collision_pairs.begin()->first;
+    ASSERT_EQ(inspector.GetName(sphere1), "two_bodies::body1_collision");
+
+    // Add a proximity visualizer, with or without hydro.
+    const std::string prefix = show_hydroelastic ? "show_hydro" : "non_hydro";
+    MeshcatVisualizerParams params;
+    params.role = Role::kProximity;
+    params.show_hydroelastic = show_hydroelastic;
+    params.prefix = prefix;
+    MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                            params);
+
+    // Send the geometry to Meshcat.
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+    diagram->ForcedPublish(*context);
+
+    // Read back the mesh for a hydroelastic shape. Its size (in bytes) will
+    // tell us whether or not hydro was used -- the normal representation is
+    // just the ellipse axes (very small); the hydro representation is all
+    // of the tessellated faces (very large).
+    const std::string data = meshcat->GetPackedObject(fmt::format(
+        "/drake/{}/two_bodies/body1/{}", prefix, sphere1.get_value()));
+    if (show_hydroelastic) {
+      EXPECT_GT(data.size(), 5000);
+    } else {
+      EXPECT_LT(data.size(), 1000);
+    }
+  }
+}
+
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   auto meshcat = std::make_shared<Meshcat>();
 
