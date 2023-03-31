@@ -32,6 +32,8 @@ struct VisualizationConfig {
     a->Visit(DRAKE_NVP(enable_meshcat_creation));
     a->Visit(DRAKE_NVP(delete_on_initialization_event));
     a->Visit(DRAKE_NVP(enable_alpha_sliders));
+    a->Visit(DRAKE_NVP(newtons_per_meter));
+    a->Visit(DRAKE_NVP(newton_meters_per_meter));
   }
 
   /** Which LCM URL to use.
@@ -71,6 +73,12 @@ struct VisualizationConfig {
 
   /** Determines whether to enable alpha sliders for geometry display. */
   bool enable_alpha_sliders{false};
+
+  /** Sets the length scale of the force vectors. */
+  double newtons_per_meter{10};
+
+  /** Sets the length scale of the moment vectors. */
+  double newton_meters_per_meter{3};
 };
 
 }  // namespace visualization

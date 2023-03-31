@@ -177,6 +177,8 @@ ContactVisualizerParams ConvertVisualizationConfigToMeshcatContactParams(
   ContactVisualizerParams result;
   result.publish_period = config.publish_period;
   result.delete_on_initialization_event = config.delete_on_initialization_event;
+  result.newtons_per_meter = config.newtons_per_meter;
+  result.newton_meters_per_meter = config.newton_meters_per_meter;
   return result;
 }
 
