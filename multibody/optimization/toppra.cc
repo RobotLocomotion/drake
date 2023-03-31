@@ -588,9 +588,9 @@ Toppra::ComputeForwardPass(double s_dot_0,
     solvers::MathematicalProgramResult result;
     solver.Solve(*forward_prog_, {}, {}, &result);
     if (!result.is_success()) {
-      drake::log()->error(fmt::format(
+      drake::log()->error(
           "Toppra failed to find the maximum path acceleration at knot {}/{}.",
-          knot, N));
+          knot, N);
       return std::nullopt;
     } else {
       ustar(knot) = result.GetSolution()(0);
