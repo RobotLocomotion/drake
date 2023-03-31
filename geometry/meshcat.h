@@ -327,13 +327,13 @@ class Meshcat {
   constexpr int nx = 15, ny = 11;
   X = RowVector<double, nx>::LinSpaced(0, 1).replicate<ny, 1>();
   Y = Vector<double, ny>::LinSpaced(0, 1).replicate<1, nx>();
-  @code
+  @endcode
   in C++ or e.g.
   @code
   xs = np.linspace(0, 1, 15)
   ys = np.linspace(0, 1, 11)
   [X, Y] = np.meshgrid(xs, ys)
-  @code
+  @endcode
   in Python, and Z is the surface evaluated on each X, Y value.
 
   @pre X, Y, and Z must be the same shape. */
