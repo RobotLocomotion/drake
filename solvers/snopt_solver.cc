@@ -147,6 +147,10 @@ struct SnoptImpl<false> {
   // "Print file" option is not enabled, this is zero.
   thread_local inline static int g_iprint;
 
+  // The command-line summary option for the current thread.
+  thread_local inline static snopt::integer g_isumm;
+
+
   static void snclose() {
     // Close the print file and then release its unit (if necessary).
     snopt::integer iprint = g_iprint;
@@ -158,7 +162,7 @@ struct SnoptImpl<false> {
   }
   template <typename Int>
   static void sninit(
-      const char* name, int len, int summOn, char* cw, snopt::integer lencw,
+      const char* name, int len, int summ, char* cw, snopt::integer lencw,
       Int* iw, snopt::integer leniw, double* rw, snopt::integer lenrw) {
     // Allocate a unit number for the "Print file" (if necessary); the code
     // within f_sninit will open the file.
@@ -168,11 +172,11 @@ struct SnoptImpl<false> {
       g_iprint = FortranUnitFactory::singleton().Allocate();
     }
     snopt::integer iprint = static_cast<snopt::integer>(g_iprint);
-    snopt::integer summ_on = static_cast<snopt::integer>(summOn);
+    g_isumm = static_cast<snopt::integer>(summ);
 
-    snopt::sninit_(&iprint, &summ_on, cw, &lencw, iw, &leniw, rw, &lenrw, 8 * lencw);
+    snopt::sninit_(&iprint, &g_isumm, cw, &lencw, iw, &leniw, rw, &lenrw, 8 * lencw);
 
-    // Set the print file name if enabled.
+    // Open the print file if set.
     if (iprint > 0) {
       snopt::integer errors;
       snopt::snopenappend_(&iprint, const_cast<char*>(name), &errors, len);
@@ -234,10 +238,9 @@ struct SnoptImpl<false> {
       const char* buffer, int len, int ival, snopt::integer* errors,
       char* cw, snopt::integer lencw, Int* iw, snopt::integer leniw,
       double* rw, snopt::integer lenrw) {
-        snopt::integer iPrint = -1;
-        snopt::integer iSumm = -1;
+        snopt::integer iPrint = g_iprint;
         snopt::integer opt_val = static_cast<snopt::integer>(ival);
-    snopt::snseti_(const_cast<char*>(buffer), &opt_val, &iPrint, &iSumm, errors, cw, &lencw,
+    snopt::snseti_(const_cast<char*>(buffer), &opt_val, &iPrint, &g_isumm, errors, cw, &lencw,
                    iw, &leniw, rw, &lenrw, len, 8 * lencw);
   }
   template <typename Int>
@@ -245,10 +248,9 @@ struct SnoptImpl<false> {
       const char* buffer, int len, double rvalue, snopt::integer* errors,
       char* cw, snopt::integer lencw, Int* iw, snopt::integer leniw,
       double* rw, snopt::integer lenrw) {
-        snopt::integer iPrint = -1;
-        snopt::integer iSumm = -1;
+        snopt::integer iPrint = g_iprint;
         snopt::doublereal r_val = static_cast<snopt::doublereal>(rvalue);
-    snopt::snsetr_(const_cast<char*>(buffer), &r_val, &iPrint, &iSumm, errors, cw, &lencw,
+    snopt::snsetr_(const_cast<char*>(buffer), &r_val, &iPrint, &g_isumm, errors, cw, &lencw,
                   iw, &leniw, rw, &lenrw, len, 8 * lencw);
   }
 };
@@ -1201,7 +1203,7 @@ void SolveWithGivenOptions(
     print_file_name = print_file_it->second;
   }
   Snopt::sninit(
-      print_file_name.c_str(), print_file_name.length(), 6 /* no summary */,
+      print_file_name.c_str(), print_file_name.length(), 6 /* summary level */,
       storage.cw(), storage.lencw(),
       storage.iw(), storage.leniw(),
       storage.rw(), storage.lenrw());
