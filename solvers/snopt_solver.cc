@@ -17,9 +17,6 @@
 
 #include <iostream>
 
-// // NOLINTNEXTLINE(build/include)
-// #include "snopt.h"
-
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
@@ -52,10 +49,10 @@ extern "C" {
 #undef bit_set
 
 // Include SNOPT's function declarations.
-#include <snopt.hh>
-// #ifdef SNOPT_HAS_SNFILEWRAPPER
-#include <snfilewrapper.hh>
-// #endif
+#include <cexamples/snopt.h>
+#ifdef SNOPT_HAS_SNFILEWRAPPER
+#include <cexamples/snfilewrapper.h>
+#endif
 
 }  // extern C
 }  // namespace snopt
@@ -187,7 +184,7 @@ struct SnoptImpl<false> {
   static void snopta(
       snopt::integer start, char* name,
       snopt::integer nf, snopt::integer n, double objadd, snopt::integer objrow,
-      snopt::My_fp usrfun,
+      snopt::U_fp usrfun,
       snopt::integer* iAfun, snopt::integer* jAvar, snopt::integer neA, double* A,
       snopt::integer* iGfun, snopt::integer* jGvar, snopt::integer neG,
       double* xlow, double* xupp,
@@ -240,7 +237,7 @@ struct SnoptImpl<false> {
         snopt::integer iPrint = -1;
         snopt::integer iSumm = -1;
         snopt::integer opt_val = static_cast<snopt::integer>(ival);
-    snopt::snseti_(buffer, &opt_val, &iPrint, &iSumm, errors, cw, &lencw,
+    snopt::snseti_(const_cast<char*>(buffer), &opt_val, &iPrint, &iSumm, errors, cw, &lencw,
                    iw, &leniw, rw, &lenrw, len, 8 * lencw);
   }
   template <typename Int>
@@ -251,7 +248,7 @@ struct SnoptImpl<false> {
         snopt::integer iPrint = -1;
         snopt::integer iSumm = -1;
         snopt::doublereal r_val = static_cast<snopt::doublereal>(rvalue);
-    snopt::snsetr_(buffer, &r_val, &iPrint, &iSumm, errors, cw, &lencw,
+    snopt::snsetr_(const_cast<char*>(buffer), &r_val, &iPrint, &iSumm, errors, cw, &lencw,
                   iw, &leniw, rw, &lenrw, len, 8 * lencw);
   }
 };
@@ -1444,7 +1441,7 @@ void SolveWithGivenOptions(
   char problem_name[] = "drake_problem";
   // clang-format off
   Snopt::snopta(Cold, problem_name, nF, nx, objective_constant, ObjRow,
-                reinterpret_cast<snopt::My_fp>(&snopt_userfun),
+                reinterpret_cast<snopt::U_fp>(&snopt_userfun),
                 iAfun.data(), jAvar.data(), lenA, A.data(),
                 iGfun.data(), jGvar.data(), lenG,
                 xlow.data(), xupp.data(),
