@@ -1203,7 +1203,7 @@ void SolveWithGivenOptions(
     print_file_name = print_file_it->second;
   }
   Snopt::sninit(
-      print_file_name.c_str(), print_file_name.length(), 6 /* summary level */,
+      print_file_name.c_str(), print_file_name.length(), 0 /* summary level */,
       storage.cw(), storage.lencw(),
       storage.iw(), storage.leniw(),
       storage.rw(), storage.lenrw());
