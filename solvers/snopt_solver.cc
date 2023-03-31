@@ -386,12 +386,12 @@ class WorkspaceStorage {
   explicit WorkspaceStorage(const SnoptUserFunInfo* user_info)
       : user_info_(user_info) {
     DRAKE_DEMAND(user_info_ != nullptr);
-    iw_.resize(500 * 1000);
-    rw_.resize(500 * 1000);
-    cw_.resize(8 * 501);
+    iw_.resize(500);
+    rw_.resize(500);
+    cw_.resize(8 * 500);
   }
 
-  snopt::integer* iw() { return reinterpret_cast<snopt::integer*>(iw_.data()); }
+  snopt::integer* iw() { return iw_.data(); }
   int leniw() const { return iw_.size(); }
   void resize_iw(int size) { iw_.resize(size); }
 
@@ -411,7 +411,7 @@ class WorkspaceStorage {
 
  private:
   std::vector<char> cw_;
-  std::vector<int> iw_;
+  std::vector<snopt::integer> iw_;
   std::vector<double> rw_;
 
   const SnoptUserFunInfo* const user_info_;
