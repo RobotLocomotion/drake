@@ -389,7 +389,7 @@ macro(override_repository NAME)
   set(repo "${CMAKE_CURRENT_BINARY_DIR}/external/workspace/${NAME}")
   string(APPEND BAZEL_WORKSPACE_EXTRA
     "local_repository(name = '${NAME}', path = '${repo}')\n")
-  string(APPEND BAZEL_WORKSPACE_EXCLUDES "${NAME} ")
+  list(APPEND BAZEL_WORKSPACE_EXCLUDES "${NAME}")
 endmacro()
 
 # For Python, always override Drake's default with the CMake selection instead.
