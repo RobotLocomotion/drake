@@ -15,8 +15,8 @@ GTEST_TEST(CsdpSolverInterrnalTest, ExitHandling) {
   double* y{};
   double pobj{}, dobj{};
   DRAKE_EXPECT_THROWS_MESSAGE(
-      csdp::cpp_easy_sdp(
-          nullptr, 0, 0, C, nullptr, nullptr, 0, &X, &y, &Z, &pobj, &dobj),
+      csdp::cpp_easy_sdp(nullptr, 0, 0, C, nullptr, nullptr, 0, &X, &y, &Z,
+                         &pobj, &dobj),
       ".*CSDP.*fatal exception.*");
 }
 }  // namespace internal

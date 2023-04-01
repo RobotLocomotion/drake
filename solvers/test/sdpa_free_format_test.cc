@@ -847,10 +847,9 @@ TEST_F(LinearProgramBoundingBox1, RemoveFreeVariableByNullspaceApproach) {
   double pobj{0};
   double dobj{0};
   const int ret = csdp::cpp_easy_sdp(
-      nullptr,
-      dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp, constraints_csdp,
-      -dut.constant_min_cost_term() + dut.g().dot(y_hat), &X_csdp, &y, &Z,
-      &pobj, &dobj);
+      nullptr, dut.num_X_rows(), rhs_hat.rows(), C_csdp, rhs_csdp,
+      constraints_csdp, -dut.constant_min_cost_term() + dut.g().dot(y_hat),
+      &X_csdp, &y, &Z, &pobj, &dobj);
   EXPECT_EQ(ret, 0 /* 0 is for success */);
   Eigen::SparseMatrix<double> X_hat(dut.num_X_rows(), dut.num_X_rows());
   ConvertCsdpBlockMatrixtoEigen(X_csdp, &X_hat);
@@ -1192,8 +1191,8 @@ GTEST_TEST(SdpaFreeFormatTest, GenerateSDPA_remove_free_variables_null_space) {
   internal::SdpaFreeFormat dut(prog);
   EXPECT_GT(dut.num_free_variables(), 0);
   const std::string file_name = temp_directory() + "/sdpa_free2";
-  EXPECT_TRUE(GenerateSDPA(prog, file_name,
-                           RemoveFreeVariableMethod::kNullspace));
+  EXPECT_TRUE(
+      GenerateSDPA(prog, file_name, RemoveFreeVariableMethod::kNullspace));
   EXPECT_TRUE(std::filesystem::exists({file_name + ".dat-s"}));
   std::ifstream infile(file_name + ".dat-s");
   ASSERT_TRUE(infile.is_open());

@@ -24,7 +24,7 @@ class LinearFeasibilityProgram : public OptimizationProgram {
 
   explicit LinearFeasibilityProgram(ConstraintForm constraint_form);
 
-  ~LinearFeasibilityProgram() override {};
+  ~LinearFeasibilityProgram() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -48,7 +48,7 @@ class LinearProgram0 : public OptimizationProgram {
 
   LinearProgram0(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~LinearProgram0() override {};
+  ~LinearProgram0() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -69,7 +69,7 @@ class LinearProgram1 : public OptimizationProgram {
 
   LinearProgram1(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~LinearProgram1() override {};
+  ~LinearProgram1() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -97,7 +97,7 @@ class LinearProgram2 : public OptimizationProgram {
 
   LinearProgram2(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~LinearProgram2() override {};
+  ~LinearProgram2() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -122,7 +122,7 @@ class LinearProgram3 : public OptimizationProgram {
 
   LinearProgram3(CostForm cost_form, ConstraintForm constraint_form);
 
-  ~LinearProgram3() override {};
+  ~LinearProgram3() override = default;
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 
@@ -143,11 +143,11 @@ std::ostream& operator<<(std::ostream& os, LinearProblems value);
 
 class LinearProgramTest
     : public ::testing::TestWithParam<
-        std::tuple<CostForm, ConstraintForm, LinearProblems>> {
+          std::tuple<CostForm, ConstraintForm, LinearProblems>> {
  public:
   LinearProgramTest();
 
-  OptimizationProgram* prob() const {return prob_.get();}
+  OptimizationProgram* prob() const { return prob_.get(); }
 
  private:
   std::unique_ptr<OptimizationProgram> prob_;

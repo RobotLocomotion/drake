@@ -11,14 +11,14 @@
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/test/mathematical_program_test_util.h"
 
-using Eigen::Vector4d;
-using Eigen::Vector3d;
-using Eigen::Vector2d;
-using Eigen::Matrix4d;
-using Eigen::Matrix3d;
-using Eigen::Matrix2d;
-using std::numeric_limits;
 using drake::symbolic::Expression;
+using Eigen::Matrix2d;
+using Eigen::Matrix3d;
+using Eigen::Matrix4d;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+using std::numeric_limits;
 
 namespace drake {
 namespace solvers {
@@ -63,7 +63,9 @@ LinearFeasibilityProgram::LinearFeasibilityProgram(
       prog()->AddLinearConstraint(+x_(1) >= 1);
       break;
     }
-    default: { throw std::runtime_error("Unknown constraint form"); }
+    default: {
+      throw std::runtime_error("Unknown constraint form");
+    }
   }
 }
 
@@ -93,7 +95,9 @@ LinearProgram0::LinearProgram0(CostForm cost_form,
       prog()->AddLinearCost(2 * x_(0) + x_(1) + 4);
       break;
     }
-    default: { throw std::runtime_error("Un-supported cost form."); }
+    default: {
+      throw std::runtime_error("Un-supported cost form.");
+    }
   }
   Vector3d b_lb(-numeric_limits<double>::infinity(), 2.0,
                 -numeric_limits<double>::infinity());
@@ -133,14 +137,16 @@ LinearProgram0::LinearProgram0(CostForm cost_form,
       prog()->AddLinearConstraint(+x_(0) >= 0);
       break;
     }
-    default: { throw std::runtime_error("Unsupported constraint form."); }
+    default: {
+      throw std::runtime_error("Unsupported constraint form.");
+    }
   }
 }
 
 void LinearProgram0::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const double tol = GetSolverSolutionDefaultCompareTolerance(
-      result.get_solver_id());
+  const double tol =
+      GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
@@ -182,8 +188,8 @@ LinearProgram1::LinearProgram1(CostForm cost_form,
 
 void LinearProgram1::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const double tol = GetSolverSolutionDefaultCompareTolerance(
-      result.get_solver_id());
+  const double tol =
+      GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);
@@ -272,8 +278,8 @@ LinearProgram2::LinearProgram2(CostForm cost_form,
 
 void LinearProgram2::CheckSolution(
     const MathematicalProgramResult& result) const {
-  const double tol = GetSolverSolutionDefaultCompareTolerance(
-      result.get_solver_id());
+  const double tol =
+      GetSolverSolutionDefaultCompareTolerance(result.get_solver_id());
   EXPECT_TRUE(CompareMatrices(result.GetSolution(x_), x_expected_, tol,
                               MatrixCompareType::absolute));
   ExpectSolutionCostAccurate(*prog(), result, tol);

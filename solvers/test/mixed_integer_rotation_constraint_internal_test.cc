@@ -107,7 +107,7 @@ void CheckInnerFacets(const std::vector<Vector3d>& pts) {
   }
 }
 
-void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
+void CompareHalfspaceRelaxation(const std::vector<Vector3d>& pts) {
   // Computes a possibly less tight n and d analytically. For each triangle with
   // vertices pts[i], pts[j] and pts[k], determine if the halfspace coinciding
   // with the triangle is a cutting plane (namely all vertices in pts are on one
@@ -127,7 +127,7 @@ void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
         }
         double d_tmp = normal_tmp.transpose() * pts[i];
         bool is_cutting_plane = true;
-        for (const auto &pt : pts) {
+        for (const auto& pt : pts) {
           if (pt.transpose() * normal_tmp < d_tmp - 1E-10) {
             is_cutting_plane = false;
             break;
@@ -148,7 +148,7 @@ void CompareHalfspaceRelaxation(const std::vector<Vector3d> &pts) {
     EXPECT_NEAR(d_expected, d, 1E-6);
   }
   EXPECT_GE(d_expected, d - 1E-8);
-  for (const auto &pt : pts) {
+  for (const auto& pt : pts) {
     EXPECT_GE(pt.transpose() * n_expected - d_expected, -1E-6);
   }
 }
