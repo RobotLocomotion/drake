@@ -29,8 +29,8 @@ IntegerSet MatrixToSet(const Eigen::MatrixXi& M) {
 class IntegerLatticeTest : public ::testing::Test {
  public:
   IntegerSet EnumerationSolutions() {
-    const auto y = EnumerateIntegerSolutions(A_, b_,
-                                             lower_bound_, upper_bound_);
+    const auto y =
+        EnumerateIntegerSolutions(A_, b_, lower_bound_, upper_bound_);
     return MatrixToSet(y);
   }
 
@@ -102,7 +102,6 @@ TEST_F(IntegerLatticeTest, Singleton) {
   EXPECT_EQ(EnumerationSolutions(), ref);
 }
 
-
 TEST_F(IntegerLatticeTest, InfeasProp) {
   // Tests that EnumerateIntegerSolutions avoids exhaustive enumeration of m^n
   // points for intractable choice of m and n. This is enabled by the
@@ -117,33 +116,24 @@ TEST_F(IntegerLatticeTest, InfeasProp) {
 
   // This constraint is satisfied by one point in B.
   A_ << Eigen::MatrixXi::Constant(1, n, 1);
-  b_ << A_*lower_bound_;
+  b_ << A_ * lower_bound_;
 
   IntegerSet ref;
   ref.insert(lower_bound_);
   EXPECT_EQ(EnumerationSolutions(), ref);
 }
 
-
 TEST_F(IntegerLatticeTest, EntireBoxFeasible) {
   SetDimensions(2, 2);
-  A_ << 1, 1,
-        2, 2;
-  b_ << 10,
-        20;
+  A_ << 1, 1, 2, 2;
+  b_ << 10, 20;
 
   lower_bound_ << 0, 0;
   upper_bound_ << 1, 2;
   Eigen::MatrixXi ref_mat(6, 2);
-  ref_mat << 0, 0,
-             0, 1,
-             0, 2,
-             1, 0,
-             1, 1,
-             1, 2;
+  ref_mat << 0, 0, 0, 1, 0, 2, 1, 0, 1, 1, 1, 2;
   EXPECT_EQ(EnumerationSolutions(), MatrixToSet(ref_mat));
 }
-
 
 }  // namespace
 }  // namespace solvers

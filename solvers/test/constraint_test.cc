@@ -12,11 +12,11 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
 using Eigen::Matrix2d;
+using Eigen::MatrixXd;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::VectorXd;
 using ::testing::HasSubstr;
 using ::testing::Not;
 
@@ -281,8 +281,7 @@ void TestLorentzConeEvalConvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   dx_test.col(0) = Eigen::VectorXd::LinSpaced(x_test.rows(), 0, 1);
   dx_test.col(1) = Eigen::VectorXd::LinSpaced(x_test.rows(), 1, 2);
 
-  const AutoDiffVecXd x_autodiff =
-      math::InitializeAutoDiff(x_test, dx_test);
+  const AutoDiffVecXd x_autodiff = math::InitializeAutoDiff(x_test, dx_test);
 
   AutoDiffVecXd y_autodiff1, y_autodiff2;
   cnstr1.Eval(x_autodiff, &y_autodiff1);
@@ -323,8 +322,8 @@ void TestLorentzConeEvalNonconvex(const Eigen::Ref<const Eigen::MatrixXd>& A,
   EXPECT_EQ(cnstr.CheckSatisfied(x_test), is_in_cone_expected);
 
   std::ostringstream os;
-  cnstr.Display(
-      os, symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
+  cnstr.Display(os,
+                symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
   EXPECT_THAT(os.str(), HasSubstr("LorentzConeConstraint\n"));
   EXPECT_THAT(os.str(), HasSubstr("pow"));
   EXPECT_THAT(os.str(), Not(HasSubstr("sqrt")));
@@ -356,10 +355,8 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
   VectorXd y;
   cnstr.Eval(x_test, &y);
   Eigen::VectorXd z = A * x_test + b;
-  Vector3d y_expected(
-      z(0),
-      z(1),
-      z(0) * z(1) - z.tail(z.size() - 2).squaredNorm());
+  Vector3d y_expected(z(0), z(1),
+                      z(0) * z(1) - z.tail(z.size() - 2).squaredNorm());
   EXPECT_TRUE(
       CompareMatrices(y, y_expected, 1E-10, MatrixCompareType::absolute));
 
@@ -378,8 +375,8 @@ void TestRotatedLorentzConeEval(const Eigen::Ref<const Eigen::MatrixXd> A,
   EXPECT_EQ(cnstr.CheckSatisfied(x_taylor), is_in_cone_expected);
 
   std::ostringstream os;
-  cnstr.Display(
-      os, symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
+  cnstr.Display(os,
+                symbolic::MakeVectorContinuousVariable(cnstr.num_vars(), "x"));
   EXPECT_THAT(os.str(), HasSubstr("RotatedLorentzConeConstraint\n"));
   EXPECT_THAT(os.str(), HasSubstr("pow"));
 
@@ -623,9 +620,9 @@ GTEST_TEST(testConstraint, testExpressionConstraint) {
   Variable x2{"x2"};
 
   Vector3<Variable> vars{x0, x1, x2};
-  Vector2<Expression> e{ 1. + x0*x0, x1*x1 + x2 };
+  Vector2<Expression> e{1. + x0 * x0, x1 * x1 + x2};
 
-  ExpressionConstraint constraint(e, Vector2d::Zero(), 2.*Vector2d::Ones());
+  ExpressionConstraint constraint(e, Vector2d::Zero(), 2. * Vector2d::Ones());
 
   const VectorX<symbolic::Expression>& expressions{constraint.expressions()};
   ASSERT_EQ(expressions.size(), 2);
@@ -713,9 +710,7 @@ class SimpleEvaluator : public EvaluatorBase {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SimpleEvaluator)
   SimpleEvaluator() : EvaluatorBase(2, 3) {
     c_.resize(2, 3);
-    c_ <<
-        1, 2, 3,
-        4, 5, 6;
+    c_ << 1, 2, 3, 4, 5, 6;
   }
 
  protected:
@@ -756,8 +751,7 @@ GTEST_TEST(testConstraint, testEvaluatorConstraint) {
   x << 7, 8, 9;
   VectorXd y(2);
   MatrixXd c(2, 3);
-  c << 1, 2, 3,
-       4, 5, 6;
+  c << 1, 2, 3, 4, 5, 6;
   const VectorXd y_expected = c * x;
   constraint.Eval(x, &y);
   EXPECT_EQ(y_expected, y);
@@ -800,8 +794,7 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
   // Check autodiff evaluation.
   Eigen::MatrixXd dx(2, 1);
   dx << 1, 1;
-  const auto x_autodiff = math::InitializeAutoDiff(
-      Eigen::VectorXd(x), dx);
+  const auto x_autodiff = math::InitializeAutoDiff(Eigen::VectorXd(x), dx);
   AutoDiffVecXd y_autodiff;
   constraint.Eval(x_autodiff, &y_autodiff);
   // Now compute the gradient manually.
@@ -811,9 +804,8 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
       z_autodiff(0) - z_autodiff(1) * exp(z_autodiff(2) / z_autodiff(1));
   y_autodiff_expected(1) = z_autodiff(1);
   EXPECT_TRUE(CompareMatrices(math::ExtractValue(y_autodiff), y_expected, tol));
-  EXPECT_TRUE(CompareMatrices(
-      math::ExtractGradient(y_autodiff),
-      math::ExtractGradient(y_autodiff_expected), tol));
+  EXPECT_TRUE(CompareMatrices(math::ExtractGradient(y_autodiff),
+                              math::ExtractGradient(y_autodiff_expected), tol));
 }
 
 }  // namespace

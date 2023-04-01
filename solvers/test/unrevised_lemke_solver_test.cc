@@ -69,21 +69,24 @@ GTEST_TEST(TestUnrevisedLemke, TestCycling) {
   q << -1, -1, -1;
 
   Eigen::VectorXd expected_z(3);
-  expected_z << 1.0/3, 1.0/3, 1.0/3;
+  expected_z << 1.0 / 3, 1.0 / 3, 1.0 / 3;
   RunLCP(M, q, expected_z);
 }
 
 // Tests a simple linear complementarity problem.
 GTEST_TEST(TestUnrevisedLemke, TestSimple) {
   // Create a 9x9 diagonal matrix from the vector [1 2 3 4 5 6 7 8 9].
-  MatrixX<double> M = (Eigen::Matrix<double, 9, 1>() <<
-      1, 2, 3, 4, 5, 6, 7, 8, 9).finished().asDiagonal();
+  MatrixX<double> M =
+      (Eigen::Matrix<double, 9, 1>() << 1, 2, 3, 4, 5, 6, 7, 8, 9)
+          .finished()
+          .asDiagonal();
 
   Eigen::Matrix<double, 9, 1> q;
   q << -1, -1, -1, -1, -1, -1, -1, -1, -1;
 
   Eigen::VectorXd expected_z(9);
-  expected_z << 1, 1.0/2, 1.0/3, 1.0/4, 1.0/5, 1.0/6, 1.0/7, 1.0/8, 1.0/9;
+  expected_z << 1, 1.0 / 2, 1.0 / 3, 1.0 / 4, 1.0 / 5, 1.0 / 6, 1.0 / 7,
+      1.0 / 8, 1.0 / 9;
   RunLCP(M, q, expected_z);
 }
 
@@ -101,8 +104,7 @@ GTEST_TEST(TestUnrevisedLemke, TestSimple) {
 // possible.
 GTEST_TEST(TestUnrevisedLemke, TestPSD) {
   MatrixX<double> M(2, 2);
-  M << 1, -1,
-      -1, 1;
+  M << 1, -1, -1, 1;
 
   Eigen::Vector2d q;
   q << 1, -1;
@@ -296,8 +298,8 @@ GTEST_TEST(TestUnrevisedLemke, ZeroTolerance) {
 
   // An scalar matrix * 1e10. Should be _around_ machine epsilon * 1e10.
   M(0, 0) = 1e10;
-  EXPECT_NEAR(UnrevisedLemkeSolver<double>::ComputeZeroTolerance(M),
-              1e10 * eps, 1e11 * eps);
+  EXPECT_NEAR(UnrevisedLemkeSolver<double>::ComputeZeroTolerance(M), 1e10 * eps,
+              1e11 * eps);
 
   // A 100 x 100 identity matrix. Should be _around_ 100 * machine epsilon.
   M = MatrixX<double>::Identity(10, 10);
@@ -321,13 +323,13 @@ GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
   // Solve the problem once.
   int num_pivots;
   Eigen::VectorXd expected_z(3);
-  expected_z << 1.0/3, 1.0/3, 1.0/3;
+  expected_z << 1.0 / 3, 1.0 / 3, 1.0 / 3;
   Eigen::VectorXd z;
   UnrevisedLemkeSolver<double> lcp;
   bool result = lcp.SolveLcpLemke(M, q, &z, &num_pivots);
   ASSERT_TRUE(result);
-  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
+  ASSERT_TRUE(
+      CompareMatrices(z, expected_z, epsilon, MatrixCompareType::absolute));
 
   // Verify that more than one pivot was required.
   EXPECT_GE(num_pivots, 1);
@@ -338,8 +340,8 @@ GTEST_TEST(TestUnrevisedLemke, WarmStarting) {
   expected_z *= 2;
   result = lcp.SolveLcpLemke(M, q, &z, &num_pivots);
   ASSERT_TRUE(result);
-  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
+  ASSERT_TRUE(
+      CompareMatrices(z, expected_z, epsilon, MatrixCompareType::absolute));
   EXPECT_EQ(num_pivots, 1);
 }
 
@@ -357,8 +359,8 @@ GTEST_TEST(TestUnrevisedLemke, Trivial) {
   UnrevisedLemkeSolver<double> lcp;
   bool result = lcp.SolveLcpLemke(M, q, &z, &num_pivots);
   ASSERT_TRUE(result);
-  ASSERT_TRUE(CompareMatrices(z, expected_z, epsilon,
-                              MatrixCompareType::absolute));
+  ASSERT_TRUE(
+      CompareMatrices(z, expected_z, epsilon, MatrixCompareType::absolute));
   ASSERT_EQ(num_pivots, 0);
 }
 
@@ -382,7 +384,7 @@ class UnrevisedLemkePrivateTests : public testing::Test {
     // Set the LCP variables. Start with all z variables independent and all w
     // variables dependent.
     const int n = 3;
-    lcp_.indep_variables_.resize(n+1);
+    lcp_.indep_variables_.resize(n + 1);
     lcp_.dep_variables_.resize(n);
     for (int i = 0; i < n; ++i) {
       lcp_.dep_variables_[i] = LCPVariable(false, i);
@@ -415,50 +417,42 @@ TEST_F(UnrevisedLemkePrivateTests, SelectSubMatrixWithCovering) {
   ASSERT_EQ(result.rows(), 2);
   ASSERT_EQ(result.cols(), 2);
   MatrixX<double> expected(result.rows(), result.cols());
-  expected << 1, 0,
-              0, 1;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  expected << 1, 0, 0, 1;
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Select the lower-right 2x2.
   lcp_.SelectSubMatrixWithCovering(M, {1, 2}, {2, 3}, &result);
   ASSERT_EQ(result.rows(), 2);
   ASSERT_EQ(result.cols(), 2);
-  expected << 0, 1,
-              1, 1;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  expected << 0, 1, 1, 1;
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Select the right 3x3, with columns reversed.
   lcp_.SelectSubMatrixWithCovering(M, {0, 1, 2}, {3, 2, 1}, &result);
   ASSERT_EQ(result.rows(), 3);
   ASSERT_EQ(result.cols(), 3);
   expected = MatrixX<double>(result.rows(), result.cols());
-  expected << 1, 0, 0,
-              1, 0, 1,
-              1, 1, 0;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  expected << 1, 0, 0, 1, 0, 1, 1, 1, 0;
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Select the right 3x3, with rows reversed.
   lcp_.SelectSubMatrixWithCovering(M, {2, 1, 0}, {1, 2, 3}, &result);
   ASSERT_EQ(result.rows(), 3);
   ASSERT_EQ(result.cols(), 3);
   expected = MatrixX<double>(result.rows(), result.cols());
-  expected << 0, 1, 1,
-              1, 0, 1,
-              0, 0, 1;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  expected << 0, 1, 1, 1, 0, 1, 0, 0, 1;
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Select the entire matrix.
   lcp_.SelectSubMatrixWithCovering(M, {0, 1, 2}, {0, 1, 2, 3}, &result);
   expected = MatrixX<double>(result.rows(), result.cols());
-  expected << 1, 0, 0, 1,
-              0, 1, 0, 1,
-              0, 0, 1, 1;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  expected << 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1;
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 }
 
 // Tests proper operation of selecting a sub-column from a matrix that is
@@ -476,40 +470,40 @@ TEST_F(UnrevisedLemkePrivateTests, SelectSubColumnWithCovering) {
   VectorX<double> expected(1);
   expected << 1;
   lcp_.SelectSubColumnWithCovering(M, {0}, 0 /* column */, &result);
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Get another single row from the first column.
   expected << 0;
   lcp_.SelectSubColumnWithCovering(M, {1}, 0 /* column */, &result);
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Get first and third rows in forward order, first column.
   lcp_.SelectSubColumnWithCovering(M, {0, 2}, 0 /* column */, &result);
   expected = VectorX<double>(2);
   expected << 1, 0;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Get first and third rows in reverse order, second column.
   lcp_.SelectSubColumnWithCovering(M, {2, 0}, 1 /* column */, &result);
   expected << 0, 0;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Get all three rows in forward order, third column.
   lcp_.SelectSubColumnWithCovering(M, {0, 1, 2}, 2 /* column */, &result);
   expected = VectorX<double>(3);
   expected << 0, 0, 1;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Get all three rows in reverse order, third column.
   lcp_.SelectSubColumnWithCovering(M, {2, 1, 0}, 2 /* column */, &result);
   expected << 1, 0, 0;
-  EXPECT_TRUE(CompareMatrices(result, expected, epsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(result, expected, epsilon, MatrixCompareType::absolute));
 
   // Get one row from the fourth column.
   lcp_.SelectSubColumnWithCovering(M, {0}, 3 /* column */, &result);
@@ -532,18 +526,18 @@ TEST_F(UnrevisedLemkePrivateTests, SelectSubVector) {
 
   // One element (the middle one).
   VectorX<double> result;
-  lcp_.SelectSubVector(v, { 1 }, &result);
+  lcp_.SelectSubVector(v, {1}, &result);
   EXPECT_EQ(result.size(), 1);
   EXPECT_EQ(result[0], 1);
 
   // Two elements (the ends).
-  lcp_.SelectSubVector(v, { 0, 2 }, &result);
+  lcp_.SelectSubVector(v, {0, 2}, &result);
   EXPECT_EQ(result.size(), 2);
   EXPECT_EQ(result[0], 0);
   EXPECT_EQ(result[1], 2);
 
   // All three elements, not ordered sequentially.
-  lcp_.SelectSubVector(v, { 0, 2, 1 }, &result);
+  lcp_.SelectSubVector(v, {0, 2, 1}, &result);
   EXPECT_EQ(result.size(), 3);
   EXPECT_EQ(result[0], 0);
   EXPECT_EQ(result[1], 2);
@@ -630,29 +624,29 @@ TEST_F(UnrevisedLemkePrivateTests, ValidateIndices) {
 TEST_F(UnrevisedLemkePrivateTests, IsEachUnique) {
   // Create two variables with the same index, but one z and one w. These should
   // be reported as unique.
-  EXPECT_TRUE(lcp_.IsEachUnique(
-      {UnrevisedLemkeSolver<double>::LCPVariable(true, 0),
-       UnrevisedLemkeSolver<double>::LCPVariable(false, 0)}));
+  EXPECT_TRUE(
+      lcp_.IsEachUnique({UnrevisedLemkeSolver<double>::LCPVariable(true, 0),
+                         UnrevisedLemkeSolver<double>::LCPVariable(false, 0)}));
 
   // Create two variables with different indices, but both z. These should be
   // reported as unique.
-  EXPECT_TRUE(lcp_.IsEachUnique(
-      {UnrevisedLemkeSolver<double>::LCPVariable(true, 0),
-       UnrevisedLemkeSolver<double>::LCPVariable(true, 1)}));
+  EXPECT_TRUE(
+      lcp_.IsEachUnique({UnrevisedLemkeSolver<double>::LCPVariable(true, 0),
+                         UnrevisedLemkeSolver<double>::LCPVariable(true, 1)}));
 
   // Create two variables with different indices, but both w. These should be
   // reported as unique.
-  EXPECT_TRUE(lcp_.IsEachUnique(
-      {UnrevisedLemkeSolver<double>::LCPVariable(false, 0),
-       UnrevisedLemkeSolver<double>::LCPVariable(false, 1)}));
+  EXPECT_TRUE(
+      lcp_.IsEachUnique({UnrevisedLemkeSolver<double>::LCPVariable(false, 0),
+                         UnrevisedLemkeSolver<double>::LCPVariable(false, 1)}));
 
   // Create two identical variables. These should not be reported as unique.
-  EXPECT_FALSE(lcp_.IsEachUnique(
-      {UnrevisedLemkeSolver<double>::LCPVariable(false, 0),
-       UnrevisedLemkeSolver<double>::LCPVariable(false, 0)}));
-  EXPECT_FALSE(lcp_.IsEachUnique(
-      {UnrevisedLemkeSolver<double>::LCPVariable(true, 1),
-       UnrevisedLemkeSolver<double>::LCPVariable(true, 1)}));
+  EXPECT_FALSE(
+      lcp_.IsEachUnique({UnrevisedLemkeSolver<double>::LCPVariable(false, 0),
+                         UnrevisedLemkeSolver<double>::LCPVariable(false, 0)}));
+  EXPECT_FALSE(
+      lcp_.IsEachUnique({UnrevisedLemkeSolver<double>::LCPVariable(true, 1),
+                         UnrevisedLemkeSolver<double>::LCPVariable(true, 1)}));
 }
 
 // Tests that pivoting works as expected, using Example 4.7.7 from
@@ -686,7 +680,7 @@ TEST_F(UnrevisedLemkePrivateTests, LemkePivot) {
 
   // Case 2: Driving variable is from 'w'. We use the second-to-last tableaux
   // from Example 4.4.7.
-  lcp_.dep_variables_[0] = LCPVariable(true, 3);    // artificial variable
+  lcp_.dep_variables_[0] = LCPVariable(true, 3);  // artificial variable
   lcp_.dep_variables_[1] = LCPVariable(false, 0);
   lcp_.dep_variables_[2] = LCPVariable(true, 2);
   lcp_.indep_variables_[0] = LCPVariable(false, 1);
@@ -736,14 +730,14 @@ TEST_F(UnrevisedLemkePrivateTests, ConstructLemkeSolution) {
 
   // Verify that the operation completes successfully.
   VectorX<double> z;
-  ASSERT_TRUE(lcp_.ConstructLemkeSolution(
-      M_, q_, artificial_index_loc, zero_tol, &z));
+  ASSERT_TRUE(
+      lcp_.ConstructLemkeSolution(M_, q_, artificial_index_loc, zero_tol, &z));
 
   // Verify that the solution is as expected.
   VectorX<double> z_expected(3);
   z_expected << 0, 1, 3;
-  EXPECT_TRUE(CompareMatrices(z, z_expected, epsilon,
-                              MatrixCompareType::absolute));
+  EXPECT_TRUE(
+      CompareMatrices(z, z_expected, epsilon, MatrixCompareType::absolute));
 }
 
 // Verifies that DetermineIndexSets() works as expected.

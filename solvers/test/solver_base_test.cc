@@ -20,30 +20,42 @@ class StubSolverBase final : public SolverBase {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StubSolverBase)
-  StubSolverBase() : SolverBase(
-      &id,
-      [this](){ return available_; },
-      [this](){ return enabled_; },
-      [this](const auto& prog){ return satisfied_; }) {}
+  StubSolverBase()
+      : SolverBase(
+            &id,
+            [this]() {
+              return available_;
+            },
+            [this]() {
+              return enabled_;
+            },
+            [this](const auto& prog) {
+              return satisfied_;
+            }) {}
 #pragma GCC diagnostic pop
 
   // This overload passes the explain_unsatisfied functor to the base class,
   // in contrast to the above constructor which leaves it defaulted.
   explicit StubSolverBase(std::string explanation)
-    : SolverBase(
-        id(),
-        [this](){ return available_; },
-        [this](){ return enabled_; },
-        [this](const auto& prog){ return satisfied_; },
-        [this](const auto& prog){
-          return satisfied_ ? "" : unsatisfied_explanation_;
-        }),
-      unsatisfied_explanation_(std::move(explanation)) {}
+      : SolverBase(
+            id(),
+            [this]() {
+              return available_;
+            },
+            [this]() {
+              return enabled_;
+            },
+            [this](const auto& prog) {
+              return satisfied_;
+            },
+            [this](const auto& prog) {
+              return satisfied_ ? "" : unsatisfied_explanation_;
+            }),
+        unsatisfied_explanation_(std::move(explanation)) {}
 
-  void DoSolve(
-      const MathematicalProgram& prog, const Eigen::VectorXd& x_init,
-      const SolverOptions& options,
-      MathematicalProgramResult* result) const final {
+  void DoSolve(const MathematicalProgram& prog, const Eigen::VectorXd& x_init,
+               const SolverOptions& options,
+               MathematicalProgramResult* result) const final {
     result->set_solution_result(kSolutionFound);
     result->set_optimal_cost(1.0);
     Eigen::VectorXd x_val = x_init;
@@ -162,9 +174,8 @@ GTEST_TEST(SolverBaseTest, AvailableError) {
   const MathematicalProgram prog;
   StubSolverBase dut;
   dut.available_ = false;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.Solve(prog, {}, {}),
-      ".*StubSolverBase has not been compiled.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Solve(prog, {}, {}),
+                              ".*StubSolverBase has not been compiled.*");
 }
 
 // Check the error message when attributes are not satisfied.
@@ -172,9 +183,8 @@ GTEST_TEST(SolverBaseTest, ProgramAttributesError) {
   const MathematicalProgram prog;
   StubSolverBase dut;
   dut.satisfied_ = false;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      dut.Solve(prog, {}, {}),
-      ".*StubSolverBase is unable to solve.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.Solve(prog, {}, {}),
+                              ".*StubSolverBase is unable to solve.*");
 }
 
 GTEST_TEST(SolverBaseTest, SolveAndReturn) {

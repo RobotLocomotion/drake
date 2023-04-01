@@ -48,9 +48,9 @@ class OptimizationProgram {
 
   virtual ~OptimizationProgram() {}
 
-  CostForm cost_form() const {return cost_form_;}
+  CostForm cost_form() const { return cost_form_; }
 
-  ConstraintForm constraint_form() const {return constraint_form_;}
+  ConstraintForm constraint_form() const { return constraint_form_; }
 
   MathematicalProgram* prog() const { return prog_.get(); }
 
@@ -142,7 +142,6 @@ class LinearSystemExample3 : public LinearSystemExample2 {
 
   void CheckSolution(const MathematicalProgramResult& result) const override;
 };
-
 
 /**
  * For a stable linear system ẋ = A x, find its Lyapunov function by solving
@@ -575,7 +574,7 @@ class ConvexCubicProgramExample : public MathematicalProgram {
 
   ConvexCubicProgramExample();
 
-  ~ConvexCubicProgramExample() override {};
+  ~ConvexCubicProgramExample() override{};
 
   void CheckSolution(const MathematicalProgramResult& result) const;
 
@@ -596,7 +595,7 @@ class UnitLengthProgramExample : public MathematicalProgram {
 
   UnitLengthProgramExample();
 
-  ~UnitLengthProgramExample() override {};
+  ~UnitLengthProgramExample() override{};
 
   void CheckSolution(const MathematicalProgramResult& result,
                      double tolerance) const;

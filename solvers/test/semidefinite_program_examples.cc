@@ -13,14 +13,13 @@
 namespace drake {
 namespace solvers {
 namespace test {
-using Eigen::Vector2d;
 using Eigen::Matrix3d;
-using Eigen::Vector3d;
 using Eigen::Matrix4d;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 
 const double kInf = std::numeric_limits<double>::infinity();
-void TestTrivialSDP(const SolverInterface& solver,
-                    double tol) {
+void TestTrivialSDP(const SolverInterface& solver, double tol) {
   MathematicalProgram prog;
 
   auto S = prog.NewSymmetricContinuousVariables<2>("S");
@@ -212,10 +211,12 @@ void SolveSDPwithSecondOrderConeExample1(const SolverInterface& solver,
   prog.AddLinearCost((C0 * X.cast<symbolic::Expression>()).trace() + x(0));
   prog.AddLinearConstraint(
       (Eigen::Matrix3d::Identity() * X.cast<symbolic::Expression>()).trace() +
-          x(0) == 1);
+          x(0) ==
+      1);
   prog.AddLinearConstraint(
       (Eigen::Matrix3d::Ones() * X.cast<symbolic::Expression>()).trace() +
-          x(1) + x(2) == 0.5);
+          x(1) + x(2) ==
+      0.5);
   prog.AddPositiveSemidefiniteConstraint(X);
   prog.AddLorentzConeConstraint(x.cast<symbolic::Expression>());
 

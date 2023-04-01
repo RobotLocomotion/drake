@@ -124,8 +124,8 @@ GTEST_TEST(SolverOptionsTest, CheckOptionKeysForSolver) {
   DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
       id2, {"key1"}, {"key2"}, {"key3"}));
   // Check the solver id in solver_options.
-  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(id1, {"key1"},
-                                                          {"key2"}, {"key3"}));
+  DRAKE_EXPECT_NO_THROW(solver_options.CheckOptionKeysForSolver(
+      id1, {"key1"}, {"key2"}, {"key3"}));
 
   // Check an option not set for id1.
   solver_options.SetOption(id1, "key2", 1.3);
