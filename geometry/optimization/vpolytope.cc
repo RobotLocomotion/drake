@@ -1,10 +1,13 @@
 #include "drake/geometry/optimization/vpolytope.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <string>
 
 #include <drake_vendor/libqhullcpp/Qhull.h>
 #include <drake_vendor/libqhullcpp/QhullVertexSet.h>
@@ -21,6 +24,7 @@ namespace optimization {
 using Eigen::Matrix3Xd;
 using Eigen::MatrixXd;
 using Eigen::RowVectorXd;
+using Eigen::Vector3d;
 using Eigen::VectorXd;
 using math::RigidTransformd;
 using solvers::Binding;
@@ -234,6 +238,57 @@ double VPolytope::CalcVolume() const {
   return qhull.volume();
 }
 
+void VPolytope::WriteObj(const std::filesystem::path& filename) const {
+  DRAKE_DEMAND(ambient_dimension_ == 3);
+
+  const Vector3d center = vertices_.rowwise().mean();
+
+  orgQhull::Qhull qhull;
+  // http://www.qhull.org/html/qh-quick.htm#options
+  // Pp avoids complaining about precision (it was used by trimesh).
+  // Qt requests a triangulation.
+  constexpr char qhull_options[] = "Pp Qt";
+  qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(),
+                 qhull_options);
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+
+  std::ofstream file;
+  file.exceptions(~std::ofstream::goodbit);
+  file.open(filename);
+  std::vector<int> vertex_id_to_index(qhull.vertexCount() + 1);
+  int index = 1;
+  for (const auto& vertex : qhull.vertexList()) {
+    fmt::print(file, "v {}\n", fmt::join(vertex.point(), " "));
+    vertex_id_to_index.at(vertex.id()) = index++;
+  }
+  for (const auto& facet : qhull.facetList()) {
+    DRAKE_DEMAND(facet.vertices().size() == 3);
+    // Map the Qhull IDs into the obj file's "v" indices.
+    const orgQhull::QhullVertex& v0 = facet.vertices()[0];
+    const orgQhull::QhullVertex& v1 = facet.vertices()[1];
+    const orgQhull::QhullVertex& v2 = facet.vertices()[2];
+    std::array<int, 3> face_indices = {
+        vertex_id_to_index.at(v0.id()),
+        vertex_id_to_index.at(v1.id()),
+        vertex_id_to_index.at(v2.id()),
+    };
+    // Adjust the normal to point away from the center.
+    const Eigen::Map<Vector3d> a(v0.point().coordinates());
+    const Eigen::Map<Vector3d> b(v1.point().coordinates());
+    const Eigen::Map<Vector3d> c(v2.point().coordinates());
+    const Vector3d normal = (b - a).cross(c - a);
+    if (normal.dot(a - center) < 0) {
+      std::swap(face_indices[0], face_indices[1]);
+    }
+    fmt::print(file, "f {}\n", fmt::join(face_indices, " "));
+  }
+  file.close();
+}
+
 bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                              double tol) const {
   const int n = ambient_dimension();
@@ -392,7 +447,7 @@ Eigen::MatrixXd GetVertices(const Convex& convex) {
   int vertex_count = 0;
   for (const auto& qhull_vertex : qhull.vertexList()) {
     vertices.col(vertex_count++) =
-        Eigen::Map<Eigen::Vector3d>(qhull_vertex.point().toStdVector().data());
+        Eigen::Map<Vector3d>(qhull_vertex.point().toStdVector().data());
   }
   return vertices;
 }
