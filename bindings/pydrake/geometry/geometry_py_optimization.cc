@@ -276,6 +276,8 @@ void DefineGeometryOptimization(py::module m) {
         .def_static("MakeUnitBox", &VPolytope::MakeUnitBox, py::arg("dim"),
             cls_doc.MakeUnitBox.doc)
         .def("CalcVolume", &VPolytope::CalcVolume, cls_doc.CalcVolume.doc)
+        .def("WriteObj", &VPolytope::WriteObj, py::arg("filename"),
+            cls_doc.WriteObj.doc)
         .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
             [](Eigen::MatrixXd arg) { return VPolytope(arg); }));
     py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
