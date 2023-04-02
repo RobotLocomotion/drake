@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <string>
 
 #include <drake_vendor/libqhullcpp/Qhull.h>
 #include <drake_vendor/libqhullcpp/QhullVertexSet.h>
@@ -232,6 +234,37 @@ double VPolytope::CalcVolume() const {
                     qhull.qhullStatus(), qhull.qhullMessage()));
   }
   return qhull.volume();
+}
+
+void VPolytope::WriteObj(const std::filesystem::path& filename) const {
+  DRAKE_DEMAND(ambient_dimension_ == 3);
+
+  orgQhull::Qhull qhull;
+  // http://www.qhull.org/html/qh-quick.htm#options
+  // Pp avoids complaining about precision (it was used by trimesh).
+  std::string qhull_options = "Pp";
+  qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(),
+                 qhull_options.c_str());
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and  message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+
+  std::ofstream file;
+  file.exceptions(~std::ofstream::goodbit);
+  file.open(filename);
+  for (const auto& vertex : qhull.vertexList()) {
+    fmt::print(file, "v {}\n", fmt::join(vertex.point(), " "));
+  }
+  for (const auto& facet : qhull.facetList()) {
+    fmt::print(file, "f");
+    for (const auto& v : facet.vertices()) {
+      fmt::print(file, " {}", v.id());
+    }
+    fmt::print(file, "\n");
+  }
+  file.close();
 }
 
 bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

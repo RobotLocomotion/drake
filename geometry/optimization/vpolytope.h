@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -79,6 +80,15 @@ class VPolytope final : public ConvexSet {
    * @note this function calls qhull to compute the volume.
    */
   [[nodiscard]] double CalcVolume() const;
+
+  /**
+   * Uses qhull to compute the Delaunay triangulation and then writes the
+   * vertices and faces to `filename` in the Wavefront Obj format. Note that
+   * the extension `.obj` is not automatically added to the `filename`.
+   *
+   * @pre ambient_dimension() == 3.
+   */
+  void WriteObj(const std::filesystem::path& filename) const;
 
  private:
   bool DoIsBounded() const { return true; }

@@ -257,9 +257,8 @@ class HPolyhedron final : public ConvexSet {
   using ShapeReifier::ImplementGeometry;
   void ImplementGeometry(const Box& box, void* data) final;
   void ImplementGeometry(const HalfSpace&, void* data) final;
-  // TODO(russt): Support ImplementGeometry(const Convex& convex, ...), but
-  // currently it would require e.g. digging ReadObjForConvex out of
-  // proximity_engine.cc.
+  // TODO(russt): Support ImplementGeometry(const Convex& convex, ...);
+  // it is already supported by VPolytope.
 
   void CheckInvariants() const;
 
