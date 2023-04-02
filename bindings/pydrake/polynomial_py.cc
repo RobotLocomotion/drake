@@ -32,6 +32,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
       .def("IsAffine", &Class::IsAffine, cls_doc.IsAffine.doc)
       .def("GetCoefficients", &Class::GetCoefficients,
           cls_doc.GetCoefficients.doc)
+      .def(
+          "EvaluateUnivariate",
+          [](const Class* self, const T& x, int derivative_order) {
+            return self->EvaluateUnivariate(x, derivative_order);
+          },
+          py::arg("x"), py::arg("derivative_order") = 0,
+          cls_doc.EvaluateUnivariate.doc)
       .def("Derivative", &Class::Derivative, py::arg("derivative_order") = 1,
           cls_doc.Derivative.doc)
       .def("Integral", &Class::Integral, py::arg("integration_constant") = 0.0,
