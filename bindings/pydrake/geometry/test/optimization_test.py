@@ -1,10 +1,11 @@
 import pydrake.geometry.optimization as mut
 
+import os.path
 import unittest
 
 import numpy as np
 
-from pydrake.common import RandomGenerator
+from pydrake.common import RandomGenerator, temp_directory
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Ellipsoid, FramePoseVector, GeometryFrame,
@@ -263,6 +264,9 @@ class TestGeometryOptimization(unittest.TestCase):
         vpoly = mut.VPolytope(vertices=vertices).GetMinimalRepresentation()
         self.assertAlmostEqual(vpoly.CalcVolume(), a * a * a)
         self.assertEqual(vpoly.vertices().shape[1], 8)
+        temp_file_name = f"{temp_directory()}/vpoly.obj"
+        vpoly.WriteObj(filename=temp_file_name)
+        self.assertTrue(os.path.isfile(temp_file_name))
 
     def _calculate_path_length(self, vertices):
         n = vertices.shape[1]

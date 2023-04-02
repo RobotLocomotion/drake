@@ -6,6 +6,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_frame.h"
@@ -560,6 +561,26 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
       }
     }
   }
+}
+
+// Confirm that WriteObj generates an Obj file that can be read back in to
+// obtain the same VPolytope. All of the geometry work is done by qhull; this
+// test simply covers the data flow.
+GTEST_TEST(VPolytopeTest, WriteObjTest) {
+  VPolytope V = VPolytope::MakeUnitBox(3);
+
+  const std::string filename = temp_directory() + "/vpolytope.obj";
+  V.WriteObj(filename);
+  V.WriteObj("/tmp/vpoly.obj");
+
+  auto [scene_graph, geom_id] =
+      MakeSceneGraphWithShape(Convex(filename, 1), RigidTransformd::Identity());
+  auto context = scene_graph->CreateDefaultContext();
+  auto query =
+      scene_graph->get_query_output_port().Eval<QueryObject<double>>(*context);
+
+  VPolytope V_scene_graph(query, geom_id);
+  CheckVertices(V.vertices(), V_scene_graph.vertices(), 1e-6);
 }
 
 }  // namespace optimization

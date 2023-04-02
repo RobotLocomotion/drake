@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <numeric>
+#include <string>
 
 #include <drake_vendor/libqhullcpp/Qhull.h>
 #include <drake_vendor/libqhullcpp/QhullVertexSet.h>
@@ -232,6 +234,54 @@ double VPolytope::CalcVolume() const {
                     qhull.qhullStatus(), qhull.qhullMessage()));
   }
   return qhull.volume();
+}
+
+void VPolytope::WriteObj(const std::filesystem::path& filename) const {
+  DRAKE_DEMAND(ambient_dimension_ == 3);
+
+  Eigen::Vector3d center = vertices_.rowwise().mean();
+
+  orgQhull::Qhull qhull;
+  // http://www.qhull.org/html/qh-quick.htm#options
+  // Pp avoids complaining about precision (it was used by trimesh).
+  // Qt requests a triangulation.
+  std::string qhull_options = "Pp Qt";
+  qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(),
+                 qhull_options.c_str());
+  if (qhull.qhullStatus() != 0) {
+    throw std::runtime_error(
+        fmt::format("Qhull terminated with status {} and message:\n{}",
+                    qhull.qhullStatus(), qhull.qhullMessage()));
+  }
+
+  std::ofstream file;
+  file.exceptions(~std::ofstream::goodbit);
+  file.open(filename);
+  std::vector<int> vertex_id_to_index(qhull.vertexCount()+1);
+  int index = 1;
+  for (const auto& vertex : qhull.vertexList()) {
+    fmt::print(file, "v {}\n", fmt::join(vertex.point(), " "));
+    vertex_id_to_index[vertex.id()] = index++;
+  }
+  for (const auto& facet : qhull.facetList()) {
+    fmt::print(file, "f");
+    const Eigen::Map<Eigen::Vector3d> a(
+        facet.vertices()[0].point().coordinates()),
+        b(facet.vertices()[1].point().coordinates()),
+        c(facet.vertices()[2].point().coordinates());
+    const Eigen::Vector3d normal = (b - a).cross(c - a);
+    bool reverse_winding = normal.dot(a-center) < 0;
+    if (reverse_winding) {
+      fmt::print(file, " {}", vertex_id_to_index[facet.vertices()[1].id()]);
+      fmt::print(file, " {}", vertex_id_to_index[facet.vertices()[0].id()]);
+    } else {
+      fmt::print(file, " {}", vertex_id_to_index[facet.vertices()[0].id()]);
+      fmt::print(file, " {}", vertex_id_to_index[facet.vertices()[1].id()]);
+    }
+    fmt::print(file, " {}", vertex_id_to_index[facet.vertices()[2].id()]);
+    fmt::print(file, "\n");
+  }
+  file.close();
 }
 
 bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -55,10 +56,10 @@ class VPolytope final : public ConvexSet {
   VPolytope GetMinimalRepresentation() const;
 
   /** Returns true if the point is within @p tol of the set under the L∞-norm.
-   Note: This requires the solution of a linear program; the achievable
-   tolerance may be dependent on your specific solver and solver parameters.
-   @see ConvexSet::set_solver
-   */
+  Note: This requires the solution of a linear program; the achievable
+  tolerance may be dependent on your specific solver and solver parameters.
+  @see ConvexSet::set_solver
+  */
   using ConvexSet::PointInSet;
 
   /** Returns the vertices in a d-by-n matrix, where d is the ambient dimension,
@@ -66,7 +67,7 @@ class VPolytope final : public ConvexSet {
   const Eigen::MatrixXd& vertices() const { return vertices_; }
 
   /** Constructs a polyhedron as an axis-aligned box from the lower and upper
-   * corners. */
+  corners. */
   static VPolytope MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
                            const Eigen::Ref<const Eigen::VectorXd>& ub);
 
@@ -74,11 +75,15 @@ class VPolytope final : public ConvexSet {
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static VPolytope MakeUnitBox(int dim);
 
-  /**
-   * Computes the volume of this V-Polytope.
-   * @note this function calls qhull to compute the volume.
-   */
+  /** Computes the volume of this V-Polytope.
+  @note this function calls qhull to compute the volume. */
   [[nodiscard]] double CalcVolume() const;
+
+  /** Uses qhull to compute the Delaunay triangulation and then writes the
+  vertices and faces to `filename` in the Wavefront Obj format. Note that
+  the extension `.obj` is not automatically added to the `filename`.
+  @pre ambient_dimension() == 3. */
+  void WriteObj(const std::filesystem::path& filename) const;
 
  private:
   bool DoIsBounded() const { return true; }
