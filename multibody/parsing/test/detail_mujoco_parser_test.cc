@@ -408,8 +408,14 @@ class BoxMeshTest : public MujocoParserTest {
   }
 };
 
+TEST_F(BoxMeshTest, MeshFileDirectNoName) {
+  // Absolute path referencing the obj with the default heuristic for `name`.
+  std::string mesh_asset = fmt::format(R"""(<mesh file="{}"/>)""", box_obj_);
+  TestBoxMesh(box_obj_, mesh_asset);
+}
+
 TEST_F(BoxMeshTest, MeshFileDirect) {
-  // Absolute path, referencing the obj directly.
+  // Absolute path, referencing the obj directly and with a `name` attribute.
   std::string mesh_asset =
       fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
   TestBoxMesh(box_obj_, mesh_asset);
