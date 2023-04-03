@@ -528,7 +528,7 @@ PackageMap::PackageMap() : PackageMap{std::nullopt} {
   // an appropriately-declared external, we'll use that. Otherwise, we'll fetch
   // the data on demand from the internet.
   const RlocationOrError maybe_models_package_xml =
-      FindRunfile("models_internal/package.xml");
+      FindRunfile("drake_models/package.xml");
   if (maybe_models_package_xml.error.empty()) {
     AddPackageXml(maybe_models_package_xml.abspath);
   } else {

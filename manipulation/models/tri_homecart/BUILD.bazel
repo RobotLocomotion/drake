@@ -6,7 +6,6 @@ load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 load("@drake//tools/workspace/ros_xacro_internal:defs.bzl", "xacro_file")
-load("//tools/workspace/models_internal:files.bzl", "tri_homecart_mesh_files")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -41,9 +40,20 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-    ] + [
-        "@models_internal//:" + x
-        for x in tri_homecart_mesh_files()
+        "@drake_models//:tri_homecart/homecart_arm_mount_cantilever.mtl",
+        "@drake_models//:tri_homecart/homecart_arm_mount_cantilever.obj",
+        "@drake_models//:tri_homecart/homecart_arm_mount_stack.mtl",
+        "@drake_models//:tri_homecart/homecart_arm_mount_stack.obj",
+        "@drake_models//:tri_homecart/homecart_basecart.mtl",
+        "@drake_models//:tri_homecart/homecart_basecart.obj",
+        "@drake_models//:tri_homecart/homecart_basecart_wood_color.png",
+        "@drake_models//:tri_homecart/homecart_baseplate.mtl",
+        "@drake_models//:tri_homecart/homecart_baseplate.obj",
+        "@drake_models//:tri_homecart/homecart_bimanual_upper_structure.mtl",
+        "@drake_models//:tri_homecart/homecart_bimanual_upper_structure.obj",
+        "@drake_models//:tri_homecart/homecart_cutting_board.mtl",
+        "@drake_models//:tri_homecart/homecart_cutting_board.obj",
+        "@drake_models//:tri_homecart/homecart_cutting_board_color.png",
     ],
 )
 

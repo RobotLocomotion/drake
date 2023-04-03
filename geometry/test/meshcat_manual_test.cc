@@ -62,7 +62,7 @@ int do_main() {
   meshcat->SetTransform("obj", RigidTransformd(Vector3d{2, 0, 0}));
 
   auto mustard_obj =
-      FindRunfile("models_internal/ycb/meshes/006_mustard_bottle_textured.obj")
+      FindRunfile("drake_models/ycb/meshes/006_mustard_bottle_textured.obj")
           .abspath;
   meshcat->SetObject("mustard", Mesh(mustard_obj, 3.0));
   meshcat->SetTransform("mustard", RigidTransformd(Vector3d{3, 0, 0}));
