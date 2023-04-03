@@ -4,7 +4,9 @@
 #include <map>
 #include <optional>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "geometry/optimization/cspace_free_polytope.h"
 

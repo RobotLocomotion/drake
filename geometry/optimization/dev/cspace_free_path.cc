@@ -1,5 +1,7 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
+#include <vector>
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -35,19 +37,29 @@ PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
     const symbolic::Variables& indeterminates,
     symbolic::Polynomial::SubstituteAndExpandCacheData* cached_substitutions)
     : plane_index{plane_geometries.plane_index} {
+  auto substitute_and_create_condition =
+      [this, &cached_substitutions, &path_with_y_subs, &indeterminates, &mu](
+          const symbolic::RationalFunction& rational, bool positive_side) {
+        symbolic::Variables parameters;
+        for (const auto& var : rational.numerator().indeterminates()) {
+          parameters.insert(path_with_y_subs.at(var).decision_variables());
+        }
+        symbolic::Polynomial path_numerator{
+            rational.numerator().SubstituteAndExpand(path_with_y_subs,
+                                                     cached_substitutions)};
+        path_numerator.SetIndeterminates(indeterminates);
+        if (positive_side) {
+          positive_side_conditions.emplace_back(path_numerator,
+                                                mu,
+                                                parameters);
+        }
+      };
+
   for (const auto& rational : plane_geometries.positive_side_rationals) {
-    symbolic::Polynomial path_numerator{
-        rational.numerator().SubstituteAndExpand(path_with_y_subs,
-                                                 cached_substitutions)};
-    path_numerator.SetIndeterminates(indeterminates);
-    positive_side_conditions.emplace_back(path_numerator, mu);
+    substitute_and_create_condition(rational, true);
   }
   for (const auto& rational : plane_geometries.negative_side_rationals) {
-    symbolic::Polynomial path_numerator{
-        rational.numerator().SubstituteAndExpand(path_with_y_subs,
-                                                 cached_substitutions)};
-    path_numerator.SetIndeterminates(indeterminates);
-    negative_side_conditions.emplace_back(path_numerator, mu);
+    substitute_and_create_condition(rational, false);
   }
 }
 
