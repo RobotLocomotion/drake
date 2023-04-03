@@ -353,6 +353,17 @@ GTEST_TEST(FileParserTest, BadStringTest) {
       Parser(&plant).AddModelsFromString("bad:", "dmd.yaml"),
       ".*YAML.*bad.*");
 
+  // Syntactically well-formed DMD data, but semantically invalid.
+  {
+    // N.B. This directive is missing the required `name` attribute.
+    constexpr char yaml[] =
+        "directives:\n"
+        "- add_model_instance:\n";
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        Parser(&plant).AddModelsFromString(yaml, "dmd.yaml"),
+        ".*IsValid.*failed.*");
+  }
+
   // Unknown extension is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       Parser(&plant).AddModelsFromString("<bad/>", "weird-ext"),
