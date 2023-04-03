@@ -840,7 +840,7 @@ Polynomial Polynomial::SubstituteAndExpand(
     const Monomial cur_monomial{var};
     if (substitutions->find(cur_monomial) != substitutions->cend()) {
       if (!substitutions->at(cur_monomial).EqualTo(cur_sub)) {
-        drake::log()->warn(fmt::format(
+        drake::log()->warn(
             "SubstituteAndExpand(): the passed substitutions_cached_data "
             "contains a different expansion for {} than is contained in "
             "indeterminate_substitutions. Substitutions_cached_data contains "
@@ -848,7 +848,7 @@ Polynomial Polynomial::SubstituteAndExpand(
             "likely that substitutions_cached_data is storing expansions which "
             "are inconsistent and so you should not trust the output of this "
             "method.",
-            cur_monomial, substitutions->at(cur_monomial), cur_sub));
+            cur_monomial, substitutions->at(cur_monomial), cur_sub);
       }
     } else {
       substitutions->emplace(cur_monomial, cur_sub);

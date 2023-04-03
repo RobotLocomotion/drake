@@ -798,9 +798,9 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
         }
       }
 
-      drake::log()->warn(fmt::format(
+      drake::log()->warn(
           "Cannot find Lagrangian multipliers and separating planes for \n{}",
-          bad_pairs));
+          bad_pairs);
     }
   }
   return ret;
