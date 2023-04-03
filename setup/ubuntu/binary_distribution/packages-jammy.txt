@@ -22,7 +22,6 @@ libjsoncpp25
 liblapack3
 liblz4-1
 liblzma5
-libmsgpackc2
 libmumps-seq-5.4
 libnetcdf19
 libnlopt-cxx0
@@ -51,8 +50,5 @@ python3-numpy
 python3-pil
 python3-pydot
 python3-pygame
-python3-tornado
-python3-u-msgpack
 python3-yaml
-python3-zmq
 zlib1g
