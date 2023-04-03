@@ -225,6 +225,24 @@ class TestModelVisualizer(unittest.TestCase):
             dut._diagram.plant().GetMyContextFromRoot(dut._context))
         self.assertListEqual(list(original_q), list(joint_q))
 
+    def test_traffic_cone(self):
+        """
+        Checks that the traffic cone helpers don't crash.
+        """
+        meshcat = Meshcat()
+        dut = mut.ModelVisualizer(meshcat=meshcat)
+        path = "/PARSE_ERROR"
+        # The add & removes functions must work even when called too many, too
+        # few, or an unmatched number of times. It's not practical to have the
+        # calling code keep track of how often things are called, so the code
+        # must be robust to any ordering.
+        for _ in range(2):
+            dut._add_traffic_cone()
+        self.assertTrue(dut._meshcat.HasPath(path))
+        for _ in range(3):
+            dut._remove_traffic_cone()
+        self.assertFalse(dut._meshcat.HasPath(path))
+
     def test_webbrowser(self):
         """
         Checks that the webbrowser launch command is properly invoked.
