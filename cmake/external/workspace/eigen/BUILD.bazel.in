@@ -10,7 +10,10 @@ EIGEN_DEFINES = split_cmake_list(
 cc_library(
     name = "eigen",
     hdrs = glob(
-        ["include/**"],
+        [
+            "include/Eigen/**",
+            "include/unsupported/Eigen/**",
+        ],
         allow_empty = False,
     ),
     defines = EIGEN_DEFINES,

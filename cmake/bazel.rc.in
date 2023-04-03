@@ -25,7 +25,7 @@ build --subcommands=@BAZEL_SUBCOMMANDS@
 
 # Use the source code and BUILD files from the Drake source tree.
 # The WORKSPACE lives in the build directory, so by has no packages otherwise.
-build --package_path="@PROJECT_SOURCE_DIR@"
+build --package_path="%workspace%:@PROJECT_SOURCE_DIR@"
 
 # Fix macOS per https://github.com/bazelbuild/bazel/issues/14294.
 build --notrim_test_configuration
@@ -41,6 +41,9 @@ build:RelWithDebInfo --compilation_mode=opt --fission=no --copt=-g --host_copt=-
 
 # Match CMAKE_BUILD_TYPE as well as the WITH_FOO customizations for solvers.
 build @BAZEL_CONFIG@
+
+# Respect user.bazelrc (when present).
+try-import @PROJECT_SOURCE_DIR@/user.bazelrc
 
 # TODO(jwnimmer-tri) Pass along CMAKE_C_FLAGS and CMAKE_CXX_FLAGS also, and
 # specifically make sure the user's -std=c++NN is respected.
