@@ -157,7 +157,6 @@ void ParseModelDirectivesImpl(
       // the name is non-empty.
       std::optional<ModelInstanceIndex> model_instance;
       if (!model_namespace.empty()) {
-        DRAKE_DEMAND(plant->HasModelInstanceNamed(model_namespace));
         model_instance = plant->GetModelInstanceByName(model_namespace);
       }
 
@@ -222,7 +221,7 @@ ModelDirectives LoadModelDirectives(const DataSource& data_source) {
     directives = yaml::LoadYamlString<ModelDirectives>(
         data_source.contents(), std::nullopt /* child_name */, defaults);
   }
-  DRAKE_DEMAND(directives.IsValid());
+  DRAKE_THROW_UNLESS(directives.IsValid());
   return directives;
 }
 
