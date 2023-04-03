@@ -37,8 +37,28 @@ void InverseDynamicsController<T>::SetUp(
   const int num_actuators = multibody_plant_for_control_->num_actuators();
   const int dim = kp.size();
   DRAKE_DEMAND(num_positions == dim);
-  DRAKE_DEMAND(num_positions == num_velocities);
-  DRAKE_DEMAND(num_positions == num_actuators);
+  if (num_positions != num_actuators) {
+    throw std::runtime_error(fmt::format(R"""(
+Your plant has {} positions, but only {} actuators.
+    
+InverseDynamicsController (currently) only supports fully-actuated robots. For
+instance, you cannot use this directly if your robot/model has an unactuated 
+floating base.
+
+Note that commonly, the MultibodyPlant used for control is not the same
+one used for simulation; the simulation model might contain the robot and also
+some objects in the world which the controller does not have direct
+observations of nor control over. See 
+https://stackoverflow.com/q/75917723/9510020 for some further discussion.)""",
+                                         num_positions, num_actuators));
+  }
+  if (num_positions != num_velocities) {
+    throw std::runtime_error(fmt::format(R"""(
+Your plant has {} positions, but {} velocities. Likely you have a quaternion 
+floating base. InverseDynamicsController currently requires that the 
+number of positions matches the number of velocities, and does not support 
+joints modeled with quaternions.)""", num_positions, num_velocities));
+  }
 
   /*
   (vd*)
