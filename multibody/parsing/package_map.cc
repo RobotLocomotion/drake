@@ -189,9 +189,8 @@ class PackageData {
   /* Returns true iff `other` specifies a suitably identical package to `this`
   such that we can fold the two together: the path specification (whether local
   or remote) must match, but the deprecation or fetch status can differ. In case
-  they do not match, the error (if provided) will be reset to describe the
-  incompatibility. */
-  bool CanMerge(const PackageData& other, std::string* error = nullptr) const;
+  they do not match, the error will be reset to describe the incompatibility. */
+  bool CanMerge(const PackageData& other, std::string* error) const;
 
   /* Merges `other` into `this`. Throws an exception if CanMerge() is false.
   The `package_name` is non-functional (only used when reporting errors). */
@@ -557,15 +556,37 @@ void PackageMap::Add(const std::string& package_name,
   impl_->Emplace(package_name, PackageData::MakeLocal(package_path));
 }
 
+namespace {
+// Returns true iff the two paths exist and their fs::canonical respellings
+// are fs::equivalent. Returns false if there are any filesystem errors.
+bool is_equivalent_canonical(const fs::path& first, const fs::path& second) {
+  std::error_code ec;
+  const fs::path first_canonical = fs::canonical(first, ec);
+  if (ec) {
+    return false;
+  }
+  const fs::path second_canonical = fs::canonical(second, ec);
+  if (ec) {
+    return false;
+  }
+  return fs::equivalent(first_canonical, second_canonical, ec);
+}
+}  // namespace
+
 bool PackageData::CanMerge(const PackageData& other, std::string* error) const {
-  // When both packages are local, the paths must resolve to the same dir.
+  DRAKE_DEMAND(error != nullptr);
+  // When both packages are local, the paths must either resolve to the same dir
+  // or else (in support of Bazel runfiles) the package.xml files must resolve
+  // to the same file.
   if (this->is_local() && other.is_local()) {
-    if (!fs::equivalent(this->local_path(), other.local_path())) {
-      if (error != nullptr) {
-        *error = fmt::format(
-            "because the local paths are not equivalent ('{}' vs '{}')",
-            this->display_path(), other.display_path());
-      }
+    const fs::path this_path = fs::path(this->local_path());
+    const fs::path other_path = fs::path(other.local_path());
+    if (!is_equivalent_canonical(this_path, other_path) &&
+        !is_equivalent_canonical(this_path / "package.xml",
+                                 other_path / "package.xml")) {
+      *error = fmt::format(
+          "because the local paths are not equivalent ('{}' vs '{}')",
+          this->display_path(), other.display_path());
       return false;
     }
     return true;
@@ -574,24 +595,20 @@ bool PackageData::CanMerge(const PackageData& other, std::string* error) const {
   // When both packages are remote, the specification must match exactly.
   if (this->is_remote() && other.is_remote()) {
     if (!(this->remote_params() == other.remote_params())) {
-      if (error != nullptr) {
-        *error = fmt::format(
-            "because the remote package parameters differ ({} vs {})",
-            this->remote_params().ToJson(), other.remote_params().ToJson());
-      }
+      *error = fmt::format(
+          "because the remote package parameters differ ({} vs {})",
+          this->remote_params().ToJson(), other.remote_params().ToJson());
       return false;
     }
     return true;
   }
 
   // Cannot merge local paths with remote params.
-  if (error != nullptr) {
-    *error = fmt::format(
-        "because the existing path is {} ('{}') "
-        "but the the new path is {} ('{}')",
-        this->is_local() ? "local" : "remote", this->display_path(),
-        other.is_local() ? "local" : "remote", other.display_path());
-  }
+  *error = fmt::format(
+      "because the existing path is {} ('{}') "
+      "but the the new path is {} ('{}')",
+      this->is_local() ? "local" : "remote", this->display_path(),
+      other.is_local() ? "local" : "remote", other.display_path());
   return false;
 }
 
@@ -872,11 +889,12 @@ void PackageMap::CrawlForPackages(
     } else {
       // Warn if we've found the same path with a different spelling.
       const PackageData& existing_data = impl_->map().at(package_name);
-      if (!existing_data.CanMerge(PackageData::MakeLocal(package_path))) {
+      auto local = PackageData::MakeLocal(package_path);
+      std::string error;
+      if (!existing_data.CanMerge(local, &error)) {
         drake::log()->warn(
-            "PackageMap is ignoring newly-found path '{}' for package '{}'"
-            " and will continue using the previously-known path at '{}'.",
-            path, package_name, existing_data.display_path());
+            "PackageMap is ignoring newly-found path for package '{}' {}",
+            package_name, error);
       }
     }
     if (stop_at_package) {
