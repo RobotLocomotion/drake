@@ -913,8 +913,12 @@ class MujocoParser {
 
       std::string file;
       if (ParseStringAttribute(mesh_node, "file", &file)) {
-        std::string name{file};
-        ParseStringAttribute(mesh_node, "name", &name);
+        std::string name;
+        if (!ParseStringAttribute(mesh_node, "name", &name)) {
+          // Per the mujoco docs, if the "name" attribute is omitted then the
+          // mesh name equals the file name without the path and extension.
+          name = std::filesystem::path(file).stem();
+        }
 
         Vector3d scale{1, 1, 1};
         if (ParseVectorAttribute(mesh_node, "scale", &scale)) {
