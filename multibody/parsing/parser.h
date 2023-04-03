@@ -33,6 +33,10 @@ class CompositeParse;
 /// The output of parsing is one or more model instances added to the
 /// MultibodyPlant provided to the parser at construction.
 ///
+/// For an introductory tutorial about parsing, see the
+/// <a href="https://deepnote.com/workspace/Drake-0b3b2c53-a7ad-441b-80f8-bf8350752305/project/Tutorials-2b4fc509-aef2-417d-a40d-6071dfed9199/notebook/authoring_multibody_simulation-3c9697070d3541ee82c0bfe4054ada2d">Authoring
+/// a Multibody Simulation</a> page.
+///
 /// SDFormat files may contain multiple `<model>` elements.  New model
 /// instances will be added to @p plant for each `<model>` tag in the file.
 ///
