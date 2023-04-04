@@ -293,8 +293,8 @@ GTEST_TEST(TestAddVariable, TestAddSymmetricVariable1) {
   auto X = prog.NewSymmetricContinuousVariables<3>("X");
   CheckAddedVariable<MatrixDecisionVariable<3, 3>>(
       prog, X, 3, 3,
-      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)",
-      true, MathematicalProgram::VarType::CONTINUOUS);
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)", true,
+      MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(TestAddVariable, TestAddSymmetricVariable2) {
@@ -303,8 +303,8 @@ GTEST_TEST(TestAddVariable, TestAddSymmetricVariable2) {
   auto X = prog.NewSymmetricContinuousVariables(3, "X");
   CheckAddedVariable<MatrixXDecisionVariable>(
       prog, X, 3, 3,
-      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)",
-      true, MathematicalProgram::VarType::CONTINUOUS);
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)", true,
+      MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(TestAddVariable, TestAddBinaryVariable1) {
@@ -824,9 +824,8 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
   // Use minimal call site (directly on adding Binding<C>).
   // TODO(eric.cousineau): Check if there is a way to parse the error text to
   // ensure that we are capturing the correct error.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddItem(prog, CreateBinding(c, x)),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddItem(prog, CreateBinding(c, x)),
+                              ".*is not a decision variable.*");
 }
 
 }  // namespace
@@ -3142,12 +3141,10 @@ GTEST_TEST(TestMathematicalProgram, TestAddCostThrowError) {
 
   // Add a cost containing variable not included in the mathematical program.
   Variable y("y");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddCost(x(0) + y),
-      ".*is not a decision variable.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddCost(x(0) * x(0) + y),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) + y),
+                              ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) * x(0) + y),
+                              ".*is not a decision variable.*");
 }
 
 GTEST_TEST(TestMathematicalProgram, TestAddGenericCost) {
@@ -3362,7 +3359,7 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   const double tol = std::numeric_limits<double>::epsilon();
   Vector3d x_guess = Vector3d::Constant(.39);
   Vector2d y_guess = Vector2d::Constant(4.99);
-  y_guess[0] = 3*x_guess[0] + 2*x_guess[1];
+  y_guess[0] = 3 * x_guess[0] + 2 * x_guess[1];
   prog.SetInitialGuess(x, x_guess);
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfied(bindings[0], prog.initial_guess(), 0));
@@ -3385,7 +3382,7 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[1], 0));
 
   x_guess[2] = .39;
-  y_guess[0] = 3*x_guess[0] + 2*x_guess[1] + 0.2;
+  y_guess[0] = 3 * x_guess[0] + 2 * x_guess[1] + 0.2;
   prog.SetInitialGuess(x, x_guess);
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
@@ -3671,10 +3668,9 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   // Test with a polynomial whose coefficients depend on variables that are not
   // decision variables of prog.
   symbolic::Variable b("b");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddEqualityConstraintBetweenPolynomials(
-          p1, symbolic::Polynomial(b * x, {x})),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddEqualityConstraintBetweenPolynomials(
+                                  p1, symbolic::Polynomial(b * x, {x})),
+                              ".*is not a decision variable.*");
   // If we add `b` to prog as decision variable, then the code throws no
   // exceptions.
   prog.AddDecisionVariables(Vector1<symbolic::Variable>(b));
@@ -3980,9 +3976,9 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<1>("y");
-  prog.AddLinearCost(2*x[0] + 3*x[1]);
-  prog.AddLinearConstraint(x[0]+x[1] <= 2.0);
-  prog.AddSosConstraint(x[0]*y[0]*y[0]);
+  prog.AddLinearCost(2 * x[0] + 3 * x[1]);
+  prog.AddLinearConstraint(x[0] + x[1] <= 2.0);
+  prog.AddSosConstraint(x[0] * y[0] * y[0]);
 
   std::string s = prog.to_string();
   EXPECT_THAT(s, testing::HasSubstr("Decision variables"));

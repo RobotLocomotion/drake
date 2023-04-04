@@ -338,8 +338,8 @@ GTEST_TEST(OsqpSolverTest, VariableScaling2) {
   double s = 100;
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
-  prog.AddBoundingBoxConstraint(
-      0.5 * s, std::numeric_limits<double>::infinity(), x(0));
+  prog.AddBoundingBoxConstraint(0.5 * s,
+                                std::numeric_limits<double>::infinity(), x(0));
   prog.AddQuadraticCost((x(0) / s + 1) * (x(0) / s + 1));
   prog.AddQuadraticCost(x(1) * x(1));
   prog.AddLinearCost(2 * x(1) + 1);

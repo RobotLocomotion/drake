@@ -10,9 +10,9 @@ namespace solvers {
 namespace {
 
 using drake::symbolic::Expression;
+using drake::symbolic::Monomial;
 using drake::symbolic::Variable;
 using drake::symbolic::Variables;
-using drake::symbolic::Monomial;
 
 typedef std::set<Monomial,
                  drake::symbolic::GradedReverseLexOrder<std::less<Variable>>>

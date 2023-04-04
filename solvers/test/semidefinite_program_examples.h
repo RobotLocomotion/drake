@@ -15,8 +15,7 @@ namespace test {
 /// The analytical solution is
 /// S = [1 1]
 ///     [1 1]
-void TestTrivialSDP(const SolverInterface& solver,
-                    double tol);
+void TestTrivialSDP(const SolverInterface& solver, double tol);
 
 // Solve a semidefinite programming problem.
 // Find the common Lyapunov function for linear systems

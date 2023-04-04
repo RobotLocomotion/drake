@@ -34,9 +34,8 @@ TEST_F(MathematicalProgramResultTest, DefaultConstructor) {
   EXPECT_EQ(result.get_x_val().size(), 0);
   EXPECT_TRUE(std::isnan(result.get_optimal_cost()));
   EXPECT_EQ(result.num_suboptimal_solution(), 0);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      result.get_abstract_solver_details(),
-      "The solver_details has not been set yet.");
+  DRAKE_EXPECT_THROWS_MESSAGE(result.get_abstract_solver_details(),
+                              "The solver_details has not been set yet.");
 }
 
 TEST_F(MathematicalProgramResultTest, Setters) {
@@ -90,9 +89,9 @@ TEST_F(MathematicalProgramResultTest, GetSolution) {
   // Get a solution of an Expression (with additional Variables).
   const symbolic::Variable x_extra{"extra"};
   const symbolic::Expression e{x0_ + x_extra};
-  EXPECT_TRUE(result.GetSolution(e).EqualTo(symbolic::Expression{x_val(0) +
-  x_extra}));
-  const Vector2<symbolic::Expression> m{x0_ + x_extra, x1_*x_extra};
+  EXPECT_TRUE(
+      result.GetSolution(e).EqualTo(symbolic::Expression{x_val(0) + x_extra}));
+  const Vector2<symbolic::Expression> m{x0_ + x_extra, x1_ * x_extra};
   const Vector2<symbolic::Expression> msol = result.GetSolution(m);
   EXPECT_TRUE(msol[0].EqualTo(x_val(0) + x_extra));
   EXPECT_TRUE(msol[1].EqualTo(x_val(1) * x_extra));
@@ -272,8 +271,7 @@ GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintBindings) {
   // Choose constraint values such that x=0 should violate all constraints.
   const Eigen::Vector2d value1 = Eigen::Vector2d::Constant(10);
   const Eigen::Vector3d value2 = Eigen::Vector3d::Constant(100);
-  auto constraint1 = prog.AddBoundingBoxConstraint(
-      value1, value1, x.head<2>());
+  auto constraint1 = prog.AddBoundingBoxConstraint(value1, value1, x.head<2>());
   auto constraint2 = prog.AddBoundingBoxConstraint(value2, value2, x);
   SnoptSolver solver;
   if (solver.is_available()) {

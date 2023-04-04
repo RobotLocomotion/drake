@@ -46,9 +46,8 @@ GTEST_TEST(testLinearSystemSolver, EmptyProblem) {
               HasSubstr("LinearEqualityConstraint is required"));
 
   LinearSystemSolver solver;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog),
-      ".*LinearEqualityConstraint is required.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                              ".*LinearEqualityConstraint is required.*");
 }
 
 GTEST_TEST(testLinearSystemSolver, QuadraticProblem) {
@@ -61,9 +60,8 @@ GTEST_TEST(testLinearSystemSolver, QuadraticProblem) {
               HasSubstr("QuadraticCost was declared"));
 
   LinearSystemSolver solver;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      solver.Solve(prog),
-      ".*QuadraticCost was declared.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(solver.Solve(prog),
+                              ".*QuadraticCost was declared.*");
 }
 
 /**
@@ -76,7 +74,7 @@ GTEST_TEST(testLinearSystemSolver, InfeasibleProblem) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
   prog.AddLinearConstraint(3 * x(0) == 1 && 2 * x(0) + x(1) == 2 &&
-        x(0) - x(1) == 0);
+                           x(0) - x(1) == 0);
 
   const MathematicalProgramResult result = Solve(prog);
   EXPECT_FALSE(result.is_success());
