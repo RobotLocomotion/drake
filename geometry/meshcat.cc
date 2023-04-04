@@ -342,7 +342,7 @@ class MeshcatShapeReifier : public ShapeReifier {
         //  - "[^\s]+" matches the filename, and
         //  - "[$\r\n]" matches the end of string or end of line.
         // TODO(russt): This parsing could still be more robust.
-        std::regex map_regex(R"""(map_.+\s([^\s]+)[$\r\n])""");
+        std::regex map_regex(R"""(map_.+\s([^\s]+)\s*[$\r\n])""");
         for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
                                        meshfile_object.mtl_library.end(),
                                        map_regex);
