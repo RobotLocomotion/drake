@@ -824,7 +824,9 @@ class CollisionChecker {
   }
 
   const DistanceAndInterpolationProvider& distance_and_interpolation_provider()
-      const { return *distance_and_interpolation_provider_; }
+      const {
+    return *distance_and_interpolation_provider_;
+  }
 
   /** Sets the configuration distance function to `distance_function`.
    @pre distance_function satisfies the requirements documented on
@@ -876,8 +878,8 @@ class CollisionChecker {
   Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& q1,
                                                    const Eigen::VectorXd& q2,
                                                    double ratio) const {
-    return distance_and_interpolation_provider_->
-        InterpolateBetweenConfigurations(q1, q2, ratio);
+    return distance_and_interpolation_provider_
+        ->InterpolateBetweenConfigurations(q1, q2, ratio);
   }
 
   /** @returns a functor that captures this object, so it can be used like a

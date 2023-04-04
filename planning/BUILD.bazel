@@ -17,6 +17,8 @@ drake_cc_package_library(
         ":collision_checker",
         ":collision_checker_context",
         ":collision_checker_params",
+        ":distance_interpolation_provider",
+        ":linear_distance_interpolation_provider",
         ":robot_clearance",
         ":robot_collision_type",
         ":robot_diagram",
@@ -97,6 +99,20 @@ drake_cc_library(
     hdrs = ["distance_interpolation_provider.h"],
     deps = [
         "//common:essential",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_distance_interpolation_provider",
+    srcs = ["linear_distance_interpolation_provider.cc"],
+    hdrs = ["linear_distance_interpolation_provider.h"],
+    interface_deps = [
+        ":distance_interpolation_provider",
+        "//multibody/plant",
+    ],
+    deps = [
+        "//common:essential",
+        "@common_robotics_utilities",
     ],
 )
 

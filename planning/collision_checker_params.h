@@ -55,9 +55,6 @@ struct CollisionCheckerParams {
   world model instance. */
   std::vector<drake::multibody::ModelInstanceIndex> robot_model_instances;
 
-  std::unique_ptr<DistanceAndInterpolationProvider>
-      distance_and_interpolation_provider;
-
   // TODO(SeanCurtis-TRI): add doc hyperlinks to edge checking doc.
   /** Configuration (probably weighted) distance function.
   @note the `configuration_distance_function` object will be copied and retained
@@ -84,6 +81,9 @@ struct CollisionCheckerParams {
   distance between robot and itself is less than padding, the checker reports a
   collision. */
   double self_collision_padding{};
+
+  std::unique_ptr<DistanceAndInterpolationProvider>
+      distance_and_interpolation_provider;
 };
 
 }  // namespace planning

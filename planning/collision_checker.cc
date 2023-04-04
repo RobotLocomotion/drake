@@ -519,8 +519,8 @@ std::vector<uint8_t> CollisionChecker::CheckConfigsCollisionFree(
 void CollisionChecker::SetConfigurationDistanceFunction(
     const ConfigurationDistanceFunction& distance_function) {
   DRAKE_THROW_UNLESS(distance_function != nullptr);
-  SanityCheckConfigurationDistanceFunction(
-      distance_function, GetZeroConfiguration());
+  SanityCheckConfigurationDistanceFunction(distance_function,
+                                           GetZeroConfiguration());
   distance_and_interpolation_provider_->SetConfigurationDistanceFunction(
       distance_function);
 }
@@ -540,8 +540,8 @@ void CollisionChecker::SetConfigurationInterpolationFunction(
             GetQuaternionDofStartIndices(plant())));
     return;
   }
-  SanityCheckConfigurationInterpolationFunction(
-      interpolation_function, GetZeroConfiguration());
+  SanityCheckConfigurationInterpolationFunction(interpolation_function,
+                                                GetZeroConfiguration());
   distance_and_interpolation_provider_->SetConfigurationInterpolationFunction(
       interpolation_function);
 }
@@ -838,8 +838,9 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
             params.configuration_distance_function, default_interpolation_fn);
   } else {
     throw std::runtime_error(
-        "CollisionCheckerParams must contain a DistanceAndInterpolationProvider"
-        " and/or a ConfigurationdistanceFunction");
+        "CollisionCheckerParams must contain "
+        "distance_and_interpolation_provider != nullptr "
+        "and/or distance_function != nullptr");
   }
 
   // Set edge step size.

@@ -21,12 +21,12 @@ class DistanceAndInterpolationProvider {
 
   std::unique_ptr<DistanceAndInterpolationProvider> Clone() const;
 
-  double ComputeConfigurationDistance(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to) const;
+  double ComputeConfigurationDistance(const Eigen::VectorXd& from,
+                                      const Eigen::VectorXd& to) const;
 
-  Eigen::VectorXd InterpolateBetweenConfigurations(
-      const Eigen::VectorXd& from, const Eigen::VectorXd& to,
-      double ratio) const;
+  Eigen::VectorXd InterpolateBetweenConfigurations(const Eigen::VectorXd& from,
+                                                   const Eigen::VectorXd& to,
+                                                   double ratio) const;
 
  protected:
   DistanceAndInterpolationProvider();
