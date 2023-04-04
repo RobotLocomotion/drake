@@ -342,5 +342,7 @@ class FileCoverage:
             final_row[col] = df[col].sum()
 
         final_row["FileName"] = "TOTAL"
-        self.df_pruned = df.append(final_row, ignore_index=True)
+        self.df_pruned = pandas.concat(
+            [self.df_pruned, pandas.DataFrame([final_row])],
+            ignore_index=True, sort=False)
         logging.debug("Coverage = {}".format(str(final_row["Coverage"])))
