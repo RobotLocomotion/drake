@@ -35,6 +35,7 @@ resources then you will need to set that environment variable.
 """
 
 import argparse
+import logging
 import os
 
 from pydrake.visualization._model_visualizer import \
@@ -42,6 +43,14 @@ from pydrake.visualization._model_visualizer import \
 
 
 def _main():
+    # Use a few color highlights for the user's terminal output.
+    logging.addLevelName(logging.INFO, "\033[36mINFO\033[0m")
+    logging.addLevelName(logging.WARNING, "\033[33mWARNING\033[0m")
+    logging.addLevelName(logging.ERROR, "\033[31mERROR\033[0m")
+    format = "%(levelname)s: %(message)s"
+    logging.basicConfig(level=logging.INFO, format=format)
+
+    # Prepare to parse arguments.
     args_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
