@@ -25,19 +25,13 @@ MatrixXd MakeArbitraryMatrix(int m, int n) {
   return A;
 }
 
-/* Returns a dummy 3x3 matrix with all entries in the matrix equal to the given
- value. */
-Matrix3d Make3x3Matrix(double value) {
-  return value * Matrix3d::Ones();
-}
-
 /* Returns an arbitrary Block3x3SparseMatrix with size 12-by-9. */
 Block3x3SparseMatrix<double> MakeBlockSparseMatrix() {
   Block3x3SparseMatrix<double> sparse_matrix(4, 3);
   std::vector<Block3x3SparseMatrix<double>::Triplet> triplets;
-  triplets.emplace_back(0, 0, Make3x3Matrix(1.0));
-  triplets.emplace_back(2, 1, Make3x3Matrix(2.0));
-  triplets.emplace_back(3, 2, Make3x3Matrix(3.0));
+  triplets.emplace_back(0, 0, Matrix3d::Constant(1.0));
+  triplets.emplace_back(2, 1, Matrix3d::Constant(2.0));
+  triplets.emplace_back(3, 2, Matrix3d::Constant(3.0));
   sparse_matrix.SetFromTriplets(triplets);
   EXPECT_EQ(sparse_matrix.num_blocks(), 3);
   return sparse_matrix;
@@ -56,13 +50,15 @@ GTEST_TEST(MatrixBlockTest, Constructors) {
   EXPECT_EQ(dense_block.cols(), 9);
   EXPECT_EQ(sparse_block.size(), 12*9);
   EXPECT_EQ(dense_block.size(), 12*9);
+  EXPECT_FALSE(sparse_block.is_dense());
+  EXPECT_TRUE(dense_block.is_dense());
 
   EXPECT_TRUE(CompareMatrices(sparse_block.MakeDenseMatrix(),
                               dense_block.MakeDenseMatrix()));
 }
 
 GTEST_TEST(MatrixBlockTest, MultiplyAndAddTo) {
-  const VectorXd x = VectorXd::LinSpaced(9, 0.0, 1.0);
+  const MatrixXd x = MakeArbitraryMatrix(9, 7);
   Block3x3SparseMatrix<double> sparse_matrix = MakeBlockSparseMatrix();
   const MatrixXd dense_matrix = sparse_matrix.MakeDenseMatrix();
 
@@ -70,9 +66,9 @@ GTEST_TEST(MatrixBlockTest, MultiplyAndAddTo) {
   const MatrixBlock<double> dense_block(dense_matrix);
 
   /* Set the destinations to compatible-sized non-zero vectors. */
-  VectorXd y1 = MakeArbitraryMatrix(12, 1);
-  VectorXd y2 = y1;
-  VectorXd expected_y = y1;
+  MatrixXd y1 = MakeArbitraryMatrix(12, 7);
+  MatrixXd y2 = y1;
+  MatrixXd expected_y = y1;
 
   sparse_block.MultiplyAndAddTo(x, &y1);
   dense_block.MultiplyAndAddTo(x, &y2);
@@ -116,7 +112,7 @@ GTEST_TEST(MatrixBlockTest, LeftMultiplyByBlockDiagonal) {
   const int num_Gs = 7;
   std::vector<MatrixXd> Gs;
   for (int i = 0; i < num_Gs; ++i) {
-    Gs.emplace_back(Make3x3Matrix(3.14 * i));
+    Gs.emplace_back(Matrix3d::Constant(3.14 * i));
   }
   const int start = 2;
   const int end = 5;
@@ -164,8 +160,8 @@ GTEST_TEST(MatrixBlockTest, StackMatrixBlock) {
   /* Make a second MatrixBlock that's different from the existing one. */
   Block3x3SparseMatrix<double> sparse_matrix2(2, 3);
   std::vector<Block3x3SparseMatrix<double>::Triplet> triplets;
-  triplets.emplace_back(0, 0, Make3x3Matrix(4.0));
-  triplets.emplace_back(1, 1, Make3x3Matrix(5.0));
+  triplets.emplace_back(0, 0, Matrix3d::Constant(4.0));
+  triplets.emplace_back(1, 1, Matrix3d::Constant(5.0));
   sparse_matrix2.SetFromTriplets(triplets);
   const MatrixXd dense_matrix2 = sparse_matrix2.MakeDenseMatrix();
   const MatrixBlock<double> sparse_block2(std::move(sparse_matrix2));

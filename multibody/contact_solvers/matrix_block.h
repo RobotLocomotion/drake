@@ -28,6 +28,8 @@ class MatrixBlock;
  @pre all entries in `blocks` have the same `cols()`.
  @pre either all entries in `blocks` are dense, or all entries in `blocks` are
  sparse.
+ @returns A MatrixBlock concatenating the given blocks row-wise that's dense if
+ all the given blocks are dense and sparse otherwise.
  @tparam_default_scalar */
 template <typename T>
 MatrixBlock<T> StackMatrixBlocks(const std::vector<MatrixBlock<T>>& blocks);
@@ -61,17 +63,23 @@ class MatrixBlock {
     return rows() * cols();
   }
 
-  /* Performs y += M * A.
+  bool is_dense() const {
+    return is_dense_;
+  }
+
+  /* Performs *y += M * A.
    @pre y != nullptr and the sizes of A and y are compatible with M. */
   void MultiplyAndAddTo(const Eigen::Ref<const MatrixX<T>>& A,
-                        EigenPtr<VectorX<T>> y) const;
+                        EigenPtr<MatrixX<T>> y) const;
 
   /* Performs y += Mᵀ * A.
    @pre y != nullptr and the sizes of A and y are compatible with M. */
   void TransposeAndMultiplyAndAddTo(const Eigen::Ref<const MatrixX<T>>& A,
                                    EigenPtr<MatrixX<T>> y) const;
 
-  /* Performs y += Mᵀ * A, where A is itself a MatrixBlock.
+  // TODO(xuchenhan-tri): Consider writing the output to a MatrixBlock to
+  // preserve the sparsity structure if it exists.
+  /* Performs *y += Mᵀ * A.
    @pre y != nullptr and the sizes of A and y are compatible with M. */
   void TransposeAndMultiplyAndAddTo(const MatrixBlock<T>& A,
                                    EigenPtr<MatrixX<T>> y) const;

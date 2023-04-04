@@ -35,10 +35,11 @@ int MatrixBlock<T>::cols() const {
 
 template <class T>
 void MatrixBlock<T>::MultiplyAndAddTo(const Eigen::Ref<const MatrixX<T>>& A,
-                                      EigenPtr<VectorX<T>> y) const {
+                                      EigenPtr<MatrixX<T>> y) const {
   DRAKE_DEMAND(y != nullptr);
   DRAKE_DEMAND(cols() == A.rows());
-  DRAKE_DEMAND(rows() == y->size());
+  DRAKE_DEMAND(rows() == y->rows());
+  DRAKE_DEMAND(A.cols() == y->cols());
 
   if (is_dense_) {
     const MatrixX<T>& M_dense = std::get<MatrixX<T>>(data_);
@@ -68,6 +69,8 @@ void MatrixBlock<T>::TransposeAndMultiplyAndAddTo(
   M_sparse.TransposeAndMultiplyAndAddTo(A, y);
 }
 
+// TODO(xuchenhan-tri): consider a double dispatch strategy where each block
+// type provides an API to operate on every other block type.
 template <class T>
 void MatrixBlock<T>::TransposeAndMultiplyAndAddTo(const MatrixBlock<T>& A,
                                                  EigenPtr<MatrixX<T>> y) const {
@@ -75,7 +78,6 @@ void MatrixBlock<T>::TransposeAndMultiplyAndAddTo(const MatrixBlock<T>& A,
   DRAKE_DEMAND(cols() == y->rows());
   DRAKE_DEMAND(rows() == A.rows());
   DRAKE_DEMAND(A.cols() == y->cols());
-
   if (A.is_dense_) {
     const MatrixX<T>& A_dense = std::get<MatrixX<T>>(A.data_);
     this->TransposeAndMultiplyAndAddTo(A_dense, y);
@@ -97,6 +99,8 @@ void MatrixBlock<T>::TransposeAndMultiplyAndAddTo(const MatrixBlock<T>& A,
   M_sparse.TransposeAndMultiplyAndAddTo(A_sparse, y);
 }
 
+// TODO(xuchenhan-tri): consider a double dispatch strategy where each block
+// type provides an API to operate on every other block type.
 template <class T>
 MatrixBlock<T> MatrixBlock<T>::LeftMultiplyByBlockDiagonal(
     const std::vector<MatrixX<T>>& Gs, int start, int end) const {
