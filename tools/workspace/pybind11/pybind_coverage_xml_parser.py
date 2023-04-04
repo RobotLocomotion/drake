@@ -2,6 +2,8 @@ import logging
 import os
 import xml.etree.ElementTree as ET
 
+from packaging import version
+
 import pandas
 
 
@@ -342,5 +344,11 @@ class FileCoverage:
             final_row[col] = df[col].sum()
 
         final_row["FileName"] = "TOTAL"
-        self.df_pruned = df.append(final_row, ignore_index=True)
+        kwargs = dict(ignore_index=True)
+        if version.parse(pandas.__version__) >= version.parse('1.0'):
+            # When `focal` support goes away, drop this dance and just set
+            # sort=False all the time.
+            kwargs['sort'] = False
+        self.df_pruned = pandas.concat([df, pandas.DataFrame([final_row])],
+                                       **kwargs)
         logging.debug("Coverage = {}".format(str(final_row["Coverage"])))
