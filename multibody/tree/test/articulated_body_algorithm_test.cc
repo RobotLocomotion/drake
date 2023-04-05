@@ -269,7 +269,7 @@ GTEST_TEST(ArticulatedBodyInertiaAlgorithm, ModifiedFeatherstoneExample) {
   // Create box (B).
   const double Lx = 0.5, Ly = 1.2, Lz = 1.6;
   const double mass_box = 2.4;
-  const UnitInertia<double> M_Bcm =
+  const SpatialInertia<double> M_Bcm =
       SpatialInertia<double>::SolidBoxWithMass(mass_box, Lx, Ly, Lz);
 
   // Create cylinder (C) in box.
