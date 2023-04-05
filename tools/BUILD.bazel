@@ -85,6 +85,16 @@ config_setting(
     values = {"define": "WITH_SNOPT=ON"},
 )
 
+config_setting(
+    name = "using_sanitizer",
+    values = {"define": "USING_SANITIZER=ON"},
+)
+
+config_setting(
+    name = "using_memcheck",
+    values = {"define": "USING_MEMCHECK=ON"},
+)
+
 # CLP is an open-source solver, and is included in the Drake build by
 # default. The CLP solver is irrelevant to some users of MathematicalProgram,
 # so we provide a hidden switch to shut it off for developers who don't

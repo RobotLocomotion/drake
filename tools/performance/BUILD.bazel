@@ -1,3 +1,4 @@
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_library",
@@ -26,10 +27,38 @@ drake_cc_library(
     ],
 )
 
+config_setting(
+    name = "apple",
+    constraint_values = ["@platforms//os:osx"],
+)
+
+selects.config_setting_group(
+    name = "fixture_memory_no",
+    match_any = [
+        ":apple",
+        "//tools:using_memcheck",
+        "//tools:using_sanitizer",
+    ],
+)
+
+drake_cc_library(
+    name = "fixture_memory",
+    srcs = select({
+        ":fixture_memory_no": ["fixture_memory_no.cc"],
+        "//conditions:default": ["fixture_memory_yes.cc"],
+    }),
+    hdrs = ["fixture_memory.h"],
+    deps = [
+        "//common:essential",
+        "@googlebenchmark//:benchmark",
+    ],
+)
+
 drake_cc_library(
     name = "gflags_main",
     srcs = ["gflags_main.cc"],
     deps = [
+        ":fixture_memory",
         "@gflags",
         "@googlebenchmark//:benchmark",
     ],
@@ -44,4 +73,9 @@ drake_py_binary(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(
+    cpplint_extra_srcs = [
+        "fixture_memory_no.cc",
+        "fixture_memory_yes.cc",
+    ],
+)
