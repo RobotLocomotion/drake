@@ -19,7 +19,7 @@ using Eigen::Matrix3Xi;
 using geometry::Meshcat;
 
 // Helper to query meshcat whether an item is visible or not.
-bool visible(Meshcat& meshcat, std::string_view path) {
+bool visible(const Meshcat& meshcat, std::string_view path) {
   std::string property = meshcat.GetPackedProperty(path, "visible");
   msgpack::object_handle oh =
       msgpack::unpack(property.data(), property.size());
