@@ -177,6 +177,9 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cspace_free_polytope_with_mosek_test",
     timeout = "long",
+    # Some of these test cases take a very long time to run. Run each test case
+    # in its own process (in parallel) to improve test latency.
+    shard_count = 12,
     # This test launches 2 threads to test both serial and parallel code paths
     # in CspaceFreePolytope.
     tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
