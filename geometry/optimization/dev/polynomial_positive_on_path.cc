@@ -14,6 +14,7 @@ ParametrizedPolynomialPositiveOnUnitInterval::
         const symbolic::Variable& interval_variable,
         const symbolic::Variables& parameters)
     : mu_(interval_variable),
+      poly_(poly),
       p_(poly),
       parameters_(parameters),
       psatz_variables_and_psd_constraints_() {

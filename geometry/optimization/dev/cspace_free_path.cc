@@ -1,7 +1,6 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
 #include <vector>
-#include <iostream>
 
 namespace drake {
 namespace geometry {
@@ -49,19 +48,16 @@ PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
             rational.numerator().SubstituteAndExpand(path_with_y_subs,
                                                      cached_substitutions)};
 
-//        std::cout << rational.numerator().indeterminates() << std::endl;
-//        std::cout << path_numerator.indeterminates() << std::endl;
-//        std::cout << std::endl;
-        path_numerator.SetIndeterminates(indeterminates);
+        // The current y_slacks along with mu.
+        symbolic::Variables cur_indeterminates{
+            intersect(indeterminates, rational.numerator().indeterminates())};
+        cur_indeterminates.insert(mu);
+
+        path_numerator.SetIndeterminates(cur_indeterminates);
         if (positive_side) {
-          positive_side_conditions.emplace_back(path_numerator,
-                                                mu,
-                                                parameters);
-        }
-        else {
-          negative_side_conditions.emplace_back(path_numerator,
-                                                mu,
-                                                parameters);
+          positive_side_conditions.emplace_back(path_numerator, mu, parameters);
+        } else {
+          negative_side_conditions.emplace_back(path_numerator, mu, parameters);
         }
       };
 
@@ -87,8 +83,9 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
 
 void CspaceFreePath::GeneratePathRationals() {
   // plane_geometries_ currently has rationals in terms of the configuration
-  // space variable. We create PlaneSeparatesGeometriesOnPath objects which can
-  // be used to construct the program once a path is chosen.
+  // space variable. We create PlaneSeparatesGeometriesOnPath objects which are
+  // in terms of the path variable and can be used to construct the
+  // certification program once a path is chosen.
   symbolic::Polynomial::SubstituteAndExpandCacheData cached_substitutions;
 
   // Add the auxilliary variables for matrix SOS constraints to the substitution
@@ -101,7 +98,7 @@ void CspaceFreePath::GeneratePathRationals() {
     indeterminates.insert(y_slack()(i));
   }
 
-  for (const auto& plane_geometry : this->get_mutable_plane_geometries()) {
+  for (const auto& plane_geometry : this->get_plane_geometries()) {
     plane_geometries_on_path_.emplace_back(plane_geometry, mu_,
                                            path_with_y_subs, indeterminates,
                                            &cached_substitutions);

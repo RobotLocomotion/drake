@@ -44,9 +44,14 @@ class CspaceFreePathTester {
     return cspace_free_path_->get_s_set();
   }
 
-  [[nodiscard]] std::vector<PlaneSeparatesGeometries>&
-  get_mutable_plane_geometries() {
-    return cspace_free_path_->get_mutable_plane_geometries();
+  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
+  get_plane_geometries() {
+    return cspace_free_path_->get_plane_geometries();
+  }
+
+  [[nodiscard]] const std::vector<PlaneSeparatesGeometriesOnPath>&
+  get_path_plane_geometries() {
+    return cspace_free_path_->plane_geometries_on_path_;
   }
 
  private:
