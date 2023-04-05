@@ -17,6 +17,7 @@
 #include <utility>
 
 #include <drake_vendor/tinyxml2.h>
+#include <picosha2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_throw.h"
@@ -196,6 +197,11 @@ class PackageData {
   The `package_name` is non-functional (only used when reporting errors). */
   void Merge(std::string_view package_name, const PackageData& other);
 
+  /* Returns the path relative to our cache dir where the package will live once
+  it is fetched (or lives already, if it's already fetched).
+  @pre is_remote() is true. */
+  fs::path GetCacheRelativePath() const;
+
   /* Checks whether a remote package is already in the cache and if so updates
   this object so that GetPathWithAutomaticFetching() will return the already-
   cached path instead of fetching anything.
@@ -246,6 +252,13 @@ std::vector<std::string> GetAllowedUrls(const std::vector<std::string>& urls) {
   return result;
 }
 
+fs::path PackageData::GetCacheRelativePath() const {
+  DRAKE_DEMAND(is_remote());
+  const std::string hashed_strip_prefix =
+      picosha2::hash256_hex_string(remote_params_->strip_prefix.value_or(""));
+  return fmt::format("{}-{}", remote_params_->sha256, hashed_strip_prefix);
+}
+
 /* A little helper struct that gathers the args for package_downloader into a
 single place to make it easy to convert to JSON. */
 struct DownloaderArgs {
@@ -265,11 +278,11 @@ bool PackageData::FindInCache() {
   if (!path_.needs_fetch()) {
     return true;
   }
-  internal::PathOrError cache = internal::FindOrCreateCache("package_map");
-  if (!cache.error.empty()) {
+  internal::PathOrError try_cache = internal::FindOrCreateCache("package_map");
+  if (!try_cache.error.empty()) {
     return false;
   }
-  const fs::path package_dir = cache.abspath / remote_params_->sha256;
+  const fs::path package_dir = try_cache.abspath / GetCacheRelativePath();
   std::error_code ec;
   if (!fs::is_directory(package_dir, ec)) {
     return false;
@@ -309,7 +322,7 @@ const std::string& PackageData::GetPathWithAutomaticFetching(
   const fs::path cache_dir = std::move(try_cache.abspath);
 
   // See if the package has already been fetched.
-  const fs::path package_dir = cache_dir / remote_params().sha256;
+  const fs::path package_dir = cache_dir / GetCacheRelativePath();
   std::error_code ec;
   if (fs::is_directory(package_dir, ec)) {
     mutable_path->set_fetched_path(package_dir.string());
