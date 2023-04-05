@@ -1,6 +1,7 @@
 import copy
 from enum import Enum
 import logging
+from pathlib import Path
 import time
 from webbrowser import open as _webbrowser_open
 
@@ -108,6 +109,7 @@ class ModelVisualizer:
         # The builder is set to None during Finalize(), though during a Reload
         # it will be temporarily resurrected.
         self._builder = RobotDiagramBuilder()
+        self._builder.parser().SetAutoRenaming(True)
 
         # The following fields are set non-None during Finalize().
         self._original_package_map = None
@@ -204,21 +206,31 @@ class ModelVisualizer:
             self._meshcat = StartMeshcat()
         return self._meshcat
 
-    def AddModels(self, filename):
+    def AddModels(self, filename: Path = None, *, url: str = None):
         """
-        Adds all models found in an input file.
+        Adds all models found in an input file (or url).
 
         This can be called multiple times, until the object is finalized.
 
         Args:
           filename: the name of a file containing one or more models.
+          url: the package:// URL containing one or more models.
+
+        Exactly one of filename or url must be non-None.
         """
         if self._builder is None:
             raise ValueError("Finalize has already been called.")
+        if sum([filename is not None, url is not None]) != 1:
+            raise ValueError("Must provide either filename= or url=")
         self._check_rep(finalized=False)
-        self._builder.parser().AddModels(filename)
+        if filename is not None:
+            kwargs = dict(file_name=filename)
+        else:
+            assert url is not None
+            kwargs = dict(url=url)
+        self._builder.parser().AddModels(**kwargs)
         if self._model_filenames is not None:
-            self._model_filenames.append(filename)
+            self._model_filenames.append(kwargs)
 
     def Finalize(self, position=None):
         """
@@ -336,10 +348,11 @@ class ModelVisualizer:
 
         # Populate the diagram builder again with the same packages and models.
         self._builder = RobotDiagramBuilder()
+        self._builder.parser().SetAutoRenaming(True)
         self._builder.parser().package_map().AddMap(self._original_package_map)
         try:
-            for filename in self._model_filenames:
-                self._builder.parser().AddModels(filename)
+            for kwargs in self._model_filenames:
+                self._builder.parser().AddModels(**kwargs)
             logging.getLogger("drake").info(f"Reload was successful")
         except BaseException as e:
             # If there's a parsing error, show it; don't crash.
