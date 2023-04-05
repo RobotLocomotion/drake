@@ -1,6 +1,7 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
 #include <vector>
+#include <iostream>
 
 namespace drake {
 namespace geometry {
@@ -47,9 +48,18 @@ PlaneSeparatesGeometriesOnPath::PlaneSeparatesGeometriesOnPath(
         symbolic::Polynomial path_numerator{
             rational.numerator().SubstituteAndExpand(path_with_y_subs,
                                                      cached_substitutions)};
+
+//        std::cout << rational.numerator().indeterminates() << std::endl;
+//        std::cout << path_numerator.indeterminates() << std::endl;
+//        std::cout << std::endl;
         path_numerator.SetIndeterminates(indeterminates);
         if (positive_side) {
           positive_side_conditions.emplace_back(path_numerator,
+                                                mu,
+                                                parameters);
+        }
+        else {
+          negative_side_conditions.emplace_back(path_numerator,
                                                 mu,
                                                 parameters);
         }
