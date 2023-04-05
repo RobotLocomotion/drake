@@ -240,7 +240,12 @@ std::unique_ptr<CollisionCheckerTester> MakeUnallocatedChecker(
         return (b - a).norm();
       }};
   return std::make_unique<CollisionCheckerTester>(
-      CollisionCheckerParams{move(robot), robot_indices, dist, 0.1, 0, 0},
+      CollisionCheckerParams{.model = move(robot),
+                             .robot_model_instances = robot_indices,
+                             .configuration_distance_function = dist,
+                             .edge_step_size = 0.1,
+                             .env_collision_padding = 0,
+                             .self_collision_padding = 0},
       supports_parallel);
 }
 
@@ -310,8 +315,12 @@ class CollisionCheckerThrowTest : public testing::Test {
   void ExpectConstructorThrow(const std::string& throw_message_pattern) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         CollisionCheckerTester(
-            {move(diagram_), robot_model_instances_, distance_fn_,
-             edge_step_size_, env_collision_padding_, self_collision_padding_}),
+            {.model = move(diagram_),
+             .robot_model_instances = robot_model_instances_,
+             .configuration_distance_function = distance_fn_,
+             .edge_step_size = edge_step_size_,
+             .env_collision_padding = env_collision_padding_,
+             .self_collision_padding = self_collision_padding_}),
         throw_message_pattern);
   }
 
@@ -361,8 +370,13 @@ GTEST_TEST(CollisionCheckerTest, SortedRobots) {
     return 0;
   };
   auto dut = std::make_unique<CollisionCheckerTester>(CollisionCheckerParams{
-      builder.Build(), std::vector<ModelInstanceIndex>{robot2, robot2, robot1},
-      distance_function, 0.1, 0, 0});
+      .model = builder.Build(),
+      .robot_model_instances =
+          std::vector<ModelInstanceIndex>{robot2, robot2, robot1},
+      .configuration_distance_function = distance_function,
+      .edge_step_size = 0.1,
+      .env_collision_padding = 0,
+      .self_collision_padding = 0});
   EXPECT_THAT(dut->robot_model_instances(), ElementsAre(robot1, robot2));
 }
 
@@ -391,7 +405,12 @@ GTEST_TEST(CollisionCheckerTest, CollisionCheckerEmpty) {
   };
   const ModelInstanceIndex robot = default_model_instance();
   const ModelInstanceIndex world = world_model_instance();
-  CollisionCheckerTester dut({move(diagram), {robot}, fn0, 0.1, 0, 0});
+  CollisionCheckerTester dut({.model = move(diagram),
+                              .robot_model_instances = {robot},
+                              .configuration_distance_function = fn0,
+                              .edge_step_size = 0.1,
+                              .env_collision_padding = 0,
+                              .self_collision_padding = 0});
 
   EXPECT_THAT(dut.robot_model_instances(), testing::ElementsAre(robot));
   RigidBody<double> free_body("free", world, {});
@@ -1288,7 +1307,12 @@ CheckerType MakeEdgeChecker(ConfigurationDistanceFunction calc_dist,
   }
   auto diagram = builder.Build();
 
-  CheckerType checker({move(diagram), {robot}, calc_dist, step_size, 0, 0});
+  CheckerType checker({.model = move(diagram),
+                       .robot_model_instances = {robot},
+                       .configuration_distance_function = calc_dist,
+                       .edge_step_size = step_size,
+                       .env_collision_padding = 0,
+                       .self_collision_padding = 0});
   checker.SetConfigurationInterpolationFunction(interp);
   return checker;
 }
