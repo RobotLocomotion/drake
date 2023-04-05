@@ -98,7 +98,7 @@ GTEST_TEST(SpatialInertia, PointMass) {
 }
 
 // Tests the static method for the spatial inertia of a solid box.
-GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
+GTEST_TEST(SpatialInertia, SolidBoxWithDensityOrMass) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
   const double lx = 1.0;
   const double ly = 2.0;
@@ -108,10 +108,16 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
   const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidBox(lx, ly, lz);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  const SpatialInertia<double> M =
+  const SpatialInertia<double> M_with_density =
       SpatialInertia<double>::SolidBoxWithDensity(density, lx, ly, lz);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
+
+  // Ensure SolidBoxWithDensity() matches SolidBoxWithMass().
+  const SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::SolidBoxWithMass(mass, lx, ly, lz);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
   // Ensure a negative or zero length, width, or height throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
@@ -122,11 +128,23 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensity) {
       "[^]* One or more dimensions of a solid box is negative or zero: "
       "(.*, .*, .*).");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidBoxWithMass(mass, 0, ly, lz),
+      "[^]* One or more dimensions of a solid box is negative or zero: "
+      "(.*, .*, .*).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, ly, -0.1, lz),
       "[^]* One or more dimensions of a solid box is negative or zero: "
       "(.*, .*, .*).");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidBoxWithMass(mass, ly, -0.1, lz),
+      "[^]* One or more dimensions of a solid box is negative or zero: "
+      "(.*, .*, .*).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidBoxWithDensity(density, ly, ly, -1E-15),
+      "[^]* One or more dimensions of a solid box is negative or zero: "
+      "(.*, .*, .*).");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidBoxWithMass(mass, ly, ly, -1E-15),
       "[^]* One or more dimensions of a solid box is negative or zero: "
       "(.*, .*, .*).");
 }

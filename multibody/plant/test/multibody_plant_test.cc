@@ -3463,7 +3463,7 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
   const double cube_mass = 5.0;
   const Vector3d cube_com(0, 0, 0);
   const UnitInertia<double> cube_unit_inertia =
-      UnitInertia<double>::SolidBox(cube_length, cube_length, cube_length);
+      UnitInertia<double>::SolidCube(cube_length);
   const RigidBody<double>& cube = plant.AddRigidBody(
       "cube", SpatialInertia<double>(cube_mass, cube_com, cube_unit_inertia));
 
@@ -3518,8 +3518,7 @@ GTEST_TEST(MultibodyPlantTest, RigidBodyParameters) {
   const double new_cube_mass = 3.0;
   const Vector3d new_cube_com(0, 0, 0);
   const UnitInertia<double> new_cube_unit_inertia =
-      UnitInertia<double>::SolidBox(new_cube_length, new_cube_length,
-                                    new_cube_length);
+      UnitInertia<double>::SolidCube(new_cube_length);
 
   SpatialInertia<double> new_sphere_params(new_sphere_mass, new_sphere_com,
                                            new_sphere_unit_inertia);

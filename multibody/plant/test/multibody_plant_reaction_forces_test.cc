@@ -628,7 +628,7 @@ class WeldedBoxesTest : public ::testing::Test {
   void AddBoxes() {
     const Vector3d p_BoBcm_B = Vector3d::Zero();
     const UnitInertia<double> G_BBcm =
-        UnitInertia<double>::SolidBox(kCubeSize, kCubeSize, kCubeSize);
+        UnitInertia<double>::SolidCube(kCubeSize);
     const SpatialInertia<double> M_BBo_B =
         SpatialInertia<double>::MakeFromCentralInertia(kBoxMass, p_BoBcm_B,
                                                        G_BBcm);

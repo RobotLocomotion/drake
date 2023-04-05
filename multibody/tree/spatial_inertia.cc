@@ -49,6 +49,19 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
 
   const T volume = lx * ly * lz;
   const T mass = density * volume;
+  return SpatialInertia<T>::SolidBoxWithMass(mass, lx, ly, lz);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidBoxWithMass(
+    const T& mass, const T& lx, const T& ly, const T& lz) {
+  // Ensure lx, ly, lz are positive.
+  if (lx <= 0 || ly <= 0 || lz <= 0) {
+    std::string error_message = fmt::format("{}(): One or more dimensions of a "
+    "solid box is negative or zero: ({}, {}, {}).",
+      __func__, lx, ly, lz);
+    throw std::logic_error(error_message);
+  }
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidBox(lx, ly, lz);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
