@@ -704,6 +704,26 @@ class TestPlant(unittest.TestCase):
         SpatialInertia.MakeFromCentralInertia(
             mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
+        SpatialInertia.SolidBoxWithDensity(
+            density=1000, lx=0.1, ly=0.2, lz=0.3)
+        SpatialInertia.SolidCubeWithDensity(
+            density=1000, length=0.4)
+        SpatialInertia.SolidCapsuleWithDensity(
+            density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCylinderWithDensity(
+            density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCylinderWithDensityAboutEnd(
+            density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.ThinRodWithMass(
+            mass=2, length=0.3, unit_vector=[0, 0, 1])
+        SpatialInertia.ThinRodWithMassAboutEnd(
+            mass=2, length=0.3, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidEllipsoidWithDensity(
+            density=1000, a=0.2, b=0.3, c=0.4)
+        SpatialInertia.SolidSphereWithDensity(
+            density=1000, radius=0.5)
+        SpatialInertia.HollowSphereWithDensity(
+            area_density=2, radius=0.5)
         spatial_inertia = SpatialInertia(
             mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
             G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
