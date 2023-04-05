@@ -180,6 +180,9 @@ drake_cc_googletest(
     # This test launches 2 threads to test both serial and parallel code paths
     # in CspaceFreePolytope.
     tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
+    # Some of these test cases take a very long time to run. Run each test case
+    # in its own process (in parallel) to improve test latency.
+    shard_count = 12,
     use_default_main = False,
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
