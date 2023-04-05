@@ -364,7 +364,7 @@ class TwoDOFPlanarPendulumTest : public ::testing::Test {
     // Set a spatial inertia for each link.  For now, these are unimportant
     // because this fixture is only used for kinematic tests (e.g., Jacobians).
     const SpatialInertia<double> M_Bcm =
-        SpatialInertia<double>::SolidBox(mass_link, link_length_, 1, 1);
+        SpatialInertia<double>::SolidBoxWithMass(mass_link, link_length_, 1, 1);
 
     // Create an empty MultibodyPlant and then add the two links.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);

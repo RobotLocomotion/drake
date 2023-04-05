@@ -72,7 +72,7 @@ GTEST_TEST(JointLimitsTest, PrismaticJointConvergenceTest) {
         Vector3<double>::Zero());
     const auto M_B = SpatialInertia<double>::MakeFromCentralInertia(
         mass, Vector3<double>::Zero(),
-        mass * UnitInertia<double>::SolidBox(box_size, box_size, box_size));
+        mass * UnitInertia<double>::SolidCube(box_size));
     const RigidBody<double>& body = plant.AddRigidBody("Body", M_B);
     const PrismaticJoint<double>& slider = plant.AddJoint<PrismaticJoint>(
         "Slider", plant.world_body(), std::nullopt, body, std::nullopt,
