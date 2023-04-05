@@ -127,6 +127,7 @@ drake_cc_library(
         ":contact_visualizer_params",
         "//geometry:meshcat",
         "//math:geometric_transform",
+        "@msgpack_internal//:msgpack",
     ],
 )
 
