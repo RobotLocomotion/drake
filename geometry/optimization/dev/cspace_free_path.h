@@ -66,6 +66,42 @@ class CspaceFreePath : public CspaceFreePolytope {
 
   [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
 
+//  /**
+//   * Constructs the program that certifies that a given path is safe for the
+//   * geometry pair.
+//   * @param geometry_pair The geometry pair who's safety is to be certified.
+//   * @param state_to_env_map A map containing the evaluation of the decision
+//   * variables of the values in path_. Every key in path_ must be a key in state_to_env_map
+//   *
+//   * I.e. if k is a key in path_ then
+//   * path_.at(k).Evaluate(state_to_env_map.at(k)) must not throw an error. Every key in path_ must be a key in
+//   * @return
+//   */
+//  [[nodiscard]] const SeparationCertificateProgram
+//  MakeIsPathSafeForGeometryProgram(
+//      const SortedPair<geometry::GeometryId>& geometry_pair,
+//      const std::unordered_map<symbolic::Variable, symbolic::Environment>&
+//          state_to_env_map) const;
+//
+//  /**
+//   Solves a SeparationCertificateProgram with the given options
+//   @return result If we find the separation certificate, then `result` contains
+//   the separation plane and the Lagrangian polynomials; otherwise result is
+//   empty.
+//   */
+//  [[nodiscard]] std::optional<SeparationCertificateResult>
+//  SolveIsPathSafeForGeometryProgram(
+//      const SeparationCertificateProgram& certificate_program,
+//      const FindSeparationCertificateGivenPolytopeOptions& options) const;
+//
+//  [[nodiscard]] bool IsPathSafe(
+//      const std::unordered_map<symbolic::Variable, symbolic::Environment>&
+//          state_to_env_map,
+//      const IgnoredCollisionPairs& ignored_collision_pairs,
+//      const FindSeparationCertificateGivenPolytopeOptions& options,
+//      std::unordered_map<SortedPair<geometry::GeometryId>,
+//                         SeparationCertificateResult>* certificates);
+
  protected:
   /**
    Generate all the conditions (certain rationals being non-negative, and
