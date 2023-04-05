@@ -167,6 +167,9 @@ drake_py_unittest(
         ":pybind_coverage_test_actual_data",
         ":pybind_coverage_test_expected_data",
     ],
+    # Nerf this test with a manual tag until issues with pandas 2.0 (used in
+    # macos unprovisioned CI builds) are resolved.
+    tags = ["manual"],
     deps = [":mkdoc"],
 )
 
