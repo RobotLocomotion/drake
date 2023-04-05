@@ -135,9 +135,9 @@ class SpatialInertia {
   /// Creates a spatial inertia for a uniform density solid box B about its
   /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] lx length of the box in the Bx direction.
-  /// @param[in] ly length of the box in the By direction.
-  /// @param[in] lz length of the box in the Bz direction.
+  /// @param[in] lx length of the box in the Bx direction (meters).
+  /// @param[in] ly length of the box in the By direction (meters).
+  /// @param[in] lz length of the box in the Bz direction (meters).
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @throws std::exception if any of lx, ly, lz are zero or negative.
   static SpatialInertia<T> SolidBoxWithDensity(
@@ -146,54 +146,57 @@ class SpatialInertia {
   /// Creates a spatial inertia for a uniform density solid cube B about its
   /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] l The length of each of the cube's sides.
+  /// @param[in] length The length of each of the cube's sides (meters).
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.  Since B's
   /// rotational inertia is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo
   /// expressed in frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
   /// B has an equal moment of inertia about any line passing through Bo.
-  /// @throws std::exception if l is zero or negative.
-  static SpatialInertia<T> SolidCubeWithDensity(const T& density, const T& l);
+  /// @throws std::exception if length is zero or negative.
+  static SpatialInertia<T> SolidCubeWithDensity(
+      const T& density, const T& length);
 
   /// Creates a spatial inertia for a uniform density solid capsule B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] r radius of the cylinder/half-sphere part of the capsule.
-  /// @param[in] l length of the cylindrical part of the capsule.
+  /// @param[in] radius radius of the cylinder/half-sphere part of the capsule.
+  /// @param[in] length length of the cylindrical part of the capsule (meters).
   /// @param[in] unit_vector unit vector defining the axial direction of the
   ///   cylindrical part of the capsule, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
   ///   an equal moment of inertia about any line that both passes through Bo
   ///   and is perpendicular to unit_vector.
-  /// @throws std::exception if r or l is zero or negative.
+  /// @throws std::exception if radius or length is zero or negative.
   /// @pre ‖unit_vector‖ = 1; see UnitVector::SolidCapsule() for details.
   static SpatialInertia<T> SolidCapsuleWithDensity(
-      const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
+      const T& density, const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform density solid cylinder B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] r radius of the cylinder.
-  /// @param[in] l length of the cylinder in the unit_vector direction.
+  /// @param[in] radius radius of the cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
   /// @param[in] unit_vector unit vector defining the axial direction of the
   ///   cylinder, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
   ///   an equal moment of inertia about any line that both passes through Bo
   ///   and is perpendicular to unit_vector.
-  /// @throws std::exception if r or l is zero or negative.
+  /// @throws std::exception if radius or length is zero or negative.
   /// @pre ‖unit_vector‖ = 1.
   /// @see SolidCylinderWithDensityAboutEnd() to calculate M_BBp_B, B's spatial
   /// inertia about Bp (at the center of one of the cylinder's circular ends).
   static SpatialInertia<T> SolidCylinderWithDensity(
-      const T& density, const T& r, const T& l, const Vector3<T>& unit_vector);
+      const T& density, const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density solid cylinder B about an
   /// end-point Bp (Bp is at the center of one of the cylinder's circular ends).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] radius radius of the cylinder.
-  /// @param[in] length length of the cylinder in the unit_vector direction.
+  /// @param[in] radius radius of cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
   /// @param[in] unit_vector unit vector defining the axial direction of the
   ///   cylinder, expressed in B.
   /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
@@ -260,28 +263,29 @@ class SpatialInertia {
   /// Creates a spatial inertia for a uniform density solid sphere B about its
   /// geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
-  /// @param[in] r sphere's radius.
+  /// @param[in] radius sphere's radius (meters).
   /// @retval M_BBo B's spatial inertia about Bo. Since B's rotational inertia
   ///   is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
   ///   frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
   ///   B's has an equal moment of inertia about any line passing through Bo.
-  /// @throws std::exception if r is zero or negative.
-  static SpatialInertia<T> SolidSphereWithDensity(const T& density, const T& r);
+  /// @throws std::exception if radius is zero or negative.
+  static SpatialInertia<T> SolidSphereWithDensity(
+      const T& density, const T& radius);
 
   /// Creates a spatial inertia for a uniform density thin hollow sphere B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] area_density mass per unit area (kg/m²).
-  /// @param[in] r sphere's radius (the hollow sphere is regarded as an
-  /// infinitesimally thin shell of uniform density).
+  /// @param[in] radius sphere's radius in meters (the hollow sphere is regarded
+  /// as an infinitesimally thin shell of uniform density).
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B. Since B's
   /// rotational inertia is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo
   /// expressed in frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
   /// B has an equal moment of inertia about any line passing through Bo.
-  /// @throws std::exception if r is zero or negative.
+  /// @throws std::exception if radius is zero or negative.
   static SpatialInertia<T> HollowSphereWithDensity(
-      const T& area_density, const T& r);
+      const T& area_density, const T& radius);
 
   /// Creates a spatial inertia for a uniform density solid tetrahedron B about
   /// a point A, from which position vectors to B's 4 vertices B0, B1, B2, B3
