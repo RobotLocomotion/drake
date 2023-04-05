@@ -818,6 +818,11 @@ class CollisionChecker {
    applying appropriate padding. */
   //@{
 
+  /** Sets the distance and interpolation provider to use.
+   @pre the collision checker instance in use is already using a distance and
+   interpolation provider, not (deprecated) separate distance and interpolation
+   functions.
+  */
   void SetDistanceAndInterpolationProvider(
       std::unique_ptr<DistanceAndInterpolationProvider> provider) {
     distance_and_interpolation_provider_->SetProvider(std::move(provider));
@@ -830,7 +835,8 @@ class CollisionChecker {
 
   /** Sets the configuration distance function to `distance_function`.
    @pre distance_function satisfies the requirements documented on
-   ConfigurationDistanceFunction.
+   ConfigurationDistanceFunction and a DistanceAndInterpolationProvider is not
+   already in use.
    @note the `distance_function` object will be copied and retained by this
    collision checker, so if the function has any lambda-captured data then
    that data must outlive this collision checker. */
@@ -861,7 +867,8 @@ class CollisionChecker {
    @param interpolation_function a functor, or nullptr. If nullptr, the default
    function will be configured and used.
    @pre interpolation_function satisfies the requirements documented on
-   ConfigurationInterpolationFunction, or is nullptr.
+   ConfigurationInterpolationFunction, or is nullptr and a
+   DistanceAndInterpolationProvider is not already in use.
    @note the `interpolation_function` object will be copied and retained by
    this collision checker, so if the function has any lambda-captured data
    then that data must outlive this collision checker.
@@ -1388,22 +1395,25 @@ class CollisionChecker {
     void SetProvider(
         std::unique_ptr<DistanceAndInterpolationProvider> provider) {
       DRAKE_THROW_UNLESS(provider != nullptr);
+      DRAKE_THROW_UNLESS(has_provider());
       provider_ = std::move(provider);
-      distance_function_ = nullptr;
-      interpolation_function_ = nullptr;
     }
 
     void SetConfigurationDistanceFunction(
         const ConfigurationDistanceFunction& distance_function) {
       DRAKE_THROW_UNLESS(distance_function != nullptr);
+      DRAKE_THROW_UNLESS(!has_provider());
       distance_function_ = distance_function;
     }
 
     void SetConfigurationInterpolationFunction(
         const ConfigurationInterpolationFunction& interpolation_function) {
       DRAKE_THROW_UNLESS(interpolation_function != nullptr);
+      DRAKE_THROW_UNLESS(!has_provider());
       interpolation_function_ = interpolation_function;
     }
+
+    bool has_provider() const { return provider_ != nullptr; }
 
    private:
     std::unique_ptr<DistanceAndInterpolationProvider> DoClone() const final {
