@@ -2,6 +2,7 @@ from ._meldis import (
     Meldis,
 )
 from ._model_visualizer import (
+    AddFrameTriadIllustration,
     ModelVisualizer,
 )
 from ._plotting import (
