@@ -2,6 +2,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <picosha2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_cache.h"
@@ -19,13 +20,17 @@ using RemoteParams = PackageMap::RemoteParams;
 
 class PackageMapRemoteTest : public ::testing::Test {
  protected:
-  /* Creates a mock-up of the ~/.cache/drake/package_map/{sha256} directory
-  containing just the package.xml file. Returns the package directory. */
+  /* Creates a mock-up of the cached package download directory containing just
+  the package.xml file. Returns the package directory. */
   fs::path PrepopulateCache(std::string_view package_name,
-                            std::string_view sha256) {
+                            std::string_view sha256,
+                            std::string_view strip_prefix) {
     const auto try_cache = drake::internal::FindOrCreateCache("package_map");
     DRAKE_DEMAND(try_cache.error.empty());
-    const fs::path package_dir = try_cache.abspath / sha256;
+    const fs::path package_dir =
+        try_cache.abspath /
+        fmt::format("{}-{}", sha256,
+                    picosha2::hash256_hex_string(strip_prefix));
     const bool exists = fs::create_directory(package_dir);
     DRAKE_DEMAND(exists);
     std::ofstream xml(package_dir / "package.xml");
@@ -45,7 +50,7 @@ class PackageMapRemoteTest : public ::testing::Test {
 TEST_F(PackageMapRemoteTest, GetPathPrepopulated) {
   const std::string package_name("some_remote_name");
   const std::string sha256(64u, '0');
-  const fs::path package_dir = PrepopulateCache(package_name, sha256);
+  const fs::path package_dir = PrepopulateCache(package_name, sha256, "");
 
   // Adding the remote package doesn't download anything.
   // (The DRAKE_ALLOW_NETWORK governor would fail if we tried to download.)
@@ -93,6 +98,28 @@ TEST_F(PackageMapRemoteTest, ActuallyFetch) {
   std::stringstream buffer;
   buffer << readme.rdbuf();
   EXPECT_EQ(buffer.str(), "This package is empty.\n");
+}
+
+// Fetch a remote zip file, then again with a different strip_prefix.
+TEST_F(PackageMapRemoteTest, FetchWithDifferentStrip) {
+  PackageMap dut = PackageMap::MakeEmpty();
+
+  auto foo_params = MakeGoodParams();
+  dut.AddRemote("foo", foo_params);
+
+  auto bar_params = MakeGoodParams();
+  const std::string old_bar_prefix = std::move(bar_params.strip_prefix.value());
+  dut.AddRemote("bar", bar_params);
+
+  // Resolve 'foo' and then 'bar'.
+  const auto foo = fs::path(dut.GetPath("foo"));
+  const auto bar = fs::path(dut.GetPath("bar"));
+
+  // Check that the extracted data lives where it should. (Note that here we're
+  // checking the README file within the downloaded package, not the metadata
+  // {sha256}.README file from the downloader program in the parent directory.)
+  EXPECT_TRUE(fs::is_regular_file(foo / "README"));
+  EXPECT_TRUE(fs::is_regular_file(bar / old_bar_prefix / "README"));
 }
 
 // When DRAKE_ALLOW_NETWORK denies package_map, only file:// URLs are allowed
