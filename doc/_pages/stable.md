@@ -188,6 +188,10 @@ to obtain the stability guarantee:
 * In C++, do not depend on the exact signature of Drake functions, as we may
   add new, defaulted arguments without prior notice (i.e., do not take the
   address of any Drake function, or assign it to a `std::function`).
+* In C++, do not depend on the exact order of struct fields. When using
+  [aggregate initialization](https://en.cppreference.com/w/cpp/language/aggregate_initialization),
+  always use designated initializers (i.e., field names) when referring to
+  struct fields. It is OK to depend on the relative order of struct fields.
 
 ### Model files
 
