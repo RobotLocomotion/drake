@@ -110,9 +110,7 @@ fi
 
 if [[ "${with_test_only}" -eq 1 ]]; then
   packages=$(cat "${BASH_SOURCE%/*}/packages-${codename}-test-only.txt")
-  # Suppress Python 3.8 warnings when installing python3-pandas on Focal.
-  PYTHONWARNINGS=ignore::SyntaxWarning \
-    apt-get install ${maybe_yes} --no-install-recommends ${packages}
+  apt-get install ${maybe_yes} --no-install-recommends ${packages}
 fi
 
 if [[ "${with_maintainer_only}" -eq 1 ]]; then
