@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/geometry/meshcat_types.h"
 
 namespace drake {
 namespace multibody {
@@ -16,6 +17,15 @@ using Eigen::VectorXd;
 using Eigen::Matrix3Xd;
 using Eigen::Matrix3Xi;
 using geometry::Meshcat;
+
+// Helper to query meshcat whether an item is visible or not.
+bool visible(const Meshcat& meshcat, std::string_view path) {
+  std::string property = meshcat.GetPackedProperty(path, "visible");
+  msgpack::object_handle oh =
+      msgpack::unpack(property.data(), property.size());
+  auto data = oh.get().as<geometry::internal::SetPropertyData<bool>>();
+  return data.value;
+}
 
 // Tests that zero force or moment doesn't crash.
 GTEST_TEST(HydroelasticContactVisualizer, TestZeroForceOrMoment) {
@@ -51,6 +61,11 @@ GTEST_TEST(HydroelasticContactVisualizer, TestZeroForceOrMoment) {
                      non_zero_force_C_W, zero_moment_C_W,
                      p_WV, faces, pressure});
     DRAKE_EXPECT_NO_THROW(visualizer.Update(0, items));
+
+    const std::string path = fmt::format("{}/{}+{}", params.prefix,
+                                         items[0].body_A, items[0].body_B);
+    EXPECT_TRUE(visible(*meshcat, path + "/force_C_W"));
+    EXPECT_FALSE(visible(*meshcat, path + "/moment_C_W"));
   }
   // Zero force / non-zero moment
   {
@@ -59,6 +74,11 @@ GTEST_TEST(HydroelasticContactVisualizer, TestZeroForceOrMoment) {
                      zero_force_C_W, non_zero_moment_C_W,
                      p_WV, faces, pressure});
     DRAKE_EXPECT_NO_THROW(visualizer.Update(0, items));
+
+    const std::string path = fmt::format("{}/{}+{}", params.prefix,
+                                         items[0].body_A, items[0].body_B);
+    EXPECT_FALSE(visible(*meshcat, path + "/force_C_W"));
+    EXPECT_TRUE(visible(*meshcat, path + "/moment_C_W"));
   }
 }
 

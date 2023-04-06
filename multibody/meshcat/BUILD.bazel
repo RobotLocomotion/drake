@@ -65,6 +65,7 @@ drake_cc_googletest(
     deps = [
         ":hydroelastic_contact_visualizer",
         "//common/test_utilities:expect_no_throw",
+        "@msgpack_internal//:msgpack",
     ],
 )
 
