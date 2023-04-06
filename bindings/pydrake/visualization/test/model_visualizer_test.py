@@ -152,6 +152,19 @@ class TestModelVisualizer(unittest.TestCase):
                 dut.AddModels(FindResourceOrThrow(model_runpath))
                 dut.Run(loop_once=True)
 
+    def test_model_from_url(self):
+        url = "package://drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        dut = mut.ModelVisualizer()
+        dut.AddModels(url=url)
+        dut.Run(loop_once=True)
+
+    def test_add_model_args_error(self):
+        filename = "drake/multibody/benchmarks/acrobot/acrobot.sdf"
+        url = f"package://{filename}"
+        dut = mut.ModelVisualizer()
+        with self.assertRaisesRegex(ValueError, "either filename.*url"):
+            dut.AddModels(filename, url=url)
+
     def test_methods_and_multiple_models(self):
         """
         Tests main class methods individually as well as adding models twice.
