@@ -217,8 +217,7 @@ GTEST_TEST(WeldedBoxesTest, ForwardDynamicsViaArticulatedBodyAlgorithm) {
 
   // Set a model with two boxes anchored to the world via weld joints.
   const Vector3d p_BoBcm_B = Vector3d::Zero();
-  const UnitInertia<double> G_BBcm =
-      UnitInertia<double>::SolidBox(kCubeSize, kCubeSize, kCubeSize);
+  const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidCube(kCubeSize);
   const SpatialInertia<double> M_BBo_B =
       SpatialInertia<double>::MakeFromCentralInertia(kBoxMass, p_BoBcm_B,
                                                      G_BBcm);
