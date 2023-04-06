@@ -116,7 +116,10 @@ class NamedViewBase:
     def __setattr__(self, name, value):
         """Prevent setting additional attributes."""
         if not hasattr(self, name):
-            raise AttributeError("Cannot add attributes!")
+            raise AttributeError(
+                "Cannot add attributes! The fields in this named view are"
+                f"{self.get_fields()}, but you tried to set '{name}'."
+            )
         object.__setattr__(self, name, value)
 
     def __len__(self):

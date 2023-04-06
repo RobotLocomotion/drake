@@ -121,6 +121,8 @@ class TestNamedView(unittest.TestCase):
         np.testing.assert_equal(value, [3, 3])
         self.assertEqual(repr(view), "MyView(a=3, b=3)")
         self.assertEqual(str(view), repr(view))
+        with self.assertRaisesRegex(AttributeError, ".*('a', 'b').*"):
+            view.c = 42
 
     def test_Zero(self):
         MyView = namedview("MyView", ["a", "b"])
