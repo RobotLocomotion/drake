@@ -171,7 +171,7 @@ TEST_F(CameraConfigFunctionsTest, InvalidParentBaseFrame) {
   config.X_PB.base_frame = "invalid_frame";
   DRAKE_EXPECT_THROWS_MESSAGE(
       ApplyCameraConfig(config, &builder_),
-      "Could not find frame.+");
+      ".*invalid_frame.*");
 }
 
 /* Confirms that render engine is handled correctly.

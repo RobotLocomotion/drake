@@ -19,9 +19,11 @@ GetScopedFrameByNameMaybe(
     return &plant.world_frame();
   auto scoped_name = multibody::ScopedName::Parse(full_name);
   if (!scoped_name.get_namespace().empty()) {
-    auto instance = plant.GetModelInstanceByName(scoped_name.get_namespace());
-    if (plant.HasFrameNamed(scoped_name.get_element(), instance)) {
-      return &plant.GetFrameByName(scoped_name.get_element(), instance);
+    if (plant.HasModelInstanceNamed(scoped_name.get_namespace())) {
+      auto instance = plant.GetModelInstanceByName(scoped_name.get_namespace());
+      if (plant.HasFrameNamed(scoped_name.get_element(), instance)) {
+        return &plant.GetFrameByName(scoped_name.get_element(), instance);
+      }
     }
   } else if (plant.HasFrameNamed(scoped_name.get_element())) {
     return &plant.GetFrameByName(scoped_name.get_element());
@@ -32,11 +34,15 @@ GetScopedFrameByNameMaybe(
 const drake::multibody::Frame<double>& GetScopedFrameByName(
     const drake::multibody::MultibodyPlant<double>& plant,
     const std::string& full_name) {
-  auto* frame = GetScopedFrameByNameMaybe(plant, full_name);
-  if (frame == nullptr) {
-    throw std::runtime_error("Could not find frame: " + full_name);
+  if (full_name == "world")
+    return plant.world_frame();
+  auto scoped_name = multibody::ScopedName::Parse(full_name);
+  if (!scoped_name.get_namespace().empty()) {
+    auto instance = plant.GetModelInstanceByName(scoped_name.get_namespace());
+    return plant.GetFrameByName(scoped_name.get_element(), instance);
+  } else {
+    return plant.GetFrameByName(scoped_name.get_element());
   }
-  return *frame;
 }
 
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
