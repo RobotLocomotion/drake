@@ -32,55 +32,61 @@ using trajectories::PiecewisePolynomial;
 // u control input
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
-                                   int num_time_samples, double fixed_timestep)
+                                   int num_time_samples, double fixed_timestep,
+                                   solvers::MathematicalProgram* prog)
     : MultipleShooting(num_inputs, num_states, num_time_samples,
                        false /* timesteps_are_decision_variables */,
-                       fixed_timestep, fixed_timestep) {}
+                       fixed_timestep, fixed_timestep, prog) {}
 
 MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state, int num_time_samples,
-    double fixed_timestep)
+    double fixed_timestep, solvers::MathematicalProgram* prog)
     : MultipleShooting(input, state, num_time_samples, std::nullopt,
-                       fixed_timestep, fixed_timestep) {}
+                       fixed_timestep, fixed_timestep, prog) {}
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
                                    double minimum_timestep,
-                                   double maximum_timestep)
+                                   double maximum_timestep,
+                                   solvers::MathematicalProgram* prog)
     : MultipleShooting(num_inputs, num_states, num_time_samples,
                        true /* timesteps_are_decision_variables */,
-                       minimum_timestep, maximum_timestep) {}
+                       minimum_timestep, maximum_timestep, prog) {}
 
 MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state,
     const solvers::DecisionVariable& time, int num_time_samples,
-    double minimum_timestep, double maximum_timestep)
+    double minimum_timestep, double maximum_timestep,
+    solvers::MathematicalProgram* prog)
     : MultipleShooting(input, state, num_time_samples, time, minimum_timestep,
-                       maximum_timestep) {}
+                       maximum_timestep, prog) {}
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
                                    bool timesteps_are_decision_variables,
                                    double minimum_timestep,
-                                   double maximum_timestep)
+                                   double maximum_timestep,
+                                   solvers::MathematicalProgram* prog)
     : MultipleShooting(
           MakeVectorContinuousVariable(num_inputs, "u"),
           MakeVectorContinuousVariable(num_states, "x"), num_time_samples,
           timesteps_are_decision_variables
-              ? std::optional<solvers::DecisionVariable>{
-                  solvers::DecisionVariable{"t"}}
+              ? std::optional<
+                    solvers::DecisionVariable>{solvers::DecisionVariable{"t"}}
               : std::nullopt,
-          minimum_timestep, maximum_timestep) {}
+          minimum_timestep, maximum_timestep, prog) {}
 
 MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state, int num_time_samples,
     const std::optional<solvers::DecisionVariable>& time_var,
-    double minimum_timestep, double maximum_timestep)
-    : owned_prog_(std::make_unique<solvers::MathematicalProgram>()),
-      prog_(*owned_prog_),
+    double minimum_timestep, double maximum_timestep,
+    solvers::MathematicalProgram* prog)
+    : owned_prog_(prog ? nullptr
+                       : std::make_unique<solvers::MathematicalProgram>()),
+      prog_(prog ? *prog : *owned_prog_),
       num_inputs_(input.size()),
       num_states_(state.size()),
       N_(num_time_samples),

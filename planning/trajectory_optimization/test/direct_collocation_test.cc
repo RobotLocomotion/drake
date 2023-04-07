@@ -75,6 +75,29 @@ GTEST_TEST(DirectCollocationConstraint, AutoDiffXdConstructor) {
   constraint.Eval(x, &y);
 }
 
+GTEST_TEST(DirectCollocation, PassProgToConstructor) {
+  const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
+  const std::unique_ptr<Context<double>> context =
+      system->CreateDefaultContext();
+
+  const int kNumSampleTimes = 4;
+  const double kTimeStep = .1;
+  solvers::MathematicalProgram prog;
+  DirectCollocation dircol(
+      system.get(), *context, kNumSampleTimes, kTimeStep, kTimeStep,
+      systems::InputPortSelection::kUseFirstInputIfItExists, false, &prog);
+
+  EXPECT_EQ(&prog, &dircol.prog());
+  const int num_vars = prog.num_vars();
+
+  // Add a second direct collocation problem to the same prog.
+  DirectCollocation dircol2(
+      system.get(), *context, kNumSampleTimes, kTimeStep, kTimeStep,
+      systems::InputPortSelection::kUseFirstInputIfItExists, false, &prog);
+  EXPECT_EQ(&prog, &dircol2.prog());
+  EXPECT_EQ(prog.num_vars(), num_vars * 2);
+}
+
 GTEST_TEST(DirectCollocation, TestAddRunningCost) {
   const std::unique_ptr<LinearSystem<double>> system = MakeSimpleLinearSystem();
   const std::unique_ptr<Context<double>> context =
