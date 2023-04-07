@@ -11,6 +11,7 @@
 
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/find_runfiles.h"
 #include "drake/common/temp_directory.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
@@ -683,8 +684,8 @@ TEST_F(UrdfParserTest, DoublePendulum) {
 // `package://` syntax internally to the URDF (at least for packages which are
 // successfully found in the same directory at the URDF.
 TEST_F(UrdfParserTest, TestAtlasMinimalContact) {
-  std::string full_name = FindResourceOrThrow(
-      "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
+  const std::string full_name = FindRunfile(
+      "drake_models/atlas/atlas_minimal_contact.urdf").abspath;
   AddModelFromUrdfFile(full_name, "");
   for (int k = 0; k < 30; k++) {
     EXPECT_THAT(TakeWarning(), MatchesRegex(".*safety_controller.*ignored.*"));
@@ -715,8 +716,8 @@ TEST_F(UrdfParserTest, TestAddWithQuaternionFloatingDof) {
 }
 
 TEST_F(UrdfParserTest, TestRegisteredSceneGraph) {
-  const std::string full_name = FindResourceOrThrow(
-      "drake/examples/atlas/urdf/atlas_minimal_contact.urdf");
+  const std::string full_name = FindRunfile(
+      "drake_models/atlas/atlas_minimal_contact.urdf").abspath;
   // Test that registration with scene graph results in visual geometries.
   AddModelFromUrdfFile(full_name, "");
   // Mostly ignore warnings here; they are tested in detail elsewhere.

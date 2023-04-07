@@ -9,16 +9,54 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = ["//visibility:public"])
 
 models_filegroup(
-    name = "models",
+    name = "glob_models",
     extra_srcs = [
         "LICENSE.TXT",
         "iiwa_stack.LICENSE.txt",
     ],
+    visibility = ["//visibility:private"],
 )
 
 install_data(
     name = "install_data",
-    data = [":models"],
+    data = [":glob_models"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":glob_models",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_0.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_1.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_2.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_3.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_4.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_5.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_6.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_7.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/band.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/kuka.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_0.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_1.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_2_grey.obj",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_2_orange.obj",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_3.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_4_grey.obj",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_4_orange.obj",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_5.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_6_grey.obj",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_6_orange.obj",  # noqa
+        "@drake_models//:iiwa_description/meshes/iiwa14/visual/link_7.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_0.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_1.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_2.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_3.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_4.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_5.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_6.obj",
+        "@drake_models//:iiwa_description/meshes/iiwa7/visual/link_7.obj",
+    ],
 )
 
 # === test/ ===

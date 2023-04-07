@@ -1,5 +1,5 @@
 
-This directory contains models for Atlas.
+This directory contains a small demo of Atlas dynamics.
 
 Historical note
 ---------------

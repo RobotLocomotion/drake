@@ -9,16 +9,37 @@ load("//tools/lint:lint.bzl", "add_lint_tests")
 package(default_visibility = [":__subpackages__"])
 
 models_filegroup(
-    name = "models",
+    name = "glob_models",
     extra_srcs = [
         "LICENSE.TXT",
     ],
-    visibility = ["//visibility:public"],
 )
 
 install_data(
     name = "install_data",
-    data = [":models"],
+    data = [":glob_models"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "models",
+    srcs = [
+        ":glob_models",
+        "@drake_models//:allegro_hand_description/meshes/allegro.mtl",
+        "@drake_models//:allegro_hand_description/meshes/base_link.obj",
+        "@drake_models//:allegro_hand_description/meshes/base_link_left.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_0.0.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_1.0.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_12.0_left.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_12.0_right.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_13.0.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_14.0.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_15.0.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_15.0_tip.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_2.0.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_3.0.obj",
+        "@drake_models//:allegro_hand_description/meshes/link_3.0_tip.obj",
+    ],
     visibility = ["//visibility:public"],
 )
 
