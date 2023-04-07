@@ -31,7 +31,11 @@ class CspaceFreePathTester {
   }
 
   [[nodiscard]] const symbolic::Variable& get_mu() const {
-    return cspace_free_path_->mu_;
+    return cspace_free_path_->mu();
+  }
+
+  [[nodiscard]] unsigned int get_max_degree() const {
+    return cspace_free_path_->max_degree();
   }
 
   [[nodiscard]] const std::unordered_map<

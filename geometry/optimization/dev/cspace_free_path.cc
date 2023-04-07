@@ -77,6 +77,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
                                const Options& options)
     : CspaceFreePolytope(plant, scene_graph, plane_order, q_star, options),
       mu_(symbolic::Variable("mu")),
+      max_degree_(static_cast<int>(maximum_path_degree)),
       path_(initialize_path_map(this, maximum_path_degree)) {
   this->GeneratePathRationals();
 }
@@ -103,6 +104,70 @@ void CspaceFreePath::GeneratePathRationals() {
                                            path_with_y_subs, indeterminates,
                                            &cached_substitutions);
   }
+}
+
+[[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
+CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
+    const SortedPair<geometry::GeometryId>& geometry_pair,
+    const std::unordered_map<const symbolic::Variable,
+                             const Polynomial<double>>& path) const {
+  // Fail fast as building the programs can be expensive.
+  for (const auto& [var, cur_path] : path) {
+    DRAKE_DEMAND(cur_path.is_univariate());
+    DRAKE_DEMAND(cur_path.GetDegree() <= static_cast<int>(max_degree_));
+  }
+
+  int plane_index{get_separating_plane_index(geometry_pair)};
+  if (plane_index < 0) {
+    throw std::runtime_error(fmt::format(
+        "GetIsGeometrySeparableProgram(): geometry pair ({}, {}) does not need "
+        "a separation certificate",
+        get_scene_graph().model_inspector().GetName(geometry_pair.first()),
+        get_scene_graph().model_inspector().GetName(geometry_pair.second())));
+  }
+
+  return ConstructPlaneSearchProgramOnPath(
+      plane_geometries_on_path_.at(plane_index), path);
+}
+
+[[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
+CspaceFreePath::ConstructPlaneSearchProgramOnPath(
+    const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
+    const std::unordered_map<const symbolic::Variable,
+                             const Polynomial<double>>& path) const {
+  SeparationCertificateProgram ret;
+
+  // construct the parameter to value map
+  symbolic::Environment param_eval_map;
+  for (const auto& [config_space_var, eval_path] : path) {
+    const symbolic::Polynomial symbolic_path{path_.at(config_space_var)};
+    const std::vector<Polynomial<double>::Monomial> monomials =
+        eval_path.GetMonomials();
+    for (const auto& [mu_monom, mu_var_coeff] :
+         symbolic_path.monomial_to_coefficient_map()) {
+      // Find the monomial with the matching degree. If it doesn't exist
+      // evaluate it to 0.
+      const auto evaled_monom_iter = std::find_if(
+          monomials.begin(), monomials.end(), [&mu_monom](const auto& m) {
+            return m.GetDegree() == mu_monom.total_degree();
+          });
+      const double mu_var_coeff_eval{evaled_monom_iter == monomials.end()
+                                         ? 0
+                                         : evaled_monom_iter->coefficient};
+      param_eval_map.insert(*mu_var_coeff.GetVariables().begin(),
+                            mu_var_coeff_eval);
+    }
+  }
+
+  // Now add the separation conditions to the program
+  for (const auto& condition : plane_geometries_on_path.positive_side_conditions) {
+    condition.AddPositivityConstraintToProgram(param_eval_map, ret.prog.get());
+  }
+  for (const auto& condition : plane_geometries_on_path.negative_side_conditions) {
+    condition.AddPositivityConstraintToProgram(param_eval_map, ret.prog.get());
+  }
+
+  return ret;
 }
 
 }  // namespace optimization

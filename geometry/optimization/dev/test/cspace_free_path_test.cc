@@ -18,6 +18,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
     CspaceFreePathTester tester(plant_, scene_graph_,
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
+    EXPECT_EQ(tester.get_max_degree(), maximum_path_degree);
     // check that the path map is properly instantiated
     for (const auto& s_set_itr : tester.get_s_set()) {
       EXPECT_GT(tester.get_path().count(s_set_itr), 0);

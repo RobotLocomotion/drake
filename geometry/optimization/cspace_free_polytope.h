@@ -322,7 +322,8 @@ class CspaceFreePolytope {
     kSum,            ///< Maximize ∑ᵢδᵢ
     kGeometricMean,  ///< Maximize the geometric mean power(∏ᵢ (δᵢ + ε), 1/n)
                      ///< where n is C.rows(),
-                     ///< ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon.  # NOLINT
+                     ///< ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon.
+                     ///< # NOLINT
   };
 
   struct FindPolytopeGivenLagrangianOptions {
@@ -462,8 +463,7 @@ class CspaceFreePolytope {
    separation certificate for a pair of geometries for a C-space polytope
    {s | C*s<=d, s_lower<=s<=s_upper}.
    */
-  [[nodiscard]] SeparationCertificateProgram
-  MakeIsGeometrySeparableProgram(
+  [[nodiscard]] SeparationCertificateProgram MakeIsGeometrySeparableProgram(
       const SortedPair<geometry::GeometryId>& geometry_pair,
       const Eigen::Ref<const Eigen::MatrixXd>& C,
       const Eigen::Ref<const Eigen::VectorXd>& d) const;
@@ -485,6 +485,19 @@ class CspaceFreePolytope {
   [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
   get_plane_geometries() {
     return plane_geometries_;
+  }
+
+  // Returns the index of the plane which will separate the geometry pair.
+  // Returns -1 if the pair is not in map_geometries_to_separating_planes_.
+  int get_separating_plane_index(SortedPair<geometry::GeometryId> pair) const {
+    auto geometry_pair_it = map_geometries_to_separating_planes_.find(pair);
+    return (geometry_pair_it == map_geometries_to_separating_planes_.end())
+               ? -1
+               : geometry_pair_it->second;
+  }
+
+  const geometry::SceneGraph<double>& get_scene_graph() const {
+    return scene_graph_;
   }
 
  private:

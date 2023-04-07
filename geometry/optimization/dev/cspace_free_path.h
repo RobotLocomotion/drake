@@ -8,11 +8,9 @@
 #include <utility>
 #include <vector>
 
-#include "drake/geometry/optimization/cspace_free_polytope.h"
-#include "drake/common/trajectories/piecewise_polynomial.h"
-
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
 namespace drake {
@@ -60,12 +58,26 @@ class CspaceFreePath : public CspaceFreePolytope {
                  const geometry::SceneGraph<double>* scene_graph,
                  SeparatingPlaneOrder plane_order,
                  const Eigen::Ref<const Eigen::VectorXd>& q_star,
-                 const trajectories::PiecewisePolynomial<symbolic::Polynomial> path,
+                 unsigned int maximum_path_degree,
                  const Options& options = Options{});
 
   ~CspaceFreePath() {}
 
   [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
+
+  [[nodiscard]] int max_degree() const { return max_degree_; }
+
+  /**
+   Constructs the MathematicalProgram which searches for a separation
+   certificate for a pair of geometries along the path.
+   @param[in] path maps each configuration space variable to a univariate
+   polynomial of degree less than max_degree_.
+   */
+  [[nodiscard]] SeparationCertificateProgram
+  MakeIsGeometrySeparableOnPathProgram(
+      const SortedPair<geometry::GeometryId>& geometry_pair,
+      const std::unordered_map<const symbolic::Variable,
+                               const Polynomial<double>>& path) const;
 
  protected:
   /**
@@ -83,6 +95,9 @@ class CspaceFreePath : public CspaceFreePolytope {
   // The path parametrization variable going between 0 and 1.
   const symbolic::Variable mu_;
 
+  // The maximum degree path this object can certify
+  const int max_degree_;
+
   // A map storing the substitutions from the s_set_ variables to the path
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
@@ -93,28 +108,17 @@ class CspaceFreePath : public CspaceFreePolytope {
   std::vector<PlaneSeparatesGeometriesOnPath> plane_geometries_on_path_;
 
   /**
-   Constructs the program which searches for the plane separating a pair of
-   geometries, for all configuration in the set {s | C * s <= d, s_lower <= s
-   <= s_upper}.
-   @param[in] plane_geometries Contain the conditions that need to be
-   non-negative on the region C * s <= d and s_lower <= s <= s_upper.
-   @param[in] d_minus_Cs d - C*s.
-   @param[in] s_minus_s_lower s - s_lower.
-   @param[in] s_upper_minus_s s_upper - s.
-   @param[in] C_redundant_indices In the polyhedron C*s <= d, s_lower <= s <=
-   s_upper, some rows of C*s<=d might be redundant. We store the indices of the
-   redundant rows in C_redundant_indices.
-   @param[in] s_lower_redundant_indices. Store the indices of the redundant rows
-   in s >= s_lower.
-   @param[in] s_upper_redundant_indices. Store the indices of the redundant rows
-   in s <= s_upper.
+   Constructs the MathematicalProgram which searches for a separation
+   certificate for a pair of geometries along the path.
+   @param[in] plane_geometries_on_path Contain the parametric conditions that
+   need to be non-negative on the path.
+   @param[in] path maps each configuration space variable to a univariate
+   polynomial of degree less than max_degree_.
    */
-  [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgramForPair(
-      const PlaneSeparatesGeometries& plane_geometries,
-      const VectorX<symbolic::Polynomial>& d_minus_Cs,
-      const std::unordered_set<int>& C_redundant_indices,
-      const std::unordered_set<int>& s_lower_redundant_indices,
-      const std::unordered_set<int>& s_upper_redundant_indices) const;
+  [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgramOnPath(
+      const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
+      const std::unordered_map<const symbolic::Variable,
+                               const Polynomial<double>>& path) const;
 
   // Friend declaration for use in constructor to avoid large initialization
   // lambda.
