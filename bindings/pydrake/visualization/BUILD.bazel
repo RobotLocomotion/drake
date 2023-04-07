@@ -55,6 +55,7 @@ drake_pybind_library(
         "_meldis.py",
         "_model_visualizer.py",
         "_plotting.py",
+        "_triad.py",
         "_video.py",
         "_visualization_extra.py",
     ],
@@ -157,6 +158,16 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "plotting_test",
+    deps = [
+        ":visualization",
+    ],
+)
+
+drake_py_unittest(
+    name = "triad_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
     deps = [
         ":visualization",
     ],

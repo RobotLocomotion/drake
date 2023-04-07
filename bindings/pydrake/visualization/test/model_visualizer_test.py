@@ -1,4 +1,5 @@
 import copy
+import inspect
 import subprocess
 import textwrap
 import unittest
@@ -281,3 +282,10 @@ class TestModelVisualizer(unittest.TestCase):
         dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
         with catch_drake_warnings(expected_count=1):
             dut.RunWithReload(loop_once=True)
+
+    def test_triad_defaults(self):
+        # Cross-check the default triad parameters.
+        expected = inspect.signature(mut.AddFrameTriadIllustration).parameters
+        actual = mut.ModelVisualizer._get_constructor_defaults()
+        for name in ("length", "radius", "opacity"):
+            self.assertEqual(actual[f"triad_{name}"], expected[name].default)

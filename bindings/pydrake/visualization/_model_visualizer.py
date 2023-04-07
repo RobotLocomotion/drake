@@ -28,6 +28,9 @@ from pydrake.visualization import (
     VisualizationConfig,
     ApplyVisualizationConfig,
 )
+from pydrake.visualization._triad import (
+    AddFrameTriadIllustration,
+)
 
 
 class RunResult(Enum):
@@ -63,9 +66,9 @@ class ModelVisualizer:
 
     def __init__(self, *,
                  visualize_frames=False,
-                 triad_length=0.5,
-                 triad_radius=0.01,
-                 triad_opacity=1,
+                 triad_length=0.3,
+                 triad_radius=0.005,
+                 triad_opacity=0.9,
                  publish_contacts=True,
                  browser_new=False,
                  pyplot=False,
@@ -248,7 +251,7 @@ class ModelVisualizer:
             raise RuntimeError("Finalize has already been called.")
 
         if self._visualize_frames:
-            # Find all the frames and draw them using _add_triad().
+            # Find all the frames and draw them.
             # The frames are drawn using the parsed length.
             # The world frame is drawn thicker than the rest.
             inspector = self._builder.scene_graph().model_inspector()
@@ -257,8 +260,10 @@ class ModelVisualizer:
                 radius = self._triad_radius * (
                     3 if frame_id == world_id else 1
                     )
-                self._add_triad(
-                    frame_id,
+                AddFrameTriadIllustration(
+                    plant=self._builder.plant(),
+                    scene_graph=self._builder.scene_graph(),
+                    frame_id=frame_id,
                     length=self._triad_length,
                     radius=radius,
                     opacity=self._triad_opacity,
@@ -484,68 +489,6 @@ class ModelVisualizer:
         for old_name, old_value in slider_values.items():
             if old_name in current_names:
                 self._meshcat.SetSliderValue(old_name, old_value)
-
-    def _add_triad(
-        self,
-        frame_id,
-        *,
-        length,
-        radius,
-        opacity,
-        X_FT=RigidTransform(),
-        name="frame",
-    ):
-        """
-        Adds illustration geometry representing the coordinate frame, with
-        the x-axis drawn in red, the y-axis in green and the z-axis in blue.
-        The axes point in +x, +y and +z directions, respectively.
-        Based on [code permalink](https://github.com/RussTedrake/manipulation/blob/5e59811/manipulation/scenarios.py#L367-L414).# noqa
-        Args:
-          frame_id: a geometry::frame_id registered with scene_graph.
-          length: the length of each axis in meters.
-          radius: the radius of each axis in meters.
-          opacity: the opacity of the coordinate axes, between 0 and 1.
-          X_FT: a RigidTransform from the triad frame T to the frame_id frame F
-          name: the added geometry will have names name + " x-axis", etc.
-        """
-        # x-axis
-        X_TG = RigidTransform(
-            RotationMatrix.MakeYRotation(np.pi / 2),
-            [length / 2.0, 0, 0],
-        )
-        geom = GeometryInstance(
-            X_FT.multiply(X_TG), Cylinder(radius, length), name + " x-axis"
-        )
-        geom.set_illustration_properties(
-            MakePhongIllustrationProperties([1, 0, 0, opacity])
-        )
-        self._builder.scene_graph().RegisterGeometry(
-            self._builder.plant().get_source_id(), frame_id, geom)
-
-        # y-axis
-        X_TG = RigidTransform(
-            RotationMatrix.MakeXRotation(np.pi / 2),
-            [0, length / 2.0, 0],
-        )
-        geom = GeometryInstance(
-            X_FT.multiply(X_TG), Cylinder(radius, length), name + " y-axis"
-        )
-        geom.set_illustration_properties(
-            MakePhongIllustrationProperties([0, 1, 0, opacity])
-        )
-        self._builder.scene_graph().RegisterGeometry(
-            self._builder.plant().get_source_id(), frame_id, geom)
-
-        # z-axis
-        X_TG = RigidTransform([0, 0, length / 2.0])
-        geom = GeometryInstance(
-            X_FT.multiply(X_TG), Cylinder(radius, length), name + " z-axis"
-        )
-        geom.set_illustration_properties(
-            MakePhongIllustrationProperties([0, 0, 1, opacity])
-        )
-        self._builder.scene_graph().RegisterGeometry(
-            self._builder.plant().get_source_id(), frame_id, geom)
 
     def _add_traffic_cone(self):
         """Adds a traffic cone to the scene, indicating a parsing error."""
