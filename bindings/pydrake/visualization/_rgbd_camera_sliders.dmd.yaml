@@ -1,0 +1,10 @@
+# Adds rgbd_camera_sliders.sdf with a default posture. TODO(#13065) Move
+# the default posture into rgbd_camera_sliders.sdf and remove this file.
+directives:
+- add_model:
+    name: _rgbd_camera_sliders
+    file: package://drake/bindings/pydrake/visualization/_rgbd_camera_sliders.sdf
+    default_joint_positions:
+      $rgbd_target_z: [0.5]
+      $rgbd_zenith: [-0.52]
+      $rgbd_range: [2.5]

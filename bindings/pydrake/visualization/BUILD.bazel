@@ -40,6 +40,10 @@ drake_pybind_library(
         "visualization_py.h",
     ],
     package_info = PACKAGE_INFO,
+    py_data = [
+        "_rgbd_camera_sliders.dmd.yaml",
+        "_rgbd_camera_sliders.sdf",
+    ],
     py_deps = [
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/solvers",
@@ -106,6 +110,15 @@ install_files(
     },
 )
 
+install_files(
+    name = "install_models",
+    dest = "share/drake/bindings/pydrake/visualization",
+    files = [
+        "_rgbd_camera_sliders.dmd.yaml",
+        "_rgbd_camera_sliders.sdf",
+    ],
+)
+
 PY_LIBRARIES = [
     ":visualization",
 ]
@@ -118,6 +131,7 @@ install(
     targets = [":visualization"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES) + [
+        ":install_models",
         ":install_wrapper_scripts",
     ],
 )
