@@ -39,6 +39,7 @@ class TestTrajectoryOptimization(unittest.TestCase):
             input_port_index=InputPortSelection.kUseFirstInputIfItExists,
             assume_non_continuous_states_are_fixed=False)
         prog = dircol.prog()
+        num_initial_vars = prog.num_vars()
 
         # Spell out most of the methods, regardless of whether they make sense
         # as a consistent optimization.  The goal is to check the bindings,
@@ -137,6 +138,20 @@ class TestTrajectoryOptimization(unittest.TestCase):
         self.assertIsInstance(c[0].evaluator(), mp.LinearEqualityConstraint)
         self.assertEqual(len(prog.linear_equality_constraints()),
                          nc + 2*num_time_samples)
+
+        # Add a second direct collocation problem to the same prog.
+        num_vars = prog.num_vars()
+        dircol2 = DirectCollocation(
+            plant,
+            context,
+            num_time_samples=num_time_samples,
+            minimum_timestep=0.2,
+            maximum_timestep=0.5,
+            input_port_index=InputPortSelection.kUseFirstInputIfItExists,
+            assume_non_continuous_states_are_fixed=False,
+            prog=prog)
+        self.assertEqual(dircol.prog(), dircol2.prog())
+        self.assertEqual(prog.num_vars(), num_vars + num_initial_vars)
 
     def test_direct_transcription(self):
         # Integrator.
