@@ -2190,6 +2190,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetDefaultPositions(ModelInstanceIndex model_instance,
                     const Eigen::Ref<const Eigen::VectorXd>& q_instance);
 
+  /// Returns a list of string names corresponding to each element of the
+  /// position vector. These strings take the form
+  /// `{model_instance_name}_{joint_name}_{joint_position_suffix}`, but the
+  /// prefix and suffix may optionally be withheld using @p
+  /// add_model_instance_prefix and @p always_add_suffix.
+  ///
+  /// @param model_instance (optional) If specified, names are only returned for
+  /// a particular `model_instance`.
+  /// @param add_model_instance_prefix (optional) By default, the prefix will be
+  /// added iff `model_instance == std::nullopt`.
+  /// @param always_add_suffix (optional). If true, then the suffix is always
+  /// added. If false, then the suffix is only added for joints that have more
+  /// than one position (in this case, not adding would lead to ambiguity).
+  ///
+  /// The returned names are guaranteed to be unique if the @p model_instance is
+  /// provided OR if @p add_model_instance_prefix is `true` (the default).
+  ///
+  /// @throws std::exception if the plant is not finalized or if the
+  /// @p model_instance is invalid.
+  std::vector<std::string> GetPositionNames(
+      std::optional<ModelInstanceIndex> model_instance = std::nullopt,
+      std::optional<bool> add_model_instance_prefix = std::nullopt,
+      bool always_add_suffix = true) const;
+
   /// Returns a const vector reference to the generalized velocities v in a
   /// given Context.
   /// @note This method returns a reference to existing data, exhibits constant

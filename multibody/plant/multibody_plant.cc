@@ -1361,6 +1361,57 @@ void MultibodyPlant<T>::SetDefaultPositions(ModelInstanceIndex model_instance,
 }
 
 template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
+    std::optional<ModelInstanceIndex> model_instance,
+    std::optional<bool> add_model_instance_prefix,
+    bool always_add_suffix) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::vector<std::string> names;
+  std::vector<JointIndex> joint_indices;
+  int position_offset = 0;
+  if (model_instance) {
+    names.resize(num_positions(*model_instance));
+    joint_indices = GetJointIndices(*model_instance);
+    // The offset into the position array is the position_start of the first
+    // mobilizer in the tree; here we just take the minimum.
+    position_offset = num_positions();
+    for (const auto& joint_index : joint_indices) {
+      position_offset =
+          std::min(position_offset, get_joint(joint_index).position_start());
+    }
+  } else {
+    names.resize(num_positions());
+    joint_indices.resize(num_joints());
+    std::iota(joint_indices.begin(), joint_indices.end(), JointIndex(0));
+  }
+  if (!add_model_instance_prefix) {
+    add_model_instance_prefix = !model_instance.has_value();
+  }
+
+  for (const auto& joint_index : joint_indices) {
+    const Joint<T>& joint = get_joint(joint_index);
+    // Sanity check: joint positions are in range.
+    DRAKE_DEMAND(joint.position_start() >= position_offset);
+    DRAKE_DEMAND(joint.position_start() + joint.num_positions() -
+                     position_offset <=
+                 static_cast<int>(names.size()));
+
+    const std::string prefix =
+        *add_model_instance_prefix
+            ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
+            : "";
+    for (int i = 0; i < joint.num_positions(); ++i) {
+      const std::string suffix = always_add_suffix || joint.num_positions() > 1
+          ? fmt::format("_{}", joint.position_suffix(i)) : "";
+      names[joint.position_start() + i - position_offset] =
+          fmt::format("{}{}{}", prefix, joint.name(), suffix);
+    }
+  }
+  return names;
+}
+
+
+template <typename T>
 void MultibodyPlant<T>::EstimatePointContactParameters(
     double penetration_allowance) {
   // Default to Earth's gravity for this estimation.
