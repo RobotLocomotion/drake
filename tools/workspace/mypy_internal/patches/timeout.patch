@@ -1,4 +1,4 @@
-Increase timeout from 30 seconds to 180 seconds
+Increase timeout from 30 seconds to 360 seconds
 
 --- mypy/moduleinspect.py
 +++ mypy/moduleinspect.py
@@ -7,7 +7,7 @@ Increase timeout from 30 seconds to 180 seconds
          Return the value read from the queue, or None if the process unexpectedly died.
          """
 -        max_iter = 600
-+        timeout_seconds = 180
++        timeout_seconds = 360
 +        timeout_increment = 0.05
 +        max_iter = int(timeout_seconds / timeout_increment)
          n = 0
