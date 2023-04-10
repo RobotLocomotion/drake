@@ -19,12 +19,12 @@ template <typename T>
 class BlockSparseMatrixBuilder;
 
 // This class provides a representation for sparse matrices with a structure
-// consisting of MatrixBlocks, which are either dense blocks or sparse matrices
-// composing of dense blocks of non-zeros themselves (see MatrixBlock). While
-// other storage formats such as CRS (Compressed Row Storage) are popular (E.g.
-// Eigen::SparseMatrix), a data structure tailored to block-sparse matrices
-// enables efficient algorithms capable of exploiting highly optimized
-// operations with dense blocks (e.g. via AVX instructions).
+// consisting of MatrixBlocks, which are either dense blocks or blocks with
+// specific properties such as sparse, diagonal, or identity. (See
+// MatrixBlock). While other storage formats such as CRS (Compressed Row
+// Storage) are popular (E.g. Eigen::SparseMatrix), a data structure tailored to
+// block-sparse matrices enables efficient algorithms capable of exploiting
+// highly optimized operations with individual blocks.
 //
 // Instances of this class are meant to be built with BlockSparseMatrixBuilder
 // to ensure the consistency of block entries provided by users.
