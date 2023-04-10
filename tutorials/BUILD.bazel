@@ -94,7 +94,6 @@ drake_jupyter_py_binary(
 drake_jupyter_py_binary(
     name = "authoring_multibody_simulation",
     add_test_rule = 1,
-    test_timeout = "moderate",
     deps = [
         "//bindings/pydrake",
     ],
