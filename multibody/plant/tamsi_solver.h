@@ -450,7 +450,7 @@ where `O₅(δt²) = O₂(‖vˢ⁺¹ − vˢ‖²) = O₂(‖O₄(δt)‖²)`. 
 We can now use Eq. (14) into Eq. (11) to arrive to:
 @verbatim
   (15)  M(qˢ) vˢ⁺¹ = M(qˢ) vˢ +
-        δt [τˢ + Jₙᵀ(qˢ) (fₙ(qˢ,vˢ) + O₆(δt)] + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)) +
+        δt [τˢ + Jₙᵀ(qˢ) (fₙ(qˢ,vˢ) + O₆(δt)) + Jₜᵀ(qˢ) fₜ(vˢ⁺¹)] +
         O₁(δt²)
 @endverbatim
 which we can rewrite as:
