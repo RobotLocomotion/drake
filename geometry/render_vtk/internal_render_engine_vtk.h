@@ -224,6 +224,9 @@ class RenderEngineVtk : public render::RenderEngine,
 
   void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
 
+  // Sets vertex and fragment shaders to the depth_actor's mapper.
+  void SetDepthShader(const vtkSmartPointer<vtkActor>& depth_actor);
+
   // Three pipelines: rgb, depth, and label.
   static constexpr int kNumPipelines = 3;
 

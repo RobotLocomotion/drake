@@ -720,6 +720,7 @@ licenses([
         "vtkIOImport",
         hdrs = [
             "vtkGLTFImporter.h",
+            "vtkOBJImporter.h",
             "vtkIOImportModule.h",
             "vtkImporter.h",
         ],

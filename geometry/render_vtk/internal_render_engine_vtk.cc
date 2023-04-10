@@ -1,21 +1,25 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk.h"
 
+#include <filesystem>
 #include <fstream>
 #include <limits>
 #include <optional>
 #include <stdexcept>
 #include <utility>
 
+#include <vtkActorCollection.h>
 #include <vtkCamera.h>
 #include <vtkCylinderSource.h>
 #include <vtkImageCast.h>
-#include <vtkOBJReader.h>
+#include <vtkOBJImporter.h>
 #include <vtkOpenGLPolyDataMapper.h>
 #include <vtkOpenGLShaderProperty.h>
 #include <vtkOpenGLTexture.h>
 #include <vtkPNGReader.h>
 #include <vtkPlaneSource.h>
 #include <vtkProperty.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderer.h>
 #include <vtkTexturedSphereSource.h>
 #include <vtkTransform.h>
 #include <vtkTransformPolyDataFilter.h>
@@ -93,6 +97,74 @@ std::string RemoveFileExtension(const std::string& filepath) {
     throw std::logic_error("File has no extension.");
   }
   return filepath.substr(0, last_dot);
+}
+
+void SetColorActorTexture(const vtkSmartPointer<vtkActor>& color_actor,
+                          const RegistrationData& data,
+                          const Eigen::Vector4d& default_diffuse) {
+  const std::string& diffuse_map_name =
+      data.properties.GetPropertyOrDefault<std::string>("phong", "diffuse_map",
+                                                        "");
+  // Legacy support for *implied* texture maps. If we have mesh.obj, we look for
+  // mesh.png (unless one has been specifically called out in the properties).
+  // TODO(SeanCurtis-TRI): Remove this legacy texture when objects and materials
+  //  are coherently specified by SDF/URDF/obj/mtl, etc.
+  std::string texture_name;
+  std::ifstream file_exist(diffuse_map_name);
+  if (file_exist) {
+    texture_name = diffuse_map_name;
+  } else {
+    if (!diffuse_map_name.empty()) {
+      log()->warn("Requested diffuse map could not be found: {}",
+                  diffuse_map_name);
+    }
+    if (diffuse_map_name.empty() && data.mesh_filename) {
+      // This is the hack to search for mesh.png as a possible texture.
+      const std::string alt_texture_name(
+          RemoveFileExtension(*data.mesh_filename) + ".png");
+      std::ifstream alt_file_exist(alt_texture_name);
+      if (alt_file_exist) texture_name = alt_texture_name;
+    }
+  }
+  if (!texture_name.empty()) {
+    const Vector2d& uv_scale = data.properties.GetPropertyOrDefault(
+        "phong", "diffuse_scale", Vector2d{1, 1});
+    vtkNew<vtkPNGReader> texture_reader;
+    texture_reader->SetFileName(texture_name.c_str());
+    texture_reader->Update();
+    if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
+      log()->warn(
+          "Texture map '{}' has an unsupported bit depth, casting it to uchar "
+          "channels.",
+          texture_name);
+    }
+
+    vtkNew<vtkImageCast> caster;
+    caster->SetOutputScalarType(VTK_UNSIGNED_CHAR);
+    caster->SetInputConnection(texture_reader->GetOutputPort());
+    caster->Update();
+    DRAKE_DEMAND(caster->GetOutput() != nullptr);
+
+    vtkNew<vtkOpenGLTexture> texture;
+    texture->SetInputConnection(caster->GetOutputPort());
+    const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
+    texture->SetRepeat(need_repeat);
+    texture->InterpolateOn();
+    color_actor->SetTexture(texture.Get());
+  } else {
+    const Vector4d& diffuse = data.properties.GetPropertyOrDefault(
+        "phong", "diffuse", default_diffuse);
+    color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
+    color_actor->GetProperty()->SetOpacity(diffuse(3));
+  }
+}
+
+void SetLabelActorTexture(const vtkSmartPointer<vtkActor>& label_actor,
+                          const ColorD& color) {
+  // This is to disable shadows and to get an object painted with a single
+  // color.
+  label_actor->GetProperty()->LightingOff();
+  label_actor->GetProperty()->SetColor(color.r, color.g, color.b);
 }
 
 }  // namespace
@@ -444,20 +516,75 @@ void RenderEngineVtk::InitializePipelines() {
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    void* user_data) {
   static_cast<RegistrationData*>(user_data)->mesh_filename = file_name;
-  vtkNew<vtkOBJReader> mesh_reader;
-  mesh_reader->SetFileName(file_name.c_str());
-  mesh_reader->Update();
+  std::array<vtkSmartPointer<vtkActor>, kNumPipelines> actors{
+      vtkSmartPointer<vtkActor>::New(), vtkSmartPointer<vtkActor>::New(),
+      vtkSmartPointer<vtkActor>::New()};
 
-  vtkNew<vtkTransform> transform;
-  // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
-  // TODO(SeanCurtis-TRI): Only add the transform filter if scale is not all 1.
-  transform->Scale(scale, scale, scale);
-  vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(mesh_reader->GetOutputPort());
-  transform_filter->SetTransform(transform.GetPointer());
-  transform_filter->Update();
+  const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
 
-  ImplementGeometry(transform_filter.GetPointer(), user_data);
+  vtkNew<vtkRenderer> vtk_renderer;
+  vtkNew<vtkRenderWindow> vtk_render_window;
+  vtk_render_window->AddRenderer(vtk_renderer);
+
+  vtkNew<vtkOBJImporter> importer;
+  const std::string file_directory =
+      std::filesystem::path{file_name}.parent_path();
+  // Create three actors for color, depth, and label pipelines.
+  for (int i = 0; i < kNumPipelines; ++i) {
+    importer->SetFileName(file_name.c_str());
+    importer->SetTexturePath(file_directory.c_str());
+    importer->SetRenderWindow(vtk_render_window);
+    importer->Update();
+  }
+
+  vtkActorCollection* actor_collection = vtk_renderer->GetActors();
+  // TODO(zachfang): Figure out why there are two actors from each import.
+  DRAKE_DEMAND(actor_collection->GetNumberOfItems() == kNumPipelines * 2);
+  actor_collection->InitTraversal();
+  for (int i = 0; i < actor_collection->GetNumberOfItems(); ++i) {
+    vtkActor* actor = actor_collection->GetNextActor();
+    if (i % 2 == 0) continue;
+    const int actor_index = i / 2;
+    actors[actor_index].TakeReference(actor);
+  }
+
+  vtkSmartPointer<vtkTransform> vtk_X_WG = ConvertToVtkTransform(data.X_WG);
+  // Adds the actor into the specified pipeline.
+  auto connect_actor = [this, &actors, &vtk_X_WG,
+                        &scale](ImageType image_type) {
+    actors[image_type]->SetScale(scale, scale, scale);
+    actors[image_type]->SetUserTransform(vtk_X_WG);
+    pipelines_[image_type]->renderer->AddActor(actors[image_type].Get());
+  };
+
+  // Color actor.
+  const bool no_mtl = std::string{importer->GetFileNameMTL()}.empty();
+  if (no_mtl) {
+    SetColorActorTexture(actors[ImageType::kColor], data, default_diffuse_);
+  }
+  connect_actor(ImageType::kColor);
+
+  // Depth actor.
+  SetDepthShader(actors[ImageType::kDepth]);
+  connect_actor(ImageType::kDepth);
+
+  // Label actor.
+  const RenderLabel label = GetRenderLabelOrThrow(data.properties);
+  if (label != RenderLabel::kDoNotRender) {
+    // NOTE: We only configure the label actor if it doesn't have "do not
+    // render" label applied. We *have* created the actor; but otherwise, we
+    // leave it disconnected.
+
+    // The label_actor may have a texture applied already via vtkOBJImporter,
+    // explicit remove any texture for proper label rendering.
+    actors[ImageType::kLabel]->SetTexture(nullptr);
+
+    const ColorD color = RenderEngine::GetColorDFromLabel(label);
+    SetLabelActorTexture(actors[ImageType::kLabel], color);
+    connect_actor(ImageType::kLabel);
+  }
+
+  actors_.insert({data.id, std::move(actors)});
 }
 
 void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
@@ -471,14 +598,7 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   // get destroyed when this array goes out of scope.
   std::array<vtkNew<vtkOpenGLPolyDataMapper>, kNumPipelines> mappers;
 
-  // Sets vertex and fragment shaders only to the depth mapper.
-  vtkOpenGLShaderProperty* shader_prop = vtkOpenGLShaderProperty::SafeDownCast(
-      actors[ImageType::kDepth]->GetShaderProperty());
-  DRAKE_DEMAND(shader_prop != nullptr);
-  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
-  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
-  mappers[ImageType::kDepth]->AddObserver(
-      vtkCommand::UpdateShaderEvent, uniform_setting_callback_.Get());
+  SetDepthShader(actors[ImageType::kDepth]);
 
   for (auto& mapper : mappers) {
     mapper->SetInputConnection(source->GetOutputPort());
@@ -499,76 +619,16 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
   // Label actor.
   const RenderLabel label = GetRenderLabelOrThrow(data.properties);
   if (label != RenderLabel::kDoNotRender) {
-    // NOTE: We only configure the label actor if it doesn't have to "do not
+    // NOTE: We only configure the label actor if it doesn't have "do not
     // render" label applied. We *have* created an actor and connected it to
     // a mapper; but otherwise, we leave it disconnected.
-    auto& label_actor = actors[ImageType::kLabel];
-    // This is to disable shadows and to get an object painted with a single
-    // color.
-    label_actor->GetProperty()->LightingOff();
-    const auto color = RenderEngine::GetColorDFromLabel(label);
-    label_actor->GetProperty()->SetColor(color.r, color.g, color.b);
+    const ColorD color = RenderEngine::GetColorDFromLabel(label);
+    SetLabelActorTexture(actors[ImageType::kLabel], color);
     connect_actor(ImageType::kLabel);
   }
 
   // Color actor.
-  auto& color_actor = actors[ImageType::kColor];
-  const std::string& diffuse_map_name =
-      data.properties.GetPropertyOrDefault<std::string>("phong", "diffuse_map",
-                                                        "");
-  // Legacy support for *implied* texture maps. If we have mesh.obj, we look for
-  // mesh.png (unless one has been specifically called out in the properties).
-  // TODO(SeanCurtis-TRI): Remove this legacy texture when objects and materials
-  //  are coherently specified by SDF/URDF/obj/mtl, etc.
-  std::string texture_name;
-  std::ifstream file_exist(diffuse_map_name);
-  if (file_exist) {
-    texture_name = diffuse_map_name;
-  } else {
-    if (!diffuse_map_name.empty()) {
-      log()->warn("Requested diffuse map could not be found: {}",
-                  diffuse_map_name);
-    }
-    if (diffuse_map_name.empty() && data.mesh_filename) {
-      // This is the hack to search for mesh.png as a possible texture.
-      const std::string alt_texture_name(
-          RemoveFileExtension(*data.mesh_filename) + ".png");
-      std::ifstream alt_file_exist(alt_texture_name);
-      if (alt_file_exist) texture_name = alt_texture_name;
-    }
-  }
-  if (!texture_name.empty()) {
-    const Vector2d& uv_scale = data.properties.GetPropertyOrDefault(
-        "phong", "diffuse_scale", Vector2d{1, 1});
-    vtkNew<vtkPNGReader> texture_reader;
-    texture_reader->SetFileName(texture_name.c_str());
-    texture_reader->Update();
-    if (texture_reader->GetOutput()->GetScalarType() != VTK_UNSIGNED_CHAR) {
-      log()->warn(
-          "Texture map '{}' has an unsupported bit depth, casting it to uchar "
-          "channels.",
-          texture_name);
-    }
-
-    vtkNew<vtkImageCast> caster;
-    caster->SetOutputScalarType(VTK_UNSIGNED_CHAR);
-    caster->SetInputConnection(texture_reader->GetOutputPort());
-    caster->Update();
-    DRAKE_DEMAND(caster->GetOutput() != nullptr);
-
-    vtkNew<vtkOpenGLTexture> texture;
-    texture->SetInputConnection(caster->GetOutputPort());
-    const bool need_repeat = uv_scale[0] > 1 || uv_scale[1] > 1;
-    texture->SetRepeat(need_repeat);
-    texture->InterpolateOn();
-    color_actor->SetTexture(texture.Get());
-  } else {
-    const Vector4d& diffuse =
-        data.properties.GetPropertyOrDefault("phong", "diffuse",
-                                             default_diffuse_);
-    color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
-    color_actor->GetProperty()->SetOpacity(diffuse(3));
-  }
+  SetColorActorTexture(actors[ImageType::kColor], data, default_diffuse_);
   // TODO(SeanCurtis-TRI): Determine if this precludes modulating the texture
   //  with arbitrary rgba values (e.g., tinting red or making everything
   //  slightly transparent). In other words, should opacity be set regardless
@@ -581,6 +641,17 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
 
   // Take ownership of the actors.
   actors_.insert({data.id, std::move(actors)});
+}
+
+void RenderEngineVtk::SetDepthShader(
+    const vtkSmartPointer<vtkActor>& depth_actor) {
+  vtkOpenGLShaderProperty* shader_prop =
+      vtkOpenGLShaderProperty::SafeDownCast(depth_actor->GetShaderProperty());
+  DRAKE_DEMAND(shader_prop != nullptr);
+  shader_prop->SetVertexShaderCode(render::shaders::kDepthVS);
+  shader_prop->SetFragmentShaderCode(render::shaders::kDepthFS);
+  depth_actor->GetMapper()->AddObserver(vtkCommand::UpdateShaderEvent,
+                                        uniform_setting_callback_.Get());
 }
 
 RenderEngineVtk::RenderingPipeline& RenderEngineVtk::get_mutable_pipeline(
