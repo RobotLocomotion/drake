@@ -216,11 +216,8 @@ GTEST_TEST(WeldedBoxesTest, ForwardDynamicsViaArticulatedBodyAlgorithm) {
   MultibodyPlant<double> plant(discrete_update_period);
 
   // Set a model with two boxes anchored to the world via weld joints.
-  const Vector3d p_BoBcm_B = Vector3d::Zero();
-  const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidCube(kCubeSize);
   const SpatialInertia<double> M_BBo_B =
-      SpatialInertia<double>::MakeFromCentralInertia(kBoxMass, p_BoBcm_B,
-                                                     G_BBcm);
+      SpatialInertia<double>::SolidCubeWithMass(kBoxMass, kCubeSize);
   // Create two rigid bodies.
   const auto& boxA = plant.AddRigidBody("boxA", M_BBo_B);
   const auto& boxB = plant.AddRigidBody("boxB", M_BBo_B);

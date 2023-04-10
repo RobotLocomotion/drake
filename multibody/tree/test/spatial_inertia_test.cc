@@ -152,31 +152,45 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensityOrMass) {
 // Tests the static method for the spatial inertia of a solid cube.
 GTEST_TEST(SpatialInertia, SolidCubeWithDensity) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
-  const double l = 2.0;
-  const double volume = l * l * l;
+  const double length = 2.0;
+  const double volume = length * length * length;
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidCube(l);
+  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidCube(length);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  const SpatialInertia<double> M =
-      SpatialInertia<double>::SolidCubeWithDensity(density, l);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  const SpatialInertia<double> M_with_density =
+      SpatialInertia<double>::SolidCubeWithDensity(density, length);
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
 
   // Also test against a solid box with length = width = height.
   const SpatialInertia<double> Mbox =
-      SpatialInertia<double>::SolidBoxWithDensity(density, l, l, l);
-  EXPECT_TRUE(
-      CompareMatrices(Mbox.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+      SpatialInertia<double>::SolidBoxWithDensity(
+          density, length, length, length);
+  EXPECT_TRUE(CompareMatrices(Mbox.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
+
+  // Ensure SolidCubeWithDensity() matches SolidCubeWithMass().
+  const SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::SolidCubeWithMass(mass, length);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+      M_with_density.CopyToFullMatrix6()));
 
   // Ensure a negative or zero length throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCubeWithDensity(density, 0),
       "[^]* The length of a solid cube is negative or zero: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCubeWithMass(mass, 0),
+      "[^]* The length of a solid cube is negative or zero: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCubeWithDensity(density, -1),
       "[^]* The length of a solid cube is negative or zero: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCubeWithMass(mass, -1),
+      "[^]* The length of a solid cube is negative or zero: .*.");
 }
+
 
 // Tests the static method for the spatial inertia of a solid capsule.
 GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
