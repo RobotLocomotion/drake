@@ -17,33 +17,41 @@ namespace contact_solvers {
 namespace internal {
 namespace {
 
-/* Compute y = J^T * weight_matrix * J. */
+/* Computes the dense matrix Jᵀ*G*J. Matrix J a column-wise concatenation of
+ entries in `jacobian_row_data`. Matrix G is block diagonal with diagonal
+ blocks `weight_matrix[w_start]`, ..., `weight_matrix[w_end]`. The result of the
+ product is written to the output parameter `result`. Previous values stored in
+ `result` are discarded.
+ @pre result != nullptr.
+ @pre All entries in `jacobian_row_data` have the same number of rows.
+ @pre Entries in weight_matrix with indices in [w_start, w_end] are square and
+ have rows that sum up to be the same as the rows of each entry in
+ `jacobian_row_data`. */
 template <typename MatrixType>
 void ComputeWeightMatrixTerms(
     const vector<MatrixBlock<double>>& jacobian_row_data,
     const vector<MatrixXd>& weight_matrix, int w_start, int w_end,
-    MatrixType* yptr) {
+    MatrixType* result) {
   std::vector<MatrixBlock<double>> GJs;
-  for (size_t j = 0; j < jacobian_row_data.size(); ++j) {
-    const MatrixBlock<double>& J = jacobian_row_data[j];
+  for (size_t k = 0; k < jacobian_row_data.size(); ++k) {
+    const MatrixBlock<double>& J = jacobian_row_data[k];
     GJs.emplace_back(
         J.LeftMultiplyByBlockDiagonal(weight_matrix, w_start, w_end));
   }
 
-  MatrixType& y = *yptr;
-  y.setZero();
-  int r_offset = 0;
-  for (size_t i = 0; i < jacobian_row_data.size(); ++i) {
-    int c_offset = 0;
-    const MatrixBlock<double>& J = jacobian_row_data[i];
-    for (size_t j = 0; j < jacobian_row_data.size(); ++j) {
-      const MatrixBlock<double>& GJ = GJs[j];
+  result->setZero();
+  int row_offset = 0;
+  for (size_t k = 0; k < jacobian_row_data.size(); ++k) {
+    int col_offset = 0;
+    const MatrixBlock<double>& J = jacobian_row_data[k];
+    for (size_t l = 0; l < jacobian_row_data.size(); ++l) {
+      const MatrixBlock<double>& GJ = GJs[l];
       Eigen::Ref<MatrixXd> block =
-          y.block(r_offset, c_offset, J.cols(), GJ.cols());
+          result->block(row_offset, col_offset, J.cols(), GJ.cols());
       J.TransposeAndMultiplyAndAddTo(GJ, &block);
-      c_offset += GJ.cols();
+      col_offset += GJ.cols();
     }
-    r_offset += J.cols();
+    row_offset += J.cols();
   }
 }
 
