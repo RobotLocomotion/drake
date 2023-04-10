@@ -13,7 +13,9 @@ from pydrake.common.yaml import yaml_load_typed
 from pydrake.math import BsplineBasis_, RigidTransform_, RotationMatrix_
 from pydrake.polynomial import Polynomial_
 from pydrake.trajectories import (
+    BezierCurve_,
     BsplineTrajectory_,
+    CompositeTrajectory_,
     PathParameterizedTrajectory_,
     PiecewisePolynomial_,
     PiecewisePose_,
@@ -78,6 +80,26 @@ class TestTrajectories(unittest.TestCase):
         numpy_compare.assert_float_equal(
             trajectory.EvalDerivative(t=2.3, derivative_order=2),
             np.zeros((1, 2)))
+
+    @numpy_compare.check_all_types
+    def test_bezier_curve(self, T):
+        curve = BezierCurve_[T]()
+        self.assertEqual(curve.rows(), 0)
+        self.assertEqual(curve.cols(), 1)
+
+        points = np.mat("4.0, 5.0; 6.0, 7.0")
+        curve = BezierCurve_[T](start_time=1,
+                                end_time=2,
+                                control_points=points)
+        numpy_compare.assert_float_equal(curve.start_time(), 1.0)
+        numpy_compare.assert_float_equal(curve.end_time(), 2.0)
+        self.assertEqual(curve.rows(), 2)
+        self.assertEqual(curve.cols(), 1)
+        self.assertEqual(curve.order(), 1)
+
+        b = curve.BernsteinBasis(i=0, time=1.5, order=1)
+        self.assertIsInstance(b, T)
+        numpy_compare.assert_float_equal(curve.control_points(), points)
 
     @numpy_compare.check_all_types
     def test_bspline_trajectory(self, T):
@@ -435,6 +457,22 @@ class TestTrajectories(unittest.TestCase):
         pp1 = PiecewisePolynomial([1, 2, 3])
         pp2 = pp1 + pp1
         numpy_compare.assert_equal(pp2.value(0), 2 * pp1.value(0))
+
+    @numpy_compare.check_all_types
+    def test_composite_trajectory(self, T):
+        CompositeTrajectory = CompositeTrajectory_[T]
+        PiecewisePolynomial = PiecewisePolynomial_[T]
+
+        x = np.array([[10.0, 20.0, 30.0]])
+        pp1 = PiecewisePolynomial.FirstOrderHold([0.0, 1.0, 2.0], x)
+        pp2 = PiecewisePolynomial.FirstOrderHold([2.0, 3.0, 4.0], x)
+        traj = CompositeTrajectory(segments=[pp1, pp2])
+        self.assertEqual(traj.rows(), 1)
+        self.assertEqual(traj.cols(), 1)
+        numpy_compare.assert_float_equal(traj.start_time(), 0.0)
+        numpy_compare.assert_float_equal(traj.end_time(), 4.0)
+        self.assertIsInstance(traj.segment(0), PiecewisePolynomial)
+        self.assertIsInstance(traj.segment(1), PiecewisePolynomial)
 
     @numpy_compare.check_all_types
     def test_quaternion_slerp(self, T):
