@@ -23,7 +23,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_0.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_0.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -49,7 +49,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_1.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_1.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -95,7 +95,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_grey.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_grey.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -106,7 +106,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_2_orange.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_2_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -152,7 +152,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_3.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_3.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -163,7 +163,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -174,7 +174,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -220,7 +220,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_grey.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_grey.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -231,7 +231,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_4_orange.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_4_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -277,7 +277,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_5.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_5.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -288,7 +288,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/band.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/band.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -299,7 +299,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/kuka.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/kuka.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -345,7 +345,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_grey.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_grey.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -356,7 +356,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_6_orange.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_6_orange.obj</uri>
           </mesh>
         </geometry>
         <material>
@@ -402,7 +402,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/collision/link_7_polytope.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/collision/link_7_polytope.obj</uri>
           </mesh>
         </geometry>
         <surface>
@@ -421,7 +421,7 @@ Later edited by hand to rename the base link and remove damping from the joints.
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
-            <uri>package://drake/manipulation/models/iiwa_description/meshes/visual/link_7.obj</uri>
+            <uri>package://drake_models/iiwa_description/meshes/iiwa14/visual/link_7.obj</uri>
           </mesh>
         </geometry>
         <material>
