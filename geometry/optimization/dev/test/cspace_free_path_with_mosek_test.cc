@@ -1,16 +1,14 @@
-#include <gtest/gtest.h>
-
 #include <iostream>
 
+#include <gtest/gtest.h>
+
+#include "drake/common/trajectories/bezier_curve.h"
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 #include "drake/geometry/optimization/dev/test/c_iris_path_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/solvers/common_solver_option.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
-#include "drake/common/trajectories/bezier_curve.h"
-
-
 
 namespace drake {
 namespace geometry {
@@ -38,7 +36,11 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
                                                        body2_sphere_};
   const Eigen::Vector<double, 3> s0{0.05, 0.05, 0.05};
+  VectorX<symbolic::Expression> s0_expr{3};
+  s0_expr << s0(0), s0(1), s0(2);
   const Eigen::Vector<double, 3> s_end{-0.05, -0.05, -0.05};
+  VectorX<symbolic::Expression> s_end_expr{3};
+  s_end_expr << s_end(0), s_end(1), s_end(2);
   ASSERT_TRUE(c_free_polyhedron.PointInSet(s0));
   ASSERT_TRUE(c_free_polyhedron.PointInSet(s_end));
 
@@ -46,20 +48,39 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
     CspaceFreePathTester tester(plant_, scene_graph_,
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
-    for (int bezier_curve_order = 1; bezier_curve_order <= maximum_path_degree; ++bezier_curve_order) {
-        // Construct a polynonomial of degree bezier_curve_order <= maximum_path_degree.
-        Eigen::MatrixXd control_points{3, bezier_curve_order + 1};
-        control_points.col(0) = s0;
-        control_points.col(bezier_curve_order) = s_end;
-        const Eigen::Vector<double, 3> orth_offset{-0.01, 0.005, 0.005};
-        for(int i = 1; i < bezier_curve_order - 1; ++i) {
-          // another control point slightly off the straight line path between s0 and s_end.
-          Eigen::Vector<double, 3> si = i*(s0 + s_end)/bezier_curve_order + orth_offset;
-          ASSERT_TRUE(c_free_polyhedron.PointInSet(si));
-        }
-        trajectories::BezierCurve<double> path{0,1,control_points};
-        EXPECT_EQ(path.order(), bezier_curve_order);
+    for (int bezier_curve_order = 1; bezier_curve_order <= maximum_path_degree;
+         ++bezier_curve_order) {
+      // Construct a polynonomial of degree bezier_curve_order <=
+      // maximum_path_degree.
+      Eigen::MatrixX<symbolic::Expression> control_points{
+          3, bezier_curve_order + 1};
 
+      control_points.col(0) = s0_expr;
+      control_points.col(bezier_curve_order) = s_end_expr;
+      const Eigen::Vector<double, 3> orth_offset{-0.01, 0.005, 0.005};
+      for (int i = 1; i < bezier_curve_order - 1; ++i) {
+        // another control point slightly off the straight line path between s0
+        // and s_end.
+        Eigen::Vector<double, 3> si =
+            i * (s0 + s_end) / bezier_curve_order + orth_offset;
+        ASSERT_TRUE(c_free_polyhedron.PointInSet(si));
+        VectorX<symbolic::Expression> si_expr{3};
+        si_expr << si(0), si(1), si(2);
+        control_points.col(i) = si_expr;
+      }
+      Eigen::MatrixX<symbolic::Expression> control_points_expr{
+          3, bezier_curve_order + 1};
+      trajectories::BezierCurve<symbolic::Expression> path{0, 1,
+                                                           control_points};
+      EXPECT_EQ(path.order(), bezier_curve_order);
+
+      Eigen::MatrixX<symbolic::Expression> bezier_path_expr =
+          path.value(symbolic::Variable("mu"));
+      Eigen::VectorX<symbolic::Polynomial> bezier_poly_path{
+          bezier_path_expr.rows()};
+
+      auto prog = tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(geometry_pair,
+                                                                                 bezier_poly_path);
     }
   }
 }
@@ -68,8 +89,9 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
 }  // namespace geometry
 }  // namespace drake
 
-//int main(int argc, char** argv) {
-//  // Ensure that we have the MOSEK license for the entire duration of this test,
+// int main(int argc, char** argv) {
+//  // Ensure that we have the MOSEK license for the entire duration of this
+//  test,
 //  // so that we do not have to release and re-acquire the license for every
 //  // test.
 //  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();

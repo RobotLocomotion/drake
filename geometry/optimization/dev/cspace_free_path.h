@@ -12,6 +12,11 @@
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/cspace_free_polytope.h"
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
+#include "drake/common/polynomial.h"
+
+
+#include <Eigen/Core>
+
 
 namespace drake {
 namespace geometry {
@@ -79,6 +84,11 @@ class CspaceFreePath : public CspaceFreePolytope {
       const std::unordered_map<const symbolic::Variable,
                                const Polynomial<double>>& path) const;
 
+  [[nodiscard]] SeparationCertificateProgram
+  MakeIsGeometrySeparableOnPathProgram(
+      const SortedPair<geometry::GeometryId>& geometry_pair,
+      const VectorX<Polynomiald>& path) const;
+
  protected:
   /**
    Generate all the conditions (certain rationals being non-negative, and
@@ -102,6 +112,7 @@ class CspaceFreePath : public CspaceFreePolytope {
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
 
+
   // We have the invariant plane_geometries_on_path_[i].plane_index == i. We use
   // a list instead of a vector as PlaneSeparatesGeometriesOnPath contains
   // objects which cannot be copied or moved.
@@ -117,8 +128,8 @@ class CspaceFreePath : public CspaceFreePolytope {
    */
   [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgramOnPath(
       const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
-      const std::unordered_map<const symbolic::Variable,
-                               const Polynomial<double>>& path) const;
+      const std::unordered_map<symbolic::Variable,
+                               Polynomial<double>>& path) const;
 
   // Friend declaration for use in constructor to avoid large initialization
   // lambda.

@@ -1,7 +1,7 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
 #include <vector>
-
+#include <iostream>
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -106,17 +106,35 @@ void CspaceFreePath::GeneratePathRationals() {
   }
 }
 
+//[[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
+//CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
+//    const SortedPair<geometry::GeometryId>& geometry_pair,
+//    const std::unordered_map<const symbolic::Variable,
+//                             const Polynomial<double>>& path) const {
+//  // Fail fast as building the programs can be expensive.
+//  for (const auto& [var, cur_path] : path) {
+//    DRAKE_DEMAND(cur_path.is_univariate());
+//    DRAKE_DEMAND(cur_path.GetDegree() <= static_cast<int>(max_degree_));
+//  }
+//
+//  int plane_index{get_separating_plane_index(geometry_pair)};
+//  if (plane_index < 0) {
+//    throw std::runtime_error(fmt::format(
+//        "GetIsGeometrySeparableProgram(): geometry pair ({}, {}) does not need "
+//        "a separation certificate",
+//        get_scene_graph().model_inspector().GetName(geometry_pair.first()),
+//        get_scene_graph().model_inspector().GetName(geometry_pair.second())));
+//  }
+//
+//  return ConstructPlaneSearchProgramOnPath(
+//      plane_geometries_on_path_.at(plane_index), path);
+//}
+
 [[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
 CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
     const SortedPair<geometry::GeometryId>& geometry_pair,
-    const std::unordered_map<const symbolic::Variable,
-                             const Polynomial<double>>& path) const {
-  // Fail fast as building the programs can be expensive.
-  for (const auto& [var, cur_path] : path) {
-    DRAKE_DEMAND(cur_path.is_univariate());
-    DRAKE_DEMAND(cur_path.GetDegree() <= static_cast<int>(max_degree_));
-  }
-
+    const VectorX<Polynomiald>& path) const {
+  // Fail fast as building the program can be expensive.
   int plane_index{get_separating_plane_index(geometry_pair)};
   if (plane_index < 0) {
     throw std::runtime_error(fmt::format(
@@ -126,15 +144,23 @@ CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
         get_scene_graph().model_inspector().GetName(geometry_pair.second())));
   }
 
+  DRAKE_DEMAND(rational_forward_kin().s().rows() == path.rows());
+  std::unordered_map<symbolic::Variable, Polynomial<double>> cspace_var_to_path;
+  for (int i = 0; i < path.rows(); ++i) {
+    DRAKE_DEMAND(path(i).is_univariate());
+    DRAKE_DEMAND(path(i).GetDegree() <= static_cast<int>(max_degree_));
+    cspace_var_to_path.emplace(rational_forward_kin().s()(i), path(i));
+  }
+
   return ConstructPlaneSearchProgramOnPath(
-      plane_geometries_on_path_.at(plane_index), path);
+      plane_geometries_on_path_.at(plane_index), cspace_var_to_path);
 }
 
 [[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
 CspaceFreePath::ConstructPlaneSearchProgramOnPath(
     const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
-    const std::unordered_map<const symbolic::Variable,
-                             const Polynomial<double>>& path) const {
+    const std::unordered_map<symbolic::Variable,
+                             Polynomial<double>>& path) const {
   SeparationCertificateProgram ret;
 
   // construct the parameter to value map
