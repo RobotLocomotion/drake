@@ -2190,30 +2190,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void SetDefaultPositions(ModelInstanceIndex model_instance,
                     const Eigen::Ref<const Eigen::VectorXd>& q_instance);
 
-  /// Returns a list of string names corresponding to each element of the
-  /// position vector. These strings take the form
-  /// `{model_instance_name}_{joint_name}_{joint_position_suffix}`, but the
-  /// prefix and suffix may optionally be withheld using @p
-  /// add_model_instance_prefix and @p always_add_suffix.
-  ///
-  /// @param model_instance (optional) If specified, names are only returned for
-  /// a particular `model_instance`.
-  /// @param add_model_instance_prefix (optional) By default, the prefix will be
-  /// added iff `model_instance == std::nullopt`.
-  /// @param always_add_suffix (optional). If true, then the suffix is always
-  /// added. If false, then the suffix is only added for joints that have more
-  /// than one position (in this case, not adding would lead to ambiguity).
-  ///
-  /// The returned names are guaranteed to be unique if the @p model_instance is
-  /// provided OR if @p add_model_instance_prefix is `true` (the default).
-  ///
-  /// @throws std::exception if the plant is not finalized or if the
-  /// @p model_instance is invalid.
-  std::vector<std::string> GetPositionNames(
-      std::optional<ModelInstanceIndex> model_instance = std::nullopt,
-      std::optional<bool> add_model_instance_prefix = std::nullopt,
-      bool always_add_suffix = true) const;
-
   /// Returns a const vector reference to the generalized velocities v in a
   /// given Context.
   /// @note This method returns a reference to existing data, exhibits constant
@@ -2366,6 +2342,130 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     this->ValidateCreatedForThisSystem(state);
     internal_tree().SetRandomState(context, state, generator);
   }
+
+  /// Returns a list of string names corresponding to each element of the
+  /// position vector. These strings take the form
+  /// `{model_instance_name}_{joint_name}_{joint_position_suffix}`, but the
+  /// prefix and suffix may optionally be withheld using @p
+  /// add_model_instance_prefix and @p always_add_suffix.
+  ///
+  /// @param always_add_suffix (optional). If true, then the suffix is always
+  /// added. If false, then the suffix is only added for joints that have more
+  /// than one position (in this case, not adding would lead to ambiguity).
+  ///
+  /// The returned names are guaranteed to be unique if @p
+  /// add_model_instance_prefix is `true` (the default).
+  ///
+  /// @throws std::exception if the plant is not finalized.
+  std::vector<std::string> GetPositionNames(
+      bool add_model_instance_prefix = true,
+      bool always_add_suffix = true) const;
+
+  /// Returns a list of string names corresponding to each element of the
+  /// position vector. These strings take the form
+  /// `{model_instance_name}_{joint_name}_{joint_position_suffix}`, but the
+  /// prefix and suffix may optionally be withheld using @p
+  /// add_model_instance_prefix and @p always_add_suffix.
+  ///
+  /// @param always_add_suffix (optional). If true, then the suffix is always
+  /// added. If false, then the suffix is only added for joints that have more
+  /// than one position (in this case, not adding would lead to ambiguity).
+  ///
+  /// The returned names are guaranteed to be unique.
+  ///
+  /// @throws std::exception if the plant is not finalized or if the @p
+  /// model_instance is invalid.
+  std::vector<std::string> GetPositionNames(
+      ModelInstanceIndex model_instance, bool add_model_instance_prefix = false,
+      bool always_add_suffix = true) const;
+
+  /// Returns a list of string names corresponding to each element of the
+  /// velocity vector. These strings take the form
+  /// `{model_instance_name}_{joint_name}_{joint_velocity_suffix}`, but the
+  /// prefix and suffix may optionally be withheld using @p
+  /// add_model_instance_prefix and @p always_add_suffix.
+  ///
+  /// @param always_add_suffix (optional). If true, then the suffix is always
+  /// added. If false, then the suffix is only added for joints that have more
+  /// than one position (in this case, not adding would lead to ambiguity).
+  ///
+  /// The returned names are guaranteed to be unique if @p
+  /// add_model_instance_prefix is `true` (the default).
+  ///
+  /// @throws std::exception if the plant is not finalized.
+  std::vector<std::string> GetVelocityNames(
+      bool add_model_instance_prefix = true,
+      bool always_add_suffix = true) const;
+
+  /// Returns a list of string names corresponding to each element of the
+  /// velocity vector. These strings take the form
+  /// `{model_instance_name}_{joint_name}_{joint_velocity_suffix}`, but the
+  /// prefix and suffix may optionally be withheld using @p
+  /// add_model_instance_prefix and @p always_add_suffix.
+  ///
+  /// @param always_add_suffix (optional). If true, then the suffix is always
+  /// added. If false, then the suffix is only added for joints that have more
+  /// than one position (in this case, not adding would lead to ambiguity).
+  ///
+  /// The returned names are guaranteed to be unique.
+  ///
+  /// @throws std::exception if the plant is not finalized or if the
+  /// @p model_instance is invalid.
+  std::vector<std::string> GetVelocityNames(
+      ModelInstanceIndex model_instance, bool add_model_instance_prefix = false,
+      bool always_add_suffix = true) const;
+
+  /// Returns a list of string names corresponding to each element of the
+  /// multibody state vector. These strings take the form
+  /// `{model_instance_name}_{joint_name}_{joint_position_suffix |
+  /// joint_velocity_suffix}`, but the prefix may optionally be withheld using
+  /// @p add_model_instance_prefix.
+  ///
+  /// The returned names are guaranteed to be unique if @p
+  /// add_model_instance_prefix is `true` (the default).
+  ///
+  /// @throws std::exception if the plant is not finalized.
+  std::vector<std::string> GetStateNames(
+      bool add_model_instance_prefix = true) const;
+
+  /// Returns a list of string names corresponding to each element of the
+  /// multibody state vector. These strings take the form
+  /// `{model_instance_name}_{joint_name}_{joint_position_suffix |
+  /// joint_velocity_suffix}`, but the prefix may optionally be withheld using
+  /// @p add_model_instance_prefix.
+  ///
+  /// The returned names are guaranteed to be unique.
+  ///
+  /// @throws std::exception if the plant is not finalized or if the @p
+  /// model_instance is invalid.
+  std::vector<std::string> GetStateNames(
+      ModelInstanceIndex model_instance,
+      bool add_model_instance_prefix = false) const;
+
+  /// Returns a list of string names corresponding to each element of the
+  /// actuation vector. These strings take the form
+  /// `{model_instance_name}_{joint_actuator_name}`, but the prefix may
+  /// optionally be withheld using @p add_model_instance_prefix.
+  ///
+  /// The returned names are guaranteed to be unique if @p
+  /// add_model_instance_prefix is `true` (the default).
+  ///
+  /// @throws std::exception if the plant is not finalized.
+  std::vector<std::string> GetActuatorNames(
+      bool add_model_instance_prefix = true) const;
+
+  /// Returns a list of string names corresponding to each element of the
+  /// actuation vector. These strings take the form
+  /// `{model_instance_name}_{joint_actuator_name}`, but the prefix may
+  /// optionally be withheld using @p add_model_instance_prefix.
+  ///
+  /// The returned names are guaranteed to be unique.
+  ///
+  /// @throws std::exception if the plant is not finalized or if the
+  /// @p model_instance is invalid.
+  std::vector<std::string> GetActuatorNames(
+      ModelInstanceIndex model_instance,
+      bool add_model_instance_prefix = false) const;
 
   /// Returns a vector of actuation values for `model_instance` from a
   /// vector `u` of actuation values for the entire model. This method throws an

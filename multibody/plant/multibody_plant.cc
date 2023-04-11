@@ -1362,30 +1362,41 @@ void MultibodyPlant<T>::SetDefaultPositions(ModelInstanceIndex model_instance,
 
 template <typename T>
 std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
-    std::optional<ModelInstanceIndex> model_instance,
-    std::optional<bool> add_model_instance_prefix,
+    bool add_model_instance_prefix, bool always_add_suffix) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::vector<std::string> names(num_positions());
+
+  for (int joint_index = 0; joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(JointIndex(joint_index));
+    const std::string prefix =
+        add_model_instance_prefix
+            ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
+            : "";
+    for (int i = 0; i < joint.num_positions(); ++i) {
+      const std::string suffix =
+          always_add_suffix || joint.num_positions() > 1
+              ? fmt::format("_{}", joint.position_suffix(i))
+              : "";
+      names[joint.position_start() + i] =
+          fmt::format("{}{}{}", prefix, joint.name(), suffix);
+    }
+  }
+  return names;
+}
+
+template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
+    ModelInstanceIndex model_instance, bool add_model_instance_prefix,
     bool always_add_suffix) const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
-  std::vector<std::string> names;
-  std::vector<JointIndex> joint_indices;
-  int position_offset = 0;
-  if (model_instance) {
-    names.resize(num_positions(*model_instance));
-    joint_indices = GetJointIndices(*model_instance);
-    // The offset into the position array is the position_start of the first
-    // mobilizer in the tree; here we just take the minimum.
-    position_offset = num_positions();
-    for (const auto& joint_index : joint_indices) {
-      position_offset =
-          std::min(position_offset, get_joint(joint_index).position_start());
-    }
-  } else {
-    names.resize(num_positions());
-    joint_indices.resize(num_joints());
-    std::iota(joint_indices.begin(), joint_indices.end(), JointIndex(0));
-  }
-  if (!add_model_instance_prefix) {
-    add_model_instance_prefix = !model_instance.has_value();
+  std::vector<std::string> names(num_positions(model_instance));
+  std::vector<JointIndex> joint_indices = GetJointIndices(model_instance);
+  // The offset into the position array is the position_start of the first
+  // mobilizer in the tree; here we just take the minimum.
+  int position_offset = num_positions();
+  for (const auto& joint_index : joint_indices) {
+    position_offset =
+        std::min(position_offset, get_joint(joint_index).position_start());
   }
 
   for (const auto& joint_index : joint_indices) {
@@ -1397,12 +1408,14 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
                  static_cast<int>(names.size()));
 
     const std::string prefix =
-        *add_model_instance_prefix
-            ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
+        add_model_instance_prefix
+            ? fmt::format("{}_", GetModelInstanceName(model_instance))
             : "";
     for (int i = 0; i < joint.num_positions(); ++i) {
-      const std::string suffix = always_add_suffix || joint.num_positions() > 1
-          ? fmt::format("_{}", joint.position_suffix(i)) : "";
+      const std::string suffix =
+          always_add_suffix || joint.num_positions() > 1
+              ? fmt::format("_{}", joint.position_suffix(i))
+              : "";
       names[joint.position_start() + i - position_offset] =
           fmt::format("{}{}{}", prefix, joint.name(), suffix);
     }
@@ -1410,6 +1423,152 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
   return names;
 }
 
+template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
+    bool add_model_instance_prefix, bool always_add_suffix) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::vector<std::string> names(num_velocities());
+
+  for (int joint_index = 0; joint_index < num_joints(); ++joint_index) {
+    const Joint<T>& joint = get_joint(JointIndex(joint_index));
+    const std::string prefix =
+        add_model_instance_prefix
+            ? fmt::format("{}_", GetModelInstanceName(joint.model_instance()))
+            : "";
+    for (int i = 0; i < joint.num_velocities(); ++i) {
+      const std::string suffix =
+          always_add_suffix || joint.num_velocities() > 1
+              ? fmt::format("_{}", joint.velocity_suffix(i))
+              : "";
+      names[joint.velocity_start() + i] =
+          fmt::format("{}{}{}", prefix, joint.name(), suffix);
+    }
+  }
+  return names;
+}
+
+template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
+    ModelInstanceIndex model_instance, bool add_model_instance_prefix,
+    bool always_add_suffix) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::vector<std::string> names(num_velocities(model_instance));
+  std::vector<JointIndex> joint_indices = GetJointIndices(model_instance);
+  // The offset into the velocity array is the velocity_start of the first
+  // mobilizer in the tree; here we just take the minimum.
+  int velocity_offset = num_velocities();
+  for (const auto& joint_index : joint_indices) {
+    velocity_offset =
+        std::min(velocity_offset, get_joint(joint_index).velocity_start());
+  }
+
+  for (const auto& joint_index : joint_indices) {
+    const Joint<T>& joint = get_joint(joint_index);
+    // Sanity check: joint velocities are in range.
+    DRAKE_DEMAND(joint.velocity_start() >= velocity_offset);
+    DRAKE_DEMAND(joint.velocity_start() + joint.num_velocities() -
+                     velocity_offset <=
+                 static_cast<int>(names.size()));
+
+    const std::string prefix =
+        add_model_instance_prefix
+            ? fmt::format("{}_", GetModelInstanceName(model_instance))
+            : "";
+    for (int i = 0; i < joint.num_velocities(); ++i) {
+      const std::string suffix =
+          always_add_suffix || joint.num_velocities() > 1
+              ? fmt::format("_{}", joint.velocity_suffix(i))
+              : "";
+      names[joint.velocity_start() + i - velocity_offset] =
+          fmt::format("{}{}{}", prefix, joint.name(), suffix);
+    }
+  }
+  return names;
+}
+
+template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetStateNames(
+    bool add_model_instance_prefix) const {
+  std::vector<std::string> names =
+      GetPositionNames(add_model_instance_prefix, true /* always_add_suffix */);
+  std::vector<std::string> velocity_names =
+      GetVelocityNames(add_model_instance_prefix, true /* always_add_suffix */);
+  names.insert(names.end(), std::make_move_iterator(velocity_names.begin()),
+               std::make_move_iterator(velocity_names.end()));
+  return names;
+}
+
+template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetStateNames(
+    ModelInstanceIndex model_instance, bool add_model_instance_prefix) const {
+  std::vector<std::string> names = GetPositionNames(
+      model_instance, add_model_instance_prefix, true /* always_add_suffix */);
+  std::vector<std::string> velocity_names = GetVelocityNames(
+      model_instance, add_model_instance_prefix, true /* always_add_suffix */);
+  names.insert(names.end(), std::make_move_iterator(velocity_names.begin()),
+               std::make_move_iterator(velocity_names.end()));
+  return names;
+}
+
+template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetActuatorNames(
+    bool add_model_instance_prefix) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::vector<std::string> names(num_actuators());
+
+  for (int actuator_index = 0; actuator_index < num_actuators();
+       ++actuator_index) {
+    const JointActuator<T>& actuator =
+        get_joint_actuator(JointActuatorIndex(actuator_index));
+    const std::string prefix =
+        add_model_instance_prefix
+            ? fmt::format("{}_",
+                          GetModelInstanceName(actuator.model_instance()))
+            : "";
+    // TODO(russt): Need to add actuator name suffix to JointActuator and loop
+    // over actuator.num_inputs() if we ever actually support actuators with
+    // multiple inputs.
+    DRAKE_DEMAND(actuator.num_inputs() == 1);
+    names[actuator.input_start()] =
+        fmt::format("{}{}", prefix, actuator.name());
+  }
+  return names;
+}
+
+template <typename T>
+std::vector<std::string> MultibodyPlant<T>::GetActuatorNames(
+    ModelInstanceIndex model_instance, bool add_model_instance_prefix) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  std::vector<std::string> names(num_actuators(model_instance));
+  std::vector<JointActuatorIndex> actuator_indices =
+      GetJointActuatorIndices(model_instance);
+  // The offset into the actuation array is the start of the first
+  // mobilizer in the tree; here we just take the minimum.
+  int offset = num_actuators();
+  for (const auto& actuator_index : actuator_indices) {
+    offset = std::min(offset, get_joint_actuator(actuator_index).input_start());
+  }
+
+  for (const auto& actuator_index : actuator_indices) {
+    const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
+    // Sanity check: indices are in range.
+    DRAKE_DEMAND(actuator.input_start() >= offset);
+    DRAKE_DEMAND(actuator.input_start() - offset <
+                 static_cast<int>(names.size()));
+
+    const std::string prefix =
+        add_model_instance_prefix
+            ? fmt::format("{}_", GetModelInstanceName(model_instance))
+            : "";
+    // TODO(russt): Need to add actuator name suffix to JointActuator and loop
+    // over actuator.num_inputs() if we ever actually support actuators with
+    // multiple inputs.
+    DRAKE_DEMAND(actuator.num_inputs() == 1);
+    names[actuator.input_start() - offset] =
+        fmt::format("{}{}", prefix, actuator.name());
+  }
+  return names;
+}
 
 template <typename T>
 void MultibodyPlant<T>::EstimatePointContactParameters(

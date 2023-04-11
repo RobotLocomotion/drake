@@ -1225,6 +1225,43 @@ class TestPlant(unittest.TestCase):
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
 
+        self.assertEqual(
+            plant.GetPositionNames(add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetPositionNames(model_instance=instance,
+                                   add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetVelocityNames(model_instance=instance,
+                                   add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetVelocityNames(add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetStateNames(add_model_instance_prefix=False), [
+                                    "ShoulderJoint_q", "ElbowJoint_q",
+                                    "ShoulderJoint_w", "ElbowJoint_w"
+                                ])
+        self.assertEqual(
+            plant.GetStateNames(model_instance=instance,
+                                add_model_instance_prefix=False), [
+                                    "ShoulderJoint_q", "ElbowJoint_q",
+                                    "ShoulderJoint_w", "ElbowJoint_w"
+                                ])
+        self.assertEqual(
+            plant.GetActuatorNames(add_model_instance_prefix=False),
+            ["ElbowJoint"])
+        self.assertEqual(
+            plant.GetActuatorNames(model_instance=instance,
+                                   add_model_instance_prefix=False),
+            ["ElbowJoint"])
+
         # Test existence of default free body pose setting.
         body = plant.GetBodyByName("Link1")
         X_WB_default = RigidTransform_[float]()
