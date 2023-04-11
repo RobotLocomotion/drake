@@ -382,7 +382,9 @@ PetscSolverStatus PetscSymmetricBlockSparseMatrix::SolveInPlace(
   return pimpl_->SolveInPlace(solver_type, preconditioner_type, b_in_x_out);
 }
 
-void PetscSymmetricBlockSparseMatrix::SetZero() { pimpl_->SetZero(); }
+void PetscSymmetricBlockSparseMatrix::SetZero() {
+  pimpl_->SetZero();
+}
 
 MatrixX<double> PetscSymmetricBlockSparseMatrix::MakeDenseMatrix() const {
   return pimpl_->MakeDenseMatrix();
@@ -403,9 +405,13 @@ SchurComplement<double> PetscSymmetricBlockSparseMatrix::CalcSchurComplement(
   return pimpl_->CalcSchurComplement(D_block_indexes, A_block_indexes);
 }
 
-int PetscSymmetricBlockSparseMatrix::rows() const { return pimpl_->size(); }
+int PetscSymmetricBlockSparseMatrix::rows() const {
+  return pimpl_->size();
+}
 
-int PetscSymmetricBlockSparseMatrix::cols() const { return pimpl_->size(); }
+int PetscSymmetricBlockSparseMatrix::cols() const {
+  return pimpl_->size();
+}
 
 void PetscSymmetricBlockSparseMatrix::AssembleIfNecessary() {
   pimpl_->AssembleIfNecessary();
