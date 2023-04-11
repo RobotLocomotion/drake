@@ -706,6 +706,8 @@ class TestPlant(unittest.TestCase):
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
         SpatialInertia.SolidBoxWithDensity(
             density=1000, lx=0.1, ly=0.2, lz=0.3)
+        SpatialInertia.SolidBoxWithMass(
+            mass=0.123, lx=0.1, ly=0.2, lz=0.3)
         SpatialInertia.SolidCubeWithDensity(
             density=1000, length=0.4)
         SpatialInertia.SolidCapsuleWithDensity(
