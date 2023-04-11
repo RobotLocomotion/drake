@@ -1146,7 +1146,23 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](const Class* self, const Context<T>& context, State<T>* state) {
               self->SetDefaultState(context, state);
             },
-            py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc);
+            py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc)
+        .def("GetPositionNames", &Class::GetPositionNames,
+            py::arg("model_instance") = std::nullopt,
+            py::arg("add_model_instance_prefix") = std::nullopt,
+            py::arg("always_add_suffix") = true, cls_doc.GetPositionNames.doc)
+        .def("GetVelocityNames", &Class::GetVelocityNames,
+            py::arg("model_instance") = std::nullopt,
+            py::arg("add_model_instance_prefix") = std::nullopt,
+            py::arg("always_add_suffix") = true, cls_doc.GetVelocityNames.doc)
+        .def("GetStateNames", &Class::GetStateNames,
+            py::arg("model_instance") = std::nullopt,
+            py::arg("add_model_instance_prefix") = std::nullopt,
+            cls_doc.GetStateNames.doc)
+        .def("GetActuatorNames", &Class::GetActuatorNames,
+            py::arg("model_instance") = std::nullopt,
+            py::arg("add_model_instance_prefix") = std::nullopt,
+            cls_doc.GetActuatorNames.doc);
   }
 
   {
