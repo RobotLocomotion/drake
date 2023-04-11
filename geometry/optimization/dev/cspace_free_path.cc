@@ -160,10 +160,12 @@ CspaceFreePath::ConstructPlaneSearchProgramOnPath(
   }
 
   // Now add the separation conditions to the program
-  for (const auto& condition : plane_geometries_on_path.positive_side_conditions) {
+  for (const auto& condition :
+       plane_geometries_on_path.positive_side_conditions) {
     condition.AddPositivityConstraintToProgram(param_eval_map, ret.prog.get());
   }
-  for (const auto& condition : plane_geometries_on_path.negative_side_conditions) {
+  for (const auto& condition :
+       plane_geometries_on_path.negative_side_conditions) {
     condition.AddPositivityConstraintToProgram(param_eval_map, ret.prog.get());
   }
 
