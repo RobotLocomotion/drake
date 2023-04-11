@@ -707,7 +707,7 @@ class TestPlant(unittest.TestCase):
         SpatialInertia.SolidBoxWithDensity(
             density=1000, lx=0.1, ly=0.2, lz=0.3)
         SpatialInertia.SolidBoxWithMass(
-            mass=0.123, length=0.2)
+            mass=0.123, lx=0.1, ly=0.2, lz=0.3)
         SpatialInertia.SolidCubeWithDensity(
             density=1000, length=0.4)
         SpatialInertia.SolidCapsuleWithDensity(
