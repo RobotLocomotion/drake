@@ -125,9 +125,7 @@ class ContactProblemGraph {
   int num_constraints() const { return num_constraints_; }
 
   /* Returns the total number of constraint equations for this graph. */
-  int num_constraint_equations() const {
-    return num_constraint_equations_;
-  }
+  int num_constraint_equations() const { return num_constraint_equations_; }
 
   /* The list of all clusters in the graph. Clusters in the returned
    `std::vector` are sorted in the order documented in this class's

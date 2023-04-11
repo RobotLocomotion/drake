@@ -542,8 +542,8 @@ std::pair<double, int> SapSolver<double>::PerformExactLineSearch(
     double dell_dalpha;
     double d2ell_dalpha2;
     data.solver.CalcCostAlongLine(data.context0, data.search_direction_data, x,
-                                   &data.scratch, &dell_dalpha, &d2ell_dalpha2,
-                                   &data.vec_scratch);
+                                  &data.scratch, &dell_dalpha, &d2ell_dalpha2,
+                                  &data.vec_scratch);
     return std::make_pair(dell_dalpha / data.dell_scale,
                           d2ell_dalpha2 / data.dell_scale);
   };

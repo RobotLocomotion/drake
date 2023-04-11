@@ -72,8 +72,8 @@ void MatrixBlock<T>::TransposeAndMultiplyAndAddTo(
 // TODO(xuchenhan-tri): consider a double dispatch strategy where each block
 // type provides an API to operate on every other block type.
 template <class T>
-void MatrixBlock<T>::TransposeAndMultiplyAndAddTo(const MatrixBlock<T>& A,
-                                                 EigenPtr<MatrixX<T>> y) const {
+void MatrixBlock<T>::TransposeAndMultiplyAndAddTo(
+    const MatrixBlock<T>& A, EigenPtr<MatrixX<T>> y) const {
   DRAKE_DEMAND(y != nullptr);
   DRAKE_DEMAND(cols() == y->rows());
   DRAKE_DEMAND(rows() == A.rows());

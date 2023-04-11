@@ -48,8 +48,8 @@ GTEST_TEST(MatrixBlockTest, Constructors) {
   EXPECT_EQ(dense_block.rows(), 12);
   EXPECT_EQ(sparse_block.cols(), 9);
   EXPECT_EQ(dense_block.cols(), 9);
-  EXPECT_EQ(sparse_block.size(), 12*9);
-  EXPECT_EQ(dense_block.size(), 12*9);
+  EXPECT_EQ(sparse_block.size(), 12 * 9);
+  EXPECT_EQ(dense_block.size(), 12 * 9);
   EXPECT_FALSE(sparse_block.is_dense());
   EXPECT_TRUE(dense_block.is_dense());
 
