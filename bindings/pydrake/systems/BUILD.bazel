@@ -271,6 +271,7 @@ drake_py_library(
         ":pyplot_visualizer_py",
         ":rendering_py",
         "//bindings/pydrake:lcm_py",
+        "@bazel_tools//tools/python/runfiles",
     ],
 )
 
