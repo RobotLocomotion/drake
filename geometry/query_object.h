@@ -600,6 +600,11 @@ class QueryObject {
    indicated by id. This function has the same restrictions on scalar report
    as ComputeSignedDistancePairwiseClosestPoints().
 
+   @note This query is unique among the distance queries in that it doesn't
+   respect collision filters. As long as the geometry ids refer to geometries
+   with proximity roles, signed distance can be computed (subject to supported
+   scalar tables above).
+
    <h3>Characterizing the returned values</h3>
 
    This method merely exercises the same mechanisms as
@@ -609,9 +614,8 @@ class QueryObject {
 
    @throws std::exception if either geometry id is invalid (e.g., doesn't refer
                           to an existing geometry, lacking proximity role,
-                          etc.), the pair (A, B) has been marked as filtered, or
-                          otherwise unsupported as indicated by the the scalar
-                          support table.
+                          etc.), the pair is unsupported as indicated by the
+                          scalar support table.
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(

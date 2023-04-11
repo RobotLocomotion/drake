@@ -916,10 +916,8 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
     engine.collision_filter().Apply(
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A, id_B}),
         extract_ids, false /* is_invariant */);
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
-        fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
-                    "distance query", id_A, id_B));
+    EXPECT_NO_THROW(
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs));
   }
 }
 

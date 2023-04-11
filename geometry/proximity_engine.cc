@@ -603,8 +603,8 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
     std::vector<SignedDistancePair<T>> witness_pairs;
     double max_distance = std::numeric_limits<double>::infinity();
     // All these quantities are aliased in the callback data.
-    shape_distance::CallbackData<T> data{&collision_filter_, &X_WGs,
-                                         max_distance, &witness_pairs};
+    shape_distance::CallbackData<T> data{nullptr, &X_WGs, max_distance,
+                                         &witness_pairs};
     data.request.enable_nearest_points = true;
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
