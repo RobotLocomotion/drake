@@ -236,8 +236,9 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
   const EncodedData encoding_a(*object_A_ptr);
   const EncodedData encoding_b(*object_B_ptr);
 
-  const bool can_collide = data.collision_filter.CanCollideWith(
-      encoding_a.id(), encoding_b.id());
+  const bool can_collide =
+      data.collision_filter == nullptr ||
+      data.collision_filter->CanCollideWith(encoding_a.id(), encoding_b.id());
 
   if (can_collide) {
     // Throw if the geometry-pair isn't supported.
