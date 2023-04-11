@@ -21,6 +21,7 @@
 #include "drake/math/rotation_matrix.h"
 #include "drake/multibody/parsing/detail_make_model_name.h"
 #include "drake/multibody/parsing/detail_tinyxml.h"
+#include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -35,44 +36,24 @@ using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-using geometry::GeometryInstance;
 using geometry::GeometryId;
+using geometry::GeometryInstance;
 using math::RigidTransformd;
 using math::RotationMatrixd;
 using tinyxml2::XMLAttribute;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
+using tinyxml2::XMLNode;
 
 namespace {
 
+// TODO(rpoyner-tri): replace with std::string_view::ends_with once c++20
+// features are available.
 bool EndsWith(std::string_view value, std::string_view ending) {
-  if (ending.size() > value.size()) { return false; }
+  if (ending.size() > value.size()) {
+    return false;
+  }
   return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-}
-
-// For tags that exist in the MuJoCo XML schema, but are not (yet) supported
-// here, we print a warning to the console.  This method checks the node for
-// the child element, and prints the warning if any occurrences exist.
-void WarnUnsupportedElement(const XMLElement& node, const std::string& tag) {
-  if (node.FirstChildElement(tag.c_str())) {
-    drake::log()->warn(
-        "The tag '{}' found as a child of '{}' is currently unsupported and "
-        "will be ignored.",
-        tag, node.Name());
-  }
-}
-
-// For tags that exist in the MuJoCo XML schema, but are not (yet) supported
-// here, we print a warning to the console.  This method checks the node for
-// the child element, and prints the warning if any occurrences exist.
-void WarnUnsupportedAttribute(const XMLElement& node,
-                              const std::string& attribute) {
-  if (node.Attribute(attribute.c_str())) {
-    drake::log()->warn(
-        "The attribute '{}' found in a {} tag is currently unsupported and "
-        "will be ignored.",
-        attribute, node.Name());
-  }
 }
 
 // Any attributes from `default` that are not specified in `node` will be added
@@ -88,8 +69,11 @@ void ApplyDefaultAttributes(const XMLElement& default_node, XMLElement* node) {
 
 class MujocoParser {
  public:
-  explicit MujocoParser(const ParsingWorkspace& workspace)
-      : workspace_(workspace), plant_(workspace.plant) {
+  explicit MujocoParser(const ParsingWorkspace& workspace,
+                        const DataSource& data_source)
+      : workspace_(workspace),
+        diagnostic_(&workspace.diagnostic, &data_source),
+        plant_(workspace.plant) {
     // Clang complains that the workspace_ field is unused. Nerf the warning
     // for now; it will be used soon.
     unused(workspace_);
@@ -102,17 +86,20 @@ class MujocoParser {
 
     // Check that only one of the orientation variants are supplied:
     const int num_orientation_attrs =
-        (node->Attribute("quat") != nullptr ? 1 : 0)
-        + (node->Attribute("axisangle") != nullptr ? 1 : 0)
-        + (node->Attribute("euler") != nullptr ? 1 : 0)
-        + (node->Attribute("xyaxes") != nullptr ? 1 : 0)
-        + (node->Attribute("zaxis") != nullptr ? 1 : 0);
+        (node->Attribute("quat") != nullptr ? 1 : 0) +
+        (node->Attribute("axisangle") != nullptr ? 1 : 0) +
+        (node->Attribute("euler") != nullptr ? 1 : 0) +
+        (node->Attribute("xyaxes") != nullptr ? 1 : 0) +
+        (node->Attribute("zaxis") != nullptr ? 1 : 0);
     if (num_orientation_attrs > 1) {
-      throw std::logic_error(fmt::format(
-          "Element {} has more than one orientation attribute specified "
-          "(perhaps through defaults). There must be no more than one instance "
-          "of `quat`, `axisangle`, `euler`, `xyaxes`, or `zaxis`.",
-          node->Name()));
+      Error(
+          *node,
+          fmt::format(
+              "Element {} has more than one orientation attribute specified "
+              "(perhaps through defaults). There must be no more than one "
+              "instance of `quat`, `axisangle`, `euler`, `xyaxes`, or `zaxis`.",
+              node->Name()));
+      return {};
     }
 
     Vector4d quat;  // MuJoCo uses w,x,y,z order.
@@ -169,11 +156,11 @@ class MujocoParser {
 
     std::string joint_name;
     if (!ParseStringAttribute(node, "joint", &joint_name)) {
-      drake::log()->warn(
-          "The motor '{}' does not use the 'joint' transmission specification. "
-          "Currently only the 'joint' attribute is supported.  This motor will "
-          "be ignored.",
-          name);
+      Warning(*node, fmt::format(
+                         "The motor '{}' does not use the 'joint' transmission "
+                         "specification. Currently only the 'joint' attribute "
+                         "is supported.  This motor will be ignored.",
+                         name));
       return;
     }
 
@@ -184,18 +171,22 @@ class MujocoParser {
       Vector2d ctrl_range;
       if (ParseVectorAttribute(node, "ctrlrange", &ctrl_range)) {
         if (ctrl_range[0] > ctrl_range[1]) {
-          drake::log()->warn(
-              "The motor '{}' specified a ctrlrange attribute where lower "
-              "limit > upper limit; these limits will be ignored.",
-              name);
+          Warning(
+              *node,
+              fmt::format(
+                  "The motor '{}' specified a ctrlrange attribute where lower "
+                  "limit > upper limit; these limits will be ignored.",
+                  name));
         } else {
           effort_limit = std::max(ctrl_range[1], -ctrl_range[0]);
           if (ctrl_range[0] != ctrl_range[1]) {
-            drake::log()->warn(
-                "The motor '{}' specified a ctrlrange attribute where lower "
-                "limit != upper limit.  Asymmetrical effort limits are not "
-                "supported yet, so the larger of the values {} will be used.",
-                name, effort_limit);
+            Warning(
+                *node,
+                fmt::format("The motor '{}' specified a ctrlrange attribute "
+                            "where lower limit != upper limit.  Asymmetrical "
+                            "effort limits are not supported yet, so the "
+                            "larger of the values {} will be used.",
+                            name, effort_limit));
           }
         }
       }
@@ -207,19 +198,23 @@ class MujocoParser {
       Vector2d force_range;
       if (ParseVectorAttribute(node, "forcerange", &force_range)) {
         if (force_range[0] > force_range[1]) {
-          drake::log()->warn(
-              "The motor '{}' specified a forcerange attribute where lower "
-              "limit > upper limit; these limits will be ignored.",
-              name);
+          Warning(
+              *node,
+              fmt::format(
+                  "The motor '{}' specified a forcerange attribute where lower "
+                  "limit > upper limit; these limits will be ignored.",
+                  name));
         } else {
           effort_limit =
               std::min(effort_limit, std::max(force_range[1], -force_range[0]));
           if (force_range[0] != force_range[1]) {
-            drake::log()->warn(
-                "The motor '{}' specified a forcerange attribute where lower "
-                "limit != upper limit.  Asymmetrical effort limits are not "
-                "supported yet, so the larger of the values {} will be used.",
-                name, std::max(force_range[1], -force_range[0]));
+            Warning(
+                *node,
+                fmt::format("The motor '{}' specified a forcerange attribute "
+                            "where lower limit != upper limit.  Asymmetrical "
+                            "effort limits are not supported yet, so the "
+                            "larger of the values {} will be used.",
+                            name, std::max(force_range[1], -force_range[0])));
           }
         }
       }
@@ -287,10 +282,11 @@ class MujocoParser {
 
     if (type == "free") {
       if (damping != 0.0) {
-        drake::log()->warn(
-            "Damping was specified for the 'free' joint {}, but is not "
-            "supported for free bodies.",
-            name);
+        Warning(*node,
+                fmt::format(
+                    "Damping was specified for the 'free' joint {}, but is not "
+                    "supported for free bodies.",
+                    name));
       }
       plant_->SetDefaultFreeBodyPose(child, X_WC);
     } else if (type == "ball") {
@@ -323,7 +319,8 @@ class MujocoParser {
             Vector1d{range[0]}, Vector1d{range[1]});
       }
     } else {
-      throw std::logic_error("Unknown joint type " + type);
+      Error(*node, "Unknown joint type " + type);
+      return;
     }
 
     WarnUnsupportedAttribute(*node, "class");
@@ -350,8 +347,8 @@ class MujocoParser {
     RigidTransformd X_BF = ParseTransform(node);
     double mass;
     if (!ParseScalarAttribute(node, "mass", &mass)) {
-      throw std::logic_error(
-          "The inertial tag must include the mass attribute.");
+      Error(*node, "The inertial tag must include the mass attribute.");
+      return {};
     }
 
     // We interpret the MuJoCo XML documentation as saying that if a
@@ -370,9 +367,10 @@ class MujocoParser {
         I_BFo_B = RotationalInertia<double>(full[0], full[1], full[2], full[3],
                                             full[4], full[5]);
       } else {
-        throw std::logic_error(
-            "The inertial tag must include either the diaginertia or "
-            "fullinertia attribute.");
+        Error(*node,
+              "The inertial tag must include either the diaginertia or "
+              "fullinertia attribute.");
+        return {};
       }
     }
 
@@ -452,18 +450,20 @@ class MujocoParser {
       // No inertia; can only be static geometry.
     } else if (type == "sphere") {
       if (size.size() < 1) {
-        throw std::logic_error(
-            "The size attribute for sphere geom must have at least one "
-            "element.");
+        Error(*node,
+              "The size attribute for sphere geom must have at least one "
+              "element.");
+        return geom;
       }
       geom.shape = std::make_unique<geometry::Sphere>(size[0]);
       unit_M_GG_G = multibody::UnitInertia<double>::SolidSphere(size[0]);
     } else if (type == "capsule") {
       if (has_fromto) {
         if (size.size() < 1) {
-          throw std::logic_error(
-              "The size attribute for capsule geom using fromto must have at "
-              "least one element.");
+          Error(*node,
+                "The size attribute for capsule geom using fromto must have at "
+                "least one element.");
+          return geom;
         }
         double length = (fromto.head<3>() - fromto.tail<3>()).norm();
         geom.shape = std::make_unique<geometry::Capsule>(size[0], length);
@@ -472,9 +472,10 @@ class MujocoParser {
 
       } else {
         if (size.size() < 2) {
-          throw std::logic_error(
-              "The size attribute for capsule geom must have at least two "
-              "elements.");
+          Error(*node,
+                "The size attribute for capsule geom must have at least two "
+                "elements.");
+          return geom;
         }
         geom.shape = std::make_unique<geometry::Capsule>(size[0], 2 * size[1]);
         unit_M_GG_G =
@@ -483,16 +484,17 @@ class MujocoParser {
     } else if (type == "ellipsoid") {
       if (has_fromto) {
         // The specification is not properly documented in the XML schema.
-        drake::log()->warn(
-            "The fromto tag for ellipsoid is currently unsupported; geom {} "
-            "will be ignored.",
-            geom.name);
+        Warning(*node, fmt::format("The fromto tag for ellipsoid is currently "
+                                   "unsupported; geom {} will be ignored.",
+                                   geom.name));
         return geom;
       } else {
         if (size.size() < 3) {
-          throw std::logic_error(
+          Error(
+              *node,
               "The size attribute for ellipsoid geom must have at least three "
               "elements.");
+          return geom;
         }
         geom.shape =
             std::make_unique<geometry::Ellipsoid>(size[0], size[1], size[2]);
@@ -502,9 +504,10 @@ class MujocoParser {
     } else if (type == "cylinder") {
       if (has_fromto) {
         if (size.size() < 1) {
-          throw std::logic_error(
-              "The size attribute for capsule geom using fromto must have at "
-              "least one element.");
+          Error(*node,
+                "The size attribute for cylinder geom using fromto must have "
+                "at least one element.");
+          return geom;
         }
         double length = (fromto.head<3>() - fromto.tail<3>()).norm();
         geom.shape = std::make_unique<geometry::Cylinder>(size[0], length);
@@ -512,9 +515,10 @@ class MujocoParser {
             multibody::UnitInertia<double>::SolidCylinder(size[0], length);
       } else {
         if (size.size() < 2) {
-          throw std::logic_error(
-              "The size attribute for cylinder geom must have at least two "
-              "elements.");
+          Error(*node,
+                "The size attribute for cylinder geom must have at least two "
+                "elements.");
+          return geom;
         }
         geom.shape = std::make_unique<geometry::Cylinder>(size[0], 2 * size[1]);
         unit_M_GG_G =
@@ -523,16 +527,17 @@ class MujocoParser {
     } else if (type == "box") {
       if (has_fromto) {
         // The specification is not properly documented in the XML schema.
-        drake::log()->warn(
-            "The fromto tag for box is currently unsupported; geom {} will be "
-            "ignored.",
-            geom.name);
+        Warning(*node, fmt::format("The fromto tag for box is currently "
+                                   "unsupported; geom {} will be "
+                                   "ignored.",
+                                   geom.name));
         return geom;
       } else {
         if (size.size() < 3) {
-          throw std::logic_error(
-              "The size attribute for box geom must have at least three "
-              "elements.");
+          Error(*node,
+                "The size attribute for box geom must have at least three "
+                "elements.");
+          return geom;
         }
         geom.shape = std::make_unique<geometry::Box>(
             size[0] * 2.0, size[1] * 2.0, size[2] * 2.0);
@@ -541,9 +546,10 @@ class MujocoParser {
       }
     } else if (type == "mesh") {
       if (!ParseStringAttribute(node, "mesh", &mesh)) {
-        throw std::runtime_error(fmt::format(
-            "geom {} specified type 'mesh', but did not set the mesh attribute",
-            geom.name));
+        Error(*node, fmt::format("geom {} specified type 'mesh', but did not "
+                                 "set the mesh attribute",
+                                 geom.name));
+          return geom;
       }
       if (mesh_.count(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
@@ -572,17 +578,20 @@ class MujocoParser {
                             .ShiftFromCenterOfMass(-obb.pose().translation());
         }
       } else {
-        log()->warn("geom {} specified unknown mesh {} and will be ignored",
-                    geom.name, mesh);
+        Warning(
+            *node,
+            fmt::format("geom {} specified unknown mesh {} and will be ignored",
+                        geom.name, mesh));
         return geom;
       }
     } else if (type == "hfield") {
-      log()->warn(
-          "The geom type '{}' is currently unsupported and will be ignored.",
-          type);
+      Warning(*node, fmt::format("The geom type '{}' is currently unsupported "
+                                 "and will be ignored.",
+                                 type));
       return geom;
     } else {
-      throw std::runtime_error(fmt::format("Unrecognized geom type {}", type));
+      Error(*node, fmt::format("Unrecognized geom type {}", type));
+      return geom;
     }
 
     if (type != "mesh") {
@@ -602,20 +611,21 @@ class MujocoParser {
     ParseScalarAttribute(node, "conaffinity", &conaffinity);
     ParseScalarAttribute(node, "condim", &condim);
     if (contype != 1 || conaffinity != 1) {
-      log()->warn(
-          "geom {} specified contype={} and conaffinity={}; but collision "
-          "filter groups are not yet implemented for the mujoco parser.",
-          geom.name, contype, conaffinity);
+      Warning(
+          *node,
+          fmt::format(
+              "geom {} specified contype={} and conaffinity={}; but collision "
+              "filter groups are not yet implemented for the mujoco parser.",
+              geom.name, contype, conaffinity));
     }
     if (condim != 3) {
       // TODO(russt): Can we support condim=1 inefficiently by setting friction
       // coefficients to zero? This may be insufficient given the parallel
       // resistor friction coefficient logic. condim=4 or 6 are likely out of
       // scope for now.
-      log()->warn(
-          "geom {} specified condim={}, which is not supported. condim=3 will "
-          "be used instead.",
-          geom.name, condim);
+      Warning(*node, fmt::format("geom {} specified condim={}, which is not "
+                                 "supported. condim=3 will be used instead.",
+                                 geom.name, condim));
     }
 
     WarnUnsupportedAttribute(*node, "group");
@@ -630,8 +640,9 @@ class MujocoParser {
         // seems like too much noise).
         ParseVectorAttribute(material_node, "rgba", &geom.rgba);
       } else {
-        log()->warn("geom {} specified an unrecognized material {}", geom.name,
-                    material);
+        Warning(*node,
+                fmt::format("geom {} specified an unrecognized material {}",
+                            geom.name, material));
       }
     }
     // rgba takes precedence over materials, so must be parsed after.
@@ -653,10 +664,12 @@ class MujocoParser {
       geom.friction = CoulombFriction(friction[0], friction[0]);
       if ((friction.size() > 1 && friction[1] != 0.0) ||
           (friction.size() > 2 && friction[2] != 0.0)) {
-        drake::log()->warn(
-            "The torsional and rolling friction specified in the friction "
-            "attribute of {} are unsupported and will be ignored.",
-            node->Name());
+        Warning(
+            *node,
+            fmt::format(
+                "The torsional and rolling friction specified in the friction "
+                "attribute of {} are unsupported and will be ignored.",
+                node->Name()));
       }
     }
 
@@ -698,26 +711,27 @@ class MujocoParser {
       body_name = fmt::format("body{}", plant_->num_bodies());
     }
 
-    std::string child_class{};
+    std::string child_class;
     if (!ParseStringAttribute(node, "childclass", &child_class)) {
       child_class = parent_class;
     }
 
-    bool compute_inertia;
+    bool compute_inertia{};
     SpatialInertia<double> M_BBo_B(0, {0, 0, 0}, {0, 0, 0});
     XMLElement* inertial_node = node->FirstChildElement("inertial");
-    if (inertial_node && (!inertia_from_geom_ || !*inertia_from_geom_)) {
+    if (inertial_node && (inertia_from_geom_ != kTrue)) {
       // Then we have a node and inertial_from_geom is "auto" or "false".
       M_BBo_B = ParseInertial(inertial_node);
       compute_inertia = false;
-    } else if (!inertial_node && inertia_from_geom_ && !inertia_from_geom_) {
+    } else if (!inertial_node && (inertia_from_geom_ == kFalse)) {
       // We don't have a node and inertial_from_geom is "false".
       // https://mujoco.readthedocs.io/en/latest/XMLreference.html#compiler
-      // says we should throw.
-      throw std::runtime_error(fmt::format(
-          "{} has no inertial tag and inertiafromgeom=false. You must specify "
-          "an inertia.",
-          body_name));
+      // says we should emit an error.
+      Error(*node,
+            fmt::format("{} has no inertial tag and inertiafromgeom=false. You "
+                        "must specify an inertia.",
+                        body_name));
+      return;
     } else {
       compute_inertia = true;
     }
@@ -779,10 +793,11 @@ class MujocoParser {
         ParseStringAttribute(joint_node, "type", &type);
         if (type == "free") {
           if (dummy_bodies > 0) {
-            throw std::logic_error(
-                fmt::format("No other joints can be defined in the body {} if "
-                            "a free joint is defined.",
-                            body_name));
+            Error(*node, fmt::format(
+                             "No other joints can be defined in the body {} if "
+                             "a free joint is defined.",
+                             body_name));
+            return;
           }
           break;  // No other joints are allowed if the joint is "free".
         }
@@ -847,9 +862,10 @@ class MujocoParser {
       if (parent_default.empty()) {
         class_name = "main";
       } else {
-        throw std::logic_error(
-            "The `class` attribute is required for all `default` elements "
-            "except at the top-level");
+        Error(*node,
+              "The `class` attribute is required for all `default` elements "
+              "except at the top-level");
+        return;
       }
     }
 
@@ -894,14 +910,13 @@ class MujocoParser {
          material_node = material_node->NextSiblingElement("material")) {
       std::string name;
       if (!ParseStringAttribute(material_node, "name", &name)) {
-        throw std::runtime_error(
-            "ERROR: Material elements must have a name attribute.");
+        Error(*node, "ERROR: Material elements must have a name attribute.");
+        return;
       }
       material_[name] = material_node;
     }
 
-    for (XMLElement* mesh_node = node->FirstChildElement("mesh");
-         mesh_node;
+    for (XMLElement* mesh_node = node->FirstChildElement("mesh"); mesh_node;
          mesh_node = mesh_node->NextSiblingElement("mesh")) {
       WarnUnsupportedAttribute(*mesh_node, "class");
       WarnUnsupportedAttribute(*mesh_node, "smoothnormal");
@@ -923,10 +938,12 @@ class MujocoParser {
         Vector3d scale{1, 1, 1};
         if (ParseVectorAttribute(mesh_node, "scale", &scale)) {
           if (scale[0] != scale[1] || scale[1] != scale[2]) {
-            throw std::runtime_error(
+            Error(
+                *node,
                 fmt::format("mesh {} was defined with a non-uniform scale; but "
                             "Drake currently only supports uniform scaling",
                             name));
+            continue;
           }
         }
 
@@ -954,7 +971,8 @@ class MujocoParser {
             filename = main_mjcf_path_ / filename;
           }
         }
-        filename = std::filesystem::canonical(filename);
+        filename = std::filesystem::weakly_canonical(filename);
+
         std::filesystem::path original_filename = filename;
 
         // TODO(russt): Support .vtk files.
@@ -962,47 +980,54 @@ class MujocoParser {
         // Replace the extension with obj, unless tolower(extension) == "obj".
         std::string extension = filename.extension();
         std::transform(extension.begin(), extension.end(), extension.begin(),
-                        [](unsigned char c) { return std::tolower(c); });
+                       [](unsigned char c) {
+                         return std::tolower(c);
+                       });
         if (extension != ".obj") {
           filename.replace_extension("obj");
         }
 
         if (std::filesystem::exists(filename)) {
-          mesh_[name] =
-              std::make_unique<geometry::Mesh>(filename, scale[0]);
+          mesh_[name] = std::make_unique<geometry::Mesh>(filename, scale[0]);
           surface_mesh_.emplace(std::pair(
               name,
               geometry::ReadObjToTriangleSurfaceMesh(filename, scale[0])));
         } else if (std::filesystem::exists(original_filename)) {
-          log()->warn(
-              "Drake's MuJoCo parser currently only supports mesh files in "
-              ".obj format. The meshfile \"{}\" was requested; Drake attempted "
-              "to load \"{}\", but that file does not exist.",
-              original_filename.string(), filename.string());
+          Warning(
+              *node,
+              fmt::format(
+                  "Drake's MuJoCo parser currently only supports mesh files in "
+                  ".obj format. The meshfile \"{}\" was requested; Drake "
+                  "attempted to load \"{}\", but that file does not exist.",
+                  original_filename.string(), filename.string()));
           std::string original_extension = original_filename.extension();
           std::transform(original_extension.begin(), original_extension.end(),
-                         original_extension.begin(),
-                         [](unsigned char c) { return std::tolower(c); });
+                         original_extension.begin(), [](unsigned char c) {
+                           return std::tolower(c);
+                         });
           if (original_extension == ".stl") {
-            log()->warn(
-                "If you have built Drake from source, running\n\n bazel run "
-                "//manipulation/utils/stl2obj -- \"{}\" \"{}\"\n\nonce will "
-                "resolve this.",
-                original_filename.string(), filename.string());
+            Warning(*node,
+                    fmt::format("If you have built Drake from source, "
+                                "running\n\n bazel run "
+                                "//manipulation/utils/stl2obj -- \"{}\" "
+                                "\"{}\"\n\nonce will "
+                                "resolve this.",
+                                original_filename.string(), filename.string()));
           }
         } else {
-          log()->warn(
-              "The mesh asset \"{}\" could not be found, nor could its .obj "
-              "replacement \"{}\".",
-              original_filename.string(), filename.string());
+          Warning(*node,
+                  fmt::format("The mesh asset \"{}\" could not be found, nor "
+                              "could its .obj "
+                              "replacement \"{}\".",
+                              original_filename.string(), filename.string()));
         }
       } else {
         std::string name{};
         ParseStringAttribute(mesh_node, "name", &name);
-        log()->warn(
-            "The mesh asset named {} did not specify a 'file' attribute and so "
-            "will be ignored.",
-            name);
+        Warning(*node, fmt::format("The mesh asset named {} did not specify a "
+                                   "'file' attribute and so "
+                                   "will be ignored.",
+                                   name));
       }
     }
 
@@ -1052,9 +1077,12 @@ class MujocoParser {
     std::string coordinate;
     if (ParseStringAttribute(node, "coordinate", &coordinate)) {
       if (coordinate != "local") {
-        throw std::logic_error(fmt::format(
-            "Compiler attribute coordinate={} is not supported yet.",
-            coordinate));
+        Error(*node,
+              fmt::format(
+                  "Compiler attribute coordinate={} is not supported yet.",
+                  coordinate));
+        // No need to return here. Passing this point will result in a wrong
+        // model, but not in parser crashes.
       }
     }
     std::string angle;
@@ -1064,10 +1092,13 @@ class MujocoParser {
       } else if (angle == "radian") {
         angle_ = kRadian;
       } else {
-        drake::log()->warn(
-            "Unknown value {} for the compiler `angle` attribute will be "
-            "ignored.  The existing value of `angle={}` will remain unchanged.",
-            angle, (angle_ == kDegree) ? "degree" : "radian");
+        Warning(
+            *node,
+            fmt::format(
+                "Unknown value {} for the compiler `angle` attribute will be "
+                "ignored.  The existing value of `angle={}` will remain "
+                "unchanged.",
+                angle, (angle_ == kDegree) ? "degree" : "radian"));
       }
     }
 
@@ -1087,16 +1118,19 @@ class MujocoParser {
     bool flag;
     switch (node->QueryBoolAttribute("inertiafromgeom", &flag)) {
       case tinyxml2::XML_SUCCESS:
-        inertia_from_geom_ = flag;
+        inertia_from_geom_ = flag ? kTrue : kFalse;
         break;
       case tinyxml2::XML_WRONG_ATTRIBUTE_TYPE:
         if (std::string(node->Attribute("inertiafromgeom")) == "auto") {
+          inertia_from_geom_ = kAuto;
           break;
         }
-        drake::log()->warn(
-            "The attribute 'inertiafromgeom' found in a '{}' tag cannot be "
-            "interpreted as a boolean nor 'auto' and will be ignored.",
-            node->Name());
+        Warning(
+            *node,
+            fmt::format(
+                "The attribute 'inertiafromgeom' found in a '{}' tag cannot be "
+                "interpreted as a boolean nor 'auto' and will be ignored.",
+                node->Name()));
         break;
       default:
         // Ok. No attribute to set.
@@ -1125,19 +1159,23 @@ class MujocoParser {
     // MultibodyPlant guarantees that the numeric values match.
     int frame_group = model_instance_;
 
-    auto geom_id_from_name = [&inspector, &geom_ids, frame_group](
-                                 const std::string& name) {
+    auto geom_id_from_name = [&inspector, &geom_ids,
+                              frame_group](const std::string& name) {
       for (GeometryId id : geom_ids) {
         // Only match geometry loaded from the current model instance.
         int candidate_frame_group =
             inspector.GetFrameGroup(inspector.GetFrameId(id));
-        if (candidate_frame_group != frame_group) { continue; }
+        if (candidate_frame_group != frame_group) {
+          continue;
+        }
 
         // MultibodyPlant Register__Geometry methods automatically change the
         // geometry name to model_instance_name::geometry_name (in
         // MultibodyPlant::GetScopedName). Cope with that change here.
         const std::string candidate_name = inspector.GetName(id);
-        if (EndsWith(candidate_name, name)) { return id; }
+        if (EndsWith(candidate_name, name)) {
+          return id;
+        }
       }
       return GeometryId();
     };
@@ -1147,24 +1185,28 @@ class MujocoParser {
       std::string geom1, geom2;
       if (!ParseStringAttribute(pair_node, "geom1", &geom1) ||
           !ParseStringAttribute(pair_node, "geom2", &geom2)) {
-        log()->warn(
-            "contact pair node does not have required geom1 and/or geom2 "
-            "attributes, so will be ignored.");
+        Warning(*node,
+                "contact pair node does not have required geom1 and/or geom2 "
+                "attributes, so will be ignored.");
         continue;
       }
 
       GeometryId geom1_id = geom_id_from_name(geom1),
                  geom2_id = geom_id_from_name(geom2);
       if (!geom1_id.is_valid()) {
-        log()->warn(
-            "contact pair specified unknown geom1 {} and will be ignored.",
-            geom1);
+        Warning(
+            *node,
+            fmt::format(
+                "contact pair specified unknown geom1 {} and will be ignored.",
+                geom1));
         continue;
       }
       if (!geom2_id.is_valid()) {
-        log()->warn(
-            "contact pair specified unknown geom2 {} and will be ignored.",
-            geom2);
+        Warning(
+            *node,
+            fmt::format(
+                "contact pair specified unknown geom2 {} and will be ignored.",
+                geom2));
         continue;
       }
 
@@ -1191,17 +1233,18 @@ class MujocoParser {
           if ((joint.parent_body().index() == body1_index &&
                joint.child_body().index() == body2_index) ||
               (joint.parent_body().index() == body2_index &&
-               joint.child_body().index() == body1_index)) {
-            log()->warn(
-                "This mjcf specified a contact pair with geom1 {} and geom2 {} "
-                "are on adjacent bodies (connected by a joint). A collision "
-                "filter excluding these bodies will be added during "
-                "MultibodyPlant::Finalize(), which will overwrite the "
-                "collision filter specified in this file. To avoid this you "
-                "must call  "
-                "MultibodyPlant::set_adjacent_bodies_collision_filters(), and "
-                "understand the implications.",
-                geom1, geom2);
+               (joint.child_body().index() == body1_index))) {
+            Warning(*node,
+                    fmt::format(
+                        "This mjcf specified a contact pair with geom1 {} and "
+                        "are on adjacent bodies (connected by a joint). A "
+                        "collision filter excluding these bodies will be added "
+                        "during MultibodyPlant::Finalize(), which will "
+                        "overwrite the collision filter specified in this "
+                        "file. To avoid this you must call "
+                        "MultibodyPlant::set_adjacent_bodies_collision_filters("
+                        "), and understand the implications.",
+                        geom1, geom2));
           }
         }
       }
@@ -1217,7 +1260,8 @@ class MujocoParser {
       std::string body1, body2;
       if (!ParseStringAttribute(exclude_node, "body1", &body1) ||
           !ParseStringAttribute(exclude_node, "body2", &body2)) {
-        drake::log()->warn(
+        Warning(
+            *node,
             "contact exclude node does not have required body1 and/or body2 "
             "attributes, so will be ignored.");
         continue;
@@ -1234,7 +1278,7 @@ class MujocoParser {
 
   // Assets without an absolute path are referenced relative to the "main MJCF
   // model file" path, `main_mjcf_path`.
-  ModelInstanceIndex Parse(const std::string& model_name_in,
+  std::optional<ModelInstanceIndex> Parse(const std::string& model_name_in,
                            const std::optional<std::string>& parent_model_name,
                            XMLDocument* xml_doc,
                            const std::filesystem::path& main_mjcf_path) {
@@ -1242,15 +1286,17 @@ class MujocoParser {
 
     XMLElement* node = xml_doc->FirstChildElement("mujoco");
     if (!node) {
-      throw std::runtime_error("ERROR: XML does not contain a mujoco tag.");
+      Error(*xml_doc, "ERROR: XML does not contain a mujoco tag.");
+      return {};
     }
 
     std::string model_name = model_name_in;
     if (model_name.empty() &&
         !ParseStringAttribute(node, "model", &model_name)) {
-      throw std::runtime_error(
-          "ERROR: Your robot must have a name attribute or a model name "
-          "must be specified.");
+      Error(*node,
+            "ERROR: Your robot must have a name attribute or a model name "
+            "must be specified.");
+      return {};
     }
     model_name = MakeModelName(model_name, parent_model_name, workspace_);
     model_instance_ = plant_->AddModelInstance(model_name);
@@ -1269,8 +1315,7 @@ class MujocoParser {
     }
 
     // Parses the assets.
-    for (XMLElement* asset_node = node->FirstChildElement("asset");
-         asset_node;
+    for (XMLElement* asset_node = node->FirstChildElement("asset"); asset_node;
          asset_node = asset_node->NextSiblingElement("asset")) {
       ParseAsset(asset_node);
     }
@@ -1321,15 +1366,36 @@ class MujocoParser {
     return model_instance_;
   }
 
+  void Warning(const XMLNode& location, std::string message) const {
+    diagnostic_.Warning(location, std::move(message));
+  }
+
+  void Error(const XMLNode& location, std::string message) const {
+    diagnostic_.Error(location, std::move(message));
+  }
+
+  // Warn about documented Mujoco elements ignored by Drake.
+  void WarnUnsupportedElement(const XMLElement& node, const std::string& tag) {
+    diagnostic_.WarnUnsupportedElement(node, tag);
+  }
+
+  // Warn about documented Mujoco attributes ignored by Drake.
+  void WarnUnsupportedAttribute(const XMLElement& node,
+                                const std::string& attribute) {
+    diagnostic_.WarnUnsupportedAttribute(node, attribute);
+  }
+
  private:
   const ParsingWorkspace& workspace_;
+  TinyXml2Diagnostic diagnostic_;
   MultibodyPlant<double>* plant_;
   ModelInstanceIndex model_instance_{};
   std::filesystem::path main_mjcf_path_{};
   enum Angle { kRadian, kDegree };
   Angle angle_{kDegree};
   std::map<std::string, XMLElement*> default_geometry_{};
-  std::optional<bool> inertia_from_geom_{};  // !has_value() => "auto".
+  enum InertiaFromGeometry { kFalse, kTrue, kAuto };
+  InertiaFromGeometry inertia_from_geom_{kAuto};
   std::map<std::string, XMLElement*> material_{};
   std::optional<std::filesystem::path> meshdir_{};
   std::map<std::string, std::unique_ptr<geometry::Mesh>> mesh_{};
@@ -1338,33 +1404,36 @@ class MujocoParser {
 
 }  // namespace
 
-ModelInstanceIndex AddModelFromMujocoXml(
+std::optional<ModelInstanceIndex> AddModelFromMujocoXml(
     const DataSource& data_source, const std::string& model_name_in,
     const std::optional<std::string>& parent_model_name,
     const ParsingWorkspace& workspace) {
   DRAKE_THROW_UNLESS(!workspace.plant->is_finalized());
 
+  TinyXml2Diagnostic diag(&workspace.diagnostic, &data_source);
   XMLDocument xml_doc;
   std::filesystem::path path{};
   if (data_source.IsFilename()) {
     xml_doc.LoadFile(data_source.filename().c_str());
     if (xml_doc.ErrorID()) {
-      throw std::runtime_error(fmt::format("Failed to parse XML file {}:\n{}",
-                                           data_source.filename(),
-                                           xml_doc.ErrorName()));
+      diag.Error(xml_doc,
+                 fmt::format("Failed to parse XML file {}:\n{}",
+                             data_source.filename(), xml_doc.ErrorName()));
+      return {};
     }
     path = data_source.filename();
     path.remove_filename();
   } else {
     xml_doc.Parse(data_source.contents().c_str());
     if (xml_doc.ErrorID()) {
-      throw std::runtime_error(
-          fmt::format("Failed to parse XML string: {}", xml_doc.ErrorName()));
+      diag.Error(xml_doc, fmt::format("Failed to parse XML string: {}",
+                                      xml_doc.ErrorName()));
+      return {};
     }
     path = std::filesystem::current_path();
   }
 
-  MujocoParser parser(workspace);
+  MujocoParser parser(workspace, data_source);
   return parser.Parse(model_name_in, parent_model_name, &xml_doc, path);
 }
 
