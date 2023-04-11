@@ -45,7 +45,7 @@ _INCLUDES = [
 _SRCS = [
     "lib/altsvc.c",
     "lib/base64.c",
-    "lib/cf-http.c",
+    "lib/cf-https-connect.c",
     "lib/cf-socket.c",
     "lib/cfilters.c",
     "lib/conncache.c",
