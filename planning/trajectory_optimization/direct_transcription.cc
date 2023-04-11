@@ -149,10 +149,12 @@ class DirectTranscriptionConstraint : public solvers::Constraint {
   const double fixed_timestep_{0};
 };
 
-double get_period(const System<double>* system) {
+double get_period(const System<double>* system, std::string message) {
   std::optional<PeriodicEventData> periodic_data =
       system->GetUniquePeriodicDiscreteUpdateAttribute();
-  DRAKE_DEMAND(periodic_data.has_value());
+  if (!periodic_data.has_value()) {
+    throw std::invalid_argument(message);    
+  }
   DRAKE_DEMAND(periodic_data->offset_sec() == 0.0);
   return periodic_data->period_sec();
 }
@@ -175,10 +177,13 @@ DirectTranscription::DirectTranscription(
     const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
                        context.num_total_states(), num_time_samples,
-                       get_period(system)),
+                       get_period(system,
+                                  "This constructor is for discrete-time "
+                                  "systems.  For continuous-time "
+                                  "systems, you must use a different "
+                                  "constructor that specifies the "
+                                  "timesteps.")),
       discrete_time_system_(true) {
-  // Note: this constructor is for discrete-time systems.  For continuous-time
-  // systems, you must use a different constructor that specifies the timesteps.
   ValidateSystem(*system, context, input_port_index);
 
   // First try symbolic dynamics.
@@ -198,8 +203,12 @@ DirectTranscription::DirectTranscription(
                    std::numeric_limits<double>::epsilon())
           /* N.B. Ensures that MultipleShooting is well-formed */),
       discrete_time_system_(true) {
-  // Note: this constructor is for discrete-time systems.  For continuous-time
-  // systems, you must use a different constructor that specifies the timesteps.
+  if (!context.has_only_discrete_state()) {
+    throw std::invalid_argument(
+        "This constructor is for discrete-time systems.  For continuous-time "
+        "systems, you must use a different constructor that specifies the "
+        "timesteps.");
+  }
   ValidateSystem(*system, context, input_port_index);
 
   for (int i = 0; i < N() - 1; i++) {
@@ -220,7 +229,12 @@ DirectTranscription::DirectTranscription(
                        context.num_total_states(), num_time_samples,
                        fixed_timestep.value),
       discrete_time_system_(false) {
-  DRAKE_DEMAND(context.has_only_continuous_state());
+  if (!context.has_only_continuous_state()) {
+    throw std::invalid_argument(
+        "This constructor is for continuous-time systems.  For discrete-time "
+        "systems, you must use a different constructor that doesn't specify "
+        "the timestep.");
+  }
   DRAKE_DEMAND(fixed_timestep.value > 0.0);
   if (context.num_input_ports() > 0) {
     DRAKE_DEMAND(num_inputs() == get_input_port_size(system, input_port_index));

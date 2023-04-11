@@ -10,6 +10,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -126,6 +127,13 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
+
+  // The continuous-time constructor throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectTranscription(&system, *context, kNumSampleTimes,
+                          TimeStep(kTimeStep)),
+      ".*is for continuous-time systems.*");
+
   DirectTranscription dirtran(&system, *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
@@ -164,6 +172,12 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
 
   const auto context = system.CreateDefaultContext();
   int kNumSampleTimes = 3;
+
+  // The discrete-time constructor throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      DirectTranscription(&system, *context, kNumSampleTimes),
+      ".*is for discrete-time systems.*");
+
   DirectTranscription dirtran(&system, *context, kNumSampleTimes,
                               TimeStep{kTimeStep});
   auto& prog = dirtran.prog();
@@ -433,6 +447,17 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   const auto B = PiecewisePolynomial<double>::FirstOrderHold(times, Bvec);
   const auto C = PiecewisePolynomial<double>::FirstOrderHold(times, Cvec);
   const auto D = PiecewisePolynomial<double>::FirstOrderHold(times, Dvec);
+
+  {
+    // Confirm that the time-varying linear system constructor throws if the
+    // system is continuous time.
+    TrajectoryLinearSystem<double> system(A, B, C, D);
+    const auto context = system.CreateDefaultContext();
+    int kNumSampleTimes = 3;
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        DirectTranscription(&system, *context, kNumSampleTimes),
+        ".*is for discrete-time systems.*");
+  }
 
   const double kTimeStep = .1;
   TrajectoryLinearSystem<double> system(A, B, C, D, kTimeStep);
