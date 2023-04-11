@@ -14,6 +14,7 @@ drake_cc_package_library(
     deps = [
         ":bezier_curve",
         ":bspline_trajectory",
+        ":composite_trajectory",
         ":discrete_time_trajectory",
         ":path_parameterized_trajectory",
         ":piecewise_polynomial",
@@ -156,6 +157,19 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "composite_trajectory",
+    srcs = [
+        "composite_trajectory.cc",
+    ],
+    hdrs = [
+        "composite_trajectory.h",
+    ],
+    deps = [
+        ":piecewise_trajectory",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_library(
@@ -279,6 +293,15 @@ drake_cc_googletest(
     name = "bezier_curve_test",
     deps = [
         ":bezier_curve",
+        "//common/test_utilities",
+    ],
+)
+
+drake_cc_googletest(
+    name = "composite_trajectory_test",
+    deps = [
+        ":bezier_curve",
+        ":composite_trajectory",
         "//common/test_utilities",
     ],
 )

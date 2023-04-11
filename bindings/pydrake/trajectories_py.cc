@@ -10,7 +10,9 @@
 #include "drake/bindings/pydrake/polynomial_types_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
+#include "drake/common/trajectories/bezier_curve.h"
 #include "drake/common/trajectories/bspline_trajectory.h"
+#include "drake/common/trajectories/composite_trajectory.h"
 #include "drake/common/trajectories/path_parameterized_trajectory.h"
 #include "drake/common/trajectories/piecewise_polynomial.h"
 #include "drake/common/trajectories/piecewise_pose.h"
@@ -250,6 +252,34 @@ struct Impl {
           .def("end_time", &Class::end_time, cls_doc.end_time.doc)
           .def("rows", &Class::rows, cls_doc.rows.doc)
           .def("cols", &Class::cols, cls_doc.cols.doc);
+      // Note: We use the copyable_unique_ptr constructor which calls Clone() on
+      // the set, so that the new object is never an alias to the old.
+      DefineTemplateClassWithDefault<copyable_unique_ptr<Trajectory<T>>>(
+          m, "CopyableUniquePtrTrajectory", param, "")
+          .def(py::init([](const Trajectory<T>& t) {
+            return copyable_unique_ptr<Trajectory<T>>(t);
+          }));
+    }
+
+    {
+      using Class = BezierCurve<T>;
+      constexpr auto& cls_doc = doc.BezierCurve;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "BezierCurve", param, cls_doc.doc);
+      cls  // BR
+          .def(py::init<>(), cls_doc.ctor.doc_0args)
+          .def(py::init<double, double, const Eigen::Ref<const MatrixX<T>>&>(),
+              py::arg("start_time"), py::arg("end_time"),
+              py::arg("control_points"), cls_doc.ctor.doc_3args)
+          .def("order", &Class::order, cls_doc.order.doc)
+          .def("BernsteinBasis", &Class::BernsteinBasis, py::arg("i"),
+              py::arg("time"), py::arg("order") = std::nullopt,
+              cls_doc.BernsteinBasis.doc)
+          .def("control_points", &Class::control_points,
+              cls_doc.control_points.doc);
+
+      DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -293,6 +323,7 @@ struct Impl {
                 return Class(std::get<0>(args), std::get<1>(args));
               }));
       DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -309,6 +340,7 @@ struct Impl {
           .def("time_scaling", &Class::time_scaling, py_rvp::reference_internal,
               cls_doc.time_scaling.doc);
       DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -521,9 +553,24 @@ struct Impl {
               py::arg("row_start") = 0, py::arg("col_start") = 0,
               cls_doc.setPolynomialMatrixBlock.doc);
       DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
       if constexpr (std::is_same_v<T, double>) {
         BindPiecewisePolynomialSerialize(&cls);
       }
+    }
+
+    {
+      using Class = CompositeTrajectory<T>;
+      constexpr auto& cls_doc = doc.CompositeTrajectory;
+      auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
+          m, "CompositeTrajectory", param, cls_doc.doc);
+      cls.def(py::init<std::vector<copyable_unique_ptr<Trajectory<T>>>>(),
+             py::arg("segments"), cls_doc.ctor.doc)
+          .def("segment", &Class::segment, py::arg("segment_index"),
+              py_rvp::reference_internal, cls_doc.segment.doc);
+
+      DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -569,6 +616,7 @@ struct Impl {
           .def("angular_acceleration", &Class::angular_acceleration,
               py::arg("time"), cls_doc.angular_acceleration.doc);
       DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -602,6 +650,7 @@ struct Impl {
           .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
               cls_doc.get_orientation_trajectory.doc);
       DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -617,6 +666,7 @@ struct Impl {
               /* N.B. We choose to omit any py::arg name here. */
               cls_doc.Append.doc);
       DefCopyAndDeepCopy(&cls);
+      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
   }
 };
