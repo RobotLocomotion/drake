@@ -1184,11 +1184,11 @@ void ThrowForNonProximity(const internal::InternalGeometry& g,
 
 template <typename T>
 SignedDistancePair<T> GeometryState<T>::ComputeSignedDistancePairClosestPoints(
-      GeometryId id_A, GeometryId id_B) const {
+      GeometryId id_A, GeometryId id_B, bool ignore_filters) const {
     ThrowForNonProximity(GetValueOrThrow(id_A, geometries_), __func__);
     ThrowForNonProximity(GetValueOrThrow(id_B, geometries_), __func__);
     return geometry_engine_->ComputeSignedDistancePairClosestPoints(
-        id_A, id_B, kinematics_data_.X_WGs);
+        id_A, id_B, kinematics_data_.X_WGs, ignore_filters);
   }
 
 template <typename T>

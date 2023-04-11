@@ -599,12 +599,14 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
 
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B,
-      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs) const {
+      const std::unordered_map<GeometryId, RigidTransform<T>>& X_WGs,
+      bool ignore_filters) const {
     std::vector<SignedDistancePair<T>> witness_pairs;
     double max_distance = std::numeric_limits<double>::infinity();
     // All these quantities are aliased in the callback data.
     shape_distance::CallbackData<T> data{&collision_filter_, &X_WGs,
                                          max_distance, &witness_pairs};
+    data.ignore_filters = ignore_filters;
     data.request.enable_nearest_points = true;
     data.request.enable_signed_distance = true;
     data.request.gjk_solver_type = fcl::GJKSolverType::GST_LIBCCD;
@@ -1087,9 +1089,10 @@ template <typename T>
 SignedDistancePair<T>
 ProximityEngine<T>::ComputeSignedDistancePairClosestPoints(
     GeometryId id_A, GeometryId id_B,
-    const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
-    const {
-  return impl_->ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs);
+    const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
+    bool ignore_filters) const {
+  return impl_->ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs,
+                                                       ignore_filters);
 }
 
 template <typename T>

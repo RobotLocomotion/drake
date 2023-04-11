@@ -2039,8 +2039,8 @@ TEST_F(GeometryStateTest, ChangeShapeProximity) {
 
   // Record the old distance.
   const SignedDistancePair<double> old_distance =
-      geometry_state_.ComputeSignedDistancePairClosestPoints(g_id,
-                                                             geometries_[2]);
+      geometry_state_.ComputeSignedDistancePairClosestPoints(
+          g_id, geometries_[2], false);
 
   // Changing from sphere to a *small* box (should be smaller than the sphere).
   // The distance between the two shapes should get *larger*.
@@ -2065,8 +2065,8 @@ TEST_F(GeometryStateTest, ChangeShapeProximity) {
 
   // Now confirm an increase in distance.
   const SignedDistancePair<double> new_distance =
-      geometry_state_.ComputeSignedDistancePairClosestPoints(g_id,
-                                                             geometries_[2]);
+      geometry_state_.ComputeSignedDistancePairClosestPoints(
+          g_id, geometries_[2], false);
   EXPECT_GT(new_distance.distance, old_distance.distance);
 }
 
@@ -4293,33 +4293,35 @@ TEST_F(GeometryStateTest, ComputeSignedDistancePairClosestPointsError) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1,
-                                                             bad_id),
+                                                             bad_id, false),
       ".*has not been registered.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.ComputeSignedDistancePairClosestPoints(bad_id,
-                                                             proximity1),
+                                                             proximity1, false),
       ".*has not been registered.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.ComputeSignedDistancePairClosestPoints(no_role,
-                                                             proximity1),
+                                                             proximity1, false),
       ".*has no role.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1,
-                                                             no_role),
+                                                             no_role, false),
       ".*has no role.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1, illus),
+      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1, illus,
+                                                             false),
       ".*has the illustration role.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ComputeSignedDistancePairClosestPoints(illus, proximity1),
+      geometry_state_.ComputeSignedDistancePairClosestPoints(illus, proximity1,
+                                                             false),
       ".*has the illustration role.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1,
-                                                             percep),
+      geometry_state_.ComputeSignedDistancePairClosestPoints(proximity1, percep,
+                                                             false),
       ".*has the perception role.");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.ComputeSignedDistancePairClosestPoints(percep,
-                                                             proximity1),
+      geometry_state_.ComputeSignedDistancePairClosestPoints(percep, proximity1,
+                                                             false),
       ".*has the perception role.");
 }
 

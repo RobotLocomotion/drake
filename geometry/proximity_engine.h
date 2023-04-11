@@ -217,7 +217,8 @@ class ProximityEngine {
    current scalar type, keyed on each geometry's GeometryId.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
       GeometryId id_A, GeometryId id_B,
-      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs)
+      const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs,
+      bool ignore_filters)
       const;
 
   /* Implementation of GeometryState::ComputeSignedDistanceToPoint().

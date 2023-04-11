@@ -181,13 +181,14 @@ QueryObject<T>::ComputeSignedDistancePairwiseClosestPoints(
 
 template <typename T>
 SignedDistancePair<T> QueryObject<T>::ComputeSignedDistancePairClosestPoints(
-    GeometryId geometry_id_A, GeometryId geometry_id_B) const {
+    GeometryId geometry_id_A, GeometryId geometry_id_B,
+    bool ignore_filters) const {
   ThrowIfNotCallable();
 
   FullPoseUpdate();
   const GeometryState<T>& state = geometry_state();
-  return state.ComputeSignedDistancePairClosestPoints(geometry_id_A,
-                                                      geometry_id_B);
+  return state.ComputeSignedDistancePairClosestPoints(
+      geometry_id_A, geometry_id_B, ignore_filters);
 }
 
 template <typename T>

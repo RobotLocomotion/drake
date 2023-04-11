@@ -689,6 +689,12 @@ GTEST_TEST(Callback, RespectCollisionFiltering) {
   threshold = std::numeric_limits<double>::max();
   Callback<double>(&sphere_A, &sphere_B, &data, threshold);
   EXPECT_EQ(results.size(), 0u);
+
+  // However, if we explicitly request collision filters be ignored, it will do
+  // so.
+  data.ignore_filters = true;
+  Callback<double>(&sphere_A, &sphere_B, &data, threshold);
+  EXPECT_EQ(results.size(), 1u);
 }
 
 // Confirms that regardless of the order of the two objects, the result always

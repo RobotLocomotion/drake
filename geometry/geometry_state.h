@@ -551,7 +551,7 @@ class GeometryState {
   /** Implementation of
    QueryObject::ComputeSignedDistancePairClosestPoints().  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
-      GeometryId id_A, GeometryId id_B) const;
+      GeometryId id_A, GeometryId id_B, bool ignore_filters) const;
 
   /** Implementation of QueryObject::ComputeSignedDistanceToPoint().  */
   std::vector<SignedDistanceToPoint<T>> ComputeSignedDistanceToPoint(

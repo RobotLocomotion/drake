@@ -880,7 +880,7 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   // Case: good case produces the correct value.
   {
     const SignedDistancePair<double> result =
-        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs);
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs, false);
     EXPECT_EQ(result.id_A, id_A);
     EXPECT_EQ(result.id_B, id_B);
     EXPECT_NEAR(result.distance, kDistance,
@@ -893,17 +893,21 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
   // Case: the first id is invalid.
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs),
+        engine.ComputeSignedDistancePairClosestPoints(bad_id, id_B, X_WGs,
+                                                      false),
         fmt::format("The geometry given by id {} does not reference .+ used in "
-                    "a signed distance query", bad_id));
+                    "a signed distance query",
+                    bad_id));
   }
 
   // Case: the second id is invalid.
   {
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs),
+        engine.ComputeSignedDistancePairClosestPoints(id_A, bad_id, X_WGs,
+                                                      false),
         fmt::format("The geometry given by id {} does not reference .+ used in "
-                    "a signed distance query", bad_id));
+                    "a signed distance query",
+                    bad_id));
   }
 
   // Case: the pair is filtered.
@@ -917,9 +921,11 @@ GTEST_TEST(ProximityEngineTests, SignedDistancePairClosestPoint) {
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet{id_A, id_B}),
         extract_ids, false /* is_invariant */);
     DRAKE_EXPECT_THROWS_MESSAGE(
-        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs),
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs, false),
         fmt::format("The geometry pair \\({}, {}\\) does not support a signed "
                     "distance query", id_A, id_B));
+    EXPECT_NO_THROW(
+        engine.ComputeSignedDistancePairClosestPoints(id_A, id_B, X_WGs, true));
   }
 }
 
@@ -4357,7 +4363,7 @@ GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::symbolic::Expression");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      engine.ComputeSignedDistancePairClosestPoints(id1, id2, X_WGs),
+      engine.ComputeSignedDistancePairClosestPoints(id1, id2, X_WGs, false),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
       "supported for scalar type drake::symbolic::Expression");
   DRAKE_EXPECT_THROWS_MESSAGE(

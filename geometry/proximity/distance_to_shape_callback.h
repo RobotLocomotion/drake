@@ -44,6 +44,8 @@ struct CallbackData {
    @param X_WGs_in                The T-valued poses. Aliased.
    @param max_distance_in         The maximum distance at which a pair is
                                   reported.
+   @param ignore_filters_in       If true, collision filters will not be
+                                  considered.
    @param nearest_pairs_in[out]   The output results. Aliased.  */
   CallbackData(
       const CollisionFilter* collision_filter_in,
@@ -66,10 +68,13 @@ struct CallbackData {
   const std::unordered_map<GeometryId, math::RigidTransform<T>>& X_WGs;
 
   /* The maximum distance at which a pair's distance will be reported.  */
-  const double max_distance;
+  const double max_distance{};
 
   /* The distance query parameters.  */
   fcl::DistanceRequestd request;
+
+  /* If true, collision filters will be ignored. */
+  bool ignore_filters{false};
 
   /* The results of the distance query.  */
   std::vector<SignedDistancePair<T>>& nearest_pairs{};

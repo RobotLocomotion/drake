@@ -607,6 +607,10 @@ class QueryObject {
    Refer to @ref query_object_compute_pairwise_distance_table
    "the table for ComputeSignedDistancePairwiseClosestPoints()" for details.
 
+   @param ignore_filters  If `true`, the query will be performed whether or not
+                          the pair (A, B) has been marked as filtered. If
+                          `false`, the existence of such a filter will throw.
+
    @throws std::exception if either geometry id is invalid (e.g., doesn't refer
                           to an existing geometry, lacking proximity role,
                           etc.), the pair (A, B) has been marked as filtered, or
@@ -615,7 +619,8 @@ class QueryObject {
    @warning For Mesh shapes, their convex hulls are used in this query. It is
             *not* computationally efficient or particularly accurate.  */
   SignedDistancePair<T> ComputeSignedDistancePairClosestPoints(
-      GeometryId geometry_id_A, GeometryId geometry_id_B) const;
+      GeometryId geometry_id_A, GeometryId geometry_id_B,
+      bool ignore_filters = false) const;
 
   // TODO(DamrongGuoy): Improve and refactor documentation of
   // ComputeSignedDistanceToPoint(). Move the common sections into Signed
