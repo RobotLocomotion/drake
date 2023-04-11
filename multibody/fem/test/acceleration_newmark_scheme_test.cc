@@ -17,9 +17,15 @@ const double kBeta = 0.3;
 const double kTolerance = 16.0 * std::numeric_limits<double>::epsilon();
 
 /* Arbitrary initial states. */
-Vector3<double> q() { return Vector3<double>(1.23, 2.34, 3.45); }
-Vector3<double> v() { return Vector3<double>(5.67, 6.78, 7.89); }
-Vector3<double> a() { return Vector3<double>(0.1011, 0.1112, 0.1213); }
+Vector3<double> q() {
+  return Vector3<double>(1.23, 2.34, 3.45);
+}
+Vector3<double> v() {
+  return Vector3<double>(5.67, 6.78, 7.89);
+}
+Vector3<double> a() {
+  return Vector3<double>(0.1011, 0.1112, 0.1213);
+}
 
 class AccelerationNewmarkSchemeTest : public ::testing::Test {
  protected:
