@@ -1173,7 +1173,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("density"), py::arg("lx"), py::arg("ly"), py::arg("lz"),
             cls_doc.SolidBoxWithDensity.doc)
         .def_static("SolidBoxWithMass", &Class::SolidBoxWithMass,
-            py::arg("mass"), py::arg("length"), cls_doc.SolidBoxWithMass.doc)
+            py::arg("mass"), py::arg("lx"), py::arg("ly"), py::arg("lz"),
+            cls_doc.SolidBoxWithMass.doc)
         .def_static("SolidCubeWithDensity", &Class::SolidCubeWithDensity,
             py::arg("density"), py::arg("length"),
             cls_doc.SolidCubeWithDensity.doc)
