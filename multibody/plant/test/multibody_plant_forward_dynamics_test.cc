@@ -162,10 +162,8 @@ TEST_F(KukaIiwaModelForwardDynamicsTests, ForwardDynamicsTest) {
 // This test verifies this does not trigger a spurious exception.
 GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   MultibodyPlant<double> plant(0.0);
-  const std::string model_path =
-      FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
-  Parser parser(&plant);
-  auto atlas_instance = parser.AddModels(model_path).at(0);
+  auto atlas_instance = Parser(&plant).AddModelsFromUrl(
+      "package://drake_models/atlas/atlas_convex_hull.urdf").at(0);
   plant.Finalize();
 
   // Create a context and store an arbitrary configuration.

@@ -47,8 +47,6 @@ class TestParsing(unittest.TestCase):
         dut = PackageMap.MakeEmpty()
         dut2 = PackageMap.MakeEmpty()
         tmpdir = os.environ.get('TEST_TMPDIR')
-        model = FindResourceOrThrow(
-            "drake/examples/atlas/urdf/atlas_minimal_contact.urdf")
 
         # Simple coverage test for Add, AddMap, Contains, size,
         # GetPackageNames, GetPath, AddPackageXml, Remove.

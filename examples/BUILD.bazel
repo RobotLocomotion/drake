@@ -36,7 +36,6 @@ drake_cc_binary(
 # process, and loaded into drake_visualizer's model database by default.
 INSTALLED_MODEL_PACKAGES = [
     "//examples/acrobot",
-    "//examples/atlas",
     "//examples/hydroelastic/spatula_slip_control",
     "//examples/kuka_iiwa_arm/models",
     "//examples/manipulation_station",

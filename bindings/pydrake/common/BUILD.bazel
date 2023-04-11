@@ -489,7 +489,7 @@ install(
 
 drake_py_unittest(
     name = "module_test",
-    data = ["//examples/atlas:models"],
+    data = ["//examples/acrobot:models"],
     deps = [
         ":module_py",
         "//bindings/pydrake:autodiffutils_py",
