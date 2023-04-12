@@ -167,6 +167,19 @@ class SpatialInertia {
   static SpatialInertia<T> SolidCubeWithDensity(
       const T& density, const T& length);
 
+  /// Creates a spatial inertia for a uniform density solid cube B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] mass mass of the solid cube (kg).
+  /// @param[in] length The length of each of the cube's sides (meters).
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.  Since B's
+  /// rotational inertia is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo
+  /// expressed in frame B is equal to M_BBo expressed in an arbitrary frame E.
+  /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
+  /// B has an equal moment of inertia about any line passing through Bo.
+  /// @throws std::exception if length is zero or negative.
+  static SpatialInertia<T> SolidCubeWithMass(
+      const T& mass, const T& length);
+
   /// Creates a spatial inertia for a uniform density solid capsule B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
