@@ -129,7 +129,9 @@ void SapDriver<T>::CalcFreeMotionVelocities(const systems::Context<T>& context,
   // TODO(amcastro-tri): Implement free-motion velocities update based on the
   // theta-method, as in the SAP paper.
   const VectorX<T>& vdot0 =
-      manager().EvalAccelerationsDueToNonContactForcesCache(context).get_vdot();
+      manager()
+          .EvalAccelerationsDueToNonContactNonJointLimitForcesCache(context)
+          .get_vdot();
   const double dt = this->plant().time_step();
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
