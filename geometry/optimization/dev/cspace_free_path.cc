@@ -162,7 +162,9 @@ CspaceFreePath::ConstructPlaneSearchProgramOnPath(
     const std::unordered_map<symbolic::Variable,
                              Polynomial<double>>& path) const {
   SeparationCertificateProgram ret;
+  ret.plane_index = plane_geometries_on_path.plane_index;
   ret.prog->AddIndeterminate(mu_);
+  ret.prog->AddIndeterminates(this->y_slack());
 
   // construct the parameter to value map
   symbolic::Environment param_eval_map;

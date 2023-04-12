@@ -21,6 +21,8 @@
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solve.h"
 
+#include <iostream>
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -575,6 +577,7 @@ CspaceFreePolytope::SolveSeparationCertificateProgram(
               &result);
   std::optional<CspaceFreePolytope::SeparationCertificateResult> ret{
       std::nullopt};
+  std::cout << result.get_solver_details<solvers::MosekSolver>().optimizer_time << std::endl;
   if (result.is_success()) {
     ret.emplace(certificate_program.certificate.GetSolution(
         certificate_program.plane_index,

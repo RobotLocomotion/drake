@@ -4,6 +4,9 @@
 #include <utility>
 
 #include "drake/common/symbolic/monomial_util.h"
+
+#include <iostream>
+
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -109,10 +112,11 @@ void ParametrizedPolynomialPositiveOnUnitInterval::
   // Add the p_ == 0 constraint after evaluation. Do this manually to avoid a
   // call to Reparse that occurs in AddEqualityConstraintBetweenPolynomials.
   const symbolic::Polynomial p_evaled{p_.EvaluatePartial(env)};
-
-  for (const auto& item : p_evaled.monomial_to_coefficient_map()) {
-    prog->AddLinearEqualityConstraint(item.second, 0);
-  }
+  prog->AddEqualityConstraintBetweenPolynomials(p_evaled, symbolic::Polynomial(0));
+//  for (const auto& item : p_evaled.monomial_to_coefficient_map()) {
+//    std::cout << item.second << std::endl;
+//    prog->AddLinearEqualityConstraint(item.second, 0);
+//  }
 }
 
 }  // namespace optimization
