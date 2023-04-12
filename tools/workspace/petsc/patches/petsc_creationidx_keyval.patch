@@ -15,7 +15,7 @@ safety issues. (PETSc isn't designed guarantee thread safety.)
 +++ src/sys/objects/inherit.c
 @@ -34,10 +34,6 @@ PetscObjectId PetscObjectNewId_Internal(void)
  */
- PetscErrorCode PetscHeaderCreate_Private(PetscObject h, PetscClassId classid, const char class_name[], const char descr[], const char mansec[], MPI_Comm comm, PetscObjectDestroyFunction destroy, PetscObjectViewFunction view)
+ PetscErrorCode PetscHeaderCreate_Private(PetscObject h, PetscClassId classid, const char class_name[], const char descr[], const char mansec[], MPI_Comm comm, PetscObjectDestroyFunction destroy, PetscObjectV    iewFunction view)
  {
 -  void       *get_tmp;
 -  PetscInt64 *cidx;
@@ -24,17 +24,16 @@ safety issues. (PETSc isn't designed guarantee thread safety.)
    PetscFunctionBegin;
    h->classid               = classid;
    h->class_name            = (char *)class_name;
-@@ -55,14 +51,6 @@ PetscErrorCode PetscHeaderCreate_Private(PetscObject h, PetscClassId classid, co
- 
+@@ -55,13 +51,6 @@ PetscErrorCode PetscHeaderCreate_Private(PetscObject h, PetscClassId classid, co
+
    PetscCall(PetscCommDuplicate(comm, &h->comm, &h->tag));
- 
+
 -  /* Increment and store current object creation index */
 -  PetscCallMPI(MPI_Comm_get_attr(h->comm, Petsc_CreationIdx_keyval, &get_tmp, &flg));
--  if (flg) {
--    cidx    = (PetscInt64 *)get_tmp;
--    h->cidx = (*cidx)++;
--    PetscCallMPI(MPI_Comm_set_attr(h->comm, Petsc_CreationIdx_keyval, cidx));
--  } else SETERRQ(h->comm, PETSC_ERR_ARG_CORRUPT, "MPI_Comm does not have an object creation index");
+-  PetscCheck(flg, h->comm, PETSC_ERR_ARG_CORRUPT, "MPI_Comm does not have an object creation index");
+-  cidx    = (PetscInt64 *)get_tmp;
+-  h->cidx = (*cidx)++;
+-  PetscCallMPI(MPI_Comm_set_attr(h->comm, Petsc_CreationIdx_keyval, cidx));
 -
  #if defined(PETSC_USE_LOG)
    /* Keep a record of object created */
