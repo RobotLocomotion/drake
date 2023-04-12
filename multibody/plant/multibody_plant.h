@@ -1131,10 +1131,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// only support actuators for single dof joints.
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint,
-      double effort_limit = std::numeric_limits<double>::infinity()) {
-    DRAKE_THROW_UNLESS(joint.num_velocities() == 1);
-    return this->mutable_tree().AddJointActuator(name, joint, effort_limit);
-  }
+      double effort_limit = std::numeric_limits<double>::infinity());
 
   /// Creates a new model instance.  Returns the index for the model
   /// instance.
