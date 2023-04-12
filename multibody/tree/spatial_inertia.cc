@@ -39,6 +39,12 @@ SpatialInertia<T> SpatialInertia<T>::PointMass(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
     const T& density, const T& lx, const T& ly, const T& lz) {
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid box's density is negative: {}.", __func__, density);
+    throw std::logic_error(error_message);
+  }
   // Ensure lx, ly, lz are positive.
   if (lx <= 0 || ly <= 0 || lz <= 0) {
     const std::string error_message = fmt::format(
@@ -55,6 +61,12 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithMass(
     const T& mass, const T& lx, const T& ly, const T& lz) {
+  // Ensure mass is non-negative.
+  if (mass < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid box's mass is negative: {}.", __func__, mass);
+    throw std::logic_error(error_message);
+  }
   // Ensure lx, ly, lz are positive.
   if (lx <= 0 || ly <= 0 || lz <= 0) {
     const std::string error_message = fmt::format(
@@ -70,6 +82,12 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithMass(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
     const T& density, const T& length) {
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid cube's density is negative: {}.", __func__, density);
+    throw std::logic_error(error_message);
+  }
   // Ensure length is positive.
   if (length <= 0) {
     const std::string error_message = fmt::format(
@@ -86,6 +104,12 @@ SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCubeWithMass(
     const T& mass, const T& length) {
+  // Ensure mass is non-negative.
+  if (mass < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid cube's mass is negative: {}.", __func__, mass);
+    throw std::logic_error(error_message);
+  }
   // Ensure length is positive.
   if (length <= 0) {
     const std::string error_message = fmt::format(
@@ -103,6 +127,12 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid capsule's density is negative: {}.", __func__, density);
+    throw std::logic_error(error_message);
+  }
   // Ensure radius and length are positive.
   if (radius <= 0 || length <= 0) {
     const std::string error_message = fmt::format(
@@ -125,6 +155,12 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid cylinder's density is negative: {}.", __func__, density);
+    throw std::logic_error(error_message);
+  }
   // Ensure radius and length are positive.
   if (radius <= 0 || length <= 0) {
     const std::string error_message = fmt::format(
@@ -160,6 +196,19 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid cylinder's density is negative: {}.", __func__, density);
+    throw std::logic_error(error_message);
+  }
+  // Ensure radius and length are positive.
+  if (radius <= 0 || length <= 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid cylinder's radius = {} or length = {} is "
+        "negative or zero.", __func__, radius, length);
+    throw std::logic_error(error_message);
+  }
   SpatialInertia<T> M_BBcm_B =
       SpatialInertia<T>::SolidCylinderWithDensity(
           density, radius, length, unit_vector);
@@ -222,6 +271,12 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMassAboutEnd(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
     const T& density, const T& a, const T& b, const T& c) {
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+       "{}(): A solid ellipsoid's density is negative: {}.", __func__, density);
+    throw std::logic_error(error_message);
+  }
   // Ensure a, b, c are positive.
   if (a <= 0 || b <= 0 || c <= 0) {
     const std::string error_message = fmt::format(
@@ -239,6 +294,12 @@ SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
     const T& density, const T& radius) {
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid sphere's density is negative: {}.", __func__, density);
+    throw std::logic_error(error_message);
+  }
   // Ensure radius is positive.
   if (radius <= 0) {
     const std::string error_message = fmt::format(
@@ -256,6 +317,13 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::HollowSphereWithDensity(
     const T& area_density, const T& radius) {
+  // Ensure area_density is non-negative.
+  if (area_density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A hollow sphere's area density is negative: {}.",
+        __func__, area_density);
+    throw std::logic_error(error_message);
+  }
   // Ensure radius is positive.
   if (radius <= 0) {
     const std::string error_message = fmt::format(
@@ -274,7 +342,13 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
     const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
     const Vector3<T>& p2, const Vector3<T>& p3) {
-  DRAKE_THROW_UNLESS(density >= 0);
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid tetrahedron's density is negative: {}.",
+        __func__, density);
+    throw std::logic_error(error_message);
+  }
   // This method calculates a tetrahedron B's spatial inertia M_BA about a
   // point A by forming 3 new position vectors, namely the position vectors
   // from B's vertex B0 to vertices B1, B2, B3 (B's other three vertices).
@@ -295,7 +369,13 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
     const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
     const Vector3<T>& p3) {
-  DRAKE_THROW_UNLESS(density >= 0);
+  // Ensure density is non-negative.
+  if (density < 0) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid tetrahedron's density is negative: {}.",
+        __func__, density);
+    throw std::logic_error(error_message);
+  }
   using std::abs;
   const T volume = (1.0 / 6.0) * abs(p1.cross(p2).dot(p3));
   const T mass = density * volume;

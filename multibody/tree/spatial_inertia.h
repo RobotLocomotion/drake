@@ -139,7 +139,8 @@ class SpatialInertia {
   /// @param[in] ly length of the box in the By direction (meters).
   /// @param[in] lz length of the box in the Bz direction (meters).
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @throws std::exception if any of lx, ly, lz are zero or negative.
+  /// @throws std::exception if any of lx, ly, lz are zero or negative
+  /// or if density is negative.
   static SpatialInertia<T> SolidBoxWithDensity(
       const T& density, const T& lx, const T& ly, const T& lz);
 
@@ -150,7 +151,8 @@ class SpatialInertia {
   /// @param[in] ly length of the box in the By direction (meters).
   /// @param[in] lz length of the box in the Bz direction (meters).
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @throws std::exception if any of lx, ly, lz are zero or negative.
+  /// @throws std::exception if any of lx, ly, lz are zero or negative
+  /// or if mass is negative.
   static SpatialInertia<T> SolidBoxWithMass(
       const T& mass, const T& lx, const T& ly, const T& lz);
 
@@ -163,7 +165,8 @@ class SpatialInertia {
   /// expressed in frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
   /// B has an equal moment of inertia about any line passing through Bo.
-  /// @throws std::exception if length is zero or negative.
+  /// @throws std::exception if length is zero or negative
+  /// or if density is negative.
   static SpatialInertia<T> SolidCubeWithDensity(
       const T& density, const T& length);
 
@@ -176,7 +179,8 @@ class SpatialInertia {
   /// expressed in frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
   /// B has an equal moment of inertia about any line passing through Bo.
-  /// @throws std::exception if length is zero or negative.
+  /// @throws std::exception if length is zero or negative
+  /// or if mass is negative.
   static SpatialInertia<T> SolidCubeWithMass(
       const T& mass, const T& length);
 
@@ -186,12 +190,13 @@ class SpatialInertia {
   /// @param[in] radius radius of the cylinder/half-sphere part of the capsule.
   /// @param[in] length length of the cylindrical part of the capsule (meters).
   /// @param[in] unit_vector unit vector defining the axial direction of the
-  ///   cylindrical part of the capsule, expressed in B.
+  /// cylindrical part of the capsule, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
-  ///   an equal moment of inertia about any line that both passes through Bo
-  ///   and is perpendicular to unit_vector.
-  /// @throws std::exception if radius or length is zero or negative.
+  /// an equal moment of inertia about any line that both passes through Bo
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if radius or length is zero or negative
+  /// or if density is negative.
   /// @pre ‖unit_vector‖ = 1; see UnitVector::SolidCapsule() for details.
   static SpatialInertia<T> SolidCapsuleWithDensity(
       const T& density, const T& radius, const T& length,
@@ -203,12 +208,13 @@ class SpatialInertia {
   /// @param[in] radius radius of the cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
   /// @param[in] unit_vector unit vector defining the axial direction of the
-  ///   cylinder, expressed in B.
+  /// cylinder, expressed in B.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
   /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
-  ///   an equal moment of inertia about any line that both passes through Bo
-  ///   and is perpendicular to unit_vector.
-  /// @throws std::exception if radius or length is zero or negative.
+  /// an equal moment of inertia about any line that both passes through Bo
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if radius or length is zero or negative
+  /// or if density is negative.
   /// @pre ‖unit_vector‖ = 1.
   /// @see SolidCylinderWithDensityAboutEnd() to calculate M_BBp_B, B's spatial
   /// inertia about Bp (at the center of one of the cylinder's circular ends).
@@ -222,13 +228,14 @@ class SpatialInertia {
   /// @param[in] radius radius of cylinder (meters).
   /// @param[in] length length of cylinder in unit_vector direction (meters).
   /// @param[in] unit_vector unit vector defining the axial direction of the
-  ///   cylinder, expressed in B.
+  /// cylinder, expressed in B.
   /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
   /// @note The position from Bp to Bcm is length / 2 * unit_vector.
   /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
-  ///   an equal moment of inertia about any line that both passes through Bp
-  ///   and is perpendicular to unit_vector.
-  /// @throws std::exception if radius or length is zero or negative.
+  /// an equal moment of inertia about any line that both passes through Bp
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if radius or length is zero or negative
+  /// or if density is negative.
   /// @pre ‖unit_vector‖ = 1.
   /// @see SolidCylinderWithDensity() to calculate M_BBcm_B, B's spatial
   /// inertia about Bcm (B's center of mass).
@@ -247,7 +254,8 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bcm and
   /// is perpendicular to unit_vector. B has no (zero) rotational inertia about
   /// the line that passes through Bcm and is parallel to unit_vector.
-  /// @throws std::exception if length is zero or negative.
+  /// @throws std::exception if length is zero or negative
+  /// or if mass is negative.
   /// @pre ‖unit_vector‖ = 1.
   /// @see ThinRodWithMassAboutEnd() to calculate M_BBp_B, B's spatial inertia
   /// about Bp (one of the ends of rod B).
@@ -266,7 +274,8 @@ class SpatialInertia {
   /// an equal moment of inertia about any line that both passes through Bp and
   /// is perpendicular to unit_vector. B has no (zero) rotational inertia about
   /// the line that passes through Bp and is parallel to unit_vector.
-  /// @throws std::exception if mass or length is zero or negative.
+  /// @throws std::exception if mass or length is zero or negative
+  /// or if mass is negative.
   /// @pre ‖unit_vector‖ = 1.
   /// @see ThinRodWithMass() to calculate M_BBcm_B, B's spatial inertia about
   /// Bcm (B's center of mass).
@@ -280,7 +289,8 @@ class SpatialInertia {
   /// @param[in] b length of ellipsoid semi-axis in the ellipsoid By direction.
   /// @param[in] c length of ellipsoid semi-axis in the ellipsoid Bz direction.
   /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
-  /// @throws std::exception if any of a, b, c are zero or negative.
+  /// @throws std::exception if any of a, b, c are zero or negative
+  /// or if density is negative.
   static SpatialInertia<T> SolidEllipsoidWithDensity(
       const T& density, const T& a, const T& b, const T& c);
 
@@ -289,11 +299,12 @@ class SpatialInertia {
   /// @param[in] density mass per volume (kg/m³).
   /// @param[in] radius sphere's radius (meters).
   /// @retval M_BBo B's spatial inertia about Bo. Since B's rotational inertia
-  ///   is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
-  ///   frame B is equal to M_BBo expressed in an arbitrary frame E.
+  /// is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
+  /// frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
-  ///   B's has an equal moment of inertia about any line passing through Bo.
-  /// @throws std::exception if radius is zero or negative.
+  /// B's has an equal moment of inertia about any line passing through Bo.
+  /// @throws std::exception if radius is zero or negative
+  /// or if density is negative.
   static SpatialInertia<T> SolidSphereWithDensity(
       const T& density, const T& radius);
 
@@ -307,7 +318,8 @@ class SpatialInertia {
   /// expressed in frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
   /// B has an equal moment of inertia about any line passing through Bo.
-  /// @throws std::exception if radius is zero or negative.
+  /// @throws std::exception if radius is zero or negative
+  /// or if area_density is negative.
   static SpatialInertia<T> HollowSphereWithDensity(
       const T& area_density, const T& radius);
 

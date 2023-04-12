@@ -119,6 +119,11 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
+  // Ensure a negative density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidBoxWithDensity(-0.1, lx, ly, lz),
+      "[^]* A solid box's density is negative: .*.");
+
   // Ensure a negative or zero length, width, or height throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
   // Instead, each parameter is tested with a single bad value and we assume a
