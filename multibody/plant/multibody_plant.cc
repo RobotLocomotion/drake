@@ -2287,60 +2287,23 @@ void MultibodyPlant<T>::CalcNonContactForces(
   this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
-
-  const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
-
-  // Compute forces applied through force elements. Note that this resets
-  // forces to empty so must come first.
-  CalcForceElementsContribution(context, forces);
-
-  AddInForcesFromInputPorts(context, forces);
-
-  // Only discrete models support joint limits.
   if (discrete) {
-    AddJointLimitsPenaltyForces(context, forces);
+    discrete_update_manager_->CalcNonContactForces(
+        context, /* include joint limit penalty forces */ true, forces);
+    return;
   } else {
+    // Compute forces applied through force elements. Note that this resets
+    // forces to empty so must come first.
+    CalcForceElementsContribution(context, forces);
+    AddInForcesFromInputPorts(context, forces);
+    // Only discrete models support joint limits. We log a warning if joint
+    // limits are set.
     auto& warning = joint_limits_parameters_.pending_warning_message;
     if (!warning.empty()) {
       drake::log()->warn(warning);
       warning.clear();
     }
   }
-}
-template <typename T>
-ScopeExit MultibodyPlant<T>::ThrowIfNonContactForceInProgress(
-    const systems::Context<T>& context) const {
-  // To overcame issue #12786, we use this additional cache entry
-  // to detect algebraic loops.
-  systems::CacheEntryValue& value =
-      this->get_cache_entry(
-              cache_indexes_.non_contact_forces_evaluation_in_progress)
-          .get_mutable_cache_entry_value(context);
-  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
-  if (evaluation_in_progress) {
-    const char* error_message =
-        "Algebraic loop detected. This situation is caused when connecting "
-        "the input of your MultibodyPlant to the output of a feedback system "
-        "which is an algebraic function of a feedthrough output of the "
-        "plant. Ways to remedy this: 1. Revisit the model for your feedback "
-        "system. Consider if its output can be written in terms of other "
-        "inputs. 2. Break the algebraic loop by adding state to the "
-        "controller, typically to 'remember' a previous input. 3. Break the "
-        "algebraic loop by adding a zero-order hold system between the "
-        "output of the plant and your feedback system. This effectively "
-        "delays the input signal to the controller.";
-    throw std::runtime_error(error_message);
-  }
-  // Mark the start of the computation. If within an algebraic
-  // loop, pulling from the plant's input ports during the
-  // computation will trigger the recursive evaluation of this
-  // method and the exception above will be thrown.
-  evaluation_in_progress = true;
-  // If the exception above is triggered, we will leave this method and the
-  // computation will no longer be "in progress". We use a scoped guard so
-  // that we have a chance to mark it as such when we leave this scope.
-  return ScopeExit(
-      [&evaluation_in_progress]() { evaluation_in_progress = false; });
 }
 
 template <typename T>
@@ -2633,17 +2596,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   &MultibodyPlant<T>::CopyContactResultsOutput,
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
-
-  // See ThrowIfNonContactForceInProgress().
-  const auto& non_contact_forces_evaluation_in_progress =
-      this->DeclareCacheEntry(
-          "Evaluation of non-contact forces and accelerations is in progress.",
-          // N.B. This flag is set to true only when the computation is in
-          // progress. Therefore its default value is `false`.
-          systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
-          {systems::System<T>::nothing_ticket()});
-  cache_indexes_.non_contact_forces_evaluation_in_progress =
-      non_contact_forces_evaluation_in_progress.cache_index();
 
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.

@@ -3938,37 +3938,51 @@ GTEST_TEST(MultibodyPlantTests, ActuationPorts) {
 }
 
 // Due to issue #12786, we cannot mark the calculation of non-contact forces
-// (and the acceleration it induces) dependent on the MultibodyPlant's inputs,
-// as it should. However, by removing this dependency, we run the risk of an
-// undetected algebraic loop. This tests verifies that if such an algebraic loop
-// exists, a nice throw message is emitted instead of an infinite recursion.
+// (and the acceleration it induces) dependent on a discrete MultibodyPlant's
+// inputs, as it should. However, by removing this dependency, we run the risk
+// of an undetected algebraic loop. This tests verifies that if such an
+// algebraic loop exists, a nice throw message is emitted instead of an infinite
+// recursion. The algebraic loop isn't present if the plant is continuous
+// because contact forces do not depend on the external force input ports in
+// continuous mode.
 GTEST_TEST(MultibodyPlantTests, AlgebraicLoopDetection) {
-  systems::DiagramBuilder<double> builder;
-  MultibodyPlant<double>* plant =
-      builder.AddSystem<MultibodyPlant<double>>(1.0e-3);
-  const char kSdfPath[] =
-      "drake/manipulation/models/iiwa_description/sdf/"
-      "iiwa14_no_collision.sdf";
-  Parser parser(plant);
-  auto iiwa_instance = parser.AddModels(FindResourceOrThrow(kSdfPath)).at(0);
-  plant->Finalize();
-  auto feedback =
-      builder.AddSystem<systems::PassThrough<double>>(plant->num_velocities());
-  builder.Connect(
-      plant->get_generalized_contact_forces_output_port(iiwa_instance),
-      feedback->get_input_port());
-  builder.Connect(feedback->get_output_port(),
-                  plant->get_applied_generalized_force_input_port());
-  std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
-  std::unique_ptr<systems::Context<double>> diagram_context =
-      diagram->CreateDefaultContext();
-  const systems::Context<double>& plant_context =
-      plant->GetMyContextFromRoot(*diagram_context);
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      plant
-          ->get_generalized_contact_forces_output_port(default_model_instance())
-          .Eval(plant_context),
-      "Algebraic loop detected.*");
+  std::vector<double> time_steps = {0.0, 1.0e-3};
+  for (double dt : time_steps) {
+    systems::DiagramBuilder<double> builder;
+    MultibodyPlant<double>* plant =
+        builder.AddSystem<MultibodyPlant<double>>(dt);
+    const char kSdfPath[] =
+        "drake/manipulation/models/iiwa_description/sdf/"
+        "iiwa14_no_collision.sdf";
+    Parser parser(plant);
+    auto iiwa_instance = parser.AddModels(FindResourceOrThrow(kSdfPath)).at(0);
+    plant->Finalize();
+    auto feedback = builder.AddSystem<systems::PassThrough<double>>(
+        plant->num_velocities());
+    builder.Connect(
+        plant->get_generalized_contact_forces_output_port(iiwa_instance),
+        feedback->get_input_port());
+    builder.Connect(feedback->get_output_port(),
+                    plant->get_applied_generalized_force_input_port());
+    std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
+    std::unique_ptr<systems::Context<double>> diagram_context =
+        diagram->CreateDefaultContext();
+    const systems::Context<double>& plant_context =
+        plant->GetMyContextFromRoot(*diagram_context);
+    if (dt == 0.0) {
+      EXPECT_NO_THROW(plant
+                          ->get_generalized_contact_forces_output_port(
+                              default_model_instance())
+                          .Eval(plant_context));
+    } else {
+      DRAKE_EXPECT_THROWS_MESSAGE(
+          plant
+              ->get_generalized_contact_forces_output_port(
+                  default_model_instance())
+              .Eval(plant_context),
+          "Algebraic loop detected.*");
+    }
+  }
 }
 
 // Verifies that a nice error message is thrown if actuation input port contains
