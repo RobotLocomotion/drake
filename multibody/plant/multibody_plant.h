@@ -17,7 +17,6 @@
 #include "drake/common/default_scalars.h"
 #include "drake/common/nice_type_name.h"
 #include "drake/common/random.h"
-#include "drake/common/scope_exit.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/contact_solvers/contact_solver.h"
@@ -4534,7 +4533,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
-    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4672,20 +4670,6 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void CalcNonContactForces(const drake::systems::Context<T>& context,
                             bool discrete,
                             MultibodyForces<T>* forces) const;
-
-  // Due to issue #12786, we cannot mark the calculation of non-contact forces
-  // (and the acceleration it induces) dependent on the MultibodyPlant's inputs,
-  // as it should. However, by removing this dependency, we run the risk of an
-  // undetected algebraic loop. We use this function to guard against such
-  // algebraic loop. In particular, calling this function immediately upon
-  // entering the calculation of non-contact forces sets a flag indicating the
-  // calculation of non-contact forces is in progress. Then, this function
-  // returns a ScopeExit which turns off the flag when going out of scope at the
-  // end of the non-contact forces calculation. If this function is called again
-  // while the flag is on, it means that an algebraic loop exists and an
-  // exception is thrown.
-  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
-      const systems::Context<T>& context) const;
 
   // Collects up forces from input ports (actuator, generalized, and spatial
   // forces) and contact forces (from compliant contact models). Does not
