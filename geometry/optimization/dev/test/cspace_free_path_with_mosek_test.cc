@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/trajectories/bezier_curve.h"
+#include "drake/common/polynomial.h"
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 #include "drake/geometry/optimization/dev/test/c_iris_path_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
@@ -75,10 +76,20 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
       EXPECT_EQ(path.order(), bezier_curve_order);
 
       Eigen::MatrixX<symbolic::Expression> bezier_path_expr =
-          path.value(symbolic::Variable("mu"));
-      Eigen::VectorX<symbolic::Polynomial> bezier_poly_path{
+          path.value(tester.get_mu());
+      VectorX<Polynomiald> bezier_poly_path{
           bezier_path_expr.rows()};
-
+      for(int r = 0; r < bezier_path_expr.rows(); ++r) {
+        std::cout << bezier_path_expr(r) << std::endl;
+        symbolic::Polynomial sym_poly{bezier_path_expr(r)};
+        Eigen::VectorXd coefficients{sym_poly.TotalDegree()+1};
+        for(const auto& [monom, coeff]: sym_poly.monomial_to_coefficient_map()) {
+          coefficients(monom.total_degree()) = coeff.Evaluate();
+        }
+        bezier_poly_path(r) = Polynomiald(coefficients);
+        std::cout << bezier_poly_path(r) << std::endl;
+        std::cout << std::endl;
+      }
       auto prog = tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(geometry_pair,
                                                                                  bezier_poly_path);
     }
