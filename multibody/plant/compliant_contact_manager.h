@@ -227,15 +227,14 @@ class CompliantContactManager final
   const std::vector<HydroelasticContactInfo<T>>& EvalHydroelasticContactInfo(
       const systems::Context<T>& context) const;
 
-  // Computes all continuous forces in the MultibodyPlant model. Joint limits
-  // are not included as continuous compliant forces but rather as constraints
-  // in the solver, and therefore must be excluded.
-  // Values in `forces` will be overwritten.
+  // Computes all non-contact forces in the MultibodyPlant model excluding joint
+  // limit penalty forces. Values in `forces` will be overwritten.
   // @pre forces != nullptr and is consistent with plant().
   void CalcNonContactForcesExcludingJointLimits(
       const systems::Context<T>& context, MultibodyForces<T>* forces) const;
 
-  // Calc non-contact forces and the accelerations they induce.
+  // Calc non-contact forces (excluding joint limit penalty forces) and the
+  // accelerations they induce.
   void CalcAccelerationsDueToNonContactForcesCache(
       const systems::Context<T>& context,
       AccelerationsDueToExternalForcesCache<T>* no_contact_accelerations_cache)

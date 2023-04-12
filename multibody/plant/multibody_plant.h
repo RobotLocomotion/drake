@@ -4673,6 +4673,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                             bool discrete,
                             MultibodyForces<T>* forces) const;
 
+  // TODO(xuchenhan-tri): We should only need this at discrete manager level.
   // Due to issue #12786, we cannot mark the calculation of non-contact forces
   // (and the acceleration it induces) dependent on the MultibodyPlant's inputs,
   // as it should. However, by removing this dependency, we run the risk of an

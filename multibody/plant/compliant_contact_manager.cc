@@ -555,7 +555,10 @@ void CompliantContactManager<T>::CalcNonContactForcesExcludingJointLimits(
   // Compute forces applied through force elements. Note that this resets
   // forces to empty so must come first.
   this->CalcForceElementsContribution(context, forces);
-  this->AddInForcesFromInputPorts(context, forces);
+  // Then add in forces from input ports.
+  const MultibodyForces<T>& discrete_input_port_forces =
+      this->EvalDiscreteInputPortForces(context);
+  forces->AddInForces(discrete_input_port_forces);
 }
 
 template <typename T>

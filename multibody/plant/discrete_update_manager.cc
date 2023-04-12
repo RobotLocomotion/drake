@@ -32,12 +32,24 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   // depend on time and (even continuous) inputs. However it does emulate
   // the discrete update of these values as if zero-order held, which is
   // what we want.
+  const auto& discrete_input_port_forces_cache_entry = this->DeclareCacheEntry(
+      "Discrete force input port values",
+      systems::ValueProducer(
+          this, MultibodyForces<T>(plant()),
+          &DiscreteUpdateManager<T>::CopyForcesFromInputPorts),
+      // The cache entry is manually managed to refresh at the beginning of a
+      // discrete update.
+      {systems::System<T>::nothing_ticket()});
+  cache_indexes_.discrete_input_port_forces =
+      discrete_input_port_forces_cache_entry.cache_index();
+
   const auto& contact_solver_results_cache_entry = this->DeclareCacheEntry(
       "Contact solver results",
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
       {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
+       systems::System<T>::all_parameters_ticket(),
+       discrete_input_port_forces_cache_entry.ticket()});
   cache_indexes_.contact_solver_results =
       contact_solver_results_cache_entry.cache_index();
 
@@ -138,18 +150,9 @@ DiscreteUpdateManager<T>::EvalContactSurfaces(
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::AddInForcesFromInputPorts(
-    const drake::systems::Context<T>& context,
-    MultibodyForces<T>* forces) const {
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddInForcesFromInputPorts(
-      plant(), context, forces);
-}
-
-template <typename T>
-void DiscreteUpdateManager<T>::CalcNonContactForces(
-    const drake::systems::Context<T>& context,
-    MultibodyForces<T>* forces) const {
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::CalcNonContactForces(
+void DiscreteUpdateManager<T>::AddJointLimitsPenaltyForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddJointLimitsPenaltyForces(
       plant(), context, forces);
 }
 
@@ -166,13 +169,6 @@ void DiscreteUpdateManager<T>::CalcForceElementsContribution(
     MultibodyForces<T>* forces) const {
   MultibodyPlantDiscreteUpdateManagerAttorney<T>::CalcForceElementsContribution(
       plant(), context, forces);
-}
-
-template <typename T>
-const std::vector<std::vector<geometry::GeometryId>>&
-DiscreteUpdateManager<T>::collision_geometries() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
-      plant());
 }
 
 template <typename T>
@@ -208,6 +204,42 @@ BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
     geometry::GeometryId geometry_id) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
       plant(), geometry_id);
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
+    const drake::systems::Context<T>& context) const {
+  const auto& discrete_input_forces_cache_entry =
+      plant().get_cache_entry(cache_indexes_.discrete_input_port_forces);
+  // The discrete sampling via cache entry trick only works when caching is
+  // enable. See #12786 for details.
+  if (discrete_input_forces_cache_entry.is_cache_entry_disabled(context)) {
+    // TODO(xuchenhan-tri): Is it better to not throw but turn caching on for
+    // this particular entry instead?
+    throw std::runtime_error(
+        "Discrete input port forces computation requires caching turned on.");
+  }
+  // Actually sample the discrete forces.
+  auto& cache_entry_value =
+      discrete_input_forces_cache_entry.get_mutable_cache_entry_value(context);
+  cache_entry_value.mark_out_of_date();
+  MultibodyForces<T>& forces =
+      cache_entry_value.template GetMutableValueOrThrow<MultibodyForces<T>>();
+  CopyForcesFromInputPorts(context, &forces);
+  cache_entry_value.mark_up_to_date();
+
+  // Initiating a value modification event.
+  const systems::DependencyTracker& tracker =
+      context.get_tracker(discrete_input_forces_cache_entry.ticket());
+  tracker.NoteValueChange(context.start_new_change_event());
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CopyForcesFromInputPorts(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  forces->SetZero();
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddInForcesFromInputPorts(
+      plant(), context, forces);
 }
 
 }  // namespace internal

@@ -133,6 +133,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    update. */
   void CalcDiscreteValues(const systems::Context<T>& context,
                           systems::DiscreteValues<T>* updates) const {
+    // The discrete sampling of input ports needs to be the first step of a
+    // discrete update.
+    SampleDiscreteInputPortForces(context);
     DRAKE_DEMAND(updates != nullptr);
     DoCalcDiscreteValues(context, updates);
   }
@@ -143,6 +146,21 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DRAKE_DEMAND(contact_results != nullptr);
     plant().ValidateContext(context);
     DoCalcContactResults(context, contact_results);
+  }
+
+  void CalcNonContactForces(const drake::systems::Context<T>& context,
+                            MultibodyForces<T>* forces) const {
+    plant().ValidateContext(context);
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
+
+    const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
+
+    // Compute forces applied through force elements. Note that this resets
+    // forces to empty so must come first.
+    CalcForceElementsContribution(context, forces);
+    forces->AddInForces(EvalDiscreteInputPortForces(context));
+    AddJointLimitsPenaltyForces(context, forces);
   }
 
   // TODO(amcastro-tri): Consider replacing with more specific APIs with the
@@ -206,6 +224,19 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return multibody_state_index_;
   }
 
+  /* Evaluates the discretely sampled MultibodyPlant input port force values.
+   This includes forces from externally applied spatial forces, externally
+   applied generalized forces, and joint actuation forces.  */
+  const MultibodyForces<T>& EvalDiscreteInputPortForces(
+      const drake::systems::Context<T>& context) const {
+    /* The discrete input port forces cache entry is manually updated immediate
+     at the beginning of each discrete update as the first step, so we know that
+     it is always up to date whenever we request it in a discrete update. */
+    return plant()
+        .get_cache_entry(cache_indexes_.discrete_input_port_forces)
+        .template Eval<MultibodyForces<T>>(context);
+  }
+
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
 
@@ -215,22 +246,14 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
 
-  void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
-                                 MultibodyForces<T>* forces) const;
-
-  void CalcNonContactForces(const drake::systems::Context<T>& context,
-                            MultibodyForces<T>* forces) const;
+  void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
+                                   MultibodyForces<T>* forces) const;
 
   [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
       const systems::Context<T>& context) const;
 
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
-
-  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
-  //  geometries.
-  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
-      const;
 
   const std::vector<internal::CouplerConstraintSpecs>&
   coupler_constraints_specs() const;
@@ -267,9 +290,20 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       ContactResults<T>* contact_results) const = 0;
 
  private:
+  // Updates the discrete_input_forces cache entry. This should only be called
+  // at the beginning of each discrete update.
+  void SampleDiscreteInputPortForces(const systems::Context<T>& context) const;
+
+  void CopyForcesFromInputPorts(const systems::Context<T>& context,
+                                MultibodyForces<T>* forces) const;
+
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
+    // Manually managed cache entries that stores the values of the force
+    // input ports of MbP. It updates iff at the beginning of the
+    // CalcDiscreteValues(). See SampleDiscreteInputPortForces().
+    systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex contact_solver_results;
   };
 

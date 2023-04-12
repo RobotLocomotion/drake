@@ -47,16 +47,16 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalContactSurfaces(context);
   }
 
-  static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
-                                        const systems::Context<T>& context,
-                                        MultibodyForces<T>* forces) {
-    plant.AddInForcesFromInputPorts(context, forces);
+  static void AddJointLimitsPenaltyForces(const MultibodyPlant<T>& plant,
+                                          const systems::Context<T>& context,
+                                          MultibodyForces<T>* forces) {
+    plant.AddJointLimitsPenaltyForces(context, forces);
   }
 
-  static void CalcNonContactForces(const MultibodyPlant<T>& plant,
-                            const drake::systems::Context<T>& context,
-                            MultibodyForces<T>* forces) {
-    return plant.CalcNonContactForces(context, true /* is discrete */, forces);
+  static void AddInForcesFromInputPorts(
+      const MultibodyPlant<T>& plant, const drake::systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
+    plant.AddInForcesFromInputPorts(context, forces);
   }
 
   [[nodiscard]] static ScopeExit ThrowIfNonContactForceInProgress(

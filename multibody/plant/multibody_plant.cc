@@ -2287,19 +2287,17 @@ void MultibodyPlant<T>::CalcNonContactForces(
   this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
-
-  const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
-
-  // Compute forces applied through force elements. Note that this resets
-  // forces to empty so must come first.
-  CalcForceElementsContribution(context, forces);
-
-  AddInForcesFromInputPorts(context, forces);
-
-  // Only discrete models support joint limits.
   if (discrete) {
-    AddJointLimitsPenaltyForces(context, forces);
+    discrete_update_manager_->CalcNonContactForces(context, forces);
+    return;
   } else {
+    const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
+    // Compute forces applied through force elements. Note that this resets
+    // forces to empty so must come first.
+    CalcForceElementsContribution(context, forces);
+    AddInForcesFromInputPorts(context, forces);
+    // Only discrete models support joint limits. We log a warning if joint
+    // limits are set.
     auto& warning = joint_limits_parameters_.pending_warning_message;
     if (!warning.empty()) {
       drake::log()->warn(warning);
@@ -2307,6 +2305,7 @@ void MultibodyPlant<T>::CalcNonContactForces(
     }
   }
 }
+
 template <typename T>
 ScopeExit MultibodyPlant<T>::ThrowIfNonContactForceInProgress(
     const systems::Context<T>& context) const {
