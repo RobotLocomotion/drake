@@ -16,6 +16,7 @@ drake_cc_package_library(
         ":render_camera",
         ":render_engine",
         ":render_label",
+        ":render_mesh",
     ],
 )
 
@@ -59,6 +60,18 @@ drake_cc_library(
         "//common:essential",
         "//common:hash",
         "//systems/sensors:image",
+    ],
+)
+
+drake_cc_library(
+    name = "render_mesh",
+    srcs = ["render_mesh.cc"],
+    hdrs = ["render_mesh.h"],
+    interface_deps = [
+        "@tinyobjloader",
+    ],
+    deps = [
+        "//common:essential",
     ],
 )
 

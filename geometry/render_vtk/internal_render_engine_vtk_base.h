@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include <vtkCylinderSource.h>
 #include <vtkSmartPointer.h>
 #include <vtkTexturedSphereSource.h>
@@ -39,6 +41,9 @@ void SetCylinderOptions(vtkCylinderSource* vtk_cylinder, double height,
 void TransformToDrakeCylinder(vtkTransform* transform,
                               vtkTransformPolyDataFilter* transform_filter,
                               vtkCylinderSource* vtk_cylinder);
+
+vtkSmartPointer<vtkPolyDataAlgorithm> DoObjStuff(
+    const std::string& file_name, PerceptionProperties* properties);
 
 }  // namespace internal
 }  // namespace render_vtk

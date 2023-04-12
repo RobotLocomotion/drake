@@ -9,7 +9,6 @@
 #include <vtkCamera.h>
 #include <vtkCylinderSource.h>
 #include <vtkImageCast.h>
-#include <vtkOBJReader.h>
 #include <vtkOpenGLPolyDataMapper.h>
 #include <vtkOpenGLShaderProperty.h>
 #include <vtkOpenGLTexture.h>
@@ -21,6 +20,7 @@
 #include <vtkTransformPolyDataFilter.h>
 
 #include "drake/common/text_logging.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render/shaders/depth_shaders.h"
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 #include "drake/geometry/render_vtk/internal_vtk_util.h"
@@ -443,17 +443,18 @@ void RenderEngineVtk::InitializePipelines() {
 
 void RenderEngineVtk::ImplementObj(const std::string& file_name, double scale,
                                    void* user_data) {
-  static_cast<RegistrationData*>(user_data)->mesh_filename = file_name;
-  vtkNew<vtkOBJReader> mesh_reader;
-  mesh_reader->SetFileName(file_name.c_str());
-  mesh_reader->Update();
+  auto* data = static_cast<RegistrationData*>(user_data);
+  data->mesh_filename = file_name;
+
+  vtkSmartPointer<vtkPolyDataAlgorithm> mesh = DoObjStuff(
+      file_name, const_cast<PerceptionProperties*>(&data->properties));
 
   vtkNew<vtkTransform> transform;
   // TODO(SeanCurtis-TRI): Should I be allowing only isotropic scale.
   // TODO(SeanCurtis-TRI): Only add the transform filter if scale is not all 1.
   transform->Scale(scale, scale, scale);
   vtkNew<vtkTransformPolyDataFilter> transform_filter;
-  transform_filter->SetInputConnection(mesh_reader->GetOutputPort());
+  transform_filter->SetInputConnection(mesh->GetOutputPort());
   transform_filter->SetTransform(transform.GetPointer());
   transform_filter->Update();
 
@@ -563,9 +564,8 @@ void RenderEngineVtk::ImplementGeometry(vtkPolyDataAlgorithm* source,
     texture->InterpolateOn();
     color_actor->SetTexture(texture.Get());
   } else {
-    const Vector4d& diffuse =
-        data.properties.GetPropertyOrDefault("phong", "diffuse",
-                                             default_diffuse_);
+    const Vector4d& diffuse = data.properties.GetPropertyOrDefault(
+        "phong", "diffuse", default_diffuse_);
     color_actor->GetProperty()->SetColor(diffuse(0), diffuse(1), diffuse(2));
     color_actor->GetProperty()->SetOpacity(diffuse(3));
   }

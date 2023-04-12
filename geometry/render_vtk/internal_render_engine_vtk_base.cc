@@ -1,9 +1,12 @@
 #include "drake/geometry/render_vtk/internal_render_engine_vtk_base.h"
 
+#include <filesystem>
 #include <ostream>
 #include <utility>
 #include <vector>
 
+#include <fmt/format.h>
+#include <tiny_obj_loader.h>
 #include <vtkCapsuleSource.h>
 #include <vtkCellArray.h>
 #include <vtkFloatArray.h>
@@ -18,6 +21,7 @@
 
 #include "drake/common/fmt_eigen.h"
 #include "drake/common/scope_exit.h"
+#include "drake/geometry/render/render_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -234,6 +238,93 @@ class DrakeCubeSource : public vtkPolyDataAlgorithm {
   void operator=(const DrakeCubeSource&) = delete;
 };
 
+class DrakeObjSource : public vtkPolyDataAlgorithm {
+ public:
+  static DrakeObjSource* New() {
+    DrakeObjSource* result = new DrakeObjSource;
+    result->InitializeObjectBase();
+    return result;
+  }
+
+  vtkTypeMacro(DrakeObjSource, vtkPolyDataAlgorithm);
+
+  void PrintSelf(std::ostream& os, vtkIndent indent) override {
+    this->Superclass::PrintSelf(os, indent);
+    os << indent << fmt::format("Num triangles: {}", mesh_data_.indices.rows());
+  }
+
+  void set_mesh_data(geometry::internal::MeshData mesh_data) {
+    mesh_data_ = std::move(mesh_data);
+  }
+
+ protected:
+  DrakeObjSource() { this->SetNumberOfInputPorts(0); }
+
+  ~DrakeObjSource() override {}
+
+  int RequestData(vtkInformation*, vtkInformationVector**,
+                  vtkInformationVector* outputVector) override {
+    vtkPoints* newPoints = vtkPoints::New(VTK_DOUBLE);
+    vtkFloatArray* newNormals = vtkFloatArray::New();
+    vtkFloatArray* newTCoords = vtkFloatArray::New();
+    vtkCellArray* newPolys = vtkCellArray::New();
+
+    ScopeExit guard([newPoints, newNormals, newTCoords, newPolys]() {
+      newPoints->Delete();
+      newNormals->Delete();
+      newTCoords->Delete();
+      newPolys->Delete();
+    });
+
+    const int num_points = mesh_data_.positions.rows();
+    const int num_tris = mesh_data_.indices.rows();
+    newPoints->Allocate(num_points);
+    newNormals->SetNumberOfComponents(3);
+    newNormals->Allocate(num_points);
+    newNormals->SetName("Normals");
+    newTCoords->SetNumberOfComponents(2);
+    newTCoords->Allocate(num_points);
+    newTCoords->SetName("TCoords");
+    // This estimate is exact because every polygon is a triangle.
+    newPolys->Allocate(newPolys->EstimateSize(num_tris, 3));
+
+    for (int p = 0; p < num_points; ++p) {
+      newPoints->InsertNextPoint(mesh_data_.positions(p, 0),
+                                 mesh_data_.positions(p, 1),
+                                 mesh_data_.positions(p, 2));
+      const double n[] = {mesh_data_.normals(p, 0), mesh_data_.normals(p, 1),
+                          mesh_data_.normals(p, 2)};
+      newNormals->InsertNextTuple(n);
+      const double uv[] = {mesh_data_.uvs(p, 0), mesh_data_.uvs(p, 1)};
+      newTCoords->InsertNextTuple(uv);
+    }
+    for (int t = 0; t < num_tris; ++t) {
+      const auto& row = mesh_data_.indices.row(t);
+      const vtkIdType triangle[] = {row[0], row[1], row[2]};
+      newPolys->InsertNextCell(3, triangle);
+    }
+
+    // Populates the output with the compute data.
+    vtkInformation* out_info = outputVector->GetInformationObject(0);
+    vtkPolyData* output =
+        vtkPolyData::SafeDownCast(out_info->Get(vtkDataObject::DATA_OBJECT()));
+    output->SetPoints(newPoints);
+    output->GetPointData()->SetNormals(newNormals);
+    output->GetPointData()->SetTCoords(newTCoords);
+    output->SetPolys(newPolys);
+
+    return 1;
+  }
+
+ private:
+  // Does vtkPolyDataAlgorithm have copy semantics such that I need to do this
+  // explicitly? Or is this just a relic from older C++?
+  DrakeObjSource(const DrakeObjSource&) = delete;
+  void operator=(const DrakeObjSource&) = delete;
+
+  geometry::internal::MeshData mesh_data_;
+};
+
 }  // namespace
 
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkCapsule(const Capsule& capsule) {
@@ -307,6 +398,80 @@ void TransformToDrakeCylinder(vtkTransform* transform,
   transform_filter->SetInputConnection(vtk_cylinder->GetOutputPort());
   transform_filter->SetTransform(transform);
   transform_filter->Update();
+}
+
+namespace {
+
+}
+
+vtkSmartPointer<vtkPolyDataAlgorithm> DoObjStuff(
+    const std::string& file_name, PerceptionProperties* properties) {
+  tinyobj::ObjReaderConfig config;
+  config.triangulate = true;
+  config.vertex_color = false;
+  tinyobj::ObjReader reader;
+  reader.ParseFromFile(file_name, config);
+
+  if (!reader.Valid()) {
+    throw std::runtime_error(fmt::format("This is bad! {}", reader.Error()));
+  }
+
+  const auto& shapes = reader.GetShapes();
+  if (shapes.size() != 1) {
+    throw std::runtime_error(fmt::format(
+        "Only one shape with one material; found {} shapes", shapes.size()));
+  }
+
+  const auto& materials = reader.GetMaterials();
+  if (materials.size() > 1) {
+    throw std::runtime_error(fmt::format(
+        "No more than one material definition supported: found {} materials",
+        materials.size()));
+  }
+
+  const auto& attrib = reader.GetAttrib();
+
+  geometry::internal::MeshData mesh_data =
+      geometry::internal::LoadMeshFromObj(attrib, shapes, file_name);
+
+  vtkSmartPointer<DrakeObjSource> obj_mesh =
+      vtkSmartPointer<DrakeObjSource>::New();
+  obj_mesh->set_mesh_data(std::move(mesh_data));
+  obj_mesh->Update();
+
+  if (properties != nullptr && materials.size() > 0) {
+    const auto& mat = materials[0];
+    // Note: the values receive *default* values even if not set in the mtl
+    // file. That's not *too* important for the diffuse texture (because the
+    // empty string is sufficiently suggestive of not being set. But the default
+    // value for diffuse color looks the same whether use chose it or the
+    // parser did). So, even if the user didn't set the diffuse color in the
+    // mtl, the mtl default value will win.
+
+    // NOTE: changing the properties is a horrible, horrible hack! We're losing
+    // data. In the long run, we need a better solution.
+    properties->UpdateProperty(
+        "phong", "diffuse",
+        Rgba(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2], mat.dissolve));
+    if (!mat.diffuse_texname.empty()) {
+      const std::string tex_name = [&mat, &file_name]() -> std::string {
+        std::filesystem::path tex_path(mat.diffuse_texname);
+        if (tex_path.is_absolute()) {
+          return mat.diffuse_texname;
+        }
+        std::filesystem::path obj_path(file_name);
+        // We're going to assume that the mtl file is in the same directory as
+        // the obj file. We don't *know* this is true and tiny_obj_loader
+        // doesn't give us this information. It'd be nice if it did.
+        std::filesystem::path obj_dir = obj_path.parent_path();
+        tex_path = (obj_dir / tex_path).lexically_normal();
+        return tex_path.string();
+      }();
+      properties->UpdateProperty("phong", "diffuse_map", tex_name);
+    }
+  }
+
+  return obj_mesh;
 }
 
 }  // namespace internal
