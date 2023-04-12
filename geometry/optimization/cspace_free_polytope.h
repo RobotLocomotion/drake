@@ -322,8 +322,7 @@ class CspaceFreePolytope {
     kSum,            ///< Maximize ∑ᵢδᵢ
     kGeometricMean,  ///< Maximize the geometric mean power(∏ᵢ (δᵢ + ε), 1/n)
                      ///< where n is C.rows(),
-                     ///< ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon.
-                     ///< # NOLINT
+                     ///< ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon.  # NOLINT
   };
 
   struct FindPolytopeGivenLagrangianOptions {
@@ -463,7 +462,8 @@ class CspaceFreePolytope {
    separation certificate for a pair of geometries for a C-space polytope
    {s | C*s<=d, s_lower<=s<=s_upper}.
    */
-  [[nodiscard]] SeparationCertificateProgram MakeIsGeometrySeparableProgram(
+  [[nodiscard]] SeparationCertificateProgram
+  MakeIsGeometrySeparableProgram(
       const SortedPair<geometry::GeometryId>& geometry_pair,
       const Eigen::Ref<const Eigen::MatrixXd>& C,
       const Eigen::Ref<const Eigen::VectorXd>& d) const;
