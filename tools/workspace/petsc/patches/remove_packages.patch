@@ -50,3 +50,14 @@ Do not load unused packages to reduce build footprint
    }
 
    PetscCallMPI(MPI_Comm_rank(PC_MPI_COMM_WORLD, &rank));
+
+--- src/dm/interface/dmregall.c
++++ src/dm/interface/dmregall.c
+@@ -55,7 +55,6 @@ PetscErrorCode DMRegisterAll(void)
+ #if defined(PETSC_HAVE_MOAB)
+   PetscCall(DMRegister(DMMOAB, DMCreate_Moab));
+ #endif
+-  PetscCall(DMRegister(DMNETWORK, DMCreate_Network));
+   PetscCall(DMRegister(DMFOREST, DMCreate_Forest));
+ #if defined(PETSC_HAVE_P4EST)
+   PetscCall(DMRegister(DMP4EST, DMCreate_p4est));
