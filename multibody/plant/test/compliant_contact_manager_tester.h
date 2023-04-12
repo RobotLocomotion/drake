@@ -41,8 +41,10 @@ class CompliantContactManagerTester {
   static void CalcNonContactForces(
       const CompliantContactManager<double>& manager,
       const drake::systems::Context<double>& context,
+      bool include_joint_limit_penalty_forces,
       MultibodyForces<double>* forces) {
-    manager.CalcNonContactForces(context, forces);
+    manager.CalcNonContactForces(context, include_joint_limit_penalty_forces,
+                                 forces);
   }
 
   static std::vector<ContactPairKinematics<double>> CalcContactKinematics(
