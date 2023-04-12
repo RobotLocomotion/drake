@@ -32,14 +32,37 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
   // depend on time and (even continuous) inputs. However it does emulate
   // the discrete update of these values as if zero-order held, which is
   // what we want.
+  const auto& discrete_input_port_forces_cache_entry = this->DeclareCacheEntry(
+      "Discrete force input port values",
+      systems::ValueProducer(
+          this, MultibodyForces<T>(plant()),
+          &DiscreteUpdateManager<T>::CopyForcesFromInputPorts),
+      // The cache entry is manually managed to refresh at the beginning of a
+      // discrete update.
+      {systems::System<T>::nothing_ticket()});
+  cache_indexes_.discrete_input_port_forces =
+      discrete_input_port_forces_cache_entry.cache_index();
+
   const auto& contact_solver_results_cache_entry = this->DeclareCacheEntry(
       "Contact solver results",
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
       {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
+       systems::System<T>::all_parameters_ticket(),
+       discrete_input_port_forces_cache_entry.ticket()});
   cache_indexes_.contact_solver_results =
       contact_solver_results_cache_entry.cache_index();
+
+  // See ThrowIfNonContactForceInProgress().
+  const auto& non_contact_forces_evaluation_in_progress =
+      this->DeclareCacheEntry(
+          "Evaluation of non-contact forces and accelerations is in progress.",
+          // N.B. This flag is set to true only when the computation is in
+          // progress. Therefore its default value is `false`.
+          systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
+          {systems::System<T>::nothing_ticket()});
+  cache_indexes_.non_contact_forces_evaluation_in_progress =
+      non_contact_forces_evaluation_in_progress.cache_index();
 
   // Allow derived classes to declare their own cache entries.
   DoDeclareCacheEntries();
@@ -120,6 +143,25 @@ const MultibodyTree<T>& DiscreteUpdateManager<T>::internal_tree() const {
 }
 
 template <typename T>
+void DiscreteUpdateManager<T>::CalcNonContactForces(
+    const drake::systems::Context<T>& context,
+    bool include_joint_limit_penalty_forces, MultibodyForces<T>* forces) const {
+  plant().ValidateContext(context);
+  DRAKE_DEMAND(forces != nullptr);
+  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
+
+  const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
+
+  // Compute forces applied through force elements. Note that this resets
+  // forces to empty so must come first.
+  CalcForceElementsContribution(context, forces);
+  forces->AddInForces(EvalDiscreteInputPortForces(context));
+  if (include_joint_limit_penalty_forces) {
+    AddJointLimitsPenaltyForces(context, forces);
+  }
+}
+
+template <typename T>
 const contact_solvers::internal::ContactSolverResults<T>&
 DiscreteUpdateManager<T>::EvalContactSolverResults(
     const systems::Context<T>& context) const {
@@ -138,26 +180,10 @@ DiscreteUpdateManager<T>::EvalContactSurfaces(
 }
 
 template <typename T>
-void DiscreteUpdateManager<T>::AddInForcesFromInputPorts(
-    const drake::systems::Context<T>& context,
-    MultibodyForces<T>* forces) const {
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddInForcesFromInputPorts(
+void DiscreteUpdateManager<T>::AddJointLimitsPenaltyForces(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddJointLimitsPenaltyForces(
       plant(), context, forces);
-}
-
-template <typename T>
-void DiscreteUpdateManager<T>::CalcNonContactForces(
-    const drake::systems::Context<T>& context,
-    MultibodyForces<T>* forces) const {
-  MultibodyPlantDiscreteUpdateManagerAttorney<T>::CalcNonContactForces(
-      plant(), context, forces);
-}
-
-template <typename T>
-ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
-    const drake::systems::Context<T>& context) const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::ThrowIfNonContactForceInProgress(plant(), context);
 }
 
 template <typename T>
@@ -166,13 +192,6 @@ void DiscreteUpdateManager<T>::CalcForceElementsContribution(
     MultibodyForces<T>* forces) const {
   MultibodyPlantDiscreteUpdateManagerAttorney<T>::CalcForceElementsContribution(
       plant(), context, forces);
-}
-
-template <typename T>
-const std::vector<std::vector<geometry::GeometryId>>&
-DiscreteUpdateManager<T>::collision_geometries() const {
-  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::collision_geometries(
-      plant());
 }
 
 template <typename T>
@@ -208,6 +227,78 @@ BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
     geometry::GeometryId geometry_id) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
       plant(), geometry_id);
+}
+
+template <typename T>
+ScopeExit DiscreteUpdateManager<T>::ThrowIfNonContactForceInProgress(
+    const systems::Context<T>& context) const {
+  systems::CacheEntryValue& value =
+      plant().get_cache_entry(
+              cache_indexes_.non_contact_forces_evaluation_in_progress)
+          .get_mutable_cache_entry_value(context);
+  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
+  if (evaluation_in_progress) {
+    const char* error_message =
+        "Algebraic loop detected. This situation is caused when connecting "
+        "the input of your MultibodyPlant to the output of a feedback system "
+        "which is an algebraic function of a feedthrough output of the "
+        "plant. Ways to remedy this: 1. Revisit the model for your feedback "
+        "system. Consider if its output can be written in terms of other "
+        "inputs. 2. Break the algebraic loop by adding state to the "
+        "controller, typically to 'remember' a previous input. 3. Break the "
+        "algebraic loop by adding a zero-order hold system between the "
+        "output of the plant and your feedback system. This effectively "
+        "delays the input signal to the controller.";
+    throw std::runtime_error(error_message);
+  }
+  // Mark the start of the computation. If within an algebraic
+  // loop, pulling from the plant's input ports during the
+  // computation will trigger the recursive evaluation of this
+  // method and the exception above will be thrown.
+  evaluation_in_progress = true;
+  // If the exception above is triggered, we will leave this method and the
+  // computation will no longer be "in progress". We use a scoped guard so
+  // that we have a chance to mark it as such when we leave this scope.
+  return ScopeExit(
+      [&evaluation_in_progress]() { evaluation_in_progress = false; });
+}
+
+
+template <typename T>
+void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
+    const drake::systems::Context<T>& context) const {
+  const auto& discrete_input_forces_cache_entry =
+      plant().get_cache_entry(cache_indexes_.discrete_input_port_forces);
+  // The discrete sampling via cache entry trick only works when caching is
+  // enable. See #12786 for details.
+  if (discrete_input_forces_cache_entry.is_cache_entry_disabled(context)) {
+    discrete_input_forces_cache_entry.enable_caching(context);
+    drake::log()->warn(
+        "The discrete force input ports cache entry has re-enabled caching due "
+        "to #12786. The discrete sampling of MultibodyPlant force input ports "
+        "depends on caching enabled for this particular cache entry.");
+  }
+  // Actually sample the discrete forces.
+  auto& cache_entry_value =
+      discrete_input_forces_cache_entry.get_mutable_cache_entry_value(context);
+  cache_entry_value.mark_out_of_date();
+  MultibodyForces<T>& forces =
+      cache_entry_value.template GetMutableValueOrThrow<MultibodyForces<T>>();
+  CopyForcesFromInputPorts(context, &forces);
+  cache_entry_value.mark_up_to_date();
+
+  // Initiate a value modification event.
+  const systems::DependencyTracker& tracker =
+      context.get_tracker(discrete_input_forces_cache_entry.ticket());
+  tracker.NoteValueChange(context.start_new_change_event());
+}
+
+template <typename T>
+void DiscreteUpdateManager<T>::CopyForcesFromInputPorts(
+    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
+  forces->SetZero();
+  MultibodyPlantDiscreteUpdateManagerAttorney<T>::AddInForcesFromInputPorts(
+      plant(), context, forces);
 }
 
 }  // namespace internal
