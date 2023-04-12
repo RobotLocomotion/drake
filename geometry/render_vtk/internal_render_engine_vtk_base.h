@@ -40,6 +40,9 @@ void TransformToDrakeCylinder(vtkTransform* transform,
                               vtkTransformPolyDataFilter* transform_filter,
                               vtkCylinderSource* vtk_cylinder);
 
+vtkSmartPointer<vtkPolyDataAlgorithm> DoObjStuff(
+    const std::string& file_name, PerceptionProperties* properties);
+
 }  // namespace internal
 }  // namespace render_vtk
 }  // namespace geometry

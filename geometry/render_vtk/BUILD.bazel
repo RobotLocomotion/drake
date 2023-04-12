@@ -78,8 +78,10 @@ drake_cc_library(
         "//common:scope_exit",
         "//geometry:geometry_roles",
         "//geometry:shape_specification",
+        "//geometry/render:render_mesh",
         "@vtk//:vtkCommonCore",
         "@vtk//:vtkFiltersSources",
+        "@tinyobjloader",
     ],
 )
 

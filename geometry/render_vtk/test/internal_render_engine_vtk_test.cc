@@ -66,6 +66,9 @@ const double kZNear = 0.5;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
 const bool kShowWindow = false;
+// Note: enabling this causes failures with two tests. Try running as:
+// bazel test geometry/render_vtk:internal_render_engine_vtk_test --test_filter=-*DifferentCameras:*Intrinsics*
+// to get past the aberrant tests; they *should* pass with this disabled.
 
 // The following tolerance is used due to a precision difference between Ubuntu
 // Linux and Mac OSX.
@@ -897,6 +900,36 @@ TEST_F(RenderEngineVtkTest, EllipsoidTest) {
       unordered_map<GeometryId, RigidTransformd>{{id, X_WV}});
   PerformCenterShapeTest(renderer_.get(), "Ellipsoid test: a extent");
 }
+
+/* Texture mesh semantics needs to change:
+
+  - Current tests - all ignore the mtl file and are wholly reliant on geometry
+    properties.
+    - MeshTest
+      - a bad value for ("phong", "diffuse_map") uses ("phong", "diffuse")
+    - TexturedMeshTest
+      - a good value for ("phong", "diffuse_map") uses it
+    - ImpliedMeshTest
+      - No diffuse specified in *property* looks for file of same name.
+  - New tests based on new semantics
+    - new semantics
+      - If obj has mtl, those materials should be used (Kd and map_Kd). Period.
+        - If the texture can't be found, it's omitted and the materials
+          diffuse value is used instead.
+      - If obj has no mtl then use the following in order of descending
+        priority.
+        - "foo.png" logic.
+        - ("phong", "diffuse")
+    - New tests
+      - MTL support
+        - Confirm that both Kd and map_Kd go through; make sure the map_Kd
+          file doesn't match names with the foo.obj. Simply picking weird values
+          for map_Kd and Kd should be sufficient to show they both come through.
+      - Missing MTL
+        - One case with implied texture (foo.obj with no mtllib does have a
+          foo.png present).
+        - Diffuse color fallback (no mtllib, no foo.png).
+*/
 
 // Performs the shape-centered-in-the-image test with a mesh (which happens to
 // be a box). This simultaneously confirms that if a diffuse_map is specified
