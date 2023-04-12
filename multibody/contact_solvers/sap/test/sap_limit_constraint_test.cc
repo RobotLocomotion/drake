@@ -94,7 +94,8 @@ TEST_P(SapLimitConstraintTest, Construction) {
   EXPECT_EQ(dut_->first_clique(), clique_);
   EXPECT_THROW(dut_->second_clique(), std::exception);
   EXPECT_EQ(dut_->constraint_function(), MakeExpectedConstraintFunction());
-  EXPECT_EQ(dut_->first_clique_jacobian(), MakeExpectedJacobian());
+  EXPECT_EQ(dut_->first_clique_jacobian().MakeDenseMatrix(),
+            MakeExpectedJacobian());
   EXPECT_THROW(dut_->second_clique_jacobian(), std::exception);
   const SapLimitConstraint<double>::Parameters& p = GetParam();
   EXPECT_EQ(dut_->parameters().lower_limit(), p.lower_limit());
@@ -304,7 +305,8 @@ TEST_P(SapLimitConstraintTest, Clone) {
   EXPECT_EQ(clone->first_clique(), clique_);
   EXPECT_THROW(clone->second_clique(), std::exception);
   EXPECT_EQ(clone->constraint_function(), dut_->constraint_function());
-  EXPECT_EQ(clone->first_clique_jacobian(), dut_->first_clique_jacobian());
+  EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
+            dut_->first_clique_jacobian().MakeDenseMatrix());
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
   const SapLimitConstraint<double>::Parameters p = GetParam();
   EXPECT_EQ(clone->parameters().lower_limit(), p.lower_limit());

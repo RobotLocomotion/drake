@@ -385,10 +385,9 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
   // We compute a factorization of A once so we can re-use it multiple times
   // below.
   const int num_cliques = A.size();  // N.B. Participating cliques.
-  std::vector<math::LinearSolver<Eigen::LDLT, MatrixX<T>>> A_ldlt(num_cliques);
+  std::vector<VectorX<T>> A_diag_inv(num_cliques);
   for (int c = 0; c < num_cliques; ++c) {
-    A_ldlt[c] = math::LinearSolver<Eigen::LDLT, MatrixX<T>>(A[c]);
-    DRAKE_DEMAND(A_ldlt[c].eigen_linear_solver().isPositive());
+    A_diag_inv[c] = A[c].diagonal().cwiseInverse();
   }
 
   // Scan constraints in the order specified by the graph.
@@ -413,16 +412,16 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
       {
         const int c =
             cliques_permutation.permuted_index(constraint.first_clique());
-        const MatrixX<T>& Jic = constraint.first_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
+        const MatrixBlock<T>& Jic = constraint.first_clique_jacobian();
+        Jic.MultiplyWithScaledTransposeAndAddTo(A_diag_inv[c], &W[i]);
       }
 
       // Adds clique 1 contribution, if present.
       if (constraint.num_cliques() == 2) {
         const int c =
             cliques_permutation.permuted_index(constraint.second_clique());
-        const MatrixX<T>& Jic = constraint.second_clique_jacobian();
-        W[i] += Jic * A_ldlt[c].Solve(Jic.transpose());
+        const MatrixBlock<T>& Jic = constraint.second_clique_jacobian();
+        Jic.MultiplyWithScaledTransposeAndAddTo(A_diag_inv[c], &W[i]);
       }
     }
   }
