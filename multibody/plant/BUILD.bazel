@@ -1074,9 +1074,11 @@ drake_cc_googletest(
     name = "discrete_update_manager_test",
     deps = [
         ":dummy_model",
+        ":multibody_plant_config_functions",
         ":multibody_plant_core",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing",
         "//systems/analysis:simulator",
         "//systems/framework:abstract_value_cloner",
     ],

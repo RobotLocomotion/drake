@@ -37,7 +37,8 @@ void DiscreteUpdateManager<T>::DeclareCacheEntries() {
       systems::ValueProducer(
           this, &DiscreteUpdateManager<T>::CalcContactSolverResults),
       {systems::System<T>::xd_ticket(),
-       systems::System<T>::all_parameters_ticket()});
+       systems::System<T>::all_parameters_ticket(),
+       systems::System<T>::all_input_ports_ticket()});
   cache_indexes_.contact_solver_results =
       contact_solver_results_cache_entry.cache_index();
 
