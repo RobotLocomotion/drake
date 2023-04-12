@@ -271,7 +271,9 @@ PYBIND11_MODULE(sensors, m) {
         .def("focal_x", &CameraConfig::focal_x, config_cls_doc.focal_x.doc)
         .def("focal_y", &CameraConfig::focal_y, config_cls_doc.focal_y.doc)
         .def("principal_point", &CameraConfig::principal_point,
-            config_cls_doc.principal_point.doc);
+            config_cls_doc.principal_point.doc)
+        .def("MakeCameras", &CameraConfig::MakeCameras,
+            config_cls_doc.MakeCameras.doc);
     DefAttributesUsingSerialize(&config_cls, config_cls_doc);
     DefReprUsingSerialize(&config_cls);
     DefCopyAndDeepCopy(&config_cls);

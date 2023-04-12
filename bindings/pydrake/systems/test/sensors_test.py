@@ -195,6 +195,9 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(config.focal_x(), 10)
         self.assertEqual(config.focal_y(), 20)
         config.principal_point()
+        (color, depth) = config.MakeCameras()
+        self.assertIsInstance(color, ColorRenderCamera)
+        self.assertIsInstance(depth, DepthRenderCamera)
 
         fov = mut.CameraConfig.FovDegrees(x=10, y=20)
         self.assertIn("x=10", repr(fov))
