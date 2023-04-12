@@ -117,11 +117,16 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
   cache_indexes_.contact_kinematics =
       contact_kinematics_cache_entry.cache_index();
 
-  // Accelerations due to non-contact forces.
-  // We cache non-contact forces, ABA forces and accelerations into a
+  // TODO(xuchenhan-tri): consider moving this cache entry to
+  // DiscreteUpdateManager.
+  // Accelerations due to non-contact forces (excluding joint limit penalty
+  // forces). We cache non-contact forces, ABA forces and accelerations into a
   // AccelerationsDueToExternalForcesCache.
   AccelerationsDueToExternalForcesCache<T> non_contact_forces_accelerations(
       this->internal_tree().get_topology());
+  const auto base_cache_indices = DiscreteUpdateManager<T>::cache_indexes();
+  const auto& discrete_input_port_forces_cache_entry =
+      plant().get_cache_entry(base_cache_indices.discrete_input_port_forces);
   const auto& non_contact_forces_accelerations_cache_entry =
       this->DeclareCacheEntry(
           "Non-contact forces accelerations.",
@@ -129,12 +134,9 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
               this, non_contact_forces_accelerations,
               &CompliantContactManager<
                   T>::CalcAccelerationsDueToNonContactForcesCache),
-          // Due to issue #12786, we cannot properly mark this entry dependent
-          // on inputs. CalcAccelerationsDueToNonContactForcesCache() uses
-          // CacheIndexes::non_contact_forces_evaluation_in_progress to guard
-          // against algebraic loops.
           {systems::System<T>::xd_ticket(),
-           systems::System<T>::all_parameters_ticket()});
+           systems::System<T>::all_parameters_ticket(),
+           discrete_input_port_forces_cache_entry.ticket()});
   cache_indexes_.non_contact_forces_accelerations =
       non_contact_forces_accelerations_cache_entry.cache_index();
 
@@ -548,27 +550,16 @@ void CompliantContactManager<T>::
 }
 
 template <typename T>
-void CompliantContactManager<T>::CalcNonContactForcesExcludingJointLimits(
-    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  DRAKE_DEMAND(forces != nullptr);
-  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
-  // Compute forces applied through force elements. Note that this resets
-  // forces to empty so must come first.
-  this->CalcForceElementsContribution(context, forces);
-  this->AddInForcesFromInputPorts(context, forces);
-}
-
-template <typename T>
 void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
     const systems::Context<T>& context,
     AccelerationsDueToExternalForcesCache<T>* forward_dynamics_cache) const {
   DRAKE_DEMAND(forward_dynamics_cache != nullptr);
-  ScopeExit guard = this->ThrowIfNonContactForceInProgress(context);
 
   // N.B. Joint limits are modeled as constraints. Therefore here we only add
   // all other external forces.
-  CalcNonContactForcesExcludingJointLimits(context,
-                                           &forward_dynamics_cache->forces);
+  this->CalcNonContactForces(context,
+                             /* include joint limit penalty forces */ false,
+                             &forward_dynamics_cache->forces);
 
   // Our goal is to compute accelerations from the Newton-Euler equations:
   //   M⋅v̇ = k(x)

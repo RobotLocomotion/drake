@@ -82,7 +82,8 @@ void TamsiDriver<T>::CalcContactSolverResults(
   // Forces at the previous time step.
   MultibodyForces<T> forces0(plant());
 
-  manager().CalcNonContactForces(context, &forces0);
+  manager().CalcNonContactForces(
+      context, /* include_joint_limit_penalty_forces */ true, &forces0);
 
   // Workspace for inverse dynamics:
   // Bodies' accelerations, ordered by BodyNodeIndex.

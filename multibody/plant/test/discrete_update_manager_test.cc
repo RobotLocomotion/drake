@@ -3,7 +3,9 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff.h"
+#include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/test/dummy_model.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/abstract_value_cloner.h"
@@ -164,6 +166,7 @@ class DummyDiscreteUpdateManager final : public DiscreteUpdateManager<T> {
 };
 
 namespace {
+
 class DiscreteUpdateManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -270,6 +273,70 @@ TEST_F(DiscreteUpdateManagerTest, ScalarConversion) {
                           2.0 * VectorXd::Ones(kNumAdditionalDofs) * time_steps,
                       std::numeric_limits<double>::epsilon()));
 }
+
+/* Tests that the contact solver results correctly depends on the actuation
+ inputs. */
+GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
+  double dt = 0.25;
+  systems::DiagramBuilder<double> builder;
+  MultibodyPlantConfig config = {.time_step = dt};
+  auto [plant, scene_graph] = AddMultibodyPlant(config, &builder);
+  const std::string sdf_model = R"""(
+<?xml version="1.0"?>
+<sdf version="1.7">
+  <model name="object">
+    <joint name="z_axis" type="prismatic">
+      <parent>world</parent>
+      <child>object</child>
+      <axis>0 0 1</axis>
+    </joint>
+    <link name="object">
+      <collision name="collision">
+        <geometry>
+          <box>
+            <size>1 1 1</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+)""";
+  const std::vector<ModelInstanceIndex> models =
+      Parser(&plant).AddModelsFromString(sdf_model, "sdf");
+  /* Disable gravity for easier algebra. */
+  plant.mutable_gravity_field().set_gravity_vector(Vector3<double>::Zero());
+  plant.Finalize();
+  auto diagram = builder.Build();
+  systems::Simulator<double> simulator(*diagram);
+  auto& context = simulator.get_mutable_context();
+  auto& plant_context = plant.GetMyMutableContextFromRoot(&context);
+
+  const ModelInstanceIndex only_model = models[0];
+  const systems::InputPort<double>& u_input =
+      plant.get_actuation_input_port(only_model);
+  /* When there's zero actuation, the velocity should stay zero due to the lack
+   of gravity. */
+  u_input.FixValue(&plant_context, Vector1<double>(0.0));
+  simulator.AdvanceTo(dt);
+  VectorX<double> v = plant.GetVelocities(plant_context, only_model);
+  ASSERT_EQ(v.size(), 1);
+  EXPECT_TRUE(CompareMatrices(v, Vector1<double>(0.0)));
+
+  /* Pull on the generalized contact forces output port to force a
+   ContactSolverResult calculation. */
+  plant.get_generalized_contact_forces_output_port(only_model)
+      .Eval(plant_context);
+  /* Then swtich to a non-zero actuation and advance another step. */
+  const double nonzero_actuation = 1.2;
+  u_input.FixValue(&plant_context, Vector1<double>(nonzero_actuation));
+  simulator.AdvanceTo(2.0 * dt);
+  v = plant.GetVelocities(plant_context, only_model);
+  ASSERT_EQ(v.size(), 1);
+  /* The velocity should reflect the change in actuation. */
+  EXPECT_TRUE(CompareMatrices(v, Vector1<double>(nonzero_actuation * dt)));
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace internal

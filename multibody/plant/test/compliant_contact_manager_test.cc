@@ -534,9 +534,10 @@ TEST_F(SpheresStackTest, DoCalcDiscreteValues) {
                               MatrixCompareType::relative));
 }
 
-// CompliantContactManager implements a workaround for issue #12786 which might
+// TODO(xuchenhan-tri): move this to discrete_update_manager_test.cc
+// DiscreteUpdateManager implements a workaround for issue #12786 which might
 // lead to undetected algebraic loops in the systems framework. Therefore
-// CompliantContactManager implements an internal algebraic loop detection to
+// DiscreteUpdateManager implements an internal algebraic loop detection to
 // properly warn users. This should go away as issue #12786 is resolved. This
 // test verifies the algebraic loop detection logic.
 class AlgebraicLoopDetection : public ::testing::Test {

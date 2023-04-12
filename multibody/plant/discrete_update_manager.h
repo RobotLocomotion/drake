@@ -133,6 +133,9 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
    update. */
   void CalcDiscreteValues(const systems::Context<T>& context,
                           systems::DiscreteValues<T>* updates) const {
+    // The discrete sampling of input ports needs to be the first step of a
+    // discrete update.
+    SampleDiscreteInputPortForces(context);
     DRAKE_DEMAND(updates != nullptr);
     DoCalcDiscreteValues(context, updates);
   }
@@ -143,6 +146,24 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     DRAKE_DEMAND(contact_results != nullptr);
     plant().ValidateContext(context);
     DoCalcContactResults(context, contact_results);
+  }
+
+  void CalcNonContactForces(const drake::systems::Context<T>& context,
+                            bool include_joint_limit_penalty_forces,
+                            MultibodyForces<T>* forces) const {
+    plant().ValidateContext(context);
+    DRAKE_DEMAND(forces != nullptr);
+    DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
+
+    const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
+
+    // Compute forces applied through force elements. Note that this resets
+    // forces to empty so must come first.
+    CalcForceElementsContribution(context, forces);
+    forces->AddInForces(EvalDiscreteInputPortForces(context));
+    if (include_joint_limit_penalty_forces) {
+      AddJointLimitsPenaltyForces(context, forces);
+    }
   }
 
   // TODO(amcastro-tri): Consider replacing with more specific APIs with the
@@ -206,6 +227,16 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
     return multibody_state_index_;
   }
 
+  /* Evaluates the discretely sampled MultibodyPlant input port force values.
+   This includes forces from externally applied spatial forces, externally
+   applied generalized forces, and joint actuation forces.  */
+  const MultibodyForces<T>& EvalDiscreteInputPortForces(
+      const drake::systems::Context<T>& context) const {
+    return plant()
+        .get_cache_entry(cache_indexes_.discrete_input_port_forces)
+        .template Eval<MultibodyForces<T>>(context);
+  }
+
   /* Exposed MultibodyPlant private/protected methods.
    @{ */
 
@@ -215,22 +246,11 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
   const std::vector<geometry::ContactSurface<T>>& EvalContactSurfaces(
       const systems::Context<T>& context) const;
 
-  void AddInForcesFromInputPorts(const drake::systems::Context<T>& context,
-                                 MultibodyForces<T>* forces) const;
-
-  void CalcNonContactForces(const drake::systems::Context<T>& context,
-                            MultibodyForces<T>* forces) const;
-
-  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
-      const systems::Context<T>& context) const;
+  void AddJointLimitsPenaltyForces(const systems::Context<T>& context,
+                                   MultibodyForces<T>* forces) const;
 
   void CalcForceElementsContribution(const drake::systems::Context<T>& context,
                                      MultibodyForces<T>* forces) const;
-
-  // TODO(xuchenhan-tri): Remove this when SceneGraph takes control of all
-  //  geometries.
-  const std::vector<std::vector<geometry::GeometryId>>& collision_geometries()
-      const;
 
   const std::vector<internal::CouplerConstraintSpecs>&
   coupler_constraints_specs() const;
@@ -266,12 +286,52 @@ class DiscreteUpdateManager : public ScalarConvertibleComponent<T> {
       const systems::Context<T>& context,
       ContactResults<T>* contact_results) const = 0;
 
- private:
   // Struct used to conglomerate the indexes of cache entries declared by the
   // manager.
   struct CacheIndexes {
+    // Manually managed cache entries that mimics a discrete sampling of forces
+    // added to the owning MbP via input ports (see issue #12786). This cache
+    // entry is manually marked out-of-date, updated, and immediately marked
+    // up-to-date at the beginning of each discrete update. So when caching is
+    // enabled, it is always up-to-date as long as any discrete update has
+    // happened. The only time this cache entry may be updated automatically via
+    // the caching mechanism is when a downstream cache entry that depends on
+    // this cache entry requests its value before any discrete update has
+    // happened. Evaluating this cache entry when caching is disabled throws an
+    // exception.
+    systems::CacheIndex discrete_input_port_forces;
     systems::CacheIndex contact_solver_results;
+    systems::CacheIndex non_contact_forces_evaluation_in_progress;
   };
+
+  // Exposes indices for the cache entries declared by this class for derived
+  // classes to depend on.
+  CacheIndexes cache_indexes() const { return cache_indexes_; }
+
+ private:
+  // Due to issue #12786, we cannot mark the calculation of non-contact forces
+  // (and the acceleration it induces) dependent on the a discrete
+  // MultibodyPlant's inputs, as it should. However, by removing this
+  // dependency, we run the risk of an undetected algebraic loop. We use this
+  // function to guard against such algebraic loop. In particular, calling this
+  // function immediately upon entering the calculation of non-contact forces
+  // sets a flag indicating the calculation of non-contact forces is in
+  // progress. Then, this function returns a ScopeExit which turns off the flag
+  // when going out of scope at the end of the non-contact forces calculation.
+  // If this function is called again while the flag is on, it means that an
+  // algebraic loop exists and an exception is thrown.
+  [[nodiscard]] ScopeExit ThrowIfNonContactForceInProgress(
+      const systems::Context<T>& context) const;
+
+  // Updates the discrete_input_forces cache entry. This should only be called
+  // at the beginning of each discrete update.
+  // @throws std::exception if caching is disabled for the given `context`.
+  void SampleDiscreteInputPortForces(const systems::Context<T>& context) const;
+
+  // Collects the sum of all forces added to the owning MultibodyPlant and store
+  // them in given `forces`. The existing values in `forces` is cleared.
+  void CopyForcesFromInputPorts(const systems::Context<T>& context,
+                                MultibodyForces<T>* forces) const;
 
   // NVI to DoDeclareCacheEntries().
   void DeclareCacheEntries();
