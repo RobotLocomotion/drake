@@ -1132,7 +1132,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const JointActuator<T>& AddJointActuator(
       const std::string& name, const Joint<T>& joint,
       double effort_limit = std::numeric_limits<double>::infinity()) {
-    DRAKE_THROW_UNLESS(joint.num_velocities() == 1);
+    if (joint.num_velocities() != 1) {
+      throw std::runtime_error(fmt::format(
+          "Calling AddJointActuator with joint {} failed -- this joint has "
+          "{} degrees of freedom, and MultibodyPlant currently only "
+          "supports actuators for single degree-of-freedom joints. "
+          "See https://stackoverflow.com/q/71477852/9510020 for "
+          "the common workarounds.",
+          joint.name(), joint.num_velocities()));
+    }
     return this->mutable_tree().AddJointActuator(name, joint, effort_limit);
   }
 
