@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":barycentric_system",
         ":constant_value_source",
         ":constant_vector_source",
+        ":delay_line",
         ":demultiplexer",
         ":discrete_derivative",
         ":discrete_time_delay",
@@ -93,6 +94,15 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:extract_double",
+        "//systems/framework",
+    ],
+)
+
+drake_cc_library(
+    name = "delay_line",
+    srcs = ["delay_line.cc"],
+    hdrs = ["delay_line.h"],
+    deps = [
         "//systems/framework",
     ],
 )

@@ -25,6 +25,7 @@ from pydrake.systems.primitives import (
     ConstantValueSource, ConstantValueSource_,
     ConstantVectorSource, ConstantVectorSource_,
     ControllabilityMatrix,
+    DelayLine, DelayLine_,
     Demultiplexer, Demultiplexer_,
     DiscreteDerivative, DiscreteDerivative_,
     DiscreteTimeDelay, DiscreteTimeDelay_,
@@ -86,6 +87,7 @@ class TestGeneral(unittest.TestCase):
         self._check_instantiations(AffineSystem_)
         self._check_instantiations(ConstantValueSource_)
         self._check_instantiations(ConstantVectorSource_)
+        self._check_instantiations(DelayLine_)
         self._check_instantiations(Demultiplexer_)
         self._check_instantiations(DiscreteDerivative_)
         self._check_instantiations(DiscreteTimeDelay_)
@@ -454,6 +456,13 @@ class TestGeneral(unittest.TestCase):
 
         mytest((-1.5, 0.5), (-1.5, 1.5))
         mytest((.2, .3), (.2, 1.3))
+
+    def test_delay_line(self):
+        dut = DelayLine(num_samples=5, period=0.0125, vector_size=3)
+        dut.num_samples()
+        dut.period()
+        model_value = AbstractValue.Make(object())
+        DelayLine(num_samples=5, period=0.0125, model_value=model_value)
 
     def test_demultiplexer(self):
         # Test demultiplexer with scalar outputs.

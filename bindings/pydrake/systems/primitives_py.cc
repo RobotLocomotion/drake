@@ -12,6 +12,7 @@
 #include "drake/systems/primitives/barycentric_system.h"
 #include "drake/systems/primitives/constant_value_source.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/systems/primitives/delay_line.h"
 #include "drake/systems/primitives/demultiplexer.h"
 #include "drake/systems/primitives/discrete_derivative.h"
 #include "drake/systems/primitives/discrete_time_delay.h"
@@ -137,6 +138,18 @@ PYBIND11_MODULE(primitives, m) {
             &ConstantVectorSource<T>::get_mutable_source_value,
             py::arg("context"), py_rvp::reference_internal,
             doc.ConstantVectorSource.get_mutable_source_value.doc);
+
+    DefineTemplateClassWithDefault<DelayLine<T>, LeafSystem<T>>(
+        m, "DelayLine", GetPyParam<T>(), doc.DelayLine.doc)
+        .def(py::init<int, double, int>(), py::arg("num_samples"),
+            py::arg("period"), py::arg("vector_size"),
+            doc.DelayLine.ctor.doc_3args_num_samples_period_vector_size)
+        .def(py::init<int, double, const AbstractValue&>(),
+            py::arg("num_samples"), py::arg("period"), py::arg("model_value"),
+            doc.DelayLine.ctor.doc_3args_num_samples_period_model_value)
+        .def("num_samples", &DelayLine<T>::num_samples,
+            doc.DelayLine.num_samples.doc)
+        .def("period", &DelayLine<T>::period, doc.DelayLine.period.doc);
 
     DefineTemplateClassWithDefault<Demultiplexer<T>, LeafSystem<T>>(
         m, "Demultiplexer", GetPyParam<T>(), doc.Demultiplexer.doc)
