@@ -52,6 +52,7 @@ drake_cc_package_library(
         ":scope_exit",
         ":scoped_singleton",
         ":sorted_pair",
+        ":ssize",
         ":temp_directory",
         ":timer",
         ":type_safe_index",
@@ -98,6 +99,7 @@ drake_cc_library(
     ],
     deps = [
         ":fmt",
+        ":ssize",
         "@eigen",
         "@fmt",
         "@spdlog",
@@ -107,6 +109,11 @@ drake_cc_library(
 drake_cc_library(
     name = "bit_cast",
     hdrs = ["bit_cast.h"],
+)
+
+drake_cc_library(
+    name = "ssize",
+    hdrs = ["ssize.h"],
 )
 
 # Specific traits and operators that are relevant to all ScalarTypes.
@@ -621,6 +628,13 @@ drake_cc_googletest(
     name = "bit_cast_test",
     deps = [
         ":bit_cast",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ssize_test",
+    deps = [
+        ":ssize",
     ],
 )
 

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 #include "drake/geometry/geometry_frame.h"
@@ -721,7 +722,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   }
   scene_graph_->AssignRole(*source_id_, id, perception_props);
 
-  DRAKE_ASSERT(static_cast<int>(visual_geometries_.size()) == num_bodies());
+  DRAKE_ASSERT(ssize(visual_geometries_) == num_bodies());
   visual_geometries_[body.index()].push_back(id);
   ++num_visual_geometries_;
   return id;
@@ -750,7 +751,7 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
       body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
 
   scene_graph_->AssignRole(*source_id_, id, std::move(properties));
-  DRAKE_ASSERT(static_cast<int>(collision_geometries_.size()) == num_bodies());
+  DRAKE_ASSERT(ssize(collision_geometries_) == num_bodies());
   collision_geometries_[body.index()].push_back(id);
   ++num_collision_geometries_;
   return id;
@@ -916,7 +917,7 @@ void MultibodyPlant<T>::CalcSpatialAccelerationsFromVdot(
     std::vector<SpatialAcceleration<T>>* A_WB_array) const {
   this->ValidateContext(context);
   DRAKE_THROW_UNLESS(A_WB_array != nullptr);
-  DRAKE_THROW_UNLESS(static_cast<int>(A_WB_array->size()) == num_bodies());
+  DRAKE_THROW_UNLESS(ssize(*A_WB_array) == num_bodies());
   internal_tree().CalcSpatialAccelerationsFromVdot(
       context, internal_tree().EvalPositionKinematics(context),
       internal_tree().EvalVelocityKinematics(context), known_vdot, A_WB_array);
@@ -1421,7 +1422,7 @@ std::vector<std::string> MultibodyPlant<T>::GetPositionNames(
     DRAKE_DEMAND(joint.position_start() >= position_offset);
     DRAKE_DEMAND(joint.position_start() + joint.num_positions() -
                      position_offset <=
-                 static_cast<int>(names.size()));
+                 ssize(names));
 
     const std::string prefix =
         add_model_instance_prefix
@@ -1484,7 +1485,7 @@ std::vector<std::string> MultibodyPlant<T>::GetVelocityNames(
     DRAKE_DEMAND(joint.velocity_start() >= velocity_offset);
     DRAKE_DEMAND(joint.velocity_start() + joint.num_velocities() -
                      velocity_offset <=
-                 static_cast<int>(names.size()));
+                 ssize(names));
 
     const std::string prefix =
         add_model_instance_prefix
@@ -1569,8 +1570,7 @@ std::vector<std::string> MultibodyPlant<T>::GetActuatorNames(
     const JointActuator<T>& actuator = get_joint_actuator(actuator_index);
     // Sanity check: indices are in range.
     DRAKE_DEMAND(actuator.input_start() >= offset);
-    DRAKE_DEMAND(actuator.input_start() - offset <
-                 static_cast<int>(names.size()));
+    DRAKE_DEMAND(actuator.input_start() - offset < ssize(names));
 
     const std::string prefix =
         add_model_instance_prefix
@@ -1877,7 +1877,7 @@ void MultibodyPlant<T>::CalcAndAddContactForcesByPenaltyMethod(
     std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(ssize(*F_BBo_W_array) == num_bodies());
   if (num_collision_geometries() == 0) return;
 
   const ContactResults<T>& contact_results = EvalContactResults(context);
@@ -1949,7 +1949,7 @@ void MultibodyPlant<T>::CalcHydroelasticContactForces(
 
   std::vector<SpatialForce<T>>& F_BBo_W_array =
       contact_info_and_body_forces->F_BBo_W_array;
-  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array.size()) == num_bodies());
+  DRAKE_DEMAND(ssize(F_BBo_W_array) == num_bodies());
   std::vector<HydroelasticContactInfo<T>>& contact_info =
       contact_info_and_body_forces->contact_info;
 
@@ -2350,7 +2350,7 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
   // the plant stable.
   std::sort(indices.begin(), indices.end());
   internal::DemandIndicesValid(indices, num_velocities());
-  DRAKE_DEMAND(static_cast<int>(indices.size()) == unlocked_cursor);
+  DRAKE_DEMAND(ssize(indices) == unlocked_cursor);
 }
 
 template <typename T>
@@ -2399,7 +2399,7 @@ void MultibodyPlant<T>::CalcSpatialContactForcesContinuous(
       std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(ssize(*F_BBo_W_array) == num_bodies());
   DRAKE_DEMAND(!is_discrete());
 
   // Forces can accumulate into F_BBo_W_array; initialize it to zero first.
@@ -2415,7 +2415,7 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
       std::vector<SpatialForce<T>>* F_BBo_W_array) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(F_BBo_W_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_BBo_W_array->size()) == num_bodies());
+  DRAKE_DEMAND(ssize(*F_BBo_W_array) == num_bodies());
   DRAKE_DEMAND(!is_discrete());
 
   // Early exit if there are no contact forces.
@@ -2445,7 +2445,7 @@ void MultibodyPlant<T>::CalcAndAddSpatialContactForcesContinuous(
       const std::vector<SpatialForce<T>>& Fhydro_BBo_W_all =
           EvalHydroelasticContactForces(context).F_BBo_W_array;
       DRAKE_DEMAND(F_BBo_W_array->size() == Fhydro_BBo_W_all.size());
-      for (int i = 0; i < static_cast<int>(Fhydro_BBo_W_all.size()); ++i) {
+      for (int i = 0; i < ssize(Fhydro_BBo_W_all); ++i) {
         // Both sets of forces are applied to the body's origins and expressed
         // in frame W. They should simply sum.
         (*F_BBo_W_array)[i] += Fhydro_BBo_W_all[i];
@@ -2536,7 +2536,7 @@ void MultibodyPlant<T>::AddInForcesContinuous(
       forces->mutable_body_forces();
   const std::vector<SpatialForce<T>>& Fcontact_BBo_W_array =
       EvalSpatialContactForcesContinuous(context);
-  for (int i = 0; i < static_cast<int>(Fapp_BBo_W_array.size()); ++i)
+  for (int i = 0; i < ssize(Fapp_BBo_W_array); ++i)
     Fapp_BBo_W_array[i] += Fcontact_BBo_W_array[i];
 }
 
@@ -3158,7 +3158,7 @@ void MultibodyPlant<T>::CalcReactionForces(
     std::vector<SpatialForce<T>>* F_CJc_Jc_array) const {
   this->ValidateContext(context);
   DRAKE_DEMAND(F_CJc_Jc_array != nullptr);
-  DRAKE_DEMAND(static_cast<int>(F_CJc_Jc_array->size()) == num_joints());
+  DRAKE_DEMAND(ssize(*F_CJc_Jc_array) == num_joints());
 
   // Guard against failure to acquire the geometry input deep in the call graph.
   ValidateGeometryInput(context, get_reaction_forces_output_port());
