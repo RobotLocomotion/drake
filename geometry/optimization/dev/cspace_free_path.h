@@ -72,18 +72,6 @@ class CspaceFreePath : public CspaceFreePolytope {
 
   [[nodiscard]] int max_degree() const { return max_degree_; }
 
-  /**
-   Constructs the MathematicalProgram which searches for a separation
-   certificate for a pair of geometries along the path.
-   @param[in] path maps each configuration space variable to a univariate
-   polynomial of degree less than max_degree_.
-   */
-  [[nodiscard]] SeparationCertificateProgram
-  MakeIsGeometrySeparableOnPathProgram(
-      const SortedPair<geometry::GeometryId>& geometry_pair,
-      const std::unordered_map<const symbolic::Variable,
-                               const Polynomial<double>>& path) const;
-
   [[nodiscard]] SeparationCertificateProgram
   MakeIsGeometrySeparableOnPathProgram(
       const SortedPair<geometry::GeometryId>& geometry_pair,

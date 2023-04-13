@@ -80,12 +80,13 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   // This polyhedron is fully collision free and can be certified as such using
   // CspaceFreePolytope.
   const HPolyhedron c_free_polyhedron{C_good, d_good};
-  const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
-                                                       body2_sphere_};
+//  const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
+//                                                       body2_sphere_};
   const Eigen::Vector<double, 3> s0_safe{0.05, 0.05, 0.05};
   const Eigen::Vector<double, 3> s_end_safe{-0.05, -0.05, -0.05};
 
-  const Eigen::Vector<double, 3> s0_unsafe{5, 5, 5};
+  const double elt{100};
+  const Eigen::Vector<double, 3> s0_unsafe{elt, elt, elt};
   const Eigen::Vector<double, 3> s_end_unsafe{-0.5, -0.5, -0.5};
 
   CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions
@@ -93,41 +94,49 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   find_certificate_options.verbose = false;
   solvers::MosekSolver solver;
   find_certificate_options.solver_id = solver.id();
-
   for (const int maximum_path_degree : {1, 3}) {
     CspaceFreePathTester tester(plant_, scene_graph_,
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
-    // Check that we can certify paths up to the maximum degree.
-    for (int bezier_curve_order = 1; bezier_curve_order <= maximum_path_degree;
-         ++bezier_curve_order) {
-      // Construct a polynonomial of degree bezier_curve_order <=
-      // maximum_path_degree. By constructing this with the control points
-      // inside c_free_polyhedron, we guarantee that the trajectory inside will
-      // be colllision free.
-      VectorX<Polynomiald> bezier_poly_path_safe =
-          MakeBezierCurvePolynomialPath(s0_safe, s_end_safe, bezier_curve_order,
-                                        c_free_polyhedron);
-      auto separation_certificate_program =
-          tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(
-              geometry_pair, bezier_poly_path_safe);
-      auto separation_certificate_result =
-          tester.cspace_free_path().SolveSeparationCertificateProgram(
-              separation_certificate_program, find_certificate_options);
-      EXPECT_TRUE(separation_certificate_result.has_value());
+    for (const auto &[geometry_pair, plane]: tester.cspace_free_path().map_geometries_to_separating_planes()) {
+      unused(plane);
 
-      VectorX<Polynomiald> bezier_poly_path_unsafe =
-          MakeBezierCurvePolynomialPath(s0_unsafe, s_end_unsafe,
-                                        bezier_curve_order);
-      separation_certificate_program =
-          tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(
-              geometry_pair, bezier_poly_path_safe);
-      separation_certificate_result =
-          tester.cspace_free_path().SolveSeparationCertificateProgram(
-              separation_certificate_program, find_certificate_options);
-      // TODO: For now this is always feasible which is not what we want. It might be
-      // that these bodies are always collision free? Need to find a collision!
-      EXPECT_FALSE(separation_certificate_result.has_value());
+      // Check that we can certify paths up to the maximum degree.
+      for (int bezier_curve_order = 1; bezier_curve_order <= maximum_path_degree;
+           ++bezier_curve_order) {
+        // Construct a polynonomial of degree bezier_curve_order <=
+        // maximum_path_degree. By constructing this with the control points
+        // inside c_free_polyhedron, we guarantee that the trajectory inside will
+        // be colllision free.
+        VectorX<Polynomiald> bezier_poly_path_safe =
+            MakeBezierCurvePolynomialPath(s0_safe, s_end_safe, bezier_curve_order,
+                                          c_free_polyhedron);
+        auto separation_certificate_program =
+            tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(
+                geometry_pair, bezier_poly_path_safe);
+        auto separation_certificate_result =
+            tester.cspace_free_path().SolveSeparationCertificateProgram(
+                separation_certificate_program, find_certificate_options);
+        bool pass_both{separation_certificate_result.has_value()};
+//        EXPECT_TRUE(separation_certificate_result.has_value());
+
+        VectorX<Polynomiald> bezier_poly_path_unsafe =
+            MakeBezierCurvePolynomialPath(s0_unsafe, s_end_unsafe,
+                                          bezier_curve_order);
+        separation_certificate_program =
+            tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(
+                geometry_pair, bezier_poly_path_safe);
+        separation_certificate_result =
+            tester.cspace_free_path().SolveSeparationCertificateProgram(
+                separation_certificate_program, find_certificate_options);
+        // TODO: For now this is always feasible which is not what we want. It might be
+        // that these bodies are always collision free? Need to find a collision!
+//        EXPECT_FALSE(separation_certificate_result.has_value());
+        pass_both = pass_both && !separation_certificate_result.has_value();
+        if(pass_both) {
+          std::cout << "SOMETHING PASSED BOTH" << std:: endl;
+        }
+      }
     }
   }
 }

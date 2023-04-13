@@ -106,30 +106,6 @@ void CspaceFreePath::GeneratePathRationals() {
   }
 }
 
-//[[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
-//CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
-//    const SortedPair<geometry::GeometryId>& geometry_pair,
-//    const std::unordered_map<const symbolic::Variable,
-//                             const Polynomial<double>>& path) const {
-//  // Fail fast as building the programs can be expensive.
-//  for (const auto& [var, cur_path] : path) {
-//    DRAKE_DEMAND(cur_path.is_univariate());
-//    DRAKE_DEMAND(cur_path.GetDegree() <= static_cast<int>(max_degree_));
-//  }
-//
-//  int plane_index{get_separating_plane_index(geometry_pair)};
-//  if (plane_index < 0) {
-//    throw std::runtime_error(fmt::format(
-//        "GetIsGeometrySeparableProgram(): geometry pair ({}, {}) does not need "
-//        "a separation certificate",
-//        get_scene_graph().model_inspector().GetName(geometry_pair.first()),
-//        get_scene_graph().model_inspector().GetName(geometry_pair.second())));
-//  }
-//
-//  return ConstructPlaneSearchProgramOnPath(
-//      plane_geometries_on_path_.at(plane_index), path);
-//}
-
 [[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
 CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
     const SortedPair<geometry::GeometryId>& geometry_pair,
