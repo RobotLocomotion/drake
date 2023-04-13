@@ -334,7 +334,7 @@ class SpatialInertia {
   /// @retval M_BA_E B's spatial inertia about point A, expressed in E.
   /// @note In the common case, point A is Eo (the origin of the expressed-in
   /// frame E). The example below has point A as Wo (origin of world frame W).
-  /// @pre density ≥ 0.
+  /// @throws std::exception if density is negative.
   /// @code{.cc}
   /// double density = 1000;
   /// Vector3<double> p_WoB0_W(1, 0, 0);
@@ -360,7 +360,7 @@ class SpatialInertia {
   /// @param[in] p2 position vector p_B0B2_E from B0 to B2, expressed in E.
   /// @param[in] p3 position vector p_B0B3_E from B0 to B3, expressed in E.
   /// @retval M_BB0_E B's spatial inertia about its vertex B0, expressed in E.
-  /// @pre density ≥ 0.
+  /// @throws std::exception if density is negative.
   /// @see SolidTetrahedronAboutPointWithDensity() to calculate a spatial
   /// inertia about an arbitrary point.
   static SpatialInertia<T> SolidTetrahedronAboutVertexWithDensity(

@@ -119,9 +119,12 @@ GTEST_TEST(SpatialInertia, SolidBoxWithDensityOrMass) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
                               M_with_density.CopyToFullMatrix6()));
 
-  // Ensure a negative density throws an exception.
+  // Ensure a negative mass or density throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidBoxWithDensity(-0.1, lx, ly, lz),
+      SpatialInertia<double>::SolidBoxWithMass(-0.1, lx, ly, lz),
+      "[^]* A solid box's mass is negative: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidBoxWithDensity(-9.3, lx, ly, lz),
       "[^]* A solid box's density is negative: .*.");
 
   // Ensure a negative or zero length, width, or height throws an exception.
@@ -181,6 +184,14 @@ GTEST_TEST(SpatialInertia, SolidCubeWithDensity) {
   EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
       M_with_density.CopyToFullMatrix6()));
 
+  // Ensure a negative mass or density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCubeWithMass(-0.1, length),
+      "[^]* A solid cube's mass is negative: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCubeWithDensity(-9.3, length),
+      "[^]* A solid cube's density is negative: .*.");
+
   // Ensure a negative or zero length throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCubeWithDensity(density, 0),
@@ -223,6 +234,11 @@ GTEST_TEST(SpatialInertia, SolidCapsuleWithDensity) {
   M = SpatialInertia<double>::SolidCapsuleWithDensity(density, r, l, unit_vec);
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Ensure a negative density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCapsuleWithDensity(-9.3, r, l, unit_vec),
+      "[^]* A solid capsule's density is negative: .*.");
 
   // Ensure a negative or zero radius or length throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
@@ -285,18 +301,34 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
-  // Ensure a negative or zero radius or length throws an exception.
-  // There is not an exhaustive test of each parameter being zero or negative.
-  // Instead, each parameter is tested with a single bad value and we assume a
-  // single value sufficiently tests the full domain of invalid values.
+  // Ensure a negative density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithDensity(-9.3, r, l, unit_vec),
+      "[^]* A solid cylinder's density is negative: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(
+          -9.3, r, l, unit_vec),
+      "[^]* A solid cylinder's density is negative: .*.");
+
+  // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(density, 0, l, unit_vec),
       "[^]* A solid cylinder's radius = .* or length = .* "
       "is negative or zero.");
-
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidCylinderWithDensity(density,
+      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(density,
           -0.1, l, unit_vec),
+      "[^]* A solid cylinder's radius = .* or length = .* "
+      "is negative or zero.");
+
+  // Ensure a negative or zero length throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithDensity(density, r, 0, unit_vec),
+      "[^]* A solid cylinder's radius = .* or length = .* "
+      "is negative or zero.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidCylinderWithDensityAboutEnd(density,
+          r, -0.1, unit_vec),
       "[^]* A solid cylinder's radius = .* or length = .* "
       "is negative or zero.");
 
@@ -347,7 +379,7 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
   EXPECT_TRUE(CompareMatrices(
       M_BBp_B.CopyToFullMatrix6(), M.CopyToFullMatrix6(), kTolerance));
 
-  // Ensure a negative or zero mass or length throws an exception.
+  // Ensure a negative or zero mass throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(-1.23, length, unit_vec),
       "[^]* A thin rod's mass = .* or length = .* "
@@ -357,11 +389,11 @@ GTEST_TEST(SpatialInertia, ThinRodWithMass) {
       "[^]* A thin rod's mass = .* or length = .* "
       "is negative or zero.");
 
+  // Ensure a negative or zero length throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(mass, -4.56, unit_vec),
       "[^]* A thin rod's mass = .* or length = .* "
       "is negative or zero.");
-
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::ThinRodWithMass(mass, 0, unit_vec),
       "[^]* A thin rod's mass = .* or length = .* "
@@ -389,6 +421,11 @@ GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensity) {
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, c);
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Ensure a negative density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidEllipsoidWithDensity(-9.3, a, b, c),
+      "[^]* A solid ellipsoid's density is negative: .*.");
 
   // Ensure a negative or zero semi-axis length throws an exception.
   // There is not an exhaustive test of each parameter being zero or negative.
@@ -422,6 +459,11 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
 
+  // Ensure a negative density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidSphereWithDensity(-9.3, r),
+      "[^]* A solid sphere's density is negative: .*.");
+
   // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithDensity(density, 0),
@@ -444,6 +486,11 @@ GTEST_TEST(SpatialInertia, HollowSphereWithDensity) {
       SpatialInertia<double>::HollowSphereWithDensity(area_density, r);
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+
+  // Ensure a negative area density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::HollowSphereWithDensity(-9.3, r),
+      "[^]* A hollow sphere's area density is negative: .*.");
 
   // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -481,6 +528,12 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutVertex) {
           density, p2, p1, p3);
   EXPECT_TRUE(CompareMatrices(M_BB0_expected.CopyToFullMatrix6(),
                               M_BB0.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure a negative density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidTetrahedronAboutVertexWithDensity(
+          -9.3, p1, p2, p3),
+      "[^]* A solid tetrahedron's density is negative: .*.");
 }
 
 // Test spatial inertia of a solid tetrahedron about an arbitrary point A.
@@ -517,10 +570,16 @@ GTEST_TEST(SpatialInertia, SolidTetrahedronAboutPoint) {
                               M_BA.CopyToFullMatrix6(), kTolerance));
 
   // Ensure nothing changes if two arguments are switched (e.g., p_AB2, p_AB3).
-  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(density,
-      p_AB0, p_AB1, p_AB3, p_AB2);
+  M_BA = SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+      density, p_AB0, p_AB1, p_AB3, p_AB2);
   EXPECT_TRUE(CompareMatrices(M_BA_expected.CopyToFullMatrix6(),
                               M_BA.CopyToFullMatrix6(), kTolerance));
+
+  // Ensure a negative density throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidTetrahedronAboutPointWithDensity(
+          -9.3, p_AB0, p_AB1, p_AB3, p_AB2),
+      "[^]* A solid tetrahedron's density is negative: .*.");
 }
 
 // Test the construction from the mass, center of mass, and unit inertia of a
