@@ -1,6 +1,7 @@
 """Provides extensions for containers of Drake-related objects."""
 
 import numpy as np
+import re
 
 
 class _EqualityProxyBase:
@@ -152,11 +153,15 @@ class NamedViewBase:
         return cls([0]*len(cls._fields))
 
 
-def namedview(name, fields):
+def namedview(name, fields, sanitize_field_names=True):
     """
     Creates a class that is a named view with given ``fields``. When the class
     is instantiated, it must be given the object that it will be a proxy for.
     Similar to ``namedtuple``.
+
+    If ``sanitize_field_names`` is True (the default), then any characters in
+    ``fields`` which are not valid in Python variable names (A-z, 0-9, and _ )
+    will be automatically replaced with `_`.
 
     Example:
         ::
@@ -187,6 +192,8 @@ def namedview(name, fields):
     For more details, see ``NamedViewBase``.
     """
     base_cls = (NamedViewBase,)
+    if sanitize_field_names:
+        fields = [re.sub('[^a-zA-Z0-9_]', '_', f) for f in fields]
     type_dict = dict(_fields=tuple(fields))
     for i, field in enumerate(fields):
         type_dict[field] = NamedViewBase._item_property(i)

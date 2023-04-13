@@ -130,3 +130,14 @@ class TestNamedView(unittest.TestCase):
         self.assertEqual(len(view), 2)
         self.assertEqual(view.a, 0)
         self.assertEqual(view.b, 0)
+
+    def test_name_sanitation(self):
+        MyView = namedview("MyView", ["$world_base", "iiwa::iiwa"])
+        self.assertEqual(MyView.get_fields(), ("_world_base", "iiwa__iiwa"))
+        view = MyView.Zero()
+        view._world_base = 3
+        view.iiwa__iiwa = 4
+
+        MyView = namedview("MyView", ["$world_base", "iiwa::iiwa"],
+                           sanitize_field_names=False)
+        self.assertEqual(MyView.get_fields(), ("$world_base", "iiwa::iiwa"))
