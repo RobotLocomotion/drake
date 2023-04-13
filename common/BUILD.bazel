@@ -94,6 +94,7 @@ drake_cc_library(
         "drake_throw.h",
         "eigen_types.h",
         "never_destroyed.h",
+        "ssize.h",
         "text_logging.h",
     ],
     deps = [
@@ -621,6 +622,13 @@ drake_cc_googletest(
     name = "bit_cast_test",
     deps = [
         ":bit_cast",
+    ],
+)
+
+drake_cc_googletest(
+    name = "ssize_test",
+    deps = [
+        ":essential",
     ],
 )
 
