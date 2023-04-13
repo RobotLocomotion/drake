@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "drake/common/reset_on_copy.h"
+#include "drake/common/ssize.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
 #include "drake/systems/framework/cache.h"
@@ -181,12 +182,12 @@ class ContextBase : public internal::ContextMessageInterface {
   /** Returns the number of input ports in this context. */
   int num_input_ports() const {
     DRAKE_ASSERT(input_port_tickets_.size() == input_port_values_.size());
-    return static_cast<int>(input_port_tickets_.size());
+    return ssize(input_port_tickets_);
   }
 
   /** Returns the number of output ports represented in this context. */
   int num_output_ports() const {
-    return static_cast<int>(output_port_tickets_.size());
+    return ssize(output_port_tickets_);
   }
 
   /** Returns the dependency ticket associated with a particular input port. */
