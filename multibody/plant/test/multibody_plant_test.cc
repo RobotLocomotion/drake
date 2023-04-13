@@ -35,6 +35,7 @@
 #include "drake/multibody/plant/discrete_contact_pair.h"
 #include "drake/multibody/plant/externally_applied_spatial_force.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
+#include "drake/multibody/tree/planar_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/revolute_spring.h"
@@ -392,6 +393,21 @@ GTEST_TEST(MultibodyPlant, SimpleModelCreation) {
   EXPECT_EQ(pendulum_frame_indices[3], pin_joint.frame_on_child().index());
   EXPECT_EQ(pendulum_frame_indices[4], weld_joint.frame_on_parent().index());
   EXPECT_EQ(pendulum_frame_indices[5], weld_joint.frame_on_child().index());
+}
+
+GTEST_TEST(MultibodyPlantTest, AddJointActuator) {
+  MultibodyPlant<double> plant(0.0);
+  ModelInstanceIndex model_instance = plant.AddModelInstance("instance");
+  const SpatialInertia<double> M_B;  // Default construction is ok for this.
+  auto body = &plant.AddRigidBody("body", model_instance, M_B);
+  const Joint<double>& planar_joint =
+      plant.AddJoint(std::make_unique<PlanarJoint<double>>(
+          "planar", plant.world_body().body_frame(), body->body_frame(),
+          Eigen::Vector3d{0, 0, 0.1}));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant.AddJointActuator("planar_actuator", planar_joint),
+      ".*3 degrees of freedom.*");
 }
 
 GTEST_TEST(MultibodyPlantTest, AddMultibodyPlantSceneGraph) {

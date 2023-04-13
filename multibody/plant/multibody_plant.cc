@@ -629,6 +629,22 @@ const WeldJoint<T>& MultibodyPlant<T>::WeldFrames(
 }
 
 template <typename T>
+const JointActuator<T>& MultibodyPlant<T>::AddJointActuator(
+    const std::string& name, const Joint<T>& joint,
+    double effort_limit) {
+  if (joint.num_velocities() != 1) {
+    throw std::logic_error(fmt::format(
+        "Calling AddJointActuator with joint {} failed -- this joint has "
+        "{} degrees of freedom, and MultibodyPlant currently only "
+        "supports actuators for single degree-of-freedom joints. "
+        "See https://stackoverflow.com/q/71477852/9510020 for "
+        "the common workarounds.",
+        joint.name(), joint.num_velocities()));
+  }
+  return this->mutable_tree().AddJointActuator(name, joint, effort_limit);
+}
+
+template <typename T>
 geometry::SourceId MultibodyPlant<T>::RegisterAsSourceForSceneGraph(
     SceneGraph<T>* scene_graph) {
   DRAKE_THROW_UNLESS(scene_graph != nullptr);
