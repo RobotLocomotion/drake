@@ -374,8 +374,10 @@ GTEST_TEST(ManipulationStationTest, CheckDynamicsUnderExternallyAppliedForce) {
   const VectorXd next_velocity_case1 = GetNextIiwaVelocity(station, *context);
 
   // Evaluate total external torque (zero contact plus spatial forces).
-  const VectorXd tau_external =
+  VectorXd tau_external =
       station.GetOutputPort("iiwa_torque_external").Eval(*context);
+  // Pollute tau_external value to be garbage and the test still passes.
+  tau_external[0] = -2023.0412;
 
   // Case 2: Next velocities for a case with feedforward torques equivalent to
   // the spatial forces from case 1 and zero spatial forces.
