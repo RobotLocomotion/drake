@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
 namespace multibody {

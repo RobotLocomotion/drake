@@ -68,10 +68,12 @@ drake_cc_library(
     srcs = ["render_mesh.cc"],
     hdrs = ["render_mesh.h"],
     interface_deps = [
-        "@tinyobjloader",
+        "//common:diagnostic_policy",
+        "//common:essential",
+        "//geometry:rgba",
     ],
     deps = [
-        "//common:essential",
+        "@tinyobjloader",
     ],
 )
 
@@ -114,6 +116,18 @@ drake_cc_googletest(
         ":render_label",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_mesh_test",
+    data = [":test_models"],
+    deps = [
+        ":render_mesh",
+        "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//multibody/parsing:diagnostic_policy_test_base",
     ],
 )
 
