@@ -80,8 +80,8 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   // This polyhedron is fully collision free and can be certified as such using
   // CspaceFreePolytope.
   const HPolyhedron c_free_polyhedron{C_good, d_good};
-//  const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
-//                                                       body2_sphere_};
+  const SortedPair<geometry::GeometryId> geometry_pair{world_box_,
+                                                       body3_box_};
   const Eigen::Vector<double, 3> s0_safe{0.05, 0.05, 0.05};
   const Eigen::Vector<double, 3> s_end_safe{-0.05, -0.05, -0.05};
 
@@ -94,12 +94,12 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   find_certificate_options.verbose = false;
   solvers::MosekSolver solver;
   find_certificate_options.solver_id = solver.id();
-  for (const int maximum_path_degree : {1, 3}) {
+  for (const int maximum_path_degree : {1}) {
     CspaceFreePathTester tester(plant_, scene_graph_,
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
-    for (const auto &[geometry_pair, plane]: tester.cspace_free_path().map_geometries_to_separating_planes()) {
-      unused(plane);
+//    for (const auto &[geometry_pair, plane]: tester.cspace_free_path().map_geometries_to_separating_planes()) {
+//      unused(plane);
 
       // Check that we can certify paths up to the maximum degree.
       for (int bezier_curve_order = 1; bezier_curve_order <= maximum_path_degree;
@@ -126,6 +126,7 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
         separation_certificate_program =
             tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(
                 geometry_pair, bezier_poly_path_safe);
+        std::cout << *separation_certificate_program.prog.get() << std::endl;
         separation_certificate_result =
             tester.cspace_free_path().SolveSeparationCertificateProgram(
                 separation_certificate_program, find_certificate_options);
@@ -138,7 +139,8 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
         }
       }
     }
-  }
+//  }
+  EXPECT_TRUE(false);
 }
 
 }  // namespace optimization

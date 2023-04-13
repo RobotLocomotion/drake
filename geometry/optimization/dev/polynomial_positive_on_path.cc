@@ -77,12 +77,12 @@ ParametrizedPolynomialPositiveOnUnitInterval::
                                   1),  // exclude μᵈ monomial
           type, "Sv");
       nu_ = std::move(nu);
-      p_ -= lambda_ + nu_ * mu_ * (symbolic::Polynomial(1, {mu_}) - mu_);
+      p_ -= lambda_ + nu_ * symbolic::Polynomial(mu_, {mu_}) * (symbolic::Polynomial(1- mu_, {mu_}) );
     } else {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
           multiplier_basis_d, type, "Sv");
       nu_ = std::move(nu);
-      p_ -= lambda_ * mu_ + nu_ * (symbolic::Polynomial(1, {mu_}) - mu_);
+      p_ -= lambda_ * symbolic::Polynomial(mu_, {mu_}) + nu_ * (symbolic::Polynomial(1- mu_, {mu_}));
     }
   }
 }
