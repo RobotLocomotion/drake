@@ -5,11 +5,7 @@
 // Many C++20 std headers define ssize; pick one.
 #include <vector>
 
-namespace drake {
-
 using std::ssize;
-
-}  // namespace drake
 
 #else  // __cpp_lib_ssize
 
