@@ -133,14 +133,14 @@ class TestNamedView(unittest.TestCase):
 
     def test_name_sanitation(self):
         MyView = namedview("MyView",
-                           ["$world_base", "iiwa::iiwa", "no spaces", "2var"])
+                           ["$world_base", "iiwa::iiwa", "no spaces", "2vär"])
         self.assertEqual(MyView.get_fields(),
-                         ("_world_base", "iiwa_iiwa", "no_spaces", "_2var"))
+                         ("_world_base", "iiwa_iiwa", "no_spaces", "_2vär"))
         view = MyView.Zero()
         view._world_base = 3
         view.iiwa_iiwa = 4
         view.no_spaces = 5
-        view._2var = 6
+        view._2vär = 6
         np.testing.assert_equal(view[:], [3, 4, 5, 6])
 
         MyView = namedview("MyView", ["$world_base", "iiwa::iiwa"],

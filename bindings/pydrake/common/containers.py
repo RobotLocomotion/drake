@@ -150,13 +150,19 @@ class NamedViewBase:
         return cls([0] * len(cls._fields))
 
 
-def _sanitize_field_name(x: str):
-    if x[0].isnumeric():
-        x = '_' + x
-    x = re.sub('[^a-zA-Z0-9_]', '_', x)
-    x = re.sub('__+', '_', x)
-    assert x.isidentifier(), f"Sanitization failed on {x}"
-    return x
+def _sanitize_field_name(name: str):
+    result = name
+    # Ensure the first character is a valid opener (e.g., no numbers allowed).
+    if not result[0].isidentifier():
+        result = "_" + result
+    # Ensure that each additional character is valid in turn, avoiding the
+    # special case for opening characters by prepending "_" during the check.
+    for i in range(1, len(result)):
+        if not ("_" + result[i]).isidentifier():
+            result = result[:i] + "_" + result[i+1:]
+    result = re.sub("__+", "_", result)
+    assert result.isidentifier(), f"Sanitization failed on {name} => {result}"
+    return result
 
 
 def namedview(name, fields, *, sanitize_field_names=True):
