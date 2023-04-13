@@ -1,6 +1,7 @@
 """Provides extensions for containers of Drake-related objects."""
 
 import numpy as np
+import re
 
 
 class _EqualityProxyBase:
@@ -71,7 +72,6 @@ class EqualToDict(_DictKeyWrap):
     `lhs.EqualTo(rhs)`.
     """
     def __init__(self, *args, **kwargs):
-
         class Proxy(_EqualityProxyBase):
             def __eq__(self, other):
                 T = type(self.value)
@@ -118,8 +118,7 @@ class NamedViewBase:
         if not hasattr(self, name):
             raise AttributeError(
                 "Cannot add attributes! The fields in this named view are"
-                f"{self.get_fields()}, but you tried to set '{name}'."
-            )
+                f"{self.get_fields()}, but you tried to set '{name}'.")
         object.__setattr__(self, name, value)
 
     def __len__(self):
@@ -142,21 +141,34 @@ class NamedViewBase:
     @staticmethod
     def _item_property(i):
         # Maps an item (at a given index) to a property.
-        return property(
-            fget=lambda self: self[i],
-            fset=lambda self, value: self.__setitem__(i, value))
+        return property(fget=lambda self: self[i],
+                        fset=lambda self, value: self.__setitem__(i, value))
 
     @classmethod
     def Zero(cls):
         """Constructs a view onto values set to all zeros."""
-        return cls([0]*len(cls._fields))
+        return cls([0] * len(cls._fields))
 
 
-def namedview(name, fields):
+def _sanitize_field_name(x: str):
+    if x[0].isnumeric():
+        x = '_' + x
+    x = re.sub('[^a-zA-Z0-9_]', '_', x)
+    x = re.sub('__+', '_', x)
+    assert x.isidentifier(), f"Sanitization failed on {x}"
+    return x
+
+
+def namedview(name, fields, *, sanitize_field_names=True):
     """
     Creates a class that is a named view with given ``fields``. When the class
     is instantiated, it must be given the object that it will be a proxy for.
     Similar to ``namedtuple``.
+
+    If ``sanitize_field_names`` is True (the default), then any characters in
+    ``fields`` which are not valid in Python identifier (A-z, 0-9, and _ )
+    will be automatically replaced with `_`. Leading numbers will have `_`
+    inserted, and duplicate `_` will be replaced by a single `_`.
 
     Example:
         ::
@@ -186,7 +198,10 @@ def namedview(name, fields):
 
     For more details, see ``NamedViewBase``.
     """
-    base_cls = (NamedViewBase,)
+    base_cls = (NamedViewBase, )
+    if sanitize_field_names:
+        fields = [_sanitize_field_name(f) for f in fields]
+    assert len(set(fields)) == len(fields), "Field names must be unique"
     type_dict = dict(_fields=tuple(fields))
     for i, field in enumerate(fields):
         type_dict[field] = NamedViewBase._item_property(i)
