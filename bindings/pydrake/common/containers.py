@@ -172,9 +172,9 @@ def namedview(name, fields, *, sanitize_field_names=True):
     Similar to ``namedtuple``.
 
     If ``sanitize_field_names`` is True (the default), then any characters in
-    ``fields`` which are not valid in Python identifier (A-z, 0-9, and _ )
-    will be automatically replaced with `_`. Leading numbers will have `_`
-    inserted, and duplicate `_` will be replaced by a single `_`.
+    ``fields`` which are not valid in Python identifiers will be automatically
+    replaced with `_`. Leading numbers will have `_` inserted, and duplicate
+    `_` will be replaced by a single `_`.
 
     Example:
         ::
