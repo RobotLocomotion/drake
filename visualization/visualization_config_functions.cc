@@ -2,12 +2,14 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
+#include "drake/visualization/inertia_visualizer.h"
 
 namespace drake {
 namespace visualization {
@@ -54,6 +56,10 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
   }
   if (config.publish_contacts) {
     ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm);
+  }
+
+  if (config.publish_inertia) {
+    InertiaVisualizer<double>::AddToBuilder(builder, plant, scene_graph);
   }
 
   if (meshcat == nullptr && config.enable_meshcat_creation) {
@@ -192,6 +198,21 @@ std::vector<MeshcatVisualizerParams> ConvertVisualizationConfigToMeshcatParams(
     illustration.enable_alpha_slider = config.enable_alpha_sliders;
     illustration.visible_by_default = true;
     result.push_back(illustration);
+  }
+
+  if (config.publish_inertia) {
+    MeshcatVisualizerParams inertia;
+    inertia.role = Role::kIllustration;
+    inertia.publish_period = config.publish_period;
+    // This color sets the alpha slider default only.
+    inertia.default_color = Rgba(0.0, 0.0, 0.0, 0.2);
+    inertia.prefix = std::string("inertia");
+    inertia.delete_on_initialization_event =
+        config.delete_on_initialization_event;
+    inertia.enable_alpha_slider = config.enable_alpha_sliders;
+    inertia.visible_by_default = false;
+    inertia.include_unspecified_accepting = false;
+    result.push_back(inertia);
   }
 
   if (config.publish_proximity) {

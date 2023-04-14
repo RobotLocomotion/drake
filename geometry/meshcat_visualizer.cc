@@ -49,8 +49,7 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
           .get_index();
 
   if (params_.enable_alpha_slider) {
-    meshcat_->AddSlider(
-      alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
+    meshcat_->AddSlider(alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
   }
 }
 
@@ -128,7 +127,29 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
   if (!version_.IsSameAs(current_version, params_.role)) {
     SetObjects(query_object.inspector());
     version_ = current_version;
+
+    if (params_.enable_alpha_slider) {
+      double max_alpha = 0.0;
+      for (const auto& [geom_id, path] : geometries_) {
+        max_alpha = std::max(max_alpha, colors_[geom_id].a());
+      }
+
+      // Set the alpha slider to the maximum alpha value found in the associated
+      // geometry so that the slider can "overdrive" the geometry alpha, i.e.
+      // a slider value of 1.0 makes the geometry fully opaque.
+      double slider_alpha = max_alpha;
+
+      // If all geometry has an alpha of 0.0 then use the default color alpha as
+      // the initial slider value; when all geometry is fully transparent the
+      // slider no longer overdrives the alpha but sets alpha to the slider
+      // value directly.
+      if (slider_alpha == 0.0) {
+        slider_alpha = params_.default_color.a();
+      }
+      meshcat_->SetSliderValue(alpha_slider_name_, slider_alpha);
+    }
   }
+
   SetTransforms(context, query_object);
   if (params_.enable_alpha_slider) {
     double new_alpha_value = meshcat_->GetSliderValue(alpha_slider_name_);
@@ -257,9 +278,20 @@ void MeshcatVisualizer<T>::SetTransforms(
 
 template <typename T>
 void MeshcatVisualizer<T>::SetColorAlphas() const {
+  double max_alpha = 0.0;
+  for (const auto& [geom_id, path] : geometries_) {
+    max_alpha = std::max(max_alpha, colors_[geom_id].a());
+  }
+
   for (const auto& [geom_id, path] : geometries_) {
     Rgba color = colors_[geom_id];
-    color.update({}, {}, {}, alpha_value_ * color.a());
+    if (max_alpha == 0.0) {
+      color.update({}, {}, {}, alpha_value_);
+    } else {
+      // We want the maximum geometry alpha to be 1.0 when the slider
+      // is at its maximum value of 1.0.
+      color.update({}, {}, {}, alpha_value_ * color.a() / max_alpha);
+    }
     meshcat_->SetProperty(path, "color",
                           {color.r(), color.g(), color.b(), color.a()});
   }
