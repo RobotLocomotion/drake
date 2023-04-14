@@ -5,6 +5,7 @@
 #include "drake/geometry/optimization/dev/test/c_iris_path_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/solvers/solve.h"
+using std::default_random_engine;
 
 namespace drake {
 namespace geometry {
@@ -33,6 +34,38 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
   }
 }
 
+// This struct is used to check whether the rationals in cspace_free_path and
+// cspace_free_polytope are properly related.
+struct PathEvaluator {
+  PathEvaluator(const CspaceFreePathTester& tester) : mu_{tester.get_mu()} {
+    default_random_engine generator;
+    std::uniform_real_distribution<> coeff_distribution(-10, 10);
+    for (const auto& [var, poly] : tester.get_path()) {
+      for (const auto& coeff_var : poly.decision_variables()) {
+        path_coefficient_evaluator_.insert(coeff_var,
+                                           coeff_distribution(generator));
+      }
+      symbolic::Polynomial evaled_poly{poly};
+      evaled_path_.insert(
+          {var, evaled_poly.EvaluatePartial(path_coefficient_evaluator_)});
+    }
+  }
+
+  symbolic::Environment MakeCspaceFreePolytopeAndPathEvaluator(double mu_val) {
+    symbolic::Environment ret{path_coefficient_evaluator_};
+    ret.insert(mu_, mu_val);
+    for (const auto& [var, poly] : evaled_path_) {
+      ret.insert(var, poly.Evaluate(ret));
+    }
+    return ret;
+  }
+
+ private:
+  const symbolic::Variable mu_;
+  std::unordered_map<symbolic::Variable, symbolic::Polynomial> evaled_path_;
+  symbolic::Environment path_coefficient_evaluator_;
+};
+
 TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
   const Eigen::Vector3d q_star(0, 0, 0);
   for (unsigned int maximum_path_degree = 1; maximum_path_degree < 3;
@@ -40,6 +73,8 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
     CspaceFreePathTester tester(plant_, scene_graph_,
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
+    PathEvaluator evaluator{tester};
+    const Eigen::Vector<double, 4> mu_test_values{0, 0.25, 0.77, 1};
 
     EXPECT_EQ(tester.get_path_plane_geometries().size(),
               tester.cspace_free_path().separating_planes().size());
@@ -111,6 +146,23 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
           EXPECT_EQ(
               static_cast<unsigned int>(path_condition.Degree(tester.get_mu())),
               maximum_path_degree * compute_total_s_degree(polytope_condition));
+
+          // Now check that the path_conditions are actually properly
+          // substituted.
+          for (int j = 0; j < mu_test_values.rows(); ++j) {
+            const symbolic::Polynomial path_condition_eval{
+                path_condition
+                    .EvaluatePartial(
+                        evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
+                            mu_test_values(i)))};
+            const symbolic::Polynomial polytope_condition_eval{
+                path_condition
+                    .EvaluatePartial(
+                        evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
+                            mu_test_values(i)))};
+            EXPECT_TRUE(path_condition_eval.CoefficientsAlmostEqual(
+                polytope_condition_eval, 1e-10));
+          }
         }
       }
     }

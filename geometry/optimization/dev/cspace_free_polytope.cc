@@ -579,6 +579,7 @@ CspaceFreePolytope::SolveSeparationCertificateProgram(
       std::nullopt};
   std::cout << result.get_solver_details<solvers::MosekSolver>().optimizer_time << std::endl;
   if (result.is_success()) {
+    std::cout << separating_planes_[certificate_program.plane_index].b << std::endl;
     ret.emplace(certificate_program.certificate.GetSolution(
         certificate_program.plane_index,
         separating_planes_[certificate_program.plane_index].a,
