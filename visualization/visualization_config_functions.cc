@@ -2,12 +2,14 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "drake/geometry/drake_visualizer.h"
 #include "drake/geometry/meshcat_visualizer.h"
 #include "drake/multibody/meshcat/contact_visualizer.h"
 #include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/systems/lcm/lcm_config_functions.h"
+#include "drake/visualization/inertia_visualizer.h"
 
 namespace drake {
 namespace visualization {
@@ -33,8 +35,12 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
                                   DrakeLcmInterface* lcm,
                                   std::shared_ptr<geometry::Meshcat> meshcat,
                                   const MultibodyPlant<double>& plant,
-                                  const SceneGraph<double>& scene_graph,
+                                  SceneGraph<double>* scene_graph,
                                   DiagramBuilder<double>* builder) {
+  DRAKE_DEMAND(lcm != nullptr);
+  DRAKE_DEMAND(scene_graph != nullptr);
+  DRAKE_DEMAND(builder != nullptr);
+
   // This is required due to ConnectContactResultsToDrakeVisualizer().
   DRAKE_THROW_UNLESS(plant.is_finalized());
 
@@ -46,10 +52,17 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     // geometry. So long as that's true, we should not enable it.
     DrakeVisualizerParams oopsie = params;
     oopsie.show_hydroelastic = false;
-    DrakeVisualizer<double>::AddToBuilder(builder, scene_graph, lcm, oopsie);
+    DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, oopsie);
   }
   if (config.publish_contacts) {
-    ConnectContactResultsToDrakeVisualizer(builder, plant, scene_graph, lcm);
+    ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm);
+  }
+
+  if (config.publish_inertia) {
+    InertiaVisualizerParams inertia_params =
+        internal::ConvertVisualizationConfigToInertiaParams(config);
+    InertiaVisualizer<double>::AddToBuilder(builder, plant, scene_graph,
+                                            inertia_params);
   }
 
   if (meshcat == nullptr && config.enable_meshcat_creation) {
@@ -61,7 +74,7 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
         internal::ConvertVisualizationConfigToMeshcatParams(config);
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      MeshcatVisualizer<double>::AddToBuilder(builder, scene_graph, meshcat,
+      MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
                                               params);
     }
     if (config.publish_contacts) {
@@ -74,11 +87,24 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
 
 }  // namespace
 
+// This is the deprecated overload.
 void ApplyVisualizationConfig(const VisualizationConfig& config,
                               DiagramBuilder<double>* builder,
                               const LcmBuses* lcm_buses,
                               const MultibodyPlant<double>* plant,
                               const SceneGraph<double>* scene_graph,
+                              std::shared_ptr<geometry::Meshcat> meshcat,
+                              DrakeLcmInterface* lcm) {
+  ApplyVisualizationConfig(config, builder, lcm_buses, plant,
+                           const_cast<SceneGraph<double>*>(scene_graph),
+                           std::move(meshcat), lcm);
+}
+
+void ApplyVisualizationConfig(const VisualizationConfig& config,
+                              DiagramBuilder<double>* builder,
+                              const LcmBuses* lcm_buses,
+                              const MultibodyPlant<double>* plant,
+                              SceneGraph<double>* scene_graph,
                               std::shared_ptr<geometry::Meshcat> meshcat,
                               DrakeLcmInterface* lcm) {
   DRAKE_THROW_UNLESS(builder != nullptr);
@@ -96,19 +122,19 @@ void ApplyVisualizationConfig(const VisualizationConfig& config,
   }
   if (scene_graph == nullptr) {
     scene_graph =
-        &builder->GetDowncastSubsystemByName<SceneGraph>("scene_graph");
+        &builder->GetMutableDowncastSubsystemByName<SceneGraph>("scene_graph");
   }
-  ApplyVisualizationConfigImpl(config, lcm, meshcat, *plant, *scene_graph,
+  ApplyVisualizationConfigImpl(config, lcm, meshcat, *plant, scene_graph,
                                builder);
 }
 
 void AddDefaultVisualization(DiagramBuilder<double>* builder,
                              std::shared_ptr<geometry::Meshcat> meshcat) {
+  SceneGraph<double>* null_scene_graph = nullptr;
   ApplyVisualizationConfig(VisualizationConfig{}, builder,
                            nullptr,  // lcm_buses
                            nullptr,  // plant
-                           nullptr,  // scene_graph
-                           meshcat);
+                           null_scene_graph, meshcat);
 }
 
 namespace internal {
@@ -155,6 +181,21 @@ std::vector<MeshcatVisualizerParams> ConvertVisualizationConfigToMeshcatParams(
     result.push_back(illustration);
   }
 
+  if (config.publish_inertia) {
+    MeshcatVisualizerParams inertia;
+    inertia.role = Role::kIllustration;
+    inertia.publish_period = config.publish_period;
+    inertia.default_color = config.inertia_color;
+    inertia.prefix = std::string("inertia");
+    inertia.delete_on_initialization_event =
+        config.delete_on_initialization_event;
+    inertia.enable_alpha_slider = config.enable_alpha_sliders;
+    inertia.alpha_slider_is_relative = false;
+    inertia.visible_by_default = false;
+    inertia.publish_untagged_geometry = false;
+    result.push_back(inertia);
+  }
+
   if (config.publish_proximity) {
     MeshcatVisualizerParams proximity;
     proximity.role = Role::kProximity;
@@ -177,6 +218,18 @@ ContactVisualizerParams ConvertVisualizationConfigToMeshcatContactParams(
   ContactVisualizerParams result;
   result.publish_period = config.publish_period;
   result.delete_on_initialization_event = config.delete_on_initialization_event;
+  return result;
+}
+
+InertiaVisualizerParams ConvertVisualizationConfigToInertiaParams(
+    const VisualizationConfig& config) {
+  InertiaVisualizerParams result;
+  result.color = config.inertia_color;
+  // We force inertia geometry to be invisible to support visualizers
+  // without alpha sliders. MeshcatVisualizer will reset the alpha of this
+  // geometry based on the alpha slider.
+  result.color.set(result.color.r(), result.color.g(), result.color.b(), 0.0);
+  result.scale_factor = config.inertia_scale_factor;
   return result;
 }
 

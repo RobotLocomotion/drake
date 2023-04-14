@@ -12,8 +12,30 @@ drake_cc_package_library(
     name = "visualization",
     visibility = ["//visibility:public"],
     deps = [
+        ":inertia_visualizer",
+        ":inertia_visualizer_params",
         ":visualization_config",
         ":visualization_config_functions",
+    ],
+)
+
+drake_cc_library(
+    name = "inertia_visualizer",
+    srcs = ["inertia_visualizer.cc"],
+    hdrs = ["inertia_visualizer.h"],
+    deps = [
+        ":inertia_visualizer_params",
+        "//multibody/plant",
+        "//systems/framework:diagram_builder",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "inertia_visualizer_params",
+    hdrs = ["inertia_visualizer_params.h"],
+    deps = [
+        "//common:name_value",
     ],
 )
 
@@ -37,6 +59,7 @@ drake_cc_library(
     srcs = ["visualization_config_functions.cc"],
     hdrs = ["visualization_config_functions.h"],
     interface_deps = [
+        ":inertia_visualizer_params",
         ":visualization_config",
         "//geometry:drake_visualizer_params",
         "//geometry:scene_graph",
@@ -46,6 +69,7 @@ drake_cc_library(
         "//systems/lcm:lcm_buses",
     ],
     deps = [
+        ":inertia_visualizer",
         "//geometry:drake_visualizer",
         "//multibody/meshcat:contact_visualizer",
         "//multibody/plant:contact_results_to_lcm",
@@ -56,10 +80,25 @@ drake_cc_library(
 drake_cc_googletest(
     name = "visualization_config_functions_test",
     deps = [
+        ":inertia_visualizer",
         ":visualization_config_functions",
         "//common/test_utilities:expect_throws_message",
         "//lcm:drake_lcm",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "inertia_visualizer_test",
+    data = [
+        "//multibody/benchmarks/acrobot:models",
+    ],
+    deps = [
+        ":inertia_visualizer",
+        ":visualization_config_functions",
+        "//geometry:meshcat",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/parsing",
     ],
 )
 
