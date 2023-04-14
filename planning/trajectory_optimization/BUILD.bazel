@@ -14,6 +14,7 @@ drake_cc_package_library(
     deps = [
         ":direct_collocation",
         ":direct_transcription",
+        ":gcs_trajectory_optimization",
         ":integration_constraint",
         ":kinematic_trajectory_optimization",
         ":multiple_shooting",
@@ -101,6 +102,18 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "gcs_trajectory_optimization",
+    srcs = ["gcs_trajectory_optimization.cc"],
+    hdrs = ["gcs_trajectory_optimization.h"],
+    deps = [
+        "//common",
+        "//common/trajectories:bezier_curve",
+        "//common/trajectories:composite_trajectory",
+        "//geometry/optimization:graph_of_convex_sets",
+    ],
+)
+
+drake_cc_library(
     name = "integration_constraint",
     srcs = ["integration_constraint.cc"],
     hdrs = ["integration_constraint.h"],
@@ -149,6 +162,18 @@ drake_cc_googletest(
         "//solvers:solve",
         "//systems/primitives:symbolic_vector_system",
         "//systems/primitives:trajectory_linear_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "gcs_trajectory_optimization_test",
+    deps = [
+        ":gcs_trajectory_optimization",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
+        "//solvers:gurobi_solver",
+        "//solvers:mosek_solver",
     ],
 )
 
