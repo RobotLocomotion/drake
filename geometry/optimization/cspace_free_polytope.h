@@ -479,6 +479,11 @@ class CspaceFreePolytope {
       const SeparationCertificateProgram& certificate_program,
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
+  // TODO(Alexandre.Amice) move to protected.
+  const geometry::SceneGraph<double>& get_scene_graph() const {
+    return scene_graph_;
+  }
+
  protected:
   [[nodiscard]] const symbolic::Variables& get_s_set() const { return s_set_; }
 
@@ -496,9 +501,7 @@ class CspaceFreePolytope {
                : geometry_pair_it->second;
   }
 
-  const geometry::SceneGraph<double>& get_scene_graph() const {
-    return scene_graph_;
-  }
+
 
  private:
   // Forward declaration the tester class. This tester class will expose the

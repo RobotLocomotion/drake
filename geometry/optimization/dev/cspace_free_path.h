@@ -8,15 +8,13 @@
 #include <utility>
 #include <vector>
 
+#include <Eigen/Core>
+
 #include "drake/common/eigen_types.h"
+#include "drake/common/polynomial.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/cspace_free_polytope.h"
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
-#include "drake/common/polynomial.h"
-
-
-#include <Eigen/Core>
-
 
 namespace drake {
 namespace geometry {
@@ -68,14 +66,34 @@ class CspaceFreePath : public CspaceFreePolytope {
 
   ~CspaceFreePath() {}
 
+  struct PathSeparationCertificateProgram
+      : public CspaceFreePolytope::SeparationCertificateProgram {
+    PathSeparationCertificateProgram(
+        const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& m_path)
+        : CspaceFreePolytope::SeparationCertificateProgram(), path{m_path} {}
+
+    const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
+  };
+
   [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
 
   [[nodiscard]] int max_degree() const { return max_degree_; }
 
-  [[nodiscard]] SeparationCertificateProgram
+  [[nodiscard]] PathSeparationCertificateProgram
   MakeIsGeometrySeparableOnPathProgram(
       const SortedPair<geometry::GeometryId>& geometry_pair,
       const VectorX<Polynomiald>& path) const;
+
+  /**
+   Solves a PathSeparationCertificateProgram with the given options
+   @return result If we find the separation certificate, then `result` contains
+   the separation plane and the Lagrangian polynomials; otherwise result is
+   empty.
+   */
+  [[nodiscard]] std::optional<SeparationCertificateResult>
+  SolvePathSeparationCertificateProgram(
+      const PathSeparationCertificateProgram& certificate_program,
+      const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
  protected:
   /**
@@ -100,7 +118,6 @@ class CspaceFreePath : public CspaceFreePolytope {
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
 
-
   // We have the invariant plane_geometries_on_path_[i].plane_index == i. We use
   // a list instead of a vector as PlaneSeparatesGeometriesOnPath contains
   // objects which cannot be copied or moved.
@@ -114,10 +131,11 @@ class CspaceFreePath : public CspaceFreePolytope {
    @param[in] path maps each configuration space variable to a univariate
    polynomial of degree less than max_degree_.
    */
-  [[nodiscard]] SeparationCertificateProgram ConstructPlaneSearchProgramOnPath(
-      const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
-      const std::unordered_map<symbolic::Variable,
-                               Polynomial<double>>& path) const;
+  [[nodiscard]] PathSeparationCertificateProgram
+  ConstructPlaneSearchProgramOnPath(
+    const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
+    const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& path)
+      const;
 
   // Friend declaration for use in constructor to avoid large initialization
   // lambda.

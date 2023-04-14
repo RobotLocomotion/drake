@@ -1,7 +1,7 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
-#include <vector>
 #include <iostream>
+#include <vector>
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -106,7 +106,7 @@ void CspaceFreePath::GeneratePathRationals() {
   }
 }
 
-[[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
+[[nodiscard]] CspaceFreePath::PathSeparationCertificateProgram
 CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
     const SortedPair<geometry::GeometryId>& geometry_pair,
     const VectorX<Polynomiald>& path) const {
@@ -122,22 +122,28 @@ CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
 
   DRAKE_DEMAND(rational_forward_kin().s().rows() == path.rows());
   std::unordered_map<symbolic::Variable, Polynomial<double>> cspace_var_to_path;
+  std::unordered_map<symbolic::Variable, symbolic::Polynomial> cspace_var_to_sym_path;
   for (int i = 0; i < path.rows(); ++i) {
     DRAKE_DEMAND(path(i).is_univariate());
     DRAKE_DEMAND(path(i).GetDegree() <= static_cast<int>(max_degree_));
+    symbolic::Polynomial::MapType sym_path_map;
+    for(const auto& monom: path(i).GetMonomials()) {
+      sym_path_map.insert({symbolic::Monomial(mu_, monom.GetDegree()), monom.coefficient});
+    }
     cspace_var_to_path.emplace(rational_forward_kin().s()(i), path(i));
+    cspace_var_to_sym_path.emplace(rational_forward_kin().s()(i),symbolic::Polynomial{sym_path_map});
   }
 
   return ConstructPlaneSearchProgramOnPath(
-      plane_geometries_on_path_.at(plane_index), cspace_var_to_path);
+      plane_geometries_on_path_.at(plane_index), cspace_var_to_sym_path);
 }
 
-[[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
+[[nodiscard]] CspaceFreePath::PathSeparationCertificateProgram
 CspaceFreePath::ConstructPlaneSearchProgramOnPath(
     const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
-    const std::unordered_map<symbolic::Variable,
-                             Polynomial<double>>& path) const {
-  SeparationCertificateProgram ret;
+    const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& path)
+    const {
+  PathSeparationCertificateProgram ret{path};
   ret.plane_index = plane_geometries_on_path.plane_index;
   ret.prog->AddIndeterminate(mu_);
   ret.prog->AddIndeterminates(this->y_slack());
@@ -146,19 +152,16 @@ CspaceFreePath::ConstructPlaneSearchProgramOnPath(
   symbolic::Environment param_eval_map;
   for (const auto& [config_space_var, eval_path] : path) {
     const symbolic::Polynomial symbolic_path{path_.at(config_space_var)};
-    const std::vector<Polynomial<double>::Monomial> monomials =
-        eval_path.GetMonomials();
+//    const std::vector<Polynomial<double>::Monomial> monomials =
+//        eval_path.GetMonomials();
     for (const auto& [mu_monom, mu_var_coeff] :
          symbolic_path.monomial_to_coefficient_map()) {
       // Find the monomial with the matching degree. If it doesn't exist
       // evaluate it to 0.
-      const auto evaled_monom_iter = std::find_if(
-          monomials.begin(), monomials.end(), [&mu_monom](const auto& m) {
-            return m.GetDegree() == mu_monom.total_degree();
-          });
-      const double mu_var_coeff_eval{evaled_monom_iter == monomials.end()
+      const auto evaled_monom_iter = eval_path.monomial_to_coefficient_map().find(mu_monom);
+      const double mu_var_coeff_eval{evaled_monom_iter == eval_path.monomial_to_coefficient_map().end()
                                          ? 0
-                                         : evaled_monom_iter->coefficient};
+                                         : evaled_monom_iter->second.Evaluate()};
       param_eval_map.insert(*mu_var_coeff.GetVariables().begin(),
                             mu_var_coeff_eval);
     }
@@ -173,7 +176,23 @@ CspaceFreePath::ConstructPlaneSearchProgramOnPath(
        plane_geometries_on_path.negative_side_conditions) {
     condition.AddPositivityConstraintToProgram(param_eval_map, ret.prog.get());
   }
+  return ret;
+}
 
+std::optional<CspaceFreePath::SeparationCertificateResult>
+CspaceFreePath::SolvePathSeparationCertificateProgram(
+    const CspaceFreePath::PathSeparationCertificateProgram& certificate_program,
+    const FindSeparationCertificateGivenPolytopeOptions& options) const {
+  std::optional<CspaceFreePath::SeparationCertificateResult> ret =
+      SolveSeparationCertificateProgram(certificate_program, options);
+  if (ret.has_value()) {
+    // SeparationCertificateResult computes the planes as if it is in s. We now
+    // replace the s variables with the path that was certified.
+    for(int i = 0; i < 3; ++i) {
+      ret.value().a(i) = ret.value().a(i).SubstituteAndExpand(certificate_program.path);
+    }
+    ret.value().b = ret.value().b.SubstituteAndExpand(certificate_program.path);
+  }
   return ret;
 }
 
