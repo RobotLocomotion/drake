@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/drake_visualizer_params.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
@@ -11,6 +12,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_buses.h"
+#include "drake/visualization/inertia_visualizer_params.h"
 #include "drake/visualization/visualization_config.h"
 
 namespace drake {
@@ -95,7 +97,16 @@ void ApplyVisualizationConfig(
     const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
     const systems::lcm::LcmBuses* lcm_buses = nullptr,
     const multibody::MultibodyPlant<double>* plant = nullptr,
-    const geometry::SceneGraph<double>* scene_graph = nullptr,
+    geometry::SceneGraph<double>* scene_graph = nullptr,
+    std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+DRAKE_DEPRECATED("2023-07-17", "Pass a non-const SceneGraph pointer")
+void ApplyVisualizationConfig(
+    const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
+    const systems::lcm::LcmBuses* lcm_buses,
+    const multibody::MultibodyPlant<double>* plant,
+    const geometry::SceneGraph<double>* scene_graph,
     std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
@@ -151,6 +162,10 @@ ConvertVisualizationConfigToMeshcatParams(const VisualizationConfig&);
 // (This function is declared in the header so that unit tests can call it.)
 multibody::meshcat::ContactVisualizerParams
 ConvertVisualizationConfigToMeshcatContactParams(const VisualizationConfig&);
+
+// (This function is declared in the header so that unit tests can call it.)
+InertiaVisualizerParams ConvertVisualizationConfigToInertiaParams(
+    const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization
