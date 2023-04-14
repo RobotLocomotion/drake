@@ -479,11 +479,6 @@ class CspaceFreePolytope {
       const SeparationCertificateProgram& certificate_program,
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
-  // TODO(Alexandre.Amice) move to protected.
-  const geometry::SceneGraph<double>& get_scene_graph() const {
-    return scene_graph_;
-  }
-
  protected:
   [[nodiscard]] const symbolic::Variables& get_s_set() const { return s_set_; }
 
@@ -492,15 +487,13 @@ class CspaceFreePolytope {
     return plane_geometries_;
   }
 
-  // Returns the index of the plane which will separate the geometry pair.
-  // Returns -1 if the pair is not in map_geometries_to_separating_planes_.
-  int get_separating_plane_index(SortedPair<geometry::GeometryId> pair) const {
-    auto geometry_pair_it = map_geometries_to_separating_planes_.find(pair);
-    return (geometry_pair_it == map_geometries_to_separating_planes_.end())
-               ? -1
-               : geometry_pair_it->second;
+  const geometry::SceneGraph<double>& get_scene_graph() const {
+    return scene_graph_;
   }
 
+  // Returns the index of the plane which will separate the geometry pair.
+  // Returns -1 if the pair is not in map_geometries_to_separating_planes_.
+  int GetSeparatingPlaneIndex(const SortedPair<geometry::GeometryId>& pair) const;
 
 
  private:

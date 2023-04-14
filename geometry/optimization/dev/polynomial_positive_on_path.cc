@@ -1,11 +1,10 @@
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
+#include <iostream>
 #include <limits>
 #include <utility>
 
 #include "drake/common/symbolic/monomial_util.h"
-
-#include <iostream>
 
 namespace drake {
 namespace geometry {
@@ -69,20 +68,22 @@ ParametrizedPolynomialPositiveOnUnitInterval::
             multiplier_basis_d, type, "Sl");
     lambda_ = std::move(lambda);
     if (deg == 0) {
-      p_ -= lambda_;  // interval variable doesn't exist in the program, so we
-                      // can ignore it.
+      // interval variable doesn't exist in the program, so we can ignore it.
+      p_ -= lambda_;
     } else if (deg % 2 == 0) {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
           multiplier_basis_d.tail(multiplier_basis_d.size() -
                                   1),  // exclude μᵈ monomial
           type, "Sv");
       nu_ = std::move(nu);
-      p_ -= lambda_ + nu_ * symbolic::Polynomial(mu_, {mu_}) * (symbolic::Polynomial(1- mu_, {mu_}) );
+      p_ -= lambda_ + nu_ * symbolic::Polynomial(mu_, {mu_}) *
+                          (symbolic::Polynomial(1 - mu_, {mu_}));
     } else {
       auto [nu, Q_nu] = psatz_variables_and_psd_constraints_.NewSosPolynomial(
           multiplier_basis_d, type, "Sv");
       nu_ = std::move(nu);
-      p_ -= lambda_ * symbolic::Polynomial(mu_, {mu_}) + nu_ * (symbolic::Polynomial(1- mu_, {mu_}));
+      p_ -= lambda_ * symbolic::Polynomial(mu_, {mu_}) +
+            nu_ * (symbolic::Polynomial(1 - mu_, {mu_}));
     }
   }
 }
@@ -112,11 +113,10 @@ void ParametrizedPolynomialPositiveOnUnitInterval::
   // Add the p_ == 0 constraint after evaluation. Do this manually to avoid a
   // call to Reparse that occurs in AddEqualityConstraintBetweenPolynomials.
   const symbolic::Polynomial p_evaled{p_.EvaluatePartial(env)};
-  prog->AddEqualityConstraintBetweenPolynomials(p_evaled, symbolic::Polynomial(0));
-//  for (const auto& item : p_evaled.monomial_to_coefficient_map()) {
-//    std::cout << item.second << std::endl;
-//    prog->AddLinearEqualityConstraint(item.second, 0);
-//  }
+  for (const auto& item : p_evaled.monomial_to_coefficient_map()) {
+    std::cout << item.second << std::endl;
+    prog->AddLinearEqualityConstraint(item.second, 0);
+  }
 }
 
 }  // namespace optimization

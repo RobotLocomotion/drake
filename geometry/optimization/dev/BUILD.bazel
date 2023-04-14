@@ -2,11 +2,9 @@ load(
     "@drake//tools/skylark:drake_cc.bzl",
     "drake_cc_googletest",
     "drake_cc_library",
-    "drake_cc_binary",
     "drake_cc_package_library",
 )
 load("//tools/lint:lint.bzl", "add_lint_tests")
-
 load(
     "@drake//tools/skylark:test_tags.bzl",
     "mosek_test_tags",
@@ -19,9 +17,8 @@ drake_cc_library(
     srcs = ["cspace_free_path.cc"],
     hdrs = ["cspace_free_path.h"],
     deps = [
+        "//common:polynomial",
         "//common/symbolic:monomial_util",
-                "//common:polynomial",
-
         "//geometry/optimization:c_iris_collision_geometry",
         "//geometry/optimization:c_iris_separating_plane",
         "//geometry/optimization:cspace_free_polytope",
@@ -66,10 +63,6 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "cspace_free_path_with_mosek_test",
     timeout = "long",
-    # This test launches 2 threads to test both serial and parallel code paths
-    # in CspaceFreePath.
-#    tags = mosek_test_tags() + ["cpu:2"] + ["no_memcheck"],
-#    use_default_main = False,
     deps = [
         ":c_iris_path_test_utilities",
         "//common/test_utilities:symbolic_test_util",

@@ -69,7 +69,8 @@ class CspaceFreePath : public CspaceFreePolytope {
   struct PathSeparationCertificateProgram
       : public CspaceFreePolytope::SeparationCertificateProgram {
     PathSeparationCertificateProgram(
-        const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& m_path)
+        const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
+            m_path)
         : CspaceFreePolytope::SeparationCertificateProgram(), path{m_path} {}
 
     const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
@@ -133,8 +134,8 @@ class CspaceFreePath : public CspaceFreePolytope {
    */
   [[nodiscard]] PathSeparationCertificateProgram
   ConstructPlaneSearchProgramOnPath(
-    const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
-    const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& path)
+      const PlaneSeparatesGeometriesOnPath& plane_geometries_on_path,
+      const std::unordered_map<symbolic::Variable, symbolic::Polynomial>& path)
       const;
 
   // Friend declaration for use in constructor to avoid large initialization

@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <gtest/gtest.h>
 
 #include "drake/common/polynomial.h"
@@ -47,7 +45,7 @@ VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
   trajectories::BezierCurve<symbolic::Expression> path{0, 1, control_points};
   EXPECT_EQ(path.order(), curve_order);
   Eigen::MatrixX<symbolic::Expression> bezier_path_expr =
-      path.value(symbolic::Variable("t"));
+      path.value_no_clamp(symbolic::Variable("t"));
 
   VectorX<Polynomiald> bezier_poly_path{bezier_path_expr.rows()};
   for (int r = 0; r < bezier_path_expr.rows(); ++r) {
@@ -61,9 +59,6 @@ VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
   return bezier_poly_path;
 }
 
-// @param s_samples Each row of s_samples is a sampled configuration s.
-// @param C The c-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}.
-// @param d The c-space polytope is {s | C*s<=d, s_lower<=s<=s_upper}.
 // @param a Maps the plane index to the separating plane parameter `a` in {x|
 // aᵀx+b=0}
 // @param b Maps the plane index to the separating plane parameter `b` in {x|
@@ -78,7 +73,7 @@ void CheckSeparationBySamples(
     const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs) {
   auto diagram_context = diagram.CreateDefaultContext();
   const auto& plant = tester.cspace_free_path().rational_forward_kin().plant();
-  const auto& scene_graph = tester.cspace_free_path().get_scene_graph();
+  const auto& scene_graph = tester.get_scene_graph();
   auto& plant_context =
       plant.GetMyMutableContextFromRoot(diagram_context.get());
   auto& scene_graph_context =
@@ -139,7 +134,7 @@ void CheckForCollisionAlongPath(
     const Eigen::Ref<const Eigen::VectorXd>& q_star) {
   auto diagram_context = diagram.CreateDefaultContext();
   const auto& plant = tester.cspace_free_path().rational_forward_kin().plant();
-  const auto& scene_graph = tester.cspace_free_path().get_scene_graph();
+  const auto& scene_graph = tester.get_scene_graph();
   auto& plant_context =
       plant.GetMyMutableContextFromRoot(diagram_context.get());
   auto& scene_graph_context =
@@ -214,7 +209,7 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   //  const Eigen::Vector<double, 3> s0_unsafe{0.65*M_PI, 1.63, 2.9};
   //  const Eigen::Vector<double, 3> s_end_unsafe{-1.63, 0.612, -0.65};
 
-  for (const int maximum_path_degree : {1,4}) {
+  for (const int maximum_path_degree : {1, 4}) {
     CspaceFreePathTester tester(plant_, scene_graph_,
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
@@ -268,13 +263,3 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
-
-// int main(int argc, char** argv) {
-//  // Ensure that we have the MOSEK license for the entire duration of this
-//  test,
-//  // so that we do not have to release and re-acquire the license for every
-//  // test.
-//  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();
-//  ::testing::InitGoogleTest(&argc, argv);
-//  return RUN_ALL_TESTS();
-//}

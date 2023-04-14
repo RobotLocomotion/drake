@@ -1479,6 +1479,13 @@ GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
   return ret;
 }
 
+int CspaceFreePolytope::GetSeparatingPlaneIndex(const SortedPair<geometry::GeometryId>& pair) const {
+    auto geometry_pair_it = map_geometries_to_separating_planes_.find(pair);
+    return (geometry_pair_it == map_geometries_to_separating_planes_.end())
+               ? -1
+               : geometry_pair_it->second;
+  }
+
 // Explicit instantiation
 template VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs<double>(
     const Eigen::Ref<const Eigen::MatrixXd>&,

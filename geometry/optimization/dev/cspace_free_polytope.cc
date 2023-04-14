@@ -21,8 +21,6 @@
 #include "drake/solvers/mathematical_program_result.h"
 #include "drake/solvers/solve.h"
 
-#include <iostream>
-
 namespace drake {
 namespace geometry {
 namespace optimization {

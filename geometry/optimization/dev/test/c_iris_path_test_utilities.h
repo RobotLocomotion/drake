@@ -58,6 +58,10 @@ class CspaceFreePathTester {
     return cspace_free_path_->plane_geometries_on_path_;
   }
 
+  [[nodiscard]] const geometry::SceneGraph<double>& get_scene_graph() const {
+    return cspace_free_path_->get_scene_graph();
+  }
+
  private:
   std::unique_ptr<CspaceFreePath> cspace_free_path_;
 };

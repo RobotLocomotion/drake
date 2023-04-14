@@ -5,7 +5,6 @@
 #include "drake/geometry/optimization/dev/test/c_iris_path_test_utilities.h"
 #include "drake/geometry/optimization/test/c_iris_test_utilities.h"
 #include "drake/solvers/solve.h"
-using std::default_random_engine;
 
 namespace drake {
 namespace geometry {
@@ -37,8 +36,9 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
 // This struct is used to check whether the rationals in cspace_free_path and
 // cspace_free_polytope are properly related.
 struct PathEvaluator {
-  PathEvaluator(const CspaceFreePathTester& tester) : mu_{tester.get_mu()} {
-    default_random_engine generator;
+  explicit PathEvaluator(const CspaceFreePathTester& tester)
+      : mu_{tester.get_mu()} {
+    std::default_random_engine generator;
     std::uniform_real_distribution<> coeff_distribution(-10, 10);
     for (const auto& [var, poly] : tester.get_path()) {
       for (const auto& coeff_var : poly.decision_variables()) {
@@ -151,15 +151,13 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
           // substituted.
           for (int j = 0; j < mu_test_values.rows(); ++j) {
             const symbolic::Polynomial path_condition_eval{
-                path_condition
-                    .EvaluatePartial(
-                        evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
-                            mu_test_values(i)))};
+                path_condition.EvaluatePartial(
+                    evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
+                        mu_test_values(i)))};
             const symbolic::Polynomial polytope_condition_eval{
-                path_condition
-                    .EvaluatePartial(
-                        evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
-                            mu_test_values(i)))};
+                path_condition.EvaluatePartial(
+                    evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
+                        mu_test_values(i)))};
             EXPECT_TRUE(path_condition_eval.CoefficientsAlmostEqual(
                 polytope_condition_eval, 1e-10));
           }
