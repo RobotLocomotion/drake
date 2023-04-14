@@ -51,6 +51,11 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
   if (params_.enable_alpha_slider) {
     meshcat_->AddSlider(
       alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
+    // The following won't cause an update for most geometry but will correctly
+    // update geometry that we have special alpha handling for, e.g. inertia
+    // (where we force the alpha to initially be zero); the first publish
+    // pass will update the geometry alpha to the original (non-zero) alpha.
+    meshcat_->SetSliderValue(alpha_slider_name_, params_.default_color.a());
   }
 }
 
@@ -259,9 +264,12 @@ template <typename T>
 void MeshcatVisualizer<T>::SetColorAlphas() const {
   for (const auto& [geom_id, path] : geometries_) {
     Rgba color = colors_[geom_id];
-    color.set(color.r(), color.g(), color.b(), alpha_value_ * color.a());
+    double new_alpha = alpha_value_;
+    if (params_.alpha_slider_is_relative) {
+      new_alpha *= color.a();
+    }
     meshcat_->SetProperty(path, "color",
-      {color.r(), color.g(), color.b(), alpha_value_ * color.a()});
+      {color.r(), color.g(), color.b(), new_alpha});
   }
 }
 
