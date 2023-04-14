@@ -12,8 +12,19 @@ from pydrake.planning import (
     DirectCollocationConstraint,
     DirectTranscription,
     KinematicTrajectoryOptimization,
+    GCSTrajectoryOptimization,
 )
-from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
+from pydrake.geometry.optimization import (
+    HPolyhedron,
+    Point,
+    VPolytope,
+    GraphOfConvexSetsOptions,
+)
+from pydrake.trajectories import (
+    PiecewisePolynomial,
+    BsplineTrajectory,
+    CompositeTrajectory,
+)
 import pydrake.solvers as mp
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
@@ -22,6 +33,11 @@ from pydrake.trajectories import PiecewisePolynomial, BsplineTrajectory
 from pydrake.symbolic import Variable
 from pydrake.systems.framework import InputPortSelection
 from pydrake.systems.primitives import LinearSystem
+
+
+def GurobiOrMosekSolverAvailable():
+    return (mp.MosekSolver().available() and mp.MosekSolver().enabled()) or (
+        mp.GurobiSolver().available() and mp.GurobiSolver().enabled())
 
 
 class TestTrajectoryOptimization(unittest.TestCase):
@@ -239,3 +255,161 @@ class TestTrajectoryOptimization(unittest.TestCase):
         q = trajopt.ReconstructTrajectory(result=result)
         self.assertIsInstance(q, BsplineTrajectory)
         trajopt.SetInitialGuess(trajectory=q)
+
+    def test_gcs_trajectory_optimization_2d(self):
+        """The following 2D environment has been presented in the GCS paper.
+
+        We have two possible starts, S1 and S2, and two possible goals,
+        G1 and G2. The goal is to find a the shortest path from either of
+        the starts to either of the goals while avoiding the obstacles.
+        Further we constraint the path to go through either the intermediate
+        point I or the subspace.
+
+    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+    ░░      ░░░░░░░░                                      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░                                      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░                                      ░░░░░░░░    G1   ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░    S2░░░░░░░░      ░░░░░░░░░░ I ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░      ░░░░░░░░         ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░                       ░░
+    ░░      ░░░░░░░░      ░░░░░░░░░░   ░░░░░░░░░░░░░                       ░░
+    ░░                                 ░░░░░░░░░░░░░      ░░░░░░░░░░░░░░░░░░░
+    ░░                          ░░░░░░░░░░░░░░░░░░░░                       ░░
+    ░░                        ░░░░░░░░░░░░░░░░░░░░░░░░░                 G2 ░░
+    ░░      ░░░░░░░░        ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                  ░░
+    ░░      ░░░░░░░░          ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░                ░░
+    ░░      ░░░░░░░░            ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░              ░░
+    ░░      ░░░░░░░░              ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░            ░░
+    ░░      ░░░░░░░░                ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░          ░░
+    ░░      ░░░░░░░░                  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░        ░░
+    ░░      ░░░░░░░░                    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░xxxxxx░░
+    ░░      ░░░░░░░░                      ░░░░░░░░░░░░░░░░░░░░░░░░░xxxxxxxx░░
+    ░░      ░░░░░░░░                        ░░░░░░░░░░░░░░░░░░░░░xxxxxxxxxx░░
+    ░░      ░░░░░░░░                          ░░░░░░░░░░░░░░░░░xxxxxxxxxxxx░░
+    ░░      ░░░░░░░░                            ░░░░░░░░░░░░░xxx Subspace x░░
+    ░░      ░░░░░░░░                                       xxxxxxxxxxxxxxxx░░
+    ░░  S1  ░░░░░░░░                                       xxxxxxxxxxxxxxxx░░
+    ░░      ░░░░░░░░                                       xxxxxxxxxxxxxxxx░░
+    ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+        """
+
+        kDimension = 2
+        gcs = GCSTrajectoryOptimization(num_positions=kDimension)
+        self.assertEqual(gcs.num_positions(), kDimension)
+
+        # Define the collision free space.
+        vertices = [
+            np.array([[0.4, 0.4, 0.0, 0.0], [0.0, 5.0, 5.0, 0.0]]),
+            np.array([[0.4, 1.0, 1.0, 0.4], [2.4, 2.4, 2.6, 2.6]]),
+            np.array([[1.4, 1.4, 1.0, 1.0], [2.2, 4.6, 4.6, 2.2]]),
+            np.array([[1.4, 2.4, 2.4, 1.4], [2.2, 2.6, 2.8, 2.8]]),
+            np.array([[2.2, 2.4, 2.4, 2.2], [2.8, 2.8, 4.6, 4.6]]),
+            np.array([[1.4, 1., 1., 3.8, 3.8], [2.2, 2.2, 0.0, 0.0, 0.2]]),
+            np.array([[3.8, 3.8, 1.0, 1.0], [4.6, 5.0, 5.0, 4.6]]),
+            np.array([[5.0, 5.0, 4.8, 3.8, 3.8], [0.0, 1.2, 1.2, 0.2, 0.0]]),
+            np.array([[3.4, 4.8, 5.0, 5.0], [2.6, 1.2, 1.2, 2.6]]),
+            np.array([[3.4, 3.8, 3.8, 3.4], [2.6, 2.6, 4.6, 4.6]]),
+            np.array([[3.8, 4.4, 4.4, 3.8], [2.8, 2.8, 3.0, 3.0]]),
+            np.array([[5.0, 5.0, 4.4, 4.4], [2.8, 5.0, 5.0, 2.8]])
+        ]
+
+        # We add a the path length cost to the entire graph.
+        # This can be called ahead of time or after adding the regions.
+        gcs.AddPathLengthCost(weight=1.0)
+
+        # Add two subgraphs with different orders.
+        main1 = gcs.AddRegions([HPolyhedron(VPolytope(v)) for v in vertices],
+                               order=1,
+                               name="main1")
+        self.assertIsInstance(main1, GCSTrajectoryOptimization.Subgraph)
+        self.assertEqual(main1.order(), 1)
+        self.assertEqual(main1.name(), "main1")
+        self.assertEqual(main1.size(), len(vertices))
+        self.assertIsInstance(main1.regions(), list)
+
+        main2 = gcs.AddRegions([HPolyhedron(VPolytope(v)) for v in vertices],
+                               order=3,
+                               name="main2")
+        self.assertIsInstance(main2, GCSTrajectoryOptimization.Subgraph)
+        self.assertEqual(main2.order(), 3)
+        self.assertEqual(main2.name(), "main2")
+        self.assertEqual(main2.size(), len(vertices))
+
+        # Add two start and goal regions.
+        start1 = np.array([0.2, 0.2])
+        start2 = np.array([0.3, 3.2])
+
+        goal1 = np.array([4.8, 4.8])
+        goal2 = np.array([4.9, 2.4])
+
+        source = gcs.AddRegions([Point(start1), Point(start2)],
+                                order=0,
+                                name="starts")
+        self.assertIsInstance(source, GCSTrajectoryOptimization.Subgraph)
+        self.assertEqual(source.order(), 0)
+        self.assertEqual(source.name(), "starts")
+        self.assertEqual(source.size(), 2)
+
+        # Here we force a delay of 10 seconds at the goal.
+        target = gcs.AddRegions([Point(goal1), Point(goal2)],
+                                order=0,
+                                h_min=10,
+                                h_max=10,
+                                name='goals')
+        self.assertIsInstance(target, GCSTrajectoryOptimization.Subgraph)
+        self.assertEqual(target.order(), 0)
+        self.assertEqual(target.name(), "goals")
+        self.assertEqual(target.size(), 2)
+
+        # We connect the subgraphs main1 and main2 by constraining it to
+        # go through either of the subspaces.
+        subspace_region = HPolyhedron(VPolytope(vertices[7]))
+        subspace_point = Point([2.3, 3.5])
+
+        self.assertIsInstance(
+            gcs.AddEdges(main1, main2, subspace=subspace_point),
+            GCSTrajectoryOptimization.EdgesBetweenSubgraphs)
+        self.assertIsInstance(
+            gcs.AddEdges(main1, main2, subspace=subspace_region),
+            GCSTrajectoryOptimization.EdgesBetweenSubgraphs)
+
+        # We connect the start and goal regions to the rest of the graph.
+        self.assertIsInstance(gcs.AddEdges(source, main1),
+                              GCSTrajectoryOptimization.EdgesBetweenSubgraphs)
+        self.assertIsInstance(gcs.AddEdges(main2, target),
+                              GCSTrajectoryOptimization.EdgesBetweenSubgraphs)
+
+        # This weight matrix penalizes movement in the y direction three
+        # times more than in the x direction only for the main2 subgraph.
+        main2.AddPathLengthCost(np.diag([1.0, 3.0]))
+
+        options = GraphOfConvexSetsOptions()
+        options.convex_relaxation = True
+        options.max_rounded_paths = 5
+
+        if not GurobiOrMosekSolverAvailable():
+            return
+
+        traj, result = gcs.SolvePath(source, target, options)
+
+        self.assertIsInstance(result, mp.MathematicalProgramResult)
+        self.assertIsInstance(traj, CompositeTrajectory)
+        self.assertTrue(result.is_success())
+        self.assertEqual(traj.rows(), kDimension)
+
+        np.testing.assert_array_almost_equal(traj.value(traj.start_time()),
+                                             start2[:, None], 6)
+        np.testing.assert_array_almost_equal(traj.value(traj.end_time()),
+                                             goal2[:, None], 6)
+
+        # Check that the delay at the goal is respected.
+        np.testing.assert_array_almost_equal(traj.value(traj.end_time() - 10),
+                                             goal2[:, None], 6)
+        self.assertTrue(traj.end_time() - traj.start_time() >= 10)
