@@ -23,6 +23,7 @@ struct MeshcatVisualizerParams {
     a->Visit(DRAKE_NVP(enable_alpha_slider));
     a->Visit(DRAKE_NVP(visible_by_default));
     a->Visit(DRAKE_NVP(show_hydroelastic));
+    a->Visit(DRAKE_NVP(publish_untagged_geometry));
   }
 
   /** The duration (in simulation seconds) between attempts to update poses in
@@ -34,7 +35,9 @@ struct MeshcatVisualizerParams {
   /** The role of the geometries to be sent to the visualizer. */
   Role role{Role::kIllustration};
 
-  /** The color to apply to any geometry that hasn't defined one. */
+  /** The color to apply to any geometry that hasn't defined one.
+   The alpha value of this default color is used as the initial value for
+   the alpha slider, if one exists. */
   Rgba default_color{0.9, 0.9, 0.9, 1.0};
 
   /** A prefix to add to the path for all objects and transforms curated by the
@@ -52,6 +55,11 @@ struct MeshcatVisualizerParams {
 
   /** Determines whether to enable the alpha slider for geometry display. */
   bool enable_alpha_slider{false};
+
+  /** Determines whether the alpha slider sets geometry alpha to a value
+   relative to the geometry's initial alpha value, or (if false) the alpha
+   slider value becomes the geometry's new absolute alpha value. */
+  bool alpha_slider_is_relative{true};
 
   /** Determines whether our meshcat path should be default to being visible. */
   bool visible_by_default{true};
@@ -73,6 +81,10 @@ struct MeshcatVisualizerParams {
   This option is ignored by MeshcatVisualizer<T> when T is not `double`, e.g.
   if T == AutoDiffXd. */
   bool show_hydroelastic{false};
+
+  /** When true, only geometries explicitly tagged for this visualizer are
+  shown, and geometries with no tag are not shown. */
+  bool publish_untagged_geometry{true};
 };
 
 }  // namespace geometry

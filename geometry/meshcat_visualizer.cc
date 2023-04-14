@@ -51,6 +51,11 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
   if (params_.enable_alpha_slider) {
     meshcat_->AddSlider(
       alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
+    // The following won't cause an update for most geometry but will correctly
+    // update geometry that we have special alpha handling for, e.g. inertia
+    // (where we force the alpha to initially be zero); the first publish
+    // pass will update the geometry alpha to the original (non-zero) alpha.
+    meshcat_->SetSliderValue(alpha_slider_name_, params_.default_color.a());
   }
 }
 
@@ -175,21 +180,29 @@ void MeshcatVisualizer<T>::SetObjects(
     while ((pos = frame_path.find("::", pos)) != std::string::npos) {
       frame_path.replace(pos++, 2, "/");
     }
-    if (frame_id != inspector.world_frame_id() &&
-        inspector.NumGeometriesForFrameWithRole(frame_id, params_.role) > 0) {
-      dynamic_frames_[frame_id] = frame_path;
-      frames_to_delete.erase(frame_id);  // Don't delete this one.
-    }
 
+    int num_geometries = 0;
     for (GeometryId geom_id : inspector.GetGeometries(frame_id, params_.role)) {
+      const GeometryProperties* properties =
+          inspector.GetProperties(geom_id, params_.role);
+      DRAKE_DEMAND(properties != nullptr);
+      if (!params_.publish_untagged_geometry &&
+          !properties->HasProperty("meshcat", "accepting")) {
+        continue;
+      }
+      if (properties->GetPropertyOrDefault("meshcat", "accepting",
+                                           params_.prefix) != params_.prefix) {
+        continue;
+      }
+
       // Note: We use the frame_path/id instead of instance.GetName(geom_id),
       // which is a garbled mess of :: and _ and a memory address by default
       // when coming from MultibodyPlant.
       // TODO(russt): Use the geometry names if/when they are cleaned up.
       const std::string path =
           fmt::format("{}/{}", frame_path, geom_id.get_value());
-      const Rgba rgba = inspector.GetProperties(geom_id, params_.role)
-          ->GetPropertyOrDefault("phong", "diffuse", params_.default_color);
+      const Rgba rgba = properties->GetPropertyOrDefault("phong", "diffuse",
+                                                         params_.default_color);
       bool used_hydroelastic = false;
       if constexpr (std::is_same_v<T, double>) {
         if (params_.show_hydroelastic) {
@@ -217,6 +230,12 @@ void MeshcatVisualizer<T>::SetObjects(
       geometries_[geom_id] = path;
       colors_[geom_id] = rgba;
       geometries_to_delete.erase(geom_id);  // Don't delete this one.
+      ++num_geometries;
+    }
+
+    if (frame_id != inspector.world_frame_id() && num_geometries > 0) {
+      dynamic_frames_[frame_id] = frame_path;
+      frames_to_delete.erase(frame_id);  // Don't delete this one.
     }
   }
 
@@ -246,9 +265,12 @@ template <typename T>
 void MeshcatVisualizer<T>::SetColorAlphas() const {
   for (const auto& [geom_id, path] : geometries_) {
     Rgba color = colors_[geom_id];
-    color.set(color.r(), color.g(), color.b(), alpha_value_ * color.a());
+    double new_alpha = alpha_value_;
+    if (params_.alpha_slider_is_relative) {
+      new_alpha *= color.a();
+    }
     meshcat_->SetProperty(path, "color",
-      {color.r(), color.g(), color.b(), alpha_value_ * color.a()});
+      {color.r(), color.g(), color.b(), new_alpha});
   }
 }
 
