@@ -1265,3 +1265,11 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
 }  // namespace geometry
 }  // namespace drake
 
+int main(int argc, char** argv) {
+  // Ensure that we have the MOSEK license for the entire duration of this test,
+  // so that we do not have to release and re-acquire the license for every
+  // test.
+  auto mosek_license = drake::solvers::MosekSolver::AcquireLicense();
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
