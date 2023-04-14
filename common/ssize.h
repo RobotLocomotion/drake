@@ -1,9 +1,10 @@
 #pragma once
 
-#ifdef __cpp_lib_ssize
-
-// Many C++20 std headers define ssize; pick one.
+// Many C++20 std headers define ssize; pick one. This is needed even to
+// get the __cpp_lib_ssize define set.
 #include <vector>
+
+#ifdef __cpp_lib_ssize
 
 using std::ssize;
 
