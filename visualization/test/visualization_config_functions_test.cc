@@ -7,6 +7,7 @@
 #include "drake/geometry/meshcat.h"
 #include "drake/lcm/drake_lcm.h"
 #include "drake/systems/analysis/simulator.h"
+#include "drake/visualization/inertia_visualizer_params.h"
 
 using drake::geometry::DrakeVisualizerParams;
 using drake::geometry::Meshcat;
@@ -34,11 +35,14 @@ namespace {
 GTEST_TEST(VisualizationConfigTest, Defaults) {
   const VisualizationConfig config;
   const DrakeVisualizerParams drake_params;
-  const DrakeVisualizerParams meshcat_params;
+  const MeshcatVisualizerParams meshcat_params;
+  const InertiaVisualizerParams inertia_params;
   EXPECT_EQ(config.publish_period, drake_params.publish_period);
   EXPECT_EQ(config.default_illustration_color, drake_params.default_color);
   EXPECT_EQ(config.publish_period, meshcat_params.publish_period);
   EXPECT_EQ(config.default_illustration_color, meshcat_params.default_color);
+  EXPECT_EQ(config.inertia_color, inertia_params.color);
+  EXPECT_EQ(config.inertia_scale_factor, inertia_params.scale_factor);
 }
 
 // Tests the mapping from default schema data to geometry params.
@@ -64,7 +68,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
 
   const std::vector<MeshcatVisualizerParams> meshcat_params =
       ConvertVisualizationConfigToMeshcatParams(config);
-  ASSERT_EQ(meshcat_params.size(), 2);
+  ASSERT_EQ(meshcat_params.size(), 3);
 
   EXPECT_EQ(meshcat_params.at(0).role, Role::kIllustration);
   EXPECT_EQ(meshcat_params.at(0).publish_period, config.publish_period);
@@ -74,24 +78,47 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider,
             config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(0).alpha_slider_is_relative, true);
   EXPECT_EQ(meshcat_params.at(0).visible_by_default, true);
   EXPECT_EQ(meshcat_params.at(0).show_hydroelastic, false);
+  EXPECT_EQ(meshcat_params.at(0).publish_untagged_geometry, true);
 
-  EXPECT_EQ(meshcat_params.at(1).role, Role::kProximity);
+  EXPECT_EQ(meshcat_params.at(1).role, Role::kIllustration);
   EXPECT_EQ(meshcat_params.at(1).publish_period, config.publish_period);
-  EXPECT_EQ(meshcat_params.at(1).default_color, config.default_proximity_color);
+  EXPECT_EQ(meshcat_params.at(1).default_color, config.inertia_color);
   EXPECT_EQ(meshcat_params.at(1).delete_on_initialization_event,
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
             config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(1).alpha_slider_is_relative, false);
   EXPECT_EQ(meshcat_params.at(1).visible_by_default, false);
-  EXPECT_EQ(meshcat_params.at(1).show_hydroelastic, true);
+  EXPECT_EQ(meshcat_params.at(1).show_hydroelastic, false);
+  EXPECT_EQ(meshcat_params.at(1).publish_untagged_geometry, false);
+
+  EXPECT_EQ(meshcat_params.at(2).role, Role::kProximity);
+  EXPECT_EQ(meshcat_params.at(2).publish_period, config.publish_period);
+  EXPECT_EQ(meshcat_params.at(2).default_color, config.default_proximity_color);
+  EXPECT_EQ(meshcat_params.at(2).delete_on_initialization_event,
+            config.delete_on_initialization_event);
+  EXPECT_EQ(meshcat_params.at(2).enable_alpha_slider,
+            config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(2).alpha_slider_is_relative, true);
+  EXPECT_EQ(meshcat_params.at(2).visible_by_default, false);
+  EXPECT_EQ(meshcat_params.at(2).show_hydroelastic, true);
+  EXPECT_EQ(meshcat_params.at(2).publish_untagged_geometry, true);
 
   const ContactVisualizerParams contact_params =
       ConvertVisualizationConfigToMeshcatContactParams(config);
   EXPECT_EQ(contact_params.publish_period, config.publish_period);
   EXPECT_EQ(contact_params.delete_on_initialization_event,
             config.delete_on_initialization_event);
+
+  InertiaVisualizerParams inertia_params =
+      ConvertVisualizationConfigToInertiaParams(config);
+  const Rgba no_alpha_color(config.inertia_color.r(), config.inertia_color.g(),
+                            config.inertia_color.b(), 0.0);
+  EXPECT_EQ(inertia_params.color, no_alpha_color);
+  EXPECT_EQ(inertia_params.scale_factor, config.inertia_scale_factor);
 }
 
 // Tests the mapping from non-default schema data to geometry params.
@@ -101,6 +128,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
   config.publish_proximity = false;
   config.default_illustration_color = Rgba(0.25, 0.25, 0.25, 0.25);
   config.enable_alpha_sliders = true;
+  config.inertia_color = Rgba(0.9, 0.3, 0.0, 0.5);
+  config.inertia_scale_factor = 2.0;
 
   const std::vector<DrakeVisualizerParams> drake_params =
       ConvertVisualizationConfigToDrakeParams(config);
@@ -112,17 +141,25 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionSpecial) {
 
   const std::vector<MeshcatVisualizerParams> meshcat_params =
       ConvertVisualizationConfigToMeshcatParams(config);
-  ASSERT_EQ(meshcat_params.size(), 1);
+  ASSERT_EQ(meshcat_params.size(), 2);
+
   EXPECT_EQ(meshcat_params.at(0).role, Role::kIllustration);
   EXPECT_EQ(meshcat_params.at(0).publish_period, 0.5);
   EXPECT_EQ(meshcat_params.at(0).default_color, Rgba(0.25, 0.25, 0.25, 0.25));
   EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider, true);
+
+  InertiaVisualizerParams inertia_params =
+      ConvertVisualizationConfigToInertiaParams(config);
+  // Note that alpha is still zero.
+  EXPECT_EQ(inertia_params.color, Rgba(0.9, 0.3, 0.0, 0.0));
+  EXPECT_EQ(inertia_params.scale_factor, 2.0);
 }
 
 // Tests everything disabled.
 GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionAllDisabled) {
   VisualizationConfig config;
   config.publish_illustration = false;
+  config.publish_inertia = false;
   config.publish_proximity = false;
 
   const std::vector<DrakeVisualizerParams> drake_params =
@@ -164,6 +201,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
            // For Meshcat.
            "meshcat_visualizer",
            "meshcat_contact_visualizer",
+           "inertia_visualizer",
        }) {
     SCOPED_TRACE(fmt::format("Checking for a system named like {}", name));
     int count = 0;
@@ -205,6 +243,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   // Disable everything.
   VisualizationConfig config;
   config.publish_illustration = false;
+  config.publish_inertia = false;
   config.publish_proximity = false;
   config.publish_contacts = false;
 
@@ -259,7 +298,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoMeshcat) {
       ++meshcat_count;
     }
   }
-  EXPECT_EQ(meshcat_count, 2);
+  EXPECT_EQ(meshcat_count, 3);
 }
 
 // Check that turning on the alpha sliders functions as expected.
@@ -280,6 +319,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AlphaSliders) {
 
   // Check that alpha sliders exist.
   meshcat->GetSliderValue("illustration α");
+  meshcat->GetSliderValue("inertia α");
   meshcat->GetSliderValue("proximity α");
 }
 
