@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/planning/trajectory_optimization/direct_collocation.h"
 #include "drake/planning/trajectory_optimization/direct_transcription.h"
+#include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 #include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 namespace drake {
@@ -346,6 +347,74 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathLengthCost", &Class::AddPathLengthCost,
             py::arg("weight") = 1.0, py::arg("use_conic_constraint") = false,
             cls_doc.AddPathLengthCost.doc);
+  }
+
+  {
+    using Class = GCSTrajectoryOptimization;
+    constexpr auto& cls_doc = doc.GCSTrajectoryOptimization;
+    auto gcs_traj_opt =
+        py::class_<Class>(m, "GCSTrajectoryOptimization", cls_doc.doc)
+            .def(py::init<int>(), py::arg("num_positions"), "")
+            .def("num_positions", &Class::num_positions,
+                cls_doc.num_positions.doc)
+            .def("GetGraphvizString", &Class::GetGraphvizString,
+                py::arg("show_slacks") = true, py::arg("precision") = 3,
+                py::arg("scientific") = false, cls_doc.GetGraphvizString.doc)
+            .def("AddRegions",
+                py::overload_cast<const geometry::optimization::ConvexSets&,
+                    const std::vector<std::pair<int, int>>&, int, double,
+                    double, std::string>(&Class::AddRegions),
+                py_rvp::reference_internal, py::arg("regions"),
+                py::arg("edges_between_regions"), py::arg("order"),
+                py::arg("d_min") = 1e-6, py::arg("d_max") = 20,
+                py::arg("name") = "", cls_doc.AddRegions.doc_6args)
+            .def("AddRegions",
+                py::overload_cast<const geometry::optimization::ConvexSets&,
+                    int, double, double, std::string>(&Class::AddRegions),
+                py_rvp::reference_internal, py::arg("regions"),
+                py::arg("order"), py::arg("d_min") = 1e-6,
+                py::arg("d_max") = 20, py::arg("name") = "",
+                cls_doc.AddRegions.doc_5args)
+            .def("AddEdges", &Class::AddEdges, py_rvp::reference_internal,
+                py::arg("from"), py::arg("to"),
+                py::arg("subspace") = py::none(), cls_doc.AddEdges.doc)
+            .def("AddPathLengthCost",
+                py::overload_cast<const Eigen::MatrixXd&>(
+                    &Class::AddPathLengthCost),
+                py::arg("weight_matrix"),
+                cls_doc.AddPathLengthCost.doc_1args_weight_matrix)
+            .def("AddPathLengthCost",
+                py::overload_cast<double>(&Class::AddPathLengthCost),
+                py::arg("weight") = 1.0,
+                cls_doc.AddPathLengthCost.doc_1args_weight)
+            .def("SolvePath", &Class::SolvePath, py::arg("source"),
+                py::arg("target"),
+                py::arg("options") =
+                    geometry::optimization::GraphOfConvexSetsOptions(),
+                cls_doc.SolvePath.doc);
+
+    // Subgraph
+    const auto& subgraph_doc = doc.GCSTrajectoryOptimization.Subgraph;
+    py::class_<Class::Subgraph>(gcs_traj_opt, "Subgraph", subgraph_doc.doc)
+        .def("name", &Class::Subgraph::name, subgraph_doc.name.doc)
+        .def("order", &Class::Subgraph::order, subgraph_doc.order.doc)
+        .def("size", &Class::Subgraph::size, subgraph_doc.order.doc)
+        .def("regions", &Class::Subgraph::regions, subgraph_doc.regions.doc)
+        .def("AddPathLengthCost",
+            py::overload_cast<const Eigen::MatrixXd&>(
+                &Class::Subgraph::AddPathLengthCost),
+            py::arg("weight_matrix"),
+            subgraph_doc.AddPathLengthCost.doc_1args_weight_matrix)
+        .def("AddPathLengthCost",
+            py::overload_cast<double>(&Class::Subgraph::AddPathLengthCost),
+            py::arg("weight") = 1.0,
+            subgraph_doc.AddPathLengthCost.doc_1args_weight);
+
+    // SubgraphEdges
+    const auto& subgraph_edges_doc =
+        doc.GCSTrajectoryOptimization.SubgraphEdges;
+    py::class_<Class::SubgraphEdges>(
+        gcs_traj_opt, "SubgraphEdges", subgraph_edges_doc.doc);
   }
 }
 
