@@ -23,6 +23,7 @@ struct MeshcatVisualizerParams {
     a->Visit(DRAKE_NVP(enable_alpha_slider));
     a->Visit(DRAKE_NVP(visible_by_default));
     a->Visit(DRAKE_NVP(show_hydroelastic));
+    a->Visit(DRAKE_NVP(publish_untagged_geometry));
   }
 
   /** The duration (in simulation seconds) between attempts to update poses in
@@ -50,29 +51,39 @@ struct MeshcatVisualizerParams {
    events" for more information. */
   bool delete_on_initialization_event{true};
 
-  /** Determines whether to enable the alpha slider for geometry display. */
+  /** Determines whether to enable the alpha slider for geometry display. When
+   true, the initial position of the slider will be default_color.alpha(). */
   bool enable_alpha_slider{false};
+
+  /** Determines whether the alpha slider sets geometry alpha to a value
+   relative to the geometry's initial alpha value, or (if false) the alpha
+   slider value becomes the geometry's new absolute alpha value. */
+  bool alpha_slider_is_relative{true};
 
   /** Determines whether our meshcat path should be default to being visible. */
   bool visible_by_default{true};
 
   /** When using the hydroelastic contact model, collision geometries that are
-  _declared_ as geometric primitives are frequently represented by some
-  discretely tessellated mesh when computing contact. It can be quite helpful
-  in assessing contact behavior to visualize these discrete meshes (in place of
-  the idealized primitives).
+   _declared_ as geometric primitives are frequently represented by some
+   discretely tessellated mesh when computing contact. It can be quite helpful
+   in assessing contact behavior to visualize these discrete meshes (in place
+   of the idealized primitives).
 
-  To visualize these representations it is necessary to request visualization
-  of geometries with the Role::kProximity role (see the role field). It is
-  further necessary to explicitly request the hydroelastic meshes where
-  available (setting show_hydroelastic to `true`).
+   To visualize these representations it is necessary to request visualization
+   of geometries with the Role::kProximity role (see the role field). It is
+   further necessary to explicitly request the hydroelastic meshes where
+   available (setting show_hydroelastic to `true`).
 
-  Setting this `show_hydroelastic` to `true` will have no apparent effect if
-  none of the collision meshes have a hydroelastic mesh associated with them.
+   Setting this `show_hydroelastic` to `true` will have no apparent effect if
+   none of the collision meshes have a hydroelastic mesh associated with them.
 
-  This option is ignored by MeshcatVisualizer<T> when T is not `double`, e.g.
-  if T == AutoDiffXd. */
+   This option is ignored by MeshcatVisualizer<T> when T is not `double`, e.g.
+   if T == AutoDiffXd. */
   bool show_hydroelastic{false};
+
+  /** When true, only geometries explicitly tagged for this visualizer are
+   shown, and geometries with no tag are not shown. */
+  bool publish_untagged_geometry{true};
 };
 
 }  // namespace geometry

@@ -13,6 +13,7 @@
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/framework/diagram_builder.h"
 #include "drake/systems/lcm/lcm_buses.h"
+#include "drake/visualization/inertia_visualizer_params.h"
 #include "drake/visualization/visualization_config.h"
 
 namespace drake {
@@ -179,6 +180,10 @@ ConvertVisualizationConfigToMeshcatParams(const VisualizationConfig&);
 // (This function is declared in the header so that unit tests can call it.)
 multibody::meshcat::ContactVisualizerParams
 ConvertVisualizationConfigToMeshcatContactParams(const VisualizationConfig&);
+
+// (This function is declared in the header so that unit tests can call it.)
+InertiaVisualizerParams ConvertVisualizationConfigToInertiaParams(
+    const VisualizationConfig&);
 
 }  // namespace internal
 }  // namespace visualization
