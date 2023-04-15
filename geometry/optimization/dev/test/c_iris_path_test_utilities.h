@@ -49,12 +49,12 @@ class CspaceFreePathTester {
   }
 
   [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
-  get_plane_geometries() {
+  get_plane_geometries() const {
     return cspace_free_path_->get_plane_geometries();
   }
 
   [[nodiscard]] const std::vector<PlaneSeparatesGeometriesOnPath>&
-  get_path_plane_geometries() {
+  get_path_plane_geometries() const {
     return cspace_free_path_->plane_geometries_on_path_;
   }
 

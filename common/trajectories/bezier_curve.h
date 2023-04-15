@@ -66,8 +66,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
            a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
 
-  /** Evaluates the curve at the given time without clamping */
-  MatrixX<T> value_no_clamp(const T& time) const;
+  MatrixX<T> value(const T& time, bool clamp_time) const;
 
   Eigen::Index rows() const override { return control_points_.rows(); }
 

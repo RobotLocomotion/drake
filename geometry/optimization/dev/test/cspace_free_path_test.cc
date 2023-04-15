@@ -74,7 +74,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
                                 SeparatingPlaneOrder::kAffine, q_star,
                                 maximum_path_degree);
     PathEvaluator evaluator{tester};
-    const Eigen::Vector<double, 4> mu_test_values{0, 0.25, 0.77, 1};
+    const Eigen::Vector4d mu_test_values{0, 0.25, 0.77, 1};
 
     EXPECT_EQ(tester.get_path_plane_geometries().size(),
               tester.cspace_free_path().separating_planes().size());

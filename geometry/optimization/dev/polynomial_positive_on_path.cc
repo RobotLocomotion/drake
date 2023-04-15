@@ -1,6 +1,5 @@
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
-#include <iostream>
 #include <limits>
 #include <utility>
 
@@ -114,7 +113,6 @@ void ParametrizedPolynomialPositiveOnUnitInterval::
   // call to Reparse that occurs in AddEqualityConstraintBetweenPolynomials.
   const symbolic::Polynomial p_evaled{p_.EvaluatePartial(env)};
   for (const auto& item : p_evaled.monomial_to_coefficient_map()) {
-    std::cout << item.second << std::endl;
     prog->AddLinearEqualityConstraint(item.second, 0);
   }
 }

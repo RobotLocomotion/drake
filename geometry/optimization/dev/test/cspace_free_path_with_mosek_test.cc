@@ -14,7 +14,7 @@ namespace geometry {
 namespace optimization {
 
 VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
-    const Eigen::Vector<double, 3>& s0, const Eigen::Vector<double, 3>& s_end,
+    const Eigen::Vector3d& s0, const Eigen::Vector3d& s_end,
     int curve_order,
     std::optional<HPolyhedron> poly_to_check_containment = std::nullopt) {
   if (poly_to_check_containment.has_value()) {
@@ -29,11 +29,11 @@ VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
 
   control_points.col(0) = s0_expr;
   control_points.col(curve_order) = s_end_expr;
-  const Eigen::Vector<double, 3> orth_offset{-0.01, 0.005, 0.005};
+  const Eigen::Vector3d orth_offset{-0.01, 0.005, 0.005};
   for (int i = 1; i < curve_order - 1; ++i) {
     // another control point slightly off the straight line path between s0
     // and s_end.
-    Eigen::Vector<double, 3> si = i * (s0 + s_end) / curve_order + orth_offset;
+    Eigen::Vector3d si = i * (s0 + s_end) / curve_order + orth_offset;
     if (poly_to_check_containment.has_value()) {
       EXPECT_TRUE(poly_to_check_containment.value().PointInSet(si));
     }
@@ -45,7 +45,7 @@ VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
   trajectories::BezierCurve<symbolic::Expression> path{0, 1, control_points};
   EXPECT_EQ(path.order(), curve_order);
   Eigen::MatrixX<symbolic::Expression> bezier_path_expr =
-      path.value_no_clamp(symbolic::Variable("t"));
+      path.value(symbolic::Variable("t"), false);
 
   VectorX<Polynomiald> bezier_poly_path{bezier_path_expr.rows()};
   for (int r = 0; r < bezier_path_expr.rows(); ++r) {
@@ -184,9 +184,6 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   // This polyhedron is fully collision free and can be certified as such using
   // CspaceFreePolytope.
   const HPolyhedron c_free_polyhedron{C_good, d_good};
-  //  const SortedPair<geometry::GeometryId> geometry_pair{body2_sphere_,
-  //                                                       body3_cylinder_};
-
   const SortedPair<geometry::GeometryId> geometry_pair{body0_box_,
                                                        body2_sphere_};
 
@@ -200,14 +197,14 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   Eigen::VectorXd mu_samples{100};
   mu_samples = Eigen::VectorXd::LinSpaced(num_samples, 0, 1);
 
-  const Eigen::Vector<double, 3> s0_safe{0.06, -0.02, 0.04};
-  const Eigen::Vector<double, 3> s_end_safe{-0.17, 0.08, -0.19};
+  const Eigen::Vector3d s0_safe{0.06, -0.02, 0.04};
+  const Eigen::Vector3d s_end_safe{-0.17, 0.08, -0.19};
 
-  const Eigen::Vector<double, 3> s0_unsafe{-1.74, -0.22, 0.24};
-  const Eigen::Vector<double, 3> s_end_unsafe{0.84, 2.31, 1.47};
+  const Eigen::Vector3d s0_unsafe{-1.74, -0.22, 0.24};
+  const Eigen::Vector3d s_end_unsafe{0.84, 2.31, 1.47};
 
-  //  const Eigen::Vector<double, 3> s0_unsafe{0.65*M_PI, 1.63, 2.9};
-  //  const Eigen::Vector<double, 3> s_end_unsafe{-1.63, 0.612, -0.65};
+  //  const Eigen::Vector3d s0_unsafe{0.65*M_PI, 1.63, 2.9};
+  //  const Eigen::Vector3d s_end_unsafe{-1.63, 0.612, -0.65};
 
   for (const int maximum_path_degree : {1, 4}) {
     CspaceFreePathTester tester(plant_, scene_graph_,

@@ -43,11 +43,16 @@ struct PlaneSeparatesGeometriesOnPath {
   int plane_index;
 };
 
+/**
+ This class certifies whether polynomial trajectories of maximum degree d in the
+ tangential-configuration space are collision free. By tangential-configuration
+ space, we mean the revolute joint angle θ is replaced by t = tan(θ/2).
+ */
 class CspaceFreePath : public CspaceFreePolytope {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePath);
   /**
-   @param plant The plant for which we compute the C-space free trajectory. It
+   @param plant The plant for which we compute the TC-space free trajectory. It
    must outlive this CspaceFreePath object.
    @param scene_graph The scene graph that has been connected with `plant`. It
    must outlive this CspaceFreePath object.
@@ -66,6 +71,13 @@ class CspaceFreePath : public CspaceFreePolytope {
 
   ~CspaceFreePath() {}
 
+  /**
+   A SeparationCertificateProgram which allows stores the path that this
+   program certifies.
+   @param[in] path maps each configuration space variable to a univariate
+   polynomial of degree less than max_degree_ which corresponds to the path
+   taken by that configuration space variable.
+   */
   struct PathSeparationCertificateProgram
       : public CspaceFreePolytope::SeparationCertificateProgram {
     PathSeparationCertificateProgram(
@@ -80,6 +92,16 @@ class CspaceFreePath : public CspaceFreePolytope {
 
   [[nodiscard]] int max_degree() const { return max_degree_; }
 
+  /**
+   Constructs the PathSeparationCertificateProgram which searches for a
+   separation certificate for a pair of geometries along a path in
+   tangent-configuration space.
+   @param[in] plane_geometries_on_path The geometry pair that we wish to certify
+   is collision free along the path.
+   @param[in] path A vector the same size as the plant's generalized positions
+   with each entry a univariate polynomial. The path is the value of these
+   polynomials as the variable varies between [0,1].
+   */
   [[nodiscard]] PathSeparationCertificateProgram
   MakeIsGeometrySeparableOnPathProgram(
       const SortedPair<geometry::GeometryId>& geometry_pair,
@@ -125,12 +147,12 @@ class CspaceFreePath : public CspaceFreePolytope {
   std::vector<PlaneSeparatesGeometriesOnPath> plane_geometries_on_path_;
 
   /**
-   Constructs the MathematicalProgram which searches for a separation
-   certificate for a pair of geometries along the path.
+   Constructs the PathSeparationCertificateProgram which searches for a
+   separation certificate for a pair of geometries along the path.
    @param[in] plane_geometries_on_path Contain the parametric conditions that
    need to be non-negative on the path.
-   @param[in] path maps each configuration space variable to a univariate
-   polynomial of degree less than max_degree_.
+   @param[in] path maps each tangential-configuration space variable to a
+   univariate polynomial of degree less than max_degree_.
    */
   [[nodiscard]] PathSeparationCertificateProgram
   ConstructPlaneSearchProgramOnPath(
