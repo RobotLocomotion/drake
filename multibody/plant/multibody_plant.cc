@@ -1369,12 +1369,35 @@ void MultibodyPlant<T>::set_penetration_allowance(
 }
 
 template <typename T>
+VectorX<T> MultibodyPlant<T>::GetDefaultPositions() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  VectorX<T> q(num_positions());
+  q.setConstant(std::numeric_limits<double>::quiet_NaN());
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    const Joint<T>& joint = get_joint(i);
+    q.segment(joint.position_start(), joint.num_positions()) =
+        joint.default_positions();
+  }
+  return q;
+}
+
+template <typename T>
+VectorX<T> MultibodyPlant<T>::GetDefaultPositions(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  const VectorX<T> q = GetDefaultPositions();
+  const VectorX<T> q_instance = internal_tree().GetPositionsFromArray(
+      model_instance, q);
+  return q_instance;
+}
+
+template <typename T>
 void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   DRAKE_THROW_UNLESS(q.size() == num_positions());
-  for (int i = 0; i < num_joints(); ++i) {
-    Joint<T>& joint = get_mutable_joint(JointIndex(i));
+  for (JointIndex i{0}; i < num_joints(); ++i) {
+    Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
         q.segment(joint.position_start(), joint.num_positions()));
   }

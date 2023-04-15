@@ -149,9 +149,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
 
     m.def(
         "CalcContactFrictionFromSurfaceProperties",
-        [](const multibody::CoulombFriction<T>& surface_properties1,
-            const multibody::CoulombFriction<T>& surface_properties2) {
-          return drake::multibody::CalcContactFrictionFromSurfaceProperties(
+        [](const CoulombFriction<T>& surface_properties1,
+            const CoulombFriction<T>& surface_properties2) {
+          return CalcContactFrictionFromSurfaceProperties(
               surface_properties1, surface_properties2);
         },
         py::arg("surface_properties1"), py::arg("surface_properties2"),
@@ -891,8 +891,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_actuation_input_port.doc_0args)
         .def("get_actuation_input_port",
             overload_cast_explicit<const systems::InputPort<T>&,
-                multibody::ModelInstanceIndex>(
-                &Class::get_actuation_input_port),
+                ModelInstanceIndex>(&Class::get_actuation_input_port),
             py::arg("model_instance"), py_rvp::reference_internal,
             cls_doc.get_actuation_input_port.doc_1args)
         .def("get_applied_generalized_force_input_port",
@@ -925,7 +924,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, cls_doc.get_state_output_port.doc_0args)
         .def("get_state_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
-                multibody::ModelInstanceIndex>(&Class::get_state_output_port),
+                ModelInstanceIndex>(&Class::get_state_output_port),
             py::arg("model_instance"), py_rvp::reference_internal,
             cls_doc.get_state_output_port.doc_1args)
         .def("get_generalized_acceleration_output_port",
@@ -935,7 +934,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_generalized_acceleration_output_port.doc_0args)
         .def("get_generalized_acceleration_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
-                multibody::ModelInstanceIndex>(
+                ModelInstanceIndex>(
                 &Class::get_generalized_acceleration_output_port),
             py::arg("model_instance"), py_rvp::reference_internal,
             cls_doc.get_generalized_acceleration_output_port.doc_1args)
@@ -951,7 +950,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.get_contact_results_output_port.doc)
         .def("get_generalized_contact_forces_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&,
-                multibody::ModelInstanceIndex>(
+                ModelInstanceIndex>(
                 &Class::get_generalized_contact_forces_output_port),
             py_rvp::reference_internal, py::arg("model_instance"),
             cls_doc.get_generalized_contact_forces_output_port.doc);
@@ -1048,7 +1047,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "GetPositions",
             [](const MultibodyPlant<T>* self, const Context<T>& context,
-                multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
+                ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetPositions(context, model_instance);
             },
             py_rvp::reference, py::arg("context"), py::arg("model_instance"),
@@ -1063,12 +1062,25 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "SetPositions",
             [](const MultibodyPlant<T>* self, Context<T>* context,
-                multibody::ModelInstanceIndex model_instance,
+                ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>>& q) {
               self->SetPositions(context, model_instance, q);
             },
             py::arg("context"), py::arg("model_instance"), py::arg("q"),
             cls_doc.SetPositions.doc_2args)
+        .def(
+            "GetDefaultPositions",
+            [](const MultibodyPlant<T>* self) {
+              return self->GetDefaultPositions();
+            },
+            cls_doc.GetDefaultPositions.doc_0args)
+        .def(
+            "GetDefaultPositions",
+            [](const MultibodyPlant<T>* self,
+                ModelInstanceIndex model_instance) {
+              return self->GetDefaultPositions(model_instance);
+            },
+            py::arg("model_instance"), cls_doc.GetDefaultPositions.doc_1args)
         .def(
             "SetDefaultPositions",
             [](MultibodyPlant<T>* self,
@@ -1078,8 +1090,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("q"), cls_doc.SetDefaultPositions.doc_1args)
         .def(
             "SetDefaultPositions",
-            [](MultibodyPlant<T>* self,
-                multibody::ModelInstanceIndex model_instance,
+            [](MultibodyPlant<T>* self, ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<double>>& q_instance) {
               self->SetDefaultPositions(model_instance, q_instance);
             },
@@ -1094,7 +1105,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "GetVelocities",
             [](const MultibodyPlant<T>* self, const Context<T>& context,
-                multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
+                ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetVelocities(context, model_instance);
             },
             py_rvp::reference, py::arg("context"), py::arg("model_instance"),
@@ -1127,7 +1138,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "GetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self, const Context<T>& context,
-                multibody::ModelInstanceIndex model_instance) -> VectorX<T> {
+                ModelInstanceIndex model_instance) -> VectorX<T> {
               return self->GetPositionsAndVelocities(context, model_instance);
             },
             py_rvp::reference, py::arg("context"), py::arg("model_instance"),
@@ -1143,7 +1154,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def(
             "SetPositionsAndVelocities",
             [](const MultibodyPlant<T>* self, Context<T>* context,
-                multibody::ModelInstanceIndex model_instance,
+                ModelInstanceIndex model_instance,
                 const Eigen::Ref<const VectorX<T>>& q_v) {
               self->SetPositionsAndVelocities(context, model_instance, q_v);
             },
@@ -1411,7 +1422,7 @@ PYBIND11_MODULE(plant, m) {
           const MultibodyPlant<double>& plant,
           const geometry::SceneGraph<double>& scene_graph,
           lcm::DrakeLcmInterface* lcm, std::optional<double> publish_period) {
-        return drake::multibody::ConnectContactResultsToDrakeVisualizer(
+        return ConnectContactResultsToDrakeVisualizer(
             builder, plant, scene_graph, lcm, publish_period);
       },
       py::arg("builder"), py::arg("plant"), py::arg("scene_graph"),
