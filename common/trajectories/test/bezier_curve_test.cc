@@ -24,6 +24,10 @@ GTEST_TEST(BezierCurveTest, Linear) {
   EXPECT_EQ(curve.end_time(), 3.0);
   EXPECT_TRUE(
       CompareMatrices(curve.value(2.5), Eigen::Vector2d(1.5, 5), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(curve.value(0, true), Eigen::Vector2d(1, 3), 1e-14));
+  EXPECT_TRUE(
+      CompareMatrices(curve.value(0, false), Eigen::Vector2d(-1, -5), 1e-14));
 
   auto deriv = curve.MakeDerivative();
   BezierCurve<double>& deriv_bezier =
@@ -79,6 +83,14 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
                                 Eigen::Vector2d((1 - t) * (1 - t), t * t),
                                 1e-14));
+    EXPECT_TRUE(CompareMatrices(curve.value(sample_time, true),
+                                Eigen::Vector2d((1 - t) * (1 - t), t * t),
+                                1e-14));
+    EXPECT_TRUE(
+        CompareMatrices(curve.value(sample_time, false),
+                        Eigen::Vector2d((1 - sample_time) * (1 - sample_time),
+                                        sample_time * sample_time),
+                        1e-14));
     EXPECT_TRUE(CompareMatrices(deriv->value(sample_time),
                                 Eigen::Vector2d(-2 * (1 - t), 2 * t), 1e-14));
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time),

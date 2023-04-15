@@ -33,8 +33,13 @@ std::unique_ptr<Trajectory<T>> BezierCurve<T>::Clone() const {
 
 template <typename T>
 MatrixX<T> BezierCurve<T>::value(const T& time) const {
+  return value(time, true);
+}
+
+template <typename T>
+MatrixX<T> BezierCurve<T>::value(const T& time, bool clamp_time) const {
   using std::clamp;
-  const T ctime = clamp(time, T{start_time_}, T{end_time_});
+  const T ctime = clamp_time ? clamp(time, T{start_time_}, T{end_time_}) : time;
   MatrixX<T> v = VectorX<T>::Zero(rows());
   for (int i = 0; i < control_points_.cols(); ++i) {
     v += BernsteinBasis(i, ctime) * control_points_.col(i);
