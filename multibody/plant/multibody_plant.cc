@@ -1320,6 +1320,43 @@ void MultibodyPlant<T>::set_penetration_allowance(
 }
 
 template <typename T>
+VectorX<T> MultibodyPlant<T>::GetDefaultPositions() const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  VectorX<T> q(num_positions());
+  for (int i = 0; i < num_joints(); ++i) {
+    const Joint<T>& joint = get_joint(JointIndex(i));
+    q.segment(joint.position_start(), joint.num_positions()) =
+        joint.default_positions();
+  }
+  for (BodyIndex i : GetFloatingBaseBodies()) {
+    const Body<T>& body = get_body(i);
+    const RigidTransform<double> X_WB = GetDefaultFreeBodyPose(body);
+    const int pos = body.floating_positions_start();
+    if (body.has_quaternion_dofs()) {
+      const Eigen::Quaternion<T> quat = X_WB.rotation().ToQuaternion();
+      q[pos] = quat.w();
+      q.segment(pos + 1, 3) = quat.vec();
+      q.segment(pos + 4, 3) = X_WB.translation();
+    } else {
+      const math::RollPitchYaw<double> rpy = X_WB.rotation().ToRollPitchYaw();
+      q.segment(pos, 3) = rpy.vector();
+      q.segment(pos + 3, 3) = X_WB.translation();
+    }
+  }
+  return q;
+}
+
+template <typename T>
+VectorX<T> MultibodyPlant<T>::GetDefaultPositions(
+    ModelInstanceIndex model_instance) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  const VectorX<T> q = GetDefaultPositions();
+  const VectorX<T> q_instance = internal_tree().GetPositionsFromArray(
+      model_instance, q);
+  return q_instance;
+}
+
+template <typename T>
 void MultibodyPlant<T>::SetDefaultPositions(
     const Eigen::Ref<const Eigen::VectorXd>& q) {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();

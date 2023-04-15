@@ -2169,6 +2169,17 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     internal_tree().SetPositionsInArray(model_instance, q_instance, &q);
   }
 
+  /// Gets the default positions for the plant, which can be canged via
+  /// SetDefaultPositions().
+  /// @throws std::exception if the plant is not finalized.
+  VectorX<T> GetDefaultPositions() const;
+
+  /// Gets the default positions for the plant for a given model instance,
+  /// which can be changed via SetDefaultPositions(ModelInstanceIndex).
+  /// @throws std::exception if the plant is not finalized, or if the
+  /// model_instance is invalid,
+  VectorX<T> GetDefaultPositions(ModelInstanceIndex model_instance) const;
+
   /// Sets the default positions for the plant.  Calls to CreateDefaultContext
   /// or SetDefaultContext/SetDefaultState will return a Context populated with
   /// these position values. They have no other effects on the dynamics of the
