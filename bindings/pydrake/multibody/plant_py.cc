@@ -1062,6 +1062,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("context"), py::arg("model_instance"), py::arg("q"),
             cls_doc.SetPositions.doc_2args)
         .def(
+            "GetDefaultPositions",
+            [](const MultibodyPlant<T>* self) {
+              return self->GetDefaultPositions();
+            },
+            cls_doc.GetDefaultPositions.doc_0args)
+        .def(
+            "GetDefaultPositions",
+            [](const MultibodyPlant<T>* self,
+                multibody::ModelInstanceIndex model_instance) {
+              return self->GetDefaultPositions(model_instance);
+            },
+            py::arg("model_instance"), cls_doc.GetDefaultPositions.doc_1args)
+        .def(
             "SetDefaultPositions",
             [](MultibodyPlant<T>* self,
                 const Eigen::Ref<const VectorX<double>>& q) {

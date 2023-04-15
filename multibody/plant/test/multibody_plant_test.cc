@@ -4082,6 +4082,10 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       plant->SetDefaultPositions(iiwa0_instance, q.head<7>()),
       ".*you must call Finalize.* first.");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->GetDefaultPositions(),
+                              ".*you must call Finalize.* first.");
+  DRAKE_EXPECT_THROWS_MESSAGE(plant->GetDefaultPositions(iiwa0_instance),
+                              ".*you must call Finalize.* first.");
   plant->Finalize();
 
   // Throws if the q is the wrong size.
@@ -4091,9 +4095,12 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
       plant->SetDefaultPositions(iiwa1_instance, q.head<3>()),
       ".*q_instance.size.* == num_positions.*");
 
-  plant->SetDefaultPositions(q);
-
   const double kTol = 1e-15;
+
+  EXPECT_FALSE(CompareMatrices(plant->GetDefaultPositions(), q, kTol));
+  plant->SetDefaultPositions(q);
+  EXPECT_TRUE(CompareMatrices(plant->GetDefaultPositions(), q, kTol));
+
   auto context = plant->CreateDefaultContext();
   EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));
   EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context, iiwa0_instance),
@@ -4106,8 +4113,21 @@ GTEST_TEST(MultibodyPlantTest, SetDefaultPositions) {
       7 + 7 + 7, 3.0, 4.0);  // 7 joints each + 7 floating base positions.
   q.segment(7, 4).normalize();  // normalize the quaternion indices.
 
+  EXPECT_FALSE(
+      CompareMatrices(
+          plant->GetDefaultPositions(iiwa0_instance), q.head<7>(), kTol));
   plant->SetDefaultPositions(iiwa0_instance, q.head<7>());
+  EXPECT_TRUE(
+      CompareMatrices(
+          plant->GetDefaultPositions(iiwa0_instance), q.head<7>(), kTol));
+
+  EXPECT_FALSE(
+      CompareMatrices(
+          plant->GetDefaultPositions(iiwa1_instance), q.tail<14>(), kTol));
   plant->SetDefaultPositions(iiwa1_instance, q.tail<14>());
+  EXPECT_TRUE(
+      CompareMatrices(
+          plant->GetDefaultPositions(iiwa1_instance), q.tail<14>(), kTol));
 
   plant->SetDefaultContext(context.get());
   EXPECT_TRUE(CompareMatrices(plant->GetPositions(*context), q, kTol));

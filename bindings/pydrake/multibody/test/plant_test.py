@@ -1220,9 +1220,11 @@ class TestPlant(unittest.TestCase):
         numpy_compare.assert_float_allclose(
             plant.GetPositionsAndVelocities(context), x0)
 
-        # Test SetDefaultPositions
+        # Test Get/SetDefaultPositions
         plant.SetDefaultPositions(q=q0)
+        plant.GetDefaultPositions()
         plant.SetDefaultPositions(model_instance=instance, q_instance=q0)
+        plant.GetDefaultPositions(model_instance=instance)
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
