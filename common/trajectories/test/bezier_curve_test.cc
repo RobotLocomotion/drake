@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -28,6 +29,15 @@ GTEST_TEST(BezierCurveTest, Linear) {
       CompareMatrices(curve.value(0, true), Eigen::Vector2d(1, 3), 1e-14));
   EXPECT_TRUE(
       CompareMatrices(curve.value(0, false), Eigen::Vector2d(-1, -5), 1e-14));
+
+  BezierCurve<symbolic::Expression> curve_sym(
+      2, 3, points.cast<symbolic::Expression>());
+  VectorX<symbolic::Expression> curve_sym_expression{
+      curve_sym.value(symbolic::Variable("t"), false)};
+  for (int i = 0; i < curve_sym_expression.rows(); i++) {
+    EXPECT_TRUE(curve_sym_expression(i).is_polynomial());
+    EXPECT_EQ(symbolic::Polynomial(curve_sym_expression(i)).TotalDegree(), 1);
+  }
 
   auto deriv = curve.MakeDerivative();
   BezierCurve<double>& deriv_bezier =
@@ -99,6 +109,14 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
                                 Eigen::Vector2d(2, 2), 1e-14));
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time, 2),
                                 Eigen::Vector2d(2, 2), 1e-14));
+  }
+  BezierCurve<symbolic::Expression> curve_sym(
+      2, 3, points.cast<symbolic::Expression>());
+  VectorX<symbolic::Expression> curve_sym_expression{
+      curve_sym.value(symbolic::Variable("t"), false)};
+  for (int i = 0; i < curve_sym_expression.rows(); i++) {
+    EXPECT_TRUE(curve_sym_expression(i).is_polynomial());
+    EXPECT_EQ(symbolic::Polynomial(curve_sym_expression(i)).TotalDegree(), 2);
   }
 }
 

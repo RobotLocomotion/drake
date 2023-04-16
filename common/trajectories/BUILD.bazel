@@ -293,6 +293,7 @@ drake_cc_googletest(
     name = "bezier_curve_test",
     deps = [
         ":bezier_curve",
+        "//common/symbolic:polynomial",
         "//common/test_utilities",
     ],
 )
