@@ -244,6 +244,31 @@ std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
 instances. */
 typedef std::vector<copyable_unique_ptr<ConvexSet>> ConvexSets;
 
+namespace internal {
+
+// Base case for the recursion
+inline void AddSets(ConvexSets* sets) {}
+
+// Recursive helper function to process the arguments
+template <typename T, typename... Args>
+inline void AddSets(ConvexSets* sets, T&& arg, Args&&... args) {
+  sets->emplace_back(arg);
+  AddSets(sets, std::forward<Args>(args)...);
+}
+
+}  // namespace internal
+
+/** Helper method which allows the ConvexSets to be initialized from arguments
+ containing ConvexSet instances, or unique_ptr<ConvexSet>, or any object that
+ can passed to emplace_back() on the ConvexSets. */
+template <typename... Args>
+ConvexSets MakeConvexSets(Args&&... args) {
+  ConvexSets sets;
+  sets.reserve(sizeof...(args));
+  internal::AddSets(&sets, std::forward<Args>(args)...);
+  return sets;
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

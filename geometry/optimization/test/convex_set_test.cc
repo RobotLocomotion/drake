@@ -81,6 +81,18 @@ arrangement of boxes:
   EXPECT_FALSE(set_A.IntersectsWith(set_C));
   EXPECT_FALSE(set_C.IntersectsWith(set_A));
 }
+
+GTEST_TEST(MakeConvexSetsTest, Basic) {
+  HPolyhedron box = HPolyhedron::MakeUnitBox(2);
+  ConvexSets sets =
+      MakeConvexSets(box, box.Clone(), Point(Vector3d(1.0, 2.0, 3.0)));
+
+  EXPECT_EQ(sets.size(), 3);
+  EXPECT_EQ(sets[0]->ambient_dimension(), 2);
+  EXPECT_EQ(sets[1]->ambient_dimension(), 2);
+  EXPECT_EQ(sets[2]->ambient_dimension(), 3);
+}
+
 }  // namespace
 
 }  // namespace optimization

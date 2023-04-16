@@ -424,8 +424,9 @@ void VPolytope::ImplementGeometry(const Convex& convex, void* data) {
 }
 
 Eigen::MatrixXd GetVertices(const Convex& convex) {
-  const auto [tinyobj_vertices, faces, num_faces] = internal::ReadObjFile(
-      convex.filename(), convex.scale(), false /* triangulate */);
+  const auto [tinyobj_vertices, faces, num_faces] =
+      geometry::internal::ReadObjFile(convex.filename(), convex.scale(),
+                                      false /* triangulate */);
   unused(faces);
   unused(num_faces);
   orgQhull::Qhull qhull;
