@@ -244,28 +244,19 @@ std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
 instances. */
 typedef std::vector<copyable_unique_ptr<ConvexSet>> ConvexSets;
 
-namespace internal {
-
-// Base case for the recursion
-inline void AddSets(ConvexSets*) {}
-
-// Recursive helper function to process the arguments
-template <typename T, typename... Args>
-inline void AddSets(ConvexSets* sets, T&& arg, Args&&... args) {
-  sets->emplace_back(arg);
-  AddSets(sets, std::forward<Args>(args)...);
-}
-
-}  // namespace internal
-
-/** Helper method which allows the ConvexSets to be initialized from arguments
- containing ConvexSet instances, or unique_ptr<ConvexSet>, or any object that
- can passed to emplace_back() on the ConvexSets. */
+/** Helper function that allows the ConvexSets to be initialized from arguments
+containing ConvexSet references, or unique_ptr<ConvexSet> instances, or any
+object that can be assigned to ConvexSets::value_type. */
 template <typename... Args>
 ConvexSets MakeConvexSets(Args&&... args) {
   ConvexSets sets;
-  sets.reserve(sizeof...(args));
-  internal::AddSets(&sets, std::forward<Args>(args)...);
+  constexpr size_t N = sizeof...(args);
+  sets.resize(N);
+  // This is a "constexpr for" loop for 0 <= I < N.
+  auto args_tuple = std::forward_as_tuple(std::forward<Args>(args)...);
+  [&]<size_t... I>(std::integer_sequence<size_t, I...> &&) {
+    ((sets[I] = std::get<I>(std::move(args_tuple))), ...);
+  }(std::make_index_sequence<N>{});
   return sets;
 }
 
