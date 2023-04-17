@@ -15,15 +15,19 @@ namespace solvers {
  * details.
  */
 struct ClpSolverDetails {
-  // Refer to ClpModel::status() function for the meaning of the status code.
-  // -1: unknown error.
-  // 0: optimal.
-  // 1: primal infeasible
-  // 2: dual infeasible
-  // 3: stopped on iterations or time.
-  // 4: stopped due to errors
-  // 5: stopped by event handler
-  int status;
+  /** The CLP_VERSION from the Clp build. */
+  std::string clp_version;
+
+  /** Refer to ClpModel::status() function for the meaning of the status code.
+   * - -1: unknown error.
+   * - 0: optimal.
+   * - 1: primal infeasible
+   * - 2: dual infeasible
+   * - 3: stopped on iterations or time.
+   * - 4: stopped due to errors
+   * - 5: stopped by event handler
+   */
+  int status{-1};
 };
 
 /**
