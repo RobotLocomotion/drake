@@ -25,7 +25,7 @@ VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
   s0_expr << s0(0), s0(1), s0(2);
   VectorX<symbolic::Expression> s_end_expr{3};
   s_end_expr << s_end(0), s_end(1), s_end(2);
-  Eigen::MatrixX<symbolic::Expression> control_points{3, curve_order + 1};
+  MatrixX<symbolic::Expression> control_points{3, curve_order + 1};
 
   control_points.col(0) = s0_expr;
   control_points.col(curve_order) = s_end_expr;
@@ -41,10 +41,10 @@ VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
     si_expr << si(0), si(1), si(2);
     control_points.col(i) = si_expr;
   }
-  Eigen::MatrixX<symbolic::Expression> control_points_expr{3, curve_order + 1};
+  MatrixX<symbolic::Expression> control_points_expr{3, curve_order + 1};
   trajectories::BezierCurve<symbolic::Expression> path{0, 1, control_points};
   EXPECT_EQ(path.order(), curve_order);
-  Eigen::MatrixX<symbolic::Expression> bezier_path_expr =
+  MatrixX<symbolic::Expression> bezier_path_expr =
       path.value(symbolic::Variable("t"), false);
 
   VectorX<Polynomiald> bezier_poly_path{bezier_path_expr.rows()};
