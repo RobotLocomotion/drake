@@ -335,6 +335,27 @@ GTEST_TEST(VisualizationConfigFunctionsTest, WrongSystemTypes) {
                               ".*not cast.*");
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Make sure the deprecated overload doesn't crash.
+GTEST_TEST(VisualizationConfigFunctionsTest, DeprecatedApply) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+
+  // Call the deprecated overload (with const pointers).
+  const VisualizationConfig config;
+  const MultibodyPlant<double>* const const_plant = &plant;
+  const SceneGraph<double>* const const_scene_graph = &scene_graph;
+  ApplyVisualizationConfig(config, &builder, nullptr, const_plant,
+                           const_scene_graph);
+
+  // Simulate for a moment and make sure nothing crashes.
+  Simulator<double> simulator(builder.Build());
+  simulator.AdvanceTo(0.25);
+}
+#pragma GCC diagnostic pop
+
 }  // namespace
 }  // namespace internal
 }  // namespace visualization

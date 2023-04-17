@@ -33,8 +33,12 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
                                   DrakeLcmInterface* lcm,
                                   std::shared_ptr<geometry::Meshcat> meshcat,
                                   const MultibodyPlant<double>& plant,
-                                  const SceneGraph<double>& scene_graph,
+                                  SceneGraph<double>* scene_graph,
                                   DiagramBuilder<double>* builder) {
+  DRAKE_DEMAND(lcm != nullptr);
+  DRAKE_DEMAND(scene_graph != nullptr);
+  DRAKE_DEMAND(builder != nullptr);
+
   // This is required due to ConnectContactResultsToDrakeVisualizer().
   DRAKE_THROW_UNLESS(plant.is_finalized());
 
@@ -46,10 +50,10 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     // geometry. So long as that's true, we should not enable it.
     DrakeVisualizerParams oopsie = params;
     oopsie.show_hydroelastic = false;
-    DrakeVisualizer<double>::AddToBuilder(builder, scene_graph, lcm, oopsie);
+    DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, oopsie);
   }
   if (config.publish_contacts) {
-    ConnectContactResultsToDrakeVisualizer(builder, plant, scene_graph, lcm);
+    ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm);
   }
 
   if (meshcat == nullptr && config.enable_meshcat_creation) {
@@ -61,7 +65,7 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     const std::vector<MeshcatVisualizerParams> all_meshcat_params =
         internal::ConvertVisualizationConfigToMeshcatParams(config);
     for (const MeshcatVisualizerParams& params : all_meshcat_params) {
-      MeshcatVisualizer<double>::AddToBuilder(builder, scene_graph, meshcat,
+      MeshcatVisualizer<double>::AddToBuilder(builder, *scene_graph, meshcat,
                                               params);
     }
     if (config.publish_contacts) {
@@ -78,7 +82,7 @@ void ApplyVisualizationConfig(const VisualizationConfig& config,
                               DiagramBuilder<double>* builder,
                               const LcmBuses* lcm_buses,
                               const MultibodyPlant<double>* plant,
-                              const SceneGraph<double>* scene_graph,
+                              SceneGraph<double>* scene_graph,
                               std::shared_ptr<geometry::Meshcat> meshcat,
                               DrakeLcmInterface* lcm) {
   DRAKE_THROW_UNLESS(builder != nullptr);
@@ -96,10 +100,42 @@ void ApplyVisualizationConfig(const VisualizationConfig& config,
   }
   if (scene_graph == nullptr) {
     scene_graph =
-        &builder->GetDowncastSubsystemByName<SceneGraph>("scene_graph");
+        &builder->GetMutableDowncastSubsystemByName<SceneGraph>("scene_graph");
   }
-  ApplyVisualizationConfigImpl(config, lcm, meshcat, *plant, *scene_graph,
+  ApplyVisualizationConfigImpl(config, lcm, meshcat, *plant, scene_graph,
                                builder);
+}
+
+// This is the deprecated overload.
+void ApplyVisualizationConfig(const VisualizationConfig& config,
+                              DiagramBuilder<double>* builder,
+                              const LcmBuses* lcm_buses,
+                              const MultibodyPlant<double>* plant,
+                              const SceneGraph<double>* scene_graph,
+                              std::shared_ptr<geometry::Meshcat> meshcat,
+                              DrakeLcmInterface* lcm) {
+  DRAKE_THROW_UNLESS(builder != nullptr);
+
+  // Obtain a mutable scene_graph based on the const one.
+  SceneGraph<double>* mutable_scene_graph = nullptr;
+  if (scene_graph != nullptr) {
+    for (System<double>* system : builder->GetMutableSystems()) {
+      DRAKE_DEMAND(system != nullptr);
+      if (system == scene_graph) {
+        mutable_scene_graph = const_cast<SceneGraph<double>*>(scene_graph);
+        break;
+      }
+    }
+    if (mutable_scene_graph == nullptr) {
+      throw std::logic_error(
+          "The const scene_graph provided to ApplyVisualizationConfig was not "
+          "a System owned by the provided builder");
+    }
+  }
+
+  // Delegate to the mutable overload.
+  ApplyVisualizationConfig(config, builder, lcm_buses, plant,
+                           mutable_scene_graph, std::move(meshcat), lcm);
 }
 
 void AddDefaultVisualization(DiagramBuilder<double>* builder,
