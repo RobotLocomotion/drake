@@ -26,6 +26,7 @@
 #include "drake/math/discrete_lyapunov_equation.h"
 #include "drake/math/matrix_util.h"
 #include "drake/math/quadratic_form.h"
+#include "drake/math/quaternion.h"
 #include "drake/math/random_rotation.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/math/roll_pitch_yaw.h"
@@ -362,6 +363,43 @@ void DoScalarDependentDefinitions(py::module m, T) {
         return VectorToSkewSymmetric(p);
       },
       py::arg("p"), doc.VectorToSkewSymmetric.doc);
+
+  // Quaternion.
+  m  // BR
+      .def("ClosestQuaternion", &ClosestQuaternion<T>, py::arg("quat1"),
+          py::arg("quat2"), doc.ClosestQuaternion.doc)
+      // TODO(russt): Bind quatRotateVec, quatDiff, quatDiffAxisInvar once
+      // they've been switched to Eigen::Quaternion<T>.
+      .def("is_quaternion_in_canonical_form",
+          &is_quaternion_in_canonical_form<T>, py::arg("quat"),
+          doc.is_quaternion_in_canonical_form.doc)
+      .def("QuaternionToCanonicalForm", &QuaternionToCanonicalForm<T>,
+          py::arg("quat"), doc.QuaternionToCanonicalForm.doc)
+      .def("AreQuaternionsEqualForOrientation",
+          &AreQuaternionsEqualForOrientation<T>, py::arg("quat1"),
+          py::arg("quat2"), py::arg("tolerance"),
+          doc.AreQuaternionsEqualForOrientation.doc)
+      .def("CalculateQuaternionDtFromAngularVelocityExpressedInB",
+          &CalculateQuaternionDtFromAngularVelocityExpressedInB<T>,
+          py::arg("quat_AB"), py::arg("w_AB_B"),
+          doc.CalculateQuaternionDtFromAngularVelocityExpressedInB.doc)
+      .def("CalculateAngularVelocityExpressedInBFromQuaternionDt",
+          &CalculateAngularVelocityExpressedInBFromQuaternionDt<T>,
+          py::arg("quat_AB"), py::arg("quatDt"),
+          doc.CalculateAngularVelocityExpressedInBFromQuaternionDt.doc)
+      .def("CalculateQuaternionDtConstraintViolation",
+          &CalculateQuaternionDtConstraintViolation<T>, py::arg("quat"),
+          py::arg("quatDt"), doc.CalculateQuaternionDtConstraintViolation.doc)
+      .def("IsQuaternionValid", &IsQuaternionValid<T>, py::arg("quat"),
+          py::arg("tolerance"), doc.IsQuaternionValid.doc)
+      .def("IsBothQuaternionAndQuaternionDtOK",
+          &IsBothQuaternionAndQuaternionDtOK<T>, py::arg("quat"),
+          py::arg("quatDt"), py::arg("tolerance"),
+          doc.IsBothQuaternionAndQuaternionDtOK.doc);
+  // TODO(russt): Bind
+  // IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB, but this
+  // requires additional support for T=Expression (e.g. if_then_else(Formula,
+  // Formula, Formula)) or an exclusion.
 }
 
 void DoScalarIndependentDefinitions(py::module m) {
