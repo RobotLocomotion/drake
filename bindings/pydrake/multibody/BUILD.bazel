@@ -1,7 +1,6 @@
 load("@drake//tools/install:install.bzl", "install", "install_files")
 load(
     "@drake//tools/skylark:pybind.bzl",
-    "add_pybind_coverage_data",
     "drake_pybind_library",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -502,8 +501,6 @@ drake_py_unittest(
         "//bindings/pydrake/systems:framework_py",
     ],
 )
-
-add_pybind_coverage_data()
 
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [

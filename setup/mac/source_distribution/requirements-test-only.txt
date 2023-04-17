@@ -1,6 +1,5 @@
 flask
 jupyter
-pandas
 six
 u-msgpack-python
 websockets

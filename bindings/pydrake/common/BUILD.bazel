@@ -23,10 +23,6 @@ load(
     "generate_pybind11_version_py_file",
 )
 load("//bindings/pydrake:pydrake.bzl", "add_lint_tests_pydrake")
-load(
-    "@drake//tools/skylark:pybind.bzl",
-    "add_pybind_coverage_data",
-)
 
 package(default_visibility = [
     "//bindings/pydrake:__subpackages__",
@@ -568,7 +564,6 @@ generate_pybind_documentation_header(
     name = "generate_deprecation_example_class_documentation",
     testonly = 1,
     out = "test/deprecation_example/example_class_documentation.h",
-    out_xml = "test/deprecation_example/example_class_documentation.xml",
     targets = [":deprecation_example_class"],
 )
 
@@ -838,7 +833,5 @@ drake_py_unittest(
         "//bindings/pydrake/common/test_utilities:meta_py",
     ],
 )
-
-add_pybind_coverage_data()
 
 add_lint_tests_pydrake()
