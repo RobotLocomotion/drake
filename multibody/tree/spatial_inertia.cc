@@ -21,7 +21,8 @@ SpatialInertia<T> SpatialInertia<T>::PointMass(
   // Ensure mass is non-negative.
   if (mass < 0) {
     const std::string error_message = fmt::format(
-        "{}(): The mass of a particle is negative: {}.", __func__, mass);
+        "{}(): The mass of a particle is negative or zero: {}.",
+        __func__, mass);
     throw std::logic_error(error_message);
   }
 
@@ -42,7 +43,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid box's density is negative: {}.", __func__, density);
+        "{}(): A solid box's density is negative or zero: {}.",
+        __func__, density);
     throw std::logic_error(error_message);
   }
   // Ensure lx, ly, lz are positive.
@@ -64,7 +66,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithMass(
   // Ensure mass is non-negative.
   if (mass < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid box's mass is negative: {}.", __func__, mass);
+        "{}(): A solid box's mass is negative or zero: {}.", __func__, mass);
     throw std::logic_error(error_message);
   }
   // Ensure lx, ly, lz are positive.
@@ -85,7 +87,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid cube's density is negative: {}.", __func__, density);
+        "{}(): A solid cube's density is negative or zero: {}.",
+        __func__, density);
     throw std::logic_error(error_message);
   }
   // Ensure length is positive.
@@ -107,7 +110,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCubeWithMass(
   // Ensure mass is non-negative.
   if (mass < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid cube's mass is negative: {}.", __func__, mass);
+        "{}(): A solid cube's mass is negative or zero: {}.", __func__, mass);
     throw std::logic_error(error_message);
   }
   // Ensure length is positive.
@@ -130,7 +133,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid capsule's density is negative: {}.", __func__, density);
+        "{}(): A solid capsule's density is negative or zero: {}.",
+        __func__, density);
     throw std::logic_error(error_message);
   }
   // Ensure radius and length are positive.
@@ -158,7 +162,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid cylinder's density is negative: {}.", __func__, density);
+        "{}(): A solid cylinder's density is negative or zero: {}.",
+        __func__, density);
     throw std::logic_error(error_message);
   }
   // Ensure radius and length are positive.
@@ -199,7 +204,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid cylinder's density is negative: {}.", __func__, density);
+        "{}(): A solid cylinder's density is negative or zero: {}.",
+        __func__, density);
     throw std::logic_error(error_message);
   }
   // Ensure radius and length are positive.
@@ -274,7 +280,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-       "{}(): A solid ellipsoid's density is negative: {}.", __func__, density);
+       "{}(): A solid ellipsoid's density is negative or zero: {}.",
+       __func__, density);
     throw std::logic_error(error_message);
   }
   // Ensure a, b, c are positive.
@@ -297,7 +304,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid sphere's density is negative: {}.", __func__, density);
+        "{}(): A solid sphere's density is negative or zero: {}.",
+        __func__, density);
     throw std::logic_error(error_message);
   }
   // Ensure radius is positive.
@@ -320,7 +328,7 @@ SpatialInertia<T> SpatialInertia<T>::HollowSphereWithDensity(
   // Ensure area_density is non-negative.
   if (area_density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A hollow sphere's area density is negative: {}.",
+        "{}(): A hollow sphere's area density is negative or zero: {}.",
         __func__, area_density);
     throw std::logic_error(error_message);
   }
@@ -345,7 +353,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid tetrahedron's density is negative: {}.",
+        "{}(): A solid tetrahedron's density is negative or zero: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
@@ -372,7 +380,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
   // Ensure density is non-negative.
   if (density < 0) {
     const std::string error_message = fmt::format(
-        "{}(): A solid tetrahedron's density is negative: {}.",
+        "{}(): A solid tetrahedron's density is negative or zero: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
@@ -392,8 +400,8 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   std::string error_message = fmt::format(
           "Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
   const T& mass = get_mass();
-  if (mass < T(0)) {
-      error_message += fmt::format("\nmass = {} is negative.\n", mass);
+  if (mass <= T(0)) {
+      error_message += fmt::format("\nmass = {} is negative or zero.\n", mass);
   } else {
     error_message += fmt::format("{}", *this);
     WriteExtraCentralInertiaProperties(&error_message);
