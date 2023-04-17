@@ -129,7 +129,6 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//math:geometric_transform",
         "//multibody/contact_solvers:contact_solver",
-        "//multibody/contact_solvers:sparse_linear_operator",
         "//multibody/contact_solvers/sap",
         "//multibody/fem",
         "//multibody/hydroelastics:hydroelastic_engine",
