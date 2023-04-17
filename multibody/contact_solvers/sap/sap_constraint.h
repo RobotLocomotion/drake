@@ -127,9 +127,7 @@ class SapConstraint {
   virtual ~SapConstraint() = default;
 
   /* Number of constraint equations. */
-  int num_constraint_equations() const {
-    return g_.size();
-  }
+  int num_constraint_equations() const { return g_.size(); }
 
   /* Number of participating cliques. It will always return either one (1) or
    two (2). */
@@ -143,8 +141,7 @@ class SapConstraint {
    num_cliques() == 1. */
   int second_clique() const {
     if (num_cliques() == 1)
-      throw std::logic_error(
-          "This constraint only involves a single clique.");
+      throw std::logic_error("This constraint only involves a single clique.");
     return second_clique_;
   }
 
@@ -159,8 +156,7 @@ class SapConstraint {
    It throws an exception if num_cliques() == 1. */
   const MatrixBlock<T>& second_clique_jacobian() const {
     if (num_cliques() == 1)
-      throw std::logic_error(
-          "This constraint only involves a single clique.");
+      throw std::logic_error("This constraint only involves a single clique.");
     return second_clique_jacobian_;
   }
 

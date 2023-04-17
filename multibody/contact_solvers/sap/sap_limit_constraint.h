@@ -162,7 +162,7 @@ class SapLimitConstraint final : public SapConstraint<T> {
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.
-  T q0_{};  // position at the configuration from construction.
+  T q0_{};              // position at the configuration from construction.
 };
 
 }  // namespace internal

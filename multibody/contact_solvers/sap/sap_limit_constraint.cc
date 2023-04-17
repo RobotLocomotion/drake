@@ -41,7 +41,9 @@ SapLimitConstraint<T>::SapLimitConstraint(int clique, int clique_dof,
                        CalcConstraintJacobian(clique_dof, clique_nv,
                                               parameters.lower_limit(),
                                               parameters.upper_limit())),
-      parameters_(std::move(parameters)), clique_dof_(clique_dof), q0_{q0} {}
+      parameters_(std::move(parameters)),
+      clique_dof_(clique_dof),
+      q0_{q0} {}
 
 template <typename T>
 VectorX<T> SapLimitConstraint<T>::CalcBiasTerm(const T& time_step,
