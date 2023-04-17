@@ -1162,26 +1162,11 @@ TEST_F(GeometryStateTest, ValidateSingleSourceTree) {
       const auto& geometry = internal_geometries.at(geometries_[i]);
       EXPECT_EQ(geometry.frame_id(), frames_[i / kGeometryCount]);
       EXPECT_EQ(geometry.id(), geometries_[i]);
-      EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
-      EXPECT_FALSE(geometry.parent_id());
       EXPECT_EQ(geometry.name(), geometry_names_[i]);
-      EXPECT_EQ(geometry.child_geometry_ids().size(), 0);
 
-      // 2023-04-01 Also modify this documentation with the removal of
-      // GetPoseInParent().
-      // Note: There are no geometries parented to other geometries. The results
-      // of GetPoseInFrame() and GetPoseInParent() must be the identical (as
-      // the documentation for GeometryState::GetPoseInParent() indicates).
       EXPECT_TRUE(CompareMatrices(
           geometry_state_.GetPoseInFrame(geometry.id()).GetAsMatrix34(),
           X_FGs_[i].GetAsMatrix34()));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      // 2023-04-01 Deprecation removal.
-      EXPECT_TRUE(CompareMatrices(
-          geometry_state_.GetPoseInParent(geometry.id()).GetAsMatrix34(),
-          X_FGs_[i].GetAsMatrix34()));
-#pragma GCC diagnostic pop
     }
   }
   EXPECT_EQ(static_cast<int>(gs_tester_.get_geometry_world_poses().size()),
@@ -1515,7 +1500,6 @@ TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   EXPECT_TRUE(gs_tester_.get_frames().at(f_id).has_child(g_id));
   const auto& geometry = gs_tester_.get_geometries().at(g_id);
   EXPECT_TRUE(geometry.is_child_of_frame(f_id));
-  EXPECT_FALSE(geometry.parent_id());
 }
 
 // Confirms that when adding a geometry G, X_WG is up-to-date with the best
@@ -1589,81 +1573,6 @@ TEST_F(GeometryStateTest, RegisterNullGeometry) {
       "Registering null geometry to frame \\d+, on source \\d+.");
 }
 
-// 2023-04-01 Simply remove all of the RegisterGeometryOn*Geometry tests.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Tests the logic for hanging a geometry on another geometry. This confirms
-// topology and pose values.
-TEST_F(GeometryStateTest, RegisterGeometryonValidGeometry) {
-  const SourceId s_id = SetUpSingleSourceTree();
-  const double x = 3;
-  const double y = 2;
-  const double z = 1;
-  RigidTransformd pose{Translation3d{x, y, z}};
-  const int parent_index = 0;
-  const GeometryId parent_id = geometries_[parent_index];
-  const FrameId frame_id = geometry_state_.GetFrameId(parent_id);
-  auto instance = make_unique<GeometryInstance>(
-      pose, make_unique<Sphere>(1), "sphere");
-  GeometryId expected_g_id = instance->id();
-  GeometryId g_id =
-      geometry_state_.RegisterGeometryWithParent(s_id,
-                                                 parent_id,
-                                                 move(instance));
-  EXPECT_EQ(g_id, expected_g_id);
-
-  // This relies on the gᵗʰ geometry having position [ g+1 0 0 ]ᵀ. The parent
-  // geometry is at [parent_index + 1, 0, 0] and this is at [3, 2, 1]. They
-  // simply sum up. The parent has *no* rotation so the resultant transform is
-  // simply the sum of the translation vectors.
-  const RigidTransformd expected_pose_in_frame{
-      Translation3d{(parent_index + 1) + x, y, z}};
-  EXPECT_EQ(frame_id, geometry_state_.GetFrameId(g_id));
-
-  const RigidTransformd& X_FG = geometry_state_.GetPoseInFrame(g_id);
-  EXPECT_TRUE(CompareMatrices(X_FG.GetAsMatrix34(),
-                              expected_pose_in_frame.GetAsMatrix34(), 1e-14,
-                              MatrixCompareType::absolute));
-  const RigidTransformd& X_PG = geometry_state_.GetPoseInParent(g_id);
-  EXPECT_TRUE(CompareMatrices(X_PG.GetAsMatrix34(), pose.GetAsMatrix34(),
-                  1e-14, MatrixCompareType::absolute));
-
-  EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
-  const auto& geometry = gs_tester_.get_geometries().at(g_id);
-  EXPECT_EQ(geometry.frame_id(), frame_id);
-  EXPECT_TRUE(geometry.is_child_of_geometry(parent_id));
-  EXPECT_TRUE(gs_tester_.get_geometries().at(parent_id).has_child(g_id));
-
-  const InternalGeometry* parent = gs_tester_.GetGeometry(parent_id);
-  const InternalGeometry* child = gs_tester_.GetGeometry(g_id);
-  EXPECT_TRUE(parent->has_child(g_id));
-  EXPECT_TRUE(child->parent_id());  // implicit cast of optional --> bool.
-  EXPECT_EQ(parent_id, *child->parent_id());
-}
-
-// Tests the response to the erroneous action of trying to hang a new geometry
-// on a non-existent geometry id.
-TEST_F(GeometryStateTest, RegisterGeometryonInvalidGeometry) {
-  const SourceId s_id = SetUpSingleSourceTree();
-  auto instance = make_unique<GeometryInstance>(
-      RigidTransformd::Identity(), make_unique<Sphere>(1), "sphere");
-  const GeometryId junk_id = GeometryId::get_new_id();
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterGeometryWithParent(s_id, junk_id, move(instance)),
-      "Referenced geometry \\d+ has not been registered.");
-}
-
-// Tests the response to passing a null pointer as a GeometryInstance.
-TEST_F(GeometryStateTest, RegisterNullGeometryonGeometry) {
-  const SourceId s_id = SetUpSingleSourceTree();
-  unique_ptr<GeometryInstance> instance;
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterGeometryWithParent(s_id, geometries_[0],
-                                                 move(instance)),
-      "Registering null geometry to geometry \\d+, on source \\d+.");
-}
-#pragma GCC diagnostic pop
-
 // Tests the registration of anchored geometry.
 TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   const SourceId s_id = NewSource("new source");
@@ -1678,43 +1587,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
   EXPECT_NE(g, nullptr);
   EXPECT_EQ(InternalFrame::world_frame_id(), g->frame_id());
   EXPECT_EQ(s_id, g->source_id());
-  // Assigned directly to the world frame means the pose in parent and frame
-  // should match.
-  EXPECT_TRUE(
-      CompareMatrices(g->X_FG().GetAsMatrix34(), g->X_PG().GetAsMatrix34()));
 }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// 2023-04-01 Deprecation removal.
-// Tests the registration of a new geometry on another geometry.
-TEST_F(GeometryStateTest, RegisterAnchoredOnAnchoredGeometry) {
-  // Add an anchored geometry.
-  const SourceId s_id = NewSource("new source");
-  RigidTransformd pose{Translation3d{1, 2, 3}};
-  auto instance = make_unique<GeometryInstance>(
-      pose, make_unique<Sphere>(1), "sphere1");
-  auto parent_id = geometry_state_.RegisterAnchoredGeometry(s_id,
-                                                            move(instance));
-
-  pose = RigidTransformd::Identity();
-  instance = make_unique<GeometryInstance>(
-      pose, make_unique<Sphere>(1), "sphere2");
-  auto child_id = geometry_state_.RegisterGeometryWithParent(s_id, parent_id,
-                                                             move(instance));
-  const InternalGeometry* parent = gs_tester_.GetGeometry(parent_id);
-  const InternalGeometry* child = gs_tester_.GetGeometry(child_id);
-  EXPECT_TRUE(parent->has_child(child_id));
-  EXPECT_TRUE(static_cast<bool>(child->parent_id()));
-  EXPECT_EQ(parent_id, *child->parent_id());
-  EXPECT_TRUE(
-      CompareMatrices(pose.GetAsMatrix34(), child->X_PG().GetAsMatrix34()));
-  const RigidTransformd& X_FP = parent->X_FG();
-  EXPECT_TRUE(CompareMatrices((X_FP * pose).GetAsMatrix34(),
-                              child->X_FG().GetAsMatrix34()));
-  EXPECT_EQ(InternalFrame::world_frame_id(), parent->frame_id());
-}
-#pragma GCC diagnostic pop
 
 // Confirms that registering two geometries with the same id causes failure.
 TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
@@ -1792,11 +1665,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
 
   // Querying the _reference_ pose is fine.
   EXPECT_TRUE(geometry_state_.GetPoseInFrame(g_id).IsExactlyEqualTo(X_WG));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-  EXPECT_TRUE(geometry_state_.GetPoseInParent(g_id).IsExactlyEqualTo(X_WG));
-#pragma GCC diagnostic pop
+
   // Querying _current_ pose on deformable geometry throws. (Deformable
   // geometries are characterized by vertex positions via
   // get_configurations_in_world.)
@@ -2196,86 +2065,6 @@ TEST_F(GeometryStateTest, RemoveGeometry) {
   DRAKE_EXPECT_NO_THROW(gs_tester_.FinalizePoseUpdate());
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-// Tests the RemoveGeometry functionality in which the geometry removed has
-// geometry children.
-TEST_F(GeometryStateTest, RemoveGeometryTree) {
-  const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
-
-  // Pose all of the frames to the specified poses in their parent frame.
-  FramePoseVector<double> poses;
-  for (int f = 0; f < static_cast<int>(frames_.size()); ++f) {
-    poses.set_value(frames_[f], X_PFs_[f]);
-  }
-  gs_tester_.SetFramePoses(s_id, poses, &gs_tester_.mutable_kinematics_data());
-  gs_tester_.FinalizePoseUpdate();
-
-  // The geometry to remove and its parent frame.
-  const GeometryId root_id = geometries_[0];
-  const FrameId f_id = frames_[0];
-
-  // Confirm that the first geometry belongs to the first frame.
-  ASSERT_EQ(geometry_state_.GetFrameId(root_id), f_id);
-  // Hang geometry from the first geometry.
-  const GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
-      s_id, root_id,
-      make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                    unique_ptr<Shape>(new Sphere(1)), "leaf"));
-  geometry_state_.AssignRole(s_id, g_id, ProximityProperties());
-
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count() + 1);
-  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
-            single_tree_dynamic_geometry_count() + 1);
-  EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
-
-  geometry_state_.RemoveGeometry(s_id, root_id);
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count() - 1);
-  EXPECT_EQ(geometry_state_.NumDynamicGeometries(),
-            single_tree_dynamic_geometry_count() - 1);
-
-  const auto& frame = gs_tester_.get_frames().at(f_id);
-  EXPECT_FALSE(frame.has_child(root_id));
-  EXPECT_FALSE(frame.has_child(g_id));
-  EXPECT_EQ(gs_tester_.get_geometries().count(root_id), 0);
-  EXPECT_EQ(gs_tester_.get_geometries().count(g_id), 0);
-}
-
-// Tests the RemoveGeometry functionality in which the geometry is a child of
-// another geometry (and has no child geometries itself).
-TEST_F(GeometryStateTest, RemoveChildLeaf) {
-  const SourceId s_id = SetUpSingleSourceTree(Assign::kProximity);
-
-  // The geometry parent and frame to which it belongs.
-  const GeometryId parent_id = geometries_[0];
-  const FrameId frame_id = frames_[0];
-  // Confirm that the first geometry belongs to the first frame.
-  ASSERT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
-  // Hang geometry from the first geometry.
-  const GeometryId g_id = geometry_state_.RegisterGeometryWithParent(
-      s_id, parent_id,
-      make_unique<GeometryInstance>(RigidTransformd::Identity(),
-                                    unique_ptr<Shape>(new Sphere(1)), "leaf"));
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count() + 1);
-  EXPECT_EQ(geometry_state_.GetFrameId(g_id), frame_id);
-
-  geometry_state_.RemoveGeometry(s_id, g_id);
-
-  EXPECT_EQ(geometry_state_.get_num_geometries(),
-            single_tree_total_geometry_count());
-  EXPECT_EQ(geometry_state_.NumDynamicGeometries(), geometries_.size());
-  EXPECT_EQ(geometry_state_.GetFrameId(parent_id), frame_id);
-
-  EXPECT_FALSE(gs_tester_.get_frames().at(frame_id).has_child(g_id));
-  EXPECT_TRUE(gs_tester_.get_frames().at(frame_id).has_child(parent_id));
-  EXPECT_FALSE(gs_tester_.get_geometries().at(parent_id).has_child(g_id));
-}
-#pragma GCC diagnostic pop
-
 // Tests the response to invalid use of RemoveGeometry.
 TEST_F(GeometryStateTest, RemoveGeometryInvalid) {
   const SourceId s_id = SetUpSingleSourceTree();
@@ -2383,13 +2172,6 @@ TEST_F(GeometryStateTest, GetPoseForBadGeometryId) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetPoseInFrame(GeometryId::get_new_id()),
       "Referenced geometry \\d+ has not been registered.");
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.GetPoseInParent(GeometryId::get_new_id()),
-      "Referenced geometry \\d+ has not been registered.");
-#pragma GCC diagnostic pop
 }
 
 // This tests the source ownership functionality - a function which reports if
@@ -4099,19 +3881,10 @@ TEST_F(GeometryStateTest, GeometryVersionUpdate) {
                          new_source, new_frame_0, GeometryFrame("new_f1"));
 
   // Registering geometries with no roles assigned does not change the versions.
-  GeometryId new_geometry_0 = VerifyVersionUnchanged(
+  VerifyVersionUnchanged(
       &GeometryState<double>::RegisterGeometry, new_source, new_frame_0,
       std::make_unique<GeometryInstance>(
           RigidTransformd(), make_unique<Sphere>(1), "new_geometry_0"));
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-  VerifyVersionUnchanged(
-      &GeometryState<double>::RegisterGeometryWithParent, new_source,
-      new_geometry_0,
-      std::make_unique<GeometryInstance>(
-          RigidTransformd(), make_unique<Sphere>(1), "new_geometry_1"));
-#pragma GCC diagnostic pop
   VerifyVersionUnchanged(
       &GeometryState<double>::RegisterAnchoredGeometry, new_source,
       std::make_unique<GeometryInstance>(

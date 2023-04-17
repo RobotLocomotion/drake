@@ -159,11 +159,6 @@ class QueryObject {
   /** Reports the position of the frame indicated by `frame_id` relative to its
    parent frame. If the frame was registered with the world frame as its parent
    frame, this value will be identical to that returned by GetPoseInWorld().
-   <!-- 2023-04-01 Remove this note when we're done deprecating
-    SGI::GetPoseInParent(). -->
-   @note This is analogous to but distinct from
-   SceneGraphInspector::GetPoseInParent(). In this case, the pose will *always*
-   be relative to another frame.
    @throws std::exception if the frame `frame_id` is not valid.  */
   const math::RigidTransform<T>& GetPoseInParent(FrameId frame_id) const;
 

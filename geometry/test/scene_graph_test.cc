@@ -235,14 +235,8 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
       scene_graph_.RegisterFrame(id, GeometryFrame("parent"));
   FrameId child_frame_id =
       scene_graph_.RegisterFrame(id, parent_frame_id, GeometryFrame("child"));
-  GeometryId parent_geometry_id = scene_graph_.RegisterGeometry(
+  GeometryId geometry_id = scene_graph_.RegisterGeometry(
       id, parent_frame_id, make_sphere_instance());
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal; delete all references to child_geometry_id.
-  GeometryId child_geometry_id = scene_graph_.RegisterGeometry(
-      id, parent_geometry_id, make_sphere_instance());
-#pragma GCC diagnostic pop
   GeometryId anchored_id =
       scene_graph_.RegisterAnchoredGeometry(id, make_sphere_instance());
   scene_graph_.RemoveGeometry(id, old_geometry_id);
@@ -256,8 +250,7 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
   // respectively.
   EXPECT_TRUE(model_inspector.BelongsToSource(parent_frame_id, id));
   EXPECT_TRUE(model_inspector.BelongsToSource(child_frame_id, id));
-  EXPECT_TRUE(model_inspector.BelongsToSource(parent_geometry_id, id));
-  EXPECT_TRUE(model_inspector.BelongsToSource(child_geometry_id, id));
+  EXPECT_TRUE(model_inspector.BelongsToSource(geometry_id, id));
   EXPECT_TRUE(model_inspector.BelongsToSource(anchored_id, id));
   // Removed geometry from SceneGraph; "invalid" id throws.
   EXPECT_THROW(model_inspector.BelongsToSource(old_geometry_id, id),
@@ -267,9 +260,7 @@ TEST_F(SceneGraphTest, TopologyAfterAllocation) {
                std::logic_error);
   EXPECT_THROW(context_inspector.BelongsToSource(child_frame_id, id),
                std::logic_error);
-  EXPECT_THROW(context_inspector.BelongsToSource(parent_geometry_id, id),
-               std::logic_error);
-  EXPECT_THROW(context_inspector.BelongsToSource(child_geometry_id, id),
+  EXPECT_THROW(context_inspector.BelongsToSource(geometry_id, id),
                std::logic_error);
   EXPECT_THROW(context_inspector.BelongsToSource(anchored_id, id),
                std::logic_error);
@@ -845,23 +836,12 @@ GTEST_TEST(SceneGraphContextModifier, RegisterGeometry) {
   EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
   EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_1));
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-  // Test registration of geometry onto _geometry_.
-  GeometryId sphere_id_2 = scene_graph.RegisterGeometry(
-      context.get(), source_id, sphere_id_1, make_sphere_instance());
-  EXPECT_EQ(2, inspector.NumGeometriesForFrame(frame_id));
-  EXPECT_EQ(frame_id, inspector.GetFrameId(sphere_id_2));
-#pragma GCC diagnostic pop
-
-  // 2023-04-01 Change from sphere_id_2 to sphere_id_1.
   // Remove the geometry.
   DRAKE_EXPECT_NO_THROW(
-      scene_graph.RemoveGeometry(context.get(), source_id, sphere_id_2));
-  EXPECT_EQ(1, inspector.NumGeometriesForFrame(frame_id));
+      scene_graph.RemoveGeometry(context.get(), source_id, sphere_id_1));
+  EXPECT_EQ(0, inspector.NumGeometriesForFrame(frame_id));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      inspector.GetFrameId(sphere_id_2),
+      inspector.GetFrameId(sphere_id_1),
       "Referenced geometry \\d+ has not been registered.");
 }
 

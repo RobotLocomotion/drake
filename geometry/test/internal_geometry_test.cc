@@ -104,11 +104,7 @@ GTEST_TEST(InternalGeometryTest, SetShape) {
   EXPECT_EQ(ShapeName(b).name(), ShapeName(geometry.shape()).name());
 }
 
-// 2023-04-01 Simplify this test with removal of deprecated X_PG(). Only one
-// case and no calls to X_PG.
 GTEST_TEST(InternalGeometryTest, SetPose) {
-  // Expect a loss of four bits due to matrix inversion in updating X_PG.
-  constexpr double kTol = 16 * std::numeric_limits<double>::epsilon();
   const SourceId source_id = SourceId::get_new_id();
   const Sphere sphere(1.5);
   const FrameId frame_id = FrameId::get_new_id();
@@ -117,35 +113,16 @@ GTEST_TEST(InternalGeometryTest, SetPose) {
 
   const RigidTransformd X_FGold(RotationMatrixd::MakeXRotation(M_PI / 3),
                                 Vector3d(1, 2, 3));
-  const RigidTransformd X_PGold(RotationMatrixd::MakeYRotation(M_PI / 7),
+  const RigidTransformd X_FGNew(RotationMatrixd::MakeYRotation(M_PI / 7),
                                 Vector3d(4, 5, 6));
-  const RigidTransformd X_GoldGnew(RotationMatrixd::MakeZRotation(M_PI / 5),
-                                   Vector3d(7, 8, 9));
-  const RigidTransformd X_FGNew = X_FGold * X_GoldGnew;
 
-  {
-    // Case where X_FG = X_PG.
-    InternalGeometry geometry(source_id, sphere.Clone(), frame_id, geometry_id,
-                              name, X_FGold);
-    geometry.set_pose(X_FGNew);
-    EXPECT_TRUE(CompareMatrices(geometry.X_FG().GetAsMatrix34(),
-                                X_FGNew.GetAsMatrix34()));
-    EXPECT_TRUE(CompareMatrices(geometry.X_PG().GetAsMatrix34(),
-                                X_FGNew.GetAsMatrix34(), kTol));
-  }
-
-  {
-    // Case where X_FG != X_PG.
-    InternalGeometry geometry(source_id, sphere.Clone(), frame_id, geometry_id,
-                              name, X_PGold);
-    // See the docs for this function to explain why we're passing X_FG here.
-    geometry.set_geometry_parent(GeometryId::get_new_id(), X_FGold);
-    geometry.set_pose(X_FGNew);
-    EXPECT_TRUE(CompareMatrices(geometry.X_FG().GetAsMatrix34(),
-                                X_FGNew.GetAsMatrix34()));
-    EXPECT_TRUE(CompareMatrices(geometry.X_PG().GetAsMatrix34(),
-                                (X_PGold * X_GoldGnew).GetAsMatrix34(), kTol));
-  }
+  InternalGeometry geometry(source_id, sphere.Clone(), frame_id, geometry_id,
+                            name, X_FGold);
+  EXPECT_TRUE(CompareMatrices(geometry.X_FG().GetAsMatrix34(),
+                              X_FGold.GetAsMatrix34()));
+  geometry.set_pose(X_FGNew);
+  EXPECT_TRUE(CompareMatrices(geometry.X_FG().GetAsMatrix34(),
+                              X_FGNew.GetAsMatrix34()));
 }
 
 // Tests the removal of all roles.
@@ -171,36 +148,42 @@ GTEST_TEST(InternalGeometryTest, RemoveRole) {
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_TRUE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
+  EXPECT_FALSE(geometry.has_role(Role::kUnassigned));
 
   // Case: Redundant removal of role is a no-op.
   DRAKE_EXPECT_NO_THROW(geometry.RemoveProximityRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_TRUE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
+  EXPECT_FALSE(geometry.has_role(Role::kUnassigned));
 
   // Case: Remove illustration, only perception remains.
   DRAKE_EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
+  EXPECT_FALSE(geometry.has_role(Role::kUnassigned));
 
   // Case: Redundant removal of role is a no-op.
   DRAKE_EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_TRUE(geometry.has_role(Role::kPerception));
+  EXPECT_FALSE(geometry.has_role(Role::kUnassigned));
 
   // Case: Remove perception, no roles exist.
   DRAKE_EXPECT_NO_THROW(geometry.RemovePerceptionRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
+  EXPECT_TRUE(geometry.has_role(Role::kUnassigned));
 
   // Case: Redundant removal of role is a no-op.
   DRAKE_EXPECT_NO_THROW(geometry.RemoveIllustrationRole());
   EXPECT_FALSE(geometry.has_role(Role::kProximity));
   EXPECT_FALSE(geometry.has_role(Role::kIllustration));
   EXPECT_FALSE(geometry.has_role(Role::kPerception));
+  EXPECT_TRUE(geometry.has_role(Role::kUnassigned));
 }
 
 GTEST_TEST(InternalGeometryTest, DeformableGeometry) {
@@ -222,8 +205,6 @@ GTEST_TEST(InternalGeometryTest, DeformableGeometry) {
   EXPECT_TRUE(expected_mesh_G.Equal(*reference_mesh_G));
 
   EXPECT_TRUE(geometry.X_FG().IsExactlyEqualTo(X_FG));
-  // The immediate parent of a deformable geometry is the frame.
-  EXPECT_TRUE(geometry.X_PG().IsExactlyEqualTo(X_FG));
   // Meshed geometry is never anchored.
   EXPECT_TRUE(geometry.is_dynamic());
   // Meshed geometry is always deformable.
