@@ -1138,7 +1138,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///   model. An exception is thrown if an instance with the same name
   ///   already exists in the model. See HasModelInstanceNamed().
   ModelInstanceIndex AddModelInstance(const std::string& name) {
-    return this->mutable_tree().AddModelInstance(name);
+    ModelInstanceIndex result = this->mutable_tree().AddModelInstance(name);
+    if (geometry_source_is_registered()) {
+      scene_graph_->NameFrameGroup(*get_source_id(), result, name);
+    }
+    return result;
   }
 
   /// Renames an existing model instance.
@@ -1152,6 +1156,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   void RenameModelInstance(ModelInstanceIndex model_instance,
                            const std::string& name) {
     this->mutable_tree().RenameModelInstance(model_instance, name);
+    if (geometry_source_is_registered()) {
+      scene_graph_->NameFrameGroup(*get_source_id(), model_instance, name);
+    }
   }
 
   /// This method must be called after all elements in the model (joints,
