@@ -32,15 +32,13 @@ namespace {
  have rows that sum up to be the same as the rows of each entry in
  `J_blocks`. */
 template <typename MatrixType>
-void ComputeWeightMatrixTerms(
-    const vector<MatrixBlock<double>>& J_blocks,
-    const vector<MatrixXd>& G_blocks, int G_start, int G_end,
-    MatrixType* result) {
+void ComputeWeightMatrixTerms(const vector<MatrixBlock<double>>& J_blocks,
+                              const vector<MatrixXd>& G_blocks, int G_start,
+                              int G_end, MatrixType* result) {
   std::vector<MatrixBlock<double>> GJs;
   for (size_t k = 0; k < J_blocks.size(); ++k) {
     const MatrixBlock<double>& J = J_blocks[k];
-    GJs.emplace_back(
-        J.LeftMultiplyByBlockDiagonal(G_blocks, G_start, G_end));
+    GJs.emplace_back(J.LeftMultiplyByBlockDiagonal(G_blocks, G_start, G_end));
   }
 
   result->setZero();
