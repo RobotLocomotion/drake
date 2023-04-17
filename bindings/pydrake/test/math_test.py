@@ -464,6 +464,38 @@ class TestMath(unittest.TestCase):
         p_cross = mut.VectorToSkewSymmetric(p)
         self.assertEqual(p_cross.shape, (3, 3))
 
+    @numpy_compare.check_all_types
+    def test_quaternion(self, T):
+        q1 = Quaternion_[T]()
+        q2 = Quaternion_[T]()
+        w = np.zeros(3)
+        tolerance = 1e-4
+        quat = mut.ClosestQuaternion(quat1=q1, quat2=q2)
+        self.assertIsInstance(quat, Quaternion_[T])
+        b = mut.is_quaternion_in_canonical_form(quat=q1)
+        numpy_compare.assert_equal(b, True)
+        quat = mut.QuaternionToCanonicalForm(quat=q1)
+        self.assertIsInstance(quat, Quaternion_[T])
+        b = mut.AreQuaternionsEqualForOrientation(quat1=q1,
+                                                  quat2=q2,
+                                                  tolerance=tolerance)
+        numpy_compare.assert_equal(b, True)
+        quatDt = mut.CalculateQuaternionDtFromAngularVelocityExpressedInB(
+            quat_AB=q1, w_AB_B=w)
+        numpy_compare.assert_float_equal(quatDt, np.zeros(4))
+        w2 = mut.CalculateAngularVelocityExpressedInBFromQuaternionDt(
+            quat_AB=q1, quatDt=quatDt)
+        self.assertEqual(len(w2), 3)
+        v = mut.CalculateQuaternionDtConstraintViolation(quat=q1,
+                                                         quatDt=quatDt)
+        self.assertIsInstance(v, T)
+        b = mut.IsQuaternionValid(quat=q1, tolerance=tolerance)
+        numpy_compare.assert_equal(b, True)
+        b = mut.IsBothQuaternionAndQuaternionDtOK(quat=q1,
+                                                  quatDt=quatDt,
+                                                  tolerance=tolerance)
+        numpy_compare.assert_equal(b, True)
+
     def test_random_rotations(self):
         g = RandomGenerator()
         quat = mut.UniformlyRandomQuaternion(g)
