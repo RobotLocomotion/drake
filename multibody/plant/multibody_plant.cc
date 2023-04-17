@@ -256,8 +256,9 @@ std::string GetScopedName(
       model_instance != default_model_instance()) {
     // XXX probably don't want to unfreeze here, but rather nuke the whole
     // thing.
-    unused(plant);
-    return std::to_string(model_instance) + "::" + name;
+    // unused(plant);
+    // return std::to_string(model_instance) + "::" + name;
+    return plant.GetModelInstanceName(model_instance, false) + "::" + name;
   } else {
     return name;
   }
@@ -709,9 +710,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
+  // XXX Here undo the hack to measure the damage.
   GeometryId id =
       RegisterGeometry(body, X_BG, shape,
-                       GetScopedName(*this, body.model_instance(), name));
+                       // GetScopedName(*this, body.model_instance(), name));
+                       name);
   scene_graph_->AssignRole(*source_id_, id, properties);
 
   // TODO(SeanCurtis-TRI): Eliminate the automatic assignment of perception
@@ -759,8 +762,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterCollisionGeometry(
   // TODO(amcastro-tri): Consider doing this after finalize so that we can
   // register geometry that has a fixed path to world to the world body (i.e.,
   // as anchored geometry).
+  // XXX here we undo the hack to measure the damage.
   GeometryId id = RegisterGeometry(
-      body, X_BG, shape, GetScopedName(*this, body.model_instance(), name));
+      body, X_BG, shape,
+      // GetScopedName(*this, body.model_instance(), name));
+      name);
 
   scene_graph_->AssignRole(*source_id_, id, std::move(properties));
   DRAKE_ASSERT(ssize(collision_geometries_) == num_bodies());
@@ -879,10 +885,12 @@ void MultibodyPlant<T>::RegisterRigidBodyWithSceneGraph(
   if (geometry_source_is_registered()) {
     // If not already done, register a frame for this body.
     if (!body_has_registered_frame(body)) {
+      // XXX Here we undo the hack to measure the damage.
       FrameId frame_id = scene_graph_->RegisterFrame(
           source_id_.value(),
           GeometryFrame(
-              GetScopedName(*this, body.model_instance(), body.name()),
+              // GetScopedName(*this, body.model_instance(), body.name()),
+              body.name(),
               /* TODO(@SeanCurtis-TRI): Add test coverage for this
                * model-instance support as requested in #9390. */
               body.model_instance()));
