@@ -168,7 +168,10 @@ void MeshcatVisualizer<T>::SetObjects(
     std::string frame_path =
         frame_id == inspector.world_frame_id()
             ? params_.prefix
-            : fmt::format("{}/{}", params_.prefix, inspector.GetName(frame_id));
+            : fmt::format("{}/{}/{}",
+                          params_.prefix,
+                          inspector.GetFrameGroupName(frame_id),
+                          inspector.GetName(frame_id));
     // MultibodyPlant declares frames with SceneGraph using "::". We replace
     // those with `/` here to expose the full tree to Meshcat.
     size_t pos = 0;

@@ -169,6 +169,12 @@ const InputPort<T>& SceneGraph<T>::get_source_configuration_port(
 }
 
 template <typename T>
+void SceneGraph<T>::NameFrameGroup(SourceId source_id, int frame_group,
+                                   std::string_view name) {
+  model_.NameFrameGroup(source_id, frame_group, name);
+}
+
+template <typename T>
 FrameId SceneGraph<T>::RegisterFrame(SourceId source_id,
                                      const GeometryFrame& frame) {
   return model_.RegisterFrame(source_id, frame);

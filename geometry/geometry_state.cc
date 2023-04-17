@@ -394,6 +394,27 @@ int GeometryState<T>::GetFrameGroup(FrameId frame_id) const {
 }
 
 template <typename T>
+const std::string& GeometryState<T>::GetFrameGroupName(
+    SourceId source_id, int frame_group) const {
+  static const std::string empty;
+  auto source_it = source_to_frame_group_names_.find(source_id);
+  if (source_it == source_to_frame_group_names_.end()) {
+    return empty;
+  }
+  auto group_it = source_it->second.find(frame_group);
+  if (group_it == source_it->second.end()) {
+    return empty;
+  }
+  return group_it->second;
+}
+
+template <typename T>
+const std::string& GeometryState<T>::GetFrameGroupName(
+    FrameId frame_id) const {
+  return GetFrameGroupName(get_source_id(frame_id), GetFrameGroup(frame_id));
+}
+
+template <typename T>
 int GeometryState<T>::NumGeometriesForFrame(FrameId frame_id) const {
   const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
   return static_cast<int>(frame.child_geometries().size());
@@ -717,6 +738,12 @@ SourceId GeometryState<T>::RegisterNewSource(const std::string& name) {
 }
 
 template <typename T>
+void GeometryState<T>::NameFrameGroup(
+    SourceId source_id, int frame_group, std::string_view name) {
+  source_to_frame_group_names_[source_id][frame_group] = name;
+}
+
+template <typename T>
 FrameId GeometryState<T>::RegisterFrame(SourceId source_id,
                                         const GeometryFrame& frame) {
   return RegisterFrame(source_id, InternalFrame::world_frame_id(), frame);
@@ -745,7 +772,13 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
     source_root_frame_map_[source_id].insert(frame_id);
   }
   FrameNameSet& f_name_set = source_frame_name_map_[source_id];
-  const auto& [iterator, was_inserted] = f_name_set.insert(frame.name());
+  // XXX patchery hackery
+  std::string group_prefix;
+  if (frame.frame_group() != 0) {
+    group_prefix = std::to_string(frame.frame_group()) + "::";
+  }
+  const auto& [iterator, was_inserted] = f_name_set.insert(
+      group_prefix + frame.name());
   if (!was_inserted) {
     throw std::logic_error(
         fmt::format("Registering frame for source '{}'"
