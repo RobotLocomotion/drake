@@ -171,6 +171,7 @@ void SetSolution(
     MathematicalProgramResult* result) {
   ClpSolverDetails& solver_details =
       result->SetSolverDetailsType<ClpSolverDetails>();
+  solver_details.clp_version = CLP_VERSION;
   result->set_x_val(Eigen::Map<const Eigen::VectorXd>(model.getColSolution(),
                                                       prog.num_vars()));
   Eigen::Map<const Eigen::VectorXd> lambda(model.dualRowSolution(),
