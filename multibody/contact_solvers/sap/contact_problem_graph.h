@@ -59,9 +59,7 @@ class ContactProblemGraph {
                                      int num_constraint_equations);
 
     const SortedPair<int>& cliques() const { return cliques_; }
-    int num_constraints() const {
-      return ssize(constraint_index_);
-    }
+    int num_constraints() const { return ssize(constraint_index_); }
     int num_total_constraint_equations() const {
       return num_constraint_equations_;
     }
