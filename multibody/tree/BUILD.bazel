@@ -76,19 +76,6 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "multibody_element",
-    deprecation = "This label is deprecated and will be removed from Drake on 2023-04-01; as a replacement, use //multibody/tree instead.",  # noqa
-    tags = [
-        "exclude_from_libdrake",
-        "exclude_from_package",
-        "manual",
-    ],
-    deps = [
-        ":multibody_tree_core",
-    ],
-)
-
-drake_cc_library(
     name = "string_view_map_key",
     srcs = [],
     hdrs = [
