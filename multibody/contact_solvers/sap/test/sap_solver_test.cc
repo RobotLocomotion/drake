@@ -544,8 +544,7 @@ TEST_P(PizzaSaverTest, Sliding) {
   }
 
   // ls_max_iterations only pertains to backtracking line search.
-  if (params.line_search_type !=
-      SapSolverParameters::LineSearchType::kExact) {
+  if (params.line_search_type != SapSolverParameters::LineSearchType::kExact) {
     // To verify the line search throws when it doesn't converge, we set a low
     // maximum number of iterations and verify the solver fails for the right
     // reasons.

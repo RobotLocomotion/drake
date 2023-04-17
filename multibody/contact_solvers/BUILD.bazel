@@ -45,6 +45,7 @@ drake_cc_library(
     srcs = ["block_sparse_matrix.cc"],
     hdrs = ["block_sparse_matrix.h"],
     deps = [
+        ":matrix_block",
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
@@ -169,6 +170,7 @@ drake_cc_library(
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
     interface_deps = [
+        ":matrix_block",
         "//common:essential",
     ],
     deps = [
@@ -261,4 +263,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = True)

@@ -5,6 +5,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/sorted_pair.h"
+#include "drake/common/ssize.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 
 namespace drake {
@@ -58,9 +59,7 @@ class ContactProblemGraph {
                                      int num_constraint_equations);
 
     const SortedPair<int>& cliques() const { return cliques_; }
-    int num_constraints() const {
-      return static_cast<int>(constraint_index_.size());
-    }
+    int num_constraints() const { return ssize(constraint_index_); }
     int num_total_constraint_equations() const {
       return num_constraint_equations_;
     }
@@ -119,15 +118,13 @@ class ContactProblemGraph {
   int num_cliques() const { return num_cliques_; }
 
   /* Number of clusters (edges) in the graph. */
-  int num_clusters() const { return static_cast<int>(clusters_.size()); }
+  int num_clusters() const { return ssize(clusters_); }
 
   /* Number of constraints added with calls to AddConstraint(). */
   int num_constraints() const { return num_constraints_; }
 
   /* Returns the total number of constraint equations for this graph. */
-  int num_constraint_equations() const {
-    return num_constraint_equations_;
-  }
+  int num_constraint_equations() const { return num_constraint_equations_; }
 
   /* The list of all clusters in the graph. Clusters in the returned
    `std::vector` are sorted in the order documented in this class's

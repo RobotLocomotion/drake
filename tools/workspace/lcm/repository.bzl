@@ -11,8 +11,8 @@ def lcm_repository(
         a new version number; if so, then update the version numbers within
         the two lcm-*.cmake files in this directory to match.
         """,
-        commit = "1aecca45e6a05d719da8e566533e45740d1fd88c",
-        sha256 = "78ef84ccabf78ebb33a182393bb539f38fedb576e2c1cb244bf134470bd702e3",  # noqa
+        commit = "ab70eaff2bf9e7da097ae3f6183da7c234a286f1",
+        sha256 = "21a93b77bc20025070c6cb9c2d1da30e85ede5d503570130822743768ee2c2ed",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

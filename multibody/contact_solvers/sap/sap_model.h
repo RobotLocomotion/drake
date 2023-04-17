@@ -40,7 +40,7 @@ struct MomentumGainCache {
     velocity_gain.resize(nv);
     momentum_gain.resize(nv);
   }
-  VectorX<T> p;  // = A⋅v
+  VectorX<T> p;              // = A⋅v
   VectorX<T> velocity_gain;  // = v-v*
   VectorX<T> momentum_gain;  // = A⋅(v-v*)
 };
@@ -279,7 +279,8 @@ class SapModel {
   const std::vector<MatrixX<T>>& EvalConstraintsHessian(
       const systems::Context<T>& context) const {
     return system_->get_cache_entry(system_->cache_indexes().hessian)
-        .template Eval<HessianCache<T>>(context).G;
+        .template Eval<HessianCache<T>>(context)
+        .G;
   }
 
  private:

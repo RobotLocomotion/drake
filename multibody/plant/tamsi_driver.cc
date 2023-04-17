@@ -44,7 +44,7 @@ internal::ContactJacobians<T> TamsiDriver<T>::CalcContactJacobians(
       const int col_offset = topology.tree_velocities_start(tree_jacobian.tree);
       const int tree_nv = topology.num_tree_velocities(tree_jacobian.tree);
       contact_jacobians.Jc.block(row_offset, col_offset, 3, tree_nv) =
-          tree_jacobian.J;
+          tree_jacobian.J.MakeDenseMatrix();
     }
     contact_jacobians.Jt.middleRows(2 * i, 2) =
         contact_jacobians.Jc.middleRows(3 * i, 2);

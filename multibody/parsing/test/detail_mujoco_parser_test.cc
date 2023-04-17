@@ -746,8 +746,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body_spatial("offset_cylinder", M_BBo_B);
   check_body_spatial(
       "box_from_mesh",
-      SpatialInertia<double>(1.0, Vector3d::Zero(),
-                             UnitInertia<double>::SolidCube(2.0)),
+      SpatialInertia<double>::SolidCubeWithMass(1.0, 2.0),
       1e-13);
 
   check_body_spatial("sphere_auto", inertia_from_inertial_tag);
@@ -762,8 +761,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
       SpatialInertia<double>::SolidBoxWithDensity(1000, 0.8, 1.0, 1.2));
   check_body_spatial(
       "box_from_mesh_w_density",
-      SpatialInertia<double>(8.0, Vector3d::Zero(),
-                             UnitInertia<double>::SolidCube(2.0)),
+      SpatialInertia<double>::SolidCubeWithMass(8.0, 2.0),
       1e-12);
 
   // A cube rotating about its corner.

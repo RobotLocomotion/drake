@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -93,8 +94,15 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
    exception is thrown.
    @param[in] phi0 The value of the signed distance at the previous time step.
    @param[in] parameters Constraint parameters. See Parameters for details. */
-  SapFrictionConeConstraint(int clique, MatrixX<T> J, const T& phi0,
+  SapFrictionConeConstraint(int clique, MatrixBlock<T> J, const T& phi0,
                             const Parameters& parameters);
+
+  /* Alternative constructor for a contact constraint involving a single clique
+   that takes a dense Jacobian. */
+  SapFrictionConeConstraint(int clique, MatrixX<T> J, const T& phi0,
+                            const Parameters& parameters)
+      : SapFrictionConeConstraint(clique, MatrixBlock<T>(std::move(J)), phi0,
+                                  parameters) {}
 
   /* Constructs a contact constraint for the case in which two cliques
    are involved.
@@ -108,8 +116,18 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
    velocities. It must have three rows or an exception is thrown.
    @param[in] phi0 The value of the signed distance at the previous time step.
    @param[in] parameters Constraint parameters. See Parameters for details. */
+  SapFrictionConeConstraint(int clique0, int clique1, MatrixBlock<T> J0,
+                            MatrixBlock<T> J1, const T& phi0,
+                            const Parameters& parameters);
+
+  /* Alternative constructor for a contact constraint involving two cliques
+   that takes a dense Jacobian. */
   SapFrictionConeConstraint(int clique0, int clique1, MatrixX<T> J0,
-                            MatrixX<T> J1, const T& phi0, const Parameters& p);
+                            MatrixX<T> J1, const T& phi0,
+                            const Parameters& parameters)
+      : SapFrictionConeConstraint(
+            clique0, clique1, MatrixBlock<T>(std::move(J0)),
+            MatrixBlock<T>(std::move(J1)), phi0, parameters) {}
 
   /* Returns the coefficient of friction for this constraint. */
   const T& mu() const { return parameters_.mu; }

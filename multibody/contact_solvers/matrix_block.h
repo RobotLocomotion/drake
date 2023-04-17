@@ -59,13 +59,9 @@ class MatrixBlock {
 
   int rows() const;
   int cols() const;
-  int size() const {
-    return rows() * cols();
-  }
+  int size() const { return rows() * cols(); }
 
-  bool is_dense() const {
-    return is_dense_;
-  }
+  bool is_dense() const { return is_dense_; }
 
   /* Performs *y += M * A.
    @pre y != nullptr and the sizes of A and y are compatible with M. */
@@ -75,14 +71,14 @@ class MatrixBlock {
   /* Performs y += Mᵀ * A.
    @pre y != nullptr and the sizes of A and y are compatible with M. */
   void TransposeAndMultiplyAndAddTo(const Eigen::Ref<const MatrixX<T>>& A,
-                                   EigenPtr<MatrixX<T>> y) const;
+                                    EigenPtr<MatrixX<T>> y) const;
 
   // TODO(xuchenhan-tri): Consider writing the output to a MatrixBlock to
   // preserve the sparsity structure if it exists.
   /* Performs y += Mᵀ * A.
    @pre y != nullptr and the sizes of A and y are compatible with M. */
   void TransposeAndMultiplyAndAddTo(const MatrixBlock<T>& A,
-                                   EigenPtr<MatrixX<T>> y) const;
+                                    EigenPtr<MatrixX<T>> y) const;
 
   /* Computes G * M where G is a block diagonal matrix with the diagonal blocks
    specified as a vector of dense matrices. In particular, the diagonal blocks
@@ -98,7 +94,7 @@ class MatrixBlock {
   /* Performs y += M * scale.asDiagonal() * M.transpose().
    @pre y != nullptr and the sizes of scale and y are compatible with M. */
   void MultiplyWithScaledTransposeAndAddTo(const VectorX<T>& scale,
-                                         EigenPtr<MatrixX<T>> y) const;
+                                           EigenPtr<MatrixX<T>> y) const;
 
   /* Returns the MatrixBlock as an Eigen dense matrix. Useful for debugging and
    testing. */

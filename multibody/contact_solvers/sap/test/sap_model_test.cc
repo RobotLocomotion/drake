@@ -194,7 +194,7 @@ TEST_F(SpringMassTest, ProblemData) {
   // For this case, J = I₃ and M = m₁⋅I₃. Therefore W = J⋅M⁻¹⋅Jᵀ = I₃/m₁.
   // Then the diagonal approximation is ‖W‖ᵣₘₛ = ‖W‖/3 = (m₁√3)⁻¹.
   const VectorXd W_diag = SapModelTester::delassus_diagonal(*sap_model_);
-  const VectorXd W_diag_expected = Vector1d(1.0/model_.mass1()/sqrt(3.0));
+  const VectorXd W_diag_expected = Vector1d(1.0 / model_.mass1() / sqrt(3.0));
   EXPECT_TRUE(CompareMatrices(W_diag, W_diag_expected, kEpsilon,
                               MatrixCompareType::relative));
 }
@@ -266,8 +266,9 @@ class DummyConstraint final : public SapConstraint<T> {
       dPdy->resize(this->num_constraint_equations(),
                    this->num_constraint_equations());
       dPdy->setZero();
-      dPdy->diagonal() =
-          y.unaryExpr([](const T& x) { return x >= 0. ? 1.0 : 0.0; });
+      dPdy->diagonal() = y.unaryExpr([](const T& x) {
+        return x >= 0. ? 1.0 : 0.0;
+      });
     }
   };
 
@@ -559,14 +560,18 @@ class DummyModelTest : public ::testing::Test {
       {
         const int c = constraint.first_clique();
         const MatrixXd& A = sap_problem_->dynamics_matrix()[c];
-        const MatrixXd& J = constraint.first_clique_jacobian();
-        W_approximation[i] += J * A.ldlt().solve(J.transpose());
+        const VectorXd& A_diag_inv = A.diagonal().cwiseInverse();
+        const MatrixXd& J =
+            constraint.first_clique_jacobian().MakeDenseMatrix();
+        W_approximation[i] += J * A_diag_inv.asDiagonal() * J.transpose();
       }
       if (constraint.num_cliques() == 2) {
         const int c = constraint.second_clique();
         const MatrixXd& A = sap_problem_->dynamics_matrix()[c];
-        const MatrixXd& J = constraint.second_clique_jacobian();
-        W_approximation[i] += J * A.ldlt().solve(J.transpose());
+        const VectorXd& A_diag_inv = A.diagonal().cwiseInverse();
+        const MatrixXd& J =
+            constraint.second_clique_jacobian().MakeDenseMatrix();
+        W_approximation[i] += J * A_diag_inv.asDiagonal() * J.transpose();
       }
     }
 
