@@ -21,6 +21,7 @@ struct MultibodyPlantConfig {
     a->Visit(DRAKE_NVP(stiction_tolerance));
     a->Visit(DRAKE_NVP(contact_model));
     a->Visit(DRAKE_NVP(discrete_contact_solver));
+    a->Visit(DRAKE_NVP(sap_near_rigid_parameter));
     a->Visit(DRAKE_NVP(contact_surface_representation));
     a->Visit(DRAKE_NVP(adjacent_bodies_collision_filters));
   }
@@ -52,6 +53,18 @@ struct MultibodyPlantConfig {
   /// - "tamsi"
   /// - "sap"
   std::string discrete_contact_solver{"tamsi"};
+
+  // TODO(amcastro-tri): Change default to zero, or simply eliminate.
+  /// Dimensionless number in the range [0.0, 1.0] to control the "near rigid"
+  /// regime of the SAP solver, see [Castro et al., 2021]. A value of 1.0 is a
+  /// conservative choice to avoid numerical ill-conditioning. However, this
+  /// might introduce artificial softening of the contact constraints. If this
+  /// is your case try:
+  ///   1. Set this parameter to zero.
+  ///   2. For difficult problems (hundreds of contacts for instance), you might
+  ///      need to use a low value if the solver fails to converge.
+  ///      For instance, set values in the range (1e-3, 1e-2).
+  double sap_near_rigid_parameter{1.0};
 
   /// Configures the MultibodyPlant::set_contact_surface_representation().
   /// Refer to drake::geometry::HydroelasticContactRepresentation for details.

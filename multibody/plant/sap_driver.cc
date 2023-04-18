@@ -38,8 +38,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager)
-    : manager_(manager) {
+SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
+                        double near_rigid_parameter)
+    : manager_(manager), near_rigid_parameter_(near_rigid_parameter) {
   // Collect joint damping coefficients into a vector.
   joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
   for (JointIndex j(0); j < plant().num_joints(); ++j) {
@@ -49,6 +50,10 @@ SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager)
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
   }
 }
+
+template <typename T>
+SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager)
+    : SapDriver(manager, 1.0) {}
 
 template <typename T>
 void SapDriver<T>::set_sap_solver_parameters(
@@ -160,7 +165,6 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
   // Parameters used by SAP to estimate regularization, see [Castro et al.,
   // 2021].
   // TODO(amcastro-tri): consider exposing these parameters.
-  constexpr double beta = 1.0;
   constexpr double sigma = 1.0e-3;
 
   const std::vector<DiscreteContactPair<T>>& contact_pairs =
@@ -185,7 +189,8 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
 
     const typename SapFrictionConeConstraint<T>::Parameters parameters{
-        friction, stiffness, dissipation_time_scale, beta, sigma};
+        friction, stiffness, dissipation_time_scale, near_rigid_parameter_,
+        sigma};
 
     if (jacobian_blocks.size() == 1) {
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(

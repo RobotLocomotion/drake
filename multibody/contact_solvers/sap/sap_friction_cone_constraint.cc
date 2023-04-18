@@ -22,7 +22,7 @@ SapFrictionConeConstraint<T>::SapFrictionConeConstraint(int clique,
   DRAKE_DEMAND(p.mu >= 0.0);
   DRAKE_DEMAND(p.stiffness > 0.0);
   DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);
-  DRAKE_DEMAND(p.beta > 0.0);
+  DRAKE_DEMAND(p.beta >= 0.0);
   DRAKE_DEMAND(p.sigma > 0.0);
   DRAKE_DEMAND(this->first_clique_jacobian().rows() == 3);
 }
@@ -40,7 +40,7 @@ SapFrictionConeConstraint<T>::SapFrictionConeConstraint(
   DRAKE_DEMAND(p.mu >= 0.0);
   DRAKE_DEMAND(p.stiffness > 0.0);
   DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);
-  DRAKE_DEMAND(p.beta > 0.0);
+  DRAKE_DEMAND(p.beta >= 0.0);
   DRAKE_DEMAND(p.sigma > 0.0);
   DRAKE_DEMAND(this->first_clique_jacobian().rows() == 3);
   DRAKE_DEMAND(this->second_clique_jacobian().rows() == 3);

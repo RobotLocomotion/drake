@@ -64,6 +64,14 @@ class SapDriver {
   // @pre manager != nullptr.
   explicit SapDriver(const CompliantContactManager<T>* manager);
 
+  // Constructs a driver with the provided `near_rigid_regime` parameter. This
+  // parameter is a dimensionless value in the range [0.0, 1.0] that controls
+  // the amount of regularization used to avoid ill-conditioning. Refer to
+  // [Castro et al., 2021] for details. A value of zero effectively turns-off
+  // this additional regularization.
+  SapDriver(const CompliantContactManager<T>* manager,
+            double near_rigid_parameter);
+
   void set_sap_solver_parameters(
       const contact_solvers::internal::SapSolverParameters& parameters);
 
@@ -217,6 +225,9 @@ class SapDriver {
   // declare additional state, cache entries, ports, etc. After construction,
   // the driver only has const access to the manager.
   const CompliantContactManager<T>* const manager_{nullptr};
+  // Near rigid regime parameter for contact constraints. A value of 1.0 is a
+  // conservative choice to avoid ill-conditioning.
+  double near_rigid_parameter_{1.0};
   systems::CacheIndex contact_problem_;
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().

@@ -1766,6 +1766,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the contact solver type used for discrete %MultibodyPlant models.
   DiscreteContactSolver get_discrete_contact_solver() const;
 
+  /// Dimensionless number in the range [0.0, 1.0] to control the "near rigid"
+  /// regime of the SAP solver, see [Castro et al., 2021]. A value of 1.0 is a
+  /// conservative choice to avoid ill-conditioning that might lead to softer
+  /// than expected contact. If this is your case, consider turning off this
+  /// approximation by setting this parameter to zero. For difficult cases where
+  /// ill-conditioning is a problem, a small but non-zero number can be used,
+  /// e.g. 1.0e-3.
+  /// @throws std::exception iff called post-finalize.
+  void set_sap_near_rigid_parameter(
+      double near_rigid_parameter =
+          MultibodyPlantConfig{}.sap_near_rigid_parameter);
+
+  /// @returns the SAP near rigid regime parameter.
+  /// @see See set_sap_near_rigid_parameter().
+  double get_sap_near_rigid_parameter() const;
+
   /// Return the default value for contact representation, given the desired
   /// time step. Discrete systems default to use polygons; continuous systems
   /// default to use triangles.
@@ -5225,6 +5241,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // with the default value in multibody_plant_config.h; there are already
   // assertions in the cc file that enforce this.
   DiscreteContactSolver contact_solver_enum_{DiscreteContactSolver::kTamsi};
+
+  // Near rigid regime parameter from [Castro et al., 2021]. Refer to
+  // set_near_rigid_parameter() for details.
+  double sap_near_rigid_parameter_{
+      MultibodyPlantConfig{}.sap_near_rigid_parameter};
 
   // User's choice of the representation of contact surfaces in discrete
   // systems. The default value is dependent on whether the system is
