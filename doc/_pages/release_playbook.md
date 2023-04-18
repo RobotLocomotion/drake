@@ -20,12 +20,11 @@ Begin this process around 1 week prior to the intended release date.
 2. Create a local Drake branch named ``release_notes-v1.N.0`` (so that others
    can easily find and push to it after the PR is opened).
 3. As the first commit on the branch, mimic the commit
-   ([link](https://github.com/RobotLocomotion/drake/pull/14208/commits/674b84877bc08448b59a2243f3b910a7b6dbab43)
-   from [PR 14208](https://github.com/RobotLocomotion/drake/pull/14208)
+   [`drake@65adb4dd`](https://github.com/RobotLocomotion/drake/commit/65adb4dd1f89835ad482d6a9a437cb899c05b779)
    in order to disable CI.  A quick way to do this might be:
    ```
-   git fetch upstream pull/14208/head
-   git cherry-pick 674b84877bc08448b59a2243f3b910a7b6dbab43
+   git fetch upstream 65adb4dd1f89835ad482d6a9a437cb899c05b779
+   git cherry-pick FETCH_HEAD
    ```
 4. Push that branch and then open a new pull request titled:
    ```
