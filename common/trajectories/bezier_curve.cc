@@ -33,18 +33,34 @@ std::unique_ptr<Trajectory<T>> BezierCurve<T>::Clone() const {
 
 template <typename T>
 MatrixX<T> BezierCurve<T>::value(const T& time) const {
-  return value(time, true);
+  using std::clamp;
+  return EvaluateT(clamp(time, T{start_time_}, T{end_time_}));
 }
 
 template <typename T>
-MatrixX<T> BezierCurve<T>::value(const T& time, bool clamp_time) const {
-  using std::clamp;
-  const T ctime = clamp_time ? clamp(time, T{start_time_}, T{end_time_}) : time;
-  MatrixX<T> v = VectorX<T>::Zero(rows());
-  for (int i = 0; i < control_points_.cols(); ++i) {
-    v += BernsteinBasis(i, ctime) * control_points_.col(i);
+MatrixX<symbolic::Expression>
+BezierCurve<symbolic::Expression>::GetBezierExpression(
+    symbolic::Variable time) const {
+  return EvaluateT(symbolic::Expression(time));
+}
+
+template <typename T>
+MatrixX<symbolic::Expression> BezierCurve<T>::GetBezierExpression(
+    symbolic::Variable time) const {
+  MatrixX<symbolic::Expression> control_points{control_points_.rows(),
+                                               control_points_.cols()};
+  for (int r = 0; r < control_points.rows(); ++r) {
+    for (int c = 0; c < control_points.cols(); ++c) {
+      switch (this) {
+        case (std::is_same<T, double>::value()):
+          control_points(r, c) = symbolic::Expression(control_points_(r, c));
+          break;
+        case (std::is_same < T, AutoDiffXd>::value()):
+          control_points(r, c) = symbolic::Expression(control_points_(r, c).value());
+      }
+    }
   }
-  return v;
+  return EvaluateT(symbolic::Expression(time));
 }
 
 template <typename T>
@@ -80,6 +96,15 @@ MatrixX<T> BezierCurve<T>::DoEvalDerivative(const T& time,
   MatrixX<T> v = VectorX<T>::Zero(rows());
   for (int i = 0; i < points.cols(); ++i) {
     v += BernsteinBasis(i, ctime, order_ - derivative_order) * points.col(i);
+  }
+  return v;
+}
+
+template <typename T>
+MatrixX<T> BezierCurve<T>::EvaluateT(const T& time) const {
+  MatrixX<T> v = VectorX<T>::Zero(rows());
+  for (int i = 0; i < control_points_.cols(); ++i) {
+    v += BernsteinBasis(i, time) * control_points_.col(i);
   }
   return v;
 }

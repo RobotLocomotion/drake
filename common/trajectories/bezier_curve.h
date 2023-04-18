@@ -66,6 +66,9 @@ class BezierCurve final : public trajectories::Trajectory<T> {
            a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
 
+  MatrixX<symbolic::Expression> GetBezierExpression(
+      symbolic::Variable time = symbolic::Variable("t")) const;
+
   /** Evaluates the curve at the given time. If clamp_time is true and t does
    not lie in the range [start_time(), end_time()], the trajectory will silently
    be evaluated at the closest valid value of time to `time`. For example,
@@ -92,6 +95,9 @@ class BezierCurve final : public trajectories::Trajectory<T> {
 
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
+
+  template <typename T>
+  MatrixX<T> EvaluateT(const T& time) const;
 
   double start_time_{};
   double end_time_{};
