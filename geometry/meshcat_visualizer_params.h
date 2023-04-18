@@ -23,6 +23,7 @@ struct MeshcatVisualizerParams {
     a->Visit(DRAKE_NVP(enable_alpha_slider));
     a->Visit(DRAKE_NVP(visible_by_default));
     a->Visit(DRAKE_NVP(show_hydroelastic));
+    a->Visit(DRAKE_NVP(publish_untagged_geometry));
   }
 
   /** The duration (in simulation seconds) between attempts to update poses in
@@ -73,6 +74,14 @@ struct MeshcatVisualizerParams {
   This option is ignored by MeshcatVisualizer<T> when T is not `double`, e.g.
   if T == AutoDiffXd. */
   bool show_hydroelastic{false};
+
+  /** The GeometryProperties for our `role` may contain a property with the
+   group_name "meshcat" and the name "accepting". If such a property has been
+   set on a given geometry, then the visualizer will show that geometry if and
+   only if the property value exactly matches our `prefix`. If such a property
+   has not been set, then this flag determines when happens: when true, the
+   geometry will be shown anyway; when false, it will not be shown. */
+  bool publish_untagged_geometry{true};
 };
 
 }  // namespace geometry

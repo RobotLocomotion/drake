@@ -16,6 +16,8 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using multibody::AddMultibodyPlantSceneGraph;
+
 // The tests in this file require a dependency on MultibodyPlant.  One could
 // implement the tests without that dependency, but not without duplicating (or
 // sharing) a significant amount of setup code like we see in
@@ -37,8 +39,7 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
 
   void SetUpDiagram(MeshcatVisualizerParams params = {}) {
     systems::DiagramBuilder<double> builder;
-    auto [plant, scene_graph] =
-        multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
     plant_ = &plant;
     scene_graph_ = &scene_graph;
     multibody::Parser(plant_).AddModels(
@@ -344,8 +345,7 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
   for (bool show_hydroelastic : {false, true}) {
     // Load a scene with hydroelastic geometry.
     systems::DiagramBuilder<double> builder;
-    auto [plant, scene_graph] =
-        multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
     multibody::Parser(&plant).AddModelsFromUrl(
         "package://drake/multibody/meshcat/test/hydroelastic.sdf");
     plant.Finalize();
@@ -389,8 +389,7 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   auto meshcat = std::make_shared<Meshcat>();
 
   systems::DiagramBuilder<double> builder;
-  auto [plant, scene_graph] =
-      multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
   std::string urdf = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_no_collision.urdf");
@@ -430,6 +429,60 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
     EXPECT_NE(meshcat->GetPackedTransform(fmt::format(
                   "/drake/visualizer/second/iiwa14/iiwa_link_{}", link)),
               "");
+  }
+}
+
+// Use geometry properties to control which geometry is shown.
+GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
+  for (bool publish_untagged_geometry : {true, false}) {
+    for (const std::string accepting : {"", "prefix", "no_match"}) {
+      SCOPED_TRACE(fmt::format("publish_untagged_geometry = {}, accepting = {}",
+                               publish_untagged_geometry,
+                               accepting.empty() ? "null" : accepting.c_str()));
+
+      // Load a simple model with one geometry.
+      auto meshcat = std::make_shared<Meshcat>();
+      systems::DiagramBuilder<double> builder;
+      auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+      multibody::Parser(&plant).AddModelsFromUrl(
+          "package://drake/geometry/render/test/box.sdf");
+      plant.Finalize();
+
+      // Add the accepting tag (if given) to the geometry.
+      auto& inspector = scene_graph.model_inspector();
+      const FrameId body_frame =
+          plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("box").index());
+      const auto geom_ids =
+          inspector.GetGeometries(body_frame, Role::kIllustration);
+      DRAKE_DEMAND(geom_ids.size() == 1);
+      const GeometryId geom_id = *geom_ids.begin();
+      const IllustrationProperties* old_props =
+          scene_graph.model_inspector().GetIllustrationProperties(geom_id);
+      DRAKE_DEMAND(old_props != nullptr);
+      if (!accepting.empty()) {
+        IllustrationProperties new_props(*old_props);
+        new_props.AddProperty("meshcat", "accepting", accepting);
+        scene_graph.AssignRole(*plant.get_source_id(), geom_id, new_props,
+                               RoleAssign::kReplace);
+      }
+
+      // Create the visualizer.
+      MeshcatVisualizerParams params;
+      params.publish_untagged_geometry = publish_untagged_geometry;
+      params.prefix = "prefix";
+      MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                              params);
+      auto diagram = builder.Build();
+      auto context = diagram->CreateDefaultContext();
+
+      // Publish geometry. Check whether the shape was published.
+      const std::string geom_path =
+          fmt::format("prefix/box/box/{}", geom_id.get_value());
+      const bool should_show = (accepting == "prefix") ||
+                               (publish_untagged_geometry && accepting.empty());
+      diagram->ForcedPublish(*context);
+      EXPECT_EQ(meshcat->HasPath(geom_path), should_show);
+    }
   }
 }
 
