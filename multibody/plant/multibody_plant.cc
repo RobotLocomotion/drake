@@ -607,6 +607,7 @@ template <typename T>
 void MultibodyPlant<T>::set_sap_near_rigid_parameter(
     double near_rigid_parameter) {
   DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(near_rigid_parameter >= 0.0);
   sap_near_rigid_parameter_ = near_rigid_parameter;
 }
 

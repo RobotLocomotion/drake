@@ -1773,6 +1773,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// approximation by setting this parameter to zero. For difficult cases where
   /// ill-conditioning is a problem, a small but non-zero number can be used,
   /// e.g. 1.0e-3.
+  /// @throws std::exception iff near_rigid_parameter is negative.
   /// @throws std::exception iff called post-finalize.
   void set_sap_near_rigid_parameter(
       double near_rigid_parameter =

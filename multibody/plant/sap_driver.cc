@@ -41,6 +41,8 @@ template <typename T>
 SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
                         double near_rigid_parameter)
     : manager_(manager), near_rigid_parameter_(near_rigid_parameter) {
+  DRAKE_DEMAND(manager != nullptr);
+  DRAKE_DEMAND(near_rigid_parameter >= 0.0);
   // Collect joint damping coefficients into a vector.
   joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
   for (JointIndex j(0); j < plant().num_joints(); ++j) {
@@ -50,10 +52,6 @@ SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
     joint_damping_.segment(velocity_start, nv) = joint.damping_vector();
   }
 }
-
-template <typename T>
-SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager)
-    : SapDriver(manager, 1.0) {}
 
 template <typename T>
 void SapDriver<T>::set_sap_solver_parameters(
@@ -188,9 +186,16 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const T phi = contact_kinematics[icontact].phi;
     const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
 
+    // Stiffness equal to infinity is used to indicate a rigid contact. Since
+    // SAP is inherently compliant, we must use the "near rigid regime"
+    // approximation, with near rigid parameter equal to 1.0.
+    // TODO(amcastrot-tri): This is mostly for deformables, consider exposing
+    // this parameter.
+    const double beta = (stiffness == std::numeric_limits<double>::infinity())
+                            ? 1.0
+                            : near_rigid_parameter_;
     const typename SapFrictionConeConstraint<T>::Parameters parameters{
-        friction, stiffness, dissipation_time_scale, near_rigid_parameter_,
-        sigma};
+        friction, stiffness, dissipation_time_scale, beta, sigma};
 
     if (jacobian_blocks.size() == 1) {
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
@@ -720,7 +725,10 @@ void SapDriver<T>::CalcContactSolverResults(
         "     extremely large mass ratios. Revise your model and consider "
         "     whether very small objects can be removed or welded to larger "
         "     objects in the model."
-        "  4. Some other cause. You may want to use Stack Overflow (#drake "
+        "  4. Ill-conditioning could be alleviated via SAP's near rigid "
+        "     parameter. Refer to "
+        "     MultibodyPlant::set_sap_near_rigid_parameter() for details."
+        "  5. Some other cause. You may want to use Stack Overflow (#drake "
         "     tag) to request some assistance.",
         context.get_time());
     throw std::runtime_error(msg);
