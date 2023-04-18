@@ -296,7 +296,7 @@ GTEST_TEST(SpatialInertia, SolidCylinderWithDensity) {
       density, r, l, unit_vec);
   EXPECT_TRUE(
       CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
-  .
+
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidCylinderWithDensity(-9.3, r, l, unit_vec),
       "[^]* A solid cylinder's density is negative or zero: .*.");
