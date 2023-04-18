@@ -86,6 +86,10 @@ namespace multibody {
 /// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
 /// checks are not performed when T is symbolic::Expression.
 ///
+/// @see To create a spatial inertia of a mesh, see
+/// @ref CalcSpatialInertia(const geometry::TriangleSurfaceMesh<double>&,
+///                         double).
+///
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
 ///
