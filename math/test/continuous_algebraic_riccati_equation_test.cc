@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 using Eigen::MatrixXd;
 
@@ -58,6 +59,33 @@ GTEST_TEST(CARE, TestCare2) {
   Q << 1, 0, 0, 1;
   R1 << 1;
   SolveCAREandVerify(A1, B1, Q, R1);
+}
+
+// This test case is reported in
+// https://github.com/RobotLocomotion/drake/issues/19191
+GTEST_TEST(CARE, TestCareUnstabilizable) {
+  // This system is not stabilizable, the Q matrix is not strictly positive
+  // definite.
+  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(12, 12);
+  A.topRightCorner<6, 6>() = Eigen::MatrixXd::Identity(6, 6);
+  A(6, 0) = -12;
+  A(6, 4) = 9;
+  A(7, 5) = -9;
+
+  Eigen::MatrixXd B = Eigen::MatrixXd::Zero(12, 4);
+  // clang-format off
+  B.bottomRows<4>() << 1, 1, 1, 1,
+                       7, -7, 7, -7,
+                       -59, 0, 59, 0,
+                       0, 99, 0, -99;
+  // clang-format on
+  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(12, 12);
+  Q(0, 0) = 10;
+  Q(1, 1) = 10;
+  Q(2, 2) = 10;
+  Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
+  DRAKE_EXPECT_THROWS_MESSAGE(ContinuousAlgebraicRiccatiEquation(A, B, Q, R),
+                              "ContinuousAlgebraicRiccatiEquation fails.*");
 }
 
 }  // namespace
