@@ -7,12 +7,12 @@ Use bazel to build the tool:
 Here's an example of how to obtain the git sha for the release.
 
   bazel run //tools/release_engineering:download_release_candidate -- \
-      --timestamp 20220303 --find-git-sha
+      --timestamp 20230315 --find-git-sha
 
 Here's an example of how download the release artifacts:
 
   bazel run //tools/release_engineering:download_release_candidate -- \
-      --timestamp 20220303 --version v1.0.0
+      --timestamp 20230315 --version v1.14.0
 
 TODO(jwnimmer-tri) Rename this tool to something more general, like
 `release_candidate` (without the "download" part).
@@ -107,9 +107,9 @@ def _check_urls(*, urls):
         raise UserError(error_message.getvalue())
 
 
-def _download_binaries(*, timestamp, staging, version):
-    """Downloads the binaries as specified, and returns a list of (relative)
-    paths.
+def _generate_and_check_download_urls(*, timestamp, staging, version):
+    """Generates URLs for the binaries as specified, and
+    (relative)paths.
 
     The `timestamp` is a string like "YYYYMMDD".
     The `staging` is a bool (whether to download staged wheels / debian).
@@ -153,8 +153,14 @@ def _download_binaries(*, timestamp, staging, version):
 
     # Make sure all can be downloaded (fail-fast).
     _check_urls(urls=download_urls)
+    return base_url_filename_pairs
 
-    # Download.
+
+def _download_binaries(base_url_filename_pairs):
+    """Downloads URLs given results of _generate_and_check_download_urls.
+
+    Returns a list of relative paths.
+    """
     result = []
     for base_url, filename in base_url_filename_pairs:
         _download_with_sha(base_url=base_url, filename=filename)
@@ -191,10 +197,11 @@ def _find_git_sha(*, timestamp):
     """Implements the --find-git-sha command line action.
     """
     with tempfile.TemporaryDirectory(prefix="drake-release-tmp-") as tmp_dir:
+        base_url_filename_pairs = _generate_and_check_download_urls(
+            timestamp=timestamp, staging=False, version=None)
         print(f"+ cd {tmp_dir}", file=sys.stderr)
         os.chdir(tmp_dir)
-        filenames = _download_binaries(
-            timestamp=timestamp, staging=False, version=None)
+        filenames = _download_binaries(base_url_filename_pairs)
         result = _get_consistent_git_commit_sha(filenames=filenames)
         print()
         print(f"The nightly binaries all have the same commit: {result}")
@@ -232,12 +239,15 @@ def _download_version(*, timestamp, version):
             f"Directory must not already exist: {tmp_dir}\n"
             f"If you are re-running this script, please remove the "
             f"directory.")
+
+    base_url_filename_pairs = _generate_and_check_download_urls(
+        timestamp=timestamp, staging=True, version=version)
+
     os.makedirs(tmp_dir)
     print(f"+ cd {tmp_dir}", file=sys.stderr)
     os.chdir(tmp_dir)
 
-    filenames = _download_binaries(
-        timestamp=timestamp, staging=True, version=version)
+    filenames = _download_binaries(base_url_filename_pairs)
     git_sha = _get_consistent_git_commit_sha(filenames=filenames)
     print(f"The binaries all have the same git commit sha: {git_sha}")
 
