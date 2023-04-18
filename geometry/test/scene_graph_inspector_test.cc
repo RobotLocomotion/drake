@@ -110,20 +110,77 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
                                     ProximityProperties());
   inspector.CollisionFiltered(geometry_id, geometry_id2);
 
-  // Tests cloning a geometry.
-  std::unique_ptr<GeometryInstance> geometry_instance_clone =
-      inspector.CloneGeometryInstance(geometry_id);
-  EXPECT_NE(geometry_instance_clone->id(), geometry_id);
-  EXPECT_EQ(geometry_instance_clone->name(), "sphere");
-  const auto* shape_clone = dynamic_cast<const Sphere*>(
-      &geometry_instance_clone->shape());
-  EXPECT_NE(shape_clone, nullptr);
-  EXPECT_EQ(shape_clone->radius(), 1.0);
-  EXPECT_NE(geometry_instance_clone->proximity_properties(), nullptr);
-  EXPECT_EQ(geometry_instance_clone->perception_properties(), nullptr);
-  EXPECT_EQ(geometry_instance_clone->illustration_properties(), nullptr);
+  // Cloning geometry instances handled below.
 
   inspector.geometry_version();
+}
+
+// Inspector is uniquely responsible for defining the logic for cloning a
+// geometry. As such, merely "exercising" it is insufficient.
+GTEST_TEST(SceneGraphInspector, CloneGeometryInstance) {
+  SceneGraphInspectorTester tester;
+  const SceneGraphInspector<double>& inspector = tester.inspector();
+
+  // Register a geometry to prevent an exception being thrown.
+  const SourceId source_id = tester.mutable_state().RegisterNewSource("name");
+  const FrameId frame_id =
+      tester.mutable_state().RegisterFrame(source_id, GeometryFrame("frame"));
+
+  // Geometry with no properties; confirm the other properties.
+  const GeometryInstance original(RigidTransformd(
+      Eigen::Vector3d(1, 2, 3)), make_unique<Sphere>(1.5), "test_sphere");
+  const GeometryId geometry_id = tester.mutable_state().RegisterGeometry(
+      source_id, frame_id, make_unique<GeometryInstance>(original));
+
+  // Confirm basic geometry parameters (name, id, etc.) and that if the source
+  // doesn't have a role, the clone doesn't either.
+  {
+    std::unique_ptr<GeometryInstance> clone =
+        inspector.CloneGeometryInstance(geometry_id);
+
+    EXPECT_NE(clone->id(), original.id());
+    EXPECT_EQ(clone->name(), original.name());
+    const auto* shape_clone = dynamic_cast<const Sphere*>(&clone->shape());
+    EXPECT_NE(shape_clone, nullptr);
+    EXPECT_EQ(shape_clone->radius(), 1.5);
+    EXPECT_EQ(clone->proximity_properties(), nullptr);
+    EXPECT_EQ(clone->perception_properties(), nullptr);
+    EXPECT_EQ(clone->illustration_properties(), nullptr);
+  }
+
+  // Now confirm that assigned roles (via their properties) propagate.
+  {
+    IllustrationProperties illus;
+    illus.AddProperty("illus", "value", 1.5);
+    PerceptionProperties percep;
+    percep.AddProperty("percep", "value", 1.5);
+    ProximityProperties prox;
+    prox.AddProperty("prox", "value", 1.5);
+    tester.mutable_state().AssignRole(source_id, geometry_id, illus);
+    tester.mutable_state().AssignRole(source_id, geometry_id, percep);
+    tester.mutable_state().AssignRole(source_id, geometry_id, prox);
+
+    std::unique_ptr<GeometryInstance> clone =
+        inspector.CloneGeometryInstance(geometry_id);
+
+    ASSERT_NE(clone->illustration_properties(), nullptr);
+    EXPECT_TRUE(
+        clone->illustration_properties()->HasProperty("illus", "value"));
+    ASSERT_NE(clone->perception_properties(), nullptr);
+    EXPECT_TRUE(clone->perception_properties()->HasProperty("percep", "value"));
+    ASSERT_NE(clone->proximity_properties(), nullptr);
+    EXPECT_TRUE(clone->proximity_properties()->HasProperty("prox", "value"));
+
+    // A smoke test to confirm the clone doesn't share data with GeometryState's
+    // internals (unlikely as the data most likely to be shared is passed by
+    // value). But to hinder regression, we'll peek at some property addresses.
+    EXPECT_NE(clone->illustration_properties(),
+              inspector.GetIllustrationProperties(geometry_id));
+    EXPECT_NE(clone->perception_properties(),
+              inspector.GetPerceptionProperties(geometry_id));
+    EXPECT_NE(clone->proximity_properties(),
+              inspector.GetProximityProperties(geometry_id));
+  }
 }
 
 // Generally, SceneGraphInspector is a thin wrapper for invoking methods on
