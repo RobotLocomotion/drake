@@ -590,6 +590,7 @@ drake_cc_library(
 drake_cc_googletest(
     name = "meshcat_visualizer_test",
     data = [
+        "//geometry/render:test_models",
         "//manipulation/models/iiwa_description:models",
         "//multibody/meshcat:models",
     ],
