@@ -207,6 +207,12 @@ std::optional<string> MaybeGetInstallResourceRoot() {
   return std::nullopt;
 }
 
+Result MakeResultFrom(const string& resource_path, RlocationOrError other) {
+  return other.error.empty()
+             ? Result::make_success(resource_path, std::move(other.abspath))
+             : Result::make_error(resource_path, std::move(other.error));
+}
+
 }  // namespace
 
 const char* const kDrakeResourceRootEnvironmentVariableName =
@@ -243,14 +249,19 @@ Result FindResource(const string& resource_path) {
         *guess, resource_path);
   }
 
-  // (2) Check the Runfiles.
+  // (2) Check the Runfiles. If and only if we have Drake's runfiles (not just
+  // any old runfiles) should we consider runfiles as a source for FindResource.
+  // Downstream projects that use Bazel but don't build Drake from source will
+  // have runfiles but not Drake's runfiles; in that case we should skip this
+  // option and continue to option (3) instead.
   if (HasRunfiles()) {
-    auto rlocation_or_error = FindRunfile(resource_path);
-    if (rlocation_or_error.error.empty()) {
-      return Result::make_success(
-          resource_path, rlocation_or_error.abspath);
+    if (FindRunfile(kSentinelRelpath).error.empty()) {
+      return MakeResultFrom(resource_path, FindRunfile(resource_path));
+    } else {
+      log()->debug(
+          "FindResource ignoring Bazel runfiles with no sentinel file {}.",
+          kSentinelRelpath);
     }
-    return Result::make_error(resource_path, rlocation_or_error.error);
   }
 
   // (3) Check the `libdrake_marker.so` location in the install tree.
