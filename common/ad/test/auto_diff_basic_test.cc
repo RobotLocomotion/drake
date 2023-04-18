@@ -16,6 +16,7 @@ GTEST_TEST(AutodiffBasicTest, DefaultCtor) {
   const AutoDiff dut;
   EXPECT_EQ(dut.value(), 0.0);
   EXPECT_EQ(dut.derivatives().size(), 0);
+  EXPECT_EQ("true", "false");
 }
 
 GTEST_TEST(AutodiffBasicTest, ConvertingCtor) {
