@@ -12,6 +12,7 @@ namespace math {
 /// S A + A' S - S B R^{-1} B' S + Q = 0
 /// @f]
 ///
+/// @note (A, B) should be stabilizable, (Q, A) should be detectable.
 /// @throws std::exception if R is not positive definite.
 ///
 /// Based on the Matrix Sign Function method outlined in this paper:

@@ -22,13 +22,30 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
   Eigen::MatrixXd H(2 * n, 2 * n);
 
   H << A, B * R_cholesky.solve(B.transpose()), Q, -A.transpose();
+  // For the closed-loop system ẋ = (A+BK)x (where K is the LQR controller
+  // gain), we denote the eigenvalues of A+BK as λ₁, ..., λₙ, then with Q
+  // satisfying the algebraic Riccati equation, the eigenvalues of H is λ₁, ...,
+  // λₙ and -λ₁,
+  // ..., -λₙ (refer to https://stanford.edu/class/ee363/lectures/clqr.pdf for
+  // more details). Since LQR gain should stabilize the closed-loop system, we
+  // know that the real parts of λ₁, ..., λₙ should be strictly negative.
+  if (H.determinant() == 0) {
+    // If H.determinant() is 0, then H must have at least one eigenvalue being
+    // 0, contradicting to the requirement on H.
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation fails. The Hamiltonian is not "
+        "invertible. Either your (A, B) is not stabilizable, or (Q, A) is not "
+        "detectable.");
+    // TODO(hongkai.dai): actually check if (A, B) is stabilizable and (Q, A) is
+    // detectable.
+  }
 
   Eigen::MatrixXd Z = H;
   Eigen::MatrixXd Z_old;
 
   // these could be options
   const double tolerance = 1e-9;
-  const double max_iterations = 100;
+  const int max_iterations = 100;
 
   double relative_norm;
   size_t iteration = 0;
