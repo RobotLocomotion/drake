@@ -22,6 +22,18 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
   Eigen::MatrixXd H(2 * n, 2 * n);
 
   H << A, B * R_cholesky.solve(B.transpose()), Q, -A.transpose();
+  // The Hamiltonian H should have half of its eigenvalues with negative real
+  // part, and half of its eigenvalues with positive real part, see
+  // https://stanford.edu/class/ee363/lectures/clqr.pdf for more discussion on
+  // the Hamiltonian.
+  if (H.determinant() == 0) {
+    // If H.determinant() is 0, then H must have at least one eigenvalue being
+    // 0, contradicting to the requirement on H.
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation fails. The Hamiltonian is not "
+        "invertible. Either your (A, B) is not controllable, or (Q, A) is not "
+        "observable.");
+  }
 
   Eigen::MatrixXd Z = H;
   Eigen::MatrixXd Z_old;
@@ -62,6 +74,12 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(
       lhs, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
+  if (svd.info() != Eigen::Success) {
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation: svd is unsuccessful. Check your "
+        "input: is your (A, B) controllable? Is your Q matrix positive "
+        "semidefinite? Is your R matrix positive definite?");
+  }
   return svd.solve(rhs);
 }
 
