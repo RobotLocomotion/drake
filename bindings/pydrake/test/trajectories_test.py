@@ -24,6 +24,7 @@ from pydrake.trajectories import (
     Trajectory,
     Trajectory_
 )
+from pydrake.symbolic import Variable
 
 
 # Custom trajectory class used to test Trajectory subclassing in python.
@@ -100,6 +101,11 @@ class TestTrajectories(unittest.TestCase):
         b = curve.BernsteinBasis(i=0, time=1.5, order=1)
         self.assertIsInstance(b, T)
         numpy_compare.assert_float_equal(curve.control_points(), points)
+
+        curve_expression = curve.GetExpression(time=Variable("t"))
+        self.assertEqual(curve_expression.shape, (2,1))
+        for expr in curve_expression:
+            self.assertTrue(expr[0].is_polynomial())
 
     @numpy_compare.check_all_types
     def test_bspline_trajectory(self, T):
