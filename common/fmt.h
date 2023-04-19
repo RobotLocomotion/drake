@@ -128,8 +128,8 @@ template arguments, note that macros will fight with commas so you should use
 `typename... Ts` instead of writing them all out.
 
 @param NAMESPACE The namespace that encloses the `TYPE` being formatted. Cannot
-be empty. For nested namespaces, use intemediate colons, e.g., `%drake::common`.
-Do not place _leading_ colons on the `NAMESPACE`.
+be empty. For nested namespaces, use intermediate colons, e.g.,
+`%drake::common`. Do not place _leading_ colons on the `NAMESPACE`.
 
 @param TYPE The class name (or struct name, or enum name, etc.) being formatted.
 Do not place _leading_ double-colons on the `TYPE`. If the type is templated,
@@ -140,7 +140,8 @@ chosen as `typename T`.
 being formatted within the `EXPR` expression.
 
 @param EXPR An expression to `return` from the format_as function; it can
-refer to the given `ARG` name which will be of type `const TYPE& ARG`.
+refer to the given `ARG` name which will be of type `const TYPE& ARG`. The
+evaluated expression _must never throw_.
 
 @note In future versions of fmt (perhaps fmt >= 10) there might be an ADL
 `format_as` customization point with this feature built-in. If so, then we can
