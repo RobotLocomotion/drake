@@ -153,6 +153,8 @@ drake_cc_library(
     ],
     deps = [
         ":trajectory",
+        "//common:drake_bool",
+        "//common/symbolic:polynomial",
         "//math:binomial_coefficient",
     ],
 )
