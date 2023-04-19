@@ -52,7 +52,6 @@ class CompliantContactManagerTester {
 class DeformableDriverContactTest : public ::testing::Test {
  protected:
   static constexpr double kDt = 0.001;
-  static constexpr double kPointContactStiffness = 1e6;
   static constexpr double kDissipationTimeScale = 0.1;
 
   void SetUp() override {
@@ -69,8 +68,7 @@ class DeformableDriverContactTest : public ::testing::Test {
     /* Register a rigid collision geometry intersecting with the bottom half of
      the deformable octahedrons. */
     geometry::ProximityProperties proximity_prop;
-    geometry::AddContactMaterial({}, kPointContactStiffness,
-                                 CoulombFriction<double>(1.0, 1.0),
+    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                  &proximity_prop);
     // TODO(xuchenhan-tri): Modify this when resolution hint is no longer used
     //  as the trigger for contact with deformable bodies.
@@ -184,8 +182,8 @@ class DeformableDriverContactTest : public ::testing::Test {
     auto geometry = make_unique<GeometryInstance>(
         RigidTransformd(), make_unique<Sphere>(1.0), move(name));
     geometry::ProximityProperties props;
-    geometry::AddContactMaterial({}, kPointContactStiffness,
-                                 CoulombFriction<double>(1.0, 1.0), &props);
+    geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
+                                 &props);
     props.AddProperty(geometry::internal::kMaterialGroup,
                       geometry::internal::kRelaxationTime,
                       kDissipationTimeScale);
@@ -407,7 +405,8 @@ TEST_F(DeformableDriverContactTest, AppendDiscreteContactPairs) {
   /* tau for deformable body is set to kDissipationTimeScale and is unset for
    rigid body (which then assumes the default value, dt). */
   constexpr double expected_tau = kDissipationTimeScale + kDt;
-  constexpr double expected_k = kPointContactStiffness / 2.0;
+  // Stiffness is set to infinity for deformable contact pairs.
+  constexpr double expected_k = std::numeric_limits<double>::infinity();
   GeometryId id0 = model_->GetGeometryId(body_id0_);
   GeometryId id1 = model_->GetGeometryId(body_id1_);
 
