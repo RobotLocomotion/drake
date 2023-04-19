@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -1084,6 +1085,14 @@ class MultibodyTree {
   // See MultibodyPlant::GetFreeBodyPose.
   math::RigidTransform<T> GetFreeBodyPoseOrThrow(
       const systems::Context<T>& context, const Body<T>& body) const;
+
+  // See MultibodyPlant::SetDefaultFreeBodyPose.
+  void SetDefaultFreeBodyPose(const Body<T>& body,
+                              const math::RigidTransform<double>& X_WB);
+
+  // See MultibodyPlant::GetDefaultFreeBodyPose.
+  math::RigidTransform<double> GetDefaultFreeBodyPose(
+      const Body<T>& body) const;
 
   // See MultibodyPlant::SetFreeBodyPose.
   void SetFreeBodyPoseOrThrow(
@@ -3068,6 +3077,15 @@ class MultibodyTree {
   // mobilizer model of the joint, or an invalid index if the joint is modeled
   // with constraints instead.
   std::vector<MobilizerIndex> joint_to_mobilizer_;
+
+  // Maps the default body poses of all floating bodies AND bodies touched by
+  // MultibodyPlant::SetDefaultFreeBodyPose(). The poses are stored as a
+  // 7-vector generalized positions [qw, qx, qy, qz, x, y, z]. The default pose
+  // of floating bodies are converted to the joint indices of the floating
+  // joints connecting the world and the body during Finalize(), and the default
+  // poses can be retrieved via the joints' default positions.
+  std::unordered_map<BodyIndex, std::variant<JointIndex, Vector<double, 7>>>
+      default_body_poses_;
 
   MultibodyTreeTopology topology_;
 
