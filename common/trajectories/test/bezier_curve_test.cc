@@ -3,6 +3,7 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 
 namespace drake {
@@ -24,6 +25,7 @@ GTEST_TEST(BezierCurveTest, Linear) {
   EXPECT_EQ(curve.end_time(), 3.0);
   EXPECT_TRUE(
       CompareMatrices(curve.value(2.5), Eigen::Vector2d(1.5, 5), 1e-14));
+  EXPECT_TRUE(CompareMatrices(curve.value(0), Eigen::Vector2d(1, 3), 1e-14));
 
   auto deriv = curve.MakeDerivative();
   BezierCurve<double>& deriv_bezier =
@@ -79,6 +81,10 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
                                 Eigen::Vector2d((1 - t) * (1 - t), t * t),
                                 1e-14));
+    EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
+                                Eigen::Vector2d((1 - t) * (1 - t), t * t),
+                                1e-14));
+
     EXPECT_TRUE(CompareMatrices(deriv->value(sample_time),
                                 Eigen::Vector2d(-2 * (1 - t), 2 * t), 1e-14));
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time),
@@ -87,6 +93,14 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
                                 Eigen::Vector2d(2, 2), 1e-14));
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time, 2),
                                 Eigen::Vector2d(2, 2), 1e-14));
+  }
+
+  // Extract the symoblic exprssion for the bezier curve.
+  VectorX<symbolic::Expression> curve_expression{
+      curve.GetExpression(symbolic::Variable("t"))};
+  for (int i = 0; i < curve_expression.rows(); i++) {
+    EXPECT_TRUE(curve_expression(i).is_polynomial());
+    EXPECT_EQ(symbolic::Polynomial(curve_expression(i)).TotalDegree(), 2);
   }
 }
 
@@ -120,6 +134,68 @@ GTEST_TEST(BezierCurve, ScalarTypes) {
 
   EXPECT_TRUE(CompareMatrices(curve.value(0.5), curve_ad.value(0.5), 1e-14));
   EXPECT_TRUE(CompareMatrices(curve.value(0.5), curve_sym.value(0.5), 1e-14));
+}
+
+GTEST_TEST(BezierCurve, GetExpressionLinear) {
+  symbolic::Variable t{"t"};
+
+  // Tests that the call to GetExpression returns a polynomial of appropriate
+  // degree and that all scalar types return the same expression when the
+  // underlying control points are the same. Whether the underlying expression
+  // is correct must be done separately.
+  auto test_expression_from_points =
+      [&t](double start_time, double end_time,
+           const Eigen::Ref<const Eigen::MatrixXd>& points) {
+        BezierCurve<double> curve_double(start_time, end_time, points);
+        BezierCurve<AutoDiffXd> curve_ad(start_time, end_time,
+                                         points.cast<AutoDiffXd>());
+        BezierCurve<symbolic::Expression> curve_sym(
+            start_time, end_time, points.cast<symbolic::Expression>());
+
+        const VectorX<symbolic::Expression> curve_expression{
+            curve_sym.GetExpression(t)};
+        const VectorX<symbolic::Expression> curve_expression_double{
+            curve_double.GetExpression(t)};
+        const VectorX<symbolic::Expression> curve_expression_ad{
+            curve_ad.GetExpression(t)};
+        for (int i = 0; i < curve_expression.rows(); i++) {
+          EXPECT_TRUE(curve_expression(i).is_polynomial());
+          EXPECT_EQ(symbolic::Polynomial(curve_expression(i)).TotalDegree(),
+                    points.cols() - 1);
+          EXPECT_TRUE(curve_expression(i).EqualTo(curve_expression_double(i)));
+          EXPECT_TRUE(curve_expression(i).EqualTo(curve_expression_ad(i)));
+        }
+        return curve_expression;
+      };
+
+  // Line segment from (1,3) to (2,7).
+  Eigen::Matrix2d points_linear;
+  // clang-format off
+  points_linear << 1, 2,
+                   3, 7;
+  // clang-format on
+  const double start_time_linear{2};
+  const double end_time_linear{3};
+  const VectorX<symbolic::Expression> linear_curve_expression =
+      test_expression_from_points(start_time_linear, end_time_linear,
+                                  points_linear);
+  for (int i = 0; i < linear_curve_expression.rows(); i++) {
+    symbolic::Expression expr_expected =
+        (end_time_linear - t) * points_linear(i, 0) +
+        (t - start_time_linear) * points_linear(i, 1);
+    EXPECT_TRUE(linear_curve_expression(i).EqualTo(expr_expected.Expand()));
+  }
+
+  // Quadratic curve: [ (1-t)²; t^2 ]
+  Eigen::Matrix<double, 2, 3> points_quadratic;
+  // clang-format off
+  points_quadratic << 1, 0, 0,
+                      0, 0, 1;
+  // clang-format on
+  const VectorX<symbolic::Expression> quadratic_curve_expression =
+      test_expression_from_points(0, 1, points_quadratic);
+  EXPECT_TRUE(quadratic_curve_expression(0).EqualTo(pow(t, 2) - 2 * t + 1));
+  EXPECT_TRUE(quadratic_curve_expression(1).EqualTo(pow(t, 2)));
 }
 
 }  // namespace
