@@ -157,19 +157,19 @@ class Box final : public Shape {
   /** Constructs a box with the given `width`, `depth`, and `height`, which
    specify the box's dimension along the canonical x-, y-, and z-axes,
    respectively.
-   @throws std::exception if `width`, `depth` or `height` are not strictly
-   positive. */
+   @throws std::exception if any measure is not finite positive. */
   Box(double width, double depth, double height);
 
   /** Constructs a box with a vector of measures: width, depth, and height --
    the box's dimensions along the canonical x-, y-, and z-axes, respectively.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measures is not finite positive. */
   explicit Box(const Vector3<double>& measures);
 
   ~Box() final;
 
   /** Constructs a cube with the given `edge_size` for its width, depth, and
-   height. */
+   height.
+   @throw std::exception if edge_Size is not finite positive. */
   static Box MakeCube(double edge_size);
 
   /** Returns the box's dimension along the x axis. */
@@ -206,12 +206,12 @@ class Capsule final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Capsule);
 
   /** Constructs a capsule with the given `radius` and `length`.
-   @throws std::exception if `radius` or `length` are not strictly positive.
+   @throws std::exception if any measure is not finite positive.
    */
   Capsule(double radius, double length);
 
   /** Constructs a capsule with a vector of measures: radius and length.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Capsule(const Vector2<double>& measures);
 
   ~Capsule() final;
@@ -336,12 +336,11 @@ class Cylinder final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Cylinder);
 
   /** Constructs a cylinder with the given `radius` and `length`.
-   @throws std::exception if `radius` or `length` are not strictly positive.
-   */
+   @throws std::exception if any measure is not finite positive. */
   Cylinder(double radius, double length);
 
   /** Constructs a cylinder with a vector of measures: radius and length.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Cylinder(const Vector2<double>& measures);
 
   ~Cylinder() final;
@@ -376,14 +375,13 @@ class Ellipsoid final : public Shape {
   /** Constructs an ellipsoid with the given lengths of its principal
    semi-axes, with a, b, and c measured along the x-, y-, and z- axes of the
    canonical frame, respectively.
-   @throws std::exception if `a`, `b`, or `c` are not strictly positive.
-   */
+   @throws std::exception if any measure is not finite positive. */
   Ellipsoid(double a, double b, double c);
 
   /** Constructs an ellipsoid with a vector of measures: the lengths of its
    principal semi-axes, with a, b, and c measured along the x-, y-, and z- axes
    of the canonical frame, respectively.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit Ellipsoid(const Vector3<double>& measures);
 
   ~Ellipsoid() final;
@@ -572,13 +570,12 @@ class MeshcatCone final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MeshcatCone);
 
   /** Constructs the parameterized cone.
-   @throws std::exception if `height`, `a`, or `b` are not strictly positive.
-   */
+   @throws std::exception if any measure is not finite positive. */
   explicit MeshcatCone(double height, double a = 1.0, double b = 1.0);
 
   /** Constructs a cone with a vector of measures: height and principal
    semi-axes.
-   @throws std::exception if the measures are not strictly positive. */
+   @throws std::exception if any measure is not finite positive. */
   explicit MeshcatCone(const Vector3<double>& measures);
 
   ~MeshcatCone() final;
@@ -606,8 +603,8 @@ class Sphere final : public Shape {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Sphere);
 
   /** Constructs a sphere with the given `radius`.
-   @throws std::exception if `radius` is negative. Note that a zero radius is
-   considered valid. */
+   @throws std::exception if `radius` is not finite *non-negative*. Note that a
+                              zero radius is considered valid. */
   explicit Sphere(double radius);
 
   ~Sphere() final;
