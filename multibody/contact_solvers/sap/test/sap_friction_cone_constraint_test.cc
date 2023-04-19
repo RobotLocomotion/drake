@@ -45,7 +45,7 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraint) {
   const double mu = 0.5;
   const double stiffness = 1.0e5;
   const double dissipation_time_scale = 0.01;
-  const double beta = 0.1;
+  const double beta = 0.0;
   const double sigma = 1.0e-4;
   const int clique = 12;
   const double phi0 = -2.5e-3;
@@ -71,7 +71,7 @@ GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraint) {
   const double mu = 0.5;
   const double stiffness = 1.0e5;
   const double dissipation_time_scale = 0.01;
-  const double beta = 0.1;
+  const double beta = 0.0;
   const double sigma = 1.0e-4;
   const int clique0 = 12;
   const int clique1 = 13;

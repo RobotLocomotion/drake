@@ -970,7 +970,10 @@ void CompliantContactManager<T>::ExtractModelInfo() {
       // plant to symbolic and perform other supported queries such as
       // introspection and kinematics.
       if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-        sap_driver_ = std::make_unique<SapDriver<T>>(this);
+        const double near_rigid_parameter =
+            plant().get_sap_near_rigid_parameter();
+        sap_driver_ =
+            std::make_unique<SapDriver<T>>(this, near_rigid_parameter);
       }
       break;
     case DiscreteContactSolver::kTamsi:

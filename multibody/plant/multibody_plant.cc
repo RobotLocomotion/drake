@@ -336,6 +336,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     num_collision_geometries_ = other.num_collision_geometries_;
     contact_model_ = other.contact_model_;
     contact_solver_enum_ = other.contact_solver_enum_;
+    sap_near_rigid_parameter_ = other.sap_near_rigid_parameter_;
     contact_surface_representation_ = other.contact_surface_representation_;
     // geometry_query_port_ is set during DeclareSceneGraphPorts() below.
     // geometry_pose_port_ is set during DeclareSceneGraphPorts() below.
@@ -600,6 +601,19 @@ template <typename T>
 DiscreteContactSolver MultibodyPlant<T>::get_discrete_contact_solver()
     const {
   return contact_solver_enum_;
+}
+
+template <typename T>
+void MultibodyPlant<T>::set_sap_near_rigid_parameter(
+    double near_rigid_parameter) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(near_rigid_parameter >= 0.0);
+  sap_near_rigid_parameter_ = near_rigid_parameter;
+}
+
+template <typename T>
+double MultibodyPlant<T>::get_sap_near_rigid_parameter() const {
+  return sap_near_rigid_parameter_;
 }
 
 template <typename T>

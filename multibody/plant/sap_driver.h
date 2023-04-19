@@ -57,12 +57,15 @@ class SapDriver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(SapDriver);
 
-  // The newly constructed driver is used in the given `manager` to perform
-  // discrete updates using the SAP solver. This driver will user manager
-  // services to perform solver-agnostic multibody computations, e.g. contact
-  // kinematics. The given `manager` must outlive this driver.
-  // @pre manager != nullptr.
-  explicit SapDriver(const CompliantContactManager<T>* manager);
+  // Constructs a driver with the provided `near_rigid_parameter`.
+  // This is a dimensionless positive parameter typically in the range [0.0,
+  // 1.0] that controls the amount of regularization used to avoid
+  // ill-conditioning. Refer to [Castro et al., 2021] for details. A value of
+  // zero effectively turns-off this additional regularization.
+  // @pre manager is not nullptr.
+  // @pre near_rigid_parameter is positive.
+  explicit SapDriver(const CompliantContactManager<T>* manager,
+                     double near_rigid_parameter = 1.0);
 
   void set_sap_solver_parameters(
       const contact_solvers::internal::SapSolverParameters& parameters);
@@ -217,6 +220,8 @@ class SapDriver {
   // declare additional state, cache entries, ports, etc. After construction,
   // the driver only has const access to the manager.
   const CompliantContactManager<T>* const manager_{nullptr};
+  // Near rigid regime parameter for contact constraints.
+  const double near_rigid_parameter_;
   systems::CacheIndex contact_problem_;
   // Vector of joint damping coefficients, of size plant().num_velocities().
   // This information is extracted during the call to ExtractModelInfo().
