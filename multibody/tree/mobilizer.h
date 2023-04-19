@@ -381,7 +381,7 @@ class Mobilizer : public MultibodyElement<T> {
   // evaluating any random distributions that were declared (via e.g.
   // MobilizerImpl::set_random_position_distribution() and/or
   // MobilizerImpl::set_random_velocity_distribution(), or calling
-  // set_zero_state() if none have been declared. Note that the intended
+  // set_default_state() if none have been declared. Note that the intended
   // caller of this method is `MultibodyTree::SetRandomState()` which treats
   // the independent samples returned from this sample as an initial guess,
   // but may change the value in order to "project" it onto a constraint
