@@ -1,6 +1,7 @@
 #include "drake/geometry/shape_specification.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <limits>
 
@@ -13,6 +14,13 @@
 
 namespace drake {
 namespace geometry {
+namespace {
+
+bool is_positive_finite(double value) {
+  return std::isfinite(value) && value > 0;
+}
+
+}
 
 using math::RigidTransform;
 
@@ -44,12 +52,9 @@ Shape::Shape(ShapeTag<S>) {
 Box::Box(double width, double depth, double height)
     : Shape(ShapeTag<Box>()),
       size_(width, depth, height) {
-  if (width <= 0 || depth <= 0 || height <= 0) {
-    throw std::logic_error(
-        fmt::format("Box width, depth, and height should all be > 0 (were {}, "
-                    "{}, and {}, respectively).",
-                    width, depth, height));
-  }
+  DRAKE_THROW_UNLESS(is_positive_finite(width), width);
+  DRAKE_THROW_UNLESS(is_positive_finite(depth), depth);
+  DRAKE_THROW_UNLESS(is_positive_finite(height), height);
 }
 
 Box::Box(const Vector3<double>& measures)
@@ -61,12 +66,8 @@ Box Box::MakeCube(double edge_size) {
 
 Capsule::Capsule(double radius, double length)
     : Shape(ShapeTag<Capsule>()), radius_(radius), length_(length) {
-  if (radius <= 0 || length <= 0) {
-    throw std::logic_error(
-        fmt::format("Capsule radius and length should both be > 0 (were {} "
-                    "and {}, respectively).",
-                    radius, length));
-  }
+  DRAKE_THROW_UNLESS(is_positive_finite(radius), radius);
+  DRAKE_THROW_UNLESS(is_positive_finite(length), length);
 }
 
 Capsule::Capsule(const Vector2<double>& measures)
@@ -76,21 +77,15 @@ Convex::Convex(const std::string& filename, double scale)
     : Shape(ShapeTag<Convex>()),
       filename_(std::filesystem::absolute(filename)),
       scale_(scale) {
-  if (std::abs(scale) < 1e-8) {
-    throw std::logic_error("Convex |scale| cannot be < 1e-8.");
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(scale) && std::abs(scale) >= 1e-8, scale);
 }
 
 Cylinder::Cylinder(double radius, double length)
     : Shape(ShapeTag<Cylinder>()),
       radius_(radius),
       length_(length) {
-  if (radius <= 0 || length <= 0) {
-    throw std::logic_error(
-        fmt::format("Cylinder radius and length should both be > 0 (were {} "
-                    "and {}, respectively).",
-                    radius, length));
-  }
+  DRAKE_THROW_UNLESS(is_positive_finite(radius), radius);
+  DRAKE_THROW_UNLESS(is_positive_finite(length), length);
 }
 
 Cylinder::Cylinder(const Vector2<double>& measures)
@@ -98,12 +93,9 @@ Cylinder::Cylinder(const Vector2<double>& measures)
 
 Ellipsoid::Ellipsoid(double a, double b, double c)
     : Shape(ShapeTag<Ellipsoid>()), radii_(a, b, c) {
-  if (a <= 0 || b <= 0 || c <= 0) {
-    throw std::logic_error(
-        fmt::format("Ellipsoid lengths of principal semi-axes a, b, and c "
-                    "should all be > 0 (were {}, {}, and {}, respectively).",
-                    a, b, c));
-  }
+  DRAKE_THROW_UNLESS(is_positive_finite(a), a);
+  DRAKE_THROW_UNLESS(is_positive_finite(b), b);
+  DRAKE_THROW_UNLESS(is_positive_finite(c), c);
 }
 
 Ellipsoid::Ellipsoid(const Vector3<double>& measures)
@@ -146,19 +138,14 @@ Mesh::Mesh(const std::string& filename, double scale)
     : Shape(ShapeTag<Mesh>()),
       filename_(std::filesystem::absolute(filename)),
       scale_(scale) {
-  if (std::abs(scale) < 1e-8) {
-    throw std::logic_error("Mesh |scale| cannot be < 1e-8.");
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(scale) && std::abs(scale) >= 1e-8, scale);
 }
 
 MeshcatCone::MeshcatCone(double height, double a, double b)
     : Shape(ShapeTag<MeshcatCone>()), height_(height), a_(a), b_(b) {
-  if (height <= 0 || a <= 0 || b <= 0) {
-    throw std::logic_error(fmt::format(
-        "MeshcatCone parameters height, a, and b should all be > 0 (they were "
-        "{}, {}, and {}, respectively).",
-        height, a, b));
-  }
+  DRAKE_THROW_UNLESS(is_positive_finite(height), height);
+  DRAKE_THROW_UNLESS(is_positive_finite(a), a);
+  DRAKE_THROW_UNLESS(is_positive_finite(b), b);
 }
 
 MeshcatCone::MeshcatCone(const Vector3<double>& measures)
@@ -166,10 +153,7 @@ MeshcatCone::MeshcatCone(const Vector3<double>& measures)
 
 Sphere::Sphere(double radius)
     : Shape(ShapeTag<Sphere>()), radius_(radius) {
-  if (radius < 0) {
-    throw std::logic_error(
-        fmt::format("Sphere radius should be >= 0 (was {}).", radius));
-  }
+  DRAKE_THROW_UNLESS(std::isfinite(radius) && radius >= 0, radius);
 }
 
 ShapeReifier::~ShapeReifier() = default;
