@@ -61,7 +61,13 @@ MatrixX<symbolic::Expression> BezierCurve<T>::GetExpression(
                                              control_points)
         .GetExpression(time);
   } else {
-    return EvaluateT(symbolic::Expression(time));
+    MatrixX<symbolic::Expression> ret{EvaluateT(symbolic::Expression(time))};
+    for (int i = 0; i < ret.rows(); ++i) {
+      for (int j = 0; j < ret.rows(); ++j) {
+        ret(i, j) = ret(i, j).Expand();
+      }
+    }
+    return ret;
   }
 }
 

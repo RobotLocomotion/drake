@@ -66,8 +66,8 @@ class BezierCurve final : public trajectories::Trajectory<T> {
            a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
 
-  /** Extracts the underlying polynomial expression of this curve in terms of
-   variable `time`. */
+  /** Extracts the expanded underlying polynomial expression of this curve in
+   terms of variable `time`. */
   MatrixX<symbolic::Expression> GetExpression(
       symbolic::Variable time = symbolic::Variable("t")) const;
 
