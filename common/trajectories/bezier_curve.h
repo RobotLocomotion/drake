@@ -66,17 +66,10 @@ class BezierCurve final : public trajectories::Trajectory<T> {
            a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
 
-  MatrixX<symbolic::Expression> GetBezierExpression(
+  /** Extracts the underlying polynomial expression of this curve in terms of
+   variable `time`. */
+  MatrixX<symbolic::Expression> GetExpression(
       symbolic::Variable time = symbolic::Variable("t")) const;
-
-  /** Evaluates the curve at the given time. If clamp_time is true and t does
-   not lie in the range [start_time(), end_time()], the trajectory will silently
-   be evaluated at the closest valid value of time to `time`. For example,
-   `value(-1)` will return `value(0)` for a trajectory defined over [0, 1]. When
-   the curve is of type Expression, calling this method with time =
-   symbolic::Variable("t") and clamp_time = false enables the extraction of the
-   underlying polynomial expression of this curve. */
-  MatrixX<T> value(const T& time, bool clamp_time) const;
 
   Eigen::Index rows() const override { return control_points_.rows(); }
 
@@ -96,7 +89,6 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
 
-  template <typename T>
   MatrixX<T> EvaluateT(const T& time) const;
 
   double start_time_{};

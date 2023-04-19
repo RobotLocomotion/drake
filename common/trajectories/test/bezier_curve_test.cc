@@ -26,17 +26,14 @@ GTEST_TEST(BezierCurveTest, Linear) {
   EXPECT_TRUE(
       CompareMatrices(curve.value(2.5), Eigen::Vector2d(1.5, 5), 1e-14));
   EXPECT_TRUE(
-      CompareMatrices(curve.value(0, true), Eigen::Vector2d(1, 3), 1e-14));
-  EXPECT_TRUE(
-      CompareMatrices(curve.value(0, false), Eigen::Vector2d(-1, -5), 1e-14));
+      CompareMatrices(curve.value(0), Eigen::Vector2d(1, 3), 1e-14));
 
-  BezierCurve<symbolic::Expression> curve_sym(
-      2, 3, points.cast<symbolic::Expression>());
-  VectorX<symbolic::Expression> curve_sym_expression{
-      curve_sym.value(symbolic::Variable("t"), false)};
-  for (int i = 0; i < curve_sym_expression.rows(); i++) {
-    EXPECT_TRUE(curve_sym_expression(i).is_polynomial());
-    EXPECT_EQ(symbolic::Polynomial(curve_sym_expression(i)).TotalDegree(), 1);
+  // Extract the symoblic exprssion for the bezier curve.
+  const VectorX<symbolic::Expression> curve_expression{
+      curve.GetExpression(symbolic::Variable("t"))};
+  for (int i = 0; i < curve_expression.rows(); i++) {
+    EXPECT_TRUE(curve_expression(i).is_polynomial());
+    EXPECT_EQ(symbolic::Polynomial(curve_expression(i)).TotalDegree(), 1);
   }
 
   auto deriv = curve.MakeDerivative();
@@ -93,14 +90,10 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
                                 Eigen::Vector2d((1 - t) * (1 - t), t * t),
                                 1e-14));
-    EXPECT_TRUE(CompareMatrices(curve.value(sample_time, true),
+    EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
                                 Eigen::Vector2d((1 - t) * (1 - t), t * t),
                                 1e-14));
-    EXPECT_TRUE(
-        CompareMatrices(curve.value(sample_time, false),
-                        Eigen::Vector2d((1 - sample_time) * (1 - sample_time),
-                                        sample_time * sample_time),
-                        1e-14));
+
     EXPECT_TRUE(CompareMatrices(deriv->value(sample_time),
                                 Eigen::Vector2d(-2 * (1 - t), 2 * t), 1e-14));
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time),
@@ -110,13 +103,13 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time, 2),
                                 Eigen::Vector2d(2, 2), 1e-14));
   }
-  BezierCurve<symbolic::Expression> curve_sym(
-      2, 3, points.cast<symbolic::Expression>());
-  VectorX<symbolic::Expression> curve_sym_expression{
-      curve_sym.value(symbolic::Variable("t"), false)};
-  for (int i = 0; i < curve_sym_expression.rows(); i++) {
-    EXPECT_TRUE(curve_sym_expression(i).is_polynomial());
-    EXPECT_EQ(symbolic::Polynomial(curve_sym_expression(i)).TotalDegree(), 2);
+  
+  // Extract the symoblic exprssion for the bezier curve.
+  VectorX<symbolic::Expression> curve_expression{
+      curve.GetExpression(symbolic::Variable("t"))};
+  for (int i = 0; i < curve_expression.rows(); i++) {
+    EXPECT_TRUE(curve_expression(i).is_polynomial());
+    EXPECT_EQ(symbolic::Polynomial(curve_expression(i)).TotalDegree(), 2);
   }
 }
 

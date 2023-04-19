@@ -1,5 +1,7 @@
 #include "drake/common/trajectories/bezier_curve.h"
 
+#include "drake/common/drake_bool.h"
+#include "drake/common/symbolic/polynomial.h"
 #include "drake/math/binomial_coefficient.h"
 
 namespace drake {
@@ -38,29 +40,29 @@ MatrixX<T> BezierCurve<T>::value(const T& time) const {
 }
 
 template <typename T>
-MatrixX<symbolic::Expression>
-BezierCurve<symbolic::Expression>::GetBezierExpression(
+MatrixX<symbolic::Expression> BezierCurve<T>::GetExpression(
     symbolic::Variable time) const {
-  return EvaluateT(symbolic::Expression(time));
-}
+  if constexpr (scalar_predicate<T>::is_bool) {
+    MatrixX<symbolic::Expression> control_points{control_points_.rows(),
+                                                 control_points_.cols()};
 
-template <typename T>
-MatrixX<symbolic::Expression> BezierCurve<T>::GetBezierExpression(
-    symbolic::Variable time) const {
-  MatrixX<symbolic::Expression> control_points{control_points_.rows(),
-                                               control_points_.cols()};
-  for (int r = 0; r < control_points.rows(); ++r) {
-    for (int c = 0; c < control_points.cols(); ++c) {
-      switch (this) {
-        case (std::is_same<T, double>::value()):
-          control_points(r, c) = symbolic::Expression(control_points_(r, c));
-          break;
-        case (std::is_same < T, AutoDiffXd>::value()):
-          control_points(r, c) = symbolic::Expression(control_points_(r, c).value());
+    if constexpr (std::is_same_v<T, double>) {
+      control_points = control_points_.template cast<symbolic::Expression>();
+    } else {
+      // AutoDiffXd.
+      for (int r = 0; r < control_points.rows(); ++r) {
+        for (int c = 0; c < control_points.cols(); ++c) {
+          control_points(r, c) =
+              symbolic::Expression(control_points_(r, c).value());
+        }
       }
     }
+    return BezierCurve<symbolic::Expression>(start_time_, end_time_,
+                                             control_points)
+        .GetExpression(time);
+  } else {
+    return EvaluateT(symbolic::Expression(time));
   }
-  return EvaluateT(symbolic::Expression(time));
 }
 
 template <typename T>
