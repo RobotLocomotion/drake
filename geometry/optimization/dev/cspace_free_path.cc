@@ -121,6 +121,8 @@ CspaceFreePath::MakeIsGeometrySeparableOnPathProgram(
   }
 
   DRAKE_DEMAND(rational_forward_kin().s().rows() == path.rows());
+  // Now we convert the vector of common::Polynomial to a map from the
+  // configuration space variable s to symbolic::Polynomial in mu.
   std::unordered_map<symbolic::Variable, symbolic::Polynomial>
       cspace_var_to_sym_path;
   for (int i = 0; i < path.rows(); ++i) {

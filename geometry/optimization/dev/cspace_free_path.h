@@ -24,6 +24,17 @@ namespace optimization {
  Contains the information to enforce a pair of geometries are separated by a
  plane. The conditions are that certain rational functions should be always
  positive.
+ @param plane_geometries Contains the information required to separate two
+ geometries over a range of configurations in the tangential configuration space
+ variables s. These condition are rational function in the variables s and
+ (sometimes) in auxillary variables y.
+ @param mu The variable used to represent time in the path.
+ @param path_with_y_subs Maps the configuration space variables s to Polynomials
+ of mu and maps the auxillary variables y to symbolic::Polynomial(y).
+ @param indeterminates Must contain mu and the auxillary variables y needed to
+ implement the separating plane condition.
+ @param cached_substitutions SubstituteAndExpandCacheData which can be used to
+ speed up the substitutions of the path.
  */
 struct PlaneSeparatesGeometriesOnPath {
   PlaneSeparatesGeometriesOnPath(
@@ -76,14 +87,19 @@ class CspaceFreePath : public CspaceFreePolytope {
    program certifies.
    @param[in] path maps each configuration space variable to a univariate
    polynomial of degree less than max_degree_ which corresponds to the path
-   taken by that configuration space variable.
+   taken by that configuration space variable. The path must be given
+   i.e. no polynomials in the path may contain decision variables.
    */
   struct PathSeparationCertificateProgram
       : public CspaceFreePolytope::SeparationCertificateProgram {
     PathSeparationCertificateProgram(
         const std::unordered_map<symbolic::Variable, symbolic::Polynomial>&
             m_path)
-        : CspaceFreePolytope::SeparationCertificateProgram(), path{m_path} {}
+        : CspaceFreePolytope::SeparationCertificateProgram(), path{m_path} {
+      for (const auto& item : path) {
+        DRAKE_DEMAND(item.second.decision_variables().empty());
+      }
+    }
 
     const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
   };
@@ -141,9 +157,7 @@ class CspaceFreePath : public CspaceFreePolytope {
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
 
-  // We have the invariant plane_geometries_on_path_[i].plane_index == i. We use
-  // a list instead of a vector as PlaneSeparatesGeometriesOnPath contains
-  // objects which cannot be copied or moved.
+  // We have the invariant plane_geometries_on_path_[i].plane_index == i.
   std::vector<PlaneSeparatesGeometriesOnPath> plane_geometries_on_path_;
 
   /**
@@ -152,7 +166,8 @@ class CspaceFreePath : public CspaceFreePolytope {
    @param[in] plane_geometries_on_path Contain the parametric conditions that
    need to be non-negative on the path.
    @param[in] path maps each tangential-configuration space variable to a
-   univariate polynomial of degree less than max_degree_.
+   univariate polynomial of degree less than max_degree_. The path must be given
+   i.e. no polynomials in the path may contain decision variables.
    */
   [[nodiscard]] PathSeparationCertificateProgram
   ConstructPlaneSearchProgramOnPath(
