@@ -276,7 +276,10 @@ struct Impl {
               py::arg("time"), py::arg("order") = std::nullopt,
               cls_doc.BernsteinBasis.doc)
           .def("control_points", &Class::control_points,
-              cls_doc.control_points.doc);
+              cls_doc.control_points.doc)
+          .def("GetExpression", &Class::GetExpression,
+              py::arg("time") = symbolic::Variable("t"),
+              cls_doc.GetExpression.doc);
 
       DefCopyAndDeepCopy(&cls);
       py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
