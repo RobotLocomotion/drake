@@ -22,6 +22,7 @@ AddResult AddMultibodyPlant(
   result.plant.set_discrete_contact_solver(
       internal::GetDiscreteContactSolverFromString(
           config.discrete_contact_solver));
+  result.plant.set_sap_near_rigid_parameter(config.sap_near_rigid_parameter);
   result.plant.set_contact_surface_representation(
       internal::GetContactSurfaceRepresentationFromString(
           config.contact_surface_representation));

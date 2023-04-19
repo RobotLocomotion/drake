@@ -2451,6 +2451,11 @@ class TestPlant(unittest.TestCase):
         for model in models:
             plant.set_discrete_contact_solver(model)
             self.assertEqual(plant.get_discrete_contact_solver(), model)
+        # Defaults specified in MultibodyPlantConfig
+        self.assertEqual(plant.get_sap_near_rigid_parameter(),
+                         MultibodyPlantConfig().sap_near_rigid_parameter)
+        plant.set_sap_near_rigid_parameter(near_rigid_parameter=0.03)
+        self.assertEqual(plant.get_sap_near_rigid_parameter(), 0.03)
 
     def test_contact_surface_representation(self):
         for time_step in [0.0, 0.1]:
