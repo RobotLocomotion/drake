@@ -135,7 +135,8 @@ class InertiaVisualizerGeometryTest
 
   // Returns the value of CalculateInertiaGeometry for the given input.
   std::pair<geometry::Ellipsoid, RigidTransform<double>>
-  CalculateInertiaGeometryFor(const GeometryTestCase& input) {
+  CalculateInertiaGeometryFor(const GeometryTestCase& input,
+                              MultibodyPlant<double>* plant = nullptr) {
     static constexpr char kModelTemplate[] = R"""(
           <?xml version='1.0'?>
           <sdf version='1.7'>
@@ -172,13 +173,16 @@ class InertiaVisualizerGeometryTest
         fmt::arg("pitch", rpy()(1)), fmt::arg("yaw", rpy()(2)));
     drake::log()->info("Using SDF model: {}", model);
 
-    multibody::Parser parser(&plant_);
+    if (plant == nullptr) {
+      plant = &plant_;
+    }
+    multibody::Parser parser(plant);
     parser.SetStrictParsing();
     parser.AddModelsFromString(model, "sdf");
-    plant_.Finalize();
+    plant->Finalize();
     const multibody::RigidBody<double>& body =
-        plant_.GetBodyByName("test_body");
-    return CalculateInertiaGeometry(body, *plant_.CreateDefaultContext());
+        plant->GetBodyByName("test_body");
+    return CalculateInertiaGeometry(body, *plant->CreateDefaultContext());
   }
 
   /* Returns the translation (xyz) vector for this test case. */
@@ -272,6 +276,38 @@ TEST_P(InertiaVisualizerGeometryTest, ZeroMassTest) {
   EXPECT_NEAR(ellipsoid.a(), 0.001, kTolerance);
   EXPECT_NEAR(ellipsoid.b(), 0.001, kTolerance);
   EXPECT_NEAR(ellipsoid.c(), 0.001, kTolerance);
+}
+
+// Test inertia geometry computations for a point-mass body. It should always
+// put a sphere at the center of mass (as defined by xyz()). The volume of the
+// sphere is proportional to the mass (such that 1 kg -> 1 cm radius).
+TEST_P(InertiaVisualizerGeometryTest, PointMass) {
+  // The volume of a 6.2 cm radius sphere (the size for a 1-kg point mass).
+  const double reference_volume = (4.0 / 3.0) * M_PI * 0.062 * 0.062 * 0.062;
+  const double reference_mass = 1.0;  // kg
+  for (const double& mass : {0.125, 1.0, 8.0}) {
+    SCOPED_TRACE(fmt::format("Testing mass = {}", mass));
+    // The test harness only allows one call to CalculateInertiaGeometryFor per
+    // test (when using its built-in plant). So, we'll construct a new plant
+    // for each iteration.
+    systems::DiagramBuilder<double> builder;
+    auto [plant, _] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+    auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+        {.mass = mass, .moment_ixx = 0, .moment_iyy = 0, .moment_izz = 0},
+        &plant);
+
+    // Pose is strictly the position of the center of mass (R = I).
+    EXPECT_TRUE(transform.IsExactlyEqualTo(RigidTransform<double>(xyz())));
+
+    // The ratio of sphere volume to reference volume should be the same as the
+    // ratio of the mass to the reference mass (1 kg).
+    const double volume = CalcVolume(ellipsoid);
+    EXPECT_DOUBLE_EQ(volume / reference_volume, mass / reference_mass);
+
+    // It's a *sphere*.
+    EXPECT_EQ(ellipsoid.a(), ellipsoid.b());
+    EXPECT_EQ(ellipsoid.a(), ellipsoid.c());
+  }
 }
 
 // Test that the inertia visualization ellipsoid for a box that uses the same
