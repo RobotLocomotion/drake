@@ -313,6 +313,18 @@ const auto& GetElementByName(
   return GetElementByIndex(tree, lower->second);
 }
 
+Vector<double, 7> ToGeneralizedPositions(const RigidTransform<double>& pose) {
+  Vector<double, 7> result;
+  result.head<4>() = pose.rotation().ToQuaternionAsVector4();
+  result.tail<3>() = pose.translation();
+  return result;
+}
+
+RigidTransform<double> ToRigidTransform(const Vector<double, 7>& q) {
+  return RigidTransform<double>(
+      Eigen::Quaternion<double>(q[0], q[1], q[2], q[3]), q.tail<3>());
+}
+
 }  // namespace
 
 template <typename T>
@@ -775,6 +787,23 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   CreateModelInstances();
+
+  // For all floating bodies, route their future default poses queries through
+  // its joint representation.
+  for (int i = 0; i < num_joints(); ++i) {
+    auto& joint = owned_joints_[i];
+    const Body<T>& body = joint->child_body();
+    if (body.is_floating()) {
+      // Set default positions for the floating joints.
+      // TODO(xuchenhan-tri): This assumes that the only type of floating
+      // joint is the quaternion floating joint. This may change pending
+      DRAKE_DEMAND(joint->type_name() == "quaternion_floating");
+      const RigidTransform<double>& default_pose = GetDefaultFreeBodyPose(body);
+      const Vector<double, 7> default_q = ToGeneralizedPositions(default_pose);
+      joint->set_default_positions(default_q);
+      default_body_poses_[body.index()] = joint->index();
+    }
+  }
 }
 
 template <typename T>
@@ -936,6 +965,38 @@ RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
       GetFreeBodyMobilizerOrThrow(body);
   return RigidTransform<T>(mobilizer.get_quaternion(context),
                                  mobilizer.get_position(context));
+}
+
+template <typename T>
+void MultibodyTree<T>::SetDefaultFreeBodyPose(
+    const Body<T>& body, const RigidTransform<double>& X_WB) {
+  if (default_body_poses_.count(body.index()) == 0 ||
+      std::holds_alternative<Vector<double, 7>>(
+          default_body_poses_.at(body.index()))) {
+    default_body_poses_[body.index()] = ToGeneralizedPositions(X_WB);
+    return;
+  }
+  Joint<T>& joint = *owned_joints_.at(
+      std::get<JointIndex>(default_body_poses_.at(body.index())));
+  joint.set_default_positions(ToGeneralizedPositions(X_WB));
+}
+
+template <typename T>
+RigidTransform<double> MultibodyTree<T>::GetDefaultFreeBodyPose(
+    const Body<T>& body) const {
+  if (default_body_poses_.count(body.index()) == 0) {
+    return RigidTransform<double>::Identity();
+  }
+  const auto& default_body_pose = default_body_poses_.at(body.index());
+  if (std::holds_alternative<JointIndex>(default_body_pose)) {
+    const Joint<T>& joint =
+        *owned_joints_.at(std::get<JointIndex>(default_body_pose));
+    const VectorX<double>& q = joint.default_positions();
+    DRAKE_DEMAND(q.size() == 7);
+    return ToRigidTransform(q);
+  }
+  const Vector<double, 7>& q = std::get<Vector<double, 7>>(default_body_pose);
+  return ToRigidTransform(q);
 }
 
 template <typename T>

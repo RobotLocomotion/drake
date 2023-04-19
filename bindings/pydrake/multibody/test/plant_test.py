@@ -1264,14 +1264,6 @@ class TestPlant(unittest.TestCase):
                                    add_model_instance_prefix=False),
             ["ElbowJoint"])
 
-        # Test existence of default free body pose setting.
-        body = plant.GetBodyByName("Link1")
-        X_WB_default = RigidTransform_[float]()
-        plant.SetDefaultFreeBodyPose(body=body, X_WB=X_WB_default)
-        numpy_compare.assert_float_equal(
-            plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
-            X_WB_default.GetAsMatrix4())
-
         # Test existence of limits.
         self.assertEqual(plant.GetPositionLowerLimits().shape, (nq,))
         self.assertEqual(plant.GetPositionUpperLimits().shape, (nq,))
@@ -1281,6 +1273,18 @@ class TestPlant(unittest.TestCase):
         self.assertEqual(plant.GetAccelerationUpperLimits().shape, (nv,))
         self.assertEqual(plant.GetEffortLowerLimits().shape, (nu,))
         self.assertEqual(plant.GetEffortUpperLimits().shape, (nu,))
+
+    @numpy_compare.check_all_types
+    def test_default_free_body_pose(self, T):
+        plant = MultibodyPlant_[T](0.0)
+        body = plant.AddRigidBody("body", SpatialInertia_[float]())
+        plant.Finalize()
+        # Test existence of default free body pose setting.
+        X_WB_default = RigidTransform_[float]()
+        plant.SetDefaultFreeBodyPose(body=body, X_WB=X_WB_default)
+        numpy_compare.assert_float_equal(
+            plant.GetDefaultFreeBodyPose(body=body).GetAsMatrix4(),
+            X_WB_default.GetAsMatrix4())
 
     @numpy_compare.check_all_types
     def test_port_access(self, T):
