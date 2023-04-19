@@ -8,6 +8,7 @@
 namespace drake {
 namespace visualization {
 
+using Eigen::Vector3d;
 using geometry::Ellipsoid;
 using geometry::FramePoseVector;
 using geometry::GeometryFrame;
@@ -15,6 +16,7 @@ using geometry::GeometryInstance;
 using geometry::IllustrationProperties;
 using geometry::Rgba;
 using geometry::SceneGraph;
+using geometry::Sphere;
 using math::RigidTransform;
 using multibody::SpatialInertia;
 using systems::Context;
@@ -118,34 +120,53 @@ void InertiaVisualizer<T>::UpdateItems(
     const multibody::Body<T>& body = plant.get_body(item.body);
     const SpatialInertia<T> M_B =
         body.CalcSpatialInertiaInBodyFrame(plant_context);
-    const Matrix6<double> inertia_matrix =
-        ExtractDoubleOrThrow(M_B.CopyToFullMatrix6());
 
+    // Pose the ellipsoid at the center of mass.
     item.X_BBcm = RigidTransform<double>(ExtractDoubleOrThrow(M_B.get_com()));
 
-    // Compute the illustration geometry and update the visualization.
-    double Ixx = inertia_matrix(0, 0);
-    double Iyy = inertia_matrix(1, 1);
-    double Izz = inertia_matrix(2, 2);
+    // For a massless body, use a very tiny sphere.
+    const double mass = ExtractDoubleOrThrow(M_B.get_mass());
+    if (mass == 0) {
+      scene_graph->ChangeShape(source_id_, item.geometry, Sphere(0.001));
+      continue;
+    }
 
-    // The moments of inertia of a uniform-density solid ellipsoid with
-    // semi-axes a, b, and c are:
-    //   MIa = (b^2 + c^2) / 5 ; MIb = (a^2 + b^2) / 5 ; MIc = (a^2 + c^2) / 5
+    // We need to find the equivalent solid ellipsoid for M_B, as described by
+    // its semi-major axes (a, b, c) and density (p).
     //
-    // (See also multibody/tree/unit_inertia.[h,cc].)
+    // Note that the scale of a, b, c relative to each other are independent of
+    // the mass; they only depend on Ixx, Iyy, Izz. So first, we'll convert the
+    // unit inertia to an ellipsoid to determine the relative axes. Then, we'll
+    // re-scale the axes to match the body's mass.
     //
-    // Here we compute the ellipsoid dimensions as the inverse of the above.
-    double ellipsoid_a =
-        std::max(sqrt((5 / 2) * (-Ixx + Iyy + Izz)) * params_.scale_factor,
-                 std::numeric_limits<double>::epsilon());
-    double ellipsoid_b =
-        std::max(sqrt((5 / 2) * (+Ixx - Iyy + Izz)) * params_.scale_factor,
-                 std::numeric_limits<double>::epsilon());
-    double ellipsoid_c =
-        std::max(sqrt((5 / 2) * (+Ixx + Iyy - Izz)) * params_.scale_factor,
-                 std::numeric_limits<double>::epsilon());
-    const Eigen::Vector3d dimensions{ellipsoid_a, ellipsoid_b, ellipsoid_c};
-    scene_graph->ChangeShape(source_id_, item.geometry, Ellipsoid(dimensions));
+    // Per multibody/tree/unit_inertia the unit inertia of a solid ellipsoid is:
+    //
+    //  Ixx = (b² + c²) / 5
+    //  Iyy = (a² + b²) / 5
+    //  Izz = (a² + c²) / 5
+    //
+    // Solving this for positive a b c, we have:
+    const Vector3d unit_inertia_moments =
+        ExtractDoubleOrThrow(M_B.get_unit_inertia().get_moments());
+    const double Ixx = unit_inertia_moments(0);
+    const double Iyy = unit_inertia_moments(1);
+    const double Izz = unit_inertia_moments(2);
+    Vector3d solved_abc{std::sqrt((5.0 / 2.0) * (-Ixx + Iyy + Izz)),
+                        std::sqrt((5.0 / 2.0) * (+Ixx - Iyy + Izz)),
+                        std::sqrt((5.0 / 2.0) * (+Ixx + Iyy - Izz))};
+    // A zero for any axis means we're dealing with a point mass.
+    const double eps = std::numeric_limits<double>::epsilon();
+    if (solved_abc.minCoeff() < 10 * eps) {
+      solved_abc.setConstant(1.0);
+    }
+    // Using an assumed density, we'll scale the ellipsoid to have a volume that
+    // matches the body's mass.
+    const double density = 1000.0;
+    const double solved_mass = density * (4.0 / 3.0) * M_PI * solved_abc(0) *
+                               solved_abc(1) * solved_abc(2);
+    const double volume_scale = mass / solved_mass;
+    const Vector3d abc = solved_abc * std::cbrt(volume_scale);
+    scene_graph->ChangeShape(source_id_, item.geometry, Ellipsoid(abc));
   }
 }
 
