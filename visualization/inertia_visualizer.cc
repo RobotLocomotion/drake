@@ -170,19 +170,30 @@ std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
   Vector3<double> radii;
   std::tie(radii, X_BE) =
       M_BBo_B.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
-  // An ellipse that has one of its diameters >100x greater than another one
-  // does not render well on the screen, so we'll make sure no dimension of the
-  // unit inertia's ellipsoid is smaller than 1/100 of the maximum dimension.
-  radii = radii.array().max(1e-2 * radii.maxCoeff());
-  // Assuming the ~density of water for the visualization ellipsoid, scale up
-  // the ellipsoid representation of the unit inertia to have a volume that
-  // matches the body's actual mass, so that our ellipsoid actually has the
-  // same inertia as M_BBo_B. (We're illustrating M_BBo, not G_BBo.)
-  const double density = 1000.0;
-  const double unit_inertia_ellipsoid_mass =
-      density * (4.0 / 3.0) * M_PI * radii(0) * radii(1) * radii(2);
-  const double volume_scale = mass / unit_inertia_ellipsoid_mass;
-  const Vector3d abc = radii * std::cbrt(volume_scale);
+  const double max_radius = radii.maxCoeff();
+  Vector3d abc;
+  if (max_radius == 0.0) {
+    // TODO(SeanCurtis-TRI): It would be better to present some kind of glyph
+    // instead. A letter P, an icon, etc.
+    // The body is a point mass. We'll simply introduce a small sphere with
+    // a one-centimeter radius.
+    abc << 0.01, 0.01, 0.01;
+  } else {
+    // An ellipse that has one of its diameters >100x greater than another one
+    // does not render well on the screen, so we'll make sure no dimension of
+    // the unit inertia's ellipsoid is smaller than 1/100 of the maximum
+    // dimension.
+    radii = radii.array().max(1e-2 * radii.maxCoeff());
+    // Assuming the ~density of water for the visualization ellipsoid, scale up
+    // the ellipsoid representation of the unit inertia to have a volume that
+    // matches the body's actual mass, so that our ellipsoid actually has the
+    // same inertia as M_BBo_B. (We're illustrating M_BBo, not G_BBo.)
+    const double density = 1000.0;
+    const double unit_inertia_ellipsoid_mass =
+        density * (4.0 / 3.0) * M_PI * radii(0) * radii(1) * radii(2);
+    const double volume_scale = mass / unit_inertia_ellipsoid_mass;
+    abc = radii * std::cbrt(volume_scale);
+  }
 
   return std::make_pair(Ellipsoid(abc), X_BE);
 }
