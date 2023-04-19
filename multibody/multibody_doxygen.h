@@ -351,10 +351,14 @@ Jacobian wrt v               | Jv   |@f$J_{v}^{{}^B\omega^C}@f$|`Jv_w_BC`   
 
 ᵃ In code, a vector has an expressed-in-frame which appears after the quantity.
 <br>Example: `w_BC_E` is C's angular velocity in B, expressed in frame E, typeset
-as @f$[^B\omega^C]_E @f$.
+as @f$[^B\omega^C]_E @f$. If not explicitly present, the expressed-in-frame
+defaults to the measured-in-frame. Hence, `w_BC` is C's angular velocity
+<b>in</b> (measured-in) frame B, expressed in frame B (implied).
 <br>Similarly, an inertia matrix or spatial inertia has an expressed-in-frame.
 <br>Example: `I_BBo_E` is body B's inertia matrix about Bo,
 expressed in frame E, typeset as @f$[I^{B/Bo}]_E@f$.
+<br>By convention, `I_BP` is body B's inertia matrix about point P,
+expressed in B (implied).
 <br>For more information, see @ref multibody_spatial_inertia
 
 ᵇ In code, spatial velocity (or spatial acceleration) has an expressed-in-frame
