@@ -274,10 +274,11 @@ Result FindResource(const string& resource_path) {
   // No resource roots were found.
   return Result::make_error(resource_path, fmt::format(
       "Could not find Drake resource_path '{}' because no resource roots of "
-      "any kind could be found: {} is unset, a {} could not be created, and "
-      "there is no Drake CMake install marker.",
+      "any kind could be found: {} is unset, a {} could not be created or "
+      "did not contain {}, and there is no Drake CMake install marker.",
       resource_path, kDrakeResourceRootEnvironmentVariableName,
-      "bazel::tools::cpp::runfiles::Runfiles"));
+      "bazel::tools::cpp::runfiles::Runfiles",
+      kSentinelRelpath));
 }
 
 string FindResourceOrThrow(const string& resource_path) {
