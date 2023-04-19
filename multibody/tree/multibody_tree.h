@@ -1085,6 +1085,16 @@ class MultibodyTree {
   math::RigidTransform<T> GetFreeBodyPoseOrThrow(
       const systems::Context<T>& context, const Body<T>& body) const;
 
+  // Sets default free body pose of the given `body` to `X_WB`.
+  // @pre body.is_floating() == true.
+  void SetDefaultFreeBodyPose(const Body<T>& body,
+                              const math::RigidTransform<double>& X_WB);
+
+  // Gets default free body pose of the given `body`.
+  // @pre body.is_floating() == true.
+  math::RigidTransform<double> GetDefaultFreeBodyPose(
+      const Body<T>& body) const;
+
   // See MultibodyPlant::SetFreeBodyPose.
   void SetFreeBodyPoseOrThrow(
       const Body<T>& body, const math::RigidTransform<T>& X_WB,
@@ -3068,6 +3078,12 @@ class MultibodyTree {
   // mobilizer model of the joint, or an invalid index if the joint is modeled
   // with constraints instead.
   std::vector<MobilizerIndex> joint_to_mobilizer_;
+
+  // Only used pre-finalize; empty post-finalize.
+  std::unordered_map<BodyIndex, math::RigidTransform<double>>
+      default_free_body_poses_;
+  // Only used post-finalize; empty pre-finalize.
+  std::unordered_map<BodyIndex, JointIndex> free_body_to_joint_;
 
   MultibodyTreeTopology topology_;
 

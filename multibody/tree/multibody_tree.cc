@@ -313,6 +313,14 @@ const auto& GetElementByName(
   return GetElementByIndex(tree, lower->second);
 }
 
+template <typename T>
+Vector<T, 7> ToGeneralizedPositions(const RigidTransform<T>& pose) {
+  Vector<T, 7> result;
+  result.template head<4>() = pose.rotation().ToQuaternionAsVector4();
+  result.template tail<3>() = pose.translation();
+  return result;
+}
+
 }  // namespace
 
 template <typename T>
@@ -678,10 +686,19 @@ void MultibodyTree<T>::CreateJointImplementations() {
     const Body<T>& body = get_body(body_index);
     const BodyTopology& body_topology = get_topology().get_body(body.index());
     if (!body_topology.inboard_mobilizer.is_valid()) {
-      this->AddJoint<QuaternionFloatingJoint>("$world_" + body.name(),
-                                              world_body(), {}, body, {});
+      const auto& joint = this->AddJoint<QuaternionFloatingJoint>(
+          "$world_" + body.name(), world_body(), {}, body, {});
+      free_body_to_joint_[body.index()] = joint.index();
+
+      // Set default positions for the new quaternion floating joint.
+      const RigidTransform<double>& default_pose = GetDefaultFreeBodyPose(body);
+      const Vector<double, 7> default_q = ToGeneralizedPositions(default_pose);
+      auto& mutable_joint = const_cast<QuaternionFloatingJoint<T>&>(joint);
+      mutable_joint.set_default_positions(default_q);
     }
   }
+
+  default_free_body_poses_.clear();
 
   joint_to_mobilizer_.resize(num_joints());
   for (int i = num_joints_pre_floating_joints; i < num_joints(); ++i) {
@@ -936,6 +953,39 @@ RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
       GetFreeBodyMobilizerOrThrow(body);
   return RigidTransform<T>(mobilizer.get_quaternion(context),
                                  mobilizer.get_position(context));
+}
+
+template <typename T>
+void MultibodyTree<T>::SetDefaultFreeBodyPose(
+    const Body<T>& body, const RigidTransform<double>& X_WB) {
+  if (topology_is_valid()) {
+    // Use joint representation after Finalize.
+    DRAKE_DEMAND(free_body_to_joint_.count(body.index()) > 0);
+    Joint<T>& joint = *owned_joints_.at(free_body_to_joint_.at(body.index()));
+    joint.set_default_positions(ToGeneralizedPositions(X_WB));
+  } else {
+    // Use body representation before Finalize.
+    default_free_body_poses_[body.index()] = X_WB;
+  }
+}
+
+template <typename T>
+RigidTransform<double> MultibodyTree<T>::GetDefaultFreeBodyPose(
+    const Body<T>& body) const {
+  if (topology_is_valid()) {
+    // Use joint representation after Finalize.
+    DRAKE_DEMAND(free_body_to_joint_.count(body.index()) > 0);
+    const Joint<T>& joint =
+        *owned_joints_.at(free_body_to_joint_.at(body.index()));
+    const VectorX<double>& q = joint.default_positions();
+    return RigidTransform<double>(Eigen::Quaternion<double>(q.head<4>()),
+                                  q.tail<3>());
+  } else {
+    // Use body representation before Finalize.
+    return default_free_body_poses_.count(body.index()) > 0
+               ? default_free_body_poses_.at(body.index())
+               : RigidTransform<double>();
+  }
 }
 
 template <typename T>
