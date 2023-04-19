@@ -801,8 +801,10 @@ drake_cc_googletest(
 drake_cc_googletest(
     name = "drake_throw_test",
     deps = [
+        ":autodiff",
         ":essential",
         "//common/test_utilities:expect_no_throw",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
