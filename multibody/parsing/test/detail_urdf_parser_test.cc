@@ -1207,7 +1207,7 @@ TEST_F(UrdfParserTest, PointMass) {
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
 
-TEST_F(UrdfParserTest, BadInertia) {
+TEST_F(UrdfParserTest, BadInertiaFormats) {
   // Test various mis-formatted inputs.
   constexpr const char* base = R"""(
     <robot name='point_mass'>
@@ -1248,36 +1248,41 @@ TEST_F(UrdfParserTest, BadInertia) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*izz.*"));
 }
 
-// TODO(rpoyner-tri): these tests don't test the parser but rather error
-// behavior of underlying implementation components. Consider moving or
-// removing them.
-class ZeroMassNonZeroInertiaTest : public UrdfParserTest {
- public:
-  void ParseZeroMassNonZeroInertia() {
-    AddModelFromUrdfString(R"""(
-<robot name='bad'>
-  <link name='bad'>
-    <inertial>
-      <mass value="0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
-    </inertial>
-  </link>
-</robot>)""", "");
-  }
-};
+TEST_F(UrdfParserTest, BadInertiaValues) {
+  // Test various invalid input values.
+  constexpr const char* base = R"""(
+    <robot name='point_mass'>
+      <link name='point_mass'>
+        <inertial>
+          <mass {}/>
+          <inertia {}/>
+        </inertial>
+      </link>
+    </robot>)""";
 
-TEST_F(ZeroMassNonZeroInertiaTest, ExceptionType) {
+  // Absurd rotational inertia values.
+  AddModelFromUrdfString(
+      fmt::format(base, "value='1'",
+                  "ixx='1' ixy='4' ixz='9' iyy='16' iyz='25' izz='36'"), "a");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
+  // Test some inertia values found in the wild.
+  AddModelFromUrdfString(
+      fmt::format(
+          base, "value='0.038'",
+          "ixx='4.30439933333e-05' ixy='9.57068e-06' ixz='5.1205e-06' "
+          "iyy='1.44451933333e-05' iyz='1.342825e-05' izz='4.30439933333e-05'"),
+      "b");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
+  // Negative mass.
+  AddModelFromUrdfString(
+      fmt::format(base, "value='-1'",
+                  "ixx='1' ixy='0' ixz='0' iyy='1' iyz='0' izz='1'"), "c");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*fail.*"));
   // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  if (!::drake::kDrakeAssertIsArmed) {
-    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
-  }
-}
-
-TEST_F(ZeroMassNonZeroInertiaTest, Message) {
-  // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  const std::string expected_message = ".*condition 'mass > 0' failed.";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseZeroMassNonZeroInertia(), expected_message);
+  AddModelFromUrdfString(
+      fmt::format(base, "value='0'",
+                  "ixx='1' ixy='0' ixz='0' iyy='1' iyz='0' izz='1'"), "d");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*fail.*"));
 }
 
 TEST_F(UrdfParserTest, BushingParsing) {
