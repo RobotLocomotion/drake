@@ -159,6 +159,14 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
     ParseScalarAttribute(mass, "value", &body_mass);
   }
 
+  // If physical validity checks fail below, return a prepared point mass
+  // inertia instead. Use a plausible guess for the mass, letting actual mass
+  // validity checking happen later.
+  const double plausible_dummy_mass =
+      (std::isfinite(body_mass) && body_mass > 0.0) ? body_mass : 1.0;
+  auto dummy_inertia = SpatialInertia<double>::PointMass(plausible_dummy_mass,
+                                                         Vector3d::Zero());
+
   double ixx = 0;
   double ixy = 0;
   double ixz = 0;
@@ -176,12 +184,26 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
     ParseScalarAttribute(inertia, "izz", &izz);
   }
 
-  const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
+  // Yes, catching exceptions violates the coding standard. It is done here to
+  // capture math-aware exceptions into parse-time warnings, since non-physical
+  // inertias are all too common, and the thrown messages are actually pretty
+  // useful.
+  RotationalInertia<double> I_BBcm_Bi;
+  try {
+    // Use the factory method here; it doesn't change its diagnostic behavior
+    // between release and debug builds.
+    I_BBcm_Bi = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            ixx, iyy, izz, ixy, ixz, iyz);
+  } catch (const std::exception& e) {
+    Warning(*node, e.what());
+    return dummy_inertia;
+  }
 
   // If this is a massless body, return a zero SpatialInertia.
-  if (body_mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
+  if (body_mass == 0.0 && I_BBcm_Bi.get_moments().isZero() &&
       I_BBcm_Bi.get_products().isZero()) {
-    return SpatialInertia<double>(body_mass, {0., 0., 0.}, {0., 0., 0});
+    return SpatialInertia<double>(
+        0.0, Vector3d::Zero(), UnitInertia<double>{0.0, 0.0, 0.0});
   }
   // B and Bi are not necessarily aligned.
   const math::RotationMatrix<double> R_BBi(X_BBi.rotation());
@@ -193,8 +215,14 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
   // http://wiki.ros.org/urdf/XML/link#Elements
   const Vector3d p_BoBcm_B = X_BBi.translation();
 
-  return SpatialInertia<double>::MakeFromCentralInertia(
-      body_mass, p_BoBcm_B, I_BBcm_B);
+  try {
+    return SpatialInertia<double>::MakeFromCentralInertia(
+        body_mass, p_BoBcm_B, I_BBcm_B);
+  } catch (const std::exception& e) {
+    Warning(*node, e.what());
+    return dummy_inertia;
+  }
+  DRAKE_UNREACHABLE();
 }
 
 void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
