@@ -11,6 +11,9 @@ namespace drake {
 namespace geometry {
 namespace {
 
+using Eigen::Vector3d;
+using Eigen::Vector4d;
+
 GTEST_TEST(RgbaTest, Default) {
   Rgba defaulted;
   Rgba opaque_white(1, 1, 1, 1);
@@ -40,10 +43,20 @@ GTEST_TEST(RgbaTest, Basic) {
   EXPECT_FALSE(color.AlmostEqual(color_delta, 0.999 * kEps));
   color.set(1.0, 1.0, 1.0, 0.0);
   EXPECT_EQ(color, Rgba(1.0, 1.0, 1.0, 0.0));
-  color.set(Eigen::Vector4d{0.1, 0.2, 0.3, 0.4});
+  color.set(Vector4d{0.1, 0.2, 0.3, 0.4});
   EXPECT_EQ(color, Rgba(0.1, 0.2, 0.3, 0.4));
-  color.set(Eigen::Vector3d{0.5, 0.6, 0.7});
+  color.set(Vector3d{0.5, 0.6, 0.7});
   EXPECT_EQ(color, Rgba(0.5, 0.6, 0.7, 1.0));
+}
+
+GTEST_TEST(RgbaTest, Update) {
+  Rgba color(0.1, 0.2, 0.3, 0.4);
+  color.update();
+  EXPECT_EQ(color.rgba(), Vector4d(0.1, 0.2, 0.3, 0.4));
+  color.update(0.6, 0.7, 0.8);
+  EXPECT_EQ(color.rgba(), Vector4d(0.6, 0.7, 0.8, 0.4));
+  color.update({}, {}, {}, 0.9);
+  EXPECT_EQ(color.rgba(), Vector4d(0.6, 0.7, 0.8, 0.9));
 }
 
 GTEST_TEST(RgbaTest, Errors) {

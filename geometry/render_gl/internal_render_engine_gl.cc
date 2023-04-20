@@ -80,11 +80,9 @@ class DefaultRgbaColorShader final : public ShaderProgram {
 
   std::optional<ShaderProgramData> DoCreateProgramData(
       const PerceptionProperties& properties) const final {
-    const Rgba rgba =
+    const Rgba diffuse =
         properties.GetPropertyOrDefault("phong", "diffuse", default_diffuse_);
-    Vector4<float> v4{
-        static_cast<float>(rgba.r()), static_cast<float>(rgba.g()),
-        static_cast<float>(rgba.b()), static_cast<float>(rgba.a())};
+    const Vector4<float> v4 = diffuse.rgba().template cast<float>();
     return ShaderProgramData{shader_id(), AbstractValue::Make(v4)};
   }
 
