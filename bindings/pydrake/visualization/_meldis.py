@@ -1,3 +1,4 @@
+import copy
 import logging
 import numpy as np
 import sys
@@ -165,9 +166,9 @@ class _ViewerApplet:
         if force or value_changed:
             for k in range(len(self._geom_paths)):
                 path = self._geom_paths[k]
-                color = self._geom_colors[k]
-                new_rgba = [color.r(), color.g(), color.b(), value * color.a()]
-                self._meshcat.SetProperty(path, "color", new_rgba)
+                new_color = copy.deepcopy(self._geom_colors[k])
+                new_color.update(a=value * new_color.a())
+                self._meshcat.SetProperty(path, "color", new_color.rgba)
 
     def on_viewer_draw_deformable(self, message):
         """Handler for lcmt_viewer_link_data."""

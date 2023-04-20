@@ -487,7 +487,7 @@ class GeometryProperties {
   // TODO(eric.cousineau): Deprecate this, saying: "Use Rgba instead of
   // Vector4d to define diffuse color."
   static Eigen::Vector4d ToVector4d(const Rgba& color) {
-    return Eigen::Vector4d(color.r(), color.g(), color.b(), color.a());
+    return color.rgba();
   }
 
   // TODO(eric.cousineau): Deprecate this, saying: "Use Rgba instead of

@@ -317,6 +317,10 @@ class TestGeometryCore(unittest.TestCase):
         self.assertEqual(color, mut.Rgba(1.0, 1.0, 1.0, 0.0))
         color.set(rgba=[0.75, 0.5, 0.25])
         self.assertEqual(color, mut.Rgba(0.75, 0.5, 0.25, 1.0))
+        color.update(a=0.5)
+        self.assertEqual(color, mut.Rgba(0.75, 0.5, 0.25, 0.5))
+        color.update(r=0.1, g=0.2, b=0.3)
+        self.assertEqual(color, mut.Rgba(0.1, 0.2, 0.3, 0.5))
 
         # Property read/write.
         color.rgba = [0.1, 0.2, 0.3, 0.4]

@@ -88,10 +88,8 @@ lcmt_viewer_geometry_data MakeHydroMesh(GeometryId geometry_id,
   geometry_data.quaternion[2] = q.y();
   geometry_data.quaternion[3] = q.z();
 
-  Eigen::Map<Eigen::Vector4f> color(geometry_data.color);
-  Eigen::Vector4d color_vec(in_color.r(), in_color.g(), in_color.b(),
-                            in_color.a());
-  color = color_vec.cast<float>();
+  Eigen::Map<Eigen::Vector4f>(geometry_data.color) =
+      in_color.rgba().cast<float>();
 
   // There are *two* ways to use the MESH geometry type. One is to set the
   // string value with a path to a parseable mesh file (see
@@ -177,10 +175,8 @@ lcmt_viewer_geometry_data MakeDeformableSurfaceMesh(
 
   geometry_data.string_data = deformable_data.name;
 
-  Eigen::Map<Eigen::Vector4f> color(geometry_data.color);
-  Eigen::Vector4d color_vec(in_color.r(), in_color.g(), in_color.b(),
-                            in_color.a());
-  color = color_vec.cast<float>();
+  Eigen::Map<Eigen::Vector4f>(geometry_data.color) =
+      in_color.rgba().cast<float>();
 
   // We can define the mesh in the float data as:
   // V | T | v0 | v1 | ... vN | t0 | t1 | ... | tM
@@ -374,10 +370,8 @@ class ShapeToLcm : public ShapeReifier {
     geometry_data_.quaternion[2] = q.y();
     geometry_data_.quaternion[3] = q.z();
 
-    Eigen::Map<Eigen::Vector4f> color(geometry_data_.color);
-    Eigen::Vector4d color_vec(in_color.r(), in_color.g(), in_color.b(),
-                              in_color.a());
-    color = color_vec.cast<float>();
+    Eigen::Map<Eigen::Vector4f>(geometry_data_.color) =
+        in_color.rgba().cast<float>();
     return geometry_data_;
   }
 
