@@ -10,12 +10,12 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
-from pydrake.geometry import FrameId
-from pydrake.geometry.render import (
+from pydrake.geometry import (
     ClippingRange,
     ColorRenderCamera,
     DepthRange,
     DepthRenderCamera,
+    FrameId,
     RenderCameraCore,
 )
 from pydrake.lcm import DrakeLcm
