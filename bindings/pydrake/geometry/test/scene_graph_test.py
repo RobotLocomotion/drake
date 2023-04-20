@@ -76,8 +76,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
 
         # Test limited rendering API.
         scene_graph.AddRenderer("test_renderer",
-                                mut.render.MakeRenderEngineVtk(
-                                    mut.render.RenderEngineVtkParams()))
+                                mut.MakeRenderEngineVtk(
+                                    mut.RenderEngineVtkParams()))
         self.assertTrue(scene_graph.HasRenderer("test_renderer"))
         self.assertEqual(scene_graph.RendererCount(), 1)
 
@@ -236,7 +236,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         # Check AssignRole bits.
         proximity = mut.ProximityProperties()
         perception = mut.PerceptionProperties()
-        perception.AddProperty("label", "id", mut.render.RenderLabel(0))
+        perception.AddProperty("label", "id", mut.RenderLabel(0))
         illustration = mut.IllustrationProperties()
         props = [
             proximity,
@@ -441,10 +441,10 @@ class TestGeometrySceneGraph(unittest.TestCase):
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
                                           shape=mut.Sphere(1.), name="sphere"))
-        render_params = mut.render.RenderEngineVtkParams()
+        render_params = mut.RenderEngineVtkParams()
         renderer_name = "test_renderer"
         scene_graph.AddRenderer(renderer_name,
-                                mut.render.MakeRenderEngineVtk(
+                                mut.MakeRenderEngineVtk(
                                     params=render_params))
 
         context = scene_graph.CreateDefaultContext()
@@ -496,15 +496,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
                 geometry_id_B=mut.GeometryId.get_new_id())
 
         # Confirm rendering API returns images of appropriate type.
-        camera_core = mut.render.RenderCameraCore(
+        camera_core = mut.RenderCameraCore(
             renderer_name=renderer_name,
             intrinsics=CameraInfo(width=10, height=10, fov_y=pi/6),
-            clipping=mut.render.ClippingRange(0.1, 10.0),
+            clipping=mut.ClippingRange(0.1, 10.0),
             X_BS=RigidTransform())
-        color_camera = mut.render.ColorRenderCamera(
+        color_camera = mut.ColorRenderCamera(
             core=camera_core, show_window=False)
-        depth_camera = mut.render.DepthRenderCamera(
-            core=camera_core, depth_range=mut.render.DepthRange(0.1, 5.0))
+        depth_camera = mut.DepthRenderCamera(
+            core=camera_core, depth_range=mut.DepthRange(0.1, 5.0))
         image = query_object.RenderColorImage(
                 camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
                 X_PC=RigidTransform())

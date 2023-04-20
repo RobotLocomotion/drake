@@ -7,7 +7,6 @@ import numpy as np
 
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.value import Value
-from pydrake.geometry import SceneGraph
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import (
     DiagramBuilder,
@@ -25,13 +24,13 @@ from pydrake.systems.sensors import (
 class TestGeometryRender(unittest.TestCase):
     def test_render_engine_vtk_params(self):
         # Confirm default construction of params.
-        params = mut.render.RenderEngineVtkParams()
+        params = mut.RenderEngineVtkParams()
         self.assertEqual(params.default_label, None)
         self.assertEqual(params.default_diffuse, None)
 
-        label = mut.render.RenderLabel(10)
+        label = mut.RenderLabel(10)
         diffuse = np.array((1.0, 0.0, 0.0, 0.0))
-        params = mut.render.RenderEngineVtkParams(
+        params = mut.RenderEngineVtkParams(
             default_label=label, default_diffuse=diffuse)
         self.assertEqual(params.default_label, label)
         self.assertTrue((params.default_diffuse == diffuse).all())
@@ -41,12 +40,12 @@ class TestGeometryRender(unittest.TestCase):
 
     def test_render_engine_gl_params(self):
         # A default constructor exists.
-        mut.render.RenderEngineGlParams()
+        mut.RenderEngineGlParams()
 
         # The kwarg constructor also works.
-        label = mut.render.RenderLabel(10)
+        label = mut.RenderLabel(10)
         diffuse = mut.Rgba(1.0, 0.0, 0.0, 0.0)
-        params = mut.render.RenderEngineGlParams(
+        params = mut.RenderEngineGlParams(
             default_clear_color=diffuse,
             default_label=label,
             default_diffuse=diffuse,
@@ -60,13 +59,13 @@ class TestGeometryRender(unittest.TestCase):
 
     def test_render_engine_gltf_client_params(self):
         # A default constructor exists.
-        mut.render.RenderEngineGltfClientParams()
+        mut.RenderEngineGltfClientParams()
 
         # The kwarg constructor also works.
-        label = mut.render.RenderLabel(10)
+        label = mut.RenderLabel(10)
         base_url = "http://127.0.0.1:8888"
         render_endpoint = "render"
-        params = mut.render.RenderEngineGltfClientParams(
+        params = mut.RenderEngineGltfClientParams(
             default_label=label,
             base_url=base_url,
             render_endpoint=render_endpoint,
@@ -79,7 +78,7 @@ class TestGeometryRender(unittest.TestCase):
         copy.copy(params)
 
     def test_render_label(self):
-        RenderLabel = mut.render.RenderLabel
+        RenderLabel = mut.RenderLabel
         value = 10
         obj = RenderLabel(value)
 
@@ -96,10 +95,10 @@ class TestGeometryRender(unittest.TestCase):
         self.assertNotEqual(RenderLabel(value), RenderLabel.kEmpty)
 
         # Confirm value instantiation.
-        Value[mut.render.RenderLabel]
+        Value[mut.RenderLabel]
 
     def test_render_label_repr(self):
-        RenderLabel = mut.render.RenderLabel
+        RenderLabel = mut.RenderLabel
 
         # Special labels should use a non-numeric spelling.
         special_labels = [
@@ -118,14 +117,14 @@ class TestGeometryRender(unittest.TestCase):
             self.assertEqual(label, roundtrip)
 
     def test_render_engine_api(self):
-        class DummyRenderEngine(mut.render.RenderEngine):
+        class DummyRenderEngine(mut.RenderEngine):
             """Mirror of C++ DummyRenderEngine."""
 
             # See comment below about `rgbd_sensor_test.cc`.
             latest_instance = None
 
             def __init__(self, render_label=None):
-                mut.render.RenderEngine.__init__(self)
+                mut.RenderEngine.__init__(self)
                 # N.B. We do not hide these because this is a test class.
                 # Normally, you would want to hide this.
                 self.force_accept = False
@@ -198,23 +197,23 @@ class TestGeometryRender(unittest.TestCase):
                 self.label_camera = camera
 
         engine = DummyRenderEngine()
-        self.assertIsInstance(engine, mut.render.RenderEngine)
+        self.assertIsInstance(engine, mut.RenderEngine)
         self.assertIsInstance(engine.Clone(), DummyRenderEngine)
 
         # Test implementation of C++ interface by using RgbdSensor.
         renderer_name = "renderer"
         builder = DiagramBuilder()
-        scene_graph = builder.AddSystem(SceneGraph())
+        scene_graph = builder.AddSystem(mut.SceneGraph())
         # N.B. This passes ownership.
         scene_graph.AddRenderer(renderer_name, engine)
         sensor = builder.AddSystem(RgbdSensor(
             parent_id=scene_graph.world_frame_id(),
             X_PB=RigidTransform(),
-            depth_camera=mut.render.DepthRenderCamera(
-                mut.render.RenderCameraCore(
+            depth_camera=mut.DepthRenderCamera(
+                mut.RenderCameraCore(
                     renderer_name, CameraInfo(640, 480, np.pi/4),
-                    mut.render.ClippingRange(0.1, 5.0), RigidTransform()),
-                mut.render.DepthRange(0.1, 5.0))))
+                    mut.ClippingRange(0.1, 5.0), RigidTransform()),
+                mut.DepthRange(0.1, 5.0))))
         builder.Connect(
             scene_graph.get_query_output_port(),
             sensor.query_object_input_port(),
@@ -247,9 +246,9 @@ class TestGeometryRender(unittest.TestCase):
 
     def test_render_engine_gltf_client_api(self):
         scene_graph = mut.SceneGraph()
-        params = mut.render.RenderEngineGltfClientParams()
+        params = mut.RenderEngineGltfClientParams()
         scene_graph.AddRenderer("gltf_renderer",
-                                mut.render.MakeRenderEngineGltfClient(
+                                mut.MakeRenderEngineGltfClient(
                                     params=params))
         self.assertTrue(scene_graph.HasRenderer("gltf_renderer"))
         self.assertEqual(scene_graph.RendererCount(), 1)
