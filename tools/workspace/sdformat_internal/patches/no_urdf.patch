@@ -2,47 +2,47 @@ Disable transmogrification of URDF files into SDFormat files.
 Drake has its own URDF parser that we should always use.
 
 diff --git a/src/parser.cc b/src/parser.cc
-index 5f29f93d..8e98983c 100644
+index 444d60a2..432fe42b 100644
 --- src/parser.cc
 +++ src/parser.cc
-@@ -44,7 +44,7 @@
+@@ -45,7 +45,7 @@
  #include "ScopedGraph.hh"
  #include "Utils.hh"
  #include "parser_private.hh"
 -#include "parser_urdf.hh"
 +// #include "parser_urdf.hh"
- 
+
  namespace sdf
  {
-@@ -726,6 +726,7 @@ bool readFileInternal(const std::string &_filename, const bool _convert,
-   {
-     return true;
+@@ -787,6 +787,7 @@ bool readFileInternal(const std::string &_filename, const bool _convert,
    }
-+#if 0  // Disable URDF2SDF for Drake.
-   else if (URDF2SDF::IsURDF(filename))
-   {
-     URDF2SDF u2g;
-@@ -742,6 +743,7 @@ bool readFileInternal(const std::string &_filename, const bool _convert,
-       return false;
-     }
-   }
-+#endif  // Disable URDF2SDF for Drake.
- 
-   return false;
- }
-@@ -803,6 +805,7 @@ bool readStringInternal(const std::string &_xmlString, const bool _convert,
-   {
-     return true;
-   }
-+#if 0  // Disable URDF2SDF for Drake.
    else
    {
-     URDF2SDF u2g;
-@@ -821,6 +824,7 @@ bool readStringInternal(const std::string &_xmlString, const bool _convert,
++#if 0  // Disable URDF2SDF for Drake.
+     tinyxml2::XMLElement *robotXml = xmlDoc.FirstChildElement("robot");
+     if (robotXml)
+     {
+@@ -810,6 +811,7 @@ bool readFileInternal(const std::string &_filename, const bool _convert,
+     {
+       sdferr << "XML does not seem to be an SDFormat or an URDF file.\n";
+     }
++#endif
+   }
+
+   return false;
+@@ -875,6 +877,7 @@ bool readStringInternal(const std::string &_xmlString, const bool _convert,
+   }
+   else
+   {
++#if 0  // Disable URDF2SDF for Drake.
+     tinyxml2::XMLElement *robotXml = xmlDoc.FirstChildElement("robot");
+     if (robotXml)
+     {
+@@ -900,6 +903,7 @@ bool readStringInternal(const std::string &_xmlString, const bool _convert,
+       sdferr << "XML does not seem to be an SDFormat or an URDF string.\n";
        return false;
      }
++#endif
    }
-+#endif  // Disable URDF2SDF for Drake.
- 
    return false;
  }
