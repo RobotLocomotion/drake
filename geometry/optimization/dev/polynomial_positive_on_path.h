@@ -79,7 +79,7 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   symbolic::Polynomial p_;
 
   // The subset of the decision variables in p_ which must be evaluated before
-  // we enforce it's positivity in a Mathematical Program.
+  // we enforce poly_'s positivity in a Mathematical Program.
   const symbolic::Variables parameters_;
 
   // The λ(μ,y) in the documentation of p_

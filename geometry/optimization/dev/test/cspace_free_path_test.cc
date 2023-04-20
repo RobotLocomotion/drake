@@ -153,11 +153,11 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
             const symbolic::Polynomial path_condition_eval{
                 path_condition.EvaluatePartial(
                     evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
-                        mu_test_values(i)))};
+                        mu_test_values(j)))};
             const symbolic::Polynomial polytope_condition_eval{
                 path_condition.EvaluatePartial(
                     evaluator.MakeCspaceFreePolytopeAndPathEvaluator(
-                        mu_test_values(i)))};
+                        mu_test_values(j)))};
             EXPECT_TRUE(path_condition_eval.CoefficientsAlmostEqual(
                 polytope_condition_eval, 1e-10));
           }
