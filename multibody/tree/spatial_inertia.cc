@@ -6,13 +6,15 @@
 
 namespace drake {
 namespace multibody {
-// namespace {
+
+namespace {
 
 template <typename T>
-static const boolean<T> is_positive_and_finite(const T& value) {
+const boolean<T> is_positive_finite(const T& value) {
   using std::isfinite;
   return isfinite(value) && value > 0;
 }
+}  // anonymous namespace
 
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
@@ -25,7 +27,7 @@ SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::PointMass(
     const T& mass, const Vector3<T>& position) {
-  if (!is_positive_and_finite(mass)) {
+  if (!is_positive_finite(mass)) {
     const std::string error_message = fmt::format(
         "{}(): The mass of a particle is not positive and finite: {}.",
         __func__, mass);
@@ -46,15 +48,15 @@ SpatialInertia<T> SpatialInertia<T>::PointMass(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
     const T& density, const T& lx, const T& ly, const T& lz) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid box's density is not positive and finite: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(lx) ||
-      !is_positive_and_finite(ly) ||
-      !is_positive_and_finite(lz)) {
+  if (!is_positive_finite(lx) ||
+      !is_positive_finite(ly) ||
+      !is_positive_finite(lz)) {
     const std::string error_message = fmt::format(
         "{}(): One or more dimensions of a solid box is not positive and "
         "finite: ({}, {}, {}).", __func__, lx, ly, lz);
@@ -69,15 +71,15 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidBoxWithMass(
     const T& mass, const T& lx, const T& ly, const T& lz) {
-  if (!is_positive_and_finite(mass)) {
+  if (!is_positive_finite(mass)) {
     const std::string error_message = fmt::format(
         "{}(): A solid box's mass is not positive and finite: {}.",
         __func__, mass);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(lx) ||
-      !is_positive_and_finite(ly) ||
-      !is_positive_and_finite(lz)) {
+  if (!is_positive_finite(lx) ||
+      !is_positive_finite(ly) ||
+      !is_positive_finite(lz)) {
     const std::string error_message = fmt::format(
         "{}(): One or more dimensions of a solid box is not positive and "
         "finite: ({}, {}, {}).", __func__, lx, ly, lz);
@@ -91,13 +93,13 @@ SpatialInertia<T> SpatialInertia<T>::SolidBoxWithMass(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
     const T& density, const T& length) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid cube's density is not positive and finite: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(length)) {
+  if (!is_positive_finite(length)) {
     const std::string error_message = fmt::format(
         "{}(): The length of a solid cube is not positive and finite: {}.",
         __func__, length);
@@ -112,13 +114,13 @@ SpatialInertia<T> SpatialInertia<T>::SolidCubeWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCubeWithMass(
     const T& mass, const T& length) {
-  if (!is_positive_and_finite(mass)) {
+  if (!is_positive_finite(mass)) {
     const std::string error_message = fmt::format(
         "{}(): A solid cube's mass is not positive and finite: {}.",
         __func__, mass);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(length)) {
+  if (!is_positive_finite(length)) {
     const std::string error_message = fmt::format(
         "{}(): The length of a solid cube is not positive and finite: {}.",
         __func__, length);
@@ -134,13 +136,13 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid capsule's density is not positive and finite: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(radius) || !is_positive_and_finite(length)) {
+  if (!is_positive_finite(radius) || !is_positive_finite(length)) {
     const std::string error_message = fmt::format(
         "{}(): A solid capsule's radius = {} or length = {} is not "
         "positive and finite.", __func__, radius, length);
@@ -161,13 +163,13 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid cylinder's density is not positive and finite: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(radius) || !is_positive_and_finite(length)) {
+  if (!is_positive_finite(radius) || !is_positive_finite(length)) {
     const std::string error_message = fmt::format(
         "{}(): A solid cylinder's radius = {} or length = {} is not "
         "positive and finite.", __func__, radius, length);
@@ -201,13 +203,13 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid cylinder's density is not positive and finite: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(radius) || !is_positive_and_finite(length)) {
+  if (!is_positive_finite(radius) || !is_positive_finite(length)) {
     const std::string error_message = fmt::format(
         "{}(): A solid cylinder's radius = {} or length = {} is not "
         "positive and finite.", __func__, radius, length);
@@ -224,7 +226,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
     const T& mass, const T& length, const Vector3<T>& unit_vector) {
-  if (!is_positive_and_finite(mass) || !is_positive_and_finite(length)) {
+  if (!is_positive_finite(mass) || !is_positive_finite(length)) {
     const std::string error_message = fmt::format(
         "{}(): A thin rod's mass = {} or length = {} is not positive and "
         "finite.", __func__, mass, length);
@@ -256,7 +258,7 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMass(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::ThinRodWithMassAboutEnd(
     const T& mass, const T& length, const Vector3<T>& unit_vector) {
-  if (!is_positive_and_finite(mass) || !is_positive_and_finite(length)) {
+  if (!is_positive_finite(mass) || !is_positive_finite(length)) {
     const std::string error_message = fmt::format(
         "{}(): A thin rod's mass = {} or length = {} is not positive and "
         "finite.", __func__, mass, length);
@@ -273,15 +275,15 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMassAboutEnd(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
     const T& density, const T& a, const T& b, const T& c) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
        "{}(): A solid ellipsoid's density is not positive and finite: {}.",
        __func__, density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(a) ||
-      !is_positive_and_finite(b) ||
-      !is_positive_and_finite(c)) {
+  if (!is_positive_finite(a) ||
+      !is_positive_finite(b) ||
+      !is_positive_finite(c)) {
     const std::string error_message = fmt::format(
         "{}(): A solid ellipsoid's semi-axis a = {} or b = {} or c = {} "
         "is not positive and finite.", __func__, a, b, c);
@@ -297,13 +299,13 @@ SpatialInertia<T> SpatialInertia<T>::SolidEllipsoidWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
     const T& density, const T& radius) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid sphere's density is not positive and finite: {}.",
         __func__, density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(radius)) {
+  if (!is_positive_finite(radius)) {
     const std::string error_message = fmt::format(
         "{}(): A solid sphere's radius = {} is not positive and finite.",
         __func__, radius);
@@ -319,13 +321,13 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::HollowSphereWithDensity(
     const T& area_density, const T& radius) {
-  if (!is_positive_and_finite(area_density)) {
+  if (!is_positive_finite(area_density)) {
     const std::string error_message = fmt::format(
         "{}(): A hollow sphere's area density is not positive and finite: {}.",
         __func__, area_density);
     throw std::logic_error(error_message);
   }
-  if (!is_positive_and_finite(radius)) {
+  if (!is_positive_finite(radius)) {
     const std::string error_message = fmt::format(
         "{}(): A hollow sphere's radius = {} is not positive and finite.",
         __func__, radius);
@@ -342,7 +344,7 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutPointWithDensity(
     const T& density, const Vector3<T>& p0, const Vector3<T>& p1,
     const Vector3<T>& p2, const Vector3<T>& p3) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid tetrahedron's density is not positive and finite: {}.",
         __func__, density);
@@ -368,7 +370,7 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
     const T& density, const Vector3<T>& p1, const Vector3<T>& p2,
     const Vector3<T>& p3) {
-  if (!is_positive_and_finite(density)) {
+  if (!is_positive_finite(density)) {
     const std::string error_message = fmt::format(
         "{}(): A solid tetrahedron's density is not positive and finite: {}.",
         __func__, density);
@@ -390,7 +392,7 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   std::string error_message = fmt::format(
           "Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
   const T& mass = get_mass();
-  if (!is_positive_and_finite(mass)) {
+  if (!is_positive_finite(mass)) {
       error_message += fmt::format(
           "\nmass = {} is not positive and finite.\n", mass);
   } else {
@@ -475,7 +477,6 @@ DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
         &operator<< )
 ))
 
-// }  // anonymous namespace
 }  // namespace multibody
 }  // namespace drake
 
