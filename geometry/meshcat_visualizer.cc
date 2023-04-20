@@ -259,9 +259,9 @@ template <typename T>
 void MeshcatVisualizer<T>::SetColorAlphas() const {
   for (const auto& [geom_id, path] : geometries_) {
     Rgba color = colors_[geom_id];
-    color.set(color.r(), color.g(), color.b(), alpha_value_ * color.a());
+    color.update({}, {}, {}, alpha_value_ * color.a());
     meshcat_->SetProperty(path, "color",
-      {color.r(), color.g(), color.b(), alpha_value_ * color.a()});
+                          {color.r(), color.g(), color.b(), color.a()});
   }
 }
 

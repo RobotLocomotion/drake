@@ -336,6 +336,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&>(
                 &Class::set),
             py::arg("rgba"), cls_doc.set.doc_1args)
+        .def("update", &Class::update, py::arg("r") = py::none(),
+            py::arg("g") = py::none(), py::arg("b") = py::none(),
+            py::arg("a") = py::none(), cls_doc.update.doc)
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__repr__", [](const Class& self) {
