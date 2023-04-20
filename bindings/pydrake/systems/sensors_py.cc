@@ -21,6 +21,7 @@
 #include "drake/systems/sensors/camera_info.h"
 #include "drake/systems/sensors/image.h"
 #include "drake/systems/sensors/image_to_lcm_image_array_t.h"
+#include "drake/systems/sensors/image_writer.h"
 #include "drake/systems/sensors/lcm_image_array_to_images.h"
 #include "drake/systems/sensors/pixel_types.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
@@ -270,7 +271,9 @@ PYBIND11_MODULE(sensors, m) {
         .def("focal_x", &CameraConfig::focal_x, config_cls_doc.focal_x.doc)
         .def("focal_y", &CameraConfig::focal_y, config_cls_doc.focal_y.doc)
         .def("principal_point", &CameraConfig::principal_point,
-            config_cls_doc.principal_point.doc);
+            config_cls_doc.principal_point.doc)
+        .def("MakeCameras", &CameraConfig::MakeCameras,
+            config_cls_doc.MakeCameras.doc);
     DefAttributesUsingSerialize(&config_cls, config_cls_doc);
     DefReprUsingSerialize(&config_cls);
     DefCopyAndDeepCopy(&config_cls);
@@ -375,6 +378,26 @@ PYBIND11_MODULE(sensors, m) {
           cls_doc.DeclareImageInputPort.doc);
     };
     type_visit(def_image_input_port, PixelTypeList{});
+  }
+
+  {
+    using Class = ImageWriter;
+    constexpr auto& cls_doc = doc.ImageWriter;
+    py::class_<Class, LeafSystem<double>> cls(m, "ImageWriter", cls_doc.doc);
+    cls  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def(
+            "DeclareImageInputPort",
+            [](Class& self, PixelType pixel_type, std::string port_name,
+                std::string file_name_format, double publish_period,
+                double start_time) {
+              self.DeclareImageInputPort(pixel_type, std::move(port_name),
+                  std::move(file_name_format), publish_period, start_time);
+            },
+            py::arg("pixel_type"), py::arg("port_name"),
+            py::arg("file_name_format"), py::arg("publish_period"),
+            py::arg("start_time"), py_rvp::reference_internal,
+            cls_doc.DeclareImageInputPort.doc);
   }
 }
 

@@ -11,6 +11,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # https://docs.deepnote.com/environment/custom-environments#custom-image-requirements
     python3-pip python-is-python3 \
   && rm -rf /var/lib/apt/lists/* \
+# Bake model data into the image up-front, instead of fetching on demand.
+  && PYTHONPATH=/opt/drake/lib/python3.8/site-packages python3 -c \
+    'from pydrake.all import PackageMap; PackageMap().GetPath("drake_models")' \
   && mv /opt/drake/bin/drake-visualizer /opt/drake/bin/drake-visualizer.image
 RUN printf '#!/bin/bash\n \
 echo "drake-visualizer is not supported on Docker containers.\n\

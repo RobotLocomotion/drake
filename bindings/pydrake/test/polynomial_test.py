@@ -4,6 +4,7 @@ import unittest
 from pydrake.common import ToleranceType
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.polynomial import Polynomial_
+from pydrake.symbolic import Expression
 
 
 class TestPolynomial(unittest.TestCase):
@@ -13,7 +14,7 @@ class TestPolynomial(unittest.TestCase):
 
         p1 = Polynomial()
         p2 = Polynomial(5)
-        p3 = Polynomial([1, 2, 3])
+        p3 = Polynomial(coefficients=[1, 2, 3])
 
     @numpy_compare.check_all_types
     def test_analysis_methods(self, T):
@@ -31,6 +32,13 @@ class TestPolynomial(unittest.TestCase):
         self.assertEqual(p_i.GetDegree(), 3)
         numpy_compare.assert_equal(
             p.CoefficientsAlmostEqual(p, 1e-14, ToleranceType.kRelative), True)
+
+        x = 1.3
+        y = p.EvaluateUnivariate(x=x, derivative_order=0)
+        if T == Expression:
+            self.assertTrue(y.EqualTo(1 + 2 * x + 3 * x**2))
+        else:
+            self.assertAlmostEqual(y, 1 + 2 * x + 3 * x**2)
 
     @numpy_compare.check_all_types
     def test_arithmetic(self, T):

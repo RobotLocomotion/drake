@@ -48,7 +48,7 @@ void StaticEquilibriumConstraint::DoEval(
   *y = B_actuation_ * u;
   // TODO(hongkai.dai): Use UpdateContextConfiguration when it supports
   // MultibodyPlant<AutoDiffXd> and Context<AutoDiffXd>
-  if (!internal::AreAutoDiffVecXdEqual(q, plant_->GetPositions(*context_))) {
+  if (!math::AreAutoDiffVecXdEqual(q, plant_->GetPositions(*context_))) {
     plant_->SetPositions(context_, q);
   }
   *y += plant_->CalcGravityGeneralizedForces(*context_);

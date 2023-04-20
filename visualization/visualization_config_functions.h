@@ -1,8 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/drake_visualizer_params.h"
 #include "drake/geometry/meshcat.h"
 #include "drake/geometry/meshcat_visualizer_params.h"
@@ -95,12 +97,42 @@ void ApplyVisualizationConfig(
     const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
     const systems::lcm::LcmBuses* lcm_buses = nullptr,
     const multibody::MultibodyPlant<double>* plant = nullptr,
-    const geometry::SceneGraph<double>* scene_graph = nullptr,
+    geometry::SceneGraph<double>* scene_graph = nullptr,
     std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
     lcm::DrakeLcmInterface* lcm = nullptr);
 
-/** Adds LCM visualization publishers to communicate to drake_visualizer
-and/or meldis, using all of the default configuration settings.
+#ifndef DRAKE_DOXYGEN_CXX
+// Deprecation shim to help interpret a scene_graph nullptr literal as mutable,
+// to avoid ambiguous overloaded function calls for users.
+// TODO(jwnimmer-tri) Remove this on 2023-09-01 upon completion of deprecation.
+inline void ApplyVisualizationConfig(
+    const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
+    const systems::lcm::LcmBuses* lcm_buses,
+    const multibody::MultibodyPlant<double>* plant,
+    std::nullptr_t /* scene_graph */,
+    std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
+    lcm::DrakeLcmInterface* lcm = nullptr) {
+  ApplyVisualizationConfig(config, builder, lcm_buses, plant,
+                           static_cast<geometry::SceneGraph<double>*>(nullptr),
+                           std::move(meshcat), lcm);
+}
+#endif
+
+DRAKE_DEPRECATED("2023-09-01", "Pass a non-const SceneGraph pointer")
+void ApplyVisualizationConfig(
+    const VisualizationConfig& config, systems::DiagramBuilder<double>* builder,
+    const systems::lcm::LcmBuses* lcm_buses,
+    const multibody::MultibodyPlant<double>* plant,
+    const geometry::SceneGraph<double>* scene_graph,
+    std::shared_ptr<geometry::Meshcat> meshcat = nullptr,
+    lcm::DrakeLcmInterface* lcm = nullptr);
+
+/** Adds LCM visualization publishers to communicate to Meshcat,
+drake_visualizer and/or meldis, using all of the default configuration
+settings.
+
+@param meshcat An optional existing Meshcat instance. (If nullptr, then a
+meshcat instance will be created.)
 
 <dl><dt>Example</dt><dd>
 @code
@@ -130,7 +162,9 @@ Simulator<double> simulator(builder.Build());
 
 @see drake::visualization::ApplyVisualizationConfig()
 @see drake::multibody::AddMultibodyPlant() */
-void AddDefaultVisualization(systems::DiagramBuilder<double>* builder);
+void AddDefaultVisualization(
+    systems::DiagramBuilder<double>* builder,
+    std::shared_ptr<geometry::Meshcat> meshcat = nullptr);
 
 namespace internal {
 

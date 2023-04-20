@@ -28,13 +28,21 @@ void DefineVisualizationConfig(py::module m) {
   }
 
   m  // BR
-      .def("ApplyVisualizationConfig", &ApplyVisualizationConfig,
+      .def("ApplyVisualizationConfig",
+          // TODO(jwnimmer-tri) On 2023-09-01 upon completion of deprecation,
+          // we can get rid of the overload_cast here.
+          py::overload_cast<const VisualizationConfig&,
+              systems::DiagramBuilder<double>*, const systems::lcm::LcmBuses*,
+              const multibody::MultibodyPlant<double>*,
+              geometry::SceneGraph<double>*, std::shared_ptr<geometry::Meshcat>,
+              lcm::DrakeLcmInterface*>(&ApplyVisualizationConfig),
           py::arg("config"), py::arg("builder"), py::arg("lcm_buses") = nullptr,
           py::arg("plant") = nullptr, py::arg("scene_graph") = nullptr,
           py::arg("meshcat") = nullptr, py::arg("lcm") = nullptr,
           doc.ApplyVisualizationConfig.doc)
       .def("AddDefaultVisualization", &AddDefaultVisualization,
-          py::arg("builder"), doc.AddDefaultVisualization.doc);
+          py::arg("builder"), py::arg("meshcat") = nullptr,
+          doc.AddDefaultVisualization.doc);
 }
 
 }  // namespace internal

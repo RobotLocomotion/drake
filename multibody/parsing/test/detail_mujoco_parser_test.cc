@@ -2,12 +2,14 @@
 
 #include <filesystem>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/text_logging.h"
+#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -17,6 +19,8 @@ namespace drake {
 namespace multibody {
 namespace internal {
 namespace {
+
+using ::testing::MatchesRegex;
 
 using Eigen::Vector3d;
 using Eigen::Vector4d;
@@ -31,35 +35,56 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using math::RotationMatrixd;
 
-// TODO(russt): Additional tests are required to get complete coverage of all
-// error/exception handling.
-
-class MujocoParserTest : public testing::Test {
+class MujocoParserTest : public test::DiagnosticPolicyTestBase {
  public:
   MujocoParserTest() {
     plant_.RegisterAsSourceForSceneGraph(&scene_graph_);
   }
 
-  std::optional<ModelInstanceIndex> AddModelFromMujocoFile(
+  std::optional<ModelInstanceIndex> AddModelFromFile(
       const std::string& file_name,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
-    auto result = AddModelFromMujocoXml(
+    auto result = wrapper_.AddModel(
         {DataSource::kFilename, &file_name}, model_name, {}, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
 
-  std::optional<ModelInstanceIndex> AddModelFromMujocoString(
+  std::optional<ModelInstanceIndex> AddModelFromString(
       const std::string& file_contents,
       const std::string& model_name) {
     internal::CollisionFilterGroupResolver resolver{&plant_};
     ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
                        &plant_, &resolver, NoSelect};
-    auto result = AddModelFromMujocoXml(
+    auto result = wrapper_.AddModel(
         {DataSource::kContents, &file_contents}, model_name, {}, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
+  }
+
+  std::vector<ModelInstanceIndex> AddAllModelsFromFile(
+      const std::string& file_name,
+      const std::optional<std::string>& parent_model_name) {
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+                       &plant_, &resolver, NoSelect};
+    auto result = wrapper_.AddAllModels(
+        {DataSource::kFilename, &file_name}, parent_model_name, w);
+    resolver.Resolve(diagnostic_policy_);
+    return result;
+  }
+
+  std::vector<ModelInstanceIndex> AddAllModelsFromString(
+      const std::string& file_contents,
+      const std::optional<std::string>& parent_model_name) {
+    internal::CollisionFilterGroupResolver resolver{&plant_};
+    ParsingWorkspace w{options_, package_map_, diagnostic_policy_,
+                       &plant_, &resolver, NoSelect};
+    auto result = wrapper_.AddAllModels(
+        {DataSource::kContents, &file_contents}, parent_model_name, w);
     resolver.Resolve(diagnostic_policy_);
     return result;
   }
@@ -73,12 +98,14 @@ class MujocoParserTest : public testing::Test {
  protected:
   ParsingOptions options_;
   PackageMap package_map_;
-  DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double> plant_{0.1};
   SceneGraph<double> scene_graph_;
+  MujocoParserWrapper wrapper_;
 
   std::string box_obj_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj"))};
+  std::string box_urdf_{std::filesystem::canonical(FindResourceOrThrow(
+      "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
 
 class GymModelTest : public MujocoParserTest,
@@ -87,14 +114,15 @@ class GymModelTest : public MujocoParserTest,
 TEST_P(GymModelTest, GymModel) {
   // Confirm successful parsing of the MuJoCo models in the DeepMind control
   // suite.
-  std::string prev_log_level = logging::set_log_level("off");
   std::string model{GetParam()};
   const std::string filename = FindResourceOrThrow(
       fmt::format("drake/multibody/parsing/dm_control/suite/{}.xml", model));
-  AddModelFromMujocoFile(filename, model);
+  AddModelFromFile(filename, model);
 
   EXPECT_TRUE(plant_.HasModelInstanceNamed(model));
-  logging::set_log_level(prev_log_level);
+
+  // For this test, ignore all warnings.
+  warning_records_.clear();
 }
 
 const char* gym_models[] = {
@@ -111,9 +139,31 @@ TEST_F(MujocoParserTest, Option) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test");
+  AddModelFromString(xml, "test");
   EXPECT_TRUE(CompareMatrices(plant_.gravity_field().gravity_vector(),
                               Vector3d{0, -9.81, 0}));
+}
+
+TEST_F(MujocoParserTest, EmptyString) {
+  EXPECT_TRUE(AddAllModelsFromString("", {}).empty());
+  EXPECT_THAT(TakeError(), MatchesRegex(".*XML_ERROR_EMPTY_DOCUMENT.*"));
+}
+
+TEST_F(MujocoParserTest, EmptyFile) {
+  EXPECT_TRUE(AddAllModelsFromFile("/dev/null", {}).empty());
+  EXPECT_THAT(TakeError(), MatchesRegex(".*XML_ERROR_EMPTY_DOCUMENT.*"));
+}
+
+TEST_F(MujocoParserTest, NoMujocoRoot) {
+  std::string xml = "<stuff/>";
+  EXPECT_TRUE(AddAllModelsFromString(xml, {}).empty());
+  EXPECT_THAT(TakeError(), MatchesRegex(".*not.*mujoco tag.*"));
+}
+
+TEST_F(MujocoParserTest, NoName) {
+  std::string xml = "<mujoco/>";
+  EXPECT_TRUE(AddAllModelsFromString(xml, {}).empty());
+  EXPECT_THAT(TakeError(), MatchesRegex(".*robot must have a name.*"));
 }
 
 TEST_F(MujocoParserTest, GeometryTypes) {
@@ -140,7 +190,7 @@ TEST_F(MujocoParserTest, GeometryTypes) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test");
+  AddModelFromString(xml, "test");
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
   auto CheckShape = [&inspector](const std::string& geometry_name,
@@ -184,9 +234,22 @@ TEST_F(MujocoParserTest, UnrecognizedGeometryTypes) {
   </worldbody>
 </mujoco>
 )""";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromMujocoString(xml, "test_unrecognized"),
-      ".*Unrecognized.*");
+  AddModelFromString(xml, "test_unrecognized");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Unrecognized.*"));
+}
+
+TEST_F(MujocoParserTest, DefaultError) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <default class="default_box">
+    <geom type="box" size="0.1 0.2 0.3"/>
+    <default/>
+  </default>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*class.*attribute is required.*"));
 }
 
 TEST_F(MujocoParserTest, GeometryPose) {
@@ -240,9 +303,9 @@ TEST_F(MujocoParserTest, GeometryPose) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test");
-  AddModelFromMujocoString(radians_xml, "radians_test");
-  AddModelFromMujocoString(degrees_xml, "degrees_test");
+  AddModelFromString(xml, "test");
+  AddModelFromString(radians_xml, "radians_test");
+  AddModelFromString(degrees_xml, "degrees_test");
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
@@ -299,9 +362,11 @@ TEST_F(MujocoParserTest, GeometryPoseErrors) {
   </worldbody>
 </mujoco>
 )""";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromMujocoString(xml, "test"),
-      ".*has more than one orientation attribute specified.*");
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*has more than one orientation attribute specified.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*has more than one orientation attribute specified.*"));
 }
 
 TEST_F(MujocoParserTest, GeometryProperties) {
@@ -326,7 +391,7 @@ TEST_F(MujocoParserTest, GeometryProperties) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test");
+  AddModelFromString(xml, "test");
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
 
@@ -394,7 +459,7 @@ class BoxMeshTest : public MujocoParserTest {
 )""",
         compiler, mesh_asset);
 
-    AddModelFromMujocoString(xml, "test");
+    AddModelFromString(xml, "test");
 
     const SceneGraphInspector<double>& inspector =
         scene_graph_.model_inspector();
@@ -408,8 +473,27 @@ class BoxMeshTest : public MujocoParserTest {
   }
 };
 
+TEST_F(MujocoParserTest, GeometryPropertiesErrors) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <asset>
+    <material/>
+  </asset>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*Material.*must have a name.*"));
+}
+
+TEST_F(BoxMeshTest, MeshFileDirectNoName) {
+  // Absolute path referencing the obj with the default heuristic for `name`.
+  std::string mesh_asset = fmt::format(R"""(<mesh file="{}"/>)""", box_obj_);
+  TestBoxMesh(box_obj_, mesh_asset);
+}
+
 TEST_F(BoxMeshTest, MeshFileDirect) {
-  // Absolute path, referencing the obj directly.
+  // Absolute path, referencing the obj directly and with a `name` attribute.
   std::string mesh_asset =
       fmt::format(R"""(<mesh name="box" file="{}"/>)""", box_obj_);
   TestBoxMesh(box_obj_, mesh_asset);
@@ -463,7 +547,7 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
   const std::string file = FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/mjcfs/box.xml");
 
-  AddModelFromMujocoFile(file, "test");
+  AddModelFromFile(file, "test");
 
   const SceneGraphInspector<double>& inspector =
       scene_graph_.model_inspector();
@@ -471,6 +555,7 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
       inspector.world_frame_id(), Role::kProximity, "box_geom");
   auto* mesh =
       dynamic_cast<const geometry::Mesh*>(&inspector.GetShape(geom_id));
+
   EXPECT_NE(mesh, nullptr);
   EXPECT_EQ(mesh->filename(), box_obj_);
   EXPECT_EQ(mesh->scale(), 1.0);
@@ -536,7 +621,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
 )""",
                                 box_obj_);
 
-  AddModelFromMujocoString(xml, "test");
+  AddModelFromString(xml, "test");
 
   xml = fmt::format(R"""(
 <mujoco model="test_auto">
@@ -564,7 +649,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
 )""",
                     box_obj_);
 
-  AddModelFromMujocoString(xml, "test_auto");
+  AddModelFromString(xml, "test_auto");
 
   xml = R"""(
 <mujoco model="test_true">
@@ -581,7 +666,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test_true");
+  AddModelFromString(xml, "test_true");
 
   xml = R"""(
 <mujoco model="test_false">
@@ -605,7 +690,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test_false");
+  AddModelFromString(xml, "test_false");
 
   plant_.Finalize();
 
@@ -661,8 +746,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body_spatial("offset_cylinder", M_BBo_B);
   check_body_spatial(
       "box_from_mesh",
-      SpatialInertia<double>(1.0, Vector3d::Zero(),
-                             UnitInertia<double>::SolidCube(2.0)),
+      SpatialInertia<double>::SolidCubeWithMass(1.0, 2.0),
       1e-13);
 
   check_body_spatial("sphere_auto", inertia_from_inertial_tag);
@@ -677,8 +761,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
       SpatialInertia<double>::SolidBoxWithDensity(1000, 0.8, 1.0, 1.2));
   check_body_spatial(
       "box_from_mesh_w_density",
-      SpatialInertia<double>(8.0, Vector3d::Zero(),
-                             UnitInertia<double>::SolidCube(2.0)),
+      SpatialInertia<double>::SolidCubeWithMass(8.0, 2.0),
       1e-12);
 
   // A cube rotating about its corner.
@@ -691,6 +774,53 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body_spatial("full_inertia_w_pose",
                      SpatialInertia<double>::MakeFromCentralInertia(
                          1.23, Vector3d{1, 2, 3}, I_BFo_B));
+}
+
+TEST_F(MujocoParserTest, CompilerErrors) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <compiler coordinate="global" angle="grad" inertiafromgeom="QQQ"/>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*grad.*angle.*ignored.*"));
+  EXPECT_THAT(TakeWarning(),
+              MatchesRegex(".*inertiafromgeom.*interpret.*ignored.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*coordinate.*not supported.*"));
+}
+
+TEST_F(MujocoParserTest, AssetErrors) {
+  std::string xml = fmt::format(R"""(
+<mujoco model="test">
+  <asset>
+    <mesh name="box_mesh" file="{}" scale="1 3 5"/>
+    <mesh name="wrong-format" file="{}"/>
+    <mesh name="missing-file" file="{}QQQ"/>
+    <mesh name="no-file-name"/>
+  </asset>
+</mujoco>
+)""", box_obj_, box_urdf_, box_urdf_);
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*only supports.*obj format.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*not.*found.*nor.*replacement.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*not specify.*file.*ignored.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(".*non-uniform scale.*"));
+}
+
+TEST_F(MujocoParserTest, BodyError) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <compiler inertiafromgeom="false"/>
+  <worldbody>
+    <body name="sphere"/>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(".*must specify an inertia.*"));
 }
 
 TEST_F(MujocoParserTest, Joint) {
@@ -736,7 +866,7 @@ TEST_F(MujocoParserTest, Joint) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test");
+  AddModelFromString(xml, "test");
   plant_.Finalize();
 
   auto context = plant_.CreateDefaultContext();
@@ -844,21 +974,125 @@ TEST_F(MujocoParserTest, Joint) {
   EXPECT_TRUE(weld_joint.X_FM().IsNearlyEqualTo(X_WB, 1e-14));
 }
 
-TEST_F(MujocoParserTest, JointThrows) {
+TEST_F(MujocoParserTest, JointErrors) {
   std::string xml = R"""(
 <mujoco model="test">
   <worldbody>
     <body name="free" pos="1 2 3" euler="30 45 60">
-      <joint type="free" name="free"/>
+      <joint type="free" name="free" damping="10"/>
       <joint type="hinge"/>
+    </body>
+    <body>
+      <joint type="ball" limited="true" range="-1 1"/>
+    </body>
+    <body>
+      <joint type="impossible"/>
     </body>
   </worldbody>
 </mujoco>
 )""";
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddModelFromMujocoString(xml, "test"),
-      ".*a free joint is defined.*");
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*Damping.*not supported for free.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*range.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*a free joint is defined.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*Unknown joint type.*"));
+}
+
+TEST_F(MujocoParserTest, InertialErrors) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body>
+      <inertial/>
+    </body>
+    <body>
+      <inertial mass="10"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*inertial.*must include.*mass.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*inertial.*must include.*diaginertia or fullinertia.*"));
+}
+
+TEST_F(MujocoParserTest, GeomAutoName) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body>
+      <geom type="sphere" size="1"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+  auto& inspector = scene_graph_.model_inspector();
+  auto geom_ids = inspector.GetAllGeometryIds();
+  EXPECT_EQ(geom_ids.size(), 2);
+  for (auto geom_id : geom_ids) {
+    EXPECT_EQ(inspector.GetName(geom_id), fmt::format("test::geom0"));
+  }
+}
+
+TEST_F(MujocoParserTest, GeomErrors) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body>
+      <geom/>
+      <geom type="capsule"/>
+      <geom type="capsule" fromto="1 2 3 4 5 6"/>
+      <geom type="ellipsoid"/>
+      <geom type="ellipsoid" fromto="1 2 3 4 5 6"/>
+      <geom type="cylinder"/>
+      <geom type="cylinder" fromto="1 2 3 4 5 6"/>
+      <geom type="box"/>
+      <geom type="box" fromto="1 2 3 4 5 6"/>
+      <geom type="mesh"/>
+      <geom type="mesh" mesh="nonsense"/>
+      <geom type="hfield"/>
+    </body>
+  </worldbody>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*fromto.*ellipsoid.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*fromto.*box.*unsupported.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*unknown mesh.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*hfield.*unsupported.*ignored.*"));
+
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size.*sphere.*must have.*element.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size.*capsule.*must have.*two elements.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size.*capsule.*fromto.*must have.*one element.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size.*ellipsoid.*must have.*three elements.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size.*cylinder.*must have.*two elements.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size.*cylinder.*fromto.*must have.*one element.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*size.*box.*must have.*three elements.*"));
+  EXPECT_THAT(TakeError(), MatchesRegex(
+      ".*mesh.*did not set the mesh attribute.*"));
 }
 
 TEST_F(MujocoParserTest, Motor) {
@@ -894,7 +1128,13 @@ TEST_F(MujocoParserTest, Motor) {
 </mujoco>
 )""";
 
-  AddModelFromMujocoString(xml, "test");
+  AddModelFromString(xml, "test");
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor1.*ctrlrange.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor2.*ctrlrange.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor2.*forcerange.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor3.*ctrlrange.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*motor3.*forcerange.*"));
+
   plant_.Finalize();
 
   EXPECT_EQ(plant_.get_actuation_input_port().size(), 4);
@@ -962,7 +1202,7 @@ TEST_P(ContactTest, Contact) {
   std::string xml = fmt::format(xml_base, include_contact ? contact_node : "");
   plant_.set_adjacent_bodies_collision_filters(
       adjacent_bodies_collision_filters);
-  AddModelFromMujocoString(xml, "test");
+  AddModelFromString(xml, "test");
   plant_.Finalize();
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
@@ -979,6 +1219,7 @@ TEST_P(ContactTest, Contact) {
     if (adjacent_bodies_collision_filters) {
       // In this case, the parser will have emitted a warning, and the
       // collision filter gets overwritten during Finalize().
+      EXPECT_THAT(TakeWarning(), MatchesRegex(".*Finalize.*will overwrite.*"));
       EXPECT_TRUE(inspector.CollisionFiltered(base_geom, body1_geom));
     } else {
       // No warning is emitted; the parsed filter is consistent with the
@@ -999,6 +1240,78 @@ TEST_P(ContactTest, Contact) {
 INSTANTIATE_TEST_SUITE_P(
     ContactTests, ContactTest,
     testing::Combine(testing::Bool(), testing::Bool()));
+
+TEST_F(MujocoParserTest, ContactWarnings) {
+  std::string xml = R"""(
+<mujoco model="test">
+  <default>
+    <geom type="sphere" size="1"/>
+  </default>
+  <worldbody>
+    <body name="base">
+      <geom name="base_geom"/>
+      <body name="body1">
+        <geom name="body1_geom"/>
+        <joint type="hinge"/>
+      </body>
+      <body name="body2">
+        <geom name="body2_geom"/>
+        <joint type="hinge"/>
+      </body>
+    </body>
+  </worldbody>
+  <contact>
+    <pair name="no-geom1" geom2="body1_geom"/>
+    <pair name="no-geom2" geom1="body1_geom"/>
+    <pair name="unknown-geom1" geom1="QQQ" geom2="body1_geom"/>
+    <pair name="unknown-geom2" geom1="body1_geom" geom2="QQQ"/>
+    <exclude name="no-body1" body2="body2" />
+    <exclude name="no-body2" body1="body1" />
+  </contact>
+</mujoco>
+)""";
+
+  AddModelFromString(xml, "test");
+
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*pair.*not have.*geom1.*geom2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*pair.*not have.*geom1.*geom2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*pair.*unknown geom1.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*pair.*unknown geom2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*exclude.*not have.*body1.*body2.*ignored.*"));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(
+      ".*exclude.*not have.*body1.*body2.*ignored.*"));
+}
+
+// TODO(rpoyner-tri) consider how to convert these to diagnostics.
+TEST_F(MujocoParserTest, ContactThrows) {
+  static constexpr char xml_base[] = R"""(
+<mujoco model="test">
+  <worldbody>
+    <body name="base">
+      <body name="body1">
+        <joint type="hinge"/>
+      </body>
+      <body name="body2">
+        <joint type="hinge"/>
+      </body>
+    </body>
+  </worldbody>
+  <contact>
+    <exclude name="unknown-body" body1="{}" body2="{}" />
+  </contact>
+</mujoco>
+)""";
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelFromString(fmt::format(xml_base, "QQQ", "body2"), "bad_body1"),
+      ".*no Body named 'QQQ' anywhere.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      AddModelFromString(fmt::format(xml_base, "body1", "QQQ"), "bad_body2"),
+      ".*no Body named 'QQQ' anywhere.*");
+}
 
 }  // namespace
 }  // namespace internal

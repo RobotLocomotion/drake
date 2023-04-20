@@ -137,9 +137,10 @@ void DrawBoxSphereIntersection(const Eigen::Vector3d& bmin,
   for (int i = 0; i < static_cast<int>(intersection_pts.size()); ++i) {
     for (int j = i + 1; j < static_cast<int>(intersection_pts.size()); ++j) {
       for (int dim = 0; dim < 3; ++dim) {
-        if (std::abs(intersection_pts[i](dim) - intersection_pts[j](dim)) < 1E-3
-            && (std::abs(intersection_pts[i](dim) - bmin(dim)) < 1E-3
-                || std::abs(intersection_pts[i](dim) - bmax(dim)) < 1E-3)) {
+        if (std::abs(intersection_pts[i](dim) - intersection_pts[j](dim)) <
+                1E-3 &&
+            (std::abs(intersection_pts[i](dim) - bmin(dim)) < 1E-3 ||
+             std::abs(intersection_pts[i](dim) - bmax(dim)) < 1E-3)) {
           // Determine if two intersection points are the neighbouring boundary
           // points of the intersection region.
           DrawArcBoundaryOfBoxSphereIntersection(

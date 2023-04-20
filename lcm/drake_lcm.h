@@ -23,6 +23,9 @@ namespace lcm {
 
 /**
  * A wrapper around a *real* LCM instance.
+ *
+ * See \ref allow_network "DRAKE_ALLOW_NETWORK" for an environment variable
+ * option to disable LCM network traffic (i.e., only allowing `memq://` URLs).
  */
 class DrakeLcm : public DrakeLcmInterface {
  public:

@@ -23,8 +23,7 @@ namespace {
 // Computes the maximum or minimum velocity in interval [0, t].
 // This assumes `vel` is a second order polynomial.
 template <typename T>
-T ComputeExtremeVel(const Polynomial<T>& vel,
-                                  double t, bool max_vel) {
+T ComputeExtremeVel(const Polynomial<T>& vel, double t, bool max_vel) {
   DRAKE_DEMAND(vel.GetDegree() == 2);
 
   Polynomial<T> acc = vel.Derivative();
@@ -55,8 +54,7 @@ T ComputeExtremeVel(const Polynomial<T>& vel,
 // Check continuity for up to d degree, where d is the minimum of \p degree and
 // the highest degree of the trajectory.
 template <typename T>
-bool CheckContinuity(const PiecewisePolynomial<T>& traj,
-                     T tol, int degree) {
+bool CheckContinuity(const PiecewisePolynomial<T>& traj, T tol, int degree) {
   if (degree < 0) return false;
 
   typedef Polynomial<T> PolynomialType;
@@ -98,10 +96,9 @@ bool CheckContinuity(const PiecewisePolynomial<T>& traj,
 // Check P(t), P'(t), P''(t), ... match values[i][t], where i is the ith
 // derivative, and t is the tth break.
 template <typename T>
-bool CheckValues(
-    const PiecewisePolynomial<T>& traj,
-    const std::vector<std::vector<MatrixX<T>>>& values,
-    T tol, bool check_last_time_step = true) {
+bool CheckValues(const PiecewisePolynomial<T>& traj,
+                 const std::vector<std::vector<MatrixX<T>>>& values, T tol,
+                 bool check_last_time_step = true) {
   if (values.empty()) return false;
 
   typedef Polynomial<T> PolynomialType;
@@ -144,11 +141,11 @@ bool CheckValues(
 }
 
 template <typename T>
-bool CheckInterpolatedValuesAtBreakTime(
-    const PiecewisePolynomial<T>& traj,
-    const std::vector<double>& breaks,
-    const std::vector<MatrixX<T>>& values, T tol,
-    bool check_last_time_step = true) {
+bool CheckInterpolatedValuesAtBreakTime(const PiecewisePolynomial<T>& traj,
+                                        const std::vector<double>& breaks,
+                                        const std::vector<MatrixX<T>>& values,
+                                        T tol,
+                                        bool check_last_time_step = true) {
   int N = static_cast<int>(breaks.size());
   for (int i = 0; i < N; ++i) {
     if (i == N - 1 && !check_last_time_step) continue;
@@ -174,8 +171,7 @@ bool CheckInterpolatedValuesAtBreakTime(
 template <typename T>
 void PchipTest(const std::vector<double>& breaks,
                const std::vector<MatrixX<T>>& samples,
-               const PiecewisePolynomial<T>& traj,
-               T tol) {
+               const PiecewisePolynomial<T>& traj, T tol) {
   typedef Polynomial<T> PolynomialType;
   const std::vector<MatrixX<T>>& Y = samples;
 

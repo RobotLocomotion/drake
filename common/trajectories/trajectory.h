@@ -36,13 +36,13 @@ class Trajectory {
   virtual MatrixX<T> value(const T& t) const = 0;
 
   /**
-  * If cols()==1, then evaluates the trajectory at each time @p t, and returns
-  * the results as a Matrix with the ith column corresponding to the ith time.
-  * Otherwise, if rows()==1, then evaluates the trajectory at each time @p t,
-  * and returns the results as a Matrix with the ith row corresponding to
-  * the ith time.
-  * @throws std::exception if both cols and rows are not equal to 1.
-  */
+   * If cols()==1, then evaluates the trajectory at each time @p t, and returns
+   * the results as a Matrix with the ith column corresponding to the ith time.
+   * Otherwise, if rows()==1, then evaluates the trajectory at each time @p t,
+   * and returns the results as a Matrix with the ith row corresponding to
+   * the ith time.
+   * @throws std::exception if both cols and rows are not equal to 1.
+   */
   MatrixX<T> vector_values(const std::vector<T>& t) const;
 
   /**
@@ -67,8 +67,7 @@ class Trajectory {
    * returning.
    * @return The nth derivative of this object.
    */
-  std::unique_ptr<Trajectory<T>> MakeDerivative(
-      int derivative_order = 1) const;
+  std::unique_ptr<Trajectory<T>> MakeDerivative(int derivative_order = 1) const;
 
   /**
    * @return The number of rows in the matrix returned by value().

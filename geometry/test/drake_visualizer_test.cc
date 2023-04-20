@@ -308,6 +308,9 @@ class DrakeVisualizerTest : public ::testing::Test {
           visualizer.query_object_input_port().template Eval<QueryObject<T>>(
               viz_context);
 
+      /* Confirm correct name.  */
+      EXPECT_EQ(visualizer.get_name(), "drake_visualizer(illustration)");
+
       /* Confirm correct connection.  */
       EXPECT_TRUE(sg_query_object.inspector().geometry_version().IsSameAs(
           viz_query_object.inspector().geometry_version(),
@@ -345,6 +348,7 @@ class DrakeVisualizerTest : public ::testing::Test {
                                          Rgba{0.1, 0.2, 0.3, 0.4}};
       const auto& visualizer =
           add_to_builder(&builder, port_source(scene_graph), &lcm_, params);
+      EXPECT_EQ(visualizer.get_name(), "drake_visualizer(perception)");
       const DrakeVisualizerParams& vis_params = Tester::get_params(visualizer);
       EXPECT_EQ(vis_params.publish_period, params.publish_period);
       EXPECT_EQ(vis_params.role, params.role);

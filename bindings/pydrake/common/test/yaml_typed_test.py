@@ -78,6 +78,23 @@ class NumpyStruct:
 
 
 @dc.dataclass
+class RejectGetattrNumpyStruct:
+    value: np.ndarray = dc.field(
+        default_factory=lambda: np.array([nan]))
+
+    def __getattribute__(self, name):
+        if name == "value":
+            # When loading fields that do not support merging (i.e., lists),
+            # yaml_load_typed is careful to not call getattr on data it doesn't
+            # need. Check that invariant by rejecting such access here.
+            raise NotImplementedError()
+        return object.__getattribute__(self, name)
+
+    def _value(self):
+        return self.__dict__["value"]
+
+
+@dc.dataclass
 class VariantStruct:
     value: typing.Union[str, float, FloatStruct, NumpyStruct] = nan
 
@@ -432,6 +449,14 @@ class TestYamlTypedRead(unittest.TestCase,
         else:
             with self.assertRaisesRegex(RuntimeError, ".*missing.*"):
                 yaml_load_typed(schema=schema, data=data, **options)
+
+    @run_with_multiple_values(_all_typed_read_options())
+    def test_read_np_no_getattr(self, *, options):
+        data = "value: [1.0]"
+        expected = [1.0]
+        x = yaml_load_typed(schema=RejectGetattrNumpyStruct, data=data,
+                            **options)
+        np.testing.assert_equal(x._value(), np.array(expected), verbose=True)
 
     @run_with_multiple_values(_all_typed_read_options())
     def test_read_nested(self, *, options):

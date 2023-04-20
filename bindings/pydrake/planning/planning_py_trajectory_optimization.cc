@@ -213,13 +213,13 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                  const systems::Context<double>&, int, double, double,
                  std::variant<systems::InputPortSelection,
                      systems::InputPortIndex>,
-                 bool>(),
+                 bool, solvers::MathematicalProgram*>(),
             py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
             py::arg("minimum_timestep"), py::arg("maximum_timestep"),
             py::arg("input_port_index") =
                 systems::InputPortSelection::kUseFirstInputIfItExists,
             py::arg("assume_non_continuous_states_are_fixed") = false,
-            cls_doc.ctor.doc);
+            py::arg("prog") = nullptr, cls_doc.ctor.doc);
   }
 
   {
@@ -236,7 +236,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("input_port_index") =
                 systems::InputPortSelection::kUseFirstInputIfItExists,
             py::arg("assume_non_continuous_states_are_fixed") = false,
-            cls_doc.ctor.doc);
+            cls_doc.ctor.doc_double);
   }
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,

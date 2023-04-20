@@ -61,7 +61,7 @@ GTEST_TEST(CorotatedModelDataTest, UpdateData) {
       CompareMatrices(corotated_model_data.deformation_gradient()[0], F));
   EXPECT_TRUE(CompareMatrices(corotated_model_data.R()[0], R, kTol));
   EXPECT_TRUE(CompareMatrices(corotated_model_data.S()[0], S, kTol));
-  EXPECT_NEAR(corotated_model_data.Jm1()[0], S.determinant() - 1.0, 10*kTol);
+  EXPECT_NEAR(corotated_model_data.Jm1()[0], S.determinant() - 1.0, 10 * kTol);
   EXPECT_TRUE(CompareMatrices(corotated_model_data.JFinvT()[0],
                               F.determinant() * F.inverse().transpose(), kTol));
 }

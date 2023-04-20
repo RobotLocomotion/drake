@@ -1,23 +1,23 @@
 load("//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load("@drake//tools/workspace:forward_files.bzl", "forward_files")
-load("//tools/workspace/models_internal:files.bzl", "veggies_mesh_files")
-load("//tools/workspace/models_internal:files.bzl", "dishes_files")
 
 package(default_visibility = ["//visibility:private"])
 
-_VEGGIES_MESHES = forward_files(
-    srcs = ["@models_internal//:" + x for x in veggies_mesh_files()],
-    dest_prefix = "",
-    strip_prefix = "@models_internal//:veggies/",
-    visibility = ["//visibility:private"],
-)
-
-_DISHES_FILES = forward_files(
-    srcs = ["@models_internal//:dishes/bowls/evo_bowl_no_mtl.obj"],
-    dest_prefix = "",
-    strip_prefix = "@models_internal//:dishes/bowls/",
-    visibility = ["//visibility:private"],
+filegroup(
+    name = "models",
+    srcs = [
+        "bowl.sdf",
+        "pepper.sdf",
+        "table.sdf",
+        "@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj",
+        "@drake_models//:veggies/bell_pepper_no_stem_color.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_normal.png",
+        "@drake_models//:veggies/bell_pepper_no_stem_occlusion_roughness_metallic.png",  # noqa
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.mtl",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.obj",
+        "@drake_models//:veggies/yellow_bell_pepper_no_stem_low.vtk",
+    ],
+    visibility = ["//:__pkg__"],
 )
 
 drake_py_binary(
@@ -38,16 +38,6 @@ drake_py_binary(
     deps = [
         "//bindings/pydrake",
     ],
-)
-
-filegroup(
-    name = "models",
-    srcs = [
-        "bowl.sdf",
-        "pepper.sdf",
-        "table.sdf",
-    ] + _VEGGIES_MESHES + _DISHES_FILES,
-    visibility = ["//:__pkg__"],
 )
 
 add_lint_tests()

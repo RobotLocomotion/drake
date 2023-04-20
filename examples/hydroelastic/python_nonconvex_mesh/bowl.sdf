@@ -19,7 +19,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>evo_bowl_no_mtl.obj</uri>
+            <uri>package://drake_models/dishes/bowls/evo_bowl_no_mtl.obj</uri>
             <scale>2.0 2.0 2.0</scale>
           </mesh>
         </geometry>
@@ -31,7 +31,7 @@
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
-            <uri>evo_bowl_no_mtl.obj</uri>
+            <uri>package://drake_models/dishes/bowls/evo_bowl_no_mtl.obj</uri>
             <scale>2.0 2.0 2.0</scale>
           </mesh>
         </geometry>

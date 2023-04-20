@@ -52,6 +52,8 @@ class DirectTranscription : public MultipleShooting {
   /// left disconnected (if they are disconnected in @p context) or will be set
   /// to their current values (if they are connected/fixed in @p context).
   /// @default kUseFirstInputIfItExists.
+  ///
+  /// @throws std::exception if `context.has_only_discrete_state() == false`.
   DirectTranscription(
       const systems::System<double>* system,
       const systems::Context<double>& context, int num_time_samples,
@@ -81,6 +83,8 @@ class DirectTranscription : public MultipleShooting {
   /// left disconnected (if they are disconnected in @p context) or will be set
   /// to their current values (if they are connected/fixed in @p context).
   /// @default kUseFirstInputIfItExists.
+  ///
+  /// @throws std::exception if `context.has_only_discrete_state() == false`.
   ///
   /// @exclude_from_pydrake_mkdoc{This overload is not bound in pydrake.  When
   /// we do bind it, we should probably rename `system` to tv_linear_system` or
@@ -114,6 +118,8 @@ class DirectTranscription : public MultipleShooting {
   /// left disconnected (if they are disconnected in @p context) or will be set
   /// to their current values (if they are connected/fixed in @p context).
   /// @default kUseFirstInputIfItExists.
+  ///
+  /// @throws std::exception if `context.has_only_continuous_state() == false`.
   DirectTranscription(
       const systems::System<double>* system,
       const systems::Context<double>& context, int num_time_samples,

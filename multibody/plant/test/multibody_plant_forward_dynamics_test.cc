@@ -162,10 +162,8 @@ TEST_F(KukaIiwaModelForwardDynamicsTests, ForwardDynamicsTest) {
 // This test verifies this does not trigger a spurious exception.
 GTEST_TEST(MultibodyPlantForwardDynamics, AtlasRobot) {
   MultibodyPlant<double> plant(0.0);
-  const std::string model_path =
-      FindResourceOrThrow("drake/examples/atlas/urdf/atlas_convex_hull.urdf");
-  Parser parser(&plant);
-  auto atlas_instance = parser.AddModels(model_path).at(0);
+  auto atlas_instance = Parser(&plant).AddModelsFromUrl(
+      "package://drake_models/atlas/atlas_convex_hull.urdf").at(0);
   plant.Finalize();
 
   // Create a context and store an arbitrary configuration.
@@ -216,12 +214,8 @@ GTEST_TEST(WeldedBoxesTest, ForwardDynamicsViaArticulatedBodyAlgorithm) {
   MultibodyPlant<double> plant(discrete_update_period);
 
   // Set a model with two boxes anchored to the world via weld joints.
-  const Vector3d p_BoBcm_B = Vector3d::Zero();
-  const UnitInertia<double> G_BBcm =
-      UnitInertia<double>::SolidBox(kCubeSize, kCubeSize, kCubeSize);
   const SpatialInertia<double> M_BBo_B =
-      SpatialInertia<double>::MakeFromCentralInertia(kBoxMass, p_BoBcm_B,
-                                                     G_BBcm);
+      SpatialInertia<double>::SolidCubeWithMass(kBoxMass, kCubeSize);
   // Create two rigid bodies.
   const auto& boxA = plant.AddRigidBody("boxA", M_BBo_B);
   const auto& boxB = plant.AddRigidBody("boxB", M_BBo_B);

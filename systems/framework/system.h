@@ -1152,7 +1152,6 @@ class System : public SystemBase {
    port_name. */
   bool HasOutputPort(const std::string& port_name) const;
 
-
   /** Returns the number of constraints specified for the system. */
   int num_constraints() const;
 

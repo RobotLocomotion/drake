@@ -74,6 +74,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(0).enable_alpha_slider,
             config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(0).visible_by_default, true);
+  EXPECT_EQ(meshcat_params.at(0).show_hydroelastic, false);
 
   EXPECT_EQ(meshcat_params.at(1).role, Role::kProximity);
   EXPECT_EQ(meshcat_params.at(1).publish_period, config.publish_period);
@@ -82,6 +84,8 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ParamConversionDefault) {
             config.delete_on_initialization_event);
   EXPECT_EQ(meshcat_params.at(1).enable_alpha_slider,
             config.enable_alpha_sliders);
+  EXPECT_EQ(meshcat_params.at(1).visible_by_default, false);
+  EXPECT_EQ(meshcat_params.at(1).show_hydroelastic, true);
 
   const ContactVisualizerParams contact_params =
       ConvertVisualizationConfigToMeshcatContactParams(config);
@@ -155,11 +159,11 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyDefault) {
   // Check that systems that we expect to have been added were actually added.
   for (const auto& name : {
            // For Meldis.
-           "DrakeVisualizer",
+           "drake_visualizer",
            "contact_results_publisher",
            // For Meshcat.
-           "MeshcatVisualizer",
-           "ContactVisualizer",
+           "meshcat_visualizer",
+           "meshcat_contact_visualizer",
        }) {
     SCOPED_TRACE(fmt::format("Checking for a system named like {}", name));
     int count = 0;
@@ -251,7 +255,7 @@ GTEST_TEST(VisualizationConfigFunctionsTest, NoMeshcat) {
   int meshcat_count = 0;
   for (const auto* system : builder.GetSystems()) {
     const std::string& name = system->get_name();
-    if (name.find("MeshcatVisualizer") != std::string::npos) {
+    if (name.find("meshcat_visualizer") != std::string::npos) {
       ++meshcat_count;
     }
   }
@@ -289,6 +293,21 @@ GTEST_TEST(VisualizationConfigFunctionsTest, AddDefault) {
   simulator.AdvanceTo(0.25);
 }
 
+// The AddDefault... sugar should respect our passed-in Meshcat.
+GTEST_TEST(VisualizationConfigFunctionsTest, AddDefaultWithMeshcat) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  std::shared_ptr<Meshcat> meshcat = std::make_shared<Meshcat>();
+  EXPECT_EQ(meshcat.use_count(), 1);
+  AddDefaultVisualization(&builder, meshcat);
+  Simulator<double> simulator(builder.Build());
+  // Our meshcat was actually used.
+  EXPECT_GE(meshcat.use_count(), 2);
+  // Nothing crashes.
+  simulator.AdvanceTo(0.25);
+}
+
 // A missing plant causes an exception.
 GTEST_TEST(VisualizationConfigFunctionsTest, NoPlant) {
   DiagramBuilder<double> builder;
@@ -315,6 +334,27 @@ GTEST_TEST(VisualizationConfigFunctionsTest, WrongSystemTypes) {
   DRAKE_EXPECT_THROWS_MESSAGE(AddDefaultVisualization(&builder),
                               ".*not cast.*");
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+// Make sure the deprecated overload doesn't crash.
+GTEST_TEST(VisualizationConfigFunctionsTest, DeprecatedApply) {
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+
+  // Call the deprecated overload (with const pointers).
+  const VisualizationConfig config;
+  const MultibodyPlant<double>* const const_plant = &plant;
+  const SceneGraph<double>* const const_scene_graph = &scene_graph;
+  ApplyVisualizationConfig(config, &builder, nullptr, const_plant,
+                           const_scene_graph);
+
+  // Simulate for a moment and make sure nothing crashes.
+  Simulator<double> simulator(builder.Build());
+  simulator.AdvanceTo(0.25);
+}
+#pragma GCC diagnostic pop
 
 }  // namespace
 }  // namespace internal

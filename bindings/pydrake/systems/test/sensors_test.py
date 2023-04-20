@@ -195,6 +195,9 @@ class TestSensors(unittest.TestCase):
         self.assertEqual(config.focal_x(), 10)
         self.assertEqual(config.focal_y(), 20)
         config.principal_point()
+        (color, depth) = config.MakeCameras()
+        self.assertIsInstance(color, ColorRenderCamera)
+        self.assertIsInstance(depth, DepthRenderCamera)
 
         fov = mut.CameraConfig.FovDegrees(x=10, y=20)
         self.assertIn("x=10", repr(fov))
@@ -452,3 +455,12 @@ class TestSensors(unittest.TestCase):
                               Value[mut.ImageDepth16U])
         self.assertIsInstance(values.get_value(3),
                               Value[mut.ImageLabel16I])
+
+    def test_image_writer(self):
+        writer = mut.ImageWriter()
+        writer.DeclareImageInputPort(
+            pixel_type=mut.PixelType.kRgba8U,
+            port_name="color",
+            file_name_format="/tmp/{port_name}-{time_usec}",
+            publish_period=0.125,
+            start_time=0.0)

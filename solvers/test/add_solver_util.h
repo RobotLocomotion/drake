@@ -15,8 +15,7 @@ namespace test {
 
 template <typename Solver>
 void AddSolverIfAvailable(
-    std::list<std::unique_ptr<SolverInterface>>*
-    solver_list) {
+    std::list<std::unique_ptr<SolverInterface>>* solver_list) {
   auto solver = std::make_unique<Solver>();
   if (solver->available()) {
     solver_list->push_back(std::move(solver));

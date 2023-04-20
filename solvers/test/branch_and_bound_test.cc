@@ -1224,10 +1224,11 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest,
 
   dut.bnb()->SetNodeSelectionMethod(
       MixedIntegerBranchAndBound::NodeSelectionMethod::kUserDefined);
-  dut.bnb()->SetUserDefinedNodeSelectionFunction([](
-      const MixedIntegerBranchAndBound& branch_and_bound) {
-    return LeftMostNodeInSubTree(branch_and_bound, *(branch_and_bound.root()));
-  });
+  dut.bnb()->SetUserDefinedNodeSelectionFunction(
+      [](const MixedIntegerBranchAndBound& branch_and_bound) {
+        return LeftMostNodeInSubTree(branch_and_bound,
+                                     *(branch_and_bound.root()));
+      });
 
   // There is only one root node, so bnb has to pick the root node.
   EXPECT_EQ(dut.PickBranchingNode(), dut.bnb()->root());
@@ -1261,8 +1262,10 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, NodeCallbackTest) {
 
   int num_visited_nodes = 1;
   auto call_back_fun = [&num_visited_nodes](
-      const MixedIntegerBranchAndBoundNode& node,
-      MixedIntegerBranchAndBound* bnb) { ++num_visited_nodes; };
+                           const MixedIntegerBranchAndBoundNode& node,
+                           MixedIntegerBranchAndBound* bnb) {
+    ++num_visited_nodes;
+  };
   auto prog = ConstructMathematicalProgram2();
   MixedIntegerBranchAndBoundTester dut(*prog, GurobiSolver::id());
   dut.bnb()->SetUserDefinedNodeCallbackFunction(call_back_fun);

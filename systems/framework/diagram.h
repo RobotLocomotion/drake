@@ -140,6 +140,10 @@ class Diagram : public System<T>, internal::SystemParentServiceInterface {
 
   std::unique_ptr<DiscreteValues<T>> AllocateDiscreteVariables() const final;
 
+  /// Returns true iff this contains a subsystem with the given name.
+  /// @see GetSubsystemByName()
+  bool HasSubsystemNamed(std::string_view name) const;
+
   /// Retrieves a const reference to the subsystem with name @p name returned
   /// by get_name().
   /// @throws std::exception if a match cannot be found.

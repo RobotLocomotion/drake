@@ -23,19 +23,19 @@ SolverId OsqpSolver::id() {
   return singleton.access();
 }
 
-bool OsqpSolver::is_enabled() { return true; }
+bool OsqpSolver::is_enabled() {
+  return true;
+}
 
 namespace {
 // If the program is compatible with this solver, returns true and clears the
 // explanation.  Otherwise, returns false and sets the explanation.  In either
 // case, the explanation can be nullptr in which case it is ignored.
-bool CheckAttributes(
-    const MathematicalProgram& prog,
-    std::string* explanation) {
+bool CheckAttributes(const MathematicalProgram& prog,
+                     std::string* explanation) {
   static const never_destroyed<ProgramAttributes> solver_capabilities(
       std::initializer_list<ProgramAttribute>{
-          ProgramAttribute::kLinearCost,
-          ProgramAttribute::kQuadraticCost,
+          ProgramAttribute::kLinearCost, ProgramAttribute::kQuadraticCost,
           ProgramAttribute::kLinearConstraint,
           ProgramAttribute::kLinearEqualityConstraint});
   const ProgramAttributes& required_capabilities = prog.required_capabilities();
@@ -43,8 +43,8 @@ bool CheckAttributes(
       required_capabilities, solver_capabilities.access(), explanation);
   if (!capabilities_match) {
     if (explanation) {
-      *explanation = fmt::format(
-          "OsqpSolver is unable to solve because {}.", *explanation);
+      *explanation = fmt::format("OsqpSolver is unable to solve because {}.",
+                                 *explanation);
     }
     return false;
   }

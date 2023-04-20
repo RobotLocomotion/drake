@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/drake_assert.h"
+#include "drake/common/ssize.h"
 #include "drake/examples/rod2d/rod2d.h"
 #include "drake/solvers/unrevised_lemke_solver.h"
 
@@ -183,7 +184,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
     // Duplicate the contact points.
     std::vector<Vector2d> contacts_dup;
-    for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
+    for (int i = 0; i < ssize(contacts); ++i) {
       for (int j = 0; j < contact_points_dup; ++j)
         contacts_dup.push_back(contacts[i]);
     }
@@ -219,7 +220,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     };
 
     // Update r with the new friction directions.
-    for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
+    for (int i = 0; i < ssize(data->r); ++i)
       data->r[i] = new_friction_directions;
 
     // Resize kF (recall the vector always is zero for this 2D problem), gammaF,
@@ -355,7 +356,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
     // Duplicate the contact points.
     std::vector<Vector2d> contacts_dup;
-    for (int i = 0; i < static_cast<int>(contacts.size()); ++i) {
+    for (int i = 0; i < ssize(contacts); ++i) {
       for (int j = 0; j < contact_points_dup; ++j)
         contacts_dup.push_back(contacts[i]);
     }
@@ -393,7 +394,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     data->gammaE.setZero(contacts.size());
 
     // Update r with the new friction directions per contact.
-    for (int i = 0; i < static_cast<int>(data->r.size()); ++i)
+    for (int i = 0; i < ssize(data->r); ++i)
       data->r[i] = new_friction_directions;
 
     // Add in empty rows to G, by default, allowing us to verify that no
@@ -838,7 +839,7 @@ class Constraint2DSolverTest : public ::testing::Test {
                 std::fabs(rod_->get_gravitational_acceleration());
             double normal_force_mag = 0;
             double fric_force = 0;
-            for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+            for (int i = 0; i < ssize(contact_forces); ++i) {
               normal_force_mag += contact_forces[i][0];
               fric_force += contact_forces[i][1];
             }
@@ -974,7 +975,7 @@ class Constraint2DSolverTest : public ::testing::Test {
             // Verify that the frictional forces are maximized.
             double fnormal = 0;
             double ffrictional = 0;
-            for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+            for (int i = 0; i < ssize(contact_forces); ++i) {
               fnormal += contact_forces[i][0];
               ffrictional += std::fabs(contact_forces[i][1]);
             }
@@ -1017,7 +1018,7 @@ class Constraint2DSolverTest : public ::testing::Test {
             // Verify that the frictional forces are maximized.
             double fnormal = 0;
             double ffrictional = 0;
-            for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+            for (int i = 0; i < ssize(contact_forces); ++i) {
               fnormal += contact_forces[i][0];
               ffrictional += std::fabs(contact_forces[i][1]);
             }
@@ -1113,7 +1114,7 @@ class Constraint2DSolverTest : public ::testing::Test {
             // correct direction.
             double fnormal = 0;
             double ffrictional = 0;
-            for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+            for (int i = 0; i < ssize(contact_forces); ++i) {
               fnormal += contact_forces[i][0];
               ffrictional += contact_forces[i][1];
               EXPECT_NEAR(ffrictional * ff_sign, mu_static * fnormal,
@@ -1160,7 +1161,7 @@ class Constraint2DSolverTest : public ::testing::Test {
             // Verify that the frictional forces are maximized.
             double fnormal = 0;
             double ffrictional = 0;
-            for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+            for (int i = 0; i < ssize(contact_forces); ++i) {
               fnormal += contact_forces[i][0];
               ffrictional += contact_forces[i][1];
             }
@@ -1259,7 +1260,7 @@ class Constraint2DSolverTest : public ::testing::Test {
             // Verify that the frictional impulses are maximized.
             double jnormal = 0;
             double jfrictional = 0;
-            for (int i = 0; i < static_cast<int>(contact_impulses.size());
+            for (int i = 0; i < ssize(contact_impulses);
                  ++i) {
               jnormal += contact_impulses[i][0];
               jfrictional += contact_impulses[i][1];
@@ -1301,7 +1302,7 @@ class Constraint2DSolverTest : public ::testing::Test {
             // Verify that the frictional impulses are maximized.
             double jnormal = 0;
             double jfrictional = 0;
-            for (int i = 0; i < static_cast<int>(contact_impulses.size());
+            for (int i = 0; i < ssize(contact_impulses);
                  ++i) {
               jnormal += contact_impulses[i][0];
               jfrictional += std::fabs(contact_impulses[i][1]);
@@ -1381,7 +1382,7 @@ class Constraint2DSolverTest : public ::testing::Test {
           // the contact normal, points along the world y-axis, and the y-axis
           //  of the contact frame, which corresponds to a contact tangent
           // vector, points along the world x-axis.
-          for (int i = 0; i < static_cast<int>(frames.size()); ++i) {
+          for (int i = 0; i < ssize(frames); ++i) {
             EXPECT_LT(
                 std::fabs(frames[i].col(0).dot(Vector2<double>::UnitY()) - 1.0),
                 std::numeric_limits<double>::epsilon());
@@ -1512,7 +1513,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
           rod_->get_rod_mass();
       double fN = 0, fF = 0;
-      for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+      for (int i = 0; i < ssize(contact_forces); ++i) {
         fN += contact_forces[i][0];
         fF += std::fabs(contact_forces[i][1]);
       }
@@ -1610,7 +1611,7 @@ class Constraint2DSolverTest : public ::testing::Test {
       const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
           rod_->get_rod_mass();
       double fN = 0, fF = 0;
-      for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+      for (int i = 0; i < ssize(contact_forces); ++i) {
         fN += contact_forces[i][0];
         fF += std::fabs(contact_forces[i][1]);
       }
@@ -1705,7 +1706,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     const double mg = std::fabs(rod_->get_gravitational_acceleration()) *
         rod_->get_rod_mass();
     double fN = 0, fF = 0;
-    for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+    for (int i = 0; i < ssize(contact_forces); ++i) {
       fN += contact_forces[i][0];
       fF += contact_forces[i][1];
     }
@@ -1791,7 +1792,7 @@ class Constraint2DSolverTest : public ::testing::Test {
 
     // Verify that the normal contact impulses exactly oppose the pre-impact
     double fN = 0, fF = 0;
-    for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+    for (int i = 0; i < ssize(contact_forces); ++i) {
       fN += contact_forces[i][0];
       fF += contact_forces[i][1];
     }
@@ -1892,7 +1893,7 @@ class Constraint2DSolverTest : public ::testing::Test {
     // Verify that the normal contact forces exactly oppose the discretized
     // force.
     double fN = 0, fF = 0;
-    for (int i = 0; i < static_cast<int>(contact_forces.size()); ++i) {
+    for (int i = 0; i < ssize(contact_forces); ++i) {
       fN += contact_forces[i][0];
       fF += contact_forces[i][1];
     }

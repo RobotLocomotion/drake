@@ -160,3 +160,6 @@
 #define PETSC__BSD_SOURCE 1
 #define PETSC__DEFAULT_SOURCE 1
 #define PETSC__GNU_SOURCE 1
+#define PETSC_OMAKE "NO_PETSC_DIR"
+#define PETSC_INTPTR_T intptr_t
+#define PETSC_INTPTR_T_FMT "#" PRIxPTR

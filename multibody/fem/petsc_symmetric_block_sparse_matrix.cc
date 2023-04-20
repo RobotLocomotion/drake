@@ -222,7 +222,7 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     /* Ensure that the matrix has been assembled. */
     AssembleIfNecessary();
     MatZeroRowsColumns(owned_matrix_, indexes.size(), indexes.data(), value,
-                       PETSC_NULL, PETSC_NULL);
+                       PETSC_NULLPTR, PETSC_NULLPTR);
   }
 
   void set_relative_tolerance(double tolerance) {
@@ -329,7 +329,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
   void EnsurePetscIsInitialized() {
     static bool done = []() {
       // TODO(xuchenhan-tri): Investigate PETSc's usage of global state.
-      PetscInitialize(PETSC_NULL, PETSC_NULL, PETSC_NULL, PETSC_NULL);
+      PetscInitialize(PETSC_NULLPTR, PETSC_NULLPTR, PETSC_NULLPTR,
+                      PETSC_NULLPTR);
       return true;
     }();
     unused(done);
@@ -382,7 +383,9 @@ PetscSolverStatus PetscSymmetricBlockSparseMatrix::SolveInPlace(
   return pimpl_->SolveInPlace(solver_type, preconditioner_type, b_in_x_out);
 }
 
-void PetscSymmetricBlockSparseMatrix::SetZero() { pimpl_->SetZero(); }
+void PetscSymmetricBlockSparseMatrix::SetZero() {
+  pimpl_->SetZero();
+}
 
 MatrixX<double> PetscSymmetricBlockSparseMatrix::MakeDenseMatrix() const {
   return pimpl_->MakeDenseMatrix();
@@ -403,9 +406,13 @@ SchurComplement<double> PetscSymmetricBlockSparseMatrix::CalcSchurComplement(
   return pimpl_->CalcSchurComplement(D_block_indexes, A_block_indexes);
 }
 
-int PetscSymmetricBlockSparseMatrix::rows() const { return pimpl_->size(); }
+int PetscSymmetricBlockSparseMatrix::rows() const {
+  return pimpl_->size();
+}
 
-int PetscSymmetricBlockSparseMatrix::cols() const { return pimpl_->size(); }
+int PetscSymmetricBlockSparseMatrix::cols() const {
+  return pimpl_->size();
+}
 
 void PetscSymmetricBlockSparseMatrix::AssembleIfNecessary() {
   pimpl_->AssembleIfNecessary();

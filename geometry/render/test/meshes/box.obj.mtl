@@ -5,4 +5,6 @@ Ks 1.000000 1.000000 1.000000
 d 1.000000
 illum 2
 Ns 0.000000
-map_Kd -s 1 1 1 box.png
+# N.B. The next line has trailing whitespace on purpose, to prove that Drake
+# ignores it during parsing.
+map_Kd -s 1 1 1 box.png 

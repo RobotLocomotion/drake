@@ -2,6 +2,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <picosha2.h>
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/find_cache.h"
@@ -19,13 +20,17 @@ using RemoteParams = PackageMap::RemoteParams;
 
 class PackageMapRemoteTest : public ::testing::Test {
  protected:
-  /* Creates a mock-up of the ~/.cache/drake/package_map/{sha256} directory
-  containing just the package.xml file. Returns the package directory. */
+  /* Creates a mock-up of the cached package download directory containing just
+  the package.xml file. Returns the package directory. */
   fs::path PrepopulateCache(std::string_view package_name,
-                            std::string_view sha256) {
+                            std::string_view sha256,
+                            std::string_view strip_prefix) {
     const auto try_cache = drake::internal::FindOrCreateCache("package_map");
     DRAKE_DEMAND(try_cache.error.empty());
-    const fs::path package_dir = try_cache.abspath / sha256;
+    const fs::path package_dir =
+        try_cache.abspath /
+        fmt::format("{}-{}", sha256,
+                    picosha2::hash256_hex_string(strip_prefix));
     const bool exists = fs::create_directory(package_dir);
     DRAKE_DEMAND(exists);
     std::ofstream xml(package_dir / "package.xml");
@@ -45,19 +50,18 @@ class PackageMapRemoteTest : public ::testing::Test {
 TEST_F(PackageMapRemoteTest, GetPathPrepopulated) {
   const std::string package_name("some_remote_name");
   const std::string sha256(64u, '0');
+  const fs::path package_dir = PrepopulateCache(package_name, sha256, "");
 
   // Adding the remote package doesn't download anything.
+  // (The DRAKE_ALLOW_NETWORK governor would fail if we tried to download.)
   PackageMap dut = PackageMap::MakeEmpty();
   RemoteParams params;
   params.urls.push_back("http://127.0.0.1/missing.zip");
   params.sha256 = sha256;
   dut.AddRemote(package_name, params);
 
-  // Only a call to GetPath kicks off the resolution, and even then nothing is
-  // downloaded (the missing URL would have been a 404 error).
-  const fs::path package_dir = PrepopulateCache(package_name, sha256);
-  const std::string resolved = dut.GetPath(package_name);
-  EXPECT_EQ(resolved, package_dir.string());
+  // Calling GetPath doesn't download, either.
+  EXPECT_EQ(dut.GetPath(package_name), package_dir.string());
 }
 
 // Returns a valid remote params object, i.e., one that can actually fetch.
@@ -94,6 +98,54 @@ TEST_F(PackageMapRemoteTest, ActuallyFetch) {
   std::stringstream buffer;
   buffer << readme.rdbuf();
   EXPECT_EQ(buffer.str(), "This package is empty.\n");
+}
+
+// Fetch a remote zip file, then again with a different strip_prefix.
+TEST_F(PackageMapRemoteTest, FetchWithDifferentStrip) {
+  PackageMap dut = PackageMap::MakeEmpty();
+
+  auto foo_params = MakeGoodParams();
+  dut.AddRemote("foo", foo_params);
+
+  auto bar_params = MakeGoodParams();
+  const std::string old_bar_prefix = std::move(bar_params.strip_prefix.value());
+  dut.AddRemote("bar", bar_params);
+
+  // Resolve 'foo' and then 'bar'.
+  const auto foo = fs::path(dut.GetPath("foo"));
+  const auto bar = fs::path(dut.GetPath("bar"));
+
+  // Check that the extracted data lives where it should. (Note that here we're
+  // checking the README file within the downloaded package, not the metadata
+  // {sha256}.README file from the downloader program in the parent directory.)
+  EXPECT_TRUE(fs::is_regular_file(foo / "README"));
+  EXPECT_TRUE(fs::is_regular_file(bar / old_bar_prefix / "README"));
+}
+
+// When DRAKE_ALLOW_NETWORK denies package_map, only file:// URLs are allowed
+// and others (like http://) are quietly ignored. (Note that our Bazel config
+// runs unit tests as "denied by default"; our BUILD rule doesn't need any
+// special magic in support of this test case.)
+TEST_F(PackageMapRemoteTest, GetPathEnvironmentDenied) {
+  // Prepare a remote package that specifies both http and file.
+  PackageMap::RemoteParams params = MakeGoodParams();
+  const std::string file_url = params.urls.front();
+  const std::string http_url = "http://127.0.0.1/missing.zip";
+  params.urls = {http_url, file_url};
+
+  // Add and fetch it.
+  PackageMap dut = PackageMap::MakeEmpty();
+  EXPECT_NO_THROW(dut.AddRemote("ok", params));
+  EXPECT_NO_THROW(dut.GetPath("ok"));
+
+  // Without the file url to fall back on, http-only is an error (when network
+  // is denied). Note that we need to clear the sha256 to avoid caching. Only
+  // actually hitting the network is denied.
+  params.urls = {http_url};
+  params.sha256 = std::string(64u, 'f');
+  dut = PackageMap::MakeEmpty();
+  DRAKE_EXPECT_THROWS_MESSAGE(dut.AddRemote("bad", params),
+                              ".*DRAKE_ALLOW_NETWORK.*");
 }
 
 // Cannot duplicate another package, even if its local-only.
@@ -174,12 +226,12 @@ TEST_F(PackageMapRemoteTest, CouldNotFetch) {
 
   // Fetching the package throws.
   DRAKE_EXPECT_THROWS_MESSAGE(dut.GetPath(package_name),
-                              ".*downloader.*error.*");
+                              ".*downloader.*error[^]*Checksum[^]*");
 
   // An incomplete download should not corrupt the cache dir. Trying again
   // should still fail.
   DRAKE_EXPECT_THROWS_MESSAGE(dut.GetPath(package_name),
-                              ".*downloader.*error.*");
+                              ".*downloader.*error[^]*Checksum[^]*");
 }
 
 // Merge an unfetched remote package into the the current map. Our purpose here

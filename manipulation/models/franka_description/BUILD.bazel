@@ -5,10 +5,6 @@ load(
 load("//tools/skylark:drake_data.bzl", "models_filegroup")
 load("//tools/install:install_data.bzl", "install_data")
 load("//tools/lint:lint.bzl", "add_lint_tests")
-load(
-    "//tools/workspace/models_internal:files.bzl",
-    "franka_description_mesh_files",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -30,9 +26,26 @@ filegroup(
     name = "models",
     srcs = [
         ":glob_models",
-    ] + [
-        "@models_internal//:" + x
-        for x in franka_description_mesh_files()
+        "@drake_models//:franka_description/meshes/visual/finger.mtl",
+        "@drake_models//:franka_description/meshes/visual/finger.obj",
+        "@drake_models//:franka_description/meshes/visual/hand.mtl",
+        "@drake_models//:franka_description/meshes/visual/hand.obj",
+        "@drake_models//:franka_description/meshes/visual/link0.mtl",
+        "@drake_models//:franka_description/meshes/visual/link0.obj",
+        "@drake_models//:franka_description/meshes/visual/link1.mtl",
+        "@drake_models//:franka_description/meshes/visual/link1.obj",
+        "@drake_models//:franka_description/meshes/visual/link2.mtl",
+        "@drake_models//:franka_description/meshes/visual/link2.obj",
+        "@drake_models//:franka_description/meshes/visual/link3.mtl",
+        "@drake_models//:franka_description/meshes/visual/link3.obj",
+        "@drake_models//:franka_description/meshes/visual/link4.mtl",
+        "@drake_models//:franka_description/meshes/visual/link4.obj",
+        "@drake_models//:franka_description/meshes/visual/link5.mtl",
+        "@drake_models//:franka_description/meshes/visual/link5.obj",
+        "@drake_models//:franka_description/meshes/visual/link6.mtl",
+        "@drake_models//:franka_description/meshes/visual/link6.obj",
+        "@drake_models//:franka_description/meshes/visual/link7.mtl",
+        "@drake_models//:franka_description/meshes/visual/link7.obj",
     ],
 )
 

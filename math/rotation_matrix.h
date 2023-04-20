@@ -117,6 +117,7 @@ class RotationMatrix {
   /// @param[in] rpy a %RollPitchYaw which is a Space-fixed (extrinsic) X-Y-Z
   /// rotation with "roll-pitch-yaw" angles `[r, p, y]` or equivalently a Body-
   /// fixed (intrinsic) Z-Y-X rotation with "yaw-pitch-roll" angles `[y, p, r]`.
+  /// @retval R_AD, rotation matrix relating frame A to frame D.
   /// @note Denoting roll `r`, pitch `p`, yaw `y`, this method returns a
   /// rotation matrix `R_AD` equal to the matrix multiplication shown below.
   /// ```
@@ -195,18 +196,7 @@ class RotationMatrix {
   /// R_AB = ⎢ 0   cos(theta)   -sin(theta) ⎥
   ///        ⎣ 0   sin(theta)    cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeXRotation(const T& theta) {
-    Matrix3<T> R;
-    using std::sin;
-    using std::cos;
-    const T c = cos(theta), s = sin(theta);
-    // clang-format off
-    R << 1,  0,  0,
-         0,  c, -s,
-         0,  s,  c;
-    // clang-format on
-    return RotationMatrix(R);
-  }
+  static RotationMatrix<T> MakeXRotation(const T& theta);
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Ay = By`.
@@ -220,18 +210,7 @@ class RotationMatrix {
   /// R_AB = ⎢          0    1           0  ⎥
   ///        ⎣ -sin(theta)   0   cos(theta) ⎦
   /// ```
-  static RotationMatrix<T> MakeYRotation(const T& theta) {
-    Matrix3<T> R;
-    using std::sin;
-    using std::cos;
-    const T c = cos(theta), s = sin(theta);
-    // clang-format off
-    R <<  c,  0,  s,
-          0,  1,  0,
-         -s,  0,  c;
-    // clang-format on
-    return RotationMatrix(R);
-  }
+  static RotationMatrix<T> MakeYRotation(const T& theta);
 
   /// Makes the %RotationMatrix `R_AB` associated with rotating a frame B
   /// relative to a frame A by an angle `theta` about unit vector `Az = Bz`.
@@ -245,18 +224,7 @@ class RotationMatrix {
   /// R_AB = ⎢ sin(theta)   cos(theta)   0 ⎥
   ///        ⎣         0            0    1 ⎦
   /// ```
-  static RotationMatrix<T> MakeZRotation(const T& theta) {
-    Matrix3<T> R;
-    using std::sin;
-    using std::cos;
-    const T c = cos(theta), s = sin(theta);
-    // clang-format off
-    R << c, -s,  0,
-         s,  c,  0,
-         0,  0,  1;
-    // clang-format on
-    return RotationMatrix(R);
-  }
+  static RotationMatrix<T> MakeZRotation(const T& theta);
 
   /// Creates a 3D right-handed orthonormal basis B from a given vector b_A,
   /// returned as a rotation matrix R_AB. It consists of orthogonal unit vectors
@@ -647,23 +615,7 @@ class RotationMatrix {
   /// returned by this method cannot construct a valid %RotationMatrix.
   /// For example, if `M` contains NaNs, `q` will not be a valid quaternion.
   static Eigen::Quaternion<T> ToQuaternion(
-      const Eigen::Ref<const Matrix3<T>>& M) {
-    Eigen::Quaternion<T> q = RotationMatrixToUnnormalizedQuaternion(M);
-
-    // Since the quaternions q and -q correspond to the same rotation matrix,
-    // choose to return a canonical quaternion, i.e., with q(0) >= 0.
-    const T canonical_factor = if_then_else(q.w() < 0, T(-1), T(1));
-
-    // The quantity q calculated thus far in this algorithm is not a quaternion
-    // with magnitude 1.  It differs from a quaternion in that all elements of
-    // q are scaled by the same factor. To return a valid quaternion, q must be
-    // normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
-    const T scale = canonical_factor / q.norm();
-    q.coeffs() *= scale;
-
-    DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, T(2))));
-    return q;
-  }
+      const Eigen::Ref<const Matrix3<T>>& M);
 
   /// Utility method to return the Vector4 associated with ToQuaternion().
   /// @see ToQuaternion().
@@ -691,7 +643,7 @@ class RotationMatrix {
   }
 
   /// (Internal use only) Constructs a RotationMatrix without initializing the
-  /// underlying 3x3 matrix. Here for use by RigidTransform but no one else.
+  /// underlying 3x3 matrix. For use by RigidTransform and RotationMatrix only.
   explicit RotationMatrix(internal::DoNotInitializeMemberFields) {}
 
  private:
@@ -705,14 +657,13 @@ class RotationMatrix {
   // Declares the allowable tolerance (small multiplier of double-precision
   // epsilon) used to check whether or not a rotation matrix is orthonormal.
   static constexpr double kInternalToleranceForOrthonormality{
-      128 * std::numeric_limits<double>::epsilon() };
-
+      128 * std::numeric_limits<double>::epsilon()};
 
   // Constructs a %RotationMatrix from a Matrix3.  No check is performed to test
   // whether or not the parameter R is a valid rotation matrix.
   // @param[in] R an allegedly valid rotation matrix.
   // @note The second parameter is just a dummy to distinguish this constructor
-  // from one of the public constructors.
+  // from any of the other constructors.
   RotationMatrix(const Matrix3<T>& R, bool) : R_AB_(R) {}
 
   // Sets `this` %RotationMatrix from a Matrix3.  No check is performed to

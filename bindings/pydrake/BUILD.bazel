@@ -12,10 +12,8 @@ load(
 )
 load(
     "@drake//tools/skylark:pybind.bzl",
-    "add_pybind_coverage_data",
     "drake_pybind_cc_googletest",
     "drake_pybind_library",
-    "generate_pybind_coverage",
     "generate_pybind_documentation_header",
     "get_drake_py_installs",
     "get_pybind_package_info",
@@ -56,12 +54,6 @@ drake_py_library(
 generate_pybind_documentation_header(
     name = "generate_pybind_documentation_header",
     out = "documentation_pybind.h",
-    ignore_dirs_for_coverage = [
-        "drake/common/proto",
-        "drake/common/yaml",
-        "drake/examples",
-    ],
-    out_xml = "documentation_pybind.xml",
     root_name = "pydrake_doc",
     targets = [
         "//tools/install/libdrake:drake_headers",
@@ -268,17 +260,6 @@ drake_py_library(
     ],
 )
 
-PYBIND_SUBPACKAGES_FOR_COVERAGE = [
-    "//bindings/pydrake/common",
-    "//bindings/pydrake/geometry",
-    "//bindings/pydrake/manipulation",
-    "//bindings/pydrake/multibody",
-    "//bindings/pydrake/planning",
-    "//bindings/pydrake/solvers",
-    "//bindings/pydrake/systems",
-    "//bindings/pydrake/visualization",
-]
-
 PY_LIBRARIES_WITH_INSTALL = [
     ":autodiffutils_py",
     ":lcm_py",
@@ -287,13 +268,17 @@ PY_LIBRARIES_WITH_INSTALL = [
     ":polynomial_py",
     ":symbolic_py",
     ":trajectories_py",
+    "//bindings/pydrake/common",
     "//bindings/pydrake/examples",
     "//bindings/pydrake/examples/multibody",
-] + PYBIND_SUBPACKAGES_FOR_COVERAGE
-
-add_pybind_coverage_data(
-    subpackages = PYBIND_SUBPACKAGES_FOR_COVERAGE,
-)
+    "//bindings/pydrake/geometry",
+    "//bindings/pydrake/manipulation",
+    "//bindings/pydrake/multibody",
+    "//bindings/pydrake/planning",
+    "//bindings/pydrake/solvers",
+    "//bindings/pydrake/systems",
+    "//bindings/pydrake/visualization",
+]
 
 PY_LIBRARIES = [
     ":module_py",
@@ -518,6 +503,7 @@ drake_py_unittest(
         ":math_py",
         ":trajectories_py",
         "//bindings/pydrake/common:eigen_geometry_py",
+        "//bindings/pydrake/common:yaml_py",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
         "//bindings/pydrake/common/test_utilities:pickle_compare_py",
     ],
@@ -545,14 +531,6 @@ drake_py_unittest(
         "//bindings/pydrake:.clang-format",
     ],
     tags = ["lint"],
-)
-
-generate_pybind_coverage(
-    name = "generate_pybind_coverage",
-    class_coverage = ":class_coverage.csv",
-    file_coverage = ":file_coverage.csv",
-    pybind_coverage_data = [":pybind_coverage_data"],
-    xml_docstrings = ":documentation_pybind.xml",
 )
 
 drake_py_binary(

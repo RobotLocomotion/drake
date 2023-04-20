@@ -338,6 +338,10 @@ class TestPlant(unittest.TestCase):
             name="ShoulderJoint", model_instance=model_instance))
         self._test_joint_actuator_api(
             T, plant.GetJointActuatorByName(name="ElbowJoint"))
+        self.assertEqual(
+            plant.GetJointActuatorByName(name="ElbowJoint"),
+            plant.GetJointActuatorByName(name="ElbowJoint",
+                                         model_instance=model_instance))
         link1 = plant.GetBodyByName(name="Link1")
         self._test_body_api(T, link1)
         self.assertIs(
@@ -700,6 +704,28 @@ class TestPlant(unittest.TestCase):
         SpatialInertia.MakeFromCentralInertia(
             mass=1.3, p_PScm_E=[0.1, -0.2, 0.3],
             I_SScm_E=RotationalInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
+        SpatialInertia.SolidBoxWithDensity(
+            density=1000, lx=0.1, ly=0.2, lz=0.3)
+        SpatialInertia.SolidBoxWithMass(
+            mass=0.123, lx=0.1, ly=0.2, lz=0.3)
+        SpatialInertia.SolidCubeWithDensity(
+            density=1000, length=0.4)
+        SpatialInertia.SolidCapsuleWithDensity(
+            density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCylinderWithDensity(
+            density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidCylinderWithDensityAboutEnd(
+            density=1000, radius=0.1, length=0.4, unit_vector=[0, 0, 1])
+        SpatialInertia.ThinRodWithMass(
+            mass=2, length=0.3, unit_vector=[0, 0, 1])
+        SpatialInertia.ThinRodWithMassAboutEnd(
+            mass=2, length=0.3, unit_vector=[0, 0, 1])
+        SpatialInertia.SolidEllipsoidWithDensity(
+            density=1000, a=0.2, b=0.3, c=0.4)
+        SpatialInertia.SolidSphereWithDensity(
+            density=1000, radius=0.5)
+        SpatialInertia.HollowSphereWithDensity(
+            area_density=2, radius=0.5)
         spatial_inertia = SpatialInertia(
             mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
             G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))
@@ -1200,6 +1226,43 @@ class TestPlant(unittest.TestCase):
 
         # Test existence of context resetting methods.
         plant.SetDefaultState(context, state=context.get_mutable_state())
+
+        self.assertEqual(
+            plant.GetPositionNames(add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetPositionNames(model_instance=instance,
+                                   add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetVelocityNames(model_instance=instance,
+                                   add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetVelocityNames(add_model_instance_prefix=False,
+                                   always_add_suffix=False),
+            ["ShoulderJoint", "ElbowJoint"])
+        self.assertEqual(
+            plant.GetStateNames(add_model_instance_prefix=False), [
+                                    "ShoulderJoint_q", "ElbowJoint_q",
+                                    "ShoulderJoint_w", "ElbowJoint_w"
+                                ])
+        self.assertEqual(
+            plant.GetStateNames(model_instance=instance,
+                                add_model_instance_prefix=False), [
+                                    "ShoulderJoint_q", "ElbowJoint_q",
+                                    "ShoulderJoint_w", "ElbowJoint_w"
+                                ])
+        self.assertEqual(
+            plant.GetActuatorNames(add_model_instance_prefix=False),
+            ["ElbowJoint"])
+        self.assertEqual(
+            plant.GetActuatorNames(model_instance=instance,
+                                   add_model_instance_prefix=False),
+            ["ElbowJoint"])
 
         # Test existence of default free body pose setting.
         body = plant.GetBodyByName("Link1")
@@ -2148,26 +2211,13 @@ class TestPlant(unittest.TestCase):
         FixedOffsetFrame(name="name", P=P, X_PF=X, model_instance=None)
         FixedOffsetFrame(name="name", bodyB=B, X_BF=X)
 
-    @numpy_compare.check_all_types
-    def test_coupler_constraint_api(self, T):
-        MultibodyPlantConfig()
-        config = MultibodyPlantConfig(time_step=0.01,
-                                      discrete_contact_solver="sap")
-        self.assertEqual(config.time_step, 0.01)
-        self.assertEqual(config.discrete_contact_solver, "sap")
-
+    def test_coupler_constraint_api(self):
         # Create a MultibodyPlant with only a WSG gripper.
-        builder = DiagramBuilder_[float]()
-        plant, scene_graph = AddMultibodyPlant(config, builder)
-        self.assertIsNotNone(plant)
-        self.assertIsNotNone(scene_graph)
-
-        wsg50_sdf_path = FindResourceOrThrow(
-            "drake/manipulation/models/"
+        plant = MultibodyPlant_[float](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+        Parser(plant).AddModelsFromUrl(
+            "package://drake/manipulation/models/"
             "wsg_50_description/sdf/schunk_wsg_50.sdf")
-
-        parser = Parser(plant)
-        gripper_model, = parser.AddModels(file_name=wsg50_sdf_path)
 
         # Add coupler constraint.
         left_slider = plant.GetJointByName("left_finger_sliding_joint")
@@ -2178,6 +2228,54 @@ class TestPlant(unittest.TestCase):
 
         # Constraint indexes are assigned in increasing order starting at zero.
         self.assertEqual(coupler_index, ConstraintIndex(0))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
+    def test_distance_constraint_api(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+
+        # Add a distance constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M_BBo_B = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+        p_AP = [0.0, 0.0, 0.0]
+        p_BQ = [0.0, 0.0, 0.0]
+        index = plant.AddDistanceConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ, distance=0.01)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(index, ConstraintIndex(0))
+
+        # We are done creating the model.
+        plant.Finalize()
+
+        # Verify the constraint was added.
+        self.assertEqual(plant.num_constraints(), 1)
+
+    @numpy_compare.check_all_types
+    def test_ball_constraint_api(self, T):
+        plant = MultibodyPlant_[T](0.01)
+        plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
+
+        # Add ball constraint. Since we won't be performing dynamics
+        # computations, using garbage inertia is ok for this test.
+        M_BBo_B = SpatialInertia_[float]()
+        body_A = plant.AddRigidBody(name="A", M_BBo_B=M_BBo_B)
+        body_B = plant.AddRigidBody(name="B", M_BBo_B=M_BBo_B)
+        p_AP = [0.0, 0.0, 0.0]
+        p_BQ = [0.0, 0.0, 0.0]
+        index = plant.AddBallConstraint(
+            body_A=body_A, p_AP=p_AP, body_B=body_B, p_BQ=p_BQ)
+
+        # Constraint indexes are assigned in increasing order starting at zero.
+        self.assertEqual(index, ConstraintIndex(0))
 
         # We are done creating the model.
         plant.Finalize()

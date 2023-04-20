@@ -46,15 +46,14 @@ class UnrevisedLemkeSolver final : public SolverBase {
   template <class U>
   static U ComputeZeroTolerance(const MatrixX<U>& M) {
     return M.rows() * M.template lpNorm<Eigen::Infinity>() *
-        (2 * std::numeric_limits<double>::epsilon());
+           (2 * std::numeric_limits<double>::epsilon());
   }
 
   /// Checks whether a given candidate solution to the LCP Mz + q = w, z ≥ 0,
   /// w ≥ 0, zᵀw = 0 is satisfied to a given tolerance. If the tolerance is
   /// non-positive, this method computes a reasonable tolerance using M.
-  static bool IsSolution(
-      const MatrixX<T>& M, const VectorX<T>& q, const VectorX<T>& z,
-      T zero_tol = -1);
+  static bool IsSolution(const MatrixX<T>& M, const VectorX<T>& q,
+                         const VectorX<T>& z, T zero_tol = -1);
 
   /// Lemke's Algorithm for solving LCPs in the matrix class E, which contains
   /// all strictly semimonotone matrices, all P-matrices, and all strictly
@@ -85,9 +84,8 @@ class UnrevisedLemkeSolver final : public SolverBase {
   ///
   /// * [Cottle 1992]      R. Cottle, J.-S. Pang, and R. Stone. The Linear
   ///                      Complementarity Problem. Academic Press, 1992.
-  bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q,
-                     VectorX<T>* z, int* num_pivots,
-                     const T& zero_tol = T(-1)) const;
+  bool SolveLcpLemke(const MatrixX<T>& M, const VectorX<T>& q, VectorX<T>* z,
+                     int* num_pivots, const T& zero_tol = T(-1)) const;
 
   /// @name Static versions of the instance methods with similar names.
   //@{
@@ -127,7 +125,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
    public:
     DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LCPVariable)
     LCPVariable() {}
-    LCPVariable(bool z, int index) : z_{z}, index_{index} {}
+    LCPVariable(bool z, int index) : index_{index}, z_{z} {}
 
     bool is_z() const { return z_; }
     int index() const { return index_; }
@@ -164,41 +162,41 @@ class UnrevisedLemkeSolver final : public SolverBase {
     }
 
    private:
-    bool z_{true};        // Is this a z variable or a w variable?
-    int index_{-1};       // Index of the variable in the problem, 0...n. n
-                          // indicates that the variable is artificial. -1
-                          // indicates that the index is uninitialized.
+    int index_{-1};  // Index of the variable in the problem, 0...n. n
+                     // indicates that the variable is artificial. -1
+                     // indicates that the index is uninitialized.
+    bool z_{true};   // Is this a z variable or a w variable?
   };
 
   void DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
                const SolverOptions&, MathematicalProgramResult*) const final;
 
-  static void SelectSubMatrixWithCovering(
-      const MatrixX<T>& in,
-      const std::vector<int>& rows,
-      const std::vector<int>& cols, MatrixX<T>* out);
+  static void SelectSubMatrixWithCovering(const MatrixX<T>& in,
+                                          const std::vector<int>& rows,
+                                          const std::vector<int>& cols,
+                                          MatrixX<T>* out);
   static void SelectSubColumnWithCovering(const MatrixX<T>& in,
-      const std::vector<int>& rows,
-      int column, VectorX<T>* out);
+                                          const std::vector<int>& rows,
+                                          int column, VectorX<T>* out);
   static void SelectSubVector(const VectorX<T>& in,
-      const std::vector<int>& rows, VectorX<T>* out);
-  static void SetSubVector(
-      const VectorX<T>& v_sub, const std::vector<int>& indices, VectorX<T>* v);
-  static bool ValidateIndices(
-    const std::vector<int>& row_indices,
-    const std::vector<int>& col_indices, int num_rows, int num_cols);
-  static bool ValidateIndices(
-    const std::vector<int>& row_indices, int vector_size);
+                              const std::vector<int>& rows, VectorX<T>* out);
+  static void SetSubVector(const VectorX<T>& v_sub,
+                           const std::vector<int>& indices, VectorX<T>* v);
+  static bool ValidateIndices(const std::vector<int>& row_indices,
+                              const std::vector<int>& col_indices, int num_rows,
+                              int num_cols);
+  static bool ValidateIndices(const std::vector<int>& row_indices,
+                              int vector_size);
   static bool IsEachUnique(const std::vector<LCPVariable>& vars);
   bool LemkePivot(const MatrixX<T>& M, const VectorX<T>& q, int driving_index,
                   T zero_tol, VectorX<T>* M_bar_col, VectorX<T>* q_bar) const;
   bool ConstructLemkeSolution(const MatrixX<T>& M, const VectorX<T>& q,
-      int artificial_index, T zero_tol, VectorX<T>* z) const;
+                              int artificial_index, T zero_tol,
+                              VectorX<T>* z) const;
   int FindComplementIndex(const LCPVariable& query) const;
   void DetermineIndexSets() const;
-  bool FindBlockingIndex(
-      const T& zero_tol, const VectorX<T>& matrix_col, const VectorX<T>& ratios,
-      int* blocking_index) const;
+  bool FindBlockingIndex(const T& zero_tol, const VectorX<T>& matrix_col,
+                         const VectorX<T>& ratios, int* blocking_index) const;
   bool IsArtificial(const LCPVariable& v) const;
 
   typedef std::vector<LCPVariable> LCPVariableVector;
@@ -208,8 +206,8 @@ class UnrevisedLemkeSolver final : public SolverBase {
   class LCPVariableVectorComparator {
    public:
     // This does a lexicographic comparison.
-    bool operator()(
-        const LCPVariableVector& v1, const LCPVariableVector& v2) const {
+    bool operator()(const LCPVariableVector& v1,
+                    const LCPVariableVector& v2) const {
       DRAKE_DEMAND(v1.size() == v2.size());
 
       // Copy the vectors.
@@ -226,8 +224,7 @@ class UnrevisedLemkeSolver final : public SolverBase {
         if (sorted1_[i] < sorted2_[i]) {
           return true;
         } else {
-          if (sorted2_[i] < sorted1_[i])
-            return false;
+          if (sorted2_[i] < sorted1_[i]) return false;
         }
       }
 

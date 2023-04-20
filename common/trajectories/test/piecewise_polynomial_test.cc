@@ -11,10 +11,12 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/trajectories/test/random_piecewise_polynomial.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/math/autodiff_gradient.h"
 
-using drake::math::ExtractGradient;
 using drake::math::DiscardGradient;
+using drake::math::ExtractGradient;
+using drake::yaml::SaveYamlString;
 using Eigen::Matrix;
 using std::default_random_engine;
 using std::normal_distribution;
@@ -27,7 +29,7 @@ namespace drake {
 namespace trajectories {
 namespace {
 
-template<typename T>
+template <typename T>
 void testIntegralAndDerivative() {
   int num_coefficients = 5;
   int num_segments = 3;
@@ -37,9 +39,8 @@ void testIntegralAndDerivative() {
   default_random_engine generator;
   vector<double> segment_times =
       PiecewiseTrajectory<double>::RandomSegmentTimes(num_segments, generator);
-  PiecewisePolynomial<T> piecewise =
-      test::MakeRandomPiecewisePolynomial<T>(
-          rows, cols, num_coefficients, segment_times);
+  PiecewisePolynomial<T> piecewise = test::MakeRandomPiecewisePolynomial<T>(
+      rows, cols, num_coefficients, segment_times);
 
   // derivative(0) should be same as original piecewise.
   EXPECT_TRUE(
@@ -61,13 +62,13 @@ void testIntegralAndDerivative() {
 
   // check continuity at sample points
   for (int i = 0; i < piecewise.get_number_of_segments() - 1; ++i) {
-    EXPECT_EQ(integral.getPolynomial(i)
-                  .EvaluateUnivariate(integral.duration(i)),
-              integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
+    EXPECT_EQ(
+        integral.getPolynomial(i).EvaluateUnivariate(integral.duration(i)),
+        integral.getPolynomial(i + 1).EvaluateUnivariate(0.0));
   }
 }
 
-template<typename T>
+template <typename T>
 void testBasicFunctionality() {
   int max_num_coefficients = 6;
   int num_tests = 100;
@@ -119,8 +120,8 @@ void testBasicFunctionality() {
     // aligned at the connecting ends is a failure.
     PiecewisePolynomial<T> piecewise2_shifted_twice = piecewise2;
     piecewise2_shifted_twice.shiftRight(2. * total_time);
-    EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
-        piecewise2_shifted_twice), std::runtime_error);
+    EXPECT_THROW(piecewise2_twice.ConcatenateInTime(piecewise2_shifted_twice),
+                 std::runtime_error);
 
     // Checks that concatenation of trajectories that have different
     // row counts is a failure.
@@ -128,7 +129,8 @@ void testBasicFunctionality() {
         piecewise3_not_matching_rows;
     piecewise3_not_matching_rows_shifted.shiftRight(total_time);
     EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
-        piecewise3_not_matching_rows_shifted), std::runtime_error);
+                     piecewise3_not_matching_rows_shifted),
+                 std::runtime_error);
 
     // Checks that concatenation of trajectories that have different
     // col counts is a failure.
@@ -136,7 +138,8 @@ void testBasicFunctionality() {
         piecewise4_not_matching_cols;
     piecewise4_not_matching_cols_shifted.shiftRight(total_time);
     EXPECT_THROW(piecewise2_twice.ConcatenateInTime(
-        piecewise4_not_matching_cols_shifted), std::runtime_error);
+                     piecewise4_not_matching_cols_shifted),
+                 std::runtime_error);
 
     piecewise2_twice.ConcatenateInTime(piecewise2_shifted);
 
@@ -177,13 +180,13 @@ void testBasicFunctionality() {
     // R(t) = P(t) for t0 <= t <= t1, R(t) = Q(t) for t1 <= t <= t2,
     // Q(t) = P(t - d) for t1 <= t <= t2, d = t1 - t0 = t2 - t1 and
     // t0 < tₓ < t1, with P, Q and R functions being piecewise polynomials.
-    EXPECT_TRUE(CompareMatrices(
-        piecewise2_twice.value(t), piecewise2_twice.value(t + total_time),
-        1e-8, MatrixCompareType::absolute));
+    EXPECT_TRUE(CompareMatrices(piecewise2_twice.value(t),
+                                piecewise2_twice.value(t + total_time), 1e-8,
+                                MatrixCompareType::absolute));
   }
 }
 
-template<typename T>
+template <typename T>
 void testValueOutsideOfRange() {
   default_random_engine generator;
   vector<double> segment_times =
@@ -208,12 +211,14 @@ GTEST_TEST(testPiecewisePolynomial, CubicSplinePeriodicBoundaryConditionTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
+  // clang-format off
   Eigen::MatrixXd samples(3, 5);
   samples << 1, 1, 1,
-        2, 2, 2,
-        0, 3, 3,
-        -2, 2, 2,
-        1, 1, 1;
+             2, 2, 2,
+             0, 3, 3,
+            -2, 2, 2,
+             1, 1, 1;
+  // clang-format on
   const bool periodic_endpoint = true;
 
   PiecewisePolynomial<double> periodic_spline =
@@ -249,12 +254,14 @@ GTEST_TEST(testPiecewisePolynomial, ExceptionsTest) {
   breaks << 0, 1, 2, 3, 4;
 
   // Spline in 3d.
+  // clang-format off
   Eigen::MatrixXd samples(3, 5);
   samples << 1, 1, 1,
-        2, 2, 2,
-        0, 3, 3,
-        -2, 2, 2,
-        1, 1, 1;
+             2, 2, 2,
+             0, 3, 3,
+            -2, 2, 2,
+             1, 1, 1;
+  // clang-format on
 
   // No throw with monotonic breaks.
   PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
@@ -307,9 +314,11 @@ GTEST_TEST(testPiecewisePolynomial, VectorValueTest) {
 GTEST_TEST(testPiecewisePolynomial, RemoveFinalSegmentTest) {
   Eigen::VectorXd breaks(3);
   breaks << 0, .5, 1.;
+  // clang-format off
   Eigen::MatrixXd samples(2, 3);
   samples << 1, 1, 2,
              2, 0, 3;
+  // clang-format on
 
   PiecewisePolynomial<double> pp =
       PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
@@ -359,13 +368,14 @@ void TestScaling(const PiecewisePolynomial<double>& pp_orig,
   }
 }
 
-
 GTEST_TEST(testPiecewisePolynomial, ReverseAndScaleTimeTest) {
   Eigen::VectorXd breaks(3);
   breaks << 0, .5, 1.;
+  // clang-format off
   Eigen::MatrixXd samples(2, 3);
   samples << 1, 1, 2,
              2, 0, 3;
+  // clang-format on
 
   const PiecewisePolynomial<double> zoh =
       PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
@@ -458,8 +468,8 @@ void TestScalarType() {
   samples << 1, 1, 2, 2, 0, 3;
 
   const PiecewisePolynomial<T> spline =
-      PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(
-          breaks, samples);
+      PiecewisePolynomial<T>::CubicWithContinuousSecondDerivatives(breaks,
+                                                                   samples);
 
   const MatrixX<T> value = spline.value(0.5);
   EXPECT_NEAR(ExtractDoubleOrThrow(value(0)),
@@ -541,7 +551,109 @@ GTEST_TEST(PiecewiseTrajectoryTest, AutoDiffDerivativesTest) {
   }
 }
 
+// Check roundtrip serialization to YAML of an empty trajectory, including a
+// golden answer for the serialized form.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoEmpty) {
+  const PiecewisePolynomial<double> empty;
+  const std::string yaml = R"""(
+breaks: []
+polynomials: []
+)""";
+
+  EXPECT_EQ("\n" + SaveYamlString(empty), yaml);
+  auto readback = yaml::LoadYamlString<PiecewisePolynomial<double>>(yaml);
+  EXPECT_TRUE(readback.empty());
+}
+
+// Check roundtrip serialization to YAML of a ZOH, including a golden answer for
+// the serialized form.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoZoh) {
+  // clang-format off
+  std::vector<double> breaks{0, 0.5, 1.0};
+  std::vector<Eigen::MatrixXd> samples(3);
+  samples[0].resize(2, 3);
+  samples[0] << 1, 1, 2,
+                2, 0, 3;
+  samples[1].resize(2, 3);
+  samples[1] << 3, 4, 5,
+                6, 7, 8;
+  samples[2].setZero(2, 3);
+  // clang-format on
+
+  const PiecewisePolynomial<double> zoh =
+      PiecewisePolynomial<double>::ZeroOrderHold(breaks, samples);
+  const std::string yaml = R"""(
+breaks: [0.0, 0.5, 1.0]
+polynomials:
+  -
+    -
+      - [1.0]
+      - [1.0]
+      - [2.0]
+    -
+      - [2.0]
+      - [0.0]
+      - [3.0]
+  -
+    -
+      - [3.0]
+      - [4.0]
+      - [5.0]
+    -
+      - [6.0]
+      - [7.0]
+      - [8.0]
+)""";
+
+  EXPECT_EQ("\n" + SaveYamlString(zoh), yaml);
+  auto readback = yaml::LoadYamlString<PiecewisePolynomial<double>>(yaml);
+  const double tolerance = 0.0;
+  EXPECT_TRUE(readback.isApprox(zoh, tolerance));
+}
+
+// Check roundtrip serialization to YAML for a more complicated trajectory.
+// Here we don't check the YAML string, just that it goes through unchanged.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoComplicated) {
+  // clang-format off
+  Eigen::VectorXd breaks(5);
+  breaks << 0, 1, 2, 3, 4;
+  Eigen::MatrixXd samples(3, 5);
+  samples << 1, 1, 1,
+             2, 2, 2,
+             0, 3, 3,
+            -2, 2, 2,
+             1, 1, 1;
+  // clang-format on
+  const auto dut =
+      PiecewisePolynomial<double>::CubicWithContinuousSecondDerivatives(
+          breaks, samples);
+  const std::string yaml = SaveYamlString(dut);
+  const auto readback = yaml::LoadYamlString<PiecewisePolynomial<double>>(yaml);
+  const double tolerance = 0.0;
+  EXPECT_TRUE(readback.isApprox(dut, tolerance)) << fmt::format(
+      "=== original ===\n{}\n"
+      "=== readback ===\n{}",
+      yaml, SaveYamlString(readback));
+}
+
+// Check that mixed-degree polynomials get padded out to the max degree.
+GTEST_TEST(PiecesewisePolynomialTest, YamlIoRagged) {
+  Polynomial<double> poly0(Eigen::Vector2d(1.0, 2.0));
+  Polynomial<double> poly1(Eigen::Vector3d(3.0, 4.0, 5.0));
+  const PiecewisePolynomial<double> dut({poly0, poly1}, {0.0, 1.0, 2.0});
+  const std::string yaml = R"""(
+breaks: [0.0, 1.0, 2.0]
+polynomials:
+  -
+    -
+      - [1.0, 2.0, 0.0]
+  -
+    -
+      - [3.0, 4.0, 5.0]
+)""";
+  EXPECT_EQ("\n" + SaveYamlString(dut), yaml);
+}
+
 }  // namespace
 }  // namespace trajectories
 }  // namespace drake
-

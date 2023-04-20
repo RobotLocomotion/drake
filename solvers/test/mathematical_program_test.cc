@@ -293,8 +293,8 @@ GTEST_TEST(TestAddVariable, TestAddSymmetricVariable1) {
   auto X = prog.NewSymmetricContinuousVariables<3>("X");
   CheckAddedVariable<MatrixDecisionVariable<3, 3>>(
       prog, X, 3, 3,
-      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)",
-      true, MathematicalProgram::VarType::CONTINUOUS);
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)", true,
+      MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(TestAddVariable, TestAddSymmetricVariable2) {
@@ -303,8 +303,8 @@ GTEST_TEST(TestAddVariable, TestAddSymmetricVariable2) {
   auto X = prog.NewSymmetricContinuousVariables(3, "X");
   CheckAddedVariable<MatrixXDecisionVariable>(
       prog, X, 3, 3,
-      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)",
-      true, MathematicalProgram::VarType::CONTINUOUS);
+      "X(0,0) X(1,0) X(2,0)\nX(1,0) X(1,1) X(2,1)\nX(2,0) X(2,1) X(2,2)", true,
+      MathematicalProgram::VarType::CONTINUOUS);
 }
 
 GTEST_TEST(TestAddVariable, TestAddBinaryVariable1) {
@@ -430,20 +430,26 @@ GTEST_TEST(TestAddDecisionVariables, AddVariable2) {
 }
 
 GTEST_TEST(TestAddDecisionVariables, AddVariable3) {
+  // Call AddDecisionVariables on a program that has some existing variables.
+  // and the new variable overlap with the old variables.
+  MathematicalProgram prog;
+  auto y = prog.NewContinuousVariables<3>("y");
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, y(1), x1));
+  EXPECT_EQ(prog.num_vars(), 5);
+  EXPECT_EQ(prog.num_indeterminates(), 0);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x0), 3);
+  EXPECT_EQ(prog.FindDecisionVariableIndex(x1), 4);
+  EXPECT_EQ(prog.initial_guess().rows(), 5);
+}
+
+GTEST_TEST(TestAddDecisionVariables, AddVariableError) {
   // Test the error inputs.
   MathematicalProgram prog;
   auto y = prog.NewContinuousVariables<3>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::CONTINUOUS);
-  // Call AddDecisionVariables on a program that has some existing variables,
-  // and the
-  // new variables intersects with the existing variables.
-  EXPECT_THROW(
-      prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, y(0))),
-      std::runtime_error);
-  // The newly added variables have duplicated entries.
-  EXPECT_THROW(prog.AddDecisionVariables(VectorDecisionVariable<3>(x0, x1, x0)),
-               std::runtime_error);
   // The newly added variables contain a dummy variable.
   Variable dummy;
   EXPECT_TRUE(dummy.is_dummy());
@@ -539,8 +545,9 @@ GTEST_TEST(TestAddIndeterminate, AddIndeterminate1) {
   // Call AddIndeterminate on an empty program.
   MathematicalProgram prog;
   const Variable x("x", Variable::Type::CONTINUOUS);
-  prog.AddIndeterminate(x);
+  int var_index = prog.AddIndeterminate(x);
   EXPECT_EQ(prog.indeterminates().rows(), 1);
+  EXPECT_EQ(var_index, 0);
 
   EXPECT_TRUE(prog.indeterminates()(0).equal_to(x));
   EXPECT_EQ(prog.FindIndeterminateIndex(x), 0);
@@ -556,9 +563,10 @@ GTEST_TEST(TestAddIndeterminate, AddIndeterminate2) {
   auto y = prog.NewIndeterminates<2>("y");
 
   const Variable x("x", Variable::Type::CONTINUOUS);
-  prog.AddIndeterminate(x);
+  int var_index = prog.AddIndeterminate(x);
 
   EXPECT_EQ(prog.indeterminates().rows(), 3);
+  EXPECT_EQ(var_index, 2);
 
   VectorIndeterminate<3> indeterminates_expected;
   indeterminates_expected << y(0), y(1), x;
@@ -570,23 +578,31 @@ GTEST_TEST(TestAddIndeterminate, AddIndeterminate2) {
 }
 
 GTEST_TEST(TestAddIndeterminate, AddIndeterminate3) {
+  // prog already contains some indeterminates, and we call AddIndeterminate on
+  // an old indeterminate.
+  MathematicalProgram prog;
+  auto y = prog.NewIndeterminates<3>();
+
+  auto var_index = prog.AddIndeterminate(y(1));
+  EXPECT_EQ(var_index, prog.FindIndeterminateIndex(y(1)));
+  EXPECT_EQ(prog.indeterminates().size(), 3);
+  EXPECT_EQ(prog.indeterminates_index().size(), 3);
+}
+
+GTEST_TEST(TestAddIndeterminate, AddIndeterminateError) {
   // Call with erroneous inputs.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<2>("y");
   const Variable z("z", Variable::Type::BINARY);
-  // Call AddIndeterminate with an input that intersects with old
-  // indeterminates.
-  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(y(0)),
-                              ".*is already an indeterminate.*");
   // Call AddIndeterminate with an input that intersects with old decision
   // variables.
   DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(x(0)),
                               ".*is a decision variable.*");
-  // Call AddIndeterminates with an input of type BINARY.
+  // Call AddIndeterminate with an input of type BINARY.
   DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(z),
                               ".*should be of type CONTINUOUS.*");
-  // Call AddIndeterminates with a dummy variable.
+  // Call AddIndeterminate with a dummy variable.
   Variable dummy;
   DRAKE_EXPECT_THROWS_MESSAGE(prog.AddIndeterminate(dummy),
                               ".*should not be a dummy variable.*");
@@ -633,17 +649,32 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec2) {
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVec3) {
+  // The program already constains some indeterminates, call AddIndeterminates()
+  // with some of the old indeterminates.
+  MathematicalProgram prog;
+  auto y = prog.NewIndeterminates<3>();
+  const symbolic::Variable x0("x0", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminates(Vector2<symbolic::Variable>(y(1), x0));
+  EXPECT_EQ(prog.indeterminates().size(), 4);
+  EXPECT_EQ(prog.indeterminates_index().size(), 4);
+  EXPECT_EQ(prog.FindIndeterminateIndex(x0), 3);
+  EXPECT_EQ(prog.FindIndeterminateIndex(y(1)), 1);
+
+  // AddIndeterminates with duplicated variables.
+  const symbolic::Variable x1("x1", Variable::Type::CONTINUOUS);
+  prog.AddIndeterminates(Vector3<symbolic::Variable>(x1, x0, x1));
+  EXPECT_EQ(prog.indeterminates().size(), 5);
+  EXPECT_EQ(prog.indeterminates_index().size(), 5);
+  EXPECT_EQ(prog.FindIndeterminateIndex(x1), 4);
+}
+
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVecError) {
   // Call with erroneous inputs.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<2>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::BINARY);
-  // Call AddIndeterminates with an input that intersects with old
-  // indeterminates.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddIndeterminates(VectorIndeterminate<2>(y(0), x0)),
-      ".*is already an indeterminate.*");
   // Call AddIndeterminates with an input that intersects with old decision
   // variables.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -714,17 +745,27 @@ GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars2) {
 }
 
 GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVars3) {
+  // Call AddIndeterminates that overlaps with the old indeterminates.
+  MathematicalProgram prog;
+  auto y = prog.NewIndeterminates<3>();
+  const Variable x0("x0", Variable::Type::CONTINUOUS);
+  const Variable x1("x1", Variable::Type::CONTINUOUS);
+  const symbolic::Variables var_set{{x0, x1, y(1)}};
+  prog.AddIndeterminates(var_set);
+  EXPECT_EQ(prog.num_indeterminates(), 5);
+  EXPECT_EQ(prog.indeterminates().size(), 5);
+  EXPECT_EQ(prog.indeterminates_index().size(), 5);
+  EXPECT_GT(prog.FindIndeterminateIndex(x0), 2);
+  EXPECT_GT(prog.FindIndeterminateIndex(x1), 2);
+}
+
+GTEST_TEST(TestAddIndeterminates, AddIndeterminatesVarsError) {
   // Call with erroneous inputs.
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<2>("y");
   const Variable x0("x0", Variable::Type::CONTINUOUS);
   const Variable x1("x1", Variable::Type::BINARY);
-  // Call AddIndeterminates with an input that intersects with old
-  // indeterminates.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddIndeterminates(symbolic::Variables({x0, y(0)})),
-      ".*is already an indeterminate.*");
   // Call AddIndeterminates with an input that intersects with old decision
   // variables.
   DRAKE_EXPECT_THROWS_MESSAGE(
@@ -783,9 +824,8 @@ void ExpectBadVar(MathematicalProgram* prog, int num_var, Args&&... args) {
   // Use minimal call site (directly on adding Binding<C>).
   // TODO(eric.cousineau): Check if there is a way to parse the error text to
   // ensure that we are capturing the correct error.
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      AddItem(prog, CreateBinding(c, x)),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(AddItem(prog, CreateBinding(c, x)),
+                              ".*is not a decision variable.*");
 }
 
 }  // namespace
@@ -3101,12 +3141,10 @@ GTEST_TEST(TestMathematicalProgram, TestAddCostThrowError) {
 
   // Add a cost containing variable not included in the mathematical program.
   Variable y("y");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddCost(x(0) + y),
-      ".*is not a decision variable.*");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddCost(x(0) * x(0) + y),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) + y),
+                              ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) * x(0) + y),
+                              ".*is not a decision variable.*");
 }
 
 GTEST_TEST(TestMathematicalProgram, TestAddGenericCost) {
@@ -3321,7 +3359,7 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   const double tol = std::numeric_limits<double>::epsilon();
   Vector3d x_guess = Vector3d::Constant(.39);
   Vector2d y_guess = Vector2d::Constant(4.99);
-  y_guess[0] = 3*x_guess[0] + 2*x_guess[1];
+  y_guess[0] = 3 * x_guess[0] + 2 * x_guess[1];
   prog.SetInitialGuess(x, x_guess);
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfied(bindings[0], prog.initial_guess(), 0));
@@ -3344,7 +3382,7 @@ GTEST_TEST(TestMathematicalProgram, TestCheckSatisfied) {
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[1], 0));
 
   x_guess[2] = .39;
-  y_guess[0] = 3*x_guess[0] + 2*x_guess[1] + 0.2;
+  y_guess[0] = 3 * x_guess[0] + 2 * x_guess[1] + 0.2;
   prog.SetInitialGuess(x, x_guess);
   prog.SetInitialGuess(y, y_guess);
   EXPECT_TRUE(prog.CheckSatisfiedAtInitialGuess(bindings[0], 0));
@@ -3630,10 +3668,9 @@ GTEST_TEST(TestMathematicalProgram, AddEqualityConstraintBetweenPolynomials) {
   // Test with a polynomial whose coefficients depend on variables that are not
   // decision variables of prog.
   symbolic::Variable b("b");
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      prog.AddEqualityConstraintBetweenPolynomials(
-          p1, symbolic::Polynomial(b * x, {x})),
-      ".*is not a decision variable.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(prog.AddEqualityConstraintBetweenPolynomials(
+                                  p1, symbolic::Polynomial(b * x, {x})),
+                              ".*is not a decision variable.*");
   // If we add `b` to prog as decision variable, then the code throws no
   // exceptions.
   prog.AddDecisionVariables(Vector1<symbolic::Variable>(b));
@@ -3939,9 +3976,9 @@ GTEST_TEST(TestMathematicalProgram, TestToString) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>("x");
   auto y = prog.NewIndeterminates<1>("y");
-  prog.AddLinearCost(2*x[0] + 3*x[1]);
-  prog.AddLinearConstraint(x[0]+x[1] <= 2.0);
-  prog.AddSosConstraint(x[0]*y[0]*y[0]);
+  prog.AddLinearCost(2 * x[0] + 3 * x[1]);
+  prog.AddLinearConstraint(x[0] + x[1] <= 2.0);
+  prog.AddSosConstraint(x[0] * y[0] * y[0]);
 
   std::string s = prog.to_string();
   EXPECT_THAT(s, testing::HasSubstr("Decision variables"));

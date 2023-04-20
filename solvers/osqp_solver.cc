@@ -321,13 +321,14 @@ void SetDualSolution(
 }
 }  // namespace
 
-bool OsqpSolver::is_available() { return true; }
+bool OsqpSolver::is_available() {
+  return true;
+}
 
-void OsqpSolver::DoSolve(
-    const MathematicalProgram& prog,
-    const Eigen::VectorXd& initial_guess,
-    const SolverOptions& merged_options,
-    MathematicalProgramResult* result) const {
+void OsqpSolver::DoSolve(const MathematicalProgram& prog,
+                         const Eigen::VectorXd& initial_guess,
+                         const SolverOptions& merged_options,
+                         MathematicalProgramResult* result) const {
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
 

@@ -35,6 +35,7 @@ resources then you will need to set that environment variable.
 """
 
 import argparse
+import logging
 import os
 
 from pydrake.visualization._model_visualizer import \
@@ -42,6 +43,14 @@ from pydrake.visualization._model_visualizer import \
 
 
 def _main():
+    # Use a few color highlights for the user's terminal output.
+    logging.addLevelName(logging.INFO, "\033[36mINFO\033[0m")
+    logging.addLevelName(logging.WARNING, "\033[33mWARNING\033[0m")
+    logging.addLevelName(logging.ERROR, "\033[31mERROR\033[0m")
+    format = "%(levelname)s: %(message)s"
+    logging.basicConfig(level=logging.INFO, format=format)
+
+    # Prepare to parse arguments.
     args_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -52,8 +61,9 @@ def _main():
     defaults = _ModelVisualizer._get_constructor_defaults()
 
     args_parser.add_argument(
-        "filename", type=str, default=None,
-        help="Path to an SDFormat or URDF file, or a package:// URL.")
+        "filename", nargs="+", type=str,
+        help="Filesystem path to an SDFormat, URDF, OBJ, or DMD file; "
+        "or a package:// URL to use a ROS package path.")
 
     assert defaults["browser_new"] is False
     args_parser.add_argument(
@@ -109,28 +119,22 @@ def _main():
         help="Run the evaluation loop once and then quit.")
     args = args_parser.parse_args()
 
+    if 'BUILD_WORKSPACE_DIRECTORY' in os.environ:
+        os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
+
     visualizer = _ModelVisualizer(visualize_frames=args.visualize_frames,
                                   triad_length=args.triad_length,
                                   triad_radius=args.triad_radius,
                                   triad_opacity=args.triad_opacity,
                                   browser_new=args.browser_new,
                                   pyplot=args.pyplot)
-
     package_map = visualizer.package_map()
     package_map.PopulateFromRosPackagePath()
-
-    # Resolve the filename if necessary.
-    filename = args.filename
-    if filename.startswith("package://"):
-        # TODO(jwnimmer-tri) PackageMap should provide a function for this.
-        suffix = filename[len("package://"):]
-        package, relative_path = suffix.split("/", maxsplit=1)
-        filename = os.path.join(package_map.GetPath(package), relative_path)
-    filename = os.path.abspath(filename)
-    if not os.path.isfile(filename):
-        args_parser.error(f"File does not exist: {filename}")
-
-    visualizer.AddModels(filename)
+    for item in args.filename:
+        if item.startswith("package://"):
+            visualizer.AddModels(url=item)
+        else:
+            visualizer.AddModels(item)
     visualizer.Run(position=args.position, loop_once=args.loop_once)
 
 

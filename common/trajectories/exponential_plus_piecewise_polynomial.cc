@@ -8,12 +8,10 @@ namespace drake {
 namespace trajectories {
 
 template <typename T>
-ExponentialPlusPiecewisePolynomial<T>::
-    ExponentialPlusPiecewisePolynomial(
-        const PiecewisePolynomial<T>& piecewise_polynomial_part)
+ExponentialPlusPiecewisePolynomial<T>::ExponentialPlusPiecewisePolynomial(
+    const PiecewisePolynomial<T>& piecewise_polynomial_part)
     : PiecewiseTrajectory<T>(piecewise_polynomial_part),
-      K_(MatrixX<T>::Zero(
-          piecewise_polynomial_part.rows(), 1)),
+      K_(MatrixX<T>::Zero(piecewise_polynomial_part.rows(), 1)),
       A_(MatrixX<T>::Zero(1, 1)),
       alpha_(MatrixX<T>::Zero(
           1, piecewise_polynomial_part.get_number_of_segments())),
@@ -65,8 +63,7 @@ Eigen::Index ExponentialPlusPiecewisePolynomial<T>::cols() const {
 }
 
 template <typename T>
-void ExponentialPlusPiecewisePolynomial<T>::shiftRight(
-    double offset) {
+void ExponentialPlusPiecewisePolynomial<T>::shiftRight(double offset) {
   std::vector<double>& breaks = this->get_mutable_breaks();
   for (auto it = breaks.begin(); it != breaks.end(); ++it) {
     *it += offset;

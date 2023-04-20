@@ -398,8 +398,15 @@ class MultipleShooting {
   /// @param num_states Number of states at each sample point.
   /// @param num_time_samples Number of time samples.
   /// @param fixed_timestep The spacing between sample times.
+  /// @param prog (optional).  If non-null, then additional decision variables,
+  /// costs, and constraints will be added into the existing
+  /// MathematicalProgram. This can be useful for, e.g., combining multiple
+  /// trajectory optimizations into a single program, coupled by a few
+  /// constraints.  If nullptr, then a new MathematicalProgram will be
+  /// allocated.
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
-                   double fixed_timestep);
+                   double fixed_timestep,
+                   solvers::MathematicalProgram* prog = nullptr);
 
   /// Constructs a MultipleShooting instance with fixed sample times. It uses
   /// the provided `input` and `state` as placeholders instead of creating new
@@ -409,9 +416,16 @@ class MultipleShooting {
   /// @param state Placeholder variables for state.
   /// @param num_time_samples Number of time samples.
   /// @param fixed_timestep The spacing between sample times.
+  /// @param prog (optional).  If non-null, then additional decision variables,
+  /// costs, and constraints will be added into the existing
+  /// MathematicalProgram. This can be useful for, e.g., combining multiple
+  /// trajectory optimizations into a single program, coupled by a few
+  /// constraints.  If nullptr, then a new MathematicalProgram will be
+  /// allocated.
   MultipleShooting(const solvers::VectorXDecisionVariable& input,
                    const solvers::VectorXDecisionVariable& state,
-                   int num_time_samples, double fixed_timestep);
+                   int num_time_samples, double fixed_timestep,
+                   solvers::MathematicalProgram* prog = nullptr);
 
   /// Constructs a MultipleShooting instance with sample times as decision
   /// variables.  It creates new placeholder variables for input, state, and
@@ -422,8 +436,15 @@ class MultipleShooting {
   /// @param num_time_samples Number of time samples.
   /// @param minimum_timestep Minimum spacing between sample times.
   /// @param maximum_timestep Maximum spacing between sample times.
+  /// @param prog (optional).  If non-null, then additional decision variables,
+  /// costs, and constraints will be added into the existing
+  /// MathematicalProgram. This can be useful for, e.g., combining multiple
+  /// trajectory optimizations into a single program, coupled by a few
+  /// constraints.  If nullptr, then a new MathematicalProgram will be
+  /// allocated.
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
-                   double minimum_timestep, double maximum_timestep);
+                   double minimum_timestep, double maximum_timestep,
+                   solvers::MathematicalProgram* prog = nullptr);
 
   /// Constructs a MultipleShooting instance with sample times as decision
   /// variables. It uses the provided `input`, `state`, and `time` as
@@ -435,10 +456,17 @@ class MultipleShooting {
   /// @param num_time_samples Number of time samples.
   /// @param minimum_timestep Minimum spacing between sample times.
   /// @param maximum_timestep Maximum spacing between sample times.
+  /// @param prog (optional).  If non-null, then additional decision variables,
+  /// costs, and constraints will be added into the existing
+  /// MathematicalProgram. This can be useful for, e.g., combining multiple
+  /// trajectory optimizations into a single program, coupled by a few
+  /// constraints.  If nullptr, then a new MathematicalProgram will be
+  /// allocated.
   MultipleShooting(const solvers::VectorXDecisionVariable& input,
                    const solvers::VectorXDecisionVariable& state,
                    const solvers::DecisionVariable& time, int num_time_samples,
-                   double minimum_timestep, double maximum_timestep);
+                   double minimum_timestep, double maximum_timestep,
+                   solvers::MathematicalProgram* prog = nullptr);
 
   /// Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
   /// @p interval_index, for all placeholder variables.
@@ -476,11 +504,13 @@ class MultipleShooting {
                    const solvers::VectorXDecisionVariable& state,
                    int num_time_samples,
                    const std::optional<solvers::DecisionVariable>& time_var,
-                   double minimum_timestep, double maximum_timestep);
+                   double minimum_timestep, double maximum_timestep,
+                   solvers::MathematicalProgram* prog = nullptr);
 
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
                    bool timesteps_are_decision_variables,
-                   double minimum_timestep, double maximum_timestep);
+                   double minimum_timestep, double maximum_timestep,
+                   solvers::MathematicalProgram* prog = nullptr);
 
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
 
@@ -488,8 +518,6 @@ class MultipleShooting {
   symbolic::Substitution ConstructPlaceholderVariableSubstitution(
       int interval_index) const;
 
-  // TODO(russt): Add a constructor whichs take a MathematicalProgram&
-  // as an argument.
   const std::unique_ptr<solvers::MathematicalProgram> owned_prog_;
   solvers::MathematicalProgram& prog_;
 

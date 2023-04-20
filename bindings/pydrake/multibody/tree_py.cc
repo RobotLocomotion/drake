@@ -1169,6 +1169,41 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("MakeFromCentralInertia", &Class::MakeFromCentralInertia,
             py::arg("mass"), py::arg("p_PScm_E"), py::arg("I_SScm_E"),
             cls_doc.MakeFromCentralInertia.doc)
+        .def_static("SolidBoxWithDensity", &Class::SolidBoxWithDensity,
+            py::arg("density"), py::arg("lx"), py::arg("ly"), py::arg("lz"),
+            cls_doc.SolidBoxWithDensity.doc)
+        .def_static("SolidBoxWithMass", &Class::SolidBoxWithMass,
+            py::arg("mass"), py::arg("lx"), py::arg("ly"), py::arg("lz"),
+            cls_doc.SolidBoxWithMass.doc)
+        .def_static("SolidCubeWithDensity", &Class::SolidCubeWithDensity,
+            py::arg("density"), py::arg("length"),
+            cls_doc.SolidCubeWithDensity.doc)
+        .def_static("SolidCapsuleWithDensity", &Class::SolidCapsuleWithDensity,
+            py::arg("density"), py::arg("radius"), py::arg("length"),
+            py::arg("unit_vector"), cls_doc.SolidCapsuleWithDensity.doc)
+        .def_static("SolidCylinderWithDensity",
+            &Class::SolidCylinderWithDensity, py::arg("density"),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderWithDensity.doc)
+        .def_static("SolidCylinderWithDensityAboutEnd",
+            &Class::SolidCylinderWithDensityAboutEnd, py::arg("density"),
+            py::arg("radius"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.SolidCylinderWithDensityAboutEnd.doc)
+        .def_static("ThinRodWithMass", &Class::ThinRodWithMass, py::arg("mass"),
+            py::arg("length"), py::arg("unit_vector"),
+            cls_doc.ThinRodWithMass.doc)
+        .def_static("ThinRodWithMassAboutEnd", &Class::ThinRodWithMassAboutEnd,
+            py::arg("mass"), py::arg("length"), py::arg("unit_vector"),
+            cls_doc.ThinRodWithMassAboutEnd.doc)
+        .def_static("SolidEllipsoidWithDensity",
+            &Class::SolidEllipsoidWithDensity, py::arg("density"), py::arg("a"),
+            py::arg("b"), py::arg("c"), cls_doc.SolidEllipsoidWithDensity.doc)
+        .def_static("SolidSphereWithDensity", &Class::SolidSphereWithDensity,
+            py::arg("density"), py::arg("radius"),
+            cls_doc.SolidSphereWithDensity.doc)
+        .def_static("HollowSphereWithDensity", &Class::HollowSphereWithDensity,
+            py::arg("area_density"), py::arg("radius"),
+            cls_doc.HollowSphereWithDensity.doc)
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),

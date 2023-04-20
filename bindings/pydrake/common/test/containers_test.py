@@ -121,6 +121,8 @@ class TestNamedView(unittest.TestCase):
         np.testing.assert_equal(value, [3, 3])
         self.assertEqual(repr(view), "MyView(a=3, b=3)")
         self.assertEqual(str(view), repr(view))
+        with self.assertRaisesRegex(AttributeError, ".*('a', 'b').*"):
+            view.c = 42
 
     def test_Zero(self):
         MyView = namedview("MyView", ["a", "b"])
@@ -128,3 +130,25 @@ class TestNamedView(unittest.TestCase):
         self.assertEqual(len(view), 2)
         self.assertEqual(view.a, 0)
         self.assertEqual(view.b, 0)
+
+    def test_name_sanitation(self):
+        MyView = namedview("MyView",
+                           ["$world_base", "iiwa::iiwa", "no spaces", "2vär"])
+        self.assertEqual(MyView.get_fields(),
+                         ("_world_base", "iiwa_iiwa", "no_spaces", "_2vär"))
+        view = MyView.Zero()
+        view._world_base = 3
+        view.iiwa_iiwa = 4
+        view.no_spaces = 5
+        view._2vär = 6
+        np.testing.assert_equal(view[:], [3, 4, 5, 6])
+
+        MyView = namedview("MyView", ["$world_base", "iiwa::iiwa"],
+                           sanitize_field_names=False)
+        self.assertEqual(MyView.get_fields(), ("$world_base", "iiwa::iiwa"))
+
+    def test_uniqueness(self):
+        with self.assertRaisesRegex(AssertionError, ".*must be unique.*"):
+            namedview("MyView", ['a', 'a'])
+        with self.assertRaisesRegex(AssertionError, ".*must be unique.*"):
+            namedview("MyView", ['a_a', 'a__a'])

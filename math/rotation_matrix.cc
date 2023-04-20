@@ -53,6 +53,54 @@ void ThrowIfAnyElementInQuaternionIsInfinityOrNaN(
 }  // namespace
 
 template <typename T>
+RotationMatrix<T> RotationMatrix<T>::MakeXRotation(const T& theta) {
+  using std::isfinite;
+  DRAKE_THROW_UNLESS(isfinite(theta));
+  RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
+  using std::cos;
+  using std::sin;
+  const T c = cos(theta), s = sin(theta);
+  // clang-format off
+  R.R_AB_ << 1,  0,  0,
+             0,  c, -s,
+             0,  s,  c;
+  // clang-format on
+  return R;
+}
+
+template <typename T>
+RotationMatrix<T> RotationMatrix<T>::MakeYRotation(const T& theta) {
+  using std::isfinite;
+  DRAKE_THROW_UNLESS(isfinite(theta));
+  RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
+  using std::cos;
+  using std::sin;
+  const T c = cos(theta), s = sin(theta);
+  // clang-format off
+  R.R_AB_ <<  c,  0,  s,
+              0,  1,  0,
+             -s,  0,  c;
+  // clang-format on
+  return R;
+}
+
+template <typename T>
+RotationMatrix<T> RotationMatrix<T>::MakeZRotation(const T& theta) {
+  using std::isfinite;
+  DRAKE_THROW_UNLESS(isfinite(theta));
+  RotationMatrix<T> R(internal::DoNotInitializeMemberFields{});
+  using std::cos;
+  using std::sin;
+  const T c = cos(theta), s = sin(theta);
+  // clang-format off
+  R.R_AB_ << c, -s,  0,
+             s,  c,  0,
+             0,  0,  1;
+  // clang-format on
+  return RotationMatrix(R);
+}
+
+template <typename T>
 RotationMatrix<T>::RotationMatrix(const RollPitchYaw<T>& rpy) {
   // TODO(@mitiguy) Add publicly viewable documentation on how Sherm and
   // Goldstein like to visualize/conceptualize rotation sequences.
@@ -395,6 +443,26 @@ Vector3<T> RotationMatrix<T>::NormalizeOrThrow(const Vector3<T>& v,
     unused(function_name);
   }
   return u;
+}
+
+template <typename T>
+Eigen::Quaternion<T> RotationMatrix<T>::ToQuaternion(
+    const Eigen::Ref<const Matrix3<T>>& M) {
+  Eigen::Quaternion<T> q = RotationMatrixToUnnormalizedQuaternion(M);
+
+  // Since the quaternions q and -q correspond to the same rotation matrix,
+  // choose to return a canonical quaternion, i.e., with q(0) >= 0.
+  const T canonical_factor = if_then_else(q.w() < 0, T(-1), T(1));
+
+  // The quantity q calculated thus far in this algorithm is not a quaternion
+  // with magnitude 1.  It differs from a quaternion in that all elements of
+  // q are scaled by the same factor. To return a valid quaternion, q must be
+  // normalized so q(0)^2 + q(1)^2 + q(2)^2 + q(3)^2 = 1.
+  const T scale = canonical_factor / q.norm();
+  q.coeffs() *= scale;
+
+  DRAKE_ASSERT_VOID(ThrowIfNotValid(QuaternionToRotationMatrix(q, T(2))));
+  return q;
 }
 
 }  // namespace math

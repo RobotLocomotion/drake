@@ -262,8 +262,8 @@ TestQPasSOCP::TestQPasSOCP() {
   prog_qp_.AddLinearConstraint(A_, b_lb_, b_ub_, x_qp_);
 }
 
-void TestQPasSOCP::SolveAndCheckSolution(
-    const SolverInterface& solver, double tol) {
+void TestQPasSOCP::SolveAndCheckSolution(const SolverInterface& solver,
+                                         double tol) {
   MathematicalProgramResult result;
   result = RunSolver(prog_socp_, solver);
   const auto& x_socp_value = result.GetSolution(x_socp_);

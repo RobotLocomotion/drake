@@ -8,8 +8,8 @@
 
 namespace drake {
 using symbolic::test::ExprEqual;
-using symbolic::test::PolynomialEqual;
 using symbolic::test::FormulaEqual;
+using symbolic::test::PolynomialEqual;
 namespace solvers {
 namespace {
 GTEST_TEST(DecomposeNonConvexQuadraticForm, Test0) {

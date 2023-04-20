@@ -135,10 +135,10 @@ void SlidingFrictionComplementarityNonlinearConstraint::DoEval(
   systems::Context<AutoDiffXd>& context =
       const_cast<systems::Context<AutoDiffXd>&>(
           contact_wrench_evaluator_->context());
-  if (!internal::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {
+  if (!math::AreAutoDiffVecXdEqual(q, plant.GetPositions(context))) {
     plant.SetPositions(&context, q);
   }
-  if (!internal::AreAutoDiffVecXdEqual(v, plant.GetVelocities(context))) {
+  if (!math::AreAutoDiffVecXdEqual(v, plant.GetVelocities(context))) {
     plant.SetVelocities(&context, v);
   }
 

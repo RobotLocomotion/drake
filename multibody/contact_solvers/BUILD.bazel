@@ -14,11 +14,13 @@ drake_cc_package_library(
     name = "contact_solvers",
     visibility = ["//visibility:public"],
     deps = [
+        ":block_3x3_sparse_matrix",
         ":block_sparse_matrix",
         ":contact_solver",
         ":contact_solver_results",
         ":contact_solver_utils",
         ":linear_operator",
+        ":matrix_block",
         ":newton_with_bisection",
         ":pgs_solver",
         ":point_contact_data",
@@ -29,10 +31,21 @@ drake_cc_package_library(
 )
 
 drake_cc_library(
+    name = "block_3x3_sparse_matrix",
+    srcs = ["block_3x3_sparse_matrix.cc"],
+    hdrs = ["block_3x3_sparse_matrix.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "block_sparse_matrix",
     srcs = ["block_sparse_matrix.cc"],
     hdrs = ["block_sparse_matrix.h"],
     deps = [
+        ":matrix_block",
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
@@ -97,6 +110,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "matrix_block",
+    srcs = ["matrix_block.cc"],
+    hdrs = ["matrix_block.h"],
+    deps = [
+        ":block_3x3_sparse_matrix",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "newton_with_bisection",
     srcs = ["newton_with_bisection.cc"],
     hdrs = ["newton_with_bisection.h"],
@@ -146,6 +170,7 @@ drake_cc_library(
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
     interface_deps = [
+        ":matrix_block",
         "//common:essential",
     ],
     deps = [
@@ -164,6 +189,14 @@ drake_cc_library(
 )
 
 drake_cc_googletest(
+    name = "block_3x3_sparse_matrix_test",
+    deps = [
+        ":block_3x3_sparse_matrix",
+        "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
     name = "block_sparse_matrix_test",
     deps = [
         ":block_sparse_matrix",
@@ -178,6 +211,14 @@ drake_cc_googletest(
         ":block_sparse_matrix",
         ":linear_operator",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "matrix_block_test",
+    deps = [
+        ":matrix_block",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -222,4 +263,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = True)

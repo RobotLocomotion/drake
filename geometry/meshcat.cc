@@ -27,6 +27,7 @@
 #include "drake/common/drake_export.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/find_resource.h"
+#include "drake/common/network_policy.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
@@ -341,7 +342,7 @@ class MeshcatShapeReifier : public ShapeReifier {
         //  - "[^\s]+" matches the filename, and
         //  - "[$\r\n]" matches the end of string or end of line.
         // TODO(russt): This parsing could still be more robust.
-        std::regex map_regex(R"""(map_.+\s([^\s]+)[$\r\n])""");
+        std::regex map_regex(R"""(map_.+\s([^\s]+)\s*[$\r\n])""");
         for (std::sregex_iterator iter(meshfile_object.mtl_library.begin(),
                                        meshfile_object.mtl_library.end(),
                                        map_regex);
@@ -546,6 +547,11 @@ class Meshcat::Impl {
         main_thread_id_(std::this_thread::get_id()),
         params_(params) {
     DRAKE_THROW_UNLESS(params.port.value_or(7000) >= 1024);
+    if (!drake::internal::IsNetworkingAllowed("meshcat")) {
+      throw std::runtime_error(
+          "Meshcat has been disabled via the DRAKE_ALLOW_NETWORK environment "
+          "variable");
+    }
 
     // Sanity-check the pattern, by passing it (along with dummy host and port
     // values) through to fmt to allow any fmt-specific exception to percolate.
@@ -2194,8 +2200,15 @@ void Meshcat::SetCamera(OrthographicCamera camera, std::string path) {
 }
 
 void Meshcat::SetTransform(std::string_view path,
-                           const RigidTransformd& X_ParentPath) {
-  impl().SetTransform(path, X_ParentPath);
+                           const RigidTransformd& X_ParentPath,
+                           const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetTransform(animation_->frame(*time), std::string(path),
+                             X_ParentPath);
+  }
+  if (!recording_ || !time || set_visualizations_while_recording_) {
+    impl().SetTransform(path, X_ParentPath);
+  }
 }
 
 void Meshcat::SetTransform(std::string_view path,
@@ -2212,18 +2225,37 @@ void Meshcat::SetRealtimeRate(double rate) {
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          bool value) {
-  impl().SetProperty(path, std::move(property), value);
+                          bool value, const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetProperty(animation_->frame(*time), std::string(path),
+                            property, value);
+  }
+  if (!recording_ || !time || set_visualizations_while_recording_) {
+    impl().SetProperty(path, std::move(property), value);
+  }
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          double value) {
-  impl().SetProperty(path, std::move(property), value);
+                          double value, const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetProperty(animation_->frame(*time), std::string(path),
+                            property, value);
+  }
+  if (!recording_ || set_visualizations_while_recording_) {
+    impl().SetProperty(path, std::move(property), value);
+  }
 }
 
 void Meshcat::SetProperty(std::string_view path, std::string property,
-                          const std::vector<double>& value) {
-  impl().SetProperty(path, std::move(property), value);
+                          const std::vector<double>& value,
+                          const std::optional<double>& time) {
+  if (recording_ && time) {
+    animation_->SetProperty(animation_->frame(*time), std::string(path),
+                            property, value);
+  }
+  if (!recording_ || set_visualizations_while_recording_) {
+    impl().SetProperty(path, std::move(property), value);
+  }
 }
 
 void Meshcat::SetAnimation(const MeshcatAnimation& animation) {
@@ -2284,6 +2316,34 @@ Meshcat::Gamepad Meshcat::GetGamepad() const {
 
 std::string Meshcat::StaticHtml() {
   return impl().StaticHtml();
+}
+
+void Meshcat::StartRecording(double frames_per_second,
+                             bool set_visualizations_while_recording) {
+  animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+  recording_ = true;
+  set_visualizations_while_recording_ = set_visualizations_while_recording;
+}
+
+void Meshcat::PublishRecording() {
+  impl().SetAnimation(*animation_);
+}
+
+void Meshcat::DeleteRecording() {
+  if (animation_) {
+    // Reset the recording.
+    double frames_per_second = animation_->frames_per_second();
+    animation_ = std::make_unique<MeshcatAnimation>(frames_per_second);
+  }
+}
+
+MeshcatAnimation& Meshcat::get_mutable_recording() {
+  if (!animation_) {
+    throw std::runtime_error(
+        "You must create a recording (via StartRecording) before calling "
+        "get_mutable_recording");
+  }
+  return *animation_;
 }
 
 bool Meshcat::HasPath(std::string_view path) const {

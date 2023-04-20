@@ -20,7 +20,9 @@ SolverId ScsSolver::id() {
   return singleton.access();
 }
 
-bool ScsSolver::is_enabled() { return true; }
+bool ScsSolver::is_enabled() {
+  return true;
+}
 
 namespace {
 // If the program is compatible with this solver, returns true and clears the

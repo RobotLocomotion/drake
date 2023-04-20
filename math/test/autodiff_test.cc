@@ -455,6 +455,25 @@ GTEST_TEST(GetDerivativeSize, Test) {
   DRAKE_EXPECT_THROWS_MESSAGE(GetDerivativeSize(x),
                               ".* has size 3, while another entry has size 4");
 }
+
+GTEST_TEST(AutoDiffEqual, AreAutoDiffVecXdEqualTest) {
+  VectorX<AutoDiffXd> a(2), b(2), c(3);
+  a << 1, 2;
+  b << 3, 4;
+  c << 1, 2, 3;
+  EXPECT_FALSE(AreAutoDiffVecXdEqual(a, b));
+  EXPECT_FALSE(AreAutoDiffVecXdEqual(a, c));
+  b = a;
+  EXPECT_TRUE(AreAutoDiffVecXdEqual(a, b));
+  a[0].derivatives() = Eigen::Vector2d(1, 2);
+  b[0].derivatives() = Eigen::Vector3d(1, 2, 3);
+  EXPECT_FALSE(AreAutoDiffVecXdEqual(a, b));
+  b[0].derivatives() = Eigen::Vector2d(4, 5);
+  EXPECT_FALSE(AreAutoDiffVecXdEqual(a, b));
+  b[0].derivatives() = a[0].derivatives();
+  EXPECT_TRUE(AreAutoDiffVecXdEqual(a, b));
+}
+
 }  // namespace
 }  // namespace math
 }  // namespace drake

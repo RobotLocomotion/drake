@@ -12,8 +12,8 @@
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solve.h"
 
-using Eigen::Vector3d;
 using Eigen::Matrix3d;
+using Eigen::Vector3d;
 
 using drake::symbolic::Expression;
 
@@ -59,19 +59,17 @@ TEST_P(TestRpyLimitsFixture, TestRpyLimits) {
     auto bb_constraints = prog.bounding_box_constraints();
 
     // Bounds are loose, so just test that feasible points are indeed feasible.
-    const double rmin =
-        (limits & kRoll_0_to_PI)
-        ? 0
-        : (limits & kRoll_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+    const double rmin = (limits & kRoll_0_to_PI)           ? 0
+                        : (limits & kRoll_NegPI_2_to_PI_2) ? -M_PI_2
+                                                           : -M_PI;
     const double rmax = (limits & kRoll_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
-    const double pmin =
-        (limits & kPitch_0_to_PI)
-        ? 0
-        : (limits & kPitch_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+    const double pmin = (limits & kPitch_0_to_PI)           ? 0
+                        : (limits & kPitch_NegPI_2_to_PI_2) ? -M_PI_2
+                                                            : -M_PI;
     const double pmax = (limits & kPitch_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
-    const double ymin = (limits & kYaw_0_to_PI)
-                        ? 0
-                        : (limits & kYaw_NegPI_2_to_PI_2) ? -M_PI_2 : -M_PI;
+    const double ymin = (limits & kYaw_0_to_PI)           ? 0
+                        : (limits & kYaw_NegPI_2_to_PI_2) ? -M_PI_2
+                                                          : -M_PI;
     const double ymax = (limits & kYaw_NegPI_2_to_PI_2) ? M_PI_2 : M_PI;
 
     for (double roll = rmin; roll <= rmax; roll += M_PI / 6) {
@@ -97,9 +95,8 @@ TEST_P(TestRpyLimitsFixture, TestRpyLimits) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    RotationTest, TestRpyLimitsFixture,
-    ::testing::Range(1 << 1, 1 << 7, 2));
+INSTANTIATE_TEST_SUITE_P(RotationTest, TestRpyLimitsFixture,
+                         ::testing::Range(1 << 1, 1 << 7, 2));
 
 // Sets up and solves an optimization:
 // <pre>

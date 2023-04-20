@@ -10,31 +10,31 @@
 namespace drake {
 namespace multibody {
 
-/** A LeafSystem which uses DoDifferentialInverseKinematics to produce joint
-position commands.
+/** A LeafSystem that integrates successive calls to
+DoDifferentialInverseKinematics (which produces joint velocity commands) to
+produce joint position commands.
 
-Rather than calling DoDifferentialInverseKinematics on the current measured
-positions of the robot, this System maintains its own internal state and
-integrates successive velocity commands open loop. If
-DoDifferentialInverseKinematics returns kNoSolution, then the integrator will
-hold the integrated position (with zero velocity); on kStuck the integration
-will continue (though "kStuck" implies that the achieved spatial velocity will
-be much smaller than what was commanded).
+In each evaluation, DoDifferentialInverseKinematics uses a linearization of the
+robot kinematics around a nominal position. The nominal position is obtained by
+either:
+1) If the optional boolean (abstract-)valued input port `use_robot_state` is
+   connected and set to `true`, then differential IK is computed using the
+   `robot_state` input port (which must also be connected). Note: Using
+   measured joint positions in a feedback loop can lead to undamped
+   oscillations in the redundant joints; we hope to resolve this and are
+   tracking it in #9773.
+2) Otherwise, differential IK is computed using this System's internal state,
+   representing the current joint position command. This is equivalent to
+   integrating (open loop) the velocity commands obtained from the differential
+   IK solutions.
 
-The optional boolean (abstract-)valued input port `use_robot_state` can be used
-to reset the integrated state to the value obtained from the `robot_state`
-input (which must also be connected). Note: Using measured joint positions in a
-feedback loop can lead to undamped oscillations in the redundant joints; we
-hope to resolve this and are tracking it in #9773.
-
-Note: It is highly recommended that the user calls `SetPosition()` once to
-initialize the position commands to match the initial positions of the robot.
-Alternatively, one can connect the optional `robot_state` input port -- which
-is only used at Initialization, and simply sets the positions to the positions
-on this input port (the port accepts the state vector with positions and
-velocities for easy of use with MultibodyPlant, but only the positions are
-used).
-
+It is also important to set the initial state of the integrator:
+1) If the `robot_state` port is connected, then the initial state of the
+   integrator is set to match the positions from this port (the port accepts
+   the state vector with positions and velocities for easy of use with
+   MultibodyPlant, but only the positions are used).
+2) Otherwise, it is highly recommended that the user call `SetPosition()` to
+   initialize the integrator state.
 
 @system
 name: DifferentialInverseKinematicsIntegrator
@@ -45,7 +45,6 @@ input_ports:
 output_ports:
 - joint_positions
 @endsystem
-
 
 @ingroup manipulation_systems */
 class DifferentialInverseKinematicsIntegrator

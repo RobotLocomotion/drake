@@ -669,10 +669,6 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "petsc_symmetric_block_sparse_matrix_test",
-    tags = [
-        # This tests uses multiple CPUs concurrently.
-        "cpu:100",
-    ],
     deps = [
         ":petsc_symmetric_block_sparse_matrix",
         "//common/test_utilities:eigen_matrix_compare",
@@ -731,4 +727,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = True)

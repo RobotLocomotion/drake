@@ -662,7 +662,9 @@ void SetScsProblemData(
 }
 }  // namespace
 
-bool ScsSolver::is_available() { return true; }
+bool ScsSolver::is_available() {
+  return true;
+}
 
 namespace {
 // This should be invoked only once on each unique instance of ScsSettings.
@@ -1076,7 +1078,9 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
 
   ScsSolution* scs_sol =
       static_cast<ScsSolution*>(scs_calloc(1, sizeof(ScsSolution)));
-  ScopeExit sol_guard([&scs_sol]() { SCS(free_sol)(scs_sol); });
+  ScopeExit sol_guard([&scs_sol]() {
+    SCS(free_sol)(scs_sol);
+  });
 
   ScsSolverDetails& solver_details =
       result->SetSolverDetailsType<ScsSolverDetails>();

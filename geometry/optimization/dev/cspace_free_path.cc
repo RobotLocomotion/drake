@@ -1,7 +1,5 @@
 #include "drake/geometry/optimization/dev/cspace_free_path.h"
 
-#include "drake/common/symbolic/monomial_util.h"
-
 namespace drake {
 namespace geometry {
 namespace optimization {
@@ -47,7 +45,7 @@ void CspaceFreePath::GeneratePathRationals() {
   // new one that has rationals in terms of the path variable.
   symbolic::Polynomial::SubstituteAndExpandCacheData cached_substitutions;
 
-  // add the auxilliary variables for matrix SOS constraints to the substitution
+  // Add the auxilliary variables for matrix SOS constraints to the substitution
   // map.
   std::unordered_map<symbolic::Variable, symbolic::Polynomial>
       path_with_y_subs = path_;

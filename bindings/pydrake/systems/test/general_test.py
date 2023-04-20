@@ -155,7 +155,7 @@ class TestGeneral(unittest.TestCase):
             context.get_continuous_state_vector(), VectorBase)
         self.assertIsInstance(
             context.get_mutable_continuous_state_vector(), VectorBase)
-        system.SetDefaultContext(context)
+        system.SetDefaultContext(context=context)
 
         # Check random context method.
         system.SetRandomContext(context=context, generator=RandomGenerator())
@@ -535,6 +535,7 @@ class TestGeneral(unittest.TestCase):
 
         diagram = builder.Build()
         self.assertEqual(adder0.get_name(), "adder0")
+        self.assertTrue(diagram.HasSubsystemNamed("adder0"))
         self.assertEqual(diagram.GetSubsystemByName("adder0"), adder0)
         self.assertEqual(
             diagram.GetSystems(),
@@ -886,6 +887,7 @@ class TestGeneral(unittest.TestCase):
             builder.ExportInput(adder1.get_input_port(0), "in0")
             builder.ExportInput(adder1.get_input_port(1), "in1")
             builder.ExportOutput(adder2.get_output_port(), "out")
+            self.assertTrue(builder.HasSubsystemNamed("adder1"))
             builder.GetSubsystemByName(name="adder1")
             builder.GetMutableSubsystemByName(name="adder2")
             self.assertEqual(len(builder.connection_map()), 1)

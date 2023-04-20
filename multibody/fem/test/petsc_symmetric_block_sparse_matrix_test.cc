@@ -23,8 +23,6 @@ using std::unique_ptr;
 using std::vector;
 
 constexpr double kEps = 2e-13;
-// Size of the matrix in this test.
-constexpr int kDofs = 9;
 
 // clang-format off
 const Matrix3d A00 =
@@ -106,7 +104,9 @@ unique_ptr<PetscSymmetricBlockSparseMatrix> MakeSpdBlockSparseMatrix() {
   return A;
 }
 
-VectorXd MakeVector3d() { return Eigen::Vector3d(1, 2, 3); }
+VectorXd MakeVector3d() {
+  return Eigen::Vector3d(1, 2, 3);
+}
 
 VectorXd MakeVector9d() {
   return (Eigen::VectorXd(9) << 1, 1, 2, 3, 5, 8, 13, 21, 34).finished();
@@ -237,8 +237,7 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, FailedSolve) {
   VectorXd x(b.size());
   PetscSolverStatus status = A->Solve(
       PetscSymmetricBlockSparseMatrix::SolverType::kConjugateGradient,
-      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone,
-      b, &x);
+      PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, &x);
   /* We expect CG to fail to converge on a non-spd matrix. */
   EXPECT_EQ(status, PetscSolverStatus::kFailure);
 }
@@ -278,56 +277,6 @@ GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, Clone) {
       PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, &x_clone);
   EXPECT_TRUE(CompareMatrices(x, x_clone, b.norm() * kEps));
   EXPECT_EQ(status, status_clone);
-}
-
-/* Test if we can run several PETSc solves simultaneously on multiple threads.
- We solve the same linear system with multiple right hand sides. The solution
- from using threads should be the same as those from serial. */
-GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, MultiThreadTest) {
-  /* We first will solve each linear system one at a time, and then solve them
-   all in parallel. The two sets of results should match. */
-  constexpr int kNumThreads = 100;
-
-  std::vector<VectorXd> single_threaded_results(kNumThreads);
-  std::vector<VectorXd> multi_threaded_results(kNumThreads);
-
-  /* Create a functor that solves A*x = b. */
-  auto run_solver = [](const VectorXd& b, VectorXd* x) {
-    unique_ptr<PetscSymmetricBlockSparseMatrix> A = MakeBlockSparseMatrix();
-    A->AssembleIfNecessary();
-    x->resize(b.size());
-    PetscSolverStatus status = A->Solve(
-        PetscSymmetricBlockSparseMatrix::SolverType::kMINRES,
-        PetscSymmetricBlockSparseMatrix::PreconditionerType::kNone, b, x);
-    EXPECT_EQ(status, PetscSolverStatus::kSuccess);
-  };
-
-  /* Solve without using threads. */
-  for (int i = 0; i < kNumThreads; ++i) {
-    VectorXd b = VectorXd::Zero(kDofs);
-    // Set b to a nonzero vector for a nontrivial solve.
-    const int nonzero_entry = i % kDofs;
-    b(nonzero_entry) = 1.0;
-    run_solver(b, &single_threaded_results[i]);
-  }
-
-  /* Solve using threads. */
-  std::vector<std::thread> test_threads;
-  for (int i = 0; i < kNumThreads; ++i) {
-    VectorXd b = VectorXd::Zero(kDofs);
-    // Set b to a nonzero vector for a nontrivial solve.
-    const int nonzero_entry = i % kDofs;
-    b(nonzero_entry) = 1.0;
-    test_threads.emplace_back(run_solver, b, &multi_threaded_results[i]);
-  }
-  for (int i = 0; i < kNumThreads; ++i) {
-    test_threads[i].join();
-  }
-
-  /* All solutions should be the same. */
-  for (int i = 0; i < kNumThreads; ++i) {
-    EXPECT_EQ(single_threaded_results[i], multi_threaded_results[i]);
-  }
 }
 
 GTEST_TEST(PetscSymmetricBlockSparseMatrixTest, CalcSchurComplement) {

@@ -120,6 +120,7 @@ struct AddModelInstance {
   bool IsValid() const {
     if (name.empty()) {
       drake::log()->error("add_model_instance: `name` must be non-empty");
+      return false;
     }
     return true;
   }

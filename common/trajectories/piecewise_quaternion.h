@@ -31,7 +31,7 @@ namespace trajectories {
  *
  * @tparam_default_scalar
  */
-template<typename T>
+template <typename T>
 class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PiecewiseQuaternionSlerp)
@@ -46,18 +46,16 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    * @throws std::exception if breaks and quaternions have different length,
    * or breaks have length < 2.
    */
-  PiecewiseQuaternionSlerp(
-      const std::vector<T>& breaks,
-      const std::vector<Quaternion<T>>& quaternions);
+  PiecewiseQuaternionSlerp(const std::vector<T>& breaks,
+                           const std::vector<Quaternion<T>>& quaternions);
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
    * @throws std::exception if breaks and rot_matrices have different length,
    * or breaks have length < 2.
    */
-  PiecewiseQuaternionSlerp(
-      const std::vector<T>& breaks,
-      const std::vector<Matrix3<T>>& rotation_matrices);
+  PiecewiseQuaternionSlerp(const std::vector<T>& breaks,
+                           const std::vector<Matrix3<T>>& rotation_matrices);
 
   /**
    * Builds a PiecewiseQuaternionSlerp.
@@ -73,9 +71,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    * @throws std::exception if breaks and ang_axes have different length,
    * or breaks have length < 2.
    */
-  PiecewiseQuaternionSlerp(
-      const std::vector<T>& breaks,
-      const std::vector<AngleAxis<T>>& angle_axes);
+  PiecewiseQuaternionSlerp(const std::vector<T>& breaks,
+                           const std::vector<AngleAxis<T>>& angle_axes);
 
   ~PiecewiseQuaternionSlerp() override = default;
 
@@ -131,8 +128,7 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
    * @p tol seconds, and the angle difference between the corresponding
    * quaternion sample points are within @p tol (using `ExtractDoubleOrThrow`).
    */
-  bool is_approx(const PiecewiseQuaternionSlerp<T>& other,
-                 double tol) const;
+  bool is_approx(const PiecewiseQuaternionSlerp<T>& other, double tol) const;
 
   /**
    * Given a new Quaternion, this method adds one segment to the end of `this`.
@@ -152,9 +148,8 @@ class PiecewiseQuaternionSlerp final : public PiecewiseTrajectory<T> {
 
  private:
   // Initialize quaternions_ and computes angular velocity for each segment.
-  void Initialize(
-      const std::vector<T>& breaks,
-      const std::vector<Quaternion<T>>& quaternions);
+  void Initialize(const std::vector<T>& breaks,
+                  const std::vector<Quaternion<T>>& quaternions);
 
   // Computes the interpolation time within each segment. Result is in [0, 1].
   T ComputeInterpTime(int segment_index, const T& time) const;

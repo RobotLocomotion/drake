@@ -1,9 +1,11 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
+#include <drake_vendor/msgpack.hpp>
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/geometry/meshcat_types.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/systems/analysis/simulator.h"
@@ -13,6 +15,8 @@
 namespace drake {
 namespace geometry {
 namespace {
+
+using multibody::AddMultibodyPlantSceneGraph;
 
 // The tests in this file require a dependency on MultibodyPlant.  One could
 // implement the tests without that dependency, but not without duplicating (or
@@ -35,8 +39,7 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
 
   void SetUpDiagram(MeshcatVisualizerParams params = {}) {
     systems::DiagramBuilder<double> builder;
-    auto [plant, scene_graph] =
-        multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
     plant_ = &plant;
     scene_graph_ = &scene_graph;
     multibody::Parser(plant_).AddModels(
@@ -142,6 +145,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   // Absolute path.
   params.prefix = "/foo";
   SetUpDiagram(params);
+  EXPECT_EQ(visualizer_->get_name(), "meshcat_visualizer(/foo)");
   EXPECT_FALSE(meshcat_->HasPath("/foo/iiwa14"));
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/foo/iiwa14"));
@@ -151,9 +155,34 @@ TEST_F(MeshcatVisualizerWithIiwaTest, Prefix) {
   params.prefix = "foo";
   EXPECT_FALSE(meshcat_->HasPath("/drake/foo/iiwa14"));
   SetUpDiagram(params);
+  EXPECT_EQ(visualizer_->get_name(), "meshcat_visualizer(foo)");
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/drake/foo/iiwa14"));
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer"));
+}
+
+TEST_F(MeshcatVisualizerWithIiwaTest, NotVisibleByDefault) {
+  // Set "visible" to start out false.
+  MeshcatVisualizerParams params;
+  params.visible_by_default = false;
+
+  // Create the diagram and publish both the initialization and periodic event.
+  SetUpDiagram(params);
+  {
+    auto events = diagram_->AllocateCompositeEventCollection();
+    diagram_->GetInitializationEvents(*context_, events.get());
+    diagram_->Publish(*context_, events->get_publish_events());
+    diagram_->ForcedPublish(*context_);
+  }
+
+  // Confirm that the path was added but was set to be invisible.
+  ASSERT_TRUE(meshcat_->HasPath("/drake/visualizer"));
+  const std::string property =
+      meshcat_->GetPackedProperty("/drake/visualizer", "visible");
+  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
+  auto data = oh.get().as<internal::SetPropertyData<bool>>();
+  EXPECT_EQ(data.property, "visible");
+  EXPECT_EQ(data.value, false);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
@@ -208,15 +237,17 @@ bool has_iiwa_frame(const MeshcatAnimation& animation, int frame) {
 TEST_F(MeshcatVisualizerWithIiwaTest, Recording) {
   MeshcatVisualizerParams params;
   SetUpDiagram(params);
-  auto animation = visualizer_->get_mutable_recording();
+  DRAKE_EXPECT_THROWS_MESSAGE(visualizer_->get_mutable_recording(),
+                              ".*You must create a recording.*");
 
   // Publish once without recording and confirm that we don't have the iiwa
   // frame.
   diagram_->ForcedPublish(*context_);
+  visualizer_->StartRecording();
+  auto animation = visualizer_->get_mutable_recording();
   EXPECT_FALSE(has_iiwa_frame(*animation, 0));
 
   // Publish again *with* recording and confirm that we do now have the frame.
-  visualizer_->StartRecording();
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(has_iiwa_frame(*animation, 0));
 
@@ -307,12 +338,58 @@ TEST_F(MeshcatVisualizerWithIiwaTest, UpdateAlphaSliders) {
   diagram_->ForcedPublish(*context_);
 }
 
+// When opted-in by the user, we should display the hydroelastic tessellation
+// instead of the primitive shape.
+GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
+  auto meshcat = std::make_shared<Meshcat>();
+  for (bool show_hydroelastic : {false, true}) {
+    // Load a scene with hydroelastic geometry.
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+    multibody::Parser(&plant).AddModelsFromUrl(
+        "package://drake/multibody/meshcat/test/hydroelastic.sdf");
+    plant.Finalize();
+
+    // Dig out a GeometryId that we just loaded.
+    const auto& inspector = scene_graph.model_inspector();
+    const auto& collision_pairs = inspector.GetCollisionCandidates();
+    ASSERT_GT(collision_pairs.size(), 0);
+    const GeometryId sphere1 = collision_pairs.begin()->first;
+    ASSERT_EQ(inspector.GetName(sphere1), "two_bodies::body1_collision");
+
+    // Add a proximity visualizer, with or without hydro.
+    const std::string prefix = show_hydroelastic ? "show_hydro" : "non_hydro";
+    MeshcatVisualizerParams params;
+    params.role = Role::kProximity;
+    params.show_hydroelastic = show_hydroelastic;
+    params.prefix = prefix;
+    MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                            params);
+
+    // Send the geometry to Meshcat.
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+    diagram->ForcedPublish(*context);
+
+    // Read back the mesh for a hydroelastic shape. Its size (in bytes) will
+    // tell us whether or not hydro was used -- the normal representation is
+    // just the ellipse axes (very small); the hydro representation is all
+    // of the tessellated faces (very large).
+    const std::string data = meshcat->GetPackedObject(fmt::format(
+        "/drake/{}/two_bodies/body1/{}", prefix, sphere1.get_value()));
+    if (show_hydroelastic) {
+      EXPECT_GT(data.size(), 5000);
+    } else {
+      EXPECT_LT(data.size(), 1000);
+    }
+  }
+}
+
 GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
   auto meshcat = std::make_shared<Meshcat>();
 
   systems::DiagramBuilder<double> builder;
-  auto [plant, scene_graph] =
-      multibody::AddMultibodyPlantSceneGraph(&builder, 0.001);
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
   std::string urdf = FindResourceOrThrow(
       "drake/manipulation/models/iiwa_description/urdf/"
       "iiwa14_no_collision.urdf");
@@ -352,6 +429,61 @@ GTEST_TEST(MeshcatVisualizerTest, MultipleModels) {
     EXPECT_NE(meshcat->GetPackedTransform(fmt::format(
                   "/drake/visualizer/second/iiwa14/iiwa_link_{}", link)),
               "");
+  }
+}
+
+// Use geometry properties to control which geometry is shown.
+GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
+  for (bool include_unspecified_accepting : {true, false}) {
+    for (const std::string accepting : {"", "prefix", "no_match"}) {
+      SCOPED_TRACE(fmt::format("include_unspecified = {}, accepting_str = {}",
+                               include_unspecified_accepting,
+                               accepting.empty() ? "null" : accepting.c_str()));
+
+      // Load a simple model with one geometry.
+      auto meshcat = std::make_shared<Meshcat>();
+      systems::DiagramBuilder<double> builder;
+      auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+      multibody::Parser(&plant).AddModelsFromUrl(
+          "package://drake/geometry/render/test/box.sdf");
+      plant.Finalize();
+
+      // Add the accepting tag (if given) to the geometry.
+      auto& inspector = scene_graph.model_inspector();
+      const FrameId body_frame =
+          plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("box").index());
+      const auto geom_ids =
+          inspector.GetGeometries(body_frame, Role::kIllustration);
+      DRAKE_DEMAND(geom_ids.size() == 1);
+      const GeometryId geom_id = *geom_ids.begin();
+      const IllustrationProperties* old_props =
+          scene_graph.model_inspector().GetIllustrationProperties(geom_id);
+      DRAKE_DEMAND(old_props != nullptr);
+      if (!accepting.empty()) {
+        IllustrationProperties new_props(*old_props);
+        new_props.AddProperty("meshcat", "accepting", accepting);
+        scene_graph.AssignRole(*plant.get_source_id(), geom_id, new_props,
+                               RoleAssign::kReplace);
+      }
+
+      // Create the visualizer.
+      MeshcatVisualizerParams params;
+      params.include_unspecified_accepting = include_unspecified_accepting;
+      params.prefix = "prefix";
+      MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                              params);
+      auto diagram = builder.Build();
+      auto context = diagram->CreateDefaultContext();
+
+      // Publish geometry. Check whether the shape was published.
+      const std::string geom_path =
+          fmt::format("prefix/box/box/{}", geom_id.get_value());
+      const bool should_show =
+          (accepting == "prefix") ||
+          (include_unspecified_accepting && accepting.empty());
+      diagram->ForcedPublish(*context);
+      EXPECT_EQ(meshcat->HasPath(geom_path), should_show);
+    }
   }
 }
 

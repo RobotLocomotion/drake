@@ -92,15 +92,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   @returns a mutable pointer to the current recording.  See
   get_mutable_recording().
   */
-  MeshcatAnimation* StartRecording(bool set_transforms_while_recording = true) {
-    recording_ = true;
-    set_transforms_while_recording_ = set_transforms_while_recording;
-    return get_mutable_recording();
-  }
+  MeshcatAnimation* StartRecording(bool set_transforms_while_recording = true);
 
   /** Sets a flag to pause/stop recording.  When stopped, publish events will
   not add frames to the animation. */
-  void StopRecording() { recording_ = false; }
+  void StopRecording();
 
   /** Sends the recording to Meshcat as an animation. The published animation
   only includes transforms and properties; the objects that they modify must be
@@ -121,8 +117,11 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   into the same animation.
 
   The MeshcatAnimation object will only remain valid for the lifetime of `this`
-  or until DeleteRecording() is called. */
-  MeshcatAnimation* get_mutable_recording() { return animation_.get(); }
+  or until DeleteRecording() is called.
+
+  @throws std::exception if meshcat does not have a recording.
+  */
+  MeshcatAnimation* get_mutable_recording();
 
   /** Returns the QueryObject-valued input port. It should be connected to
    SceneGraph's QueryObject-valued output port. Failure to do so will cause a
@@ -134,14 +133,20 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   /** Adds a MeshcatVisualizer and connects it to the given SceneGraph's
    QueryObject-valued output port. See
    MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
-   MeshcatVisualizerParams) for details. */
+   MeshcatVisualizerParams) for details.
+   The %MeshcatVisualizer's name (see systems::SystemBase::set_name) will be set
+   to a sensible default value, unless the default name was already in use by
+   another system. */
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder, const SceneGraph<T>& scene_graph,
       std::shared_ptr<Meshcat> meshcat, MeshcatVisualizerParams params = {});
 
   /** Adds a MeshcatVisualizer and connects it to the given QueryObject-valued
    output port. See MeshcatVisualizer::MeshcatVisualizer(MeshcatVisualizer*,
-   MeshcatVisualizerParams) for details. */
+   MeshcatVisualizerParams) for details.
+   The %MeshcatVisualizer's name (see systems::SystemBase::set_name) will be set
+   to a sensible default value, unless the default name was already in use by
+   another system. */
   static MeshcatVisualizer<T>& AddToBuilder(
       systems::DiagramBuilder<T>* builder,
       const systems::OutputPort<T>& query_object_port,
@@ -218,15 +223,6 @@ class MeshcatVisualizer final : public systems::LeafSystem<T> {
   shared Meshcat instance keeping track).  We may also want to allow users to
   disable the default publishing behavior (to record without visualizing
   immediately). */
-
-  /* MeshcatAnimation object for recording. It must be mutable so that frames
-   * can be added to it during Publish events. */
-  mutable std::unique_ptr<MeshcatAnimation> animation_;
-
-  /* Recording status.  True means that each new Publish event will record a
-  frame in the animation. */
-  bool recording_{false};
-  bool set_transforms_while_recording_{true};
 
   /* TODO(#16486): ideally this mutable state will go away once it is safe to
   run Meshcat multithreaded */

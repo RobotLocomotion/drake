@@ -102,8 +102,7 @@ GTEST_TEST(QPtest, TestUnitBallExample) {
 
 class NoisyQuadraticCost {
  public:
-  explicit NoisyQuadraticCost(const double max_noise)
-      : max_noise_(max_noise) {}
+  explicit NoisyQuadraticCost(const double max_noise) : max_noise_(max_noise) {}
   int numInputs() const { return 1; }
   int numOutputs() const { return 1; }
   template <typename T>

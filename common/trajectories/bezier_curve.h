@@ -52,6 +52,7 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   T BernsteinBasis(int i, const T& time,
                    std::optional<int> order = std::nullopt) const;
 
+  /** Returns a reference to the control points which define the curve. */
   const MatrixX<T>& control_points() const { return control_points_; }
 
   // Required methods for trajectories::Trajectory interface.

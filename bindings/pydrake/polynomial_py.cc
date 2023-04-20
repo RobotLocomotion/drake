@@ -25,13 +25,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
       .def(py::init<>(), cls_doc.ctor.doc_0args)
       .def(py::init<const T&>(), cls_doc.ctor.doc_1args_scalar)
       .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(),
-          cls_doc.ctor.doc_1args_constEigenMatrixBase)
+          py::arg("coefficients"), cls_doc.ctor.doc_1args_constEigenMatrixBase)
       .def("GetNumberOfCoefficients", &Class::GetNumberOfCoefficients,
           cls_doc.GetNumberOfCoefficients.doc)
       .def("GetDegree", &Class::GetDegree, cls_doc.GetDegree.doc)
       .def("IsAffine", &Class::IsAffine, cls_doc.IsAffine.doc)
       .def("GetCoefficients", &Class::GetCoefficients,
           cls_doc.GetCoefficients.doc)
+      .def(
+          "EvaluateUnivariate",
+          [](const Class* self, const T& x, int derivative_order) {
+            return self->EvaluateUnivariate(x, derivative_order);
+          },
+          py::arg("x"), py::arg("derivative_order") = 0,
+          cls_doc.EvaluateUnivariate.doc)
       .def("Derivative", &Class::Derivative, py::arg("derivative_order") = 1,
           cls_doc.Derivative.doc)
       .def("Integral", &Class::Integral, py::arg("integration_constant") = 0.0,

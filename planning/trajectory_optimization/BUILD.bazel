@@ -142,6 +142,7 @@ drake_cc_googletest(
     deps = [
         ":direct_transcription",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//multibody/parsing",
         "//multibody/plant",
         "//solvers:snopt_solver",

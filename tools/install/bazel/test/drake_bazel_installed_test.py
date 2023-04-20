@@ -108,11 +108,13 @@ _set_log_level("trace")
 FindResourceOrThrow("drake/examples/pendulum/Pendulum.urdf")
 """)
 
-    # This test case confirms that @drake_models still works.
+    # This test case confirms that package://drake_models still works.
     with open(join(scratch_dir, "package_map_test.py"), "w") as f:
         f.write("""
+from pydrake.common import _set_log_level
 from pydrake.multibody.parsing import PackageMap
-PackageMap()
+_set_log_level("trace")
+PackageMap().GetPath("drake_models")
 """)
 
     with open(join(scratch_dir, "import_all_test.py"), "w") as f:
@@ -136,6 +138,8 @@ import pydrake.all
         "--max_idle_secs=1",
         # Run all of the tests from the BUILD.bazel generated above.
         command, "//...", "--jobs=1",
+        # Deny networking.
+        "--test_env=DRAKE_ALLOW_NETWORK=none",
         # Enable verbosity.
         "--announce_rc",
         "--test_output=streamed",

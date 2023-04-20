@@ -529,6 +529,24 @@ TEST_F(ImageWriterTest, ConfigureInputPortErrors) {
                               "System .* already has an input port named .*");
 }
 
+// Helper function for testing port declaration with a runtime pixel type.
+template <PixelType kPixelType>
+void TestRuntimePixelType() {
+  ImageWriter writer;
+  const auto& port =
+      writer.DeclareImageInputPort(kPixelType, "in", "/tmp/{time_usec}", 1, 1);
+  EXPECT_EQ(port.Allocate()->static_type_info(), typeid(Image<kPixelType>));
+}
+
+// This tests that the runtime pixel types are passed through correctly.
+TEST_F(ImageWriterTest, RuntimePixelType) {
+  TestRuntimePixelType<PixelType::kRgba8U>();
+  TestRuntimePixelType<PixelType::kLabel16I>();
+  TestRuntimePixelType<PixelType::kDepth32F>();
+  TestRuntimePixelType<PixelType::kDepth16U>();
+  TestRuntimePixelType<PixelType::kGrey8U>();
+}
+
 // Helper function for testing the extension produced for a given pixel type.
 template <PixelType kPixelType>
 void TestPixelExtension(const std::string& folder, ImageWriter* writer,

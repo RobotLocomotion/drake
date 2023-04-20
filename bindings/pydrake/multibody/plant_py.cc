@@ -264,7 +264,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("AddCouplerConstraint", &Class::AddCouplerConstraint,
             py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
             py::arg("offset") = 0.0, py_rvp::reference_internal,
-            cls_doc.AddCouplerConstraint.doc);
+            cls_doc.AddCouplerConstraint.doc)
+        .def("AddDistanceConstraint", &Class::AddDistanceConstraint,
+            py::arg("body_A"), py::arg("p_AP"), py::arg("body_B"),
+            py::arg("p_BQ"), py::arg("distance"),
+            py::arg("stiffness") = std::numeric_limits<double>::infinity(),
+            py::arg("damping") = 0.0, py_rvp::reference_internal,
+            cls_doc.AddDistanceConstraint.doc)
+        .def("AddBallConstraint", &Class::AddBallConstraint, py::arg("body_A"),
+            py::arg("p_AP"), py::arg("body_B"), py::arg("p_BQ"),
+            py_rvp::reference_internal, cls_doc.AddBallConstraint.doc);
     // Mathy bits
     cls  // BR
         .def(
@@ -790,6 +799,12 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::GetJointActuatorByName),
             py::arg("name"), py_rvp::reference_internal,
             cls_doc.GetJointActuatorByName.doc_1args)
+        .def("GetJointActuatorByName",
+            overload_cast_explicit<const JointActuator<T>&, string_view,
+                ModelInstanceIndex>(&Class::GetJointActuatorByName),
+            py::arg("name"), py::arg("model_instance"),
+            py_rvp::reference_internal,
+            cls_doc.GetJointActuatorByName.doc_2args)
         .def("GetModelInstanceByName",
             overload_cast_explicit<ModelInstanceIndex, string_view>(
                 &Class::GetModelInstanceByName),
@@ -1131,7 +1146,54 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](const Class* self, const Context<T>& context, State<T>* state) {
               self->SetDefaultState(context, state);
             },
-            py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc);
+            py::arg("context"), py::arg("state"), cls_doc.SetDefaultState.doc)
+        .def("GetPositionNames",
+            overload_cast_explicit<std::vector<std::string>, bool, bool>(
+                &Class::GetPositionNames),
+            py::arg("add_model_instance_prefix") = false,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetPositionNames.doc_2args)
+        .def("GetPositionNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool, bool>(&Class::GetPositionNames),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetPositionNames.doc_3args)
+        .def("GetVelocityNames",
+            overload_cast_explicit<std::vector<std::string>, bool, bool>(
+                &Class::GetVelocityNames),
+            py::arg("add_model_instance_prefix") = false,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetVelocityNames.doc_2args)
+        .def("GetVelocityNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool, bool>(&Class::GetVelocityNames),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
+            py::arg("always_add_suffix") = true,
+            cls_doc.GetVelocityNames.doc_3args)
+        .def("GetStateNames",
+            overload_cast_explicit<std::vector<std::string>, bool>(
+                &Class::GetStateNames),
+            py::arg("add_model_instance_prefix") = false,
+            cls_doc.GetStateNames.doc_1args)
+        .def("GetStateNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool>(&Class::GetStateNames),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
+            cls_doc.GetStateNames.doc_2args)
+        .def("GetActuatorNames",
+            overload_cast_explicit<std::vector<std::string>, bool>(
+                &Class::GetActuatorNames),
+            py::arg("add_model_instance_prefix"),
+            cls_doc.GetActuatorNames.doc_1args)
+        .def("GetActuatorNames",
+            overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
+                bool>(&Class::GetActuatorNames),
+            py::arg("model_instance"), py::arg("add_model_instance_prefix"),
+            cls_doc.GetActuatorNames.doc_2args);
   }
 
   {

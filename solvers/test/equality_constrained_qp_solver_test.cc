@@ -9,10 +9,10 @@
 #include "drake/solvers/test/mathematical_program_test_util.h"
 #include "drake/solvers/test/quadratic_program_examples.h"
 
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using Eigen::Vector2d;
 using Eigen::Matrix2d;
+using Eigen::MatrixXd;
+using Eigen::Vector2d;
+using Eigen::VectorXd;
 
 namespace drake {
 namespace solvers {

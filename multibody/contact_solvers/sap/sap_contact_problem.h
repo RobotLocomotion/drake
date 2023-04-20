@@ -172,11 +172,11 @@ class SapContactProblem {
   const ContactProblemGraph& graph() const { return graph_; }
 
  private:
-  int nv_{0};                    // Total number of generalized velocities.
-  T time_step_{0.0};             // Discrete time step.
-  std::vector<MatrixX<T>> A_;    // Linear dynamics matrix.
-  VectorX<T> v_star_;            // Free-motion velocities.
-  ContactProblemGraph graph_;    // Contact graph for this problem.
+  int nv_{0};                  // Total number of generalized velocities.
+  T time_step_{0.0};           // Discrete time step.
+  std::vector<MatrixX<T>> A_;  // Linear dynamics matrix.
+  VectorX<T> v_star_;          // Free-motion velocities.
+  ContactProblemGraph graph_;  // Contact graph for this problem.
   // Constraints owned by this problem.
   std::vector<std::unique_ptr<SapConstraint<T>>> constraints_;
 };

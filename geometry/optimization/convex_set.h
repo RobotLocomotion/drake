@@ -244,6 +244,22 @@ std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
 instances. */
 typedef std::vector<copyable_unique_ptr<ConvexSet>> ConvexSets;
 
+/** Helper function that allows the ConvexSets to be initialized from arguments
+containing ConvexSet references, or unique_ptr<ConvexSet> instances, or any
+object that can be assigned to ConvexSets::value_type. */
+template <typename... Args>
+ConvexSets MakeConvexSets(Args&&... args) {
+  ConvexSets sets;
+  constexpr size_t N = sizeof...(args);
+  sets.resize(N);
+  // This is a "constexpr for" loop for 0 <= I < N.
+  auto args_tuple = std::forward_as_tuple(std::forward<Args>(args)...);
+  [&]<size_t... I>(std::integer_sequence<size_t, I...> &&) {
+    ((sets[I] = std::get<I>(std::move(args_tuple))), ...);
+  }(std::make_index_sequence<N>{});
+  return sets;
+}
+
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake

@@ -196,31 +196,6 @@ GeometryId SceneGraph<T>::RegisterGeometry(
 }
 
 template <typename T>
-GeometryId SceneGraph<T>::RegisterGeometry(
-    SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance> geometry) {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-  return model_.RegisterGeometryWithParent(source_id, geometry_id,
-                                           std::move(geometry));
-#pragma GCC diagnostic pop
-}
-
-template <typename T>
-GeometryId SceneGraph<T>::RegisterGeometry(
-    Context<T>* context, SourceId source_id, GeometryId geometry_id,
-    std::unique_ptr<GeometryInstance> geometry) const {
-  auto& g_state = mutable_geometry_state(context);
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // 2023-04-01 Deprecation removal.
-  return g_state.RegisterGeometryWithParent(source_id, geometry_id,
-                                            std::move(geometry));
-#pragma GCC diagnostic pop
-}
-
-template <typename T>
 GeometryId SceneGraph<T>::RegisterAnchoredGeometry(
     SourceId source_id, std::unique_ptr<GeometryInstance> geometry) {
   return model_.RegisterAnchoredGeometry(source_id, std::move(geometry));

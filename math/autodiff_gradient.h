@@ -230,5 +230,14 @@ GetDerivativeSize(const Eigen::MatrixBase<Derived>& A) {
   return num_derivs;
 }
 
+/**
+ * Determines if a and b are equal. a equals to b if they have the same value
+ * and gradients.
+ * TODO(hongkai.dai) implement and use std::equal_to<> for comparing Eigen
+ * vector of AutoDiffXd.
+ **/
+bool AreAutoDiffVecXdEqual(const Eigen::Ref<const VectorX<AutoDiffXd>>& a,
+                           const Eigen::Ref<const VectorX<AutoDiffXd>>& b);
+
 }  // namespace math
 }  // namespace drake

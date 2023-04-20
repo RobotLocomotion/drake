@@ -374,16 +374,7 @@ class RigidTransform {
   }
 
   /// Returns the isometry in ℜ³ that is equivalent to a %RigidTransform.
-  Isometry3<T> GetAsIsometry3() const {
-    // pose.linear() returns a mutable reference to the 3x3 rotation matrix part
-    // of Isometry3 and pose.translation() returns a mutable reference to the
-    // 3x1 position vector part of the Isometry3.
-    Isometry3<T> pose;
-    pose.linear() = rotation().matrix();
-    pose.translation() = translation();
-    pose.makeAffine();
-    return pose;
-  }
+  Isometry3<T> GetAsIsometry3() const;
 
   /// Sets `this` %RigidTransform so it corresponds to aligning the two frames
   /// so unit vectors Ax = Bx, Ay = By, Az = Bz and point Ao is coincident with
@@ -448,8 +439,11 @@ class RigidTransform {
   /// the inverse of a %RigidTransform drops off with the sqrt condition number.
   RigidTransform<T> inverse() const {
     // @internal This method's name was chosen to mimic Eigen's inverse().
-    const RotationMatrix<T> R_BA = R_AB_.inverse();
-    return RigidTransform<T>(R_BA, R_BA * (-p_AoBo_A_));
+    RigidTransform<T> X_BA(internal::DoNotInitializeMemberFields{});
+    X_BA.set_rotation(R_AB_.inverse());
+    const RotationMatrix<T>& R_BA = X_BA.rotation();
+    X_BA.set_translation(R_BA * (-p_AoBo_A_));
+    return X_BA;
   }
 
   /// Calculates the product of `this` inverted and another %RigidTransform.

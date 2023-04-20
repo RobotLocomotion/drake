@@ -285,8 +285,9 @@ TEST_F(TestAggregateCostsAndConstraints, AggregateBoundingBoxConstraints1) {
   // -inf <= x1 <= 2. The returned bounds for x1 should be 4 <= x1 <= 2. This
   // test that we can return the bounds even if the lower bound is higher than
   // the upper bound.
-  bounding_box_constraints.emplace_back(std::make_shared<BoundingBoxConstraint>(
-      Vector1d(-kInf), Vector1d(2)), Vector1<symbolic::Variable>(x_[1]));
+  bounding_box_constraints.emplace_back(
+      std::make_shared<BoundingBoxConstraint>(Vector1d(-kInf), Vector1d(2)),
+      Vector1<symbolic::Variable>(x_[1]));
   result = AggregateBoundingBoxConstraints(bounding_box_constraints);
   EXPECT_EQ(result.size(), 3);
   // Only the bound of x_[1] should change, the rest should be the same.

@@ -73,14 +73,23 @@ drake_py_binary(
     ],
 )
 
+genrule(
+    name = "drake_models_json",
+    srcs = ["@drake_models//:drake_repository_metadata.json"],
+    outs = ["drake_models.json"],
+    cmd = "cp $< $@",
+    visibility = ["//visibility:public"],
+)
+
 drake_cc_library(
     name = "package_map",
     srcs = ["package_map.cc"],
     hdrs = ["package_map.h"],
     data = [
+        ":drake_models.json",
         ":package_downloader.py",
         "//:package.xml",
-        "@models_internal//:package.xml",
+        "@drake_models//:package.xml",
     ],
     visibility = ["//visibility:public"],
     interface_deps = [
@@ -91,8 +100,10 @@ drake_cc_library(
         "//common:find_cache",
         "//common:find_resource",
         "//common:find_runfiles",
+        "//common:network_policy",
         "//common:scope_exit",
         "//common/yaml",
+        "@picosha2",
         "@tinyxml2_internal//:tinyxml2",
     ],
 )
@@ -580,6 +591,7 @@ drake_cc_googletest(
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",
+        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
@@ -656,6 +668,7 @@ drake_cc_googletest(
         "//common:find_resource",
         "//common:scope_exit",
         "//common/test_utilities:expect_throws_message",
+        "@picosha2",
     ],
 )
 
@@ -723,7 +736,10 @@ drake_py_unittest(
 install_files(
     name = "install",
     dest = "share/drake/multibody/parsing",
-    files = ["package_downloader.py"],
+    files = [
+        "drake_models.json",
+        "package_downloader.py",
+    ],
     visibility = ["//visibility:public"],
 )
 

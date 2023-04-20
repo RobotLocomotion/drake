@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -13,6 +14,7 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
+
 class CspaceFreePath : public CspaceFreePolytope {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePath);
@@ -38,8 +40,6 @@ class CspaceFreePath : public CspaceFreePolytope {
 
   [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
 
-
-
  protected:
   /**
    Generate all the conditions (certain rationals being non-negative, and
@@ -53,14 +53,14 @@ class CspaceFreePath : public CspaceFreePolytope {
   // private members of CspaceFreePath for unit test.
   friend class CspaceFreePathTester;
 
-  // the path parametrization variable going between 0 and 1
+  // The path parametrization variable going between 0 and 1.
   const symbolic::Variable mu_;
 
-  // a map storing the substitutions from the s_set_ variables to the path
+  // A map storing the substitutions from the s_set_ variables to the path
   // parametrization.
   const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path_;
 
-  // friend declaration for use in constructor to avoid large initialization
+  // Friend declaration for use in constructor to avoid large initialization
   // lambda.
   friend std::unordered_map<symbolic::Variable, symbolic::Polynomial>
   initialize_path_map(CspaceFreePath* cspace_free_path,

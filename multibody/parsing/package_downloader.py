@@ -31,8 +31,7 @@ from typing import List
 
 
 def _fail(message):
-    logging.getLogger("package_downloader").error(message)
-    sys.exit(1)
+    raise SystemExit(message)
 
 
 def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
@@ -150,12 +149,7 @@ def _run(*, temp_dir: Path, package_name: str, urls: List[str], sha256: str,
     assert output_dir.is_dir()
 
 
-def _main(argv):
-    # We expect exactly two command-line arguments to this program:
-    # - The filename containing JSON data with our *actual* arguments.
-    # - A dummy argument that we'll ignore. (It's sometimes used by our caller
-    #    to suppress valgrind when we're called from C++ code).
-    config_json, _ = argv
+def _wrapped_main(*, config_json):
 
     # Read our config file.
     with open(config_json, "r") as f:
@@ -177,6 +171,26 @@ def _main(argv):
     # Download and extract.
     with tempfile.TemporaryDirectory(prefix="drake_downloader_") as temp_dir:
         _run(temp_dir=Path(temp_dir), **kwargs)
+
+
+def _main(argv):
+    # We expect exactly three command-line arguments to this program:
+    # - The input filename containing JSON data with our *actual* arguments.
+    # - The output filename we should use to report error message text.
+    # - A dummy argument that we'll ignore. (It's sometimes used by our caller
+    #    to suppress valgrind when we're called from C++ code).
+    json_filename, error_filename, _ = argv
+    with open(error_filename, "w", encoding="utf-8") as error_file:
+        try:
+            _wrapped_main(config_json=json_filename)
+            returncode = 0
+        except SystemExit as e:
+            error_file.write(str(e))
+            returncode = 1
+        except Exception as e:
+            error_file.write(str(e))
+            returncode = 1
+    sys.exit(returncode)
 
 
 if __name__ == "__main__":
