@@ -3,48 +3,48 @@
 #include <array>
 
 #include "drake/multibody/fem/constitutive_model.h"
-#include "drake/multibody/fem/corotated_model_data.h"
+#include "drake/multibody/fem/linear_corotated_model_data.h"
 
 namespace drake {
 namespace multibody {
 namespace fem {
 namespace internal {
 
-/* Traits for CorotatedModel. */
+/* Traits for LinearCorotatedModel. */
 template <typename T, int num_locations>
-struct CorotatedModelTraits {
+struct LinearCorotatedModelTraits {
   using Scalar = T;
-  using Data = CorotatedModelData<T, num_locations>;
+  using Data = LinearCorotatedModelData<T, num_locations>;
 };
 
-/* Implements the fixed corotated hyperelastic constitutive model as
- described in [Stomakhin, 2012].
+/* Implements the linear corotated constitutive model as described in
+ [Han et al., 2023].
  @tparam_nonsymbolic_scalar
  @tparam num_locations Number of locations at which the constitutive
  relationship is evaluated. We currently only provide one instantiation of this
  template with `num_locations = 1`, but more instantiations can easily be added
  when needed.
 
- [Stomakhin, 2012] Stomakhin, Alexey, et al. "Energetically consistent
- invertible elasticity." Proceedings of the 11th ACM SIGGRAPH/Eurographics
- conference on Computer Animation. 2012. */
+ [Han et al., 2023] Han, Xuchen, Joseph Masterjohn, and Alejandro Castro. "A
+ Convex Formulation of Frictional Contact between Rigid and Deformable Bodies."
+ arXiv preprint arXiv:2303.08912 (2023). */
 template <typename T, int num_locations>
-class CorotatedModel final
-    : public ConstitutiveModel<CorotatedModel<T, num_locations>,
-                               CorotatedModelTraits<T, num_locations>> {
+class LinearCorotatedModel final
+    : public ConstitutiveModel<LinearCorotatedModel<T, num_locations>,
+                               LinearCorotatedModelTraits<T, num_locations>> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CorotatedModel)
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LinearCorotatedModel)
 
-  using Traits = CorotatedModelTraits<T, num_locations>;
+  using Traits = LinearCorotatedModelTraits<T, num_locations>;
   using Data = typename Traits::Data;
 
-  /* Constructs a CorotatedModel constitutive model with the
+  /* Constructs a LinearCorotatedModel constitutive model with the
    prescribed Young's modulus and Poisson's ratio.
    @param youngs_modulus  Young's modulus of the model, with units of N/m².
    @param poissons_ratio  Poisson's ratio of the model, unitless.
    @pre youngs_modulus >= 0.
    @pre -1 < poissons_ratio < 0.5. */
-  CorotatedModel(const T& youngs_modulus, const T& poissons_ratio);
+  LinearCorotatedModel(const T& youngs_modulus, const T& poissons_ratio);
 
   const T& youngs_modulus() const { return E_; }
 
@@ -61,8 +61,8 @@ class CorotatedModel final
   const T& lame_first_parameter() const { return lambda_; }
 
  private:
-  friend ConstitutiveModel<CorotatedModel<T, num_locations>,
-                           CorotatedModelTraits<T, num_locations>>;
+  friend ConstitutiveModel<LinearCorotatedModel<T, num_locations>,
+                           LinearCorotatedModelTraits<T, num_locations>>;
 
   /* Shadows ConstitutiveModel::CalcElasticEnergyDensityImpl() as required by
    the CRTP base class. */
