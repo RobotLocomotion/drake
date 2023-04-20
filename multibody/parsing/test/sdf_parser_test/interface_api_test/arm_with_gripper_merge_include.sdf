@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="arm_with_gripper">
+
+    <include merge="true">
+      <pose>0 2 0 0 0 0</pose>
+      <uri>package://interface_api_test/arm.urdf</uri>
+    </include>
+
+    <include merge="true">
+      <pose>0 2 0 0 0 0</pose>
+      <uri>package://interface_api_test/gripper.sdf</uri>
+    </include>
+
+    <joint name="gripper_joint" type="fixed">
+      <parent>L2</parent>
+      <child>gripper_link</child>
+    </joint>
+
+  </model>
+</sdf>
+
