@@ -159,6 +159,38 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
     ParseScalarAttribute(mass, "value", &body_mass);
   }
 
+  // If physical validity checks fail below, return a prepared plausible
+  // inertia instead. Use a plausible guess for the mass, letting actual mass
+  // validity checking happen later.
+  const double plausible_dummy_mass =
+      (std::isfinite(body_mass) && body_mass > 0.0) ? body_mass : 1.0;
+  // Construct a dummy inertia for a solid sphere, with the density of water,
+  // and radius deduced from the plausible mass.
+  static constexpr double kPlausibleDensity{1000};  // Water is 1000 kg/m³.
+  const double plausible_volume = plausible_dummy_mass / kPlausibleDensity;
+  // Volume = (4/3)π(radius)³, so radius = ³√(3/(4π))(volume).
+  const double plausible_radius =
+      std::cbrt((3.0 / (4.0 * M_PI)) * plausible_volume);
+  // Create Mdum_BBo_B, a plausible spatial inertia for B about Bo (B's origin).
+  // To do this, create Mdum_BBcm (a plausible spatial inertia for B about
+  // Bcm) as a solid sphere and then shift that spatial inertia from Bcm to Bo.
+  // Note: It is unwise to directly create a solid sphere about Bo as this does
+  // not guarantee that the spatial inertia about Bcm is valid. Bcm (B's center
+  // of mass) is the ground-truth point for validity tests.
+  const SpatialInertia<double> Mdum_BBcm =
+    SpatialInertia<double>::SolidSphereWithDensity(
+       kPlausibleDensity, plausible_radius);
+  // Bi's origin is at the COM as documented in
+  // http://wiki.ros.org/urdf/XML/link#Elements
+  const Vector3d& p_BoBcm_B = X_BBi.translation();
+  const SpatialInertia<double> Mdum_BBo_B = Mdum_BBcm.Shift(-p_BoBcm_B);
+
+  // Tell the user we are constructing a plausible but wrong model, when input
+  // inertia is not usable.
+  static constexpr char warn_format[] =
+      "{}\n"
+      "Substituting a plausible-guess inertia '{}' instead.";
+
   double ixx = 0;
   double ixy = 0;
   double ixz = 0;
@@ -176,12 +208,26 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
     ParseScalarAttribute(inertia, "izz", &izz);
   }
 
-  const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
+  // Yes, catching exceptions violates the coding standard. It is done here to
+  // capture math-aware exceptions into parse-time warnings, since non-physical
+  // inertias are all too common, and the thrown messages are actually pretty
+  // useful.
+  RotationalInertia<double> I_BBcm_Bi;
+  try {
+    // Use the factory method here; it doesn't change its diagnostic behavior
+    // between release and debug builds.
+    I_BBcm_Bi = RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+            ixx, iyy, izz, ixy, ixz, iyz);
+  } catch (const std::exception& e) {
+    Warning(*node, fmt::format(warn_format, e.what(), Mdum_BBcm));
+    return Mdum_BBo_B;
+  }
 
   // If this is a massless body, return a zero SpatialInertia.
-  if (body_mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
+  if (body_mass == 0.0 && I_BBcm_Bi.get_moments().isZero() &&
       I_BBcm_Bi.get_products().isZero()) {
-    return SpatialInertia<double>(body_mass, {0., 0., 0.}, {0., 0., 0});
+    return SpatialInertia<double>(
+        0.0, Vector3d::Zero(), UnitInertia<double>{0.0, 0.0, 0.0});
   }
   // B and Bi are not necessarily aligned.
   const math::RotationMatrix<double> R_BBi(X_BBi.rotation());
@@ -189,12 +235,14 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
   // Re-express in frame B as needed.
   const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
 
-  // Bi's origin is at the COM as documented in
-  // http://wiki.ros.org/urdf/XML/link#Elements
-  const Vector3d p_BoBcm_B = X_BBi.translation();
-
-  return SpatialInertia<double>::MakeFromCentralInertia(
-      body_mass, p_BoBcm_B, I_BBcm_B);
+  try {
+    return SpatialInertia<double>::MakeFromCentralInertia(
+        body_mass, p_BoBcm_B, I_BBcm_B);
+  } catch (const std::exception& e) {
+    Warning(*node, fmt::format(warn_format, e.what(), Mdum_BBcm));
+    return Mdum_BBo_B;
+  }
+  DRAKE_UNREACHABLE();
 }
 
 void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
