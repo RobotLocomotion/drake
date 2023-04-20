@@ -3906,6 +3906,27 @@ GTEST_TEST(TestMathematicalProgram, AddSosConstraint) {
   EXPECT_EQ(gram2.rows(), 1);
 }
 
+GTEST_TEST(TestMathematicalProgram, AddSosConstraintConstant) {
+  // Call AddSosConstraint on a constant.
+  {
+    // Test with given monomial basis.
+    MathematicalProgram prog;
+    auto x = prog.NewIndeterminates<1>();
+    auto Q = prog.AddSosConstraint(
+        1, Vector1<symbolic::Monomial>(symbolic::Monomial()));
+    EXPECT_EQ(Q.rows(), 1);
+  }
+  {
+    // Test without given monomial basis.
+    MathematicalProgram prog;
+    auto x = prog.NewIndeterminates<1>();
+    auto [Q, m] = prog.AddSosConstraint(1);
+    EXPECT_EQ(Q.rows(), 1);
+    EXPECT_EQ(m.rows(), 1);
+    EXPECT_EQ(m(0).total_degree(), 0);
+  }
+}
+
 template <typename C>
 void RemoveCostTest(MathematicalProgram* prog,
                     const symbolic::Expression& cost1_expr,
