@@ -1,0 +1,11 @@
+# This file tests the default_joint_positions and default_free_body_pose
+# directives.
+
+directives:
+
+- add_model:
+    name: joint_parsing_test
+    file: package://drake/multibody/benchmarks/acrobot/acrobot.urdf
+    default_joint_positions:
+      ShoulderJoint: [ 0.1 ]
+      ElbowJoint: [ 0.2 ]

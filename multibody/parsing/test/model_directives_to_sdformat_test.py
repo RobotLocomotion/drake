@@ -472,3 +472,22 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         self.assertEqual(expected_xml,
                          ET.tostring(result, pretty_print=True,
                                      encoding="unicode"))
+
+    def test_not_supported_default_(self):
+        with self.assertRaisesRegex(
+                ConversionError,
+                'default_free_body_pose is not supported yet.'):
+            args = self.parser.parse_args(['-m', 'multibody/parsing/test/'
+                                           'process_model_directives_test/'
+                                           'default_positions.dmd.yaml'])
+            convert_directives(args)
+
+    def test_not_supported_default_joint_position(self):
+        with self.assertRaisesRegex(
+                ConversionError,
+                'default_joint_positions is not supported yet.'):
+            args = self.parser.parse_args(['-m', 'multibody/parsing/test/'
+                                           'model_directives_to_sdformat'
+                                           '_files/default_joint_positions'
+                                           '.dmd.yaml'])
+            convert_directives(args)

@@ -292,6 +292,12 @@ class AddModel:
     def __init__(self, directive):
         self.name = directive.name
         self.file_name = directive.file
+        if directive.default_free_body_pose:
+            raise ConversionError(
+                f'default_free_body_pose is not supported yet.')
+        if directive.default_joint_positions:
+            raise ConversionError(
+                f'default_joint_positions is not supported yet.')
 
     def insert_into_root_sdformat_node(self, root, directives):
         merge_include = False
