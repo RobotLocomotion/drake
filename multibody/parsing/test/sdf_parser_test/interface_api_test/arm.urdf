@@ -6,6 +6,11 @@
         <sphere radius='0.4'/>
       </geometry>
     </collision>
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </visual>
   </link>
   <joint name="J1" type="revolute">
     <origin xyz="1 2 3" rpy="0.1 0.2 0.3"/>

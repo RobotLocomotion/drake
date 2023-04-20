@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="nested_model">
+    <include>
+      <uri>package://interface_api_test/top_merge_include.sdf</uri>
+      <name>top</name>
+    </include>
+
+    <include>
+      <uri>package://interface_api_test/top_merge_include.sdf</uri>
+      <name>another_top</name>
+    </include>
+  </model>
+</sdf>
