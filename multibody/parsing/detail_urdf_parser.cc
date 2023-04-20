@@ -176,25 +176,37 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
     ParseScalarAttribute(inertia, "izz", &izz);
   }
 
-  const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
+  // Yes, catching exceptions violates the coding standard. It is done here to
+  // funnel the plethora of possible exceptions into parse-time warnings, since
+  // non-physical inertias are all too common, and the thrown messages are
+  // actually pretty useful.
+  try {
+    const RotationalInertia<double> I_BBcm_Bi(ixx, iyy, izz, ixy, ixz, iyz);
 
-  // If this is a massless body, return a zero SpatialInertia.
-  if (body_mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
-      I_BBcm_Bi.get_products().isZero()) {
-    return SpatialInertia<double>(body_mass, {0., 0., 0.}, {0., 0., 0});
+    // If this is a massless body, return a zero SpatialInertia.
+    if (body_mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
+        I_BBcm_Bi.get_products().isZero()) {
+      return SpatialInertia<double>(body_mass, {0., 0., 0.}, {0., 0., 0});
+    }
+    // B and Bi are not necessarily aligned.
+    const math::RotationMatrix<double> R_BBi(X_BBi.rotation());
+
+    // Re-express in frame B as needed.
+    const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
+
+    // Bi's origin is at the COM as documented in
+    // http://wiki.ros.org/urdf/XML/link#Elements
+    const Vector3d p_BoBcm_B = X_BBi.translation();
+
+    return SpatialInertia<double>::MakeFromCentralInertia(
+        body_mass, p_BoBcm_B, I_BBcm_B);
+  } catch (const std::exception& e) {
+    Warning(*node, e.what());
+    // Return an arbitrary but valid inertia, to allow parsing to
+    // continue.
+    return SpatialInertia<double>::PointMass(1., {0., 0., 0.});
   }
-  // B and Bi are not necessarily aligned.
-  const math::RotationMatrix<double> R_BBi(X_BBi.rotation());
-
-  // Re-express in frame B as needed.
-  const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
-
-  // Bi's origin is at the COM as documented in
-  // http://wiki.ros.org/urdf/XML/link#Elements
-  const Vector3d p_BoBcm_B = X_BBi.translation();
-
-  return SpatialInertia<double>::MakeFromCentralInertia(
-      body_mass, p_BoBcm_B, I_BBcm_B);
+  DRAKE_UNREACHABLE();
 }
 
 void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {
