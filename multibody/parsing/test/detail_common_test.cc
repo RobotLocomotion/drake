@@ -3,6 +3,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/diagnostic_policy_test_base.h"
+
 namespace drake {
 namespace multibody {
 namespace internal {
@@ -23,6 +25,7 @@ using geometry::internal::kHydroGroup;
 using geometry::internal::kMaterialGroup;
 using geometry::internal::kRezHint;
 using std::optional;
+using testing::MatchesRegex;
 
 GTEST_TEST(EndsWithCaseInsensitiveTest, BasicTests) {
   EXPECT_TRUE(EndsWithCaseInsensitive("something", "thing"));
@@ -360,6 +363,48 @@ TEST_F(ParseProximityPropertiesTest, Friction) {
     // Friction is the only property.
     EXPECT_EQ(properties.GetPropertiesInGroup(kMaterialGroup).size(), 1u);
     EXPECT_EQ(properties.num_groups(), 2);  // Material and default groups.
+  }
+}
+
+class ParseSpatialInertiaTest : public test::DiagnosticPolicyTestBase {};
+
+TEST_F(ParseSpatialInertiaTest, BadInertiaValues) {
+  std::vector<SpatialInertia<double>> results;
+  math::RigidTransformd X_BBi;
+
+  // Absurd rotational inertia values.
+  results.push_back(
+      ParseSpatialInertia(diagnostic_policy_, X_BBi, 1,
+                          {.ixx = 1, .iyy = 4, .izz = 9,
+                           .ixy = 16, .ixz = 25, .iyz = 36}));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
+  // Test some inertia values found in the wild.
+  results.push_back(
+      ParseSpatialInertia(
+          diagnostic_policy_, X_BBi, 0.038,
+          {.ixx = 4.30439933333e-05, .iyy = 5.1205e-06, .izz = 4.3043993333e-05,
+           .ixy = 9.57068e-06, .ixz = 1.44451933333e-05, .iyz = 1.342825e-05}));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
+  // Negative mass.
+  results.push_back(
+      ParseSpatialInertia(diagnostic_policy_, X_BBi, -1,
+                          {.ixx = 1, .iyy = 1, .izz = 1,
+                           .ixy = 0, .ixz = 0, .iyz = 0}));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
+  // Test that attempt to parse links with zero mass and non-zero inertia fails.
+  results.push_back(
+      ParseSpatialInertia(diagnostic_policy_, X_BBi, 0,
+                          {.ixx = 1, .iyy = 1, .izz = 1,
+                           .ixy = 0, .ixz = 0, .iyz = 0}));
+  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
+
+  // Do some basic sanity checking on the plausible mass and inertia generated
+  // when warnings are issued.
+  int k = 0;
+  for (const auto& result : results) {
+    SCOPED_TRACE(fmt::format("test case result {}", k));
+    EXPECT_TRUE(result.IsPhysicallyValid());
+    ++k;
   }
 }
 

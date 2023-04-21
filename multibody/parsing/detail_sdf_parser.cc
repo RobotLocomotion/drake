@@ -159,24 +159,6 @@ std::string GetRelativeBodyName(
   }
 }
 
-// Given a gz::math::Inertial object, extract a RotationalInertia object
-// for the rotational inertia of body B, about its center of mass Bcm and,
-// expressed in the inertial frame Bi (as specified in <inertial> in the SDF
-// file.)
-RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
-    const gz::math::Inertiald &inertial) {
-  // TODO(amcastro-tri): Verify that gz::math::Inertial::MOI() ALWAYS is
-  // expresed in the body frame B, regardless of how a user might have
-  // specified frames in the sdf file. That is, that it always returns R_BBcm_B.
-  // TODO(amcastro-tri): Verify that gz::math::Inertial::MassMatrix()
-  // ALWAYS is in the inertial frame Bi, regardless of how a user might have
-  // specified frames in the sdf file. That is, that it always returns
-  // M_BBcm_Bi.
-  const gz::math::Matrix3d I = inertial.MassMatrix().Moi();
-  return RotationalInertia<double>(I(0, 0), I(1, 1), I(2, 2),
-                                   I(1, 0), I(2, 0), I(2, 1));
-}
-
 // This takes an `sdf::SemanticPose`, which defines a pose relative to a frame,
 // and resolves its value with respect to another frame.
 math::RigidTransformd ResolveRigidTransform(
@@ -220,17 +202,10 @@ std::string ResolveJointChildLinkName(
 // frame origin Bo and, expressed in body frame B, from a gz::Inertial
 // object.
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
+    const SDFormatDiagnostic& diagnostic,
+    const sdf::ElementPtr link_element,
     const gz::math::Inertiald& Inertial_BBcm_Bi) {
   double mass = Inertial_BBcm_Bi.MassMatrix().Mass();
-
-  const RotationalInertia<double> I_BBcm_Bi =
-      ExtractRotationalInertiaAboutBcmExpressedInBi(Inertial_BBcm_Bi);
-
-  // If this is a massless body, return a zero SpatialInertia.
-  if (mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
-      I_BBcm_Bi.get_products().isZero()) {
-    return SpatialInertia<double>(mass, {0., 0., 0.}, {0., 0., 0});
-  }
 
   // Pose of the "<inertial>" frame Bi in the body frame B.
   // TODO(amcastro-tri): Verify we don't get funny results when X_BBi is not
@@ -241,20 +216,18 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   // give us X_BI. Verify this.
   const RigidTransformd X_BBi = ToRigidTransform(Inertial_BBcm_Bi.Pose());
 
-  // B and Bi are not necessarily aligned.
-  const RotationMatrixd R_BBi = X_BBi.rotation();
-
-  // Re-express in frame B as needed.
-  const RotationalInertia<double> I_BBcm_B = I_BBcm_Bi.ReExpress(R_BBi);
-
-  // Bi's origin is at the COM as documented in
-  // http://sdformat.org/spec?ver=1.6&elem=link#inertial_pose
-  const Vector3d p_BoBcm_B = X_BBi.translation();
-
-  // Return the spatial inertia M_BBo_B of body B, about its body frame origin
-  // Bo, and expressed in the body frame B.
-  return SpatialInertia<double>::MakeFromCentralInertia(
-      mass, p_BoBcm_B, I_BBcm_B);
+  // TODO(amcastro-tri): Verify that gz::math::Inertial::MOI() ALWAYS is
+  // expresed in the body frame B, regardless of how a user might have
+  // specified frames in the sdf file. That is, that it always returns R_BBcm_B.
+  // TODO(amcastro-tri): Verify that gz::math::Inertial::MassMatrix()
+  // ALWAYS is in the inertial frame Bi, regardless of how a user might have
+  // specified frames in the sdf file. That is, that it always returns
+  // M_BBcm_Bi.
+  const gz::math::Matrix3d I = Inertial_BBcm_Bi.MassMatrix().Moi();
+  return ParseSpatialInertia(diagnostic.MakePolicyForNode(*link_element),
+                             X_BBi, mass,
+                             {.ixx = I(0, 0), .iyy = I(1, 1), .izz = I(2, 2),
+                              .ixy = I(1, 0), .ixz = I(2, 0), .iyz = I(2, 1)});
 }
 
 // Helper method to retrieve a Body given the name of the link specification.
@@ -924,7 +897,8 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
     const gz::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
     const SpatialInertia<double> M_BBo_B =
-        ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
+        ExtractSpatialInertiaAboutBoExpressedInB(
+            diagnostic, link_element, Inertial_Bcm_Bi);
 
     // Add a rigid body to model each link.
     const RigidBody<double>& body =
