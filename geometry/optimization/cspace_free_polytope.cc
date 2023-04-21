@@ -387,7 +387,6 @@ struct GramAndMonomialBasis {
   std::vector<VectorX<symbolic::Monomial>> monomial_basis;
 };
 
-
 }  // namespace
 
 CspaceFreePolytope::CspaceFreePolytope(
@@ -1323,7 +1322,6 @@ VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs(
   return d_minus_Cs;
 }
 
-
 void CspaceFreePolytope::GenerateRationals() {
   // There can be multiple geometries on the same pair, hence the body pose will
   // be reused. We use this map to store the body pose to avoid redundant
@@ -1477,6 +1475,14 @@ GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
     }
   }
   return ret;
+}
+
+int CspaceFreePolytope::GetSeparatingPlaneIndex(
+    const SortedPair<geometry::GeometryId>& pair) const {
+  auto geometry_pair_it = map_geometries_to_separating_planes_.find(pair);
+  return (geometry_pair_it == map_geometries_to_separating_planes_.end())
+             ? -1
+             : geometry_pair_it->second;
 }
 
 // Explicit instantiation

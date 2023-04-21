@@ -366,6 +366,9 @@ Polynomial<T> Polynomial<T>::Integral(
 }
 
 template <typename T>
+bool Polynomial<T>::is_univariate() const {return is_univariate_;}
+
+template <typename T>
 bool Polynomial<T>::operator==(
     const Polynomial<T>& other) const {
   // Comparison of unsorted vectors is faster copying them into std::set
