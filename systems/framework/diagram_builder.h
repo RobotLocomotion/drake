@@ -243,6 +243,18 @@ class DiagramBuilder {
         name, std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
+  /// Removes the given system from this builder and disconnects any connections
+  /// or exported ports associated with it.
+  ///
+  /// Note that un-exporting this system's ports might have a ripple effect on
+  /// other exported input or output port index assignments. The relative order
+  /// will remain intact, but index "holes" created by this removal will be
+  /// filled in by subtracting from the indices of ports that remain.
+  ///
+  /// @warning Because a DigramBuilder owns the objects it contains, the system
+  /// will be deleted.
+  void RemoveSystem(const System<T>& system);
+
   /// Returns whether any Systems have been added yet.
   bool empty() const {
     ThrowIfAlreadyBuilt();

@@ -44,6 +44,22 @@ GTEST_TEST(DiagramBuilderTest, AddNamedSystem) {
   EXPECT_EQ(c->get_name(), "c");
 }
 
+// Tests ::RemoveSystem.
+GTEST_TEST(DiagramBuilderTest, Remove) {
+  DiagramBuilder<double> builder;
+  const auto& adder1 = *builder.AddSystem<Adder>(1 /* inputs */, 1 /* size */);
+  builder.ExportInput(adder1.get_input_port());
+  builder.ExportOutput(adder1.get_output_port());
+  const auto& adder2 = *builder.AddSystem<Adder>(1 /* inputs */, 2 /* size */);
+  builder.ExportInput(adder2.get_input_port());
+  builder.ExportOutput(adder2.get_output_port());
+  builder.RemoveSystem(adder1);
+  auto diagram = builder.Build();
+  ASSERT_EQ(diagram->num_input_ports(), 1);
+  ASSERT_EQ(diagram->num_output_ports(), 1);
+  EXPECT_EQ(diagram->get_output_port().size(), 2);
+}
+
 // Tests already_built() and one example of ThrowIfAlreadyBuilt().
 GTEST_TEST(DiagramBuilderTest, AlreadyBuilt) {
   DiagramBuilder<double> builder;

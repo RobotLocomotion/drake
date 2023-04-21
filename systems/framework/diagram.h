@@ -47,8 +47,18 @@ class OwnedSystems {
   decltype(auto) begin() const { return vec_.begin(); }
   decltype(auto) end() const { return vec_.end(); }
   decltype(auto) operator[](size_t i) const { return vec_[i]; }
+  decltype(auto) operator[](size_t i) { return vec_[i]; }
   void push_back(std::unique_ptr<System<T>>&& sys) {
     vec_.push_back(std::move(sys));
+  }
+  decltype(auto) back() const {
+    return vec_.back();
+  }
+  decltype(auto) back() {
+    return vec_.back();
+  }
+  void pop_back() {
+    vec_.pop_back();
   }
 
  private:
