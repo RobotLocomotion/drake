@@ -4,10 +4,6 @@ import numpy as np
 
 from pydrake.common.value import AbstractValue
 from pydrake.geometry import (
-    Rgba,
-    SceneGraph,
-)
-from pydrake.geometry.render import (
     ClippingRange,
     DepthRange,
     DepthRenderCamera,
@@ -15,6 +11,8 @@ from pydrake.geometry.render import (
     RenderCameraCore,
     RenderEngineVtkParams,
     RenderLabel,
+    Rgba,
+    SceneGraph,
 )
 from pydrake.math import RigidTransform
 from pydrake.systems.framework import LeafSystem

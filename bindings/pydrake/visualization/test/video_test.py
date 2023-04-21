@@ -6,7 +6,7 @@ import textwrap
 import unittest
 
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.geometry.render import RenderLabel
+from pydrake.geometry import RenderLabel
 from pydrake.math import RollPitchYaw, RigidTransform
 from pydrake.multibody.plant import AddMultibodyPlantSceneGraph
 from pydrake.multibody.parsing import Parser
