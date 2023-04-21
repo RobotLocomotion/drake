@@ -45,7 +45,7 @@ VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
   trajectories::BezierCurve<symbolic::Expression> path{0, 1, control_points};
   EXPECT_EQ(path.order(), curve_order);
   MatrixX<symbolic::Expression> bezier_path_expr =
-      path.value(symbolic::Variable("t"), false);
+      path.GetExpression(symbolic::Variable("t"));
 
   VectorX<Polynomiald> bezier_poly_path{bezier_path_expr.rows()};
   for (int r = 0; r < bezier_path_expr.rows(); ++r) {
