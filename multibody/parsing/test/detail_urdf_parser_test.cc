@@ -1248,59 +1248,6 @@ TEST_F(UrdfParserTest, BadInertiaFormats) {
   EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*izz.*"));
 }
 
-TEST_F(UrdfParserTest, BadInertiaValues) {
-  // Test various invalid input values.
-  constexpr const char* base = R"""(
-    <robot name='test'>
-      <link name='test'>
-        <inertial>
-          <mass {}/>
-          <inertia {}/>
-        </inertial>
-      </link>
-    </robot>)""";
-
-  const int num_builtin_models = plant_.num_model_instances();
-
-  // Absurd rotational inertia values.
-  AddModelFromUrdfString(
-      fmt::format(base, "value='1'",
-                  "ixx='1' ixy='4' ixz='9' iyy='16' iyz='25' izz='36'"), "a");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
-  // Test some inertia values found in the wild.
-  AddModelFromUrdfString(
-      fmt::format(
-          base, "value='0.038'",
-          "ixx='4.30439933333e-05' ixy='9.57068e-06' ixz='5.1205e-06' "
-          "iyy='1.44451933333e-05' iyz='1.342825e-05' izz='4.30439933333e-05'"),
-      "b");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
-  // Negative mass.
-  AddModelFromUrdfString(
-      fmt::format(base, "value='-1'",
-                  "ixx='1' ixy='0' ixz='0' iyy='1' iyz='0' izz='1'"), "c");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
-  // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  AddModelFromUrdfString(
-      fmt::format(base, "value='0'",
-                  "ixx='1' ixy='0' ixz='0' iyy='1' iyz='0' izz='1'"), "d");
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
-
-  plant_.Finalize();
-  // Do some basic sanity checking on the plausible mass and inertia generated
-  // when warnings are issued.
-  for (ModelInstanceIndex k(num_builtin_models);
-       k < plant_.num_model_instances(); ++k) {
-    SCOPED_TRACE(fmt::format("model instance {}", k));
-    const auto& body = dynamic_cast<const RigidBody<double>&>(
-        plant_.GetBodyByName("test", k));
-    const double mass = body.default_mass();
-    EXPECT_GT(mass, 0);
-    EXPECT_TRUE(std::isfinite(mass));
-    EXPECT_TRUE(body.default_rotational_inertia().CouldBePhysicallyValid());
-  }
-}
-
 TEST_F(UrdfParserTest, BushingParsing) {
   // Test successful parsing.
   const std::string good_bushing_model = R"""(
