@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -212,6 +213,32 @@ void ParseCollisionFilterGroupCommon(
         read_bool_attribute,
     const std::function<std::string(const ElementNode&, const char*)>&
         read_tag_string);
+
+// This helper struct serves to label and order the inertia inputs in the
+// (otherwise unmanageable) parameter list of ParseSpatialInertia.
+struct InertiaInputs {
+  // Moments.
+  double ixx{};
+  double iyy{};
+  double izz{};
+  // Products of inertia.
+  double ixy{};
+  double ixz{};
+  double iyz{};
+};
+
+// Combines the given user inputs into a SpatialInertia. When any data is
+// invalid, emits a warning into the diagnostic policy and returns a
+// best-effort approximation instead.
+// @param diagnostic  The error-reporting channel.
+// @param X_BBi       Pose of the inertia frame expressed in the body's frame.
+// @param mass        Mass of the body.
+// @param inertia_inputs The moments and products of inertia.
+SpatialInertia<double> ParseSpatialInertia(
+    const drake::internal::DiagnosticPolicy& diagnostic,
+    const math::RigidTransformd& X_BBi,
+    double mass,
+    const InertiaInputs& inertia_inputs);
 
 }  // namespace internal
 }  // namespace multibody

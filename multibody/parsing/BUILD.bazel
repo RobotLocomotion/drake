@@ -488,6 +488,7 @@ drake_cc_googletest(
     name = "detail_common_test",
     deps = [
         ":detail_misc",
+        "//common/test_utilities",
     ],
 )
 
