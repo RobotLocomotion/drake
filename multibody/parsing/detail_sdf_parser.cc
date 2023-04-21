@@ -173,8 +173,11 @@ RotationalInertia<double> ExtractRotationalInertiaAboutBcmExpressedInBi(
   // specified frames in the sdf file. That is, that it always returns
   // M_BBcm_Bi.
   const gz::math::Matrix3d I = inertial.MassMatrix().Moi();
-  return RotationalInertia<double>(I(0, 0), I(1, 1), I(2, 2),
-                                   I(1, 0), I(2, 0), I(2, 1));
+  // Use the factory method since it does not change its validity checking
+  // behavior between debug and optimized builds.
+  return RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+      I(0, 0), I(1, 1), I(2, 2),
+      I(1, 0), I(2, 0), I(2, 1));
 }
 
 // This takes an `sdf::SemanticPose`, which defines a pose relative to a frame,
@@ -220,16 +223,36 @@ std::string ResolveJointChildLinkName(
 // frame origin Bo and, expressed in body frame B, from a gz::Inertial
 // object.
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
+    const SDFormatDiagnostic& diagnostic,
+    const sdf::ElementPtr link_element,
     const gz::math::Inertiald& Inertial_BBcm_Bi) {
   double mass = Inertial_BBcm_Bi.MassMatrix().Mass();
 
-  const RotationalInertia<double> I_BBcm_Bi =
-      ExtractRotationalInertiaAboutBcmExpressedInBi(Inertial_BBcm_Bi);
+  // If physical validity checks fail below, return a prepared point mass
+  // inertia instead. Use a plausible guess for the mass, letting actual mass
+  // validity checking happen later.
+  const double plausible_dummy_mass =
+      (std::isfinite(mass) && mass > 0.0) ? mass : 1.0;
+  auto dummy_inertia = SpatialInertia<double>::PointMass(plausible_dummy_mass,
+                                                         Vector3d::Zero());
+
+  // Yes, catching exceptions violates the coding standard. It is done here to
+  // capture math-aware exceptions into parse-time warnings, since non-physical
+  // inertias are all too common, and the thrown messages are actually pretty
+  // useful.
+  RotationalInertia<double> I_BBcm_Bi;
+  try {
+    I_BBcm_Bi = ExtractRotationalInertiaAboutBcmExpressedInBi(Inertial_BBcm_Bi);
+  } catch (const std::exception& e) {
+    diagnostic.Warning(link_element, e.what());
+    return dummy_inertia;
+  }
 
   // If this is a massless body, return a zero SpatialInertia.
   if (mass == 0. && I_BBcm_Bi.get_moments().isZero() &&
       I_BBcm_Bi.get_products().isZero()) {
-    return SpatialInertia<double>(mass, {0., 0., 0.}, {0., 0., 0});
+    return SpatialInertia<double>(
+        0.0, Vector3d::Zero(), UnitInertia<double>{0.0, 0.0, 0.0});
   }
 
   // Pose of the "<inertial>" frame Bi in the body frame B.
@@ -251,10 +274,15 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   // http://sdformat.org/spec?ver=1.6&elem=link#inertial_pose
   const Vector3d p_BoBcm_B = X_BBi.translation();
 
-  // Return the spatial inertia M_BBo_B of body B, about its body frame origin
-  // Bo, and expressed in the body frame B.
-  return SpatialInertia<double>::MakeFromCentralInertia(
-      mass, p_BoBcm_B, I_BBcm_B);
+  try {
+    // Return the spatial inertia M_BBo_B of body B, about its body frame origin
+    // Bo, and expressed in the body frame B.
+    return SpatialInertia<double>::MakeFromCentralInertia(
+        mass, p_BoBcm_B, I_BBcm_B);
+  } catch (const std::exception& e) {
+    diagnostic.Warning(link_element, e.what());
+    return dummy_inertia;
+  }
 }
 
 // Helper method to retrieve a Body given the name of the link specification.
@@ -924,7 +952,8 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
     const gz::math::Inertiald& Inertial_Bcm_Bi = link.Inertial();
 
     const SpatialInertia<double> M_BBo_B =
-        ExtractSpatialInertiaAboutBoExpressedInB(Inertial_Bcm_Bi);
+        ExtractSpatialInertiaAboutBoExpressedInB(
+            diagnostic, link_element, Inertial_Bcm_Bi);
 
     // Add a rigid body to model each link.
     const RigidBody<double>& body =

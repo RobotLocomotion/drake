@@ -87,6 +87,7 @@ bool SDFormatDiagnostic::PropagateErrors(
 
 bool IsError(const sdf::Error& report) {
   switch (report.Code()) {
+    case sdf::ErrorCode::LINK_INERTIA_INVALID:
     case sdf::ErrorCode::ELEMENT_DEPRECATED:
     case sdf::ErrorCode::VERSION_DEPRECATED:
     case sdf::ErrorCode::NONE: {
