@@ -524,7 +524,9 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
   return redundant_indices;
 }
 
-bool HPolyhedron::IsEmpty() const { return DoIsEmpty(A_, b_); }
+bool HPolyhedron::IsEmpty() const {
+  return DoIsEmpty(A_, b_);
+}
 
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                double tol) const {

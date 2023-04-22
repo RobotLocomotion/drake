@@ -285,10 +285,7 @@ GTEST_TEST(VPolytopeTest, From2DHPolytopeTest) {
 GTEST_TEST(VPolytopeTest, From3DHSimplexTest) {
   Matrix<double, 4, 3> A;
   Vector4d b;
-  A <<  -1,  0,  0,
-         0, -1,  0,
-         0,  0, -1,
-         1,  1,  1;
+  A << -1, 0, 0, 0, -1, 0, 0, 0, -1, 1, 1, 1;
   b << 0, 0, 0, 1;
   HPolyhedron H(A, b);
   VPolytope V(H);
@@ -317,12 +314,12 @@ GTEST_TEST(VPolytopeTest, From3DHSimplexTest) {
 GTEST_TEST(VPolytopeTest, FromRedundantHPolytopeTest) {
   Matrix<double, 6, 2> A;
   Vector6d b;
-  A <<  1, -1,  // y ≥ x
-        1,  0,  // x ≤ 1
-        0,  1,  // y ≤ 2
-       -1,  0,  // x ≥ 0
-        1,  1,  // x + y ≤ 3.1   (redundant)
-       -1, -1;  // x + y ≥ - 0.1 (redundant)
+  A << 1, -1,  // y ≥ x
+      1, 0,    // x ≤ 1
+      0, 1,    // y ≤ 2
+      -1, 0,   // x ≥ 0
+      1, 1,    // x + y ≤ 3.1   (redundant)
+      -1, -1;  // x + y ≥ - 0.1 (redundant)
   b << 0, 1, 2, 0, 3.1, 0.1;
   HPolyhedron H(A, b);
   VPolytope V(H);
@@ -349,9 +346,9 @@ GTEST_TEST(VPolytopeTest, FromRedundantHPolytopeTest) {
 GTEST_TEST(VPolytopeTest, FromUnboundedHPolytopeTest) {
   Matrix<double, 3, 2> A;
   Vector3d b;
-  A <<  1, -1,  // y ≥ x
-        1,  0,  // x ≤ 1
-        0,  1;  // y ≤ 2
+  A << 1, -1,  // y ≥ x
+      1, 0,    // x ≤ 1
+      0, 1;    // y ≤ 2
   b << 0, 1, 2;
   HPolyhedron H(A, b);
 
@@ -507,7 +504,7 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     // clang-format on
     auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
     EXPECT_EQ(vpoly.vertices().cols(), 4);
-    EXPECT_NEAR(vpoly.CalcVolume(), l*l, tol);
+    EXPECT_NEAR(vpoly.CalcVolume(), l * l, tol);
     // Calculate the length of the path that visits all the vertices
     // sequentially.
     // If the vertices are in clockwise/counter-clockwise order,
@@ -520,7 +517,7 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     for (int axis = 0; axis < 2; ++axis) {
       for (int face = 0; face < 2; ++face) {
         for (int side = 0; side < 2; ++side) {
-          Vector2d point(l/2, l/2);
+          Vector2d point(l / 2, l / 2);
           point[axis] = l * face + d * (side * 2 - 1);
           if (face + side == 1) {
             EXPECT_TRUE(vpoly.PointInSet(point, tol));
@@ -543,14 +540,14 @@ GTEST_TEST(VPolytopeTest, GetMinimalRepresentationTest) {
     // clang-format on
     auto vpoly = VPolytope(vertices).GetMinimalRepresentation();
     EXPECT_EQ(vpoly.vertices().cols(), 8);
-    EXPECT_NEAR(vpoly.CalcVolume(), l*l*l, tol);
+    EXPECT_NEAR(vpoly.CalcVolume(), l * l * l, tol);
 
     // Test PointInSet with points nearby the six faces.
     const double d = 10 * tol;
     for (int axis = 0; axis < 3; ++axis) {
       for (int face = 0; face < 2; ++face) {
         for (int side = 0; side < 2; ++side) {
-          Vector3d point(l/2, l/2, l/2);
+          Vector3d point(l / 2, l / 2, l / 2);
           point[axis] = l * face + d * (side * 2 - 1);
           if (face + side == 1) {
             EXPECT_TRUE(vpoly.PointInSet(point, tol));

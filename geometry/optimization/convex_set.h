@@ -256,7 +256,8 @@ ConvexSets MakeConvexSets(Args&&... args) {
   auto args_tuple = std::forward_as_tuple(std::forward<Args>(args)...);
   [&]<size_t... I>(std::integer_sequence<size_t, I...> &&) {
     ((sets[I] = std::get<I>(std::move(args_tuple))), ...);
-  }(std::make_index_sequence<N>{});
+  }
+  (std::make_index_sequence<N>{});
   return sets;
 }
 

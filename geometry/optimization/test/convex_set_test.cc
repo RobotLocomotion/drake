@@ -20,11 +20,9 @@ using test::LimitMalloc;
 GTEST_TEST(ConvexSetsTest, BasicTest) {
   ConvexSets sets;
 
-  const ConvexSet& a =
-      *sets.emplace_back(Point(Vector2d{1., 2.}));
+  const ConvexSet& a = *sets.emplace_back(Point(Vector2d{1., 2.}));
   const Vector3d b_point{3., 4., 5.};
-  std::unique_ptr<Point> b_original =
-      std::make_unique<Point>(b_point);
+  std::unique_ptr<Point> b_original = std::make_unique<Point>(b_point);
   Point* b_pointer = b_original.get();
   const ConvexSet& b = *sets.emplace_back(std::move(b_original));
 
