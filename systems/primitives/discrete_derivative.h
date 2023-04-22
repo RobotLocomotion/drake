@@ -55,9 +55,12 @@ class DiscreteDerivative final : public LeafSystem<T> {
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(DiscreteDerivative)
 
   /// Constructor taking @p num_inputs, the size of the vector to be
-  /// differentiated, and @p time_step, the sampling interval.
+  /// differentiated, and @p time_step, the sampling interval. If @p
+  /// suppress_initial_transient is true (the default), then the output will be
+  /// zero for the first two time steps (see the class documentation for
+  /// details).
   DiscreteDerivative(int num_inputs, double time_step,
-                     bool suppress_initial_transient = false);
+                     bool suppress_initial_transient = true);
 
   /// Scalar-converting copy constructor.  See @ref system_scalar_conversion.
   template <typename U>
@@ -147,11 +150,14 @@ class StateInterpolatorWithDiscreteDerivative final : public Diagram<T> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(StateInterpolatorWithDiscreteDerivative)
 
-  /// Constructor taking @p num_positions, the size of the position vector
-  /// to be differentiated, and @p time_step, the sampling interval.
+  /// Constructor taking @p num_positions, the size of the position vector to
+  /// be differentiated, and @p time_step, the sampling interval. If @p
+  /// suppress_initial_transient is true (the default), then the velocity
+  /// output will be zero for the first two time steps (see the
+  /// DiscreteDerivative class documentation for details).
   StateInterpolatorWithDiscreteDerivative(
       int num_positions, double time_step,
-      bool suppress_initial_transient = false);
+      bool suppress_initial_transient = true);
 
   /// Returns the `suppress_initial_transient` passed to the constructor.
   bool suppress_initial_transient() const;

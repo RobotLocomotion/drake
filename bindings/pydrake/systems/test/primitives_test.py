@@ -716,18 +716,18 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(discrete_derivative.get_input_port(0).size(), 5)
         self.assertEqual(discrete_derivative.get_output_port(0).size(), 5)
         self.assertEqual(discrete_derivative.time_step(), 0.5)
-        self.assertFalse(discrete_derivative.suppress_initial_transient())
+        self.assertTrue(discrete_derivative.suppress_initial_transient())
 
         discrete_derivative = DiscreteDerivative(
-            num_inputs=5, time_step=0.5, suppress_initial_transient=True)
-        self.assertTrue(discrete_derivative.suppress_initial_transient())
+            num_inputs=5, time_step=0.5, suppress_initial_transient=False)
+        self.assertFalse(discrete_derivative.suppress_initial_transient())
 
     def test_state_interpolator_with_discrete_derivative(self):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
             num_positions=5, time_step=0.4)
         self.assertEqual(state_interpolator.get_input_port(0).size(), 5)
         self.assertEqual(state_interpolator.get_output_port(0).size(), 10)
-        self.assertFalse(state_interpolator.suppress_initial_transient())
+        self.assertTrue(state_interpolator.suppress_initial_transient())
 
         # test set_initial_position using context
         context = state_interpolator.CreateDefaultContext()
