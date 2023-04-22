@@ -66,9 +66,9 @@ Eigen::MatrixXd OrderCounterClockwise(const Eigen::MatrixXd& vertices) {
     angles[i] = std::atan2(y, x);
   }
 
-  std::sort(indices.begin(), indices.end(), [&angles](size_t a, size_t b){
-      return angles[a] > angles[b];
-    });
+  std::sort(indices.begin(), indices.end(), [&angles](size_t a, size_t b) {
+    return angles[a] > angles[b];
+  });
 
   Eigen::MatrixXd sorted_vertices(dim, num_vertices);
 

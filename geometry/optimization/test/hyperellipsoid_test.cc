@@ -467,7 +467,6 @@ GTEST_TEST(HyperellipsoidTest, MinimumUniformScaling4) {
   EXPECT_TRUE(CompareMatrices(x, Vector2d{3.0, 0.0}, kTol));
 }
 
-
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
