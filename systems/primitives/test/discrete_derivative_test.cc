@@ -109,7 +109,7 @@ GTEST_TEST(DiscreteDerivativeTest, ToSymbolic) {
 // This confirms that we've correctly conditioned the extra state for the
 // update counter to be declared only when strictly required.
 GTEST_TEST(DiscreteDerivativeTest, IsAffine) {
-  const DiscreteDerivative<double> dut(2, 0.1);
+  const DiscreteDerivative<double> dut(2, 0.1, false);
   auto symbolic = dut.ToSymbolic();
   SystemSymbolicInspector inspector(*symbolic);
   EXPECT_TRUE(inspector.IsTimeInvariant());
