@@ -42,8 +42,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
   auto find_free_polytope_plane_geometry_with_plane_index =
       [&polytope_tester](
           int plane_index) -> std::optional<PlaneSeparatesGeometries> {
-    for (const auto& plane_geometry :
-         polytope_tester.plane_geometries()) {
+    for (const auto& plane_geometry : polytope_tester.plane_geometries()) {
       if (plane_geometry.plane_index == plane_index) {
         return std::optional{plane_geometry};
       }
