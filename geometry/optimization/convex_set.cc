@@ -20,7 +20,9 @@ ConvexSet::ConvexSet(
 
 ConvexSet::~ConvexSet() = default;
 
-std::unique_ptr<ConvexSet> ConvexSet::Clone() const { return cloner_(*this); }
+std::unique_ptr<ConvexSet> ConvexSet::Clone() const {
+  return cloner_(*this);
+}
 
 bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   DRAKE_THROW_UNLESS(other.ambient_dimension() == this->ambient_dimension());

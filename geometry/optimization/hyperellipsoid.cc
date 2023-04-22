@@ -101,7 +101,7 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
   // conic constraints.  See discussion at #15320.
   // TODO(russt): Revisit this pending resolution of #15320.
   std::vector<solvers::SolverId> preferred_solvers{solvers::MosekSolver::id(),
-                                          solvers::GurobiSolver::id()};
+                                                   solvers::GurobiSolver::id()};
 
   // If we have only linear constraints, then add a quadratic cost and solve the
   // QP.  Otherwise add a slack variable and solve the SOCP.
@@ -120,13 +120,13 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     prog.AddLinearCost(slack[0]);
     // z₀ = slack, z₁ = 1, z₂...ₙ = A_*(x-center)
     // z₀z₁ ≥ z₂² + ... + zₙ²
-    MatrixXd A = MatrixXd::Zero(A_.rows()+2, A_.cols()+1);
-    VectorXd b(A_.rows()+2);
+    MatrixXd A = MatrixXd::Zero(A_.rows() + 2, A_.cols() + 1);
+    VectorXd b(A_.rows() + 2);
     A(0, 0) = 1;
     A.bottomRightCorner(A_.rows(), A_.cols()) = A_;
     b[0] = 0;
     b[1] = 1;
-    b.tail(A_.rows()) = -A_*center_;
+    b.tail(A_.rows()) = -A_ * center_;
     prog.AddRotatedLorentzConeConstraint(A, b, {slack, x});
     preferred_solvers.emplace_back(solvers::ScsSolver::id());
   }
