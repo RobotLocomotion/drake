@@ -22,7 +22,16 @@ GTEST_TEST(QuadrotorPlantTest, ToAutoDiff) {
 
 GTEST_TEST(QuadrotorPlantTest, ToSymbolic) {
   const QuadrotorPlant<double> plant;
-  EXPECT_FALSE(is_symbolic_convertible(plant));
+  EXPECT_TRUE(is_symbolic_convertible(plant));
+
+  auto plant_sym = plant.ToSymbolic();
+  auto context_sym = plant_sym->CreateDefaultContext();
+  symbolic::Variable xdot("xdot");
+  context_sym->get_mutable_continuous_state_vector()[6] = xdot;
+
+  Eigen::VectorX<symbolic::Expression> derivatives =
+      plant_sym->EvalTimeDerivatives(*context_sym).CopyToVector();
+  EXPECT_EQ(derivatives[0], xdot);
 }
 
 // Ensure that DoCalcTimeDerivatives succeeds even if the input port is
