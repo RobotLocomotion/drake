@@ -7,7 +7,6 @@ import numpy as np
 
 from drake import lcmt_viewer_load_robot, lcmt_viewer_draw
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.value import AbstractValue
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.lcm import DrakeLcm, Subscriber
 from pydrake.math import RigidTransform
@@ -316,8 +315,7 @@ class TestGeometryVisualizers(unittest.TestCase):
         context = visualizer.CreateDefaultContext()
         cloud = PointCloud(4)
         cloud.mutable_xyzs()[:] = np.zeros((3, 4))
-        visualizer.cloud_input_port().FixValue(
-          context, AbstractValue.Make(cloud))
+        visualizer.cloud_input_port().FixValue(context, cloud)
         self.assertIsInstance(visualizer.pose_input_port(), InputPort_[T])
         visualizer.ForcedPublish(context)
         visualizer.Delete()
