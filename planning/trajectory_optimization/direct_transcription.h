@@ -16,7 +16,9 @@ namespace planning {
 namespace trajectory_optimization {
 
 // Helper struct holding a time-step value for continuous-time
-// DirectTranscription.
+// DirectTranscription. This is currently needed to disambiguate between the
+// constructors; DirectTranscription(system, context, int, int) could cast the
+// last int into a fixed_timestep or the input_port_index.
 struct TimeStep {
   double value{-1};
   explicit TimeStep(double step) : value(step) {}
