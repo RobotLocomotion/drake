@@ -94,9 +94,8 @@ class ContactPropertiesTest : public ::testing::Test {
       const std::optional<double>& hydro_modulus = std::nullopt,
       const std::optional<geometry::internal::HydroelasticType>&
           compliance_type = std::nullopt) {
-    auto sphere = make_unique<Sphere>(1.0);
     auto result =
-        make_unique<GeometryInstance>(RigidTransformd(), move(sphere), name);
+        make_unique<GeometryInstance>(RigidTransformd(), Sphere(1.0), name);
     geometry::ProximityProperties props;
     geometry::AddContactMaterial(hunt_crossley_dissipation, k, mu, &props);
     if (tau.has_value()) {

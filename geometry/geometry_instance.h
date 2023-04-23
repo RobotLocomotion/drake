@@ -88,6 +88,13 @@ class GeometryInstance {
    @param name   The name of the geometry (must satisfy the name requirements).
    @throws std::exception if the canonicalized version of `name` is empty.
    */
+  GeometryInstance(const math::RigidTransform<double>& X_PG, const Shape& shape,
+                   const std::string& name);
+
+  /** (Advanced) Overload that transfers ownership of `shape` (for performance).
+   The caller must not retain any pointer to `shape`.
+   @pre shape is non-null.
+   @exclude_from_pydrake_mkdoc{Cannot transfer ownership.} */
   GeometryInstance(const math::RigidTransform<double>& X_PG,
                    std::unique_ptr<Shape> shape, const std::string& name);
 
@@ -105,13 +112,15 @@ class GeometryInstance {
   void set_pose(const math::RigidTransformd& X_PG) { X_PG_ = X_PG; }
 
   /** Returns the underlying shape specification for this geometry instance.
-   @pre release_shape() has not been called. */
+   @pre release_shape() has not been called nor has this been moved-from. */
   const Shape& shape() const {
-    DRAKE_DEMAND(shape_ != nullptr);
+    DRAKE_THROW_UNLESS(shape_ != nullptr);
     return *shape_;
   }
 
-  /** Releases the shape from the instance.  */
+  /** (Advanced) Transfers ownership of this geometry instance's underlying
+   shape specification to the caller.
+   @pre release_shape() has not been called nor has this been moved-from. */
   std::unique_ptr<Shape> release_shape() { return std::move(shape_); }
 
   /** Returns the *canonicalized* name for the instance.
