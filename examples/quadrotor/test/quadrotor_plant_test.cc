@@ -10,6 +10,9 @@ namespace examples {
 namespace quadrotor {
 namespace {
 
+using symbolic::Expression;
+using symbolic::Variable;
+
 GTEST_TEST(QuadrotorPlantTest, DirectFeedthrough) {
   const QuadrotorPlant<double> plant;
   EXPECT_FALSE(plant.HasAnyDirectFeedthrough());
@@ -22,7 +25,19 @@ GTEST_TEST(QuadrotorPlantTest, ToAutoDiff) {
 
 GTEST_TEST(QuadrotorPlantTest, ToSymbolic) {
   const QuadrotorPlant<double> plant;
-  EXPECT_FALSE(is_symbolic_convertible(plant));
+  EXPECT_TRUE(is_symbolic_convertible(plant));
+
+  auto plant_sym = plant.ToSymbolic();
+  auto context_sym = plant_sym->CreateDefaultContext();
+  VectorX<Variable> x = symbolic::MakeVectorVariable(12, "x");
+  context_sym->get_mutable_continuous_state_vector().SetFromVector(
+      x.cast<Expression>());
+
+  VectorX<Expression> derivatives =
+      plant_sym->EvalTimeDerivatives(*context_sym).CopyToVector();
+  for (int i = 0; i < 6; ++i) {
+    EXPECT_EQ(derivatives[i], x[i+6]);
+  }
 }
 
 // Ensure that DoCalcTimeDerivatives succeeds even if the input port is
