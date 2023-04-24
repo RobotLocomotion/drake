@@ -11,6 +11,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/hash.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/systems/framework/diagram.h"
 #include "drake/systems/framework/system.h"
@@ -457,7 +458,7 @@ class DiagramBuilder {
   std::vector<std::string> output_port_names_;
 
   // For fast membership queries: has this input port already been wired?
-  std::set<InputPortLocator> diagram_input_set_;
+  std::unordered_set<InputPortLocator, DefaultHash> diagram_input_set_;
 
   // A vector of data about exported input ports.
   struct ExportedInputData {
