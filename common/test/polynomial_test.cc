@@ -618,5 +618,17 @@ GTEST_TEST(PolynomialTest, SubsitutionTest) {
                   .CoefficientsAlmostEqual(x * x + 3 * pow(x, 4) + 3 * y));
 }
 
+GTEST_TEST(PolynomialTest, IsUnivariateTrue) {
+  const VectorXd coefficients = Eigen::Vector3d(0.25, 0.0, 2.0);
+  Polynomial<double> dut(coefficients);
+  EXPECT_TRUE(dut.is_univariate());
+}
+
+GTEST_TEST(PolynomialTest, IsUnivariateFalse) {
+  Polynomiald x("x");
+  Polynomiald y("y");
+  EXPECT_FALSE((x+y).is_univariate());
+}
+
 }  // anonymous namespace
 }  // namespace drake
