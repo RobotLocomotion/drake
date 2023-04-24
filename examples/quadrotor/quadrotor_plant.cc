@@ -152,5 +152,5 @@ std::unique_ptr<systems::AffineSystem<double>> StabilizingLQRController(
 }  // namespace examples
 }  // namespace drake
 
-DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_NONSYMBOLIC_SCALARS(
+DRAKE_DEFINE_CLASS_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
     class ::drake::examples::quadrotor::QuadrotorPlant)
