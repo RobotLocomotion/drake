@@ -300,6 +300,9 @@ class Polynomial {
    */
   Polynomial Integral(const T& integration_constant = 0.0) const;
 
+  /** Returns true if this is a univariate polynomial */
+  bool is_univariate() const;
+
   bool operator==(const Polynomial& other) const;
 
   Polynomial& operator+=(const Polynomial& other);
