@@ -25,6 +25,7 @@ _PYTHON_SITE_PACKAGES_RELPATH = MANIFEST["python_site_packages_relpath"]
 _DRAKE_ROOT_PACKAGE_RUNFILES = [x for x in _DRAKE_RUNFILES if "/" not in x]
 
 _EXPECTED_DRAKE_RUNFILES_PACKAGES = [
+    "bindings/pydrake",
     "common",
     "examples",
     "geometry",
