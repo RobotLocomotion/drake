@@ -4,7 +4,6 @@
 
 #include "drake/common/is_approx_equal_abstol.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/limit_malloc.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/point.h"
 
@@ -15,7 +14,6 @@ namespace {
 
 using Eigen::Vector2d;
 using Eigen::Vector3d;
-using test::LimitMalloc;
 
 GTEST_TEST(ConvexSetsTest, BasicTest) {
   ConvexSets sets;
@@ -83,57 +81,6 @@ arrangement of boxes:
   EXPECT_FALSE(set_A.IntersectsWith(set_C));
   EXPECT_FALSE(set_C.IntersectsWith(set_A));
 }
-
-GTEST_TEST(MakeConvexSetsTest, Basic) {
-  HPolyhedron box = HPolyhedron::MakeUnitBox(2);
-  ConvexSets sets =
-      MakeConvexSets(box, box.Clone(), Point(Vector3d(1.0, 2.0, 3.0)));
-
-  EXPECT_EQ(sets.size(), 3);
-  EXPECT_EQ(sets[0]->ambient_dimension(), 2);
-  EXPECT_EQ(sets[1]->ambient_dimension(), 2);
-  EXPECT_EQ(sets[2]->ambient_dimension(), 3);
-}
-
-// A mutable lvalue reference is copied, not moved.
-GTEST_TEST(MakeConvexSetsTest, MutableLvalueReference) {
-  const HPolyhedron box = HPolyhedron::MakeUnitBox(2);
-  std::unique_ptr<ConvexSet> box_clone = box.Clone();
-  ConvexSets sets = MakeConvexSets(box_clone);
-  EXPECT_EQ(sets.size(), 1);
-  EXPECT_NE(box_clone.get(), nullptr);
-}
-
-// The amount of copying is as small as possible.
-GTEST_TEST(MakeConvexSetsTest, NoExtraCopying) {
-  const HPolyhedron box = HPolyhedron::MakeUnitBox(2);
-
-  // A `unique_ptr<ConvexSet>` is moved into place, no copies.
-  // The only allocation is the std::vector storage itself.
-  {
-    std::unique_ptr<ConvexSet> box1{box.Clone()};
-    std::unique_ptr<ConvexSet> box2{box.Clone()};
-    LimitMalloc guard({.max_num_allocations = 1});
-    MakeConvexSets(std::move(box1), std::move(box2));
-  }
-
-  // A `copyable_unique_ptr<ConvexSet>` is moved into place, no copies.
-  {
-    copyable_unique_ptr<ConvexSet> box1{box.Clone()};
-    copyable_unique_ptr<ConvexSet> box2{box.Clone()};
-    LimitMalloc guard({.max_num_allocations = 1});
-    MakeConvexSets(std::move(box1), std::move(box2));
-  }
-
-  // A `const ConvexSet&` is copied just once.
-  {
-    const int box_clone_num_allocs = 3;  // HPolyhedron, A_ , b_.
-    const int num = 1 + box_clone_num_allocs;
-    LimitMalloc guard({.max_num_allocations = num, .min_num_allocations = num});
-    MakeConvexSets(box);
-  }
-};
-
 }  // namespace
 
 }  // namespace optimization

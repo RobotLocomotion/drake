@@ -160,7 +160,6 @@ drake_cc_googletest(
     deps = [
         ":convex_set",
         "//common/test_utilities:eigen_matrix_compare",
-        "//common/test_utilities:limit_malloc",
         "//solvers:clp_solver",
     ],
 )
