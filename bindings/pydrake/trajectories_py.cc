@@ -252,13 +252,6 @@ struct Impl {
           .def("end_time", &Class::end_time, cls_doc.end_time.doc)
           .def("rows", &Class::rows, cls_doc.rows.doc)
           .def("cols", &Class::cols, cls_doc.cols.doc);
-      // Note: We use the copyable_unique_ptr constructor which calls Clone() on
-      // the set, so that the new object is never an alias to the old.
-      DefineTemplateClassWithDefault<copyable_unique_ptr<Trajectory<T>>>(
-          m, "CopyableUniquePtrTrajectory", param, "")
-          .def(py::init([](const Trajectory<T>& t) {
-            return copyable_unique_ptr<Trajectory<T>>(t);
-          }));
     }
 
     {
@@ -280,9 +273,7 @@ struct Impl {
           .def("GetExpression", &Class::GetExpression,
               py::arg("time") = symbolic::Variable("t"),
               cls_doc.GetExpression.doc);
-
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -326,7 +317,6 @@ struct Impl {
                 return Class(std::get<0>(args), std::get<1>(args));
               }));
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -343,7 +333,6 @@ struct Impl {
           .def("time_scaling", &Class::time_scaling, py_rvp::reference_internal,
               cls_doc.time_scaling.doc);
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -556,7 +545,6 @@ struct Impl {
               py::arg("row_start") = 0, py::arg("col_start") = 0,
               cls_doc.setPolynomialMatrixBlock.doc);
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
       if constexpr (std::is_same_v<T, double>) {
         BindPiecewisePolynomialSerialize(&cls);
       }
@@ -567,13 +555,20 @@ struct Impl {
       constexpr auto& cls_doc = doc.CompositeTrajectory;
       auto cls = DefineTemplateClassWithDefault<Class, Trajectory<T>>(
           m, "CompositeTrajectory", param, cls_doc.doc);
-      cls.def(py::init<std::vector<copyable_unique_ptr<Trajectory<T>>>>(),
-             py::arg("segments"), cls_doc.ctor.doc)
+      cls  // BR
+          .def(py::init([](std::vector<const Trajectory<T>*> py_segments) {
+            std::vector<copyable_unique_ptr<Trajectory<T>>> segments;
+            segments.reserve(py_segments.size());
+            for (const Trajectory<T>* py_segment : py_segments) {
+              segments.emplace_back(py_segment ? py_segment->Clone() : nullptr);
+            }
+            return std::make_unique<CompositeTrajectory<T>>(
+                std::move(segments));
+          }),
+              py::arg("segments"), cls_doc.ctor.doc)
           .def("segment", &Class::segment, py::arg("segment_index"),
               py_rvp::reference_internal, cls_doc.segment.doc);
-
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -619,7 +614,6 @@ struct Impl {
           .def("angular_acceleration", &Class::angular_acceleration,
               py::arg("time"), cls_doc.angular_acceleration.doc);
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -653,7 +647,6 @@ struct Impl {
           .def("get_orientation_trajectory", &Class::get_orientation_trajectory,
               cls_doc.get_orientation_trajectory.doc);
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
 
     {
@@ -669,7 +662,6 @@ struct Impl {
               /* N.B. We choose to omit any py::arg name here. */
               cls_doc.Append.doc);
       DefCopyAndDeepCopy(&cls);
-      py::implicitly_convertible<Class, copyable_unique_ptr<Trajectory<T>>>();
     }
   }
 };
