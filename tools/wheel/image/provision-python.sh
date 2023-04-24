@@ -50,5 +50,8 @@ pip install \
     auditwheel
 
 if [[ "$(uname)" == "Linux" ]]; then
-    pip install patchelf
+    # TODO(19261): on 2023-04-24 the release of patchelf==0.18.0.0 results in
+    # misaligned sections.  For now we pin to the most recent working version.
+    # See: https://github.com/NixOS/patchelf/issues/492
+    pip install patchelf==0.17.2.1
 fi
