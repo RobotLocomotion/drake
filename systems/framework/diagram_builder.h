@@ -244,6 +244,18 @@ class DiagramBuilder {
         name, std::make_unique<S<T>>(std::forward<Args>(args)...));
   }
 
+  /// Removes the given system from this builder and disconnects any connections
+  /// or exported ports associated with it.
+  ///
+  /// Note that un-exporting this system's ports might have a ripple effect on
+  /// other exported port index assignments. The relative order will remain
+  /// intact, but any "holes" created by this removal will be filled in by
+  /// decrementing the indices of all higher-numbered ports that remain.
+  ///
+  /// @warning Because a DiagramBuilder owns the objects it contains, the system
+  /// will be deleted.
+  void RemoveSystem(const System<T>& system);
+
   /// Returns whether any Systems have been added yet.
   bool empty() const {
     ThrowIfAlreadyBuilt();
@@ -440,6 +452,8 @@ class DiagramBuilder {
   void ThrowIfSystemNotRegistered(const System<T>* system) const;
 
   void ThrowIfAlgebraicLoopsExist() const;
+
+  void CheckInvariants() const;
 
   // Produces the Blueprint that has been described by the calls to
   // Connect, ExportInput, and ExportOutput. Throws std::exception if the
