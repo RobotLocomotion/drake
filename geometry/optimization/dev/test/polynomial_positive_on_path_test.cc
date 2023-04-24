@@ -25,6 +25,10 @@ void validate_parametrized_polynomial_prog(
   const Polynomial nu{poly_prog.get_nu()};
   const Polynomial p{poly_prog.get_p()};
 
+  // poly member of ParametrizedPolynomialPositiveOnUnitInterval should be
+  // exactly the polynomial poly.
+  EXPECT_TRUE(poly.EqualTo(poly_prog.get_poly()));
+
   // p should have the same degree as poly
   EXPECT_EQ(p.TotalDegree(), poly.TotalDegree());
   // p should have the same indeterminates as poly.
