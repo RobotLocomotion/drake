@@ -159,9 +159,14 @@ drake_cc_googletest(
     name = "convex_set_test",
     deps = [
         ":convex_set",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
-        "//solvers:clp_solver",
+    ],
+)
+
+drake_cc_googletest(
+    name = "convex_set_solving_test",
+    deps = [
+        ":convex_set",
     ],
 )
 
