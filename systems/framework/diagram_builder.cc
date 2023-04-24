@@ -11,12 +11,106 @@
 
 namespace drake {
 namespace systems {
+namespace {
+
+/* Erases the i'th element of vec, shifting everything after it over by one. */
+template <typename StdVector>
+void VectorErase(StdVector* vec, size_t i) {
+  DRAKE_DEMAND(vec != nullptr);
+  const size_t size = vec->size();
+  DRAKE_DEMAND(i < size);
+  for (size_t hole = i; (hole + 1) < size; ++hole) {
+    (*vec)[hole] = std::move((*vec)[hole + 1]);
+  }
+  vec->pop_back();
+}
+
+}  // namespace
 
 template <typename T>
 DiagramBuilder<T>::DiagramBuilder() {}
 
 template <typename T>
 DiagramBuilder<T>::~DiagramBuilder() {}
+
+template <typename T>
+void DiagramBuilder<T>::RemoveSystem(const System<T>& system) {
+  ThrowIfAlreadyBuilt();
+  if (systems_.count(&system) == 0) {
+    throw std::logic_error(fmt::format(
+        "Cannot RemoveSystem on {} because it has not been added to this "
+        "DiagramBuilder",
+        system.GetSystemPathname()));
+  }
+  const size_t system_index = std::distance(
+      registered_systems_.begin(),
+      std::find_if(registered_systems_.begin(), registered_systems_.end(),
+                   [&system](const std::unique_ptr<System<T>>& item) {
+                     return item.get() == &system;
+                   }));
+  DRAKE_DEMAND(system_index < registered_systems_.size());
+
+  // Un-export any input ports associated with this system.
+  // First, undo the ConnectInput.
+  std::set<std::string> disconnected_diagram_input_port_names;
+  for (size_t i = 0; i < input_port_ids_.size();) {
+    const InputPortLocator& locator = input_port_ids_[i];
+    if (locator.first == &system) {
+      const size_t num_erased = diagram_input_set_.erase(locator);
+      DRAKE_DEMAND(num_erased == 1);
+      disconnected_diagram_input_port_names.insert(
+          std::move(input_port_names_[i]));
+      VectorErase(&input_port_ids_, i);
+      VectorErase(&input_port_names_, i);
+    } else {
+      ++i;
+    }
+  }
+  // Second, undo the DeclareInput (iff it was the last connected system).
+  for (const auto& name : disconnected_diagram_input_port_names) {
+    const bool num_connections =
+        std::count(input_port_names_.begin(), input_port_names_.end(), name);
+    if (num_connections == 0) {
+      const auto iter = diagram_input_indices_.find(name);
+      DRAKE_DEMAND(iter != diagram_input_indices_.end());
+      const InputPortIndex removed_index = iter->second;
+      VectorErase(&diagram_input_data_, removed_index);
+      diagram_input_indices_.erase(iter);
+      for (auto& [_, index] : diagram_input_indices_) {
+        if (index > removed_index) {
+          --index;
+        }
+      }
+    }
+  }
+
+  // Un-export any output ports associated with this system.
+  for (OutputPortIndex i{0}; i < output_port_ids_.size();) {
+    const OutputPortLocator& locator = output_port_ids_[i];
+    if (locator.first == &system) {
+      VectorErase(&output_port_ids_, i);
+      VectorErase(&output_port_names_, i);
+    } else {
+      ++i;
+    }
+  }
+
+  // Disconnect any internal connections associated with this system.
+  for (auto iter = connection_map_.begin(); iter != connection_map_.end();) {
+    const auto& [input_locator, output_locator] = *iter;
+    if ((input_locator.first == &system) || (output_locator.first == &system)) {
+      iter = connection_map_.erase(iter);
+    } else {
+      ++iter;
+    }
+  }
+
+  // Delete the system.
+  systems_.erase(&system);
+  VectorErase(&registered_systems_, system_index);
+
+  DRAKE_ASSERT_VOID(CheckInvariants());
+}
 
 template <typename T>
 std::vector<const System<T>*> DiagramBuilder<T>::GetSystems() const {
@@ -519,10 +613,50 @@ void DiagramBuilder<T>::ThrowIfAlgebraicLoopsExist() const {
 }
 
 template <typename T>
+void DiagramBuilder<T>::CheckInvariants() const {
+  auto has_system = [this](const System<T>* system) {
+    return std::count(systems_.begin(), systems_.end(), system) > 0;
+  };
+
+  // The systems_ and registered_systems_ are identical sets.
+  DRAKE_DEMAND(systems_.size() == registered_systems_.size());
+  for (const auto& item : registered_systems_) {
+    DRAKE_DEMAND(has_system(item.get()));
+  }
+
+  // The connection_map_ only refers to registered systems.
+  for (const auto& [input, output] : connection_map_) {
+    DRAKE_DEMAND(has_system(input.first));
+    DRAKE_DEMAND(has_system(output.first));
+  }
+
+  // The input_port_ids_ and output_port_ids_ only refer to registered systems.
+  for (const auto& [system, _] : input_port_ids_) {
+    DRAKE_DEMAND(has_system(system));
+  }
+  for (const auto& [system, _] : output_port_ids_) {
+    DRAKE_DEMAND(has_system(system));
+  }
+
+  // The input_port_ids_ and diagram_input_set_ are identical sets.
+  DRAKE_DEMAND(input_port_ids_.size() == diagram_input_set_.size());
+  for (const auto& item : input_port_ids_) {
+    DRAKE_DEMAND(diagram_input_set_.find(item) != diagram_input_set_.end());
+  }
+
+  // The diagram_input_indices_ is the inverse of diagram_input_data_.
+  DRAKE_DEMAND(diagram_input_data_.size() == diagram_input_indices_.size());
+  for (const auto& [name, index] : diagram_input_indices_) {
+    DRAKE_DEMAND(diagram_input_data_.at(index).name == name);
+  }
+}
+
+template <typename T>
 std::unique_ptr<typename Diagram<T>::Blueprint> DiagramBuilder<T>::Compile() {
   if (registered_systems_.size() == 0) {
     throw std::logic_error("Cannot Compile an empty DiagramBuilder.");
   }
+  DRAKE_ASSERT_VOID(CheckInvariants());
   ThrowIfAlgebraicLoopsExist();
 
   auto blueprint = std::make_unique<typename Diagram<T>::Blueprint>();

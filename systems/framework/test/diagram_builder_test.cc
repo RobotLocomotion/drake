@@ -44,6 +44,76 @@ GTEST_TEST(DiagramBuilderTest, AddNamedSystem) {
   EXPECT_EQ(c->get_name(), "c");
 }
 
+// Tests ::RemoveSystem.
+GTEST_TEST(DiagramBuilderTest, Remove) {
+  DiagramBuilder<double> builder;
+
+  // First, create this builder layout:
+  //
+  //      ---------------------------
+  //   u0 | ==> pass0a => pass0b => | y0
+  //      |                         |
+  //   u1 | ==> adder ==> pass1 ==> | y1
+  //      |    ^      ⧵             |
+  //      |   /        ⧵==========> | adder_out
+  //      |  /                      |
+  //   u2 | ============> pass2 ==> | y2
+  //      ---------------------------
+  //
+  // This setup is carefully chosen such that removing 'adder' will cover all
+  // branching conditions within the implementation.
+  const auto& pass0a = *builder.AddSystem<PassThrough>(1 /* size */);
+  const auto& pass0b = *builder.AddSystem<PassThrough>(1 /* size */);
+  builder.Connect(pass0a, pass0b);
+  builder.ExportInput(pass0a.get_input_port(), "u0");
+  builder.ExportOutput(pass0b.get_output_port(), "y0");
+  const auto& adder = *builder.AddSystem<Adder>(2 /* inputs */, 1 /* size */);
+  builder.ExportInput(adder.get_input_port(0), "u1");
+  builder.ExportInput(adder.get_input_port(1), "u2");
+  const auto& pass1 = *builder.AddSystem<PassThrough>(1 /* size */);
+  builder.Connect(adder, pass1);
+  builder.ExportOutput(pass1.get_output_port(), "y1");
+  builder.ExportOutput(adder.get_output_port(), "adder_out");
+  const auto& pass2 = *builder.AddSystem<PassThrough>(1 /* size */);
+  builder.ConnectInput("u2", pass2.get_input_port());
+  builder.ExportOutput(pass2.get_output_port(), "y2");
+
+  // Now, remove the 'adder' leaving this diagram:
+  //
+  //      ---------------------------
+  //   u0 | ==> pass0a => pass0b => | y0
+  //      |               pass1 ==> | y1
+  //   u2 | ============> pass2 ==> | y2
+  //      ---------------------------
+  //
+  builder.RemoveSystem(adder);
+  auto diagram = builder.Build();
+  ASSERT_EQ(diagram->num_input_ports(), 2);
+  ASSERT_EQ(diagram->num_output_ports(), 3);
+  EXPECT_EQ(diagram->get_input_port(0).get_name(), "u0");
+  EXPECT_EQ(diagram->get_input_port(1).get_name(), "u2");
+  EXPECT_EQ(diagram->get_output_port(0).get_name(), "y0");
+  EXPECT_EQ(diagram->get_output_port(1).get_name(), "y1");
+  EXPECT_EQ(diagram->get_output_port(2).get_name(), "y2");
+
+  auto context = diagram->CreateDefaultContext();
+  diagram->GetInputPort("u0").FixValue(context.get(),
+                                       Eigen::VectorXd::Constant(1, 22.0));
+  diagram->GetInputPort("u2").FixValue(context.get(),
+                                       Eigen::VectorXd::Constant(1, 44.0));
+  EXPECT_EQ(diagram->GetOutputPort("y0").Eval(*context)[0], 22.0);
+  EXPECT_EQ(diagram->GetOutputPort("y2").Eval(*context)[0], 44.0);
+}
+
+// Tests ::RemoveSystem error message.
+GTEST_TEST(DiagramBuilderTest, RemoveError) {
+  DiagramBuilder<double> builder;
+  PassThrough<double> dummy(1);
+  dummy.set_name("dummy");
+  DRAKE_EXPECT_THROWS_MESSAGE(builder.RemoveSystem(dummy),
+                              ".*RemoveSystem.*dummy.*not.*added.*");
+}
+
 // Tests already_built() and one example of ThrowIfAlreadyBuilt().
 GTEST_TEST(DiagramBuilderTest, AlreadyBuilt) {
   DiagramBuilder<double> builder;
