@@ -4,6 +4,12 @@ if(NOT APPLE)
     set(libxcrypt_url "https://github.com/besser82/libxcrypt/archive/v${libxcrypt_version}/libxcrypt-${libxcrypt_version}.tar.gz")
     set(libxcrypt_md5 "4828b1530f5bf35af0b45b35acc4db1d")
     list(APPEND ALL_PROJECTS libxcrypt)
+
+    # patchelf
+    set(patchelf_version 0.12)
+    set(patchelf_url "https://github.com/NixOS/patchelf/tarball/99c24238981b7b1084313aca8f5c493bb46f302c")
+    set(patchelf_md5 "9fa63224f9b73060ef6bd37f8effea8c")
+    list(APPEND ALL_PROJECTS patchelf)
 endif()
 
 # zlib

@@ -48,7 +48,3 @@ pip install \
     setuptools \
     wheel \
     auditwheel
-
-if [[ "$(uname)" == "Linux" ]]; then
-    pip install patchelf
-fi
