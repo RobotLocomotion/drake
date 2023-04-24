@@ -87,8 +87,13 @@ namespace multibody {
 /// checks are not performed when T is symbolic::Expression.
 ///
 /// @see To create a spatial inertia of a mesh, see
-/// @ref CalcSpatialInertia(const geometry::TriangleSurfaceMesh<double>&,
-///                         double).
+/// @ref CalcSpatialInertia(const geometry::TriangleSurfaceMesh<double>& mesh, double density). <!--# NOLINT-->
+///
+/// @see To create spatial inertia from most of geometry::Shape, see
+/// @ref CalcSpatialInertia(const geometry::Shape& shape, double density).
+///
+/// @see To create spatial inertia for a set of bodies, see
+/// @ref MultibodyPlant::CalcSpatialInertia().
 ///
 /// - [Jain 2010]  Jain, A., 2010. Robot and multibody dynamics: analysis and
 ///                algorithms. Springer Science & Business Media.
