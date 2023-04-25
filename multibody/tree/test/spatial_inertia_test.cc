@@ -439,24 +439,39 @@ GTEST_TEST(SpatialInertia, SolidEllipsoidWithDensity) {
 }
 
 // Tests the static method for the spatial inertia of a solid sphere.
-GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
+GTEST_TEST(SpatialInertia, SolidSphereWithDensityOrMass) {
   const double density = 1000;  // Water is 1 g/ml = 1000 kg/m³.
-  const double r = 0.2;
-  const double volume = 4.0 / 3.0 * M_PI * std::pow(r, 3);
+  const double radius = 0.2;
+  const double volume = 4.0 / 3.0 * M_PI * std::pow(radius, 3);  // 4/3 π r³
   const double mass = density * volume;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidSphere(r);
+  const UnitInertia<double>G_BBo_B = UnitInertia<double>::SolidSphere(radius);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  const SpatialInertia<double> M =
-      SpatialInertia<double>::SolidSphereWithDensity(density, r);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  const SpatialInertia<double> M_with_density =
+      SpatialInertia<double>::SolidSphereWithDensity(density, radius);
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
+
+  // Ensure SolidSphereWithDensity() matches SolidSphereWithMass().
+  const SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::SolidSphereWithMass(mass, radius);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::SolidSphereWithDensity(-9.3, r),
+      SpatialInertia<double>::SolidSphereWithMass(-9.3, radius),
+      "[^]* A solid sphere's mass is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidSphereWithDensity(-9.3, radius),
       "[^]* A solid sphere's density is not positive and finite: .*.");
 
   // Ensure a negative or zero radius throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidSphereWithMass(mass, 0),
+      "[^]* A solid sphere's radius = .* is not positive and finite.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::SolidSphereWithMass(mass, -0.2),
+      "[^]* A solid sphere's radius = .* is not positive and finite.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithDensity(density, 0),
       "[^]* A solid sphere's radius = .* is not positive and finite.");
@@ -468,22 +483,37 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensity) {
 // Tests the static method for the spatial inertia of a thin hollow sphere.
 GTEST_TEST(SpatialInertia, HollowSphereWithDensity) {
   const double area_density = 80;  // density per unit area is 80 kg/m².
-  const double r = 0.2;
-  const double surface_area = 4.0 * M_PI * std::pow(r, 2);
+  const double radius = 0.2;
+  const double surface_area = 4.0 * M_PI * std::pow(radius, 2);  // 4 π r²
   const double mass = area_density * surface_area;
   const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-  const UnitInertia<double>G_BBo_B = UnitInertia<double>::HollowSphere(r);
+  const UnitInertia<double>G_BBo_B = UnitInertia<double>::HollowSphere(radius);
   const SpatialInertia<double> M_expected(mass, p_BoBcm_B, G_BBo_B);
-  const SpatialInertia<double> M =
-      SpatialInertia<double>::HollowSphereWithDensity(area_density, r);
-  EXPECT_TRUE(
-      CompareMatrices(M_expected.CopyToFullMatrix6(), M.CopyToFullMatrix6()));
+  const SpatialInertia<double> M_with_density =
+      SpatialInertia<double>::HollowSphereWithDensity(area_density, radius);
+  EXPECT_TRUE(CompareMatrices(M_expected.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
+
+  // Ensure HollowSphereWithDensity() matches HollowSphereWithMass().
+  const SpatialInertia<double> M_with_mass =
+      SpatialInertia<double>::HollowSphereWithMass(mass, radius);
+  EXPECT_TRUE(CompareMatrices(M_with_mass.CopyToFullMatrix6(),
+                              M_with_density.CopyToFullMatrix6()));
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      SpatialInertia<double>::HollowSphereWithDensity(-9.3, r),
+      SpatialInertia<double>::HollowSphereWithMass(-9.3, radius),
+      "[^]* A hollow sphere's area mass is not positive and finite: .*.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::HollowSphereWithDensity(-9.3, radius),
       "[^]* A hollow sphere's area density is not positive and finite: .*.");
 
   // Ensure a negative or zero radius throws an exception.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::HollowSphereWithMass(mass, 0),
+      "[^]* A hollow sphere's radius = .* is not positive and finite.");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      SpatialInertia<double>::HollowSphereWithMass(mass, -0.2),
+      "[^]* A hollow sphere's radius = .* is not positive and finite.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::HollowSphereWithDensity(area_density, 0),
       "[^]* A hollow sphere's radius = .* is not positive and finite.");

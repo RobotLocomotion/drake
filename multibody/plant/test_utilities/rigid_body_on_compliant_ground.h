@@ -85,12 +85,10 @@ class RigidBodyOnCompliantGround
 
     // Arbitrary inertia values.
     const double radius = 0.1;
-    const SpatialInertia<double> M_Bo =
-        SpatialInertia<double>::MakeFromCentralInertia(
-            kMass_, Vector3d::Zero(),
-            UnitInertia<double>::SolidSphere(radius) * kMass_);
+    const SpatialInertia<double> M_BBcm =
+        SpatialInertia<double>::SolidSphereWithMass(kMass_, radius);
 
-    body_ = &plant_->AddRigidBody("body", M_Bo);
+    body_ = &plant_->AddRigidBody("body", M_BBcm);
 
     // N.B. We add an intermediate zero mass body so that we can use separate
     // prismatic joints for the x and z directions. Even though the intermediate

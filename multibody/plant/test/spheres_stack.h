@@ -216,10 +216,8 @@ class SpheresStack {
   // Helper to add a spherical body into the model.
   const RigidBody<double>& AddSphere(const SphereParameters& params) {
     // Add rigid body.
-    const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-    const UnitInertia<double> G_BBcm_B =
-        UnitInertia<double>::SolidSphere(params.radius);
-    const SpatialInertia<double> M_BBcm_B(params.mass, p_BoBcm_B, G_BBcm_B);
+    const SpatialInertia<double> M_BBcm_B =
+        SpatialInertia<double>::SolidSphereWithMass(params.mass, params.radius);
     const RigidBody<double>& body = plant_->AddRigidBody(params.name, M_BBcm_B);
 
     // Add collision geometry.

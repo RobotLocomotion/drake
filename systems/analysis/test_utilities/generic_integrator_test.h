@@ -20,10 +20,10 @@ struct GenericIntegratorTest : public ::testing::Test {
     // Add a single free body to the world.
     const double radius = 0.05;  // m
     const double mass = 0.1;     // kg
-    auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
-    multibody::SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(),
-                                            G_Bcm);
-    plant_->AddRigidBody("Ball", M_Bcm);
+    multibody::SpatialInertia<double> M_BBcm =
+        multibody::SpatialInertia<double>::SolidSphereWithMass(mass, radius);
+
+    plant_->AddRigidBody("Ball", M_BBcm);
     plant_->Finalize();
 
     context_ = MakePlantContext();

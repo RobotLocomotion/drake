@@ -14,7 +14,7 @@ const boolean<T> is_positive_finite(const T& value) {
   using std::isfinite;
   return isfinite(value) && value > 0;
 }
-}  // anonymous namespace
+}  // namespace
 
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {
@@ -313,6 +313,24 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
   }
   const T volume = (4.0 / 3.0) * M_PI * radius * radius * radius;  // 4/3 π r³
   const T mass = density * volume;
+  return SolidSphereWithMass(mass, radius);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidSphereWithMass(
+    const T& mass, const T& radius) {
+  if (!is_positive_finite(mass)) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid sphere's mass is not positive and finite: {}.",
+        __func__, mass);
+    throw std::logic_error(error_message);
+  }
+  if (!is_positive_finite(radius)) {
+    const std::string error_message = fmt::format(
+        "{}(): A solid sphere's radius = {} is not positive and finite.",
+        __func__, radius);
+    throw std::logic_error(error_message);
+  }
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::SolidSphere(radius);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
@@ -335,6 +353,24 @@ SpatialInertia<T> SpatialInertia<T>::HollowSphereWithDensity(
   }
   const T area = 4.0 * M_PI * radius * radius;  // 4 π r²
   const T mass = area_density * area;
+  return HollowSphereWithMass(mass, radius);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::HollowSphereWithMass(
+    const T& mass, const T& radius) {
+  if (!is_positive_finite(mass)) {
+    const std::string error_message = fmt::format(
+        "{}(): A hollow sphere's area mass is not positive and finite: {}.",
+        __func__, mass);
+    throw std::logic_error(error_message);
+  }
+  if (!is_positive_finite(radius)) {
+    const std::string error_message = fmt::format(
+        "{}(): A hollow sphere's radius = {} is not positive and finite.",
+        __func__, radius);
+    throw std::logic_error(error_message);
+  }
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B = UnitInertia<T>::HollowSphere(radius);
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);

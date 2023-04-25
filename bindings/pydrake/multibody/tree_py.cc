@@ -1201,9 +1201,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidSphereWithDensity", &Class::SolidSphereWithDensity,
             py::arg("density"), py::arg("radius"),
             cls_doc.SolidSphereWithDensity.doc)
+        .def_static("SolidSphereWithMass", &Class::SolidSphereWithMass,
+            py::arg("mass"), py::arg("radius"), cls_doc.SolidSphereWithMass.doc)
         .def_static("HollowSphereWithDensity", &Class::HollowSphereWithDensity,
             py::arg("area_density"), py::arg("radius"),
             cls_doc.HollowSphereWithDensity.doc)
+        .def_static("HollowSphereWithMass", &Class::HollowSphereWithMass,
+            py::arg("mass"), py::arg("radius"),
+            cls_doc.HollowSphereWithMass.doc)
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),
