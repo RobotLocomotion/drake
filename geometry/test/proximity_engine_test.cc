@@ -4334,7 +4334,7 @@ GTEST_TEST(ProximityEngineTests,
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::AutoDiffXd");
+      "supported for scalar type drake::AutoDiffXd.*");
 }
 
 // Tests that an unsupported geometry causes the engine to throw.
@@ -4353,15 +4353,15 @@ GTEST_TEST(ProximityEngineTests, ExpressionUnsupported) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairwiseClosestPoints(X_WGs, kInf),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::symbolic::Expression");
+      "supported for scalar type drake::symbolic::Expression.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputeSignedDistancePairClosestPoints(id1, id2, X_WGs),
       "Signed distance queries between shapes 'Box' and 'Box' are not "
-      "supported for scalar type drake::symbolic::Expression");
+      "supported for scalar type drake::symbolic::Expression.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       engine.ComputePointPairPenetration(X_WGs),
       "Penetration queries between shapes 'Box' and 'Box' are not supported "
-      "for scalar type drake::symbolic::Expression");
+      "for scalar type drake::symbolic::Expression.*");
 }
 
 // Test fixture for deformable contact.
