@@ -775,6 +775,27 @@ void MultibodyTree<T>::FinalizeInternals() {
   }
 
   CreateModelInstances();
+
+  // For all floating bodies, route their future default poses queries through
+  // its joint representation.
+  for (int i = 0; i < num_joints(); ++i) {
+    auto& joint = owned_joints_[i];
+    const Body<T>& body = joint->child_body();
+    if (body.is_floating()) {
+      // Set default positions for the floating joints.
+      // TODO(xuchenhan-tri): This assumes that the only type of floating
+      // joint is the quaternion floating joint. This may change pending
+      // the resolution of #14949.
+      auto* quaternion_floating_joint =
+          dynamic_cast<QuaternionFloatingJoint<T>*>(joint.get());
+      DRAKE_DEMAND(quaternion_floating_joint != nullptr);
+      const auto [quaternion, translation] =
+          GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+      quaternion_floating_joint->set_default_quaternion(quaternion);
+      quaternion_floating_joint->set_default_position(translation);
+      default_body_poses_[body.index()] = joint->index();
+    }
+  }
 }
 
 template <typename T>
@@ -936,6 +957,57 @@ RigidTransform<T> MultibodyTree<T>::GetFreeBodyPoseOrThrow(
       GetFreeBodyMobilizerOrThrow(body);
   return RigidTransform<T>(mobilizer.get_quaternion(context),
                                  mobilizer.get_position(context));
+}
+
+template <typename T>
+void MultibodyTree<T>::SetDefaultFreeBodyPose(
+    const Body<T>& body, const RigidTransform<double>& X_WB) {
+  if (default_body_poses_.count(body.index()) == 0 ||
+      std::holds_alternative<
+          std::pair<Eigen::Quaternion<double>, Vector3<double>>>(
+          default_body_poses_.at(body.index()))) {
+    default_body_poses_[body.index()] =
+        std::make_pair(X_WB.rotation().ToQuaternion(), X_WB.translation());
+    return;
+  }
+  const auto& joint = owned_joints_.at(
+      std::get<JointIndex>(default_body_poses_.at(body.index())));
+  auto* quaternion_floating_joint =
+      dynamic_cast<QuaternionFloatingJoint<T>*>(joint.get());
+  DRAKE_DEMAND(quaternion_floating_joint != nullptr);
+  quaternion_floating_joint->set_default_quaternion(
+      X_WB.rotation().ToQuaternion());
+  quaternion_floating_joint->set_default_position(X_WB.translation());
+}
+
+template <typename T>
+RigidTransform<double> MultibodyTree<T>::GetDefaultFreeBodyPose(
+    const Body<T>& body) const {
+  const std::pair<Eigen::Quaternion<double>, Vector3<double>> pose =
+      GetDefaultFreeBodyPoseAsQuaternionVec3Pair(body);
+  return RigidTransform<double>(pose.first, pose.second);
+}
+
+template <typename T>
+std::pair<Eigen::Quaternion<double>, Vector3<double>>
+MultibodyTree<T>::GetDefaultFreeBodyPoseAsQuaternionVec3Pair(
+    const Body<T>& body) const {
+  if (default_body_poses_.count(body.index()) == 0) {
+    return std::make_pair(Eigen::Quaternion<double>::Identity(),
+                          Vector3<double>::Zero());
+  }
+  const auto& default_body_pose = default_body_poses_.at(body.index());
+  if (std::holds_alternative<JointIndex>(default_body_pose)) {
+    const auto& joint =
+        owned_joints_.at(std::get<JointIndex>(default_body_pose));
+    const QuaternionFloatingJoint<T>* quaternion_floating_joint =
+        dynamic_cast<const QuaternionFloatingJoint<T>*>(joint.get());
+    DRAKE_DEMAND(quaternion_floating_joint != nullptr);
+    return std::make_pair(quaternion_floating_joint->get_default_quaternion(),
+                          quaternion_floating_joint->get_default_position());
+  }
+  return std::get<std::pair<Eigen::Quaternion<double>, Vector3<double>>>(
+      default_body_pose);
 }
 
 template <typename T>

@@ -287,7 +287,6 @@ MultibodyPlant<T>::MultibodyPlant(
   // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
-  X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
   DeclareSceneGraphPorts();
@@ -396,7 +395,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
-    X_WB_default_list_ = other.X_WB_default_list_;
 
     adjacent_bodies_collision_filters_ =
         other.adjacent_bodies_collision_filters_;
@@ -1341,20 +1339,6 @@ void MultibodyPlant<T>::SetDefaultPositions(
     joint.set_default_positions(
         q.segment(joint.position_start(), joint.num_positions()));
   }
-  for (BodyIndex i : GetFloatingBaseBodies()) {
-    const Body<T>& body = get_body(i);
-    RigidTransform<double> X_WB;
-    const int pos = body.floating_positions_start();
-    if (body.has_quaternion_dofs()) {
-      X_WB = RigidTransform<double>(
-          Eigen::Quaternion<double>(q[pos], q[pos + 1], q[pos + 2], q[pos + 3]),
-          q.segment(pos + 4, 3));
-    } else {
-      X_WB = RigidTransform<double>(
-          math::RollPitchYaw<double>(q.segment(pos, 3)), q.segment(pos + 3, 3));
-    }
-    SetDefaultFreeBodyPose(body, X_WB);
-  }
 }
 
 template <typename T>
@@ -1370,21 +1354,6 @@ void MultibodyPlant<T>::SetDefaultPositions(ModelInstanceIndex model_instance,
     Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
         q.segment(joint.position_start(), joint.num_positions()));
-  }
-  for (BodyIndex i : GetBodyIndices(model_instance)) {
-    const Body<T>& body = get_body(i);
-    if (!body.is_floating()) continue;
-    RigidTransform<double> X_WB;
-    const int pos = body.floating_positions_start();
-    if (body.has_quaternion_dofs()) {
-      X_WB = RigidTransform<double>(
-          Eigen::Quaternion<double>(q[pos], q[pos + 1], q[pos + 2], q[pos + 3]),
-          q.segment(pos + 4, 3));
-    } else {
-      X_WB = RigidTransform<double>(
-          math::RollPitchYaw<double>(q.segment(pos, 3)), q.segment(pos + 3, 3));
-    }
-    SetDefaultFreeBodyPose(body, X_WB);
   }
 }
 
