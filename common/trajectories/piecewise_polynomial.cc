@@ -763,7 +763,7 @@ MatrixX<T> ComputePchipEndSlope(const T& dt0, const T& dt1,
   return deriv;
 }
 
-}  // end namespace
+}  // namespace
 
 // Makes a cubic piecewise polynomial.
 // It first computes the first derivatives at each break, and solves for each

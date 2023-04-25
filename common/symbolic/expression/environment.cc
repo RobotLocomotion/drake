@@ -53,7 +53,7 @@ Environment::map BuildMap(const initializer_list<Environment::key_type> vars) {
   return m;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 Environment::Environment(const std::initializer_list<value_type> init)
     : Environment{map(init)} {}

@@ -733,6 +733,6 @@ GTEST_TEST(EvaluatorCost, Eval) {
   EXPECT_NEAR(y2(0), a.dot(evaluator2_y) + b, 1E-12);
 }
 
-}  // anonymous namespace
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

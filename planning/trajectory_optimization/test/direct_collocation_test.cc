@@ -529,7 +529,7 @@ GTEST_TEST(DirectCollocation, DiscreteTimeSystemThrows) {
       ".*doesn't have any continuous states.*");
 }
 
-}  // anonymous namespace
+}  // namespace
 }  // namespace trajectory_optimization
 }  // namespace planning
 }  // namespace drake

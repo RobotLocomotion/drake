@@ -280,5 +280,5 @@ class UnrevisedLemkeSolver final : public SolverBase {
   mutable std::vector<LCPVariable> indep_variables_, dep_variables_;
 };
 
-}  // end namespace solvers
-}  // end namespace drake
+}  // namespace solvers
+}  // namespace drake

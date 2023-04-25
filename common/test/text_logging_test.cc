@@ -172,7 +172,7 @@ GTEST_TEST(TextLoggingTest, SetLogPattern) {
   #endif
 }
 
-}  // anon namespace
+}  // namespace
 
 // To enable compiling without depending on @spdlog, we need to provide our own
 // main routine.  The default drake_cc_googletest_main depends on @spdlog.

@@ -1022,7 +1022,7 @@ std::optional<int> ParseInt(std::string_view s) {
   }
   return std::nullopt;
 }
-}  // anonymous namespace
+}  // namespace
 
 bool GurobiSolver::is_available() {
   return true;

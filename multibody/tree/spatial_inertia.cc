@@ -14,7 +14,7 @@ const boolean<T> is_positive_finite(const T& value) {
   using std::isfinite;
   return isfinite(value) && value > 0;
 }
-}  // anonymous namespace
+}  // namespace
 
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::MakeUnitary() {

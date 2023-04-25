@@ -174,7 +174,7 @@ void Calc(double time, const std::string& frame_name, const PointCloud& cloud,
   message->row_step = data_size;
 }
 
-}  // anonymous namespace
+}  // namespace
 
 PointCloudToLcm::PointCloudToLcm(std::string frame_name)
     : frame_name_(std::move(frame_name)) {

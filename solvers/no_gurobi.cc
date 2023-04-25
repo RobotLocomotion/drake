@@ -22,5 +22,5 @@ void GurobiSolver::DoSolve(const MathematicalProgram&, const Eigen::VectorXd&,
       "solver.");
 }
 
-}  // end namespace solvers
-}  // end namespace drake
+}  // namespace solvers
+}  // namespace drake

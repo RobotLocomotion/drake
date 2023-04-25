@@ -170,7 +170,7 @@ int get_input_port_size(
   }
 }
 
-}  // end namespace
+}  // namespace
 
 DirectTranscription::DirectTranscription(
     const System<double>* system, const Context<double>& context,

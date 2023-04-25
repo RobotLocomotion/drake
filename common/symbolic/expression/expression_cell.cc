@@ -231,7 +231,7 @@ Expression ExpandPow(const Expression& base, const Expression& exponent) {
   const int n{static_cast<int>(e)};
   return ExpandPow(base, n);
 }
-}  // anonymous namespace
+}  // namespace
 
 ExpressionCell::~ExpressionCell() = default;
 

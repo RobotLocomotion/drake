@@ -275,6 +275,6 @@ GTEST_TEST(EvaluatorBaseTest, DynamicSizedEvaluatorTest) {
             "DynamicSizedEvaluator with 1 decision variables "
             "dynamic_sized_variable\n");
 }
-}  // anonymous namespace
+}  // namespace
 }  // namespace solvers
 }  // namespace drake

@@ -50,5 +50,5 @@ using IndeterminatesRefList = std::list<Eigen::Ref<const VectorXIndeterminate>>;
 [[nodiscard]] VectorXIndeterminate ConcatenateIndeterminatesRefList(
     const IndeterminatesRefList& var_list);
 
-}  // end namespace solvers
-}  // end namespace drake
+}  // namespace solvers
+}  // namespace drake
