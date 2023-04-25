@@ -380,8 +380,7 @@ Formula MultipleShooting::SubstitutePlaceholderVariables(
   return f.Substitute(ConstructPlaceholderVariableSubstitution(interval_index));
 }
 
-solvers::MathematicalProgramResult Solve(
-    const MultipleShooting& trajopt) {
+solvers::MathematicalProgramResult Solve(const MultipleShooting& trajopt) {
   const solvers::MathematicalProgram& prog = trajopt.prog();
   return Solve(prog);
 }

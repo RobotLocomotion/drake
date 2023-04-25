@@ -44,8 +44,8 @@ class MyDirectTrajOpt : public MultipleShooting {
                   const solvers::VectorXDecisionVariable& state,
                   const int num_time_samples, const double fixed_timestep,
                   solvers::MathematicalProgram* prog = nullptr)
-      : MultipleShooting(input, state, num_time_samples, fixed_timestep,
-                         prog) {}
+      : MultipleShooting(input, state, num_time_samples, fixed_timestep, prog) {
+  }
 
   MyDirectTrajOpt(const solvers::VectorXDecisionVariable& input,
                   const solvers::VectorXDecisionVariable& state,
@@ -246,8 +246,7 @@ GTEST_TEST(MultipleShootingTest, PlaceholderVariableTest) {
                std::exception);
 
   EXPECT_THROW(prog.AddLinearConstraint(t(0) <= 1.0), std::exception);
-  EXPECT_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)),
-               std::exception);
+  EXPECT_THROW(prog.AddLinearConstraint(u <= Vector1d(1.0)), std::exception);
 
   EXPECT_THROW(prog.AddLinearConstraint(Eigen::Matrix2d::Identity(),
                                         Eigen::Vector2d::Zero(),
@@ -402,7 +401,7 @@ GTEST_TEST(MultipleShootingTest, ConstraintAllKnotsTest) {
       trajopt.AddConstraintToAllKnotPoints(
           Vector2<symbolic::Formula>{trajopt.state()[0] == state_value[0],
                                      trajopt.state()[1] == state_value[1]});
-  EXPECT_EQ(c2.size(), 2*kNumSampleTimes);
+  EXPECT_EQ(c2.size(), 2 * kNumSampleTimes);
 }
 
 GTEST_TEST(MultipleShootingTest, FinalCostTest) {
