@@ -308,5 +308,5 @@ class MobyLCPSolver final : public SolverBase {
   mutable std::vector<unsigned> all_, tlist_, bas_, nonbas_, j_;
 };
 
-}  // end namespace solvers
-}  // end namespace drake
+}  // namespace solvers
+}  // namespace drake

@@ -355,7 +355,7 @@ nlopt::algorithm GetNloptAlgorithm(const SolverOptions& merged_options) {
         it->second));
   }
 }
-}  // anonymous namespace
+}  // namespace
 
 bool NloptSolver::is_available() {
   return true;

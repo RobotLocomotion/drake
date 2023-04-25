@@ -559,7 +559,7 @@ GTEST_TEST(DirectTranscriptionTest, LinearSystemWParamsTest) {
 // TODO(russt): Add tests for ReconstructTrajectory methods once their output is
 // non-trivial.
 
-}  // anonymous namespace
+}  // namespace
 }  // namespace trajectory_optimization
 }  // namespace planning
 }  // namespace drake

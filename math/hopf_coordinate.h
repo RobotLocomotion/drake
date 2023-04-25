@@ -77,5 +77,5 @@ Vector3<T> QuaternionToHopfCoordinate(const Eigen::Quaternion<T>& quaternion) {
                 sqrt(pow(quaternion.w(), 2) + pow(quaternion.x(), 2)));
   return Vector3<T>(theta, phi, psi);
 }
-}  // namespace math.
+}  // namespace math
 }  // namespace drake

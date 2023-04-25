@@ -70,7 +70,7 @@ VectorX<double> LinearSolver<double>::Solve(const VectorX<double>& v) const {
   }
   return lu_.solve(v);
 }
-}  // anonymous namespace
+}  // namespace
 
 template <>
 void UnrevisedLemkeSolver<AutoDiffXd>::DoSolve(

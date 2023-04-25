@@ -27,5 +27,5 @@ using VariableRefList = std::list<Eigen::Ref<const VectorXDecisionVariable>>;
  */
 [[nodiscard]] VectorXDecisionVariable ConcatenateVariableRefList(
     const VariableRefList& var_list);
-}  // end namespace solvers
-}  // end namespace drake
+}  // namespace solvers
+}  // namespace drake

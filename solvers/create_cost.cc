@@ -53,7 +53,7 @@ Binding<LinearCost> DoParseLinearCost(
                        vars_vec);
 }
 
-}  // anonymous namespace
+}  // namespace
 
 Binding<LinearCost> ParseLinearCost(const Expression& e) {
   auto p = symbolic::ExtractVariablesFromExpression(e);

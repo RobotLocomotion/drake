@@ -128,7 +128,7 @@ void PackImageToLcmImageT(const AbstractValue& untyped_image,
   }
 }
 
-}  // anonymous namespace
+}  // namespace
 
 ImageToLcmImageArrayT::ImageToLcmImageArrayT(bool do_compress)
     : do_compress_(do_compress) {

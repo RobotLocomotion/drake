@@ -618,5 +618,5 @@ GTEST_TEST(PolynomialTest, SubsitutionTest) {
                   .CoefficientsAlmostEqual(x * x + 3 * pow(x, 4) + 3 * y));
 }
 
-}  // anonymous namespace
+}  // namespace
 }  // namespace drake

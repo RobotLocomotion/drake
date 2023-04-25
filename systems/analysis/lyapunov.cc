@@ -27,7 +27,7 @@ void AddLinearConstraintIfNonTrivial(const symbolic::Formula &f,
   }
 }
 
-}  // end namespace
+}  // namespace
 
 Eigen::VectorXd SampleBasedLyapunovAnalysis(
     const System<double>& system, const Context<double>& context,

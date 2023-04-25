@@ -674,7 +674,7 @@ GTEST_TEST(MultipleShootingTest, NewSequentialVariableTest) {
               result.GetSolution(trajopt.h_vars()).sum(), 1e-6);
 }
 
-}  // anonymous namespace
+}  // namespace
 }  // namespace trajectory_optimization
 }  // namespace planning
 }  // namespace drake
