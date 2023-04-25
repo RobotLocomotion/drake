@@ -468,20 +468,20 @@ GTEST_TEST(SpatialInertia, SolidSphereWithDensityOrMass) {
   // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithMass(mass, 0),
-      "[^]* A solid sphere's radius = .* is not positive and finite.");
+      "[^]* A solid sphere's radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithMass(mass, -0.2),
-      "[^]* A solid sphere's radius = .* is not positive and finite.");
+      "[^]* A solid sphere's radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithDensity(density, 0),
-      "[^]* A solid sphere's radius = .* is not positive and finite.");
+      "[^]* A solid sphere's radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::SolidSphereWithDensity(density, -0.2),
-      "[^]* A solid sphere's radius = .* is not positive and finite.");
+      "[^]* A solid sphere's radius is not positive and finite: .*.");
 }
 
 // Tests the static method for the spatial inertia of a thin hollow sphere.
-GTEST_TEST(SpatialInertia, HollowSphereWithDensity) {
+GTEST_TEST(SpatialInertia, HollowSphereWithDensityOrMass) {
   const double area_density = 80;  // density per unit area is 80 kg/m².
   const double radius = 0.2;
   const double surface_area = 4.0 * M_PI * std::pow(radius, 2);  // 4 π r²
@@ -510,16 +510,16 @@ GTEST_TEST(SpatialInertia, HollowSphereWithDensity) {
   // Ensure a negative or zero radius throws an exception.
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::HollowSphereWithMass(mass, 0),
-      "[^]* A hollow sphere's radius = .* is not positive and finite.");
+      "[^]* A hollow sphere's radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::HollowSphereWithMass(mass, -0.2),
-      "[^]* A hollow sphere's radius = .* is not positive and finite.");
+      "[^]* A hollow sphere's radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::HollowSphereWithDensity(area_density, 0),
-      "[^]* A hollow sphere's radius = .* is not positive and finite.");
+      "[^]* A hollow sphere's radius is not positive and finite: .*.");
   DRAKE_EXPECT_THROWS_MESSAGE(
       SpatialInertia<double>::HollowSphereWithDensity(area_density, -0.2),
-      "[^]* A hollow sphere's radius = .* is not positive and finite.");
+      "[^]* A hollow sphere's radius is not positive and finite: .*.");
 }
 
 // Test spatial inertia of a solid tetrahedron B about its vertex B0.

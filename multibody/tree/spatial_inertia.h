@@ -296,7 +296,7 @@ class SpatialInertia {
   /// is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
   /// frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
-  /// B's has an equal moment of inertia about any line passing through Bo.
+  /// B has an equal moment of inertia about any line passing through Bo.
   /// @throws std::exception if density or radius is not positive and finite.
   static SpatialInertia<T> SolidSphereWithDensity(
       const T& density, const T& radius);
@@ -309,7 +309,7 @@ class SpatialInertia {
   /// is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
   /// frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
-  /// B's has an equal moment of inertia about any line passing through Bo.
+  /// B has an equal moment of inertia about any line passing through Bo.
   /// @throws std::exception if mass or radius is not positive and finite.
   static SpatialInertia<T> SolidSphereWithMass(
       const T& mass, const T& radius);
@@ -338,7 +338,7 @@ class SpatialInertia {
   /// is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
   /// frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
-  /// B's has an equal moment of inertia about any line passing through Bo.
+  /// B has an equal moment of inertia about any line passing through Bo.
   /// @throws std::exception if mass or radius is not positive and finite.
   static SpatialInertia<T> HollowSphereWithMass(
       const T& mass, const T& radius);

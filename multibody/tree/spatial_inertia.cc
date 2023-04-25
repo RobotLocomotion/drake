@@ -307,7 +307,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithDensity(
   }
   if (!is_positive_finite(radius)) {
     const std::string error_message = fmt::format(
-        "{}(): A solid sphere's radius = {} is not positive and finite.",
+        "{}(): A solid sphere's radius is not positive and finite: {}.",
         __func__, radius);
     throw std::logic_error(error_message);
   }
@@ -327,7 +327,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidSphereWithMass(
   }
   if (!is_positive_finite(radius)) {
     const std::string error_message = fmt::format(
-        "{}(): A solid sphere's radius = {} is not positive and finite.",
+        "{}(): A solid sphere's radius is not positive and finite: {}.",
         __func__, radius);
     throw std::logic_error(error_message);
   }
@@ -347,7 +347,7 @@ SpatialInertia<T> SpatialInertia<T>::HollowSphereWithDensity(
   }
   if (!is_positive_finite(radius)) {
     const std::string error_message = fmt::format(
-        "{}(): A hollow sphere's radius = {} is not positive and finite.",
+        "{}(): A hollow sphere's radius is not positive and finite: {}.",
         __func__, radius);
     throw std::logic_error(error_message);
   }
@@ -367,7 +367,7 @@ SpatialInertia<T> SpatialInertia<T>::HollowSphereWithMass(
   }
   if (!is_positive_finite(radius)) {
     const std::string error_message = fmt::format(
-        "{}(): A hollow sphere's radius = {} is not positive and finite.",
+        "{}(): A hollow sphere's radius is not positive and finite: {}.",
         __func__, radius);
     throw std::logic_error(error_message);
   }
