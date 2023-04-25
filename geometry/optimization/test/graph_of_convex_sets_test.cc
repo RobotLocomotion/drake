@@ -1334,9 +1334,9 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
       const double tol =
           (relaxed_result.get_solver_id() == solvers::GurobiSolver::id())
               ? 1e-1
-              : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
-                    ? 1e-2
-                    : 1e-5;
+          : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
+              ? 1e-2
+              : 1e-5;
       EXPECT_NEAR(relaxed_result.GetSolution(edges[ii]->phi()), 0.5, tol);
     } else if (ii < 10) {
       EXPECT_LT(relaxed_result.GetSolution(edges[ii]->phi()), 0.5);
@@ -1358,6 +1358,33 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   auto mip_result = spp.SolveShortestPath(source->id(), target->id(), options);
   EXPECT_NEAR(rounded_result.get_optimal_cost(), mip_result.get_optimal_cost(),
               2e-6);
+
+  if (solvers::MosekSolver::is_available() &&
+      solvers::MosekSolver::is_enabled()) {
+    // Test rounding_solver_options by setting the maximum iterations to 0,
+    // which is equivalent to not solving the rounding problem. Thus it should
+    // fail.
+    solvers::MosekSolver mosek_solver;
+    options.solver = &mosek_solver;
+    options.convex_relaxation = true;
+    options.preprocessing = false;
+    options.max_rounded_paths = 10;
+
+    options.rounding_solver_options = SolverOptions();
+    options.rounding_solver_options->SetOption(
+        solvers::MosekSolver::id(), "MSK_IPAR_INTPNT_MAX_ITERATIONS", 0);
+
+    auto failed_result =
+        spp.SolveShortestPath(source->id(), target->id(), options);
+    EXPECT_FALSE(failed_result.is_success());
+
+    // Without the convex relaxation, the solver should ignore the
+    // rounding_solver_options and succeed.
+    options.convex_relaxation = false;
+    auto successful_result =
+        spp.SolveShortestPath(source->id(), target->id(), options);
+    EXPECT_TRUE(successful_result.is_success());
+  }
 }
 
 // In some cases, the depth first search performed in rounding will lead to a
