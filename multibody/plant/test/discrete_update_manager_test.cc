@@ -451,6 +451,10 @@ GTEST_TEST(DiscreteUpdateManagerCacheEntry, ContactSolverResults) {
   ASSERT_EQ(v.size(), 1);
   /* The velocity should reflect the change in actuation. */
   EXPECT_TRUE(CompareMatrices(v, Vector1<double>(nonzero_actuation * dt)));
+
+  plant_context.DisableCaching();
+  DRAKE_EXPECT_THROWS_MESSAGE(simulator.AdvanceTo(4.0 * dt),
+                              ".*caching.*off.*");
 }
 
 }  // namespace

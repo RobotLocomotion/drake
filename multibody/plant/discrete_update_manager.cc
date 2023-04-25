@@ -272,11 +272,15 @@ void DiscreteUpdateManager<T>::SampleDiscreteInputPortForces(
   // The discrete sampling via cache entry trick only works when caching is
   // enable. See #12786 for details.
   if (discrete_input_forces_cache_entry.is_cache_entry_disabled(context)) {
+    throw std::runtime_error(
+        "Discrete MbP doesn't work with caching turned off.");
+#if 0
     discrete_input_forces_cache_entry.enable_caching(context);
     drake::log()->warn(
         "The discrete force input ports cache entry has re-enabled caching due "
         "to #12786. The discrete sampling of MultibodyPlant force input ports "
         "depends on caching enabled for this particular cache entry.");
+#endif
   }
   // Actually sample the discrete forces.
   auto& cache_entry_value =
