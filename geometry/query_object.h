@@ -262,7 +262,7 @@ class QueryObject {
    | Convex    | throwsᵉ | throwsᵉ  | throwsᵉ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Cylinder  | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Ellipsoid | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵉ  |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
    | Sphere    | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |    throwsᵉ  |    ᵇ    | throwsᵉ |
    __*Table 3*__: Support for `T` = @ref drake::symbolic::Expression.
@@ -540,7 +540,7 @@ class QueryObject {
    | Cylinder  | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Ellipsoid | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      ᵃ     |    ᶜ    |  ░░░░░  |
+   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      throwsᵃ  |    ᶜ    |  ░░░░░  |
    | Sphere    |  2e-15  |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |    2e-15   |    ᶜ    |  5e-15  |
    __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` =
@@ -553,9 +553,9 @@ class QueryObject {
    | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Cylinder  | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵈ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |    throwsᵈ  |    ᵇ    | throwsᵈ |
+   | HalfSpace | throwsᵃ | throwsᵃ  | throwsᵃ |  throwsᵃ  |   throwsᵃ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      throwsᵃ     |    ᶜ    |  ░░░░░  |
+   | Sphere    | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |    throwsᵈ  |    ᶜ    | throwsᵈ |
    __*Table 6*__: Support for `T` = @ref drake::symbolic::Expression.
 
    - ᵃ We don't currently support queries between HalfSpace and any other shape

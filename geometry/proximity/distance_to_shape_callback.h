@@ -180,7 +180,9 @@ void CalcDistanceFallback(const fcl::CollisionObjectd& a,
   // actually exists, it should be specialized below.
   throw std::logic_error(fmt::format(
       "Signed distance queries between shapes '{}' and '{}' "
-      "are not supported for scalar type {}",
+      "are not supported for scalar type {}. See the documentation for "
+      "QueryObject::ComputeSignedDistancePairwiseClosestPoints() for the "
+      "full status of supported geometries.",
       GetGeometryName(a), GetGeometryName(b), NiceTypeName::Get<T>()));
 }
 

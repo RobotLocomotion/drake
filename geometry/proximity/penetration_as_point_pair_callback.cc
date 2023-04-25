@@ -416,7 +416,9 @@ bool Callback(fcl::CollisionObjectd* fcl_object_A_ptr,
   } else {
     throw std::logic_error(fmt::format(
         "Penetration queries between shapes '{}' and '{}' "
-        "are not supported for scalar type {}",
+        "are not supported for scalar type {}. See the documentation for "
+        "QueryObject::ComputePointPairPenetration() for the full status of "
+        "supported geometries.",
         GetGeometryName(*fcl_object_A_ptr), GetGeometryName(*fcl_object_B_ptr),
         NiceTypeName::Get<T>()));
   }
