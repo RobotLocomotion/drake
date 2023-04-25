@@ -108,8 +108,8 @@ class NiceTypeName {
   // No instances of this class should be created.
   NiceTypeName() = delete;
 
-  static std::string GetWithPossibleOverride(
-      const void* ptr, const std::type_info& info);
+  static std::string GetWithPossibleOverride(const void* ptr,
+                                             const std::type_info& info);
 };
 
 }  // namespace drake

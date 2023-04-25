@@ -91,7 +91,7 @@ class Polynomial {
     /// A comparison to allow std::lexicographical_compare on this class; does
     /// not reflect any sort of mathematical total order.
     bool operator<(const Monomial& other) const {
-      return ((coefficient < other.coefficient)  ||
+      return ((coefficient < other.coefficient) ||
               ((coefficient == other.coefficient) && (terms < other.terms)));
     }
 
@@ -244,8 +244,8 @@ class Polynomial {
   typename Product<T, U>::type EvaluateMultivariate(
       const std::map<VarType, U>& var_values) const {
     using std::pow;
-    typedef typename std::remove_const_t<
-      typename Product<T, U>::type> ProductType;
+    typedef typename std::remove_const_t<typename Product<T, U>::type>
+        ProductType;
     ProductType value = 0;
     for (const Monomial& monomial : monomials_) {
       ProductType monomial_value = monomial.coefficient;
@@ -268,8 +268,7 @@ class Polynomial {
    * Returns a Polynomial in which each variable in var_values has been
    * replaced with its value and constants appropriately combined.
    */
-  Polynomial EvaluatePartial(
-      const std::map<VarType, T>& var_values) const;
+  Polynomial EvaluatePartial(const std::map<VarType, T>& var_values) const;
 
   /// Replaces all instances of variable orig with replacement.
   void Subs(const VarType& orig, const VarType& replacement);
@@ -325,42 +324,36 @@ class Polynomial {
 
   const Polynomial operator*(const Polynomial& other) const;
 
-  friend const Polynomial operator+(const Polynomial& p,
-                                    const T& scalar) {
+  friend const Polynomial operator+(const Polynomial& p, const T& scalar) {
     Polynomial ret = p;
     ret += scalar;
     return ret;
   }
 
-  friend const Polynomial operator+(const T& scalar,
-                                    const Polynomial& p) {
+  friend const Polynomial operator+(const T& scalar, const Polynomial& p) {
     Polynomial ret = p;
     ret += scalar;
     return ret;
   }
 
-  friend const Polynomial operator-(const Polynomial& p,
-                                    const T& scalar) {
+  friend const Polynomial operator-(const Polynomial& p, const T& scalar) {
     Polynomial ret = p;
     ret -= scalar;
     return ret;
   }
 
-  friend const Polynomial operator-(const T& scalar,
-                                    const Polynomial& p) {
+  friend const Polynomial operator-(const T& scalar, const Polynomial& p) {
     Polynomial ret = -p;
     ret += scalar;
     return ret;
   }
 
-  friend const Polynomial operator*(const Polynomial& p,
-                                    const T& scalar) {
+  friend const Polynomial operator*(const Polynomial& p, const T& scalar) {
     Polynomial ret = p;
     ret *= scalar;
     return ret;
   }
-  friend const Polynomial operator*(const T& scalar,
-                                    const Polynomial& p) {
+  friend const Polynomial operator*(const T& scalar, const Polynomial& p) {
     Polynomial ret = p;
     ret *= scalar;
     return ret;
@@ -452,8 +445,7 @@ class Polynomial {
   /** Variable name/ID conversion facility. */
   static bool IsValidVariableName(const std::string name);
 
-  static VarType VariableNameToId(const std::string name,
-                                  unsigned int m = 1);
+  static VarType VariableNameToId(const std::string name, unsigned int m = 1);
 
   static std::string IdToVariableName(const VarType id);
   //@}
@@ -482,9 +474,8 @@ class Polynomial {
 
 /** Provides power function for Polynomial. */
 template <typename T>
-Polynomial<T> pow(
-    const Polynomial<T>& base,
-    typename Polynomial<T>::PowerType exponent) {
+Polynomial<T> pow(const Polynomial<T>& base,
+                  typename Polynomial<T>::PowerType exponent) {
   DRAKE_DEMAND(exponent >= 0);
   if (exponent == 0) {
     return Polynomial<T>{1.0};
@@ -523,8 +514,7 @@ typedef Eigen::Matrix<Polynomiald, Eigen::Dynamic, 1> VectorXPoly;
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <typename T>
-struct formatter<drake::Polynomial<T>>
-    : drake::ostream_formatter {};
+struct formatter<drake::Polynomial<T>> : drake::ostream_formatter {};
 template <>
 struct formatter<drake::Polynomial<double>::Monomial>
     : drake::ostream_formatter {};

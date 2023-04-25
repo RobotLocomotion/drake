@@ -33,7 +33,8 @@ int ReportZeroHash(const std::type_info& detail) {
       " See drake/common/test/value_test.cc for an example.",
       bad_class, bad_class);
   if (!has_warned) {
-    log()->warn(message +
+    log()->warn(
+        message +
         " This is the first instance of an impaired T within this process."
         " Additional instances will not be warned about, but you may set"
         " the drake::log() level to 'debug' to see all instances.");
@@ -47,8 +48,7 @@ int ReportZeroHash(const std::type_info& detail) {
 AbstractValue::~AbstractValue() = default;
 
 std::string AbstractValue::GetNiceTypeName() const {
-  return NiceTypeName::Canonicalize(
-      NiceTypeName::Demangle(type_info().name()));
+  return NiceTypeName::Canonicalize(NiceTypeName::Demangle(type_info().name()));
 }
 
 void AbstractValue::ThrowCastError(const std::string& requested_type) const {
@@ -56,13 +56,14 @@ void AbstractValue::ThrowCastError(const std::string& requested_type) const {
   const auto static_type = NiceTypeName::Get(static_type_info());
   if (dynamic_type != static_type) {
     throw std::logic_error(fmt::format(
-         "AbstractValue: a request to cast to '{}' failed because the value "
-         "was created using the static type '{}' (with a dynamic type of "
-         "'{}').", requested_type, static_type, dynamic_type));
+        "AbstractValue: a request to cast to '{}' failed because the value "
+        "was created using the static type '{}' (with a dynamic type of '{}').",
+        requested_type, static_type, dynamic_type));
   }
   throw std::logic_error(fmt::format(
-     "AbstractValue: a request to cast to '{}' failed because the value "
-     "was created using the static type '{}'.", requested_type, static_type));
+      "AbstractValue: a request to cast to '{}' failed because the value was "
+      "created using the static type '{}'.",
+      requested_type, static_type));
 }
 
 }  // namespace drake

@@ -23,16 +23,16 @@ namespace fs = std::filesystem;
 
 using Result = FindResourceResult;
 
-std::optional<string>
-Result::get_absolute_path() const {
+std::optional<string> Result::get_absolute_path() const {
   return absolute_path_;
 }
 
-string
-Result::get_absolute_path_or_throw() const {
+string Result::get_absolute_path_or_throw() const {
   // If we have a path, return it.
   const auto& optional_path = get_absolute_path();
-  if (optional_path) { return *optional_path; }
+  if (optional_path) {
+    return *optional_path;
+  }
 
   // Otherwise, throw the error message.
   const auto& optional_error = get_error_message();
@@ -40,8 +40,7 @@ Result::get_absolute_path_or_throw() const {
   throw std::runtime_error(*optional_error);
 }
 
-std::optional<string>
-Result::get_error_message() const {
+std::optional<string> Result::get_error_message() const {
   // If an error has been set, return it.
   if (error_message_ != std::nullopt) {
     DRAKE_ASSERT(absolute_path_ == std::nullopt);
@@ -97,8 +96,8 @@ void Result::CheckInvariants() {
     DRAKE_DEMAND(error_message_ == std::nullopt);
   } else {
     // For our "non-empty" state, we must have exactly one of success or error.
-    DRAKE_DEMAND(
-        (absolute_path_ == std::nullopt) != (error_message_ == std::nullopt));
+    DRAKE_DEMAND((absolute_path_ == std::nullopt) !=
+                 (error_message_ == std::nullopt));
   }
   // When non-nullopt, the path and error cannot be the empty string.
   DRAKE_DEMAND((absolute_path_ == std::nullopt) || !absolute_path_->empty());
@@ -122,9 +121,8 @@ bool IsRelativePath(const string& path) {
 // Taking `root` to be Drake's resource root, confirm that the sentinel file
 // exists and return the found resource_path (or an error if either the
 // sentinel or resource_path was missing).
-Result CheckAndMakeResult(
-    const string& root_description, const string& root,
-    const string& resource_path) {
+Result CheckAndMakeResult(const string& root_description, const string& root,
+                          const string& resource_path) {
   DRAKE_DEMAND(!root_description.empty());
   DRAKE_DEMAND(!root.empty());
   DRAKE_DEMAND(!resource_path.empty());
@@ -133,21 +131,25 @@ Result CheckAndMakeResult(
 
   // Check for the sentinel.
   if (!fs::is_regular_file({root + "/" + kSentinelRelpath})) {
-    return Result::make_error(resource_path, fmt::format(
-        "Could not find Drake resource_path '{}' because {} specified a "
-        "resource root of '{}' but that root did not contain the expected "
-        "sentinel file '{}'.",
-        resource_path, root_description, root, kSentinelRelpath));
+    return Result::make_error(
+        resource_path,
+        fmt::format(
+            "Could not find Drake resource_path '{}' because {} specified a "
+            "resource root of '{}' but that root did not contain the expected "
+            "sentinel file '{}'.",
+            resource_path, root_description, root, kSentinelRelpath));
   }
 
   // Check for the resource_path.
   const string abspath = root + '/' + resource_path;
   if (!fs::is_regular_file({abspath})) {
-    return Result::make_error(resource_path, fmt::format(
-        "Could not find Drake resource_path '{}' because {} specified a "
-        "resource root of '{}' but that root did not contain the expected "
-        "file '{}'.",
-        resource_path, root_description, root, abspath));
+    return Result::make_error(
+        resource_path,
+        fmt::format(
+            "Could not find Drake resource_path '{}' because {} specified a "
+            "resource root of '{}' but that root did not contain the expected "
+            "file '{}'.",
+            resource_path, root_description, root, abspath));
   }
 
   return Result::make_success(resource_path, abspath);
@@ -159,28 +161,28 @@ std::optional<string> MaybeGetEnvironmentResourceRoot() {
   const char* const env_name = kDrakeResourceRootEnvironmentVariableName;
   const char* const env_value = getenv(env_name);
   if (!env_value) {
-    log()->debug(
-        "FindResource ignoring {} because it is not set.",
-        env_name);
+    log()->debug("FindResource ignoring {} because it is not set.", env_name);
     return std::nullopt;
   }
   const std::string root{env_value};
   if (!fs::is_directory({root})) {
     static const logging::Warn log_once(
-        "FindResource ignoring {}='{}' because it does not exist.",
-        env_name, env_value);
+        "FindResource ignoring {}='{}' because it does not exist.", env_name,
+        env_value);
     return std::nullopt;
   }
   if (!fs::is_directory({root + "/drake"})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain a 'drake' "
-        "subdirectory.", env_name, env_value);
+        "subdirectory.",
+        env_name, env_value);
     return std::nullopt;
   }
   if (!fs::is_regular_file({root + "/" + kSentinelRelpath})) {
     static const logging::Warn log_once(
         "FindResource ignoring {}='{}' because it does not contain the "
-        "expected sentinel file '{}'.", env_name, env_value, kSentinelRelpath);
+        "expected sentinel file '{}'.",
+        env_name, env_value, kSentinelRelpath);
     return std::nullopt;
   }
   return root;
@@ -198,8 +200,10 @@ std::optional<string> MaybeGetInstallResourceRoot() {
     if (fs::is_directory({root})) {
       return root;
     } else {
-      log()->debug("FindResource ignoring CMake install candidate '{}' "
-                   "because it does not exist", root);
+      log()->debug(
+          "FindResource ignoring CMake install candidate '{}' because it does "
+          "not exist",
+          root);
     }
   } else {
     log()->debug("FindResource has no CMake install candidate");
@@ -226,15 +230,17 @@ Result FindResource(const string& resource_path) {
   // compatibility with the original semantics of this function; if we want to
   // offer a function that takes paths without "drake", we can use a new name.
   if (!IsRelativePath(resource_path)) {
-    return Result::make_error(resource_path, fmt::format(
-        "Drake resource_path '{}' is not a relative path.",
-        resource_path));
+    return Result::make_error(
+        resource_path,
+        fmt::format("Drake resource_path '{}' is not a relative path.",
+                    resource_path));
   }
   const string prefix("drake/");
   if (!StartsWith(resource_path, prefix)) {
-    return Result::make_error(resource_path, fmt::format(
-        "Drake resource_path '{}' does not start with {}.",
-        resource_path, prefix));
+    return Result::make_error(
+        resource_path,
+        fmt::format("Drake resource_path '{}' does not start with {}.",
+                    resource_path, prefix));
   }
 
   // We will check each potential resource root one by one.  The first root
@@ -266,19 +272,19 @@ Result FindResource(const string& resource_path) {
 
   // (3) Check the `libdrake_marker.so` location in the install tree.
   if (auto guess = MaybeGetInstallResourceRoot()) {
-    return CheckAndMakeResult(
-        "Drake CMake install marker",
-        *guess, resource_path);
+    return CheckAndMakeResult("Drake CMake install marker", *guess,
+                              resource_path);
   }
 
   // No resource roots were found.
-  return Result::make_error(resource_path, fmt::format(
-      "Could not find Drake resource_path '{}' because no resource roots of "
-      "any kind could be found: {} is unset, a {} could not be created or "
-      "did not contain {}, and there is no Drake CMake install marker.",
-      resource_path, kDrakeResourceRootEnvironmentVariableName,
-      "bazel::tools::cpp::runfiles::Runfiles",
-      kSentinelRelpath));
+  return Result::make_error(
+      resource_path,
+      fmt::format(
+          "Could not find Drake resource_path '{}' because no resource roots "
+          "of any kind could be found: {} is unset, a {} could not be created "
+          "or did not contain {}, and there is no Drake CMake install marker.",
+          resource_path, kDrakeResourceRootEnvironmentVariableName,
+          "bazel::tools::cpp::runfiles::Runfiles", kSentinelRelpath));
 }
 
 string FindResourceOrThrow(const string& resource_path) {

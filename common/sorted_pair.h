@@ -34,18 +34,19 @@ namespace drake {
 /// @tparam T A template type that provides `operator<`.
 template <class T>
 struct SortedPair {
-  static_assert(is_less_than_comparable<T>::value, "SortedPair can only be used"
-      " with types that can be compared using the less-than operator"
-      " (operator<).");
+  static_assert(is_less_than_comparable<T>::value,
+                "SortedPair can only be used with types that can be compared "
+                "using the less-than operator (operator<).");
 
   /// The default constructor creates `first()` and `second()` using T's default
   /// constructor, iff T has a default constructor.  Otherwise, this constructor
   /// is not available.
 #ifndef DRAKE_DOXYGEN_CXX
   template <typename T1 = T,
-      typename std::enable_if_t<std::is_constructible_v<T1>, bool> = true>
+            typename std::enable_if_t<std::is_constructible_v<T1>, bool> = true>
 #endif
-  SortedPair() {}
+  SortedPair() {
+  }
 
   /// Rvalue reference constructor, permits constructing with std::unique_ptr
   /// types, for example.
@@ -61,14 +62,16 @@ struct SortedPair {
 
   /// Constructs a %SortedPair from two objects.
   SortedPair(const T& a, const T& b) : first_(a), second_(b) {
-    if (second_ < first_)
+    if (second_ < first_) {
       std::swap(first_, second_);
+    }
   }
 
   /// Type-converting copy constructor.
   template <class U>
-  SortedPair(SortedPair<U>&& u) : first_{std::forward<T>(u.first())},
-      second_{std::forward<T>(u.second())} {}
+  SortedPair(SortedPair<U>&& u)
+      : first_{std::forward<T>(u.first())},
+        second_{std::forward<T>(u.second())} {}
 
   // N.B. We leave all of the copy/move/assign operations implicitly declared,
   // so that iff T provides that operation, then we will also provide it.  Do
@@ -80,8 +83,9 @@ struct SortedPair {
   void set(U&& a, U&& b) {
     first_ = std::forward<U>(a);
     second_ = std::forward<U>(b);
-    if (second_ < first_)
+    if (second_ < first_) {
       std::swap(first_, second_);
+    }
   }
 
   /// Gets the first (according to `operator<`) of the objects.
@@ -99,7 +103,7 @@ struct SortedPair {
   /// Implements the @ref hash_append concept.
   template <class HashAlgorithm>
   friend void hash_append(HashAlgorithm& hasher, const SortedPair& p) noexcept {
-     using drake::hash_append;
+    using drake::hash_append;
     hash_append(hasher, p.first_);
     hash_append(hasher, p.second_);
   }
@@ -118,17 +122,19 @@ struct SortedPair {
   //@}
 
  private:
-  T first_{};          // The first of the two objects, according to operator<.
-  T second_{};         // The second of the two objects, according to operator<.
+  T first_{};   // The first of the two objects, according to operator<.
+  T second_{};  // The second of the two objects, according to operator<.
 };
 
 template <typename T>
-DRAKE_DEPRECATED("2023-06-01",
+DRAKE_DEPRECATED(
+    "2023-06-01",
     "Use fmt or spdlog for logging, not operator<<. "
     "Add an #include <fmt/ranges.h> to format SortedPair as a range."
     "See https://github.com/RobotLocomotion/drake/issues/17742 for background.")
 // TODO(jwnimmer-tri) On 2023-06-01 also remove the <ostream> include.
-inline std::ostream& operator<<(std::ostream& out, const SortedPair<T>& pair) {
+inline std::ostream&
+operator<<(std::ostream& out, const SortedPair<T>& pair) {
   out << "(" << pair.first() << ", " << pair.second() << ")";
   return out;
 }
@@ -148,8 +154,7 @@ inline bool operator<(const SortedPair<T>& x, const SortedPair<T>& y) {
 
 /// Determine whether two SortedPair objects are not equal using `operator==`.
 template <class T>
-inline bool operator!=(
-    const SortedPair<T>& x, const SortedPair<T>& y) {
+inline bool operator!=(const SortedPair<T>& x, const SortedPair<T>& y) {
   return !(x == y);
 }
 
@@ -167,8 +172,7 @@ inline bool operator<=(const SortedPair<T>& x, const SortedPair<T>& y) {
 
 /// Determines whether `x >= y` using `operator<`.
 template <class T>
-inline bool
-operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
+inline bool operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
   return !(x < y);
 }
 
@@ -177,10 +181,10 @@ operator>=(const SortedPair<T>& x, const SortedPair<T>& y) {
 /// @param y  The second_ object.
 /// @return A newly-constructed SortedPair object.
 template <class T>
-inline constexpr SortedPair<typename std::decay<T>::type>
-MakeSortedPair(T&& x, T&& y) {
-  return SortedPair<
-      typename std::decay<T>::type>(std::forward<T>(x), std::forward<T>(y));
+inline constexpr SortedPair<typename std::decay<T>::type> MakeSortedPair(
+    T&& x, T&& y) {
+  return SortedPair<typename std::decay<T>::type>(std::forward<T>(x),
+                                                  std::forward<T>(y));
 }
 
 }  // namespace drake
@@ -195,8 +199,7 @@ void swap(drake::SortedPair<T>& t, drake::SortedPair<T>& u) {
 
 /// Provides std::hash<SortedPair<T>>.
 template <class T>
-struct hash<drake::SortedPair<T>>
-    : public drake::DefaultHash {};
+struct hash<drake::SortedPair<T>> : public drake::DefaultHash {};
 #if defined(__GLIBCXX__)
 // https://gcc.gnu.org/onlinedocs/libstdc++/manual/unordered_associative.html
 template <class T>

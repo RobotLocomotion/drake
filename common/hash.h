@@ -247,9 +247,7 @@ class FNV1aHasher {
   }
 
   /// Returns the hash.
-  explicit constexpr operator size_t() noexcept {
-    return hash_;
-  }
+  explicit constexpr operator size_t() noexcept { return hash_; }
 
  private:
   static_assert(sizeof(result_type) == (64 / 8), "We require a 64-bit size_t");

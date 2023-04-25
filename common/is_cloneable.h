@@ -18,11 +18,10 @@ struct is_cloneable_helper : std::false_type {};
 // prefers this overload over the default overload.
 template <typename T>
 struct is_cloneable_helper<
-    T,
-    typename std::enable_if_t<std::is_same_v<
-        decltype(std::declval<const T>().Clone().release()),
-        typename std::remove_const_t<T>*>>>
-    : std::true_type {};
+    T, typename std::enable_if_t<
+           std::is_same_v<decltype(std::declval<const T>().Clone().release()),
+                          typename std::remove_const_t<T>*>>> : std::true_type {
+};
 
 }  // namespace is_cloneable_internal
 
@@ -79,7 +78,6 @@ struct is_cloneable_helper<
  @tparam  T  The class to test for cloneability.
  */
 template <typename T>
-using is_cloneable =
-    is_cloneable_internal::is_cloneable_helper<T, void>;
+using is_cloneable = is_cloneable_internal::is_cloneable_helper<T, void>;
 
 }  // namespace drake
