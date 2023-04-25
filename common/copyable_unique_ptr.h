@@ -377,8 +377,7 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
   // when an integer argument is provided.
   template <typename U = T>
   static constexpr std::enable_if_t<
-      std::is_same_v<decltype(U(std::declval<const U&>())), U>,
-      bool>
+      std::is_same_v<decltype(U(std::declval<const U&>())), U>, bool>
   can_copy(int) {
     return true;
   }
@@ -425,12 +424,13 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
 
 // TODO(jwnimmer-tri) On 2023-06-01 also remove the <ostream> include above.
 template <class charT, class traits, class T>
-DRAKE_DEPRECATED("2023-06-01",
+DRAKE_DEPRECATED(
+    "2023-06-01",
     "Use fmt or spdlog for logging, not operator<<. "
     "See https://github.com/RobotLocomotion/drake/issues/17742 for details.")
-std::basic_ostream<charT, traits>& operator<<(
-    std::basic_ostream<charT, traits>& os,
-    const copyable_unique_ptr<T>& cu_ptr) {
+std::basic_ostream<charT, traits>&
+operator<<(std::basic_ostream<charT, traits>& os,
+           const copyable_unique_ptr<T>& cu_ptr) {
   os << cu_ptr.get();
   return os;
 }

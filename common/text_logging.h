@@ -53,25 +53,25 @@ DRAKE_FORMATTER_AS(). Grep around in Drake's existing code to find examples. */
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
 // Provide operative macros only when spdlog is available and Debug is enabled.
-#define DRAKE_LOGGER_TRACE(...)                                               \
-  do {                                                                        \
-    /* Capture the drake::log() in a temporary, using a relatively unique */  \
-    /* variable name to avoid potential variable name shadowing warnings. */  \
-    ::drake::logging::logger* const drake_spdlog_macro_logger_alias =         \
-        ::drake::log();                                                       \
-    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::trace) {   \
-      SPDLOG_LOGGER_TRACE(drake_spdlog_macro_logger_alias, __VA_ARGS__);      \
-    }                                                                         \
+#define DRAKE_LOGGER_TRACE(...)                                              \
+  do {                                                                       \
+    /* Capture the drake::log() in a temporary, using a relatively unique */ \
+    /* variable name to avoid potential variable name shadowing warnings. */ \
+    ::drake::logging::logger* const drake_spdlog_macro_logger_alias =        \
+        ::drake::log();                                                      \
+    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::trace) {  \
+      SPDLOG_LOGGER_TRACE(drake_spdlog_macro_logger_alias, __VA_ARGS__);     \
+    }                                                                        \
   } while (0)
-#define DRAKE_LOGGER_DEBUG(...)                                               \
-  do {                                                                        \
-    /* Capture the drake::log() in a temporary, using a relatively unique */  \
-    /* variable name to avoid potential variable name shadowing warnings. */  \
-    ::drake::logging::logger* const drake_spdlog_macro_logger_alias =         \
-        ::drake::log();                                                       \
-    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::debug) {   \
-      SPDLOG_LOGGER_DEBUG(drake_spdlog_macro_logger_alias, __VA_ARGS__);      \
-    }                                                                         \
+#define DRAKE_LOGGER_DEBUG(...)                                              \
+  do {                                                                       \
+    /* Capture the drake::log() in a temporary, using a relatively unique */ \
+    /* variable name to avoid potential variable name shadowing warnings. */ \
+    ::drake::logging::logger* const drake_spdlog_macro_logger_alias =        \
+        ::drake::log();                                                      \
+    if (drake_spdlog_macro_logger_alias->level() <= spdlog::level::debug) {  \
+      SPDLOG_LOGGER_DEBUG(drake_spdlog_macro_logger_alias, __VA_ARGS__);     \
+    }                                                                        \
   } while (0)
 
 #else
@@ -135,12 +135,18 @@ class logger {
   template <typename... Args>
   void critical(const char*, const Args&...) {}
 
-  template <typename T> void trace(const T&) {}
-  template <typename T> void debug(const T&) {}
-  template <typename T> void info(const T&) {}
-  template <typename T> void warn(const T&) {}
-  template <typename T> void error(const T&) {}
-  template <typename T> void critical(const T&) {}
+  template <typename T>
+  void trace(const T&) {}
+  template <typename T>
+  void debug(const T&) {}
+  template <typename T>
+  void info(const T&) {}
+  template <typename T>
+  void warn(const T&) {}
+  template <typename T>
+  void error(const T&) {}
+  template <typename T>
+  void critical(const T&) {}
 };
 
 // A stubbed-out version of `spdlog::sinks::sink`.

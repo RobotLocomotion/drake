@@ -67,8 +67,7 @@ RunfilesSingleton Create() {
     argv0 = argv0.c_str();  // Remove trailing nil bytes.
     drake::log()->debug("_NSGetExecutablePath = {}", argv0);
 #else
-    const std::string& argv0 = fs::read_symlink({
-        "/proc/self/exe"}).string();
+    const std::string& argv0 = fs::read_symlink({"/proc/self/exe"}).string();
     drake::log()->debug("readlink(/proc/self/exe) = {}", argv0);
 #endif
     result.runfiles.reset(Runfiles::Create(argv0, &bazel_error));
@@ -97,8 +96,8 @@ RunfilesSingleton Create() {
       bazel_error = "RUNFILES_DIR was not provided by the Runfiles object";
       result.runfiles.reset();
     } else if (!fs::is_directory({result.runfiles_dir})) {
-      bazel_error = fmt::format(
-          "RUNFILES_DIR '{}' does not exist", result.runfiles_dir);
+      bazel_error =
+          fmt::format("RUNFILES_DIR '{}' does not exist", result.runfiles_dir);
       result.runfiles.reset();
     }
   }
@@ -108,9 +107,8 @@ RunfilesSingleton Create() {
     result.runfiles_dir.clear();
     result.error = fmt::format(
         "{} (created using {} with TEST_SRCDIR={} and "
-            "RUNFILES_MANIFEST_FILE={} and RUNFILES_DIR={})",
-        bazel_error, mechanism,
-        nullable_to_string(std::getenv("TEST_SRCDIR")),
+        "RUNFILES_MANIFEST_FILE={} and RUNFILES_DIR={})",
+        bazel_error, mechanism, nullable_to_string(std::getenv("TEST_SRCDIR")),
         nullable_to_string(std::getenv("RUNFILES_MANIFEST_FILE")),
         nullable_to_string(std::getenv("RUNFILES_DIR")));
     drake::log()->debug("FindRunfile error: {}", result.error);

@@ -41,14 +41,14 @@ class FindResourceResult {
   /// @pre neither string parameter is empty
   /// @param resource_path the value passed to FindResource
   /// @param base_path an absolute base path that precedes resource_path
-  static FindResourceResult make_success(
-      std::string resource_path, std::string absolute_path);
+  static FindResourceResult make_success(std::string resource_path,
+                                         std::string absolute_path);
 
   /// Returns an error result (the requested resource was NOT found).
   /// @pre neither string parameter is empty
   /// @param resource_path the value passed to FindResource
-  static FindResourceResult make_error(
-      std::string resource_path, std::string error_message);
+  static FindResourceResult make_error(std::string resource_path,
+                                       std::string error_message);
 
   /// Returns an empty error result (no requested resource).
   static FindResourceResult make_empty();

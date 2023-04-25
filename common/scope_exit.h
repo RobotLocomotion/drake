@@ -36,8 +36,7 @@ class ScopeExit final {
   /// Creates a resource that will call `func` when destroyed.  Note that
   /// `func()` should not throw an exception, since it will typically be
   /// invoked during stack unwinding.
-  explicit ScopeExit(std::function<void()> func)
-      : func_(std::move(func)) {
+  explicit ScopeExit(std::function<void()> func) : func_(std::move(func)) {
     DRAKE_THROW_UNLESS(func_ != nullptr);
   }
 
@@ -50,9 +49,7 @@ class ScopeExit final {
   }
 
   /// Disarms this guard, so that the destructor has no effect.
-  void Disarm() {
-    func_ = nullptr;
-  }
+  void Disarm() { func_ = nullptr; }
 
  private:
   std::function<void()> func_;

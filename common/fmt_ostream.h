@@ -20,19 +20,26 @@ types that provide `operator<<` support but not `fmt::formatter<T>` support.
 Once we stop using `FMT_DEPRECATED_OSTREAM=1`, compilation errors will help you
 understand where you are required to use this wrapper. */
 template <typename T>
-auto fmt_streamed(const T& ref) { return fmt::streamed(ref); }
-#else  // FMT_VERSION
+auto fmt_streamed(const T& ref) {
+  return fmt::streamed(ref);
+}
+#else   // FMT_VERSION
 namespace internal {
-template <typename T> struct streamed_ref { const T& ref; };
+template <typename T>
+struct streamed_ref {
+  const T& ref;
+};
 }  // namespace internal
 template <typename T>
-internal::streamed_ref<T> fmt_streamed(const T& ref) { return {ref}; }
+internal::streamed_ref<T> fmt_streamed(const T& ref) {
+  return {ref};
+}
 #endif  // FMT_VERSION
 
 // Compatibility shim for fmt::ostream_formatter.
 #if FMT_VERSION >= 90000
 using fmt::ostream_formatter;
-#else  // FMT_VERSION
+#else   // FMT_VERSION
 /** When using fmt >= 9, this is an alias for fmt::ostream_formatter.
 When using fmt < 9, this uses a polyfill instead. */
 struct ostream_formatter : fmt::formatter<std::string_view> {

@@ -260,6 +260,5 @@ struct hash<drake::Identifier<Tag>> : public drake::DefaultHash {};
 // TODO(jwnimmer-tri) Add a real formatter and deprecate the operator<<.
 namespace fmt {
 template <typename Tag>
-struct formatter<drake::Identifier<Tag>>
-    : drake::ostream_formatter {};
+struct formatter<drake::Identifier<Tag>> : drake::ostream_formatter {};
 }  // namespace fmt
