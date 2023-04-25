@@ -1313,19 +1313,20 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
   GraphOfConvexSetsOptions options;
   options.convex_relaxation = true;
   options.preprocessing = false;
-  options.max_rounded_paths = 0;
-  auto relaxed_result =
-      spp.SolveShortestPath(source->id(), target->id(), options);
-  ASSERT_TRUE(relaxed_result.is_success());
-
-  options.preprocessing = true;
   options.max_rounded_paths = 10;
-  auto rounded_result =
-      spp.SolveShortestPath(source->id(), target->id(), options);
+  std::vector<MathematicalProgramResult> all_results;
+  MathematicalProgramResult rounded_result =
+      spp.SolveShortestPath(source->id(), target->id(), options, &all_results);
+  MathematicalProgramResult relaxed_result = all_results[0];
+  ASSERT_TRUE(relaxed_result.is_success());
   ASSERT_TRUE(rounded_result.is_success());
 
   EXPECT_LT(relaxed_result.get_optimal_cost(),
             rounded_result.get_optimal_cost());
+  for (size_t ii = 1; ii < all_results.size(); ++ii) {
+    EXPECT_LE(rounded_result.get_optimal_cost(),
+              all_results[ii].get_optimal_cost());
+  }
 
   const auto& edges = spp.Edges();
   for (size_t ii = 0; ii < edges.size(); ++ii) {
@@ -1636,11 +1637,12 @@ GTEST_TEST(ShortestPathTest, Figure9) {
   e23->AddConstraint(e23->xu()[1] == e23->xv()[1]);
   e34->AddConstraint(e34->xu()[1] == e34->xv()[1]);
 
-  auto relaxed_result = spp.SolveShortestPath(source->id(), target->id());
   GraphOfConvexSetsOptions options;
   options.max_rounded_paths = 1;
-  auto rounded_result =
-      spp.SolveShortestPath(source->id(), target->id(), options);
+  std::vector<MathematicalProgramResult> all_results;
+  MathematicalProgramResult rounded_result =
+      spp.SolveShortestPath(source->id(), target->id(), options, &all_results);
+  MathematicalProgramResult relaxed_result = all_results[0];
 
   ASSERT_TRUE(relaxed_result.is_success());
   EXPECT_EQ(rounded_result.get_solution_result(),

@@ -482,8 +482,9 @@ class GraphOfConvexSets {
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       VertexId source_id, VertexId target_id,
-      const GraphOfConvexSetsOptions& options =
-          GraphOfConvexSetsOptions()) const;
+      const GraphOfConvexSetsOptions& options = GraphOfConvexSetsOptions(),
+      std::vector<solvers::MathematicalProgramResult>* all_results =
+          nullptr) const;
 
   /** Convenience overload that takes const reference arguments for source and
   target.
@@ -491,8 +492,9 @@ class GraphOfConvexSets {
   */
   solvers::MathematicalProgramResult SolveShortestPath(
       const Vertex& source, const Vertex& target,
-      const GraphOfConvexSetsOptions& options =
-          GraphOfConvexSetsOptions()) const;
+      const GraphOfConvexSetsOptions& options = GraphOfConvexSetsOptions(),
+      std::vector<solvers::MathematicalProgramResult>* all_results =
+          nullptr) const;
 
  private:
   /* Facilitates testing. */
@@ -521,6 +523,17 @@ class GraphOfConvexSets {
       solvers::MathematicalProgram* prog,
       const solvers::Binding<solvers::Constraint>& binding,
       const solvers::VectorXDecisionVariable& vars) const;
+
+  void FillResult(
+      std::map<VertexId, std::vector<Edge*>> incoming_edges,
+      std::map<VertexId, std::vector<Edge*>> outgoing_edges,
+      std::vector<Edge*> excluded_edges,
+      std::map<VertexId, solvers::MatrixXDecisionVariable> vertex_edge_ell,
+      std::map<EdgeId, symbolic::Variable> relaxed_phi,
+      std::vector<symbolic::Variable> excluded_phi, VertexId target_id,
+      const solvers::MathematicalProgram& prog,
+      const GraphOfConvexSetsOptions& options,
+      solvers::MathematicalProgramResult* result) const;
 
   std::map<VertexId, std::unique_ptr<Vertex>> vertices_{};
   std::map<EdgeId, std::unique_ptr<Edge>> edges_{};
