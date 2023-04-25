@@ -499,20 +499,53 @@ void DefineGeometryOptimization(py::module m) {
                 py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
                 py::arg("precision") = 3, py::arg("scientific") = false,
                 cls_doc.GetGraphvizString.doc)
-            .def("SolveShortestPath",
-                overload_cast_explicit<solvers::MathematicalProgramResult,
-                    GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                    const GraphOfConvexSetsOptions&>(
-                    &GraphOfConvexSets::SolveShortestPath),
+            .def(
+                "SolveShortestPath",
+                [](const GraphOfConvexSets& self,
+                    GraphOfConvexSets::VertexId source_id,
+                    GraphOfConvexSets::VertexId target_id,
+                    const GraphOfConvexSetsOptions& options) {
+                  return self.SolveShortestPath(source_id, target_id, options);
+                },
                 py::arg("source_id"), py::arg("target_id"),
                 py::arg("options") = GraphOfConvexSetsOptions(),
                 cls_doc.SolveShortestPath.doc_by_id)
-            .def("SolveShortestPath",
-                overload_cast_explicit<solvers::MathematicalProgramResult,
-                    const GraphOfConvexSets::Vertex&,
-                    const GraphOfConvexSets::Vertex&,
-                    const GraphOfConvexSetsOptions&>(
-                    &GraphOfConvexSets::SolveShortestPath),
+            .def(
+                "SolveShortestPath",
+                [](const GraphOfConvexSets& self,
+                    const GraphOfConvexSets::Vertex& source,
+                    const GraphOfConvexSets::Vertex& target,
+                    const GraphOfConvexSetsOptions& options) {
+                  return self.SolveShortestPath(source, target, options);
+                },
+                py::arg("source"), py::arg("target"),
+                py::arg("options") = GraphOfConvexSetsOptions(),
+                cls_doc.SolveShortestPath.doc_by_reference)
+            .def(
+                "SolveShortestPathAllResults",
+                [](const GraphOfConvexSets& self,
+                    GraphOfConvexSets::VertexId source_id,
+                    GraphOfConvexSets::VertexId target_id,
+                    const GraphOfConvexSetsOptions& options) {
+                  std::vector<solvers::MathematicalProgramResult> all_results;
+                  auto result = self.SolveShortestPath(
+                      source_id, target_id, options, &all_results);
+                  return py::make_tuple(result, all_results);
+                },
+                py::arg("source_id"), py::arg("target_id"),
+                py::arg("options") = GraphOfConvexSetsOptions(),
+                cls_doc.SolveShortestPath.doc_by_id)
+            .def(
+                "SolveShortestPathAllResults",
+                [](const GraphOfConvexSets& self,
+                    const GraphOfConvexSets::Vertex& source,
+                    const GraphOfConvexSets::Vertex& target,
+                    const GraphOfConvexSetsOptions& options) {
+                  std::vector<solvers::MathematicalProgramResult> all_results;
+                  auto result = self.SolveShortestPath(
+                      source, target, options, &all_results);
+                  return py::make_tuple(result, all_results);
+                },
                 py::arg("source"), py::arg("target"),
                 py::arg("options") = GraphOfConvexSetsOptions(),
                 cls_doc.SolveShortestPath.doc_by_reference);

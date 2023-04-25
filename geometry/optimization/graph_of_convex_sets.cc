@@ -620,6 +620,99 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
   }
 }
 
+void GraphOfConvexSets::FillResult(
+    std::map<VertexId, std::vector<Edge*>> incoming_edges,
+    std::map<VertexId, std::vector<Edge*>> outgoing_edges,
+    std::vector<Edge*> excluded_edges,
+    std::map<VertexId, MatrixXDecisionVariable> vertex_edge_ell,
+    std::map<EdgeId, Variable> relaxed_phi, std::vector<Variable> excluded_phi,
+    VertexId target_id, const MathematicalProgram& prog,
+    const GraphOfConvexSetsOptions& options,
+    MathematicalProgramResult* result) const {
+  int num_placeholder_vars = relaxed_phi.size();
+  for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
+       vertices_) {
+    num_placeholder_vars += vpair.second->ambient_dimension();
+    num_placeholder_vars += vpair.second->ell_.size();
+  }
+  for (const Edge* e : excluded_edges) {
+    num_placeholder_vars += e->y_.size() + e->z_.size() + e->ell_.size() + 1;
+  }
+  num_placeholder_vars += excluded_phi.size();
+  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
+      prog.decision_variable_index();
+  int count = result->get_x_val().size();
+  Eigen::VectorXd x_val(count + num_placeholder_vars);
+  x_val.head(count) = result->get_x_val();
+  for (const Edge* e : excluded_edges) {
+    for (int i = 0; i < e->y_.size(); ++i) {
+      decision_variable_index.emplace(e->y_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->z_.size(); ++i) {
+      decision_variable_index.emplace(e->z_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    for (int i = 0; i < e->ell_.size(); ++i) {
+      decision_variable_index.emplace(e->ell_[i].get_id(), count);
+      x_val[count++] = 0;
+    }
+    decision_variable_index.emplace(e->phi_.get_id(), count);
+    x_val[count++] = 0;
+  }
+  for (const Variable& phi : excluded_phi) {
+    decision_variable_index.emplace(phi.get_id(), count);
+    x_val[count++] = 0;
+  }
+  for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
+       vertices_) {
+    const Vertex* v = vpair.second.get();
+    const bool is_target = (target_id == v->id());
+    VectorXd x_v = VectorXd::Zero(v->ambient_dimension());
+    double sum_phi = 0;
+    if (is_target) {
+      sum_phi = 1.0;
+      for (const auto& e : incoming_edges[v->id()]) {
+        x_v += result->GetSolution(e->z_);
+      }
+    } else {
+      for (const auto& e : outgoing_edges[v->id()]) {
+        x_v += result->GetSolution(e->y_);
+        sum_phi += result->GetSolution(
+            options.convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_);
+      }
+    }
+    // In the convex relaxation, sum_relaxed_phi may not be one even for
+    // vertices in the shortest path. We undo yₑ = ϕₑ xᵤ here to ensure that
+    // xᵤ is in v->set(). If ∑ ϕₑ is small enough that numerical errors
+    // prevent the projection back into the Xᵤ, then we prefer to return NaN.
+    if (sum_phi < 100.0 * std::numeric_limits<double>::epsilon()) {
+      x_v = VectorXd::Constant(v->ambient_dimension(),
+                               std::numeric_limits<double>::quiet_NaN());
+    } else if (options.convex_relaxation) {
+      x_v /= sum_phi;
+    }
+    for (int i = 0; i < v->ambient_dimension(); ++i) {
+      decision_variable_index.emplace(v->x()[i].get_id(), count);
+      x_val[count++] = x_v[i];
+    }
+    for (int ii = 0; ii < v->ell_.size(); ++ii) {
+      decision_variable_index.emplace(v->ell_[ii].get_id(), count);
+      x_val[count++] =
+          result->GetSolution(vertex_edge_ell.at(v->id()).col(ii)).sum();
+    }
+  }
+  if (options.convex_relaxation) {
+    // Write the value of the relaxed phi into the phi placeholder.
+    for (const auto& [edge_id, relaxed_phi_var] : relaxed_phi) {
+      decision_variable_index.emplace(edges_.at(edge_id)->phi_.get_id(), count);
+      x_val[count++] = result->GetSolution(relaxed_phi_var);
+    }
+  }
+  result->set_decision_variable_index(decision_variable_index);
+  result->set_x_val(x_val);
+}
+
 namespace {
 MathematicalProgramResult Solve(const MathematicalProgram& prog,
                                 const GraphOfConvexSetsOptions& options,
@@ -639,7 +732,8 @@ MathematicalProgramResult Solve(const MathematicalProgram& prog,
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     VertexId source_id, VertexId target_id,
-    const GraphOfConvexSetsOptions& options) const {
+    const GraphOfConvexSetsOptions& options,
+    std::vector<MathematicalProgramResult>* all_results) const {
   DRAKE_DEMAND(vertices_.find(source_id) != vertices_.end());
   DRAKE_DEMAND(vertices_.find(target_id) != vertices_.end());
 
@@ -910,6 +1004,10 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
     int num_trials = 0;
     MathematicalProgramResult best_rounded_result;
+    if (all_results) {
+      all_results->reserve(options.max_rounded_paths + 1);
+      all_results->push_back(result);
+    }
     while (static_cast<int>(paths.size()) < options.max_rounded_paths &&
            num_trials < options.max_rounding_trials) {
       ++num_trials;
@@ -981,6 +1079,9 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
       }
 
       MathematicalProgramResult rounded_result = Solve(prog, options, true);
+      if (all_results) {
+        all_results->push_back(rounded_result);
+      }
 
       // Check path quality.
       if (rounded_result.is_success() &&
@@ -999,101 +1100,32 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     } else {
       result.set_solution_result(SolutionResult::kIterationLimit);
     }
+  } else if (all_results) {
+    all_results->reserve(1);
+    all_results->push_back(result);
   }
 
   // Push the placeholder variables and excluded edge variables into the result,
   // so that they can be accessed as if they were variables included in the
   // optimization.
-  int num_placeholder_vars = relaxed_phi.size();
-  for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
-       vertices_) {
-    num_placeholder_vars += vpair.second->ambient_dimension();
-    num_placeholder_vars += vpair.second->ell_.size();
-  }
-  for (const Edge* e : excluded_edges) {
-    num_placeholder_vars += e->y_.size() + e->z_.size() + e->ell_.size() + 1;
-  }
-  num_placeholder_vars += excluded_phi.size();
-  std::unordered_map<symbolic::Variable::Id, int> decision_variable_index =
-      prog.decision_variable_index();
-  int count = result.get_x_val().size();
-  Eigen::VectorXd x_val(count + num_placeholder_vars);
-  x_val.head(count) = result.get_x_val();
-  for (const Edge* e : excluded_edges) {
-    for (int i = 0; i < e->y_.size(); ++i) {
-      decision_variable_index.emplace(e->y_[i].get_id(), count);
-      x_val[count++] = 0;
-    }
-    for (int i = 0; i < e->z_.size(); ++i) {
-      decision_variable_index.emplace(e->z_[i].get_id(), count);
-      x_val[count++] = 0;
-    }
-    for (int i = 0; i < e->ell_.size(); ++i) {
-      decision_variable_index.emplace(e->ell_[i].get_id(), count);
-      x_val[count++] = 0;
-    }
-    decision_variable_index.emplace(e->phi_.get_id(), count);
-    x_val[count++] = 0;
-  }
-  for (const Variable& phi : excluded_phi) {
-    decision_variable_index.emplace(phi.get_id(), count);
-    x_val[count++] = 0;
-  }
-  for (const std::pair<const VertexId, std::unique_ptr<Vertex>>& vpair :
-       vertices_) {
-    const Vertex* v = vpair.second.get();
-    const bool is_target = (target_id == v->id());
-    VectorXd x_v = VectorXd::Zero(v->ambient_dimension());
-    double sum_phi = 0;
-    if (is_target) {
-      sum_phi = 1.0;
-      for (const auto& e : incoming_edges[v->id()]) {
-        x_v += result.GetSolution(e->z_);
-      }
-    } else {
-      for (const auto& e : outgoing_edges[v->id()]) {
-        x_v += result.GetSolution(e->y_);
-        sum_phi += result.GetSolution(
-            options.convex_relaxation ? relaxed_phi.at(e->id()) : e->phi_);
-      }
-    }
-    // In the convex relaxation, sum_relaxed_phi may not be one even for
-    // vertices in the shortest path. We undo yₑ = ϕₑ xᵤ here to ensure that
-    // xᵤ is in v->set(). If ∑ ϕₑ is small enough that numerical errors
-    // prevent the projection back into the Xᵤ, then we prefer to return NaN.
-    if (sum_phi < 100.0 * std::numeric_limits<double>::epsilon()) {
-      x_v = VectorXd::Constant(v->ambient_dimension(),
-                               std::numeric_limits<double>::quiet_NaN());
-    } else if (options.convex_relaxation) {
-      x_v /= sum_phi;
-    }
-    for (int i = 0; i < v->ambient_dimension(); ++i) {
-      decision_variable_index.emplace(v->x()[i].get_id(), count);
-      x_val[count++] = x_v[i];
-    }
-    for (int ii = 0; ii < v->ell_.size(); ++ii) {
-      decision_variable_index.emplace(v->ell_[ii].get_id(), count);
-      x_val[count++] =
-          result.GetSolution(vertex_edge_ell.at(v->id()).col(ii)).sum();
+  FillResult(incoming_edges, outgoing_edges, excluded_edges, vertex_edge_ell,
+             relaxed_phi, excluded_phi, target_id, prog, options, &result);
+  if (all_results) {
+    for (MathematicalProgramResult& r : *all_results) {
+      FillResult(incoming_edges, outgoing_edges, excluded_edges,
+                 vertex_edge_ell, relaxed_phi, excluded_phi, target_id, prog,
+                 options, &r);
     }
   }
-  if (options.convex_relaxation) {
-    // Write the value of the relaxed phi into the phi placeholder.
-    for (const auto& [edge_id, relaxed_phi_var] : relaxed_phi) {
-      decision_variable_index.emplace(edges_.at(edge_id)->phi_.get_id(), count);
-      x_val[count++] = result.GetSolution(relaxed_phi_var);
-    }
-  }
-  result.set_decision_variable_index(decision_variable_index);
-  result.set_x_val(x_val);
 
   return result;
 }
 
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     const Vertex& source, const Vertex& target,
-    const GraphOfConvexSetsOptions& options) const {
-  return SolveShortestPath(source.id(), target.id(), options);
+    const GraphOfConvexSetsOptions& options,
+    std::vector<MathematicalProgramResult>* all_results) const {
+  return SolveShortestPath(source.id(), target.id(), options, all_results);
 }
 
 }  // namespace optimization
