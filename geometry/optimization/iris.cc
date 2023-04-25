@@ -33,9 +33,9 @@ using multibody::Body;
 using multibody::Frame;
 using multibody::JacobianWrtVariable;
 using multibody::MultibodyPlant;
-using solvers::MathematicalProgram;
 using solvers::Binding;
 using solvers::Constraint;
+using solvers::MathematicalProgram;
 using symbolic::Expression;
 using systems::Context;
 
@@ -225,7 +225,7 @@ class SamePointConstraint : public Constraint {
   SamePointConstraint(const MultibodyPlant<double>* plant,
                       const Context<double>& context)
       : Constraint(3, plant->num_positions() + 6, Vector3d::Zero(),
-                            Vector3d::Zero()),
+                   Vector3d::Zero()),
         plant_(plant),
         context_(plant->CreateDefaultContext()) {
     DRAKE_DEMAND(plant_ != nullptr);
@@ -422,14 +422,13 @@ class CounterExampleConstraint : public Constraint {
   // Sets the actual constraint to be falsified, overwriting any previously set
   // constraints. The Binding<Constraint> must remain valid for the lifetime of
   // this object (or until a new Binding<Constraint> is set).
-  void set(const Binding<Constraint>*
-               binding_with_constraint_to_be_falsified,
+  void set(const Binding<Constraint>* binding_with_constraint_to_be_falsified,
            int index, bool falsify_lower_bound) {
     DRAKE_DEMAND(binding_with_constraint_to_be_falsified != nullptr);
     const int N =
         binding_with_constraint_to_be_falsified->evaluator()->num_constraints();
     DRAKE_DEMAND(index >= 0 && index < N);
-    binding_  = binding_with_constraint_to_be_falsified;
+    binding_ = binding_with_constraint_to_be_falsified;
     index_ = index;
     falsify_lower_bound_ = falsify_lower_bound;
   }
@@ -512,7 +511,7 @@ class CounterExampleProgram {
     const MatrixXd Asq = E.A().transpose() * E.A();
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(Asq);
     const double scale = 1.0 / std::sqrt(es.eigenvalues().maxCoeff() *
-                                        es.eigenvalues().minCoeff());
+                                         es.eigenvalues().minCoeff());
     prog_.AddQuadraticErrorCost(scale * Asq, E.center(), q_);
 
     prog_.AddConstraint(counter_example_constraint, q_);
@@ -564,7 +563,7 @@ void AddTangentToPolytope(
       (E.A().transpose() * E.A() * (point - E.center())).normalized();
   (*b)[*num_constraints] =
       A->row(*num_constraints) * point - configuration_space_margin;
-  if (A->row(*num_constraints)*E.center() > (*b)[*num_constraints]) {
+  if (A->row(*num_constraints) * E.center() > (*b)[*num_constraints]) {
     throw std::logic_error(
         "The current center of the IRIS region is within "
         "options.configuration_space_margin of being infeasible.  Check your "
@@ -576,7 +575,7 @@ void AddTangentToPolytope(
 }
 
 void MakeGuessFeasible(const HPolyhedron& P, const IrisOptions& options,
-                 const VectorXd& closest, Eigen::VectorXd* guess) {
+                       const VectorXd& closest, Eigen::VectorXd* guess) {
   const auto& A = P.A();
   const auto& b = P.b();
   const int N = A.rows();
@@ -700,7 +699,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
   std::vector<Binding<Constraint>> additional_constraint_bindings{};
   if (options.prog_with_additional_constraints) {
     counter_example_constraint = std::make_shared<CounterExampleConstraint>(
-                options.prog_with_additional_constraints);
+        options.prog_with_additional_constraints);
     additional_constraint_bindings =
         options.prog_with_additional_constraints->GetAllConstraints();
     // Fail fast if the seed point is infeasible.
@@ -734,21 +733,18 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
         }
       }
     };
-    auto HandleLinearConstraints =
-        [&](const auto& bindings) {
-          for (const auto& binding : bindings) {
-            AddConstraint(binding.evaluator()->GetDenseA(),
-                          binding.evaluator()->upper_bound(),
-                          binding.variables());
-            AddConstraint(-binding.evaluator()->GetDenseA(),
-                          -binding.evaluator()->lower_bound(),
-                          binding.variables());
-            auto pos = std::find(additional_constraint_bindings.begin(),
-                                 additional_constraint_bindings.end(), binding);
-            DRAKE_ASSERT(pos != additional_constraint_bindings.end());
-            additional_constraint_bindings.erase(pos);
-          }
-        };
+    auto HandleLinearConstraints = [&](const auto& bindings) {
+      for (const auto& binding : bindings) {
+        AddConstraint(binding.evaluator()->GetDenseA(),
+                      binding.evaluator()->upper_bound(), binding.variables());
+        AddConstraint(-binding.evaluator()->GetDenseA(),
+                      -binding.evaluator()->lower_bound(), binding.variables());
+        auto pos = std::find(additional_constraint_bindings.begin(),
+                             additional_constraint_bindings.end(), binding);
+        DRAKE_ASSERT(pos != additional_constraint_bindings.end());
+        additional_constraint_bindings.erase(pos);
+      }
+    };
     HandleLinearConstraints(
         options.prog_with_additional_constraints->bounding_box_constraints());
     HandleLinearConstraints(
@@ -822,14 +818,13 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
           *sets.at(pair.geomA), *sets.at(pair.geomB), E,
           A.topRows(num_constraints), b.head(num_constraints));
       while (sample_point_requirement &&
-             consecutive_failures <
-                 options.num_collision_infeasible_samples) {
+             consecutive_failures < options.num_collision_infeasible_samples) {
         if (prog.Solve(*solver, guess, &closest)) {
           consecutive_failures = 0;
           AddTangentToPolytope(E, closest, options.configuration_space_margin,
                                &A, &b, &num_constraints);
-          P_candidate = HPolyhedron(A.topRows(num_constraints),
-                          b.head(num_constraints));
+          P_candidate =
+              HPolyhedron(A.topRows(num_constraints), b.head(num_constraints));
           MakeGuessFeasible(P_candidate, options, closest, &guess);
           if (options.require_sample_point_is_contained) {
             sample_point_requirement =
@@ -849,7 +844,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
 
     if (options.prog_with_additional_constraints) {
       counter_example_prog->UpdatePolytope(A.topRows(num_constraints),
-                                            b.head(num_constraints));
+                                           b.head(num_constraints));
       for (const auto& binding : additional_constraint_bindings) {
         for (int index = 0; index < binding.evaluator()->num_constraints();
              ++index) {

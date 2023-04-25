@@ -144,9 +144,13 @@ Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
   return binding;
 }
 
-void Edge::AddPhiConstraint(bool phi_value) { phi_value_ = phi_value; }
+void Edge::AddPhiConstraint(bool phi_value) {
+  phi_value_ = phi_value;
+}
 
-void Edge::ClearPhiConstraints() { phi_value_ = std::nullopt; }
+void Edge::ClearPhiConstraints() {
+  phi_value_ = std::nullopt;
+}
 
 double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
@@ -216,7 +220,9 @@ void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
   edges_.erase(edge_id);
 }
 
-void GraphOfConvexSets::RemoveEdge(const Edge& edge) { RemoveEdge(edge.id()); }
+void GraphOfConvexSets::RemoveEdge(const Edge& edge) {
+  RemoveEdge(edge.id());
+}
 
 std::vector<Vertex*> GraphOfConvexSets::Vertices() {
   std::vector<Vertex*> vertices;

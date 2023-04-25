@@ -34,9 +34,9 @@ class CspaceFreePathTester {
     return cspace_free_path_->mu_;
   }
 
-  [[nodiscard]] const std::unordered_map<
-      symbolic::Variable, symbolic::Polynomial>&
-      get_path() const {
+  [[nodiscard]] const std::unordered_map<symbolic::Variable,
+                                         symbolic::Polynomial>&
+  get_path() const {
     return cspace_free_path_->path_;
   }
 

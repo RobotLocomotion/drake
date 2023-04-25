@@ -762,7 +762,9 @@ TEST_F(CIrisRobotPolytopicGeometryTest, InitializePolytopeSearchProgram) {
   ASSERT_TRUE(std::all_of(
       certificates_result.begin(), certificates_result.end(),
       [](const std::optional<CspaceFreePolytope::SeparationCertificateResult>&
-             certificate) { return certificate.has_value(); }));
+             certificate) {
+        return certificate.has_value();
+      }));
 
   for (bool search_s_bounds_lagrangians : {false, true}) {
     const int gram_total_size = tester.GetGramVarSizeForPolytopeSearchProgram(
@@ -873,7 +875,9 @@ class CIrisToyRobotInitializePolytopeSearchProgramTest
     ASSERT_TRUE(std::all_of(
         certificates_result.begin(), certificates_result.end(),
         [](const std::optional<CspaceFreePolytope::SeparationCertificateResult>&
-               certificate) { return certificate.has_value(); }));
+               certificate) {
+          return certificate.has_value();
+        }));
 
     for (bool search_s_bounds_lagrangians :
          search_s_bounds_lagrangians_options) {
@@ -961,7 +965,9 @@ TEST_F(CIrisToyRobotTest, FindPolytopeGivenLagrangian) {
   ASSERT_TRUE(std::all_of(
       certificates_result.begin(), certificates_result.end(),
       [](const std::optional<CspaceFreePolytope::SeparationCertificateResult>&
-             certificate) { return certificate.has_value(); }));
+             certificate) {
+        return certificate.has_value();
+      }));
   for (bool search_s_bounds_lagrangians : {true}) {
     const int gram_total_size = tester.GetGramVarSizeForPolytopeSearchProgram(
         ignored_collision_pairs, search_s_bounds_lagrangians);

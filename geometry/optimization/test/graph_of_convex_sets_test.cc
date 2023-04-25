@@ -1332,8 +1332,7 @@ GTEST_TEST(ShortestPathTest, RoundedSolution) {
     if (ii < 6) {
       // Some solvers do not balance the two paths as closely as other solvers.
       const double tol =
-          (relaxed_result.get_solver_id() == solvers::GurobiSolver::id())
-              ? 1e-1
+          (relaxed_result.get_solver_id() == solvers::GurobiSolver::id()) ? 1e-1
           : (relaxed_result.get_solver_id() == solvers::CsdpSolver::id())
               ? 1e-2
               : 1e-5;

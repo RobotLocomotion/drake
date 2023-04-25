@@ -555,7 +555,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   // The particular value was found by visual inspection using the desmos plot.
   const double z_test = 0, theta_test = -1.55;
   // Confirm that the pendulum is colliding with the wall with true kinematics:
-  EXPECT_LE(z_test + l*std::cos(theta_test), r);
+  EXPECT_LE(z_test + l * std::cos(theta_test), r);
 
   // With num_collision_infeasible_samples == 1, we found that SNOPT misses this
   // point (on some platforms with some random seeds).
@@ -700,20 +700,20 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
   {
     std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
     meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
-                            -3.25, 3.25, -3.25, 3.25);
+                             -3.25, 3.25, -3.25, 3.25);
     meshcat->SetProperty("/Grid", "visible", true);
     Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.6, 1.6);
     Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
     for (int i = 0; i < theta1s.size(); ++i) {
       points(0, i) = theta1s[i];
-      points(1, i) =  std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
+      points(1, i) = std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
       points(0, points.cols() - i - 1) = theta1s[i];
       points(1, points.cols() - i - 1) =
           -std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
     }
     meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
     VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    points.resize(3, vregion.vertices().cols()+1);
+    points.resize(3, vregion.vertices().cols() + 1);
     points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
     points.topRightCorner(2, 1) = vregion.vertices().col(0);
     points.bottomRows<1>().setZero();

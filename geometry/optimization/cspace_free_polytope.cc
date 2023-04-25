@@ -387,7 +387,6 @@ struct GramAndMonomialBasis {
   std::vector<VectorX<symbolic::Monomial>> monomial_basis;
 };
 
-
 }  // namespace
 
 CspaceFreePolytope::CspaceFreePolytope(
@@ -1322,7 +1321,6 @@ VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs(
   }
   return d_minus_Cs;
 }
-
 
 void CspaceFreePolytope::GenerateRationals() {
   // There can be multiple geometries on the same pair, hence the body pose will
