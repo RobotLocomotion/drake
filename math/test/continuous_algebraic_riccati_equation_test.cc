@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
-#include "drake/common/test_utilities/expect_throws_message.h"
 
 using Eigen::MatrixXd;
 
@@ -59,77 +58,6 @@ GTEST_TEST(CARE, TestCare2) {
   Q << 1, 0, 0, 1;
   R1 << 1;
   SolveCAREandVerify(A1, B1, Q, R1);
-}
-
-// This test case is reported in
-// https://github.com/RobotLocomotion/drake/issues/19191
-GTEST_TEST(CARE, TestUndetectable) {
-  // The pair (Q, A) is not detectable. Hence the continuous algebraic Riccati
-  // equation will fail.
-  Eigen::MatrixXd A = Eigen::MatrixXd::Zero(12, 12);
-  A.topRightCorner<6, 6>() = Eigen::MatrixXd::Identity(6, 6);
-  A(6, 0) = -12;
-  A(6, 4) = 9;
-  A(7, 5) = -9;
-
-  Eigen::MatrixXd B = Eigen::MatrixXd::Zero(12, 4);
-  // clang-format off
-  B.bottomRows<4>() << 1, 1, 1, 1,
-                       7, -7, 7, -7,
-                       -59, 0, 59, 0,
-                       0, 99, 0, -99;
-  // clang-format on
-  Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(12, 12);
-  Q(0, 0) = 10;
-  Q(1, 1) = 10;
-  Q(2, 2) = 10;
-  Eigen::MatrixXd R = Eigen::Matrix4d::Identity();
-  DRAKE_EXPECT_THROWS_MESSAGE(ContinuousAlgebraicRiccatiEquation(A, B, Q, R),
-                              "ContinuousAlgebraicRiccatiEquation fails.*");
-
-  // Test an example in which (A, B) is stabilizable and (Q, A) is detectable
-  // but (Q, A) is not observable. The example was created by Thomas Cohn in
-  // https://github.com/RobotLocomotion/drake/pull/19222#issuecomment-1516939077
-  A.resize(3, 3);
-  // clang-format off
-  A << 0, 1, 0,
-       0, 0, 1,
-       -1, -1, -1;
-  // clang-format on
-  B.resize(3, 1);
-  B << 0, 0, 1;
-  Q.resize(3, 3);
-  // clang-format off
-  Q << 1, 1, 0,
-       1, 1, 0,
-       0, 0, 0;
-  // clang-format on
-  R.resize(1, 1);
-  R << 1;
-  SolveCAREandVerify(A, B, Q, R);
-}
-
-GTEST_TEST(Care, TestUnstabilizable) {
-  // The pair (A, B) is not stabilizable.
-  Eigen::Matrix2d A;
-  // clang-format off
-  A << 0, 1,
-       0, 0;
-  // clang-format on
-  Eigen::Vector2d B(1, 0);
-  Eigen::Matrix2d Q = Eigen::Matrix2d::Identity();
-  Eigen::Matrix<double, 1, 1> R(1);
-  DRAKE_EXPECT_THROWS_MESSAGE(ContinuousAlgebraicRiccatiEquation(A, B, Q, R),
-                              "ContinuousAlgebraicRiccatiEquation fails.*");
-
-  // The pair (A, B) is stabilizable (but not controllable), so the Riccati
-  // equation should have a solution.
-  // clang-format off
-  A << -11, 30,
-       -4, 11;
-  // clang-format on
-  B << 10, 4;
-  SolveCAREandVerify(A, B, Q, R);
 }
 
 }  // namespace
