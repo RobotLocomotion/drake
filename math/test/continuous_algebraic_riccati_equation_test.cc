@@ -11,10 +11,15 @@ namespace drake {
 namespace math {
 namespace {
 
+// @param is_X_pd X should always be positive semidefinite. Under some
+// conditions on A, B, Q, the matrix X is positive definite. Check
+// http://webpages.iust.ac.ir/b_moaveni/courses/paper_Riccati.pdf for the
+// condition on whether the solution X is positive definite or positive
+// semidefinite.
 void SolveCAREandVerify(const Eigen::Ref<const MatrixXd>& A,
                         const Eigen::Ref<const MatrixXd>& B,
                         const Eigen::Ref<const MatrixXd>& Q,
-                        const Eigen::Ref<const MatrixXd>& R) {
+                        const Eigen::Ref<const MatrixXd>& R, bool is_X_pd) {
   MatrixXd X = ContinuousAlgebraicRiccatiEquation(
       A, B, Q, R);
 
@@ -22,9 +27,15 @@ void SolveCAREandVerify(const Eigen::Ref<const MatrixXd>& A,
       CompareMatrices(X, X.transpose(), 1E-10, MatrixCompareType::absolute));
   int n = X.rows();
 
-  // Checks X is positive definite.
-  Eigen::LLT<Eigen::MatrixXd> llt(X);
-  EXPECT_EQ(llt.info(), Eigen::Success);
+  if (is_X_pd) {
+    // Checks X is positive definite.
+    Eigen::LLT<Eigen::MatrixXd> llt(X);
+    EXPECT_EQ(llt.info(), Eigen::Success);
+  } else {
+    // Checks X is positive semidefinite.
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es_X(X);
+    EXPECT_TRUE((es_X.eigenvalues().array() >= -1E-10).all());
+  }
 
   // Tests the solution:
   // A^T * X + X * A - X * B * R^-1 * B^T * X + Q = 0
@@ -48,7 +59,7 @@ GTEST_TEST(CARE, TestCare) {
   B1 << 0, 1;
   Q << 3, 0, 0, 3;
   R1 << 3;
-  SolveCAREandVerify(A1, B1, Q, R1);
+  SolveCAREandVerify(A1, B1, Q, R1, true /* is_X_pd */);
 }
 
 // Test the stabilization of the linearized pendulum (at the top).
@@ -58,7 +69,7 @@ GTEST_TEST(CARE, TestCare2) {
   B1 << 0, 1;
   Q << 1, 0, 0, 1;
   R1 << 1;
-  SolveCAREandVerify(A1, B1, Q, R1);
+  SolveCAREandVerify(A1, B1, Q, R1, true /* is_X_pd */);
 }
 
 // This test case is reported in
@@ -106,7 +117,7 @@ GTEST_TEST(CARE, TestUndetectable) {
   // clang-format on
   R.resize(1, 1);
   R << 1;
-  SolveCAREandVerify(A, B, Q, R);
+  SolveCAREandVerify(A, B, Q, R, false /* is_X_pd */);
 }
 
 GTEST_TEST(Care, TestUnstabilizable) {
@@ -129,7 +140,7 @@ GTEST_TEST(Care, TestUnstabilizable) {
        -4, 11;
   // clang-format on
   B << 10, 4;
-  SolveCAREandVerify(A, B, Q, R);
+  SolveCAREandVerify(A, B, Q, R, true /* is_X_pd */);
 }
 
 }  // namespace
