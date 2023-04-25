@@ -199,10 +199,10 @@ DirectTranscription::DirectTranscription(
     const Context<double>& context, int num_time_samples,
     const std::variant<InputPortSelection, InputPortIndex>& input_port_index)
     : MultipleShooting(get_input_port_size(system, input_port_index),
-          context.num_total_states(), num_time_samples,
-          std::max(system->time_period(),
-                   std::numeric_limits<double>::epsilon())
-          /* N.B. Ensures that MultipleShooting is well-formed */),
+                       context.num_total_states(), num_time_samples,
+                       std::max(system->time_period(),
+                                std::numeric_limits<double>::epsilon())
+                       /* N.B. Ensures that MultipleShooting is well-formed */),
       discrete_time_system_(true) {
   if (!context.has_only_discrete_state()) {
     throw std::invalid_argument(
@@ -215,9 +215,9 @@ DirectTranscription::DirectTranscription(
   for (int i = 0; i < N() - 1; i++) {
     const double t = system->time_period() * i;
     prog().AddLinearEqualityConstraint(
-        state(i+1).cast<symbolic::Expression>() ==
+        state(i + 1).cast<symbolic::Expression>() ==
         system->A(t) * state(i).cast<symbolic::Expression>() +
-        system->B(t) * input(i).cast<symbolic::Expression>());
+            system->B(t) * input(i).cast<symbolic::Expression>());
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
@@ -247,7 +247,6 @@ DirectTranscription::DirectTranscription(
   }
   ConstrainEqualInputAtFinalTwoTimesteps();
 }
-
 
 void DirectTranscription::DoAddRunningCost(const symbolic::Expression& g) {
   // Cost = \sum_n g(n,x[n],u[n]) dt
@@ -309,7 +308,7 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
   VectorX<Expression> next_state(num_states());
 
   for (int i = 0; i < N() - 1; i++) {
-    symbolic_context->SetTime(i*fixed_timestep());
+    symbolic_context->SetTime(i * fixed_timestep());
 
     if (input_port) {
       input_port->FixValue(symbolic_context.get(), input(i).cast<Expression>());
@@ -328,7 +327,7 @@ bool DirectTranscription::AddSymbolicDynamicConstraints(
           symbolic_context->get_continuous_state_vector().CopyToVector();
     }
     if (i == 0 && !IsAffine(next_state,
-            symbolic::Variables(prog().decision_variables()))) {
+                            symbolic::Variables(prog().decision_variables()))) {
       // Note: only check on the first iteration, where we can return false
       // before adding any constraints to the program.  For i>0, the
       // AddLinearEqualityConstraint call with throw.

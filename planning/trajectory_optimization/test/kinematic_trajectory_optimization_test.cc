@@ -63,9 +63,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathPositionConstraint) {
 // 0.1 <= |position|² <= 1
 class SimplePositionConstraint : public solvers::Constraint {
  public:
-  SimplePositionConstraint()
-      : Constraint(1, 3, Vector1d{0.1}, Vector1d{1.0}) {
-  }
+  SimplePositionConstraint() : Constraint(1, 3, Vector1d{0.1}, Vector1d{1.0}) {}
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override {
@@ -362,7 +360,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathLengthCost) {
       trajopt_.basis(), math::EigenToStdVector<double>(guess)));
   auto result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
-  EXPECT_NEAR(result.get_optimal_cost(), 2.0*std::sqrt(3.0), 1e-6);
+  EXPECT_NEAR(result.get_optimal_cost(), 2.0 * std::sqrt(3.0), 1e-6);
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, AddPathLengthCostConic) {
@@ -379,7 +377,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathLengthCostConic) {
 
   auto result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
-  EXPECT_NEAR(result.get_optimal_cost(), 2.0*std::sqrt(3.0), 1e-6);
+  EXPECT_NEAR(result.get_optimal_cost(), 2.0 * std::sqrt(3.0), 1e-6);
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, SolveWithAlmostEverything) {

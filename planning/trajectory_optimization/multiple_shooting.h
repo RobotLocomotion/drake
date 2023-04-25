@@ -253,9 +253,10 @@ class MultipleShooting {
     return AddFinalCost(matrix(0, 0));
   }
 
-  typedef std::function<
-      void(const Eigen::Ref<const Eigen::VectorXd>& sample_times,
-           const Eigen::Ref<const Eigen::MatrixXd>& values)> TrajectoryCallback;
+  typedef std::function<void(
+      const Eigen::Ref<const Eigen::VectorXd>& sample_times,
+      const Eigen::Ref<const Eigen::MatrixXd>& values)>
+      TrajectoryCallback;
   typedef std::function<void(
       const Eigen::Ref<const Eigen::VectorXd>& sample_times,
       const Eigen::Ref<const Eigen::MatrixXd>& states,
@@ -277,8 +278,8 @@ class MultipleShooting {
    * callback to a quadratic programming problem may result in using a nonlinear
    * programming solver as the default solver.
    */
-  solvers::Binding<solvers::VisualizationCallback>
-  AddInputTrajectoryCallback(const TrajectoryCallback& callback);
+  solvers::Binding<solvers::VisualizationCallback> AddInputTrajectoryCallback(
+      const TrajectoryCallback& callback);
 
   /**
    * Adds a callback method to visualize intermediate results of state variables
@@ -294,8 +295,8 @@ class MultipleShooting {
    * callback to a quadratic programming problem may result in using a nonlinear
    * programming solver as the default solver.
    */
-  solvers::Binding<solvers::VisualizationCallback>
-  AddStateTrajectoryCallback(const TrajectoryCallback& callback);
+  solvers::Binding<solvers::VisualizationCallback> AddStateTrajectoryCallback(
+      const TrajectoryCallback& callback);
 
   /**
    * Adds a callback method to visualize intermediate results of all variables

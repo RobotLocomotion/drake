@@ -270,8 +270,8 @@ void DirectCollocation::DoAddRunningCost(const symbolic::Expression& g) {
     prog().AddCost(SubstitutePlaceholderVariables(
         g * (h_vars()(i - 1) + h_vars()(i)) / 2, i));
   }
-  prog().AddCost(SubstitutePlaceholderVariables(
-      g * h_vars()(N() - 2) / 2, N() - 1));
+  prog().AddCost(
+      SubstitutePlaceholderVariables(g * h_vars()(N() - 2) / 2, N() - 1));
 }
 
 PiecewisePolynomial<double> DirectCollocation::ReconstructInputTrajectory(
@@ -306,8 +306,7 @@ PiecewisePolynomial<double> DirectCollocation::ReconstructStateTrajectory(
   FixedInputPortValue* input_port_value{nullptr};
   if (input_port) {
     input_port_value = &input_port->FixValue(
-      context_.get(),
-      system_->AllocateInputVector(*input_port)->get_value());
+        context_.get(), system_->AllocateInputVector(*input_port)->get_value());
   }
 
   for (int i = 0; i < N(); i++) {
