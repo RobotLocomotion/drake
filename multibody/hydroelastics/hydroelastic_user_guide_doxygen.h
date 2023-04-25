@@ -619,6 +619,20 @@ indicate what can and cannot be done with hydroelastic contact.
   Currently we are actively developing code for deformable bodies in
   @ref drake::multibody::DeformableModel.
 
+@subsection hug_dissipation_and_solver Current dissipation models
+
+<!-- TODO(DamrongGuoy) Refer to SAP Epic Issue when it's available. -->
+
+- SAP does not support Hunt-Crossley dissipation at this time for both
+  point and hydroelastic contact.
+  See the documentation for that in the
+  [MultibodyPlant documentation.]
+  (https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#:~:text=%E2%81%B4%20We%20allow%20to,will%20be%20ignored.)
+  We allow the user to specify both hunt_crossley_dissipation (TAMSI and
+  continuous mode parameter) and relaxation_time (SAP specific parameter) on
+  the model, but the parameter may be ignored depending on your plant
+  configuration.
+
 @section hydro_references Sources referenced within this documentation
 
 - @anchor Elandt2019 [Elandt 2019] Elandt, R., Drumwright, E., Sherman, M.,
