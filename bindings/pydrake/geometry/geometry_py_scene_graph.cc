@@ -208,6 +208,20 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+        .def("ChangeShape",
+            py::overload_cast<SourceId, GeometryId, const Shape&,
+                std::optional<math::RigidTransform<double>>>(
+                &Class::ChangeShape),
+            py::arg("source_id"), py::arg("geometry_id"), py::arg("shape"),
+            py::arg("X_FG") = std::nullopt, cls_doc.ChangeShape.doc_model)
+        .def("ChangeShape",
+            overload_cast_explicit<void, systems::Context<T>*, SourceId,
+                GeometryId, const Shape&,
+                std::optional<math::RigidTransform<double>>>(
+                &Class::ChangeShape),
+            py::arg("context"), py::arg("source_id"), py::arg("geometry_id"),
+            py::arg("shape"), py::arg("X_FG") = std::nullopt,
+            cls_doc.ChangeShape.doc_context)
         .def("RemoveGeometry",
             py::overload_cast<SourceId, GeometryId>(&Class::RemoveGeometry),
             py::arg("source_id"), py::arg("geometry_id"),
