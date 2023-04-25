@@ -348,6 +348,56 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(context_inspector.num_geometries(), 1)
 
     @numpy_compare.check_all_types
+    def test_scene_graph_change_shape(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        RigidTransform = RigidTransform_[float]
+        scene_graph = SceneGraph()
+        source_id = scene_graph.RegisterSource("anchored")
+        frame_id = scene_graph.world_frame_id()
+        identity = RigidTransform()
+        X_FG_alt = RigidTransform(p=(1, 2, 3))
+        geometry_id = scene_graph.RegisterGeometry(
+            source_id=source_id, frame_id=frame_id,
+            geometry=mut.GeometryInstance(X_PG=identity,
+                                          shape=mut.Sphere(1.),
+                                          name="sphere1"))
+        context = scene_graph.CreateDefaultContext()
+        model_inspector = scene_graph.model_inspector()
+
+        self.assertIsInstance(model_inspector.GetShape(geometry_id),
+                              mut.Sphere)
+        scene_graph.ChangeShape(source_id=source_id, geometry_id=geometry_id,
+                                shape=mut.Box(1, 2, 3))
+        self.assertIsInstance(model_inspector.GetShape(geometry_id),
+                              mut.Box)
+        scene_graph.ChangeShape(source_id=source_id, geometry_id=geometry_id,
+                                shape=mut.Capsule(1, 2), X_FG=X_FG_alt)
+        self.assertIsInstance(model_inspector.GetShape(geometry_id),
+                              mut.Capsule)
+        self.assertTrue(
+            (model_inspector.GetPoseInFrame(geometry_id).translation()
+             == X_FG_alt.translation()).all())
+
+        query_object = scene_graph.get_query_output_port().Eval(context)
+        context_inspector = query_object.inspector()
+
+        self.assertIsInstance(context_inspector.GetShape(geometry_id),
+                              mut.Sphere)
+        scene_graph.ChangeShape(
+            context=context, source_id=source_id, geometry_id=geometry_id,
+            shape=mut.Box(1, 2, 3))
+        self.assertIsInstance(context_inspector.GetShape(geometry_id),
+                              mut.Box)
+        scene_graph.ChangeShape(
+            context=context, source_id=source_id, geometry_id=geometry_id,
+            shape=mut.Capsule(1, 2), X_FG=X_FG_alt)
+        self.assertIsInstance(context_inspector.GetShape(geometry_id),
+                              mut.Capsule)
+        self.assertTrue(
+            (context_inspector.GetPoseInFrame(geometry_id).translation()
+             == X_FG_alt.translation()).all())
+
+    @numpy_compare.check_all_types
     def test_scene_graph_remove_geometry(self, T):
         SceneGraph = mut.SceneGraph_[T]
 
