@@ -127,12 +127,11 @@ class HydroelasticModelTests : public ::testing::Test {
                                      double friction_coefficient) {
     // Inertial properties are only needed when verifying accelerations since
     // hydro forces are only a function of state.
-    const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-    const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidSphere(radius);
-    const SpatialInertia<double> M_BBcm_B(kMass, p_BoBcm_B, G_BBcm);
+    const SpatialInertia<double> M_BBcm =
+        SpatialInertia<double>::SolidSphereWithMass(kMass, radius);
 
     // Create a rigid body B with the mass properties of a uniform sphere.
-    const RigidBody<double>& body = plant->AddRigidBody("body", M_BBcm_B);
+    const RigidBody<double>& body = plant->AddRigidBody("body", M_BBcm);
 
     // Body B's visual geometry and collision geometry are a sphere.
     // The pose X_BG of block B's geometry frame G is an identity transform.
@@ -465,12 +464,11 @@ class ContactModelTest : public ::testing::Test {
       MultibodyPlant<double>* plant) {
     // Inertial properties are only needed when verifying accelerations since
     // hydro forces are only a function of state.
-    const Vector3<double> p_BoBcm_B = Vector3<double>::Zero();
-    const UnitInertia<double> G_BBcm = UnitInertia<double>::SolidSphere(radius);
-    const SpatialInertia<double> M_BBcm_B(kMass, p_BoBcm_B, G_BBcm);
+    const SpatialInertia<double> M_BBcm =
+        SpatialInertia<double>::SolidSphereWithMass(kMass, radius);
 
     // Create a rigid body B with the mass properties of a uniform sphere.
-    const RigidBody<double>& body = plant->AddRigidBody(name, M_BBcm_B);
+    const RigidBody<double>& body = plant->AddRigidBody(name, M_BBcm);
 
     // Body B's collision geometry is a sphere.
     // The pose X_BG of block B's geometry frame G is an identity transform.

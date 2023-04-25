@@ -71,10 +71,8 @@ void AddBallPlateBodies(
 
   // Add the ball. Let B be the ball's frame (at its center). The ball's
   // center of mass Bcm is coincident with Bo.
-  const Vector3<double> p_BoBcm = Vector3<double>::Zero();
   const RigidBody<double>& ball = plant->AddRigidBody(
-      "Ball", SpatialInertia<double>{mass, p_BoBcm,
-                                     UnitInertia<double>::SolidSphere(radius)});
+      "Ball", SpatialInertia<double>::SolidSphereWithMass(mass, radius));
   // Set up mechanical properties of the ball.
   ProximityProperties ball_props;
   AddContactMaterial(dissipation, {} /* point stiffness */, surface_friction,

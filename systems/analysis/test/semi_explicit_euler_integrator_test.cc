@@ -61,9 +61,9 @@ GTEST_TEST(IntegratorTest, RigidBody) {
   multibody::MultibodyPlant<double> plant(0.0);
   const double radius = 0.05;   // m
   const double mass = 0.1;      // kg
-  auto G_Bcm = multibody::UnitInertia<double>::SolidSphere(radius);
-  multibody::SpatialInertia<double> M_Bcm(mass, Vector3<double>::Zero(), G_Bcm);
-  plant.AddRigidBody("Ball", M_Bcm);
+  multibody::SpatialInertia<double> M_BBcm =
+      multibody::SpatialInertia<double>::SolidSphereWithMass(mass, radius);
+  plant.AddRigidBody("Ball", M_BBcm);
   plant.Finalize();
 
   // Set free_body to have zero translation, zero rotation, and zero velocity.

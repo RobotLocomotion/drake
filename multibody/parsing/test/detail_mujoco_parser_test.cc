@@ -731,10 +731,9 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body("ellipsoid_from_default",
              UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
   check_body("box_from_sub", UnitInertia<double>::SolidBox(0.8, 1.0, 1.2));
-  SpatialInertia<double> M_BBo_B = SpatialInertia<double>(
-      2.53, Vector3d::Zero(), UnitInertia<double>::SolidSphere(0.1));
-  M_BBo_B += SpatialInertia<double>(2.53, Vector3d::Zero(),
-                                    UnitInertia<double>::SolidSphere(0.2));
+  SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidSphereWithMass(2.53, 0.1);
+  M_BBo_B += SpatialInertia<double>::SolidSphereWithMass(2.53, 0.2);
   check_body_spatial("two_spheres", M_BBo_B);
   // Use the equation for the moment of inertia of a cylinder about one end.
   M_BBo_B = SpatialInertia<double>(

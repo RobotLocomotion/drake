@@ -724,8 +724,12 @@ class TestPlant(unittest.TestCase):
             density=1000, a=0.2, b=0.3, c=0.4)
         SpatialInertia.SolidSphereWithDensity(
             density=1000, radius=0.5)
+        SpatialInertia.SolidSphereWithMass(
+            mass=2, radius=0.5)
         SpatialInertia.HollowSphereWithDensity(
             area_density=2, radius=0.5)
+        SpatialInertia.HollowSphereWithMass(
+            mass=2, radius=0.5)
         spatial_inertia = SpatialInertia(
             mass=2.5, p_PScm_E=[0.1, -0.2, 0.3],
             G_SP_E=UnitInertia(Ixx=2.0, Iyy=2.3, Izz=2.4))

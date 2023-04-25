@@ -69,13 +69,11 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
     // problem.
     const double mass = 1.5;
     const double radius = 0.1;
-    const SpatialInertia<double> M_Bo =
-        SpatialInertia<double>::MakeFromCentralInertia(
-            mass, Vector3d::Zero(),
-            UnitInertia<double>::SolidSphere(radius) * mass);
+    const SpatialInertia<double> M_BBcm =
+        SpatialInertia<double>::SolidSphereWithMass(mass, radius);
 
-    bodyA_ = &plant_.AddRigidBody("A", M_Bo);
-    bodyB_ = &plant_.AddRigidBody("B", M_Bo);
+    bodyA_ = &plant_.AddRigidBody("A", M_BBcm);
+    bodyB_ = &plant_.AddRigidBody("B", M_BBcm);
     if (anchor_bodyA) {
       plant_.WeldFrames(plant_.world_frame(), bodyA_->body_frame());
     }

@@ -305,10 +305,23 @@ class SpatialInertia {
   /// is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
   /// frame B is equal to M_BBo expressed in an arbitrary frame E.
   /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
-  /// B's has an equal moment of inertia about any line passing through Bo.
+  /// B has an equal moment of inertia about any line passing through Bo.
   /// @throws std::exception if density or radius is not positive and finite.
   static SpatialInertia<T> SolidSphereWithDensity(
       const T& density, const T& radius);
+
+  /// Creates a spatial inertia for a uniform density solid sphere B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] mass mass of the solid sphere (kg).
+  /// @param[in] radius sphere's radius (meters).
+  /// @retval M_BBo B's spatial inertia about Bo. Since B's rotational inertia
+  /// is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
+  /// frame B is equal to M_BBo expressed in an arbitrary frame E.
+  /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
+  /// B has an equal moment of inertia about any line passing through Bo.
+  /// @throws std::exception if mass or radius is not positive and finite.
+  static SpatialInertia<T> SolidSphereWithMass(
+      const T& mass, const T& radius);
 
   /// Creates a spatial inertia for a uniform density thin hollow sphere B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
@@ -324,6 +337,20 @@ class SpatialInertia {
   /// finite.
   static SpatialInertia<T> HollowSphereWithDensity(
       const T& area_density, const T& radius);
+
+  /// Creates a spatial inertia for a uniform density hollow sphere B about its
+  /// geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] mass mass of the hollow sphere (kg).
+  /// @param[in] radius sphere's radius in meters (the hollow sphere is regarded
+  /// as an infinitesimally thin shell of uniform density).
+  /// @retval M_BBo B's spatial inertia about Bo. Since B's rotational inertia
+  /// is triaxially symmetric, M_BBo_B = M_BBo_E, i.e., M_BBo expressed in
+  /// frame B is equal to M_BBo expressed in an arbitrary frame E.
+  /// @note B's rotational inertia about Bo is triaxially symmetric, meaning
+  /// B has an equal moment of inertia about any line passing through Bo.
+  /// @throws std::exception if mass or radius is not positive and finite.
+  static SpatialInertia<T> HollowSphereWithMass(
+      const T& mass, const T& radius);
 
   /// Creates a spatial inertia for a uniform density solid tetrahedron B about
   /// a point A, from which position vectors to B's 4 vertices B0, B1, B2, B3
