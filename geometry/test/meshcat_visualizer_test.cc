@@ -487,6 +487,86 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
   }
 }
 
+// Check the logic and results of setting the alpha slider.
+GTEST_TEST(MeshcatVisualizerTest, AlphaSliderResults) {
+  struct Scenario {
+    double geometry_alpha;
+    // The visualizer sets the minimum slider value to 0.02, so expected values
+    // for small slider values need to adjust for that fact.
+    std::vector<std::pair<double, double>> slider_and_expected_values;
+  };
+
+  std::vector<Scenario> scenarios{
+    // For geometry that is not fully transparent, the alpha set by the slider
+    // is geometry alpha * slider value.
+    {1.0, {{0.0, 0.02}, {0.6, 0.6}, {1.0, 1.0}}},
+    {0.5, {{0.0, 0.01}, {0.6, 0.6 * 0.5}, {1.0, 0.5}}},
+    // For fully-transparent geometry, the alpha set by the slider is the
+    // slider's value.
+    {0.0, {{0.0, 0.02}, {0.6, 0.6}, {1.0, 1.0}}}
+  };
+
+  for (auto scenario : scenarios) {
+    // Load a simple model with one geometry.
+    auto meshcat = std::make_shared<Meshcat>();
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+    multibody::Parser(&plant).AddModelsFromUrl(
+        "package://drake/geometry/render/test/box.sdf");
+    plant.Finalize();
+
+    auto& inspector = scene_graph.model_inspector();
+    const FrameId body_frame =
+        plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("box").index());
+    const auto geom_ids =
+        inspector.GetGeometries(body_frame, Role::kIllustration);
+    DRAKE_DEMAND(geom_ids.size() == 1);
+    const GeometryId geom_id = *geom_ids.begin();
+    const IllustrationProperties* old_props =
+        scene_graph.model_inspector().GetIllustrationProperties(geom_id);
+    DRAKE_DEMAND(old_props != nullptr);
+    IllustrationProperties new_props(*old_props);
+    new_props.UpdateProperty("phong", "diffuse", Rgba{1.0, 1.0, 1.0,
+                             scenario.geometry_alpha});
+    scene_graph.AssignRole(*plant.get_source_id(), geom_id, new_props,
+                           RoleAssign::kReplace);
+
+    // Create the visualizer.
+    MeshcatVisualizerParams params;
+    params.include_unspecified_accepting = true;
+    params.prefix = "visualizer";
+    params.enable_alpha_slider = true;
+    MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                            params);
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+
+    // Publish geometry and check the results of various slider settings.
+    const std::string geom_path =
+        fmt::format("visualizer/box/box/{}", geom_id.get_value());
+    for (auto value_pair : scenario.slider_and_expected_values) {
+      if (value_pair.first == 1.0) {
+        // We can't get the color property until it is explicitly set, and
+        // setting the slider to its initial value of 1.0 gets ignored.
+        // If a test scenario tries this, set to another value first.
+        meshcat->SetSliderValue("visualizer α", 0.9);
+      }
+      diagram->ForcedPublish(*context);
+      meshcat->SetSliderValue("visualizer α", value_pair.first);
+      diagram->ForcedPublish(*context);
+
+      const std::string property = meshcat->GetPackedProperty(geom_path,
+                                                              "color");
+      msgpack::object_handle oh = msgpack::unpack(property.data(),
+                                                  property.size());
+      auto data = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
+      EXPECT_EQ(data.property, "color");
+      EXPECT_EQ(data.value.size(), 4);
+      EXPECT_EQ(data.value[3], value_pair.second);
+    }
+  }
+}
+
 }  // namespace
 }  // namespace geometry
 }  // namespace drake
