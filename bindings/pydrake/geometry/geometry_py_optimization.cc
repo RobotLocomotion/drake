@@ -432,92 +432,8 @@ void DefineGeometryOptimization(py::module m) {
   // GraphOfConvexSets
   {
     const auto& cls_doc = doc.GraphOfConvexSets;
-    auto graph_of_convex_sets =
-        py::class_<GraphOfConvexSets>(m, "GraphOfConvexSets", cls_doc.doc)
-            .def(py::init<>(), cls_doc.ctor.doc)
-            .def("AddVertex", &GraphOfConvexSets::AddVertex, py::arg("set"),
-                py::arg("name") = "", py_rvp::reference_internal,
-                cls_doc.AddVertex.doc)
-            .def("AddEdge",
-                py::overload_cast<GraphOfConvexSets::VertexId,
-                    GraphOfConvexSets::VertexId, std::string>(
-                    &GraphOfConvexSets::AddEdge),
-                py::arg("u_id"), py::arg("v_id"), py::arg("name") = "",
-                py_rvp::reference_internal, cls_doc.AddEdge.doc_by_id)
-            .def("AddEdge",
-                py::overload_cast<const GraphOfConvexSets::Vertex&,
-                    const GraphOfConvexSets::Vertex&, std::string>(
-                    &GraphOfConvexSets::AddEdge),
-                py::arg("u"), py::arg("v"), py::arg("name") = "",
-                py_rvp::reference_internal, cls_doc.AddEdge.doc_by_reference)
-            .def("RemoveVertex",
-                py::overload_cast<GraphOfConvexSets::VertexId>(
-                    &GraphOfConvexSets::RemoveVertex),
-                py::arg("vertex_id"), cls_doc.RemoveVertex.doc_by_id)
-            .def("RemoveVertex",
-                py::overload_cast<const GraphOfConvexSets::Vertex&>(
-                    &GraphOfConvexSets::RemoveVertex),
-                py::arg("vertex"), cls_doc.RemoveVertex.doc_by_reference)
-            .def("RemoveEdge",
-                py::overload_cast<GraphOfConvexSets::EdgeId>(
-                    &GraphOfConvexSets::RemoveEdge),
-                py::arg("edge_id"), cls_doc.RemoveEdge.doc_by_id)
-            .def("RemoveEdge",
-                py::overload_cast<const GraphOfConvexSets::Edge&>(
-                    &GraphOfConvexSets::RemoveEdge),
-                py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
-            .def(
-                "Vertices",
-                [](GraphOfConvexSets* self) {
-                  py::list out;
-                  py::object self_py = py::cast(self, py_rvp::reference);
-                  for (auto* vertex : self->Vertices()) {
-                    py::object vertex_py = py::cast(vertex, py_rvp::reference);
-                    // Keep alive, ownership: `vertex` keeps `self` alive.
-                    py_keep_alive(vertex_py, self_py);
-                    out.append(vertex_py);
-                  }
-                  return out;
-                },
-                cls_doc.Vertices.doc)
-            .def(
-                "Edges",
-                [](GraphOfConvexSets* self) {
-                  py::list out;
-                  py::object self_py = py::cast(self, py_rvp::reference);
-                  for (auto* edge : self->Edges()) {
-                    py::object edge_py = py::cast(edge, py_rvp::reference);
-                    // Keep alive, ownership: `edge` keeps `self` alive.
-                    py_keep_alive(edge_py, self_py);
-                    out.append(edge_py);
-                  }
-                  return out;
-                },
-                cls_doc.Edges.doc)
-            .def("ClearAllPhiConstraints",
-                &GraphOfConvexSets::ClearAllPhiConstraints,
-                cls_doc.ClearAllPhiConstraints.doc)
-            .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
-                py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
-                py::arg("precision") = 3, py::arg("scientific") = false,
-                cls_doc.GetGraphvizString.doc)
-            .def("SolveShortestPath",
-                overload_cast_explicit<solvers::MathematicalProgramResult,
-                    GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
-                    const GraphOfConvexSetsOptions&>(
-                    &GraphOfConvexSets::SolveShortestPath),
-                py::arg("source_id"), py::arg("target_id"),
-                py::arg("options") = GraphOfConvexSetsOptions(),
-                cls_doc.SolveShortestPath.doc_by_id)
-            .def("SolveShortestPath",
-                overload_cast_explicit<solvers::MathematicalProgramResult,
-                    const GraphOfConvexSets::Vertex&,
-                    const GraphOfConvexSets::Vertex&,
-                    const GraphOfConvexSetsOptions&>(
-                    &GraphOfConvexSets::SolveShortestPath),
-                py::arg("source"), py::arg("target"),
-                py::arg("options") = GraphOfConvexSetsOptions(),
-                cls_doc.SolveShortestPath.doc_by_reference);
+    py::class_<GraphOfConvexSets> graph_of_convex_sets(
+        m, "GraphOfConvexSets", cls_doc.doc);
 
     BindIdentifier<GraphOfConvexSets::VertexId>(
         graph_of_convex_sets, "VertexId", doc.GraphOfConvexSets.VertexId.doc);
@@ -624,6 +540,92 @@ void DefineGeometryOptimization(py::module m) {
             py::arg("result"), edge_doc.GetSolutionPhiXu.doc)
         .def("GetSolutionPhiXv", &GraphOfConvexSets::Edge::GetSolutionPhiXv,
             py::arg("result"), edge_doc.GetSolutionPhiXv.doc);
+
+    graph_of_convex_sets  // BR
+        .def(py::init<>(), cls_doc.ctor.doc)
+        .def("AddVertex", &GraphOfConvexSets::AddVertex, py::arg("set"),
+            py::arg("name") = "", py_rvp::reference_internal,
+            cls_doc.AddVertex.doc)
+        .def("AddEdge",
+            py::overload_cast<GraphOfConvexSets::VertexId,
+                GraphOfConvexSets::VertexId, std::string>(
+                &GraphOfConvexSets::AddEdge),
+            py::arg("u_id"), py::arg("v_id"), py::arg("name") = "",
+            py_rvp::reference_internal, cls_doc.AddEdge.doc_by_id)
+        .def("AddEdge",
+            py::overload_cast<const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&, std::string>(
+                &GraphOfConvexSets::AddEdge),
+            py::arg("u"), py::arg("v"), py::arg("name") = "",
+            py_rvp::reference_internal, cls_doc.AddEdge.doc_by_reference)
+        .def("RemoveVertex",
+            py::overload_cast<GraphOfConvexSets::VertexId>(
+                &GraphOfConvexSets::RemoveVertex),
+            py::arg("vertex_id"), cls_doc.RemoveVertex.doc_by_id)
+        .def("RemoveVertex",
+            py::overload_cast<const GraphOfConvexSets::Vertex&>(
+                &GraphOfConvexSets::RemoveVertex),
+            py::arg("vertex"), cls_doc.RemoveVertex.doc_by_reference)
+        .def("RemoveEdge",
+            py::overload_cast<GraphOfConvexSets::EdgeId>(
+                &GraphOfConvexSets::RemoveEdge),
+            py::arg("edge_id"), cls_doc.RemoveEdge.doc_by_id)
+        .def("RemoveEdge",
+            py::overload_cast<const GraphOfConvexSets::Edge&>(
+                &GraphOfConvexSets::RemoveEdge),
+            py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
+        .def(
+            "Vertices",
+            [](GraphOfConvexSets* self) {
+              py::list out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (auto* vertex : self->Vertices()) {
+                py::object vertex_py = py::cast(vertex, py_rvp::reference);
+                // Keep alive, ownership: `vertex` keeps `self` alive.
+                py_keep_alive(vertex_py, self_py);
+                out.append(vertex_py);
+              }
+              return out;
+            },
+            cls_doc.Vertices.doc)
+        .def(
+            "Edges",
+            [](GraphOfConvexSets* self) {
+              py::list out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (auto* edge : self->Edges()) {
+                py::object edge_py = py::cast(edge, py_rvp::reference);
+                // Keep alive, ownership: `edge` keeps `self` alive.
+                py_keep_alive(edge_py, self_py);
+                out.append(edge_py);
+              }
+              return out;
+            },
+            cls_doc.Edges.doc)
+        .def("ClearAllPhiConstraints",
+            &GraphOfConvexSets::ClearAllPhiConstraints,
+            cls_doc.ClearAllPhiConstraints.doc)
+        .def("GetGraphvizString", &GraphOfConvexSets::GetGraphvizString,
+            py::arg("result") = std::nullopt, py::arg("show_slacks") = true,
+            py::arg("precision") = 3, py::arg("scientific") = false,
+            cls_doc.GetGraphvizString.doc)
+        .def("SolveShortestPath",
+            overload_cast_explicit<solvers::MathematicalProgramResult,
+                GraphOfConvexSets::VertexId, GraphOfConvexSets::VertexId,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SolveShortestPath),
+            py::arg("source_id"), py::arg("target_id"),
+            py::arg("options") = GraphOfConvexSetsOptions(),
+            cls_doc.SolveShortestPath.doc_by_id)
+        .def("SolveShortestPath",
+            overload_cast_explicit<solvers::MathematicalProgramResult,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSets::Vertex&,
+                const GraphOfConvexSetsOptions&>(
+                &GraphOfConvexSets::SolveShortestPath),
+            py::arg("source"), py::arg("target"),
+            py::arg("options") = GraphOfConvexSetsOptions(),
+            cls_doc.SolveShortestPath.doc_by_reference);
   }
 
   // NOLINTNEXTLINE(readability/fn_size)
