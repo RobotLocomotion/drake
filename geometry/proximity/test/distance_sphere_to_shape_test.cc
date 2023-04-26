@@ -84,7 +84,7 @@ GTEST_TEST(SphereShapeDistance, FallbackSupport) {
       CalcDistanceFallback<AutoDiffXd>(obj_a, obj_b, request,
                                        &distance_pair_ad),
       "Signed distance queries between shapes .+ and .+ are not supported for "
-      "scalar type .*AutoDiffXd");
+      "scalar type .*AutoDiffXd.*");
 }
 // TODO(SeanCurtis-TRI): Create a more general test framework when we have
 //  shape-shape primitives that *aren't* covered by the point-shape tests.
