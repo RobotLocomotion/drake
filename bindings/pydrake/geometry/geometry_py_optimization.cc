@@ -17,6 +17,7 @@
 #include "drake/geometry/optimization/iris.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/point.h"
+#include "drake/geometry/optimization/spectrahedron.h"
 #include "drake/geometry/optimization/vpolytope.h"
 
 namespace drake {
@@ -255,6 +256,16 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::pickle([](const Point& self) { return self.x(); },
             [](Eigen::VectorXd arg) { return Point(arg); }));
     py::implicitly_convertible<Point, copyable_unique_ptr<ConvexSet>>();
+  }
+
+  // Spectrahedron
+  {
+    const auto& cls_doc = doc.Spectrahedron;
+    py::class_<Spectrahedron, ConvexSet>(m, "Spectrahedron", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
+        .def(py::init<const solvers::MathematicalProgram&>(), py::arg("prog"),
+            cls_doc.ctor.doc_1args);
+    py::implicitly_convertible<Spectrahedron, copyable_unique_ptr<ConvexSet>>();
   }
 
   // VPolytope

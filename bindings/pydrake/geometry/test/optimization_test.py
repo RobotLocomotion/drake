@@ -206,6 +206,15 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(sum2.num_terms(), 2)
         self.assertIsInstance(sum2.term(0), mut.Point)
 
+    def test_spectrahedron(self):
+        s = mut.Spectrahedron()
+        prog = MathematicalProgram()
+        X = prog.NewSymmetricContinuousVariables(3)
+        prog.AddPositiveSemidefiniteConstraint(X)
+        prog.AddLinearEqualityConstraint(X[0, 0] + X[1, 1] + X[2, 2], 1)
+        s = mut.Spectrahedron(prog=prog)
+        self.assertEqual(s.ambient_dimension(), 6)
+
     def test_v_polytope(self):
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.VPolytope(vertices=vertices)

@@ -35,6 +35,7 @@ drake_cc_library(
         "intersection.cc",
         "minkowski_sum.cc",
         "point.cc",
+        "spectrahedron.cc",
         "vpolytope.cc",
     ],
     hdrs = [
@@ -45,6 +46,7 @@ drake_cc_library(
         "intersection.h",
         "minkowski_sum.h",
         "point.h",
+        "spectrahedron.h",
         "vpolytope.h",
     ],
     interface_deps = [
@@ -55,6 +57,7 @@ drake_cc_library(
     deps = [
         "//geometry:read_obj",
         "//solvers:choose_best_solver",
+        "//solvers:get_program_type",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
         "//solvers:mosek_solver",
@@ -329,6 +332,16 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+    ],
+)
+
+drake_cc_googletest(
+    name = "spectrahedron_test",
+    deps = [
+        ":convex_set",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//solvers:solve",
     ],
 )
 
