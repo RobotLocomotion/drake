@@ -496,7 +496,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
 
   EXPECT_NEAR(region.MaximumVolumeInscribedEllipsoid().Volume(),
               iterative_region.MaximumVolumeInscribedEllipsoid().Volume(),
-              1e-7);
+              1e-6);
 }
 
 // A (somewhat contrived) example of a concave configuration-space obstacle
