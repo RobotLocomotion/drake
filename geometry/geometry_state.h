@@ -235,6 +235,9 @@ class GeometryState {
       SourceId Source_id, int frame_group) const;
   const std::string& GetFrameGroupName(FrameId frame_id) const;
 
+  /** XXX */
+  std::string GetFullName(GeometryId id) const;
+
   /** Implementation of SceneGraphInspector::NumGeometriesForFrame().  */
   int NumGeometriesForFrame(FrameId frame_id) const;
 

@@ -53,7 +53,7 @@ class TestTriad(unittest.TestCase):
         for i, char in enumerate(("x", "y", "z")):
             geom_id = [x, y, z][i]
             frame_name = inspect.GetName(inspect.GetFrameId(geom_id))
-            self.assertEqual(frame_name, "acrobot::Link2")
+            self.assertEqual(frame_name, "Link2")
             self.assertEqual(inspect.GetName(geom_id), f"foo {char}-axis")
             self.assertEqual(inspect.GetShape(geom_id).length(), 0.2)
             self.assertEqual(inspect.GetShape(geom_id).radius(), 0.001)
