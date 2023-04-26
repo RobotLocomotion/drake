@@ -415,6 +415,14 @@ const std::string& GeometryState<T>::GetFrameGroupName(
 }
 
 template <typename T>
+std::string GeometryState<T>::GetFullName(GeometryId id) const {
+  return fmt::format(
+              "{}::{}",
+              GetFrameGroupName(GetFrameId(id)),
+              GetName(id));
+}
+
+template <typename T>
 int GeometryState<T>::NumGeometriesForFrame(FrameId frame_id) const {
   const InternalFrame& frame = GetValueOrThrow(frame_id, frames_);
   return static_cast<int>(frame.child_geometries().size());

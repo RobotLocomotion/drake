@@ -1562,7 +1562,7 @@ TEST_F(UrdfParserTest, CollisionFilterGroupParsingTest) {
         plant_.GetBodyFrameIdOrThrow(
             plant_.GetBodyByName(fmt::format("link{}", k)).index()),
         geometry::Role::kProximity,
-        fmt::format("collision_filter_group_parsing_test::link{}_sphere", k));
+        fmt::format("link{}_sphere", k));
     ids[k] = geometry_id;
   }
 

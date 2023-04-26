@@ -150,6 +150,12 @@ const std::string& SceneGraphInspector<T>::GetFrameGroupName(
 }
 
 template <typename T>
+std::string SceneGraphInspector<T>::GetFullName(GeometryId id) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetFullName(id);
+}
+
+template <typename T>
 int SceneGraphInspector<T>::NumGeometriesForFrame(FrameId frame_id) const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->NumGeometriesForFrame(frame_id);

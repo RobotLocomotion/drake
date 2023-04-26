@@ -136,9 +136,9 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     const int num_links = ids.size();
     const auto& inspector = scene_graph_.model_inspector();
     for (int m = 0; m < num_links; ++m) {
-      const std::string& m_name = inspector.GetName(ids[m]);
+      const std::string& m_name = inspector.GetFullName(ids[m]);
       for (int n = m + 1; n < num_links; ++n) {
-        const std::string& n_name = inspector.GetName(ids[n]);
+        const std::string& n_name = inspector.GetFullName(ids[n]);
         SCOPED_TRACE(fmt::format("{}[{}] vs {}[{}]", m_name, m, n_name, n));
         CollisionPair names{m_name, n_name};
         auto contains =
