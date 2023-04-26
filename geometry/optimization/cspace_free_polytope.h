@@ -481,10 +481,19 @@ class CspaceFreePolytope {
  protected:
   [[nodiscard]] const symbolic::Variables& get_s_set() const { return s_set_; }
 
-  [[nodiscard]] std::vector<PlaneSeparatesGeometries>&
+  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
   get_mutable_plane_geometries() {
     return plane_geometries_;
   }
+
+  const geometry::SceneGraph<double>& get_scene_graph() const {
+    return scene_graph_;
+  }
+
+  // Returns the index of the plane which will separate the geometry pair.
+  // Returns -1 if the pair is not in map_geometries_to_separating_planes_.
+  int GetSeparatingPlaneIndex(
+      const SortedPair<geometry::GeometryId>& pair) const;
 
  private:
   // Forward declaration the tester class. This tester class will expose the
