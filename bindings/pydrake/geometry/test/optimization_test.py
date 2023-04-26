@@ -378,7 +378,6 @@ class TestGeometryOptimization(unittest.TestCase):
         options.termination_threshold = 0.1
         options.relative_termination_threshold = 0.01
         options.random_seed = 1314
-        options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],

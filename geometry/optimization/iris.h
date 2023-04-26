@@ -62,11 +62,6 @@ struct IrisOptions {
   pass in such configuration space obstacles. */
   ConvexSets configuration_obstacles{};
 
-  /** The initial hyperepllipsoid that IRIS will use for calculating hyperplanes
-  in the first iteration. If no hyperellipsoid is provided, a small hypershpere
-  centered at the given sample will be used. */
-  std::optional<Hyperellipsoid> starting_ellipse{};
-
   /** By default, IRIS in configuration space certifies regions for collision
   avoidance constraints and joint limits. This option can be used to pass
   additional constraints that should be satisfied by the IRIS region. We accept

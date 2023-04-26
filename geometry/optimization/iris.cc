@@ -49,8 +49,7 @@ HPolyhedron Iris(const ConvexSets& obstacles, const Ref<const VectorXd>& sample,
   }
   DRAKE_DEMAND(domain.IsBounded());
   const double kEpsilonEllipsoid = 1e-2;
-  Hyperellipsoid E = options.starting_ellipse.value_or(
-      Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
+  Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample);
   HPolyhedron P = domain;
 
   // On each iteration, we will build the collision-free polytope represented as
@@ -638,8 +637,7 @@ HPolyhedron IrisInConfigurationSpace(const MultibodyPlant<double>& plant,
                                        plant.GetPositionUpperLimits());
   DRAKE_DEMAND(P.A().rows() == 2 * nq);
   const double kEpsilonEllipsoid = 1e-2;
-  Hyperellipsoid E = options.starting_ellipse.value_or(
-      Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample));
+  Hyperellipsoid E = Hyperellipsoid::MakeHypersphere(kEpsilonEllipsoid, sample);
 
   // Make all of the convex sets and supporting quantities.
   auto query_object =

@@ -428,7 +428,15 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulum) {
   EXPECT_FALSE(region.PointInSet(Vector2d{-.4, -.3}));
 }
 
-const char block_urdf[] = R"(
+// A block on a vertical track, free to rotate (in the plane) with width `w` and
+// height `h`, plus a ground plane at z=0.  The true configuration space is
+// min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the ±.  These
+// regions are visualized at https://www.desmos.com/calculator/ok5ckpa1kp.
+GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
+  const double w = 2.0;
+  const double h = 1.0;
+  const std::string block_urdf = fmt::format(
+      R"(
 <robot name="block">
   <link name="fixed">
     <collision name="ground">
@@ -449,7 +457,7 @@ const char block_urdf[] = R"(
   </joint>
   <link name="link2">
     <collision name="block">
-      <geometry><box size="2 1 1"/></geometry>
+      <geometry><box size="{w} 1 {h}"/></geometry>
     </collision>
   </link>
   <joint name="joint2" type="revolute">
@@ -459,14 +467,9 @@ const char block_urdf[] = R"(
     <child link="link2"/>
   </joint>
 </robot>
-)";
+)",
+      fmt::arg("w", w), fmt::arg("h", h));
 
-// A block on a vertical track, free to rotate (in the plane) with width `w` of
-// 2 and height `h` of 1, plus a ground plane at z=0.  The true configuration
-// space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
-// ±. These regions are visualized at
-// https://www.desmos.com/calculator/ok5ckpa1kp.
-GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   const Vector2d sample{1.0, 0.0};
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
@@ -481,22 +484,6 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
-}
-
-GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
-  const Vector2d sample{1.0, 0.0};
-  IrisOptions options;
-  options.iteration_limit = 2;
-  HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
-
-  options.iteration_limit = 1;
-  HPolyhedron iterative_region = IrisFromUrdf(block_urdf, sample, options);
-  options.starting_ellipse = iterative_region.MaximumVolumeInscribedEllipsoid();
-  iterative_region = IrisFromUrdf(block_urdf, sample, options);
-
-  EXPECT_NEAR(region.MaximumVolumeInscribedEllipsoid().Volume(),
-              iterative_region.MaximumVolumeInscribedEllipsoid().Volume(),
-              1e-7);
 }
 
 // A (somewhat contrived) example of a concave configuration-space obstacle
