@@ -1,5 +1,6 @@
 #include "drake/geometry/meshcat_visualizer.h"
 
+#include <algorithm>
 #include <memory>
 #include <optional>
 #include <string>
@@ -257,9 +258,18 @@ void MeshcatVisualizer<T>::SetTransforms(
 
 template <typename T>
 void MeshcatVisualizer<T>::SetColorAlphas() const {
+  double max_alpha = 0.0;
+  for (const auto& [geom_id, path] : geometries_) {
+    max_alpha = std::max(max_alpha, colors_[geom_id].a());
+  }
+
   for (const auto& [geom_id, path] : geometries_) {
     Rgba color = colors_[geom_id];
-    color.update({}, {}, {}, alpha_value_ * color.a());
+    if (max_alpha == 0.0) {
+      color.update({}, {}, {}, alpha_value_);
+    } else {
+      color.update({}, {}, {}, alpha_value_ * color.a());
+    }
     meshcat_->SetProperty(path, "color",
                           {color.r(), color.g(), color.b(), color.a()});
   }

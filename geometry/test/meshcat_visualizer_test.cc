@@ -321,23 +321,6 @@ TEST_F(MeshcatVisualizerWithIiwaTest, ScalarConversion) {
   ad_diagram->ForcedPublish(*ad_context);
 }
 
-TEST_F(MeshcatVisualizerWithIiwaTest, UpdateAlphaSliders) {
-  MeshcatVisualizerParams params;
-  params.enable_alpha_slider = true;
-  SetUpDiagram(params);
-  systems::Simulator<double> simulator(*diagram_);
-
-  // Simulate for a moment and publish to populate the visualizer.
-  simulator.AdvanceTo(0.1);
-  diagram_->ForcedPublish(*context_);
-
-  meshcat_->SetSliderValue("visualizer α", 0.5);
-
-  // Simulate and publish again to cause an update.
-  simulator.AdvanceTo(0.1);
-  diagram_->ForcedPublish(*context_);
-}
-
 // When opted-in by the user, we should display the hydroelastic tessellation
 // instead of the primitive shape.
 GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
@@ -484,6 +467,108 @@ GTEST_TEST(MeshcatVisualizerTest, AcceptingProperty) {
       diagram->ForcedPublish(*context);
       EXPECT_EQ(meshcat->HasPath(geom_path), should_show);
     }
+  }
+}
+
+// Full system acceptance test of setting alpha slider values.
+TEST_F(MeshcatVisualizerWithIiwaTest, AlphaSlidersSystemCheck) {
+  MeshcatVisualizerParams params;
+  params.enable_alpha_slider = true;
+  SetUpDiagram(params);
+  systems::Simulator<double> simulator(*diagram_);
+
+  // Simulate for a moment and publish to populate the visualizer.
+  simulator.AdvanceTo(0.1);
+  diagram_->ForcedPublish(*context_);
+
+  meshcat_->SetSliderValue("visualizer α", 0.5);
+
+  // Simulate and publish again to cause an update.
+  simulator.AdvanceTo(0.1);
+  diagram_->ForcedPublish(*context_);
+}
+
+// Check the effect that changing alpha sliders has on geometry color.
+GTEST_TEST(MeshcatVisualizerTest, AlphaSliderCheckResults) {
+  struct Scenario {
+    double geometry_alpha{};
+    double slider_value{};
+    double expected_value{};
+  };
+
+  std::vector<Scenario> scenarios{
+    // For geometry that is not fully transparent, the alpha set by the slider
+    // is geometry alpha * slider value.
+    {1.0, 0.6, 0.6},
+    {1.0, 1.0, 1.0},
+    {0.5, 0.6, 0.6 * 0.5},
+    {0.5, 1.0, 0.5},
+
+    // For fully-transparent geometry, the alpha set by the slider is the
+    // slider's value.
+    {0.0, 0.6, 0.6},
+    {0.0, 1.0, 1.0},
+
+    // Note that we do not test setting sliders to 0.0 because that's outside
+    // the slider range and is also orthogonal to the logic we're testing.
+  };
+
+  for (auto scenario : scenarios) {
+    // Load a simple model with one geometry.
+    auto meshcat = std::make_shared<Meshcat>();
+    systems::DiagramBuilder<double> builder;
+    auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.001);
+    multibody::Parser(&plant).AddModelsFromUrl(
+        "package://drake/geometry/render/test/box.sdf");
+    plant.Finalize();
+
+    // Update the single geometry's alpha to scenario.geometry_alpha.
+    auto& inspector = scene_graph.model_inspector();
+    const FrameId body_frame =
+        plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("box").index());
+    const auto geom_ids =
+        inspector.GetGeometries(body_frame, Role::kIllustration);
+    DRAKE_DEMAND(geom_ids.size() == 1);
+    const GeometryId geom_id = *geom_ids.begin();
+    const IllustrationProperties* old_props =
+        scene_graph.model_inspector().GetIllustrationProperties(geom_id);
+    DRAKE_DEMAND(old_props != nullptr);
+    IllustrationProperties new_props(*old_props);
+    new_props.UpdateProperty("phong", "diffuse", Rgba{1.0, 1.0, 1.0,
+                             scenario.geometry_alpha});
+    scene_graph.AssignRole(*plant.get_source_id(), geom_id, new_props,
+                           RoleAssign::kReplace);
+
+    // Create the visualizer.
+    MeshcatVisualizerParams params;
+    params.prefix = "visualizer";
+    params.enable_alpha_slider = true;
+    MeshcatVisualizer<double>::AddToBuilder(&builder, scene_graph, meshcat,
+                                            params);
+    auto diagram = builder.Build();
+    auto context = diagram->CreateDefaultContext();
+
+    // Publish geometry and check the results of various slider settings.
+    const std::string geom_path =
+        fmt::format("visualizer/box/box/{}", geom_id.get_value());
+    if (scenario.slider_value == 1.0) {
+      // We can't get the color property until it is explicitly set, and
+      // setting the slider to its initial value of 1.0 gets ignored.
+      // If a test scenario tries this, set to another value first.
+      meshcat->SetSliderValue("visualizer α", 0.9);
+    }
+    diagram->ForcedPublish(*context);
+    meshcat->SetSliderValue("visualizer α", scenario.slider_value);
+    diagram->ForcedPublish(*context);
+
+    const std::string property = meshcat->GetPackedProperty(geom_path,
+                                                            "color");
+    msgpack::object_handle oh = msgpack::unpack(property.data(),
+                                                property.size());
+    auto data = oh.get().as<internal::SetPropertyData<std::vector<double>>>();
+    EXPECT_EQ(data.property, "color");
+    ASSERT_EQ(data.value.size(), 4);
+    EXPECT_EQ(data.value[3], scenario.expected_value);
   }
 }
 
