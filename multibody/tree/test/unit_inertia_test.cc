@@ -122,6 +122,22 @@ GTEST_TEST(UnitInertia, ReExpressInAnotherFrame) {
   EXPECT_TRUE(G_Ro_F.CouldBePhysicallyValid());
 }
 
+// Tests the method to obtain the principal moments of inertia and axes.
+GTEST_TEST(UnitInertia, CalcPrincipalMomentsAndAxesOfInertia) {
+  const double a = 5.0;
+  const double b = 4.0;
+  const double c = 3.0;
+  UnitInertia<double> G_BBcm_B = UnitInertia<double>::SolidEllipsoid(a, b, c);
+
+  drake::math::RotationMatrix<double> R_BP;
+  const Vector3<double> principal_moments =
+      G_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
+  EXPECT_TRUE(R_BP.IsExactlyIdentity());
+  EXPECT_TRUE(CompareMatrices(G_BBcm_B.get_moments(),
+                              principal_moments, 1e-14));
+  EXPECT_TRUE(G_BBcm_B.get_products() == Vector3<double>::Zero());
+}
+
 // Tests the static method to obtain the unit inertia of a point mass.
 GTEST_TEST(UnitInertia, PointMass) {
   Vector3d v(1, 2, 4.2);
