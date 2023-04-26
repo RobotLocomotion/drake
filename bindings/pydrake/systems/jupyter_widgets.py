@@ -32,15 +32,14 @@ class PoseSliders(LeafSystem):
         output_ports:
         - pose
     """
-    # TODO(russt): Use namedtuple defaults parameter once we are Python >= 3.7.
-    Visible = namedtuple("Visible", ("roll", "pitch", "yaw", "x", "y", "z"))
-    Visible.__new__.__defaults__ = (True, True, True, True, True, True)
-    MinRange = namedtuple("MinRange", ("roll", "pitch", "yaw", "x", "y", "z"))
-    MinRange.__new__.__defaults__ = (-np.pi, -np.pi, -np.pi, -1.0, -1.0, -1.0)
-    MaxRange = namedtuple("MaxRange", ("roll", "pitch", "yaw", "x", "y", "z"))
-    MaxRange.__new__.__defaults__ = (np.pi, np.pi, np.pi, 1.0, 1.0, 1.0)
-    Value = namedtuple("Value", ("roll", "pitch", "yaw", "x", "y", "z"))
-    Value.__new__.__defaults__ = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    Visible = namedtuple("Visible", ("roll", "pitch", "yaw", "x", "y", "z"),
+                         defaults=(True, True, True, True, True, True))
+    MinRange = namedtuple("MinRange", ("roll", "pitch", "yaw", "x", "y", "z"),
+                          defaults=(-np.pi, -np.pi, -np.pi, -1.0, -1.0, -1.0))
+    MaxRange = namedtuple("MaxRange", ("roll", "pitch", "yaw", "x", "y", "z"),
+                          defaults=(np.pi, np.pi, np.pi, 1.0, 1.0, 1.0))
+    Value = namedtuple("Value", ("roll", "pitch", "yaw", "x", "y", "z"),
+                       defaults=(0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
     def __init__(self, visible=Visible(), min_range=MinRange(),
                  max_range=MaxRange(), value=Value()):
