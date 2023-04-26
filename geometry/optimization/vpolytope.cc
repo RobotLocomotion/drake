@@ -289,6 +289,13 @@ void VPolytope::WriteObj(const std::filesystem::path& filename) const {
   file.close();
 }
 
+std::optional<Eigen::VectorXd> VPolytope::DoMaybeGetPoint() const {
+  if (vertices_.cols() == 1) {
+    return vertices_.col(0);
+  }
+  return std::nullopt;
+}
+
 bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                              double tol) const {
   const int n = ambient_dimension();

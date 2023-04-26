@@ -34,6 +34,10 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   return result.is_success();
 }
 
+std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
+  return std::nullopt;
+}
+
 std::vector<solvers::Binding<solvers::Constraint>>
 ConvexSet::AddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,

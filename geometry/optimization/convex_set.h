@@ -88,6 +88,12 @@ class ConvexSet : public ShapeReifier {
    * notes. */
   bool IsBounded() const { return DoIsBounded(); }
 
+  /** If this set contains exactly one point, returns the value of that point.
+   * Otherwise, returns nullopt. */
+  std::optional<Eigen::VectorXd> MaybeGetPoint() const {
+    return DoMaybeGetPoint();
+  }
+
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
@@ -194,6 +200,10 @@ class ConvexSet : public ShapeReifier {
 
   // Non-virtual interface implementations.
   virtual bool DoIsBounded() const = 0;
+
+  /** The default implementation returns nullopt. Sets that can model a single
+   * point should override with a custom implementation . */
+  virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
 
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;

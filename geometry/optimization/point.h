@@ -49,6 +49,10 @@ class Point final : public ConvexSet {
  private:
   bool DoIsBounded() const final { return true; }
 
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final {
+    return x_;
+  }
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
