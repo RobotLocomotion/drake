@@ -773,7 +773,6 @@ class RotationalInertia {
   }
   ///@}
 
- protected:
   /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   /// No check is done to determine if the result is physically valid.
   /// @param I_BP_E Rotational inertia of a body (or composite body) B to
@@ -799,6 +798,13 @@ class RotationalInertia {
     this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
     return *this;
   }
+
+ protected:
+  // Returns a constant reference to the underlying Eigen matrix. Notice that
+  // since RotationalInertia only uses the lower-triangular portion of its
+  // matrix, the three upper off-diagonal matrix elements will be NaN.
+  // Most users won't call this method.
+  const Matrix3<T>& get_matrix() const { return I_SP_E_; }
 
  private:
   // Make RotationalInertia<Scalar> templated on any other type Scalar be a
@@ -901,12 +907,6 @@ class RotationalInertia {
   static void check_and_swap(int* i, int* j) {
     if (!is_lower_triangular_order(*i, *j)) std::swap(*i, *j);
   }
-
-  // Returns a constant reference to the underlying Eigen matrix. Notice that
-  // since RotationalInertia only uses the lower-triangular portion of its
-  // matrix, the three upper off-diagonal matrix elements will be NaN.
-  // Most users won't call this method.
-  const Matrix3<T>& get_matrix() const { return I_SP_E_; }
 
   // Returns a const Eigen view expression to the symmetric part of the matrix
   // in use by this RotationalInertia.

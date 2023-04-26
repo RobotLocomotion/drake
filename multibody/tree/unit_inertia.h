@@ -183,6 +183,24 @@ class UnitInertia : public RotationalInertia<T> {
     return UnitInertia<T>(*this).ShiftToCenterOfMassInPlace(p_QBcm_E);
   }
 
+  /// Forms the 3 principal moments of inertia and their 3 associated principal
+  /// directions for `this` unit inertia about-point P, expressed-in a frame E.
+  /// @param[out] R_EP 3x3 right-handed orthonormal matrix which happens to be
+  /// the rotation matrix relating the expressed-in frame E to the frame P. The
+  /// 3 columns of R_EP are 3 orthogonal unit vectors Px_E, Py_E, Pz_E parallel
+  /// to `this` unit inertia's principal axes (each unit vector is expressed in
+  /// frame E). The unit vector Px_E in the 1ˢᵗ column corresponds to the 1ˢᵗ of
+  /// the returned 3 principal moments of inertia.
+  /// @returns The 3 principal moments of inertia [Ixx Iyy Izz] sorted in
+  /// ascending order.
+  /// @throws std::exception if the eigenvalue solver fails or if scalar type T
+  /// cannot be converted to a double.
+  /// @note: This method only works for a unit inertia with scalar type T that
+  /// that can be converted to a double (discarding any supplemental scalar data
+  /// such as derivatives of an AutoDiffXd).
+  Vector3<double> CalcPrincipalMomentsAndAxesOfInertia(
+      math::RotationMatrix<double>* R_EP) const;
+
   /// @name            Unit inertia for common 3D objects
   /// The following methods assist in the construction of %UnitInertia instances
   /// for common 3D objects such as boxes, spheres, rods and others.
