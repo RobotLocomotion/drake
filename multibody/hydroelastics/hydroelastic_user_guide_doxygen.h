@@ -587,7 +587,7 @@ indicate what can and cannot be done with hydroelastic contact.
   discrete mode.
 - You can visualize the contact surfaces, their pressure fields, and the
   resultant contact forces in MeshCat as the simulation progresses. However,
-  for playing back recodings in MeshCat, only the contact forces and moments
+  for playing back recordings in MeshCat, only the contact forces and moments
   are available (see issue
   [19142](https://github.com/RobotLocomotion/drake/issues/19142)).
 - All Drake Shape types can be used to create rigid hydroelastic bodies (this
@@ -597,7 +597,7 @@ indicate what can and cannot be done with hydroelastic contact.
   and rigid hydroelastic bodies.
 - The Drake Convex Shape type can be used both as a compliant hydroelastic body
   and a rigid hydroelastic body. To use Convex, add the custom tag
-  `<drake:declare_convex/>` tag under the `<mesh>` tag in either an SDF
+  `<drake:declare_convex/>` tag under the `<mesh>` tag in either an SDFormat
   or URDF file.
 - The Drake Mesh Shape type can be used as a compliant hydroelastic body
   using a tetrahedral mesh in VTK file.
