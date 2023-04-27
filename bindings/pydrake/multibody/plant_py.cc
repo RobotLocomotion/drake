@@ -10,6 +10,7 @@
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/type_pack.h"
+#include "drake/bindings/pydrake/common/type_safe_index_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -1497,11 +1498,22 @@ PYBIND11_MODULE(plant, m) {
         .def("RegisterDeformableBody", &Class::RegisterDeformableBody,
             py::arg("geometry_instance"), py::arg("config"),
             py::arg("resolution_hint"), cls_doc.RegisterDeformableBody.doc)
+        .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
+            py::arg("id"), py::arg("p_WQ"), py::arg("n_W"),
+            cls_doc.SetWallBoundaryCondition.doc)
         .def("GetDiscreteStateIndex", &Class::GetDiscreteStateIndex,
             py::arg("id"), cls_doc.GetDiscreteStateIndex.doc)
         .def("GetReferencePositions", &Class::GetReferencePositions,
             py::arg("id"), py_rvp::reference_internal,
             cls_doc.GetReferencePositions.doc)
+        .def(
+            "GetBodyId",
+            [](const Class* self, multibody::DeformableBodyIndex index) {
+              return self->GetBodyId(index);
+            },
+            py::arg("index"), cls_doc.GetBodyId.doc_1args_index)
+        .def("GetBodyIndex", &Class::GetBodyIndex, py::arg("id"),
+            cls_doc.GetBodyIndex.doc)
         .def("GetGeometryId", &Class::GetGeometryId, py::arg("id"),
             cls_doc.GetGeometryId.doc)
         .def(
@@ -1517,6 +1529,10 @@ PYBIND11_MODULE(plant, m) {
   {
     BindIdentifier<DeformableBodyId>(
         m, "DeformableBodyId", doc.DeformableBodyId.doc);
+  }
+  {
+    BindTypeSafeIndex<DeformableBodyIndex>(
+        m, "DeformableBodyIndex", doc.DeformableBodyIndex.doc);
   }
 
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },

@@ -2787,6 +2787,7 @@ class TestPlant(unittest.TestCase):
 
         geometry_id = dut.GetGeometryId(body_id)
         self.assertEqual(dut.GetBodyId(geometry_id), body_id)
+        dut.SetWallBoundaryCondition(body_id, [1, 1, -1], [0, 0, 1])
 
         # Verify that a body has been added to the model.
         self.assertEqual(dut.num_bodies(), 1)
@@ -2799,6 +2800,8 @@ class TestPlant(unittest.TestCase):
         # Turn on SAP and finalize.
         plant.set_discrete_contact_solver(DiscreteContactSolver.kSap)
         plant.Finalize()
+        body_index = dut.GetBodyIndex(body_id)
+        self.assertEqual(dut.GetBodyId(body_index), body_id)
 
         # Post-finalize operations.
         self.assertIsInstance(
