@@ -160,7 +160,7 @@ drake_cc_googletest(
     name = "detail_sdf_diagnostic_test",
     deps = [
         ":detail_sdf_diagnostic",
-        ":diagnostic_policy_test_base",
+        "//common/test_utilities:diagnostic_policy_test_base",
     ],
 )
 
@@ -390,17 +390,6 @@ drake_cc_library(
     ],
 )
 
-drake_cc_library(
-    name = "diagnostic_policy_test_base",
-    testonly = 1,
-    hdrs = ["test/diagnostic_policy_test_base.h"],
-    visibility = ["//visibility:private"],
-    deps = [
-        "//common:diagnostic_policy",
-        "@gtest//:without_main",
-    ],
-)
-
 drake_cc_googletest(
     name = "acrobot_parser_test",
     data = [
@@ -510,7 +499,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_mesh_parser",
-        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -520,7 +508,7 @@ drake_cc_googletest(
     name = "detail_select_parser_test",
     deps = [
         ":detail_select_parser",
-        ":diagnostic_policy_test_base",
+        "//common/test_utilities:diagnostic_policy_test_base",
     ],
 )
 
@@ -540,7 +528,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_parser",
-        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -556,7 +543,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
-        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities",
         "//multibody/benchmarks/acrobot",
@@ -573,8 +559,8 @@ drake_cc_googletest(
     ] + _DM_CONTROL_MUJOCO_FILES,
     deps = [
         ":detail_mujoco_parser",
-        ":diagnostic_policy_test_base",
         "//common:find_resource",
+        "//common/test_utilities:diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
@@ -587,7 +573,7 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_sdf_geometry",
-        ":diagnostic_policy_test_base",
+        "//common/test_utilities:diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//math:geometric_transform",
@@ -601,7 +587,6 @@ drake_cc_googletest(
     ],
     deps = [
         ":detail_urdf_parser",
-        ":diagnostic_policy_test_base",
         "//common:find_resource",
         "//common/test_utilities",
     ],
@@ -681,7 +666,7 @@ drake_cc_googletest(
     name = "detail_tinyxml_test",
     deps = [
         ":detail_misc",
-        ":diagnostic_policy_test_base",
+        "//common/test_utilities:diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
     ],
 )
@@ -690,7 +675,7 @@ drake_cc_googletest(
     name = "detail_tinyxml2_diagnostic_test",
     deps = [
         ":detail_misc",
-        ":diagnostic_policy_test_base",
+        "//common/test_utilities:diagnostic_policy_test_base",
     ],
 )
 
@@ -698,7 +683,7 @@ drake_cc_googletest(
     name = "detail_collision_filter_group_resolver_test",
     deps = [
         ":detail_misc",
-        ":diagnostic_policy_test_base",
+        "//common/test_utilities:diagnostic_policy_test_base",
     ],
 )
 
