@@ -28,6 +28,7 @@ from pydrake.multibody.tree import (
 )
 import pydrake.multibody.inverse_kinematics as ik
 import pydrake.solvers as mp
+from pydrake.symbolic import Expression, MakeVectorVariable, Variable
 from pydrake.systems.framework import DiagramBuilder, DiagramBuilder_
 from pydrake.geometry import (
     Box,
@@ -37,6 +38,7 @@ from pydrake.geometry import (
 from pydrake.math import RigidTransform
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import FindResourceOrThrow
+from pydrake.common.test_utilities import numpy_compare
 from pydrake.trajectories import PiecewisePolynomial
 
 Environment = namedtuple("Environment", [
@@ -180,6 +182,27 @@ class TestQuaternionEulerIntegrationConstraint(unittest.TestCase):
         dut = QuaternionEulerIntegrationConstraint(
             allow_quaternion_negation=True)
         self.assertIsInstance(dut, mp.Constraint)
+        self.assertTrue(dut.allow_quaternion_negation())
+        q1 = np.array([1, 0, 0, 0])
+        q2 = np.array([0, 1, 0, 0])
+        w = np.array([0.1, 0.2, 0.3])
+        h = 0.01
+        c = dut.ComposeVariable(quat1=q1, quat2=q2, angular_vel=w, h=h)
+        np.testing.assert_equal(c, np.concatenate((q1, q2, w, [h])))
+        q1 = MakeVectorVariable(4, "q1")
+        q2 = MakeVectorVariable(4, "q2")
+        w = MakeVectorVariable(3, "w")
+        h = Variable("h")
+        c = dut.ComposeVariable(quat1=q1, quat2=q2, angular_vel=w, h=h)
+        numpy_compare.assert_equal(c, np.concatenate((q1, q2, w, [h])))
+        q1 = np.array([
+            Expression(1), Expression(0), Expression(0), Expression(0)])
+        q2 = np.array([
+            Expression(1), Expression(0), Expression(0), Expression(0)])
+        w = np.array([Expression(1), Expression(0), Expression(0)])
+        h = Expression(0.01)
+        c = dut.ComposeVariable(quat1=q1, quat2=q2, angular_vel=w, h=h)
+        numpy_compare.assert_equal(c, np.concatenate((q1, q2, w, [h])))
 
 
 class TestSpatialVelocityConstraint(unittest.TestCase):
