@@ -101,6 +101,9 @@ cc_library(
 
 cc_library(
     name = "drake_shared_library",
+    data = [
+        ":.all_runfiles",
+    ],
     deps = [
         ":.drake_headers",
         "@eigen",
