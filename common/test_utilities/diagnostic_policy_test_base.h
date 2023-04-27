@@ -6,9 +6,9 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/diagnostic_policy.h"
+#include "drake/common/text_logging.h"
 
 namespace drake {
-namespace multibody {
 namespace test {
 
 using drake::internal::DiagnosticDetail;
@@ -100,7 +100,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   std::string FormatFirstError() {
     if (error_records_.empty()) {
       for (const auto& warning : warning_records_) {
-        drake::log()->warn(warning.FormatWarning());
+        log()->warn(warning.FormatWarning());
       }
       EXPECT_GT(error_records_.size(), 0)
           << "FormatFirstError did not get any errors";
@@ -113,7 +113,7 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
   // if there were no warnings). Also fails if there were any errors.
   std::string FormatFirstWarning() {
     for (const auto& error : error_records_) {
-      drake::log()->error(error.FormatError());
+      log()->error(error.FormatError());
     }
     EXPECT_TRUE(error_records_.empty());
     if (warning_records_.empty()) {
@@ -138,5 +138,4 @@ class DiagnosticPolicyTestBase : public ::testing::Test {
 };
 
 }  // namespace test
-}  // namespace multibody
 }  // namespace drake
