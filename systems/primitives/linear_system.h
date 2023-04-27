@@ -88,13 +88,11 @@ class LinearSystem : public AffineSystem<T> {
   /// etc.); pass a default-constructed object if such support is not desired.
   /// See @ref system_scalar_conversion for detailed background and examples
   /// related to scalar-type conversion support.
-  LinearSystem(
-      SystemScalarConverter converter,
-      const Eigen::Ref<const Eigen::MatrixXd>& A,
-      const Eigen::Ref<const Eigen::MatrixXd>& B,
-      const Eigen::Ref<const Eigen::MatrixXd>& C,
-      const Eigen::Ref<const Eigen::MatrixXd>& D,
-      double time_period);
+  LinearSystem(SystemScalarConverter converter,
+               const Eigen::Ref<const Eigen::MatrixXd>& A,
+               const Eigen::Ref<const Eigen::MatrixXd>& B,
+               const Eigen::Ref<const Eigen::MatrixXd>& C,
+               const Eigen::Ref<const Eigen::MatrixXd>& D, double time_period);
 };
 
 /// Base class for a discrete or continuous linear time-varying (LTV) system.
@@ -275,6 +273,16 @@ Eigen::MatrixXd ObservabilityMatrix(const LinearSystem<double>& sys);
 /// Returns true iff the observability matrix is full column rank.
 /// @ingroup estimator_systems
 bool IsObservable(const LinearSystem<double>& sys,
+                  std::optional<double> threshold = std::nullopt);
+
+/// Returns true iff the system is stabilizable.
+/// @ingroup control_systems
+bool IsStabilizable(const LinearSystem<double>& sys,
+                    std::optional<double> threshold = std::nullopt);
+
+/// Returns true iff the system is detectable.
+/// @ingroup estimator_systems
+bool IsDetectable(const LinearSystem<double>& sys,
                   std::optional<double> threshold = std::nullopt);
 
 }  // namespace systems
