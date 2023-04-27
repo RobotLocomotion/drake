@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/systems/analysis/integrator_base.h"
+#include "drake/systems/analysis/linear_system_property.h"
 #include "drake/systems/analysis/monte_carlo.h"
 #include "drake/systems/analysis/region_of_attraction.h"
 #include "drake/systems/analysis/runge_kutta2_integrator.h"
@@ -388,6 +389,17 @@ PYBIND11_MODULE(analysis, m) {
         py::arg("context"), py::arg("options") = RegionOfAttractionOptions(),
         doc.RegionOfAttraction.doc);
   }
+
+  // linear system properties
+  m.def("Controllable", &Controllable, py::arg("A"), py::arg("B"),
+       pydrake_doc.drake.systems.Controllable.doc)
+      .def("Observable", &Observable, py::arg("A"), py::arg("C"),
+          pydrake_doc.drake.systems.Observable.doc)
+      .def("Stabilizable", &Stabilizable, py::arg("A"), py::arg("B"),
+          py::arg("continuous_time"),
+          pydrake_doc.drake.systems.Stabilizable.doc)
+      .def("Detectable", &Detectable, py::arg("A"), py::arg("C"),
+          py::arg("continuous_time"), pydrake_doc.drake.systems.Detectable.doc);
 }
 
 }  // namespace pydrake

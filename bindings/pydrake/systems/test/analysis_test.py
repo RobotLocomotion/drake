@@ -1,6 +1,8 @@
 import copy
 import unittest
 
+import numpy as np
+
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.math import isnan
 from pydrake.symbolic import Variable, Expression
@@ -15,9 +17,12 @@ from pydrake.systems.primitives import (
 from pydrake.systems.framework import Context_, EventStatus
 from pydrake.systems.analysis import (
     ApplySimulatorConfig,
+    Controllable,
+    Detectable,
     ExtractSimulatorConfig,
     InitializeParams,
     IntegratorBase_,
+    Observable,
     PrintSimulatorStatistics,
     ResetIntegratorFromFlags,
     RungeKutta2Integrator, RungeKutta2Integrator_,
@@ -28,6 +33,7 @@ from pydrake.systems.analysis import (
     Simulator_,
     SimulatorConfig,
     SimulatorStatus,
+    Stabilizable,
 )
 from pydrake.trajectories import PiecewisePolynomial, PiecewisePolynomial_
 
@@ -284,3 +290,25 @@ class TestAnalysis(unittest.TestCase):
         self.assertLess(status.return_time(), 1.1)
         simulator.clear_monitor()
         self.assertIsNone(simulator.get_monitor())
+
+    def test_controllable(self):
+        A = np.array([[1, 0], [0, 2]])
+        B = np.array([[1], [2]])
+        self.assertTrue(Controllable(A=A, B=B))
+
+    def test_observable(self):
+        A = np.array([[1, 0], [0, 2]])
+        C = np.array([[1, 2]])
+        self.assertTrue(Observable(A=A, C=C))
+
+    def test_stabilizable(self):
+        A = np.array([[1, 0], [0, 2]])
+        B = np.array([[-1], [0]])
+        self.assertFalse(Stabilizable(A=A, B=B, continuous_time=True))
+        self.assertFalse(Stabilizable(A=A, B=B, continuous_time=False))
+
+    def test_detectable(self):
+        A = np.array([[1, 0], [0, -2]])
+        C = np.array([[1, 0]])
+        self.assertTrue(Detectable(A=A, C=C, continuous_time=True))
+        self.assertFalse(Detectable(A=A, C=C, continuous_time=False))

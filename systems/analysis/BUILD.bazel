@@ -27,6 +27,7 @@ drake_cc_package_library(
         ":initial_value_problem",
         ":instantaneous_realtime_rate_calculator",
         ":integrator_base",
+        ":linear_system_property",
         ":lyapunov",
         ":monte_carlo",
         ":radau_integrator",
@@ -187,6 +188,16 @@ drake_cc_library(
     hdrs = ["explicit_euler_integrator.h"],
     deps = [
         ":integrator_base",
+    ],
+)
+
+drake_cc_library(
+    name = "linear_system_property",
+    srcs = ["linear_system_property.cc"],
+    hdrs = ["linear_system_property.h"],
+    deps = [
+        "//common:essential",
+        "@eigen",
     ],
 )
 
@@ -597,6 +608,13 @@ drake_cc_googletest(
         "//systems/analysis/test_utilities:linear_scalar_system",
         "//systems/analysis/test_utilities:quadratic_scalar_system",
         "//systems/analysis/test_utilities:spring_mass_system",
+    ],
+)
+
+drake_cc_googletest(
+    name = "linear_system_property_test",
+    deps = [
+        ":linear_system_property",
     ],
 )
 
