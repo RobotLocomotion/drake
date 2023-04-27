@@ -5,10 +5,22 @@
 
 #include "drake/common/symbolic/polynomial.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/geometry/optimization/vpolytope.h"
 
 namespace drake {
 namespace trajectories {
 namespace {
+
+using drake::geometry::optimization::VPolytope;
+void CheckConvexHullProperty(const BezierCurve<double>& curve,
+                             int num_samples) {
+  VPolytope control_polytope = VPolytope(curve.control_points());
+  Eigen::VectorXd samples = Eigen::VectorXd::LinSpaced(
+      num_samples, curve.start_time(), curve.end_time());
+  for (int i = 0; i < num_samples; ++i) {
+    EXPECT_TRUE(control_polytope.PointInSet(curve.value(samples(i))));
+  }
+}
 
 // Line segment from (1,3) to (2,7).
 GTEST_TEST(BezierCurveTest, Linear) {
@@ -37,6 +49,10 @@ GTEST_TEST(BezierCurveTest, Linear) {
 
   EXPECT_TRUE(
       CompareMatrices(curve.EvalDerivative(2.5), Eigen::Vector2d(1, 4), 1e-14));
+
+  const int num_samples{1000};
+  CheckConvexHullProperty(curve, num_samples);
+  CheckConvexHullProperty(deriv_bezier, num_samples);
 }
 
 // Quadratic curve: [ (1-t)²; t^2 ]
@@ -102,6 +118,10 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(curve_expression(i).is_polynomial());
     EXPECT_EQ(symbolic::Polynomial(curve_expression(i)).TotalDegree(), 2);
   }
+
+  const int num_samples{1000};
+  CheckConvexHullProperty(curve, num_samples);
+  CheckConvexHullProperty(deriv_bezier, num_samples);
 }
 
 GTEST_TEST(BezierCurve, Clone) {
