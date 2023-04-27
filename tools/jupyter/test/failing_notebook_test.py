@@ -21,4 +21,7 @@ class TestFailingNotebook(unittest.TestCase):
         self.assertEqual(p.poll(), 1)
         message = stdout.decode("utf8")
         self.assertIn("CellExecutionError", message)
-        self.assertIn("DrakeDeprecationWarning: Deprecation example", message)
+        # NOTE: there can be color codes between the DrakeDeprecationWarning
+        # and the warning test, so assert for each separately.
+        self.assertIn("DrakeDeprecationWarning", message)
+        self.assertIn("Deprecation example", message)
