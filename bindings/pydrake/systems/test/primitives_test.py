@@ -33,7 +33,9 @@ from pydrake.systems.primitives import (
     Gain, Gain_,
     Integrator, Integrator_,
     IsControllable,
+    IsDetectable,
     IsObservable,
+    IsStabilizable,
     Linearize,
     LinearSystem, LinearSystem_,
     LinearTransformDensity, LinearTransformDensity_,
@@ -151,9 +153,13 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(Co.shape, (2, 2))
         self.assertFalse(IsControllable(system))
         self.assertFalse(IsControllable(system, 1e-6))
+        self.assertFalse(IsStabilizable(sys=system))
+        self.assertFalse(IsStabilizable(sys=system, threshold=1e-6))
         Ob = ObservabilityMatrix(system)
         self.assertEqual(Ob.shape, (2, 2))
         self.assertFalse(IsObservable(system))
+        self.assertFalse(IsDetectable(sys=system))
+        self.assertFalse(IsDetectable(sys=system, threshold=1e-6))
 
         system = AffineSystem(A, B, f0, C, D, y0, .1)
         self.assertEqual(system.get_input_port(0), system.get_input_port())

@@ -299,6 +299,55 @@ bool IsObservable(const LinearSystem<double>& sys,
   return lu_decomp.rank() == sys.A().rows();
 }
 
+namespace {
+bool IsStabilizable(const Eigen::Ref<const Eigen::MatrixXd>& A,
+                    const Eigen::Ref<const Eigen::MatrixXd>& B,
+                    bool continuous_time, std::optional<double> threshold) {
+  // (A, B) is stabilizable if [(λI - A) B] is full rank for all unstable
+  // eigenvalues.
+  DRAKE_DEMAND(A.rows() == A.cols());
+  DRAKE_DEMAND(A.rows() == B.rows());
+  Eigen::EigenSolver<Eigen::MatrixXd> es(A);
+  DRAKE_DEMAND(es.info() == Eigen::Success);
+  for (int i = 0; i < es.eigenvalues().size(); ++i) {
+    bool stable_mode = false;
+    if (continuous_time) {
+      stable_mode = es.eigenvalues()(i).real() < 0;
+    } else {
+      stable_mode = std::norm(es.eigenvalues()(i)) < 1;
+    }
+    if (!stable_mode) {
+      Eigen::MatrixXcd mat(A.rows(), A.cols() + B.cols());
+      mat.leftCols(A.cols()) =
+          es.eigenvalues()(i) * Eigen::MatrixXd::Identity(A.rows(), A.cols()) -
+          A;
+      mat.rightCols(B.cols()) = B;
+      Eigen::ColPivHouseholderQR<Eigen::MatrixXcd> qr(mat);
+      if (threshold) {
+        qr.setThreshold(*threshold);
+      }
+      DRAKE_DEMAND(qr.info() == Eigen::Success);
+      if (qr.rank() < A.rows()) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+}  // namespace
+
+bool IsStabilizable(const LinearSystem<double>& sys,
+                    std::optional<double> threshold) {
+  return IsStabilizable(sys.A(), sys.B(), sys.time_period() <= 0, threshold);
+}
+
+bool IsDetectable(const LinearSystem<double>& sys,
+                  std::optional<double> threshold) {
+  // The system (C, A) is detectable iff (A', C') is stabilizable.;
+  return IsStabilizable(sys.A().transpose(), sys.C().transpose(),
+                        sys.time_period() <= 0, threshold);
+}
+
 }  // namespace systems
 }  // namespace drake
 

@@ -762,6 +762,12 @@ PYBIND11_MODULE(primitives, m) {
 
   m.def("IsObservable", &IsObservable, py::arg("sys"),
       py::arg("threshold") = std::nullopt, doc.IsObservable.doc);
+
+  m.def("IsStabilizable", &IsStabilizable, py::arg("sys"),
+      py::arg("threshold") = std::nullopt, doc.IsStabilizable.doc);
+
+  m.def("IsDetectable", &IsDetectable, py::arg("sys"),
+      py::arg("threshold") = std::nullopt, doc.IsDetectable.doc);
 }  // NOLINT(readability/fn_size)
 
 }  // namespace pydrake

@@ -547,6 +547,70 @@ GTEST_TEST(TestLinearize, Observability2) {
   EXPECT_TRUE(CompareMatrices(ObservabilityMatrix(sys), O, 1e-14));
 }
 
+GTEST_TEST(Stabilizable, test1) {
+  // Test symmetric A.
+  Eigen::Matrix2d A;
+  // clang-format off
+  A << -2, 0,
+        0, 2;
+  // clang-format on
+  const Eigen::Vector2d B(0, 1);
+  const Eigen::Matrix2d C = Eigen::Matrix2d::Identity();
+  const Eigen::Matrix<double, 2, 0> D;
+
+  const LinearSystem<double> continuous_sys(A, B, C, D, 0.);
+  // The unstable mode λ=2 is stabilizable.
+  EXPECT_TRUE(IsStabilizable(continuous_sys));
+  EXPECT_FALSE(IsControllable(continuous_sys));
+
+  const LinearSystem<double> discrete_sys(A, B, C, D, 0.1);
+  // The unstable mode λ=-2 is not stabilizable.
+  EXPECT_FALSE(IsStabilizable(discrete_sys));
+  EXPECT_FALSE(IsControllable(discrete_sys));
+}
+
+GTEST_TEST(Stabilizable, test2) {
+  // Test asymmetric A.
+  Eigen::Matrix2d A;
+  // clang-format off
+  A << -2, 1,
+        0, 2;
+  // clang-format on
+  const Eigen::Vector2d B(0, 1);
+  const Eigen::Matrix2d C = Eigen::Matrix2d::Identity();
+  const Eigen::Matrix<double, 2, 0> D;
+
+  const LinearSystem<double> continuous_sys(A, B, C, D, 0.);
+  // The unstable mode λ=2 is stabilizable.
+  EXPECT_TRUE(IsStabilizable(continuous_sys));
+  EXPECT_TRUE(IsControllable(continuous_sys));
+
+  const LinearSystem<double> discrete_sys(A, B, C, D, 0.1);
+  // The unstable mode λ=-2 and 2 are stabilizable.
+  EXPECT_TRUE(IsStabilizable(discrete_sys));
+  EXPECT_TRUE(IsControllable(discrete_sys));
+}
+
+GTEST_TEST(Detectable, test) {
+  Eigen::Matrix3d A;
+  // clang-format off
+  A << -0.4, 0, 0,
+          0, 3, 0,
+          0, 0, -2;
+  // clang-format on
+  Eigen::Matrix<double, 3, 0> B;
+  const Eigen::RowVector3d C(1, 1, 0);
+  const Eigen::Matrix<double, 1, 0> D;
+
+  const LinearSystem<double> continuous_sys(A, B, C, D, 0.);
+  EXPECT_TRUE(IsDetectable(continuous_sys));
+  EXPECT_FALSE(IsObservable(continuous_sys));
+
+  const LinearSystem<double> discrete_sys(A, B, C, D, 0.1);
+  EXPECT_FALSE(IsDetectable(discrete_sys));
+  EXPECT_FALSE(IsObservable(discrete_sys));
+}
+
 class LinearSystemSymbolicTest : public ::testing::Test {
  public:
   LinearSystemSymbolicTest() = default;
