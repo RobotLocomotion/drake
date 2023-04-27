@@ -12,5 +12,4 @@ install(
     visibility = ["//visibility:public"],
 )
 
-
 add_lint_tests()

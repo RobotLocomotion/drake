@@ -15,8 +15,6 @@
 #include <utility>
 #include <vector>
 
-#include <iostream>
-
 #include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/autodiff.h"
