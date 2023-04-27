@@ -5,7 +5,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/temp_directory.h"
-#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
+#include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 
 namespace drake {
 namespace multibody {

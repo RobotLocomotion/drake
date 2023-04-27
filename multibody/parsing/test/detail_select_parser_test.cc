@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
+#include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 
 namespace drake {
 namespace multibody {
