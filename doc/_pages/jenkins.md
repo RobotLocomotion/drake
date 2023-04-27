@@ -116,15 +116,14 @@ updated. She will then respond on when it is appropriate to merge the PR.
 To schedule an "experimental" build of the [binary packages](/from_binary.html),
 comment on an open pull request as follows:
 
-* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
-* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-snopt-packaging please``
+* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-monterey-unprovisioned-clang-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
-to schedule a build of one of the following jobs from the Jenkins user
-interface:
-
-* linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging
-* mac-x86-monterey-unprovisioned-clang-bazel-experimental-snopt-packaging
+to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
+jobs with **experimental** in its name.
 
 The URL from which to download the built package will be indicated in the
 Jenkins console log for the completed build, for example:
