@@ -141,7 +141,7 @@ class TestMeldis(unittest.TestCase):
 
         # The geometry isn't registered until the load is processed.
         self.assertEqual(meshcat.HasPath("/DRAKE_VIEWER"), False)
-        link_path = "/DRAKE_VIEWER/2/plant/acrobot/Link2/0"
+        link_path = "/DRAKE_VIEWER/2/plant/Link2/0"
         self.assertEqual(meshcat.HasPath(link_path), False)
 
         # Process the load + draw; make sure the geometry exists now.
@@ -210,7 +210,7 @@ class TestMeldis(unittest.TestCase):
             # The first time around, the link won't be added until the DRAW
             # message arrives. The second time around, the link should still
             # be intact from the first time (i.e., no `Delete` occurred).
-            link_path = "/DRAKE_VIEWER/2/plant/acrobot/Link2/0"
+            link_path = "/DRAKE_VIEWER/2/plant/Link2/0"
             if i == 0:
                 self.assertFalse(meshcat.HasPath(link_path))
             else:
@@ -320,9 +320,9 @@ class TestMeldis(unittest.TestCase):
 
         # The geometry isn't registered until the load is processed.
         hydro_path = "/CONTACT_RESULTS/hydroelastic/" + \
-                     "body1.two_bodies::body1_collision+body2"
+                     "body1.body1_collision+body2"
         hydro_path2 = "/CONTACT_RESULTS/hydroelastic/" + \
-                      "body1.two_bodies::body1_collision2+body2"
+                      "body1.body1_collision2+body2"
         self.assertEqual(meshcat.HasPath(hydro_path), False)
         self.assertEqual(meshcat.HasPath(hydro_path2), False)
 
