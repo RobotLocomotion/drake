@@ -80,6 +80,12 @@ class GcsTrajectoryOptimization final {
       return regions_;
     }
 
+    /** Adds a minimum time cost to all regions in the subgraph. The cost is the
+    sum of the time scaling variables.
+    @param weight is the relative weight of the cost.
+    */
+    void AddTimeCost(double weight = 1.0);
+
     /** Adds multiple L2Norm Costs on the upper bound of the path length.
     Since we cannot directly compute the path length of a Bézier curve, we
     minimize the upper bound of the path integral by minimizing the sum of
@@ -262,6 +268,16 @@ class GcsTrajectoryOptimization final {
       const Subgraph& from_subgraph, const Subgraph& to_subgraph,
       const geometry::optimization::ConvexSet* subspace = nullptr);
 
+  /** Adds a minimum time cost to all regions in the whole graph. The cost is
+  the sum of the time scaling variables.
+
+  This cost will be added to the entire graph. Note that this cost
+  will be applied even to subgraphs added in the future.
+
+  @param weight is the relative weight of the cost.
+  */
+  void AddTimeCost(double weight = 1.0);
+
   /** Adds multiple L2Norm Costs on the upper bound of the path length.
   Since we cannot directly compute the path length of a Bézier curve, we
   minimize the upper bound of the path integral by minimizing the sum of
@@ -337,6 +353,7 @@ class GcsTrajectoryOptimization final {
   // Store the subgraphs by reference.
   std::vector<std::unique_ptr<Subgraph>> subgraphs_;
   std::vector<std::unique_ptr<EdgesBetweenSubgraphs>> subgraph_edges_;
+  std::vector<double> global_time_costs_;
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
 };
 
