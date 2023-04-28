@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace math {
@@ -33,13 +34,26 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
   // half have strictly positive real parts.
   if (H.determinant() == 0) {
     // If H.determinant() is 0, then H must have at least one eigenvalue being
-    // 0, contradicting to the requirement on H.
+    // 0, contradicting to the requirement on H. This is a sufficient condition
+    // for the system being stabilizable and detectable, and checking the
+    // determinant is cheap.
     throw std::runtime_error(
         "ContinuousAlgebraicRiccatiEquation fails. The Hamiltonian is not "
         "invertible. Either your (A, B) is not stabilizable, or (Q, A) is not "
         "detectable.");
-    // TODO(hongkai.dai): actually check if (A, B) is stabilizable and (Q, A) is
-    // detectable.
+  }
+  // Now we actually check if the system is stabilizable and detectable.
+  const systems::LinearSystem<double> sys(
+      A, B, Q, Eigen::MatrixXd::Zero(Q.rows(), 0), 0 /* time_period=0.*/);
+  if (!systems::IsStabilizable(sys)) {
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation fails. The system is not "
+        "stabilizable.");
+  }
+  if (!systems::IsDetectable(sys)) {
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation fails. The system is not "
+        "detectable.");
   }
 
   Eigen::MatrixXd Z = H;

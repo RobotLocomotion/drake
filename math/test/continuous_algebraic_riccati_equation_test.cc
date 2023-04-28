@@ -98,6 +98,25 @@ GTEST_TEST(CARE, TestUndetectable) {
   DRAKE_EXPECT_THROWS_MESSAGE(ContinuousAlgebraicRiccatiEquation(A, B, Q, R),
                               "ContinuousAlgebraicRiccatiEquation fails.*");
 
+  // Undetectable (Q, A)
+  A.resize(2, 2);
+  // clang-format off
+  A << 1, 2,
+       0, 2;
+  // clang-format on
+  Q.resize(2, 2);
+  // clang-format off
+  Q << 0, 0,
+       0, 1;
+  // clang-format on
+  B.resize(2, 1);
+  B << 1, 1;
+  R.resize(1, 1);
+  R << 1;
+  DRAKE_EXPECT_THROWS_MESSAGE(ContinuousAlgebraicRiccatiEquation(A, B, Q, R),
+                              "ContinuousAlgebraicRiccatiEquation fails. The "
+                              "system is not detectable.");
+
   // Test an example in which (A, B) is stabilizable and (Q, A) is detectable
   // but (Q, A) is not observable. The example was created by Thomas Cohn in
   // https://github.com/RobotLocomotion/drake/pull/19222#issuecomment-1516939077
@@ -133,6 +152,16 @@ GTEST_TEST(Care, TestUnstabilizable) {
   DRAKE_EXPECT_THROWS_MESSAGE(ContinuousAlgebraicRiccatiEquation(A, B, Q, R),
                               "ContinuousAlgebraicRiccatiEquation fails.*");
 
+  // (A, B) is not stabilizable.
+  // clang-format off
+  A << 1, -1,
+       0, 2;
+  // clang-format on
+  B << 1, -1;
+  DRAKE_EXPECT_THROWS_MESSAGE(ContinuousAlgebraicRiccatiEquation(A, B, Q, R),
+                              "ContinuousAlgebraicRiccatiEquation fails. The "
+                              "system is not stabilizable.");
+
   // The pair (A, B) is stabilizable (but not controllable), so the Riccati
   // equation should have a solution.
   // clang-format off
@@ -142,7 +171,6 @@ GTEST_TEST(Care, TestUnstabilizable) {
   B << 10, 4;
   SolveCAREandVerify(A, B, Q, R, true /* is_X_pd */);
 }
-
 }  // namespace
 }  // namespace math
 }  // namespace drake
