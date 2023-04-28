@@ -8,6 +8,68 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
+Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
+      math::RotationMatrix<double>* principal_directions) const {
+  // 1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffXd.
+  //    Therefore, convert `this` to a local copy of type Matrix3<double>.
+  // 2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
+  //    of this symmetric matrix.
+  static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
+  static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
+  static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+  const Matrix3<T>& I_BP_E = get_matrix();
+  Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
+  I_double(0, 0) = ExtractDoubleOrThrow(I_BP_E(0, 0));
+  I_double(1, 1) = ExtractDoubleOrThrow(I_BP_E(1, 1));
+  I_double(2, 2) = ExtractDoubleOrThrow(I_BP_E(2, 2));
+  I_double(1, 0) = ExtractDoubleOrThrow(I_BP_E(1, 0));
+  I_double(2, 0) = ExtractDoubleOrThrow(I_BP_E(2, 0));
+  I_double(2, 1) = ExtractDoubleOrThrow(I_BP_E(2, 1));
+
+  // If all products of inertia are zero, no need to calculate eigenvalues.
+  // The eigenvalues are diagonal elements and eigenvectors are identity matrix.
+  const bool is_diagonal = (I_double(1, 0) == 0 && I_double(2, 0) == 0 &&
+                            I_double(2, 1) == 0);
+  if (is_diagonal) {
+    if (principal_directions != nullptr)
+      *principal_directions = math::RotationMatrix<double>::Identity();
+    // Sort the eigenvalues in ascending order.
+    Vector3<double> moments(I_double(0, 0), I_double(1, 1), I_double(2, 2));
+    std::sort(moments.data(), moments.data() + moments.size());
+    return moments;
+  }
+
+  // Calculate eigenvalues, possibly with eigenvectors.
+  Eigen::SelfAdjointEigenSolver<Matrix3<double>> eig_solve;
+  const int compute_Eigenvectors = principal_directions != nullptr ?
+      Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly;
+  eig_solve.compute(I_double, compute_Eigenvectors);
+  if (eig_solve.info() != Eigen::Success) {
+    const std::string error_message = fmt::format(
+        "{}(): Unable to calculate the eigenvalues or eigenvectors of the "
+        "3x3 matrix associated with a RotationalInertia.", __func__);
+    throw std::logic_error(error_message);
+  }
+
+  // The eigen solver orders the storage of eigenvalues in increasing value and
+  // orders the storage of their corresponding eigenvectors similarly.
+  // Note: Since the unit inertia 3x3 matrix should be positive semi-definite,
+  // all the eigenvalues should be non-negative.
+  if (principal_directions != nullptr) {
+    // Form a right-handed orthogonal set of unit vectors Bx, By, Bz with the
+    // 1st and 2nd eigenvectors and their cross-product. Unit vectors Bx, By, Bz
+    // are expressed in the same frame E as `this` UnitInertia.
+    const Vector3<double>& Bx_E = eig_solve.eigenvectors().col(0);
+    const Vector3<double>& By_E = eig_solve.eigenvectors().col(1);
+    const Vector3<double> Bz_E = Bx_E.cross(By_E);  // Ensure right-handed set.
+    *principal_directions =
+        math::RotationMatrix<double>::MakeFromOrthonormalColumns(Bx_E, By_E,
+                                                                 Bz_E);
+  }
+  return eig_solve.eigenvalues();
+}
+
+template <typename T>
 void RotationalInertia<T>::ThrowNotPhysicallyValid(const char* func_name)
     const {
   std::string error_message = fmt::format(

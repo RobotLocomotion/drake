@@ -541,41 +541,26 @@ class RotationalInertia {
   /// @throws std::exception if eigenvalue solver fails or if scalar type T
   ///         cannot be converted to a double.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
-    // Notes:
-    //   1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffXd.
-    //      Therefore, convert `this` to a local copy of type Matrix3<double>.
-    //   2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
-    //      of this symmetric matrix.
-    static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
-    static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
-    static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
-    Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
-    I_double(0, 0) = ExtractDoubleOrThrow(I_SP_E_(0, 0));
-    I_double(1, 1) = ExtractDoubleOrThrow(I_SP_E_(1, 1));
-    I_double(2, 2) = ExtractDoubleOrThrow(I_SP_E_(2, 2));
-    I_double(1, 0) = ExtractDoubleOrThrow(I_SP_E_(1, 0));
-    I_double(2, 0) = ExtractDoubleOrThrow(I_SP_E_(2, 0));
-    I_double(2, 1) = ExtractDoubleOrThrow(I_SP_E_(2, 1));
-
-    // If all products of inertia are zero, no need to calculate eigenvalues.
-    // The eigenvalues are the diagonal elements.  Sort them in ascending order.
-    const bool is_diagonal = (I_double(1, 0) == 0 && I_double(2, 0) == 0 &&
-                              I_double(2, 1) == 0);
-    if (is_diagonal) {
-      Vector3<double> moments(I_double(0, 0), I_double(1, 1), I_double(2, 2));
-      std::sort(moments.data(), moments.data() + moments.size());
-      return moments;
-    }
-
-    Eigen::SelfAdjointEigenSolver<Matrix3<double>> solver(
-        I_double, Eigen::EigenvaluesOnly);
-    if (solver.info() != Eigen::Success) {
-      throw std::runtime_error(
-          "Error: In RotationalInertia::CalcPrincipalMomentsOfInertia()."
-          " Solver failed while computing eigenvalues of the inertia matrix.");
-    }
-    return solver.eigenvalues();
+    return CalcPrincipalMomentsAndAxesOfInertia(nullptr);
   }
+
+  /// Forms the 3 principal moments of inertia and their 3 associated principal
+  /// directions for `this` unit inertia about-point P, expressed-in a frame E.
+  /// @param[out] R_EP 3x3 right-handed orthonormal matrix which happens to be
+  /// the rotation matrix relating the expressed-in frame E to the frame P. The
+  /// 3 columns of R_EP are 3 orthogonal unit vectors Px_E, Py_E, Pz_E parallel
+  /// to `this` unit inertia's principal axes (each unit vector is expressed in
+  /// frame E). The unit vector Px_E in the 1ˢᵗ column corresponds to the 1ˢᵗ of
+  /// the returned 3 principal moments of inertia.
+  /// @returns The 3 principal moments of inertia [Ixx Iyy Izz] sorted in
+  /// ascending order.
+  /// @throws std::exception if the eigenvalue solver fails or if scalar type T
+  /// cannot be converted to a double.
+  /// @note: This method only works for a unit inertia with scalar type T that
+  /// that can be converted to a double (discarding any supplemental scalar data
+  /// such as derivatives of an AutoDiffXd).
+  Vector3<double> CalcPrincipalMomentsAndAxesOfInertia(
+      math::RotationMatrix<double>* R_EP) const;
 
   /// Performs several necessary checks to verify whether `this` rotational
   /// inertia *could* be physically valid, including:
@@ -780,6 +765,7 @@ class RotationalInertia {
   }
   ///@}
 
+ protected:
   /// Subtracts a rotational inertia `I_BP_E` from `this` rotational inertia.
   /// No check is done to determine if the result is physically valid.
   /// @param I_BP_E Rotational inertia of a body (or composite body) B to
@@ -805,13 +791,6 @@ class RotationalInertia {
     this->get_mutable_triangular_view() -= I_BP_E.get_matrix();
     return *this;
   }
-
- protected:
-  // Returns a constant reference to the underlying Eigen matrix. Notice that
-  // since RotationalInertia only uses the lower-triangular portion of its
-  // matrix, the three upper off-diagonal matrix elements will be NaN.
-  // Most users won't call this method.
-  const Matrix3<T>& get_matrix() const { return I_SP_E_; }
 
  private:
   // Make RotationalInertia<Scalar> templated on any other type Scalar be a
@@ -914,6 +893,12 @@ class RotationalInertia {
   static void check_and_swap(int* i, int* j) {
     if (!is_lower_triangular_order(*i, *j)) std::swap(*i, *j);
   }
+
+  // Returns a constant reference to the underlying Eigen matrix. Notice that
+  // since RotationalInertia only uses the lower-triangular portion of its
+  // matrix, the three upper off-diagonal matrix elements will be NaN.
+  // Most users won't call this method.
+  const Matrix3<T>& get_matrix() const { return I_SP_E_; }
 
   // Returns a const Eigen view expression to the symmetric part of the matrix
   // in use by this RotationalInertia.
