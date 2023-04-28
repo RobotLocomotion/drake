@@ -147,6 +147,9 @@ using MatrixLikewise = Eigen::Matrix<Scalar,
     Derived::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor,
     Derived::MaxRowsAtCompileTime, Derived::MaxColsAtCompileTime>;
 
+/// A fully dynamic Eigen stride.
+using StrideX = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+
 /// A quaternion templated on scalar type.
 template <typename Scalar>
 using Quaternion = Eigen::Quaternion<Scalar>;

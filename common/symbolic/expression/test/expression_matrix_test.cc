@@ -157,6 +157,19 @@ TEST_F(SymbolicExpressionMatrixTest, EigenMul4) {
   EXPECT_EQ(M, M_expected);
 }
 
+TEST_F(SymbolicExpressionMatrixTest, EigenDot) {
+  const auto vec = Vector3<Expression>(x_, y_, z_);
+  const Expression expected = (x_ * x_) + (y_ * y_) + (z_ * z_);
+
+  const Expression dot1 = vec.dot(vec);
+  const Expression dot2 = vec.transpose() * vec;
+  const Eigen::Matrix<Expression, 1, 1> dot3 = vec.transpose() * vec;
+
+  EXPECT_TRUE(ExprEqual(dot1, expected));
+  EXPECT_TRUE(ExprEqual(dot2, expected));
+  EXPECT_TRUE(ExprEqual(dot3(0), expected));
+}
+
 TEST_F(SymbolicExpressionMatrixTest, EigenDiv) {
   auto const M(A_ / 2.0);
   Eigen::Matrix<Expression, 3, 2> M_expected;
