@@ -472,6 +472,15 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "math_overloads_matrix_test",
+    deps = [
+        ":math_py",
+        "//bindings/pydrake/common/test_utilities:meta_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
     name = "perception_test",
     deps = [
         ":perception_py",
