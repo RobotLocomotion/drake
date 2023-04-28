@@ -51,6 +51,10 @@ void Point::set_x(const Eigen::Ref<const Eigen::VectorXd>& x) {
   x_ = x;
 }
 
+std::optional<Eigen::VectorXd> Point::DoMaybeGetPoint() const {
+  return x_;
+}
+
 bool Point::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                          double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
