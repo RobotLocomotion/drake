@@ -95,7 +95,7 @@ class ZmpPlanner {
   void Plan(const trajectories::PiecewisePolynomial<double>& zmp_d,
             const Eigen::Vector4d& x0, double height, double gravity = 9.81,
             const Eigen::Matrix2d& Qy = Eigen::Matrix2d::Identity(),
-            const Eigen::Matrix2d& R = Eigen::Matrix2d::Zero());
+            const Eigen::Matrix2d& R = 0.1 * Eigen::Matrix2d::Identity());
 
   /**
    Returns true if Plan() has been called.
