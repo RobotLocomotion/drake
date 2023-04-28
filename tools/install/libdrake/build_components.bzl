@@ -86,6 +86,5 @@ LIBDRAKE_COMPONENTS = [
     "//systems/primitives",
     "//systems/rendering",
     "//systems/sensors",
-    "//systems/trajectory_optimization",
     "//visualization",
 ]

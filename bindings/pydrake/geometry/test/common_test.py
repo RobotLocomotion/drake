@@ -393,9 +393,6 @@ class TestGeometryCore(unittest.TestCase):
             shape_copy = shape.Clone()
             self.assertIsInstance(shape_copy, shape_cls)
             self.assertIsNot(shape, shape_copy)
-        with catch_drake_warnings(expected_count=2):
-            mut.Mesh(absolute_filename="arbitrary/path", scale=1.0),
-            mut.Convex(absolute_filename="arbitrary/path", scale=1.0),
 
     def test_shapes(self):
         # We'll test some invariants on all shapes as inherited from the Shape

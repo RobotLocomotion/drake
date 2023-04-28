@@ -12,7 +12,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_frame.h"
@@ -434,15 +433,6 @@ void DoScalarIndependentDefinitions(py::module m) {
               return Convex(info.first, info.second);
             }));
 
-    constexpr char doc_ConvexInitWithArgumentNameAbsoluteFilename[] =
-        "Convex(absolute_filename=...) is deprecated, and will be removed on "
-        "or around 2023-05-01.  Please use Convex(filename=...) instead.";
-
-    convex_cls.def(py_init_deprecated<Convex, std::string, double>(
-                       doc_ConvexInitWithArgumentNameAbsoluteFilename),
-        py::arg("absolute_filename"), py::arg("scale") = 1.0,
-        doc_ConvexInitWithArgumentNameAbsoluteFilename);
-
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc_2args)
@@ -493,15 +483,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             [](std::pair<std::string, double> info) {
               return Mesh(info.first, info.second);
             }));
-
-    constexpr char doc_MeshInitWithArgumentNameAbsoluteFilename[] =
-        "Mesh(absolute_filename=...) is deprecated, and will be removed on "
-        "or around 2023-05-01.  Please use Mesh(filename=...) instead.";
-
-    mesh_cls.def(py_init_deprecated<Mesh, std::string, double>(
-                     doc_MeshInitWithArgumentNameAbsoluteFilename),
-        py::arg("absolute_filename"), py::arg("scale") = 1.0,
-        doc_MeshInitWithArgumentNameAbsoluteFilename);
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)
