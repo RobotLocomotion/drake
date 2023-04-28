@@ -57,6 +57,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
 }
 
+// TODO(wrangelvid) Add a dedicated test comparing time cost to path length
+// cost. Velocity bounds are required for that.
+
 GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidPositions) {
   /* Positions passed into GcsTrajectoryOptimization must be greater than 0.*/
   DRAKE_EXPECT_THROWS_MESSAGE(GcsTrajectoryOptimization(0),
@@ -416,6 +419,7 @@ TEST_F(SimpleEnv2D, MultiStartGoal) {
   gcs.AddEdges(regions, target);
 
   gcs.AddPathLengthCost();
+  gcs.AddTimeCost();
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
@@ -507,6 +511,7 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
 
   // We can add different costs to the individual subgraphs.
   main1.AddPathLengthCost(5);
+  main1.AddTimeCost(1);
 
   // This weight matrix penalizes movement in the y direction three times more
   // than in the x direction.
