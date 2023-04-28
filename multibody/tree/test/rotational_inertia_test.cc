@@ -12,6 +12,7 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/tree/unit_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -518,6 +519,55 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
   EXPECT_TRUE(CompareMatrices(expected_principal_moments,
                               principal_moments,
                               kTolerance, MatrixCompareType::absolute));
+}
+
+// Tests the method to obtain the principal moments of inertia and axes.
+GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
+  const double a = 5.0;
+  const double b = 4.0;
+  const double c = 3.0;
+  const UnitInertia<double> G_BBcm_B =
+      UnitInertia<double>::SolidEllipsoid(a, b, c);
+
+  // Ensure UnitInertia can calculate principal moments and principal axes.
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+  drake::math::RotationMatrix<double> R_BP;
+  const Vector3<double> G_principal_moments =
+      G_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
+  EXPECT_TRUE(CompareMatrices(G_BBcm_B.get_moments(),
+                              G_principal_moments, kTolerance));
+  EXPECT_TRUE(G_BBcm_B.get_products() == Vector3<double>::Zero());
+  EXPECT_TRUE(R_BP.IsExactlyIdentity());
+
+  // For mass = 3 kg, ensure RotationalInertia calculates the same principal
+  // axes as UnitInertia (above) with thrice the moments of inertia.
+  const double mass = 3.0;
+  const RotationalInertia<double> I_BBcm_B = mass * G_BBcm_B;
+  const Vector3<double> I_BBcm_B_principal_moments =
+      I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
+  EXPECT_TRUE(R_BP.IsExactlyIdentity());
+  EXPECT_TRUE(CompareMatrices(I_BBcm_B_principal_moments,
+      mass * G_principal_moments, kTolerance));
+  EXPECT_TRUE(I_BBcm_B.get_products() == Vector3<double>::Zero());
+
+  // Rotate the ellipsoid by 30 degrees and verify principal moments/axes.
+  const drake::math::RotationMatrix<double> R_BC =
+      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  const RotationalInertia<double> I_BBcm_C = I_BBcm_B.ReExpress(R_BC);
+  const Vector3<double> I_BBcm_C_principal_moments =
+      I_BBcm_C.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
+  EXPECT_TRUE(CompareMatrices(I_BBcm_C_principal_moments,
+      I_BBcm_B_principal_moments, kTolerance));
+  EXPECT_FALSE(I_BBcm_C.get_products() == Vector3<double>::Zero());
+
+  // Unit length eigenvectors Px_B, Py_B, Pz_B stored in the columns of R_BP
+  // should be parallel to unit vectors Cx_B, Cy_B, Cz_B in the columns of R_BC.
+  const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BP.col(0);
+  const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BP.col(1);
+  const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BP.col(2);
+  EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);
+  EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);
+  EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() for a
