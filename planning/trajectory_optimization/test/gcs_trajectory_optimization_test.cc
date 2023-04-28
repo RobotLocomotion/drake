@@ -416,6 +416,7 @@ TEST_F(SimpleEnv2D, MultiStartGoal) {
   gcs.AddEdges(regions, target);
 
   gcs.AddPathLengthCost();
+  gcs.AddTimeCost();
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
@@ -507,6 +508,7 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
 
   // We can add different costs to the individual subgraphs.
   main1.AddPathLengthCost(5);
+  main1.AddTimeCost(1);
 
   // This weight matrix penalizes movement in the y direction three times more
   // than in the x direction.
