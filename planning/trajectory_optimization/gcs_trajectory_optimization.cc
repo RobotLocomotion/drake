@@ -32,6 +32,7 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::L2NormCost;
+using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using symbolic::DecomposeLinearExpressions;
 using symbolic::Expression;
@@ -141,6 +142,17 @@ Subgraph::Subgraph(
 }
 
 Subgraph::~Subgraph() = default;
+
+void Subgraph::AddTimeCost(double weight) {
+  // The time cost is the sum of duration variables ∑ hᵢ
+  auto time_cost =
+      std::make_shared<LinearCost>(weight * Eigen::VectorXd::Ones(1), 0.0);
+
+  for (Vertex* v : vertices_) {
+    // The duration variable is the last element of the vertex.
+    v->AddCost(Binding<LinearCost>(time_cost, v->x().tail(1)));
+  }
+}
 
 void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
   /*
@@ -332,6 +344,10 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
                                     h_min, h_max, std::move(name), this);
 
   // Add global costs to the subgraph.
+  for (double weight : global_time_costs_) {
+    subgraph->AddTimeCost(weight);
+  }
+
   if (order > 0) {
     // These costs rely on the derivative of the trajectory.
     for (const MatrixXd& weight_matrix : global_path_length_costs_) {
@@ -369,6 +385,14 @@ EdgesBetweenSubgraphs& GcsTrajectoryOptimization::AddEdges(
     const ConvexSet* subspace) {
   return *subgraph_edges_.emplace_back(
       new EdgesBetweenSubgraphs(from_subgraph, to_subgraph, subspace, this));
+}
+
+void GcsTrajectoryOptimization::AddTimeCost(double weight) {
+  // Add time cost to each subgraph.
+  for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
+    subgraph->AddTimeCost(weight);
+  }
+  global_time_costs_.push_back(weight);
 }
 
 void GcsTrajectoryOptimization::AddPathLengthCost(
