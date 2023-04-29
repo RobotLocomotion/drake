@@ -111,32 +111,58 @@ After this has passed, go through normal review. Once normal review is done,
 add `@BetsyMcPhail` for review and request that the provisioned instances be
 updated. She will then respond on when it is appropriate to merge the PR.
 
-## Building Binary Packages on Demand
+## Building Packages on Demand
 
-To schedule an "experimental" build of the [binary packages](/from_binary.html),
-comment on an open pull request as follows:
+### Binary or Debian
 
-* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging please``
-* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-snopt-packaging please``
+To schedule an "experimental" build of a [binary package](/from_binary.html)
+or [debian package](/apt.html), comment on an open pull request using one or
+more of these commands:
+
+* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot linux-jammy-unprovisioned-gcc-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot mac-arm-monterey-unprovisioned-clang-bazel-experimental-packaging please``
+* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-bazel-experimental-packaging please``
 
 or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
-to schedule a build of one of the following jobs from the Jenkins user
-interface:
+to schedule a build of one of the [Packaging](https://drake-jenkins.csail.mit.edu/view/Packaging/)
+jobs with **experimental** in its name.
 
-* linux-focal-unprovisioned-gcc-bazel-experimental-snopt-packaging
-* mac-x86-monterey-unprovisioned-clang-bazel-experimental-snopt-packaging
-
-The URL from which to download the built package will be indicated in the
-Jenkins console log for the completed build, for example:
+To download the built package, open the Jenkins console log for the completed
+build (click on "Console Output" then "Full Log") and search for the text
+"Upload complete" to find the download URL.  For example:
 
 ```
--- Uploading package archive 1 of 1 to AWS S3...
-
-upload: drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz
--- Package URL 1 of 1: https://drake-packages.csail.mit.edu/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz
--- Uploading package archive checksum 1 of 1 to AWS S3...
-
-upload: drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz.sha512 to s3://drake-packages/drake/experimental/drake-<yyymmddhhmmss>-<commit>-<platform>.tar.gz.sha512
+...
+[9:49:51 AM]  -- Upload complete: https://drake-packages.csail.mit.edu/drake/experimental/drake-20230427164706-0b666a17ba2ce3ca7505655dc724960d88a34645-jammy.tar.gz
+...
+[9:49:53 AM]  -- Upload complete: https://drake-packages.csail.mit.edu/drake/experimental/drake-dev_0.0.20230427164706-0b666a17ba2ce3ca7505655dc724960d88a34645-1_amd64-jammy.deb
+...
 ```
 
-where ``<platform>`` is ``focal``, or ``mac``.
+### Wheel
+
+To schedule an "experimental" build of a [wheel package](/pip.html),
+comment on an open pull request using one or more of these commands:
+
+* ``@drake-jenkins-bot linux-focal-unprovisioned-gcc-wheel-experimental-release``
+* ``@drake-jenkins-bot mac-arm-monterey-unprovisioned-clang-wheel-experimental-release``
+* ``@drake-jenkins-bot mac-x86-monterey-unprovisioned-clang-wheel-experimental-release``
+
+or follow the [instructions above](#scheduling-builds-via-the-jenkins-user-interface)
+to schedule a build of one of the [Wheel](https://drake-jenkins.csail.mit.edu/view/Wheel/)
+jobs with **experimental** in its name.
+
+To download the built wheel, open the Jenkins console log for the completed
+build (click on "Console Output" then "Full Log") and search for the text
+"Upload complete" to find the download URL.  For example:
+
+```
+...
+[12:42:41 PM]  -- Upload complete: https://drake-packages.csail.mit.edu/drake/experimental/drake-0.0.2023.4.24.18.52.8%2Bgit51c87b29-cp310-cp310-manylinux_2_31_x86_64.whl
+...
+```
+
+Note that there might be multiple wheel files uploaded for different versions
+of Python. Be sure to match the Python ``M.NN`` version you will be using to
+the ``-cpMNN-`` substring in the URL.
