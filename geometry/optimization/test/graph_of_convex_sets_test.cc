@@ -1213,7 +1213,7 @@ class PreprocessShortestPathTest : public ::testing::Test {
   }
   std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
                                           VertexId target_id) {
-    return g_.PreprocessShortestPath(source_id, target_id);
+    return g_.PreprocessShortestPath(source_id, target_id, options_);
   }
 
   GraphOfConvexSets g_;
