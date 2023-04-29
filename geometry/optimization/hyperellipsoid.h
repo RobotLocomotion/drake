@@ -96,6 +96,8 @@ class Hyperellipsoid final : public ConvexSet {
   static Hyperellipsoid MakeUnitBall(int dim);
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

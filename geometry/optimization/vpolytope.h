@@ -86,7 +86,9 @@ class VPolytope final : public ConvexSet {
   void WriteObj(const std::filesystem::path& filename) const;
 
  private:
-  bool DoIsBounded() const { return true; }
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
+  bool DoIsBounded() const final { return true; }
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;

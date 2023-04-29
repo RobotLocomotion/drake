@@ -56,6 +56,21 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   EXPECT_FALSE(S2.PointInSet(out));
 }
 
+GTEST_TEST(CartesianProductTest, MoveTest) {
+  const Point P1(Vector2d{1.2, 3.4}), P2(Vector2d{5.6, 7.8});
+  CartesianProduct orig(P1, P2);
+
+  // A move-constructed CartesianProduct takes over the original data.
+  CartesianProduct dut(std::move(orig));
+  EXPECT_EQ(dut.num_factors(), 2);
+  EXPECT_EQ(dut.ambient_dimension(), 4);
+
+  // The old CartesianProduct is in a valid but unspecified state.
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_EQ(orig.num_factors(), 0);
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(CartesianProductTest, FromSceneGraph) {
   const RigidTransformd X_WG{math::RollPitchYawd(.1, .2, 3),
                              Vector3d{.5, .87, .1}};
