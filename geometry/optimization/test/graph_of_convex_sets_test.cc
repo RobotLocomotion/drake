@@ -17,6 +17,7 @@
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solver_options.h"
 
@@ -1213,7 +1214,7 @@ class PreprocessShortestPathTest : public ::testing::Test {
   }
   std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
                                           VertexId target_id) {
-    return g_.PreprocessShortestPath(source_id, target_id);
+    return g_.PreprocessShortestPath(source_id, target_id, options_);
   }
 
   GraphOfConvexSets g_;
@@ -1253,6 +1254,16 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
     EXPECT_NEAR(e->GetSolutionCost(result1), e->GetSolutionCost(result2),
                 1e-10);
   }
+}
+
+// Confirm that the preprocessor uses the solver passed in through the options
+// structure.
+TEST_F(PreprocessShortestPathTest, Solver) {
+  // Intentionally choose a solver that cannot run the preprocessing.
+  solvers::LinearSystemSolver solver;
+  options_.solver = &solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(vid_[0], vid_[5], options_),
+                              ".*LinearSystemSolver is unable to solve.*");
 }
 
 /* This test rounds the shortest path on a graph with two paths around an

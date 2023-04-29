@@ -249,6 +249,7 @@ drake_cc_googletest(
         "//solvers:csdp_solver",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
+        "//solvers:linear_system_solver",
         "//solvers:mosek_solver",
     ],
 )
