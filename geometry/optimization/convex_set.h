@@ -7,6 +7,8 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/drake_deprecated.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -64,7 +66,9 @@ class ConvexSet : public ShapeReifier {
   virtual ~ConvexSet();
 
   /** Creates a unique deep copy of this set. */
-  std::unique_ptr<ConvexSet> Clone() const;
+  std::unique_ptr<ConvexSet> Clone() const {
+    return DoClone();
+  }
 
   /** Returns the dimension of the vector space in which the elements of this
   set are evaluated.  Contrast this with the `affine dimension`: the
@@ -91,7 +95,7 @@ class ConvexSet : public ShapeReifier {
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
-    DRAKE_DEMAND(x.size() == ambient_dimension());
+    DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
     return DoPointInSet(x, tol);
   }
 
@@ -102,7 +106,7 @@ class ConvexSet : public ShapeReifier {
   void AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
-    DRAKE_DEMAND(vars.size() == ambient_dimension());
+    DRAKE_THROW_UNLESS(vars.size() == ambient_dimension());
     return DoAddPointInSetConstraints(prog, vars);
   }
 
@@ -160,7 +164,7 @@ class ConvexSet : public ShapeReifier {
   a particular set has not been implemented yet. */
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> ToShapeWithPose()
       const {
-    DRAKE_DEMAND(ambient_dimension_ == 3);
+    DRAKE_THROW_UNLESS(ambient_dimension_ == 3);
     return DoToShapeWithPose();
   }
 
@@ -170,31 +174,31 @@ class ConvexSet : public ShapeReifier {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
-  /** For use by derived classes to construct a %ConvexSet.
+  /** For use by derived classes to construct a %ConvexSet. */
+  explicit ConvexSet(int ambient_dimension);
 
-  @param cloner Function pointer to implement Clone(), typically of the form
-  `&ConvexSetCloner<Derived>`.
-
-  Here is a typical example:
-  @code
-   class MyConvexSet final : public ConvexSet {
-    public:
-     MyConvexSet() : ConvexSet(&ConvexSetCloner<MyConvexSet>, 3) {}
-     ...
-   };
-  @endcode */
-  ConvexSet(std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
-            int ambient_dimension);
+  DRAKE_DEPRECATED("2023-09-01", "Use the 1-arg constructor instead.")
+  ConvexSet(std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)>,
+            int ambient_dimension)
+      : ConvexSet(ambient_dimension) {}
 
   // Implements non-virtual base class serialization.
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(ambient_dimension_));
+    int ambient_dimension = ambient_dimension_;
+    // TODO(#19309) The trailing underscore here is wrong.
+    a->Visit(MakeNameValue("ambient_dimension_", &ambient_dimension));
+    ambient_dimension_ = ambient_dimension;
   }
 
+
   // Non-virtual interface implementations.
+
+  virtual std::unique_ptr<ConvexSet> DoClone() const = 0;
+
   virtual bool DoIsBounded() const = 0;
 
+  /** @pre x.size() == ambient_dimension() */
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 
@@ -222,16 +226,16 @@ class ConvexSet : public ShapeReifier {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const = 0;
 
+  /** @pre ambient_dimension() == 3 */
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
   std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner_;
-  int ambient_dimension_{0};
+  reset_after_move<int> ambient_dimension_;
 };
 
-/** (Advanced) Implementation helper for ConvexSet::Clone. Refer to the
-ConvexSet::ConvexSet() constructor documentation for an example. */
 template <typename Derived>
+DRAKE_DEPRECATED("2023-09-01", "This function is no longer necessary.")
 std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
   static_assert(std::is_base_of_v<ConvexSet, Derived>,
                 "Concrete sets *must* be derived from the ConvexSet class");

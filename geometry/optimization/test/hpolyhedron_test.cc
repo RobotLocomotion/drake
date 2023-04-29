@@ -85,6 +85,24 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_TRUE(CompareMatrices(b, H_scene_graph.b()));
 }
 
+GTEST_TEST(HPolyhedronTest, MoveTest) {
+  Matrix<double, 6, 3> A;
+  A << Matrix3d::Identity(), -Matrix3d::Identity();
+  Vector6d b = Vector6d::Ones();
+  HPolyhedron orig(A, b);
+
+  // A move-constructed HPolyhedron takes over the original data.
+  HPolyhedron dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.A(), A));
+  EXPECT_TRUE(CompareMatrices(dut.b(), b));
+
+  // The old HPolyhedron is in a valid but unspecified state.
+  EXPECT_EQ(orig.A().cols(), orig.ambient_dimension());
+  EXPECT_EQ(orig.b().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope) {
   Eigen::Matrix<double, 3, 4> vert1;
   // clang-format off

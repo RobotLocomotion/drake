@@ -58,6 +58,22 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   EXPECT_FALSE(S2.PointInSet(out));
 }
 
+GTEST_TEST(PointTest, MoveTest) {
+  const Point P1(Vector2d{0.1, 1.2});
+  HPolyhedron H1 = HPolyhedron::MakeBox(Vector2d{0, 0}, Vector2d{2, 2});
+  Intersection orig(P1, H1);
+
+  // A move-constructed Intersection takes over the original data.
+  Intersection dut(std::move(orig));
+  EXPECT_EQ(dut.num_elements(), 2);
+  EXPECT_EQ(dut.ambient_dimension(), 2);
+
+  // The old Intersection is in a valid but unspecified state.
+  EXPECT_EQ(orig.num_elements(), 0);
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(IntersectionTest, TwoBoxes) {
   HPolyhedron H1 = HPolyhedron::MakeBox(Vector2d{0, 0}, Vector2d{2, 2});
   HPolyhedron H2 = HPolyhedron::MakeBox(Vector2d{1, -1}, Vector2d{3, 1});

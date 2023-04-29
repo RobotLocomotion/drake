@@ -82,13 +82,12 @@ Eigen::MatrixXd OrderCounterClockwise(const Eigen::MatrixXd& vertices) {
 }  // namespace
 
 VPolytope::VPolytope(const Eigen::Ref<const Eigen::MatrixXd>& vertices)
-    : ConvexSet(&ConvexSetCloner<VPolytope>, vertices.rows()),
-      vertices_{vertices} {}
+    : ConvexSet(vertices.rows()), vertices_{vertices} {}
 
 VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
                      std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<VPolytope>, 3) {
+    : ConvexSet(3) {
   Matrix3Xd vertices;
   query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
 
@@ -101,7 +100,7 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
 }
 
 VPolytope::VPolytope(const HPolyhedron& hpoly)
-    : ConvexSet(&ConvexSetCloner<VPolytope>, hpoly.ambient_dimension()) {
+    : ConvexSet(hpoly.ambient_dimension()) {
   DRAKE_THROW_UNLESS(hpoly.IsBounded());
 
   Eigen::MatrixXd coeffs(hpoly.A().rows(), hpoly.A().cols() + 1);
@@ -167,12 +166,12 @@ VPolytope::~VPolytope() = default;
 
 VPolytope VPolytope::MakeBox(const Eigen::Ref<const VectorXd>& lb,
                              const Eigen::Ref<const VectorXd>& ub) {
-  DRAKE_DEMAND(lb.size() == ub.size());
-  DRAKE_DEMAND((lb.array() <= ub.array()).all());
+  DRAKE_THROW_UNLESS(lb.size() == ub.size());
+  DRAKE_THROW_UNLESS((lb.array() <= ub.array()).all());
   const int n = lb.size();
-  DRAKE_DEMAND(n > 0);
+  DRAKE_THROW_UNLESS(n > 0);
   // Make sure that n is small enough to avoid overflow
-  DRAKE_DEMAND(n <= static_cast<int>(sizeof(Eigen::Index)) * 8 - 2);
+  DRAKE_THROW_UNLESS(n <= static_cast<int>(sizeof(Eigen::Index)) * 8 - 2);
   // Create all 2^n vertices.
   MatrixXd vertices = lb.replicate(1, 1 << n);
   for (int i = 1; i < vertices.cols(); ++i) {
@@ -239,7 +238,7 @@ double VPolytope::CalcVolume() const {
 }
 
 void VPolytope::WriteObj(const std::filesystem::path& filename) const {
-  DRAKE_DEMAND(ambient_dimension_ == 3);
+  DRAKE_THROW_UNLESS(ambient_dimension_ == 3);
 
   const Vector3d center = vertices_.rowwise().mean();
 
@@ -287,6 +286,10 @@ void VPolytope::WriteObj(const std::filesystem::path& filename) const {
     fmt::print(file, "f {}\n", fmt::join(face_indices, " "));
   }
   file.close();
+}
+
+std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
+  return std::make_unique<VPolytope>(*this);
 }
 
 bool VPolytope::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
@@ -431,7 +434,7 @@ Eigen::MatrixXd GetVertices(const Convex& convex) {
   orgQhull::Qhull qhull;
   const int dim = 3;
   std::vector<double> tinyobj_vertices_flat(tinyobj_vertices->size() * dim);
-  for (int i = 0; i < static_cast<int>(tinyobj_vertices->size()); ++i) {
+  for (int i = 0; i < ssize(*tinyobj_vertices); ++i) {
     for (int j = 0; j < dim; ++j) {
       tinyobj_vertices_flat[dim * i + j] = (*tinyobj_vertices)[i](j);
     }
