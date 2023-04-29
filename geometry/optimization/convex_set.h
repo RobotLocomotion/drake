@@ -88,10 +88,26 @@ class ConvexSet : public ShapeReifier {
    * notes. */
   bool IsBounded() const { return DoIsBounded(); }
 
+  /** If this set trivially contains exactly one point, returns the value of
+   * that point. Otherwise, returns nullopt. When ambient_dimension is zero,
+   * returns nullopt. By "trivially", we mean that representation of the set
+   * structurally maps to a single point; if checking for point-ness would
+   * require solving an optimization program, returns nullopt. In other words,
+   * this is a relatively cheap function to call. */
+  std::optional<Eigen::VectorXd> MaybeGetPoint() const {
+    if (ambient_dimension() == 0) {
+      return std::nullopt;
+    }
+    return DoMaybeGetPoint();
+  }
+
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
     DRAKE_DEMAND(x.size() == ambient_dimension());
+    if (ambient_dimension() == 0) {
+      return false;
+    }
     return DoPointInSet(x, tol);
   }
 
@@ -195,6 +211,12 @@ class ConvexSet : public ShapeReifier {
   // Non-virtual interface implementations.
   virtual bool DoIsBounded() const = 0;
 
+  /** The default implementation returns nullopt. Sets that can model a single
+   * point should override with a custom implementation.
+   * @pre ambient_dimension() > 0 */
+  virtual std::optional<Eigen::VectorXd> DoMaybeGetPoint() const;
+
+  /** @pre ambient_dimension() > 0 */
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 

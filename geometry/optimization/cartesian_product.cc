@@ -50,8 +50,8 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 }
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
-                                   const Eigen::Ref<const Eigen::MatrixXd>& A,
-                                   const Eigen::Ref<const Eigen::VectorXd>& b)
+                                   const Eigen::Ref<const MatrixXd>& A,
+                                   const Eigen::Ref<const VectorXd>& b)
     : ConvexSet(&ConvexSetCloner<CartesianProduct>, A.cols()),
       sets_{sets},
       A_{A},
@@ -103,7 +103,37 @@ bool CartesianProduct::DoIsBounded() const {
   return true;
 }
 
-bool CartesianProduct::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+std::optional<VectorXd> CartesianProduct::DoMaybeGetPoint() const {
+  // Check if all sets are points.
+  std::vector<VectorXd> points;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      points.push_back(std::move(*point));
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  // Stack the points.
+  int start = 0;
+  VectorXd x(ambient_dimension());
+  for (const VectorXd& point : points) {
+    const int point_size = point.size();
+    x.segment(start, point_size) = point;
+    start += point_size;
+  }
+  DRAKE_DEMAND(start == x.size());
+
+  // Return the possibly-scaled point.
+  if (A_.has_value()) {
+    DRAKE_DEMAND(b_.has_value());
+    return *A_ * x + *b_;
+  } else {
+    return x;
+  }
+}
+
+bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                     double tol) const {
   int index = 0;
   VectorXd y = A_ ? (*A_) * x + (*b_) : x;
