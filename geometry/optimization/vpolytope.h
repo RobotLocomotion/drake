@@ -28,6 +28,9 @@ class VPolytope final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(VPolytope)
 
+  /** Constructs a default (zero-dimensional) set. */
+  VPolytope();
+
   /** Constructs the polytope from a d-by-n matrix, where d is the ambient
   dimension, and n is the number of vertices.  The vertices do not have to be
   ordered, nor minimal (they can contain points inside their convex hull).
@@ -86,7 +89,9 @@ class VPolytope final : public ConvexSet {
   void WriteObj(const std::filesystem::path& filename) const;
 
  private:
-  bool DoIsBounded() const { return true; }
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
+  bool DoIsBounded() const final { return true; }
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;

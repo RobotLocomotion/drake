@@ -20,6 +20,9 @@ class Point final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point)
 
+  /** Constructs a default (zero-dimensional) set. */
+  Point();
+
   /** Constructs a Point. */
   explicit Point(const Eigen::Ref<const Eigen::VectorXd>& x);
 
@@ -47,6 +50,8 @@ class Point final : public ConvexSet {
   void set_x(const Eigen::Ref<const Eigen::VectorXd>& x);
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final { return true; }
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
