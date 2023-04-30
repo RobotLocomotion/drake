@@ -78,21 +78,6 @@ drake_pybind_library(
     ],
     py_srcs = [
         "_extra.py",
-        "augmented_lagrangian.py",
-        "branch_and_bound.py",
-        "clp.py",
-        "csdp.py",
-        "gurobi.py",
-        "ipopt.py",
-        "mathematicalprogram.py",
-        "mixed_integer_optimization_util.py",
-        "mixed_integer_rotation_constraint.py",
-        "mosek.py",
-        "nlopt.py",
-        "osqp.py",
-        "scs.py",
-        "sdpa_free_format.py",
-        "snopt.py",
     ],
 )
 

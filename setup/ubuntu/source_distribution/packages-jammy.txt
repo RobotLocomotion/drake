@@ -18,7 +18,6 @@ libjpeg-turbo8-dev
 liblapack-dev
 liblz4-dev
 liblzma-dev
-libmsgpack-dev
 libmumps-seq-dev
 libnlopt-cxx-dev
 libopengl-dev
