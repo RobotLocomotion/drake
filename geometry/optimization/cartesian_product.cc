@@ -50,15 +50,15 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 }
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
-                                   const Eigen::Ref<const Eigen::MatrixXd>& A,
-                                   const Eigen::Ref<const Eigen::VectorXd>& b)
+                                   const Eigen::Ref<const MatrixXd>& A,
+                                   const Eigen::Ref<const VectorXd>& b)
     : ConvexSet(&ConvexSetCloner<CartesianProduct>, A.cols()),
       sets_{sets},
       A_{A},
       b_{b} {
-  DRAKE_DEMAND(A_->rows() == b_->rows());
-  DRAKE_DEMAND(A_->rows() == sum_ambient_dimensions(sets));
-  DRAKE_DEMAND(A_->colPivHouseholderQr().rank() == A_->cols());
+  DRAKE_THROW_UNLESS(A_->rows() == b_->rows());
+  DRAKE_THROW_UNLESS(A_->rows() == sum_ambient_dimensions(sets));
+  DRAKE_THROW_UNLESS(A_->colPivHouseholderQr().rank() == A_->cols());
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
@@ -89,7 +89,7 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
 CartesianProduct::~CartesianProduct() = default;
 
 const ConvexSet& CartesianProduct::factor(int index) const {
-  DRAKE_DEMAND(0 <= index && index < static_cast<int>(sets_.size()));
+  DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
 }
 
@@ -103,7 +103,7 @@ bool CartesianProduct::DoIsBounded() const {
   return true;
 }
 
-bool CartesianProduct::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                     double tol) const {
   int index = 0;
   VectorXd y = A_ ? (*A_) * x + (*b_) : x;
