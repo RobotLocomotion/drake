@@ -81,14 +81,15 @@ MatrixXd OrderCounterClockwise(const MatrixXd& vertices) {
 
 }  // namespace
 
+VPolytope::VPolytope() : ConvexSet(0) {}
+
 VPolytope::VPolytope(const Eigen::Ref<const MatrixXd>& vertices)
-    : ConvexSet(&ConvexSetCloner<VPolytope>, vertices.rows()),
-      vertices_{vertices} {}
+    : ConvexSet(vertices.rows()), vertices_{vertices} {}
 
 VPolytope::VPolytope(const QueryObject<double>& query_object,
                      GeometryId geometry_id,
                      std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<VPolytope>, 3) {
+    : ConvexSet(3) {
   Matrix3Xd vertices;
   query_object.inspector().GetShape(geometry_id).Reify(this, &vertices);
 
@@ -101,7 +102,7 @@ VPolytope::VPolytope(const QueryObject<double>& query_object,
 }
 
 VPolytope::VPolytope(const HPolyhedron& hpoly)
-    : ConvexSet(&ConvexSetCloner<VPolytope>, hpoly.ambient_dimension()) {
+    : ConvexSet(hpoly.ambient_dimension()) {
   DRAKE_THROW_UNLESS(hpoly.IsBounded());
 
   MatrixXd coeffs(hpoly.A().rows(), hpoly.A().cols() + 1);
@@ -189,6 +190,9 @@ VPolytope VPolytope::MakeUnitBox(int dim) {
 }
 
 VPolytope VPolytope::GetMinimalRepresentation() const {
+  if (ambient_dimension() == 0) {
+    return VPolytope();
+  }
   orgQhull::Qhull qhull;
   qhull.runQhull("", vertices_.rows(), vertices_.cols(), vertices_.data(), "");
   if (qhull.qhullStatus() != 0) {
@@ -219,6 +223,9 @@ VPolytope VPolytope::GetMinimalRepresentation() const {
 }
 
 double VPolytope::CalcVolume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
   orgQhull::Qhull qhull;
   try {
     qhull.runQhull("", ambient_dimension(), vertices_.cols(), vertices_.data(),
@@ -286,6 +293,10 @@ void VPolytope::WriteObj(const std::filesystem::path& filename) const {
     fmt::print(file, "f {}\n", fmt::join(face_indices, " "));
   }
   file.close();
+}
+
+std::unique_ptr<ConvexSet> VPolytope::DoClone() const {
+  return std::make_unique<VPolytope>(*this);
 }
 
 bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,

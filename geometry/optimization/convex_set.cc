@@ -11,21 +11,18 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-ConvexSet::ConvexSet(
-    std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
-    int ambient_dimension)
-    : cloner_(std::move(cloner)), ambient_dimension_(ambient_dimension) {
+ConvexSet::ConvexSet(int ambient_dimension)
+    : ambient_dimension_(ambient_dimension) {
   DRAKE_THROW_UNLESS(ambient_dimension >= 0);
 }
 
 ConvexSet::~ConvexSet() = default;
 
-std::unique_ptr<ConvexSet> ConvexSet::Clone() const {
-  return cloner_(*this);
-}
-
 bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   DRAKE_THROW_UNLESS(other.ambient_dimension() == this->ambient_dimension());
+  if (ambient_dimension() == 0) {
+    return false;
+  }
   solvers::MathematicalProgram prog{};
   const auto& x = prog.NewContinuousVariables(this->ambient_dimension(), "x");
   this->AddPointInSetConstraints(&prog, x);
@@ -34,11 +31,20 @@ bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   return result.is_success();
 }
 
+void ConvexSet::AddPointInSetConstraints(
+    solvers::MathematicalProgram* prog,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
+  DRAKE_THROW_UNLESS(vars.size() == ambient_dimension());
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
+  return DoAddPointInSetConstraints(prog, vars);
+}
+
 std::vector<solvers::Binding<solvers::Constraint>>
 ConvexSet::AddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const symbolic::Variable& t) const {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
   std::vector<solvers::Binding<solvers::Constraint>> constraints =
       DoAddPointInNonnegativeScalingConstraints(prog, x, t);
@@ -55,6 +61,7 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
     const Eigen::Ref<const Eigen::VectorXd>& c, double d,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(A.rows() == ambient_dimension());
   DRAKE_THROW_UNLESS(A.rows() == b.rows());
   DRAKE_THROW_UNLESS(A.cols() == x.size());

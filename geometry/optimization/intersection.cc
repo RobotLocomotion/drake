@@ -16,17 +16,29 @@ using solvers::MathematicalProgram;
 using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
 
-Intersection::Intersection(const ConvexSets& sets)
-    : ConvexSet(&ConvexSetCloner<Intersection>, sets[0]->ambient_dimension()),
-      sets_{sets} {
-  for (int i = 1; i < ssize(sets_); ++i) {
-    DRAKE_THROW_UNLESS(sets_[i]->ambient_dimension() ==
-                       sets_[0]->ambient_dimension());
+namespace {
+
+int GetAmbientDimension(const ConvexSets& sets) {
+  if (sets.empty()) {
+    return 0;
   }
+  const int ambient_dimension = sets[0]->ambient_dimension();
+  for (const copyable_unique_ptr<ConvexSet>& set : sets) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+    DRAKE_THROW_UNLESS(set->ambient_dimension() == ambient_dimension);
+  }
+  return ambient_dimension;
 }
 
+}  // namespace
+
+Intersection::Intersection() : ConvexSet(0) {}
+
+Intersection::Intersection(const ConvexSets& sets)
+    : ConvexSet(GetAmbientDimension(sets)), sets_{sets} {}
+
 Intersection::Intersection(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(&ConvexSetCloner<Intersection>, setA.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension()) {
   DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
@@ -37,6 +49,10 @@ Intersection::~Intersection() = default;
 const ConvexSet& Intersection::element(int index) const {
   DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
+}
+
+std::unique_ptr<ConvexSet> Intersection::DoClone() const {
+  return std::make_unique<Intersection>(*this);
 }
 
 bool Intersection::DoIsBounded() const {

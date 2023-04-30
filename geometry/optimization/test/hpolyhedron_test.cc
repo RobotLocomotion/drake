@@ -44,6 +44,10 @@ GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   EXPECT_EQ(H.ambient_dimension(), 0);
   EXPECT_EQ(H.A().size(), 0);
   EXPECT_EQ(H.b().size(), 0);
+  EXPECT_NO_THROW(H.Clone());
+  EXPECT_FALSE(H.IntersectsWith(H));
+  EXPECT_FALSE(H.IsBounded());
+  EXPECT_FALSE(H.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
@@ -83,6 +87,24 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   HPolyhedron H_scene_graph(query, geom_id);
   EXPECT_TRUE(CompareMatrices(A, H_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(b, H_scene_graph.b()));
+}
+
+GTEST_TEST(HPolyhedronTest, MoveTest) {
+  Matrix<double, 6, 3> A;
+  A << Matrix3d::Identity(), -Matrix3d::Identity();
+  Vector6d b = Vector6d::Ones();
+  HPolyhedron orig(A, b);
+
+  // A move-constructed HPolyhedron takes over the original data.
+  HPolyhedron dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.A(), A));
+  EXPECT_TRUE(CompareMatrices(dut.b(), b));
+
+  // The old HPolyhedron is in a valid but unspecified state.
+  EXPECT_EQ(orig.A().cols(), orig.ambient_dimension());
+  EXPECT_EQ(orig.b().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
 }
 
 GTEST_TEST(HPolyhedronTest, ConstructorFromVPolytope) {

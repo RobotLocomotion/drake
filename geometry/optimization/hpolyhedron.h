@@ -194,6 +194,7 @@ class HPolyhedron final : public ConvexSet {
   template <typename Archive>
   void Serialize(Archive* a) {
     ConvexSet::Serialize(a);
+    // TODO(#19309) The trailing underscores here are wrong.
     a->Visit(DRAKE_NVP(A_));
     a->Visit(DRAKE_NVP(b_));
     CheckInvariants();
@@ -205,6 +206,8 @@ class HPolyhedron final : public ConvexSet {
 
   [[nodiscard]] HPolyhedron DoIntersectionWithChecks(const HPolyhedron& other,
                                                      double tol) const;
+
+  std::unique_ptr<ConvexSet> DoClone() const final;
 
   bool DoIsBounded() const final;
 
