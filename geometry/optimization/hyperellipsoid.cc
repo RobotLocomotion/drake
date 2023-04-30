@@ -35,8 +35,8 @@ Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
     : ConvexSet(&ConvexSetCloner<Hyperellipsoid>, center.size()),
       A_{A},
       center_{center} {
-  DRAKE_DEMAND(A.cols() == center.size());
-  DRAKE_DEMAND(A.allFinite());  // to ensure the set is non-empty.
+  DRAKE_THROW_UNLESS(A.cols() == center.size());
+  DRAKE_THROW_UNLESS(A.allFinite());  // to ensure the set is non-empty.
 }
 
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
@@ -92,7 +92,7 @@ double Hyperellipsoid::Volume() const {
 
 std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     const ConvexSet& other) const {
-  DRAKE_DEMAND(other.ambient_dimension() == ambient_dimension());
+  DRAKE_THROW_UNLESS(other.ambient_dimension() == ambient_dimension());
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(ambient_dimension());
   other.AddPointInSetConstraints(&prog, x);
@@ -147,20 +147,20 @@ std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
 Hyperellipsoid Hyperellipsoid::MakeAxisAligned(
     const Eigen::Ref<const VectorXd>& radius,
     const Eigen::Ref<const VectorXd>& center) {
-  DRAKE_DEMAND(radius.size() == center.size());
-  DRAKE_DEMAND((radius.array() > 0).all());
+  DRAKE_THROW_UNLESS(radius.size() == center.size());
+  DRAKE_THROW_UNLESS((radius.array() > 0).all());
   return Hyperellipsoid(MatrixXd(radius.cwiseInverse().asDiagonal()), center);
 }
 
 Hyperellipsoid Hyperellipsoid::MakeHypersphere(
     double radius, const Eigen::Ref<const VectorXd>& center) {
-  DRAKE_DEMAND(radius > 0);
+  DRAKE_THROW_UNLESS(radius > 0);
   const int dim = center.size();
   return Hyperellipsoid(MatrixXd::Identity(dim, dim) / radius, center);
 }
 
 Hyperellipsoid Hyperellipsoid::MakeUnitBall(int dim) {
-  DRAKE_DEMAND(dim > 0);
+  DRAKE_THROW_UNLESS(dim > 0);
   return Hyperellipsoid(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
 }
 
@@ -251,7 +251,7 @@ Hyperellipsoid::DoToShapeWithPose() const {
 
   // A must be invertible for the ellipsoid parameters to be finite.
   // The eigenvalues here are the eigenvalues of AᵀA.
-  DRAKE_DEMAND((solver.eigenvalues().array() > 1e-12).all());
+  DRAKE_THROW_UNLESS((solver.eigenvalues().array() > 1e-12).all());
 
   // solver.eigenvectors returns V, where V D_λ V^T = AᵀA, so R = V and
   // D⁻ᵀD⁻¹ = D_λ.
