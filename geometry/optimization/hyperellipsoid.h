@@ -29,6 +29,9 @@ class Hyperellipsoid final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Hyperellipsoid)
 
+  /** Constructs a default (zero-dimensional) set. */
+  Hyperellipsoid();
+
   /** Constructs the ellipsoid.
   @pre A.cols() == center.size(). */
   Hyperellipsoid(const Eigen::Ref<const Eigen::MatrixXd>& A,
@@ -62,7 +65,7 @@ class Hyperellipsoid final : public ConvexSet {
   precision).
   @pre @p other must have the same ambient_dimension as this.
   @returns the minimal scaling and the witness point, x, on other.
-  */
+  @throws std::exception if ambient_dimension() == 0 */
   std::pair<double, Eigen::VectorXd> MinimumUniformScalingToTouch(
       const ConvexSet& other) const;
 
@@ -96,6 +99,8 @@ class Hyperellipsoid final : public ConvexSet {
   static Hyperellipsoid MakeUnitBall(int dim);
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

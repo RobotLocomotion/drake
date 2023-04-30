@@ -37,14 +37,13 @@ int sum_ambient_dimensions(const ConvexSets& sets) {
 
 }  // namespace
 
+CartesianProduct::CartesianProduct() : ConvexSet(0) {}
+
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                sum_ambient_dimensions(sets)),
-      sets_{sets} {}
+    : ConvexSet(sum_ambient_dimensions(sets)), sets_{sets} {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                setA.ambient_dimension() + setB.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -52,19 +51,16 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
                                    const Eigen::Ref<const Eigen::MatrixXd>& A,
                                    const Eigen::Ref<const Eigen::VectorXd>& b)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>, A.cols()),
-      sets_{sets},
-      A_{A},
-      b_{b} {
-  DRAKE_DEMAND(A_->rows() == b_->rows());
-  DRAKE_DEMAND(A_->rows() == sum_ambient_dimensions(sets));
-  DRAKE_DEMAND(A_->colPivHouseholderQr().rank() == A_->cols());
+    : ConvexSet(A.cols()), sets_{sets}, A_{A}, b_{b} {
+  DRAKE_THROW_UNLESS(A_->rows() == b_->rows());
+  DRAKE_THROW_UNLESS(A_->rows() == sum_ambient_dimensions(sets));
+  DRAKE_THROW_UNLESS(A_->colPivHouseholderQr().rank() == A_->cols());
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    GeometryId geometry_id,
                                    std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>, 3) {
+    : ConvexSet(3) {
   Cylinder cylinder(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
 
@@ -89,8 +85,12 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
 CartesianProduct::~CartesianProduct() = default;
 
 const ConvexSet& CartesianProduct::factor(int index) const {
-  DRAKE_DEMAND(0 <= index && index < static_cast<int>(sets_.size()));
+  DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
+}
+
+std::unique_ptr<ConvexSet> CartesianProduct::DoClone() const {
+  return std::make_unique<CartesianProduct>(*this);
 }
 
 bool CartesianProduct::DoIsBounded() const {

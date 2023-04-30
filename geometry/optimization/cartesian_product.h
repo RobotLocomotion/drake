@@ -28,6 +28,9 @@ class CartesianProduct final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CartesianProduct)
 
+  /** Constructs a default (zero-dimensional) set. */
+  CartesianProduct();
+
   /** Constructs the product from a vector of convex sets. */
   explicit CartesianProduct(const ConvexSets& sets);
 
@@ -71,6 +74,8 @@ class CartesianProduct final : public ConvexSet {
   using ConvexSet::PointInSet;
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

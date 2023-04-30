@@ -53,6 +53,31 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   EXPECT_FALSE(S2.PointInSet(out));
 }
 
+GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
+  const MinkowskiSum dut;
+  EXPECT_EQ(dut.num_terms(), 0);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_FALSE(dut.IsBounded());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
+GTEST_TEST(MinkowskiSumTest, MoveTest) {
+  const Point P1(Vector2d{1.2, 3.4}), P2(Vector2d{5.6, 7.8});
+  MinkowskiSum orig(P1, P2);
+
+  // A move-constructed MinkowskiSum takes over the original data.
+  MinkowskiSum dut(std::move(orig));
+  EXPECT_EQ(dut.num_terms(), 2);
+  EXPECT_EQ(dut.ambient_dimension(), 2);
+
+  // The old MinkowskiSum is in a valid but unspecified state.
+  EXPECT_EQ(orig.num_terms(), 0);
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
   const RigidTransformd X_WG{math::RollPitchYawd(.1, .2, 3),
                              Vector3d{.5, .87, .1}};
