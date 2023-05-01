@@ -19,6 +19,9 @@ class Intersection final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Intersection)
 
+  /** Constructs a default (zero-dimensional) set. */
+  Intersection();
+
   /** Constructs the intersection from a vector of convex sets. */
   explicit Intersection(const ConvexSets& sets);
 
