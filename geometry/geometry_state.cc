@@ -780,8 +780,18 @@ FrameId GeometryState<T>::RegisterFrame(SourceId source_id, FrameId parent_id,
     source_root_frame_map_[source_id].insert(frame_id);
   }
   FrameNameSet& f_name_set = source_frame_name_map_[source_id];
-  // XXX patchery hackery
+
+  // Since we want to be able to load the same model twice within the same
+  // source, we can only require that frame names are unique with an
+  // instance/frame group. Use a synthetic prefix to achieve that effect.
+
+  // TODO(rpoyner-tri): do we want to instead restructure the frame name set
+  // data structures by (source_id, frame_group)?
   std::string group_prefix;
+  // Frames in the world instance/frame group don't get prefixes; this flows
+  // from internal choices about how to name the "world" frame. If we prefix
+  // world frame names here, we won't notice a second erroneous frame named
+  // "world". See GeometryStateTest::ManyWorldsRefuted.
   if (frame.frame_group() != 0) {
     group_prefix = std::to_string(frame.frame_group()) + "::";
   }
