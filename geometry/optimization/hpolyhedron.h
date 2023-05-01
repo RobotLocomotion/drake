@@ -18,8 +18,7 @@ class VPolytope;
 
 /** Implements a polyhedral convex set using the half-space representation:
 `{x| A x ≤ b}`.  Note: This set may be unbounded.
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class HPolyhedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(HPolyhedron)
@@ -28,22 +27,19 @@ class HPolyhedron final : public ConvexSet {
   HPolyhedron();
 
   /** Constructs the polyhedron.
-  @pre A.rows() == b.size().
-  */
+  @pre A.rows() == b.size(). */
   HPolyhedron(const Eigen::Ref<const Eigen::MatrixXd>& A,
               const Eigen::Ref<const Eigen::VectorXd>& b);
 
   /** Constructs a new HPolyhedron from a SceneGraph geometry and pose in the
-  @p reference_frame frame, obtained via the QueryObject.  If @p reference_frame
+  `reference_frame` frame, obtained via the QueryObject.  If `reference_frame`
   frame is std::nullopt, then it will be expressed in the world frame.
-
   @throws std::exception the geometry is not a convex polytope. */
   HPolyhedron(const QueryObject<double>& query_object, GeometryId geometry_id,
               std::optional<FrameId> reference_frame = std::nullopt);
 
-  /** Constructs a new HPolyedron from a VPolytope object.
-  This function will use qhull.
-   */
+  /** Constructs a new HPolyedron from a VPolytope object.  This function will
+  use qhull. */
   explicit HPolyhedron(const VPolytope& vpoly);
 
   // TODO(russt): Add a method/constructor that would create the geometry using
@@ -66,7 +62,7 @@ class HPolyhedron final : public ConvexSet {
   using ConvexSet::IsBounded;
 
   /** Returns true iff this HPolyhedron is entirely contained in the HPolyhedron
-  other. This is done by checking whether every inequality in @p other is
+  other. This is done by checking whether every inequality in `other` is
   redundant when added to this.
   @param tol We check if this polyhedron is contained in other.A().row(i).dot(x)
   <= other.b()(i) + tol. The larger tol value is, the more relaxation we add to
@@ -76,8 +72,8 @@ class HPolyhedron final : public ConvexSet {
                                  double tol = 1E-9) const;
 
   /** Constructs the intersection of two HPolyhedron by adding the rows of
-  inequalities from @p other. If @p check_for_redundancy is true
-  then only adds the rows of @p other other.A().row(i).dot(x)<=other.b()(i) to
+  inequalities from `other`. If `check_for_redundancy` is true
+  then only adds the rows of `other` other.A().row(i).dot(x)<=other.b()(i) to
   this HPolyhedron if the inequality other.A().row(i).dot(x)<=other.b()(i)+tol
   is not implied by the inequalities from this HPolyhedron.
   A positive tol means it is more likely to deem a constraint being redundant
@@ -145,17 +141,14 @@ class HPolyhedron final : public ConvexSet {
   To find the visual center, consider using the more expensive
   MaximumVolumeInscribedEllipsoid() method, and then taking the center of the
   returned Hyperellipsoid.
-
-  @throws std::exception if the solver fails to solve the problem.
-  */
+  @throws std::exception if the solver fails to solve the problem. */
   Eigen::VectorXd ChebyshevCenter() const;
 
   /** Returns the Cartesian product of `this` and `other`. */
   HPolyhedron CartesianProduct(const HPolyhedron& other) const;
 
-  /** Returns the `n`-ary Cartesian power of `this`.
-  The n-ary Cartesian power of a set H is the set H ⨉ H ⨉ ... ⨉ H, where H is
-  repeated n times. */
+  /** Returns the `n`-ary Cartesian power of `this`. The n-ary Cartesian power
+  of a set H is the set H ⨉ H ⨉ ... ⨉ H, where H is repeated n times. */
   HPolyhedron CartesianPower(int n) const;
 
   /** Returns the Pontryagin (Minkowski) Difference of `this` and `other`.
@@ -168,15 +161,12 @@ class HPolyhedron final : public ConvexSet {
   /** Draw an (approximately) uniform sample from the set using the hit and run
   Markov-chain Monte-Carlo strategy described at
   https://mathoverflow.net/a/162327 and the cited paper.
-
-  To generate many samples, pass the output of one iteration in as the @p
-  previous_sample to the next; in this case the distribution of samples will
+  To generate many samples, pass the output of one iteration in as the
+  `previous_sample` to the next; in this case the distribution of samples will
   converge to the true uniform distribution in total variation at a geometric
-  rate.  If @p previous_sample is not set, then the ChebyshevCenter() will be
+  rate.  If `previous_sample` is not set, then the ChebyshevCenter() will be
   used to seed the algorithm.
-
-  @throws std::exception if previous_sample is not in the set.
-  */
+  @throws std::exception if previous_sample is not in the set. */
   Eigen::VectorXd UniformSample(
       RandomGenerator* generator,
       const Eigen::Ref<const Eigen::VectorXd>& previous_sample) const;
@@ -190,11 +180,11 @@ class HPolyhedron final : public ConvexSet {
   static HPolyhedron MakeBox(const Eigen::Ref<const Eigen::VectorXd>& lb,
                              const Eigen::Ref<const Eigen::VectorXd>& ub);
 
-  /** Constructs the L∞-norm unit box in @p dim dimensions, {x | |x|∞ <= 1 }.
+  /** Constructs the L∞-norm unit box in `dim` dimensions, {x | |x|∞ <= 1 }.
   This is an axis-aligned box, centered at the origin, with edge length 2. */
   static HPolyhedron MakeUnitBox(int dim);
 
-  /** Constructs the L1-norm unit ball in @p dim dimensions, {x | |x|₁ <= 1 }.
+  /** Constructs the L1-norm unit ball in `dim` dimensions, {x | |x|₁ <= 1 }.
   This set is also known as the cross-polytope and is described by the 2ᵈⁱᵐ
   signed unit vectors. */
   static HPolyhedron MakeL1Ball(int dim);
@@ -210,9 +200,11 @@ class HPolyhedron final : public ConvexSet {
   }
 
  private:
+  /* @pre other.ambient_dimension() == this->ambient_dimension() */
   [[nodiscard]] HPolyhedron DoIntersectionNoChecks(
       const HPolyhedron& other) const;
 
+  /* @pre other.ambient_dimension() == this->ambient_dimension() */
   [[nodiscard]] HPolyhedron DoIntersectionWithChecks(const HPolyhedron& other,
                                                      double tol) const;
 

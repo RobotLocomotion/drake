@@ -35,7 +35,7 @@ SceneGraph also provides a lot of valuable tools for content management,
 including parsing geometries from file (via multibody::Parser) and Role.
 
 MathematicalProgram has many relevant solvers::Cost / solvers::Constraint for
-reasoning about geometry (e.g. the LorentzCone or even LinearConstraint). The
+reasoning about geometry (e.g., the LorentzCone or even LinearConstraint). The
 class and methods in this group add a level of modeling power above these
 individual constraints (there are many different types of constraints one would
 write given various optimization on these sets).
@@ -53,12 +53,10 @@ The geometry::optimization tools support:
   3D.
 
 @ingroup geometry
-@ingroup solvers
-*/
+@ingroup solvers */
 
 /** Abstract base class for defining a convex set.
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class ConvexSet : public ShapeReifier {
  public:
   virtual ~ConvexSet();
@@ -67,31 +65,29 @@ class ConvexSet : public ShapeReifier {
   std::unique_ptr<ConvexSet> Clone() const;
 
   /** Returns the dimension of the vector space in which the elements of this
-  set are evaluated.  Contrast this with the `affine dimension`: the
-  dimension of the smallest affine subset of the ambient space that contains
-  our set.  For example, if we define a set using `A*x = b`, where `A` has
-  linearly independent rows, then the ambient dimension is the dimension of
-  `x`, but the affine dimension of the set is `ambient_dimension() -
-  rank(A)`. */
+  set are evaluated.  Contrast this with the `affine dimension`: the dimension
+  of the smallest affine subset of the ambient space that contains our set.
+  For example, if we define a set using `A*x = b`, where `A` has linearly
+  independent rows, then the ambient dimension is the dimension of `x`, but the
+  affine dimension of the set is `ambient_dimension() - rank(A)`. */
   int ambient_dimension() const { return ambient_dimension_; }
 
   /** Returns true iff the intersection between `this` and `other` is non-empty.
   @throws std::exception if the ambient dimension of `other` is not the same as
-  that of `this`.
-   */
+  that of `this`. */
   bool IntersectsWith(const ConvexSet& other) const;
 
-  /** Returns true iff the set is bounded, e.g. there exists an element-wise
-   * finite lower and upper bound for the set.  Note: for some derived classes,
-   * this check is trivial, but for others it can require solving an (typically
-   * small) optimization problem.  Check the derived class documentation for any
-   * notes. */
+  /** Returns true iff the set is bounded, e.g., there exists an element-wise
+  finite lower and upper bound for the set.  Note: for some derived classes,
+  this check is trivial, but for others it can require solving an (typically
+  small) optimization problem.  Check the derived class documentation for any
+  notes. */
   bool IsBounded() const { return DoIsBounded(); }
 
   /** Returns true iff the point x is contained in the set. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
-    DRAKE_DEMAND(x.size() == ambient_dimension());
+    DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
     return DoPointInSet(x, tol);
   }
 
@@ -102,7 +98,7 @@ class ConvexSet : public ShapeReifier {
   void AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
-    DRAKE_DEMAND(vars.size() == ambient_dimension());
+    DRAKE_THROW_UNLESS(vars.size() == ambient_dimension());
     return DoAddPointInSetConstraints(prog, vars);
   }
 
@@ -155,12 +151,11 @@ class ConvexSet : public ShapeReifier {
 
   /** Constructs a Shape and a pose of the set in the world frame for use in
   the SceneGraph geometry ecosystem.
-
   @throws std::exception if ambient_dimension() != 3 or if the functionality for
   a particular set has not been implemented yet. */
   std::pair<std::unique_ptr<Shape>, math::RigidTransformd> ToShapeWithPose()
       const {
-    DRAKE_DEMAND(ambient_dimension_ == 3);
+    DRAKE_THROW_UNLESS(ambient_dimension() == 3);
     return DoToShapeWithPose();
   }
 
@@ -186,33 +181,44 @@ class ConvexSet : public ShapeReifier {
   ConvexSet(std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
             int ambient_dimension);
 
-  // Implements non-virtual base class serialization.
+  /** Implements non-virtual base class serialization. */
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(ambient_dimension_));
   }
 
-  // Non-virtual interface implementations.
+  /** Non-virtual interface implementation for IsBounded(). */
   virtual bool DoIsBounded() const = 0;
 
+  /** Non-virtual interface implementation for PointInSet().
+  @pre x.size() == ambient_dimension() */
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 
+  /** Non-virtual interface implementation for AddPointInSetConstraints().
+  @pre vars.size() == ambient_dimension() */
   virtual void DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
 
+  /** Non-virtual interface implementation for
+  AddPointInNonnegativeScalingConstraints().
+  @pre x.size() == ambient_dimension() */
   virtual std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const symbolic::Variable& t) const = 0;
 
-  /** An NVI method that subclasses must overwrite to add the constraints
-  needed to keep the point A * x + b in the non-negative scaling of the set.
-  Note that subclasses do not need to add the constraint c * t + d ≥ 0 as it is
-  already added.
-  */
+  /** Non-virtual interface implementation for
+  AddPointInNonnegativeScalingConstraints(). Subclasses must override to add the
+  constraints needed to keep the point A * x + b in the non-negative scaling of
+  the set. Note that subclasses do not need to add the constraint c * t + d ≥ 0
+  as it is already added.
+  @pre A.rows() == ambient_dimension()
+  @pre A.rows() == b.rows()
+  @pre A.cols() == x.size()
+  @pre c.rows() == t.size() */
   virtual std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -222,9 +228,12 @@ class ConvexSet : public ShapeReifier {
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const = 0;
 
+  /** Non-virtual interface implementation for ToShapeWithPose().
+  @pre ambient_dimension() == 3 */
   virtual std::pair<std::unique_ptr<Shape>, math::RigidTransformd>
   DoToShapeWithPose() const = 0;
 
+ private:
   std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner_;
   int ambient_dimension_{0};
 };
