@@ -7,9 +7,9 @@
 
 #include "drake/common/find_resource.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
-#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 
 namespace drake {
 namespace multibody {
