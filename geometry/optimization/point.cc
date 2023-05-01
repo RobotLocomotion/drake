@@ -20,6 +20,8 @@ using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Variable;
 
+Point::Point() : Point(VectorXd(0)) {}
+
 Point::Point(const Eigen::Ref<const VectorXd>& x)
     : ConvexSet(&ConvexSetCloner<Point>, x.size()), x_{x} {}
 

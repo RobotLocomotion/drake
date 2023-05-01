@@ -53,6 +53,16 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   EXPECT_FALSE(S2.PointInSet(out));
 }
 
+GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
+  const MinkowskiSum dut;
+  EXPECT_EQ(dut.num_terms(), 0);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_FALSE(dut.IsBounded());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
 GTEST_TEST(MinkowskiSumTest, FromSceneGraph) {
   const RigidTransformd X_WG{math::RollPitchYawd(.1, .2, 3),
                              Vector3d{.5, .87, .1}};

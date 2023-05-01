@@ -30,6 +30,9 @@ using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Variable;
 
+Hyperellipsoid::Hyperellipsoid()
+    : Hyperellipsoid(MatrixXd(0, 0), VectorXd(0)) {}
+
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
     : ConvexSet(&ConvexSetCloner<Hyperellipsoid>, center.size()),
@@ -83,6 +86,9 @@ double volume_of_unit_sphere(int dim) {
 }  // namespace
 
 double Hyperellipsoid::Volume() const {
+  if (ambient_dimension() == 0) {
+    return 0.0;
+  }
   if (A_.rows() < A_.cols()) {
     return std::numeric_limits<double>::infinity();
   }
@@ -92,6 +98,7 @@ double Hyperellipsoid::Volume() const {
 
 std::pair<double, VectorXd> Hyperellipsoid::MinimumUniformScalingToTouch(
     const ConvexSet& other) const {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(other.ambient_dimension() == ambient_dimension());
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(ambient_dimension());

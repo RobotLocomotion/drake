@@ -58,6 +58,19 @@ GTEST_TEST(PointTest, BasicTest) {
   EXPECT_TRUE(CompareMatrices(p2_W, P.x()));
 }
 
+GTEST_TEST(PointTest, DefaultCtor) {
+  const Point dut;
+  EXPECT_EQ(dut.x().size(), 0);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_FALSE(dut.IsBounded());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+
+  Point P;
+  EXPECT_NO_THROW(P.set_x(Eigen::VectorXd::Zero(0)));
+}
+
 GTEST_TEST(PointTest, FromSceneGraphTest) {
   Vector3d p_W{1.2, 4.5, -2.8};
 
