@@ -284,6 +284,20 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
+drake_cc_googletest_ubuntu_only(
+    name = "thread_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    tags = vtk_test_tags() + ["cpu:4"],
+    deps = [
+        ":factory",
+        "//common/yaml",
+        "//planning:robot_diagram_builder",
+        "//systems/sensors:sim_rgbd_sensor",
+    ],
+)
+
 add_lint_tests(
     cpplint_extra_srcs = [
         "no_factory.cc",
