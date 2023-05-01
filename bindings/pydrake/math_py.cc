@@ -595,6 +595,79 @@ void DoScalarIndependentDefinitions(py::module m) {
           NumericalGradientOption(NumericalGradientMethod::kForward),
       doc.ComputeNumericalGradient.doc);
 }
+
+template <typename T>
+std::string_view GetDtypeName() {
+  if constexpr (std::is_same_v<T, double>) {
+    return "float";
+  }
+  if constexpr (std::is_same_v<T, AutoDiffXd>) {
+    return "AutoDiffXd";
+  }
+  if constexpr (std::is_same_v<T, Variable>) {
+    return "Variable";
+  }
+  if constexpr (std::is_same_v<T, Expression>) {
+    return "Expression";
+  }
+}
+
+/* Binds a native C++ matmul(A, B) for wide variety of scalar types. This is
+important for performance until numpy allows us to define dtype-specific
+implementations. Doing a matmul elementwise with a C++ <=> Python call for every
+flop is extraordinarily slow.*/
+void DefineHeterogeneousMatmul(py::module m) {
+  const auto bind = [&m]<typename T1, typename T2>() {
+    using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+    // To avoid too much doc spam, we'll use a more descriptive docstring for
+    // the first overload only.
+    const std::string_view extra_doc =
+        (std::is_same_v<T1, double> && std::is_same_v<T2, double>)
+            ? " The numpy matmul ``A @ B`` is typically slow when multiplying "
+              "user-defined dtypes such as AutoDiffXd or Expression. Use this "
+              "function for better performance, e.g., ``matmul(A, B)``. For a "
+              "dtype=float @ dtype=float, this might be a little slower than "
+              "numpy, but is provided here for convenience so that the user "
+              "doesn't need to be overly careful about the dtype of arguments."
+            : "";
+    const std::string doc = fmt::format(
+        "Matrix product for dtype={} @ dtype={} -> dtype={}.{}",
+        GetDtypeName<T1>(), GetDtypeName<T2>(), GetDtypeName<T3>(), extra_doc);
+    m.def(
+        "matmul",
+        [](const Eigen::Ref<const MatrixX<T1>, 0, StrideX>& A,
+            const Eigen::Ref<const MatrixX<T2>, 0, StrideX>& B) -> MatrixX<T3> {
+          if constexpr (std::is_same_v<T3, AutoDiffXd>) {
+            return A.template cast<AutoDiffXd>() *
+                   B.template cast<AutoDiffXd>();
+          } else {
+            return A * B;
+          }
+        },
+        doc.c_str());
+  };  // NOLINT(readability/braces)
+
+  // The ordering of the calls to `bind` here are sorted fastest-to-slowest to
+  // ensure that overload resolution chooses the fastest one.
+
+  // Bind a double-only overload for convenience.
+  bind.operator()<double, double>();
+
+  // Bind the AutoDiff-related overloads.
+  bind.operator()<double, AutoDiffXd>();
+  bind.operator()<AutoDiffXd, double>();
+  bind.operator()<AutoDiffXd, AutoDiffXd>();
+
+  // Bind the Expression-related overloads.
+  bind.operator()<double, Variable>();
+  bind.operator()<Variable, double>();
+  bind.operator()<double, Expression>();
+  bind.operator()<Expression, double>();
+  bind.operator()<Variable, Expression>();
+  bind.operator()<Expression, Variable>();
+  bind.operator()<Expression, Expression>();
+}
+
 }  // namespace
 
 PYBIND11_MODULE(math, m) {
@@ -610,6 +683,7 @@ PYBIND11_MODULE(math, m) {
   pydrake::internal::BindMathOperators<double>(&m);
   pydrake::internal::BindMathOperators<AutoDiffXd>(&m);
   pydrake::internal::BindMathOperators<Expression>(&m);
+  DefineHeterogeneousMatmul(m);
 
   DoScalarIndependentDefinitions(m);
   type_visit([m](auto dummy) { DoScalarDependentDefinitions(m, dummy); },
