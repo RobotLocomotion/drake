@@ -2903,8 +2903,8 @@ class MathematicalProgram {
    * Getter for linear equality constraints. Note that this only includes
    * constraints that were added explicitly as LinearEqualityConstraint or
    * which were added symbolically (and their equality constraint nature was
-   * uncovered). Their may be bounding_box_constraints() and
-   * linear_constraints() whose lower bound also equals their upper bound.
+   * uncovered). There may be bounding_box_constraints() and
+   * linear_constraints() whose lower bounds also equal their upper bounds.
    */
   const std::vector<Binding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
