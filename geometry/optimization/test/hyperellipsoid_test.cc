@@ -84,6 +84,37 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   // sphere is rotationally symmetric.
 }
 
+GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
+  const Hyperellipsoid dut;
+  EXPECT_EQ(dut.A().rows(), 0);
+  EXPECT_EQ(dut.A().cols(), 0);
+  EXPECT_EQ(dut.center().size(), 0);
+  EXPECT_EQ(dut.Volume(), 0.0);
+  EXPECT_THROW(dut.MinimumUniformScalingToTouch(dut), std::exception);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_FALSE(dut.IsBounded());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
+GTEST_TEST(HyperellipsoidTest, MoveTest) {
+  const Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
+  const Vector3d center = Vector3d::Zero();
+  Hyperellipsoid orig(A, center);
+
+  // A move-constructed Hyperellipsoid takes over the original data.
+  Hyperellipsoid dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.A(), A));
+  EXPECT_TRUE(CompareMatrices(dut.center(), center));
+
+  // The old Hyperellipsoid is in a valid but unspecified state.
+  EXPECT_EQ(orig.A().cols(), orig.ambient_dimension());
+  EXPECT_EQ(orig.center().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   const double radius = 0.1;
   auto [scene_graph, geom_id] =
