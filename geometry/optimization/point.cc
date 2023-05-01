@@ -20,7 +20,7 @@ using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Variable;
 
-Point::Point(const Eigen::Ref<const Eigen::VectorXd>& x)
+Point::Point(const Eigen::Ref<const VectorXd>& x)
     : ConvexSet(&ConvexSetCloner<Point>, x.size()), x_{x} {}
 
 Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
@@ -46,12 +46,12 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
 
 Point::~Point() = default;
 
-void Point::set_x(const Eigen::Ref<const Eigen::VectorXd>& x) {
-  DRAKE_DEMAND(x.size() == x_.size());
+void Point::set_x(const Eigen::Ref<const VectorXd>& x) {
+  DRAKE_THROW_UNLESS(x.size() == x_.size());
   x_ = x;
 }
 
-bool Point::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+bool Point::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                          double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
 }
