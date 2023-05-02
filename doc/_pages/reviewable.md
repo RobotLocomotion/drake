@@ -115,6 +115,11 @@ but never both at once; choose whichever one is the best match.
 Commits that merely add missing pydrake bindings should be marked
 ``release notes: fix``.
 
+Externals bumps should always have release notes.  Either ``release
+notes: feature`` or ``release notes: fix`` is fine; in the
+case of externals bumps, the notes document doesn't use separate
+sections for fix / feature anyway.
+
 **When combining release notes labels:**
 
 - ``none`` must not be combined with any other label.
