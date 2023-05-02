@@ -125,10 +125,10 @@ DirectCollocationConstraint::DirectCollocationConstraint(
   }
 }
 
-void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
-                                           const AutoDiffVecXd& input,
-                                           Context<AutoDiffXd>* context,
-                                           AutoDiffVecXd* xdot) const {
+void DirectCollocationConstraint::dynamics(
+    const Eigen::Ref<const AutoDiffVecXd>& state,
+    const Eigen::Ref<const AutoDiffVecXd>& input, Context<AutoDiffXd>* context,
+    AutoDiffVecXd* xdot) const {
   if (input_port_ &&
       (!input_port_->HasValue(*context) ||
        !AreAutoDiffVecXdEqual(input, input_port_->Eval(*context)))) {

@@ -15,6 +15,7 @@ drake_cc_package_library(
         ":direct_collocation",
         ":direct_transcription",
         ":gcs_trajectory_optimization",
+        ":hybrid_multibody_collocation",
         ":integration_constraint",
         ":kinematic_trajectory_optimization",
         ":multiple_shooting",
@@ -114,6 +115,20 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "hybrid_multibody_collocation",
+    srcs = ["hybrid_multibody_collocation.cc"],
+    hdrs = ["hybrid_multibody_collocation.h"],
+    deps = [
+        ":direct_collocation",
+        "//multibody/inverse_kinematics:kinematic_evaluators",
+        "//multibody/optimization",
+        "//multibody/plant",
+        "//planning:robot_diagram",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
     name = "integration_constraint",
     srcs = ["integration_constraint.cc"],
     hdrs = ["integration_constraint.h"],
@@ -174,6 +189,20 @@ drake_cc_googletest(
         "//common/test_utilities:expect_throws_message",
         "//solvers:gurobi_solver",
         "//solvers:mosek_solver",
+    ],
+)
+
+drake_cc_googletest(
+    name = "hybrid_multibody_collocation_test",
+    timeout = "long",
+    shard_count = 4,
+    deps = [
+        ":hybrid_multibody_collocation",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//planning:robot_diagram_builder",
+        "//solvers:snopt_solver",
+        "//solvers:solve",
     ],
 )
 

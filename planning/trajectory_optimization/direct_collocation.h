@@ -175,7 +175,8 @@ class DirectCollocationConstraint : public solvers::Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
  private:
-  void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+  void dynamics(const Eigen::Ref<const AutoDiffVecXd>& state,
+                const Eigen::Ref<const AutoDiffVecXd>& input,
                 systems::Context<AutoDiffXd>* context,
                 AutoDiffVecXd* xdot) const;
 
