@@ -28,6 +28,8 @@ drake_pybind_library(
         "//bindings/pydrake/common:cpp_template_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",
+        "//bindings/pydrake/common:identifier_pybind",
+        "//bindings/pydrake/common:sorted_pair_pybind",
         "//bindings/pydrake/common:wrap_pybind",
         "//bindings/pydrake/geometry:optimization_pybind",
     ],

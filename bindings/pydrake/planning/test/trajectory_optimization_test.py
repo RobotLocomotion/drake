@@ -5,6 +5,7 @@ import warnings
 import numpy as np
 
 from pydrake.examples import PendulumPlant
+from pydrake.geometry import SceneGraphInspector
 from pydrake.math import eq, BsplineBasis
 from pydrake.planning import (
     AddDirectCollocationConstraint,
@@ -12,7 +13,9 @@ from pydrake.planning import (
     DirectCollocationConstraint,
     DirectTranscription,
     GcsTrajectoryOptimization,
+    HybridMultibodyCollocation,
     KinematicTrajectoryOptimization,
+    RobotDiagramBuilder,
 )
 from pydrake.geometry.optimization import (
     GraphOfConvexSetsOptions,
@@ -469,3 +472,74 @@ class TestTrajectoryOptimization(unittest.TestCase):
                                   show_slack=True,
                                   precision=3,
                                   scientific=False), str)
+
+    def test_hybrid_multibody_collocation(self):
+        xml = """
+    <mujoco model="test">
+    <worldbody>
+        <geom name="floor" type="box" size="5 5 5" pos="0 0 -5" />
+        <body name="ball">
+        <joint type="slide" name="z" axis="0 0 1" />
+        <geom name="ball" type="sphere" size="1" mass="1" />
+        </body>
+    </worldbody>
+    </mujoco>"""
+
+        builder = RobotDiagramBuilder()
+        builder.parser().AddModelsFromString(xml, "xml")
+        diagram = builder.Build()
+        context = diagram.CreateDefaultContext()
+        plant_context = diagram.plant().GetMyContextFromRoot(context)
+
+        kMinTimeStep = 0.05
+        kMaxTimeStep = 0.5
+        hybrid = HybridMultibodyCollocation(robot_diagram=diagram,
+                                            robot_diagram_context=context,
+                                            minimum_time_step=kMinTimeStep,
+                                            maximum_time_step=kMaxTimeStep)
+        prog = hybrid.prog()
+
+        self.assertEqual(hybrid.num_inputs(), 0)
+        self.assertEqual(hybrid.num_states(), 2)
+        self.assertEqual(len(hybrid.GetContactPairCandidates()), 1)
+        self.assertIsInstance(hybrid.model_inspector(), SceneGraphInspector)
+
+        kNumTimeSteps = 5
+        aerial_phase = hybrid.AddMode(name="aerial",
+                                      num_time_samples=kNumTimeSteps,
+                                      sticking_contact=set())
+
+        self.assertEqual(aerial_phase.in_contact(), set())
+
+        ground_phase = hybrid.AddModeWithInelasticImpact(
+            name="ground", num_time_samples=kNumTimeSteps,
+            new_contact=hybrid.GetContactPairCandidates().pop())
+
+        self.assertEqual(
+            len(
+                ground_phase.ContactForce(
+                    contact=ground_phase.in_contact().pop())), 3)
+        self.assertEqual(
+            len(
+                ground_phase.ContactForce(
+                    contact=ground_phase.in_contact().pop(), index=0)), 3)
+        self.assertEqual(len(ground_phase.AllContactForces()), 3)
+        self.assertEqual(len(ground_phase.AllContactForces(index=0)), 3)
+
+        # z(t0) = 1.5, zdot(t0) = 0.
+        prog.AddBoundingBoxConstraint([1.5, 0], [1.5, 0],
+                                      aerial_phase.initial_state())
+
+        result = mp.Solve(prog)
+        self.assertTrue(result.is_success())
+
+        aerial_traj = aerial_phase.ReconstructStateTrajectory(result=result)
+        self.assertEqual(aerial_traj.rows(), 2)
+        aerial_force = aerial_phase.ReconstructContactForceTrajectory(
+            result=result, contact=hybrid.GetContactPairCandidates().pop())
+        self.assertEqual(aerial_force.rows(), 3)
+        traj = hybrid.ReconstructStateTrajectory(result=result)
+        self.assertEqual(traj.rows(), 2)
+        force = hybrid.ReconstructContactForceTrajectory(
+            result=result, contact=hybrid.GetContactPairCandidates().pop())
+        self.assertEqual(force.rows(), 3)

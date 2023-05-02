@@ -31,6 +31,18 @@ GTEST_TEST(SortedPair, Default) {
   EXPECT_EQ(y.second(), 0.0);
 }
 
+GTEST_TEST(SortedPair, FromStdPair) {
+  std::pair<int, int> p{1, 2};
+  SortedPair<int> sp(p);
+  EXPECT_EQ(sp.first(), 1);
+  EXPECT_EQ(sp.second(), 2);
+
+  std::pair<int, int> p2{2, 1};
+  SortedPair<int> sp2(p2);
+  EXPECT_EQ(sp2.first(), 1);
+  EXPECT_EQ(sp2.second(), 2);
+}
+
 // Usable even with non-default-constructible types
 GTEST_TEST(SortedPair, WithoutDefaultCtor) {
   NoDefaultCtor a(2);
