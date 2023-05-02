@@ -4646,6 +4646,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     systems::CacheIndex spatial_contact_forces_continuous;
     systems::CacheIndex discrete_contact_pairs;
     systems::CacheIndex joint_locking_data;
+    systems::CacheIndex joint_locking_data_per_tree;
   };
 
   // Constructor to bridge testing from MultibodyTree to MultibodyPlant.
@@ -4820,15 +4821,33 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // current configuration. The resulting index values in @p
   // unlocked_velocity_indices will be in ascending order, in the range [0,
   // num_velocities()), with the indices of the locked velocities removed.
-  void CalcJointLockingIndices(
+  void CalcUnlockedVelocityIndices(
       const systems::Context<T>& context,
       std::vector<int>* unlocked_velocity_indices) const;
 
-  // Eval version of the method CalcJointLockingIndices().
-  const std::vector<int>& EvalJointLockingIndices(
+  // Eval version of the method CalcUnlockedVelocityIndices().
+  const std::vector<int>& EvalUnlockedVelocityIndices(
       const systems::Context<T>& context) const {
     return this->get_cache_entry(cache_indexes_.joint_locking_data)
         .template Eval<std::vector<int>>(context);
+  }
+
+  // Computes the array of indices of velocities that are not locked in the
+  // current configuration for each tree in the plant's topology. The resulting
+  // index values in each element of @p unlocked_velocity_indices will be in
+  // ascending order, in the range [0, tree_M.num_velocities()), with the
+  // indices of the locked velocities removed. `unlocked_velocity_indices` has
+  // the same size as the number of trees in the plant's topology and is resized
+  // accordingly on output.
+  void CalcUnlockedVelocityIndicesPerTree(
+      const systems::Context<T>& context,
+      std::vector<std::vector<int>>* unlocked_velocity_indices) const;
+
+  // Eval version of the method CalcUnlockedVelocityIndices().
+  const std::vector<std::vector<int>>& EvalUnlockedVelocityIndicesPerTree(
+      const systems::Context<T>& context) const {
+    return this->get_cache_entry(cache_indexes_.joint_locking_data_per_tree)
+        .template Eval<std::vector<std::vector<int>>>(context);
   }
 
   // Computes the vector of ContactSurfaces for hydroelastic contact.
