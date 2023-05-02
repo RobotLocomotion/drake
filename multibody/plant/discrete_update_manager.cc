@@ -202,10 +202,18 @@ DiscreteUpdateManager<T>::coupler_constraints_specs() const {
 }
 
 template <typename T>
-const std::vector<int>& DiscreteUpdateManager<T>::EvalJointLockingIndices(
+const std::vector<int>& DiscreteUpdateManager<T>::EvalUnlockedVelocityIndices(
     const systems::Context<T>& context) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<
-      T>::EvalJointLockingIndices(plant(), context);
+      T>::EvalUnlockedVelocityIndices(plant(), context);
+}
+
+template <typename T>
+const std::vector<std::vector<int>>&
+DiscreteUpdateManager<T>::EvalUnlockedVelocityIndicesPerTree(
+    const systems::Context<T>& context) const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<
+      T>::EvalUnlockedVelocityIndicesPerTree(plant(), context);
 }
 
 template <typename T>
