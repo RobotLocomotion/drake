@@ -372,7 +372,7 @@ TEST_F(KukaIiwaArmTests, CalcFreeMotionVelocities) {
 
   MultibodyForces<double> forces(plant_);
   CompliantContactManagerTester::CalcNonContactForces(*manager_, *context_,
-                                                      &forces);
+                                                      false, &forces);
   const VectorXd zero_vdot = VectorXd::Zero(plant_.num_velocities());
   const VectorXd k0 = -plant_.CalcInverseDynamics(*context_, zero_vdot, forces);
 

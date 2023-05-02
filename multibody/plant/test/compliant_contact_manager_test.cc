@@ -26,8 +26,6 @@
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/space_xyz_mobilizer.h"
-#include "drake/systems/primitives/pass_through.h"
-#include "drake/systems/primitives/zero_order_hold.h"
 
 using drake::geometry::GeometryId;
 using drake::geometry::PenetrationAsPointPair;
@@ -47,8 +45,6 @@ using drake::multibody::contact_solvers::internal::SapSolverResults;
 using drake::multibody::contact_solvers::internal::SapSolverStatus;
 using drake::multibody::internal::DiscreteContactPair;
 using drake::systems::Context;
-using drake::systems::PassThrough;
-using drake::systems::ZeroOrderHold;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -532,113 +528,6 @@ TEST_F(SpheresStackTest, DoCalcDiscreteValues) {
   // Verify the result.
   EXPECT_TRUE(CompareMatrices(x_next, x_next_expected, kEps,
                               MatrixCompareType::relative));
-}
-
-// CompliantContactManager implements a workaround for issue #12786 which might
-// lead to undetected algebraic loops in the systems framework. Therefore
-// CompliantContactManager implements an internal algebraic loop detection to
-// properly warn users. This should go away as issue #12786 is resolved. This
-// test verifies the algebraic loop detection logic.
-class AlgebraicLoopDetection : public ::testing::Test {
- public:
-  // Makes a system containing a multibody plant. When with_algebraic_loop =
-  // true the model includes a feedback system that creates an algebraic loop.
-  void MakeDiagram(bool with_algebraic_loop) {
-    systems::DiagramBuilder<double> builder;
-    plant_ = builder.AddSystem<MultibodyPlant>(1.0e-3);
-    // N.B. Currently only SAP goes through the manager.
-    plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
-    plant_->Finalize();
-    auto owned_contact_manager =
-        std::make_unique<CompliantContactManager<double>>();
-    plant_->SetDiscreteUpdateManager(std::move(owned_contact_manager));
-
-    systems::System<double>* feedback{nullptr};
-    if (with_algebraic_loop) {
-      // We intentionally create an algebraic loop by placing a pass through
-      // system between the contact forces output and the input forces. This
-      // test is based on a typical user story: a user wants to write a
-      // controller that uses the estimated forces as input to the controller.
-      // For instance, the controller could implement force feedback for
-      // grasping. To simplify the model, a user might choose to emulate a real
-      // sensor or force estimator by connecting the output forces from the
-      // plant straight into the controller, creating an algebraic loop.
-      feedback = builder.AddSystem<PassThrough>(plant_->num_velocities());
-    } else {
-      // A more realistic model would include a force estimator, that most
-      // likely would introduce state and break the algebraic loop. Another
-      // option would be to introduce a delay between the force output ant the
-      // controller, effectively modeling a delay in the measured signal. Here
-      // we emulate one of these strategies using a zero-order-hold (ZOH) system
-      // to add feedback. This will not create an algebraic loop.
-      // N.B. The discrete period of the ZOH does not necessarily need to match
-      // that of the plant. This example makes them different to illustrate this
-      // point.
-      feedback =
-          builder.AddSystem<ZeroOrderHold>(2.0e-4, plant_->num_velocities());
-    }
-    builder.Connect(plant_->get_generalized_contact_forces_output_port(
-                        default_model_instance()),
-                    feedback->get_input_port(0));
-    builder.Connect(feedback->get_output_port(0),
-                    plant_->get_applied_generalized_force_input_port());
-    diagram_ = builder.Build();
-    diagram_context_ = diagram_->CreateDefaultContext();
-    plant_context_ =
-        &plant_->GetMyMutableContextFromRoot(diagram_context_.get());
-  }
-
-  void VerifyLoopIsDetected() const {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        plant_
-            ->get_generalized_contact_forces_output_port(
-                default_model_instance())
-            .Eval(*plant_context_),
-        "Algebraic loop detected.*");
-  }
-
-  void VerifyNoLoopIsDetected() const {
-    EXPECT_NO_THROW(plant_
-                        ->get_generalized_contact_forces_output_port(
-                            default_model_instance())
-                        .Eval(*plant_context_));
-  }
-
- protected:
-  std::unique_ptr<systems::Diagram<double>> diagram_;
-  MultibodyPlant<double>* plant_{nullptr};
-  std::unique_ptr<Context<double>> diagram_context_;
-  Context<double>* plant_context_{nullptr};
-};
-
-TEST_F(AlgebraicLoopDetection, LoopIsDetected) {
-  MakeDiagram(true /* make diagram with algebraic loop */);
-  VerifyLoopIsDetected();
-}
-
-TEST_F(AlgebraicLoopDetection, LoopIsDetectedWhenCachingIsDisabled) {
-  MakeDiagram(true /* make diagram with algebraic loop */);
-  diagram_context_->DisableCaching();
-  VerifyLoopIsDetected();
-}
-
-TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositives) {
-  MakeDiagram(false /* make diagram with no algebraic loop */);
-  // There is no loop and therefore no exception should be thrown.
-  VerifyNoLoopIsDetected();
-  // Since the computation is cached, we can evaluate it multiple times without
-  // triggering the loop detection, as desired.
-  VerifyNoLoopIsDetected();
-}
-
-TEST_F(AlgebraicLoopDetection, VerifyNoFalsePositivesWhenCachingIsDisabled) {
-  MakeDiagram(false /* make diagram with no algebraic loop */);
-  diagram_context_->DisableCaching();
-  // There is no loop and therefore no exception should be thrown.
-  VerifyNoLoopIsDetected();
-  // Even if the computation is not cached, the loop detection is not triggered,
-  // as desired.
-  VerifyNoLoopIsDetected();
 }
 
 // This test verifies contact results in the equilibrium configuration.
