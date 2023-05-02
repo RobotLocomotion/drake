@@ -348,6 +348,10 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
           .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
+  const std::vector<std::vector<int>>& per_tree_locked_indices =
+      this->EvalJointLockingIndicesPerTree(context);
+  const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
+
   // Fill in the point contact pairs.
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       plant().EvalPointPairPenetrations(context);
@@ -358,6 +362,15 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
     const BodyIndex body_B_index =
         this->geometry_id_to_body_index().at(pair.id_B);
     const Body<T>& body_B = plant().get_body(body_B_index);
+
+    // For joint locking, filter out contacts between bodies who belong to trees
+    // with 0 degrees of freedom.
+    if (per_tree_locked_indices[topology.body_to_tree_index(body_A_index)]
+                .size() == 0 &&
+        per_tree_locked_indices[topology.body_to_tree_index(body_B_index)]
+                .size() == 0) {
+      continue;
+    }
 
     const T kA = GetPointContactStiffness(
         pair.id_A, this->default_contact_stiffness(), inspector);
@@ -426,6 +439,10 @@ void CompliantContactManager<T>::
   const std::vector<geometry::ContactSurface<T>>& surfaces =
       this->EvalContactSurfaces(context);
 
+  const std::vector<std::vector<int>>& per_tree_locked_indices =
+      this->EvalJointLockingIndicesPerTree(context);
+  const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
+
   const int num_surfaces = surfaces.size();
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     const auto& s = surfaces[surface_index];
@@ -441,6 +458,15 @@ void CompliantContactManager<T>::
     const BodyIndex body_N_index =
         this->geometry_id_to_body_index().at(s.id_N());
     const Body<T>& body_N = plant().get_body(body_N_index);
+
+    // For joint locking, filter out contacts between bodies who belong to trees
+    // with 0 degrees of freedom.
+    if (per_tree_locked_indices[topology.body_to_tree_index(body_M_index)]
+                .size() == 0 &&
+        per_tree_locked_indices[topology.body_to_tree_index(body_N_index)]
+                .size() == 0) {
+      continue;
+    }
 
     // TODO(amcastro-tri): Consider making the modulus required, instead of
     // a default infinite value.
@@ -699,18 +725,27 @@ void CompliantContactManager<T>::AppendContactResultsForPointContact(
   const VectorX<T>& vt = solver_results.vt;
   const VectorX<T>& vn = solver_results.vn;
 
+  // N.B. Contact between two fully locked trees are filtered out of discrete
+  // pairs, therefore for purely point contact:
+  //   num_point_contacts != plant().EvalPointPairPenetrations(context).size()
+  // We find the index of the first non-point contact, whose value corresponds
+  // to num_point_contacts.
+  auto itr = std::find_if(discrete_pairs.begin(), discrete_pairs.end(),
+                          [](const auto& pair) {
+                            return pair.surface_index.has_value();
+                          });
+  const int num_point_contacts = std::distance(discrete_pairs.begin(), itr);
 
-  const int num_contacts = point_pairs.size();
-  DRAKE_DEMAND(fn.size() >= num_contacts);
-  DRAKE_DEMAND(ft.size() >= 2 * num_contacts);
-  DRAKE_DEMAND(vn.size() >= num_contacts);
-  DRAKE_DEMAND(vt.size() >= 2 * num_contacts);
+  DRAKE_DEMAND(fn.size() >= num_point_contacts);
+  DRAKE_DEMAND(ft.size() >= 2 * num_point_contacts);
+  DRAKE_DEMAND(vn.size() >= num_point_contacts);
+  DRAKE_DEMAND(vt.size() >= 2 * num_point_contacts);
 
   // The correspondence between `discrete_pairs` and `point_pairs` depends on
   // strict ordering of CompliantContactManager::CalcDiscreteContactPairs.
   // All point contacts must come first and their order in discrete_pairs
   // corresponds to their order in point_pairs.
-  for (int icontact = 0; icontact < num_contacts; ++icontact) {
+  for (int icontact = 0; icontact < num_point_contacts; ++icontact) {
     const auto& discrete_pair = discrete_pairs[icontact];
     const auto& point_pair = point_pairs[icontact];
 
@@ -791,16 +826,13 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
   // If the point contact model is used, hydroelastic contact pairs are appended
-  // after point contact pairs.
-  // TODO(amcastro-tri): right now EvalPointPairPenetrations() throws an
-  // exception if only hydroelastic is used. Consider a solution in which this
-  // method always returns a valid result, possibly empty.
-  // A possible solution could be moving this method into DiscreteUpdateManager
-  // if the plant no longer uses it.
-  const int num_point_contacts =
-      plant().get_contact_model() == ContactModel::kHydroelastic
-          ? 0
-          : plant().EvalPointPairPenetrations(context).size();
+  // after point contact pairs. The index of the first discrete pair with a valid
+  // surface index is the first non-point contact pair.
+  auto itr = std::find_if(discrete_pairs.begin(), discrete_pairs.end(),
+                          [](const auto& pair) {
+                            return pair.surface_index.has_value();
+                          });
+  const int num_point_contacts = std::distance(discrete_pairs.begin(), itr);
   const int num_surfaces = all_surfaces.size();
 
   std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
@@ -859,11 +891,27 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
                                                 traction_Aq_W);
   }
 
+  const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
+  const std::vector<std::vector<int>>& per_tree_locked_indices =
+      this->EvalJointLockingIndicesPerTree(context);
+
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
-    contact_info->emplace_back(
-        &all_surfaces[surface_index], F_Ao_W_per_surface[surface_index],
-        std::move(quadrature_data[surface_index]));
+    BodyIndex bodyA_index = this->geometry_id_to_body_index().at(
+        all_surfaces[surface_index].id_M());
+    BodyIndex bodyB_index = this->geometry_id_to_body_index().at(
+        all_surfaces[surface_index].id_N());
+
+    // For joint locking, filter out contacts between bodies who belong to trees
+    // with 0 degrees of freedom.
+    if (per_tree_locked_indices[topology.body_to_tree_index(bodyA_index)]
+                .size() != 0 ||
+        per_tree_locked_indices[topology.body_to_tree_index(bodyB_index)]
+                .size() != 0) {
+      contact_info->emplace_back(&all_surfaces[surface_index],
+                                 F_Ao_W_per_surface[surface_index],
+                                 std::move(quadrature_data[surface_index]));
+    }
   }
 }
 

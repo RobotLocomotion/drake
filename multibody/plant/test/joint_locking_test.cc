@@ -6,6 +6,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "drake/geometry/proximity_properties.h"
 #include "drake/math/rigid_transform.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -203,7 +204,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
     plant->WeldFrames(
         body1.body_frame(), body2.body_frame(),
         RigidTransformd(Vector3d(-kArmLength * cos(kElbowPosition), 0.0,
-                                  kArmLength * sin(kElbowPosition))));
+                                 kArmLength * sin(kElbowPosition))));
   } else {
     plant->AddJoint<RevoluteJoint>(
         "elbow", body1, {}, body2,
@@ -308,6 +309,182 @@ GTEST_TEST(JointLockingTest, TrajectoryTest) {
               0);
   }
 }
+
+struct FilteredContactResultsConfig {
+  ContactModel contact_model{ContactModel::kPoint};
+  DiscreteContactSolver solver{DiscreteContactSolver::kTamsi};
+};
+
+std::ostream& operator<<(std::ostream& out,
+                         const FilteredContactResultsConfig& c) {
+  switch (c.solver) {
+    case DiscreteContactSolver::kTamsi:
+      out << "TAMSI";
+      break;
+    case DiscreteContactSolver::kSap:
+      out << "SAP";
+      break;
+  }
+  out << "_";
+  switch (c.contact_model) {
+    case ContactModel::kPoint:
+      out << "point";
+      break;
+    case ContactModel::kHydroelastic:
+      out << "hydroelastic";
+      break;
+    case ContactModel::kHydroelasticWithFallback:
+      out << "hydroelastic_with_fallback";
+      break;
+  }
+  return out;
+}
+// Utility testing class to construct a plant with two stacked spheres in contact
+// with the contact model and discrete solver specified in the parameter.
+class FilteredContactResultsTest
+    : public ::testing::TestWithParam<FilteredContactResultsConfig> {
+ public:
+  void SetUp() {
+    FilteredContactResultsConfig config = GetParam();
+
+    systems::DiagramBuilder<double> builder;
+    plant_ = &AddMultibodyPlantSceneGraph(&builder, 0.01 /* time_step */).plant;
+    plant_->set_discrete_contact_solver(config.solver);
+
+    const RigidBody<double>& ball_A = AddBall("ball_A");
+    const RigidBody<double>& ball_B = AddBall("ball_B");
+
+    // Position ball B above ball A in z such that they are in contact.
+    const math::RigidTransformd X_WA{};
+    const math::RigidTransformd X_WB{Vector3d{0, 0, radius_}};
+
+    plant_->SetDefaultFreeBodyPose(ball_A, X_WA);
+    plant_->SetDefaultFreeBodyPose(ball_B, X_WB);
+
+    plant_->Finalize();
+    diagram_ = builder.Build();
+  }
+
+  const RigidBody<double>& AddBall(const std::string& name) {
+    FilteredContactResultsConfig config = GetParam();
+
+    SpatialInertia<double> M_BBcm =
+        SpatialInertia<double>::SolidSphereWithMass(mass_, radius_);
+    const RigidBody<double>& ball = plant_->AddRigidBody(name, M_BBcm);
+
+    // Add sphere geometry for the ball.
+    // Pose of sphere geometry S in body frame B.
+    const RigidTransformd X_BS = RigidTransformd::Identity();
+    // Set material properties for hydroelastics.
+    geometry::ProximityProperties ball_props;
+    geometry::AddContactMaterial(
+        1e-4 /* dissipation */, {} /* point stiffness */,
+        CoulombFriction<double>{1.0, 1.0} /* friction */, &ball_props);
+
+    if (config.contact_model == ContactModel::kHydroelastic) {
+      geometry::AddCompliantHydroelasticProperties(
+          0.5 * radius_, hydroelastic_modulus_, &ball_props);
+    }
+    plant_->RegisterCollisionGeometry(ball, X_BS, geometry::Sphere(radius_),
+                                      "collision", std::move(ball_props));
+
+    // Add visual for the ball.
+    const Vector4<double> red(1.0, 0.0, 0.0, 1.0);
+    plant_->RegisterVisualGeometry(ball, X_BS, geometry::Sphere(radius_),
+                                   "visual", red);
+    return ball;
+  }
+
+ protected:
+  const double mass_{1.0};
+  const double radius_{1.0};
+  const double hydroelastic_modulus_{1e5};
+  MultibodyPlant<double>* plant_;
+  std::unique_ptr<systems::Diagram<double>> diagram_{};
+};
+
+// Test that contact results are properly filtered. Due to joint locking, all
+// degrees of freedom of a tree (in the MultibodyTopology sense) can be locked,
+// resulting in degenerate contact Jacobians. We eliminate all contacts between
+// bodies where both bodies' parent trees have all of their DOFs locked from
+// joint locking.
+TEST_P(FilteredContactResultsTest, VerifyLockedResults) {
+  // Create a context for this system:
+  std::unique_ptr<systems::Context<double>> diagram_context =
+      diagram_->CreateDefaultContext();
+  systems::Context<double>& context =
+      diagram_->GetMutableSubsystemContext(*plant_, diagram_context.get());
+
+  FilteredContactResultsConfig config = GetParam();
+
+  // Both spheres unlocked, expect a single contact result.
+  {
+    const ContactResults<double>& results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            context);
+
+    if (config.contact_model == ContactModel::kPoint) {
+      EXPECT_EQ(results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    } else {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 1);
+    }
+  }
+
+  // One of the pair is locked, expect a single contact result.
+  {
+    plant_->GetBodyByName("ball_A").Lock(&context);
+    // Both spheres unlocked, should expect a single contact result.
+    const ContactResults<double>& results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            context);
+
+    if (config.contact_model == ContactModel::kPoint) {
+      EXPECT_EQ(results.num_point_pair_contacts(), 1);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    } else {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 1);
+    }
+  }
+
+  // Both spheres locked, expect no contact result for the pair.
+  {
+    plant_->GetBodyByName("ball_A").Lock(&context);
+    plant_->GetBodyByName("ball_B").Lock(&context);
+
+    // Both spheres unlocked, should expect a single contact result.
+    const ContactResults<double>& results =
+        plant_->get_contact_results_output_port().Eval<ContactResults<double>>(
+            context);
+
+    if (config.contact_model == ContactModel::kPoint) {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    } else {
+      EXPECT_EQ(results.num_point_pair_contacts(), 0);
+      EXPECT_EQ(results.num_hydroelastic_contacts(), 0);
+    }
+  }
+}
+
+std::vector<FilteredContactResultsConfig> MakeTestCases() {
+  return std::vector<FilteredContactResultsConfig>{
+      {.contact_model = ContactModel::kPoint,
+       .solver = DiscreteContactSolver::kTamsi},
+      {.contact_model = ContactModel::kHydroelastic,
+       .solver = DiscreteContactSolver::kTamsi},
+      {.contact_model = ContactModel::kPoint,
+       .solver = DiscreteContactSolver::kSap},
+      {.contact_model = ContactModel::kHydroelastic,
+       .solver = DiscreteContactSolver::kSap}};
+}
+
+INSTANTIATE_TEST_SUITE_P(JointLockingTests, FilteredContactResultsTest,
+                         testing::ValuesIn(MakeTestCases()),
+                         testing::PrintToStringParamName());
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
