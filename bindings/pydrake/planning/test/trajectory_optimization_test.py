@@ -320,6 +320,8 @@ class TestTrajectoryOptimization(unittest.TestCase):
             np.array([[5.0, 5.0, 4.4, 4.4], [2.8, 5.0, 5.0, 2.8]])
         ]
 
+        max_vel = np.ones((2, 1))
+
         # We add a path length cost to the entire graph.
         # This can be called ahead of time or after adding the regions.
         gcs.AddPathLengthCost(weight=1.0)
@@ -333,6 +335,9 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # Add the cost again, which is unnecessary for the optimization
         # but useful to check the binding with the default values.
         gcs.AddTimeCost()
+
+        # Add velocity bounds to the entire graph.
+        gcs.AddVelocityBounds(lb=-max_vel, ub=max_vel)
 
         # Add two subgraphs with different orders.
         main1 = gcs.AddRegions(
@@ -429,6 +434,9 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # Add the cost again, which is unnecessary for the optimization
         # but useful to check the binding with the default values.
         main2.AddTimeCost()
+
+        # Add tighter velocity bounds to the main2 subgraph.
+        main2.AddVelocityBounds(lb=-0.5*max_vel, ub=0.5*max_vel)
 
         options = GraphOfConvexSetsOptions()
         options.convex_relaxation = True

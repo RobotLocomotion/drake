@@ -1,5 +1,6 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -32,6 +33,7 @@ using solvers::Binding;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::L2NormCost;
+using solvers::LinearConstraint;
 using solvers::LinearCost;
 using solvers::LinearEqualityConstraint;
 using symbolic::DecomposeLinearExpressions;
@@ -45,6 +47,8 @@ using Vertex = GraphOfConvexSets::Vertex;
 using Edge = GraphOfConvexSets::Edge;
 using VertexId = GraphOfConvexSets::VertexId;
 using EdgeId = GraphOfConvexSets::EdgeId;
+
+const double kInf = std::numeric_limits<double>::infinity();
 
 Subgraph::Subgraph(
     const ConvexSets& regions,
@@ -200,6 +204,52 @@ void Subgraph::AddPathLengthCost(double weight) {
   return Subgraph::AddPathLengthCost(weight_matrix);
 }
 
+void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
+                                 const Eigen::Ref<const VectorXd>& ub) {
+  DRAKE_THROW_UNLESS(lb.size() == num_positions());
+  DRAKE_THROW_UNLESS(ub.size() == num_positions());
+  if (order() == 0) {
+    throw std::runtime_error(
+        "Velocity Bounds are not defined for a set of order 0.");
+  }
+
+  // We have q̇(t) = drds * dsdt = ṙ(s) / h, and h >= 0, so we
+  // use h * lb <= ṙ(s) <= h * ub, formulated as:
+  // - inf <=   h * lb - ṙ(s) <= 0
+  // - inf <= - h * ub + ṙ(s) <= 0
+
+  // This also leverages the convex hull property of the B-splines: if all of
+  // the control points satisfy these convex constraints and the curve is
+  // inside the convex hull of these constraints, then the curve satisfies the
+  // constraints for all t.
+
+  const MatrixX<Expression> u_rdot_control =
+      dynamic_pointer_cast_or_throw<BezierCurve<Expression>>(
+          u_r_trajectory_.MakeDerivative())
+          ->control_points();
+
+  MatrixXd b(u_h_.rows(), u_vars_.size());
+  DecomposeLinearExpressions(u_h_.cast<Expression>(), u_vars_, &b);
+
+  for (int i = 0; i < u_rdot_control.cols(); ++i) {
+    MatrixXd M(num_positions(), u_vars_.size());
+    DecomposeLinearExpressions(u_rdot_control.col(i), u_vars_, &M);
+    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
+    // for both M and b here.
+
+    MatrixXd H(2 * num_positions(), M.cols());
+    H << M - ub * b, -M + lb * b;
+
+    const auto velocity_constraint = std::make_shared<LinearConstraint>(
+        H, VectorXd::Constant(2 * num_positions(), -kInf),
+        VectorXd::Zero(2 * num_positions()));
+
+    for (Vertex* v : vertices_) {
+      v->AddConstraint(Binding<LinearConstraint>(velocity_constraint, v->x()));
+    }
+  }
+}
+
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace, GcsTrajectoryOptimization* traj_opt)
@@ -349,9 +399,12 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(
   }
 
   if (order > 0) {
-    // These costs rely on the derivative of the trajectory.
+    // These costs and constraints rely on the derivative of the trajectory.
     for (const MatrixXd& weight_matrix : global_path_length_costs_) {
       subgraph->AddPathLengthCost(weight_matrix);
+    }
+    for (const auto& [lb, ub] : global_velocity_bounds_) {
+      subgraph->AddVelocityBounds(lb, ub);
     }
   }
   return *subgraphs_.emplace_back(subgraph);
@@ -410,6 +463,20 @@ void GcsTrajectoryOptimization::AddPathLengthCost(double weight) {
   const MatrixXd weight_matrix =
       weight * MatrixXd::Identity(num_positions(), num_positions());
   return GcsTrajectoryOptimization::AddPathLengthCost(weight_matrix);
+}
+
+void GcsTrajectoryOptimization::AddVelocityBounds(
+    const Eigen::Ref<const VectorXd>& lb,
+    const Eigen::Ref<const VectorXd>& ub) {
+  DRAKE_THROW_UNLESS(lb.size() == num_positions());
+  DRAKE_THROW_UNLESS(ub.size() == num_positions());
+  // Add path velocity bounds to each subgraph.
+  for (std::unique_ptr<Subgraph>& subgraph : subgraphs_) {
+    if (subgraph->order() > 0) {
+      subgraph->AddVelocityBounds(lb, ub);
+    }
+  }
+  global_velocity_bounds_.push_back({lb, ub});
 }
 
 std::pair<CompositeTrajectory<double>, solvers::MathematicalProgramResult>
