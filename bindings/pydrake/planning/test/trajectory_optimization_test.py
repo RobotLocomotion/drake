@@ -320,13 +320,19 @@ class TestTrajectoryOptimization(unittest.TestCase):
             np.array([[5.0, 5.0, 4.4, 4.4], [2.8, 5.0, 5.0, 2.8]])
         ]
 
-        # We add a the path length cost to the entire graph.
+        # We add a path length cost to the entire graph.
         # This can be called ahead of time or after adding the regions.
         gcs.AddPathLengthCost(weight=1.0)
         # This cost is equivalent to the above.
         # It will be added twice, which is unnecessary,
         # but we do it to test the binding.
         gcs.AddPathLengthCost(weight_matrix=np.eye(dimension))
+
+        # Add a mimimum time cost to the entire graph.
+        gcs.AddTimeCost(weight=1.0)
+        # Add the cost again, which is unnecessary for the optimization
+        # but useful to check the binding with the default values.
+        gcs.AddTimeCost()
 
         # Add two subgraphs with different orders.
         main1 = gcs.AddRegions(
@@ -415,6 +421,14 @@ class TestTrajectoryOptimization(unittest.TestCase):
         # This weight matrix penalizes movement in the y direction three
         # times more than in the x direction only for the main2 subgraph.
         main2.AddPathLengthCost(weight_matrix=np.diag([1.0, 3.0]))
+
+        # Adding this cost checks the python binding. It won't contribute to
+        # the solution since we already added the minimum time cost to the
+        # whole graph.
+        main2.AddTimeCost(weight=1.0)
+        # Add the cost again, which is unnecessary for the optimization
+        # but useful to check the binding with the default values.
+        main2.AddTimeCost()
 
         options = GraphOfConvexSetsOptions()
         options.convex_relaxation = True

@@ -376,6 +376,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
               return out;
             },
             subgraph_doc.regions.doc)
+        .def("AddTimeCost", &Class::Subgraph::AddTimeCost,
+            py::arg("weight") = 1.0, subgraph_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",
             py::overload_cast<const Eigen::MatrixXd&>(
                 &Class::Subgraph::AddPathLengthCost),
@@ -416,6 +418,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddEdges", &Class::AddEdges, py_rvp::reference_internal,
             py::arg("from_subgraph"), py::arg("to_subgraph"),
             py::arg("subspace") = py::none(), cls_doc.AddEdges.doc)
+        .def("AddTimeCost", &Class::AddTimeCost, py::arg("weight") = 1.0,
+            cls_doc.AddTimeCost.doc)
         .def("AddPathLengthCost",
             py::overload_cast<const Eigen::MatrixXd&>(
                 &Class::AddPathLengthCost),
