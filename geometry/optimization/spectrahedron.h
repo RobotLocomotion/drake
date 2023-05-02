@@ -16,8 +16,7 @@ namespace optimization {
 The ambient dimension of the set is N(N+1)/2; the number of variables required
 to describe the N-by-N semidefinite matrix.
 
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class Spectrahedron final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Spectrahedron)
@@ -26,16 +25,14 @@ class Spectrahedron final : public ConvexSet {
   Spectrahedron();
 
   /** Constructs the spectrahedron from a MathematicalProgram.
-  @throws std::exception if @p prog.required_capabilities() is not a subset of
+  @throws std::exception if `prog.required_capabilities()` is not a subset of
   supported_attributes(). */
   explicit Spectrahedron(const solvers::MathematicalProgram& prog);
 
   ~Spectrahedron() final;
 
   /** Returns the list of solvers::ProgramAttributes supported by this class. */
-  static const solvers::ProgramAttributes& supported_attributes() {
-    return supported_attributes_;
-  }
+  static const solvers::ProgramAttributes& supported_attributes();
 
   // TODO(russt): Add PointInSet(MatrixXd X, double tol) overload, which will
   // only work in the case where the ambient_dimension is ONLY symmetric
@@ -71,8 +68,6 @@ class Spectrahedron final : public ConvexSet {
       const final;
 
   copyable_unique_ptr<solvers::MathematicalProgram> sdp_{};
-
-  static const solvers::ProgramAttributes supported_attributes_;
 };
 
 }  // namespace optimization
