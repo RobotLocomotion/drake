@@ -18,6 +18,7 @@ namespace trajectory_optimization {
 namespace {
 
 using Eigen::Vector2d;
+using Eigen::Vector3d;
 using geometry::optimization::ConvexSets;
 using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
@@ -57,8 +58,157 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, Basic) {
   EXPECT_TRUE(CompareMatrices(traj.value(traj.end_time()), goal, 1e-6));
 }
 
-// TODO(wrangelvid) Add a dedicated test comparing time cost to path length
-// cost. Velocity bounds are required for that.
+GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
+  /* This simple 2D example will show the difference between the minimum time
+  and minimum path length objectives. Bob wants to get from start (S) to goal
+  (G). Bob can either walk or take an e-scooter. While the e-scooter is faster
+  (10 m/s in x and y), it can't drive through gravel. However, Bob can walk at 1
+  m/s (in x and y) through gravel. Bob wants to find the fastest path from S to
+  G.
+
+  ░ - wall
+  ▒ - gravel
+  ░░░░░░░░░░░░░░░░░░░░░░░░
+  ░░                    ░░
+  ░░                    ░░
+  ░░      ░░░░░░░░      ░░
+  ░░      ░░░░░░░░      ░░
+  ░░      ░░░░░░░░      ░░
+  ░░  S   ▒▒▒▒▒▒▒▒   G  ░░
+  ░░      ▒▒▒▒▒▒▒▒      ░░
+  ░░░░░░░░░░░░░░░░░░░░░░░░
+  */
+
+  const int kDimension = 2;
+  const double kWalkingSpeed = 1;
+  const double kScooterSpeed = 10;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  Vector2d start(-0.5, 0), goal(0.5, 0);
+
+  auto& walking_regions =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeBox(Vector2d(-0.5, -0.5),
+                                                         Vector2d(0.5, 0.5))),
+                     3);
+  // Bob can walk at 1 m/s in x and y.
+  walking_regions.AddVelocityBounds(Vector2d(-kWalkingSpeed, -kWalkingSpeed),
+                                    Vector2d(kWalkingSpeed, kWalkingSpeed));
+
+  auto& scooter_regions = gcs.AddRegions(
+      MakeConvexSets(
+          HPolyhedron::MakeBox(Vector2d(-0.5, -0.5), Vector2d(-0.2, 1)),
+          HPolyhedron::MakeBox(Vector2d(-0.5, 1), Vector2d(0.5, 1.5)),
+          HPolyhedron::MakeBox(Vector2d(0.2, -0.5), Vector2d(0.5, 1))),
+      3);
+  // Bob can ride an e-scooter at 10 m/s in x and y.
+  scooter_regions.AddVelocityBounds(Vector2d(-kScooterSpeed, -kScooterSpeed),
+                                    Vector2d(kScooterSpeed, kScooterSpeed));
+
+  auto& source = gcs.AddRegions(MakeConvexSets(Point(start)), 0);
+  auto& target = gcs.AddRegions(MakeConvexSets(Point(goal)), 0);
+
+  gcs.AddEdges(source, walking_regions);
+  gcs.AddEdges(walking_regions, target);
+
+  gcs.AddEdges(source, scooter_regions);
+  gcs.AddEdges(scooter_regions, target);
+
+  // Add shortest path objective to compare against the minimum time objective.
+  gcs.AddPathLengthCost();
+
+  if (!GurobiOrMosekSolverAvailable()) {
+    return;
+  }
+
+  auto [shortest_path_traj, shortest_path_result] =
+      gcs.SolvePath(source, target);
+  EXPECT_TRUE(shortest_path_result.is_success());
+  EXPECT_EQ(shortest_path_traj.rows(), 2);
+  EXPECT_EQ(shortest_path_traj.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(
+      shortest_path_traj.value(shortest_path_traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(
+      shortest_path_traj.value(shortest_path_traj.end_time()), goal, 1e-6));
+
+  // We expect the shortest path to be a straight line from S to G, going
+  // through the gravel. Thus we expect the number of segments in the trajectory
+  // to be 3 (one for start, one for the walking_regions and one for the goal)
+  // and the path length to be 1.
+  EXPECT_EQ(shortest_path_traj.get_number_of_segments(), 3);
+
+  const double kExpectedShortestPathLength = 1.0;
+  double shortest_path_length = 0.0;
+  const double dt = 0.01;  // Time step for numerical integration.
+
+  for (double t = shortest_path_traj.start_time();
+       t < shortest_path_traj.end_time(); t += dt) {
+    const double t_next = std::min(t + dt, shortest_path_traj.end_time());
+    const double dx =
+        (shortest_path_traj.value(t_next) - shortest_path_traj.value(t)).norm();
+    shortest_path_length += dx;
+  }
+  EXPECT_NEAR(shortest_path_length, kExpectedShortestPathLength, 1e-6);
+
+  const double shortest_path_duration =
+      shortest_path_traj.end_time() - shortest_path_traj.start_time();
+
+  // Now we want to find the fastest path from S to G.
+  // Add minimum time objective with a very high weight to overpower the
+  // shortest path objective.
+  gcs.AddTimeCost(1e6);
+
+  auto [fastest_path_traj, fastest_path_result] = gcs.SolvePath(source, target);
+  EXPECT_TRUE(fastest_path_result.is_success());
+  EXPECT_EQ(fastest_path_traj.rows(), 2);
+  EXPECT_EQ(fastest_path_traj.cols(), 1);
+  EXPECT_TRUE(CompareMatrices(
+      fastest_path_traj.value(fastest_path_traj.start_time()), start, 1e-6));
+  EXPECT_TRUE(CompareMatrices(
+      fastest_path_traj.value(fastest_path_traj.end_time()), goal, 1e-6));
+
+  // We expect the fastest path to take a detour and avoid the going through the
+  // gravel. Thus we expect the number of segments in the trajectory to be 5
+  // (one for start, three for the scooter_regions and one for the goal) and the
+  // path length to be greater than 2.4 (the minimum path length for the
+  // detour).
+  EXPECT_EQ(fastest_path_traj.get_number_of_segments(), 5);
+
+  const double kLeastExpectedFastestPathLength = 2.4;
+  double fastest_path_length = 0.0;
+
+  // During the path integration, we will also check that the velocity bounds
+  // are consistently hit.
+  auto fastest_path_velocity = fastest_path_traj.MakeDerivative();
+  for (double t = fastest_path_traj.start_time();
+       t < fastest_path_traj.end_time(); t += dt) {
+    const double t_next = std::min(t + dt, fastest_path_traj.end_time());
+    const double dx =
+        (fastest_path_traj.value(t_next) - fastest_path_traj.value(t)).norm();
+
+    // We also expect the fastest path to consistently hit either of the
+    // velocity bounds.
+    // TODO(wrangelvid) as we add the start and end points as curves with
+    // order zero to the composite trajectory, the velocity is not computed
+    // properly.
+    if (fastest_path_traj.start_time() < t &&
+        t < fastest_path_traj.end_time()) {
+      EXPECT_TRUE((fastest_path_velocity->value(t).cwiseAbs() -
+                   Vector2d(kScooterSpeed, kScooterSpeed))
+                      .cwiseAbs()
+                      .minCoeff() < 1e-6);
+    }
+    fastest_path_length += dx;
+  }
+  EXPECT_TRUE(fastest_path_length > kLeastExpectedFastestPathLength);
+  // We expect the fastest path to be longer than the shortest path.
+  EXPECT_TRUE(fastest_path_length > shortest_path_length);
+
+  // The fastest path should be faster than the shortest path.
+  const double fastest_path_duration =
+      fastest_path_traj.end_time() - fastest_path_traj.start_time();
+  EXPECT_TRUE(fastest_path_duration < shortest_path_duration);
+}
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidPositions) {
   /* Positions passed into GcsTrajectoryOptimization must be greater than 0.*/
@@ -97,6 +247,32 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, ZeroOrderPathLengthCost) {
   // This should consider the order of the subgraphs and not add the path length
   // cost to the regions.
   DRAKE_EXPECT_NO_THROW(gcs.AddPathLengthCost());
+}
+
+GTEST_TEST(GcsTrajectoryOptimizationTest, InvalidVelocityBounds) {
+  /* The velocity of a curve is not defined for a subgraph of order 0.*/
+  const int kDimension = 2;
+  GcsTrajectoryOptimization gcs(kDimension);
+  EXPECT_EQ(gcs.num_positions(), kDimension);
+
+  auto& regions =
+      gcs.AddRegions(MakeConvexSets(HPolyhedron::MakeUnitBox(kDimension)), 0);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions.AddVelocityBounds(Vector2d::Zero(), Vector2d::Zero()),
+      "Velocity Bounds are not defined for a set of order 0.");
+  // This should consider the order of the subgraphs and not add the velocity
+  // bounds to the regions.
+  DRAKE_EXPECT_NO_THROW(
+      gcs.AddVelocityBounds(Vector2d::Zero(), Vector2d::Zero()));
+
+  // lower and upper bound must have the same dimension as the graph.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      regions.AddVelocityBounds(Vector3d::Zero(), Vector2d::Zero()),
+      ".*size.*.num_positions.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      gcs.AddVelocityBounds(Vector2d::Zero(), Vector3d::Zero()),
+      ".*size.*.num_positions.*");
 }
 
 GTEST_TEST(GcsTrajectoryOptimizationTest, DisjointGraph) {
@@ -409,6 +585,7 @@ TEST_F(SimpleEnv2D, MultiStartGoal) {
 
   Vector2d start1(0.2, 0.2), start2(0.3, 3.2);
   Vector2d goal1(4.8, 4.8), goal2(4.9, 2.4);
+  const double kSpeed = 1.0;
 
   auto& regions = gcs.AddRegions(regions_, 3);
   auto& source =
@@ -417,6 +594,8 @@ TEST_F(SimpleEnv2D, MultiStartGoal) {
 
   gcs.AddEdges(source, regions);
   gcs.AddEdges(regions, target);
+
+  gcs.AddVelocityBounds(Vector2d(-kSpeed, -kSpeed), Vector2d(kSpeed, kSpeed));
 
   gcs.AddPathLengthCost();
   gcs.AddTimeCost();
@@ -480,6 +659,7 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   EXPECT_EQ(gcs.num_positions(), kDimension);
 
   Vector2d start(0.2, 0.2), goal(4.8, 4.8), intermediate(2.3, 3.5);
+  const double kSpeed = 1.0;
 
   // Both a Point and an HPolytope are valid subspaces.
   Point subspace_point(intermediate);
@@ -509,9 +689,10 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
   gcs.AddEdges(main1, main2, &subspace_region);
   gcs.AddEdges(main2, target);
 
-  // We can add different costs to the individual subgraphs.
+  // We can add different costs and constraints to the individual subgraphs.
   main1.AddPathLengthCost(5);
   main1.AddTimeCost(1);
+  main1.AddVelocityBounds(Vector2d(-kSpeed, -kSpeed), Vector2d(kSpeed, kSpeed));
 
   // This weight matrix penalizes movement in the y direction three times more
   // than in the x direction.

@@ -386,7 +386,9 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathLengthCost",
             py::overload_cast<double>(&Class::Subgraph::AddPathLengthCost),
             py::arg("weight") = 1.0,
-            subgraph_doc.AddPathLengthCost.doc_1args_weight);
+            subgraph_doc.AddPathLengthCost.doc_1args_weight)
+        .def("AddVelocityBounds", &Class::Subgraph::AddVelocityBounds,
+            py::arg("lb"), py::arg("ub"), subgraph_doc.AddVelocityBounds.doc);
 
     // EdgesBetweenSubgraphs
     const auto& subgraph_edges_doc =
@@ -428,6 +430,8 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("AddPathLengthCost",
             py::overload_cast<double>(&Class::AddPathLengthCost),
             py::arg("weight") = 1.0, cls_doc.AddPathLengthCost.doc_1args_weight)
+        .def("AddVelocityBounds", &Class::AddVelocityBounds, py::arg("lb"),
+            py::arg("ub"), cls_doc.AddVelocityBounds.doc)
         .def("SolvePath", &Class::SolvePath, py::arg("source"),
             py::arg("target"),
             py::arg("options") =
