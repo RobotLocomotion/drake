@@ -319,10 +319,11 @@ class CspaceFreePolytope {
    margin between the i'th face C.row(i)<=d(i) to the inscribed ellipsoid.
    */
   enum EllipsoidMarginCost {
-    kSum,            ///< Maximize ∑ᵢδᵢ
-    kGeometricMean,  ///< Maximize the geometric mean power(∏ᵢ (δᵢ + ε), 1/n)
-                     ///< where n is C.rows(),
-                     ///< ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon. NOLINT
+    /** Maximize ∑ᵢδᵢ */
+    kSum,
+    /** Maximize the geometric mean power(∏ᵢ (δᵢ + ε), 1/n) where n is C.rows(),
+    ε=FindPolytopeGivenLagrangianOptions.ellipsoid_margin_epsilon. */
+    kGeometricMean,
   };
 
   struct FindPolytopeGivenLagrangianOptions {

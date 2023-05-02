@@ -14,8 +14,8 @@ using Eigen::Vector2d;
 // incompatible when MOSEK might be used.
 
 GTEST_TEST(ConvexSetTest, IntersectsWithTest) {
-/* Test that IntersectsWith() yields correct results for the following
-arrangement of boxes:
+  /* Test that IntersectsWith() yields correct results for the following
+  arrangement of boxes:
      5                ┏━━━━━━━━━┓
                       ┃      C  ┃
      4      ┏━━━━━━━━━┃━━━━┓    ┃
@@ -28,7 +28,7 @@ arrangement of boxes:
        ┃  A      ┃
      0 ┗━━━━━━━━━┛
        0    1    2    3    4    5
-*/
+  */
   HPolyhedron set_A = HPolyhedron::MakeBox(Vector2d(0, 0), Vector2d(2, 2));
   HPolyhedron set_B = HPolyhedron::MakeBox(Vector2d(1, 1), Vector2d(4, 4));
   HPolyhedron set_C = HPolyhedron::MakeBox(Vector2d(3, 3), Vector2d(5, 5));

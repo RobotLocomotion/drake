@@ -155,8 +155,8 @@ VPolytope::VPolytope(const HPolyhedron& hpoly)
       vertex_A.row(jj) = Eigen::Map<Eigen::RowVectorXd, Eigen::Unaligned>(
           hyperplane.data(), hyperplane.size());
     }
-    vertices_.col(ii) = vertex_A.partialPivLu().solve(VectorXd::Ones(
-                            incident_hyperplanes.count())) +
+    vertices_.col(ii) = vertex_A.partialPivLu().solve(
+                            VectorXd::Ones(incident_hyperplanes.count())) +
                         eigen_center;
     ii++;
   }
