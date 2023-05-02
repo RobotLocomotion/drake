@@ -328,7 +328,7 @@ install(
     docs = [
         "AUTHORS",
         "COPYING",
-        "NEWS",
+        "NEWS.md",
     ],
     rename = {
         "share/java/liblcm-java.jar": "lcm.jar",

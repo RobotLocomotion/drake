@@ -6,8 +6,8 @@ def petsc_repository(
     github_archive(
         name = name,
         repository = "petsc/petsc",
-        commit = "v3.19.0",
-        sha256 = "4c5930d494f7aa6a89124c26d209f68ca2383f1f1d8b24b6414c0571b359469b",  # noqa
+        commit = "v3.19.1",
+        sha256 = "a4fac43dfd39fc2ceb960a1141fe034525b2b1d565d8c61573de62b8089b0895",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
         patches = [
