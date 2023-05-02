@@ -67,6 +67,14 @@ struct SortedPair {
     }
   }
 
+  /// Constructs a %SortedPair from a std::pair
+  explicit SortedPair(const std::pair<T, T>& pair)
+      : first_(pair.first), second_(pair.second) {
+    if (second_ < first_) {
+      std::swap(first_, second_);
+    }
+  }
+
   /// Type-converting copy constructor.
   template <class U>
   SortedPair(SortedPair<U>&& u)
