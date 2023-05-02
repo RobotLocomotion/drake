@@ -2900,7 +2900,11 @@ class MathematicalProgram {
   }  // e.g. for snopt_user_fun
 
   /**
-   * Getter for linear equality constraints.
+   * Getter for linear equality constraints. Note that this only includes
+   * constraints that were added explicitly as LinearEqualityConstraint or
+   * which were added symbolically (and their equality constraint nature was
+   * uncovered). There may be bounding_box_constraints() and
+   * linear_constraints() whose lower bounds also equal their upper bounds.
    */
   const std::vector<Binding<LinearEqualityConstraint>>&
   linear_equality_constraints() const {
@@ -2922,7 +2926,9 @@ class MathematicalProgram {
     return l2norm_costs_;
   }
 
-  /** Getter for linear constraints. */
+  /** Getter for linear *inequality* constraints. Note that this does not
+   * include linear_equality_constraints() nor bounding_box_constraints(). See
+   * also GetAllLinearConstraints(). */
   const std::vector<Binding<LinearConstraint>>& linear_constraints() const {
     return linear_constraints_;
   }
@@ -2984,7 +2990,8 @@ class MathematicalProgram {
 
   /**
    * Getter returning all linear constraints (both linear equality and
-   * inequality constraints).
+   * inequality constraints). Note that this does *not* include bounding box
+   * constraints, which are technically also linear.
    * @returns Vector of all linear constraint bindings.
    */
   [[nodiscard]] std::vector<Binding<LinearConstraint>> GetAllLinearConstraints()
