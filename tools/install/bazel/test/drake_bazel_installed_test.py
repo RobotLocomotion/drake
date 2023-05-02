@@ -18,12 +18,12 @@ def main():
 
     # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/rules_python/repository.bzl.
-    rules_python_commit = "0.19.0"
+    rules_python_commit = "0.21.0"
     rules_python_urls = [
         f"https://github.com/bazelbuild/rules_python/archive/{rules_python_commit}.tar.gz",  # noqa
         f"https://drake-mirror.csail.mit.edu/github/bazelbuild/rules_python/{rules_python_commit}.tar.gz",  # noqa
     ]
-    rules_python_sha256 = "ffc7b877c95413c82bfd5482c017edcf759a6250d8b24e82f41f3c8b8d9e287e"  # noqa
+    rules_python_sha256 = "94750828b18044533e98a129003b6a68001204038dc4749f40b195b24c38f49f"  # noqa
 
     with open(join(scratch_dir, "WORKSPACE"), "w") as f:
         f.write(f"""
