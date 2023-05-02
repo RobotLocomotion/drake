@@ -3,6 +3,8 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -10,6 +12,7 @@
 #include "drake/planning/trajectory_optimization/direct_collocation.h"
 #include "drake/planning/trajectory_optimization/direct_transcription.h"
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
+#include "drake/planning/trajectory_optimization/hybrid_multibody_collocation.h"
 #include "drake/planning/trajectory_optimization/kinematic_trajectory_optimization.h"
 
 namespace drake {
@@ -37,6 +40,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   using namespace drake::planning::trajectory_optimization;
   constexpr auto& doc = pydrake_doc.drake.planning.trajectory_optimization;
 
+  using geometry::GeometryId;
   using solvers::MathematicalProgram;
   using solvers::MatrixXDecisionVariable;
   using solvers::VectorXDecisionVariable;
@@ -450,6 +454,98 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("options") =
                 geometry::optimization::GraphOfConvexSetsOptions(),
             cls_doc.SolvePath.doc);
+  }
+
+  {
+    using Class = HybridMultibodyCollocation;
+    constexpr auto& cls_doc = doc.HybridMultibodyCollocation;
+    py::class_<Class> hybrid(m, "HybridMultibodyCollocation", cls_doc.doc);
+
+    using ContactPair = HybridMultibodyCollocation::ContactPair;
+
+    // ConstrainedDirectCollocation
+    const auto& dircon_doc =
+        doc.HybridMultibodyCollocation.ConstrainedDirectCollocation;
+    py::class_<Class::ConstrainedDirectCollocation, MultipleShooting>(
+        hybrid, "ConstrainedDirectCollocation", dircon_doc.doc)
+        .def(
+            "in_contact",
+            [](Class::ConstrainedDirectCollocation& self) {
+              std::set<std::pair<geometry::GeometryId, geometry::GeometryId>>
+                  pairs;
+              for (const auto& p : self.in_contact()) {
+                pairs.emplace(p.first(), p.second());
+              }
+              return pairs;
+            },
+            dircon_doc.in_contact.doc)
+        .def("ContactForce",
+            overload_cast_explicit<solvers::VectorXDecisionVariable,
+                const ContactPair&>(
+                &Class::ConstrainedDirectCollocation::ContactForce),
+            py::arg("contact"), dircon_doc.ContactForce.doc_1args)
+        .def("ContactForce",
+            overload_cast_explicit<solvers::VectorXDecisionVariable,
+                const ContactPair&, int>(
+                &Class::ConstrainedDirectCollocation::ContactForce),
+            py::arg("contact"), py::arg("index"),
+            dircon_doc.ContactForce.doc_2args)
+        .def("AllContactForces",
+            overload_cast_explicit<solvers::VectorXDecisionVariable>(
+                &Class::ConstrainedDirectCollocation::AllContactForces),
+            dircon_doc.AllContactForces.doc_0args)
+        .def("AllContactForces",
+            overload_cast_explicit<solvers::VectorXDecisionVariable, int>(
+                &Class::ConstrainedDirectCollocation::AllContactForces),
+            py::arg("index"), dircon_doc.AllContactForces.doc_1args)
+        .def("ReconstructInputTrajectory",
+            &Class::ConstrainedDirectCollocation::ReconstructInputTrajectory,
+            py::arg("result"), dircon_doc.ReconstructInputTrajectory.doc)
+        .def("ReconstructStateTrajectory",
+            &Class::ConstrainedDirectCollocation::ReconstructStateTrajectory,
+            py::arg("result"), dircon_doc.ReconstructStateTrajectory.doc)
+        .def("ReconstructContactForceTrajectory",
+            &Class::ConstrainedDirectCollocation::
+                ReconstructContactForceTrajectory,
+            py::arg("result"), py::arg("contact"),
+            dircon_doc.ReconstructContactForceTrajectory.doc);
+
+    hybrid  // BR
+        .def(py::init<const planning::RobotDiagram<double>*,
+                 const systems::Context<double>&, double, double>(),
+            py::arg("robot_diagram"), py::arg("robot_diagram_context"),
+            py::arg("minimum_time_step"), py::arg("maximum_time_step"),
+            cls_doc.ctor.doc)
+        .def("prog", &Class::prog, py_rvp::reference_internal, cls_doc.prog.doc)
+        .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
+        .def("num_states", &Class::num_states, cls_doc.num_states.doc)
+        .def(
+            "GetContactPairCandidates",
+            [](Class& self) {
+              std::set<std::pair<geometry::GeometryId, geometry::GeometryId>>
+                  pairs;
+              for (const auto& p : self.GetContactPairCandidates()) {
+                pairs.emplace(p.first(), p.second());
+              }
+              return pairs;
+            },
+            cls_doc.GetContactPairCandidates.doc)
+        .def("model_inspector", &Class::model_inspector,
+            py_rvp::reference_internal, cls_doc.model_inspector.doc)
+        .def("AddMode", &Class::AddMode, py_rvp::reference_internal,
+            py::arg("name"), py::arg("num_time_samples"),
+            py::arg("sticking_contact"), cls_doc.AddMode.doc)
+        .def("AddModeWithInelasticImpact", &Class::AddModeWithInelasticImpact,
+            py_rvp::reference_internal, py::arg("name"),
+            py::arg("num_time_samples"), py::arg("new_contact"),
+            cls_doc.AddModeWithInelasticImpact.doc)
+        .def("ReconstructInputTrajectory", &Class::ReconstructInputTrajectory,
+            py::arg("result"), cls_doc.ReconstructInputTrajectory.doc)
+        .def("ReconstructStateTrajectory", &Class::ReconstructStateTrajectory,
+            py::arg("result"), cls_doc.ReconstructStateTrajectory.doc)
+        .def("ReconstructContactForceTrajectory",
+            &Class::ReconstructContactForceTrajectory, py::arg("result"),
+            py::arg("contact"), cls_doc.ReconstructContactForceTrajectory.doc);
   }
 }
 
