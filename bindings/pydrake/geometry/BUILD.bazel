@@ -1,5 +1,9 @@
 load("@drake//tools/install:install.bzl", "install")
 load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_library",
+)
+load(
     "@drake//tools/skylark:drake_py.bzl",
     "drake_py_unittest",
 )
@@ -19,9 +23,16 @@ package(default_visibility = [
 # bindings.
 PACKAGE_INFO = get_pybind_package_info(base_package = "//bindings")
 
+drake_cc_library(
+    name = "optimization_pybind",
+    hdrs = ["optimization_pybind.h"],
+    declare_installed_headers = 0,
+)
+
 drake_pybind_library(
     name = "geometry",
     cc_deps = [
+        ":optimization_pybind",
         "//bindings/pydrake:documentation_pybind",
         "//bindings/pydrake/common:default_scalars_pybind",
         "//bindings/pydrake/common:deprecation_pybind",

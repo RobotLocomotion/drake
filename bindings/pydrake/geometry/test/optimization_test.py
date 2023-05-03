@@ -9,7 +9,7 @@ from pydrake.common import RandomGenerator, temp_directory
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Ellipsoid, FramePoseVector, GeometryFrame,
-    GeometryInstance, SceneGraph, Sphere,
+    GeometryInstance, ProximityProperties, SceneGraph, Sphere,
 )
 from pydrake.math import RigidTransform
 from pydrake.multibody.inverse_kinematics import InverseKinematics
@@ -346,6 +346,10 @@ class TestGeometryOptimization(unittest.TestCase):
             geometry=GeometryInstance(X_PG=RigidTransform(),
                                       shape=Capsule(1., 1.0),
                                       name="capsule"))
+        for geometry_id in [box_geometry_id, cylinder_geometry_id,
+                            sphere_geometry_id, capsule_geometry_id]:
+            scene_graph.AssignRole(source_id, geometry_id,
+                                   properties=ProximityProperties())
         context = scene_graph.CreateDefaultContext()
         pose_vector = FramePoseVector()
         pose_vector.set_value(frame_id, RigidTransform())
@@ -381,6 +385,9 @@ class TestGeometryOptimization(unittest.TestCase):
         obstacles = mut.MakeIrisObstacles(
             query_object=query_object,
             reference_frame=scene_graph.world_frame_id())
+        self.assertGreater(len(obstacles), 0)
+        for obstacle in obstacles:
+            self.assertIsInstance(obstacle, mut.ConvexSet)
         options = mut.IrisOptions()
         options.require_sample_point_is_contained = True
         options.iteration_limit = 1
@@ -441,6 +448,10 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(region.PointInSet([1.0]))
         self.assertFalse(region.PointInSet([3.0]))
         options.configuration_obstacles = [mut.Point([-0.5])]
+        point, = options.configuration_obstacles
+        self.assertEqual(point.x(), [-0.5])
+        point2, = options.configuration_obstacles
+        self.assertIs(point2, point)
         region = mut.IrisInConfigurationSpace(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
