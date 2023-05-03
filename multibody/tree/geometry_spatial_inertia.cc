@@ -95,17 +95,11 @@ class SpatialInertiaCalculator final : public ShapeReifier {
   SpatialInertia<double> spatial_inertia_;
 };
 
-}  // namespace
-
-SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
-                                          double density) {
-  SpatialInertiaCalculator calculator;
-  calculator.Calculate(shape, density);
-  return calculator.spatial_inertia();
-}
-
-SpatialInertia<double> CalcSpatialInertia(
-    const geometry::TriangleSurfaceMesh<double>& mesh, double density) {
+void CalcMeshMetrics(
+    const geometry::TriangleSurfaceMesh<double>& mesh,
+    UnitInertia<double>* unit_inertia,
+    double* volume_times_six,
+    Vector3d* com) {
   /* This algorithm is based on:
    - https://www.geometrictools.com/Documentation/PolyhedralMassProperties.pdf
    - http://number-none.com/blow/inertia/bb_inertia.doc
@@ -141,10 +135,10 @@ SpatialInertia<double> CalcSpatialInertia(
     vol_times_six += tet_vol_times_six;
     accum_com += (p + q + r) * tet_vol_times_six;
   }
+  *volume_times_six = vol_times_six;
+  *com = accum_com;
 
   const double volume = vol_times_six / 6.0;
-  const double mass = density * volume;
-  const Vector3d p_GoGcm = accum_com / (vol_times_six * 4);
   // We can compute I = C.trace * 1₃ - C. Two key points:
   //  1. We don't want I, we want G, the unit inertia. Our computation of C is
   //     *mass* weighted with an implicit assumption of unit density. So, to
@@ -153,8 +147,39 @@ SpatialInertia<double> CalcSpatialInertia(
   //     and go get the six terms we actually care about.
   C /= volume;
   const double trace_C = C.trace();
-  const UnitInertia G_GGo_G(trace_C - C(0, 0), trace_C - C(1, 1),
-                            trace_C - C(2, 2), -C(1, 0), -C(2, 0), -C(2, 1));
+  *unit_inertia = UnitInertia<double>(
+      trace_C - C(0, 0), trace_C - C(1, 1),
+      trace_C - C(2, 2), -C(1, 0), -C(2, 0), -C(2, 1));
+}
+
+}  // namespace
+
+SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
+                                          double density) {
+  SpatialInertiaCalculator calculator;
+  calculator.Calculate(shape, density);
+  return calculator.spatial_inertia();
+}
+
+UnitInertia<double> CalcUnitInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh) {
+  UnitInertia<double> result;
+  double vx6{};
+  Vector3d com;
+  CalcMeshMetrics(mesh, &result, &vx6, &com);
+  return result;
+}
+
+SpatialInertia<double> CalcSpatialInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh, double density) {
+  UnitInertia<double> G_GGo_G;;
+  double vol_times_six{};
+  Vector3d accum_com;
+  CalcMeshMetrics(mesh, &G_GGo_G, &vol_times_six, &accum_com);
+
+  const double volume = vol_times_six / 6.0;
+  const double mass = density * volume;
+  const Vector3d p_GoGcm = accum_com / (vol_times_six * 4);
   return SpatialInertia<double>{mass, p_GoGcm, G_GGo_G};
 }
 

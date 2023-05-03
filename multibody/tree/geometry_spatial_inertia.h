@@ -3,6 +3,7 @@
 #include "drake/geometry/proximity/triangle_surface_mesh.h"
 #include "drake/geometry/shape_specification.h"
 #include "drake/multibody/tree/spatial_inertia.h"
+#include "drake/multibody/tree/unit_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -10,7 +11,7 @@ namespace multibody {
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given
  `shape`.
- 
+
  The `shape` is defined in its canonical frame S and the body in frame B. The
  two frames are coincident and aligned (i.e., X_SB = I).
 
@@ -35,10 +36,31 @@ namespace multibody {
 SpatialInertia<double> CalcSpatialInertia(const geometry::Shape& shape,
                                           double density);
 
+/** Computes the UnitInertia of a body made up of a homogeneous material
+ (of given `density` in kg/m³) uniformly distributed in the volume of the given
+ `mesh`.
+
+ The `mesh` is defined in its canonical frame M and the body in frame B. The two
+ frames are coincident and aligned (i.e., X_MB = I).
+
+ For the resultant unit inertia to be meaningful, the `mesh` must satisfy
+ certain requirements:
+
+   - The mesh must *fully* enclose a volume (no cracks, no open manifolds,
+     etc.)
+   - All triangles must be "wound" such that their normals point outward
+     (according to the right-hand rule based on vertex winding).
+
+ If these requirements are not met, a value *will* be returned, but its value
+ is meaningless.
+ @pydrake_mkdoc_identifier{mesh} */
+UnitInertia<double> CalcUnitInertia(
+    const geometry::TriangleSurfaceMesh<double>& mesh);
+
 /** Computes the SpatialInertia of a body made up of a homogeneous material
  (of given `density` in kg/m³) uniformly distributed in the volume of the given
  `mesh`.
- 
+
  The `mesh` is defined in its canonical frame M and the body in frame B. The two
  frames are coincident and aligned (i.e., X_MB = I).
 
