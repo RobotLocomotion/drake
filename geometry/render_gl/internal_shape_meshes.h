@@ -5,7 +5,7 @@
 
 #include <Eigen/Dense>
 
-#include "drake/geometry/render_gl/internal_opengl_includes.h"
+#include "drake/geometry/render/render_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -30,8 +30,8 @@ namespace internal {
                             with the sphere equator.
  @pre `longitude_bands` >= 3 and `latitude_bands` >= 2 (otherwise the sphere
       will have no volume).  */
-MeshData MakeLongLatUnitSphere(int longitude_bands = 50,
-                               int latitude_bands = 50);
+geometry::internal::RenderMesh MakeLongLatUnitSphere(int longitude_bands = 50,
+                                                     int latitude_bands = 50);
 
 /* Creates an OpenGL-compatible mesh representation of a unit cylinder; its
  radius and height are equal to 1. It is centered on the origin of its canonical
@@ -57,7 +57,8 @@ MeshData MakeLongLatUnitSphere(int longitude_bands = 50,
                     cylinder.
  @pre `num_strips` >= 3 (otherwise the cylinder will have no volume).
  @pre `num_bands` >= 1.  */
-MeshData MakeUnitCylinder(int num_strips = 50, int num_bands = 1);
+geometry::internal::RenderMesh MakeUnitCylinder(int num_strips = 50,
+                                                int num_bands = 1);
 
 /* Creates an OpenGL-compatible mesh reprepsenting a square patch. The patch
  has edge length `measure` units long. The square patch is defined lying on the
@@ -73,7 +74,8 @@ MeshData MakeUnitCylinder(int num_strips = 50, int num_bands = 1);
  two triangles).
  @pre `measure` > 0
  @pre `resolution >= 1`. */
-MeshData MakeSquarePatch(GLfloat measure = 200, int resolution = 1);
+geometry::internal::RenderMesh MakeSquarePatch(double measure = 200,
+                                               int resolution = 1);
 
 /* Creates an OpenGL-compatible mesh representation of the unit box - all edges
  are length 1. The box is centered on the origin of its canonical frame C with
@@ -91,7 +93,7 @@ MeshData MakeSquarePatch(GLfloat measure = 200, int resolution = 1);
 
 <!-- TODO(SeanCurtis-TRI): consider offering subdivisions if per-vertex
     properties yield undesirable artifacts for large boxes.  --> */
-MeshData MakeUnitBox();
+geometry::internal::RenderMesh MakeUnitBox();
 
 /* Creates an OpenGL-compatible mesh representation of a capsule with the given
  `radius` and `length`. The capsule is centered on the origin of its canonical
@@ -119,7 +121,8 @@ MeshData MakeUnitBox();
  @param length    The length of the cylindrical barrel.
  @pre `samples` >= 3 (otherwise the capsule will have no volume).
  @pre radius > 0 and length > 0.  */
-MeshData MakeCapsule(int samples, double radius, double length);
+geometry::internal::RenderMesh MakeCapsule(int samples, double radius,
+                                           double length);
 
 }  // namespace internal
 }  // namespace render_gl

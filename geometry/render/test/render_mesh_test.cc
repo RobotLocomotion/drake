@@ -1,4 +1,4 @@
-#include "drake/geometry/render_gl/internal_shape_meshes.h"
+#include "drake/geometry/render/render_mesh.h"
 
 #include <sstream>
 #include <vector>
@@ -12,27 +12,26 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
 namespace internal {
 namespace {
 
 using Eigen::AngleAxisf;
-using Vector2f = Vector2<GLfloat>;
-using Vector3f = Vector3<GLfloat>;
+using Eigen::Vector2d;
+using Eigen::Vector3d;
 using std::vector;
 
-GTEST_TEST(LoadMeshFromObjTest, ErrorModes) {
+GTEST_TEST(LoadRenderMeshFromObjTest, ErrorModes) {
   {
     // Case: Vertices only reports no faces found.
     std::stringstream in_stream("v 1 2 3");
-    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
+    DRAKE_EXPECT_THROWS_MESSAGE(LoadRenderMeshFromObj(&in_stream),
                                 "The OBJ data appears to have no faces.*");
   }
   {
     // Case: Not an obj in any way reports as no faces.
     std::stringstream in_stream("Not an obj\njust some\nmeaningles text.\n");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadMeshFromObj(&in_stream),
+        LoadRenderMeshFromObj(&in_stream),
         "The OBJ data appears to have no faces.* might not be an OBJ file.+");
   }
   {
@@ -40,7 +39,7 @@ GTEST_TEST(LoadMeshFromObjTest, ErrorModes) {
     // invalid in that it references vertex positions that don't exist.
     std::stringstream in_stream("v 1 2 3\nf 1 2 3\n");
     DRAKE_EXPECT_THROWS_MESSAGE(
-        LoadMeshFromObj(&in_stream),
+        LoadRenderMeshFromObj(&in_stream),
         "OBJ has no normals; RenderEngineGl requires OBJs with normals.+");
   }
   {
@@ -53,7 +52,7 @@ vn 0 0 1
 vt 0 1
 f 1 2 3
 )""");
-    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
+    DRAKE_EXPECT_THROWS_MESSAGE(LoadRenderMeshFromObj(&in_stream),
                                 "Not all faces reference normals.+");
   }
   {
@@ -66,12 +65,12 @@ vn 0 0 1
 vt 0 0
 f 1//1 2//1 3//1
 )""");
-    DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj(&in_stream),
+    DRAKE_EXPECT_THROWS_MESSAGE(LoadRenderMeshFromObj(&in_stream),
                                 "Not all faces reference texture.+");
   }
 }
 
-GTEST_TEST(LoadMeshFromObjTest, NoMeshUvs) {
+GTEST_TEST(LoadRenderMeshFromObjTest, NoMeshUvs) {
   // Update: This OBJ has no UVs, but we have now updated this to accept it.
   std::stringstream in_stream(R"""(
 v 0.1 0.2 0.3
@@ -80,23 +79,23 @@ v -0.1 -0.2 -0.3
 vn 0 0 1
 f 1//1 2//1 3//1
 )""");
-  EXPECT_NO_THROW(LoadMeshFromObj(&in_stream));
+  EXPECT_NO_THROW(LoadRenderMeshFromObj(&in_stream));
 }
 
-// Simply confirms that the filename variant of LoadMeshFromObj successfully
-// dispatches files or errors, as appropriate. The actual parsing functionality
-// is parsed via the stream interface.
-GTEST_TEST(LoadMeshFromObjTest, ReadingFile) {
+// Simply confirms that the filename variant of LoadRenderMeshFromObj
+// successfully dispatches files or errors, as appropriate. The actual parsing
+// functionality  is parsed via the stream interface.
+GTEST_TEST(LoadRenderMeshFromObjTest, ReadingFile) {
   const std::string filename =
       FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
 
-  MeshData mesh_data = LoadMeshFromObj(filename);
+  RenderMesh mesh_data = LoadRenderMeshFromObj(filename);
   EXPECT_EQ(mesh_data.positions.rows(), 24);
   EXPECT_EQ(mesh_data.normals.rows(), 24);
   EXPECT_EQ(mesh_data.uvs.rows(), 24);
   EXPECT_EQ(mesh_data.indices.rows(), 12);
 
-  DRAKE_EXPECT_THROWS_MESSAGE(LoadMeshFromObj("Bad file name"),
+  DRAKE_EXPECT_THROWS_MESSAGE(LoadRenderMeshFromObj("Bad file name"),
                               "Cannot load the obj file 'Bad file name'");
 }
 
@@ -106,17 +105,17 @@ struct TriangluateTestParmas {
   std::string obj_spec;
   int position_count;
   // The expected normal and texture coordinate for the vertices in face 0 (f0).
-  Vector3f n0;
-  Vector2f uv0;
+  Vector3d n0;
+  Vector2d uv0;
   // The expected normal and texture coordinate for the vertices in face 1 (f1).
-  Vector3f n1;
-  Vector2f uv1;
+  Vector3d n1;
+  Vector2d uv1;
 };
 
 // Confirms that non-triangular faces get triangulated. This also confirms that
 // duplication occurs due to associations of vertex positions with multiple
 // normals or texture coordinates.
-GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
+GTEST_TEST(LoadRenderMeshFromObjTest, TriangulatePolygons) {
   /*
              o 4
             ╱  ╲            A five-sided polygon and a four-sided polygon
@@ -141,10 +140,10 @@ GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
   v -1 -2 0
   v 1 -2 0)""";
 
-  const Vector3f unit3_z = Vector3f::UnitZ();
-  const Vector3f unit3_y = Vector3f::UnitY();
-  const Vector2f zero2 = Vector2f::Zero();
-  const Vector2f ones2(1, 1);
+  const Vector3d unit3_z = Vector3d::UnitZ();
+  const Vector3d unit3_y = Vector3d::UnitY();
+  const Vector2d zero2 = Vector2d::Zero();
+  const Vector2d ones2(1, 1);
 
   vector<TriangluateTestParmas> test_params{
       // Every vertex is associated with a single normal and texture coordinate.
@@ -179,7 +178,7 @@ GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
     std::stringstream in_stream;
     in_stream << positions;
     in_stream << params.obj_spec;
-    MeshData mesh_data = LoadMeshFromObj(&in_stream);
+    RenderMesh mesh_data = LoadRenderMeshFromObj(&in_stream);
     EXPECT_EQ(mesh_data.positions.rows(), params.position_count);
     EXPECT_EQ(mesh_data.normals.rows(), params.position_count);
     EXPECT_EQ(mesh_data.uvs.rows(), params.position_count);
@@ -214,7 +213,7 @@ GTEST_TEST(LoadMeshFromObjTest, TriangulatePolygons) {
 // Geometry already triangulated gets preserved. This doesn't do variations on
 // whether vertex positions need copying due to associations with multiple
 // normals/uvs. It relies on `TriangulatePolygons` to handle that.
-GTEST_TEST(LoadMeshFromObjTest, PreserveTriangulation) {
+GTEST_TEST(LoadRenderMeshFromObjTest, PreserveTriangulation) {
   /*
              o 4
             ╱  ╲
@@ -246,17 +245,17 @@ GTEST_TEST(LoadMeshFromObjTest, PreserveTriangulation) {
   f 1/1/1 6/1/1 7/1/1
   f 1/1/1 7/1/1 2/1/1
   )""");
-  MeshData mesh_data = LoadMeshFromObj(&in_stream);
+  RenderMesh mesh_data = LoadRenderMeshFromObj(&in_stream);
   EXPECT_EQ(mesh_data.positions.rows(), 7);
   EXPECT_EQ(mesh_data.normals.rows(), 7);
   EXPECT_EQ(mesh_data.uvs.rows(), 7);
   EXPECT_EQ(mesh_data.indices.rows(), 5);
 }
 
-// The MeshData produces *new* vertices from what was in the OBJ based on what
+// The RenderMesh produces *new* vertices from what was in the OBJ based on what
 // vertex gets referenced by which faces. A vertex that doesn't get referenced
 // gets omitted.
-GTEST_TEST(LoadMeshFromObjTest, RemoveUnreferencedVertices) {
+GTEST_TEST(LoadRenderMeshFromObjTest, RemoveUnreferencedVertices) {
   /*
 
         4 o───────o 3
@@ -278,7 +277,7 @@ GTEST_TEST(LoadMeshFromObjTest, RemoveUnreferencedVertices) {
   f 1/1/1 2/1/1 3/1/1
   f 6/1/1 3/1/1 4/1/1
   )""");
-  MeshData mesh_data = LoadMeshFromObj(&in_stream);
+  RenderMesh mesh_data = LoadRenderMeshFromObj(&in_stream);
   EXPECT_EQ(mesh_data.positions.rows(), 5);
   EXPECT_EQ(mesh_data.normals.rows(), 5);
   EXPECT_EQ(mesh_data.uvs.rows(), 5);
@@ -287,6 +286,5 @@ GTEST_TEST(LoadMeshFromObjTest, RemoveUnreferencedVertices) {
 
 }  // namespace
 }  // namespace internal
-}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake

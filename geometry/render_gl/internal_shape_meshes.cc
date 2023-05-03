@@ -15,7 +15,9 @@ namespace geometry {
 namespace render_gl {
 namespace internal {
 
+using geometry::internal::RenderMesh;
 using Eigen::Vector2d;
+using Eigen::Vector3d;
 using std::vector;
 
 namespace {
@@ -54,11 +56,10 @@ namespace {
                              `calc_radius_i`.
  @pre `calc_radius_i(0)` and `calc_radius_i(curve_sample_count - 1) = 0`.
  */
-MeshData MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
-                           const std::function<GLfloat(int i)>& calc_radius_i,
-                           const std::function<GLfloat(int i)>& calc_z_i) {
-  const GLfloat delta_theta =
-      static_cast<GLfloat>(2 * M_PI / rotate_sample_count);
+RenderMesh MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
+                             const std::function<double(int i)>& calc_radius_i,
+                             const std::function<double(int i)>& calc_z_i) {
+  const double delta_theta = 2 * M_PI / rotate_sample_count;
 
   /* We have R rotation samples and C curve samples.
 
@@ -81,7 +82,7 @@ MeshData MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
       (curve_sample_count - 2) * (rotate_sample_count + 1) + 2;
   const int tri_count = (curve_sample_count - 2) * 2 * rotate_sample_count;
 
-  MeshData mesh_data;
+  RenderMesh mesh_data;
   auto& vertices = mesh_data.positions;
   vertices.resize(vert_count, 3);
   auto& indices = mesh_data.indices;
@@ -100,17 +101,17 @@ MeshData MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
 
   /* Computes the vertex position for the index `v` of the vertex in the ring,
    v ∈ [0, R] (inclusive), with the given z-value and ring radius r.  */
-  auto make_vertex = [delta_theta](int v, GLfloat v_z, GLfloat r)  {
-    const GLfloat theta = v * delta_theta;
-    const GLfloat v_x = r * ::cosf(theta);
-    const GLfloat v_y = r * ::sinf(theta);
-    return Vector3<GLfloat>{v_x, v_y, v_z};
+  auto make_vertex = [delta_theta](int v, double v_z, double r)  {
+    const double theta = v * delta_theta;
+    const double v_x = r * std::cos(theta);
+    const double v_y = r * std::sin(theta);
+    return Vector3d{v_x, v_y, v_z};
   };
 
   /* Now start with the rings that have non-zero radius.  */
   ++ring_i;
-  GLfloat z_i = calc_z_i(ring_i);
-  GLfloat r_i = calc_radius_i(ring_i);
+  double z_i = calc_z_i(ring_i);
+  double r_i = calc_radius_i(ring_i);
 
   /* Triangles spanning ring 0 to ring 1 are simply a triangle fan around vertex
    0.  */
@@ -162,7 +163,7 @@ MeshData MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
 
   /* Triangles spanning ring C-2 to ring C-1; a triangle fan around the last
    vertex. We're only missing the last vertex, all other vertices exist.  */
-  vertices.row(v_index) << 0.f, 0.f, calc_z_i(ring_i);
+  vertices.row(v_index) << 0, 0, calc_z_i(ring_i);
   const int prev_ring_start = v_index - rotate_sample_count - 1;
   /* Post-increment v_index so its value represents the total number of
    vertices added.  */
@@ -183,7 +184,7 @@ MeshData MakeRevoluteShape(int rotate_sample_count, int curve_sample_count,
 
 }  // namespace
 
-MeshData MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
+RenderMesh MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
   /*
    For notational convenience:
     T = number of latitude bands
@@ -241,19 +242,19 @@ MeshData MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
 
   /* Angle separating latitudinal rings measured in the longitudinal direction
    (defines the height of rings).  */
-  const GLfloat delta_phi = static_cast<GLfloat>(M_PI / latitude_bands);
+  const double delta_phi = M_PI / latitude_bands;
   auto calc_z_i = [delta_phi, latitude_bands](int ring_i) {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
     return ::cosf(ring_i * delta_phi);
   };
-  auto calc_radius_i = [calc_z_i, latitude_bands](int ring_i) {
+  auto calc_radius_i = [calc_z_i, latitude_bands](int ring_i) -> double{
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= latitude_bands);
-    if (ring_i == 0 || ring_i == latitude_bands) return 0.f;
-    const GLfloat z_i = calc_z_i(ring_i);
-    return sqrtf(1.0 - z_i * z_i);
+    if (ring_i == 0 || ring_i == latitude_bands) return 0;
+    const double z_i = calc_z_i(ring_i);
+    return std::sqrt(1.0 - z_i * z_i);
   };
-  MeshData mesh_data = MakeRevoluteShape(longitude_bands, latitude_bands + 1,
-                                         calc_radius_i, calc_z_i);
+  RenderMesh mesh_data = MakeRevoluteShape(longitude_bands, latitude_bands + 1,
+                                           calc_radius_i, calc_z_i);
 
   /* The process of building should match our predicted counts.  */
   DRAKE_DEMAND(mesh_data.positions.rows() == vert_count);
@@ -293,7 +294,7 @@ MeshData MakeLongLatUnitSphere(int longitude_bands, int latitude_bands) {
   return mesh_data;
 }
 
-MeshData MakeUnitCylinder(int num_strips, int num_bands) {
+RenderMesh MakeUnitCylinder(int num_strips, int num_bands) {
   /*
    For notational convenience
      S = number of strips
@@ -370,26 +371,26 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
   const int tri_count = 2 * (num_bands + 1) * num_strips;
 
   /* The height of each band along the length of the barrel.  */
-  const GLfloat band_height = 1.f / num_bands;
+  const double band_height = 1.0 / num_bands;
 
   /* As illustrated above, circle 0 & 1 have a z-value of 0.5, circles
    C-2 and C-1 are at -0.5, and all other circles are distributed between.
    Because C = B + 3, C-2 = B + 1 and C-1 = B + 2.  */
-  auto calc_z_i = [band_height, num_bands](int ring_i) {
+  auto calc_z_i = [band_height, num_bands](int ring_i) -> double {
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= num_bands + 2);
     if (ring_i < 2) return 0.5f;
     if (ring_i > num_bands) return -0.5f;
     /* Circles 2, 3, ... C - 3 should have a displacement of 1, 2, ..., C-4
      band_height below the top cap.  */
-    return 0.5f - (ring_i - 1) * band_height;
+    return 0.5 - (ring_i - 1) * band_height;
   };
   auto calc_radius_i = [num_bands](int ring_i) {
     /* Circles 0 and C-1 are zero-radius circles. C-1 = (B + 3) -1 = B + 2.  */
     DRAKE_DEMAND(ring_i >= 0 && ring_i <= num_bands + 2);
-    if (ring_i == 0 || ring_i == num_bands + 2) return 0.f;
-    return 1.f;
+    if (ring_i == 0 || ring_i == num_bands + 2) return 0;
+    return 1;
   };
-  MeshData mesh_data =
+  RenderMesh mesh_data =
       MakeRevoluteShape(num_strips, num_bands + 3, calc_radius_i, calc_z_i);
 
   /* The process of building should match our predicted counts.  */
@@ -414,7 +415,7 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
 
   const int old_v_count = mesh_data.positions.rows();
   const int new_v_count = old_v_count + 2 * (num_strips + 1);
-  MeshData full_mesh_data;
+  RenderMesh full_mesh_data;
   full_mesh_data.positions.resize(new_v_count, 3);
   full_mesh_data.normals.resize(new_v_count, 3);
   full_mesh_data.uvs.resize(new_v_count, 2);
@@ -454,8 +455,10 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
 
   /* Transform indices in the triangles. */
   /* Top cap remains unchanged; so we'll skip the first num_strips triangles. */
+  using indices_uint_t = decltype(full_mesh_data.indices)::Scalar;
   full_mesh_data.indices = mesh_data.indices;
-  const auto offset = Vector3<GLuint>::Constant(num_strips + 1).transpose();
+  const auto offset =
+      Vector3<indices_uint_t>::Constant(num_strips + 1).transpose();
   int t = num_strips;
   for (; t < t_count - num_strips; ++t) {
     full_mesh_data.indices.row(t) += offset;
@@ -478,7 +481,7 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
    face. Even if the cylinder is scaled to arbitrary radius/length this
    mapping will still be true.  */
   const int ring_size = num_strips + 1;
-  const GLfloat arc_length = 3;  /* Two radii + length.  */
+  const double arc_length = 3;  /* Two radii + length.  */
   int uv_index = 0;
   /* North pole.  */
   full_mesh_data.uvs.row(uv_index) << 0, 1;
@@ -486,10 +489,10 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
   /* Now handle the rings of vertices. Each ring has a constant v-coordinate
    and a set of u-values that span [0, 1]. So, we'll create the u- and
    v-values that we'll write into the data as blocks.  */
-  VectorX<GLfloat> u_values(ring_size);
-  u_values.setLinSpaced(0.f, 1.f);
-  VectorX<GLfloat> v_values(ring_size);
-  v_values.setConstant(2.f / arc_length);
+  VectorX<double> u_values(ring_size);
+  u_values.setLinSpaced(0, 1.0);
+  VectorX<double> v_values(ring_size);
+  v_values.setConstant(2 / arc_length);
 
   /* First two rings are duplicates with matching uv coordinates.  */
   full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
@@ -500,7 +503,7 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
   uv_index += ring_size;
 
   /* For B bands, there are B - 1 rings located *strictly* on the barrel.  */
-  const GLfloat v_delta = 1 / arc_length / num_bands;
+  const double v_delta = 1 / arc_length / num_bands;
   for (int barrel_ring = 0; barrel_ring < num_bands - 1; ++barrel_ring) {
     v_values.setConstant(v_values(0) - v_delta);
     full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
@@ -509,7 +512,7 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
   }
 
   /* Last two rings are duplicates with matching uv coordinates.  */
-  v_values.setConstant(1.f / arc_length);
+  v_values.setConstant(1 / arc_length);
   full_mesh_data.uvs.block(uv_index, 0, ring_size, 1) = u_values;
   full_mesh_data.uvs.block(uv_index, 1, ring_size, 1) = v_values;
   uv_index += ring_size;
@@ -524,23 +527,23 @@ MeshData MakeUnitCylinder(int num_strips, int num_bands) {
   return full_mesh_data;
 }
 
-MeshData MakeSquarePatch(GLfloat measure, int resolution) {
+RenderMesh MakeSquarePatch(double measure, int resolution) {
   DRAKE_DEMAND(measure > 0);
   DRAKE_DEMAND(resolution >= 1);
 
   const int vert_count = (resolution + 1) * (resolution + 1);
   const int tri_count = 2 * resolution * resolution;
 
-  MeshData mesh_data;
+  RenderMesh mesh_data;
   mesh_data.positions.resize(vert_count, 3);
   mesh_data.normals.resize(vert_count, 3);
   mesh_data.uvs.resize(vert_count, 2);
   mesh_data.indices.resize(tri_count, 3);
 
   /* The size of each square sub-patch.  */
-  const GLfloat delta_pos = measure / resolution;
+  const double delta_pos = measure / resolution;
   /* The size of each square sub-patch in *texture coordinates*.  */
-  const GLfloat delta_uv = 1.f / resolution;
+  const double delta_uv = 1.0 / resolution;
 
   /* Build the following grid. Where N = resolution.
 
@@ -569,16 +572,16 @@ MeshData MakeSquarePatch(GLfloat measure, int resolution) {
   /* First add the vertices.  */
   int v_index = 0;
 
-  GLfloat x0 = -measure / 2;
-  GLfloat y0 = -measure / 2;
+  double x0 = -measure / 2;
+  double y0 = -measure / 2;
   for (int i = 0; i <= resolution; ++i) {
-    const GLfloat y = y0 + i * delta_pos;
-    const GLfloat v = i * delta_uv;
+    const double y = y0 + i * delta_pos;
+    const double v = i * delta_uv;
     for (int j = 0; j <= resolution; ++j) {
       mesh_data.normals.row(v_index) << 0, 0, 1;
-      const GLfloat x = x0 + j * delta_pos;
+      const double x = x0 + j * delta_pos;
       mesh_data.positions.row(v_index) << x, y, 0;
-      const GLfloat u = j * delta_uv;
+      const double u = j * delta_uv;
       mesh_data.uvs.row(v_index++) << u, v;
     }
   }
@@ -615,7 +618,7 @@ MeshData MakeSquarePatch(GLfloat measure, int resolution) {
   return mesh_data;
 }
 
-MeshData MakeUnitBox() {
+RenderMesh MakeUnitBox() {
   /* The box is 24 vertices (8 vertex positions duplicated three times each --
    once per adjacent face) and twelve faces. We duplicate the vertex positions
    because each adjacent face requires a different normal direction.
@@ -629,7 +632,7 @@ MeshData MakeUnitBox() {
             │/_____│/
             a      b
   */
-  MeshData mesh_data;
+  RenderMesh mesh_data;
   mesh_data.positions.resize(24, 3);
   mesh_data.normals.resize(24, 3);
   mesh_data.uvs.resize(24, 2);
@@ -728,7 +731,7 @@ MeshData MakeUnitBox() {
   return mesh_data;
 }
 
-MeshData MakeCapsule(int samples, double radius, double length) {
+RenderMesh MakeCapsule(int samples, double radius, double length) {
   /* Based on samples, we'll create a unit sphere, guaranteeing that there are
    vertices on the equator. We'll use the unit sphere to create the capsule
    by duplicating the equator vertices, translating the northern hemisphere
@@ -743,7 +746,7 @@ MeshData MakeCapsule(int samples, double radius, double length) {
    of bands to guarantee vertices at the equator).  */
   const int half_samples = samples / 2;
   const int lat_bands = half_samples + (half_samples % 2);
-  const MeshData sphere_data = MakeLongLatUnitSphere(samples, lat_bands);
+  const RenderMesh sphere_data = MakeLongLatUnitSphere(samples, lat_bands);
 
   /* The number of vertices in a "ring" is samples + 1 because the revolute
    surface duplicates the first vertex on each ring to accommodate texture
@@ -758,7 +761,7 @@ MeshData MakeCapsule(int samples, double radius, double length) {
   const int H = (sphere_data.positions.rows() - ring_size) / 2;
   DRAKE_DEMAND(2 * H + ring_size == sphere_data.positions.rows());
 
-  MeshData data;
+  RenderMesh data;
   const int vert_count = 2 * (H + ring_size);
   data.positions.resize(vert_count, 3);
   data.normals.resize(vert_count, 3);
@@ -772,9 +775,9 @@ MeshData MakeCapsule(int samples, double radius, double length) {
   int sphere_v = -1;
   int capsule_v = -1;
   /* Northern hemisphere plus the equator.  */
-  const Vector3<GLfloat> offset(0, 0, length / 2);
+  const Vector3d offset(0, 0, length / 2);
   for (int i = 0; i < H + ring_size; ++i) {
-    const Vector3<GLfloat> p_SV = sphere_data.positions.row(++sphere_v);
+    const Vector3d p_SV = sphere_data.positions.row(++sphere_v);
     data.positions.row(++capsule_v) = p_SV * radius + offset;
     data.normals.row(capsule_v) = sphere_data.normals.row(sphere_v);
     data.uvs.row(capsule_v) = sphere_data.uvs.row(sphere_v);
@@ -782,7 +785,7 @@ MeshData MakeCapsule(int samples, double radius, double length) {
   /* Back up our *reading* index so that we get a copy of the equator.  */
   sphere_v -= ring_size;
   for (int i = 0; i < H + ring_size; ++i) {
-    const Vector3<GLfloat> p_SV = sphere_data.positions.row(++sphere_v);
+    const Vector3d p_SV = sphere_data.positions.row(++sphere_v);
     data.positions.row(++capsule_v) = p_SV * radius - offset;
     data.normals.row(capsule_v) = sphere_data.normals.row(sphere_v);
     data.uvs.row(capsule_v) = sphere_data.uvs.row(sphere_v);
@@ -823,7 +826,8 @@ MeshData MakeCapsule(int samples, double radius, double length) {
   }
   /* Now the southern hemisphere gets its indices offset to account for the
    injection of `ring_size` new vertices.  */
-  const Vector3<GLuint> i_offset(ring_size, ring_size, ring_size);
+  using indices_uint_t = decltype(sphere_data.indices)::Scalar;
+  const Vector3<indices_uint_t> i_offset(ring_size, ring_size, ring_size);
   for (int sphere_t = hemisphere_tri_count;
        sphere_t < sphere_data.indices.rows(); ++sphere_t, ++capsule_t) {
     auto tri = sphere_data.indices.row(sphere_t);
@@ -855,8 +859,8 @@ MeshData MakeCapsule(int samples, double radius, double length) {
 
      delta_v = πR / 2L / (B/2) = πR / BL
    */
-  const GLfloat arc_length = length + M_PI * radius;
-  const GLfloat delta_v = M_PI * radius / (lat_bands * arc_length);
+  const double arc_length = length + M_PI * radius;
+  const double delta_v = M_PI * radius / (lat_bands * arc_length);
   int uv_index = 0;
 
   /* Skipping north and south pole; they are the same as with the sphere.  */
@@ -864,7 +868,7 @@ MeshData MakeCapsule(int samples, double radius, double length) {
   /* The latitude rings on the northern hemisphere.  */
   for (int r = 1; r <= lat_bands / 2; ++r) {
     /* The v-value for this ring.  */
-    const GLfloat v_value = 1.f - r * delta_v;
+    const double v_value = 1.0 - r * delta_v;
     for (int i = 0; i < ring_size; ++i) {
       data.uvs(++uv_index, 1) = v_value;
     }
@@ -872,7 +876,7 @@ MeshData MakeCapsule(int samples, double radius, double length) {
   /* The latitude rings for the southern hemisphere.  */
   for (int r = 0; r < lat_bands / 2; ++r) {
     /* The v-value for this ring.  */
-    const GLfloat v_value = (lat_bands - r) * delta_v;
+    const double v_value = (lat_bands - r) * delta_v;
     for (int i = 0; i < ring_size; ++i) {
       data.uvs(++uv_index, 1) = v_value;
     }
