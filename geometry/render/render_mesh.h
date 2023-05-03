@@ -7,7 +7,6 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
 namespace internal {
 
 /* The data representing a mesh. The triangle mesh is defined by `indices`. Row
@@ -20,11 +19,11 @@ namespace internal {
  For now, all vertex quantities (`positions`, `normals` and `uvs`) are
  guaranteed (as well as the `indices` data). In the future, `uvs` may become
  optional.  */
-struct MeshData {
-  Eigen::Matrix<GLfloat, Eigen::Dynamic, 3, Eigen::RowMajor> positions;
-  Eigen::Matrix<GLfloat, Eigen::Dynamic, 3, Eigen::RowMajor> normals;
-  Eigen::Matrix<GLfloat, Eigen::Dynamic, 2, Eigen::RowMajor> uvs;
-  Eigen::Matrix<GLuint, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
+struct RenderMesh {
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> positions;
+  Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor> normals;
+  Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> uvs;
+  Eigen::Matrix<unsigned int, Eigen::Dynamic, 3, Eigen::RowMajor> indices;
 
   /** See docs for `has_tex_coord` below.  */
   static constexpr bool kHasTexCoordDefault{true};
@@ -45,20 +44,19 @@ struct MeshData {
  mind.
 
  If no texture coordinates are specified by the file, it will be indicated in
- the returned MeshData. See MeshData::has_tex_coord for more detail.
+ the returned RenderMesh. See RenderMesh::has_tex_coord for more detail.
 
  @throws std::exception if a) tinyobj::LoadObj() fails, (b) there are no faces
                            or normals, c) faces fail to reference normals, or d)
                            faces fail to reference the texture coordinates if
                            they are present.  */
-MeshData LoadMeshFromObj(std::istream* input_stream,
-                         const std::string& filename = "from_string");
+RenderMesh LoadRenderMeshFromObj(std::istream* input_stream,
+                                 const std::string& filename = "from_string");
 
-/* Overload of LoadMeshFromObj that reads the OBJ description from the given
- file. */
-MeshData LoadMeshFromObj(const std::string& filename);
+/* Overload of LoadRenderMeshFromObj that reads the OBJ description from the
+ given file. */
+RenderMesh LoadRenderMeshFromObj(const std::string& filename);
 
 }  // namespace internal
-}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake
