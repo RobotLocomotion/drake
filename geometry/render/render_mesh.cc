@@ -1,4 +1,4 @@
-#include "drake/geometry/render_gl/internal_shape_meshes.h"
+#include "drake/geometry/render/render_mesh.h"
 
 #include <fstream>
 #include <istream>
@@ -15,7 +15,6 @@
 
 namespace drake {
 namespace geometry {
-namespace render_gl {
 namespace internal {
 
 using Eigen::Vector2d;
@@ -26,8 +25,8 @@ using std::string;
 using std::tuple;
 using std::vector;
 
-MeshData LoadMeshFromObj(std::istream* input_stream,
-                         const std::string& filename) {
+RenderMesh LoadRenderMeshFromObj(std::istream* input_stream,
+                                 const std::string& filename) {
   tinyobj::attrib_t attrib;
   vector<tinyobj::shape_t> shapes;
   vector<tinyobj::material_t> materials;
@@ -37,7 +36,7 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
    triangulate for us. */
   const bool do_tinyobj_triangulation = true;
 
-  drake::log()->trace("LoadMeshFromObj('{}')", filename);
+  drake::log()->trace("LoadRenderMeshFromObj('{}')", filename);
 
   /* Tinyobj doesn't infer the search directory from the directory containing
    the obj file. We have to provide that directory; of course, this assumes
@@ -59,7 +58,7 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
         filename));
   }
 
-  /* The parsed product needs to be further processed. The MeshData assumes
+  /* The parsed product needs to be further processed. The RenderMesh assumes
    that all vertex quantities (positions, normals, texture coordinates) are
    indexed with a common index; a face that references vertex i, will get its
    position from positions[i], its normal from normals[i], and its texture
@@ -174,38 +173,37 @@ MeshData LoadMeshFromObj(std::istream* input_stream,
   DRAKE_DEMAND(positions.size() == normals.size());
   DRAKE_DEMAND(positions.size() == uvs.size());
 
-  MeshData mesh_data;
+  RenderMesh mesh_data;
   mesh_data.indices.resize(triangles.size(), 3);
   for (int t = 0; t < mesh_data.indices.rows(); ++t) {
-    mesh_data.indices.row(t) = triangles[t].cast<GLuint>();
+    mesh_data.indices.row(t) = triangles[t].cast<unsigned int>();
   }
   mesh_data.positions.resize(positions.size(), 3);
   for (int v = 0; v < mesh_data.positions.rows(); ++v) {
-    mesh_data.positions.row(v) = positions[v].cast<GLfloat>();
+    mesh_data.positions.row(v) = positions[v];
   }
   mesh_data.normals.resize(normals.size(), 3);
   for (int n = 0; n < mesh_data.normals.rows(); ++n) {
-    mesh_data.normals.row(n) = normals[n].cast<GLfloat>();
+    mesh_data.normals.row(n) = normals[n];
   }
   mesh_data.has_tex_coord = has_tex_coord;
   mesh_data.uvs.resize(uvs.size(), 2);
   for (int uv = 0; uv < mesh_data.uvs.rows(); ++uv) {
-    mesh_data.uvs.row(uv) = uvs[uv].cast<GLfloat>();
+    mesh_data.uvs.row(uv) = uvs[uv];
   }
 
   return mesh_data;
 }
 
-MeshData LoadMeshFromObj(const string& filename) {
+RenderMesh LoadRenderMeshFromObj(const string& filename) {
   std::ifstream input_stream(filename);
   if (!input_stream.is_open()) {
     throw std::runtime_error(
         fmt::format("Cannot load the obj file '{}'", filename));
   }
-  return LoadMeshFromObj(&input_stream, filename);
+  return LoadRenderMeshFromObj(&input_stream, filename);
 }
 
 }  // namespace internal
-}  // namespace render_gl
 }  // namespace geometry
 }  // namespace drake
