@@ -81,6 +81,8 @@ Later edited by hand to:
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <drake:gear_ratio>160.0</drake:gear_ratio>
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="iiwa_link_2">
       <pose relative_to="iiwa_joint_2"/>
@@ -141,6 +143,8 @@ Later edited by hand to:
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <drake:gear_ratio>160.0</drake:gear_ratio>
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="iiwa_link_3">
       <pose relative_to="iiwa_joint_3"/>
@@ -210,6 +214,8 @@ Later edited by hand to:
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <drake:gear_ratio>160.0</drake:gear_ratio>
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="iiwa_link_4">
       <pose relative_to="iiwa_joint_4"/>
@@ -268,6 +274,8 @@ Later edited by hand to:
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <drake:gear_ratio>160.0</drake:gear_ratio>
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="iiwa_link_5">
       <pose relative_to="iiwa_joint_5"/>
@@ -337,6 +345,8 @@ Later edited by hand to:
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <drake:gear_ratio>100.0</drake:gear_ratio>
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="iiwa_link_6">
       <pose relative_to="iiwa_joint_6"/>
@@ -395,6 +405,8 @@ Later edited by hand to:
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <drake:gear_ratio>160.0</drake:gear_ratio>
+      <drake:rotor_inertia>0.0000454</drake:rotor_inertia>
     </joint>
     <link name="iiwa_link_7">
       <pose relative_to="iiwa_joint_7"/>
@@ -444,6 +456,8 @@ Later edited by hand to:
           <spring_stiffness>0</spring_stiffness>
         </dynamics>
       </axis>
+      <drake:gear_ratio>160.0</drake:gear_ratio>
+      <drake:rotor_inertia>0.0000454</drake:rotor_inertia>
     </joint>
     <static>0</static>
   </model>
