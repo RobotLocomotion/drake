@@ -11,6 +11,9 @@
 #include "drake/geometry/optimization/point.h"
 #include "drake/math/matrix_util.h"
 #include "drake/solvers/solve.h"
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 namespace drake {
 namespace planning {
@@ -261,7 +264,9 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       std::make_shared<LinearEqualityConstraint>(
           M, VectorXd::Zero(num_positions()));
 
-  // TODO(wrangelvid) this can be parallelized.
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
   for (int i = 0; i < from_subgraph.size(); ++i) {
     for (int j = 0; j < to_subgraph.size(); ++j) {
       if (from_subgraph.regions()[i]->IntersectsWith(
@@ -279,7 +284,6 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
         const Vertex& u = *from_subgraph.vertices_[i];
         const Vertex& v = *to_subgraph.vertices_[j];
         Edge* uv_edge = traj_opt_.AddEdge(u, v);
-        edges_.emplace_back(uv_edge);
 
         // Add path continuity constraints.
         uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
@@ -299,6 +303,11 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
             uv_edge->AddConstraint(Binding<Constraint>(constraint, vars));
           }
         }
+
+#if defined(_OPENMP)
+#pragma omp critical
+#endif
+        { edges_.emplace_back(uv_edge); }
       }
     }
   }
@@ -364,14 +373,21 @@ Subgraph& GcsTrajectoryOptimization::AddRegions(const ConvexSets& regions,
   if (name.empty()) {
     name = fmt::format("S{}", subgraphs_.size());
   }
-  // TODO(wrangelvid): This is O(n^2) and can be improved.
+#if defined(_OPENMP)
+#pragma omp parallel for
+#endif
   std::vector<std::pair<int, int>> edges_between_regions;
   for (size_t i = 0; i < regions.size(); ++i) {
     for (size_t j = i + 1; j < regions.size(); ++j) {
       if (regions[i]->IntersectsWith(*regions[j])) {
-        // Regions are overlapping, add edge.
-        edges_between_regions.emplace_back(i, j);
-        edges_between_regions.emplace_back(j, i);
+// Regions are overlapping, add edge.
+#if defined(_OPENMP)
+#pragma omp critical
+#endif
+        {
+          edges_between_regions.emplace_back(i, j);
+          edges_between_regions.emplace_back(j, i);
+        }
       }
     }
   }
