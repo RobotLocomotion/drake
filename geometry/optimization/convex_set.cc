@@ -11,18 +11,12 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-ConvexSet::ConvexSet(
-    std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
-    int ambient_dimension)
-    : cloner_(std::move(cloner)), ambient_dimension_(ambient_dimension) {
+ConvexSet::ConvexSet(int ambient_dimension)
+    : ambient_dimension_(ambient_dimension) {
   DRAKE_THROW_UNLESS(ambient_dimension >= 0);
 }
 
 ConvexSet::~ConvexSet() = default;
-
-std::unique_ptr<ConvexSet> ConvexSet::Clone() const {
-  return cloner_(*this);
-}
 
 bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   DRAKE_THROW_UNLESS(other.ambient_dimension() == this->ambient_dimension());
