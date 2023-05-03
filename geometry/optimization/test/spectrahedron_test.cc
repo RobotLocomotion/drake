@@ -79,9 +79,9 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
       prog.linear_equality_constraints()[0].evaluator()->lower_bound(),
       prog2.linear_equality_constraints()[0].evaluator()->lower_bound()));
   EXPECT_EQ(prog2.linear_constraints().size(), 1);
-  EXPECT_TRUE(CompareMatrices(
-      prog.linear_constraints()[0].evaluator()->GetDenseA(),
-      prog2.linear_constraints()[0].evaluator()->GetDenseA()));
+  EXPECT_TRUE(
+      CompareMatrices(prog.linear_constraints()[0].evaluator()->GetDenseA(),
+                      prog2.linear_constraints()[0].evaluator()->GetDenseA()));
   EXPECT_TRUE(CompareMatrices(
       prog.linear_constraints()[0].evaluator()->lower_bound(),
       prog2.linear_constraints()[0].evaluator()->lower_bound()));
