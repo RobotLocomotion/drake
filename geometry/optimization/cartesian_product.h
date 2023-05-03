@@ -69,6 +69,8 @@ class CartesianProduct final : public ConvexSet {
   using ConvexSet::PointInSet;
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -62,7 +62,7 @@ class ConvexSet : public ShapeReifier {
   virtual ~ConvexSet();
 
   /** Creates a unique deep copy of this set. */
-  std::unique_ptr<ConvexSet> Clone() const;
+  std::unique_ptr<ConvexSet> Clone() const { return DoClone(); }
 
   /** Returns the dimension of the vector space in which the elements of this
   set are evaluated.  Contrast this with the `affine dimension`: the dimension
@@ -165,27 +165,17 @@ class ConvexSet : public ShapeReifier {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ConvexSet)
 
-  /** For use by derived classes to construct a %ConvexSet.
-
-  @param cloner Function pointer to implement Clone(), typically of the form
-  `&ConvexSetCloner<Derived>`.
-
-  Here is a typical example:
-  @code
-   class MyConvexSet final : public ConvexSet {
-    public:
-     MyConvexSet() : ConvexSet(&ConvexSetCloner<MyConvexSet>, 3) {}
-     ...
-   };
-  @endcode */
-  ConvexSet(std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
-            int ambient_dimension);
+  /** For use by derived classes to construct a %ConvexSet. */
+  explicit ConvexSet(int ambient_dimension);
 
   /** Implements non-virtual base class serialization. */
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(ambient_dimension_));
   }
+
+  /** Non-virtual interface implementation for Clone(). */
+  virtual std::unique_ptr<ConvexSet> DoClone() const = 0;
 
   /** Non-virtual interface implementation for IsBounded(). */
   virtual bool DoIsBounded() const = 0;
@@ -234,20 +224,8 @@ class ConvexSet : public ShapeReifier {
   DoToShapeWithPose() const = 0;
 
  private:
-  std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner_;
   int ambient_dimension_{0};
 };
-
-/** (Advanced) Implementation helper for ConvexSet::Clone. Refer to the
-ConvexSet::ConvexSet() constructor documentation for an example. */
-template <typename Derived>
-std::unique_ptr<ConvexSet> ConvexSetCloner(const ConvexSet& other) {
-  static_assert(std::is_base_of_v<ConvexSet, Derived>,
-                "Concrete sets *must* be derived from the ConvexSet class");
-  DRAKE_DEMAND(typeid(other) == typeid(Derived));
-  const auto& typed_other = static_cast<const Derived&>(other);
-  return std::make_unique<Derived>(typed_other);
-}
 
 /** Provides the recommended container for passing a collection of ConvexSet
 instances. */

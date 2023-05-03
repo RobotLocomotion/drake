@@ -44,6 +44,8 @@ class Point final : public ConvexSet {
   void set_x(const Eigen::Ref<const Eigen::VectorXd>& x);
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final { return true; }
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
