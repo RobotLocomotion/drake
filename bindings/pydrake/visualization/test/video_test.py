@@ -160,13 +160,13 @@ class TestVideoWriter(unittest.TestCase):
             filename=filename, builder=builder, sensor_pose=sensor_pose,
             fps=fps, kinds=kinds, backend=backend)
 
-        # Simulate for one second.
+        # Simulate for one second (add torque to the plant to make it move).
         diagram = builder.Build()
         simulator = Simulator(diagram)
         diagram_context = simulator.get_mutable_context()
         plant_context = plant.GetMyMutableContextFromRoot(diagram_context)
         plant.get_actuation_input_port().FixValue(
-            plant_context, [0] * plant.num_positions())
+            plant_context, [10] * plant.num_positions())
         simulator.AdvanceTo(1.0)
         writer.Save()
 
