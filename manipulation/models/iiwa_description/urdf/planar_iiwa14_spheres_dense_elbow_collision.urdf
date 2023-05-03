@@ -486,6 +486,8 @@
     <actuator name="iiwa_motor_2">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0001321" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_4">
@@ -497,6 +499,8 @@
     <actuator name="iiwa_motor_4">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0001321" />
     </actuator>
   </transmission>
   <transmission name="iiwa_tran_6">
@@ -508,6 +512,8 @@
     <actuator name="iiwa_motor_6">
       <hardwareInterface>PositionJointInterface</hardwareInterface>
       <mechanicalReduction>1</mechanicalReduction>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia value="0.0000454" />
     </actuator>
   </transmission>
   <drake:collision_filter_group name="wrist">

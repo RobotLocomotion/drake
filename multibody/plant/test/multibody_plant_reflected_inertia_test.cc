@@ -53,6 +53,7 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
                                          const VectorX<double>& gear_ratios) {
     LoadIiwaWithGripper(&plant_);
     LoadIiwaWithGripper(&plant_ri_);
+    ResetReflectedInertia(&plant_);
     AddInReflectedInertia(&plant_ri_, rotor_inertias, gear_ratios);
 
     plant_.Finalize();
@@ -140,6 +141,16 @@ class MultibodyPlantReflectedInertiaTests : public ::testing::Test {
           plant->get_mutable_joint_actuator(index);
       joint_actuator.set_default_rotor_inertia(rotor_inertias(int{index}));
       joint_actuator.set_default_gear_ratio(gear_ratios(int{index}));
+    }
+  }
+
+  void ResetReflectedInertia(MultibodyPlant<double>* plant) {
+    DRAKE_DEMAND(plant != nullptr);
+    for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+      JointActuator<double>& joint_actuator =
+          plant->get_mutable_joint_actuator(index);
+      joint_actuator.set_default_rotor_inertia(0.0);
+      joint_actuator.set_default_gear_ratio(1.0);
     }
   }
 
