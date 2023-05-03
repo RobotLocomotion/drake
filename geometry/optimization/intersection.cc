@@ -17,8 +17,7 @@ using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
 
 Intersection::Intersection(const ConvexSets& sets)
-    : ConvexSet(&ConvexSetCloner<Intersection>, sets[0]->ambient_dimension()),
-      sets_{sets} {
+    : ConvexSet(sets[0]->ambient_dimension()), sets_{sets} {
   for (int i = 1; i < ssize(sets_); ++i) {
     DRAKE_THROW_UNLESS(sets_[i]->ambient_dimension() ==
                        sets_[0]->ambient_dimension());
@@ -26,7 +25,7 @@ Intersection::Intersection(const ConvexSets& sets)
 }
 
 Intersection::Intersection(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(&ConvexSetCloner<Intersection>, setA.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension()) {
   DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
@@ -37,6 +36,10 @@ Intersection::~Intersection() = default;
 const ConvexSet& Intersection::element(int index) const {
   DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
+}
+
+std::unique_ptr<ConvexSet> Intersection::DoClone() const {
+  return std::make_unique<Intersection>(*this);
 }
 
 bool Intersection::DoIsBounded() const {

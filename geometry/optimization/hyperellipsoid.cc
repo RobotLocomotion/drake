@@ -32,9 +32,7 @@ using symbolic::Variable;
 
 Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
                                const Eigen::Ref<const VectorXd>& center)
-    : ConvexSet(&ConvexSetCloner<Hyperellipsoid>, center.size()),
-      A_{A},
-      center_{center} {
+    : ConvexSet(center.size()), A_{A}, center_{center} {
   DRAKE_THROW_UNLESS(A.cols() == center.size());
   DRAKE_THROW_UNLESS(A.allFinite());  // to ensure the set is non-empty.
 }
@@ -42,7 +40,7 @@ Hyperellipsoid::Hyperellipsoid(const Eigen::Ref<const MatrixXd>& A,
 Hyperellipsoid::Hyperellipsoid(const QueryObject<double>& query_object,
                                GeometryId geometry_id,
                                std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<Hyperellipsoid>, 3) {
+    : ConvexSet(3) {
   Eigen::Matrix3d A_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &A_G);
   // p_GG_varᵀ * A_Gᵀ * A_G * p_GG_var ≤ 1
@@ -162,6 +160,10 @@ Hyperellipsoid Hyperellipsoid::MakeHypersphere(
 Hyperellipsoid Hyperellipsoid::MakeUnitBall(int dim) {
   DRAKE_THROW_UNLESS(dim > 0);
   return Hyperellipsoid(MatrixXd::Identity(dim, dim), VectorXd::Zero(dim));
+}
+
+std::unique_ptr<ConvexSet> Hyperellipsoid::DoClone() const {
+  return std::make_unique<Hyperellipsoid>(*this);
 }
 
 bool Hyperellipsoid::DoIsBounded() const {

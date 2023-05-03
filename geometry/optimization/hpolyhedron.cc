@@ -111,18 +111,18 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
 
 }  // namespace
 
-HPolyhedron::HPolyhedron() : ConvexSet(&ConvexSetCloner<HPolyhedron>, 0) {}
+HPolyhedron::HPolyhedron() : ConvexSet(0) {}
 
 HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
                          const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(&ConvexSetCloner<HPolyhedron>, A.cols()), A_{A}, b_{b} {
+    : ConvexSet(A.cols()), A_{A}, b_{b} {
   CheckInvariants();
 }
 
 HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
                          GeometryId geometry_id,
                          std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<HPolyhedron>, 3) {
+    : ConvexSet(3) {
   std::pair<MatrixXd, VectorXd> Ab_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &Ab_G);
 
@@ -137,7 +137,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
 }
 
 HPolyhedron::HPolyhedron(const VPolytope& vpoly)
-    : ConvexSet(&ConvexSetCloner<HPolyhedron>, vpoly.ambient_dimension()) {
+    : ConvexSet(vpoly.ambient_dimension()) {
   orgQhull::Qhull qhull;
   qhull.runQhull("", vpoly.ambient_dimension(), vpoly.vertices().cols(),
                  vpoly.vertices().data(), "");
@@ -524,6 +524,10 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
 
 bool HPolyhedron::IsEmpty() const {
   return DoIsEmpty(A_, b_);
+}
+
+std::unique_ptr<ConvexSet> HPolyhedron::DoClone() const {
+  return std::make_unique<HPolyhedron>(*this);
 }
 
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,

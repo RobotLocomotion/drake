@@ -38,13 +38,10 @@ int sum_ambient_dimensions(const ConvexSets& sets) {
 }  // namespace
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                sum_ambient_dimensions(sets)),
-      sets_{sets} {}
+    : ConvexSet(sum_ambient_dimensions(sets)), sets_{sets} {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                setA.ambient_dimension() + setB.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -52,10 +49,7 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
                                    const Eigen::Ref<const MatrixXd>& A,
                                    const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>, A.cols()),
-      sets_{sets},
-      A_{A},
-      b_{b} {
+    : ConvexSet(A.cols()), sets_{sets}, A_{A}, b_{b} {
   DRAKE_THROW_UNLESS(A_->rows() == b_->rows());
   DRAKE_THROW_UNLESS(A_->rows() == sum_ambient_dimensions(sets));
   DRAKE_THROW_UNLESS(A_->colPivHouseholderQr().rank() == A_->cols());
@@ -64,7 +58,7 @@ CartesianProduct::CartesianProduct(const ConvexSets& sets,
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    GeometryId geometry_id,
                                    std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>, 3) {
+    : ConvexSet(3) {
   Cylinder cylinder(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
 
@@ -91,6 +85,10 @@ CartesianProduct::~CartesianProduct() = default;
 const ConvexSet& CartesianProduct::factor(int index) const {
   DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
+}
+
+std::unique_ptr<ConvexSet> CartesianProduct::DoClone() const {
+  return std::make_unique<CartesianProduct>(*this);
 }
 
 bool CartesianProduct::DoIsBounded() const {

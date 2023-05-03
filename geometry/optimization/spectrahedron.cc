@@ -36,11 +36,10 @@ VectorXDecisionVariable GetVariablesByIndex(
 
 }  // namespace
 
-Spectrahedron::Spectrahedron()
-    : ConvexSet(&ConvexSetCloner<Spectrahedron>, 0) {}
+Spectrahedron::Spectrahedron() : ConvexSet(0) {}
 
 Spectrahedron::Spectrahedron(const MathematicalProgram& prog)
-    : ConvexSet(&ConvexSetCloner<Spectrahedron>, prog.num_vars()) {
+    : ConvexSet(prog.num_vars()) {
   for (const ProgramAttribute& attr : prog.required_capabilities()) {
     if (supported_attributes().count(attr) < 1) {
       throw std::runtime_error(fmt::format(
@@ -66,6 +65,10 @@ const ProgramAttributes& Spectrahedron::supported_attributes() {
                         ProgramAttribute::kLinearEqualityConstraint,
                         ProgramAttribute::kPositiveSemidefiniteConstraint}};
   return kSupportedAttributes.access();
+}
+
+std::unique_ptr<ConvexSet> Spectrahedron::DoClone() const {
+  return std::make_unique<Spectrahedron>(*this);
 }
 
 bool Spectrahedron::DoIsBounded() const {
