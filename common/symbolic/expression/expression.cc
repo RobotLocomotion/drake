@@ -1025,4 +1025,90 @@ double ExtractDoubleOrThrow(const symbolic::Expression& e) {
   return e.Evaluate();
 }
 
+namespace symbolic {
+namespace internal {
+namespace {
+
+template <typename T1, typename T2>
+Expression GenericGevv(const Eigen::Ref<const VectorX<T1>, 0, StrideX>& a,
+                       const Eigen::Ref<const VectorX<T2>, 0, StrideX>& b) {
+  DRAKE_ASSERT(a.size() == b.size());
+  ExpressionAddFactory fac;
+  for (int k = 0; k < a.size(); ++k) {
+    fac.AddExpression(a[k] * b[k]);
+  }
+  return std::move(fac).GetExpression();
+}
+
+template <typename T1, typename T2>
+void GenericGemm(const Eigen::Ref<const MatrixX<T1>, 0, StrideX>& left,
+                 const Eigen::Ref<const MatrixX<T2>, 0, StrideX>& right,
+                 EigenPtr<MatrixX<Expression>> result) {
+  // These checks are guaranteed by our header file functions that call us.
+  DRAKE_ASSERT(result != nullptr);
+  DRAKE_ASSERT(result->rows() == left.rows());
+  DRAKE_ASSERT(result->cols() == right.cols());
+  DRAKE_ASSERT(left.cols() == right.rows());
+
+  // Delegate to Gevv.
+  for (int i = 0; i < result->rows(); ++i) {
+    for (int j = 0; j < result->cols(); ++j) {
+      (*result)(i, j) = GenericGevv<T1, T2>(left.row(i), right.col(j));
+    }
+  }
+}
+
+}  // namespace
+
+template <bool transpose>
+void Gemm<transpose>::CalcDV(const MatrixRef<double>& D,
+                             const MatrixRef<Variable>& V,
+                             EigenPtr<MatrixX<Expression>> result) {
+  // We convert Variable => Expression up front, so the ExpressionVar cells get
+  // reused during the computation instead of creating lots of duplicates.
+  // TODO(jwnimmer-tri) If V contains duplicate variables (e.g., symmetric),
+  // it's possible that interning the duplicates would improve performance of
+  // subsequent operations.
+  CalcDE(D, V.template cast<Expression>(), result);
+}
+
+template <bool transpose>
+void Gemm<transpose>::CalcDE(const MatrixRef<double>& D,
+                             const MatrixRef<Expression>& E,
+                             EigenPtr<MatrixX<Expression>> result) {
+  if constexpr (!transpose) {
+    GenericGemm<double, Expression>(D, E, result);
+  } else {
+    GenericGemm<Expression, double>(E, D, result);
+  }
+}
+
+template <bool transpose>
+void Gemm<transpose>::CalcVE(const MatrixRef<Variable>& V,
+                             const MatrixRef<Expression>& E,
+                             EigenPtr<MatrixX<Expression>> result) {
+  // We convert Variable => Expression up front, so the ExpressionVar cells get
+  // reused during the computation instead of creating lots of duplicates.
+  // TODO(jwnimmer-tri) If V contains duplicate variables (e.g., symmetric),
+  // it's possible that interning the duplicates would improve performance of
+  // subsequent operations.
+  CalcEE(V.template cast<Expression>(), E, result);
+}
+
+template <bool transpose>
+void Gemm<transpose>::CalcEE(const MatrixRef<Expression>& A,
+                             const MatrixRef<Expression>& B,
+                             EigenPtr<MatrixX<Expression>> result) {
+  if constexpr (!transpose) {
+    GenericGemm<Expression, Expression>(A, B, result);
+  } else {
+    GenericGemm<Expression, Expression>(B, A, result);
+  }
+}
+
+template struct Gemm<false>;
+template struct Gemm<true>;
+
+}  // namespace internal
+}  // namespace symbolic
 }  // namespace drake
