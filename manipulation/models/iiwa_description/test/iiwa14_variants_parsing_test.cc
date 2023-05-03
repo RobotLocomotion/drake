@@ -39,6 +39,8 @@ void CompareActuatorLimits(const multibody::JointActuator<double>& joint_a,
             joint_b.joint().acceleration_lower_limits()));
   EXPECT_TRUE(CompareMatrices(joint_a.joint().acceleration_upper_limits(),
             joint_b.joint().acceleration_upper_limits()));
+  EXPECT_EQ(joint_a.default_gear_ratio(), joint_b.default_gear_ratio());
+  EXPECT_EQ(joint_a.default_rotor_inertia(), joint_b.default_rotor_inertia());
 }
 
 // Tests that KUKA LBR iiwa14 models have consistent joint limits.

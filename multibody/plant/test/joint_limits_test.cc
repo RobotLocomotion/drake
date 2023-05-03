@@ -205,8 +205,8 @@ VectorX<double> KukaPositionUpperLimits() {
 // a short simulation time to keep wall clock times low, specially for debug
 // builds.
 GTEST_TEST(JointLimitsTest, KukaArm) {
-  const double time_step = 2.0e-3;
-  const double simulation_time = 35;
+  const double time_step = 2.0e-4;
+  const double simulation_time = 55;
 
   // At steady state after one second of simulation, we expect the velocity to
   // be zero within this absolute tolerance.
@@ -260,7 +260,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 
   // Drive all the joints to their upper limit by applying a positive torque.
   plant.get_actuation_input_port().FixValue(&context,
-                                            VectorX<double>::Constant(nq, 0.4));
+                                            VectorX<double>::Constant(nq, 2.0));
   simulator.Initialize();
   simulator.AdvanceTo(simulation_time);
 
@@ -276,7 +276,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
 
   // Drive all the joints to their lower limit by applying a negative torque.
   plant.get_actuation_input_port().FixValue(
-      &context, VectorX<double>::Constant(nq, -0.4));
+      &context, VectorX<double>::Constant(nq, -2.0));
   plant.SetDefaultContext(&context);
   context.SetTime(0.0);
   simulator.Initialize();

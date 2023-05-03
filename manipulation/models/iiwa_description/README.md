@@ -78,3 +78,22 @@ For the record, the rounded average acceleration limits:
 |Axis 5 (A5)|700.73   |12.23    |
 |Axis 6 (A6)|900.66   |15.72    |
 |Axis 7 (A7)|900.69   |15.72    |
+
+### Rotor Inertia and Gear Ratio
+The rotor inertias and gear ratios are estimated based on the specifications of a similar robot, i.e. DLR LWR III (link
+below). The motors and gears are assumed to be the RoboDrive ILM series and Harmonic Drive CSG series. These values are
+being validated experimentally.
+* "DLR LWR III. (URL:
+<https://www.dlr.de/rm/en/desktopdefault.aspx/tabid-12464/21732_read-49777/>, Accessed on 2023-05-08)
+
+The motor and gear types:
+|Axis data  | motor      | gear            | gear ratio | rotor inertia (kg m^2)|
+|-----------|-----------:|----------------:|-----------:|----------------------:|
+|Axis 1 (A1)|ILM 85x23   |CSG-32-160-2A-GR |160         |1.321e-4               |
+|Axis 2 (A2)|ILM 85x23   |CSG-32-160-2A-GR |160         |1.321e-4               |
+|Axis 3 (A3)|ILM 70x18   |CSG-32-160-2A-GR |160         |1.321e-4               |
+|Axis 4 (A4)|ILM 70x18   |CSG-32-160-2A-GR |160         |1.321e-4               |
+|Axis 5 (A5)|ILM 70x18   |CSG-32-100-2A-GR |100         |1.321e-4               |
+|Axis 6 (A6)|ILM 50x08   |CSG-20-160-2A-GR |160         |4.54e-5                |
+|Axis 7 (A7)|ILM 50x08   |CSG-20-160-2A-GR |160         |4.54e-5                |
+

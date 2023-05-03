@@ -69,6 +69,8 @@
       <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="320" velocity="${85 * PI / 180}" drake:acceleration="8.57"/>
       <safety_controller soft_lower_limit="${-168 * PI / 180}" soft_upper_limit="${168 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="${robot_name}_link_1">
       <inertial>
@@ -112,6 +114,8 @@
       <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="320" velocity="${85 * PI / 180}" drake:acceleration="8.57"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="${robot_name}_link_2">
       <inertial>
@@ -164,6 +168,8 @@
       <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="176" velocity="${100 * PI / 180}" drake:acceleration="8.74"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="${robot_name}_link_3">
       <inertial>
@@ -223,6 +229,8 @@
       <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="176" velocity="${75 * PI / 180}" drake:acceleration="11.36"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="${robot_name}_link_4">
       <inertial>
@@ -275,6 +283,8 @@
       <limit lower="${-170 * PI / 180}" upper="${170 * PI / 180}" effort="110" velocity="${130 * PI / 180}" drake:acceleration="12.23"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
+      <drake:gear_ratio value="100.0" />
+      <drake:rotor_inertia>0.0001321</drake:rotor_inertia>
     </joint>
     <link name="${robot_name}_link_5">
       <inertial>
@@ -334,6 +344,8 @@
       <limit lower="${-120 * PI / 180}" upper="${120 * PI / 180}" effort="40" velocity="${135 * PI / 180}" drake:acceleration="15.72"/>
       <safety_controller soft_lower_limit="${-118 * PI / 180}" soft_upper_limit="${118 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia>0.0000454</drake:rotor_inertia>
     </joint>
     <link name="${robot_name}_link_6">
       <inertial>
@@ -388,6 +400,8 @@
       <limit lower="${-175 * PI / 180}" upper="${175 * PI / 180}" effort="40" velocity="${135 * PI / 180}" drake:acceleration="15.72"/>
       <safety_controller soft_lower_limit="${-173 * PI / 180}" soft_upper_limit="${173 * PI / 180}" k_position="${safety_controller_k_pos}" k_velocity="${safety_controller_k_vel}"/>
       <dynamics damping="${joint_damping}"/>
+      <drake:gear_ratio value="160.0" />
+      <drake:rotor_inertia>0.0000454</drake:rotor_inertia>
     </joint>
     <link name="${robot_name}_link_7">
       <inertial>
