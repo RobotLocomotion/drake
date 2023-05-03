@@ -561,6 +561,7 @@ TEST_F(MujocoParserTest, MeshFileRelativePathFromFile) {
   EXPECT_EQ(mesh->scale(), 1.0);
 }
 
+// TODO(rpoyner-tri): update tests to account for actual inertia from mesh.
 TEST_F(MujocoParserTest, InertiaFromGeometry) {
   std::string xml = fmt::format(R"""(
 <mujoco model="test">

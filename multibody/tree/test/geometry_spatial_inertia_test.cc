@@ -140,6 +140,8 @@ GTEST_TEST(GeometrySpatialInertaTest, Sphere) {
                                    M_BBo_B, /* tolerance = */ 0.0));
 }
 
+// TODO(rpoyner-tri): add tests for unit inertia on meshes.
+
 // Exercises the common code paths for Mesh and Convex (i.e., "MeshTypes").
 template <typename MeshType>
 class MeshTypeSpatialInertaTest : public testing::Test {};
