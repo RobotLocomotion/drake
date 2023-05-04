@@ -99,8 +99,8 @@ RenderMaterial DefineMaterial(
       // message with the additional context.
       policy.Warning(fmt::format(
           "The ('phong', 'diffuse_map') property referenced a map that "
-          "could not be found: {}",
-          material.diffuse_map));
+          "could not be found: '{}'",
+          material.diffuse_map.string()));
       material.diffuse_map.clear();
     }
   }
