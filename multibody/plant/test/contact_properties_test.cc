@@ -59,10 +59,10 @@ class ContactPropertiesTest : public ::testing::Test {
     unique_ptr<GeometryInstance> geometry_D = MakeGeometryInstance(
         "D", kMuD, std::nullopt, kNegativeTauD, std::nullopt);
 
-    g_A_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_A));
-    g_B_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_B));
-    g_C_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_C));
-    g_D_ = scene_graph_.RegisterGeometry(s_id, f_id, move(geometry_D));
+    g_A_ = scene_graph_.RegisterGeometry(s_id, f_id, std::move(geometry_A));
+    g_B_ = scene_graph_.RegisterGeometry(s_id, f_id, std::move(geometry_B));
+    g_C_ = scene_graph_.RegisterGeometry(s_id, f_id, std::move(geometry_C));
+    g_D_ = scene_graph_.RegisterGeometry(s_id, f_id, std::move(geometry_D));
 
     scene_graph_ad_ = dynamic_pointer_cast<SceneGraph<AutoDiffXd>>(
         scene_graph_.ToAutoDiffXd());

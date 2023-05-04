@@ -483,7 +483,7 @@ GTEST_TEST(RgbdSensorDiscrete, ImageHold) {
   RgbdSensor* sensor_raw = sensor.get();
   const double kPeriod = 0.1;
   const bool include_render_port = true;
-  RgbdSensorDiscrete discrete_sensor(move(sensor), kPeriod,
+  RgbdSensorDiscrete discrete_sensor(std::move(sensor), kPeriod,
                                      include_render_port);
 
   // This tests very *explicit* knowledge of what the wiring should be. As such,

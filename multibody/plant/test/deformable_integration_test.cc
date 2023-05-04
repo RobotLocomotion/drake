@@ -76,7 +76,7 @@ class DeformableIntegrationTest : public ::testing::Test {
     body_id_ =
         RegisterDeformableOctahedron(deformable_model.get(), "deformable");
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
     /* Register a rigid geometry that serves as an inclined plane. */
@@ -100,7 +100,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
@@ -140,7 +140,7 @@ class DeformableIntegrationTest : public ::testing::Test {
   DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                                 std::string name) {
     auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(0.1), move(name));
+        RigidTransformd(), make_unique<Sphere>(0.1), std::move(name));
     ProximityProperties props;
     geometry::AddContactMaterial({}, {}, kFriction, &props);
     geometry->set_proximity_properties(std::move(props));

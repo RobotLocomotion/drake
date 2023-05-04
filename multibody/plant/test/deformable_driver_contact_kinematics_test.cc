@@ -57,8 +57,8 @@ class CompliantContactManagerTester {
 DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                               std::string name,
                                               const RigidTransformd& X_WF) {
-  auto geometry =
-      make_unique<GeometryInstance>(X_WF, make_unique<Sphere>(1.0), move(name));
+  auto geometry = make_unique<GeometryInstance>(X_WF, make_unique<Sphere>(1.0),
+                                                std::move(name));
   geometry::ProximityProperties props;
   geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                &props);
