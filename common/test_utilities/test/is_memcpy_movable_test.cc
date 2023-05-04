@@ -10,7 +10,6 @@ namespace drake {
 namespace test {
 namespace {
 
-using std::move;
 using std::string;
 using std::unique_ptr;
 using std::make_unique;

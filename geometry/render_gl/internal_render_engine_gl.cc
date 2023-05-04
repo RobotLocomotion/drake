@@ -20,7 +20,6 @@ using Eigen::Vector3d;
 using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
-using std::move;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
@@ -405,7 +404,7 @@ class DefaultLabelShader final : public ShaderProgram {
   */
   explicit DefaultLabelShader(
       std::function<Vector4<float>(const PerceptionProperties&)> label_encoder)
-      : ShaderProgram(), label_encoder_(move(label_encoder)) {
+      : ShaderProgram(), label_encoder_(std::move(label_encoder)) {
     LoadFromSources(kVertexShader, kFragmentShader);
     encoded_label_loc_ = GetUniformLocation("encoded_label");
   }
@@ -1110,7 +1109,7 @@ ShaderId RenderEngineGl::AddShader(std::unique_ptr<ShaderProgram> program,
                                    RenderType render_type) {
   const ShaderId shader_id = program->shader_id();
   shader_families_[render_type].insert({shader_id, vector<GeometryId>()});
-  shader_programs_[render_type][shader_id] = move(program);
+  shader_programs_[render_type][shader_id] = std::move(program);
   return shader_id;
 }
 
@@ -1125,7 +1124,7 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
       if (data.has_value()) {
         if (candidate_data->shader_id() < data->shader_id()) continue;
       }
-      data = move(candidate_data);
+      data = std::move(candidate_data);
     }
   }
   // There should always be, at least, the default shader that accepts the

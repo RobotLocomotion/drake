@@ -14,7 +14,6 @@ namespace {
 
 using math::RigidTransformd;
 using std::make_unique;
-using std::move;
 
 // Confirms that the instance is copyable.
 GTEST_TEST(GeometryInstanceTest, IsCopyable) {

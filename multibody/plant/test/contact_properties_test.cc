@@ -21,7 +21,6 @@ using geometry::SourceId;
 using geometry::Sphere;
 using math::RigidTransformd;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 const CoulombFriction<double> kMuA(1.0, 1.0);
@@ -116,7 +115,7 @@ class ContactPropertiesTest : public ::testing::Test {
       props.AddProperty(geometry::internal::kHydroGroup,
                         geometry::internal::kComplianceType, *compliance_type);
     }
-    result->set_proximity_properties(move(props));
+    result->set_proximity_properties(std::move(props));
     return result;
   }
 

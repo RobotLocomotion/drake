@@ -24,7 +24,6 @@ namespace {
 using math::RigidTransformd;
 using std::array;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 // Convenience function for making a geometry instance.
@@ -176,7 +175,7 @@ GTEST_TEST(CollisionFilterManagerTest, MoveSemantics) {
   // Move construct a filter from the model. A modification to the copy should
   // be visible in the original model_filter but not the context.
   CollisionFilterManager model_filter = scene_graph.collision_filter_manager();
-  CollisionFilterManager copy_filter(move(model_filter));
+  CollisionFilterManager copy_filter(std::move(model_filter));
   copy_filter.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet{g_id1, g_id2}));
   EXPECT_TRUE(model_inspector.CollisionFiltered(g_id1, g_id2));
@@ -186,7 +185,7 @@ GTEST_TEST(CollisionFilterManagerTest, MoveSemantics) {
   // be visible to the context inspector but not model inspector.
   CollisionFilterManager context_filter =
       scene_graph.collision_filter_manager(context.get());
-  copy_filter = move(context_filter);
+  copy_filter = std::move(context_filter);
   copy_filter.Apply(
       CollisionFilterDeclaration().ExcludeWithin(GeometrySet{g_id1, g_id3}));
   EXPECT_FALSE(model_inspector.CollisionFiltered(g_id1, g_id3));

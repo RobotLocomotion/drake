@@ -12,7 +12,6 @@ namespace deformable {
 namespace {
 
 using std::make_unique;
-using std::move;
 using std::vector;
 
 /* Returns an approximation of the signed distance field inside the given
@@ -37,7 +36,7 @@ ApproximateSignedDistanceField(const VolumeMesh<double>* mesh) {
         -CalcDistanceToSurfaceMesh(vertex, surface_mesh));
   }
   return make_unique<VolumeMeshFieldLinear<double, double>>(
-      move(signed_distance), mesh);
+      std::move(signed_distance), mesh);
 }
 
 }  // namespace

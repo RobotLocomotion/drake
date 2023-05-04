@@ -33,7 +33,6 @@ using math::RigidTransformd;
 using std::array;
 using std::make_unique;
 using std::map;
-using std::move;
 using std::set;
 using std::vector;
 using systems::Context;
@@ -337,8 +336,8 @@ internal::DeformableMeshData MakeDeformableMeshData(
   }
 
   // TODO(xuchenhan-tri): Read the color of the mesh from properties.
-  return {g_id, inspector.GetName(g_id), move(surface_to_volume_vertices),
-          move(surface_triangles), volume_vertex_count};
+  return {g_id, inspector.GetName(g_id), std::move(surface_to_volume_vertices),
+          std::move(surface_triangles), volume_vertex_count};
 }
 
 // Simple class for converting shape specifications into LCM-compatible shapes.

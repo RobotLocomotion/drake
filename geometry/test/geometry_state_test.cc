@@ -43,7 +43,6 @@ using math::RigidTransformd;
 using render::RenderLabel;
 using std::make_unique;
 using std::map;
-using std::move;
 using std::optional;
 using std::pair;
 using std::set;
@@ -425,7 +424,7 @@ class GeometryStateTestBase {
     if (add_renderer) {
       auto render_engine = make_unique<DummyRenderEngine>();
       render_engine_ = render_engine.get();
-      geometry_state_.AddRenderer(kDummyRenderName, move(render_engine));
+      geometry_state_.AddRenderer(kDummyRenderName, std::move(render_engine));
     }
   }
 
@@ -562,7 +561,7 @@ class GeometryStateTestBase {
     auto instance = make_unique<GeometryInstance>(
         RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
     geometry_state_.RegisterDeformableGeometry(
-        s_id, InternalFrame::world_frame_id(), move(instance), kRezHint);
+        s_id, InternalFrame::world_frame_id(), std::move(instance), kRezHint);
     return s_id;
   }
 
@@ -1329,7 +1328,7 @@ TEST_F(GeometryStateTest, GetGeometryTest) {
     auto instance = make_unique<GeometryInstance>(
         RigidTransformd::Identity(), make_unique<Sphere>(1), "shape");
     const GeometryId new_id =
-        geometry_state_.RegisterGeometry(source_id_, f_id, move(instance));
+        geometry_state_.RegisterGeometry(source_id_, f_id, std::move(instance));
 
     // Build the expected answers.
     const auto first_geometry_iter = geometries_.begin() + i * kGeometryCount;
@@ -1489,7 +1488,7 @@ TEST_F(GeometryStateTest, RegisterGeometryGoodSource) {
   const FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
   const GeometryId expected_g_id = instance_->id();
   const GeometryId g_id =
-      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_));
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance_));
   EXPECT_EQ(g_id, expected_g_id);
   EXPECT_EQ(geometry_state_.GetFrameId(g_id), f_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
@@ -1525,7 +1524,7 @@ TEST_F(GeometryStateTest, AddGeometryUpdatesX_WG) {
     auto instance = make_unique<GeometryInstance>(
         instance_pose_, make_unique<Sphere>(1.0), "instance");
     const GeometryId g_id =
-        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance));
     const RigidTransformd X_WG_expected = X_WF * instance_->pose();
     EXPECT_TRUE(
         CompareMatrices(geometry_state_.get_pose_in_world(g_id).GetAsMatrix34(),
@@ -1538,9 +1537,9 @@ TEST_F(GeometryStateTest, RegisterDuplicateGeometry) {
   const SourceId s_id = NewSource();
   const FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
   auto instance_copy = make_unique<GeometryInstance>(*instance_);
-  geometry_state_.RegisterGeometry(s_id, f_id, move(instance_));
+  geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance_));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_copy)),
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance_copy)),
       "Registering geometry with an id that has already been registered: \\d+");
 }
 
@@ -1549,7 +1548,7 @@ TEST_F(GeometryStateTest, RegisterGeometryMissingSource) {
   const SourceId s_id = SourceId::get_new_id();
   const FrameId f_id = FrameId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_)),
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance_)),
       "Referenced geometry source \\d+ is not registered.");
 }
 
@@ -1558,7 +1557,7 @@ TEST_F(GeometryStateTest, RegisterGeometryMissingFrame) {
   const SourceId s_id = NewSource();
   const FrameId f_id = FrameId::get_new_id();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterGeometry(s_id, f_id, move(instance_)),
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance_)),
       "Referenced frame \\d+ for source \\d+\\,"
       " but the frame doesn't belong to the source.");
 }
@@ -1569,7 +1568,7 @@ TEST_F(GeometryStateTest, RegisterNullGeometry) {
   const FrameId f_id = geometry_state_.RegisterFrame(s_id, *frame_);
   unique_ptr<GeometryInstance> null_geometry;
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterGeometry(s_id, f_id, move(null_geometry)),
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(null_geometry)),
       "Registering null geometry to frame \\d+, on source \\d+.");
 }
 
@@ -1580,7 +1579,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
       RigidTransformd::Identity(), make_unique<Sphere>(1), "sphere");
   const GeometryId expected_g_id = instance->id();
   const auto g_id =
-      geometry_state_.RegisterAnchoredGeometry(s_id, move(instance));
+      geometry_state_.RegisterAnchoredGeometry(s_id, std::move(instance));
   EXPECT_EQ(g_id, expected_g_id);
   EXPECT_TRUE(geometry_state_.BelongsToSource(g_id, s_id));
   const InternalGeometry* g = gs_tester_.GetGeometry(g_id);
@@ -1593,9 +1592,9 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometry) {
 TEST_F(GeometryStateTest, RegisterDuplicateAnchoredGeometry) {
   const SourceId s_id = NewSource();
   auto instance_copy = make_unique<GeometryInstance>(*instance_);
-  geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_));
+  geometry_state_.RegisterAnchoredGeometry(s_id, std::move(instance_));
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterAnchoredGeometry(s_id, move(instance_copy)),
+      geometry_state_.RegisterAnchoredGeometry(s_id, std::move(instance_copy)),
       "Registering geometry with an id that has already been "
       "registered: \\d+");
 }
@@ -1606,7 +1605,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredGeometryInvalidSource) {
       RigidTransformd::Identity(), make_unique<Sphere>(1), "sphere");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
-                                               move(instance)),
+                                               std::move(instance)),
       "Referenced geometry source \\d+ is not registered.");
 }
 
@@ -1616,7 +1615,7 @@ TEST_F(GeometryStateTest, RegisterAnchoredNullGeometry) {
   unique_ptr<GeometryInstance> instance;
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.RegisterAnchoredGeometry(SourceId::get_new_id(),
-                                               move(instance)),
+                                               std::move(instance)),
       "Registering null geometry to frame \\d+, on source \\d+.");
 }
 
@@ -1635,8 +1634,8 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   auto instance1 = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
   DRAKE_EXPECT_THROWS_MESSAGE(
-      geometry_state_.RegisterDeformableGeometry(s_id, f_id, move(instance1),
-                                                 kRezHint),
+      geometry_state_.RegisterDeformableGeometry(
+          s_id, f_id, std::move(instance1), kRezHint),
       "Registering deformable geometry.*non-world frame.*");
 
   /* Successful registration of deformable geometry. */
@@ -1646,7 +1645,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
       X_WG, make_unique<Sphere>(sphere), "sphere");
   const GeometryId expected_g_id = instance2->id();
   const auto g_id = geometry_state_.RegisterDeformableGeometry(
-      s_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
+      s_id, InternalFrame::world_frame_id(), std::move(instance2), kRezHint);
   EXPECT_EQ(g_id, expected_g_id);
   EXPECT_TRUE(geometry_state_.IsDeformableGeometry(g_id));
 
@@ -1654,7 +1653,7 @@ TEST_F(GeometryStateTest, RegisterDeformableGeometry) {
   auto instance3 = make_unique<GeometryInstance>(
       RigidTransformd::Identity(), make_unique<Sphere>(sphere), "sphere");
   const GeometryId non_deformable_g_id =
-      geometry_state_.RegisterGeometry(s_id, f_id, move(instance3));
+      geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance3));
   EXPECT_FALSE(geometry_state_.IsDeformableGeometry(non_deformable_g_id));
 
   // Verify the reference mesh of the deformable geometry matches the input.
@@ -1712,9 +1711,9 @@ TEST_F(GeometryStateTest, GetAllDeformableGeometryIds) {
 
   /* Register in counter-intuitive order. */
   geometry_state_.RegisterDeformableGeometry(
-      s2_id, InternalFrame::world_frame_id(), move(instance2), kRezHint);
+      s2_id, InternalFrame::world_frame_id(), std::move(instance2), kRezHint);
   geometry_state_.RegisterDeformableGeometry(
-      s1_id, InternalFrame::world_frame_id(), move(instance1), kRezHint);
+      s1_id, InternalFrame::world_frame_id(), std::move(instance1), kRezHint);
 
   /* Confirm that we get the expected ids in the expected order. */
   const vector<GeometryId> deformable_ids =
@@ -1956,7 +1955,7 @@ TEST_F(GeometryStateTest, SetGeometryConfiguration) {
       "deformable sphere");
   deformable_instance->set_proximity_properties(ProximityProperties());
   const auto deformable_id = geometry_state_.RegisterDeformableGeometry(
-      s_id, InternalFrame::world_frame_id(), move(deformable_instance),
+      s_id, InternalFrame::world_frame_id(), std::move(deformable_instance),
       /* resolution_hint */ 2.0);
   // Add a rigid geometry with a resolution hint (so that it can be in contact
   // with deformable geometries).
@@ -1965,10 +1964,10 @@ TEST_F(GeometryStateTest, SetGeometryConfiguration) {
       "rigid_box");
   ProximityProperties rigid_properties;
   rigid_properties.AddProperty(internal::kHydroGroup, internal::kRezHint, 1.0);
-  rigid_instance->set_proximity_properties(move(rigid_properties));
+  rigid_instance->set_proximity_properties(std::move(rigid_properties));
   const FrameId f_id =
       geometry_state_.RegisterFrame(s_id, GeometryFrame("frame"));
-  geometry_state_.RegisterGeometry(s_id, f_id, move(rigid_instance));
+  geometry_state_.RegisterGeometry(s_id, f_id, std::move(rigid_instance));
 
   // Update the deformable geometry's configuration by translating it away from
   // the rigid geometry.
@@ -3052,7 +3051,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     auto instance = make_instance("instance2");
     instance->set_proximity_properties(ProximityProperties());
     const GeometryId g_id =
-        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance));
 
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_TRUE(geometry->has_proximity_role());
@@ -3065,7 +3064,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     auto instance = make_instance("instance3");
     instance->set_illustration_properties(IllustrationProperties());
     const GeometryId g_id =
-        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance));
 
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_FALSE(geometry->has_proximity_role());
@@ -3078,7 +3077,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     auto instance = make_instance("instance4");
     instance->set_perception_properties(perception_props);
     const GeometryId g_id =
-        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance));
 
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_FALSE(geometry->has_proximity_role());
@@ -3093,7 +3092,7 @@ TEST_F(GeometryStateTest, InstanceRoleAssignment) {
     instance->set_illustration_properties(IllustrationProperties());
     instance->set_perception_properties(perception_props);
     const GeometryId g_id =
-        geometry_state_.RegisterGeometry(s_id, f_id, move(instance));
+        geometry_state_.RegisterGeometry(s_id, f_id, std::move(instance));
 
     const InternalGeometry* geometry = gs_tester_.GetGeometry(g_id);
     EXPECT_TRUE(geometry->has_proximity_role());
@@ -3364,7 +3363,7 @@ TEST_F(GeometryStateTest, RemoveGeometryFromRenderer) {
   const string other_renderer_name = "alt_renderer";
   auto temp_engine = make_unique<DummyRenderEngine>();
   const DummyRenderEngine& other_engine = *temp_engine;
-  geometry_state_.AddRenderer(other_renderer_name, move(temp_engine));
+  geometry_state_.AddRenderer(other_renderer_name, std::move(temp_engine));
 
   SetUpSingleSourceTree(Assign::kPerception);
 
@@ -3440,7 +3439,7 @@ TEST_F(GeometryStateTest, RemoveFrameFromRenderer) {
   const string other_renderer_name = "alt_renderer";
   auto temp_engine = make_unique<DummyRenderEngine>();
   const DummyRenderEngine& other_engine = *temp_engine;
-  geometry_state_.AddRenderer(other_renderer_name, move(temp_engine));
+  geometry_state_.AddRenderer(other_renderer_name, std::move(temp_engine));
 
   SetUpSingleSourceTree(Assign::kPerception);
 
@@ -3549,7 +3548,7 @@ TEST_F(GeometryStateTest, AddRendererAfterGeometry) {
   // The new renderer has no geometry assigned.
   EXPECT_EQ(other_renderer->num_registered(), 0);
   const string other_name = "other";
-  geometry_state_.AddRenderer(other_name, move(new_renderer));
+  geometry_state_.AddRenderer(other_name, std::move(new_renderer));
   // The new renderer only has the geometries with perception properties
   // assigned.
   EXPECT_EQ(other_renderer->num_registered(),
@@ -3601,7 +3600,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
   auto new_renderer = make_unique<DummyRenderEngine>();
   const DummyRenderEngine& second_renderer = *new_renderer.get();
   const string second_name = "second_renderer";
-  geometry_state_.AddRenderer(second_name, move(new_renderer));
+  geometry_state_.AddRenderer(second_name, std::move(new_renderer));
   ASSERT_TRUE(geometry_state_.HasRenderer(second_name));
 
   ASSERT_EQ(first_renderer.num_registered(), 0);
@@ -3626,7 +3625,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
     PerceptionProperties properties(base_properties);
     properties.AddProperty("renderer", "accepting", set<string>{});
     const GeometryId id = geometries_[1];
-    geometry_state_.AssignRole(source_id_, id, move(properties));
+    geometry_state_.AssignRole(source_id_, id, std::move(properties));
     EXPECT_TRUE(first_renderer.is_registered(id));
     EXPECT_TRUE(second_renderer.is_registered(id));
   }
@@ -3637,7 +3636,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
     properties.AddProperty("renderer", "accepting",
                            set<string>{kDummyRenderName});
     const GeometryId id = geometries_[2];
-    geometry_state_.AssignRole(source_id_, id, move(properties));
+    geometry_state_.AssignRole(source_id_, id, std::move(properties));
     EXPECT_TRUE(first_renderer.is_registered(id));
     EXPECT_FALSE(second_renderer.is_registered(id));
   }
@@ -3647,7 +3646,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
     PerceptionProperties properties(base_properties);
     properties.AddProperty("renderer", "accepting", set<string>{second_name});
     const GeometryId id = geometries_[3];
-    geometry_state_.AssignRole(source_id_, id, move(properties));
+    geometry_state_.AssignRole(source_id_, id, std::move(properties));
     EXPECT_FALSE(first_renderer.is_registered(id));
     EXPECT_TRUE(second_renderer.is_registered(id));
   }
@@ -3657,7 +3656,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
     PerceptionProperties properties(base_properties);
     properties.AddProperty("renderer", "accepting", set<string>{"junk"});
     const GeometryId id = geometries_[4];
-    geometry_state_.AssignRole(source_id_, id, move(properties));
+    geometry_state_.AssignRole(source_id_, id, std::move(properties));
     EXPECT_FALSE(first_renderer.is_registered(id));
     EXPECT_FALSE(second_renderer.is_registered(id));
   }
@@ -3668,7 +3667,7 @@ TEST_F(GeometryStateTest, RespectAcceptingRendererProperty) {
     properties.AddProperty("renderer", "accepting",
                            set<string>{kDummyRenderName, second_name});
     const GeometryId id = geometries_[5];
-    geometry_state_.AssignRole(source_id_, id, move(properties));
+    geometry_state_.AssignRole(source_id_, id, std::move(properties));
     EXPECT_TRUE(first_renderer.is_registered(id));
     EXPECT_TRUE(second_renderer.is_registered(id));
   }
@@ -3741,7 +3740,7 @@ TEST_F(GeometryStateTest, PostHocRenderEngineRespectAcceptingRenderer) {
   auto second_renderer_owned = make_unique<DummyRenderEngine>();
   const DummyRenderEngine& second_renderer = *second_renderer_owned.get();
 
-  geometry_state_.AddRenderer(second_name, move(second_renderer_owned));
+  geometry_state_.AddRenderer(second_name, std::move(second_renderer_owned));
   ASSERT_TRUE(geometry_state_.HasRenderer(second_name));
 
   EXPECT_EQ(second_renderer.num_registered(), 3);
@@ -3762,7 +3761,7 @@ TEST_F(GeometryStateTest, RendererPoseUpdate) {
   auto render_engine = make_unique<DummyRenderEngine>();
   DummyRenderEngine* second_engine = render_engine.get();
   const std::string second_engine_name = "second_engine";
-  geometry_state_.AddRenderer(second_engine_name, move(render_engine));
+  geometry_state_.AddRenderer(second_engine_name, std::move(render_engine));
 
   SetUpSingleSourceTree(Assign::kPerception);
 

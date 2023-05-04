@@ -39,7 +39,6 @@ using math::RigidTransformd;
 using math::RotationMatrixd;
 using std::make_unique;
 using std::map;
-using std::move;
 using std::string;
 using std::unique_ptr;
 using std::vector;
@@ -99,7 +98,7 @@ class PoseSource : public systems::LeafSystem<T> {
                                     &PoseSource<T>::ReadPoses);
   }
 
-  void SetPoses(FramePoseVector<T> poses) { poses_ = move(poses); }
+  void SetPoses(FramePoseVector<T> poses) { poses_ = std::move(poses); }
 
  private:
   void ReadPoses(const Context<T>&, FramePoseVector<T>* poses) const {
@@ -122,7 +121,7 @@ class ConfigurationSource : public systems::LeafSystem<T> {
 
   void SetConfigurations(
     GeometryConfigurationVector<T> configurations) {
-    configurations_ = move(configurations);
+    configurations_ = std::move(configurations);
   }
 
  private:
@@ -160,8 +159,8 @@ class DrakeVisualizerTest : public ::testing::Test {
   void ConfigureDiagram(DrakeVisualizerParams params = {}) {
     DiagramBuilder<T> builder;
     scene_graph_ = builder.template AddSystem<SceneGraph<T>>();
-    visualizer_ =
-        builder.template AddSystem<DrakeVisualizer<T>>(&lcm_, move(params));
+    visualizer_ = builder.template AddSystem<DrakeVisualizer<T>>(
+        &lcm_, std::move(params));
     builder.Connect(scene_graph_->get_query_output_port(),
                     visualizer_->query_object_input_port());
     pose_source_id_ = scene_graph_->RegisterSource(kPoseSourceName);
@@ -869,7 +868,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeDeformableGeometry) {
       RigidTransformd::Identity(), make_unique<Sphere>(kRadius), "sphere");
   GeometryId g_id = this->scene_graph_->RegisterDeformableGeometry(
       this->configuration_source_id_, this->scene_graph_->world_frame_id(),
-      move(geometry_instance), kRezHint);
+      std::move(geometry_instance), kRezHint);
   const auto& inspector = this->scene_graph_->model_inspector();
   const VolumeMesh<double>* mesh = inspector.GetReferenceMesh(g_id);
   ASSERT_NE(mesh, nullptr);
@@ -954,7 +953,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
         this->pose_source_id_, GeometryFrame(name, 0));
     const GeometryId g_id = this->scene_graph_->RegisterGeometry(
         this->pose_source_id_, f_id,
-        make_unique<GeometryInstance>(X_PG, move(shape_u_p), name));
+        make_unique<GeometryInstance>(X_PG, std::move(shape_u_p), name));
     this->scene_graph_->AssignRole(this->pose_source_id_, g_id, properties);
     poses.set_value(f_id, RigidTransform<T>{});
   };
@@ -984,7 +983,7 @@ TYPED_TEST(DrakeVisualizerTest, VisualizeHydroGeometry) {
   add_geometry(make_unique<Sphere>(1), "sphere", props, X_PSphere);
   add_geometry(make_unique<HalfSpace>(), "soft_half_space", props);
 
-  this->pose_source_->SetPoses(move(poses));
+  this->pose_source_->SetPoses(std::move(poses));
 
   /* Dispatch a load message. */
   auto context = this->diagram_->CreateDefaultContext();

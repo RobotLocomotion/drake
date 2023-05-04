@@ -14,7 +14,6 @@ namespace drake {
 namespace  {
 
 using std::make_unique;
-using std::move;
 using std::regex;
 using std::regex_match;
 using std::stringstream;

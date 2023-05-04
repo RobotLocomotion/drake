@@ -39,7 +39,6 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using std::make_pair;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 using systems::Context;

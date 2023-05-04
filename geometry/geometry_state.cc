@@ -36,7 +36,6 @@ using render::ColorRenderCamera;
 using render::DepthRenderCamera;
 using std::make_pair;
 using std::make_unique;
-using std::move;
 using std::set;
 using std::string;
 using std::swap;
@@ -1161,7 +1160,7 @@ void GeometryState<T>::AddRenderer(
         "AddRenderer(): A renderer with the name '{}' already exists", name));
   }
   render::RenderEngine* render_engine = renderer.get();
-  render_engines_[name] = move(renderer);
+  render_engines_[name] = std::move(renderer);
   bool accepted = false;
   for (auto& id_geo_pair : geometries_) {
     InternalGeometry& geometry = id_geo_pair.second;

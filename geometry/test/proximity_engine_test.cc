@@ -115,7 +115,6 @@ using Eigen::Vector3d;
 
 using std::make_shared;
 using std::make_unique;
-using std::move;
 using std::shared_ptr;
 using std::unordered_map;
 using std::vector;
@@ -747,7 +746,7 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
   engine.AddAnchoredGeometry(sphere, pose, GeometryId::get_new_id());
   engine.AddDynamicGeometry(sphere, pose, GeometryId::get_new_id());
 
-  ProximityEngine<double> move_construct(move(engine));
+  ProximityEngine<double> move_construct(std::move(engine));
   EXPECT_EQ(move_construct.num_geometries(), 2);
   EXPECT_EQ(move_construct.num_anchored(), 1);
   EXPECT_EQ(move_construct.num_dynamic(), 1);
@@ -756,7 +755,7 @@ GTEST_TEST(ProximityEngineTests, MoveSemantics) {
   EXPECT_EQ(engine.num_dynamic(), 0);
 
   ProximityEngine<double> move_assign;
-  move_assign = move(move_construct);
+  move_assign = std::move(move_construct);
   EXPECT_EQ(move_assign.num_geometries(), 2);
   EXPECT_EQ(move_assign.num_anchored(), 1);
   EXPECT_EQ(move_assign.num_dynamic(), 1);

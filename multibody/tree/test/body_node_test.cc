@@ -30,7 +30,6 @@ using Eigen::MatrixXd;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using math::RotationMatrix;
-using std::move;
 using systems::Context;
 
 // Friend access into BodyNode.

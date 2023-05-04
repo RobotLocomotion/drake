@@ -22,7 +22,6 @@ namespace {
 
 using std::regex;
 using std::regex_match;
-using std::move;
 
 // Create dummy index types to exercise the functionality
 using AIndex = TypeSafeIndex<class A>;
@@ -35,7 +34,7 @@ GTEST_TEST(TypeSafeIndex, Constructor) {
   EXPECT_EQ(index, 1);                      // This also tests operator==(int).
   AIndex index2(index);                     // Copy constructor.
   EXPECT_EQ(index2, 1);
-  AIndex index3(move(index2));              // Move constructor.
+  AIndex index3(std::move(index2));              // Move constructor.
   EXPECT_EQ(index3, 1);
   EXPECT_FALSE(index2.is_valid());
 
@@ -62,7 +61,7 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   // Move assignment.
   AIndex index3(2);
   EXPECT_NE(index3, index2);
-  index3 = move(index1);
+  index3 = std::move(index1);
   EXPECT_EQ(index3, index2);
   EXPECT_FALSE(index1.is_valid());
 
@@ -90,7 +89,7 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
     AIndex invalid;
     AIndex target(2);
     EXPECT_TRUE(target.is_valid());
-    DRAKE_EXPECT_NO_THROW(invalid = move(target));
+    DRAKE_EXPECT_NO_THROW(invalid = std::move(target));
     EXPECT_FALSE(target.is_valid());
     EXPECT_EQ(invalid, 2);
   }
@@ -99,7 +98,7 @@ GTEST_TEST(TypeSafeIndex, IndexAssignment) {
   {
     AIndex invalid;
     AIndex target(3);
-    DRAKE_EXPECT_NO_THROW(target = move(invalid));
+    DRAKE_EXPECT_NO_THROW(target = std::move(invalid));
     EXPECT_FALSE(target.is_valid());
     EXPECT_FALSE(invalid.is_valid());
   }

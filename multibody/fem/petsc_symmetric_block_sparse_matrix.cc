@@ -232,20 +232,20 @@ class PetscSymmetricBlockSparseMatrix::Impl {
 
   SchurComplement<double> CalcSchurComplement(
       const vector<int>& D_block_indexes, const vector<int>& A_block_indexes) {
-    using std::move;
-
     MatrixXd D_complement;          // A - BD⁻¹Bᵀ.
     MatrixXd neg_Dinv_B_transpose;  // -D⁻¹Bᵀ.
 
     if (D_block_indexes.size() == 0) {
       D_complement = MakeDenseMatrix();
       neg_Dinv_B_transpose.resize(0, size_);
-      return SchurComplement(move(D_complement), move(neg_Dinv_B_transpose));
+      return SchurComplement(std::move(D_complement),
+                             std::move(neg_Dinv_B_transpose));
     }
     if (A_block_indexes.size() == 0) {
       D_complement.resize(0, 0);
       neg_Dinv_B_transpose.resize(size_, 0);
-      return SchurComplement(move(D_complement), move(neg_Dinv_B_transpose));
+      return SchurComplement(std::move(D_complement),
+                             std::move(neg_Dinv_B_transpose));
     }
     // Build indices to create the four blocks in the Schur complement.
     IS is0, is1;
@@ -303,7 +303,8 @@ class PetscSymmetricBlockSparseMatrix::Impl {
     ISDestroy(&is0);
     ISDestroy(&is1);
 
-    return SchurComplement(move(D_complement), move(neg_Dinv_B_transpose));
+    return SchurComplement(std::move(D_complement),
+                           std::move(neg_Dinv_B_transpose));
   }
 
   int size() const { return size_; }
