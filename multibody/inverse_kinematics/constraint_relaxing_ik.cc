@@ -52,7 +52,6 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
   q_sol_out->clear();
   q_sol_out->push_back(q_current);
 
-  int step_ctr = 0;
   int relaxed_ctr = 0;
   int random_ctr = 0;
 
@@ -153,7 +152,6 @@ bool ConstraintRelaxingIk::PlanSequentialTrajectory(
     // Sets next IK's initial and bias to current solution.
     q0 = q_sol;
     q_sol_out->push_back(q_sol);
-    step_ctr++;
   }
 
   DRAKE_DEMAND(static_cast<int>(q_sol_out->size()) == num_steps + 1);
