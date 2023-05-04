@@ -175,7 +175,7 @@ def _determine_macos(repository_ctx):
 
     # Match supported macOS release(s).
     (macos_release,) = sw_vers.stdout.strip().split(".")[:1]
-    if macos_release not in ["12"]:
+    if macos_release not in ["12", "13"]:
         print("WARNING: unsupported macOS '%s'" % macos_release)
 
     # Check which arch we should be using.
