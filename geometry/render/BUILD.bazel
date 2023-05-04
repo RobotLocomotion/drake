@@ -97,17 +97,22 @@ drake_cc_library(
 
 # === test/ ===
 
+genrule(
+    name = "box_no_mtl",
+    srcs = ["test/meshes/box.obj"],
+    outs = ["test/meshes/box_no_mtl.obj"],
+    cmd = "sed '/mtllib/d; /usemtl/d' $< > $@",
+    visibility = ["//visibility:private"],
+)
+
 filegroup(
     name = "test_models",
     testonly = 1,
-    srcs = [
+    srcs = [":box_no_mtl"] + glob([
+        "test/meshes/*",
         "test/box.sdf",
         "test/diag_gradient.png",
-        "test/meshes/box.obj",
-        "test/meshes/box.obj.mtl",
-        "test/meshes/box.png",
-        "test/meshes/box16u.png",
-    ],
+    ]),
 )
 
 drake_cc_googletest(
