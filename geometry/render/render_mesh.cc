@@ -1,8 +1,10 @@
 #include "drake/geometry/render/render_mesh.h"
 
+#include <algorithm>
 #include <fstream>
-#include <istream>
 #include <map>
+#include <set>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -16,47 +18,118 @@
 namespace drake {
 namespace geometry {
 namespace internal {
+namespace {
 
+using drake::internal::DiagnosticPolicy;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using std::make_tuple;
 using std::map;
-using std::string;
 using std::tuple;
 using std::vector;
 
-RenderMesh LoadRenderMeshFromObj(std::istream* input_stream,
-                                 const std::string& filename) {
-  tinyobj::attrib_t attrib;
-  vector<tinyobj::shape_t> shapes;
-  vector<tinyobj::material_t> materials;
-  string warn;
-  string err;
-  /* This renderer assumes everything is triangles -- we rely on tinyobj to
-   triangulate for us. */
-  const bool do_tinyobj_triangulation = true;
+/* Constructs a RenderMaterial from a single tinyobj material specification. */
+RenderMaterial MakeMaterialFromMtl(const tinyobj::material_t& mat,
+                                   const std::filesystem::path& obj_path,
+                                   const GeometryProperties& properties,
+                                   bool has_tex_coord,
+                                   const DiagnosticPolicy& policy) {
+  RenderMaterial result;
+  result.diffuse.set(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2],
+                     mat.dissolve);
+  result.diffuse_map = [&mat, &obj_path]() -> std::string {
+    if (mat.diffuse_texname.empty()) {
+      return mat.diffuse_texname;
+    }
+    std::filesystem::path tex_path(mat.diffuse_texname);
+    if (tex_path.is_absolute()) {
+      return mat.diffuse_texname;
+    }
+    // There are three potential paths: path to obj, path to mtl, and path to
+    // texture image (png). We have the path to obj. The mtl is defined relative
+    // to the obj (inside the obj) and the png is defined relative to the
+    // mtl (defined in the mtl). However, tinyobj doesn't give us access to
+    // the mtl path to resolve image paths. For now, we're making the
+    // simplifying assumption that obj and mtl are in the same directory.
+    //
+    // What if the OBJ references multiple mtl files in disparate locations?
+    // Ideally, `material_t` should  come with a string indicating either the
+    // the mtl file it came from or the directory of that mtl file. Then
+    // relative paths of the referenced images can be properly interpreted.
+    // Or what is stored in material_t should be relative to the obj.
+    std::filesystem::path obj_dir = obj_path.parent_path();
+    return (obj_dir / tex_path).lexically_normal().string();
+  }();
 
-  drake::log()->trace("LoadRenderMeshFromObj('{}')", filename);
-
-  /* Tinyobj doesn't infer the search directory from the directory containing
-   the obj file. We have to provide that directory; of course, this assumes
-   that the material library reference is relative to the obj directory.
-   Ignore material-library file.  */
-  tinyobj::MaterialReader* material_reader = nullptr;
-  const bool ret =
-      tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, input_stream,
-                       material_reader, do_tinyobj_triangulation);
-  if (!ret) {
-    throw std::runtime_error(
-        fmt::format("tinyobj::LoadObj failed to load file: {}", filename));
+  // If texture is specified, it must be available and applicable.
+  if (!result.diffuse_map.empty()) {
+    std::ifstream tex_file(result.diffuse_map);
+    if (!tex_file.is_open()) {
+      policy.Warning(fmt::format(
+          "The OBJ file's material requested an unavailable diffuse texture "
+          "image: {}. The image will be omitted.",
+          result.diffuse_map.string()));
+      result.diffuse_map.clear();
+    }
+    if (!has_tex_coord) {
+      policy.Warning(fmt::format(
+          "The OBJ file's material requested a diffuse texture image: {}. "
+          "However the mesh doesn't define texture coordinates. The image "
+          "will be omitted.",
+          result.diffuse_map.string()));
+      result.diffuse_map.clear();
+    }
   }
 
-  if (shapes.empty()) {
+  MaybeWarnForRedundantMaterial(properties, obj_path.string(), policy);
+  return result;
+}
+
+}  // namespace
+
+// TODO(SeanCurtis-TRI): Add troubleshooting entry on OBJ support and
+// reference it in these errors/warnings.
+
+RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
+                                 const GeometryProperties& properties,
+                                 const Rgba& default_diffuse,
+                                 const DiagnosticPolicy& policy) {
+  tinyobj::ObjReaderConfig config;
+  config.triangulate = true;
+  config.vertex_color = false;
+  tinyobj::ObjReader reader;
+  const bool valid_parse = reader.ParseFromFile(obj_path.string(), config);
+
+  if (!valid_parse) {
+    throw std::runtime_error(fmt::format("Failed parsing the obj file: {}: {}",
+                                         obj_path.string(), reader.Error()));
+  }
+
+  // We better not get any errors if we have a valid parse.
+  DRAKE_DEMAND(reader.Error().empty());
+
+  const vector<tinyobj::shape_t>& shapes = reader.GetShapes();
+
+  bool faces_found = false;
+  for (const auto& shape : shapes) {
+    faces_found = shape.mesh.indices.size() > 0;
+    if (faces_found) break;
+  }
+  if (!faces_found) {
     throw std::runtime_error(fmt::format(
         "The OBJ data appears to have no faces; it could be missing faces or "
         "might not be an OBJ file: {}",
-        filename));
+        obj_path.string()));
   }
+
+  if (!reader.Warning().empty()) {
+    policy.Warning(reader.Warning());
+  }
+
+  const tinyobj::attrib_t& attrib = reader.GetAttrib();
+
+  // All of the materials referenced by faces.
+  std::set<int> referenced_materials;
 
   /* The parsed product needs to be further processed. The RenderMesh assumes
    that all vertex quantities (positions, normals, texture coordinates) are
@@ -104,9 +177,8 @@ RenderMesh LoadRenderMeshFromObj(std::istream* input_stream,
   //   1. If normals are absent, generate normals so that we get faceted meshes.
   //   2. Make use of smoothing groups.
   if (attrib.normals.size() == 0) {
-    throw std::runtime_error(fmt::format(
-        "OBJ has no normals; RenderEngineGl requires OBJs with normals: {}",
-        filename));
+    throw std::runtime_error(
+        fmt::format("OBJ has no normals: {}", obj_path.string()));
   }
 
   bool has_tex_coord{attrib.texcoords.size() > 0};
@@ -131,13 +203,14 @@ RenderMesh LoadRenderMeshFromObj(std::istream* input_stream,
         const int norm_index = shape_mesh.indices[v_index].normal_index;
         const int uv_index = shape_mesh.indices[v_index].texcoord_index;
         if (norm_index < 0) {
-          throw std::runtime_error(
-              fmt::format("Not all faces reference normals: {}", filename));
+          throw std::runtime_error(fmt::format(
+              "Not all faces reference normals: {}", obj_path.string()));
         }
         if (has_tex_coord) {
           if (uv_index < 0) {
-            throw std::runtime_error(fmt::format(
-                "Not all faces reference texture coordinates: {}", filename));
+            throw std::runtime_error(
+                fmt::format("Not all faces reference texture coordinates: {}",
+                            obj_path.string()));
           }
         } else {
           DRAKE_DEMAND(uv_index < 0);
@@ -167,6 +240,7 @@ RenderMesh LoadRenderMeshFromObj(std::istream* input_stream,
         ++v_index;
       }
       triangles.emplace_back(&face_vertices[0]);
+      referenced_materials.insert(shape_mesh.material_ids[f]);
     }
   }
 
@@ -193,16 +267,34 @@ RenderMesh LoadRenderMeshFromObj(std::istream* input_stream,
     mesh_data.uvs.row(uv) = uvs[uv];
   }
 
-  return mesh_data;
-}
-
-RenderMesh LoadRenderMeshFromObj(const string& filename) {
-  std::ifstream input_stream(filename);
-  if (!input_stream.is_open()) {
-    throw std::runtime_error(
-        fmt::format("Cannot load the obj file '{}'", filename));
+  // If we've only used a single material in the OBJ, use it. If the only
+  // referenced material is "-1", it means there is no material.
+  if (referenced_materials.size() == 1 && referenced_materials.count(-1) == 0) {
+    mesh_data.material =
+        MakeMaterialFromMtl(reader.GetMaterials().front(), obj_path,
+                            properties, has_tex_coord, policy);
+  } else {
+    // We'll need to use the material fallback logic for meshes.
+    if (referenced_materials.size() > 1) {
+      vector<std::string_view> mat_names;
+      std::transform(
+          referenced_materials.begin(), referenced_materials.end(),
+          std::back_inserter(mat_names), [&reader](int i) {
+            return i < 0 ? std::string("__default__")
+                         : fmt::format("'{}'", reader.GetMaterials()[i].name);
+          });
+      policy.Warning(fmt::format(
+          "Drake currently only supports OBJs that use a single material "
+          "across the whole mesh; for {}, {} materials were used: {}. The "
+          "parsed materials will not be used.",
+          obj_path.string(), referenced_materials.size(),
+          fmt::join(mat_names, ", ")));
+    }
+    mesh_data.material = MakeMeshFallbackMaterial(properties, obj_path,
+                                                  default_diffuse, policy);
   }
-  return LoadRenderMeshFromObj(&input_stream, filename);
+
+  return mesh_data;
 }
 
 }  // namespace internal
