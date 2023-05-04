@@ -19,5 +19,8 @@ def tinyobjloader_repository(
             # We replace tinyobjloader's implementation of float parsing with a
             # faster call to strtod_l.
             ":faster_float_parsing.patch",
+            # If only a diffuse texture is given (map_Kd) tinyobj modulates it
+            # to 60% grey. We prefer 100%.
+            ":default_texture_color.patch",
         ],
     )
