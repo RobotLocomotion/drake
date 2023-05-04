@@ -100,14 +100,11 @@ drake_cc_library(
 filegroup(
     name = "test_models",
     testonly = 1,
-    srcs = [
+    srcs = glob([
+        "test/meshes/**/*.*",
         "test/box.sdf",
         "test/diag_gradient.png",
-        "test/meshes/box.obj",
-        "test/meshes/box.obj.mtl",
-        "test/meshes/box.png",
-        "test/meshes/box16u.png",
-    ],
+    ]),
 )
 
 drake_cc_googletest(
