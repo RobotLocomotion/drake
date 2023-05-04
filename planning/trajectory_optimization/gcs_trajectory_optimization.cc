@@ -253,7 +253,9 @@ void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
 EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
     const Subgraph& from_subgraph, const Subgraph& to_subgraph,
     const ConvexSet* subspace, GcsTrajectoryOptimization* traj_opt)
-    : traj_opt_(*traj_opt) {
+    : traj_opt_(*traj_opt),
+      from_subgraph_order_(from_subgraph.order()),
+      to_subgraph_order_(to_subgraph.order()) {
   // Formulate edge costs and constraints.
   if (subspace != nullptr) {
     if (subspace->ambient_dimension() != num_positions()) {
@@ -376,6 +378,90 @@ bool EdgesBetweenSubgraphs::RegionsConnectThroughSubspace(
     subspace.AddPointInSetConstraints(&prog, x);
     solvers::MathematicalProgramResult result = solvers::Solve(prog);
     return result.is_success();
+  }
+}
+
+void EdgesBetweenSubgraphs::AddVelocityBounds(
+    const Eigen::Ref<const VectorXd>& lb,
+    const Eigen::Ref<const VectorXd>& ub) {
+  DRAKE_THROW_UNLESS(lb.size() == num_positions());
+  DRAKE_THROW_UNLESS(ub.size() == num_positions());
+
+  // We have q̇(t) = drds * dsdt = ṙ(s) / h, and h >= 0, so we
+  // use h * lb <= ṙ(s) <= h * ub, formulated as:
+  // - inf <=   h * lb - ṙ(s) <= 0
+  // - inf <= - h * ub + ṙ(s) <= 0
+
+  // We will enforce the velocity bounds on the last control point of the u set
+  // and on the first control point of the v set unless one of the sets are of
+  // order zero. In the zero order case, velocity doesn't matter since its a
+  // point.
+
+  if (from_subgraph_order_ == 0 && to_subgraph_order_ == 0) {
+    throw std::runtime_error(
+        "Cannot add velocity bounds to a subgraph edges where both subgraphs "
+        "have zero order.");
+  }
+
+  if (from_subgraph_order_ > 0) {
+    // Add velocity bounds to the last control point of the u set.
+
+    const MatrixX<Expression> u_rdot_control =
+        dynamic_pointer_cast_or_throw<BezierCurve<Expression>>(
+            u_r_trajectory_.MakeDerivative())
+            ->control_points();
+
+    MatrixXd b(u_h_.rows(), u_vars_.size());
+    DecomposeLinearExpressions(u_h_.cast<Expression>(), u_vars_, &b);
+
+    // Last control point velocity constraint.
+    MatrixXd M(num_positions(), u_vars_.size());
+    DecomposeLinearExpressions(u_rdot_control.col(u_rdot_control.cols() - 1),
+                               u_vars_, &M);
+    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
+    // for both M and b here.
+    MatrixXd H(2 * num_positions(), M.cols());
+    H << M - ub * b, -M + lb * b;
+
+    const auto last_ctrl_pt_velocity_constraint =
+        std::make_shared<LinearConstraint>(
+            H, VectorXd::Constant(2 * num_positions(), -kInf),
+            VectorXd::Zero(2 * num_positions()));
+
+    for (Edge* edge : edges_) {
+      edge->AddConstraint(Binding<LinearConstraint>(
+          last_ctrl_pt_velocity_constraint, edge->xu()));
+    }
+  }
+
+  if (to_subgraph_order_ > 0) {
+    // Add velocity bounds to the first control point of the v set.
+    const MatrixX<Expression> v_rdot_control =
+        dynamic_pointer_cast_or_throw<BezierCurve<Expression>>(
+            v_r_trajectory_.MakeDerivative())
+            ->control_points();
+
+    MatrixXd b(v_h_.rows(), v_vars_.size());
+    DecomposeLinearExpressions(v_h_.cast<Expression>(), v_vars_, &b);
+
+    // First control point velocity constraint.
+    MatrixXd M(num_positions(), v_vars_.size());
+    DecomposeLinearExpressions(v_rdot_control.col(0), v_vars_, &M);
+    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
+    // for both M and b here.
+
+    MatrixXd H(2 * num_positions(), M.cols());
+    H << M - ub * b, -M + lb * b;
+
+    const auto first_ctrl_pt_velocity_constraint =
+        std::make_shared<LinearConstraint>(
+            H, VectorXd::Constant(2 * num_positions(), -kInf),
+            VectorXd::Zero(2 * num_positions()));
+
+    for (Edge* edge : edges_) {
+      edge->AddConstraint(Binding<LinearConstraint>(
+          first_ctrl_pt_velocity_constraint, edge->xv()));
+    }
   }
 }
 
@@ -598,8 +684,15 @@ GcsTrajectoryOptimization::SolvePath(const Subgraph& source,
     const double h = phi_inv * result.GetSolution(edge->xu()).tail<1>().value();
     const double start_time =
         bezier_curves.empty() ? 0 : bezier_curves.back()->end_time();
-    bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
-        start_time, start_time + h, edge_path_points));
+
+    // Skip edges with a single control point that spend near zero time in the
+    // region, since zero order continuity constraint is sufficient. These edges
+    // would result in a discontinuous trajectory for velocities and higher
+    // derivatives.
+    if (!(num_control_points == 1 && h <= 1e-6)) {
+      bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
+          start_time, start_time + h, edge_path_points));
+    }
   }
 
   // Get the final control points from the solution.
@@ -615,8 +708,13 @@ GcsTrajectoryOptimization::SolvePath(const Subgraph& source,
       phi_inv * result.GetSolution(path_edges.back()->xv()).tail<1>().value();
   const double start_time =
       bezier_curves.empty() ? 0 : bezier_curves.back()->end_time();
-  bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
-      start_time, start_time + h, edge_path_points));
+
+  // Skip edges with a single control point that spend near zero time in the
+  // region, since zero order continuity constraint is sufficient.
+  if (!(num_control_points == 1 && h <= 1e-6)) {
+    bezier_curves.emplace_back(std::make_unique<BezierCurve<double>>(
+        start_time, start_time + h, edge_path_points));
+  }
 
   return {CompositeTrajectory<double>(bezier_curves), result};
 }

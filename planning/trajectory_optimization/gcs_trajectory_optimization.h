@@ -167,6 +167,19 @@ class GcsTrajectoryOptimization final {
 
     ~EdgesBetweenSubgraphs();
 
+    /** Adds a linear velocity constraint to the control point connecting the
+    subgraphs `lb` ≤ q̇(t) ≤ `ub`.
+    @param lb is the lower bound of the velocity.
+    @param ub is the upper bound of the velocity.
+
+    @throws std::exception if both subgraphs order is zero, since the velocity
+    is defined as the derivative of the Bézier curve. At least one of the
+    subgraphs must have an order of at least 1.
+    @throws std::exception if lb or ub are not of size num_positions().
+    */
+    void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                           const Eigen::Ref<const Eigen::VectorXd>& ub);
+
    private:
     EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
                           const Subgraph& to_subgraph,
@@ -182,6 +195,8 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::ConvexSet& subspace);
 
     GcsTrajectoryOptimization& traj_opt_;
+    const int from_subgraph_order_;
+    const int to_subgraph_order_;
 
     std::vector<geometry::optimization::GraphOfConvexSets::Edge*> edges_;
 
