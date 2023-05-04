@@ -2556,14 +2556,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   DeclareCacheEntries();
 
   // Declare per model instance actuation ports.
-  int num_actuated_instances = 0;
   ModelInstanceIndex last_actuated_instance;
   instance_actuation_ports_.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_dofs = num_actuated_dofs(model_instance_index);
     if (instance_num_dofs > 0) {
-      ++num_actuated_instances;
       last_actuated_instance = model_instance_index;
     }
     instance_actuation_ports_[model_instance_index] =
