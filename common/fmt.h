@@ -4,6 +4,10 @@
 
 #include <fmt/format.h>
 
+#if FMT_VERSION >= 90000
+#include <fmt/std.h>
+#endif
+
 // This file contains the essentials of fmt support in Drake, mainly
 // compatibility code to inter-operate with different versions of fmt.
 
