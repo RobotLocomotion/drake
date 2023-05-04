@@ -408,20 +408,32 @@ class TestTrajectoryOptimization(unittest.TestCase):
         subspace_region = HPolyhedron(VPolytope(vertices[7]))
         subspace_point = Point([2.3, 3.5])
 
-        self.assertIsInstance(
-            gcs.AddEdges(from_subgraph=main1,
-                         to_subgraph=main2,
-                         subspace=subspace_point),
-            GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
-        self.assertIsInstance(
-            gcs.AddEdges(main1, main2, subspace=subspace_region),
-            GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
+        main1_to_main2_pt = gcs.AddEdges(main1, main2, subspace=subspace_point)
+        self.assertIsInstance(main1_to_main2_pt,
+                              GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
+
+        main1_to_main2_region = gcs.AddEdges(main1,
+                                             main2,
+                                             subspace=subspace_region)
+        self.assertIsInstance(main1_to_main2_region,
+                              GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
+
+        # Add half of the maximum velocity constraint at the subspace point
+        # and region.
+        main1_to_main2_pt.AddVelocityBounds(lb=-max_vel / 2, ub=max_vel / 2)
+        main1_to_main2_region.AddVelocityBounds(lb=-max_vel / 2,
+                                                ub=max_vel / 2)
 
         # We connect the start and goal regions to the rest of the graph.
         self.assertIsInstance(gcs.AddEdges(source, main1),
                               GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
-        self.assertIsInstance(gcs.AddEdges(main2, target),
+        main2_to_target = gcs.AddEdges(main2, target)
+        self.assertIsInstance(main2_to_target,
                               GcsTrajectoryOptimization.EdgesBetweenSubgraphs)
+
+        # Add final zero velocity constraints.
+        main2_to_target.AddVelocityBounds(lb=np.zeros(dimension),
+                                          ub=np.zeros(dimension))
 
         # This weight matrix penalizes movement in the y direction three
         # times more than in the x direction only for the main2 subgraph.
