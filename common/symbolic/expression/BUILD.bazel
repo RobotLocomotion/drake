@@ -52,6 +52,8 @@ drake_cc_library(
         "//common:random",
     ],
     deps = [
+        "@abseil_cpp_internal//absl/container:flat_hash_set",
+        "@abseil_cpp_internal//absl/container:inlined_vector",
         "@fmt",
     ],
 )
@@ -171,6 +173,7 @@ drake_cc_googletest(
     name = "mixing_scalar_types_test",
     deps = [
         ":expression",
+        "//common/test_utilities:limit_malloc",
     ],
 )
 
