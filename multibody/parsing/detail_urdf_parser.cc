@@ -43,6 +43,7 @@ using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 using math::RigidTransformd;
+using math::RotationMatrixd;
 using tinyxml2::XMLNode;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
@@ -524,10 +525,12 @@ void UrdfParser::ParseJoint(
       name, child_name);
   if (child_body == nullptr) { return; }
 
-  RigidTransformd X_PJ;
+  // The rigid transform from parent to child. See the Joint class
+  // documentation.
+  RigidTransformd X_PB;
   XMLElement* origin = node->FirstChildElement("origin");
   if (origin) {
-    X_PJ = OriginAttributesToTransform(origin);
+    X_PB = OriginAttributesToTransform(origin);
   }
 
   Vector3d axis(1, 0, 0);
@@ -581,8 +584,10 @@ void UrdfParser::ParseJoint(
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
     ParseJointDynamics(node, &damping);
+    // Frame F = M = B. See Joint class documentation.
+    const RigidTransformd& X_PF = X_PB;
     index = plant->AddJoint<RevoluteJoint>(
-        name, *parent_body, X_PJ,
+        name, *parent_body, X_PF,
         *child_body, std::nullopt, axis, lower, upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(*index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
@@ -590,15 +595,19 @@ void UrdfParser::ParseJoint(
         Vector1d(-acceleration), Vector1d(acceleration));
   } else if (type.compare("fixed") == 0) {
     throw_on_custom_joint(false);
+    // Frame F = M = B. See Joint class documentation.
+    const RigidTransformd& X_PF = X_PB;
     index = plant->AddJoint<WeldJoint>(
-        name, *parent_body, X_PJ, *child_body, std::nullopt,
+        name, *parent_body, X_PF, *child_body, std::nullopt,
         RigidTransformd::Identity()).index();
   } else if (type.compare("prismatic") == 0) {
     throw_on_custom_joint(false);
     ParseJointLimits(node, &lower, &upper, &velocity, &acceleration, &effort);
     ParseJointDynamics(node, &damping);
+    // Frame F = M = B. See Joint class documentation.
+    const RigidTransformd& X_PF = X_PB;
     index = plant->AddJoint<PrismaticJoint>(
-        name, *parent_body, X_PJ, *child_body, std::nullopt, axis, lower,
+        name, *parent_body, X_PF, *child_body, std::nullopt, axis, lower,
         upper, damping).index();
     Joint<double>& joint = plant->get_mutable_joint(*index);
     joint.set_velocity_limits(Vector1d(-velocity), Vector1d(velocity));
@@ -612,8 +621,10 @@ void UrdfParser::ParseJoint(
   } else if (type.compare("ball") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
+    // Frame F = M = B. See Joint class documentation.
+    const RigidTransformd& X_PF = X_PB;
     index = plant->AddJoint<BallRpyJoint>(
-      name, *parent_body, X_PJ, *child_body, std::nullopt, damping).index();
+      name, *parent_body, X_PF, *child_body, std::nullopt, damping).index();
   } else if (type.compare("planar") == 0) {
     // Permit both the standard 'joint' and custom 'drake:joint' spellings
     // here. The standard spelling was actually always correct, but Drake only
@@ -624,21 +635,36 @@ void UrdfParser::ParseJoint(
     if (dynamics_node) {
       ParseVectorAttribute(dynamics_node, "damping", &damping_vec);
     }
+    // URDF convention dictates that the joint frame J is the same as the child
+    // frame B, and the joint axis is specified in the joint frame J.
+    // The convention for planar joint in Drake is that Mz and Fz are aligned
+    // with the joint axis. So in general, we don't have r = M = B as we do in
+    // in, e.g., revolute joint.  Here, we set F = M != B.
+    const Vector3d& Mz_B = axis;
+    const RotationMatrixd R_BM = RotationMatrixd::MakeFromOneVector(Mz_B, 2);
+    const RigidTransformd X_BM = RigidTransformd(R_BM, Vector3d::Zero());
+    const RigidTransformd X_PM = X_PB * X_BM;
+    const RigidTransformd& X_PF = X_PM;
     index = plant->AddJoint<PlanarJoint>(
-      name, *parent_body, X_PJ, *child_body, std::nullopt, damping_vec).index();
+      name, *parent_body, X_PF, *child_body, X_BM, damping_vec).index();
   } else if (type.compare("screw") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
     double screw_thread_pitch;
     ParseScrewJointThreadPitch(node, &screw_thread_pitch);
+    // Frame F = M = B. See Joint class documentation.
+    const RigidTransformd& X_PF = X_PB;
     index = plant->AddJoint<ScrewJoint>(
-      name, *parent_body, X_PJ, *child_body, std::nullopt, axis,
+      name, *parent_body, X_PF, *child_body, std::nullopt, axis,
       screw_thread_pitch, damping).index();
   } else if (type.compare("universal") == 0) {
     throw_on_custom_joint(true);
     ParseJointDynamics(node, &damping);
+    // TODO(xuchenhan-tri): Should use axis information.
+    // Frame F = M = B. See Joint class documentation.
+    const RigidTransformd& X_PF = X_PB;
     index = plant->AddJoint<UniversalJoint>(
-      name, *parent_body, X_PJ, *child_body, std::nullopt, damping).index();
+      name, *parent_body, X_PF, *child_body, std::nullopt, damping).index();
   } else {
     Error(*node, fmt::format("Joint '{}' has unrecognized type: '{}'",
                              name, type));
