@@ -359,7 +359,7 @@ RenderEngineVtk::RenderEngineVtk(const RenderEngineVtk& other)
         vtkSmartPointer<vtkActor>::New()};
     clone_actor_array(other_id_actor_pair.second, &actors);
     const GeometryId id = other_id_actor_pair.first;
-    actors_.insert({id, move(actors)});
+    actors_.insert({id, std::move(actors)});
   }
 
   // Copy camera properties

@@ -433,10 +433,10 @@ class ContactSurface {
                  std::unique_ptr<std::vector<Vector3<T>>> grad_eN_W, int)
       : id_M_(id_M),
         id_N_(id_N),
-        mesh_W_(move(mesh_W)),
-        e_MN_(move(e_MN)),
-        grad_eM_W_(move(grad_eM_W)),
-        grad_eN_W_(move(grad_eN_W)) {
+        mesh_W_(std::move(mesh_W)),
+        e_MN_(std::move(e_MN)),
+        grad_eM_W_(std::move(grad_eM_W)),
+        grad_eN_W_(std::move(grad_eN_W)) {
     // If defined the gradient values must map 1-to-1 onto elements.
     if (is_triangle()) {
       DRAKE_THROW_UNLESS(grad_eM_W_ == nullptr ||

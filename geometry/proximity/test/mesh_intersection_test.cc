@@ -1136,8 +1136,8 @@ class MeshMeshDerivativesTest : public ::testing::Test {
                               Vector3d{5, -5, 0},
                               Vector3d{0, 5, 0}};
     vector<SurfaceTriangle> faces{{0, 1, 2}};
-    tri_mesh_R_ =
-        make_unique<TriangleSurfaceMesh<double>>(move(faces), move(vertices));
+    tri_mesh_R_ = make_unique<TriangleSurfaceMesh<double>>(std::move(faces),
+                                                           std::move(vertices));
     bvh_R_ = make_unique<Bvh<Obb, TriangleSurfaceMesh<double>>>(*tri_mesh_R_);
     X_WR_ = HalfSpace::MakePose(Vector3d{1, 2, 3}.normalized(),
                                 Vector3d{0.25, 0.1, -0.2})

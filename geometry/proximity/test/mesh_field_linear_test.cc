@@ -48,7 +48,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> GenerateMesh() {
   std::vector<Vector3<T>> vertices;
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   auto surface_mesh = std::make_unique<TriangleSurfaceMesh<T>>(
-      move(faces), std::move(vertices));
+      std::move(faces), std::move(vertices));
   return surface_mesh;
 }
 

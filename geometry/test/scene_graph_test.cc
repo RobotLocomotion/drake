@@ -546,7 +546,8 @@ TEST_F(SceneGraphTest, RoleManagementSmokeTest) {
   instance->set_proximity_properties(ProximityProperties());
   instance->set_perception_properties(PerceptionProperties());
 
-  GeometryId g_id = scene_graph_.RegisterGeometry(s_id, f_id, move(instance));
+  GeometryId g_id =
+      scene_graph_.RegisterGeometry(s_id, f_id, std::move(instance));
 
   const SceneGraphInspector<double>& inspector = scene_graph_.model_inspector();
   EXPECT_NE(inspector.GetProximityProperties(g_id), nullptr);

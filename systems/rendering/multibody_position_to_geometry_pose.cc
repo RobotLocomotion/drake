@@ -19,7 +19,7 @@ MultibodyPositionToGeometryPose<T>::MultibodyPositionToGeometryPose(
 
 // Note: This constructor is not *obviously* correct. Compare it with this code:
 //   unique_ptr<Foo> f;
-//   bar(*f, move(f));
+//   bar(*f, std::move(f));
 // The invocation to bar may not be valid because the compiler can chose to
 // perform the move of f before the dereference (which would make the first
 // parameter a reference to null). However, this constructor works because:

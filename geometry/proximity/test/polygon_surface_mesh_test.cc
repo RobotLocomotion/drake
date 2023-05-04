@@ -114,7 +114,7 @@ class PolygonSurfaceMeshTest : public ::testing::Test {
     for (const auto& polygon : polygons) {
       AddPolygon(polygon, &face_data, &vertices);
     }
-    return {move(face_data), move(vertices)};
+    return {std::move(face_data), std::move(vertices)};
   }
 };
 
@@ -194,7 +194,7 @@ TYPED_TEST(PolygonSurfaceMeshTest, MeshCentroid) {
     total_area_expected += polygon.area;
     scaled_centroid_expected += polygon.area * polygon.centroid;
   }
-  const PolygonSurfaceMesh<T> mesh(move(face_data), move(vertices));
+  const PolygonSurfaceMesh<T> mesh(std::move(face_data), std::move(vertices));
 
   ASSERT_TRUE(CompareMatrices(
       mesh.centroid(), scaled_centroid_expected / total_area_expected, 1e-15));
@@ -225,7 +225,7 @@ TYPED_TEST(PolygonSurfaceMeshTest, Area) {
     this->AddPolygon(polygon, &face_data, &vertices);
     expected_total_area += polygon.area;
   }
-  const PolygonSurfaceMesh<T> mesh(move(face_data), move(vertices));
+  const PolygonSurfaceMesh<T> mesh(std::move(face_data), std::move(vertices));
 
   ASSERT_NEAR(ExtractDoubleOrThrow(mesh.total_area()), expected_total_area,
               1e-15);
@@ -258,7 +258,7 @@ TYPED_TEST(PolygonSurfaceMeshTest, CalcBoundingBox) {
       max_corner = max_corner.array().max(v.array());
     }
   }
-  const PolygonSurfaceMesh<T> mesh(move(face_data), move(vertices));
+  const PolygonSurfaceMesh<T> mesh(std::move(face_data), std::move(vertices));
 
   const Vector3d center_expected = (min_corner + max_corner) / 2;
   const Vector3d size_expected = max_corner - min_corner;

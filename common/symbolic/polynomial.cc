@@ -370,7 +370,7 @@ Variables GetDecisionVariables(const Polynomial::MapType& m) {
 }  // namespace
 
 Polynomial::Polynomial(MapType map)
-    : monomial_to_coefficient_map_{move(map)},
+    : monomial_to_coefficient_map_{std::move(map)},
       indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   // Remove all [monomial, coeff] pair in monomial_to_coefficient_map_ if

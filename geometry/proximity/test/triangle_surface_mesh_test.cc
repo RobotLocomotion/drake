@@ -123,7 +123,7 @@ std::unique_ptr<TriangleSurfaceMesh<T>> TestSurfaceMesh(
   std::vector<Vector3<T>> vertices_W;
   for (int v = 0; v < 4; ++v) vertices_W.emplace_back(X_WM * vertex_data_M[v]);
   auto surface_mesh_W = std::make_unique<TriangleSurfaceMesh<T>>(
-      move(faces), std::move(vertices_W));
+      std::move(faces), std::move(vertices_W));
 
   EXPECT_EQ(2, surface_mesh_W->num_triangles());
   EXPECT_EQ(4, surface_mesh_W->num_vertices());

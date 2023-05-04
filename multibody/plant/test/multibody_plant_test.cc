@@ -1915,7 +1915,7 @@ GTEST_TEST(MultibodyPlantTest, VisualGeometryRegistration) {
   // determine role assignment has happened.
   temp_engine->set_force_accept(true);
   const DummyRenderEngine& render_engine = *temp_engine;
-  scene_graph.AddRenderer("dummy", move(temp_engine));
+  scene_graph.AddRenderer("dummy", std::move(temp_engine));
   MultibodyPlant<double> plant(0.0);
   plant.RegisterAsSourceForSceneGraph(&scene_graph);
   EXPECT_EQ(render_engine.num_registered(), 0);

@@ -69,7 +69,7 @@ class DeformableIntegrationTest : public ::testing::Test {
     deformable_model->SetWallBoundaryCondition(
         body_id_, p_WQ_, n_W_);
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
     /* Register a visual geometry for the "wall". */
@@ -85,7 +85,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
@@ -119,7 +119,7 @@ class DeformableIntegrationTest : public ::testing::Test {
   DeformableBodyId RegisterDeformableBall(DeformableModel<double>* model,
                                           std::string name) {
     auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(kRadius), move(name));
+        RigidTransformd(), make_unique<Sphere>(kRadius), std::move(name));
     ProximityProperties props;
     const CoulombFriction<double> kFriction{0.4, 0.4};
     geometry::AddContactMaterial({}, {}, kFriction, &props);

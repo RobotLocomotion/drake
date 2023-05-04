@@ -172,7 +172,7 @@ class SliceTest
     // Make an arbitrary mesh field with heterogeneous values.
     vector<double> values{0.25, 0.5, 0.75, 1, -1};
     field_F_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-        move(values), volume_mesh_F_.get());
+        std::move(values), volume_mesh_F_.get());
 
     cut_edges_.clear();
     const int tet_index = 0;
@@ -209,7 +209,7 @@ class SliceTest
     // Make an arbitrary mesh field with heterogeneous values.
     vector<double> values{0.25, 0.5, 0.75, 1, -1};
     field_F_ = make_unique<VolumeMeshFieldLinear<double, double>>(
-        move(values), volume_mesh_F_.get());
+        std::move(values), volume_mesh_F_.get());
 
     const int tet_index = 0;
     std::vector<Vector3<double>> polygon_vertices;
@@ -816,7 +816,7 @@ TEST_F(SliceTest, NoDoubleCounting) {
   VolumeMesh<double> mesh_M = TrivialVolumeMesh(I);
   // Make an arbitrary mesh field with heterogeneous values.
   vector<double> values{0.25, 0.5, 0.75, 1, -1};
-  VolumeMeshFieldLinear<double, double> field_M{move(values), &mesh_M};
+  VolumeMeshFieldLinear<double, double> field_M{std::move(values), &mesh_M};
 
   {
     // Slicing against tet 0 should intersect and produce the three faces.
