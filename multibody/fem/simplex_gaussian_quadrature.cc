@@ -6,7 +6,6 @@ namespace fem {
 namespace internal {
 
 using std::make_pair;
-using std::move;
 
 /* Linear triangle quadrature. */
 template <>
@@ -18,7 +17,7 @@ SimplexGaussianQuadrature<2, 1>::ComputePointsAndWeights() {
   LocationsType points = {{{1.0 / 3.0, 1.0 / 3.0}}};
   /* For a unit triangle, area = 0.5. */
   WeightsType weights = {{0.5}};
-  return make_pair(move(points), move(weights));
+  return make_pair(std::move(points), std::move(weights));
 }
 
 /* Quadratic triangle quadrature. */
@@ -39,7 +38,7 @@ SimplexGaussianQuadrature<2, 2>::ComputePointsAndWeights() {
   points[2] = {1.0 / 6.0, 2.0 / 3.0};
   /* For a unit triangle, area = 0.5. */
   WeightsType weights = {{1.0 / 6.0, 1.0 / 6.0, 1.0 / 6.0}};
-  return make_pair(move(points), move(weights));
+  return make_pair(std::move(points), std::move(weights));
 }
 
 /* Cubic triangle quadrature. */
@@ -59,7 +58,7 @@ SimplexGaussianQuadrature<2, 3>::ComputePointsAndWeights() {
   points[3] = {0.2, 0.2};
   /* For a unit triangle, area = 0.5. */
   WeightsType weights = {{-9.0 / 32.0, 25.0 / 96.0, 25.0 / 96.0, 25.0 / 96.0}};
-  return make_pair(move(points), move(weights));
+  return make_pair(std::move(points), std::move(weights));
 }
 
 /* Linear tetrahedral quadrature. */
@@ -72,7 +71,7 @@ SimplexGaussianQuadrature<3, 1>::ComputePointsAndWeights() {
   LocationsType points = {{{0.25, 0.25, 0.25}}};
   /* For a unit tetrahedron, area = 1/6. */
   WeightsType weights = {{1.0 / 6.0}};
-  return make_pair(move(points), move(weights));
+  return make_pair(std::move(points), std::move(weights));
 }
 
 /* Quadratic tetrahedral quadrature. */
@@ -95,7 +94,7 @@ SimplexGaussianQuadrature<3, 2>::ComputePointsAndWeights() {
   points[3] = {b, b, b};
   /* For a unit tetrahedron, area = 1/6. */
   WeightsType weights = {{1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0, 1.0 / 24.0}};
-  return make_pair(move(points), move(weights));
+  return make_pair(std::move(points), std::move(weights));
 }
 
 /* Cubic tetrahedral quadrature. */
@@ -121,7 +120,7 @@ SimplexGaussianQuadrature<3, 3>::ComputePointsAndWeights() {
   /* For a unit tetrahedron, area = 1/6. */
   WeightsType weights = {
       {-2.0 / 15.0, 3.0 / 40.0, 3.0 / 40.0, 3.0 / 40.0, 3.0 / 40.0}};
-  return make_pair(move(points), move(weights));
+  return make_pair(std::move(points), std::move(weights));
 }
 }  // namespace internal
 }  // namespace fem

@@ -17,7 +17,6 @@ namespace {
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 
 /* Constructs a coarse sphere (octahedron) whose vertices are transformed from
  the canonical sphere frame S to some arbitrary frame F. */
@@ -34,7 +33,7 @@ VolumeMesh<double> MakeTransformedSphere(double radius,
     vertices_F.push_back(X_FS * mesh_S.vertex(v));
   }
   std::vector<VolumeElement> tets_F(mesh_S.tetrahedra());
-  return VolumeMesh<double>(move(tets_F), move(vertices_F));
+  return VolumeMesh<double>(std::move(tets_F), std::move(vertices_F));
 }
 
 GTEST_TEST(DeformableGeometryTest, Constructor) {
@@ -168,7 +167,7 @@ GTEST_TEST(DeformableGeometryTest, UpdateVertexPositions) {
   VolumeMesh<double> mesh = MakeSphereVolumeMesh<double>(
       sphere, 0.5, TessellationStrategy::kDenseInteriorVertices);
   const int num_vertices = mesh.num_vertices();
-  DeformableGeometry deformable_geometry(move(mesh));
+  DeformableGeometry deformable_geometry(std::move(mesh));
   const VectorXd q = VectorXd::LinSpaced(3 * num_vertices, 0.0, 1.0);
   deformable_geometry.UpdateVertexPositions(q);
   const VolumeMesh<double> deformed_mesh =
@@ -185,8 +184,8 @@ GTEST_TEST(RigidGeometryTest, Pose) {
   const double resolution_hint = 0.5;
   auto mesh = make_unique<TriangleSurfaceMesh<double>>(
       MakeSphereSurfaceMesh<double>(sphere, resolution_hint));
-  auto rigid_mesh = make_unique<hydroelastic::RigidMesh>(move(mesh));
-  RigidGeometry rigid_geometry(move(rigid_mesh));
+  auto rigid_mesh = make_unique<hydroelastic::RigidMesh>(std::move(mesh));
+  RigidGeometry rigid_geometry(std::move(rigid_mesh));
   const math::RigidTransform<double> X_WG(
       math::RollPitchYaw<double>(-1.57, 0, 3), Vector3d(-0.3, -0.55, 0.36));
   rigid_geometry.set_pose_in_world(X_WG);

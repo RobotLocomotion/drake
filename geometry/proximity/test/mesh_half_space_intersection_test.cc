@@ -29,7 +29,6 @@ using math::RigidTransformd;
 using math::RotationMatrix;
 using math::RotationMatrixd;
 using std::make_unique;
-using std::move;
 using std::pair;
 using std::unique_ptr;
 using std::vector;

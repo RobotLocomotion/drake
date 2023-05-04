@@ -28,7 +28,6 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 namespace drake {
@@ -144,7 +143,7 @@ class DeformableIntegrationTest : public ::testing::Test {
         RigidTransformd(), make_unique<Sphere>(0.1), move(name));
     ProximityProperties props;
     geometry::AddContactMaterial({}, {}, kFriction, &props);
-    geometry->set_proximity_properties(move(props));
+    geometry->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
     body_config.set_youngs_modulus(kYoungsModulus);
     body_config.set_poissons_ratio(kPoissonsRatio);
@@ -152,8 +151,8 @@ class DeformableIntegrationTest : public ::testing::Test {
     body_config.set_stiffness_damping_coefficient(kStiffnessDamping);
     /* Make the resolution hint large enough so that we get an octahedron. */
     constexpr double kRezHint = 10.0;
-    DeformableBodyId id =
-        model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+    DeformableBodyId id = model->RegisterDeformableBody(std::move(geometry),
+                                                        body_config, kRezHint);
     /* Verify that the geometry has 7 vertices and is indeed an octahedron. */
     const SceneGraphInspector<double>& inspector =
         scene_graph_->model_inspector();

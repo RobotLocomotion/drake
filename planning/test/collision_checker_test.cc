@@ -71,7 +71,6 @@ using multibody::RevoluteJoint;
 using multibody::RigidBody;
 using multibody::SpatialInertia;
 using multibody::world_model_instance;
-using std::move;
 using std::optional;
 using std::pair;
 using std::vector;
@@ -107,7 +106,7 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
  public:
   explicit CollisionCheckerTester(CollisionCheckerParams params,
                                   bool supports_parallel_checking = false)
-      : UnimplementedCollisionChecker(move(params),
+      : UnimplementedCollisionChecker(std::move(params),
                                       supports_parallel_checking) {}
 
   //@{
@@ -240,7 +239,7 @@ std::unique_ptr<CollisionCheckerTester> MakeUnallocatedChecker(
         return (b - a).norm();
       }};
   return std::make_unique<CollisionCheckerTester>(
-      CollisionCheckerParams{.model = move(robot),
+      CollisionCheckerParams{.model = std::move(robot),
                              .robot_model_instances = robot_indices,
                              .configuration_distance_function = dist,
                              .edge_step_size = 0.1,
@@ -315,7 +314,7 @@ class CollisionCheckerThrowTest : public testing::Test {
   void ExpectConstructorThrow(const std::string& throw_message_pattern) {
     DRAKE_EXPECT_THROWS_MESSAGE(
         CollisionCheckerTester(
-            {.model = move(diagram_),
+            {.model = std::move(diagram_),
              .robot_model_instances = robot_model_instances_,
              .configuration_distance_function = distance_fn_,
              .edge_step_size = edge_step_size_,
@@ -405,7 +404,7 @@ GTEST_TEST(CollisionCheckerTest, CollisionCheckerEmpty) {
   };
   const ModelInstanceIndex robot = default_model_instance();
   const ModelInstanceIndex world = world_model_instance();
-  CollisionCheckerTester dut({.model = move(diagram),
+  CollisionCheckerTester dut({.model = std::move(diagram),
                               .robot_model_instances = {robot},
                               .configuration_distance_function = fn0,
                               .edge_step_size = 0.1,
@@ -448,7 +447,7 @@ GTEST_TEST(CollisionCheckerTest, ModelIntrospection) {
   auto [robot, robot_index] = MakeModel();
   RobotDiagram<double>* robot_raw = robot.get();
   std::unique_ptr<CollisionCheckerTester> checker =
-      MakeUnallocatedChecker(move(robot), {robot_index});
+      MakeUnallocatedChecker(std::move(robot), {robot_index});
 
   EXPECT_EQ(&checker->model(), robot_raw);
   EXPECT_EQ(&checker->plant(), &robot_raw->plant());
@@ -476,7 +475,7 @@ GTEST_TEST(CollisionCheckerTest, ModelIntrospection) {
 GTEST_TEST(CollisionCheckerTest, MutableSetupModel) {
   auto [robot, robot_index] = MakeModel();
   std::unique_ptr<CollisionCheckerTester> checker =
-      MakeUnallocatedChecker(move(robot), {robot_index});
+      MakeUnallocatedChecker(std::move(robot), {robot_index});
 
   EXPECT_NO_THROW(checker->GetMutableSetupModel());
   checker->AllocateContexts();  // Required explicit allocation step.
@@ -498,7 +497,7 @@ GTEST_TEST(CollisionCheckerTest, RobotClearance) {
   auto [robot, robot_index] =
       MakeModel({.weld_robot = false, .on_env_base = true});
   std::unique_ptr<CollisionCheckerTester> checker =
-      MakeUnallocatedChecker(move(robot), {robot_index});
+      MakeUnallocatedChecker(std::move(robot), {robot_index});
   checker->AllocateContexts();
 
   // MaxNumDistances called the implemented NVI.
@@ -538,7 +537,7 @@ class TrivialCollisionCheckerTest : public testing::Test {
  public:
   TrivialCollisionCheckerTest() {
     auto [robot, robot_index] = MakeModel();
-    dut_ = MakeUnallocatedChecker(move(robot), {robot_index});
+    dut_ = MakeUnallocatedChecker(std::move(robot), {robot_index});
     dut_->AllocateContexts();
   }
 
@@ -836,8 +835,8 @@ TEST_F(TrivialCollisionCheckerTest, Shapes) {
 TEST_F(TrivialCollisionCheckerTest, ReportParallelChecking) {
   for (bool parallel_supported : {true, false}) {
     auto [robot, robot_index] = MakeModel();
-    auto checker =
-        MakeUnallocatedChecker(move(robot), {robot_index}, parallel_supported);
+    auto checker = MakeUnallocatedChecker(std::move(robot), {robot_index},
+                                          parallel_supported);
     EXPECT_EQ(checker->SupportsParallelChecking(), parallel_supported);
   }
 }
@@ -1032,7 +1031,7 @@ TEST_F(TrivialCollisionCheckerTest, CollisionFiltersNominal) {
     // A change to the checker's filter configuration doesn't change the
     // nominal matrix.
     auto [robot, robot_index] = MakeModel();
-    auto checker = MakeUnallocatedChecker(move(robot), {robot_index});
+    auto checker = MakeUnallocatedChecker(std::move(robot), {robot_index});
     const Eigen::MatrixXi first_nominal =
         checker->GetNominalFilteredCollisionMatrix();
     const Eigen::MatrixXi no_filters = MakeNothingFiltered(checker.get());
@@ -1057,7 +1056,7 @@ TEST_F(TrivialCollisionCheckerTest, CollisionFiltersNominal) {
     auto collision_filters = scene_graph.collision_filter_manager();
     collision_filters.Apply(CollisionFilterDeclaration().AllowWithin(
         GeometrySet(scene_graph.model_inspector().GetAllFrameIds())));
-    auto checker = MakeUnallocatedChecker(move(robot), {robot_index});
+    auto checker = MakeUnallocatedChecker(std::move(robot), {robot_index});
     const Eigen::MatrixXi filters = checker->GetFilteredCollisionMatrix();
     // Confirm it is valid.
     EXPECT_NO_THROW(checker->SetCollisionFilterMatrix(filters));
@@ -1075,7 +1074,7 @@ TEST_F(TrivialCollisionCheckerTest, CollisionFiltersNominal) {
     auto collision_filters = scene_graph.collision_filter_manager();
     collision_filters.Apply(CollisionFilterDeclaration().AllowWithin(
         GeometrySet(scene_graph.model_inspector().GetAllFrameIds())));
-    auto checker = MakeUnallocatedChecker(move(robot), {robot_index});
+    auto checker = MakeUnallocatedChecker(std::move(robot), {robot_index});
     const Eigen::MatrixXi filters = checker->GetFilteredCollisionMatrix();
     // Confirm it is valid.
     EXPECT_NO_THROW(checker->SetCollisionFilterMatrix(filters));
@@ -1100,7 +1099,7 @@ TEST_F(TrivialCollisionCheckerTest, CollisionFiltersNominal) {
     const FrameId id3 = robot->plant().GetBodyFrameIdOrThrow(BodyIndex(3));
     collision_filters.Apply(
         CollisionFilterDeclaration().ExcludeWithin(GeometrySet({id1, id3})));
-    auto checker = MakeUnallocatedChecker(move(robot), {robot_index});
+    auto checker = MakeUnallocatedChecker(std::move(robot), {robot_index});
     const Eigen::MatrixXi filters = checker->GetFilteredCollisionMatrix();
     // Confirm it is valid.
     EXPECT_NO_THROW(checker->SetCollisionFilterMatrix(filters));
@@ -1131,7 +1130,7 @@ TEST_F(TrivialCollisionCheckerTest, CollisionFiltersNominal) {
         GeometrySet({g_id1, g_id3})));
 
     DRAKE_EXPECT_THROWS_MESSAGE(
-        MakeUnallocatedChecker(move(robot), {robot_index}),
+        MakeUnallocatedChecker(std::move(robot), {robot_index}),
         ".*SceneGraph's collision filters .+ are not homogeneous.*");
   }
 }
@@ -1307,7 +1306,7 @@ CheckerType MakeEdgeChecker(ConfigurationDistanceFunction calc_dist,
   }
   auto diagram = builder.Build();
 
-  CheckerType checker({.model = move(diagram),
+  CheckerType checker({.model = std::move(diagram),
                        .robot_model_instances = {robot},
                        .configuration_distance_function = calc_dist,
                        .edge_step_size = step_size,
@@ -1570,7 +1569,7 @@ class ParameterizedEdgeCheckTest
 class MockEdgeChecker : public UnimplementedCollisionChecker {
  public:
   explicit MockEdgeChecker(CollisionCheckerParams params)
-      : UnimplementedCollisionChecker(move(params), true) {
+      : UnimplementedCollisionChecker(std::move(params), true) {
     DRAKE_DEMAND(plant().num_positions() >= kQSize);
     AllocateContexts();
     const int num_omp_threads =

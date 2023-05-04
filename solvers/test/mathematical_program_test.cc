@@ -63,7 +63,6 @@ using std::is_permutation;
 using std::is_same_v;
 using std::make_shared;
 using std::map;
-using std::move;
 using std::numeric_limits;
 using std::pair;
 using std::runtime_error;

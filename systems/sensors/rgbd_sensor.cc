@@ -29,7 +29,6 @@ using geometry::render::DepthRange;
 using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 using std::make_pair;
-using std::move;
 using std::pair;
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
@@ -43,8 +42,8 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        ColorRenderCamera color_camera,
                        DepthRenderCamera depth_camera)
     : parent_frame_id_(parent_id),
-      color_camera_(move(color_camera)),
-      depth_camera_(move(depth_camera)),
+      color_camera_(std::move(color_camera)),
+      depth_camera_(std::move(depth_camera)),
       X_PB_(X_PB) {
   const CameraInfo& color_intrinsics = color_camera_.core().intrinsics();
   const CameraInfo& depth_intrinsics = depth_camera_.core().intrinsics();
@@ -173,7 +172,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
   const auto& depth_camera_info = camera->depth_camera_info();
 
   DiagramBuilder<double> builder;
-  builder.AddSystem(move(camera));
+  builder.AddSystem(std::move(camera));
   query_object_port_ =
       builder.ExportInput(camera_->query_object_input_port(), "geometry_query");
 

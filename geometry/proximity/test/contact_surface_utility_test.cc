@@ -23,7 +23,6 @@ using Eigen::AngleAxisd;
 using Eigen::Vector3d;
 using math::RigidTransformd;
 using math::RotationMatrixd;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 

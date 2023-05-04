@@ -38,7 +38,6 @@ using multibody::JointIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::world_model_instance;
-using std::move;
 using systems::Context;
 
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
@@ -764,7 +763,7 @@ std::vector<RobotCollisionType> CollisionChecker::ClassifyContextBodyCollisions(
 
 CollisionChecker::CollisionChecker(CollisionCheckerParams params,
                                    bool supports_parallel_checking)
-    : setup_model_(move(params.model)),
+    : setup_model_(std::move(params.model)),
       robot_model_instances_([&params]() {
         // Sort (and de-duplicate) the robot model instances for faster lookups.
         DRAKE_THROW_UNLESS(params.robot_model_instances.size() > 0);
@@ -790,7 +789,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
       Eigen::MatrixXd::Zero(plant().num_bodies(), plant().num_bodies());
   // Set parameters with safety checks.
   SetConfigurationDistanceFunction(
-      move(params.configuration_distance_function));
+      std::move(params.configuration_distance_function));
   set_edge_step_size(params.edge_step_size);
   SetPaddingAllRobotEnvironmentPairs(params.env_collision_padding);
   SetPaddingAllRobotRobotPairs(params.self_collision_padding);
@@ -809,7 +808,7 @@ CollisionChecker::CollisionChecker(const CollisionChecker&) = default;
 void CollisionChecker::AllocateContexts() {
   DRAKE_THROW_UNLESS(IsInitialSetup());
   // Move to a const model.
-  model_ = move(setup_model_);
+  model_ = std::move(setup_model_);
   // Make a diagram & plant context for each thread.
   const int num_omp_threads =
       common_robotics_utilities::openmp_helpers::GetNumOmpThreads();

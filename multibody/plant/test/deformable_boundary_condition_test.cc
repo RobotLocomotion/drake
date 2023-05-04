@@ -23,7 +23,6 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 namespace drake {
@@ -124,15 +123,15 @@ class DeformableIntegrationTest : public ::testing::Test {
     ProximityProperties props;
     const CoulombFriction<double> kFriction{0.4, 0.4};
     geometry::AddContactMaterial({}, {}, kFriction, &props);
-    geometry->set_proximity_properties(move(props));
+    geometry->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
     body_config.set_youngs_modulus(kYoungsModulus);
     body_config.set_poissons_ratio(kPoissonsRatio);
     body_config.set_mass_density(kMassDensity);
     body_config.set_stiffness_damping_coefficient(kStiffnessDamping);
     constexpr double kRezHint = kRadius;
-    DeformableBodyId id =
-        model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+    DeformableBodyId id = model->RegisterDeformableBody(std::move(geometry),
+                                                        body_config, kRezHint);
     return id;
   }
 };

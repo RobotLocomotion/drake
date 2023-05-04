@@ -18,7 +18,6 @@ using multibody::BodyIndex;
 using multibody::MultibodyPlant;
 using multibody::Parser;
 using std::make_unique;
-using std::move;
 
 GTEST_TEST(MultibodyPositionToGeometryPoseTest, BadConstruction) {
   {

@@ -31,7 +31,6 @@ namespace {
 
 using Eigen::Vector3d;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 

@@ -10,8 +10,6 @@
 
 namespace drake {
 
-using std::move;
-
 using symbolic::Expression;
 using symbolic::Formula;
 using symbolic::Variable;

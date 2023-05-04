@@ -7,7 +7,6 @@ namespace geometry {
 namespace internal {
 
 using multibody::contact_solvers::internal::PartialPermutation;
-using std::move;
 
 namespace {
 
@@ -53,7 +52,7 @@ PartialPermutation ContactParticipation::CalcVertexPartialPermutation() const {
       permuted_vertex_indexes[v] = permuted_vertex_index++;
     }
   }
-  return PartialPermutation(move(permuted_vertex_indexes));
+  return PartialPermutation(std::move(permuted_vertex_indexes));
 }
 
 PartialPermutation ContactParticipation::CalcDofPermutation() const {
@@ -74,7 +73,7 @@ PartialPermutation ContactParticipation::CalcDofPartialPermutation() const {
       ++permuted_vertex_index;
     }
   }
-  return PartialPermutation(move(permuted_dof_indexes));
+  return PartialPermutation(std::move(permuted_dof_indexes));
 }
 
 template <typename T>
@@ -87,12 +86,12 @@ DeformableContactSurface<T>::DeformableContactSurface(
     std::optional<std::vector<Vector4<T>>> barycentric_coordinates_B)
     : id_A_(id_A),
       id_B_(id_B),
-      contact_mesh_W_(move(contact_mesh_W)),
-      signed_distances_(move(signed_distances)),
-      contact_vertex_indexes_A_(move(contact_vertex_indexes_A)),
-      barycentric_coordinates_A_(move(barycentric_coordinates_A)),
-      contact_vertex_indexes_B_(move(contact_vertex_indexes_B)),
-      barycentric_coordinates_B_(move(barycentric_coordinates_B)) {
+      contact_mesh_W_(std::move(contact_mesh_W)),
+      signed_distances_(std::move(signed_distances)),
+      contact_vertex_indexes_A_(std::move(contact_vertex_indexes_A)),
+      barycentric_coordinates_A_(std::move(barycentric_coordinates_A)),
+      contact_vertex_indexes_B_(std::move(contact_vertex_indexes_B)),
+      barycentric_coordinates_B_(std::move(barycentric_coordinates_B)) {
   const int num_contact_points = contact_mesh_W_.num_faces();
   DRAKE_DEMAND(num_contact_points ==
                static_cast<int>(signed_distances_.size()));
@@ -133,9 +132,9 @@ void DeformableContact<T>::AddDeformableRigidContactSurface(
                contact_mesh_W.num_faces());
   iter->second.Participate(participating_vertices);
   contact_surfaces_.emplace_back(
-      deformable_id, rigid_id, move(contact_mesh_W), move(signed_distances),
-      move(contact_vertex_indexes), move(barycentric_coordinates), std::nullopt,
-      std::nullopt);
+      deformable_id, rigid_id, std::move(contact_mesh_W),
+      std::move(signed_distances), std::move(contact_vertex_indexes),
+      std::move(barycentric_coordinates), std::nullopt, std::nullopt);
 }
 
 template class DeformableContactSurface<double>;

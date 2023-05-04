@@ -34,7 +34,6 @@ using math::RigidTransform;
 using multibody::internal::FullBodyName;
 using std::function;
 using std::make_unique;
-using std::move;
 using std::nullopt;
 using std::optional;
 using std::string;
