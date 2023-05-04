@@ -22,6 +22,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/geometry/render/render_engine.h"
 #include "drake/geometry/render/render_label.h"
+#include "drake/geometry/render/render_material.h"
 #include "drake/geometry/render_vtk/render_engine_vtk_params.h"
 
 #ifndef DRAKE_DOXYGEN_CXX
@@ -132,7 +133,9 @@ class RenderEngineVtk : public render::RenderEngine,
    using. These values must be set at construction.  */
   //@{
 
-  const Eigen::Vector4d& default_diffuse() const { return default_diffuse_; }
+  Eigen::Vector4d default_diffuse() const {
+    return default_diffuse_.rgba();
+  }
 
   using render::RenderEngine::default_render_label;
   //@}
@@ -220,7 +223,9 @@ class RenderEngineVtk : public render::RenderEngine,
                     void* user_data);
 
   // Performs the common setup for all shape types.
-  void ImplementGeometry(vtkPolyDataAlgorithm* source, void* user_data);
+  void ImplementGeometry(vtkPolyDataAlgorithm* source,
+                         const geometry::internal::RenderMaterial& material,
+                         void* user_data);
 
   void SetDefaultLightPosition(const Vector3<double>& X_DL) override;
 
@@ -248,7 +253,7 @@ class RenderEngineVtk : public render::RenderEngine,
   static vtkNew<ShaderCallback> uniform_setting_callback_;
 
   // Obnoxious bright orange.
-  Eigen::Vector4d default_diffuse_{0.9, 0.45, 0.1, 1.0};
+  Rgba default_diffuse_{0.9, 0.45, 0.1, 1.0};
 
   // The color to clear the color buffer to.
   systems::sensors::ColorD default_clear_color_;
