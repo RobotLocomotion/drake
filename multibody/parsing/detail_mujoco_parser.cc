@@ -23,6 +23,7 @@
 #include "drake/multibody/parsing/detail_tinyxml.h"
 #include "drake/multibody/parsing/detail_tinyxml2_diagnostic.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
+#include "drake/multibody/tree/geometry_spatial_inertia.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
 #include "drake/multibody/tree/scoped_name.h"
@@ -554,28 +555,12 @@ class MujocoParser {
       if (mesh_.count(mesh)) {
         geom.shape = mesh_.at(mesh)->Clone();
         if (compute_inertia) {
-          // TODO(russt): Compute the proper unit inertia for the mesh geometry
-          // (#18314). For now, we compute an OBB for the mesh and take the
-          // unit inertia of the corresponding box.
-
           // At least so far, we have a surface mesh for every mesh.
           DRAKE_ASSERT(surface_mesh_.count(mesh) == 1);
           const geometry::TriangleSurfaceMesh<double>& surface_mesh =
               surface_mesh_.at(mesh);
-          std::set<int> v;
-          for (int i = 0; i < surface_mesh.num_vertices(); ++i) {
-            v.insert(v.end(), i);
-          }
-          // TODO(russt): The ObbMaker should really make it easier to "use all
-          // the vertices".
-          const geometry::internal::Obb obb =
-              geometry::internal::ObbMaker(surface_mesh, v).Compute();
-          UnitInertia<double> unit_M_GBox_Box =
-              multibody::UnitInertia<double>::SolidBox(
-                  obb.half_width()[0] * 2.0, obb.half_width()[1] * 2.0,
-                  obb.half_width()[2] * 2.0);
-          unit_M_GG_G = unit_M_GBox_Box.ReExpress(obb.pose().rotation())
-                            .ShiftFromCenterOfMass(-obb.pose().translation());
+          unit_M_GG_G =
+              multibody::CalcSpatialInertia(surface_mesh).get_unit_inertia();
         }
       } else {
         Warning(
