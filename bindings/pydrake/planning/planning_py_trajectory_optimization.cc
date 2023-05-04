@@ -4,6 +4,7 @@
 #include "pybind11/stl.h"
 
 #include "drake/bindings/pydrake/documentation_pybind.h"
+#include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
 #include "drake/planning/trajectory_optimization/direct_collocation.h"
@@ -403,17 +404,29 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("result") = std::nullopt, py::arg("show_slack") = true,
             py::arg("precision") = 3, py::arg("scientific") = false,
             cls_doc.GetGraphvizString.doc)
-        .def("AddRegions",
-            py::overload_cast<const geometry::optimization::ConvexSets&,
-                const std::vector<std::pair<int, int>>&, int, double, double,
-                std::string>(&Class::AddRegions),
+        .def(
+            "AddRegions",
+            [](Class& self,
+                const std::vector<geometry::optimization::ConvexSet*>& regions,
+                const std::vector<std::pair<int, int>>& edges_between_regions,
+                int order, double h_min, double h_max,
+                std::string name) -> Class::Subgraph& {
+              return self.AddRegions(CloneConvexSets(regions),
+                  edges_between_regions, order, h_min, h_max, std::move(name));
+            },
             py_rvp::reference_internal, py::arg("regions"),
             py::arg("edges_between_regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
             py::arg("name") = "", cls_doc.AddRegions.doc_6args)
-        .def("AddRegions",
-            py::overload_cast<const geometry::optimization::ConvexSets&, int,
-                double, double, std::string>(&Class::AddRegions),
+        .def(
+            "AddRegions",
+            [](Class& self,
+                const std::vector<geometry::optimization::ConvexSet*>& regions,
+                int order, double h_min, double h_max,
+                std::string name) -> Class::Subgraph& {
+              return self.AddRegions(CloneConvexSets(regions), order, h_min,
+                  h_max, std::move(name));
+            },
             py_rvp::reference_internal, py::arg("regions"), py::arg("order"),
             py::arg("h_min") = 1e-6, py::arg("h_max") = 20,
             py::arg("name") = "", cls_doc.AddRegions.doc_5args)

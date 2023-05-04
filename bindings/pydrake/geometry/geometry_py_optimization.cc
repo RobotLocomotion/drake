@@ -9,6 +9,7 @@
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
+#include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -39,10 +40,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.ConvexSet;
     py::class_<ConvexSet>(m, "ConvexSet", cls_doc.doc)
-        .def("Clone",
-            static_cast<::std::unique_ptr<ConvexSet> (ConvexSet::*)() const>(
-                &ConvexSet::Clone),
-            cls_doc.Clone.doc)
+        .def("Clone", &ConvexSet::Clone, cls_doc.Clone.doc)
         .def("ambient_dimension", &ConvexSet::ambient_dimension,
             cls_doc.ambient_dimension.doc)
         .def("IntersectsWith", &ConvexSet::IntersectsWith, py::arg("other"),
@@ -77,25 +75,24 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.AddPointInNonnegativeScalingConstraints.doc_7args)
         .def("ToShapeWithPose", &ConvexSet::ToShapeWithPose,
             cls_doc.ToShapeWithPose.doc);
-    // Note: We use the copyable_unique_ptr constructor which calls Clone() on
-    // the set, so that the new object is never an alias to the old.
-    py::class_<copyable_unique_ptr<ConvexSet>>(m, "CopyableUniquePtrConvexSet")
-        .def(py::init([](const ConvexSet& s) {
-          return copyable_unique_ptr<ConvexSet>(s);
-        }));
   }
 
   // CartesianProduct
   {
     const auto& cls_doc = doc.CartesianProduct;
     py::class_<CartesianProduct, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
-        .def(py::init<const ConvexSets&>(), py::arg("sets"),
-            cls_doc.ctor.doc_1args_sets)
+        .def(py::init([](const std::vector<ConvexSet*>& sets) {
+          return std::make_unique<CartesianProduct>(CloneConvexSets(sets));
+        }),
+            py::arg("sets"), cls_doc.ctor.doc_1args_sets)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args_setA_setB)
-        .def(py::init<const ConvexSets&,
-                 const Eigen::Ref<const Eigen::MatrixXd>&,
-                 const Eigen::Ref<const Eigen::VectorXd>&>(),
+        .def(py::init([](const std::vector<ConvexSet*>& sets,
+                          const Eigen::Ref<const Eigen::MatrixXd>& A,
+                          const Eigen::Ref<const Eigen::VectorXd>& b) {
+          return std::make_unique<CartesianProduct>(
+              CloneConvexSets(sets), A, b);
+        }),
             py::arg("sets"), py::arg("A"), py::arg("b"),
             cls_doc.ctor.doc_3args_sets_A_b)
         .def(py::init<const QueryObject<double>&, GeometryId,
@@ -107,8 +104,6 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.num_factors.doc)
         .def("factor", &CartesianProduct::factor, py_rvp::reference_internal,
             py::arg("index"), cls_doc.factor.doc);
-    py::implicitly_convertible<CartesianProduct,
-        copyable_unique_ptr<ConvexSet>>();
   }
 
   // HPolyhedron
@@ -170,7 +165,6 @@ void DefineGeometryOptimization(py::module m) {
             [](std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
               return HPolyhedron(std::get<0>(args), std::get<1>(args));
             }));
-    py::implicitly_convertible<HPolyhedron, copyable_unique_ptr<ConvexSet>>();
   }
 
   // Hyperellipsoid
@@ -203,31 +197,32 @@ void DefineGeometryOptimization(py::module m) {
             [](std::pair<Eigen::MatrixXd, Eigen::VectorXd> args) {
               return Hyperellipsoid(std::get<0>(args), std::get<1>(args));
             }));
-    py::implicitly_convertible<Hyperellipsoid,
-        copyable_unique_ptr<ConvexSet>>();
   }
 
   // Intersection
   {
     const auto& cls_doc = doc.Intersection;
     py::class_<Intersection, ConvexSet>(m, "Intersection", cls_doc.doc)
-        .def(py::init<const ConvexSets&>(), py::arg("sets"),
-            cls_doc.ctor.doc_1args)
+        .def(py::init([](const std::vector<ConvexSet*>& sets) {
+          return std::make_unique<Intersection>(CloneConvexSets(sets));
+        }),
+            py::arg("sets"), cls_doc.ctor.doc_1args)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args)
         .def("num_elements", &Intersection::num_elements,
             cls_doc.num_elements.doc)
         .def("element", &Intersection::element, py_rvp::reference_internal,
             py::arg("index"), cls_doc.element.doc);
-    py::implicitly_convertible<Intersection, copyable_unique_ptr<ConvexSet>>();
   }
 
   // MinkowskiSum
   {
     const auto& cls_doc = doc.MinkowskiSum;
     py::class_<MinkowskiSum, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
-        .def(py::init<const ConvexSets&>(), py::arg("sets"),
-            cls_doc.ctor.doc_1args)
+        .def(py::init([](const std::vector<ConvexSet*>& sets) {
+          return std::make_unique<MinkowskiSum>(CloneConvexSets(sets));
+        }),
+            py::arg("sets"), cls_doc.ctor.doc_1args)
         .def(py::init<const ConvexSet&, const ConvexSet&>(), py::arg("setA"),
             py::arg("setB"), cls_doc.ctor.doc_2args)
         .def(py::init<const QueryObject<double>&, GeometryId,
@@ -237,7 +232,6 @@ void DefineGeometryOptimization(py::module m) {
         .def("num_terms", &MinkowskiSum::num_terms, cls_doc.num_terms.doc)
         .def("term", &MinkowskiSum::term, py_rvp::reference_internal,
             py::arg("index"), cls_doc.term.doc);
-    py::implicitly_convertible<MinkowskiSum, copyable_unique_ptr<ConvexSet>>();
   }
 
   // Point
@@ -255,7 +249,6 @@ void DefineGeometryOptimization(py::module m) {
         .def("set_x", &Point::set_x, py::arg("x"), cls_doc.set_x.doc)
         .def(py::pickle([](const Point& self) { return self.x(); },
             [](Eigen::VectorXd arg) { return Point(arg); }));
-    py::implicitly_convertible<Point, copyable_unique_ptr<ConvexSet>>();
   }
 
   // Spectrahedron
@@ -265,7 +258,6 @@ void DefineGeometryOptimization(py::module m) {
         .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const solvers::MathematicalProgram&>(), py::arg("prog"),
             cls_doc.ctor.doc_1args);
-    py::implicitly_convertible<Spectrahedron, copyable_unique_ptr<ConvexSet>>();
   }
 
   // VPolytope
@@ -293,7 +285,6 @@ void DefineGeometryOptimization(py::module m) {
             cls_doc.WriteObj.doc)
         .def(py::pickle([](const VPolytope& self) { return self.vertices(); },
             [](Eigen::MatrixXd arg) { return VPolytope(arg); }));
-    py::implicitly_convertible<VPolytope, copyable_unique_ptr<ConvexSet>>();
   }
 
   {
@@ -317,8 +308,24 @@ void DefineGeometryOptimization(py::module m) {
         .def_readwrite("num_collision_infeasible_samples",
             &IrisOptions::num_collision_infeasible_samples,
             cls_doc.num_collision_infeasible_samples.doc)
-        .def_readwrite("configuration_obstacles",
-            &IrisOptions::configuration_obstacles,
+        .def_property(
+            "configuration_obstacles",
+            [](const IrisOptions& self) {
+              py::list out;
+              py::object self_py = py::cast(self, py_rvp::reference);
+              for (const copyable_unique_ptr<ConvexSet>& convex_set :
+                  self.configuration_obstacles) {
+                py::object convex_set_py =
+                    py::cast(convex_set.get(), py_rvp::reference);
+                // Keep alive, ownership: `convex_set` keeps `self` alive.
+                py_keep_alive(convex_set_py, self_py);
+                out.append(convex_set_py);
+              }
+              return out;
+            },
+            [](IrisOptions& self, const std::vector<ConvexSet*>& sets) {
+              self.configuration_obstacles = CloneConvexSets(sets);
+            },
             cls_doc.configuration_obstacles.doc)
         .def_readwrite("starting_ellipse", &IrisOptions::starting_ellipse,
             cls_doc.starting_ellipse.doc)
@@ -358,11 +365,29 @@ void DefineGeometryOptimization(py::module m) {
         cls_doc.prog_with_additional_constraints.doc);
   }
 
-  m.def("Iris", &Iris, py::arg("obstacles"), py::arg("sample"),
-      py::arg("domain"), py::arg("options") = IrisOptions(), doc.Iris.doc);
+  m.def(
+      "Iris",
+      [](const std::vector<ConvexSet*>& obstacles,
+          const Eigen::Ref<const Eigen::VectorXd>& sample,
+          const HPolyhedron& domain, const IrisOptions& options) {
+        return Iris(CloneConvexSets(obstacles), sample, domain, options);
+      },
+      py::arg("obstacles"), py::arg("sample"), py::arg("domain"),
+      py::arg("options") = IrisOptions(), doc.Iris.doc);
 
-  m.def("MakeIrisObstacles", &MakeIrisObstacles, py::arg("query_object"),
-      py::arg("reference_frame") = std::nullopt, doc.MakeIrisObstacles.doc);
+  m.def(
+      "MakeIrisObstacles",
+      [](const QueryObject<double>& query_object,
+          std::optional<FrameId> reference_frame) {
+        std::vector<copyable_unique_ptr<ConvexSet>> copyable_result =
+            MakeIrisObstacles(query_object, reference_frame);
+        std::vector<std::unique_ptr<ConvexSet>> result(
+            std::make_move_iterator(copyable_result.begin()),
+            std::make_move_iterator(copyable_result.end()));
+        return result;
+      },
+      py::arg("query_object"), py::arg("reference_frame") = std::nullopt,
+      doc.MakeIrisObstacles.doc);
 
   m.def("IrisInConfigurationSpace",
       py::overload_cast<const multibody::MultibodyPlant<double>&,
