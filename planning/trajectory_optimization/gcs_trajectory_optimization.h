@@ -111,6 +111,18 @@ class GcsTrajectoryOptimization final {
     */
     void AddPathLengthCost(double weight = 1.0);
 
+    /** Adds a linear velocity constraint to the subgraph `lb` ≤ q̇(t) ≤
+    `ub`.
+    @param lb is the lower bound of the velocity.
+    @param ub is the upper bound of the velocity.
+
+    @throws std::exception if subgraph order is zero, since the velocity is
+    defined as the derivative of the Bézier curve.
+    @throws std::exception if lb or ub are not of size num_positions().
+    */
+    void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                           const Eigen::Ref<const Eigen::VectorXd>& ub);
+
    private:
     /* Constructs a new subgraph and copies the regions. */
     Subgraph(const geometry::optimization::ConvexSets& regions,
@@ -314,6 +326,21 @@ class GcsTrajectoryOptimization final {
   */
   void AddPathLengthCost(double weight = 1.0);
 
+  /** Adds a linear velocity constraint to the entire graph `lb` ≤ q̇(t) ≤
+  `ub`.
+  @param lb is the lower bound of the velocity.
+  @param ub is the upper bound of the velocity.
+
+  This constraint will be added to the entire graph. Since the velocity requires
+  forming the derivative of the Bézier curve, this constraint will only added to
+  all subgraphs with order greater than zero. Note that this constraint will be
+  applied even to subgraphs added in the future.
+
+  @throws std::exception if lb or ub are not of size num_positions().
+  */
+  void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                         const Eigen::Ref<const Eigen::VectorXd>& ub);
+
   /** Formulates and solves the mixed-integer convex formulation of the
   shortest path problem on the whole graph. @see
   `geometry::optimization::GraphOfConvexSets::SolveShortestPath()` for further
@@ -355,6 +382,8 @@ class GcsTrajectoryOptimization final {
   std::vector<std::unique_ptr<EdgesBetweenSubgraphs>> subgraph_edges_;
   std::vector<double> global_time_costs_;
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
+  std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>
+      global_velocity_bounds_{};
 };
 
 }  // namespace trajectory_optimization
