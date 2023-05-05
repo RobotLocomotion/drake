@@ -571,9 +571,10 @@ CspaceFreePolytope::SolveSeparationCertificateProgram(
     const CspaceFreePolytope::SeparationCertificateProgram& certificate_program,
     const FindSeparationCertificateGivenPolytopeOptions& options) const {
   CspaceFreePolytope::SeparationCertificateResult ret_base{
+    std::move(
       internal::SolveSeparationCertificateProgramBase(
           certificate_program, options,
-          separating_planes_[certificate_program.plane_index])};
+          separating_planes_[certificate_program.plane_index]))};
   std::optional<CspaceFreePolytope::SeparationCertificateResult> ret{
       std::nullopt};
   if (ret_base.result.is_success()) {
