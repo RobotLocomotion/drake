@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <ios>
 #include <stdexcept>
-#include <unordered_set>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/container/inlined_vector.h"
 #include <fmt/format.h>
 
@@ -1077,7 +1077,7 @@ void Gemm<reverse>::CalcDV(const MatrixRef<double>& D,
   absl::InlinedVector<Expression, kSmallSize> inner_vars_as_expr;
   inner_vars_as_expr.reserve(max_k);
   // The unique_ids is used to efficiently de-duplicate vars.
-  std::unordered_set<Variable::Id> unique_ids;
+  absl::flat_hash_set<Variable::Id> unique_ids;
   unique_ids.reserve(max_k);
   // The var_index[k] refers to the index in inner_vars[] for that variable.
   // We have inner_vars[var_index[k]] == V(k, j) during the j'th row loop,
