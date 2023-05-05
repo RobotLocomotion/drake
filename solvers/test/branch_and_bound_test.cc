@@ -20,9 +20,11 @@ class MixedIntegerBranchAndBoundTester {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(MixedIntegerBranchAndBoundTester)
 
-  explicit MixedIntegerBranchAndBoundTester(const MathematicalProgram& prog,
-                                            const SolverId& solver_id)
-      : bnb_{new MixedIntegerBranchAndBound(prog, solver_id)} {}
+  explicit MixedIntegerBranchAndBoundTester(
+      const MathematicalProgram& prog, const SolverId& solver_id,
+      MixedIntegerBranchAndBound::Options options =
+          MixedIntegerBranchAndBound::Options{})
+      : bnb_{new MixedIntegerBranchAndBound(prog, solver_id, options)} {}
 
   MixedIntegerBranchAndBound* bnb() const { return bnb_.get(); }
 
@@ -51,6 +53,8 @@ class MixedIntegerBranchAndBoundTester {
       const MixedIntegerBranchAndBoundNode& node) {
     bnb_->SearchIntegralSolutionByRounding(node);
   }
+
+  bool HasConverged() const { return bnb_->HasConverged(); }
 
  private:
   std::unique_ptr<MixedIntegerBranchAndBound> bnb_;
@@ -163,6 +167,7 @@ void CheckNewRootNode(
   // The left and right children are empty.
   EXPECT_FALSE(root.left_child());
   EXPECT_FALSE(root.right_child());
+  EXPECT_EQ(root.NumNodesInSubtree(), 1);
   // The parent node is empty.
   EXPECT_TRUE(root.IsRoot());
   // None of the binary variables are fixed.
@@ -313,6 +318,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
 
   // Branch on variable x(0).
   root->Branch(x(0));
+  EXPECT_EQ(root->NumNodesInSubtree(), 3);
+  EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
 
   const Eigen::Vector4d x_expected_l0(0, 1, 0, 0.5);
   const Eigen::Vector4d x_expected_r0(1, 1, 0, 0);
@@ -325,6 +333,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch1) {
   // Branch on variable x(2). The child nodes created by branching on x(0) will
   // be deleted.
   root->Branch(x(2));
+  EXPECT_EQ(root->NumNodesInSubtree(), 3);
+  EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
   const Eigen::Vector4d x_expected_l2(0, 1, 0, 0.5);
   const Eigen::Vector4d x_expected_r2(0, 4.1, 1, -1.05);
   CheckNodeSolution(*(root->left_child()), x, x_expected_l2, 1.5, tol);
@@ -350,6 +361,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
 
   // Branch on x(0)
   root->Branch(x(0));
+  EXPECT_EQ(root->NumNodesInSubtree(), 3);
+  EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
   EXPECT_EQ(root->left_child()->solution_result(),
             SolutionResult::kInfeasibleConstraints);
   Eigen::Matrix<double, 5, 1> x_expected_r;
@@ -360,6 +374,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
 
   // Branch on x(2)
   root->Branch(x(2));
+  EXPECT_EQ(root->NumNodesInSubtree(), 3);
+  EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
   Eigen::Matrix<double, 5, 1> x_expected_l;
   x_expected_l << 1, 2.0 / 3.0, 0, 1, 1;
   CheckNodeSolution(*(root->left_child()), x, x_expected_l, 23.0 / 6.0, tol);
@@ -370,6 +387,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch2) {
 
   // Branch on x(4)
   root->Branch(x(4));
+  EXPECT_EQ(root->NumNodesInSubtree(), 3);
+  EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
   x_expected_l << 0.7, 1, 1, 1.4, 0;
   x_expected_r << 0.2, 2.0 / 3.0, 1, 1.4, 1;
   CheckNodeSolution(*(root->left_child()), x, x_expected_l, -4.9, tol);
@@ -396,6 +416,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch3) {
   // Branch on x(0) and x(2), the child nodes are all unbounded.
   for (const auto& x_binary : {x(0), x(2)}) {
     root->Branch(x_binary);
+    EXPECT_EQ(root->NumNodesInSubtree(), 3);
+    EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+    EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
     EXPECT_EQ(root->left_child()->solution_result(),
               SolutionResult::kUnbounded);
     EXPECT_EQ(root->right_child()->solution_result(),
@@ -420,6 +443,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch4) {
 
   // Branch on x(3)
   root->Branch(x(3));
+  EXPECT_EQ(root->NumNodesInSubtree(), 3);
+  EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
   EXPECT_EQ(root->left_child()->solution_result(),
             SolutionResult::kInfeasibleConstraints);
   EXPECT_EQ(root->right_child()->solution_result(),
@@ -427,6 +453,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundNodeTest, TestBranch4) {
 
   // Branch on x(4)
   root->Branch(x(4));
+  EXPECT_EQ(root->NumNodesInSubtree(), 3);
+  EXPECT_EQ(root->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(root->right_child()->NumNodesInSubtree(), 1);
   EXPECT_EQ(root->left_child()->solution_result(),
             SolutionResult::kInfeasibleConstraints);
   EXPECT_EQ(root->right_child()->solution_result(),
@@ -476,6 +505,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor1) {
   EXPECT_TRUE(CompareMatrices(best_solutions.begin()->second, x_expected, tol,
                               MatrixCompareType::absolute));
   EXPECT_TRUE(bnb.IsLeafNodeFathomed(*(bnb.root())));
+  EXPECT_EQ(bnb.root()->NumNodesInSubtree(), 1);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
@@ -488,6 +518,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor2) {
   EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
   EXPECT_TRUE(bnb.solutions().empty());
   EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
+  EXPECT_EQ(bnb.root()->NumNodesInSubtree(), 1);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
@@ -499,6 +530,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor3) {
   EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
   EXPECT_TRUE(bnb.solutions().empty());
   EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
+  EXPECT_EQ(bnb.root()->NumNodesInSubtree(), 1);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor4) {
@@ -510,6 +542,7 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestConstructor4) {
   EXPECT_EQ(bnb.best_upper_bound(), std::numeric_limits<double>::infinity());
   EXPECT_TRUE(bnb.solutions().empty());
   EXPECT_FALSE(bnb.IsLeafNodeFathomed(*(bnb.root())));
+  EXPECT_EQ(bnb.root()->NumNodesInSubtree(), 1);
 }
 
 GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
@@ -521,6 +554,9 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed1) {
   VectorDecisionVariable<4> x = dut.bnb()->root()->prog()->decision_variables();
 
   dut.mutable_root()->Branch(x(0));
+  EXPECT_EQ(dut.mutable_root()->NumNodesInSubtree(), 3);
+  EXPECT_EQ(dut.mutable_root()->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(dut.mutable_root()->right_child()->NumNodesInSubtree(), 1);
   // Both left and right children have integral optimal solution. Both nodes are
   // fathomed.
   EXPECT_TRUE(
@@ -587,12 +623,22 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, TestLeafNodeFathomed3) {
   EXPECT_FALSE(dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root())));
 
   dut.mutable_root()->Branch(x(0));
+  EXPECT_EQ(dut.mutable_root()->NumNodesInSubtree(), 3);
+  EXPECT_EQ(dut.mutable_root()->left_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(dut.mutable_root()->right_child()->NumNodesInSubtree(), 1);
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->left_child())));
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
 
   dut.mutable_root()->mutable_left_child()->Branch(x(2));
+  EXPECT_EQ(dut.mutable_root()->NumNodesInSubtree(), 5);
+  EXPECT_EQ(dut.mutable_root()->left_child()->NumNodesInSubtree(), 3);
+  EXPECT_EQ(dut.mutable_root()->right_child()->NumNodesInSubtree(), 1);
+  EXPECT_EQ(dut.mutable_root()->left_child()->left_child()->NumNodesInSubtree(),
+            1);
+  EXPECT_EQ(
+      dut.mutable_root()->left_child()->right_child()->NumNodesInSubtree(), 1);
   EXPECT_FALSE(
       dut.bnb()->IsLeafNodeFathomed(*(dut.bnb()->root()->right_child())));
   EXPECT_TRUE(dut.bnb()->IsLeafNodeFathomed(
@@ -1280,6 +1326,27 @@ GTEST_TEST(MixedIntegerBranchAndBoundTest, NodeCallbackTest) {
 
   dut.BranchAndUpdate(dut.mutable_root(), x(2));
   EXPECT_EQ(num_visited_nodes, 5);
+}
+
+GTEST_TEST(MixedIntegerBranchAndBoundTest, MaxNodesInTree) {
+  // Test the option max_nodes_in_tree.
+  auto prog = ConstructMathematicalProgram2();
+  MixedIntegerBranchAndBoundTester dut1(*prog, GurobiSolver::id());
+  dut1.bnb()->Solve();
+  const int dut1_num_nodes = dut1.bnb()->root()->NumNodesInSubtree();
+  EXPECT_TRUE(dut1.HasConverged());
+  // Make sure that dut1 has more than 1 nodes in the tree. Otherwise
+  // dut1_num_nodes-1 would be non-positive, which we regard as no upper limit
+  // on the number of nodes.
+  ASSERT_GT(dut1_num_nodes, 1);
+
+  MixedIntegerBranchAndBound::Options options{};
+  options.max_nodes_in_tree = dut1_num_nodes - 1;
+  MixedIntegerBranchAndBoundTester dut2(*prog, GurobiSolver::id(), options);
+  const auto dut2_solution_result = dut2.bnb()->Solve();
+  EXPECT_LE(dut2.bnb()->root()->NumNodesInSubtree(), options.max_nodes_in_tree);
+  EXPECT_FALSE(dut2.HasConverged());
+  EXPECT_EQ(dut2_solution_result, SolutionResult::kIterationLimit);
 }
 }  // namespace
 }  // namespace solvers
