@@ -11,6 +11,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_gl/internal_buffer_dim.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
 #include "drake/geometry/render_gl/internal_opengl_geometry.h"
@@ -159,7 +160,7 @@ class RenderEngineGl final : public render::RenderEngine {
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
   static OpenGlGeometry CreateGlGeometry(
-      const MeshData& mesh_data);
+      const geometry::internal::RenderMesh& mesh_data);
 
   // Sets the display window visibility and populates it with the _last_ image
   // rendered, if visible.
