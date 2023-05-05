@@ -558,6 +558,33 @@ TEST_F(DefaultReifierTest, UnsupportedGeometry) {
                               "This class (.+) does not support Sphere.");
 }
 
+// Test confirms that the default unsupported functionality can be replaced.
+// We'll simply replace it with a no-op. Contrast this with DefaultReifierTest.
+class OverrideDeafultGeometryTest : public ShapeReifier,
+                                    public ::testing::Test {
+ public:
+  using ShapeReifier::ThrowUnsupportedGeometry;
+  void DefaultImplementGeometry(const Shape&) final{};
+};
+
+// Tests default implementation of virtual functions for each shape.
+TEST_F(OverrideDeafultGeometryTest, UnsupportedGeometry) {
+  // Confirm that throwing mechanism hasn't changed. If the subsequent calls
+  // don't throw, it's not because this function's behavior has changed.
+  DRAKE_EXPECT_THROWS_MESSAGE(this->ThrowUnsupportedGeometry("Foo"),
+                              "This class (.+) does not support Foo.");
+
+  // Confirm the default behavior no longer throws.
+  EXPECT_NO_THROW(this->ImplementGeometry(Box(1, 1, 1), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Capsule(1, 2), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Convex("a", 1), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Cylinder(1, 2), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Ellipsoid(1, 1, 1), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(HalfSpace(), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Mesh("foo", 1), nullptr));
+  EXPECT_NO_THROW(this->ImplementGeometry(Sphere(0.5), nullptr));
+}
+
 GTEST_TEST(ShapeName, SimpleReification) {
   ShapeName name;
 
