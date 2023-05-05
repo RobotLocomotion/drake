@@ -389,9 +389,9 @@ class Sphere final : public Shape {
 
  This class explicitly enumerates all concrete shapes in its methods. The
  addition of a new concrete shape class requires the addition of a new
- corresponding method. There should *never* be a method that accepts the Shape
- base class as an argument; it should _only_ operate on concrete derived
- classes.
+ corresponding method. There should *never* be an ImplementGeometry method that
+ accepts the Shape base class as an argument; it should _only_ operate on
+ concrete derived classes.
 
  The expected workflow is for a class that needs to turn shape specifications
  into concrete geometry instances to implement the %ShapeReifier interface
@@ -450,6 +450,12 @@ class ShapeReifier {
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ShapeReifier)
   ShapeReifier() = default;
+
+  /** The default implementation of ImplementGeometry(): it throws an exception
+   using ThrowUnsupportedGeometry(). The purpose of this function is to
+   facilitate reifiers that would call the same API on all shapes (e.g., call an
+   API with a Shape& parameter). This reduces the implementation boilerplate. */
+  virtual void DefaultImplementGeometry(const Shape& shape);
 
   /** Derived ShapeReifiers can replace the default message for unsupported
    geometries by overriding this method. The name of the unsupported shape type
