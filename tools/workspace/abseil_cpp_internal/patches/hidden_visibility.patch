@@ -2,8 +2,8 @@ Use hidden symbol visibility for Abseil's C++ code.
 
 This probably improves linker and loader throughput.
 
---- absl/base/config.h.orig	2022-03-08 13:01:16.000000000 -0800
-+++ absl/base/config.h	2022-03-13 13:46:02.698469827 -0700
+--- absl/base/config.h.orig
++++ absl/base/config.h
 @@ -153,7 +153,7 @@
  #define ABSL_INTERNAL_C_SYMBOL(x) x
  #elif ABSL_OPTION_USE_INLINE_NAMESPACE == 1
@@ -13,3 +13,14 @@ This probably improves linker and loader throughput.
  #define ABSL_NAMESPACE_END }
  #define ABSL_INTERNAL_C_SYMBOL_HELPER_2(x, v) x##_##v
  #define ABSL_INTERNAL_C_SYMBOL_HELPER_1(x, v) \
+--- absl/synchronization/mutex.cc.orig
++++ absl/synchronization/mutex.cc
+@@ -2784,7 +2784,7 @@
+ }
+ 
+ #ifdef ABSL_HAVE_THREAD_SANITIZER
+-extern "C" void __tsan_read1(void *addr);
++extern "C" void __tsan_read1(void *addr) __attribute__((visibility ("default")));
+ #else
+ #define __tsan_read1(addr)  // do nothing if TSan not enabled
+ #endif

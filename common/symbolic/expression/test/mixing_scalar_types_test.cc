@@ -469,8 +469,8 @@ TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationVarDouble) {
 TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationVarDoubleHeap) {
   M_double_fixed_ = Eigen::Matrix2d::Identity();
   const int expected_alloc =
-      // The temporary unordered_set.
-      5
+      // The temporary flat_hash_set.
+      1
       // One expression cell for each variable.
       + 4;
   LimitMalloc guard({.max_num_allocations = expected_alloc});
@@ -532,8 +532,8 @@ TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationDoubleVar) {
 TEST_F(SymbolicMixingScalarTypesTest, MatrixMatrixMultiplicationDoubleVarHeap) {
   M_double_fixed_ = Eigen::Matrix2d::Identity();
   const int expected_alloc =
-      // The temporary unordered_set.
-      5
+      // The temporary flat_hash_set.
+      1
       // One expression cell for each variable.
       + 4;
   LimitMalloc guard({.max_num_allocations = expected_alloc});
