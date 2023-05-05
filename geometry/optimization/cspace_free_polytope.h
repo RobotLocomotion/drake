@@ -13,6 +13,7 @@
 
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
 #include "drake/solvers/mathematical_program.h"
@@ -22,23 +23,6 @@
 namespace drake {
 namespace geometry {
 namespace optimization {
-/**
- Contains the information to enforce a pair of geometries are separated by a
- plane. The conditions are that certain rational functions should be always
- positive.
- */
-struct PlaneSeparatesGeometries {
-  PlaneSeparatesGeometries(
-      std::vector<symbolic::RationalFunction> m_positive_side_rationals,
-      std::vector<symbolic::RationalFunction> m_negative_side_rationals,
-      int m_plane_index)
-      : positive_side_rationals{std::move(m_positive_side_rationals)},
-        negative_side_rationals{std::move(m_negative_side_rationals)},
-        plane_index{m_plane_index} {}
-  const std::vector<symbolic::RationalFunction> positive_side_rationals;
-  const std::vector<symbolic::RationalFunction> negative_side_rationals;
-  int plane_index;
-};
 
 /**
  This class tries to find large convex polytopes in the tangential-configuration
@@ -205,16 +189,9 @@ class CspaceFreePolytope {
    separating plane {x | aᵀx+b=0 } separates the two geometries in
    separating_planes()[plane_index] in the C-space polytope.
    */
-  struct SeparationCertificateResult {
-    int plane_index;
+  struct SeparationCertificateResult : SeparationCertificateResultBase {
     std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
     std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
-    // The separating plane is { x | aᵀx+b=0 }
-    Vector3<symbolic::Polynomial> a;
-    symbolic::Polynomial b;
-    // The value of the plane.decision_variables at solution. This field is used
-    // for debugging.
-    Eigen::VectorXd plane_decision_var_vals;
   };
 
   /**
@@ -245,35 +222,14 @@ class CspaceFreePolytope {
     std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
   };
 
-  struct SeparationCertificateProgram {
+  struct SeparationCertificateProgram : SeparationCertificateProgramBase {
     SeparationCertificateProgram()
-        : prog{new solvers::MathematicalProgram()}, certificate{} {}
-    /// The program that stores all the constraints to search for the separating
-    /// plane and Lagrangian multipliers as certificate.
-    std::unique_ptr<solvers::MathematicalProgram> prog;
+        : SeparationCertificateProgramBase(), certificate{} {}
     SeparationCertificate certificate;
-    int plane_index;
   };
 
-  struct FindSeparationCertificateGivenPolytopeOptions {
-    // We can find the certificate for each pair of geometries in parallel.
-    // num_threads specifies how many threads we run in parallel. If num_threads
-    // <=0, then we use all available threads on the computer.
-    int num_threads{-1};
-
-    // If verbose set to true, then we will print some information to the
-    // terminal.
-    bool verbose{false};
-
-    // The solver invoked for the sos program.
-    solvers::SolverId solver_id{solvers::MosekSolver::id()};
-
-    // If the SOS in one thread fails, then don't launch any more threads.
-    bool terminate_at_failure{true};
-
-    // The solver options used for the SOS program.
-    std::optional<solvers::SolverOptions> solver_options{std::nullopt};
-
+  struct FindSeparationCertificateGivenPolytopeOptions
+      : FindSeparationCertificateOptions {
     // If a row in C*s<=d is redundant (this row is implied by other rows in
     // C*s<=d, s_lower<=s<=s_upper), then we don't search for the Lagrangian
     // multiplier for this row.
@@ -521,7 +477,7 @@ class CspaceFreePolytope {
    certain vectors with length <= 1) such that the robot configuration is
    collision free.
    */
-  void GenerateRationals();
+  //  void GenerateRationals();
 
   /**
    Computes the monomial basis for each pair of bodies.
@@ -699,14 +655,6 @@ class CspaceFreePolytope {
   bool with_cross_y_;
 };
 
-/**
- * Given a diagram (which contains the plant and the scene_graph), returns all
- * the collision geometries.
- */
-[[nodiscard]] std::map<multibody::BodyIndex,
-                       std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
-GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
-                       const geometry::SceneGraph<double>& scene_graph);
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
