@@ -127,8 +127,23 @@ int main() {
 #elif defined(__apple_build_version__) && defined(__clang__)
   const char compiler_id[] = "AppleClang";
   const int compiler_version_major = __clang_major__;
-  const int compiler_version_minor = __clang_minor__;
-
+  // TODO(18327): how to get xcode version from preprocessor?
+  // clang -dM -E - < /dev/null
+  //
+  // They are not changing the __clang_minor__ version?
+  //
+  // XCode 14.1
+  // #define __apple_build_version__ 14000029
+  // #define __clang_version__ "14.0.0 (clang-1400.0.29.202)"
+  //
+  // XCode 14.3
+  // #define __apple_build_version__ 14030022
+  // #define __clang_version__ "14.0.3 (clang-1403.0.22.14.1)"
+  #if __apple_build_version__ == 14030022
+    const int compiler_version_minor = 3;
+  #else
+    const int compiler_version_minor = __clang_minor__;
+  #endif
 #elif defined(__clang__)
   const char compiler_id[] = "Clang";
   const int compiler_version_major = __clang_major__;
