@@ -1,4 +1,9 @@
-load("@cc//:compiler.bzl", "COMPILER_ID", "COMPILER_VERSION_MAJOR")
+load(
+    "@cc//:compiler.bzl",
+    "COMPILER_ID",
+    "COMPILER_VERSION_MAJOR",
+    "COMPILER_VERSION_MINOR",
+)
 load(
     "//tools/skylark:kwargs.bzl",
     "incorporate_allow_network",
@@ -36,6 +41,7 @@ CLANG_FLAGS = CXX_FLAGS + [
     "-Werror=range-loop-analysis",
     "-Werror=return-stack-address",
     "-Werror=sign-compare",
+    "-Werror=unknown-warning-option",
     # This was turned on via "-Wc99-designator", but is not an an error.
     # Our conventions permit using this language extension even in C++17 mode.
     "-Wno-c++20-designator",
@@ -62,6 +68,10 @@ APPLECLANG_FLAGS = CLANG_FLAGS
 # the project when building with an Apple LLVM compiler of the specified major
 # version.
 APPLECLANG_VERSION_SPECIFIC_FLAGS = {
+    # Drake forbids `using std::move` and `using std::forward` (ADL lookup
+    # issues).  This can be promoted to CLANG_FLAGS (or CXX_FLAGS) when drake's
+    # clang and/or gcc support it. First encountered in Xcode 14.3 as an error.
+    (14, 3): ["-Werror=unqualified-std-cast-call"],
 }
 
 # The GCC_FLAGS will be enabled for all C++ rules in the project when
@@ -91,8 +101,9 @@ def _platform_copts(rule_copts, rule_gcc_copts, rule_clang_copts, cc_test = 0):
     """
     if COMPILER_ID == "AppleClang":
         result = APPLECLANG_FLAGS + rule_copts + rule_clang_copts
-        if COMPILER_VERSION_MAJOR in APPLECLANG_VERSION_SPECIFIC_FLAGS:
-            result += APPLECLANG_VERSION_SPECIFIC_FLAGS[COMPILER_VERSION_MAJOR]
+        major_minor_version = (COMPILER_VERSION_MAJOR, COMPILER_VERSION_MINOR)
+        if major_minor_version in APPLECLANG_VERSION_SPECIFIC_FLAGS:
+            result += APPLECLANG_VERSION_SPECIFIC_FLAGS[major_minor_version]
     elif COMPILER_ID == "Clang":
         result = CLANG_FLAGS + rule_copts + rule_clang_copts
         if COMPILER_VERSION_MAJOR in CLANG_VERSION_SPECIFIC_FLAGS:
