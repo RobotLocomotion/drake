@@ -107,7 +107,6 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
     }
     // When T = AutoDiffScalar or double, check if we get the same result as
     // calling Eigen's linear solver directly.
-    constexpr double kTol = 1.0e-14;
     if constexpr (internal::is_autodiff_v<typename DerivedA::Scalar>) {
       const LinearSolverType<
           Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
@@ -124,7 +123,7 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
       }
       EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen),
                                   ExtractValue(x),
-                                  kTol));
+                                  1.0e-14));
       for (int i = 0; i < b.cols(); ++i) {
         EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
                                     ExtractGradient(x.col(i)), tol));
@@ -138,7 +137,7 @@ TestSolveLinearSystem(const Eigen::MatrixBase<DerivedA>& A,
       const auto x_eigen = eigen_linear_solver.solve(b);
       EXPECT_TRUE(CompareMatrices(ExtractValue(x_eigen),
                                   ExtractValue(x),
-                                  kTol));
+                                  1.0e-14));
       for (int i = 0; i < b.cols(); ++i) {
         EXPECT_TRUE(CompareMatrices(ExtractGradient(x_eigen.col(i)),
                                     ExtractGradient(x.col(i)), tol));
