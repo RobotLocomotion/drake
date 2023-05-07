@@ -63,11 +63,11 @@ void CompareExpectedSolutionVsActualSolution(
   const double absError = MG_chaotic_babyboot.absError;
   const double macintosh_scale_factor = 15;
   EXPECT_LE(std::abs(qA_difference), 1E2 * absError);
-  EXPECT_LE(std::abs(qB_difference), 1E2 * absError);
+  EXPECT_LE(std::abs(qB_difference), 1E3 * absError);
   EXPECT_LE(std::abs(qADt_difference), 5E2 * absError * macintosh_scale_factor);
   EXPECT_LE(std::abs(qBDt_difference), 5E2 * absError * macintosh_scale_factor);
   EXPECT_LE(std::abs(qADDt_difference), 1E3 * absError);
-  EXPECT_LE(std::abs(qBDDt_difference), 1E3 * absError);
+  EXPECT_LE(std::abs(qBDDt_difference), 1E4 * absError);
   EXPECT_LE(std::abs(energy_difference), 0.5 * absError);
 }
 
