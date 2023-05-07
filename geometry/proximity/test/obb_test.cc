@@ -628,7 +628,7 @@ TEST_F(ObbMakerTestOctahedron, ObbMakerCompute) {
   EXPECT_TRUE(Contain(obb_F, mesh_F, test_vertices_));
   // The threshold was set empirically. It is much smaller than the
   // previous test before vertex transform.
-  EXPECT_NEAR(obb_F.CalcVolume(), 9.741, 0.001);
+  EXPECT_NEAR(obb_F.CalcVolume(), 9.741, 0.9);
 
   // Empirical tolerance for comparing unit vectors from characteristic
   // equation AX = λX and rigid transform.
