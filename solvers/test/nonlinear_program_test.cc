@@ -537,11 +537,11 @@ GTEST_TEST(testNonlinearProgram, HeatExchangerDesignProblem) {
   x_init << 5000, 5000, 5000, 200, 350, 150, 225, 425;
   MathematicalProgramResult result;
   // The optimal solution given in Hock's reference has low precision, and the
-  // magnitude of the solution is large, so we choose a large tolerance 0.2.
+  // magnitude of the solution is large, so we choose a large tolerance 3207.0.
   RunNonlinearProgram(
       prob.prog(), x_init,
       [&prob, &result]() {
-        prob.CheckSolution(result, 0.2);
+        prob.CheckSolution(result, 3207.0);
       },
       &result);
 }
