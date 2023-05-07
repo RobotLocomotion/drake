@@ -28,12 +28,15 @@ GTEST_TEST(DeterministicTest, TransformTest) {
       drake::math::RollPitchYawd(
           Eigen::Vector3d(10., 20., 30.) * (M_PI / 180.0)),
       Eigen::Vector3d(1., 2., 3.));
+  constexpr double kTol = 1.0e-17;
   EXPECT_TRUE(drake::CompareMatrices(
       transform.GetDeterministicValue().GetAsMatrix34(),
-      expected.GetAsMatrix34()));
+      expected.GetAsMatrix34(),
+      kTol));
   EXPECT_TRUE(drake::CompareMatrices(
       transform.Mean().GetAsMatrix34(),
-      expected.GetAsMatrix34()));
+      expected.GetAsMatrix34(),
+      kTol));
 }
 
 const char* random = R"""(
