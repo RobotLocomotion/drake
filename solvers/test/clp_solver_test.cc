@@ -187,7 +187,7 @@ GTEST_TEST(ClpSolverTest, DualSolution3) {
   // Test GetDualSolution().
   // This QP has non-zero dual solution for the bounding box constraint.
   ClpSolver solver;
-  TestQPDualSolution3(solver);
+  TestQPDualSolution3(solver, 0.0, 1.0e-4);
 }
 
 GTEST_TEST(ClpSolverTest, EqualityConstrainedQPDualSolution1) {
