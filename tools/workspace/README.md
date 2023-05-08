@@ -98,7 +98,9 @@ additionally launch a macOS build, per
 
 https://drake.mit.edu/jenkins.html#scheduling-an-on-demand-build
 
-Once the macOS build passes, assign the pull request for review.
+Once the macOS build passes, assign the pull request for review.  If the pull
+request contains no especially complicated changes, it may be assigned to the
+on-call platform reviewer and labelled ``status: single reviewer ok``.
 
 For any non-trivial changes (i.e., changes that go beyond changing version
 numbers, checksums, or trivial fixups to patch files or code spelling), do not
@@ -121,6 +123,10 @@ The main objective of the monthly upgrade is to ensure that we stay on top of
 problematic changes from upstream. If we discover such problems, we want to
 bring them to the attention of the feature owner; their steering should provide
 the most efficient path to resolve the problem.
+
+If an external required non-trivial changes, even if you were able to make the
+changes yourself, consider separating that external into its own pull request
+and assigning it to the associated feature owner.
 
 # Changing the version of third-party software manually
 
