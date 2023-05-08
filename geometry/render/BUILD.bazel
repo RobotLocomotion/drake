@@ -84,11 +84,7 @@ drake_cc_library(
     srcs = ["render_mesh.cc"],
     hdrs = ["render_mesh.h"],
     interface_deps = [
-        ":render_material",
-        "//common:diagnostic_policy",
         "//common:essential",
-        "//geometry:geometry_properties",
-        "//geometry:rgba",
     ],
     deps = [
         "@tinyobjloader",
@@ -153,11 +149,8 @@ drake_cc_googletest(
     deps = [
         ":render_mesh",
         "//common:find_resource",
-        "//common:temp_directory",
-        "//common/test_utilities:diagnostic_policy_test_base",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
-        "//geometry:geometry_roles",
     ],
 )
 

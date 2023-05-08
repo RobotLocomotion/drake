@@ -1,7 +1,6 @@
 #include "drake/geometry/render/render_material.h"
 
 #include <fstream>
-#include <string>
 #include <vector>
 
 #include <fmt/format.h>
