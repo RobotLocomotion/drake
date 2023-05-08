@@ -94,6 +94,6 @@ The motor and gear types:
 |Axis 3 (A3)|ILM 70x18   |CSG-32-160-2A-GR |160         |1.321e-4               |
 |Axis 4 (A4)|ILM 70x18   |CSG-32-160-2A-GR |160         |1.321e-4               |
 |Axis 5 (A5)|ILM 70x18   |CSG-32-100-2A-GR |100         |1.321e-4               |
-|Axis 6 (A6)|ILM 50x08   |CSG-20-160-2A-GR |160         |1.321e-4               |
-|Axis 7 (A7)|ILM 50x08   |CSG-20-160-2A-GR |160         |1.321e-4               |
+|Axis 6 (A6)|ILM 50x08   |CSG-20-160-2A-GR |160         |4.54e-5                |
+|Axis 7 (A7)|ILM 50x08   |CSG-20-160-2A-GR |160         |4.54e-5                |
 
