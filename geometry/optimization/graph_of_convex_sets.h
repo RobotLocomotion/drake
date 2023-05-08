@@ -505,8 +505,9 @@ class GraphOfConvexSets {
   /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
 
-  std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
-                                          VertexId target_id) const;
+  std::set<EdgeId> PreprocessShortestPath(
+      VertexId source_id, VertexId target_id,
+      const GraphOfConvexSetsOptions& options) const;
 
   // Adds a perspective constraint to the mathematical program to upper bound
   // the cost below a slack variable, ℓ. Specifically given a cost g(x) to

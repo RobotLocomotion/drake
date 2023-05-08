@@ -17,6 +17,7 @@
 #include "drake/solvers/csdp_solver.h"
 #include "drake/solvers/gurobi_solver.h"
 #include "drake/solvers/ipopt_solver.h"
+#include "drake/solvers/linear_system_solver.h"
 #include "drake/solvers/mosek_solver.h"
 #include "drake/solvers/solver_options.h"
 
@@ -1213,7 +1214,7 @@ class PreprocessShortestPathTest : public ::testing::Test {
   }
   std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
                                           VertexId target_id) {
-    return g_.PreprocessShortestPath(source_id, target_id);
+    return g_.PreprocessShortestPath(source_id, target_id, options_);
   }
 
   GraphOfConvexSets g_;
@@ -1253,6 +1254,30 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
     EXPECT_NEAR(e->GetSolutionCost(result1), e->GetSolutionCost(result2),
                 1e-10);
   }
+}
+
+// PreprocessShortestPath() is supposed to consume the solver options. More
+// particularly, those options must be passed to it from SolveShortestPath().
+// We'll exploit friend access to confirm PreporocessShortestPath() makes use
+// of the options. Confirming the options are *passed* is trickier. This is
+// because both PreprocessShortestPath() and SolveShortestPath() invoke Solve
+// with the same options. It is difficult to pass in a set of options such that
+// we can discen the exercise in PreprocessShortestPath strictly from looking
+// at the result. For example, passing an incompatible solver (as we do below)
+// will throw an exception no matter what, even if SolveShortestPath() skips
+// calling PreprocessShortestPath(). So, for now, we'll directly test that
+// PreprocessShortestPath() depends on the options and leave the confirmation of
+// SolveShortestPath() correctly passing those options as a future exercise.
+TEST_F(PreprocessShortestPathTest, DependsOnOptions) {
+  // Intentionally choose a solver that cannot run the preprocessing. Throwing
+  // an exception is proof that the function relied on the options.
+  solvers::LinearSystemSolver solver;
+  options_.solver = &solver;
+  DRAKE_EXPECT_THROWS_MESSAGE(PreprocessShortestPath(vid_[0], vid_[5]),
+                              ".*LinearSystemSolver is unable to solve.*");
+
+  // TODO(SeanCurtis-TRI): Figure out a way to tell that SolveShortestPath
+  // invokes PreporcessShortestPath with the given options as documented above.
 }
 
 /* This test rounds the shortest path on a graph with two paths around an
