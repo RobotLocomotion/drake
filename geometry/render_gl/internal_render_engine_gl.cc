@@ -885,7 +885,11 @@ OpenGlGeometry RenderEngineGl::GetBox() {
 OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
   OpenGlGeometry mesh;
   if (meshes_.count(filename) == 0) {
-    RenderMesh mesh_data = LoadRenderMeshFromObj(filename);
+    // TODO(SeanCurtis-TRI): We're ignoring the declared perception properties
+    //  for the mesh. We need to pass it in and return a mesh *and* the
+    //  resulting material properties.
+    RenderMesh mesh_data = LoadRenderMeshFromObj(
+        filename, PerceptionProperties(), parameters_.default_diffuse);
     mesh = CreateGlGeometry(mesh_data);
     meshes_.insert({filename, mesh});
   } else {
