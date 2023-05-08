@@ -1817,6 +1817,29 @@ TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
   }
 }
 
+TEST_F(UrdfParserTest, PlanarJointAxisRespected) {
+  constexpr const char* model = R"""(
+    <robot name='a'>
+      <link name="link1"/>
+      <link name="link2"/>
+      <drake:joint name="planar_joint" type="planar">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <axis xyz = "0 1 0" />
+      </drake:joint>
+    </robot>)""";
+  EXPECT_NE(AddModelFromUrdfString(model, ""), std::nullopt);
+  plant_.Finalize();
+  plant_.GetMutableJointByName<PlanarJoint>("planar_joint")
+      .set_default_translation(Vector2<double>(1.2, 3.4));
+  auto context = plant_.CreateDefaultContext();
+  const math::RigidTransform<double>& X_WB =
+      plant_.EvalBodyPoseInWorld(*context, plant_.GetBodyByName("link2"));
+  // The provided axis dictates that the second link moves in the xz-plane.
+  const Vector3d expected_translation(3.4, 0, 1.2);
+  EXPECT_EQ(X_WB.translation(), expected_translation);
+}
+
 }  // namespace
 }  // namespace kcov339_avoidance_magic
 }  // namespace internal
