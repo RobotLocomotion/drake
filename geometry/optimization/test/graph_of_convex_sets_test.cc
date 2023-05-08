@@ -1256,14 +1256,27 @@ TEST_F(PreprocessShortestPathTest, CheckResults) {
   }
 }
 
-// Confirm that the preprocessor uses the solver passed in through the options
-// structure.
-TEST_F(PreprocessShortestPathTest, Solver) {
-  // Intentionally choose a solver that cannot run the preprocessing.
+// PreprocessShortestPath is supposed to consume the solver options. More
+// particularly, those options must be passed to it from SolveShortestPath.
+// We'll exploit friend access to confirm PreporocessShortestPath() makes use
+// of the options. Confirming the options are *passed* is trickier. This is
+// because both PreprocessShortestPath and SolveShortestPath invoke Solve using
+// the provided options. It is difficult to pass in a set of options such that
+// the exercise in PreprocessShortestPath via SolveShortestPath is discernible.
+// For example, passing an incompatible solver will throw an exception in the
+// _second_ call to Solve, even if the call to PreprocessShortestPath is
+// skipped. So, for now, we'll directly test PreprocessShortestPath and leave
+// confirmation of proper inside SolveShortestPath as a future
+TEST_F(PreprocessShortestPathTest, DependsOnOptions) {
+  // Intentionally choose a solver that cannot run the preprocessing. Throwing
+  // an exception is proof that the function relied on the options.
   solvers::LinearSystemSolver solver;
   options_.solver = &solver;
-  DRAKE_EXPECT_THROWS_MESSAGE(g_.SolveShortestPath(vid_[0], vid_[5], options_),
+  DRAKE_EXPECT_THROWS_MESSAGE(PreprocessShortestPath(vid_[0], vid_[5]),
                               ".*LinearSystemSolver is unable to solve.*");
+
+  // TODO(SeanCurtis-TRI): Figure out a way to tell that SolveShortestPath
+  // invokes PreporcessShortestPath with the given options as documented above.
 }
 
 /* This test rounds the shortest path on a graph with two paths around an
