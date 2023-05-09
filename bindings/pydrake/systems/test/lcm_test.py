@@ -67,6 +67,7 @@ class TestSystemsLcm(unittest.TestCase):
 
     def test_serializer(self):
         dut = mut.PySerializer(lcmt_quaternion)
+        self.assertEqual(repr(dut), "PySerializer(lcmt_quaternion)")
         model_message = self._model_message()
         value = dut.CreateDefaultValue()
         self.assert_lcm_not_equal(value.get_value(), model_message)
