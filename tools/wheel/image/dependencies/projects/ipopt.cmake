@@ -34,5 +34,6 @@ ExternalProject_Add(ipopt
     )
 
 extract_license(ipopt
+    Ipopt/AUTHORS
     Ipopt/LICENSE
 )
