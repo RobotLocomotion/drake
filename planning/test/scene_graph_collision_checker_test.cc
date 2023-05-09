@@ -10,6 +10,15 @@
 
 namespace drake {
 namespace planning {
+
+// Implement friend function used for filter consistency checking.
+void EnforceCollisionFilterConsistency(
+    const SceneGraphCollisionChecker& checker) {
+  if (!checker.CheckCollisionFilterConsistency()) {
+    throw std::runtime_error("Collision filters are inconsistent");
+  }
+}
+
 namespace test {
 namespace {
 
@@ -276,6 +285,59 @@ directives:
   // with the non-robot dofs being zeroed out without the entire jacobian
   // accidentally being zeroed out.
   EXPECT_GT(static_cast<double>(num_non_zero) / clearance.size(), 0.95);
+}
+
+// Checks that collision filters are properly updated.
+GTEST_TEST(SceneGraphCollisionCheckerTest, CollisionFilterUpdate) {
+  // Build a dut with a ground plane + floating chassis with welded arm.
+  RobotDiagramBuilder<double> builder;
+  const std::string model_directives = R"""(
+directives:
+- add_model:
+    name: ground
+    file: package://drake/planning/test_utilities/collision_ground_plane.sdf
+- add_weld:
+    parent: world
+    child: ground::ground_plane_box
+- add_model:
+    name: chassis
+    file: package://drake/manipulation/models/ycb/sdf/010_potted_meat_can.sdf
+- add_model:
+    name: arm
+    file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+- add_weld:
+    parent: chassis::base_link_meat
+    child: arm::base
+)""";
+  builder.parser().AddModelsFromString(model_directives, "dmd.yaml");
+
+  const auto& plant = builder.plant();
+  CollisionCheckerParams params;
+  params.model = builder.Build();
+  params.robot_model_instances.push_back(plant.GetModelInstanceByName("arm"));
+  params.configuration_distance_function = [](const VectorXd& q1,
+                                              const VectorXd& q2) {
+    return (q1 - q2).norm();
+  };
+  params.edge_step_size = 0.05;
+  SceneGraphCollisionChecker dut(std::move(params));
+
+  EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+
+  dut.SetCollisionFilteredBetween(
+      dut.plant().GetBodyByName("iiwa_link_0").index(),
+      dut.plant().GetBodyByName("iiwa_link_6").index(), true);
+  EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+
+  dut.SetCollisionFilterMatrix(dut.GetNominalFilteredCollisionMatrix());
+  EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+
+  dut.SetCollisionFilteredWithAllBodies(
+      dut.plant().GetBodyByName("iiwa_link_0").index());
+  EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+
+  dut.SetCollisionFilterMatrix(dut.GetNominalFilteredCollisionMatrix());
+  EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
 }
 
 }  // namespace test

@@ -1130,7 +1130,8 @@ class CollisionChecker {
       const std::vector<AddedShape>& shapes) = 0;
 
   /** Derived collision checkers can do further work in this function in
-   response to changes in collision filters. */
+   response to changes in collision filters. This is called after any changes
+   are made to the collision filter matrix. */
   virtual void DoUpdateCollisionFilters() = 0;
 
   /** Derived collision checkers are responsible for defining the reported
@@ -1408,6 +1409,12 @@ class CollisionChecker {
   /* The names of all groups with added geometries. */
   std::map<std::string, std::vector<AddedShape>> geometry_groups_;
 };
+
+/* (Internal use only.) Generates the collision filter matrix for the provided
+  collision checker and inspector. */
+Eigen::MatrixXi GenerateFilteredCollisionMatrix(
+    const CollisionChecker& checker,
+    const geometry::SceneGraphInspector<double>& inspector);
 
 }  // namespace planning
 }  // namespace drake

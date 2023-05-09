@@ -58,6 +58,12 @@ class SceneGraphCollisionChecker final : public CollisionChecker {
 
   int DoMaxContextNumDistances(
       const CollisionCheckerContext& model_context) const final;
+
+  // Expose collision filter consistency for test purposes.
+  friend void EnforceCollisionFilterConsistency(
+      const SceneGraphCollisionChecker& checker);
+
+  bool CheckCollisionFilterConsistency() const;
 };
 
 }  // namespace planning
