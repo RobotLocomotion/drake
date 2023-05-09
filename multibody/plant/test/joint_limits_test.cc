@@ -215,8 +215,8 @@ void SetReflectedInertiaToZero(MultibodyPlant<double>* plant) {
 // a short simulation time to keep wall clock times low, specially for debug
 // builds.
 // This test sets the value of reflected inertia to zero (even though model has
-// non zero reflected inertia) to avoid issues relating to very small step sizes
-// and long simulation times in the unit tests.
+// non zero reflected inertia) to avoid testing with small step sizes that take
+// longer to run.
 GTEST_TEST(JointLimitsTest, KukaArm) {
   const double time_step = 2.0e-3;
   const double simulation_time = 35;
