@@ -14,29 +14,56 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
   //    Therefore, convert `this` to a local copy of type Matrix3<double>.
   // 2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
   //    of this symmetric matrix.
-  static_assert(is_lower_triangular_order(1, 0), "Invalid indices");
-  static_assert(is_lower_triangular_order(2, 0), "Invalid indices");
-  static_assert(is_lower_triangular_order(2, 1), "Invalid indices");
+
   const Matrix3<T>& I_BP_E = get_matrix();
   Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
   I_double(0, 0) = ExtractDoubleOrThrow(I_BP_E(0, 0));
   I_double(1, 1) = ExtractDoubleOrThrow(I_BP_E(1, 1));
   I_double(2, 2) = ExtractDoubleOrThrow(I_BP_E(2, 2));
-  I_double(1, 0) = ExtractDoubleOrThrow(I_BP_E(1, 0));
-  I_double(2, 0) = ExtractDoubleOrThrow(I_BP_E(2, 0));
-  I_double(2, 1) = ExtractDoubleOrThrow(I_BP_E(2, 1));
+
+  // Since the inertia matrix is symmetric, only the lower-triangular part of
+  // the matrix is used (its upper-triangular elements are NaN).
+  I_double(1, 0) = ExtractDoubleOrThrow(I_BP_E(1, 0));  // (1, 0) not (0, 1).
+  I_double(2, 0) = ExtractDoubleOrThrow(I_BP_E(2, 0));  // (2, 0) not (0, 2).
+  I_double(2, 1) = ExtractDoubleOrThrow(I_BP_E(2, 1));  // (2, 1) not (1, 2).
 
   // If all products of inertia are zero, no need to calculate eigenvalues.
   // The eigenvalues are diagonal elements and eigenvectors are identity matrix.
   const bool is_diagonal = (I_double(1, 0) == 0 && I_double(2, 0) == 0 &&
                             I_double(2, 1) == 0);
   if (is_diagonal) {
-    if (principal_directions != nullptr)
-      *principal_directions = math::RotationMatrix<double>::Identity();
-    // Sort the eigenvalues in ascending order.
-    Vector3<double> moments(I_double(0, 0), I_double(1, 1), I_double(2, 2));
-    std::sort(moments.data(), moments.data() + moments.size());
-    return moments;
+    // Sort the eigenvalues and eigenvectors in ascending order.
+    double Imin = I_double(0, 0);
+    double Imed = I_double(1, 1);
+    double Imax = I_double(2, 2);
+    int imin = 0, imed = 1, imax = 2;  // Indices.
+    if (Imin > Imed) {
+      std::swap(Imin, Imed);  // Imin gets lower value, Imed higher value.
+      std::swap(imin, imed);  // imin = 1 and imed = 0.
+    }
+    if (Imin > Imax) {
+      std::swap(Imin, Imax);  // Imin gets lower value, Imax higher value.
+      std::swap(imin, imed);  // imin = 2 and imed = 0 or 1 (depends).
+    }
+    if (Imed > Imax) {
+      std::swap(Imed, Imax);  // Imed gets lower value, Imax higher value
+      std::swap(imed, imax);  // imed = 1 or 2 and imax = 0 or 1.
+    }
+    DRAKE_ASSERT(Imin <= Imed && Imed <= Imax);
+
+    if (principal_directions != nullptr) {
+      math::RotationMatrix<double> identity_matrix =
+          math::RotationMatrix<double>::Identity();
+      const Vector3<double> col_min = identity_matrix.col(imin);
+      const Vector3<double> col_med = identity_matrix.col(imed);
+      const Vector3<double> col_max = identity_matrix.col(imax);
+      const bool is_right_handed = (col_min.cross(col_med)).dot(col_max) > 0;
+      *principal_directions =
+          math::RotationMatrix<double>::MakeFromOrthonormalColumns(
+              col_min, col_med, is_right_handed ? col_max : -col_max);
+    }
+
+    return Vector3<double>(Imin, Imed, Imax);
   }
 
   // Calculate eigenvalues, possibly with eigenvectors.
@@ -53,8 +80,8 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
 
   // The eigen solver orders the storage of eigenvalues in increasing value and
   // orders the storage of their corresponding eigenvectors similarly.
-  // Note: Since the unit inertia 3x3 matrix should be positive semi-definite,
-  // all the eigenvalues should be non-negative.
+  // Note: The rotational inertia's 3x3 matrix should be positive semi-definite,
+  // so all the eigenvalues should be non-negative.
   if (principal_directions != nullptr) {
     // Form a right-handed orthogonal set of unit vectors Bx, By, Bz with the
     // 1st and 2nd eigenvectors and their cross-product. Unit vectors Bx, By, Bz

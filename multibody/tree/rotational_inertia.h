@@ -537,19 +537,24 @@ class RotationalInertia {
     return CalcPrincipalMomentsAndAxesOfInertia(nullptr);
   }
 
-  /// Forms the 3 principal moments of inertia and their 3 associated principal
-  /// directions for `this` unit inertia about-point P, expressed-in a frame E.
-  /// @param[out] R_EP 3x3 right-handed orthonormal matrix which happens to be
-  /// the rotation matrix relating the expressed-in frame E to the frame P. The
-  /// 3 columns of R_EP are 3 orthogonal unit vectors Px_E, Py_E, Pz_E parallel
-  /// to `this` unit inertia's principal axes (each unit vector is expressed in
-  /// frame E). The unit vector Px_E in the 1ˢᵗ column corresponds to the 1ˢᵗ of
-  /// the returned 3 principal moments of inertia.
-  /// @returns The 3 principal moments of inertia [Ixx Iyy Izz] sorted in
-  /// ascending order.
+  /// Forms the 3 principal moments of inertia and optionally their 3 associated
+  /// principal directions for `this` rotational inertia.
+  /// @param[out] R_EP Optional 3x3 right-handed orthonormal matrix that happens
+  /// to be the rotation matrix relating the expressed-in frame E to a frame P,
+  /// where frame E is the expressed-in frame for `this` rotational inertia
+  /// I_BPo_E (body B's rotational inertia about-point Po) and frame P contains
+  /// right-handed orthogonal unit vectors Px, Py, Pz. The 1ˢᵗ column of R_EP is
+  /// Px_E (Px expressed in frame E) which is parallel to the principal acis
+  /// associated with Ixx (the smallest principal moment of inertia). Similarly,
+  /// the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are parallel to
+  /// principal axes associated with Iyy and Izz (the intermediate and largest
+  /// principal moments of inertia).
+  /// @returns 3 principal moments of inertia [Ixx Iyy Izz], sorted in ascending
+  /// order (Ixx ≤ Iyy ≤ Izz). If R_EP ≠ nullptr, also returns the 3 associated
+  /// principal directions via the argument R_EP.
   /// @throws std::exception if the eigenvalue solver fails or if scalar type T
   /// cannot be converted to a double.
-  /// @note: This method only works for a unit inertia with scalar type T that
+  /// @note: This method only works for a rotational inertia with scalar type T
   /// that can be converted to a double (discarding any supplemental scalar data
   /// such as derivatives of an AutoDiffXd).
   Vector3<double> CalcPrincipalMomentsAndAxesOfInertia(
