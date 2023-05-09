@@ -2305,7 +2305,7 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcJointLockingIndices(
+void MultibodyPlant<T>::CalcUnlockedVelocityIndices(
     const systems::Context<T>& context,
     std::vector<int>* unlocked_velocity_indices) const {
   DRAKE_DEMAND(unlocked_velocity_indices != nullptr);
@@ -2331,6 +2331,26 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
   std::sort(indices.begin(), indices.end());
   internal::DemandIndicesValid(indices, num_velocities());
   DRAKE_DEMAND(ssize(indices) == unlocked_cursor);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcUnlockedVelocityIndicesPerTree(
+    const systems::Context<T>& context,
+    std::vector<std::vector<int>>* unlocked_velocity_indices_per_tree) const {
+  DRAKE_DEMAND(unlocked_velocity_indices_per_tree != nullptr);
+
+  const auto& unlocked_velocity_indices =
+      this->EvalUnlockedVelocityIndices(context);
+  const auto& topology = internal_tree().get_topology();
+  auto& indices = *unlocked_velocity_indices_per_tree;
+  indices.clear();
+  indices.resize(topology.num_trees());
+
+  for (int dof : unlocked_velocity_indices) {
+    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
+    const int tree_dof = dof - topology.tree_velocities_start(tree);
+    indices[tree].push_back(tree_dof);
+  }
 }
 
 template <typename T>
@@ -2857,13 +2877,23 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
 
-  // Cache joint locking indices.
+  // Cache joint locking data. A joint's locked/unlocked state is stored as an
+  // abstract parameter, so this is the only dependency needed.
   const auto& joint_locking_data_cache_entry =
-      this->DeclareCacheEntry("Joint Locking Indices.", std::vector<int>(),
-                              &MultibodyPlant::CalcJointLockingIndices,
+      this->DeclareCacheEntry("Unlocked Velocity Indices.", std::vector<int>(),
+                              &MultibodyPlant::CalcUnlockedVelocityIndices,
                               {this->all_parameters_ticket()});
   cache_indexes_.joint_locking_data =
       joint_locking_data_cache_entry.cache_index();
+
+  // Cache joint locking per tree data. A joint's locked/unlocked state is
+  // stored as an abstract parameter, so this is the only dependency needed.
+  const auto& joint_locking_data_per_tree_cache_entry = this->DeclareCacheEntry(
+      "Unlocked Velocity Indices Per Tree.", std::vector<std::vector<int>>(),
+      &MultibodyPlant::CalcUnlockedVelocityIndicesPerTree,
+      {this->all_parameters_ticket()});
+  cache_indexes_.joint_locking_data_per_tree =
+      joint_locking_data_per_tree_cache_entry.cache_index();
 }
 
 template <typename T>
