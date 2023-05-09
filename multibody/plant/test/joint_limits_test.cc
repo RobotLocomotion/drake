@@ -198,12 +198,25 @@ VectorX<double> KukaPositionUpperLimits() {
   return -KukaPositionLowerLimits();
 }
 
+void SetReflectedInertiaToZero(MultibodyPlant<double>* plant) {
+  DRAKE_DEMAND(plant != nullptr);
+  for (JointActuatorIndex index(0); index < plant->num_actuators(); ++index) {
+    JointActuator<double>& joint_actuator =
+        plant->get_mutable_joint_actuator(index);
+    joint_actuator.set_default_rotor_inertia(0.0);
+    joint_actuator.set_default_gear_ratio(1.0);
+  }
+}
+
 // We test joint limits for the case of a Kuka arm model. In order to reach
 // the joint limits we drive the joints by applying a constant torque for a
 // given length of simulation time.
 // Tolerances are rather loose given we use a relatively large time step and
 // a short simulation time to keep wall clock times low, specially for debug
 // builds.
+// This test sets the value of reflected inertia to zero (even though model has
+// non zero reflected inertia) to avoid testing with small step sizes that take
+// longer to run.
 GTEST_TEST(JointLimitsTest, KukaArm) {
   const double time_step = 2.0e-3;
   const double simulation_time = 35;
@@ -226,6 +239,7 @@ GTEST_TEST(JointLimitsTest, KukaArm) {
                    plant.GetFrameByName("iiwa_link_0"));
   plant.mutable_gravity_field().set_gravity_vector(
       Vector3<double>::Zero());
+  SetReflectedInertiaToZero(&plant);
   plant.Finalize();
 
   // Some sanity check on model sizes.
