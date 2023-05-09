@@ -141,7 +141,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @pre publish_period is non-negative.
    */
   LcmPublisherSystem(const std::string& channel,
-                     std::unique_ptr<SerializerInterface> serializer,
+                     std::shared_ptr<const SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
                      double publish_period = 0.0);
 
@@ -173,7 +173,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
    */
   LcmPublisherSystem(const std::string& channel,
-      std::unique_ptr<SerializerInterface> serializer,
+      std::shared_ptr<const SerializerInterface> serializer,
       drake::lcm::DrakeLcmInterface* lcm,
       const systems::TriggerTypeSet& publish_triggers,
       double publish_period = 0.0);
@@ -235,7 +235,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
   InitializationPublisher initialization_publisher_;
 
   // Converts Value<LcmMessage> objects into LCM message bytes.
-  const std::unique_ptr<SerializerInterface> serializer_;
+  const std::shared_ptr<const SerializerInterface> serializer_;
 
   // If we're not given a DrakeLcm object, we allocate one and keep it here.
   // The unique_ptr is const, not the held object.

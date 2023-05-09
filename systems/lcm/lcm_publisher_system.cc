@@ -18,7 +18,7 @@ using systems::TriggerTypeSet;
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    std::shared_ptr<const SerializerInterface> serializer,
     DrakeLcmInterface* lcm,
     const TriggerTypeSet& publish_triggers,
     double publish_period)
@@ -73,7 +73,7 @@ LcmPublisherSystem::LcmPublisherSystem(
 
 LcmPublisherSystem::LcmPublisherSystem(
     const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    std::shared_ptr<const SerializerInterface> serializer,
     DrakeLcmInterface* lcm, double publish_period)
     : LcmPublisherSystem(channel, std::move(serializer), lcm,
       (publish_period > 0.0) ?
