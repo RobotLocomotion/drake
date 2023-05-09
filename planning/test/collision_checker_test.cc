@@ -143,6 +143,10 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
     // Don't need to do work; just don't throw.
   }
 
+  void DoUpdateCollisionFilters() override {
+    // Don't need to do work; just don't throw.
+  }
+
   RobotClearance DoCalcContextRobotClearance(
       const CollisionCheckerContext&, double influence_dist) const override {
     // CollisionChecker promises that influence_dist is finite and non-negative.

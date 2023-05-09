@@ -51,6 +51,10 @@ void UnimplementedCollisionChecker::DoRemoveAddedGeometries(
   ThrowNotImplemented(__func__);
 }
 
+void UnimplementedCollisionChecker::DoUpdateCollisionFilters() {
+  ThrowNotImplemented(__func__);
+}
+
 RobotClearance UnimplementedCollisionChecker::DoCalcContextRobotClearance(
     const CollisionCheckerContext&, double) const {
   ThrowNotImplemented(__func__);

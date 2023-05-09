@@ -114,6 +114,41 @@ void SceneGraphCollisionChecker::DoRemoveAddedGeometries(
   PerformOperationAgainstAllModelContexts(operation);
 }
 
+void SceneGraphCollisionChecker::DoUpdateCollisionFilters() {
+  using Operation = const std::function<void(const RobotDiagram<double>&,
+                                             CollisionCheckerContext*)>;
+  const Operation operation = [this](const RobotDiagram<double>& model,
+                                     CollisionCheckerContext* model_context) {
+    CollisionFilterDeclaration new_collision_filters;
+
+    const int num_bodies = model.plant().num_bodies();
+    for (int i = 0; i < num_bodies - 1; ++i) {
+      const Body<double>& body_i = model.plant().get_body(BodyIndex(i));
+      const GeometrySet geometries_i(
+          model.plant().GetCollisionGeometriesForBody(body_i));
+
+      for (int j = i + 1; j < num_bodies; ++j) {
+        const Body<double>& body_j = model.plant().get_body(BodyIndex(j));
+        const GeometrySet geometries_j(
+            model.plant().GetCollisionGeometriesForBody(body_j));
+
+        if (IsCollisionFilteredBetween(body_i, body_j)) {
+          new_collision_filters.ExcludeBetween(geometries_i, geometries_j);
+        } else {
+          new_collision_filters.AllowBetween(geometries_i, geometries_j);
+        }
+      }
+    }
+
+    auto& sg_context = model_context->mutable_scene_graph_context();
+    model.scene_graph()
+        .collision_filter_manager(&sg_context)
+        .Apply(new_collision_filters);
+  };
+
+  PerformOperationAgainstAllModelContexts(operation);
+}
+
 bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
     const CollisionCheckerContext& model_context) const {
   const QueryObject<double>& query_object = model_context.GetQueryObject();

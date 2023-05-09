@@ -47,6 +47,8 @@ class SceneGraphCollisionChecker final : public CollisionChecker {
   void DoRemoveAddedGeometries(
       const std::vector<CollisionChecker::AddedShape>& shapes) final;
 
+  void DoUpdateCollisionFilters() final;
+
   RobotClearance DoCalcContextRobotClearance(
       const CollisionCheckerContext& model_context,
       double influence_distance) const final;

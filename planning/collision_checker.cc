@@ -419,9 +419,8 @@ void CollisionChecker::SetCollisionFilterMatrix(
   // Now test for consistency.
   ValidateFilteredCollisionMatrix(filter_matrix, __func__);
   filtered_collisions_ = filter_matrix;
-  log()->debug("Set collision filter matrix to:\n{}",
-               fmt_eigen(filtered_collisions_));
-  UpdateMaxCollisionPadding();
+  // Allow derived checkers to peform any post-filter-change work.
+  DoUpdateCollisionFilters();
 }
 
 bool CollisionChecker::IsCollisionFilteredBetween(BodyIndex bodyA_index,
@@ -452,6 +451,8 @@ void CollisionChecker::SetCollisionFilteredBetween(BodyIndex bodyA_index,
   DRAKE_ASSERT(filtered_collisions_(int{bodyA_index}, int{bodyB_index}) != -1);
   filtered_collisions_(int{bodyA_index}, int{bodyB_index}) = encoded;
   filtered_collisions_(int{bodyB_index}, int{bodyA_index}) = encoded;
+  // Allow derived checkers to peform any post-filter-change work.
+  DoUpdateCollisionFilters();
 }
 
 void CollisionChecker::SetCollisionFilteredWithAllBodies(BodyIndex body_index) {
@@ -462,6 +463,8 @@ void CollisionChecker::SetCollisionFilteredWithAllBodies(BodyIndex body_index) {
   filtered_collisions_.col(body_index).setConstant(1);
   // Maintain the invariant that the diagonal is always -1.
   filtered_collisions_(int{body_index}, int{body_index}) = -1;
+  // Allow derived checkers to peform any post-filter-change work.
+  DoUpdateCollisionFilters();
 }
 
 bool CollisionChecker::CheckConfigCollisionFree(

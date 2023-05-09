@@ -55,6 +55,8 @@ class UnimplementedCollisionChecker : public CollisionChecker {
   void DoRemoveAddedGeometries(
       const std::vector<CollisionChecker::AddedShape>& shapes) override;
 
+  void DoUpdateCollisionFilters() override;
+
   RobotClearance DoCalcContextRobotClearance(const CollisionCheckerContext&,
                                              double) const override;
 

@@ -1129,6 +1129,10 @@ class CollisionChecker {
   virtual void DoRemoveAddedGeometries(
       const std::vector<AddedShape>& shapes) = 0;
 
+  /** Derived collision checkers can do further work in this function in
+   response to changes in collision filters. */
+  virtual void DoUpdateCollisionFilters() = 0;
+
   /** Derived collision checkers are responsible for defining the reported
    measurements. But they must adhere to the characteristics documented on
    RobotClearance, e.g., one measurement per row. CollisionChecker guarantees
