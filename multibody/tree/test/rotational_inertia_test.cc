@@ -523,36 +523,60 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
 
 // Tests the method to obtain the principal moments of inertia and axes.
 GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
-  const double a = 5.0;
-  const double b = 4.0;
-  const double c = 3.0;
-  const UnitInertia<double> G_BBcm_B =
-      UnitInertia<double>::SolidEllipsoid(a, b, c);
-
-  // Ensure UnitInertia can calculate principal moments and principal axes.
+  // Form principal moments of inertia associated with a solid ellipsoid.
+  const double a = 5.0, b = 4.0, c = 3.0;
+  const double mass = 3.0;
+  const double Imin = 0.2 * mass * (b*b + c*c);  // Ixx = 1/5 m (b² + c²) small
+  const double Imed = 0.2 * mass * (a*a + c*c);  // Iyy = 1/5 m (a² + c²) medium
+  const double Imax = 0.2 * mass * (a*a + b*b);  // Izz = 1/5 m (a² + b²) large
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
   drake::math::RotationMatrix<double> R_BP;
-  const Vector3<double> G_principal_moments =
-      G_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
-  EXPECT_TRUE(CompareMatrices(G_BBcm_B.get_moments(),
-                              G_principal_moments, kTolerance));
-  EXPECT_TRUE(G_BBcm_B.get_products() == Vector3<double>::Zero());
-  EXPECT_TRUE(R_BP.IsExactlyIdentity());
 
-  // For mass = 3 kg, ensure RotationalInertia calculates the same principal
-  // axes as UnitInertia (above) with thrice the moments of inertia.
-  const double mass = 3.0;
-  const RotationalInertia<double> I_BBcm_B = mass * G_BBcm_B;
-  const Vector3<double> I_BBcm_B_principal_moments =
+  // Verify principal moments of inertia for straightforward case.
+  RotationalInertia<double> I_BBcm_B(Imin, Imed, Imax);
+  Vector3<double> I_BBcm_B_principal_moments =
       I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
-  EXPECT_TRUE(R_BP.IsExactlyIdentity());
-  EXPECT_TRUE(CompareMatrices(I_BBcm_B_principal_moments,
-      mass * G_principal_moments, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_B_principal_moments, kTolerance));
   EXPECT_TRUE(I_BBcm_B.get_products() == Vector3<double>::Zero());
+  drake::math::RotationMatrix<double> R_BP_expected =
+      drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // Verify the ordering of principal moments of inertia and directions.
+  I_BBcm_B = RotationalInertia<double>(Imed, Imin, Imax);
+  I_BBcm_B_principal_moments =
+      I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_B_principal_moments, kTolerance));
+  EXPECT_TRUE(I_BBcm_B.get_products() == Vector3<double>::Zero());
+  Vector3<double> col_min(0.0, 1.0, 0.0);  // Minimum inertia moment direction.
+  Vector3<double> col_med(1.0, 0.0, 0.0);  // Medium inertia moment direction.
+  Vector3<double> col_max(0.0, 0.0, 1.0);  // Maximum inertia moment direction.
+  R_BP_expected =
+      drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
+          col_min, col_med, -col_max);
+  EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
+
+  // Re-verify the ordering of principal moments of inertia and directions.
+  I_BBcm_B = RotationalInertia<double>(Imax, Imin, Imed);
+  I_BBcm_B_principal_moments =
+      I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_B_principal_moments, kTolerance));
+  EXPECT_TRUE(I_BBcm_B.get_products() == Vector3<double>::Zero());
+  col_min = Vector3<double>(0.0, 1.0, 0.0);  // Minimum inertia moment direction
+  col_med = Vector3<double>(0.0, 0.0, 1.0);  // Medium inertia moment direction
+  col_max = Vector3<double>(1.0, 0.0, 0.0);  // Maximum inertia moment direction
+  R_BP_expected =
+      drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
+          col_min, col_med, col_max);
+  EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
 
   // Rotate the ellipsoid by 30 degrees and verify principal moments/axes.
   const drake::math::RotationMatrix<double> R_BC =
       drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  I_BBcm_B = RotationalInertia<double>(Imin, Imed, Imax);
   const RotationalInertia<double> I_BBcm_C = I_BBcm_B.ReExpress(R_BC);
   const Vector3<double> I_BBcm_C_principal_moments =
       I_BBcm_C.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
