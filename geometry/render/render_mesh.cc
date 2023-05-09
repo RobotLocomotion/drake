@@ -276,7 +276,7 @@ RenderMesh LoadRenderMeshFromObj(const std::filesystem::path& obj_path,
   } else {
     // We'll need to use the material fallback logic for meshes.
     if (referenced_materials.size() > 1) {
-      vector<std::string_view> mat_names;
+      vector<std::string> mat_names;
       // If the referenced material is < 0 (typically -1), it represents the
       // *unnamed* default material. We need to detect it and provide *some*
       // name for the error. We choose __default__ as being conspicuous but with
