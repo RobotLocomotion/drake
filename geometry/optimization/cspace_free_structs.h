@@ -53,10 +53,10 @@ struct FindSeparationCertificateOptions {
 /**
  We certify that a pair of geometries is collision free by finding the
  separating plane over a range of configuration. The Lagrangian multipliers
- used for certifying this condition will differ. This struct contains the
- the separating plane {x | aᵀx+b=0 } and derived classes may store the
- Lagrangians certifying that the plane separates the two geometries in
- separating_planes()[plane_index] in the C-space polytope.
+ used for certifying this condition will differ in derived classes. This struct
+ contains the the separating plane {x | aᵀx+b=0 } and derived classes may store
+ the Lagrangians certifying that the plane separates the two geometries in
+ separating_planes()[plane_index] in the C-space region.
  */
 struct SeparationCertificateResultBase {
   int plane_index;
@@ -67,6 +67,7 @@ struct SeparationCertificateResultBase {
   // for debugging.
   Eigen::VectorXd plane_decision_var_vals;
 
+  // The result of solving a SeparationCertificateProgramBase
   solvers::MathematicalProgramResult result;
 };
 

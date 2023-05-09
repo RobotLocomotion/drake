@@ -473,13 +473,6 @@ class CspaceFreePolytope {
       const Eigen::Ref<const VectorX<T>>& d) const;
 
   /**
-   Generate all the conditions (certain rationals being non-negative, and
-   certain vectors with length <= 1) such that the robot configuration is
-   collision free.
-   */
-  //  void GenerateRationals();
-
-  /**
    Computes the monomial basis for each pair of bodies.
 
    There can be multiple collision geometries on the same body, and their SOS

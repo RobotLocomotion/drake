@@ -14,7 +14,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 namespace internal {
-
+namespace {
 struct BodyPair {
   BodyPair(multibody::BodyIndex m_body1, multibody::BodyIndex m_body2)
       : body1{m_body1}, body2{m_body2} {}
@@ -29,18 +29,6 @@ struct BodyPair {
 struct BodyPairHash {
   size_t operator()(const BodyPair& p) const { return p.body1 * 100 + p.body2; }
 };
-
-int GetNumYInRational(const symbolic::RationalFunction& rational,
-                      const Vector3<symbolic::Variable>& y_slack) {
-  int count = 0;
-  for (int i = 0; i < 3; ++i) {
-    if (rational.numerator().indeterminates().find(y_slack(i)) !=
-        rational.numerator().indeterminates().end()) {
-      ++count;
-    }
-  }
-  return count;
-}
 
 // Returns true if all the bodies on the kinematics chain from `start` to `end`
 // are welded together (namely all the mobilizers in between are welded).
@@ -92,6 +80,19 @@ GetLinkCollisionPairs(
     }
   }
   return ret;
+}
+}  // namespace
+
+int GetNumYInRational(const symbolic::RationalFunction& rational,
+                      const Vector3<symbolic::Variable>& y_slack) {
+  int count = 0;
+  for (int i = 0; i < 3; ++i) {
+    if (rational.numerator().indeterminates().find(y_slack(i)) !=
+        rational.numerator().indeterminates().end()) {
+      ++count;
+    }
+  }
+  return count;
 }
 
 std::map<multibody::BodyIndex,
@@ -157,7 +158,7 @@ int GenerateCollisionPairs(
 void GenerateRationals(
     const std::vector<std::unique_ptr<
         CSpaceSeparatingPlane<symbolic::Variable>>>& separating_planes,
-    const Vector3<symbolic::Variable> y_slack,
+    const Vector3<symbolic::Variable>& y_slack,
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
     const multibody::RationalForwardKinematics& rational_forward_kin,
     std::vector<PlaneSeparatesGeometries>* plane_geometries) {
@@ -172,6 +173,7 @@ void GenerateRationals(
   for (int plane_index = 0;
        plane_index < static_cast<int>(separating_planes.size());
        ++plane_index) {
+    DRAKE_ASSERT(separating_planes.at(plane_index) != nullptr);
     const auto& separating_plane = *(separating_planes.at(plane_index));
     // Compute X_AB for both side of the geometries.
     std::vector<symbolic::RationalFunction> positive_side_rationals;
@@ -264,28 +266,23 @@ void GenerateRationals(
   }
 }
 
-/**
- Solves a SeparationCertificateProgramBase with the given options.
- */
-[[nodiscard]] SeparationCertificateResultBase
-SolveSeparationCertificateProgramBase(
+void SolveSeparationCertificateProgramBase(
     const SeparationCertificateProgramBase& certificate_program,
     const FindSeparationCertificateOptions& options,
-    const CSpaceSeparatingPlane<symbolic::Variable>& separating_plane) {
-  SeparationCertificateResultBase cert_result;
+    const CSpaceSeparatingPlane<symbolic::Variable>& separating_plane,
+    SeparationCertificateResultBase* result) {
+  result->plane_index = certificate_program.plane_index;
   solvers::MakeSolver(options.solver_id)
       ->Solve(*certificate_program.prog, std::nullopt, options.solver_options,
-              &(cert_result.result));
-  if (cert_result.result.is_success()) {
-    cert_result.plane_index = certificate_program.plane_index;
-    cert_result.plane_decision_var_vals =
-        cert_result.result.GetSolution(separating_plane.decision_variables);
+              &(result->result));
+  if (result->result.is_success()) {
+    result->plane_decision_var_vals =
+        result->result.GetSolution(separating_plane.decision_variables);
     for (int i = 0; i < 3; ++i) {
-      cert_result.a(i) = cert_result.result.GetSolution(separating_plane.a(i));
+      result->a(i) = result->result.GetSolution(separating_plane.a(i));
     }
-    cert_result.b = cert_result.result.GetSolution(separating_plane.b);
+    result->b = result->result.GetSolution(separating_plane.b);
   }
-  return cert_result;
 }
 
 }  // namespace internal
