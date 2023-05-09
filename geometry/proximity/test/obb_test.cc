@@ -628,7 +628,7 @@ TEST_F(ObbMakerTestOctahedron, ObbMakerCompute) {
   EXPECT_TRUE(Contain(obb_F, mesh_F, test_vertices_));
   // The threshold was set empirically. It is much smaller (about 9.7 m³)
   // than the previous test before vertex transform (about 27 m³).
-  // We use about 10-percent tolerance (0.9 m³) because the numerical 
+  // We use about 10-percent tolerance (0.9 m³) because the numerical
   // optimization varies among different computing platforms.
   EXPECT_NEAR(obb_F.CalcVolume(), 9.741, 0.9);
 
