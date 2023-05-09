@@ -22,7 +22,7 @@ constexpr int kMagic = 6832;  // An arbitrary value.
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    std::shared_ptr<const SerializerInterface> serializer,
     drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
       serializer_(std::move(serializer)),
