@@ -17,22 +17,37 @@ namespace geometry {
 namespace optimization {
 namespace internal {
 
+/**
+ Generate all the conditions (certain rationals being non-negative, and
+ certain vectors with length <= 1) such that the robot configuration is
+ collision free.
+ @param[in] separating_planes A vector containing the plane parameters as well
+ as information about which bodies to separate.
+ @param[in] y_slack The auxillary variables requried to enforce that capsules,
+ spheres, and cylinders are on the correct side. See
+ c_iris_collision_geometry.h/cc for details.
+ @param[in] q_star The point about which the rational forward kinematics are
+ taken. See rational_forward_kinematics.h/cc for details.
+ @param[in,out] plane_geometries A vector containing the separation information.
+ */
 void GenerateRationals(
     const std::vector<std::unique_ptr<
         CSpaceSeparatingPlane<symbolic::Variable>>>& separating_planes,
-    const Vector3<symbolic::Variable> y_slack,
+    const Vector3<symbolic::Variable>& y_slack,
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
     const multibody::RationalForwardKinematics& rational_forward_kin,
     std::vector<PlaneSeparatesGeometries>* plane_geometries);
 
 // Returns the number of y_slack variables in `rational`.
 // Not all y_slack necessarily appear in `rational`.
-int GetNumYInRational(const symbolic::RationalFunction& rational,
-                      const Vector3<symbolic::Variable>& y_slack);
+[[nodiscard]] int GetNumYInRational(const symbolic::RationalFunction& rational,
+                                    const Vector3<symbolic::Variable>& y_slack);
 
 /**
  * Given a plant and associated scene graph, returns all
  * the collision geometries.
+ * @return A map ret, such that ret[body_index] returns all the
+ * CIrisCollisionGeometries attached to the body as body_index.
  */
 [[nodiscard]] std::map<multibody::BodyIndex,
                        std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
@@ -58,16 +73,17 @@ GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
         collision_pairs);
 
 /**
-   Solves a SeparationCertificateProgram with the given options
-   @return result If we find the separation certificate, then `result` contains
-   the separation plane and the Lagrangian polynomials; otherwise result is
-   empty.
-   */
-[[nodiscard]] SeparationCertificateResultBase
-SolveSeparationCertificateProgramBase(
+ * Solves a SeparationCertificateProgram with the given options
+ * @param[in, out] result Will always contain the MathematicalProgramResult and
+ * plane_index associated to solving certificate_program. If a separation
+ * certificate is found (i.e. result->result.is_success) then result will also
+ * contain the plane parameters of the separating plane.
+ */
+void SolveSeparationCertificateProgramBase(
     const SeparationCertificateProgramBase& certificate_program,
     const FindSeparationCertificateOptions& options,
-    const CSpaceSeparatingPlane<symbolic::Variable>& separating_plane);
+    const CSpaceSeparatingPlane<symbolic::Variable>& separating_plane,
+    SeparationCertificateResultBase* result);
 
 }  // namespace internal
 }  // namespace optimization
