@@ -13,6 +13,9 @@ class PySerializer(SerializerInterface):
         SerializerInterface.__init__(self)
         self._lcm_type = lcm_type
 
+    def __repr__(self):
+        return f"PySerializer({self._lcm_type.__name__})"
+
     def Clone(self):
         return PySerializer(self._lcm_type)
 
@@ -74,9 +77,12 @@ def _make_lcm_publisher(
         serializer = _Serializer_[lcm_type]()
     if publish_triggers is not None:
         return LcmPublisherSystem(
-            channel, serializer, lcm, publish_triggers, publish_period)
+            channel=channel, serializer=serializer, lcm=lcm,
+            publish_triggers=publish_triggers, publish_period=publish_period)
     else:
-        return LcmPublisherSystem(channel, serializer, lcm, publish_period)
+        return LcmPublisherSystem(
+            channel=channel, serializer=serializer, lcm=lcm,
+            publish_period=publish_period)
 
 
 LcmSubscriberSystem.Make = _make_lcm_subscriber

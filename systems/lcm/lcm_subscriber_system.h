@@ -74,7 +74,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * @param[in] channel The LCM channel on which to subscribe.
    *
    * @param[in] serializer The serializer that converts between byte vectors
-   * and LCM message objects.
+   * and LCM message objects. Cannot be null.
    *
    * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
