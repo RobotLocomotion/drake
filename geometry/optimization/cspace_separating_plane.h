@@ -30,12 +30,12 @@ struct CSpaceSeparatingPlane {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CSpaceSeparatingPlane)
 
-  CSpaceSeparatingPlane(Vector3<symbolic::Polynomial> m_a,
-                       symbolic::Polynomial m_b,
-                       const CIrisCollisionGeometry* m_positive_side_geometry,
-                       const CIrisCollisionGeometry* m_negative_side_geometry,
-                       multibody::BodyIndex m_expressed_body,
-                       const Eigen::Ref<const VectorX<T>>& m_decision_variables)
+  CSpaceSeparatingPlane(
+      Vector3<symbolic::Polynomial> m_a, symbolic::Polynomial m_b,
+      const CIrisCollisionGeometry* m_positive_side_geometry,
+      const CIrisCollisionGeometry* m_negative_side_geometry,
+      multibody::BodyIndex m_expressed_body,
+      const Eigen::Ref<const VectorX<T>>& m_decision_variables)
       : a{std::move(m_a)},
         b{std::move(m_b)},
         positive_side_geometry{m_positive_side_geometry},

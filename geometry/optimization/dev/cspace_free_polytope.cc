@@ -570,17 +570,18 @@ std::optional<CspaceFreePolytope::SeparationCertificateResult>
 CspaceFreePolytope::SolveSeparationCertificateProgram(
     const CspaceFreePolytope::SeparationCertificateProgram& certificate_program,
     const FindSeparationCertificateGivenPolytopeOptions& options) const {
-  CspaceFreePolytope::SeparationCertificateResult ret_base{
-      internal::SolveSeparationCertificateProgramBase(
-          certificate_program, options,
-          separating_planes_[certificate_program.plane_index])};
-  std::optional<CspaceFreePolytope::SeparationCertificateResult> ret{
+  CspaceFreePolytope::SeparationCertificateResult ret;
+
+  internal::SolveSeparationCertificateProgramBase(
+      certificate_program, options,
+      separating_planes_[certificate_program.plane_index], &ret);
+  std::optional<CspaceFreePolytope::SeparationCertificateResult> ret_optional{
       std::nullopt};
-  if (ret_base.result.is_success()) {
-    ret = ret_base;
+  if (ret.result.is_success()) {
+    ret_optional = ret;
     // Now set the Lagrangians of the result.
     auto set_lagrangians =
-        [&ret_base](
+        [&ret_optional](
             const std::vector<CspaceFreePolytope::SeparatingPlaneLagrangians>&
                 lagrangians_vec,
             std::vector<CspaceFreePolytope::SeparatingPlaneLagrangians>*
@@ -588,17 +589,17 @@ CspaceFreePolytope::SolveSeparationCertificateProgram(
           lagrangians_result->reserve(lagrangians_vec.size());
           for (const auto& lagrangians : lagrangians_vec) {
             lagrangians_result->push_back(
-                lagrangians.GetSolution(ret_base.result));
+                lagrangians.GetSolution(ret_optional.value().result));
           }
         };
     set_lagrangians(
         certificate_program.certificate.positive_side_rational_lagrangians,
-        &ret.value().positive_side_rational_lagrangians);
+        &ret_optional.value().positive_side_rational_lagrangians);
     set_lagrangians(
         certificate_program.certificate.negative_side_rational_lagrangians,
-        &ret.value().negative_side_rational_lagrangians);
+        &ret_optional.value().negative_side_rational_lagrangians);
   }
-  return ret;
+  return ret_optional;
 }
 }  // namespace optimization
 }  // namespace geometry

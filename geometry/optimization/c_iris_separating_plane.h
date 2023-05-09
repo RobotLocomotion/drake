@@ -40,8 +40,8 @@ struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
                        SeparatingPlaneOrder m_plane_order,
                        const Eigen::Ref<const VectorX<T>>& m_decision_variables)
       : CSpaceSeparatingPlane<T>(m_a, m_b, m_positive_side_geometry,
-                              m_negative_side_geometry, m_expressed_body,
-                              m_decision_variables),
+                                 m_negative_side_geometry, m_expressed_body,
+                                 m_decision_variables),
         plane_order{m_plane_order} {}
 
   SeparatingPlaneOrder plane_order;
