@@ -5,6 +5,7 @@ def cc_library_vendored(
         edit_include = None,
         srcs = None,
         srcs_vendored = None,
+        vendor_tool_args = None,
         **kwargs):
     """
     Compiles a third-party C++ library using altered include paths and
@@ -46,7 +47,7 @@ def cc_library_vendored(
         outs = hdrs_vendored + srcs_vendored,
         cmd = " ".join([
             "$(execpath @drake//tools/workspace:vendor_cxx)",
-        ] + [
+        ] + (vendor_tool_args or []) + [
             "'--edit-include={}:{}'".format(k, v)
             for k, v in edit_include.items()
         ] + [
