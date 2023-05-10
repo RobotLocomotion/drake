@@ -79,7 +79,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
    * @param lcm A non-null pointer to the LCM subsystem to subscribe on.
    */
   LcmSubscriberSystem(const std::string& channel,
-                      std::unique_ptr<SerializerInterface> serializer,
+                      std::shared_ptr<const SerializerInterface> serializer,
                       drake::lcm::DrakeLcmInterface* lcm);
 
   ~LcmSubscriberSystem() override;
@@ -134,7 +134,7 @@ class LcmSubscriberSystem : public LeafSystem<double> {
 
   // Converts LCM message bytes to Value<LcmMessage> objects.
   // Will be non-null iff our output port is abstract-valued.
-  const std::unique_ptr<SerializerInterface> serializer_;
+  const std::shared_ptr<const SerializerInterface> serializer_;
 
   // The mutex that guards received_message_ and received_message_count_.
   mutable std::mutex received_message_mutex_;
