@@ -7,6 +7,7 @@
 #include <vtkTransformPolyDataFilter.h>
 
 #include "drake/geometry/geometry_roles.h"
+#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/shape_specification.h"
 
 namespace drake {
@@ -26,6 +27,10 @@ vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkBox(
 // Creates a VTK ellipsoid scaled from a sphere.
 vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkEllipsoid(
     const Ellipsoid& ellipsoid);
+
+// Creates a VTK mesh from the given mesh data.
+vtkSmartPointer<vtkPolyDataAlgorithm> CreateVtkMesh(
+    geometry::internal::RenderMesh mesh_data);
 
 // Sets common sphere options such as its dimensions and resolution.
 void SetSphereOptions(vtkTexturedSphereSource* vtk_sphere, double radius);
