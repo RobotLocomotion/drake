@@ -189,21 +189,6 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
   /* Returns the holonomic constraint bias b. */
   const VectorX<T>& bias() const { return bias_; }
 
-  /* Implements the projection operation P(y) = max(γₗ, min(γᵤ, y)). For this
-   specific constraint, the result is independent of the regularization R. Refer
-   to SapConstraint::Project() for details. */
-  void Project(const Eigen::Ref<const VectorX<T>>& y,
-               const Eigen::Ref<const VectorX<T>>& R,
-               EigenPtr<VectorX<T>> gamma,
-               MatrixX<T>* dPdy = nullptr) const final;
-
-  // TODO(amcastro-tri): Extend SapConstraint so that wi can be a vector with an
-  // entry for each constraint equation.
-  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
-
-  VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                        const T& wi) const final;
-
   std::unique_ptr<SapConstraint<T>> Clone() const final;
 
  private:

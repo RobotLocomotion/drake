@@ -46,34 +46,7 @@ SapLimitConstraint<T>::SapLimitConstraint(int clique, int clique_dof,
       q0_{q0} {}
 
 template <typename T>
-VectorX<T> SapLimitConstraint<T>::CalcBiasTerm(const T& time_step,
-                                               const T&) const {
-  return -this->constraint_function() /
-         (time_step + parameters_.dissipation_time_scale());
-}
-
-template <typename T>
-VectorX<T> SapLimitConstraint<T>::CalcDiagonalRegularization(
-    const T& time_step, const T& wi) const {
-  using std::max;
-
-  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
-  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
-  // [Castro et al., 2021] for details.
-  const double beta_factor =
-      parameters_.beta() * parameters_.beta() / (4.0 * M_PI * M_PI);
-
-  const T& k = parameters_.stiffness();
-  const T& taud = parameters_.dissipation_time_scale();
-
-  const T R = max(beta_factor * wi, 1.0 / (time_step * k * (time_step + taud)));
-
-  return VectorX<T>::Constant(this->num_constraint_equations(), R);
-}
-
-template <typename T>
 void SapLimitConstraint<T>::Project(const Eigen::Ref<const VectorX<T>>& y,
-                                    const Eigen::Ref<const VectorX<T>>&,
                                     EigenPtr<VectorX<T>> gamma,
                                     MatrixX<T>* dPdy) const {
   DRAKE_DEMAND(gamma != nullptr);
@@ -139,6 +112,65 @@ MatrixX<T> SapLimitConstraint<T>::CalcConstraintJacobian(int clique_dof,
   if (qu < kInf) J(i, clique_dof) = -1;
 
   return J;
+}
+
+template <typename T>
+std::unique_ptr<AbstractValue> SapLimitConstraint<T>::DoMakeData(
+    const T& time_step,
+    const Eigen::Ref<const VectorX<T>>& delassus_estimation) const {
+  using std::max;
+
+  // Estimate regularization based on near-rigid regime threshold.
+  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
+  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
+  // [Castro et al., 2021] for details.
+  const double beta_factor =
+      parameters_.beta() * parameters_.beta() / (4.0 * M_PI * M_PI);
+
+  const T& k = parameters_.stiffness();
+  const T& taud = parameters_.dissipation_time_scale();
+
+  VectorX<T> R = (beta_factor * delassus_estimation)
+                     .cwiseMax(1.0 / (time_step * k * (time_step + taud)));
+  VectorX<T> v_hat = -this->constraint_function() / (time_step + taud);
+
+  // Make data.
+  SapLimitConstraintData<T> data(std::move(R), std::move(v_hat));
+  return AbstractValue::Make(data);
+}
+
+template <typename T>
+void SapLimitConstraint<T>::DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                                       AbstractValue* abstract_data) const {
+  auto& data = abstract_data->get_mutable_value<SapLimitConstraintData<T>>();
+  const VectorX<T>& R_inv = data.R_inv();
+  const VectorX<T>& v_hat = data.v_hat();
+  data.mutable_vc() = vc;
+  data.mutable_y() = R_inv.asDiagonal() * (v_hat - vc);
+  Project(data.y(), &data.mutable_gamma(), &data.mutable_dPdy());
+}
+
+template <typename T>
+T SapLimitConstraint<T>::DoCalcCost(const AbstractValue& abstract_data) const {
+  const auto& data = abstract_data.get_value<SapLimitConstraintData<T>>();
+  const VectorX<T>& R = data.R();
+  const VectorX<T>& gamma = data.gamma();
+  const T cost = 0.5 * gamma.dot(R.asDiagonal() * gamma);
+  return cost;
+}
+
+template <typename T>
+void SapLimitConstraint<T>::DoCalcImpulse(const AbstractValue& abstract_data,
+                                          EigenPtr<VectorX<T>> gamma) const {
+  const auto& data = abstract_data.get_value<SapLimitConstraintData<T>>();
+  *gamma = data.gamma();
+}
+
+template <typename T>
+void SapLimitConstraint<T>::DoCalcCostHessian(
+    const AbstractValue& abstract_data, MatrixX<T>* G) const {
+  const auto& data = abstract_data.get_value<SapLimitConstraintData<T>>();
+  *G = data.dPdy() * data.R_inv().asDiagonal();
 }
 
 }  // namespace internal

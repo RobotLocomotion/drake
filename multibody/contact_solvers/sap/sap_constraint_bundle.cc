@@ -14,7 +14,8 @@ template <typename T>
 SapConstraintBundle<T>::SapConstraintBundle(
     const SapContactProblem<T>* problem, const VectorX<T>& delassus_diagonal) {
   DRAKE_THROW_UNLESS(problem != nullptr);
-  DRAKE_THROW_UNLESS(delassus_diagonal.size() == problem->num_constraints());
+  DRAKE_THROW_UNLESS(delassus_diagonal.size() ==
+                     problem->num_constraint_equations());
 
   // Create vector of constraints but not in the order they were enumerated in
   // the SapProblem, but in the computationally convenient order enumerated in
@@ -23,27 +24,18 @@ SapConstraintBundle<T>::SapConstraintBundle(
   constraints_.reserve(problem->num_constraints());
 
   // Vector of bias velocities and diagonal matrix R.
-  vhat_.resize(problem->num_constraint_equations());
-  R_.resize(problem->num_constraint_equations());
-  int impulse_index_start = 0;
+  //int impulse_index_start = 0;
   for (const ContactProblemGraph::ConstraintCluster& e :
        problem->graph().clusters()) {
     for (int i : e.constraint_index()) {
+      // TODO: fix this constness hack.
+      // Possibility: SapContactProblem becomes a ContactProblem, with
+      // constraint specifications instead of SapConstraints. Then here, the
+      // bundle instantiates the specific constraints.
       const SapConstraint<T>& c = problem->get_constraint(i);
       constraints_.push_back(&c);
-
-      const int ni = c.num_constraint_equations();
-      const T& wi = delassus_diagonal[i];
-
-      vhat_.segment(impulse_index_start, ni) =
-          c.CalcBiasTerm(problem->time_step(), wi);
-      R_.segment(impulse_index_start, ni) =
-          c.CalcDiagonalRegularization(problem->time_step(), wi);
-
-      impulse_index_start += ni;
     }
   }
-  Rinv_ = R_.cwiseInverse();
 
   MakeConstraintBundleJacobian(*problem);
 }
@@ -122,59 +114,90 @@ void SapConstraintBundle<T>::MakeConstraintBundleJacobian(
 }
 
 template <typename T>
-void SapConstraintBundle<T>::CalcUnprojectedImpulses(const VectorX<T>& vc,
-                                                     VectorX<T>* y) const {
-  DRAKE_DEMAND(vc.size() == num_constraint_equations());
-  DRAKE_DEMAND(y != nullptr);
-  DRAKE_DEMAND(y->size() == num_constraint_equations());
-  *y = Rinv_.asDiagonal() * (vhat_ - vc);
-}
-
-template <typename T>
-void SapConstraintBundle<T>::ProjectImpulses(
-    const VectorX<T>& y, VectorX<T>* gamma,
-    std::vector<MatrixX<T>>* dPdy) const {
-  DRAKE_DEMAND(y.size() == num_constraint_equations());
-  DRAKE_DEMAND(gamma != nullptr);
-  DRAKE_DEMAND(gamma->size() == num_constraint_equations());
-  if (dPdy != nullptr) {
-    DRAKE_DEMAND(static_cast<int>(dPdy->size()) == num_constraints());
-  }
+SapConstraintBundleData SapConstraintBundle<T>::MakeData(
+    const T& time_step, const VectorX<T>& delassus_diagonal) const {
+  DRAKE_DEMAND(delassus_diagonal.size() == num_constraint_equations());    
+  SapConstraintBundleData data;
+  data.reserve(num_constraints());
   int constraint_start = 0;
   for (int i = 0; i < num_constraints(); ++i) {
     const SapConstraint<T>& c = *constraints_[i];
     const int ni = c.num_constraint_equations();
-    const auto y_i = y.segment(constraint_start, ni);
-    const auto R_i = R().segment(constraint_start, ni);
-    auto gamma_i = gamma->segment(constraint_start, ni);
-    if (dPdy != nullptr) {
-      MatrixX<T>& dPdy_i = (*dPdy)[i];
-      c.Project(y_i, R_i, &gamma_i, &dPdy_i);
-    } else {
-      c.Project(y_i, R_i, &gamma_i);
-    }
+    const auto wi = delassus_diagonal.segment(constraint_start, ni);
+    data.emplace_back(c.MakeData(time_step, wi));
+    constraint_start += ni;
+  }
+  return data;
+}
+
+template <typename T>
+void SapConstraintBundle<T>::CalcData(
+    const VectorX<T>& vc, SapConstraintBundleData* bundle_data) const {
+  DRAKE_DEMAND(bundle_data != nullptr);
+  DRAKE_DEMAND(static_cast<int>(bundle_data->size()) ==
+               num_constraints());      
+  int constraint_start = 0;
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = *constraints_[i];
+    const int ni = c.num_constraint_equations();
+    const auto vc_i = vc.segment(constraint_start, ni);
+    AbstractValue& data = *(*bundle_data)[i];
+    c.CalcData(vc_i, &data);
     constraint_start += ni;
   }
 }
 
 template <typename T>
-void SapConstraintBundle<T>::ProjectImpulsesAndCalcConstraintsHessian(
-    const VectorX<T>& y, VectorX<T>* gamma, std::vector<MatrixX<T>>* G) const {
-  DRAKE_DEMAND(y.size() == num_constraint_equations());
+T SapConstraintBundle<T>::CalcCost(
+    const SapConstraintBundleData& bundle_data) const {
+  DRAKE_DEMAND(static_cast<int>(bundle_data.size()) ==
+               num_constraints());      
+  T cost = 0.0;
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = *constraints_[i];
+    const AbstractValue& data = *bundle_data[i];
+    cost += c.CalcCost(data);
+  }
+  return cost;
+}
+
+template <typename T>
+void SapConstraintBundle<T>::CalcImpulses(
+    const SapConstraintBundleData& bundle_data, VectorX<T>* gamma) const {
+  DRAKE_DEMAND(static_cast<int>(bundle_data.size()) ==
+               num_constraints());
+  DRAKE_DEMAND(gamma != nullptr);
+  DRAKE_DEMAND(gamma->size() == num_constraint_equations());
+  int constraint_start = 0;
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = *constraints_[i];
+    const int ni = c.num_constraint_equations();
+    const AbstractValue& data = *bundle_data[i];    
+    auto gamma_i = gamma->segment(constraint_start, ni);
+    c.CalcImpulse(data, &gamma_i);
+    constraint_start += ni;
+  }
+}
+
+template <typename T>
+void SapConstraintBundle<T>::CalcImpulsesAndConstraintsHessian(
+    const SapConstraintBundleData& bundle_data, VectorX<T>* gamma, std::vector<MatrixX<T>>* G) const {
+  DRAKE_DEMAND(static_cast<int>(bundle_data.size()) ==
+               num_constraints());
   DRAKE_DEMAND(gamma != nullptr);
   DRAKE_DEMAND(gamma->size() == num_constraint_equations());
   DRAKE_DEMAND(static_cast<int>(G->size()) == num_constraints());
-  // G = dPdy after call to ProjectImpulses. We add in the R⁻¹ next.
-  ProjectImpulses(y, gamma, G);
 
   // The regularizer Hessian is G = d²ℓ/dvc² = dP/dy⋅R⁻¹.
   int constraint_start = 0;
   for (int i = 0; i < num_constraints(); ++i) {
     const SapConstraint<T>& c = *constraints_[i];
     const int ni = c.num_constraint_equations();
-    const auto Rinv_i = Rinv().segment(constraint_start, ni);
-    const MatrixX<T>& dPdy_i = (*G)[i];
-    (*G)[i] = dPdy_i * Rinv_i.asDiagonal();
+    const AbstractValue& data = *bundle_data[i];
+    auto gamma_i = gamma->segment(constraint_start, ni);
+    auto& Gi = (*G)[i];
+    c.CalcImpulse(data, &gamma_i);
+    c.CalcCostHessian(data, &Gi);
     constraint_start += ni;
   }
 }

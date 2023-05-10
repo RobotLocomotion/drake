@@ -147,7 +147,7 @@ struct SapSolverParameters {
 
   // SAP uses sparse supernodal algebra by default. Set this to true to use
   // dense algebra instead. Typically used for testing.
-  bool use_dense_algebra{false};
+  bool use_dense_algebra{true};
 
   // Dimensionless number used to allow some slop on the check near zero for
   // certain quantities such as the gradient of the cost.
@@ -165,7 +165,7 @@ struct SapSolverParameters {
   // cause false negatives. For debugging purposes however, this options allows
   // to trigger an exception if the cost increases. For details, see
   // documentation on `relative_slop`.
-  bool nonmonotonic_convergence_is_error{false};
+  bool nonmonotonic_convergence_is_error{true};
 };
 
 // This class implements the Semi-Analytic Primal (SAP) solver described in

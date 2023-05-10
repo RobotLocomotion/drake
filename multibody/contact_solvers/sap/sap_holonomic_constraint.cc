@@ -75,6 +75,7 @@ SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
                parameters_.num_constraint_equations());
 }
 
+#if 0
 template <typename T>
 VectorX<T> SapHolonomicConstraint<T>::CalcBiasTerm(const T& time_step,
                                                    const T& wi) const {
@@ -150,6 +151,7 @@ void SapHolonomicConstraint<T>::Project(const Eigen::Ref<const VectorX<T>>& y,
     }
   }
 }
+#endif
 
 template <typename T>
 std::unique_ptr<SapConstraint<T>> SapHolonomicConstraint<T>::Clone() const {
