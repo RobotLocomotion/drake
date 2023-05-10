@@ -27,8 +27,13 @@ TEST_F(CIrisToyRobotTest, CspaceFreePolytopeConstructor) {
   const CspaceFreePolytope& dut = tester.cspace_free_polytope();
   int num_planes_expected = 0;
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // TODO(jwnimmer-tri) Once deprecation date 2023-09-01 is finished, adjust
+  // the namespace of the call here from `optimization::` to `internal::`.
   const auto link_geometries =
-      internal::GetCollisionGeometries(*plant_, *scene_graph_);
+      optimization::GetCollisionGeometries(*plant_, *scene_graph_);
+#pragma GCC diagnostic pop
   // Count the expected number of planes by hand.
   num_planes_expected +=
       link_geometries.at(plant_->world_body().index()).size() *
