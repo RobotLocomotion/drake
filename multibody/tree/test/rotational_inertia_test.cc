@@ -12,7 +12,6 @@
 #include "drake/math/autodiff.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/rotation_matrix.h"
-#include "drake/multibody/tree/unit_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -523,17 +522,19 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
 
 // Tests the method to obtain the principal moments of inertia and axes.
 GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
-  // Form principal moments of inertia associated with a solid ellipsoid.
+  // For a solid ellipsoid B, form B's rotational inertia about Bcm (B's center
+  // of mass) for principal directions Bx, By, Bz.
   const double a = 5.0, b = 4.0, c = 3.0;
   const double mass = 3.0;
   const double Imin = 0.2 * mass * (b*b + c*c);  // Ixx = 1/5 m (b² + c²) small
   const double Imed = 0.2 * mass * (a*a + c*c);  // Iyy = 1/5 m (a² + c²) medium
   const double Imax = 0.2 * mass * (a*a + b*b);  // Izz = 1/5 m (a² + b²) large
+  RotationalInertia<double> I_BBcm_B(Imin, Imed, Imax);
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
   drake::math::RotationMatrix<double> R_BP;
 
-  // Verify principal moments of inertia for straightforward case.
-  RotationalInertia<double> I_BBcm_B(Imin, Imed, Imax);
+  // Verify a special case of a RotationalInertia with zero products of inertia,
+  // constructed with principal moments of inertia having Imin < Imed < Imax.
   Vector3<double> I_BBcm_B_principal_moments =
       I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
   EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
@@ -543,55 +544,63 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
       drake::math::RotationMatrix<double>::Identity();
   EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
 
-  // Verify the ordering of principal moments of inertia and directions.
+  // Verify reordering for a special case of a RotationalInertia constructed
+  // with principal moments of inertia having Imed < Imin (must reorder).
   I_BBcm_B = RotationalInertia<double>(Imed, Imin, Imax);
   I_BBcm_B_principal_moments =
       I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
   EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
                               I_BBcm_B_principal_moments, kTolerance));
   EXPECT_TRUE(I_BBcm_B.get_products() == Vector3<double>::Zero());
-  Vector3<double> col_min(0.0, 1.0, 0.0);  // Minimum inertia moment direction.
-  Vector3<double> col_med(1.0, 0.0, 0.0);  // Medium inertia moment direction.
-  Vector3<double> col_max(0.0, 0.0, 1.0);  // Maximum inertia moment direction.
+  Vector3<double> col_min(0.0, 1.0, 0.0);  // Direction for minimum axis.
+  Vector3<double> col_med(1.0, 0.0, 0.0);  // Direction for intermediate axis.
+  Vector3<double> col_max(0.0, 0.0, 1.0);  // Direction for maximum axis.
   R_BP_expected =
       drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
           col_min, col_med, -col_max);
   EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
 
-  // Re-verify the ordering of principal moments of inertia and directions.
+  // Verify reordering for a special case of a RotationalInertia constructed
+  // with principal moments of inertia having Imax < Imin (must reorder).
   I_BBcm_B = RotationalInertia<double>(Imax, Imin, Imed);
   I_BBcm_B_principal_moments =
       I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
   EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
                               I_BBcm_B_principal_moments, kTolerance));
   EXPECT_TRUE(I_BBcm_B.get_products() == Vector3<double>::Zero());
-  col_min = Vector3<double>(0.0, 1.0, 0.0);  // Minimum inertia moment direction
-  col_med = Vector3<double>(0.0, 0.0, 1.0);  // Medium inertia moment direction
-  col_max = Vector3<double>(1.0, 0.0, 0.0);  // Maximum inertia moment direction
+  col_min = Vector3<double>(0.0, 1.0, 0.0);  // Direction for minimum axis.
+  col_med = Vector3<double>(0.0, 0.0, 1.0);  // Direction for intermediate axis.
+  col_max = Vector3<double>(1.0, 0.0, 0.0);  // Direction for maximum axis.
   R_BP_expected =
       drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
           col_min, col_med, col_max);
   EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
 
-  // Rotate the ellipsoid by 30 degrees and verify principal moments/axes.
-  const drake::math::RotationMatrix<double> R_BC =
-      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  // Rotate body B by 30 degrees and verify principal moments/axes. This tests
+  // a general case for a rotational inertia with non-zero products of inertia.
   I_BBcm_B = RotationalInertia<double>(Imin, Imed, Imax);
-  const RotationalInertia<double> I_BBcm_C = I_BBcm_B.ReExpress(R_BC);
-  const Vector3<double> I_BBcm_C_principal_moments =
+  drake::math::RotationMatrix<double> R_BC =
+      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  RotationalInertia<double> I_BBcm_C = I_BBcm_B.ReExpress(R_BC);
+  Vector3<double> I_BBcm_C_principal_moments =
       I_BBcm_C.CalcPrincipalMomentsAndAxesOfInertia(&R_BP);
-  EXPECT_TRUE(CompareMatrices(I_BBcm_C_principal_moments,
-      I_BBcm_B_principal_moments, kTolerance));
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_C_principal_moments, kTolerance));
   EXPECT_FALSE(I_BBcm_C.get_products() == Vector3<double>::Zero());
 
-  // Unit length eigenvectors Px_B, Py_B, Pz_B stored in the columns of R_BP
-  // should be parallel to unit vectors Cx_B, Cy_B, Cz_B in the columns of R_BC.
+  // The orthogonal unit length eigenvectors Px_B, Py_B, Pz_B stored in the
+  // columns of R_BP are parallel to the principal axes (lines). Since lines
+  // do not have a fully-qualified direction (they lack sense), all we can check
+  // is whether these principal axes (represented by Px_B, Py_B, Pz_B) are
+  // parallel to the right-handed unit vectors Cx_B, Cy_B, Cz_B stored in the
+  // columns of R_BC and whether they form a right-handed set.
   const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BP.col(0);
   const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BP.col(1);
   const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BP.col(2);
-  EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);
-  EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);
-  EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);
+  EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);  // Px parallel to Cx.
+  EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);  // Py parallel to Cy.
+  EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);  // Pz parallel to Cz.
+  EXPECT_NEAR(Px_B.cross(Py_B).dot(Pz_B), 1.0, kTolerance);  // Right-handed.
 }
 
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() for a

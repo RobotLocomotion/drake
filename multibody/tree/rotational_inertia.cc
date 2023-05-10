@@ -14,7 +14,6 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
   //    Therefore, convert `this` to a local copy of type Matrix3<double>.
   // 2. Eigen's SelfAdjointEigenSolver only uses the lower-triangular part
   //    of this symmetric matrix.
-
   const Matrix3<T>& I_BP_E = get_matrix();
   Matrix3<double> I_double = Matrix3<double>::Constant(NAN);
   I_double(0, 0) = ExtractDoubleOrThrow(I_BP_E(0, 0));
@@ -27,36 +26,34 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
   I_double(2, 0) = ExtractDoubleOrThrow(I_BP_E(2, 0));  // (2, 0) not (0, 2).
   I_double(2, 1) = ExtractDoubleOrThrow(I_BP_E(2, 1));  // (2, 1) not (1, 2).
 
-  // If all products of inertia are zero, no need to calculate eigenvalues.
-  // The eigenvalues are diagonal elements and eigenvectors are identity matrix.
+  // If all products of inertia are zero, no need to calculate eigenvalues or
+  // eigenvectors as the principal moments of inertia are just the diagonal
+  // elements and the principal directions are simple (e.g., [1, 0, 0]).
   const bool is_diagonal = (I_double(1, 0) == 0 && I_double(2, 0) == 0 &&
                             I_double(2, 1) == 0);
   if (is_diagonal) {
-    // Sort the eigenvalues and eigenvectors in ascending order.
-    double Imin = I_double(0, 0);
-    double Imed = I_double(1, 1);
-    double Imax = I_double(2, 2);
-    int imin = 0, imed = 1, imax = 2;  // Indices.
-    if (Imin > Imed) {
-      std::swap(Imin, Imed);  // Imin gets lower value, Imed higher value.
-      std::swap(imin, imed);  // imin = 1 and imed = 0.
-    }
-    if (Imin > Imax) {
-      std::swap(Imin, Imax);  // Imin gets lower value, Imax higher value.
-      std::swap(imin, imed);  // imin = 2 and imed = 0 or 1 (depends).
-    }
-    if (Imed > Imax) {
-      std::swap(Imed, Imax);  // Imed gets lower value, Imax higher value
-      std::swap(imed, imax);  // imed = 1 or 2 and imax = 0 or 1.
-    }
+    // Sort the principal moments of inertia (eigenvalues) and corresponding
+    // principal directions (eigenvectors) in ascending order.
+    using Pair = std::pair<double, int>;
+    std::array I{Pair{I_double(0, 0), 0},
+                 Pair{I_double(1, 1), 1},
+                 Pair{I_double(2, 2), 2}};
+    std::stable_sort(I.begin(), I.end(), [](const Pair& l, const Pair& r) {
+      return l.first < r.first;});
+    const double Imin = I[0].first;  // Minimum principal moment of inertia.
+    const double Imed = I[1].first;  // Intermediate principal moment of inertia
+    const double Imax = I[2].first;  // Maximum principal moment of inertia.
     DRAKE_ASSERT(Imin <= Imed && Imed <= Imax);
 
     if (principal_directions != nullptr) {
       math::RotationMatrix<double> identity_matrix =
           math::RotationMatrix<double>::Identity();
-      const Vector3<double> col_min = identity_matrix.col(imin);
-      const Vector3<double> col_med = identity_matrix.col(imed);
-      const Vector3<double> col_max = identity_matrix.col(imax);
+      const uint index_min = I[0].second;  // Index associated with Imin.
+      const uint index_med = I[1].second;  // Index associated with Imed.
+      const uint index_max = I[2].second;  // Index associated with Imax.
+      const Vector3<double> col_min = identity_matrix.col(index_min);
+      const Vector3<double> col_med = identity_matrix.col(index_med);
+      const Vector3<double> col_max = identity_matrix.col(index_max);
       const bool is_right_handed = (col_min.cross(col_med)).dot(col_max) > 0;
       *principal_directions =
           math::RotationMatrix<double>::MakeFromOrthonormalColumns(
