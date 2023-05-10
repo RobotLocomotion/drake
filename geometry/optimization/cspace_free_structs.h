@@ -27,7 +27,7 @@ struct PlaneSeparatesGeometries {
         plane_index{m_plane_index} {}
   const std::vector<symbolic::RationalFunction> positive_side_rationals;
   const std::vector<symbolic::RationalFunction> negative_side_rationals;
-  int plane_index;
+  int plane_index{-1};
 };
 
 struct FindSeparationCertificateOptions {
@@ -59,7 +59,7 @@ struct FindSeparationCertificateOptions {
  separating_planes()[plane_index] in the C-space region.
  */
 struct SeparationCertificateResultBase {
-  int plane_index;
+  int plane_index{-1};
   // The separating plane is { x | aᵀx+b=0 }
   Vector3<symbolic::Polynomial> a;
   symbolic::Polynomial b;
@@ -77,7 +77,7 @@ struct SeparationCertificateProgramBase {
   /// The program that stores all the constraints to search for the separating
   /// plane and Lagrangian multipliers as certificate.
   std::unique_ptr<solvers::MathematicalProgram> prog;
-  int plane_index;
+  int plane_index{-1};
 };
 
 }  // namespace optimization

@@ -29,7 +29,6 @@ enum class SeparatingPlaneOrder {
 
 template <typename T>
 struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
- public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisSeparatingPlane)
 
   CIrisSeparatingPlane(Vector3<symbolic::Polynomial> m_a,
@@ -44,7 +43,7 @@ struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
                                  m_decision_variables),
         plane_order{m_plane_order} {}
 
-  SeparatingPlaneOrder plane_order;
+  SeparatingPlaneOrder plane_order{separating_plane_order::kAffine};
 };
 
 /**
