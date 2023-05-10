@@ -1,5 +1,6 @@
 package(default_visibility = ["//visibility:private"])
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load(
     "@python//:version.bzl",
     "PYTHON_SITE_PACKAGES_RELPATH",
@@ -137,14 +138,23 @@ cc_library(
     }),
 )
 
-# Depend on IPOPT's shared library iff IPOPT is enabled.
+# Depend on IPOPT's shared library iff IPOPT is enabled and we're on a platform
+# that uses the host OS shared library.
+selects.config_setting_group(
+    name = "ipopt_not_shared",
+    match_any = [
+        "//tools:no_ipopt",
+        "//tools/cc_toolchain:linux",
+    ],
+)
+
 cc_library(
     name = "ipopt_deps",
-    deps = select({
+    deps = selects.with_or({
         "//conditions:default": [
             "@ipopt",
         ],
-        "//tools:no_ipopt": [],
+        ":ipopt_not_shared": [],
     }),
 )
 
