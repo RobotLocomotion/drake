@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/value.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
@@ -160,48 +161,31 @@ class SapConstraint {
     return second_clique_jacobian_;
   }
 
-  /* Computes the projection γ = P(y) onto the convex set specific to a
-   constraint in the norm defined by the diagonal positive matrix R, i.e. the
-   norm ‖x‖ = sqrt(xᵀ⋅R⋅x). Refer to [Castro et al., 2021] for details.
-   @param[in] y Impulse to be projected, of size num_constraint_equations().
-   @param[in] R Specifies the diagonal components of matrix R, of size
-   num_constraint_equations().
-   @param[in,out] gamma On output, the projected impulse γ. On input it must be
-   of size num_constraint_equations().
-   @param[in,out] dPdy Not used if nullptr. Otherwise it must be a squared
-   matrix of size num_constraint_equations() to store the Jacobian dP/dy on
-   output. */
-  virtual void Project(const Eigen::Ref<const VectorX<T>>& y,
-                       const Eigen::Ref<const VectorX<T>>& R,
-                       EigenPtr<VectorX<T>> gamma,
-                       MatrixX<T>* dPdy = nullptr) const = 0;
+  /* Makes data used by this constraint to perform computations. Different
+   constraint can opt to use `time_step` and a diagonal approximation of the
+   Delassus operator in `delassus_estimation` to pre-compute scale quantities to
+   condition the problem better. The default implementation stores a VectorX of
+   size num_constraint_equations(), typically to be used for constraint
+   velocities. Derived constraints can make their own data by overriding virtual
+   interface DoMakeData(). */
+  std::unique_ptr<AbstractValue> MakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const;
 
-  /* Computes the bias term v̂ used to compute the constraint impulses before
-   projection y = −R⁻¹⋅(vc − v̂).
-   @param[in] time_step The time step used in the temporal discretization.
-   @param[in] wi Approximation of the inverse of the mass for this
-   constraint. Specific constraints can use this information to estimate
-   stabilization terms in the "near-rigid" regime. Refer to [Castro et al.,
-   2021] for details.
-   @note Parameter wi provides a scale factor, with units of inverse of mass.
-   Thus far we are assuming the same scalar factor can be used for all
-   constraint equations effectively.
-   TODO(amcastro-tri): Consider making wi a vector quantity. */
-  virtual VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const = 0;
+  /* Updates constraint data as a function of constraint velocities `vc`. */
+  void CalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                AbstractValue* data) const;
 
-  /* Computes the regularization R used to compute the constraint impulses
-   before projection as y = −R⁻¹⋅(vc − v̂).
-   @param[in] time_step The time step used in the temporal discretization.
-   @param[in] wi Approximation of the inverse of the mass for this
-   constraint. Specific constraints can use this information to estimate
-   stabilization terms in the "near-rigid" regime. Refer to [Castro et al.,
-   2021] for details.
-   @note Parameter wi provides a scale factor, with units of inverse of mass.
-   Thus far we are assuming the same scalar factor can be used for all
-   constraint equations effectively.
-   TODO(amcastro-tri): Consider making wi a vector quantity. */
-  virtual VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                                const T& wi) const = 0;
+  /* Constraint cost. */
+  T CalcCost(const AbstractValue& data) const;
+
+  /* Computes the impulse according to:
+       γ = −∂ℓ/∂vc. */
+  void CalcImpulse(const AbstractValue& data, EigenPtr<VectorX<T>> gamma) const;
+
+  /* Computes the constraint Hessian as:
+       G = ∂²ℓ/∂vc² = -∂γ/∂vc. */
+  void CalcCostHessian(const AbstractValue& data, MatrixX<T>* G) const;
 
   /* Derived classes must override to provide polymorphic deep-copy into a new
    instance. */
@@ -209,6 +193,21 @@ class SapConstraint {
 
  protected:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapConstraint);
+
+  // @group NVI implementations. Specific constraints must implement these
+  // methods.
+  // @{  
+  virtual std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const;
+  virtual void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                          AbstractValue* data) const;
+  virtual T DoCalcCost(const AbstractValue& data) const;
+  virtual void DoCalcImpulse(const AbstractValue& data,
+                             EigenPtr<VectorX<T>> gamma) const;
+  virtual void DoCalcCostHessian(const AbstractValue& data,
+                                 MatrixX<T>* G) const;
+  // @}
 
  private:
   int first_clique_{-1};

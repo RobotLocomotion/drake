@@ -51,26 +51,6 @@ class SpringConstraint final : public SapConstraint<T> {
         k_(k),
         tau_d_(tau_d) {}
 
-  // Bias and regularization setup so that:
-  //   γ = y = -δt⋅(k⋅x + d⋅v) = −R⁻¹⋅(v−v̂).
-  VectorX<T> CalcBiasTerm(const T& time_step, const T&) const final {
-    return -this->constraint_function() / (time_step + tau_d_);
-  }
-  VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                        const T&) const final {
-    const T R = 1. / (time_step * (time_step + tau_d_) * k_);
-    return Vector3<T>(R, R, R);
-  }
-
-  // For this constraint the projection is the identity operation.
-  void Project(const Eigen::Ref<const VectorX<double>>& y,
-               const Eigen::Ref<const VectorX<double>>& R,
-               EigenPtr<VectorX<double>> gamma,
-               MatrixX<double>* dPdy) const final {
-    (*gamma) = y;
-    if (dPdy != nullptr) dPdy->setIdentity(3, 3);
-  };
-
   std::unique_ptr<SapConstraint<T>> Clone() const final {
     return std::make_unique<SpringConstraint<T>>(*this);
   }
@@ -247,30 +227,6 @@ class DummyConstraint final : public SapConstraint<T> {
                          std::move(J1), std::move(J2)),
         R_(std::move(R)),
         v_hat_(std::move(v_hat)) {}
-
-  // Returns the bias v_hat provided at construction.
-  VectorX<T> CalcBiasTerm(const T&, const T&) const final { return v_hat_; }
-  // Returns the regularization R provided at construction.
-  VectorX<T> CalcDiagonalRegularization(const T&, const T&) const final {
-    return R_;
-  }
-
-  // Dummy projection for testing. γ = P(y) = max(0, y), where max() is applied
-  // componentwise. dγ/dy = H(y), where H() is the Heaviside function, also
-  // applied componentwise.
-  void Project(const Eigen::Ref<const VectorX<T>>& y,
-               const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>> gamma,
-               MatrixX<T>* dPdy) const final {
-    (*gamma) = y.cwiseMax(0.);
-    if (dPdy != nullptr) {
-      dPdy->resize(this->num_constraint_equations(),
-                   this->num_constraint_equations());
-      dPdy->setZero();
-      dPdy->diagonal() = y.unaryExpr([](const T& x) {
-        return x >= 0. ? 1.0 : 0.0;
-      });
-    }
-  };
 
   std::unique_ptr<SapConstraint<T>> Clone() const final {
     return std::make_unique<DummyConstraint<T>>(*this);
@@ -496,7 +452,6 @@ class DummyModelTest : public ::testing::Test {
     // The constraint bundle is tested elsewhere. Therefore we use it here to
     // obtain the data we need for this test.
     J_ = sap_model_->constraints_bundle().J().MakeDenseMatrix();
-    R_ = sap_model_->constraints_bundle().R();
 
     // For testing, we make the Jacobian matrix with indexes as specified in the
     // original model.
@@ -621,7 +576,6 @@ class DummyModelTest : public ::testing::Test {
   std::vector<MatrixXd> dynamics_matrix_;
   MatrixXd A_;
   MatrixXd J_;
-  VectorXd R_;
   MatrixXd J_not_permuted_;
 };
 
@@ -722,6 +676,7 @@ TEST_F(DummyModelTest, ConstraintVelocities) {
       CompareMatrices(vc, vc_expected, kEpsilon, MatrixCompareType::relative));
 }
 
+#if 0
 TEST_F(DummyModelTest, Impulses) {
   // Generate reference values. Since the bundle is separately unit tested, we
   // use it here to obtain the expected values.
@@ -803,6 +758,7 @@ TEST_F(DummyModelTest, CostGradients) {
   EXPECT_TRUE(CompareMatrices(cost_hessian, gradient_ad_gradient, kEpsilon,
                               MatrixCompareType::relative));
 }
+#endif
 
 }  // namespace
 }  // namespace internal

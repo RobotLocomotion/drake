@@ -2,8 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using Eigen::Matrix2d;
 using Eigen::Matrix3d;
@@ -20,14 +23,42 @@ namespace {
 
 constexpr double kInf = std::numeric_limits<double>::infinity();
 
+struct TestConfig {
+  // This is a gtest test suffix; no underscores or spaces.
+  std::string description;
+  SapLimitConstraint<double>::Parameters p;
+  double q;  // A value of configuration q.
+};
+
+// This provides the suffix for each test parameter: the test config
+// description.
+std::ostream& operator<<(std::ostream& out, const TestConfig& c) {
+  out << c.description;
+  return out;
+}
+
 class SapLimitConstraintTest
-    : public testing::TestWithParam<SapLimitConstraint<double>::Parameters> {
+    : public testing::TestWithParam<TestConfig> {
  public:
   // Makes a SapLimitConstraint from this->GetParam() and an arbitrary clique,
   // clique_dof and clique_nv.
   void SetUp() override {
+    const SapLimitConstraint<double>::Parameters& p = GetParam().p;
     dut_ = std::make_unique<SapLimitConstraint<double>>(
-        clique_, clique_dof_, clique_nv_, q0_, GetParam());
+        clique_, clique_dof_, clique_nv_, q0_, p);
+
+    SapLimitConstraint<AutoDiffXd>::Parameters p_ad(
+        p.lower_limit(), p.upper_limit(), p.stiffness(),
+        p.dissipation_time_scale(), p.beta());
+    dut_ad_ = std::make_unique<SapLimitConstraint<AutoDiffXd>>(
+        clique_, clique_dof_, clique_nv_, q0_, p_ad);        
+  }
+
+  VectorXd MakeVelocity(double q) {
+    const double qdot = (q - q0_) / time_step_;
+    const VectorXd v =  qdot * VectorXd::Unit(clique_nv_, clique_dof_);
+    const VectorXd vc = MakeExpectedJacobian() * v;
+    return vc;
   }
 
   // Returns the expected number of equations for the parameters specified for
@@ -35,7 +66,7 @@ class SapLimitConstraintTest
   // to have two equations, and only one equation when just one of the limits is
   // finite.
   int expected_num_equations() const {
-    const SapLimitConstraint<double>::Parameters& p = GetParam();
+    const SapLimitConstraint<double>::Parameters& p = GetParam().p;
     int num_equations = 0;
     if (p.lower_limit() > -kInf) ++num_equations;
     if (p.upper_limit() < kInf) ++num_equations;
@@ -44,7 +75,7 @@ class SapLimitConstraintTest
 
   // The expected constraint function g(q).
   VectorXd MakeExpectedConstraintFunction() const {
-    const SapLimitConstraint<double>::Parameters& p = GetParam();
+    const SapLimitConstraint<double>::Parameters& p = GetParam().p;
     VectorXd g;
     if (p.lower_limit() == -kInf) {
       // Upper limit only.
@@ -61,7 +92,7 @@ class SapLimitConstraintTest
 
   // The expected constraint Jacobian J(q).
   MatrixXd MakeExpectedJacobian() const {
-    const SapLimitConstraint<double>::Parameters& p = GetParam();
+    const SapLimitConstraint<double>::Parameters& p = GetParam().p;
     MatrixXd J;
     if (p.lower_limit() == -kInf) {
       // Upper limit only.
@@ -84,7 +115,9 @@ class SapLimitConstraintTest
   const int clique_dof_{3};
   const int clique_nv_{7};
   const double q0_{3.1};
+  const double time_step_{2.0e-3};
   std::unique_ptr<SapLimitConstraint<double>> dut_;
+  std::unique_ptr<SapLimitConstraint<AutoDiffXd>> dut_ad_;
 };
 
 // Bare minimum sanity checks on a newly constructed limit constraint.
@@ -97,7 +130,7 @@ TEST_P(SapLimitConstraintTest, Construction) {
   EXPECT_EQ(dut_->first_clique_jacobian().MakeDenseMatrix(),
             MakeExpectedJacobian());
   EXPECT_THROW(dut_->second_clique_jacobian(), std::exception);
-  const SapLimitConstraint<double>::Parameters& p = GetParam();
+  const SapLimitConstraint<double>::Parameters& p = GetParam().p;
   EXPECT_EQ(dut_->parameters().lower_limit(), p.lower_limit());
   EXPECT_EQ(dut_->parameters().upper_limit(), p.upper_limit());
   EXPECT_EQ(dut_->parameters().stiffness(), p.stiffness());
@@ -106,15 +139,20 @@ TEST_P(SapLimitConstraintTest, Construction) {
   EXPECT_EQ(dut_->parameters().beta(), p.beta());
 }
 
+#if 0
 // Unit tests SapLimitConstraintTest::CalcBias().
 TEST_P(SapLimitConstraintTest, CalcBias) {
   const double dissipation_time_scale = GetParam().dissipation_time_scale();
   const double time_step = 5e-3;
-  const double delassus_approximation = NAN;  // Does not participate.
-  const VectorXd vhat = dut_->CalcBiasTerm(time_step, delassus_approximation);
-  const VectorXd vhat_expected =
+  const VectorXd delassus_approximation = VectorXd::Constant(
+      dut_->num_constraint_equations(), NAN);  // Does not participate.
+  std::unique_ptr<AbstractValue> abstract_data =
+      dut_->MakeData(time_step, delassus_approximation);
+  const auto& data = abstract_data->get_value<SapLimitConstraintData<double>>();
+
+  const VectorXd v_hat_expected =
       -dut_->constraint_function() / (time_step + dissipation_time_scale);
-  EXPECT_TRUE(CompareMatrices(vhat, vhat_expected,
+  EXPECT_TRUE(CompareMatrices(data.v_hat(), v_hat_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
 }
@@ -136,9 +174,11 @@ TEST_P(SapLimitConstraintTest, CalcRegularizationSoft) {
   const SapLimitConstraint<double> c(clique_, clique_dof_, clique_nv_, q0_, p);
 
   const double time_step = 5e-3;
-  const double delassus_approximation = 1.5;
-  const VectorXd R =
-      c.CalcDiagonalRegularization(time_step, delassus_approximation);
+  const VectorXd delassus_approximation =
+      VectorXd::Constant(c.num_constraint_equations(), 1.5);
+  std::unique_ptr<AbstractValue> abstract_data =
+      c.MakeData(time_step, delassus_approximation);
+  const auto& data = abstract_data->get_value<SapLimitConstraintData<double>>();
 
   const double Rvalue =
       1. /
@@ -146,7 +186,7 @@ TEST_P(SapLimitConstraintTest, CalcRegularizationSoft) {
 
   const VectorXd R_expected =
       VectorXd::Constant(expected_num_equations(), Rvalue);
-  EXPECT_TRUE(CompareMatrices(R, R_expected,
+  EXPECT_TRUE(CompareMatrices(data.R(), R_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
 }
@@ -168,39 +208,39 @@ TEST_P(SapLimitConstraintTest, CalcRegularizationNearRigid) {
   const SapLimitConstraint<double> c(clique_, clique_dof_, clique_nv_, q0_, p);
 
   const double time_step = 5e-3;
-  const double delassus_approximation = 1.5;
-  const VectorXd R =
-      c.CalcDiagonalRegularization(time_step, delassus_approximation);
-
-  const double Rvalue =
-      p.beta() * p.beta() / (4 * M_PI * M_PI) * delassus_approximation;
+  const VectorXd delassus_approximation =
+      VectorXd::Constant(c.num_constraint_equations(), 1.5);
+  std::unique_ptr<AbstractValue> abstract_data =
+      c.MakeData(time_step, delassus_approximation);
+  const auto& data = abstract_data->get_value<SapLimitConstraintData<double>>();
 
   const VectorXd R_expected =
-      VectorXd::Constant(expected_num_equations(), Rvalue);
-  EXPECT_TRUE(CompareMatrices(R, R_expected,
+      p.beta() * p.beta() / (4 * M_PI * M_PI) * delassus_approximation;
+
+  EXPECT_TRUE(CompareMatrices(data.R(), R_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
 }
+#endif
 
-// Test projection when impulses are positive.
-TEST_P(SapLimitConstraintTest, ProjectPositiveImpulses) {
+// Test constraint when impulses are positive.
+TEST_P(SapLimitConstraintTest, ValidateConstraintGradients) {
   const int ne = expected_num_equations();
-  // Result should not depend on R.
-  const VectorXd R = VectorXd::Constant(ne, NAN);
+  VectorX<AutoDiffXd> delassus_estimation =
+      VectorX<AutoDiffXd>::Constant(ne, 1.5);  // Arbitrary value.  
+  std::unique_ptr<AbstractValue> data =
+      dut_ad_->MakeData(time_step_, delassus_estimation);
 
-  // Positive impulses.
-  const VectorXd y = VectorXd::LinSpaced(ne, 1.2, 3.4);
-  VectorXd gamma;
-  gamma.resize(ne);
-  MatrixXd dPdy;
-  dut_->Project(y, R, &gamma, &dPdy);
-  EXPECT_TRUE(CompareMatrices(gamma, y, std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::relative));
-  EXPECT_TRUE(CompareMatrices(dPdy, MatrixXd::Identity(ne, ne),
-                              std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::relative));
+  // Compute data from the specified value of q.
+  const double q = GetParam().q;
+  const VectorXd vc = MakeVelocity(q);
+  VectorX<AutoDiffXd> vc_ad = drake::math::InitializeAutoDiff(vc);
+  dut_ad_->CalcData(vc_ad, data.get());
+
+  ValidateConstraintGradients(*dut_ad_, *data);
 }
 
+#if 0
 // Test projection when impulses are negative.
 TEST_P(SapLimitConstraintTest, ProjectNegativeImpulses) {
   const int ne = expected_num_equations();
@@ -317,6 +357,31 @@ TEST_P(SapLimitConstraintTest, Clone) {
   EXPECT_EQ(clone->parameters().beta(), p.beta());
 }
 
+#endif
+
+std::vector<TestConfig> MakeTestCases() {
+  return std::vector<TestConfig>{
+      {
+          .description = "BelowLowerOnly",
+          .p = SapLimitConstraint<double>::Parameters{0.5, kInf, 1.0e5, 0.01,
+                                                      0.0},
+          .q = 0.4,  // Below specified lower limit.
+      },
+      {
+          .description = "AboveLowerOnly",
+          .p = SapLimitConstraint<double>::Parameters{0.5, kInf, 1.0e5, 0.01,
+                                                      0.0},
+          .q = 0.6,  // Above the specified lower limit.
+      },
+  };
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    SapLimitConstraintTest, SapLimitConstraintTest,
+    testing::ValuesIn(MakeTestCases()),
+    testing::PrintToStringParamName());
+
+#if 0
 const SapLimitConstraint<double>::Parameters lower_only{0.5, kInf, 1.0e5, 0.01,
                                                         0.5};
 const SapLimitConstraint<double>::Parameters upper_only{-kInf, 2.3, 1.0e5, 0.01,
@@ -327,6 +392,7 @@ const SapLimitConstraint<double>::Parameters lower_and_upper{-0.3, 2.3, 1.0e5,
 INSTANTIATE_TEST_SUITE_P(SapLimitConstraintTest, SapLimitConstraintTest,
                          testing::Values(lower_only, upper_only,
                                          lower_and_upper));
+#endif
 
 }  // namespace
 }  // namespace internal

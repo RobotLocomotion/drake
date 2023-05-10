@@ -18,6 +18,14 @@
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 
+#if 0
+#define FNC_HEADER()                              \
+   std::cout << std::string(80, '*') << std::endl; \
+   std::cout << __PRETTY_FUNCTION__ << std::endl;
+#endif
+
+#define FNC_HEADER();
+
 using drake::geometry::GeometryId;
 using drake::math::RotationMatrix;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
@@ -165,7 +173,8 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
   // Parameters used by SAP to estimate regularization, see [Castro et al.,
   // 2021].
   // TODO(amcastro-tri): consider exposing these parameters.
-  constexpr double sigma = 1.0e-3;
+  constexpr double beta = 0.01;  // 0.2 leads to R = 1e-3 * wi.
+  constexpr double sigma = 0.001;  
 
   const std::vector<DiscreteContactPair<T>>& contact_pairs =
       manager().EvalDiscreteContactPairs(context);
@@ -184,18 +193,10 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
 
     const T stiffness = discrete_pair.stiffness;
     const T dissipation_time_scale = discrete_pair.dissipation_time_scale;
-    const T friction = discrete_pair.friction_coefficient;
+    const T friction = discrete_pair.friction_coefficient;    
     const T phi = contact_kinematics[icontact].phi;
     const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
 
-    // Stiffness equal to infinity is used to indicate a rigid contact. Since
-    // SAP is inherently compliant, we must use the "near rigid regime"
-    // approximation, with near rigid parameter equal to 1.0.
-    // TODO(amcastrot-tri): This is mostly for deformables, consider exposing
-    // this parameter.
-    const double beta = (stiffness == std::numeric_limits<double>::infinity())
-                            ? 1.0
-                            : near_rigid_threshold_;
     const typename SapFrictionConeConstraint<T>::Parameters parameters{
         friction, stiffness, dissipation_time_scale, beta, sigma};
 
@@ -602,9 +603,9 @@ void SapDriver<T>::CalcContactProblemCache(
   // Do not change this order here!
   cache->R_WC = AddContactConstraints(context, &problem);
   AddLimitConstraints(context, problem.v_star(), &problem);
-  AddCouplerConstraints(context, &problem);
-  AddDistanceConstraints(context, &problem);
-  AddBallConstraints(context, &problem);
+  //AddCouplerConstraints(context, &problem);
+  //AddDistanceConstraints(context, &problem);
+  //AddBallConstraints(context, &problem);
 }
 
 template <typename T>

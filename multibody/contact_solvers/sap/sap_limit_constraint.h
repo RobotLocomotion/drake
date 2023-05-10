@@ -12,6 +12,64 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+/* Structure to store data needed for SapLimitConstraint computations. */
+template <typename T>
+struct SapLimitConstraintData {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapLimitConstraintData);
+
+  /* Constructs data for a SapLimitConstraint.
+     @param R Regularization parameters.
+     @param vn_hat Bias term. */
+  SapLimitConstraintData(VectorX<T> R, VectorX<T> v_hat) {
+    const int nk = R.size();
+    parameters_.R.resize(nk);
+    parameters_.R_inv.resize(nk);
+    parameters_.v_hat.resize(nk);
+    parameters_.R = R;
+    parameters_.R_inv = R.cwiseInverse();
+    parameters_.v_hat = v_hat;
+    vc_.resize(nk);
+    y_.resize(nk);
+    gamma_.resize(nk);
+    dPdy_.resize(nk, nk);
+  }
+
+  /* Regularization R. */
+  const VectorX<T>& R() const { return parameters_.R; }
+
+  /* Inverse of the regularization, R⁻¹. */
+  const VectorX<T>& R_inv() const { return parameters_.R_inv; }
+
+  /* Constraint bias. */
+  const VectorX<T>& v_hat() const { return parameters_.v_hat; }
+
+  /* Const access. */
+  const VectorX<T>& vc() const { return vc_; }
+  const VectorX<T>& y() const { return y_; }
+  const VectorX<T>& gamma() const { return gamma_; }
+  const MatrixX<T>& dPdy() const { return dPdy_; }
+
+  /* Mutable access. */
+  VectorX<T>& mutable_vc() { return vc_; }
+  VectorX<T>& mutable_y() { return y_; }
+  VectorX<T>& mutable_gamma() { return gamma_; }
+  MatrixX<T>& mutable_dPdy() { return dPdy_; }
+
+ private:
+  struct ConstParameters {
+    VectorX<T> R;  // Regularization R.
+    VectorX<T> R_inv;
+    VectorX<T> v_hat;  // Constraint velocity bias.
+  };
+  ConstParameters parameters_;
+
+  VectorX<T> vc_;
+  VectorX<T> y_;      // Un-projected impulse y = −R⁻¹⋅(vc−v̂)
+  VectorX<T> gamma_;  // Impulse.
+  MatrixX<T> dPdy_;   // Gradient of the projection γ = P(y) w.r.t. y.
+};
+
 /* Implements limit constraints for the SAP solver, [Castro et al., 2021]. This
  constraint is used to impose a (compliant, see below) limit on the i-th degree
  of freedom (DOF) of a given clique in a SapContactModel. This constraint
@@ -128,23 +186,6 @@ class SapLimitConstraint final : public SapConstraint<T> {
   /* Returns the position provided at construction. */
   const T& position() const { return q0_; }
 
-  /* Implements the projection operation. In this case P(y) = (y)₊, independent
-   of the regularization R. Refer to SapConstraint::Project() for details. */
-  void Project(const Eigen::Ref<const VectorX<T>>& y,
-               const Eigen::Ref<const VectorX<T>>& R,
-               EigenPtr<VectorX<T>> gamma,
-               MatrixX<T>* dPdy = nullptr) const final;
-
-  /* Computes bias term. Refer to SapConstraint::CalcBiasTerm() for details. */
-  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
-
-  /* Computes the diagonal of the regularization matrix (positive diagonal) R.
-   This computes R = [Ri, Ri] (or R = [Ri] if only one limit is imposed) with
-     Ri = max(β²/(4π²)⋅wᵢ, (δt⋅(δt+tau_d)⋅k)⁻¹),
-   Refer to [Castro et al., 2021] for details. */
-  VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                        const T& wi) const final;
-
   std::unique_ptr<SapConstraint<T>> Clone() const final;
 
  private:
@@ -159,6 +200,20 @@ class SapLimitConstraint final : public SapConstraint<T> {
    constraint. */
   static MatrixX<T> CalcConstraintJacobian(int clique_dof, int clique_nv,
                                            const T& ql, const T& qu);
+
+  void Project(const Eigen::Ref<const VectorX<T>>& y,
+               EigenPtr<VectorX<T>> gamma, MatrixX<T>* dPdy = nullptr) const;
+
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const override;
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* data) const override;
+  T DoCalcCost(const AbstractValue& abstract_data) const override;
+  void DoCalcImpulse(const AbstractValue& abstract_data,
+                     EigenPtr<VectorX<T>> gamma) const override;
+  void DoCalcCostHessian(const AbstractValue& abstract_data,
+                         MatrixX<T>* G) const override;
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.

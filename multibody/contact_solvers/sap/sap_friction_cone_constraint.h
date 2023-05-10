@@ -12,6 +12,86 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+/* Structure to store data needed for SapFrictionConeConstraint computations. */
+template <typename T>
+struct SapFrictionConeConstraintData {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapFrictionConeConstraintData);
+
+  /* Constructs data for a SapFrictionConeConstraint.
+     @param mu Friction coefficient.
+     @param Rt Regularization parameter for the tangential direction.
+     @param Rn Regularization parameter for the normal direction.
+     @param vn_hat Bias term. */
+  SapFrictionConeConstraintData(const T& mu, const T& Rt, const T& Rn,
+                                const T& vn_hat);
+
+  /* Getters for regularization R, R⁻¹,  sqrt(R) and sqrt(R)⁻¹. */
+  const Vector3<T>& R() const { return parameters_.R; }
+  const Vector3<T>& R_inv() const { return parameters_.R_inv; }
+  const Vector3<T>& Rsqrt() const { return parameters_.Rsqrt; }
+  const Vector3<T>& Rsqrt_inv() const { return parameters_.Rsqrt_inv; }
+
+  /* Returns constraint bias v̂. */
+  const Vector3<T>& v_hat() const { return parameters_.v_hat; }
+
+  const T& mu() const { return parameters_.mu; }
+
+  /* Returns mu_tilde = mu ⋅ sqrt(Rt / Rn). */
+  const T& mu_tilde() const { return parameters_.mu_tilde; }
+
+  /* Returns mu_hat = mu ⋅ Rt / Rn. */
+  const T& mu_hat() const { return parameters_.mu_hat; }
+
+  /* Const access. */
+  const Vector3<T>& vc() const { return vc_; }
+  const int& region() const { return region_; }
+  const Vector3<T>& y() const { return y_; }
+  const T& yr() const { return yr_; }
+  const T& yn() const { return yn_; }
+  const Vector2<T>& t_hat() const { return t_hat_; }
+  const Vector3<T>& gamma() const { return gamma_; }
+  const Matrix3<T>& dPdy() const { return dPdy_; }
+
+  /* Mutable access. */
+  Vector3<T>& mutable_vc() { return vc_; }
+  int& mutable_region() { return region_; }
+  Vector3<T>& mutable_y() { return y_; }
+  T& mutable_yr() { return yr_; }
+  T& mutable_yn() { return yn_; }
+  Vector2<T>& mutable_t_hat() { return t_hat_; }
+  Vector3<T>& mutable_gamma() { return gamma_; }
+  Matrix3<T>& mutable_dPdy() { return dPdy_; }
+
+ private:
+  // Values stored in this struct remain const after construction.
+  struct ConstParameters {
+    Vector3<T> R;  // Regularization R.
+    Vector3<T> R_inv;
+    Vector3<T> v_hat;      // Constraint velocity bias.
+    Vector3<T> Rsqrt;      // = R^{1/2}.
+    Vector3<T> Rsqrt_inv;  // = R^{-1/2}.
+    T mu;
+    T mu_tilde;
+    T mu_hat;
+  };
+  ConstParameters parameters_;
+
+  Vector3<T> vc_;  // Contact velocity.
+
+  // Indicates in what region the un-projected impulse y is:
+  //  1. Stiction: yr < mu * yn
+  //  2. Sliding: -mu_hat * yr < yn && yn < yn < yr/mu
+  //  3. No contact: yn < -mu * yr
+  int region_{-1};
+
+  Vector3<T> y_;         // Un-projected impulse y = −R⁻¹⋅(vc−v̂)
+  T yr_{NAN}, yn_{NAN};  // Radial and normal components of y, respectively.
+  Vector2<T> t_hat_;     // Tangent vector.
+  Vector3<T> gamma_;     // Impulse.
+  Matrix3<T> dPdy_;      // Gradient of the projection γ = P(y) w.r.t. y.
+};
+
 /* Implements contact constraints for the SAP solver.
  Here we provide a brief description of the contact forces modeled by this
  constraint, enough to introduce notation and the constraint's parameters.
@@ -134,29 +214,46 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
 
   const Parameters& parameters() const { return parameters_; }
 
-  /* Implements the projection operation. Refer to SapConstraint::Project() for
-   details. */
-  void Project(const Eigen::Ref<const VectorX<T>>& y,
-               const Eigen::Ref<const VectorX<T>>& R,
-               EigenPtr<VectorX<T>> gamma,
-               MatrixX<T>* dPdy = nullptr) const final;
-
-  /* Computes bias term. Refer to SapConstraint::CalcBiasTerm() for details. */
-  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
-
-  /* Computes the diagonal of the regularization matrix (positive diagonal) R.
-   This computes R = [Rt, Rt, Rn] with:
-     Rn = max(β²/(4π²)⋅wᵢ, (δt⋅(δt+tau_d)⋅k)⁻¹),
-     Rt = σ⋅wᵢ
-   Refer to [Castro et al., 2021] for details. */
-  VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                        const T& wi) const final;
-
   std::unique_ptr<SapConstraint<T>> Clone() const final {
     return std::make_unique<SapFrictionConeConstraint<T>>(*this);
   }
 
  private:
+  /* Implementations to SapConstraint NVI functions. */
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const override;
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* data) const override;
+  T DoCalcCost(const AbstractValue& data) const final;
+  void DoCalcImpulse(const AbstractValue& abstract_data,
+                     EigenPtr<VectorX<T>> gamma) const final;
+  void DoCalcCostHessian(const AbstractValue& abstract_data,
+                         MatrixX<T>* G) const final;
+
+  /* Computes the "soft norm" ‖x‖ₛ defined by ‖x‖ₛ² = ‖x‖² + ε², where ε =
+   soft_tolerance. Using the soft norm we define the tangent vector as t̂ =
+   γₜ/‖γₜ‖ₛ, which is well defined event for γₜ = 0. Also gradients are well
+   defined and follow the same equations presented in [Castro et al., 2021]
+   where regular norms are simply replaced by soft norms. */
+  static T SoftNorm(const Eigen::Ref<const VectorX<T>>& x) {
+    using std::sqrt;
+    // TODO(amcastro-tri): consider exposing this as a parameter.
+    constexpr double soft_tolerance = 1.0e-12;
+    constexpr double soft_tolerance_squared = soft_tolerance * soft_tolerance;
+    return sqrt(x.squaredNorm() + soft_tolerance_squared);
+  };
+
+  /* Compute in what region the un-projected impulse y is:
+      1. Stiction: yr < mu * yn
+      2. Sliding: -mu_hat * yr < yn && yn < yn < yr/mu
+      3. No contact: yn < -mu * yr */
+  static int CalcRegion(const T& mu, const T& mu_hat, const T& yr, const T& yn);
+
+  /* Projects y into the friction cone (defined by mu) in the R norm. */
+  void Project(const SapFrictionConeConstraintData<T>& data, Vector3<T>* gamma,
+               Matrix3<T>* dPdy = nullptr) const;
+
   Parameters parameters_;
   T phi0_;
 };
