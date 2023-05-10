@@ -137,14 +137,16 @@ cc_library(
     }),
 )
 
-# Depend on IPOPT's shared library iff IPOPT is enabled.
+# Depend on IPOPT's shared library iff IPOPT is enabled and we're on a platform
+# that uses the host OS shared library.
 cc_library(
     name = "ipopt_deps",
     deps = select({
+        "//tools:no_ipopt": [],
+        "//tools/cc_toolchain:linux": [],
         "//conditions:default": [
             "@ipopt",
         ],
-        "//tools:no_ipopt": [],
     }),
 )
 

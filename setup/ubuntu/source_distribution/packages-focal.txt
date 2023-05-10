@@ -1,7 +1,6 @@
 clang-format-12
 coinor-libclp-dev
 coinor-libcoinutils-dev
-coinor-libipopt-dev
 default-jdk
 file
 gfortran

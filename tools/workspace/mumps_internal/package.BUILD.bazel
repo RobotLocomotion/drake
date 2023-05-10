@@ -1,0 +1,18 @@
+# -*- bazel -*-
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "dmumps_seq",
+    hdrs = glob([
+        "include/**",
+    ], allow_empty = False),
+    includes = [
+        "include",
+        "include/mumps_seq",
+    ],
+    linkopts = [
+        "-ldmumps_seq",
+    ],
+    licenses = ["reciprocal"],  # CECILL-C + BSD-3-Clause + Public Domain
+)
