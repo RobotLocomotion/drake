@@ -551,7 +551,7 @@ class RotationalInertia {
   /// where frame E is the expressed-in frame for `this` rotational inertia
   /// I_BPo_E (body B's rotational inertia about-point Po) and frame P contains
   /// right-handed orthogonal unit vectors Px, Py, Pz. The 1ˢᵗ column of R_EP is
-  /// Px_E (Px expressed in frame E) which is parallel to the principal acis
+  /// Px_E (Px expressed in frame E) which is parallel to the principal axis
   /// associated with Ixx (the smallest principal moment of inertia). Similarly,
   /// the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are parallel to
   /// principal axes associated with Iyy and Izz (the intermediate and largest
