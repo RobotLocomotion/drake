@@ -11,6 +11,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
@@ -647,6 +648,12 @@ class CspaceFreePolytope {
   // See Options::with_cross_y for its meaning.
   bool with_cross_y_;
 };
+
+DRAKE_DEPRECATED("2023-09-01", "This function was not intended for public use.")
+std::map<multibody::BodyIndex,
+         std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
+GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
+                       const geometry::SceneGraph<double>& scene_graph);
 
 }  // namespace optimization
 }  // namespace geometry

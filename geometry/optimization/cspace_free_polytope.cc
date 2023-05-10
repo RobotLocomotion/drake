@@ -1260,6 +1260,13 @@ void CspaceFreePolytope::CalcMonomialBasis() {
   }
 }
 
+std::map<multibody::BodyIndex,
+         std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
+GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
+                       const geometry::SceneGraph<double>& scene_graph) {
+  return internal::GetCollisionGeometries(plant, scene_graph);
+}
+
 int CspaceFreePolytope::GetSeparatingPlaneIndex(
     const SortedPair<geometry::GeometryId>& pair) const {
   return (map_geometries_to_separating_planes_.count(pair) == 0)
