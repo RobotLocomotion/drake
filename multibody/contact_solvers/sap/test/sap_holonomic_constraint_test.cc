@@ -1,9 +1,14 @@
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/pointer_cast.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/math/autodiff_gradient.h"
+#include "drake/multibody/contact_solvers/sap/validate_constraint_gradients.h"
 
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
@@ -52,6 +57,20 @@ class SapHolonomicConstraintTests : public ::testing::Test {
     return SapHolonomicConstraint<double>::Parameters(
         params.impulse_lower_limits(), params.impulse_upper_limits(),
         std::move(stiffnesses), std::move(relaxation_times), beta);
+  }
+
+  // Helper to make an AutoDiffXd version of constraint `c`.
+  // N.B. Regardless of the MatrixBlock format in the original constraint `c`,
+  // new constraint will use MatrixX storage for the Jacobian.
+  static std::unique_ptr<SapHolonomicConstraint<AutoDiffXd>> ToAutoDiff(
+      const SapHolonomicConstraint<double>& c) {
+    const SapHolonomicConstraint<double>::Parameters& p = c.parameters();
+    SapHolonomicConstraint<AutoDiffXd>::Parameters p_ad(
+        p.impulse_lower_limits(), p.impulse_upper_limits(), p.stiffnesses(),
+        p.relaxation_times(), p.beta());
+    return std::make_unique<SapHolonomicConstraint<AutoDiffXd>>(
+        c.first_clique(), c.constraint_function(),
+        c.first_clique_jacobian().MakeDenseMatrix(), c.bias(), p_ad);
   }
 
  protected:
@@ -113,70 +132,89 @@ TEST_F(SapHolonomicConstraintTests, TwoCliquesConstruction) {
   EXPECT_EQ(dut_->parameters().beta(), p.beta());
 }
 
-TEST_F(SapHolonomicConstraintTests, Project) {
-  const VectorXd& gl = dut_->parameters().impulse_lower_limits();
-  const VectorXd& gu = dut_->parameters().impulse_upper_limits();
+TEST_F(SapHolonomicConstraintTests, ValidateConstraintGradients) {
+  std::unique_ptr<SapHolonomicConstraint<AutoDiffXd>> dut_ad =
+      ToAutoDiff(*dut_);
 
-  // For this constraint the projection is independent of the regularization R.
-  // We test this by setting R to NaN and verifying we still get the expected
-  // results.
-  const VectorXd R = VectorXd::Constant(dut_->num_constraint_equations(), NAN);
+  const int ne = dut_->num_constraint_equations();
+  const double time_step = 0.02;
+  VectorX<AutoDiffXd> delassus_estimation =
+      VectorX<AutoDiffXd>::Constant(ne, 1.5);  // Arbitrary value.
+  std::unique_ptr<AbstractValue> abstract_data =
+      dut_ad->MakeData(time_step, delassus_estimation);
+  const auto& data =
+      abstract_data->get_value<SapHolonomicConstraintData<AutoDiffXd>>();
+
+  // Helper to make a new vector v such that v < x componentwise.
+  auto make_lower_vector = [](const VectorXd& x) {
+    VectorXd v(x.size());
+    for (int i = 0; i < x.size(); ++i) {
+      if (x(i) < 0) {
+        v(i) = 1.1 * x(i);
+      } else {
+        v(i) = 0.9 * x(i);
+      }
+    }
+    return v;
+  };
+
+  // Helper to make a new vector v such that v > x componentwise.
+  auto make_greater_vector = [](const VectorXd& x) {
+    VectorXd v(x.size());
+    for (int i = 0; i < x.size(); ++i) {
+      if (x(i) < 0) {
+        v(i) = 0.9 * x(i);
+      } else {
+        v(i) = 1.1 * x(i);
+      }
+    }
+    return v;
+  };
+
+  // Helper to validate gradients at the constraint velocity vc.
+  // It returns impulses at vc.
+  auto validate_gradients = [&](const VectorXd& vc) {
+    VectorX<AutoDiffXd> gamma_ad(ne);
+    VectorX<AutoDiffXd> vc_ad = drake::math::InitializeAutoDiff(vc);
+    dut_ad->CalcData(vc_ad, abstract_data.get());
+    dut_ad->CalcImpulse(*abstract_data, &gamma_ad);
+    const VectorXd gamma = math::ExtractValue(gamma_ad);
+    ValidateConstraintGradients(*dut_ad, *abstract_data);
+    return gamma;
+  };
+
+  const VectorXd R = math::ExtractValue(data.R());
+  const VectorXd v_hat = math::ExtractValue(data.v_hat());
+  const VectorXd gl = dut_->parameters().impulse_lower_limits();
+  const VectorXd gu = dut_->parameters().impulse_upper_limits();
+  // Constraint velocity at which gamma = gamma_upper.
+  const VectorXd vu = v_hat - R.asDiagonal() * gu;
+  // Constraint velocity at which gamma = gamma_lower.
+  const VectorXd vl = v_hat - R.asDiagonal() * gl;
 
   // Impulses within limits.
   {
-    const VectorXd y = 0.3 * gl + 0.7 * gu;
-    VectorXd gamma(y.size());
-    MatrixXd dPdy;
-    dut_->Project(y, R, &gamma, &dPdy);
-    EXPECT_TRUE(CompareMatrices(gamma, y, kEps, MatrixCompareType::relative));
-    MatrixXd dPdy_expected = MatrixXd::Identity(y.size(), y.size());
-    EXPECT_TRUE(CompareMatrices(dPdy, dPdy_expected, kEps,
-                                MatrixCompareType::relative));
+    const VectorXd vc = 0.3 * vl + 0.7 * vu;
+    const VectorXd gamma = validate_gradients(vc);
+    // We expect impulses within limits.
+    EXPECT_TRUE((gl.array() < gamma.array()).all() &&
+                (gamma.array() < gu.array()).all());
   }
 
-  // Impulses below limits.
+  // Impulses below lower limits.
   {
-    const VectorXd y = 1.5 * gl;
-    VectorXd gamma(y.size());
-    MatrixXd dPdy;
-    dut_->Project(y, R, &gamma, &dPdy);
-    EXPECT_TRUE(CompareMatrices(gamma, gl, kEps, MatrixCompareType::relative));
-    MatrixXd dPdy_expected = MatrixXd::Zero(y.size(), y.size());
-    EXPECT_TRUE(CompareMatrices(dPdy, dPdy_expected, kEps,
-                                MatrixCompareType::relative));
+    const VectorXd vc = make_greater_vector(vl);
+    const VectorXd gamma = validate_gradients(vc);
+    // We expect impulses to be capped at the lower limit.
+    EXPECT_TRUE(gamma == gl);
   }
 
-  // Impulses above limits.
+  // Impulses above upper limits.
   {
-    const VectorXd y = 1.5 * gu;
-    VectorXd gamma(y.size());
-    MatrixXd dPdy;
-    dut_->Project(y, R, &gamma, &dPdy);
-    EXPECT_TRUE(CompareMatrices(gamma, gu, kEps, MatrixCompareType::relative));
-    MatrixXd dPdy_expected = MatrixXd::Zero(y.size(), y.size());
-    EXPECT_TRUE(CompareMatrices(dPdy, dPdy_expected, kEps,
-                                MatrixCompareType::relative));
-  }
-
-  // Arbitrary combination of impulses below/above limits.
-  {
-    VectorXd y(3);
-    y(0) = 1.5 * gu(0);                // above upper limit.
-    y(1) = 0.3 * gl(1) + 0.7 * gu(1);  // within limits.
-    y(2) = 1.5 * gl(2);                // below lower limit.
-    VectorXd gamma(y.size());
-    MatrixXd dPdy;
-    dut_->Project(y, R, &gamma, &dPdy);
-    VectorXd gamma_expected(3);
-    gamma_expected(0) = gu(0);
-    gamma_expected(1) = y(1);
-    gamma_expected(2) = gl(2);
-    EXPECT_TRUE(CompareMatrices(gamma, gamma_expected, kEps,
-                                MatrixCompareType::relative));
-    MatrixXd dPdy_expected = MatrixXd::Zero(y.size(), y.size());
-    dPdy_expected(1, 1) = 1.0;
-    EXPECT_TRUE(CompareMatrices(dPdy, dPdy_expected, kEps,
-                                MatrixCompareType::relative));
+    const VectorXd vc = make_lower_vector(vl);
+    const VectorXd gamma = validate_gradients(vc);
+    // We expect impulses to be capped at the upper limit.
+    EXPECT_TRUE(gamma == gu);
   }
 }
 
@@ -192,13 +230,16 @@ TEST_F(SapHolonomicConstraintTests, CalcDiagonalRegularization) {
                                                           parameters);
 
   const double time_step = 0.01;
-  const double delassus_inverse_approximation = 2.0;
-  const Vector3d R = dut_->CalcDiagonalRegularization(
-      time_step, delassus_inverse_approximation);
+  const VectorXd delassus_approximation =
+      VectorXd::Constant(dut_->num_constraint_equations(), 2.0);
+  std::unique_ptr<AbstractValue> abstract_data =
+      dut_->MakeData(time_step, delassus_approximation);
+  const auto& data =
+      abstract_data->get_value<SapHolonomicConstraintData<double>>();
 
   // Near-rigid regularization.
-  const double R_near_rigid =
-      beta * beta / (4.0 * M_PI * M_PI) * delassus_inverse_approximation;
+  const VectorXd R_near_rigid =
+      beta * beta / (4.0 * M_PI * M_PI) * delassus_approximation;
 
   // Expected regularization for the provided parameters of compliance.
   const VectorXd& k = dut_->parameters().stiffnesses();
@@ -208,10 +249,10 @@ TEST_F(SapHolonomicConstraintTests, CalcDiagonalRegularization) {
 
   // For this case we expect only the stiffer constraint, the third one, to be
   // in the rigid regime.
-  R_expected(2) = R_near_rigid;
+  R_expected(2) = R_near_rigid(2);
 
   EXPECT_TRUE(
-      CompareMatrices(R, R_expected, kEps, MatrixCompareType::relative));
+      CompareMatrices(data.R(), R_expected, kEps, MatrixCompareType::relative));
 }
 
 TEST_F(SapHolonomicConstraintTests,
@@ -225,19 +266,22 @@ TEST_F(SapHolonomicConstraintTests,
                                                           parameters);
 
   const double time_step = 0.01;
-  const double delassus_inverse_approximation = 2.0;
-  const Vector3d R = dut_->CalcDiagonalRegularization(
-      time_step, delassus_inverse_approximation);
-  const Vector3d vhat =
-      dut_->CalcBiasTerm(time_step, delassus_inverse_approximation);
+  const VectorXd delassus_approximation =
+      VectorXd::Constant(dut_->num_constraint_equations(), 2.0);
+  std::unique_ptr<AbstractValue> abstract_data =
+      dut_->MakeData(time_step, delassus_approximation);
+  const auto& data =
+      abstract_data->get_value<SapHolonomicConstraintData<double>>();
+  const VectorXd& R = data.R();
+  const VectorXd& vhat = data.v_hat();
 
   // Near-rigid regularization.
-  const double R_near_rigid =
-      beta * beta / (4.0 * M_PI * M_PI) * delassus_inverse_approximation;
+  const VectorXd R_near_rigid =
+      beta * beta / (4.0 * M_PI * M_PI) * delassus_approximation;
 
   // Since stiffness is infinite, the expected compliance is R_near_rigid for
   // all components.
-  const VectorXd R_expected = Vector3d::Constant(R_near_rigid);
+  const VectorXd R_expected = R_near_rigid;
   EXPECT_TRUE(
       CompareMatrices(R, R_expected, kEps, MatrixCompareType::relative));
 
@@ -259,9 +303,13 @@ TEST_F(SapHolonomicConstraintTests, CalcBiasTerm) {
                                                           parameters);
 
   const double time_step = 0.01;
-  const double delassus_inverse_approximation = 2.0;
-  const Vector3d vhat =
-      dut_->CalcBiasTerm(time_step, delassus_inverse_approximation);
+  const VectorXd delassus_approximation =
+      VectorXd::Constant(dut_->num_constraint_equations(), 2.0);
+  std::unique_ptr<AbstractValue> abstract_data =
+      dut_->MakeData(time_step, delassus_approximation);
+  const auto& data =
+      abstract_data->get_value<SapHolonomicConstraintData<double>>();
+  const VectorXd& vhat = data.v_hat();
 
   // Expected bias for the provided parameters of compliance.
   const VectorXd& tau = dut_->parameters().relaxation_times();
