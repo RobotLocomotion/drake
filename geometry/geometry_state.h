@@ -792,6 +792,12 @@ class GeometryState {
   const render::RenderEngine& GetRenderEngineOrThrow(
       const std::string& renderer_name) const;
 
+  // Returns the world pose of the camera *sensor* based on camera properties,
+  // parent frame, and pose in parent.
+  math::RigidTransformd CalcCameraWorldPose(
+      const render::RenderCameraCore& core, FrameId parent_frame,
+      const math::RigidTransformd& X_PC) const;
+
   // Utility function to facilitate getting a double-valued pose for a frame,
   // regardless of T's actual type.
   math::RigidTransformd GetDoubleWorldPose(FrameId frame_id) const;
