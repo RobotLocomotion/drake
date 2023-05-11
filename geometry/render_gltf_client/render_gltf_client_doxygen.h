@@ -50,6 +50,8 @@ its own.
     - [Allowed Image Response Types](#allowed-image-response-types)
     - [Notes on glTF Camera Specification](#notes-on-gltf-camera-specification)
     - [Notes on Communicating Errors](#notes-on-communicating-errors)
+- [Notes on Rendering Label Images](#notes-on-rendering-label-images)
+- [Existing Server Implementations](#existing-server-implementations)
 - [Developing your own Server](#developing-your-own-server)
 
 <h2 id="server-api">Server API</h2>
@@ -253,12 +255,10 @@ The client accepts the following image types from a server render:
       interpret this rendering as units of millimeters.  Pixels at their maximum
       value (2¹⁶-1) will be interpreted as kTooFar (i.e., infinity).
 - When `image_type="label"`, the server may return:
-    - An RGB (3 channel) unsigned char PNG image.  The client will interpret
-      this rendering as a colored label image and convert to the final label
-      image.
-    - An RGBA (4 channel) unsigned char PNG image.  The client will interpret
-      this rendering as a colored label image and convert to the final label
-      image.
+    - An RGB (3 channel) unsigned char PNG image.
+    - An RGBA (4 channel) unsigned char PNG image.
+    - Note: The client will interpret this rendering as a colored label image
+    and convert to the final label image.
 
 <h3 id="notes-on-gltf-camera-specification">Notes on glTF Camera Specification</h3>
 <hr>
@@ -352,6 +352,40 @@ render failure as plain text in the file response.  Though this is not strictly
 required, the user of the server will have no hints as to what is going wrong
 with the client-server communication.  When the file response is provided, this
 information will be included in the exception message produced by the client.
+
+<h2 id="notes-on-rendering-label-images">Notes on Rendering Label Images</h2>
+<hr>
+
+Drake internally converts a colored-label image to a label image due to legacy
+reasons.  See RenderEngine::LabelFromColor() for more details.  Thus, the label
+output from any server should be an RGB or RGBA PNG.  For consistent label
+output across different server implementations, **anything not specified by the
+glTF file should be painted white, i.e., RGB=(255, 255, 255)**.
+
+The background information is not included in a glTF definition.  The server
+should set the entire background region to white.
+
+A server can also load geometries, e.g., the walls in a room, besides the ones
+specified in the sent glTF file.  However, as those geometries are not known
+from the client's perspective, they should be painted white as well.
+
+When producing the final label output, the client will interpret this particular
+RGB value as `RenderLabel::kDontCare`.
+
+Additionally, for a server to render colored-label images correctly, some
+specific settings are required.  Since the diffuse color of a geometry will
+eventually be translated to a meaningful label value, **a server must ensure
+that the color is rendered faithfully without any distortions**.  Be sure to
+disable any lighting interactions and turn off extra image processing, such as
+anti-aliasing and display-related optimizations.
+
+<h2 id="existing-server-implementations">Existing Server Implementations</h2>
+<hr>
+
+[drake-blender] is a glTF render server using [Blender] as the backend.
+
+[drake-blender]: https://github.com/RobotLocomotion/drake-blender
+[Blender]: https://www.blender.org
 
 <h2 id="developing-your-own-server">Developing your own Server</h2>
 <hr>

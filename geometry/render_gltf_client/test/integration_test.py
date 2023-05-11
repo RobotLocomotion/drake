@@ -30,6 +30,8 @@ from bazel_tools.tools.python.runfiles.runfiles import Create as CreateRunfiles
 import numpy as np
 from PIL import Image
 
+from pydrake.geometry import RenderLabel
+
 COLOR_PIXEL_THRESHOLD = 20  # RGB pixel value tolerance.
 DEPTH_PIXEL_THRESHOLD = 0.001  # Depth measurement tolerance in meters.
 LABEL_PIXEL_THRESHOLD = 0
@@ -261,6 +263,11 @@ class TestIntegration(unittest.TestCase):
             )
             self.assert_error_fraction_less(depth_diff, INVALID_PIXEL_FRACTION)
 
+            # By definition, the "background" from RenderEngineVtk and
+            # RenderEngineGltfClient are assigned to different reserved labels.
+            # They need to be masked out before the comparison.
+            vtk_label[vtk_label == RenderLabel.kEmpty] = 0
+            client_label[client_label == RenderLabel.kDontCare] = 0
             label_diff = (
                 np.absolute(vtk_label - client_label) > LABEL_PIXEL_THRESHOLD
             )

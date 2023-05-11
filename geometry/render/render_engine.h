@@ -334,13 +334,22 @@ class RenderEngine : public ShapeReifier {
    are encoded with unsigned bytes in the range [0, 255] per channel or
    _double-valued_ such that each channel is encoded with a double in the range
    [0, 1]. Conversion to RenderLabel is only supported from byte-valued color
-   values.  */
+   values.
+
+   For RenderEngineGltfClient, pure white color, i.e., RGB=(255, 255, 255),
+   has a particular interpretation that could include the background and any
+   server-introduced geometries.  To avoid overloading `kEmpty`, that specific
+   RGB value will be mapped to `kDontCare`.  */
   //@{
 
   /** Transforms the given byte-valued RGB color value into its corresponding
    RenderLabel.  */
   static RenderLabel LabelFromColor(const systems::sensors::ColorI& color) {
-    return RenderLabel(color.r | (color.g << 8), false);
+    if (color.r == 255 && color.g == 255 && color.b == 255) {
+      return RenderLabel::kDontCare;
+    } else {
+      return RenderLabel(color.r | (color.g << 8), false);
+    }
   }
 
   /** Transforms `this` render label into a byte-valued RGB color.  */

@@ -258,6 +258,14 @@ GTEST_TEST(RenderEngine, ColorLabelConversion) {
   EXPECT_TRUE(same_colors(color1_d, color1_d_by_hand));
   EXPECT_TRUE(same_colors(color2_d, color2_d_by_hand));
   EXPECT_TRUE(same_colors(color3_d, color3_d_by_hand));
+
+  // Test the particular interpretation of white color. White color should be
+  // converted to RenderLabel::kDontCare but not vice versa.
+  ColorI white{255, 255, 255};
+  EXPECT_EQ(RenderLabel::kDontCare, DummyRenderEngine::LabelFromColor(white));
+  ColorI kdontcare_color =
+      DummyRenderEngine::GetColorIFromLabel(RenderLabel::kDontCare);
+  EXPECT_FALSE(same_colors(white, kdontcare_color));
 }
 
 // Tests the documented behavior for configuring the default render label.

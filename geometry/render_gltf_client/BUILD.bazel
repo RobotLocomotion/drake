@@ -308,6 +308,7 @@ drake_py_unittest(
         "cpu:2",
     ],
     deps = [
+        "//bindings/pydrake",
         "@bazel_tools//tools/python/runfiles",
     ],
 )
