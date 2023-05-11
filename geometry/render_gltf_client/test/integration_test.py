@@ -261,6 +261,13 @@ class TestIntegration(unittest.TestCase):
             )
             self.assert_error_fraction_less(depth_diff, INVALID_PIXEL_FRACTION)
 
+            # By convention, where RenderEngineVtk uses RenderLabel::kEmpty
+            # (32766), RenderEngineGltfClient uses RenderLabel::kDontCare
+            # (32764). The values are hard-coded intentionally to avoid having
+            # the large dependency of pydrake. Keep the values in sync if we
+            # ever change the implementation of RenderLabel.
+            # Make them match to facilitate comparison.
+            vtk_label[vtk_label == 32766] = 32764
             label_diff = (
                 np.absolute(vtk_label - client_label) > LABEL_PIXEL_THRESHOLD
             )
