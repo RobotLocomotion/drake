@@ -1,0 +1,512 @@
+# -*- bazel -*-
+
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "cc_linkonly_library",
+)
+load(
+    "@drake//tools/workspace:cmake_configure_file.bzl",
+    "cmake_configure_file",
+)
+load(
+    "@drake//tools/workspace:vendor_cxx.bzl",
+    "cc_library_vendored",
+)
+
+licenses(["reciprocal"])  # EPL-2.0
+
+package(default_visibility = ["//visibility:private"])
+
+exports_files([
+    # Always provide access to license texts.
+    "LICENSE",
+    # This is used by our lint_test.
+    "src/Makefile.am",
+])
+
+# The list of headers to expose to the user (i.e., Drake).
+#
+# This is exactly the includeipopt_HEADERS from upstream, as enforced by
+# drake/tools/workspace/ipopt_internal/test/lint_test.py.
+_HDRS_PUBLIC = [
+    "src/Common/IpCachedResults.hpp",
+    "src/Common/IpDebug.hpp",
+    "src/Common/IpException.hpp",
+    "src/Common/IpJournalist.hpp",
+    "src/Common/IpLibraryLoader.hpp",
+    "src/Common/IpObserver.hpp",
+    "src/Common/IpOptionsList.hpp",
+    "src/Common/IpReferenced.hpp",
+    "src/Common/IpRegOptions.hpp",
+    "src/Common/IpSmartPtr.hpp",
+    "src/Common/IpTaggedObject.hpp",
+    "src/Common/IpTimedTask.hpp",
+    "src/Common/IpTypes.hpp",
+    "src/Common/IpTypes.h",
+    "src/Common/IpUtils.hpp",
+    "src/LinAlg/IpBlas.hpp",
+    "src/LinAlg/IpCompoundMatrix.hpp",
+    "src/LinAlg/IpCompoundSymMatrix.hpp",
+    "src/LinAlg/IpCompoundVector.hpp",
+    "src/LinAlg/IpDenseVector.hpp",
+    "src/LinAlg/IpDiagMatrix.hpp",
+    "src/LinAlg/IpExpansionMatrix.hpp",
+    "src/LinAlg/IpIdentityMatrix.hpp",
+    "src/LinAlg/IpLapack.hpp",
+    "src/LinAlg/IpMatrix.hpp",
+    "src/LinAlg/IpScaledMatrix.hpp",
+    "src/LinAlg/IpSumSymMatrix.hpp",
+    "src/LinAlg/IpSymMatrix.hpp",
+    "src/LinAlg/IpSymScaledMatrix.hpp",
+    "src/LinAlg/IpVector.hpp",
+    "src/LinAlg/IpZeroSymMatrix.hpp",
+    "src/LinAlg/TMatrices/IpGenTMatrix.hpp",
+    "src/LinAlg/TMatrices/IpSymTMatrix.hpp",
+    "src/LinAlg/TMatrices/IpTripletHelper.hpp",
+    "src/Algorithm/IpAlgBuilder.hpp",
+    "src/Algorithm/IpAlgStrategy.hpp",
+    "src/Algorithm/IpAugSystemSolver.hpp",
+    "src/Algorithm/IpConvCheck.hpp",
+    "src/Algorithm/IpEqMultCalculator.hpp",
+    "src/Algorithm/IpHessianUpdater.hpp",
+    "src/Algorithm/IpIpoptAlg.hpp",
+    "src/Algorithm/IpIpoptCalculatedQuantities.hpp",
+    "src/Algorithm/IpIpoptData.hpp",
+    "src/Algorithm/IpIpoptNLP.hpp",
+    "src/Algorithm/IpIterateInitializer.hpp",
+    "src/Algorithm/IpIteratesVector.hpp",
+    "src/Algorithm/IpIterationOutput.hpp",
+    "src/Algorithm/IpOrigIpoptNLP.hpp",
+    "src/Algorithm/IpLineSearch.hpp",
+    "src/Algorithm/IpMuUpdate.hpp",
+    "src/Algorithm/IpNLPScaling.hpp",
+    "src/Algorithm/IpPDSystemSolver.hpp",
+    "src/Algorithm/IpSearchDirCalculator.hpp",
+    "src/Algorithm/IpStdAugSystemSolver.hpp",
+    "src/Algorithm/IpTimingStatistics.hpp",
+    "src/Algorithm/LinearSolvers/IpLinearSolvers.h",
+    "src/Algorithm/LinearSolvers/IpSlackBasedTSymScalingMethod.hpp",
+    "src/Algorithm/LinearSolvers/IpSparseSymLinearSolverInterface.hpp",
+    "src/Algorithm/LinearSolvers/IpSymLinearSolver.hpp",
+    "src/Algorithm/LinearSolvers/IpTripletToCSRConverter.hpp",
+    "src/Algorithm/LinearSolvers/IpTSymLinearSolver.hpp",
+    "src/Algorithm/LinearSolvers/IpTSymScalingMethod.hpp",
+    "src/Interfaces/IpAlgTypes.hpp",
+    "src/Interfaces/IpIpoptApplication.hpp",
+    "src/Interfaces/IpNLP.hpp",
+    "src/Interfaces/IpReturnCodes.h",
+    "src/Interfaces/IpReturnCodes.hpp",
+    "src/Interfaces/IpReturnCodes_inc.h",
+    "src/Interfaces/IpReturnCodes.inc",
+    "src/Interfaces/IpSolveStatistics.hpp",
+    "src/Interfaces/IpStdCInterface.h",
+    "src/Interfaces/IpTNLP.hpp",
+    "src/Interfaces/IpTNLPAdapter.hpp",
+    "src/Interfaces/IpTNLPReducer.hpp",
+]
+
+# The include paths for _HDRS_PUBLIC.
+_INCLUDES_PUBLIC = depset([paths.dirname(x) for x in _HDRS_PUBLIC]).to_list()
+
+# The baseline list of sources to compile.
+#
+# This is exactly the initial libipopt_la_SOURCES from upstream but without the
+# problematic IpStdCInterface.cpp and IpStdFInterface.c files which we don't
+# use and cannot easily be marked as hidden. The correct value for this list is
+# enforced by drake/tools/workspace/ipopt_internal/test/lint_test.py.
+#
+# The Makefile.am conditionally adds more sources depending on other
+# configuration options. Likewise, we'll add some more sources later on.
+_SRCS_INITIAL = [
+    "src/Common/IpDebug.cpp",
+    "src/Common/IpJournalist.cpp",
+    "src/Common/IpObserver.cpp",
+    "src/Common/IpOptionsList.cpp",
+    "src/Common/IpRegOptions.cpp",
+    "src/Common/IpTaggedObject.cpp",
+    "src/Common/IpUtils.cpp",
+    "src/Common/IpLibraryLoader.cpp",
+    "src/LinAlg/IpBlas.cpp",
+    "src/LinAlg/IpCompoundMatrix.cpp",
+    "src/LinAlg/IpCompoundSymMatrix.cpp",
+    "src/LinAlg/IpCompoundVector.cpp",
+    "src/LinAlg/IpDenseGenMatrix.cpp",
+    "src/LinAlg/IpDenseSymMatrix.cpp",
+    "src/LinAlg/IpDenseVector.cpp",
+    "src/LinAlg/IpDiagMatrix.cpp",
+    "src/LinAlg/IpExpandedMultiVectorMatrix.cpp",
+    "src/LinAlg/IpExpansionMatrix.cpp",
+    "src/LinAlg/IpIdentityMatrix.cpp",
+    "src/LinAlg/IpLapack.cpp",
+    "src/LinAlg/IpLowRankUpdateSymMatrix.cpp",
+    "src/LinAlg/IpMatrix.cpp",
+    "src/LinAlg/IpMultiVectorMatrix.cpp",
+    "src/LinAlg/IpScaledMatrix.cpp",
+    "src/LinAlg/IpSumMatrix.cpp",
+    "src/LinAlg/IpSumSymMatrix.cpp",
+    "src/LinAlg/IpSymScaledMatrix.cpp",
+    "src/LinAlg/IpTransposeMatrix.cpp",
+    "src/LinAlg/IpVector.cpp",
+    "src/LinAlg/IpZeroMatrix.cpp",
+    "src/LinAlg/IpZeroSymMatrix.cpp",
+    "src/LinAlg/TMatrices/IpGenTMatrix.cpp",
+    "src/LinAlg/TMatrices/IpSymTMatrix.cpp",
+    "src/LinAlg/TMatrices/IpTripletHelper.cpp",
+    "src/Algorithm/IpAdaptiveMuUpdate.cpp",
+    "src/Algorithm/IpAlgBuilder.cpp",
+    "src/Algorithm/IpAlgorithmRegOp.cpp",
+    "src/Algorithm/IpAugRestoSystemSolver.cpp",
+    "src/Algorithm/IpBacktrackingLineSearch.cpp",
+    "src/Algorithm/IpDefaultIterateInitializer.cpp",
+    "src/Algorithm/IpEquilibrationScaling.cpp",
+    "src/Algorithm/IpExactHessianUpdater.cpp",
+    "src/Algorithm/IpFilter.cpp",
+    "src/Algorithm/IpFilterLSAcceptor.cpp",
+    "src/Algorithm/IpGenAugSystemSolver.cpp",
+    "src/Algorithm/IpGradientScaling.cpp",
+    "src/Algorithm/IpIpoptAlg.cpp",
+    "src/Algorithm/IpIpoptCalculatedQuantities.cpp",
+    "src/Algorithm/IpIpoptData.cpp",
+    "src/Algorithm/IpIteratesVector.cpp",
+    "src/Algorithm/IpLeastSquareMults.cpp",
+    "src/Algorithm/IpLimMemQuasiNewtonUpdater.cpp",
+    "src/Algorithm/IpLoqoMuOracle.cpp",
+    "src/Algorithm/IpLowRankAugSystemSolver.cpp",
+    "src/Algorithm/IpLowRankSSAugSystemSolver.cpp",
+    "src/Algorithm/IpMonotoneMuUpdate.cpp",
+    "src/Algorithm/IpNLPBoundsRemover.cpp",
+    "src/Algorithm/IpNLPScaling.cpp",
+    "src/Algorithm/IpOptErrorConvCheck.cpp",
+    "src/Algorithm/IpOrigIpoptNLP.cpp",
+    "src/Algorithm/IpOrigIterationOutput.cpp",
+    "src/Algorithm/IpPDFullSpaceSolver.cpp",
+    "src/Algorithm/IpPDPerturbationHandler.cpp",
+    "src/Algorithm/IpPDSearchDirCalc.cpp",
+    "src/Algorithm/IpPenaltyLSAcceptor.cpp",
+    "src/Algorithm/IpProbingMuOracle.cpp",
+    "src/Algorithm/IpQualityFunctionMuOracle.cpp",
+    "src/Algorithm/IpRestoConvCheck.cpp",
+    "src/Algorithm/IpRestoFilterConvCheck.cpp",
+    "src/Algorithm/IpRestoIpoptNLP.cpp",
+    "src/Algorithm/IpRestoIterateInitializer.cpp",
+    "src/Algorithm/IpRestoIterationOutput.cpp",
+    "src/Algorithm/IpRestoMinC_1Nrm.cpp",
+    "src/Algorithm/IpRestoPenaltyConvCheck.cpp",
+    "src/Algorithm/IpRestoRestoPhase.cpp",
+    "src/Algorithm/IpStdAugSystemSolver.cpp",
+    "src/Algorithm/IpTimingStatistics.cpp",
+    "src/Algorithm/IpUserScaling.cpp",
+    "src/Algorithm/IpWarmStartIterateInitializer.cpp",
+    "src/Algorithm/LinearSolvers/IpLinearSolversRegOp.cpp",
+    "src/Algorithm/LinearSolvers/IpLinearSolvers.c",
+    "src/Algorithm/LinearSolvers/IpSlackBasedTSymScalingMethod.cpp",
+    "src/Algorithm/LinearSolvers/IpTripletToCSRConverter.cpp",
+    "src/Algorithm/LinearSolvers/IpTSymDependencyDetector.cpp",
+    "src/Algorithm/LinearSolvers/IpTSymLinearSolver.cpp",
+    "src/contrib/CGPenalty/IpCGPenaltyCq.cpp",
+    "src/contrib/CGPenalty/IpCGPenaltyData.cpp",
+    "src/contrib/CGPenalty/IpCGPenaltyLSAcceptor.cpp",
+    "src/contrib/CGPenalty/IpCGPenaltyRegOp.cpp",
+    "src/contrib/CGPenalty/IpCGPerturbationHandler.cpp",
+    "src/contrib/CGPenalty/IpCGSearchDirCalc.cpp",
+    "src/contrib/CGPenalty/IpPiecewisePenalty.cpp",
+    "src/Interfaces/IpInterfacesRegOp.cpp",
+    "src/Interfaces/IpIpoptApplication.cpp",
+    "src/Interfaces/IpSolveStatistics.cpp",
+    "src/Interfaces/IpStdInterfaceTNLP.cpp",
+    "src/Interfaces/IpTNLP.cpp",
+    "src/Interfaces/IpTNLPAdapter.cpp",
+    "src/Interfaces/IpTNLPReducer.cpp",
+]
+
+# In addition to _SRCS_INITIAL, we also add extra sources for certain solvers.
+#
+# Mumps is our preferred linear solver.
+_SRCS_SOLVER_MUMPS = [
+    "src/Algorithm/LinearSolvers/IpMumpsSolverInterface.cpp",
+]
+
+# In addition to _SRCS_INITIAL, we also add extra sources for certain solvers.
+# These (unused) solvers are still required at link-time.
+#
+# This list is cross-checked vs the Makefile.am contents via
+# drake/tools/workspace/ipopt_internal/test/lint_test.py.
+_SRCS_SOLVER_INT32 = [
+    "src/Algorithm/LinearSolvers/IpMc19TSymScalingMethod.cpp",
+    "src/Algorithm/LinearSolvers/IpMa27TSolverInterface.cpp",
+    "src/Algorithm/LinearSolvers/IpMa57TSolverInterface.cpp",
+    "src/Algorithm/LinearSolvers/IpMa77SolverInterface.cpp",
+    "src/Algorithm/LinearSolvers/IpMa86SolverInterface.cpp",
+    "src/Algorithm/LinearSolvers/IpMa97SolverInterface.cpp",
+    "src/Algorithm/LinearSolvers/IpPardisoSolverInterface.cpp",
+]
+
+# All of the sources together (baseline + extra).
+_SRCS = _SRCS_INITIAL + _SRCS_SOLVER_MUMPS + _SRCS_SOLVER_INT32
+
+# When compiling the sources, we'll provide access to _HDRS_PRIVATE, which is
+# all of the headers that live in the same directories as the sources. These
+# are the include paths for _HDRS_PRIVATE.
+_INCLUDES_PRIVATE = depset([paths.dirname(x) for x in _SRCS]).to_list()
+
+# All of the headers that live in the same directories as the sources (except
+# for the config headers which we need to handle separately, below).
+_HDRS_PRIVATE = glob([
+    x + "/*.h*"
+    for x in _INCLUDES_PRIVATE
+], exclude = [
+    "src/Common/config*",
+    "src/Common/IpoptConfig.h",
+], allow_empty = False)
+
+# The next three rules are for the private flavor of IpoptConfig.h.
+#
+# The upstream IpoptConfig.h is a tricksy little beast. When compiling the
+# library source code, it refers to the configure-generated header. When
+# installing into include paths for the user, it uses something different
+# (a narrower header with just the IPOPT version numbers & etc).
+#
+# Here we'll generate the private header with the configuration we want,
+# by respelling it from autoconf to cmake and then setting our definitions.
+#
+# We can use cc_library (not cc_library_vendored) to declare the header
+# because it only has preprocessor definitions (no C++ object code).
+genrule(
+    name = "_respell_autoconf_to_cmakeconfig",
+    srcs = ["src/Common/config.h.in"],
+    outs = ["src/Common/config.h.in.cmake"],
+    cmd = "sed -e 's|#undef \\(.*\\)|#cmakedefine \\1 @\\1@|' $< > $@",
+)
+
+cmake_configure_file(
+    name = "_configure",
+    src = ":src/Common/config.h.in.cmake",
+    out = "hdr_private/IpoptConfig.h",
+    defines = [
+        "IPOPT_VERSION=\"drake_vendor\"",
+        # Features of the standard library and/or host system.
+        "HAVE_CFLOAT=1",
+        "HAVE_CIEEEFP=1",
+        "HAVE_CMATH=1",
+        "HAVE_FLOAT_H=1",
+        "HAVE_IEEEFP_H=1",
+        "HAVE_INTTYPES_H=1",
+        "HAVE_MATH_H=1",
+        "HAVE_STDINT_H=1",
+        "HAVE_STDIO_H=1",
+        "HAVE_STDLIB_H=1",
+        "HAVE_STRINGS_H=1",
+        "HAVE_STRING_H=1",
+        "HAVE_SYS_STAT_H=1",
+        "HAVE_SYS_TYPES_H=1",
+        "HAVE_UNISTD_H=1",
+        "HAVE_VSNPRINTF=1",
+        "IPOPT_C_FINITE=std::isfinite",
+        "IPOPT_HAS_RAND=1",
+        "IPOPT_HAS_STD__RAND=1",
+        "IPOPT_HAS_VA_COPY=1",
+        "STDC_HEADERS=1",
+        # Optional dependencies that we do actually want to use.
+        "IPOPT_HAS_LAPACK=1",
+        "IPOPT_HAS_MUMPS=1",
+        # No debug self-checks (the default).
+        "IPOPT_CHECKLEVEL=0",
+        "IPOPT_VERBOSITY=0",
+        # These are no-ops, but they can't be omitted.
+        "HSLLIB_EXPORT=",
+        "IPOPTAMPLINTERFACELIB_EXPORT=",
+        "IPOPTLIB_EXPORT=__attribute__ ((visibility (\"hidden\")))",
+        "SIPOPTAMPLINTERFACELIB_EXPORT=",
+        "SIPOPTLIB_EXPORT=",
+    ],
+    undefines = [
+        # Don't use these features of the standard library and/or host system.
+        "CXX_NO_MINUS_C_MINUS_O",
+        "F77_DUMMY_MAIN",
+        "F77_FUNC",
+        "F77_FUNC_",
+        "F77_NO_MINUS_C_MINUS_O",
+        "FC_DUMMY_MAIN_EQ_F77",
+        "HAVE_DLFCN_H",
+        "HAVE__VSNPRINTF",
+        "IPOPT_HAS_DRAND48",
+        "IPOPT_HAS_FEENABLEEXCEPT",
+        "IPOPT_INT64",
+        "IPOPT_SINGLE",
+        # Optional dependencies that we don't use.
+        "BUILD_INEXACT",
+        "HAVE_MPI_INITIALIZED",
+        "HAVE_WINDOWS_H",
+        "IPOPT_HAS_ASL",
+        "IPOPT_HAS_HSL",
+        "IPOPT_HAS_LINEARSOLVERLOADER",
+        "IPOPT_HAS_PARDISO_MKL",
+        "IPOPT_HAS_SPRAL",
+        "IPOPT_HAS_WSMP",
+        "IPOPT_HSL_FUNC",
+        "IPOPT_HSL_FUNC_",
+        "IPOPT_MPIINIT",
+        "IPOPT_WSMP_FUNC",
+        "IPOPT_WSMP_FUNC_",
+        "PARDISO_LIB",
+        # Chaff that's not used by the C++ code anyway.
+        "IPOPT_LAPACK_FUNC_",
+        "IPOPT_VERSION_MAJOR",
+        "IPOPT_VERSION_MINOR",
+        "IPOPT_VERSION_RELEASE",
+        "LT_OBJDIR",
+        "PACKAGE_BUGREPORT",
+        "PACKAGE_NAME",
+        "PACKAGE_STRING",
+        "PACKAGE_TARNAME",
+        "PACKAGE_URL",
+        "PACKAGE_VERSION",
+        "SIZEOF_INT_P",
+        # This is actually used by the C++ code, but cmake_configure_file can't
+        # handle it. We'll use `defines = []` for this instead (see below).
+        "IPOPT_LAPACK_FUNC",
+    ],
+    strict = True,
+)
+
+cc_library(
+    name = "_ipopt_config_private",
+    hdrs = [":hdr_private/IpoptConfig.h"],
+    strip_include_prefix = "hdr_private",
+    defines = [
+        "IPOPT_LAPACK_FUNC(name,NAME)=name##_",
+    ],
+    linkstatic = True,
+)
+
+# Compile all of the object code for the library.
+cc_library_vendored(
+    name = "_build",
+    srcs = _SRCS,
+    srcs_vendored = [
+        x.replace("src/", "drake_src/")
+        for x in _SRCS
+    ],
+    hdrs = _HDRS_PRIVATE,
+    hdrs_vendored = [
+        x.replace("src/", "drake_src/")
+        for x in _HDRS_PRIVATE
+    ],
+    includes = [
+        x.replace("src/", "drake_src/")
+        for x in _INCLUDES_PRIVATE
+    ],
+    vendor_tool_args = [
+        "--no-inline-namespace",
+    ],
+    linkstatic = True,
+    deps = [
+        ":_ipopt_config_private",
+        "@blas",
+        "@lapack",
+        "@mumps_internal//:dmumps_seq",
+    ],
+)
+
+# Discard the headers, leaving only the object code.
+cc_linkonly_library(
+    name = "_objs",
+    deps = [":_build"],
+)
+
+# The next two rules are for the public flavor of IpoptConfig.h.
+#
+# We can use cc_library (not cc_library_vendored) to declare the header
+# because it only has preprocessor definitions (no C++ object code).
+genrule(
+    name = "_ipopt_config_public_genrule",
+    srcs = ["src/Common/config_ipopt_default.h"],
+    outs = ["hdr_public/IpoptConfig.h"],
+    cmd = "cp $< $@",
+)
+
+cc_library(
+    name = "_ipopt_config_public",
+    hdrs = [":hdr_public/IpoptConfig.h"],
+    strip_include_prefix = "hdr_public",
+    linkstatic = True,
+)
+
+# Assemble the public headers + object code into the library Drake will use.
+cc_library_vendored(
+    name = "ipopt",
+    hdrs = _HDRS_PUBLIC,
+    hdrs_vendored = [
+        x.replace("src/", "drake_hdr/")
+        for x in _HDRS_PUBLIC
+    ],
+    includes = [
+        x.replace("src/", "drake_hdr/")
+        for x in _INCLUDES_PUBLIC
+    ],
+    vendor_tool_args = [
+        "--no-inline-namespace",
+    ],
+    linkstatic = True,
+    deps = [
+        ":_ipopt_config_public",
+        ":_objs",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+# The next three stanzas create a patch file of our diffs to install alongside
+# our binaries (which is required by Ipopt's EPL-2.0 license).
+_DIFF_INPUTS = [
+    ("src/Common/config.h.in", "hdr_private/IpoptConfig.h"),
+] + zip(
+    _SRCS + _HDRS_PRIVATE,
+    [
+        x.replace("src/", "drake_src/")
+        for x in _SRCS + _HDRS_PRIVATE
+    ],
+)
+
+[
+    genrule(
+        name = "genrule_{}_patch".format(vendor_src),
+        srcs = [upstream_src, vendor_src],
+        outs = [vendor_src + ".patch"],
+        cmd = " ".join([
+            "(diff -u0",
+            "--label={upstream_src} $(execpath {upstream_src})",
+            "--label={vendor_src} $(execpath {vendor_src})",
+            "> $@ || [[ $$? == 1 ]])",
+        ]).format(
+            upstream_src = upstream_src,
+            vendor_src = vendor_src,
+        ),
+    )
+    for upstream_src, vendor_src in _DIFF_INPUTS
+]
+
+genrule(
+    name = "genrule_full_patch",
+    srcs = [
+        vendor_src + ".patch"
+        for (_, vendor_src) in _DIFF_INPUTS
+    ],
+    outs = ["drake_ipopt.patch"],
+    cmd = "cat $(SRCS) > $@",
+)
+
+install(
+    name = "install",
+    docs = [
+        "LICENSE",
+        ":drake_ipopt.patch",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["drake_repository_metadata.json"])

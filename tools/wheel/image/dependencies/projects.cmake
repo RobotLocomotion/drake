@@ -90,20 +90,22 @@ set(clp_md5 "f7c25af22d2f03398cbbdf38c8b4f6fd")
 set(clp_dlname "clp-${clp_version}.tar.gz")
 list(APPEND ALL_PROJECTS clp)
 
+# ipopt (requires mumps)
 if(APPLE)
     set(mumps_version 5.4.1)  # Latest available in Ubuntu.
     set(mumps_url
-         "http://archive.ubuntu.com/ubuntu/pool/universe/m/mumps/mumps_${mumps_version}.orig.tar.gz"
+        "http://archive.ubuntu.com/ubuntu/pool/universe/m/mumps/mumps_${mumps_version}.orig.tar.gz"
         "http://mumps.enseeiht.fr/MUMPS_${mumps_version}.tar.gz"
     )
     set(mumps_md5 "93be789bf9c6c341a78c16038da3241b")
     set(mumps_dlname "mumps-${mumps_version}.tar.gz")
     list(APPEND ALL_PROJECTS mumps)
-endif()
 
-# ipopt
-set(ipopt_version 3.11.9)
-set(ipopt_url "https://github.com/coin-or/Ipopt/archive/refs/tags/releases/${ipopt_version}.tar.gz")
-set(ipopt_md5 "55275c202072ad30db25d2b723ef9b7a")
-set(ipopt_dlname "ipopt-${ipopt_version}.tar.gz")
-list(APPEND ALL_PROJECTS ipopt)
+    # This must match the version in tools/workspace/ipopt_internal_fromsource.
+    # The matching is automatically enforced by a linter script.
+    set(ipopt_version 3.14.12)
+    set(ipopt_url "https://github.com/coin-or/Ipopt/archive/refs/tags/releases/${ipopt_version}.tar.gz")
+    set(ipopt_md5 "b2bcb362be4c10eccde02829d3025faa")
+    set(ipopt_dlname "ipopt-${ipopt_version}.tar.gz")
+    list(APPEND ALL_PROJECTS ipopt)
+endif()
