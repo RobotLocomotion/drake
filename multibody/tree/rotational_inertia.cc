@@ -8,7 +8,7 @@ namespace drake {
 namespace multibody {
 
 template <typename T>
-Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
+Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
       math::RotationMatrix<double>* principal_directions) const {
   // 1. Eigen's SelfAdjointEigenSolver does not compile for AutoDiffXd.
   //    Therefore, convert `this` to a local copy of type Matrix3<double>.
@@ -38,8 +38,9 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
     std::array I{Pair{I_double(0, 0), 0},
                  Pair{I_double(1, 1), 1},
                  Pair{I_double(2, 2), 2}};
-    std::stable_sort(I.begin(), I.end(), [](const Pair& l, const Pair& r) {
-      return l.first < r.first;});
+    std::sort(I.begin(), I.end(), [](const Pair& l, const Pair& r) {
+      return l < r;});
+      // return l.first < r.first;});
     const double Imin = I[0].first;  // Minimum principal moment of inertia.
     const double Imed = I[1].first;  // Intermediate principal moment of inertia
     const double Imax = I[2].first;  // Maximum principal moment of inertia.
@@ -48,9 +49,9 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndAxesOfInertia(
     if (principal_directions != nullptr) {
       math::RotationMatrix<double> identity_matrix =
           math::RotationMatrix<double>::Identity();
-      const uint index_min = I[0].second;  // Index associated with Imin.
-      const uint index_med = I[1].second;  // Index associated with Imed.
-      const uint index_max = I[2].second;  // Index associated with Imax.
+      const int index_min = I[0].second;  // Index associated with Imin.
+      const int index_med = I[1].second;  // Index associated with Imed.
+      const int index_max = I[2].second;  // Index associated with Imax.
       const Vector3<double> col_min = identity_matrix.col(index_min);
       const Vector3<double> col_med = identity_matrix.col(index_med);
       const Vector3<double> col_max = identity_matrix.col(index_max);
