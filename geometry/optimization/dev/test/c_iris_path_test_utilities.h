@@ -17,14 +17,10 @@ class CspaceFreePathTester {
 
   CspaceFreePathTester(const multibody::MultibodyPlant<double>* plant,
                        const geometry::SceneGraph<double>* scene_graph,
-                       SeparatingPlaneOrder plane_order,
                        const Eigen::Ref<const Eigen::VectorXd>& q_star,
-                       unsigned int maximum_path_degree,
-                       const CspaceFreePolytope::Options& options =
-                           CspaceFreePolytope::Options())
-      : cspace_free_path_{new CspaceFreePath(plant, scene_graph, plane_order,
-                                             q_star, maximum_path_degree,
-                                             options)} {}
+                       int maximum_path_degree, int plane_order)
+      : cspace_free_path_{new CspaceFreePath(
+            plant, scene_graph, q_star, maximum_path_degree, plane_order)} {}
 
   [[nodiscard]] const CspaceFreePath& cspace_free_path() const {
     return *cspace_free_path_;
@@ -34,23 +30,10 @@ class CspaceFreePathTester {
     return cspace_free_path_->mu();
   }
 
-  [[nodiscard]] unsigned int get_max_degree() const {
-    return cspace_free_path_->max_degree();
-  }
-
   [[nodiscard]] const std::unordered_map<symbolic::Variable,
                                          symbolic::Polynomial>&
   get_path() const {
     return cspace_free_path_->path_;
-  }
-
-  [[nodiscard]] const symbolic::Variables& get_s_set() const {
-    return cspace_free_path_->get_s_set();
-  }
-
-  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
-  get_mutable_plane_geometries() const {
-    return cspace_free_path_->get_mutable_plane_geometries();
   }
 
   [[nodiscard]] const std::vector<PlaneSeparatesGeometriesOnPath>&
@@ -58,8 +41,19 @@ class CspaceFreePathTester {
     return cspace_free_path_->plane_geometries_on_path_;
   }
 
+  [[nodiscard]] const std::vector<
+      CSpacePathSeparatingPlane<symbolic::Variable>>&
+  get_separating_planes() const {
+    return cspace_free_path_->separating_planes_;
+  }
+
   [[nodiscard]] const geometry::SceneGraph<double>& get_scene_graph() const {
-    return cspace_free_path_->get_scene_graph();
+    return cspace_free_path_->scene_graph_;
+  }
+
+  [[nodiscard]] const multibody::RationalForwardKinematics*
+  get_rational_forward_kin() const {
+    return &(cspace_free_path_->rational_forward_kin_);
   }
 
  private:
