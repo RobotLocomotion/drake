@@ -35,6 +35,13 @@ namespace multibody {
 /// Also notice that once a unit inertia is created, it _is_ the unit inertia
 /// of _some_ body, perhaps with scaled geometry from the user's intention.
 ///
+/// @note The methods of this class satisfy the "basic exception guarantee": if
+/// an exception is thrown, the program will still be in a valid
+/// state. Specifically, no resources are leaked, and all objects' invariants
+/// are intact. Be aware that UnitInertia objects may contain invalid inertia
+/// data in cases where input checking is skipped.
+/// @see https://en.cppreference.com/w/cpp/language/exceptions
+///
 /// @tparam_default_scalar
 template <typename T>
 class UnitInertia : public RotationalInertia<T> {
