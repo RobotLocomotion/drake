@@ -11,13 +11,15 @@ bool AreAutoDiffVecXdEqual(const Eigen::Ref<const VectorX<AutoDiffXd>>& a,
   if (math::ExtractValue(a) != math::ExtractValue(b)) {
     return false;
   }
-  const Eigen::MatrixXd a_gradient = math::ExtractGradient(a);
-  const Eigen::MatrixXd b_gradient = math::ExtractGradient(b);
-  if (a_gradient.rows() != b_gradient.rows() ||
-      a_gradient.cols() != b_gradient.cols()) {
-    return false;
+  for (int i = 0; i < a.size(); ++i) {
+    if (a(i).derivatives().size() != b(i).derivatives().size()) {
+      return false;
+    }
+    if (a(i).derivatives() != b(i).derivatives()) {
+      return false;
+    }
   }
-  return a_gradient == b_gradient;
+  return true;
 }
 
 }  // namespace math
