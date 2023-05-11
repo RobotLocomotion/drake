@@ -1047,8 +1047,22 @@ class CollisionChecker {
    @returns true if parallel checking is supported. */
   bool SupportsParallelChecking() const { return supports_parallel_checking_; }
 
-  /* (Internal use only.) Generates the collision filter matrix for the provided
-    collision checker and inspector. */
+  /* (Internal use only.) Generates the "nominal" filtered collision matrix.
+
+   The nominal filtered collision matrix has the following properties:
+
+      - All diagonal entries are set to -1 (a body colliding with itself
+        is meaningless).
+      - All environment-environment pairs are set to -1. CollisionChecker
+        ignores them; so it might as well be explicit about it in the matrix.
+      - For bodies I and J,
+        - if all geometries of I have "filtered collisions" (in the SceneGraph
+          sense), with all the geometries of J, the matrix is set to 1.
+        - If *no* geometries of I and J are filtered, the matrix is set to 0.
+        - If some geometry pairs are filtered, and some are not, an error is
+          thrown.
+      - If a welded path exists between two bodies (in the MultibodyPlant),
+        the matrix is set to 1. */
   static Eigen::MatrixXi GenerateFilteredCollisionMatrix(
       const CollisionChecker& checker,
       const geometry::SceneGraphInspector<double>& inspector);
@@ -1193,25 +1207,6 @@ class CollisionChecker {
       - All entries are either 0, 1, or -1. */
   void ValidateFilteredCollisionMatrix(const Eigen::MatrixXi& filtered,
                                        const char* func) const;
-
-  /* The "nominal" collision matrix. This is intended to be called only upon
-   construction.
-
-   The nominal filtered collision matrix has the following properties:
-
-      - All diagonal entries are set to -1 (a body colliding with itself
-        is meaningless).
-      - All environment-environment pairs are set to -1. CollisionChecker
-        ignores them; so it might as well be explicit about it in the matrix.
-      - For bodies I and J,
-        - if all geometries of I have "filtered collisions" (in the SceneGraph
-          sense), with all the geometries of J, the matrix is set to 1.
-        - If *no* geometries of I and J are filtered, the matrix is set to 0.
-        - If some geometry pairs are filtered, and some are not, an error is
-          thrown.
-      - If a welded path exists between two bodies (in the MultibodyPlant),
-        the matrix is set to 1. */
-  Eigen::MatrixXi GenerateFilteredCollisionMatrix() const;
 
   /* Updates the stored value representing the largest value found in the
    padding matrix -- this excludes the meaningless zeros on the diagonal. */
