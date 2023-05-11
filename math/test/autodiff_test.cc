@@ -472,6 +472,10 @@ GTEST_TEST(AutoDiffEqual, AreAutoDiffVecXdEqualTest) {
   EXPECT_FALSE(AreAutoDiffVecXdEqual(a, b));
   b[0].derivatives() = a[0].derivatives();
   EXPECT_TRUE(AreAutoDiffVecXdEqual(a, b));
+  // Set derivatives of b[0] and b[1] to have different sizes. ExtractGradient
+  // will throw, but AreAutoDiffVecXdEqual should return false.
+  b[1].derivatives() = Eigen::Vector3d(1, 2, 3);
+  EXPECT_FALSE(AreAutoDiffVecXdEqual(a, b));
 }
 
 }  // namespace

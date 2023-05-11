@@ -67,6 +67,7 @@ class TestSystemsLcm(unittest.TestCase):
 
     def test_serializer(self):
         dut = mut.PySerializer(lcmt_quaternion)
+        self.assertEqual(repr(dut), "PySerializer(lcmt_quaternion)")
         model_message = self._model_message()
         value = dut.CreateDefaultValue()
         self.assert_lcm_not_equal(value.get_value(), model_message)
@@ -78,7 +79,8 @@ class TestSystemsLcm(unittest.TestCase):
         reconstruct = lcmt_quaternion.decode(raw)
         self.assert_lcm_equal(reconstruct, model_message)
         # Check cloning.
-        cloned_dut = dut.Clone()
+        with catch_drake_warnings(expected_count=1):
+            cloned_dut = dut.Clone()
         fresh_value = dut.CreateDefaultValue().get_value()
         self.assertIsInstance(fresh_value, lcmt_quaternion)
 
@@ -91,7 +93,8 @@ class TestSystemsLcm(unittest.TestCase):
 
     def test_serializer_cpp_clone(self):
         serializer = mut._Serializer_[lcmt_quaternion]()
-        serializer.Clone().CreateDefaultValue()
+        with catch_drake_warnings(expected_count=1):
+            serializer.Clone().CreateDefaultValue()
 
     def test_all_serializers_exist(self):
         """Checks that all of Drake's Python LCM messages have a matching C++

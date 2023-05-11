@@ -9,18 +9,17 @@
  </pre>
  */
 #pragma once
-
 #include <utility>
 
-#include "drake/common/symbolic/polynomial.h"
-#include "drake/geometry/optimization/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/cspace_separating_plane.h"
 
 namespace drake {
 namespace geometry {
 namespace optimization {
 /** The separating plane aᵀx + b ≥ δ, aᵀx+b ≤ −δ has parameters a and b. These
  parameters a polynomial function of `s_for_plane` with the specified degree.
- `s_for_plane` is a subset of the configuration-space variable `s`, please refer
+ `s_for_plane` is a sub
+ set of the configuration-space variable `s`, please refer
  to RationalForwardKinematics class or the paper above on the meaning of s.
  */
 // TODO(hongkai.dai): I might support kConstant in the future.
@@ -28,17 +27,8 @@ enum class SeparatingPlaneOrder {
   kAffine,  ///< a and b are affine function of s.
 };
 
-/**
- Wraps the information that a pair of collision geometries are separated by a
- plane.
- One collision geometry is on the "positive" side of the separating
- plane, namely {x| aᵀx + b ≥ δ} (with δ ≥ 0}, and the other collision geometry
- is on the "negative" side of the separating plane, namely {x|aᵀx+b ≤ −δ}.
- @tparam T The type of decision_variables. T= symbolic::Variable or double.
- */
 template <typename T>
-struct CIrisSeparatingPlane {
- public:
+struct CIrisSeparatingPlane : public CSpaceSeparatingPlane<T> {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(CIrisSeparatingPlane)
 
   CIrisSeparatingPlane(Vector3<symbolic::Polynomial> m_a,
@@ -48,28 +38,12 @@ struct CIrisSeparatingPlane {
                        multibody::BodyIndex m_expressed_body,
                        SeparatingPlaneOrder m_plane_order,
                        const Eigen::Ref<const VectorX<T>>& m_decision_variables)
-      : a{std::move(m_a)},
-        b{std::move(m_b)},
-        positive_side_geometry{m_positive_side_geometry},
-        negative_side_geometry{m_negative_side_geometry},
-        expressed_body{m_expressed_body},
-        plane_order{m_plane_order},
-        decision_variables{m_decision_variables} {}
+      : CSpaceSeparatingPlane<T>(m_a, m_b, m_positive_side_geometry,
+                                 m_negative_side_geometry, m_expressed_body,
+                                 m_decision_variables),
+        plane_order{m_plane_order} {}
 
-  /// Return the geometry on the specified side.
-  [[nodiscard]] const CIrisCollisionGeometry* geometry(
-      PlaneSide plane_side) const {
-    return plane_side == PlaneSide::kPositive ? positive_side_geometry
-                                              : negative_side_geometry;
-  }
-
-  Vector3<symbolic::Polynomial> a;
-  symbolic::Polynomial b;
-  const CIrisCollisionGeometry* positive_side_geometry;
-  const CIrisCollisionGeometry* negative_side_geometry;
-  multibody::BodyIndex expressed_body;
-  SeparatingPlaneOrder plane_order;
-  VectorX<T> decision_variables;
+  SeparatingPlaneOrder plane_order{SeparatingPlaneOrder::kAffine};
 };
 
 /**

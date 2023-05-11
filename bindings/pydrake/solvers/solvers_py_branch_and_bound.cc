@@ -18,9 +18,21 @@ void DefineSolversBranchAndBound(py::module m) {
   {
     using Class = MixedIntegerBranchAndBound;
     constexpr auto& cls_doc = doc.MixedIntegerBranchAndBound;
-    py::class_<Class>(m, "MixedIntegerBranchAndBound", cls_doc.doc)
-        .def(py::init<const MathematicalProgram&, const SolverId&>(),
-            py::arg("prog"), py::arg("solver_id"), cls_doc.ctor.doc)
+    py::class_<Class> bnb_cls(m, "MixedIntegerBranchAndBound", cls_doc.doc);
+
+    py::class_<MixedIntegerBranchAndBound::Options>(
+        bnb_cls, "Options", cls_doc.Options.doc)
+        .def(py::init<>(), cls_doc.Options.ctor.doc)
+        .def_readwrite("max_explored_nodes",
+            &MixedIntegerBranchAndBound::Options::max_explored_nodes,
+            cls_doc.Options.max_explored_nodes.doc);
+
+    bnb_cls
+        .def(py::init<const MathematicalProgram&, const SolverId&,
+                 MixedIntegerBranchAndBound::Options>(),
+            py::arg("prog"), py::arg("solver_id"),
+            py::arg("options") = MixedIntegerBranchAndBound::Options{},
+            cls_doc.ctor.doc)
         .def("Solve", &Class::Solve, cls_doc.Solve.doc)
         .def("GetOptimalCost", &Class::GetOptimalCost,
             cls_doc.GetOptimalCost.doc)

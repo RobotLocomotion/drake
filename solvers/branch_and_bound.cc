@@ -252,6 +252,22 @@ bool MixedIntegerBranchAndBoundNode::optimal_solution_is_integral() const {
   DRAKE_UNREACHABLE();
 }
 
+bool MixedIntegerBranchAndBoundNode::is_explored() const {
+  return prog_result_.get() != nullptr;
+}
+
+int MixedIntegerBranchAndBoundNode::NumExploredNodesInSubtree() const {
+  // First count this node as the root of the subtree.
+  int ret = is_explored();
+  if (left_child_.get() != nullptr) {
+    ret += left_child_->NumExploredNodesInSubtree();
+  }
+  if (right_child_.get() != nullptr) {
+    ret += right_child_->NumExploredNodesInSubtree();
+  }
+  return ret;
+}
+
 bool IsVariableInList(const std::list<symbolic::Variable>& variable_list,
                       const symbolic::Variable& variable) {
   for (const auto& var : variable_list) {
@@ -314,8 +330,10 @@ void MixedIntegerBranchAndBoundNode::Branch(
 }
 
 MixedIntegerBranchAndBound::MixedIntegerBranchAndBound(
-    const MathematicalProgram& prog, const SolverId& solver_id)
+    const MathematicalProgram& prog, const SolverId& solver_id,
+    MixedIntegerBranchAndBound::Options options)
     : root_{nullptr},
+      options_{std::move(options)},
       map_old_vars_to_new_vars_{},
       best_upper_bound_{std::numeric_limits<double>::infinity()},
       best_lower_bound_{-std::numeric_limits<double>::infinity()},
@@ -360,18 +378,26 @@ SolutionResult MixedIntegerBranchAndBound::Solve() {
   }
   MixedIntegerBranchAndBoundNode* branching_node = PickBranchingNode();
   while (branching_node) {
-    // Found a branching node, branch on this node. If no branching node is
-    // found, then every leaf node is fathomed, the branch-and-bound process
-    // should terminate.
-    // TODO(hongkai.dai) We might need to have a function that picks the
-    // branching node together with the branching variable simultaneously.
-    const symbolic::Variable* branching_variable =
-        PickBranchingVariable(*branching_node);
-    BranchAndUpdate(branching_node, *branching_variable);
-    if (HasConverged()) {
-      return SolutionResult::kSolutionFound;
+    // Each branch will create two new nodes. So if the current number of nodes
+    // + 2 is larger than options_.max_explored_nodes, we don't branch
+    // any more.
+    if (options_.max_explored_nodes >= 1 &&
+        root_->NumExploredNodesInSubtree() + 2 > options_.max_explored_nodes) {
+      return SolutionResult::kIterationLimit;
+    } else {
+      // Found a branching node, branch on this node. If no branching node is
+      // found, then every leaf node is fathomed, the branch-and-bound process
+      // should terminate.
+      // TODO(hongkai.dai) We might need to have a function that picks the
+      // branching node together with the branching variable simultaneously.
+      const symbolic::Variable* branching_variable =
+          PickBranchingVariable(*branching_node);
+      BranchAndUpdate(branching_node, *branching_variable);
+      if (HasConverged()) {
+        return SolutionResult::kSolutionFound;
+      }
+      branching_node = PickBranchingNode();
     }
-    branching_node = PickBranchingNode();
   }
   // No node to branch.
   if (best_lower_bound_ == -std::numeric_limits<double>::infinity()) {

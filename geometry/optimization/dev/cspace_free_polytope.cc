@@ -11,6 +11,7 @@
 
 #include "drake/common/symbolic/monomial_util.h"
 #include "drake/common/symbolic/polynomial.h"
+#include "drake/geometry/optimization/cspace_free_internal.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
@@ -569,21 +570,36 @@ std::optional<CspaceFreePolytope::SeparationCertificateResult>
 CspaceFreePolytope::SolveSeparationCertificateProgram(
     const CspaceFreePolytope::SeparationCertificateProgram& certificate_program,
     const FindSeparationCertificateGivenPolytopeOptions& options) const {
-  solvers::MathematicalProgramResult result;
-  solvers::MakeSolver(options.solver_id)
-      ->Solve(*certificate_program.prog, std::nullopt, options.solver_options,
-              &result);
-  std::optional<CspaceFreePolytope::SeparationCertificateResult> ret{
+  CspaceFreePolytope::SeparationCertificateResult ret;
+
+  internal::SolveSeparationCertificateProgramBase(
+      certificate_program, options,
+      separating_planes_[certificate_program.plane_index], &ret);
+  std::optional<CspaceFreePolytope::SeparationCertificateResult> ret_optional{
       std::nullopt};
-  if (result.is_success()) {
-    ret.emplace(certificate_program.certificate.GetSolution(
-        certificate_program.plane_index,
-        separating_planes_[certificate_program.plane_index].a,
-        separating_planes_[certificate_program.plane_index].b,
-        separating_planes_[certificate_program.plane_index].decision_variables,
-        result));
+  if (ret.result.is_success()) {
+    ret_optional = ret;
+    // Now set the Lagrangians of the result.
+    auto set_lagrangians =
+        [&ret_optional](
+            const std::vector<CspaceFreePolytope::SeparatingPlaneLagrangians>&
+                lagrangians_vec,
+            std::vector<CspaceFreePolytope::SeparatingPlaneLagrangians>*
+                lagrangians_result) {
+          lagrangians_result->reserve(lagrangians_vec.size());
+          for (const auto& lagrangians : lagrangians_vec) {
+            lagrangians_result->push_back(
+                lagrangians.GetSolution(ret_optional.value().result));
+          }
+        };
+    set_lagrangians(
+        certificate_program.certificate.positive_side_rational_lagrangians,
+        &ret_optional.value().positive_side_rational_lagrangians);
+    set_lagrangians(
+        certificate_program.certificate.negative_side_rational_lagrangians,
+        &ret_optional.value().negative_side_rational_lagrangians);
   }
-  return ret;
+  return ret_optional;
 }
 }  // namespace optimization
 }  // namespace geometry

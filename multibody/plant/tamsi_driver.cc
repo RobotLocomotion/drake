@@ -133,7 +133,7 @@ void TamsiDriver<T>::CalcContactSolverResults(
   }
 
   // Joint locking: quick exit if everything is locked.
-  const auto& indices = manager().EvalJointLockingIndices(context);
+  const auto& indices = manager().EvalUnlockedVelocityIndices(context);
   if (indices.empty()) {
     // Everything is locked! Return a result that indicates no velocity, but
     // reports normal forces.

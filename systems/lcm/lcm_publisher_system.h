@@ -127,7 +127,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @param[in] channel The LCM channel on which to publish.
    *
    * @param[in] serializer The serializer that converts between byte vectors
-   * and LCM message objects.
+   * and LCM message objects. Cannot be null.
    *
    * @param lcm A pointer to the LCM subsystem to use, which must
    * remain valid for the lifetime of this object. If null, a
@@ -141,7 +141,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @pre publish_period is non-negative.
    */
   LcmPublisherSystem(const std::string& channel,
-                     std::unique_ptr<SerializerInterface> serializer,
+                     std::shared_ptr<const SerializerInterface> serializer,
                      drake::lcm::DrakeLcmInterface* lcm,
                      double publish_period = 0.0);
 
@@ -153,7 +153,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @param[in] channel The LCM channel on which to publish.
    *
    * @param[in] serializer The serializer that converts between byte vectors
-   * and LCM message objects.
+   * and LCM message objects. Cannot be null.
    *
    * @param lcm A pointer to the LCM subsystem to use, which must
    * remain valid for the lifetime of this object. If null, a
@@ -173,7 +173,7 @@ class LcmPublisherSystem : public LeafSystem<double> {
    * @pre publish_triggers contains a subset of {kForced, kPeriodic, kPerStep}.
    */
   LcmPublisherSystem(const std::string& channel,
-      std::unique_ptr<SerializerInterface> serializer,
+      std::shared_ptr<const SerializerInterface> serializer,
       drake::lcm::DrakeLcmInterface* lcm,
       const systems::TriggerTypeSet& publish_triggers,
       double publish_period = 0.0);
@@ -235,12 +235,11 @@ class LcmPublisherSystem : public LeafSystem<double> {
   InitializationPublisher initialization_publisher_;
 
   // Converts Value<LcmMessage> objects into LCM message bytes.
-  // Will be non-null iff our input port is abstract-valued.
-  std::unique_ptr<SerializerInterface> serializer_;
+  const std::shared_ptr<const SerializerInterface> serializer_;
 
   // If we're not given a DrakeLcm object, we allocate one and keep it here.
   // The unique_ptr is const, not the held object.
-  std::unique_ptr<drake::lcm::DrakeLcm> const owned_lcm_;
+  const std::unique_ptr<drake::lcm::DrakeLcm> owned_lcm_;
 
   // A const pointer to an LCM subsystem. Note that while the pointer is const,
   // the LCM subsystem is not const. This may refer to an externally-supplied

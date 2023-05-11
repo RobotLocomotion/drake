@@ -22,13 +22,13 @@ constexpr int kMagic = 6832;  // An arbitrary value.
 
 LcmSubscriberSystem::LcmSubscriberSystem(
     const std::string& channel,
-    std::unique_ptr<SerializerInterface> serializer,
+    std::shared_ptr<const SerializerInterface> serializer,
     drake::lcm::DrakeLcmInterface* lcm)
     : channel_(channel),
       serializer_(std::move(serializer)),
       magic_number_{kMagic} {
-  DRAKE_DEMAND(serializer_ != nullptr);
-  DRAKE_DEMAND(lcm != nullptr);
+  DRAKE_THROW_UNLESS(serializer_ != nullptr);
+  DRAKE_THROW_UNLESS(lcm != nullptr);
 
   subscription_ = lcm->Subscribe(
       channel_, [this](const void* buffer, int size) {
