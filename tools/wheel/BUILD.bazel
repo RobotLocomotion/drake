@@ -1,6 +1,11 @@
 load("@drake//tools/skylark:drake_py.bzl", "drake_py_binary")
 load("//tools/lint:lint.bzl", "add_lint_tests")
 
+exports_files(
+    glob(["**"]),
+    visibility = ["//tools:__subpackages__"],
+)
+
 py_library(
     name = "module_py",
     srcs = ["__init__.py"],
