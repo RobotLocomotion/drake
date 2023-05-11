@@ -4383,12 +4383,152 @@ TEST_F(GeometryStateNoRendererTest, PerceptionRoleWithoutRenderer) {
       0);
 }
 
-// TODO(SeanCurtis-TRI): The `Render*Image` interface is insufficiently tested.
-//  GeometryState is a thin wrapper on the render engine, but GeometryState is
-//  responsible for:
-//    1. Confirming the parent frame is valid.
-//    2. Updating the camera pose.
-//    3. Calling the appropriate render engine.
+// GeometryState has three responsibilties when it comes to rendering:
+//
+//   1. Compute the correct camera pose in the world frame.
+//   2. Handle finding render engines by name (including *not* finding them).
+//   3. Call the appropriate RenderEngine API for the image type.
+//
+// For each of the Render*Image APIs, this establishes those three
+// responsibilites are met.
+class GeometryStateRenderTest : public ::testing::Test {
+ protected:
+  void SetUp() final {
+    const SourceId s_id = geometry_state_.RegisterNewSource("render_test");
+
+    // Add an arbitrarily posed frame (90° rotation around x-axis with non-zero
+    // offset) to serve as the parent frame for the camera.
+    X_WP_ = RigidTransformd(AngleAxis<double>(M_PI_2, Vector3d::UnitX()),
+                            Vector3d{1, 2, 3});
+    parent_id_ =
+        geometry_state_.RegisterFrame(s_id, GeometryFrame("parent_frame"));
+
+    // Equally arbitrary non-identity poses for the camera body in the parent
+    // frame and camera sensor in the camera body frame.
+    X_PC_ = RigidTransformd(AngleAxis<double>(M_PI_2, Vector3d::UnitY()),
+                            Vector3d{2, 3, 4});
+    X_CS_ = RigidTransformd(AngleAxis<double>(M_PI_2, Vector3d::UnitZ()),
+                            Vector3d{3, 4, 5});
+    // The expected pose of the camera *sensor* as passed to the render engine.
+    X_WS_ = X_WP_ * X_PC_ * X_CS_;
+
+    // Now add two render engines.
+    auto engine1 = std::make_unique<DummyRenderEngine>();
+    engine1_ = engine1.get();
+    geometry_state_.AddRenderer("engine1", std::move(engine1));
+    geometry_state_.AddRenderer("engine2",
+                                std::make_unique<DummyRenderEngine>());
+    // Make sure the geometry data knows the parent frame's pose.
+    GeometryStateTester<double> tester;
+    tester.set_state(&geometry_state_);
+    FramePoseVector<double> poses;
+    poses.set_value(parent_id_, X_WP_);
+    tester.SetFramePoses(s_id, poses, &tester.mutable_kinematics_data());
+  }
+
+  static int width() { return 4; }
+  static int height() { return 3; }
+  render::RenderCameraCore camera_core(std::string_view engine_name) const {
+    return render::RenderCameraCore(std::string(engine_name),
+                                    {width(), height(), M_PI / 4}, {0.25, 10},
+                                    X_CS_);
+  }
+
+  render::ColorRenderCamera color_camera(std::string_view engine_name) const {
+    return render::ColorRenderCamera(camera_core(engine_name));
+  }
+
+  render::DepthRenderCamera depth_camera(std::string_view engine_name) const {
+    return render::DepthRenderCamera(camera_core(engine_name), {1.0, 5.0});
+  }
+
+  GeometryState<double> geometry_state_;
+  FrameId parent_id_{};
+  // The pose of the *parent* frame P in world.
+  RigidTransformd X_WP_;
+  // The pose of the *camera* body frame C in the parent frame.
+  RigidTransformd X_PC_;
+  // The pose of the *sensor* frame S in the camera body frame.
+  RigidTransformd X_CS_;
+  // The concatenated pose of the sensor frame in the world.  See Setup().
+  RigidTransformd X_WS_;
+  DummyRenderEngine* engine1_{};
+};
+
+TEST_F(GeometryStateRenderTest, RenderColorImage) {
+  // The image doesn't matter; it will *not* get written to. It just needs to be
+  // an image that matches the camera.
+  systems::sensors::ImageRgba8U image(width(), height());
+
+  // Case: valid render sets the viewport and calls the right API. We don't test
+  //  to confirm that the image is passed along, that would be screamingly
+  //  apparent.
+  geometry_state_.RenderColorImage(color_camera("engine1"), parent_id_,
+                                    X_PC_, &image);
+  EXPECT_TRUE(CompareMatrices(engine1_->last_updated_X_WC().GetAsMatrix4(),
+                              X_WS_.GetAsMatrix4(), 1e-15));
+  EXPECT_EQ(engine1_->num_color_renders(), 1);
+  EXPECT_EQ(engine1_->num_depth_renders(), 0);
+  EXPECT_EQ(engine1_->num_label_renders(), 0);
+
+  // Passing another *valid* name doesn't throw (it finds the *other* engine.
+  // But passing an invalid name throws.
+  EXPECT_NO_THROW(geometry_state_.RenderColorImage(
+      color_camera("engine2"), parent_id_, X_PC_, &image));
+  EXPECT_THROW(geometry_state_.RenderColorImage(color_camera("not_an_engine"),
+                                                parent_id_, X_PC_, &image),
+               std::exception);
+}
+
+TEST_F(GeometryStateRenderTest, RenderDepthImage) {
+  // The image doesn't matter; it will *not* get written to. It just needs to be
+  // an image that matches the camera.
+  systems::sensors::ImageDepth32F image(width(), height());
+
+  // Case: valid render sets the viewport and calls the right API. We don't test
+  //  to confirm that the image is passed along, that would be screamingly
+  //  apparent.
+  geometry_state_.RenderDepthImage(depth_camera("engine1"), parent_id_, X_PC_,
+                                   &image);
+  EXPECT_TRUE(CompareMatrices(engine1_->last_updated_X_WC().GetAsMatrix4(),
+                              X_WS_.GetAsMatrix4(), 1e-15));
+  EXPECT_EQ(engine1_->num_color_renders(), 0);
+  EXPECT_EQ(engine1_->num_depth_renders(), 1);
+  EXPECT_EQ(engine1_->num_label_renders(), 0);
+
+  // Passing another *valid* name doesn't throw (it finds the *other* engine.
+  // But passing an invalid name throws.
+  EXPECT_NO_THROW(geometry_state_.RenderDepthImage(depth_camera("engine2"),
+                                                   parent_id_, X_PC_, &image));
+  EXPECT_THROW(geometry_state_.RenderDepthImage(depth_camera("not_an_engine"),
+                                                parent_id_, X_PC_, &image),
+               std::exception);
+}
+
+TEST_F(GeometryStateRenderTest, RenderLabelImage) {
+  // The image doesn't matter; it will *not* get written to. It just needs to be
+  // an image that matches the camera.
+  systems::sensors::ImageLabel16I image(width(), height());
+
+  // Case: valid render sets the viewport and calls the right API. We don't test
+  //  to confirm that the image is passed along, that would be screamingly
+  //  apparent.
+  geometry_state_.RenderLabelImage(color_camera("engine1"), parent_id_, X_PC_,
+                                   &image);
+  EXPECT_TRUE(CompareMatrices(engine1_->last_updated_X_WC().GetAsMatrix4(),
+                              X_WS_.GetAsMatrix4(), 1e-15));
+  EXPECT_EQ(engine1_->num_color_renders(), 0);
+  EXPECT_EQ(engine1_->num_depth_renders(), 0);
+  EXPECT_EQ(engine1_->num_label_renders(), 1);
+
+  // Passing another *valid* name doesn't throw (it finds the *other* engine.
+  // But passing an invalid name throws.
+  EXPECT_NO_THROW(geometry_state_.RenderLabelImage(color_camera("engine2"),
+                                                   parent_id_, X_PC_, &image));
+  EXPECT_THROW(geometry_state_.RenderLabelImage(color_camera("not_an_engine"),
+                                                parent_id_, X_PC_, &image),
+               std::exception);
+}
 
 }  // namespace
 }  // namespace geometry
