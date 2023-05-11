@@ -14,8 +14,7 @@ namespace geometry {
 namespace optimization {
 
 VectorX<Polynomiald> MakeBezierCurvePolynomialPath(
-    const Eigen::Vector3d& s0, const Eigen::Vector3d& s_end,
-    int curve_order,
+    const Eigen::Vector3d& s0, const Eigen::Vector3d& s_end, int curve_order,
     std::optional<HPolyhedron> poly_to_check_containment = std::nullopt) {
   if (poly_to_check_containment.has_value()) {
     EXPECT_TRUE(poly_to_check_containment.value().PointInSet(s0));
@@ -72,7 +71,7 @@ void CheckSeparationBySamples(
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
     const CspaceFreePolytope::IgnoredCollisionPairs& ignored_collision_pairs) {
   auto diagram_context = diagram.CreateDefaultContext();
-  const auto& plant = tester.cspace_free_path().rational_forward_kin().plant();
+  const auto& plant = tester.get_rational_forward_kin()->plant();
   const auto& scene_graph = tester.get_scene_graph();
   auto& plant_context =
       plant.GetMyMutableContextFromRoot(diagram_context.get());
@@ -89,8 +88,7 @@ void CheckSeparationBySamples(
       s(r) = path(r).EvaluateUnivariate(mu_samples(i));
     }
     const Eigen::VectorXd q_val =
-        tester.cspace_free_path().rational_forward_kin().ComputeQValue(s,
-                                                                       q_star);
+        tester.get_rational_forward_kin()->ComputeQValue(s, q_star);
     plant.SetPositions(&plant_context, q_val);
     const QueryObject<double>& query_object =
         state_value->get_value<QueryObject<double>>();
@@ -99,10 +97,11 @@ void CheckSeparationBySamples(
     EXPECT_FALSE(query_object.HasCollisions());
     for (int plane_index = 0;
          plane_index <
-         static_cast<int>(tester.cspace_free_path().separating_planes().size());
+         static_cast<int>(
+             tester.get_separating_planes().size());
          ++plane_index) {
       const auto& plane =
-          tester.cspace_free_path().separating_planes()[plane_index];
+          tester.get_separating_planes()[plane_index];
       if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
               plane.positive_side_geometry->id(),
               plane.negative_side_geometry->id())) == 0 &&
@@ -133,7 +132,7 @@ void CheckForCollisionAlongPath(
     const Eigen::Ref<const VectorX<Polynomiald>>& path,
     const Eigen::Ref<const Eigen::VectorXd>& q_star) {
   auto diagram_context = diagram.CreateDefaultContext();
-  const auto& plant = tester.cspace_free_path().rational_forward_kin().plant();
+  const auto& plant = tester.get_rational_forward_kin()->plant();
   const auto& scene_graph = tester.get_scene_graph();
   auto& plant_context =
       plant.GetMyMutableContextFromRoot(diagram_context.get());
@@ -150,8 +149,7 @@ void CheckForCollisionAlongPath(
       s(r) = path(r).EvaluateUnivariate(mu_samples(i));
     }
     const Eigen::VectorXd q_val =
-        tester.cspace_free_path().rational_forward_kin().ComputeQValue(s,
-                                                                       q_star);
+        tester.get_rational_forward_kin()->ComputeQValue(s, q_star);
     plant.SetPositions(&plant_context, q_val);
     const QueryObject<double>& query_object =
         state_value->get_value<QueryObject<double>>();
@@ -203,13 +201,13 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
   const Eigen::Vector3d s0_unsafe{-1.74, -0.22, 0.24};
   const Eigen::Vector3d s_end_unsafe{0.84, 2.31, 1.47};
 
+  const int plane_order = 1;
   //  const Eigen::Vector3d s0_unsafe{0.65*M_PI, 1.63, 2.9};
   //  const Eigen::Vector3d s_end_unsafe{-1.63, 0.612, -0.65};
 
   for (const int maximum_path_degree : {1, 4}) {
-    CspaceFreePathTester tester(plant_, scene_graph_,
-                                SeparatingPlaneOrder::kAffine, q_star,
-                                maximum_path_degree);
+    CspaceFreePathTester tester(plant_, scene_graph_, q_star,
+                                maximum_path_degree, plane_order);
 
     // Check that we can certify paths up to the maximum degree.
     for (int bezier_curve_order = 1; bezier_curve_order <= maximum_path_degree;
@@ -225,16 +223,16 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
           tester.cspace_free_path().MakeIsGeometrySeparableOnPathProgram(
               geometry_pair, bezier_poly_path_safe);
       auto separation_certificate_result =
-          tester.cspace_free_path().SolvePathSeparationCertificateProgram(
+          tester.cspace_free_path().SolveSeparationCertificateProgram(
               separation_certificate_program, find_certificate_options);
-      EXPECT_TRUE(separation_certificate_result.has_value());
-      if (separation_certificate_result.has_value()) {
+      EXPECT_TRUE(separation_certificate_result.result.is_success());
+      if (separation_certificate_result.result.is_success()) {
         CheckSeparationBySamples(tester, *diagram_, mu_samples,
                                  bezier_poly_path_safe,
-                                 {{separation_certificate_result->plane_index,
-                                   separation_certificate_result->a}},
-                                 {{separation_certificate_result->plane_index,
-                                   separation_certificate_result->b}},
+                                 {{separation_certificate_result.plane_index,
+                                   separation_certificate_result.a}},
+                                 {{separation_certificate_result.plane_index,
+                                   separation_certificate_result.b}},
                                  q_star, {});
       }
 
@@ -246,10 +244,10 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
               geometry_pair, bezier_poly_path_unsafe);
 
       auto separation_certificate_result2 =
-          tester.cspace_free_path().SolvePathSeparationCertificateProgram(
+          tester.cspace_free_path().SolveSeparationCertificateProgram(
               separation_certificate_program2, find_certificate_options);
-      EXPECT_FALSE(separation_certificate_result2.has_value());
-      if (!separation_certificate_result2.has_value()) {
+      EXPECT_FALSE(separation_certificate_result2.result.is_success());
+      if (!separation_certificate_result2.result.is_success()) {
         CheckForCollisionAlongPath(tester, *diagram_, mu_samples,
                                    bezier_poly_path_unsafe, q_star);
       }
