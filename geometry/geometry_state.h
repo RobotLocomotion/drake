@@ -767,7 +767,7 @@ class GeometryState {
   // elsewhere.
   void RemoveFromAllRenderersUnchecked(GeometryId id);
 
-  bool RemoveProximityRole(GeometryId geometry_id);
+    bool RemoveProximityRole(GeometryId geometry_id);
   bool RemoveIllustrationRole(GeometryId geometry_id);
   bool RemovePerceptionRole(GeometryId geometry_id);
 

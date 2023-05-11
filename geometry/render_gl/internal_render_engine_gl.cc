@@ -466,6 +466,8 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
       parameters_(std::move(params)) {
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
   glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
   glClearDepth(1.0);
   glEnable(GL_DEPTH_TEST);
