@@ -40,7 +40,6 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
                  Pair{I_double(2, 2), 2}};
     std::sort(I.begin(), I.end(), [](const Pair& l, const Pair& r) {
       return l < r;});
-      // return l.first < r.first;});
     const double Imin = I[0].first;  // Minimum principal moment of inertia.
     const double Imed = I[1].first;  // Intermediate principal moment of inertia
     const double Imax = I[2].first;  // Maximum principal moment of inertia.

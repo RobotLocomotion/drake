@@ -530,7 +530,7 @@ class RotationalInertia {
   /// that can be converted to a double (discarding any supplemental scalar data
   /// such as derivatives of an AutoDiffXd).
   /// @see CalcPrincipalMomentsAndAxesOfInertia() to also calculate principal
-  /// directions associated with `this` rotational inertia.
+  /// moment of inertia directions associated with `this` rotational inertia.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
     return CalcPrincipalMomentsAndMaybeAxesOfInertia(nullptr);
   }
@@ -548,14 +548,14 @@ class RotationalInertia {
   /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
   /// parallel to principal axes associated with Iyy and Izz (the intermediate
   /// and largest principal moments of inertia). If all principal moments of
-  /// inertia are equal Ixx = Iyy = Izz, R_EP is the identity matrix.
+  /// inertia are equal (i.e., Ixx = Iyy = Izz), R_EP is the identity matrix.
   /// @throws std::exception if the eigenvalue solver fails or if scalar type T
   /// cannot be converted to a double.
   /// @note: This method only works for a rotational inertia with scalar type T
   /// that can be converted to a double (discarding any supplemental scalar data
   /// such as derivatives of an AutoDiffXd).
   /// @see CalcPrincipalMomentsOfInertia() to calculate the principal moments
-  /// [Ixx Iyy Izz], without the principal directions.
+  /// of inertia [Ixx Iyy Izz], without calculating the principal directions.
   std::pair<Vector3<double>, math::RotationMatrix<double>>
   CalcPrincipalMomentsAndAxesOfInertia() const {
     math::RotationMatrix<double> R_EP;
