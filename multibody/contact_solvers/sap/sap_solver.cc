@@ -257,7 +257,6 @@ T SapSolver<T>::CalcCostAlongLine(
   if (d2ell_dalpha2 != nullptr) DRAKE_DEMAND(d2ell_dalpha2_scratch != nullptr);
 
   // Data.
-  const VectorX<T>& R = model_->constraints_bundle().R();
   const VectorX<T>& v_star = model_->v_star();
 
   // Search direction quantities at state v.
@@ -284,7 +283,7 @@ T SapSolver<T>::CalcCostAlongLine(
   const VectorX<T>& gamma = model_->EvalImpulses(context_alpha);
 
   // Regularizer cost.
-  const T ellR = 0.5 * gamma.dot(R.asDiagonal() * gamma);
+  const T ellR = model_->EvalConstraintsCost(context_alpha);
 
   // Momentum cost. We use the O(n) strategy described in [Castro et al., 2021].
   // The momentum cost is: ellA(α) = 0.5‖v(α)−v*‖², where ‖⋅‖ is the norm
