@@ -39,8 +39,10 @@ SceneGraphCollisionChecker::SceneGraphCollisionChecker(
     CollisionCheckerParams params)
     : CollisionChecker(std::move(params), true /* supports parallel */) {
   AllocateContexts();
-  // Enforce that all filters are active in SceneGraph.
-  DoUpdateCollisionFilters();
+  // Enforce that all filters known to the collision checker are active in
+  // SceneGraph, as CollisionChecker introduces additional filters that may not
+  // already be present in SceneGraph (e.g. environment-environment body pairs).
+  ApplyCollisionFiltersToSceneGraph();
 }
 
 SceneGraphCollisionChecker::SceneGraphCollisionChecker(
@@ -82,18 +84,15 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
   const Operation operation = [&](const RobotDiagram<double>& model,
                                   CollisionCheckerContext* model_context) {
     auto& sg_context = model_context->mutable_scene_graph_context();
-    const GeometryId added_geometry_id = model.scene_graph().RegisterGeometry(
+    model.scene_graph().RegisterGeometry(
         &sg_context, model.plant().get_source_id().value(), body_frame_id,
         std::make_unique<GeometryInstance>(geometry_template));
-    model.scene_graph()
-        .collision_filter_manager(&sg_context)
-        .Apply(CollisionFilterDeclaration().ExcludeBetween(
-            bodyA_geometries, GeometrySet{added_geometry_id}));
   };
   PerformOperationAgainstAllModelContexts(operation);
 
-  // For performance ensure that filters in SceneGraph are up to date.
-  DoUpdateCollisionFilters();
+  // Ensure that filters in SceneGraph cover the new geometry, including the
+  // within-body filter for the new geometry.
+  ApplyCollisionFiltersToSceneGraph();
 
   return geometry_template.id();
 }
@@ -120,39 +119,8 @@ void SceneGraphCollisionChecker::DoRemoveAddedGeometries(
 }
 
 void SceneGraphCollisionChecker::DoUpdateCollisionFilters() {
-  // Assemble the new collision filters.
-  CollisionFilterDeclaration new_collision_filters;
-
-  const int num_bodies = plant().num_bodies();
-  for (BodyIndex i(0); i < num_bodies - 1; ++i) {
-    const FrameId frame_i = plant().GetBodyFrameIdOrThrow(i);
-    const GeometrySet geometries_i(frame_i);
-
-    for (BodyIndex j(i + 1); j < num_bodies; ++j) {
-      const FrameId frame_j = plant().GetBodyFrameIdOrThrow(j);
-      const GeometrySet geometries_j(frame_j);
-
-      if (IsCollisionFilteredBetween(i, j)) {
-        new_collision_filters.ExcludeBetween(geometries_i, geometries_j);
-      } else {
-        new_collision_filters.AllowBetween(geometries_i, geometries_j);
-      }
-    }
-  }
-
-  // Apply the new collision filters to every context.
-  using Operation = const std::function<void(const RobotDiagram<double>&,
-                                             CollisionCheckerContext*)>;
-  const Operation operation = [&new_collision_filters](
-                                  const RobotDiagram<double>& model,
-                                  CollisionCheckerContext* model_context) {
-    auto& sg_context = model_context->mutable_scene_graph_context();
-    model.scene_graph()
-        .collision_filter_manager(&sg_context)
-        .Apply(new_collision_filters);
-  };
-
-  PerformOperationAgainstAllModelContexts(operation);
+  // Apply changes to the collision filters to SceneGraph.
+  ApplyCollisionFiltersToSceneGraph();
 }
 
 bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
@@ -398,6 +366,46 @@ int SceneGraphCollisionChecker::DoMaxContextNumDistances(
     }
   }
   return valid_candidate_count;
+}
+
+void SceneGraphCollisionChecker::ApplyCollisionFiltersToSceneGraph() {
+  // Assemble the new collision filters.
+  CollisionFilterDeclaration new_collision_filters;
+
+  const int num_bodies = plant().num_bodies();
+  for (BodyIndex i(0); i < num_bodies; ++i) {
+    const FrameId frame_i = plant().GetBodyFrameIdOrThrow(i);
+    const GeometrySet geometries_i(frame_i);
+
+    // Add within-body filter.
+    new_collision_filters.ExcludeWithin(geometries_i);
+
+    // Collect body-body filters.
+    for (BodyIndex j(i + 1); j < num_bodies; ++j) {
+      const FrameId frame_j = plant().GetBodyFrameIdOrThrow(j);
+      const GeometrySet geometries_j(frame_j);
+
+      if (IsCollisionFilteredBetween(i, j)) {
+        new_collision_filters.ExcludeBetween(geometries_i, geometries_j);
+      } else {
+        new_collision_filters.AllowBetween(geometries_i, geometries_j);
+      }
+    }
+  }
+
+  // Apply the new collision filters to every context.
+  using Operation = const std::function<void(const RobotDiagram<double>&,
+                                             CollisionCheckerContext*)>;
+  const Operation operation = [&new_collision_filters](
+                                  const RobotDiagram<double>& model,
+                                  CollisionCheckerContext* model_context) {
+    auto& sg_context = model_context->mutable_scene_graph_context();
+    model.scene_graph()
+        .collision_filter_manager(&sg_context)
+        .Apply(new_collision_filters);
+  };
+
+  PerformOperationAgainstAllModelContexts(operation);
 }
 
 }  // namespace planning

@@ -58,6 +58,9 @@ class SceneGraphCollisionChecker final : public CollisionChecker {
 
   int DoMaxContextNumDistances(
       const CollisionCheckerContext& model_context) const final;
+
+  // Applies filters defined in the filtered collision matrix to SceneGraph.
+  void ApplyCollisionFiltersToSceneGraph();
 };
 
 }  // namespace planning
