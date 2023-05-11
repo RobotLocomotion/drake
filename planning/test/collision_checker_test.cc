@@ -1234,13 +1234,25 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilteredWithAllBodies) {
   }
 
   {
-    // Setting a robot body doesn't throw, produces a consistent matrix and
-    // reports filters as expected.
+    // Setting a robot body (via index) doesn't throw, produces a consistent
+    // matrix and reports filters as expected.
     EXPECT_NO_THROW(dut_->SetCollisionFilteredWithAllBodies(b[3]));
     EXPECT_NO_THROW(
         dut_->SetCollisionFilterMatrix(dut_->GetFilteredCollisionMatrix()));
     for (BodyIndex i(0); i < num_bodies; ++i) {
       EXPECT_TRUE(dut_->IsCollisionFilteredBetween(i, b[3]));
+    }
+  }
+
+  {
+    // Setting a robot body (via reference) doesn't throw, produces a consistent
+    // matrix and reports filters as expected.
+    EXPECT_NO_THROW(
+        dut_->SetCollisionFilteredWithAllBodies(dut_->get_body(b[2])));
+    EXPECT_NO_THROW(
+        dut_->SetCollisionFilterMatrix(dut_->GetFilteredCollisionMatrix()));
+    for (BodyIndex i(0); i < num_bodies; ++i) {
+      EXPECT_TRUE(dut_->IsCollisionFilteredBetween(i, b[2]));
     }
   }
 }

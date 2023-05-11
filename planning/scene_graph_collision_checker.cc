@@ -39,6 +39,8 @@ SceneGraphCollisionChecker::SceneGraphCollisionChecker(
     CollisionCheckerParams params)
     : CollisionChecker(std::move(params), true /* supports parallel */) {
   AllocateContexts();
+  // Enforce that all filters are active in SceneGraph.
+  DoUpdateCollisionFilters();
 }
 
 SceneGraphCollisionChecker::SceneGraphCollisionChecker(
@@ -89,6 +91,9 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
             bodyA_geometries, GeometrySet{added_geometry_id}));
   };
   PerformOperationAgainstAllModelContexts(operation);
+
+  // For performance ensure that filters in SceneGraph are up to date.
+  DoUpdateCollisionFilters();
 
   return geometry_template.id();
 }
@@ -167,9 +172,11 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
     const Body<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
     DRAKE_THROW_UNLESS(body_A != nullptr);
     DRAKE_THROW_UNLESS(body_B != nullptr);
-    // Ignore distance pair involving allowed collisions.
+    // Enforce that our collision filters are consistent with query results.
     if (IsCollisionFilteredBetween(*body_A, *body_B)) {
-      continue;
+      throw std::runtime_error(fmt::format(
+          "Collision between bodies [{}] and [{}] should already be filtered",
+          body_A->scoped_name(), body_B->scoped_name()));
     }
     const bool body_A_part_of_robot = IsPartOfRobot(*body_A);
     const bool body_B_part_of_robot = IsPartOfRobot(*body_B);
@@ -241,9 +248,11 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
     const Frame<double>& frame_A = body_A.body_frame();
     const Frame<double>& frame_B = body_B.body_frame();
 
-    // Ignore distance pair involving allowed collisions.
+    // Enforce that our collision filters are consistent with query results.
     if (IsCollisionFilteredBetween(body_A, body_B)) {
-      continue;
+      throw std::runtime_error(fmt::format(
+          "Collision between bodies [{}] and [{}] should already be filtered",
+          body_A.scoped_name(), body_B.scoped_name()));
     }
 
     // Adjust pair-specific padding, and skip now-unnecessary distances.
@@ -389,60 +398,6 @@ int SceneGraphCollisionChecker::DoMaxContextNumDistances(
     }
   }
   return valid_candidate_count;
-}
-
-bool SceneGraphCollisionChecker::CheckCollisionFilterConsistency() const {
-  const Eigen::MatrixXi& current_collision_filter_matrix =
-      GetFilteredCollisionMatrix();
-  drake::log()->debug("Current filter matrix:\n{}",
-                      fmt_eigen(current_collision_filter_matrix));
-
-  int inconsistencies = 0;
-
-  using Operation = const std::function<void(const RobotDiagram<double>&,
-                                             CollisionCheckerContext*)>;
-  const Operation operation = [&](const RobotDiagram<double>& model,
-                                  CollisionCheckerContext* model_context) {
-    const auto& inspector = model_context->GetQueryObject().inspector();
-    const Eigen::MatrixXi context_collision_filter_matrix =
-        ::drake::planning::GenerateFilteredCollisionMatrix(*this, inspector);
-    drake::log()->debug("Context filter matrix:\n{}",
-                        fmt_eigen(context_collision_filter_matrix));
-
-    const int num_bodies = model.plant().num_bodies();
-    for (BodyIndex i(0); i < num_bodies; ++i) {
-      const bool i_has_geometries =
-          plant().GetCollisionGeometriesForBody(get_body(i)).size() > 0;
-
-      for (BodyIndex j(0); j < num_bodies; ++j) {
-        const bool j_has_geometries =
-            plant().GetCollisionGeometriesForBody(get_body(j)).size() > 0;
-
-        // SceneGraph only has a notion of allowed/excluded collision for bodies
-        // with geometries, so we only check pairs where both bodies have
-        // associated geometries.
-        if (i_has_geometries && j_has_geometries) {
-          const int current_filtered =
-              current_collision_filter_matrix(int{i}, int{j});
-          const int new_filtered =
-              context_collision_filter_matrix(int{i}, int{j});
-          if (current_filtered != new_filtered) {
-            inconsistencies++;
-            drake::log()->debug("Entry {},{} is inconsistent", i, j);
-          }
-        } else {
-          drake::log()->debug(
-              "Entry {},{} skipped, one or both bodies have no geometry");
-        }
-      }
-    }
-  };
-
-  // We know that the operation does not mutate the contexts.
-  const_cast<SceneGraphCollisionChecker*>(this)
-      ->PerformOperationAgainstAllModelContexts(operation);
-
-  return inconsistencies == 0;
 }
 
 }  // namespace planning

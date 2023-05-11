@@ -172,8 +172,15 @@ void DefinePlanningCollisionChecker(py::module m) {
             cls_doc.SetCollisionFilteredBetween
                 .doc_3args_bodyA_bodyB_filter_collision)
         .def("SetCollisionFilteredWithAllBodies",
-            &Class::SetCollisionFilteredWithAllBodies, py::arg("body_index"),
-            cls_doc.SetCollisionFilteredWithAllBodies.doc)
+            py::overload_cast<BodyIndex>(
+                &Class::SetCollisionFilteredWithAllBodies),
+            py::arg("body_index"),
+            cls_doc.SetCollisionFilteredWithAllBodies.doc_1args_body_index)
+        .def("SetCollisionFilteredWithAllBodies",
+            py::overload_cast<const Body<double>&>(
+                &Class::SetCollisionFilteredWithAllBodies),
+            py::arg("body"),
+            cls_doc.SetCollisionFilteredWithAllBodies.doc_1args_body)
         .def("CheckConfigCollisionFree", &Class::CheckConfigCollisionFree,
             py::arg("q"), cls_doc.CheckConfigCollisionFree.doc)
         .def("CheckContextConfigCollisionFree",

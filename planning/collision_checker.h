@@ -664,6 +664,11 @@ class CollisionChecker {
    @throws std::exception if `body_index` refers to an environment body. */
   void SetCollisionFilteredWithAllBodies(multibody::BodyIndex body_index);
 
+  /** Overload that uses body references. */
+  void SetCollisionFilteredWithAllBodies(const multibody::Body<double>& body) {
+    SetCollisionFilteredWithAllBodies(body.index());
+  }
+
   //@}
 
   /** @name Configuration collision checking */
@@ -1042,6 +1047,12 @@ class CollisionChecker {
    @returns true if parallel checking is supported. */
   bool SupportsParallelChecking() const { return supports_parallel_checking_; }
 
+  /* (Internal use only.) Generates the collision filter matrix for the provided
+    collision checker and inspector. */
+  static Eigen::MatrixXi GenerateFilteredCollisionMatrix(
+      const CollisionChecker& checker,
+      const geometry::SceneGraphInspector<double>& inspector);
+
  protected:
   /** Derived classes declare upon construction whether they support parallel
    checking (see SupportsParallelChecking()).
@@ -1409,12 +1420,6 @@ class CollisionChecker {
   /* The names of all groups with added geometries. */
   std::map<std::string, std::vector<AddedShape>> geometry_groups_;
 };
-
-/* (Internal use only.) Generates the collision filter matrix for the provided
-  collision checker and inspector. */
-Eigen::MatrixXi GenerateFilteredCollisionMatrix(
-    const CollisionChecker& checker,
-    const geometry::SceneGraphInspector<double>& inspector);
 
 }  // namespace planning
 }  // namespace drake
