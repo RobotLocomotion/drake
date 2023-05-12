@@ -17,6 +17,9 @@ using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::GeometryId;
+using geometry::SceneGraphInspector;
+using multibody::Body;
 using multibody::BodyIndex;
 using testing::ElementsAre;
 
@@ -34,6 +37,70 @@ CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams() {
        .env_collision_padding = p.env_padding,
        .self_collision_padding = p.self_padding}));
   return result;
+}
+
+// This is equivalent to CollisionChecker::GenerateFilteredCollisionMatrix, but
+// without any of the entries set by CollisionChecker itself, for purposes of
+// checking filters in SceneGraph.
+Eigen::MatrixXi GenerateFilteredCollisionMatrixFromSceneGraphOnly(
+    const SceneGraphCollisionChecker& checker,
+    const SceneGraphInspector<double>& inspector) {
+  const int num_bodies = checker.plant().num_bodies();
+  // Initialize matrix to zero (no filtered collisions).
+  Eigen::MatrixXi filtered_collisions =
+      Eigen::MatrixXi::Zero(num_bodies, num_bodies);
+
+  // Loop variables below use `int` for Eigen indexing compatibility.
+  for (int i = 0; i < num_bodies; ++i) {
+    const Body<double>& body_i = checker.get_body(BodyIndex(i));
+
+    const std::vector<GeometryId>& geometries_i =
+        checker.plant().GetCollisionGeometriesForBody(body_i);
+
+    for (int j = i; j < num_bodies; ++j) {
+      const Body<double>& body_j = checker.get_body(BodyIndex(j));
+
+      // Check if collisions between the geometries are already filtered.
+      bool collisions_filtered = false;
+      const std::vector<GeometryId>& geometries_j =
+          checker.plant().GetCollisionGeometriesForBody(body_j);
+      if (geometries_i.size() > 0 && geometries_j.size() > 0) {
+        collisions_filtered =
+            inspector.CollisionFiltered(geometries_i.at(0), geometries_j.at(0));
+        // Ensure that the collision filtering is homogeneous across all body
+        // geometries.
+        for (const auto& id_i : geometries_i) {
+          for (const auto& id_j : geometries_j) {
+            const bool current_filtered =
+                inspector.CollisionFiltered(id_i, id_j);
+            if (current_filtered != collisions_filtered) {
+              throw std::runtime_error(fmt::format(
+                  "SceneGraph's collision filters on the geometries of bodies "
+                  " {} [{}] and {} [{}] are not homogeneous",
+                  i, body_i.scoped_name(), j, body_j.scoped_name()));
+            }
+          }
+        }
+      }
+
+      // Add the filter accordingly.
+      if (collisions_filtered) {
+        // Filter the collision
+        log()->debug(
+            "Collision between body {} [{}] and body {} [{}] filtered in "
+            "SceneGraph",
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
+        filtered_collisions(i, j) = 1;
+        filtered_collisions(j, i) = 1;
+      } else {
+        log()->debug(
+            "Collision between body {} [{}] and body {} [{}] not filtered in "
+            "SceneGraph",
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
+      }
+    }
+  }
+  return filtered_collisions;
 }
 
 void EnforceCollisionFilterConsistency(
@@ -56,7 +123,7 @@ void EnforceCollisionFilterConsistency(
                                   CollisionCheckerContext* model_context) {
     const auto& inspector = model_context->GetQueryObject().inspector();
     const Eigen::MatrixXi context_collision_filter_matrix =
-        CollisionChecker::GenerateFilteredCollisionMatrix(checker, inspector);
+        GenerateFilteredCollisionMatrixFromSceneGraphOnly(checker, inspector);
     drake::log()->info("Context filter matrix:\n{}",
                        fmt_eigen(context_collision_filter_matrix));
 
@@ -67,10 +134,10 @@ void EnforceCollisionFilterConsistency(
       for (BodyIndex j(0); j < num_bodies; ++j) {
         const bool j_has_geometries = body_has_geometries(j);
 
-        const int current_filtered =
-            current_collision_filter_matrix(int{i}, int{j});
-        const int context_filtered =
-            context_collision_filter_matrix(int{i}, int{j});
+        const bool current_filtered =
+            current_collision_filter_matrix(int{i}, int{j}) != 0;
+        const bool context_filtered =
+            context_collision_filter_matrix(int{i}, int{j}) != 0;
 
         if (current_filtered != context_filtered) {
           // SceneGraph only has a notion of allowed/excluded collision for
