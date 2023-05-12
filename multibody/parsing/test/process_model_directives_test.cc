@@ -378,11 +378,10 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildWelds) {
                           "/deep_child_weld.dmd.yaml"));
   MultibodyPlant<double> plant(0.0);
 
-  EXPECT_EXIT(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
-                             make_parser(&plant).get()),
-      ::testing::KilledBySignal(SIGABRT),
-      R"(.*abort: Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+        make_parser(&plant).get()),
+        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
 }
 
 // Test model directives failure to load welds with a child to a
@@ -393,11 +392,10 @@ GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
                           "/deep_child_frame_weld.dmd.yaml"));
   MultibodyPlant<double> plant(0.0);
 
-  EXPECT_EXIT(
+  DRAKE_EXPECT_THROWS_MESSAGE(
       ProcessModelDirectives(directives, &plant, nullptr,
-                             make_parser(&plant).get()),
-      ::testing::KilledBySignal(SIGABRT),
-      R"(.*abort: Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+        make_parser(&plant).get()),
+        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
 }
 
 }  // namespace
