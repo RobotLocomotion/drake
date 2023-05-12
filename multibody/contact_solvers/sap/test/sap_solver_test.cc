@@ -721,7 +721,7 @@ class LimitConstraint final : public SapConstraint<T> {
     }
   };
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final {
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::make_unique<LimitConstraint<T>>(*this);
   }
 

@@ -150,6 +150,12 @@ void SapFrictionConeConstraint<T>::Project(
   }
 }
 
+template <typename T>
+std::unique_ptr<SapConstraint<T>> SapFrictionConeConstraint<T>::DoClone()
+    const {
+  return std::make_unique<SapFrictionConeConstraint<T>>(*this);
+}
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody

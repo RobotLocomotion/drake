@@ -145,8 +145,6 @@ class SapLimitConstraint final : public SapConstraint<T> {
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final;
-
  private:
   /* Computes the constraint function g(q0) as a function of q0 for given lower
    limit ql and upper limit qu.
@@ -159,6 +157,8 @@ class SapLimitConstraint final : public SapConstraint<T> {
    constraint. */
   static MatrixX<T> CalcConstraintJacobian(int clique_dof, int clique_nv,
                                            const T& ql, const T& qu);
+
+  std::unique_ptr<SapConstraint<T>> DoClone() const final;
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.

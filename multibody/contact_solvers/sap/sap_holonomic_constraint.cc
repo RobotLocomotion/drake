@@ -152,7 +152,7 @@ void SapHolonomicConstraint<T>::Project(const Eigen::Ref<const VectorX<T>>& y,
 }
 
 template <typename T>
-std::unique_ptr<SapConstraint<T>> SapHolonomicConstraint<T>::Clone() const {
+std::unique_ptr<SapConstraint<T>> SapHolonomicConstraint<T>::DoClone() const {
   return std::make_unique<SapHolonomicConstraint<T>>(*this);
 }
 

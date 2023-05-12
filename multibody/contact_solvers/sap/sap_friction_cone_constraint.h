@@ -152,11 +152,9 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final {
-    return std::make_unique<SapFrictionConeConstraint<T>>(*this);
-  }
-
  private:
+  std::unique_ptr<SapConstraint<T>> DoClone() const final;
+
   Parameters parameters_;
   T phi0_;
 };
