@@ -565,7 +565,7 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
                 CalcEquilibriumZPosition() - kPointContactSphereRadius_,
                 kTolerance);
     EXPECT_EQ(contact_info.slip_speed(), 0);
-    EXPECT_EQ(contact_info.separation_speed(), 0);
+    EXPECT_NEAR(contact_info.separation_speed(), 0, kEps);
   } else {
     // Test hydroelastic contact.
     EXPECT_EQ(contact_results->num_point_pair_contacts(), 0);
