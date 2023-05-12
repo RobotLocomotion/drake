@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<robot name="Acrobot">
+  <!-- Insert arbitrary Unicode to test that the editor is accounting by bytes,
+       not characters. The following is a lightly modified excerpt from:
+https://www.cl.cam.ac.uk/~mgk25/ucs/examples/quickbrown.txt
+
+Sentences that contain all letters commonly used in a language
+
+Markus Kuhn <http://www.cl.cam.ac.uk/~mgk25/> .. 2012-04-11
+
+This is an example of a plain-text file encoded in UTF-8.
+
+
+Danish (da)
+
+  Quizdeltagerne spiste jordbær med fløde, mens cirkusklovnen
+  Wolther spillede på xylofon.
+  (= Quiz contestants were eating strawbery with cream while Wolther
+  the circus clown played on xylophone.)
+
+German (de)
+
+  Falsches Üben von Xylophonmusik quält jeden größeren Zwerg
+  (= Wrongful practicing of xylophone music tortures every larger dwarf)
+
+  Zwölf Boxkämpfer jagten Eva quer über den Sylter Deich
+  (= Twelve boxing fighters hunted Eva across the dike of Sylt)
+
+  Heizölrückstoßabdämpfung
+  (= fuel oil recoil absorber)
+  (jqvwxy missing, but all non-ASCII letters in one word)
+
+Greek (el)
+
+  Γαζέες καὶ μυρτιὲς δὲν θὰ βρῶ πιὰ στὸ χρυσαφὶ ξέφωτο
+  (= No more shall I see acacias or myrtles in the golden clearing)
+
+  Ξεσκεπάζω τὴν ψυχοφθόρα βδελυγμία
+  (= I uncover the soul-destroying abhorrence)
+
+  -->
+  <link name="base_link">
+    <inertial>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+      <mass value="0.0"/>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.2 0.2 0.2"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <collision name="base_link_collision">
+      <geometry>
+        <box size="0.2 0.2 0.2"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="upper_link">
+    <inertial>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.5"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.10145833333333337" ixy="0.0" ixz="0.0" iyy="0.10145833333333337" iyz="0.0" izz="0.0012500000000000011"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.5" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="1.1" radius="0.05"/>
+      </geometry>
+      <material name="red">
+        <color rgba="1 0 0 1"/>
+      </material>
+    </visual>
+    <collision name="upper_link_collision">
+      <origin xyz="0 0 -0.5" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="1.1" radius="0.05"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="lower_link">
+    <inertial>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -1.0"/>
+      <mass value="1.0"/>
+      <inertia ixx="0.36812500000000004" ixy="0.0" ixz="0.0" iyy="0.36812500000000004" iyz="0.0" izz="0.0012499999999999734"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="2.1" radius=".05"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
+    </visual>
+    <collision name="lower_link_collision">
+      <origin xyz="0 0 -1" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="2.1" radius=".05"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="base_weld" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+  </joint>
+  <joint name="shoulder" type="continuous">
+    <parent link="base_link"/>
+    <child link="upper_link"/>
+    <origin xyz="0 0.15 0"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1"/>
+  </joint>
+  <joint name="elbow" type="continuous">
+    <parent link="upper_link"/>
+    <child link="lower_link"/>
+    <origin xyz="0 0.1 -1"/>
+    <axis xyz="0 1 0"/>
+    <dynamics damping="0.1"/>
+  </joint>
+  <transmission type="SimpleTransmission" name="elbow_trans">
+    <actuator name="elbow"/>
+    <joint name="elbow"/>
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
+  <frame name="hand" link="lower_link" xyz="0 0 -2.1" rpy="0 0 0"/>
+</robot>

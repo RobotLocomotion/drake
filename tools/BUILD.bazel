@@ -61,6 +61,11 @@ alias(
     actual = "//bindings/pydrake/multibody:mesh_to_model",
 )
 
+alias(
+    name = "fix_inertia",
+    actual = "//bindings/pydrake/multibody:fix_inertia",
+)
+
 # === config_setting rules ===
 
 # When this is set, a Drake build will promote some warnings to errors.
