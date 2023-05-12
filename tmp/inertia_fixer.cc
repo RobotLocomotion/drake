@@ -5,9 +5,15 @@
 
 #include "drake/multibody/parsing/parser.h"
 
+DEFINE_bool(scene_graph, true, "include/exclude scene graph");
+
 namespace drake {
 namespace multibody {
 namespace {
+
+using tinyxml2::XMLNode;
+using tinyxml2::XMLDocument;
+using tinyxml2::XMLElement;
 
 int do_main(int argc, char* argv[]) {
   gflags::SetUsageMessage("[INPUT-FILE-OR-URL]\n"
@@ -17,6 +23,7 @@ int do_main(int argc, char* argv[]) {
     drake::log()->error("missing input filename");
     return 1;
   }
+  const char* outfile = (argc > 2) ? argv[2] : "/dev/stdout";
 
   // Hardcode a log pattern that gives us un-decorated error messages.
   // This defeats the `-spdlog_pattern` command line option; oh well.
@@ -29,9 +36,6 @@ int do_main(int argc, char* argv[]) {
   }
   Parser parser{&plant};
   parser.package_map().PopulateFromRosPackagePath();
-  if (FLAGS_strict) {
-    parser.SetStrictParsing();
-  }
 
   const bool is_url = std::regex_search(
       argv[1], std::regex("^[A-Za-z0-9+.-]+://"));
@@ -61,7 +65,12 @@ int do_main(int argc, char* argv[]) {
 
   XMLDocument xml_doc;
   xml_doc.LoadFile(argv[1]);
-  xml_doc.SaveFile(argv[2]);
+
+  // TODO(rpoyner-tri): Somehow, in here, inertia-fixing magic happens.
+
+  // tinyxml2 preserves the input text almost exactly. Probably good enough for
+  // this purpose.
+  xml_doc.SaveFile(outfile);
 
 
   return models.empty();
