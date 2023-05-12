@@ -204,7 +204,7 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final;
+  std::unique_ptr<SapConstraint<T>> DoClone() const final;
 
  private:
   Parameters parameters_;

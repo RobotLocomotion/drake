@@ -21,14 +21,38 @@ namespace internal {
 // if these structs are nested within a templated class such as SapModel. To
 // avoid this issue, we opt for not using nested definitions.
 
+// Struct used to store SapConstraintBundleData in a cache entry.
+// It is made cloneable to provide drake::Value semantics.
+struct SapConstraintBundleDataCache {
+  // Copy semantics not allowed.
+  SapConstraintBundleDataCache(const SapConstraintBundleDataCache&) = delete;
+  void operator=(const SapConstraintBundleDataCache&) = delete;
+
+  // Move semantics allowed.
+  SapConstraintBundleDataCache(SapConstraintBundleDataCache&&) = default;
+  SapConstraintBundleDataCache& operator=(SapConstraintBundleDataCache&&) =
+      default;
+  SapConstraintBundleDataCache() = default;
+
+  SapConstraintBundleData bundle_data;
+
+  // Returns a deep-copy of `this` cache data.
+  std::unique_ptr<SapConstraintBundleDataCache> Clone() const {
+    auto clone = std::make_unique<SapConstraintBundleDataCache>();
+    clone->bundle_data.reserve(bundle_data.size());
+    for (const auto& data : bundle_data) {
+      clone->bundle_data.emplace_back(data->Clone());
+    }
+    return clone;
+  }
+};
+
 // Struct used to store the the result of updating impulses.
 template <typename T>
 struct ImpulsesCache {
   void Resize(int num_constraint_equations) {
-    y.resize(num_constraint_equations);
     gamma.resize(num_constraint_equations);
   }
-  VectorX<T> y;      // The (unprojected) impulse y = −R⁻¹⋅(vc − v̂).
   VectorX<T> gamma;  // Impulse γ = P(y), with P(y) the projection operator.
 };
 
@@ -214,6 +238,13 @@ class SapModel {
         .template Eval<VectorX<T>>(context);
   }
 
+  const SapConstraintBundleData& EvalSapConstraintBundleData(
+      const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().bundle_data)
+        .template Eval<SapConstraintBundleDataCache>(context)
+        .bundle_data;
+  }
+
   /* Evaluates the contact impulses γ(v) according to the analytical inverse
    dynamics, see [Castro et al. 2022].
    @pre `context` is created with a call to MakeContext(). */
@@ -261,6 +292,12 @@ class SapModel {
         .cost;
   }
 
+  const T& EvalConstraintsCost(const systems::Context<T>& context) const {
+    return system_->get_cache_entry(system_->cache_indexes().cost)
+        .template Eval<CostCache<T>>(context)
+        .regularizer_cost;
+  }
+
   /* Evaluates the gradient w.r.t. participating generalized velocities of the
    cost.
    @pre `context` is created with a call to MakeContext(). */
@@ -294,6 +331,7 @@ class SapModel {
      the model. */
     struct CacheIndexes {
       systems::CacheIndex constraint_velocities;
+      systems::CacheIndex bundle_data;
       systems::CacheIndex cost;
       systems::CacheIndex gradients;
       systems::CacheIndex hessian;
@@ -399,6 +437,9 @@ class SapModel {
   corresponding Eval methods for details. */
   void CalcConstraintVelocities(const systems::Context<T>& context,
                                 VectorX<T>* vc) const;
+  void CalcConstraintBundleDataCache(
+      const systems::Context<T>& context,
+      SapConstraintBundleDataCache* bundle_data) const;
   void CalcImpulsesCache(const systems::Context<T>& context,
                          ImpulsesCache<T>* cache) const;
   void CalcMomentumGainCache(const systems::Context<T>& context,

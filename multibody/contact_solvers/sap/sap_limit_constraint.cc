@@ -99,7 +99,7 @@ void SapLimitConstraint<T>::Project(const Eigen::Ref<const VectorX<T>>& y,
 }
 
 template <typename T>
-std::unique_ptr<SapConstraint<T>> SapLimitConstraint<T>::Clone() const {
+std::unique_ptr<SapConstraint<T>> SapLimitConstraint<T>::DoClone() const {
   return std::make_unique<SapLimitConstraint<T>>(*this);
 }
 
