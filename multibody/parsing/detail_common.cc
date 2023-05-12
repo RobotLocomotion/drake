@@ -264,30 +264,47 @@ SpatialInertia<double> ParseSpatialInertia(
     const DiagnosticPolicy& diagnostic,
     const math::RigidTransformd& X_BBi,
     double mass,
-    const InertiaInputs& inertia_Bi_Bi) {
+    const InertiaInputs& inertia_Bi_Bi,
+    bool spoil_invalid_inertia) {
+  SpatialInertia<double> invalid_inertia_replacement;
+  const Vector3d& p_BoBcm_B = X_BBi.translation();
   // If physical validity checks fail below, return a prepared plausible
   // inertia instead. Use a plausible guess for the mass, letting actual mass
   // validity checking happen later.
   const double plausible_dummy_mass =
       (std::isfinite(mass) && mass > 0.0) ? mass : 1.0;
-  // Construct a dummy inertia for a solid sphere, with the density of water,
-  // and radius deduced from the plausible mass.
-  static constexpr double kPlausibleDensity{1000};  // Water is 1000 kg/m³.
-  const double plausible_volume = plausible_dummy_mass / kPlausibleDensity;
-  // Volume = (4/3)π(radius)³, so radius = ³√(3/(4π))(volume).
-  const double plausible_radius =
-      std::cbrt((3.0 / (4.0 * M_PI)) * plausible_volume);
-  // Create Mdum_BBo_B, a plausible spatial inertia for B about Bo (B's origin).
-  // To do this, create Mdum_BBcm (a plausible spatial inertia for B about
-  // Bcm) as a solid sphere and then shift that spatial inertia from Bcm to Bo.
-  // Note: It is unwise to directly create a solid sphere about Bo as this does
-  // not guarantee that the spatial inertia about Bcm is valid. Bcm (B's center
-  // of mass) is the ground-truth point for validity tests.
-  const SpatialInertia<double> Mdum_BBcm =
-    SpatialInertia<double>::SolidSphereWithDensity(
-       kPlausibleDensity, plausible_radius);
-  const Vector3d& p_BoBcm_B = X_BBi.translation();
-  const SpatialInertia<double> Mdum_BBo_B = Mdum_BBcm.Shift(-p_BoBcm_B);
+  if (spoil_invalid_inertia) {
+    // The goal here is to transmit mass, to the extent we have a valid value,
+    // but otherwise leave the result invalid.
+    bool skip_checks = true;
+    invalid_inertia_replacement = SpatialInertia<double>(
+        plausible_dummy_mass,
+        Vector3d::Zero(),
+        UnitInertia<double>(
+            RotationalInertia<double>::MakeFromMomentsAndProductsOfInertia(
+                1, 0, 0, 0, 0, 0, skip_checks)), skip_checks);
+    DRAKE_DEMAND(!invalid_inertia_replacement.IsPhysicallyValid());
+  } else {
+    // Construct a dummy inertia for a solid sphere, with the density of water,
+    // and radius deduced from the plausible mass.
+    static constexpr double kPlausibleDensity{1000};  // Water is 1000 kg/m³.
+    const double plausible_volume = plausible_dummy_mass / kPlausibleDensity;
+    // Volume = (4/3)π(radius)³, so radius = ³√(3/(4π))(volume).
+    const double plausible_radius =
+        std::cbrt((3.0 / (4.0 * M_PI)) * plausible_volume);
+    // Create Mdum_BBo_B, a plausible spatial inertia for B about Bo (B's
+    // origin). To do this, create Mdum_BBcm (a plausible spatial inertia for B
+    // about Bcm) as a solid sphere and then shift that spatial inertia from
+    // Bcm to Bo. Note: It is unwise to directly create a solid sphere about Bo
+    // as this does not guarantee that the spatial inertia about Bcm is
+    // valid. Bcm (B's center of mass) is the ground-truth point for validity
+    // tests.
+    const SpatialInertia<double> Mdum_BBcm =
+        SpatialInertia<double>::SolidSphereWithDensity(
+            kPlausibleDensity, plausible_radius);
+    const SpatialInertia<double> Mdum_BBo_B = Mdum_BBcm.Shift(-p_BoBcm_B);
+    invalid_inertia_replacement = Mdum_BBo_B;
+  }
 
   // Yes, catching exceptions violates the coding standard. It is done here to
   // capture math-aware exceptions into parse-time warnings, since non-physical
@@ -307,7 +324,7 @@ SpatialInertia<double> ParseSpatialInertia(
   } catch (const std::exception& e) {
     diagnostic.Warning(
         fmt::format("While parsing inertia matrix: {}", e.what()));
-    return Mdum_BBo_B;
+    return invalid_inertia_replacement;
   }
 
   // If this is a massless body, return a zero SpatialInertia.
@@ -328,7 +345,7 @@ SpatialInertia<double> ParseSpatialInertia(
   } catch (const std::exception& e) {
     diagnostic.Warning(
         fmt::format("While re-expressing as central inertia: {}", e.what()));
-    return Mdum_BBo_B;
+    return invalid_inertia_replacement;
   }
   DRAKE_UNREACHABLE();
 }

@@ -283,11 +283,15 @@ struct InertiaInputs {
 // @param mass        Mass of the body.
 // @param inertia_Bi_Bi  The moments and products of inertia about Bi's origin,
 //                      expressed in frame Bi.
+// @param spoil_invalid_inertia If true, return deliberately invalid inertia
+//                              (rather than some valid approximation) when the
+//                              input values are physically invalid.
 SpatialInertia<double> ParseSpatialInertia(
     const drake::internal::DiagnosticPolicy& diagnostic,
     const math::RigidTransformd& X_BBi,
     double mass,
-    const InertiaInputs& inertia_Bi_Bi);
+    const InertiaInputs& inertia_Bi_Bi,
+    bool spoil_invalid_inertia);
 
 }  // namespace internal
 }  // namespace multibody

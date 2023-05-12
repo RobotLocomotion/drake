@@ -123,7 +123,11 @@ PYBIND11_MODULE(parsing, m) {
         .def("SetAutoRenaming", &Class::SetAutoRenaming, py::arg("value"),
             cls_doc.SetAutoRenaming.doc)
         .def("GetAutoRenaming", &Class::GetAutoRenaming,
-            cls_doc.GetAutoRenaming.doc);
+            cls_doc.GetAutoRenaming.doc)
+        .def("SpoilInvalidInertia", &Class::SpoilInvalidInertia,
+            cls_doc.SpoilInvalidInertia.doc)
+        .def("IsSpoilingInvalidInertia", &Class::IsSpoilingInvalidInertia,
+            cls_doc.IsSpoilingInvalidInertia.doc);
   }
 
   // Model Directives

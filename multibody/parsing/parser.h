@@ -191,6 +191,16 @@ class Parser final {
   /// @see the Parser class documentation for more detail.
   bool GetAutoRenaming() const { return enable_auto_rename_; }
 
+  /// (Internal use only) Cause all subsequent Add*Model*() operations to
+  /// replace physically invalid inertia configurations with a deliberately
+  /// invalid SpatialInertia (instead of the plausible guess normally produced
+  /// by the parser).
+  void SpoilInvalidInertia() { spoil_invalid_inertia_ = true; }
+
+  /// (Internal use only) Return true if SpoilInvalidInertia() has been called
+  /// on this parser.
+  bool IsSpoilingInvalidInertia() { return spoil_invalid_inertia_; }
+
   /// Parses the input file named in @p file_name and adds all of its model(s)
   /// to @p plant.
   ///
@@ -253,6 +263,7 @@ class Parser final {
 
   bool is_strict_{false};
   bool enable_auto_rename_{false};
+  bool spoil_invalid_inertia_{false};
   PackageMap package_map_;
   drake::internal::DiagnosticPolicy diagnostic_policy_;
   MultibodyPlant<double>* const plant_;
