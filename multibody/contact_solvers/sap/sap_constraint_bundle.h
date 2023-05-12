@@ -1,7 +1,9 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_copyable.h"
 #include "drake/multibody/contact_solvers/block_sparse_matrix.h"
 #include "drake/multibody/contact_solvers/sap/partial_permutation.h"
@@ -12,6 +14,8 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+using SapConstraintBundleData = std::vector<std::unique_ptr<AbstractValue>>;
 
 /* Given a contact problem, this class provides a representation for the entire
  "bundle" of constraints in the problem. This class re-arranges constraints
@@ -85,43 +89,38 @@ class SapConstraintBundle {
    ContactProblemGraph::participating_cliques(). */
   const BlockSparseMatrix<T>& J() const { return J_; }
 
-  /* Returns the diagonal regularization matrix R. Of size
-   num_constraint_equations(). */
-  const VectorX<T>& R() const { return R_; }
+  /* Makes data structure to store data needed for bundle computations.
+    `time_step` and `delassus_diagonal` can be used to pre-compute scale
+    quantities to condition the problem better.
+    @param[in] time_step The time step used in the contact problem.
+    @param[in] delassus_diagonal An estimation of the diagonal of the Delassus
+    operator, with one entry per constraint equation. Of size
+    num_constraint_equations().
+    */
+  SapConstraintBundleData MakeData(const T& time_step,
+                                   const VectorX<T>& delassus_diagonal) const;
 
-  /* Returns the diagonal of the inverse of the regularization matrix. Of size
-   num_constraint_equations(). */
-  const VectorX<T>& Rinv() const { return Rinv_; }
+  /* Updates constraint data as a function of constraint velocities `vc`. */
+  void CalcData(const VectorX<T>& vc,
+                SapConstraintBundleData* constraints_data) const;
 
-  /* Returns the bias v̂ for the entire bundle. Of size
-   num_constraint_equations().*/
-  const VectorX<T>& vhat() const { return vhat_; }
+  /* Computes the compound cost of the bundle as a function of the constraints'
+   velocities vector vc. */
+  T CalcCost(const SapConstraintBundleData& constraints_data) const;
 
-  /* Computes unprojected impulses y according to y = −R⁻¹⋅(v−v̂), where R is
-   the regularization matrix, R(), and v̂ is the bias term, vhat().
+  /* Computes the impulse gamma as a function of vc.
    @pre vc.size() equals num_constraint_equations().
-   @pre y != nullptr and y->size() equals num_constraint_equations(). */
-  void CalcUnprojectedImpulses(const VectorX<T>& vc, VectorX<T>* y) const;
+   @pre gamma != nullptr and gamma->size() equals num_constraint_equations(). */
+  void CalcImpulses(const SapConstraintBundleData& bundle_data,
+                    VectorX<T>* gamma) const;
 
-  /* Computes the projection γ = P(y) for all impulses and the gradient
-   dP/dy if dPdy != nullptr. On output dPdy[i] stores the gradient dPᵢ/dyᵢ for
-   the i-th constraint.
-   @pre y.size() equals num_constraint_equations().
-   @pre gamma != nullptr and gamma->size() equals num_constraint_equations().
-   @pre if dPdy != nullptr, then dPdy->size() equals num_constraints(). */
-  void ProjectImpulses(const VectorX<T>& y, VectorX<T>* gamma,
-                       std::vector<MatrixX<T>>* dPdy = nullptr) const;
-
-  /*  SAP's regularizer cost is defined as ℓᵣ = 1/2γᵀ⋅R⋅γ. The Hessian computed
-   with respect to vc (defined as vc = J⋅v, see class's documentation) is a
-   block diagonal matrix G where the i-th block diagonal entry corresponds to
-   Gᵢ = dPᵢ/dyᵢ⋅Rᵢ⁻¹. This method computes γ = P(y) and Hessian matrix G.
-   See Appendix E [Castro et al., 2021] for further details.
-   @pre y.size() equals num_constraint_equations().
+  /* Computes the constraints's Hessian G(vc) = −∂γ/∂vc = ∂²ℓ/∂vc².
+   @pre vc.size() equals num_constraint_equations().
    @pre gamma != nullptr and gamma->size() equals num_constraint_equations().
    @pre G != nullptr and G->size() equals num_constraints(). */
-  void ProjectImpulsesAndCalcConstraintsHessian(
-      const VectorX<T>& y, VectorX<T>* gamma, std::vector<MatrixX<T>>* G) const;
+  void CalcImpulsesAndConstraintsHessian(
+      const SapConstraintBundleData& bundle_data, VectorX<T>* gamma,
+      std::vector<MatrixX<T>>* G) const;
 
  private:
   /* This method builds the BlockSparseMatrix representation of the Jacobian
@@ -130,9 +129,6 @@ class SapConstraintBundle {
   void MakeConstraintBundleJacobian(const SapContactProblem<T>& problem);
 
   BlockSparseMatrix<T> J_;
-  VectorX<T> vhat_;
-  VectorX<T> R_;
-  VectorX<T> Rinv_;
   // Constraint references in the order dictated by the ContactProblemGraph.
   std::vector<const SapConstraint<T>*> constraints_;
 };
