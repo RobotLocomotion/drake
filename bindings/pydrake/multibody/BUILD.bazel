@@ -264,6 +264,32 @@ drake_py_binary(
     ],
 )
 
+drake_py_library(
+    name = "inertia_fixer_py",
+    srcs = [
+        "_inertia_fixer.py",
+        "fix_inertia.py",
+    ],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        ":parsing_py",
+        ":plant_py",
+        "//bindings/pydrake/common",
+        "//bindings/pydrake/geometry",
+    ],
+)
+
+drake_py_binary(
+    name = "fix_inertia",
+    srcs = [
+        "fix_inertia.py",
+    ],
+    visibility = ["//tools:__pkg__"],
+    deps = [
+        ":inertia_fixer_py",
+    ],
+)
+
 drake_jupyter_py_binary(
     name = "examples/door_hinge_inspector",
     add_test_rule = 1,
@@ -282,14 +308,25 @@ cmake_configure_file(
     ],
 )
 
+cmake_configure_file(
+    name = "generate_run_installed_fix_inertia",
+    src = "run_installed_fix_inertia.py.in",
+    out = "run_installed_fix_inertia.py",
+    defines = [
+        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
+    ],
+)
+
 install_files(
     name = "install_wrapper_scripts",
     dest = "bin",
     files = [
+        "run_installed_fix_inertia.py",
         "run_installed_mesh_to_model.py",
     ],
     rename = {
         "bin/run_installed_mesh_to_model.py": "mesh_to_model",
+        "bin/run_installed_fix_inertia.py": "fix_inertia",
     },
 )
 
@@ -310,6 +347,7 @@ PY_LIBRARIES = [
     ":jupyter_widgets_py",
     ":module_py",
     ":mesh_model_maker_py",
+    ":inertia_fixer_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -504,8 +542,30 @@ drake_py_unittest(
     ],
 )
 
+drake_py_unittest(
+    name = "fix_inertia_test",
+    data = [
+        ":fix_inertia",
+        ":models",
+        "//examples/acrobot:models",
+        "//manipulation/util:test_models",
+        "//multibody:models",
+        "//multibody/benchmarks/acrobot:models",
+        "//multibody/parsing:test_models",
+    ],
+    deps = [
+        ":inertia_fixer_py",
+        "//bindings/pydrake/common",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+        "//bindings/pydrake/geometry",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+    ],
+)
+
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         "run_installed_mesh_to_model.py.in",
+        "run_installed_fix_inertia.py.in",
     ],
 )
