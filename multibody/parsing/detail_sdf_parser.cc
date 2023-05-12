@@ -204,7 +204,8 @@ std::string ResolveJointChildLinkName(
 SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
     const SDFormatDiagnostic& diagnostic,
     const sdf::ElementPtr link_element,
-    const gz::math::Inertiald& Inertial_BBcm_Bi) {
+    const gz::math::Inertiald& Inertial_BBcm_Bi,
+    bool spoil_invalid_inertia) {
   double mass = Inertial_BBcm_Bi.MassMatrix().Mass();
 
   // Pose of the "<inertial>" frame Bi in the body frame B.
@@ -227,7 +228,8 @@ SpatialInertia<double> ExtractSpatialInertiaAboutBoExpressedInB(
   return ParseSpatialInertia(diagnostic.MakePolicyForNode(*link_element),
                              X_BBi, mass,
                              {.ixx = I(0, 0), .iyy = I(1, 1), .izz = I(2, 2),
-                              .ixy = I(1, 0), .ixz = I(2, 0), .iyz = I(2, 1)});
+                              .ixy = I(1, 0), .ixz = I(2, 0), .iyz = I(2, 1)},
+                             spoil_invalid_inertia);
 }
 
 // Helper method to retrieve a Body given the name of the link specification.
@@ -869,8 +871,7 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
     const ModelInstanceIndex model_instance,
     const sdf::Model& model,
     const RigidTransformd& X_WM,
-    MultibodyPlant<double>* plant,
-    const PackageMap& package_map,
+    const ParsingWorkspace& workspace,
     const std::string& root_dir) {
   std::vector<LinkInfo> link_infos;
 
@@ -902,9 +903,11 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
 
     const SpatialInertia<double> M_BBo_B =
         ExtractSpatialInertiaAboutBoExpressedInB(
-            diagnostic, link_element, Inertial_Bcm_Bi);
+            diagnostic, link_element, Inertial_Bcm_Bi,
+            workspace.options.spoil_invalid_inertia);
 
     // Add a rigid body to model each link.
+    auto plant = workspace.plant;
     const RigidBody<double>& body =
         plant->AddRigidBody(link.Name(), model_instance, M_BBo_B);
 
@@ -930,6 +933,7 @@ std::optional<std::vector<LinkInfo>> AddLinksFromSpecification(
       "plane",
       "sphere"};
 
+    auto package_map = workspace.package_map;
     if (plant->geometry_source_is_registered()) {
       ResolveFilename resolve_filename =
         [&package_map, &root_dir, &link_element](
@@ -1331,9 +1335,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
     const sdf::Model& model,
     const std::string& model_name,
     const RigidTransformd& X_WP,
-    MultibodyPlant<double>* plant,
-    CollisionFilterGroupResolver* resolver,
-    const PackageMap& package_map,
+    const ParsingWorkspace& workspace,
     const std::string& root_dir) {
 
   const std::set<std::string> supported_model_elements{
@@ -1352,6 +1354,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
       diagnostic, model.Element(), supported_model_elements);
 
 
+  auto plant = workspace.plant;
   const ModelInstanceIndex model_instance =
     plant->AddModelInstance(model_name);
   std::vector <ModelInstanceIndex> added_model_instances{model_instance};
@@ -1367,6 +1370,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   // Do this before the resolving canonical link because the link might be in a
   // nested model.
   drake::log()->trace("sdf_parser: Add nested models");
+  // auto resolver = workspace.collision_resolver;
+  // auto package_map = workspace.package_map;
   for (uint64_t model_index = 0; model_index < model.ModelCount();
        ++model_index) {
     const sdf::Model& nested_model = *model.ModelByIndex(model_index);
@@ -1374,7 +1379,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
         AddModelsFromSpecification(
             diagnostic, nested_model,
             sdf::JoinName(model_name, nested_model.Name()), X_WM,
-            plant, resolver, package_map, root_dir);
+            workspace, root_dir);
 
     added_model_instances.insert(added_model_instances.end(),
                                  nested_model_instances.begin(),
@@ -1383,7 +1388,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   drake::log()->trace("sdf_parser: Add links");
   std::optional<std::vector<LinkInfo>> added_link_infos =
       AddLinksFromSpecification(diagnostic, model_instance, model,
-                                X_WM, plant, package_map, root_dir);
+                                X_WM, workspace, root_dir);
   if (!added_link_infos.has_value()) return {};
 
   // Add the SDF "model frame" given the model name so that way any frames added
@@ -1507,7 +1512,8 @@ std::vector<ModelInstanceIndex> AddModelsFromSpecification(
   if (plant->geometry_source_is_registered()) {
     drake::log()->trace("sdf_parser: Add collision filter groups");
     ParseCollisionFilterGroup(
-        diagnostic, model_instance, model, plant, resolver);
+        diagnostic, model_instance, model,
+        workspace.plant, workspace.collision_resolver);
   }
 
   return added_model_instances;
@@ -1831,9 +1837,8 @@ std::optional<ModelInstanceIndex> AddModelFromSdf(
 
   std::vector<ModelInstanceIndex> added_model_instances =
       AddModelsFromSpecification(
-          diagnostic, model, model_name, {}, workspace.plant,
-          workspace.collision_resolver,
-          workspace.package_map, data_source.GetRootDir());
+          diagnostic, model, model_name, {}, workspace,
+          data_source.GetRootDir());
 
   DRAKE_DEMAND(!added_model_instances.empty());
   return added_model_instances.front();
@@ -1886,8 +1891,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
     std::vector<ModelInstanceIndex> added_model_instances =
         AddModelsFromSpecification(
-            diagnostic, model, model_name, {}, workspace.plant,
-            workspace.collision_resolver, workspace.package_map,
+            diagnostic, model, model_name, {}, workspace,
             data_source.GetRootDir());
     model_instances.insert(model_instances.end(),
                            added_model_instances.begin(),
@@ -1918,8 +1922,7 @@ std::vector<ModelInstanceIndex> AddModelsFromSdf(
 
       std::vector<ModelInstanceIndex> added_model_instances =
           AddModelsFromSpecification(
-              diagnostic, model, model_name, {}, workspace.plant,
-              workspace.collision_resolver, workspace.package_map,
+              diagnostic, model, model_name, {}, workspace,
               data_source.GetRootDir());
       model_instances.insert(model_instances.end(),
                              added_model_instances.begin(),

@@ -172,7 +172,8 @@ SpatialInertia<double> UrdfParser::ExtractSpatialInertiaAboutBoExpressedInB(
     ParseScalarAttribute(inertia, "izz", &inputs.izz);
   }
   return ParseSpatialInertia(diagnostic_.MakePolicyForNode(node),
-                             X_BBi, body_mass, inputs);
+                             X_BBi, body_mass, inputs,
+                             w_.options.spoil_invalid_inertia);
 }
 
 void UrdfParser::ParseBody(XMLElement* node, MaterialMap* materials) {

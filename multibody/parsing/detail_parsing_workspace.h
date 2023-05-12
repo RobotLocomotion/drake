@@ -94,6 +94,7 @@ using ParserSelector = std::function<ParserInterface&(
 
 struct ParsingOptions {
   bool enable_auto_renaming{false};
+  bool spoil_invalid_inertia{false};
 };
 
 // ParsingWorkspace bundles the commonly-needed elements for parsing routines.

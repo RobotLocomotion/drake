@@ -372,39 +372,51 @@ TEST_F(ParseSpatialInertiaTest, BadInertiaValues) {
   std::vector<SpatialInertia<double>> results;
   math::RigidTransformd X_BBi;
 
-  // Absurd rotational inertia values.
-  results.push_back(
-      ParseSpatialInertia(diagnostic_policy_, X_BBi, 1,
-                          {.ixx = 1, .iyy = 4, .izz = 9,
-                           .ixy = 16, .ixz = 25, .iyz = 36}));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
-  // Test some inertia values found in the wild.
-  results.push_back(
-      ParseSpatialInertia(
-          diagnostic_policy_, X_BBi, 0.038,
-          {.ixx = 4.30439933333e-05, .iyy = 5.1205e-06, .izz = 4.3043993333e-05,
-           .ixy = 9.57068e-06, .ixz = 1.44451933333e-05, .iyz = 1.342825e-05}));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
-  // Negative mass.
-  results.push_back(
-      ParseSpatialInertia(diagnostic_policy_, X_BBi, -1,
-                          {.ixx = 1, .iyy = 1, .izz = 1,
-                           .ixy = 0, .ixz = 0, .iyz = 0}));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
-  // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  results.push_back(
-      ParseSpatialInertia(diagnostic_policy_, X_BBi, 0,
-                          {.ixx = 1, .iyy = 1, .izz = 1,
-                           .ixy = 0, .ixz = 0, .iyz = 0}));
-  EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
+  for (bool spoil_invalid_inertia : {false, true}) {
+    results.clear();
 
-  // Do some basic sanity checking on the plausible mass and inertia generated
-  // when warnings are issued.
-  int k = 0;
-  for (const auto& result : results) {
-    SCOPED_TRACE(fmt::format("test case result {}", k));
-    EXPECT_TRUE(result.IsPhysicallyValid());
-    ++k;
+    // Absurd rotational inertia values.
+    results.push_back(
+        ParseSpatialInertia(diagnostic_policy_, X_BBi, 1,
+                            {.ixx = 1, .iyy = 4, .izz = 9,
+                             .ixy = 16, .ixz = 25, .iyz = 36},
+                            spoil_invalid_inertia));
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
+    // Test some inertia values found in the wild.
+    results.push_back(
+        ParseSpatialInertia(
+            diagnostic_policy_, X_BBi, 0.038,
+            {.ixx = 4.30439933333e-05, .iyy = 5.1205e-06,
+             .izz = 4.3043993333e-05,
+             .ixy = 9.57068e-06, .ixz = 1.44451933333e-05,
+             .iyz = 1.342825e-05},
+            spoil_invalid_inertia));
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*rot.*inertia.*"));
+    // Negative mass.
+    results.push_back(
+        ParseSpatialInertia(diagnostic_policy_, X_BBi, -1,
+                            {.ixx = 1, .iyy = 1, .izz = 1,
+                             .ixy = 0, .ixz = 0, .iyz = 0},
+                            spoil_invalid_inertia));
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
+    // Test that attempt to parse links with zero mass and non-zero inertia
+    // fails.
+    results.push_back(
+        ParseSpatialInertia(diagnostic_policy_, X_BBi, 0,
+                            {.ixx = 1, .iyy = 1, .izz = 1,
+                             .ixy = 0, .ixz = 0, .iyz = 0},
+                            spoil_invalid_inertia));
+    EXPECT_THAT(TakeWarning(), MatchesRegex(".*mass > 0.*"));
+
+    // Do some basic sanity checking on the plausible mass and inertia generated
+    // when warnings are issued.
+    int k = 0;
+    for (const auto& result : results) {
+      SCOPED_TRACE(fmt::format("test case spoiling {} number {}",
+                               spoil_invalid_inertia, k));
+      EXPECT_EQ(result.IsPhysicallyValid(), !spoil_invalid_inertia);
+      ++k;
+    }
   }
 }
 
