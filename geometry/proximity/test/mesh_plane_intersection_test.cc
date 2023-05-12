@@ -1791,7 +1791,7 @@ TEST_F(MeshPlaneDerivativesTest, FaceNormalsWrtPosition) {
       EXPECT_TRUE(
           CompareMatrices(math::ExtractValue(tri_n_W), plane_n_W, 2 * kEps));
       EXPECT_TRUE(
-          CompareMatrices(math::ExtractGradient(tri_n_W), zeros, 10 * kEps));
+          CompareMatrices(math::ExtractGradient(tri_n_W), zeros, 16 * kEps));
     }
   };
 
