@@ -5,8 +5,6 @@
 
 #include "drake/multibody/parsing/parser.h"
 
-DEFINE_bool(scene_graph, true, "include/exclude scene graph");
-
 namespace drake {
 namespace multibody {
 namespace {
@@ -25,49 +23,32 @@ int do_main(int argc, char* argv[]) {
   }
   const char* outfile = (argc > 2) ? argv[2] : "/dev/stdout";
 
-  // Hardcode a log pattern that gives us un-decorated error messages.
-  // This defeats the `-spdlog_pattern` command line option; oh well.
-  drake::logging::set_log_pattern("%v");
-
-  MultibodyPlant<double> plant{0.0};
-  drake::geometry::SceneGraph<double> scene_graph;
-  if (FLAGS_scene_graph) {
-    plant.RegisterAsSourceForSceneGraph(&scene_graph);
-  }
-  Parser parser{&plant};
-  parser.package_map().PopulateFromRosPackagePath();
-
-  const bool is_url = std::regex_search(
-      argv[1], std::regex("^[A-Za-z0-9+.-]+://"));
-
-  drake::log()->info("parsing {}", argv[1]);
-
-  // Chances are good that parsing may end in an error (implemented as throw).
-  // For purposes of this tool, we should make its message usable. To do that,
-  // catch it and display it via logging. Yes, this violates the coding
-  // standard; in this case it makes the tool significantly more useful.
-  std::vector<ModelInstanceIndex> models;
-  try {
-    if (is_url) {
-      models = parser.AddModelsFromUrl(argv[1]);
-    } else {
-      models = parser.AddModels(argv[1]);
-    }
-  } catch (const std::exception& e) {
-    drake::log()->error(e.what());
+  XMLDocument xml_doc;
+  xml_doc.LoadFile(argv[1]);
+  if (xml_doc.ErrorID()) {
+    drake::log()->error("Failed to parse XML file: {}",
+                        xml_doc.ErrorName());
     ::exit(EXIT_FAILURE);
   }
 
-  drake::log()->info("Parsed {} models.", models.size());
-
-
-  drake::log()->info("\n\n\nXML Text\n\n\n");
-
-  XMLDocument xml_doc;
-  xml_doc.LoadFile(argv[1]);
-
   // TODO(rpoyner-tri): Somehow, in here, inertia-fixing magic happens.
+
   // * Figure out which inertias need fixing, and locate their nodes in the doc.
+  //   * It might be feasible to use parser internals for:
+  //     * checking the model file type
+  //     * hijacking the diagnostic output
+  //   * URDF warning messages point to the <inertial> tag.
+  //   * SDFormat warning messages point to the <link> tag.
+
+  MultibodyPlant<double> plant{0.0};
+  drake::geometry::SceneGraph<double> scene_graph;
+  plant.RegisterAsSourceForSceneGraph(&scene_graph);
+  Parser parser{&plant};
+  parser.package_map().PopulateFromRosPackagePath();
+
+  std::vector<ModelInstanceIndex> models;
+  models = parser.AddModels(argv[1]);
+
   // * Leverage the maybe-damaged model that got parsed by the parser:
   //   * for geometries
   //   * for mass/density parameters
