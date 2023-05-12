@@ -22,11 +22,11 @@ drake_cc_binary(
     name = "inertia_fixer_cxx",
     srcs = ["inertia_fixer.cc"],
     deps = [
-        "//multibody/parsing:parser",
         "//common:add_text_logging_gflags",
+        "//multibody/parsing:parser",
         "@gflags",
+        "@tinyxml2_internal//:tinyxml2",
     ],
 )
-
 
 add_lint_tests()
