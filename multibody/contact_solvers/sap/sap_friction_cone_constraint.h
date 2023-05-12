@@ -3,7 +3,6 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
@@ -65,7 +64,15 @@ namespace internal {
 template <typename T>
 class SapFrictionConeConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapFrictionConeConstraint);
+  /* We do not allow copy, move, or assignment generally to avoid slicing.
+    Protected copy construction is enabled for sub-classes to use in their
+    implementation of DoClone(). */
+  //@{
+  SapFrictionConeConstraint& operator=(const SapFrictionConeConstraint&) =
+      delete;
+  SapFrictionConeConstraint(SapFrictionConeConstraint&&) = delete;
+  SapFrictionConeConstraint& operator=(SapFrictionConeConstraint&&) = delete;
+  //@}
 
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
@@ -152,11 +159,16 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final {
-    return std::make_unique<SapFrictionConeConstraint<T>>(*this);
+ private:
+  /* Private copy construction is enabled to use in the implementation of
+   DoClone(). */
+  SapFrictionConeConstraint(const SapFrictionConeConstraint&) = default;
+
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<SapFrictionConeConstraint<T>>(
+        new SapFrictionConeConstraint<T>(*this));
   }
 
- private:
   Parameters parameters_;
   T phi0_;
 };

@@ -675,8 +675,6 @@ INSTANTIATE_TEST_SUITE_P(
 template <typename T>
 class LimitConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(LimitConstraint);
-
   // Constructs a limit constraint on `clique` with lower limit vl, upper
   // limit vu and regularization R.
   LimitConstraint(int clique, const VectorX<T>& vl, const VectorX<T>& vu,
@@ -721,10 +719,6 @@ class LimitConstraint final : public SapConstraint<T> {
     }
   };
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final {
-    return std::make_unique<LimitConstraint<T>>(*this);
-  }
-
  private:
   static VectorX<T> ConcatenateVectors(const VectorX<T>& v1,
                                        const VectorX<T>& v2) {
@@ -748,6 +742,12 @@ class LimitConstraint final : public SapConstraint<T> {
     J.topRows(nv) = MatrixX<T>::Identity(nv, nv);
     J.bottomRows(nv) = -MatrixX<T>::Identity(nv, nv);
     return J;
+  }
+
+  LimitConstraint(const LimitConstraint&) = default;
+
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<LimitConstraint<T>>(new LimitConstraint<T>(*this));
   }
 
   VectorX<T> R_;     // Regularization.

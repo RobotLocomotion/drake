@@ -31,8 +31,6 @@ const MatrixXd J34 =
 
 class TestConstraint final : public SapConstraint<double> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestConstraint);
-
   // These constructor set up an arbitrary constraint for one and two cliques.
   TestConstraint(int clique, VectorXd g, MatrixXd J)
       : SapConstraint<double>(clique, std::move(g), std::move(J)) {}
@@ -55,8 +53,12 @@ class TestConstraint final : public SapConstraint<double> {
                                              const double&) const final {
     return Vector3d::Zero();
   }
-  std::unique_ptr<SapConstraint<double>> Clone() const final {
-    return std::make_unique<TestConstraint>(*this);
+
+ private:
+  TestConstraint(const TestConstraint&) = default;
+
+  std::unique_ptr<SapConstraint<double>> DoClone() const final {
+    return std::unique_ptr<TestConstraint>(new TestConstraint(*this));
   }
 };
 
