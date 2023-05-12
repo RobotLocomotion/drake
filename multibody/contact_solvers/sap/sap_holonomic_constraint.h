@@ -3,7 +3,6 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
@@ -65,7 +64,11 @@ namespace internal {
 template <typename T>
 class SapHolonomicConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapHolonomicConstraint);
+  // Copyable but not moveable.
+  SapHolonomicConstraint(SapHolonomicConstraint&& other) = delete;
+  SapHolonomicConstraint& operator=(SapHolonomicConstraint&& other) = delete;
+  SapHolonomicConstraint(const SapHolonomicConstraint&) = default;
+  SapHolonomicConstraint& operator=(const SapHolonomicConstraint&) = default;
 
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
@@ -204,9 +207,11 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final;
-
  private:
+  std::unique_ptr<SapConstraint<T>> DoClone() const override {
+    return std::make_unique<SapHolonomicConstraint<T>>(*this);
+  }
+
   Parameters parameters_;
   VectorX<T> bias_;
 };

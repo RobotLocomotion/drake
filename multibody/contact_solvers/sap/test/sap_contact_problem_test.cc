@@ -65,7 +65,7 @@ class TestConstraint final : public SapConstraint<double> {
                                              const double&) const final {
     return VectorXd::Zero(this->num_constraint_equations());
   }
-  std::unique_ptr<SapConstraint<double>> Clone() const final {
+  std::unique_ptr<SapConstraint<double>> DoClone() const final {
     return std::make_unique<TestConstraint>(*this);
   }
 };

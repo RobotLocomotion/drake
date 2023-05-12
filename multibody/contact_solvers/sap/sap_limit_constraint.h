@@ -3,7 +3,6 @@
 #include <limits>
 #include <memory>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
@@ -67,7 +66,11 @@ namespace internal {
 template <typename T>
 class SapLimitConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapLimitConstraint);
+  // Copyable but not moveable.
+  SapLimitConstraint(SapLimitConstraint&& other) = delete;
+  SapLimitConstraint& operator=(SapLimitConstraint&& other) = delete;
+  SapLimitConstraint(const SapLimitConstraint&) = default;
+  SapLimitConstraint& operator=(const SapLimitConstraint&) = default;
 
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
@@ -145,8 +148,6 @@ class SapLimitConstraint final : public SapConstraint<T> {
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final;
-
  private:
   /* Computes the constraint function g(q0) as a function of q0 for given lower
    limit ql and upper limit qu.
@@ -159,6 +160,10 @@ class SapLimitConstraint final : public SapConstraint<T> {
    constraint. */
   static MatrixX<T> CalcConstraintJacobian(int clique_dof, int clique_nv,
                                            const T& ql, const T& qu);
+
+  std::unique_ptr<SapConstraint<T>> DoClone() const override {
+    return std::make_unique<SapLimitConstraint<T>>(*this);
+  }
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.
