@@ -438,15 +438,40 @@ void TestKaneExactSolution(FreeBody torque_free_cylinder_kane,
   // compare Kane's quaternion with the expected quaternion.
   const bool is_ok_quat = math::AreQuaternionsEqualForOrientation(
       quat_kane, quat_expected, 8 * kEpsilon);
-  EXPECT_TRUE(is_ok_quat);
+  EXPECT_TRUE(is_ok_quat) << fmt::format(
+      " quat_kane = {}\n"
+      " quat_expected = {}\n",
+      fmt_eigen(quat_kane.coeffs().transpose()),
+      fmt_eigen(quat_expected.coeffs().transpose()));
 
   // Ensure Kane's quaternion time-derivative matches expected angular velocity.
   EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
-    quat_kane, quatDt_kane, w_expected, 8 * kEpsilon));
+      quat_kane, quatDt_kane, w_expected, 8 * kEpsilon))
+      << fmt::format(
+             " quat_kane = {}\n"
+             " quatDt_kane = {}\n"
+             " w_expected = {}\n",
+             fmt_eigen(quat_kane.coeffs().transpose()),
+             fmt_eigen(quatDt_kane.transpose()),
+             fmt_eigen(w_expected.transpose()));
+
+  // This is redundant with the immediately prior check, but provides a
+  // better error message.
+  EXPECT_TRUE(CompareMatrices(
+      math::CalculateAngularVelocityExpressedInBFromQuaternionDt(quat_kane,
+                                                                 quatDt_kane),
+      w_expected, 8 * kEpsilon));
 
   // Ensure expected quaternion time-derivative matches Kane's angular velocity.
   EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
-      quat_expected, quatDt_expected, w_kane, 8 * kEpsilon));
+      quat_expected, quatDt_expected, w_kane, 8 * kEpsilon))
+      << fmt::format(
+             " quat_expected = {}\n"
+             " quatDt_expected = {}\n"
+             " w_kane = {}\n",
+             fmt_eigen(quat_expected.coeffs().transpose()),
+             fmt_eigen(quatDt_expected.transpose()),
+             fmt_eigen(w_kane.transpose()));
 }
 
 
