@@ -6,6 +6,7 @@
 
 DEFINE_bool(scene_graph, true, "include/exclude scene graph");
 DEFINE_bool(strict, false, "enable strict parsing");
+DEFINE_bool(spoil_invalid_inertia, false, "spoil invalid inertia in mbp");
 
 namespace drake {
 namespace multibody {
@@ -33,6 +34,9 @@ int do_main(int argc, char* argv[]) {
   parser.package_map().PopulateFromRosPackagePath();
   if (FLAGS_strict) {
     parser.SetStrictParsing();
+  }
+  if (FLAGS_spoil_invalid_inertia) {
+    parser.SpoilInvalidInertia();
   }
 
   const bool is_url = std::regex_search(

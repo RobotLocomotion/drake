@@ -471,6 +471,35 @@ GTEST_TEST(FileParserTest, AutoRenaming) {
       ".*names must be unique.*");
 }
 
+
+GTEST_TEST(FileParserTest, SpoilInvalidInertia) {
+  std::string model = R"""(
+<robot name='robot'>
+  <link name='a'>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.17"/>
+      <inertia ixx="3" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+</robot>
+)""";
+  MultibodyPlant<double> plant(0.0);
+
+  Parser parser(&plant);
+  parser.SetAutoRenaming(true);  // For convenience.
+  EXPECT_FALSE(parser.IsSpoilingInvalidInertia());
+  parser.AddModelsFromString(model, "urdf");
+  EXPECT_TRUE(plant.GetRigidBodyByName("a")
+              .default_spatial_inertia().IsPhysicallyValid());
+
+  parser.SpoilInvalidInertia();
+  EXPECT_TRUE(parser.IsSpoilingInvalidInertia());
+  auto models = parser.AddModelsFromString(model, "urdf");
+  EXPECT_FALSE(plant.GetRigidBodyByName("a", models[0])
+               .default_spatial_inertia().IsPhysicallyValid());
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake
