@@ -67,6 +67,14 @@ int do_main(int argc, char* argv[]) {
   xml_doc.LoadFile(argv[1]);
 
   // TODO(rpoyner-tri): Somehow, in here, inertia-fixing magic happens.
+  // * Figure out which inertias need fixing, and locate their nodes in the doc.
+  // * Leverage the maybe-damaged model that got parsed by the parser:
+  //   * for geometries
+  //   * for mass/density parameters
+  // * Build proper inertias from geometries:
+  //   * cf. mujoco parser's techniques
+  //   * figure out how to combine inertias for multiple geometries?
+  // * Edit fixed-up inertias back into doc.
 
   // tinyxml2 preserves the input text almost exactly. Probably good enough for
   // this purpose.
