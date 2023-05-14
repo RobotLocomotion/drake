@@ -1040,8 +1040,6 @@ class MathematicalProgram {
 
   /**
    * Add a quadratic cost term of the form 0.5*x'*Q*x + b'*x + c.
-   * Notice that in the optimization program, the constant term `c` in the cost
-   * is ignored.
    * @param e A quadratic symbolic expression.
    * @param is_convex Whether the cost is already known to be convex. If
    * is_convex=nullopt (the default), then Drake will determine if `e` is a
@@ -1195,14 +1193,7 @@ class MathematicalProgram {
 
   /**
    * Adds a cost in the symbolic form.
-   * Note that the constant part of the cost is ignored. So if you set
-   * `e = x + 2`, then only the cost on `x` is added, the constant term 2 is
-   * ignored.
-   * @param e The linear or quadratic expression of the cost.
-   * @pre `e` is linear or `e` is quadratic. Otherwise throws a runtime error.
    * @return The newly created cost, together with the bound variables.
-   *
-   * @exclude_from_pydrake_mkdoc{Not bound in pydrake.}
    */
   Binding<Cost> AddCost(const symbolic::Expression& e);
 
