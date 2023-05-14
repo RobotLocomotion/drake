@@ -7,6 +7,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/math/roll_pitch_yaw.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/multibody/tree/body.h"
 #include "drake/multibody/tree/multibody_tree.h"
 
 namespace drake {
@@ -153,7 +154,16 @@ void SpaceXYZFloatingMobilizer<T>::DoCalcNMatrix(
   const T cp = cos(angles[1]);
   // Demand for the computation to be away from a state for which Einv_F is
   // singular.
-  DRAKE_DEMAND(abs(cp) > 1.0e-3);
+  if (abs(cp) < 1.0e-3) {
+    // TODO(russt): Add a "likely associated with SpaceXYZFloatingJoint" to
+    // match the error in space_xyz_mobilizer pending #19065.
+    throw std::runtime_error(fmt::format(
+        "The SpaceXYZFloatingMobilizer between body {} and body {} has reached "
+        "a singularity. This occurs when the pitch angle takes values near π/2 "
+        "+ kπ, ∀ k ∈ ℤ. At the current configuration, we have pitch = {}. "
+        "Consider using a QuaternionFloatingJoint instead.",
+        this->inboard_body().name(), this->outboard_body().name(), angles[1]));
+  }
 
   const T sp = sin(angles[1]);
   const T sy = sin(angles[2]);
@@ -271,7 +281,16 @@ void SpaceXYZFloatingMobilizer<T>::MapVelocityToQDot(
 
   const Vector3<T> angles = get_angles(context);
   const T cp = cos(angles[1]);
-  DRAKE_DEMAND(abs(cp) > 1.0e-3);
+  if (abs(cp) < 1.0e-3) {
+    // TODO(russt): Add a "likely associated with SpaceXYZFloatingJoint" to
+    // match the error in space_xyz_mobilizer pending #19065.
+    throw std::runtime_error(fmt::format(
+        "The SpaceXYZFloatingMobilizer between body {} and body {} has reached "
+        "a singularity. This occurs when the pitch angle takes values near π/2 "
+        "+ kπ, ∀ k ∈ ℤ. At the current configuration, we have pitch = {}. "
+        "Consider using a QuaternionFloatingJoint instead.",
+        this->inboard_body().name(), this->outboard_body().name(), angles[1]));
+  }
 
   const T& w0 = v[0];
   const T& w1 = v[1];
