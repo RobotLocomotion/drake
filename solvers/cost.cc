@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "drake/common/symbolic/decompose.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/differentiable_norm.h"
 
@@ -305,6 +306,86 @@ std::ostream& PerspectiveQuadraticCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "PerspectiveQuadraticCost", vars);
 }
+
+ExpressionCost::ExpressionCost(const symbolic::Expression &e)
+    : Cost(e.GetVariables().size()), expression_(e) {
+  // Setup map_var_to_index_ and vars_ so that
+  //   map_var_to_index_[vars_(i).get_id()] = i.
+  std::tie(vars_, map_var_to_index_) =
+      symbolic::ExtractVariablesFromExpression(expression_);
+
+  // Compute gradients and set up the environment.
+  derivatives_.resize(vars_.size());
+  for (int i = 0; i < vars_.size(); i++) {
+    derivatives_[i] = expression_.Differentiate(vars_[i]);
+    environment_.insert(vars_[i], 0.0);
+  }
+}
+
+void ExpressionCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                  Eigen::VectorXd* y) const {
+  DRAKE_DEMAND(x.rows() == vars_.rows());
+
+  // Set environment with current x values.
+  for (int i = 0; i < vars_.size(); i++) {
+    environment_[vars_[i]] = x(map_var_to_index_.at(vars_[i].get_id()));
+  }
+
+  // Evaluate into the output, y.
+  y->resize(1);
+  (*y)[0] = expression_.Evaluate(environment_);
+}
+
+void ExpressionCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                  AutoDiffVecXd* y) const {
+  DRAKE_DEMAND(x.rows() == vars_.rows());
+
+  // Set environment with current x values.
+  for (int i = 0; i < vars_.size(); i++) {
+    environment_[vars_[i]] = x(map_var_to_index_.at(vars_[i].get_id())).value();
+  }
+
+  // Evaluate value and derivatives into the output, y.
+  // Using ∂yᵢ/∂zⱼ = ∑ₖ ∂fᵢ/∂xₖ ∂xₖ/∂zⱼ.
+  y->resize(1);
+  Eigen::VectorXd dydx(x.size());
+  (*y)[0].value() = expression_.Evaluate(environment_);
+  for (int k = 0; k < x.size(); k++) {
+    dydx[k] = derivatives_[k].Evaluate(environment_);
+  }
+
+  (*y)[0].derivatives().resize(x(0).derivatives().size());
+  for (int j = 0; j < x(0).derivatives().size(); j++) {
+    (*y)[0].derivatives()[j] = 0.0;
+    for (int k = 0; k < x.size(); k++) {
+      (*y)[0].derivatives()[j] += dydx[k] * x(k).derivatives()[j];
+    }
+  }
+}
+
+void ExpressionCost::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+    VectorX<symbolic::Expression>* y) const {
+  DRAKE_DEMAND(x.rows() == vars_.rows());
+  symbolic::Substitution subst;
+  for (int i = 0; i < vars_.size(); ++i) {
+    if (!vars_[i].equal_to(x[i])) {
+      subst.emplace(vars_[i], x[i]);
+    }
+  }
+  y->resize(1);
+  if (subst.empty()) {
+    (*y)[0] = expression_;
+  } else {
+    (*y)[0] = expression_.Substitute(subst);
+  }
+}
+
+std::ostream& ExpressionCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, os, "ExpressionCost", vars);
+}
+
 
 }  // namespace solvers
 }  // namespace drake

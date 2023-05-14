@@ -3135,9 +3135,6 @@ GTEST_TEST(TestMathematicalProgram, TestAddCostThrowError) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
-  // Add a non-polynomial cost.
-  EXPECT_THROW(prog.AddCost(sin(x(0))), runtime_error);
-
   // Add a cost containing variable not included in the mathematical program.
   Variable y("y");
   DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) + y),
@@ -3160,6 +3157,27 @@ GTEST_TEST(TestMathematicalProgram, TestAddGenericCost) {
   GenericPtr quadratic_cost(new QuadraticCost(Matrix1d(1), Vector1d(1)));
   prog.AddCost(quadratic_cost, x);
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
+}
+
+GTEST_TEST(TestMathematicalProgram, TestAddGenericCostExpression) {
+  MathematicalProgram prog;
+  Variable x = prog.NewContinuousVariables<1>()[0];
+  Variable y = prog.NewContinuousVariables<1>()[0];
+
+  using std::atan2;
+  auto b = prog.AddCost(atan2(y, x));
+  EXPECT_EQ(prog.generic_costs().size(), 1);
+  Vector2d x_test(0.5, 0.2);
+  Vector1d y_expected(atan2(0.2, 0.5));
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(b, x_test), y_expected));
+}
+
+// Confirm that even constant costs are supported.
+GTEST_TEST(TestMathematicalProgram, TestAddCostConstant) {
+  MathematicalProgram prog;
+
+  auto b = prog.AddCost(Expression(0.5));
+  EXPECT_EQ(prog.linear_costs().size(), 1);
 }
 
 GTEST_TEST(TestMathematicalProgram, TestClone) {
