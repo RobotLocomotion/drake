@@ -604,9 +604,9 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   // parallel to the right-handed unit vectors Cx_B, Cy_B, Cz_B stored in the
   // columns of R_BC and whether they form a right-handed set.
   R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
-  const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BP.col(0);
-  const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BP.col(1);
-  const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BP.col(2);
+  const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BC.col(0);
+  const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BC.col(1);
+  const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BC.col(2);
   EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);  // Px parallel to Cx.
   EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);  // Py parallel to Cy.
   EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);  // Pz parallel to Cz.

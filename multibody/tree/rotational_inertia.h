@@ -531,11 +531,9 @@ class RotationalInertia {
   /// Forms the 3 principal moments of inertia for `this` rotational inertia.
   /// @retval The 3 principal moments of inertia [Imin Imed Imax], sorted in
   /// ascending order (Imin ≤ Imed ≤ Imax).
-  /// @throws std::exception if the eigenvalue solver fails or if scalar type T
-  /// cannot be converted to a double.
-  /// @note: This method only works for a rotational inertia with scalar type T
-  /// that can be converted to a double (discarding any supplemental scalar data
-  /// such as derivatives of an AutoDiffXd).
+  /// @throws std::exception if the elements of `this` rotational inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
   /// @see CalcPrincipalMomentsAndAxesOfInertia() to also calculate principal
   /// moment of inertia directions associated with `this` rotational inertia.
   Vector3<double> CalcPrincipalMomentsOfInertia() const {
@@ -556,11 +554,9 @@ class RotationalInertia {
   /// parallel to principal axes associated with Iyy and Izz (the intermediate
   /// and largest principal moments of inertia). If all principal moments of
   /// inertia are equal (i.e., Ixx = Iyy = Izz), R_EP is the identity matrix.
-  /// @throws std::exception if the eigenvalue solver fails or if scalar type T
-  /// cannot be converted to a double.
-  /// @note: This method only works for a rotational inertia with scalar type T
-  /// that can be converted to a double (discarding any supplemental scalar data
-  /// such as derivatives of an AutoDiffXd).
+  /// @throws std::exception if the elements of `this` rotational inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
   /// @see CalcPrincipalMomentsOfInertia() to calculate the principal moments
   /// of inertia [Ixx Iyy Izz], without calculating the principal directions.
   std::pair<Vector3<double>, math::RotationMatrix<double>>
@@ -905,11 +901,9 @@ class RotationalInertia {
   // @returns 3 principal moments of inertia [Ixx Iyy Izz], sorted in ascending
   // order (Ixx ≤ Iyy ≤ Izz). If R_EP ≠ nullptr, also returns the 3 associated
   // principal directions via the argument R_EP.
-  // @throws std::exception if the eigenvalue solver fails or if scalar type T
-  // cannot be converted to a double.
-  // @note: This method only works for a rotational inertia with scalar type T
-  // that can be converted to a double (discarding any supplemental scalar data
-  // such as derivatives of an AutoDiffXd).
+  // @throws std::exception if the elements of `this` rotational inertia cannot
+  // be converted to a real finite double. For example, an exception is thrown
+  // if `this` contains an erroneous NaN or if scalar type T is symbolic.
   // @see CalcPrincipalMomentsOfInertia() and
   // CalcPrincipalMomentsAndAxesOfInertia().
   Vector3<double> CalcPrincipalMomentsAndMaybeAxesOfInertia(
