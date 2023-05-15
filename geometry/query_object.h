@@ -315,8 +315,23 @@ class QueryObject {
        | Capsule   |    yes    |  yes  |
        | Ellipsoid |    yes    |  yes  |
        | HalfSpace |    yes    |  yes  |
-       | Mesh      |    no     |  yes  |
-       | Convex    |    yes    |  yes  |
+       | Mesh      |    yesᵃ   |  yesᵇ |
+       | Convex    |    yesᶜ   |  yesᶜ |
+
+         <!-- TODO(DamrongGuoy): Instead of the external working document for
+         the guidance how to generate tetrahedral meshes, write a Drake
+         document, for example, an appendix in Hydroelastic User Guide
+         when it's ready. -->
+
+     - ᵃ For compliant Mesh, please specify a tetrahedral mesh
+         in a VTK file in Mesh(filename). This external working
+         <a href="https://docs.google.com/document/d/1VZtVsxIjOLKvgQ8SNSrF6PtWuPW5z9PP7-dQuxfmqpc/edit?usp=sharing">
+         document</a> provides guidance how to generate a tetrahedral mesh
+         in a VTK file from a surface mesh in an OBJ file.
+     - ᵇ For rigid Mesh, please specify a surface mesh
+         in an OBJ file in Mesh(filename).
+     - ᶜ For both compliant Convex and rigid Convex, please specify a surface
+         mesh in an OBJ file in Convex(filename).
 
      - We do not support contact between two rigid geometries. One geometry
        *must* be compliant, and the other could be rigid or compliant. If
