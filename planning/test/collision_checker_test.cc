@@ -237,7 +237,7 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
   mutable VectorXd positions_for_classify_;
   // Updated with every call to DoCheckContextConfigCollisionFree().
   mutable VectorXd positions_for_check_;
-  // Updated with every call to DoUpdateCollisionFilters().
+  // Updated with every call to UpdateCollisionFilters().
   Eigen::MatrixXi updated_filter_matrix_;
 };
 
@@ -942,7 +942,7 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilterMatrix) {
   ASSERT_NO_THROW(dut_->SetCollisionFilterMatrix(no_filters));
   EXPECT_TRUE(CompareMatrices(dut_->GetFilteredCollisionMatrix(), no_filters));
   // Confirm that the collision filter matrix was updated before calling
-  // DoUpdateCollisionFilters().
+  // UpdateCollisionFilters().
   EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
                               dut_->GetFilteredCollisionMatrix()));
 
@@ -1204,7 +1204,7 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilteredBetween) {
     EXPECT_NO_THROW(
         dut_->SetCollisionFilterMatrix(dut_->GetFilteredCollisionMatrix()));
     // Confirm that the collision filter matrix was updated before calling
-    // DoUpdateCollisionFilters().
+    // UpdateCollisionFilters().
     EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
                                 dut_->GetFilteredCollisionMatrix()));
   }
@@ -1255,7 +1255,7 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilteredWithAllBodies) {
     // matrix and reports filters as expected.
     EXPECT_NO_THROW(dut_->SetCollisionFilteredWithAllBodies(b[3]));
     // Confirm that the collision filter matrix was updated before calling
-    // DoUpdateCollisionFilters().
+    // UpdateCollisionFilters().
     EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
                                 dut_->GetFilteredCollisionMatrix()));
     EXPECT_NO_THROW(
@@ -1271,7 +1271,7 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilteredWithAllBodies) {
     EXPECT_NO_THROW(
         dut_->SetCollisionFilteredWithAllBodies(dut_->get_body(b[2])));
     // Confirm that the collision filter matrix was updated before calling
-    // DoUpdateCollisionFilters().
+    // UpdateCollisionFilters().
     EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
                                 dut_->GetFilteredCollisionMatrix()));
     EXPECT_NO_THROW(

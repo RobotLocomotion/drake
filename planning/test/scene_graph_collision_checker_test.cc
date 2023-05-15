@@ -103,6 +103,11 @@ Eigen::MatrixXi GenerateFilteredCollisionMatrixFromSceneGraphOnly(
   return filtered_collisions;
 }
 
+// Enforce that the collision filter matrix of the provided collision checker is
+// consistent with the filters applied in the SceneGraph context of every
+// collision checker context. Note: this check only covers bodies with
+// associated collision geometries, as SceneGraph cannot express filters between
+// bodies without geometries.
 void EnforceCollisionFilterConsistency(
     const SceneGraphCollisionChecker& checker) {
   const Eigen::MatrixXi& current_collision_filter_matrix =
@@ -144,7 +149,7 @@ void EnforceCollisionFilterConsistency(
           // bodies with geometries, so we only check pairs where both bodies
           // have associated geometries.
           if (i_has_geometries && j_has_geometries) {
-            inconsistencies++;
+            ++inconsistencies;
             drake::log()->error("Entry {},{} is inconsistent", i, j);
           } else {
             drake::log()->info("Entry {},{} is inconsistent (ignored)", i, j);
