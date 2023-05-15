@@ -315,7 +315,7 @@ class QueryObject {
        | Capsule   |    yes    |  yes  |
        | Ellipsoid |    yes    |  yes  |
        | HalfSpace |    yes    |  yes  |
-       | Mesh      |    yes     |  yes  |
+       | Mesh      |    yes    |  yes  |
        | Convex    |    yes    |  yes  |
 
      - We do not support contact between two rigid geometries. One geometry
