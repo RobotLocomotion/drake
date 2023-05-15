@@ -138,12 +138,12 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
     return added_shape_id_;
   }
 
-  void DoRemoveAddedGeometries(
+  void RemoveAddedGeometries(
       const std::vector<CollisionChecker::AddedShape>& shapes) override {
     // Don't need to do work; just don't throw.
   }
 
-  void DoUpdateCollisionFilters() override {
+  void UpdateCollisionFilters() override {
     // Capture the updated collision filter matrix.
     updated_filter_matrix_ = GetFilteredCollisionMatrix();
   }

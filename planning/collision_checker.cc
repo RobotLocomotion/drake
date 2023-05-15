@@ -152,20 +152,6 @@ std::vector<int> CalcUncontrolledDofsThatKinematicallyAffectTheRobot(
   return result;
 }
 
-// Checks if two collision filter matrices are different.
-// Note: does not perform size checks, as all call sites enforce matching sizes.
-bool AreCollisionFilterMatricesDifferent(const Eigen::MatrixXi& matrixA,
-                                         const Eigen::MatrixXi& matrixB) {
-  for (int row = 0; row < matrixA.rows(); ++row) {
-    for (int col = 0; col < matrixA.cols(); ++col) {
-      if (matrixA(row, col) != matrixB(row, col)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 }  // namespace
 
 CollisionChecker::~CollisionChecker() = default;
@@ -277,7 +263,7 @@ void CollisionChecker::RemoveAllAddedCollisionShapes(
   auto iter = geometry_groups_.find(group_name);
   if (iter != geometry_groups_.end()) {
     drake::log()->debug("Removing geometries from group [{}].", group_name);
-    DoRemoveAddedGeometries(iter->second);
+    RemoveAddedGeometries(iter->second);
     geometry_groups_.erase(iter);
   }
 }
@@ -285,7 +271,7 @@ void CollisionChecker::RemoveAllAddedCollisionShapes(
 void CollisionChecker::RemoveAllAddedCollisionShapes() {
   drake::log()->debug("Removing all added geometries");
   for (const auto& [group_name, group_ids] : geometry_groups_) {
-    DoRemoveAddedGeometries(group_ids);
+    RemoveAddedGeometries(group_ids);
   }
   geometry_groups_.clear();
 }
@@ -433,13 +419,12 @@ void CollisionChecker::SetCollisionFilterMatrix(
   }
   // Only perform additional work if the provided filter matrix is different
   // from the current matrix.
-  if (AreCollisionFilterMatricesDifferent(filtered_collisions_,
-                                          filter_matrix)) {
+  if (filtered_collisions_ != filter_matrix) {
     // Now test for consistency.
     ValidateFilteredCollisionMatrix(filter_matrix, __func__);
     filtered_collisions_ = filter_matrix;
     // Allow derived checkers to perform any post-filter-change work.
-    DoUpdateCollisionFilters();
+    UpdateCollisionFilters();
   }
 }
 
@@ -478,7 +463,7 @@ void CollisionChecker::SetCollisionFilteredBetween(BodyIndex bodyA_index,
     filtered_collisions_(int{bodyA_index}, int{bodyB_index}) = new_value;
     filtered_collisions_(int{bodyB_index}, int{bodyA_index}) = new_value;
     // Allow derived checkers to perform any post-filter-change work.
-    DoUpdateCollisionFilters();
+    UpdateCollisionFilters();
   }
 }
 
@@ -492,10 +477,9 @@ void CollisionChecker::SetCollisionFilteredWithAllBodies(BodyIndex body_index) {
   // Maintain the invariant that the diagonal is always -1.
   filtered_collisions_(int{body_index}, int{body_index}) = -1;
   // Only perform additional work if the filter matrix has changed.
-  if (AreCollisionFilterMatricesDifferent(prior_filter_matrix,
-                                          filtered_collisions_)) {
+  if (prior_filter_matrix != filtered_collisions_) {
     // Allow derived checkers to perform any post-filter-change work.
-    DoUpdateCollisionFilters();
+    UpdateCollisionFilters();
   }
 }
 
@@ -796,116 +780,6 @@ std::vector<RobotCollisionType> CollisionChecker::ClassifyContextBodyCollisions(
   return DoClassifyContextBodyCollisions(*model_context);
 }
 
-Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix(
-    const CollisionChecker& checker,
-    const SceneGraphInspector<double>& inspector) {
-  const int num_bodies = checker.plant().num_bodies();
-  // Initialize matrix to zero (no filtered collisions).
-  Eigen::MatrixXi filtered_collisions =
-      Eigen::MatrixXi::Zero(num_bodies, num_bodies);
-
-  // Generate a mapping from body to subgraph for use in identifying welds.
-  std::vector<int> body_subgraph_mapping(num_bodies, -1);
-
-  const std::vector<std::set<BodyIndex>> subgraphs =
-      checker.plant().FindSubgraphsOfWeldedBodies();
-
-  for (size_t subgraph_id = 0; subgraph_id < subgraphs.size(); ++subgraph_id) {
-    const std::set<BodyIndex>& subgraph = subgraphs.at(subgraph_id);
-    for (const BodyIndex& body_id : subgraph) {
-      body_subgraph_mapping.at(body_id) = static_cast<int>(subgraph_id);
-    }
-  }
-
-  // For consistency, (B, B) is always filtered.
-  // Loop variables below use `int` for Eigen indexing compatibility.
-  for (int i = 0; i < num_bodies; ++i) {
-    filtered_collisions(i, i) = -1;
-
-    const int body_i_subgraph_id = body_subgraph_mapping.at(i);
-    // We expect FindSubgraphsOfWeldedBodies to cover all bodies, but check to
-    // make sure no bodies are left with the default subgraph id.
-    DRAKE_DEMAND(body_i_subgraph_id >= 0);
-
-    const bool i_is_robot = checker.IsPartOfRobot(BodyIndex(i));
-
-    const Body<double>& body_i = checker.get_body(BodyIndex(i));
-
-    const std::vector<GeometryId>& geometries_i =
-        checker.plant().GetCollisionGeometriesForBody(body_i);
-
-    for (int j = i + 1; j < num_bodies; ++j) {
-      const int body_j_subgraph_id = body_subgraph_mapping.at(j);
-
-      const bool j_is_robot = checker.IsPartOfRobot(BodyIndex(j));
-      // (Env, env) pairs are immutably filtered (marked -1).
-      if (!(i_is_robot || j_is_robot)) {
-        filtered_collisions(i, j) = -1;
-        filtered_collisions(j, i) = -1;
-        continue;
-      }
-
-      const Body<double>& body_j = checker.get_body(BodyIndex(j));
-
-      // Check if collisions between the geometries are already filtered.
-      bool collisions_filtered = false;
-      const std::vector<GeometryId>& geometries_j =
-          checker.plant().GetCollisionGeometriesForBody(body_j);
-      if (geometries_i.size() > 0 && geometries_j.size() > 0) {
-        collisions_filtered =
-            inspector.CollisionFiltered(geometries_i.at(0), geometries_j.at(0));
-        // Ensure that the collision filtering is homogeneous across all body
-        // geometries.
-        for (const auto& id_i : geometries_i) {
-          for (const auto& id_j : geometries_j) {
-            const bool current_filtered =
-                inspector.CollisionFiltered(id_i, id_j);
-            if (current_filtered != collisions_filtered) {
-              throw std::runtime_error(fmt::format(
-                  "SceneGraph's collision filters on the geometries of bodies "
-                  " {} [{}] and {} [{}] are not homogeneous",
-                  i, body_i.scoped_name(), j, body_j.scoped_name()));
-            }
-          }
-        }
-      }
-
-      // While MbP already filters collisions in SceneGraph between welded
-      // bodies, this is only recorded if both bodies have collision geometries
-      // when this filter is applied. Since we want to handle collision
-      // geometries added later, we must record if bodies are welded together.
-
-      // If the body pair has a welded path between them, it should be filtered.
-      const bool bodies_welded_together =
-          body_i_subgraph_id == body_j_subgraph_id;
-
-      // Add the filter accordingly.
-      if (collisions_filtered) {
-        // Filter the collision
-        log()->debug(
-            "Collision between body {} [{}] and body {} [{}] filtered "
-            "(filtered in SceneGraph)",
-            body_i.scoped_name(), i, body_j.scoped_name(), j);
-        filtered_collisions(i, j) = 1;
-        filtered_collisions(j, i) = 1;
-      } else if (bodies_welded_together) {
-        // Filter the collision
-        log()->debug(
-            "Collision between body {} [{}] and body {} [{}] filtered "
-            "(bodies are welded together)",
-            body_i.scoped_name(), i, body_j.scoped_name(), j);
-        filtered_collisions(i, j) = 1;
-        filtered_collisions(j, i) = 1;
-      } else {
-        log()->debug(
-            "Collision between body {} [{}] and body {} [{}] not filtered",
-            body_i.scoped_name(), i, body_j.scoped_name(), j);
-      }
-    }
-  }
-  return filtered_collisions;
-}
-
 CollisionChecker::CollisionChecker(CollisionCheckerParams params,
                                    bool supports_parallel_checking)
     : setup_model_(std::move(params.model)),
@@ -943,8 +817,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
       MakeDefaultConfigurationInterpolationFunction(
           GetQuaternionDofStartIndices(plant())));
   // Generate the filtered collision matrix.
-  nominal_filtered_collisions_ = GenerateFilteredCollisionMatrix(
-      *this, model().scene_graph().model_inspector());
+  nominal_filtered_collisions_ = GenerateFilteredCollisionMatrix();
   filtered_collisions_ = nominal_filtered_collisions_;
   log()->debug("Collision filter matrix:\n{}", fmt_eigen(filtered_collisions_));
 }
@@ -1056,6 +929,116 @@ void CollisionChecker::ValidateFilteredCollisionMatrix(
       }
     }
   }
+}
+
+Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
+  const int num_bodies = plant().num_bodies();
+  // Initialize matrix to zero (no filtered collisions).
+  Eigen::MatrixXi filtered_collisions =
+      Eigen::MatrixXi::Zero(num_bodies, num_bodies);
+
+  const auto& inspector = model().scene_graph().model_inspector();
+
+  // Generate a mapping from body to subgraph for use in identifying welds.
+  std::vector<int> body_subgraph_mapping(num_bodies, -1);
+
+  const std::vector<std::set<BodyIndex>> subgraphs =
+      plant().FindSubgraphsOfWeldedBodies();
+
+  for (size_t subgraph_id = 0; subgraph_id < subgraphs.size(); ++subgraph_id) {
+    const std::set<BodyIndex>& subgraph = subgraphs.at(subgraph_id);
+    for (const BodyIndex& body_id : subgraph) {
+      body_subgraph_mapping.at(body_id) = static_cast<int>(subgraph_id);
+    }
+  }
+
+  // For consistency, (B, B) is always filtered.
+  // Loop variables below use `int` for Eigen indexing compatibility.
+  for (int i = 0; i < num_bodies; ++i) {
+    filtered_collisions(i, i) = -1;
+
+    const int body_i_subgraph_id = body_subgraph_mapping.at(i);
+    // We expect FindSubgraphsOfWeldedBodies to cover all bodies, but check to
+    // make sure no bodies are left with the default subgraph id.
+    DRAKE_DEMAND(body_i_subgraph_id >= 0);
+
+    const bool i_is_robot = IsPartOfRobot(BodyIndex(i));
+
+    const Body<double>& body_i = get_body(BodyIndex(i));
+
+    const std::vector<GeometryId>& geometries_i =
+        plant().GetCollisionGeometriesForBody(body_i);
+
+    for (int j = i + 1; j < num_bodies; ++j) {
+      const int body_j_subgraph_id = body_subgraph_mapping.at(j);
+
+      const bool j_is_robot = IsPartOfRobot(BodyIndex(j));
+      // (Env, env) pairs are immutably filtered (marked -1).
+      if (!(i_is_robot || j_is_robot)) {
+        filtered_collisions(i, j) = -1;
+        filtered_collisions(j, i) = -1;
+        continue;
+      }
+
+      const Body<double>& body_j = get_body(BodyIndex(j));
+
+      // Check if collisions between the geometries are already filtered.
+      bool collisions_filtered = false;
+      const std::vector<GeometryId>& geometries_j =
+          plant().GetCollisionGeometriesForBody(body_j);
+      if (geometries_i.size() > 0 && geometries_j.size() > 0) {
+        collisions_filtered =
+            inspector.CollisionFiltered(geometries_i.at(0), geometries_j.at(0));
+        // Ensure that the collision filtering is homogeneous across all body
+        // geometries.
+        for (const auto& id_i : geometries_i) {
+          for (const auto& id_j : geometries_j) {
+            const bool current_filtered =
+                inspector.CollisionFiltered(id_i, id_j);
+            if (current_filtered != collisions_filtered) {
+              throw std::runtime_error(fmt::format(
+                  "SceneGraph's collision filters on the geometries of bodies "
+                  " {} [{}] and {} [{}] are not homogeneous",
+                  i, body_i.scoped_name(), j, body_j.scoped_name()));
+            }
+          }
+        }
+      }
+
+      // While MbP already filters collisions in SceneGraph between welded
+      // bodies, this is only recorded if both bodies have collision geometries
+      // when this filter is applied. Since we want to handle collision
+      // geometries added later, we must record if bodies are welded together.
+
+      // If the body pair has a welded path between them, it should be filtered.
+      const bool bodies_welded_together =
+          body_i_subgraph_id == body_j_subgraph_id;
+
+      // Add the filter accordingly.
+      if (collisions_filtered) {
+        // Filter the collision
+        log()->debug(
+            "Collision between body {} [{}] and body {} [{}] filtered "
+            "(filtered in SceneGraph)",
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
+        filtered_collisions(i, j) = 1;
+        filtered_collisions(j, i) = 1;
+      } else if (bodies_welded_together) {
+        // Filter the collision
+        log()->debug(
+            "Collision between body {} [{}] and body {} [{}] filtered "
+            "(bodies are welded together)",
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
+        filtered_collisions(i, j) = 1;
+        filtered_collisions(j, i) = 1;
+      } else {
+        log()->debug(
+            "Collision between body {} [{}] and body {} [{}] not filtered",
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
+      }
+    }
+  }
+  return filtered_collisions;
 }
 
 void CollisionChecker::UpdateMaxCollisionPadding() {
