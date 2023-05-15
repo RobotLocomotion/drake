@@ -158,6 +158,13 @@ namespace multibody {
 /// which drake::scalar_predicate<T>::is_bool is `true`. For instance, validity
 /// checks are not performed when T is symbolic::Expression.
 ///
+/// @note The methods of this class satisfy the "basic exception guarantee": if
+/// an exception is thrown, the program will still be in a valid
+/// state. Specifically, no resources are leaked, and all objects' invariants
+/// are intact. Be aware that RotationalInertia objects may contain invalid
+/// inertia data in cases where input checking is skipped.
+/// @see https://en.cppreference.com/w/cpp/language/exceptions
+///
 /// Various methods in this class require numerical (not symbolic) data types.
 ///
 /// @tparam_default_scalar

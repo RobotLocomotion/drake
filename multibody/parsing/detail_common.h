@@ -16,6 +16,7 @@
 #include "drake/multibody/plant/coulomb_friction.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
+#include "drake/multibody/tree/spatial_inertia.h"
 
 namespace drake {
 namespace multibody {
@@ -212,6 +213,47 @@ void ParseCollisionFilterGroupCommon(
         read_bool_attribute,
     const std::function<std::string(const ElementNode&, const char*)>&
         read_tag_string);
+
+// This struct helps label and order the rotational inertia inputs at call
+// sites of ParseSpatialInertia. Units of all quantities are kg⋅m².
+//
+// These quantities should have been parsed from the URDF
+// `/robot/link/inertial/inertia` tag or from the SDFormat
+// `//model/link/inertial/inertia` tag.
+struct InertiaInputs {
+  // Moments.
+  double ixx{};
+  double iyy{};
+  double izz{};
+  // Products of inertia.
+  double ixy{};
+  double ixz{};
+  double iyz{};
+};
+
+// Combines the given user inputs into a SpatialInertia. When any data is
+// invalid, emits a warning into the diagnostic policy and returns a
+// best-effort approximation instead.
+//
+// The inertia math defines an "inertia frame" (called here Bi), with
+// origin at the center of mass of the body, and axes arbitrary, but sometimes
+// chosen to zero out the products of inertia.
+//
+// Conveniently, both URDF and SDFormat inputs support compatible formats for
+// specifying the inertia frame. Callers should have previously constructed the
+// transform `X_BBi` from the URDF `/robot/link/inertial/origin` tag or from
+// the SDFormat `//model/link/inertial/pose` tag.
+//
+// @param diagnostic  The error-reporting channel.
+// @param X_BBi       Pose of the inertia frame expressed in the body's frame.
+// @param mass        Mass of the body.
+// @param inertia_Bi_Bi  The moments and products of inertia about Bi's origin,
+//                      expressed in frame Bi.
+SpatialInertia<double> ParseSpatialInertia(
+    const drake::internal::DiagnosticPolicy& diagnostic,
+    const math::RigidTransformd& X_BBi,
+    double mass,
+    const InertiaInputs& inertia_Bi_Bi);
 
 }  // namespace internal
 }  // namespace multibody

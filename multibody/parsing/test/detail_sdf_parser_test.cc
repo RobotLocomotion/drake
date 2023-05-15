@@ -503,7 +503,7 @@ TEST_F(SdfParserTest, ZeroMassNonZeroInertia) {
   // Test that attempt to parse links with zero mass and non-zero inertia fails.
   AddSceneGraph();
   const std::string expected_message = ".*condition 'mass > 0' failed.";
-  DRAKE_EXPECT_THROWS_MESSAGE(ParseTestString(R"""(
+  ParseTestString(R"""(
 <model name='bad'>
   <link name='bad'>
     <inertial>
@@ -518,7 +518,8 @@ TEST_F(SdfParserTest, ZeroMassNonZeroInertia) {
       </inertia>
     </inertial>
   </link>
-</model>)"""), expected_message);
+</model>)""");
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(expected_message));
 }
 
 TEST_F(SdfParserTest, FloatingBodyPose) {

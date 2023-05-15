@@ -1,22 +1,17 @@
-load(
-    "@drake//tools/workspace:pkg_config.bzl",
-    "pkg_config_repository",
-)
+load("@drake//tools/workspace:os.bzl", "os_specific_alias_repository")
 
-def ipopt_repository(
-        name,
-        licenses = [
-            "reciprocal",  # CPL-1.0
-            "unencumbered",  # Public-Domain
-        ],
-        modname = "ipopt",
-        pkg_config_paths = [],
-        homebrew_subdir = "opt/ipopt/lib/pkgconfig",
-        **kwargs):
-    pkg_config_repository(
+# How we build IPOPT depends on which platform we're on.
+def ipopt_repository(name):
+    os_specific_alias_repository(
         name = name,
-        licenses = licenses,
-        modname = modname,
-        pkg_config_paths = pkg_config_paths,
-        **kwargs
+        mapping = {
+            "macOS default": [
+                "ipopt=@ipopt_internal_pkgconfig//:ipopt_internal_pkgconfig",
+                "install=@ipopt_internal_pkgconfig//:install",
+            ],
+            "Ubuntu default": [
+                "ipopt=@ipopt_internal_fromsource//:ipopt",
+                "install=@ipopt_internal_fromsource//:install",
+            ],
+        },
     )

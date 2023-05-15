@@ -371,6 +371,33 @@ GTEST_TEST(ProcessModelDirectivesTest, ErrorMessages) {
   }
 }
 
+// Test model directives failure to load welds with a deep nested child.
+GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildWelds) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/deep_child_weld.dmd.yaml"));
+  MultibodyPlant<double> plant(0.0);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ProcessModelDirectives(directives, &plant, nullptr,
+        make_parser(&plant).get()),
+        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+}
+
+// Test model directives failure to load welds with a child to a
+// deep nested frame.
+GTEST_TEST(ProcessModelDirectivesTest, DeepNestedChildFrameWelds) {
+  ModelDirectives directives = LoadModelDirectives(
+      FindResourceOrThrow(std::string(kTestDir) +
+                          "/deep_child_frame_weld.dmd.yaml"));
+  MultibodyPlant<double> plant(0.0);
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ProcessModelDirectives(directives, &plant, nullptr,
+        make_parser(&plant).get()),
+        R"(.*Failure at .* in AddWeld\(\): condition 'found' failed.*)");
+}
+
 }  // namespace
 }  // namespace parsing
 }  // namespace multibody
