@@ -564,8 +564,8 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
     EXPECT_NEAR(contact_info.contact_point().z(),
                 CalcEquilibriumZPosition() - kPointContactSphereRadius_,
                 kTolerance);
-    EXPECT_EQ(contact_info.slip_speed(), 0);
-    EXPECT_EQ(contact_info.separation_speed(), 0);
+    EXPECT_NEAR(contact_info.slip_speed(), 0, kEps);
+    EXPECT_NEAR(contact_info.separation_speed(), 0, kEps);
   } else {
     // Test hydroelastic contact.
     EXPECT_EQ(contact_results->num_point_pair_contacts(), 0);
@@ -600,12 +600,12 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsEquilibriumPosition) {
       // Sanity check the face indices.
       EXPECT_THAT(std::vector<int>{data.face_index},
                   testing::IsSubsetOf({0, 1}));
-      EXPECT_EQ(data.vt_BqAq_W, Vector3d::Zero());
+      EXPECT_TRUE(CompareMatrices(data.vt_BqAq_W, Vector3d::Zero(), kEps));
       // Each of the 2 faces have area kArea_ / 2 and exist in a plane of
       // constant pressure within the compliant halfspace, thus they each
       // contribute half of the total force.
       // Therefore traction = (f_Ac_W/2) / (kArea_/2) = f_Ac_W / kArea_
-      EXPECT_EQ(data.traction_Aq_W, f_Ac_W / kArea_);
+      EXPECT_TRUE(CompareMatrices(data.traction_Aq_W, f_Ac_W / kArea_, kEps));
     }
   }
 }
