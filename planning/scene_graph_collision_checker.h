@@ -44,8 +44,10 @@ class SceneGraphCollisionChecker final : public CollisionChecker {
       const geometry::Shape& shape,
       const math::RigidTransform<double>& X_AG) final;
 
-  void DoRemoveAddedGeometries(
+  void RemoveAddedGeometries(
       const std::vector<CollisionChecker::AddedShape>& shapes) final;
+
+  void UpdateCollisionFilters() final;
 
   RobotClearance DoCalcContextRobotClearance(
       const CollisionCheckerContext& model_context,
@@ -56,6 +58,13 @@ class SceneGraphCollisionChecker final : public CollisionChecker {
 
   int DoMaxContextNumDistances(
       const CollisionCheckerContext& model_context) const final;
+
+  // Applies filters defined in the filtered collision matrix to SceneGraph.
+  // This must be called in the constructor to ensure that additional filters
+  // applied by CollisionChecker are present in SceneGraph, and after any
+  // geometry is added to SceneGraph, as any existing filters will not include
+  // the new geometry.
+  void ApplyCollisionFiltersToSceneGraph();
 };
 
 }  // namespace planning

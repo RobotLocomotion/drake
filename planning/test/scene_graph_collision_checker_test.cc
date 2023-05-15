@@ -17,6 +17,9 @@ using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
+using geometry::GeometryId;
+using geometry::SceneGraphInspector;
+using multibody::Body;
 using multibody::BodyIndex;
 using testing::ElementsAre;
 
@@ -34,6 +37,135 @@ CollisionCheckerTestParams MakeSceneGraphCollisionCheckerParams() {
        .env_collision_padding = p.env_padding,
        .self_collision_padding = p.self_padding}));
   return result;
+}
+
+// This is equivalent to CollisionChecker::GenerateFilteredCollisionMatrix, but
+// without any of the entries set by CollisionChecker itself, for purposes of
+// checking filters in SceneGraph.
+Eigen::MatrixXi GenerateFilteredCollisionMatrixFromSceneGraphOnly(
+    const SceneGraphCollisionChecker& checker,
+    const SceneGraphInspector<double>& inspector) {
+  const int num_bodies = checker.plant().num_bodies();
+  // Initialize matrix to zero (no filtered collisions).
+  Eigen::MatrixXi filtered_collisions =
+      Eigen::MatrixXi::Zero(num_bodies, num_bodies);
+
+  // Loop variables below use `int` for Eigen indexing compatibility.
+  for (int i = 0; i < num_bodies; ++i) {
+    const Body<double>& body_i = checker.get_body(BodyIndex(i));
+
+    const std::vector<GeometryId>& geometries_i =
+        checker.plant().GetCollisionGeometriesForBody(body_i);
+
+    for (int j = i; j < num_bodies; ++j) {
+      const Body<double>& body_j = checker.get_body(BodyIndex(j));
+
+      // Check if collisions between the geometries are already filtered.
+      bool collisions_filtered = false;
+      const std::vector<GeometryId>& geometries_j =
+          checker.plant().GetCollisionGeometriesForBody(body_j);
+      if (geometries_i.size() > 0 && geometries_j.size() > 0) {
+        collisions_filtered =
+            inspector.CollisionFiltered(geometries_i.at(0), geometries_j.at(0));
+        // Ensure that the collision filtering is homogeneous across all body
+        // geometries.
+        for (const auto& id_i : geometries_i) {
+          for (const auto& id_j : geometries_j) {
+            const bool current_filtered =
+                inspector.CollisionFiltered(id_i, id_j);
+            if (current_filtered != collisions_filtered) {
+              throw std::runtime_error(fmt::format(
+                  "SceneGraph's collision filters on the geometries of bodies "
+                  " {} [{}] and {} [{}] are not homogeneous",
+                  i, body_i.scoped_name(), j, body_j.scoped_name()));
+            }
+          }
+        }
+      }
+
+      // Add the filter accordingly.
+      if (collisions_filtered) {
+        // Filter the collision
+        log()->debug(
+            "Collision between body {} [{}] and body {} [{}] filtered in "
+            "SceneGraph",
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
+        filtered_collisions(i, j) = 1;
+        filtered_collisions(j, i) = 1;
+      } else {
+        log()->debug(
+            "Collision between body {} [{}] and body {} [{}] not filtered in "
+            "SceneGraph",
+            body_i.scoped_name(), i, body_j.scoped_name(), j);
+      }
+    }
+  }
+  return filtered_collisions;
+}
+
+// Enforce that the collision filter matrix of the provided collision checker is
+// consistent with the filters applied in the SceneGraph context of every
+// collision checker context. Note: this check only covers bodies with
+// associated collision geometries, as SceneGraph cannot express filters between
+// bodies without geometries.
+void EnforceCollisionFilterConsistency(
+    const SceneGraphCollisionChecker& checker) {
+  const Eigen::MatrixXi& current_collision_filter_matrix =
+      checker.GetFilteredCollisionMatrix();
+  drake::log()->info("Current filter matrix:\n{}",
+                     fmt_eigen(current_collision_filter_matrix));
+
+  const auto body_has_geometries = [&](BodyIndex index) {
+    const auto& body = checker.get_body(index);
+    return checker.plant().GetCollisionGeometriesForBody(body).size() > 0;
+  };
+
+  int inconsistencies = 0;
+
+  using Operation = const std::function<void(const RobotDiagram<double>&,
+                                             CollisionCheckerContext*)>;
+  const Operation operation = [&](const RobotDiagram<double>& model,
+                                  CollisionCheckerContext* model_context) {
+    const auto& inspector = model_context->GetQueryObject().inspector();
+    const Eigen::MatrixXi context_collision_filter_matrix =
+        GenerateFilteredCollisionMatrixFromSceneGraphOnly(checker, inspector);
+    drake::log()->info("Context filter matrix:\n{}",
+                       fmt_eigen(context_collision_filter_matrix));
+
+    const int num_bodies = model.plant().num_bodies();
+    for (BodyIndex i(0); i < num_bodies; ++i) {
+      const bool i_has_geometries = body_has_geometries(i);
+
+      for (BodyIndex j(0); j < num_bodies; ++j) {
+        const bool j_has_geometries = body_has_geometries(j);
+
+        const bool current_filtered =
+            current_collision_filter_matrix(int{i}, int{j}) != 0;
+        const bool context_filtered =
+            context_collision_filter_matrix(int{i}, int{j}) != 0;
+
+        if (current_filtered != context_filtered) {
+          // SceneGraph only has a notion of allowed/excluded collision for
+          // bodies with geometries, so we only check pairs where both bodies
+          // have associated geometries.
+          if (i_has_geometries && j_has_geometries) {
+            ++inconsistencies;
+            drake::log()->error("Entry {},{} is inconsistent", i, j);
+          } else {
+            drake::log()->info("Entry {},{} is inconsistent (ignored)", i, j);
+          }
+        }
+      }
+    }
+  };
+
+  // We know that the operation does not actually mutate the contexts.
+  const_cast<SceneGraphCollisionChecker&>(checker)
+      .PerformOperationAgainstAllModelContexts(operation);
+
+  if (inconsistencies != 0) {
+    throw std::runtime_error("Collision filters are inconsistent");
+  }
 }
 
 }  // namespace
@@ -276,6 +408,80 @@ directives:
   // with the non-robot dofs being zeroed out without the entire jacobian
   // accidentally being zeroed out.
   EXPECT_GT(static_cast<double>(num_non_zero) / clearance.size(), 0.95);
+}
+
+// Checks that collision filters are properly updated.
+GTEST_TEST(SceneGraphCollisionCheckerTest, CollisionFilterUpdate) {
+  // Build a dut with a ground plane + floating chassis with welded arm.
+  RobotDiagramBuilder<double> builder;
+  const std::string model_directives = R"""(
+directives:
+- add_model:
+    name: ground
+    file: package://drake/planning/test_utilities/collision_ground_plane.sdf
+- add_weld:
+    parent: world
+    child: ground::ground_plane_box
+- add_model:
+    name: chassis
+    file: package://drake/manipulation/models/ycb/sdf/010_potted_meat_can.sdf
+- add_model:
+    name: arm
+    file: package://drake/manipulation/models/iiwa_description/urdf/iiwa14_spheres_dense_collision.urdf
+- add_weld:
+    parent: chassis::base_link_meat
+    child: arm::base
+)""";
+  builder.parser().AddModelsFromString(model_directives, "dmd.yaml");
+
+  const auto& plant = builder.plant();
+  CollisionCheckerParams params;
+  params.model = builder.Build();
+  params.robot_model_instances.push_back(plant.GetModelInstanceByName("arm"));
+  params.configuration_distance_function = [](const VectorXd& q1,
+                                              const VectorXd& q2) {
+    return (q1 - q2).norm();
+  };
+  params.edge_step_size = 0.05;
+  SceneGraphCollisionChecker dut(std::move(params));
+
+  // As constructed, collision filters must be consistent.
+  EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+
+  // Set collision filtering for a specific pair of robot bodies.
+  // Note: this also tests setting the equivalent filtering via body indices.
+  {
+    const Eigen::MatrixXi pre_filter_matrix = dut.GetFilteredCollisionMatrix();
+    dut.SetCollisionFilteredBetween(dut.plant().GetBodyByName("iiwa_link_0"),
+                                    dut.plant().GetBodyByName("iiwa_link_6"),
+                                    true);
+    ASSERT_FALSE(
+        CompareMatrices(pre_filter_matrix, dut.GetFilteredCollisionMatrix()));
+    EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+  }
+
+  // Set the entire collision filter matrix (this is also used to reset for the
+  // following test).
+  {
+    const Eigen::MatrixXi pre_filter_matrix = dut.GetFilteredCollisionMatrix();
+    ASSERT_FALSE(CompareMatrices(pre_filter_matrix,
+                                 dut.GetNominalFilteredCollisionMatrix()));
+    dut.SetCollisionFilterMatrix(dut.GetNominalFilteredCollisionMatrix());
+    ASSERT_FALSE(
+        CompareMatrices(pre_filter_matrix, dut.GetFilteredCollisionMatrix()));
+    EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+  }
+
+  // Set collision filtering between one robot body and all other bodies.
+  // Note: this also tests setting the equivalent filtering via body index.
+  {
+    const Eigen::MatrixXi pre_filter_matrix = dut.GetFilteredCollisionMatrix();
+    dut.SetCollisionFilteredWithAllBodies(
+        dut.plant().GetBodyByName("iiwa_link_0"));
+    ASSERT_FALSE(
+        CompareMatrices(pre_filter_matrix, dut.GetFilteredCollisionMatrix()));
+    EXPECT_NO_THROW(EnforceCollisionFilterConsistency(dut));
+  }
 }
 
 }  // namespace test
