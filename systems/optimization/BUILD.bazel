@@ -65,6 +65,7 @@ drake_cc_googletest(
 
 drake_cc_googletest(
     name = "system_constraint_adapter_test",
+    tags = ["no_kcov"],  # TODO(#17978)
     deps = [
         ":system_constraint_adapter",
         ":system_optimization_test_util",
