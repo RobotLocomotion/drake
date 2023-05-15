@@ -64,10 +64,11 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
   }
 
   // Calculate eigenvalues, possibly with eigenvectors.
-  // TODO(Mitiguy) Since this is 3x3 matrix, consider Eigen's specialied
-  //  compute_direct method which calculated eigenvalues with a closed-form
-  //  algorithm that is usually significantly faster than the QR iterative
-  //  algorithm but may be less accurate (for 3x3 matrix of double ≈ 1.0E-8).
+  // TODO(Mitiguy) Since this is 3x3 matrix, consider Eigen's specialized
+  //  compute_direct() method instead of compute() which uses QR.
+  //  compute_direct() calculates eigenvalues with a closed-form algorithm that
+  //  is usually signficantly faster than the QR iterative algorithm but may
+  //  be less accurate (e.g., for 3x3 matrix of doubles, accuracy ≈ 1.0E-8).
   Eigen::SelfAdjointEigenSolver<Matrix3<double>> eig_solve;
   const int compute_eigenvectors = principal_directions != nullptr ?
       Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly;
