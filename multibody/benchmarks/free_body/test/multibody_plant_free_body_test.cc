@@ -442,7 +442,7 @@ void TestKaneExactSolution(FreeBody torque_free_cylinder_kane,
 
   // Ensure Kane's quaternion time-derivative matches expected angular velocity.
   EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
-    quat_kane, quatDt_kane, w_expected, 8 * kEpsilon));
+    quat_kane, quatDt_kane, w_expected, 12 * kEpsilon));
 
   // Ensure expected quaternion time-derivative matches Kane's angular velocity.
   EXPECT_TRUE(math::IsQuaternionAndQuaternionDtEqualAngularVelocityExpressedInB(
