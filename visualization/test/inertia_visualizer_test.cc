@@ -111,13 +111,52 @@ class InertiaVisualizerGeometryTest : public ::testing::Test {
         scene_graph_{plant_and_scene_graph_.scene_graph},
         eps_{std::numeric_limits<double>::epsilon()} {};
 
+  struct GeometryTestCase {
+    Vector3d pose{Vector3d::Zero()};
+    double mass{0};
+    double moment_ixx{0};
+    double moment_iyy{0};
+    double moment_izz{0};
+    // The visual_sdf_ should contain the visual element of the test fixture
+    // to clarify the geometry being modeled.
+    std::string visual_sdf;
+  };
+
   // TODO(trowell-tri) Update to a Vector6d argument when rpy is supported.
+  // Returns the value of CalculateInertiaGeometry for the given input.
   std::pair<geometry::Ellipsoid, math::RigidTransform<double>>
-  CalculateInertiaGeometryForPose(const Vector3d pose) {
-    const std::string model = fmt::vformat(
-        model_template_,
-        fmt::make_format_args(mass_, pose(0), pose(1), pose(2), moment_ixx_,
-                              moment_iyy_, moment_izz_, visual_sdf_));
+  CalculateInertiaGeometryFor(const GeometryTestCase& input) {
+    // TODO(trowell-tri) Extend to allow configuring pose rpy.
+    static constexpr char kModelTemplate[] = R"""(
+          <?xml version='1.0'?>
+          <sdf version='1.7'>
+            <model name='test_model'>
+              <link name='test_body'>
+                <inertial>
+                  <mass>{}</mass>
+                  <pose>{} {} {} 0 0 0</pose>
+                  <inertia>
+                    <ixx>{}</ixx>
+                    <ixy>0</ixy>
+                    <ixz>0</ixz>
+                    <iyy>{}</iyy>
+                    <iyz>0</iyz>
+                    <izz>{}</izz>
+                  </inertia>
+                </inertial>
+                <visual name="test_visual">
+                  <geometry>
+                    {}
+                  </geometry>
+                </visual>
+              </link>
+            </model>
+          </sdf>
+          )""";
+    const std::string model =
+        fmt::format(kModelTemplate, input.mass, input.pose.x(), input.pose.y(),
+                    input.pose.z(), input.moment_ixx, input.moment_iyy,
+                    input.moment_izz, input.visual_sdf);
     drake::log()->info("Using SDF model: {}", model);
 
     multibody::Parser(&plant_).AddModelsFromString(model, "sdf");
@@ -133,62 +172,13 @@ class InertiaVisualizerGeometryTest : public ::testing::Test {
   MultibodyPlant<double>& plant_;
   SceneGraph<double>& scene_graph_;
   const double eps_;
-
-  // TODO(trowell-tri) Extend to allow configuring pose rpy.
-  const std::string model_template_ = R"""(
-        <?xml version='1.0'?>
-        <sdf version='1.7'>
-          <model name='test_model'>
-            <link name='test_body'>
-              <inertial>
-                <mass>{}</mass>
-                <pose>{} {} {} 0 0 0</pose>
-                <inertia>
-                  <ixx>{}</ixx>
-                  <ixy>0</ixy>
-                  <ixz>0</ixz>
-                  <iyy>{}</iyy>
-                  <iyz>0</iyz>
-                  <izz>{}</izz>
-                </inertia>
-              </inertial>
-              <visual name="test_visual">
-                <geometry>
-                  {}
-                </geometry>
-              </visual>
-            </link>
-          </model>
-        </sdf>
-        )""";
-
-  // Subclasses should set the mass_, moment_i..._, and visual_sdf_ members.
-  double mass_;
-  double moment_ixx_;
-  double moment_iyy_;
-  double moment_izz_;
-  // The visual_sdf_ should contain the visual element of the test fixture
-  // to clarify the geometry being modeled.
-  std::string visual_sdf_;
-};
-
-// A geometry test class which uses a massless body.
-class InertiaVisualizerZeroMassTest : public InertiaVisualizerGeometryTest {
- public:
-  InertiaVisualizerZeroMassTest() {
-    mass_ = 0;
-    moment_ixx_ = 0;
-    moment_iyy_ = 0;
-    moment_izz_ = 0;
-    visual_sdf_ = "<sphere><radius>1.0</radius></sphere>";
-  }
 };
 
 // Test inertia geometry computations for the massless body, posed without
 // translation or rotation.
-TEST_F(InertiaVisualizerZeroMassTest, UnmodifiedZeroMassTest) {
-  Vector3d pose{0, 0, 0};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+TEST_F(InertiaVisualizerGeometryTest, ZeroMassTest) {
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.visual_sdf = "<sphere><radius>1.0</radius></sphere>"});
 
   EXPECT_EQ(transform.IsExactlyIdentity(), true);
 
@@ -200,9 +190,10 @@ TEST_F(InertiaVisualizerZeroMassTest, UnmodifiedZeroMassTest) {
 // Test inertia geometry computations for the massless body, posed with
 // translation but not rotation.
 // TODO(trowell-tri) Add rotation to the test when supported.
-TEST_F(InertiaVisualizerZeroMassTest, ModifiedZeroMassTest) {
-  Vector3d pose{10, 20, 30};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+TEST_F(InertiaVisualizerGeometryTest, PosedZeroMassTest) {
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.pose = Vector3d{10, 20, 30},
+       .visual_sdf = "<sphere><radius>1.0</radius></sphere>"});
 
   // Pose for zero inertia is ignored.
   EXPECT_EQ(transform.IsExactlyIdentity(), true);
@@ -212,23 +203,15 @@ TEST_F(InertiaVisualizerZeroMassTest, ModifiedZeroMassTest) {
   EXPECT_NEAR(ellipsoid.c(), 0.001, eps_);
 }
 
-// A geometry test class which uses a simple box model.
-class InertiaVisualizerBoxTest : public InertiaVisualizerGeometryTest {
- public:
-  InertiaVisualizerBoxTest() {
-    mass_ = 2000;
-    moment_ixx_ = 833.33333;
-    moment_iyy_ = 833.33333;
-    moment_izz_ = 333.33333;
-    visual_sdf_ = "<box><size>1.0 1.0 2.0</size></box>";
-  }
-};
-
 // Test inertia geometry computations for the box model, posed without
 // translation or rotation.
-TEST_F(InertiaVisualizerBoxTest, UnmodifiedBoxTest) {
-  Vector3d pose{0, 0, 0};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+TEST_F(InertiaVisualizerGeometryTest, BoxTest) {
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.mass = 2000,
+       .moment_ixx = 833.33333,
+       .moment_iyy = 833.33333,
+       .moment_izz = 333.33333,
+       .visual_sdf = "<box><size>1.0 1.0 2.0</size></box>"});
 
   EXPECT_EQ(transform.IsExactlyIdentity(), true);
 
@@ -240,40 +223,35 @@ TEST_F(InertiaVisualizerBoxTest, UnmodifiedBoxTest) {
 // Test inertia geometry computations for the box model, posed with
 // translation but not rotation.
 // TODO(trowell-tri) Add rotation to the test when supported.
-TEST_F(InertiaVisualizerBoxTest, ModifiedBoxTest) {
-  Vector3d pose{100, 200, 300};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+TEST_F(InertiaVisualizerGeometryTest, PosedBoxTest) {
+  const Vector3d pose{100, 200, 300};
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.pose = pose,
+       .mass = 2000,
+       .moment_ixx = 833.33333,
+       .moment_iyy = 833.33333,
+       .moment_izz = 333.33333,
+       .visual_sdf = "<box><size>1.0 1.0 2.0</size></box>"});
 
   EXPECT_TRUE(
       CompareMatrices(transform.GetAsMatrix34().block(0, 3, 3, 1), pose));
 
-  // The ellipsoid radii here are subtly different from the unmodified case.
+  // The ellipsoid radii here are subtly different from the unposed case.
   EXPECT_NEAR(ellipsoid.a(), 0.62035049012869525, eps_);
   EXPECT_NEAR(ellipsoid.b(), 0.62035049012869525, eps_);
   EXPECT_NEAR(ellipsoid.c(), 1.2407009848816188, eps_);
 }
 
-// A geometry test class which uses a thin cylinder model.
-class InertiaVisualizerThinCylinderTest : public InertiaVisualizerGeometryTest {
- public:
-  InertiaVisualizerThinCylinderTest() {
-    mass_ = 20;
-    moment_ixx_ = 166.666666;
-    moment_iyy_ = 166.666666;
-    moment_izz_ = 1.0e-3;
-    visual_sdf_ = R"""(
-      <cylinder>
-        <radius>0.01</radius><length>10.0</length>
-      </cylinder>
-      )""";
-  }
-};
-
 // Test inertia geometry computations for the thin cylinder model, posed without
 // translation or rotation.
-TEST_F(InertiaVisualizerThinCylinderTest, UnmodifiedThinCylinderTest) {
-  Vector3d pose{0, 0, 0};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+TEST_F(InertiaVisualizerGeometryTest, ThinCylinderTest) {
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.mass = 20,
+       .moment_ixx = 166.666666,
+       .moment_iyy = 166.666666,
+       .moment_izz = 1.0e-3,
+       .visual_sdf =
+           "<cylinder><radius>0.01</radius><length>10.0</length></cylinder>"});
 
   EXPECT_EQ(transform.IsExactlyIdentity(), true);
 
@@ -285,36 +263,35 @@ TEST_F(InertiaVisualizerThinCylinderTest, UnmodifiedThinCylinderTest) {
 // Test inertia geometry computations for the thin cylinder model, posed with
 // translation but not rotation.
 // TODO(trowell-tri) Add rotation to the test when supported.
-TEST_F(InertiaVisualizerThinCylinderTest, ModifiedThinCylinderTest) {
-  Vector3d pose{50, 20, 1};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+TEST_F(InertiaVisualizerGeometryTest, PosedThinCylinderTest) {
+  const Vector3d pose{50, 20, 1};
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.pose = pose,
+       .mass = 20,
+       .moment_ixx = 166.666666,
+       .moment_iyy = 166.666666,
+       .moment_izz = 1.0e-3,
+       .visual_sdf =
+           "<cylinder><radius>0.01</radius><length>10.0</length></cylinder>"});
 
   EXPECT_TRUE(
       CompareMatrices(transform.GetAsMatrix34().block(0, 3, 3, 1), pose));
 
-  // The ellipsoid radii here are subtly different from the unmodified case.
+  // The ellipsoid radii here are subtly different from the unposed case.
   EXPECT_NEAR(ellipsoid.a(), 0.020222471021249189, eps_);
   EXPECT_NEAR(ellipsoid.b(), 0.020222470998258898, eps_);
   EXPECT_NEAR(ellipsoid.c(), 11.675431585909024, eps_);
 }
 
-// A geometry test class which uses an ellipsoid model.
-class InertiaVisualizerEllipsoidTest : public InertiaVisualizerGeometryTest {
- public:
-  InertiaVisualizerEllipsoidTest() {
-    mass_ = 2000;
-    moment_ixx_ = 2000;
-    moment_iyy_ = 2000;
-    moment_izz_ = 800;
-    visual_sdf_ = "<ellipsoid><radii>1.0 1.0 2.0</radii></ellipsoid>";
-  }
-};
-
 // Test inertia geometry computations for the ellipsoid model, posed without
 // translation or rotation.
-TEST_F(InertiaVisualizerEllipsoidTest, UnmodifiedEllipsoidTest) {
-  Vector3d pose{0, 0, 0};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+TEST_F(InertiaVisualizerGeometryTest, EllipsoidTest) {
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.mass = 2000,
+       .moment_ixx = 2000,
+       .moment_iyy = 2000,
+       .moment_izz = 800,
+       .visual_sdf = "<ellipsoid><radii>1.0 1.0 2.0</radii></ellipsoid>"});
 
   EXPECT_EQ(transform.IsExactlyIdentity(), true);
 
@@ -326,14 +303,20 @@ TEST_F(InertiaVisualizerEllipsoidTest, UnmodifiedEllipsoidTest) {
 // Test inertia geometry computations for the ellipsoid model, posed with
 // translation but not rotation.
 // TODO(trowell-tri) Add rotation to the test when supported.
-TEST_F(InertiaVisualizerEllipsoidTest, ModifiedEllipsoidTest) {
+TEST_F(InertiaVisualizerGeometryTest, PosedEllipsoidTest) {
   Vector3d pose{10, 200, 50};
-  auto [ellipsoid, transform] = CalculateInertiaGeometryForPose(pose);
+  auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
+      {.pose = pose,
+       .mass = 2000,
+       .moment_ixx = 2000,
+       .moment_iyy = 2000,
+       .moment_izz = 800,
+       .visual_sdf = "<ellipsoid><radii>1.0 1.0 2.0</radii></ellipsoid>"});
 
   EXPECT_TRUE(
       CompareMatrices(transform.GetAsMatrix34().block(0, 3, 3, 1), pose));
 
-  // The ellipsoid radii here are subtly different from the unmodified case
+  // The ellipsoid radii here are subtly different from the unposed case
   EXPECT_NEAR(ellipsoid.a(), 0.62035049089987004, eps_);
   EXPECT_NEAR(ellipsoid.b(), 0.62035049089987004, eps_);
   EXPECT_NEAR(ellipsoid.c(), 1.240700981796919, eps_);
