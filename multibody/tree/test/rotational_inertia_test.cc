@@ -596,7 +596,6 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   I_BBcm_P = I_BBcm_C.CalcPrincipalMomentsAndAxesOfInertia();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
                               I_BBcm_P.first, kTolerance));
-
   // The orthogonal unit length eigenvectors Px_B, Py_B, Pz_B stored in the
   // columns of R_BP are parallel to the principal axes (lines). Since lines
   // do not have a fully-qualified direction (they lack sense), all we can check
@@ -607,6 +606,153 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BC.col(0);
   const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BC.col(1);
   const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BC.col(2);
+  EXPECT_TRUE(Px_B(0) != 0.0 && Px_B(1) != 0.0);    // Px != [1 0 0]
+  EXPECT_TRUE(Py_B(0) != 0.0 && Py_B(1) != 0.0);    // Py != [0 1 0]
+  EXPECT_NEAR(std::abs(Pz_B(2)), 1.0, kTolerance);  // Pz = [0 0 1] or [0 0 -1]
+  EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);  // Px parallel to Cx.
+  EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);  // Py parallel to Cy.
+  EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);  // Pz parallel to Cz.
+  EXPECT_NEAR(Px_B.cross(Py_B).dot(Pz_B), 1.0, kTolerance);  // Right-handed.
+}
+
+// Tests the method to obtain the principal moments of inertia and axes.
+GTEST_TEST(RotationalInertia, CalcPrincipalLengthsAndAxesForEquivalentShape) {
+  // Consider a body B whose shape is defined by length dimensions a, b, c.
+  const double a = 5.0, b = 4.0, c = 3.0;
+  const double mass = 3.0;
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+
+  // For a rotational inertia I_BBcm_B corresponding to a solid ellipsoid B,
+  // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape) for
+  // a solid ellipsoid shape produces identical semi-axes a, b, c.
+  // Verify principal directions (R_BP is an identity matrix)
+  const double shape_ellipsoid = 0.2 * mass;
+  double Imin = shape_ellipsoid * (b*b + c*c);  // Ixx = 1/5 m (b² + c²)  small
+  double Imed = shape_ellipsoid * (a*a + c*c);  // Iyy = 1/5 m (a² + c²)  medium
+  double Imax = shape_ellipsoid * (a*a + b*b);  // Izz = 1/5 m (a² + b²)  large
+  RotationalInertia<double> I_BBcm_B =
+      RotationalInertia<double>(Imin, Imed, Imax);
+  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> lxyz_R_BP =
+      I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape_ellipsoid);
+  Vector3<double> lxyz = lxyz_R_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c),
+                              lxyz, kTolerance));
+  drake::math::RotationMatrix<double> R_BP = lxyz_R_BP.second;
+  drake::math::RotationMatrix<double> R_BP_expected =
+      drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // For a rotational inertia I_BBcm_B corresponding to a solid box B,
+  // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape) for
+  // a solid box shape produces identical dimensions lmax a, lmed b, lmin c.
+  // Verify principal directions (R_BP is an identity matrix)
+  const double shape_box = 1.0 / 12.0 * mass;
+  Imin = shape_box * (b*b + c*c);  // Ixx = 1/12 m (b² + c²)  small
+  Imed = shape_box * (a*a + c*c);  // Iyy = 1/12 m (a² + c²)  medium
+  Imax = shape_box * (a*a + b*b);  // Izz = 1/12 m (a² + b²)  large
+  I_BBcm_B = RotationalInertia<double>(Imin, Imed, Imax);
+  lxyz_R_BP = I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape_box);
+  lxyz = lxyz_R_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c),
+                              lxyz, kTolerance));
+  R_BP = lxyz_R_BP.second;
+  R_BP_expected = drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // For a rotational inertia I_BBcm_B corresponding to a solid box B,
+  // Verify I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape) for
+  // a solid ellipsoid shape produces properly-scaled semi-axes a, b, c.
+  // Verify principal directions (R_BP is an identity matrix)
+  lxyz_R_BP =
+      I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape_ellipsoid);
+  lxyz = lxyz_R_BP.first;  // Corresponds to an box reshaped as an ellipsoid.
+  double ratio = std::sqrt(shape_box / shape_ellipsoid);  // ≈ 0.6455
+  EXPECT_TRUE(CompareMatrices(ratio * Vector3<double>(a, b, c),
+                              lxyz, kTolerance));
+  R_BP = lxyz_R_BP.second;
+  R_BP_expected = drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // For a rotational inertia I_BBcm_B corresponding to a hollow cube B whose
+  // principal moments of inertia have Imin = Imed = Imax = 5/18 m a²,
+  // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape) for
+  // a hollow box shape produces identical dimensions lmax a, lmed a, lmin a.
+  // Verify principal directions (R_BP is an identity matrix).
+  const double shape_hollow_cube = (5.0 / 18.0 * mass) / 2.0;
+  const double I_hollow_cube = (5.0 / 18.0 * mass) * a * a;
+  I_BBcm_B =
+      RotationalInertia<double>(I_hollow_cube, I_hollow_cube, I_hollow_cube);
+  lxyz_R_BP =
+      I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape_hollow_cube);
+  lxyz = lxyz_R_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, a, a),
+                              lxyz, kTolerance));
+  R_BP = lxyz_R_BP.second;  // Columns of R_BP are eigenvectors (principal axes)
+  R_BP_expected = drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // For a rotational inertia I_BBcm_B corresponding to a hollow cube B whose
+  // principal moments of inertia have Imin = Imed = Imax = 5/18 m a²,
+  // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape) for
+  // a solid sphere shape produces properly-scaled radius r.
+  // Verify principal directions (R_BP is an identity matrix)
+  const double shape_sphere = (2.0 / 5.0 * mass) / 2.0;
+  lxyz_R_BP =
+      I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape_sphere);
+  lxyz = lxyz_R_BP.first;
+  ratio = std::sqrt(shape_hollow_cube / shape_sphere);  // ≈ 0.8333333
+  EXPECT_TRUE(CompareMatrices(ratio * Vector3<double>(a, a, a),
+                              lxyz, kTolerance));
+  R_BP = lxyz_R_BP.second;
+  R_BP_expected = drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // For a rotational inertia I_BBcm_B corresponding to a solid box B whose
+  // principal moments of inertia having Imed < Imin (not Imin < Imed < Imax),
+  // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape) for
+  // a box shape still produces descending dimensions lmax a, lmed b, lmin c.
+  // Verify reordered principal directions (R_BP is not an identity matrix).
+  I_BBcm_B = RotationalInertia<double>(Imed, Imin, Imax);
+  lxyz_R_BP = I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape_box);
+  lxyz = lxyz_R_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c),
+                              lxyz, kTolerance));
+  R_BP = lxyz_R_BP.second;  // Columns of R_BP are eigenvectors (principal axes)
+  Vector3<double> col_min(0.0, 1.0, 0.0);  // Direction for minimum axis.
+  Vector3<double> col_med(1.0, 0.0, 0.0);  // Direction for intermediate axis.
+  Vector3<double> col_max(0.0, 0.0, 1.0);  // Direction for maximum axis.
+  R_BP_expected =
+      drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
+          col_min, col_med, -col_max);
+  EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
+
+  // For a rotational inertia I_BBcm_B corresponding to a solid box B whose
+  // principal moments of inertia have axes rotated by 30 degrees from frame B,
+  // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForEquivalentShape(shape) for
+  // a box shape still produces descending dimensions lmax a, lmed b, lmin a.
+  // Verify reordered principal directions (R_BP is not an identity matrix).
+  // This tests a rotational inertia with non-zero products of inertia.
+  I_BBcm_B = RotationalInertia<double>(Imin, Imed, Imax);
+  drake::math::RotationMatrix<double> R_BC =
+      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  RotationalInertia<double> I_BBcm_C = I_BBcm_B.ReExpress(R_BC);
+  lxyz_R_BP = I_BBcm_C.CalcPrincipalLengthsAndAxesForEquivalentShape(shape_box);
+  lxyz = lxyz_R_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c),
+                              lxyz, kTolerance));
+  // The orthogonal unit length eigenvectors Px_B, Py_B, Pz_B stored in the
+  // columns of R_BP are parallel to the principal axes (lines). Since lines
+  // do not have a fully-qualified direction (they lack sense), all we can check
+  // is whether these principal axes (represented by Px_B, Py_B, Pz_B) are
+  // parallel to the right-handed unit vectors Cx_B, Cy_B, Cz_B stored in the
+  // columns of R_BC and whether they form a right-handed set.
+  R_BP = lxyz_R_BP.second;  // Columns of R_BP are principal axes.
+  const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BC.col(0);
+  const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BC.col(1);
+  const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BC.col(2);
+  EXPECT_TRUE(Px_B(0) != 0.0 && Px_B(1) != 0.0);    // Px != [1 0 0]
+  EXPECT_TRUE(Py_B(0) != 0.0 && Py_B(1) != 0.0);    // Py != [0 1 0]
+  EXPECT_NEAR(std::abs(Pz_B(2)), 1.0, kTolerance);  // Pz = [0 0 1] or [0 0 -1]
   EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);  // Px parallel to Cx.
   EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);  // Py parallel to Cy.
   EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);  // Pz parallel to Cz.
