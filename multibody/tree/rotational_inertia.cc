@@ -7,6 +7,15 @@
 namespace drake {
 namespace multibody {
 
+namespace {
+
+template <typename T>
+const boolean<T> is_positive_finite(const T& value) {
+  using std::isfinite;
+  return isfinite(value) && value > 0;
+}
+}  // namespace
+
 template <typename T>
 Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
       math::RotationMatrix<double>* principal_directions) const {
@@ -101,24 +110,7 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
 template <typename T>
 std::pair<Vector3<double>, math::RotationMatrix<double>>
 RotationalInertia<T>::CalcPrincipalLengthsAndAxesForEquivalentShape(
-    double shape) const {
-  // Ellipsoid with semi-axes a, b, c   Box with dimensions a, b, c
-  // Ixx = 1/5 m (b² + c²)              Ixx = 1/12 m (b² + c²)
-  // Iyy = 1/5 m (a² + c²)              Iyy = 1/12 m (a² + c²)
-  // Izz = 1/5 m (a² + b²)              Izz = 1/12 m (a² + b²)
-  // shape = 1/5 m                      shape = 1/12 m
-  DRAKE_THROW_UNLESS(shape >= 0);
-
-  // For `this` rotational inertia I_BBcm_E expressed in frame E, calculate B's
-  // principal moments of inertia [Ixx Iyy Izz] and a rotation matrix R_EP whose
-  // columns are the 3 associated principal directions that relate frame E to a
-  // frame P that contains right-handed orthonormal vectors Px, Py, Pz. The 1ˢᵗ
-  // column of R_EP is Px_E (Px expressed in frame E) which is parallel to the
-  // principal axis associated with Ixx (smallest principal moment of inertia).
-  // Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
-  // parallel to principal axes associated with Iyy and Izz (the intermediate
-  // and largest principal moments of inertia). If all principal moments of
-  // inertia are equal (i.e., Ixx = Iyy = Izz), R_EP is the identity matrix.
+    double shape_factor, double mass) const {
   std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
       CalcPrincipalMomentsAndAxesOfInertia();
   const Vector3<double>& Imoments = I_BBcm_P.first;
@@ -127,10 +119,13 @@ RotationalInertia<T>::CalcPrincipalLengthsAndAxesForEquivalentShape(
   const double Imed = Imoments(1);
   const double Imax = Imoments(2);
   DRAKE_ASSERT(Imin <= Imed && Imed <= Imax);
-  const double coef = 0.5 / shape;  // 1 / (2*shape)
-  const double lmax_squared = coef * (Imed + Imax - Imin);
-  const double lmed_squared = coef * (Imin + Imax - Imed);
-  const double lmin_squared = coef * (Imin + Imed - Imax);
+  DRAKE_THROW_UNLESS(shape_factor > 0 && shape_factor <= 1);
+  DRAKE_THROW_UNLESS(is_positive_finite(mass));
+  const double coef = 0.5 / (mass * shape_factor);
+  using std::max;  // Avoid round-off issues that result in e.g., sqrt(-1E-15).
+  const double lmax_squared = max(coef * (Imed + Imax - Imin), 0.0);
+  const double lmed_squared = max(coef * (Imin + Imax - Imed), 0.0);
+  const double lmin_squared = max(coef * (Imin + Imed - Imax), 0.0);
   const double lmax = std::sqrt(lmax_squared);
   const double lmed = std::sqrt(lmed_squared);
   const double lmin = std::sqrt(lmin_squared);

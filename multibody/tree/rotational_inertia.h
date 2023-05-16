@@ -566,48 +566,64 @@ class RotationalInertia {
     return std::pair(Imoment, R_EP);
   }
 
-  /// Forms 3 principal length dimensions [a b c] and their associated principal
-  /// directions [Px Py Pz] for a body B with a given shape whose principal
-  /// rotational inertia I_BBcm_P about Bcm (B's center of mass) is the same as
-  /// `this` rotational inertia's principal inertia about Bcm, expressed in P.
-  /// @param[in] shape real number associated with principal moment of inertia
-  /// formulas for I_BBcm_P, where frame P's unit vectors Px, Py, Pz are
-  /// aligned with B's principal inertia axes. The two examples below are for
-  /// uniform-density solid objects of mass m.
+  /// (Internal use only) Returns length and orientation specification for an
+  /// object whose shape corresponds to a given shape_factor (e.g., a solid
+  /// ellipsoid or solid box) -- which is useful for visualization or physical
+  /// interpretation of `this` rotational inertia.
+  /// @param[in] shape_factor real positive number in range 0 < shape_factor ≤ 1
+  /// associated with principal moment of inertia (Ixx, Iyy, Izz) formulas for
+  /// I_BBcm_P, where B is a uniform-density body (e.g., a solid ellipsoid or
+  /// solid box), Bcm is B's center of mass, and frame P contains right-handed
+  /// orthogonal unit vectors Px, Py, Pz that are aligned with B's principal
+  /// inertia axes. The examples below are for bodies B of mass m.
+  /// @param[in] mass real positive number for the mass of body B.
   ///
   /// Ellipsoid with semi-axes a, b, c  |  Box with dimensions a, b, c      |
   ///-----------------------------------|:-----------------------------------
   /// Ixx = 1/5 m (b² + c²)             | Ixx = 1/12 m (b² + c²)
   /// Iyy = 1/5 m (a² + c²)             | Iyy = 1/12 m (a² + c²)
   /// Izz = 1/5 m (a² + b²)             | Izz = 1/12 m (a² + b²)
-  /// shape = 1/5 m                     | shape = 1/12 m
+  /// shape_factor = 1/5                | shape_factor = 1/12
   ///
   /// Sphere with radius r              |  Hollow cube with dimension L     |
   ///-----------------------------------|:-----------------------------------
   /// Ixx = 1/5 m (r² + r²)             | Ixx = 5/36 m (L² + L²)
   /// Iyy = 1/5 m (r² + r²)             | Iyy = 5/36 m (L² + L²)
   /// Izz = 1/5 m (r² + r²)             | Izz = 5/35 m (L² + L²)
-  /// shape = 1/5 m                     | shape = 5/36 m
+  /// shape_factor = 1/5                | shape_factor = 5/36
   ///
   /// @returns 3 principal lengths [lmax lmed lmin] sorted in descending order
-  /// (lmax ≥ lmed ≥ lmin) and a rotation matrix R_EP whose columns are the 3
-  /// associated principal directions that relate the expressed-in frame E to a
-  /// frame P, where frame E is the expressed-in frame for `this` rotational
-  /// inertia and frame P contains right-handed orthonormal vectors Px, Py, Pz.
+  /// (lmax ≥ lmed ≥ lmin) and their associated principal directions [Px Py Pz]
+  /// stored in columns of the returned rotation matrix R_EP. R_EP relates the
+  /// expressed-in frame E for `this` rotational inertia to a frame P that
+  /// contains right-handed orthogonal unit vectors Px, Py, Pz.
   /// The 1ˢᵗ column of R_EP is Px_E (Px expressed in frame E) which is parallel
   /// to the principal axis associated with lmax (the largest principal length).
   /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
   /// parallel to principal axes associated with lmed and lmin (the intermediate
   /// and smallest principal lengths). If all principal lengths are equal (i.e.,
   /// lmax = lmed = lmin), R_EP is the identity matrix.
+  /// @note The returned lengths and orientation are useful for visualization
+  /// and physical interpretation of `this` rotational inertia as a solid box,
+  /// solid ellipsoid, etc. For example, `this` may be the rotational inertia of
+  /// an oddly-shaped body (or set of bodies), but if this function is called
+  /// with a solid ellipsoid's shape_factor = 1/5, the returned lengths are
+  /// [a b c] for the ellipsoid's major, intermediate, and minor semi-axes,
+  /// respectively, and the returned rotation matrix R_EP contains the
+  /// directions of the ellipsoid's associated principal axes.
+  /// Px_E (1ˢᵗ column of R_EP) is parallel to the principal axis associated
+  /// with lmax (maximum length) and Imin (minimum moment of inertia).
+  /// Pz_E (3ʳᵈ column of R_EP) is parallel to the principal axis associated
+  /// with lmin (minimum length) and Imax (maximum moment of inertia).
   /// @throws std::exception if the elements of `this` rotational inertia cannot
   /// be converted to a real finite double. For example, an exception is thrown
   /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
-  /// @throws std::exception if shape ≤ 0.
+  /// @throws std::exception if shape_factor ≤ 0, shape_factor > 1, or mass ≤ 0.
   /// @see CalcPrincipalMomentsAndAxesOfInertia() to calculate principal moments
   /// of inertia [Imin Imed Imax] and their associated principal directions.
   std::pair<Vector3<double>, math::RotationMatrix<double>>
-  CalcPrincipalLengthsAndAxesForEquivalentShape(double shape) const;
+  CalcPrincipalLengthsAndAxesForEquivalentShape(double shape_factor,
+                                                double mass) const;
 
   /// Performs several necessary checks to verify whether `this` rotational
   /// inertia *could* be physically valid, including:
