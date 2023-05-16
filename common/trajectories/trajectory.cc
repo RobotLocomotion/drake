@@ -7,19 +7,25 @@ namespace trajectories {
 
 template <typename T>
 MatrixX<T> Trajectory<T>::vector_values(const std::vector<T>& t) const {
+  return vector_values(Eigen::Map<const VectorX<T>>(t.data(), t.size()));
+}
+
+template <typename T>
+MatrixX<T> Trajectory<T>::vector_values(
+    const Eigen::Ref<const VectorX<T>>& t) const {
   if (cols() != 1 && rows() != 1) {
     throw std::runtime_error(
         "This method only supports vector-valued trajectories.");
   }
   if (cols() == 1) {
     MatrixX<T> values(rows(), t.size());
-    for (int i = 0; i < static_cast<int>(t.size()); i++) {
+    for (int i = 0; i < static_cast<int>(t.size()); ++i) {
       values.col(i) = value(t[i]);
     }
     return values;
   }
   MatrixX<T> values(t.size(), cols());
-  for (int i = 0; i < static_cast<int>(t.size()); i++) {
+  for (int i = 0; i < static_cast<int>(t.size()); ++i) {
     values.row(i) = value(t[i]);
   }
   return values;

@@ -240,8 +240,10 @@ struct Impl {
       cls  // BR
           .def(py::init<>())
           .def("value", &Class::value, py::arg("t"), cls_doc.value.doc)
-          .def(
-              "vector_values", &Class::vector_values, cls_doc.vector_values.doc)
+          .def("vector_values",
+              overload_cast_explicit<MatrixX<T>, const std::vector<T>&>(
+                  &Class::vector_values),
+              py::arg("t"), cls_doc.vector_values.doc)
           .def("has_derivative", &Class::has_derivative,
               cls_doc.has_derivative.doc)
           .def("EvalDerivative", &Class::EvalDerivative, py::arg("t"),
