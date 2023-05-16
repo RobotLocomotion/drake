@@ -566,6 +566,49 @@ class RotationalInertia {
     return std::pair(Imoment, R_EP);
   }
 
+  /// Forms 3 principal length dimensions [a b c] and their associated principal
+  /// directions [Px Py Pz] for a body B with a given shape whose principal
+  /// rotational inertia I_BBcm_P about Bcm (B's center of mass) is the same as
+  /// `this` rotational inertia's principal inertia about Bcm, expressed in P.
+  /// @param[in] shape real number associated with principal moment of inertia
+  /// formulas for I_BBcm_P, where frame P's unit vectors Px, Py, Pz are
+  /// aligned with B's principal inertia axes. The two examples below are for
+  /// uniform-density solid objects of mass m.
+  ///
+  /// Ellipsoid with semi-axes a, b, c  |  Box with dimensions a, b, c      |
+  ///-----------------------------------|:-----------------------------------
+  /// Ixx = 1/5 m (b² + c²)             | Ixx = 1/12 m (b² + c²)
+  /// Iyy = 1/5 m (a² + c²)             | Iyy = 1/12 m (a² + c²)
+  /// Izz = 1/5 m (a² + b²)             | Izz = 1/12 m (a² + b²)
+  /// shape = 1/5 m                     | shape = 1/12 m
+  ///
+  /// Sphere with radius r              |  Hollow cube with dimension L     |
+  ///-----------------------------------|:-----------------------------------
+  /// Ixx = 1/5 m (r² + r²)             | Ixx = 5/36 m (L² + L²)
+  /// Iyy = 1/5 m (r² + r²)             | Iyy = 5/36 m (L² + L²)
+  /// Izz = 1/5 m (r² + r²)             | Izz = 5/35 m (L² + L²)
+  /// shape = 1/5 m                     | shape = 5/36 m
+  ///
+  /// @returns 3 principal lengths [lmax lmed lmin] sorted in descending order
+  /// (lmax ≥ lmed ≥ lmin) and a rotation matrix R_EP whose columns are the 3
+  /// associated principal directions that relate the expressed-in frame E to a
+  /// frame P, where frame E is the expressed-in frame for `this` rotational
+  /// inertia and frame P contains right-handed orthonormal vectors Px, Py, Pz.
+  /// The 1ˢᵗ column of R_EP is Px_E (Px expressed in frame E) which is parallel
+  /// to the principal axis associated with lmax (the largest principal length).
+  /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
+  /// parallel to principal axes associated with lmed and lmin (the intermediate
+  /// and smallest principal lengths). If all principal lengths are equal (i.e.,
+  /// lmax = lmed = lmin), R_EP is the identity matrix.
+  /// @throws std::exception if the elements of `this` rotational inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  /// @throws std::exception if shape ≤ 0.
+  /// @see CalcPrincipalMomentsAndAxesOfInertia() to calculate principal moments
+  /// of inertia [Imin Imed Imax] and their associated principal directions.
+  std::pair<Vector3<double>, math::RotationMatrix<double>>
+  CalcPrincipalLengthsAndAxesForEquivalentShape(double shape) const;
+
   /// Performs several necessary checks to verify whether `this` rotational
   /// inertia *could* be physically valid, including:
   ///
