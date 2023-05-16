@@ -1,6 +1,7 @@
 #include "drake/multibody/plant/tamsi_solver.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -12,6 +13,9 @@
 namespace drake {
 namespace multibody {
 namespace internal {
+
+using std::isnan;
+
 template <typename T>
 T TalsLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
@@ -31,6 +35,7 @@ T TalsLimiter<T>::CalcAlpha(
 
   // Case I: Quick exit for small changes in v.
   const T dv_norm2 = dv.squaredNorm();
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (dv_norm2 < epsilon_v2) {
     return 1.0;
   }
@@ -44,6 +49,7 @@ T TalsLimiter<T>::CalcAlpha(
 
   // Case II: limit transition from stiction to sliding when x << 1.0 and
   // gradients might be close to zero (due to the "soft norms").
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (x < relative_tolerance && x1 > 1.0) {
     // we know v1 != 0  since x1 > 1.0.
     // With v_alpha = v + alpha * dv, we make |v_alpha| = v_stiction / 2.
@@ -56,6 +62,7 @@ T TalsLimiter<T>::CalcAlpha(
   // We want to avoid v1 landing in a region of zero gradients so we force
   // it to land within the circle of radius v_stiction, at v_stiction/2 in the
   // direction of v.
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (x > 1.0 && x1 < relative_tolerance) {
     // In this case x1 is negligible compared to x. That is dv ≈ -v. For this
     // case we'll limit v + αdv = vₛ/2⋅v/‖v‖. Using v ≈ -dv, we arrive to
@@ -63,6 +70,7 @@ T TalsLimiter<T>::CalcAlpha(
     return 1.0 - v_stiction / 2.0 / dv_norm;
   }
 
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (x < 1.0) {
     // Another quick exit. Two possibilities (both of which yield the same
     // action):
@@ -74,6 +82,7 @@ T TalsLimiter<T>::CalcAlpha(
     //         Case II.
     return 1.0;
   } else {  // x > 1.0
+    // N.B. This phrasing of this comparison is important for NaN handling.
     if (x1 < 1.0) {
       // Case IV:
       // From Case III we know that x1 > relative_tolerance, i.e x1 falls in a
@@ -119,6 +128,7 @@ T TalsLimiter<T>::CalcAlpha(
     // We allow angle changes theta < theta_max, and we take alpha = 1.0.
     // In particular, when v1 is exactly aligned with v (but we know it does not
     // cross through zero, i.e. cos(theta) > 0).
+    // N.B. This phrasing of this comparison is important for NaN handling.
     if (cos1 > cos_theta_max) {
       return 1.0;
     } else {
@@ -147,10 +157,11 @@ T TalsLimiter<T>::CalcAlpha(
       // quadratic equation (Δ = b² - 4ac) must be positive.
       // We use a very specialized quadratic solver for this case where we know
       // there must exist a positive (i.e. real) root.
+      // However, in case of a diverging simulation it might not hold true.
       alpha = SolveQuadraticForTheSmallestPositiveRoot(a, b, c);
 
       // The geometry of the problem tells us that α ≤ 1.0
-      DRAKE_ASSERT(alpha <= 1.0);
+      DRAKE_ASSERT(isnan(alpha) || (alpha <= 1.0));
       return alpha;
     }
   }
@@ -170,11 +181,13 @@ bool TalsLimiter<T>::CrossesTheStictionRegion(
   DRAKE_ASSERT(epsilon_v > 0);
   DRAKE_ASSERT(v_stiction > 0);
   T& alpha = *alpha_out;
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (v_dot_dv < 0.0) {  // Moving towards the origin.
     alpha = -v_dot_dv / dv_norm2;  // alpha > 0
     if (alpha < 1.0) {  // The update might be crossing the stiction region.
       const Vector2<T> v_alpha = v + alpha * dv;  // Note: v_alpha.dot(dv) = 0.
       const T v_alpha_norm = v_alpha.norm();
+      // N.B. This phrasing of this comparison is important for NaN handling.
       if (v_alpha_norm < epsilon_v) {
         // v_alpha is almost zero.
         // This situation happens when dv ≈ -a v with a > 0. Therefore we cap
@@ -184,6 +197,7 @@ bool TalsLimiter<T>::CrossesTheStictionRegion(
         alpha -= v_stiction / 2.0 / dv_norm;
         DRAKE_ASSERT(0 < alpha && alpha <= 1);
         return true;  // Crosses the stiction region.
+	// N.B. This phrasing of this comparison is important for NaN handling.
       } else if (v_alpha_norm < v_stiction) {
         // v_alpha falls within the stiction region but its magnitude is
         // larger than epsilon_v.
@@ -204,6 +218,7 @@ T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
   T alpha;
   // First determine if a = 0 (to machine epsilon). This comparison is fair
   // since a is dimensionless.
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (abs(a) < std::numeric_limits<double>::epsilon()) {
     // There is only a single root to the, now linear, equation bα + c = 0.
     alpha = -c / b;
@@ -214,8 +229,9 @@ T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
   } else {
     // The determinant, Δ = b² - 4ac, of the quadratic equation.
     const T Delta = b * b - 4 * a * c;  // Uppercase, as in Δ.
-    // Geometry tell us that a real solution does exist i.e. Delta > 0.
-    DRAKE_THROW_UNLESS(Delta > 0);
+    // Geometry tell us that a real solution does exist, i.e., Delta > 0.
+    // However, in case of a diverging simulation it might not hold true, so the
+    // sqrt might be NaN here.
     const T sqrt_Delta = sqrt(Delta);
 
     // To avoid loss of significance, when 4ac is relatively small compared
@@ -228,17 +244,19 @@ T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     const T alpha2 = c / numerator;
 
     // The geometry of the problem tells us that at least one must be
-    // positive.
-    DRAKE_DEMAND(alpha2 > 0 || alpha1 > 0);
-
+    // positive, unless something has gone catastrphically wrong.
+    // N.B. This phrasing of this comparison is important for NaN handling.
     if (alpha2 > 0 && alpha1 > 0) {
       // This branch is triggered for large angle changes (typically close
       // to 180 degrees) between v1 and vt.
       alpha = min(alpha2, alpha1);
-    } else {
+      // N.B. This phrasing of this comparison is important for NaN handling.
+    } else if (alpha2 > 0 || alpha1 > 0) {
       // This branch is triggered for small angles changes (typically
       // smaller than 90 degrees) between v1 and vt.
       alpha = max(alpha2, alpha1);
+    } else {
+      return std::numeric_limits<double>::quiet_NaN();
     }
   }
   return alpha;
@@ -593,11 +611,13 @@ T TamsiSolver<T>::CalcAlpha(
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     auto vt_ic = vt.template segment<2>(ik);
     const auto dvt_ic = Delta_vt.template segment<2>(ik);
-    alpha = min(
-        alpha,
-        internal::TalsLimiter<T>::CalcAlpha(
-            vt_ic, dvt_ic,
-            cos_theta_max_, v_stiction, parameters_.relative_tolerance));
+    const T tals_alpha = internal::TalsLimiter<T>::CalcAlpha(
+        vt_ic, dvt_ic, cos_theta_max_, v_stiction,
+        parameters_.relative_tolerance);
+    if (isnan(tals_alpha)) {
+      return tals_alpha;
+    }
+    alpha = min(alpha, tals_alpha);
   }
   DRAKE_DEMAND(0 < alpha && alpha <= 1.0);
   return alpha;
@@ -689,6 +709,7 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     // After the previous iteration, we allow updating ft above to have its
     // latest value before leaving.
     // Convergence is monitored in both tangential and normal directions.
+    // N.B. This phrasing of this comparison is important for NaN handling.
     if (std::max(vt_error, vn_error) < v_contact_tolerance) {
       // Update generalized forces and return.
       tau_f = Jt.transpose() * ft;
@@ -748,6 +769,9 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
 
     // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for all contact points.
     T alpha = CalcAlpha(vt, Delta_vt);
+    if (isnan(alpha)) {
+      return TamsiSolverResult::kAlphaSolverFailed;
+    }
 
     // Update generalized velocity vector.
     v = v + alpha * Delta_v;
@@ -764,6 +788,7 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
 template <typename T>
 T TamsiSolver<T>::RegularizedFriction(const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (s >= 1) {
     return mu;
   } else {
@@ -775,6 +800,7 @@ template <typename T>
 T TamsiSolver<T>::RegularizedFrictionDerivative(
     const T& s, const T& mu) {
   DRAKE_ASSERT(s >= 0);
+  // N.B. This phrasing of this comparison is important for NaN handling.
   if (s >= 1) {
     return 0;
   } else {

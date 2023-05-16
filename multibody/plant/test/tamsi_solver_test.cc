@@ -367,6 +367,28 @@ TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_SingleSolution) {
   EXPECT_NEAR(theta, theta_max, kTolerance);
 }
 
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_QuadraticNonPositive1) {
+  // Use the same input as SingleSolution, but corrupt one value to be infinity.
+  // That should trigger the nullopt code paths.
+  Vector2<double> vt = Vector2<double>(-0.5, 0.7);
+  Vector2<double> dvt = -3.0 * Rotation(theta_max) * vt;
+  dvt[1] = std::numeric_limits<double>::infinity();
+  const double alpha = internal::TalsLimiter<double>::CalcAlpha(
+      vt, dvt, cos_min, v_stiction, tolerance);
+  EXPECT_TRUE(std::isnan(alpha)) << alpha;
+}
+
+TEST_F(DirectionLimiter, ChangesWithinTheSlidingRegion_QuadraticNonPositive2) {
+  // Use the same input as SingleSolution, but corrupt one value to be NaN.
+  // That should also trigger the nullopt code paths.
+  Vector2<double> vt = Vector2<double>(-0.5, 0.7);
+  Vector2<double> dvt = -3.0 * Rotation(theta_max) * vt;
+  vt[1] = std::numeric_limits<double>::quiet_NaN();
+  const std::optional<double> alpha = internal::TalsLimiter<double>::CalcAlpha(
+      vt, dvt, cos_min, v_stiction, tolerance);
+  EXPECT_TRUE(std::isnan(alpha)) << alpha;
+}
+
 /* Top view of the pizza saver:
 
   ^ y               C
