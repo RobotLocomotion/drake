@@ -34,6 +34,7 @@ std::optional<SpatialInertia<double>> MaybeFixBodyInertia(
   const auto& body_name = plant->get_body(body_index).name();
   const auto& rigid_body = plant->GetRigidBodyByName(body_name);
   const auto& old_inertia = rigid_body.default_spatial_inertia();
+  // if (old_inertia.IsPhysicallyValid()) { return {}; }
   const double mass = old_inertia.get_mass();
   const auto& inspector = scene_graph.model_inspector();
   const auto geoms = inspector.GetGeometries(*maybe_frame_id, Role::kProximity);
@@ -60,15 +61,19 @@ XMLElement* EnsureChildElement(XMLElement* el, const char* child) {
   return kid;
 }
 
+std::string roundtrip(double x) {
+  return fmt::format("{}", x);
+}
+
 void UpdateInertiaUrdf(
     const MultibodyPlant<double>& plant,
     BodyIndex body_index,
     const SpatialInertia<double>& inertia,
     XMLDocument* doc) {
-  unused(plant, body_index, inertia, doc);
   const auto& body_name = plant.get_body(body_index).name();
+  XMLElement* root = doc->RootElement();
   XMLElement* el{};
-  for (el = doc->FirstChildElement("link");
+  for (el = root->FirstChildElement("link");
        el;
        el = el->NextSiblingElement("link")) {
     const char* name = el->Attribute("name");
@@ -82,17 +87,29 @@ void UpdateInertiaUrdf(
   origin->SetAttribute("xyz", "0 0 0");
   origin->SetAttribute("rpy", "0 0 0");
   XMLElement* mass = EnsureChildElement(inertial, "mass");
-  mass->SetAttribute("value", inertia.get_mass());
+  mass->SetAttribute("value", roundtrip(inertia.get_mass()).c_str());
   XMLElement* ertia = EnsureChildElement(inertial, "inertia");
   const auto rot = inertia.CalcRotationalInertia();
   const auto mom = rot.get_moments();
   const auto prod = rot.get_products();
-  ertia->SetAttribute("ixx", mom(0));
-  ertia->SetAttribute("iyy", mom(1));
-  ertia->SetAttribute("izz", mom(2));
-  ertia->SetAttribute("ixy", prod(0));
-  ertia->SetAttribute("ixz", prod(1));
-  ertia->SetAttribute("iyz", prod(2));
+  ertia->SetAttribute("ixx", roundtrip(mom(0)).c_str());
+  ertia->SetAttribute("iyy", roundtrip(mom(1)).c_str());
+  ertia->SetAttribute("izz", roundtrip(mom(2)).c_str());
+  ertia->SetAttribute("ixy", roundtrip(prod(0)).c_str());
+  ertia->SetAttribute("ixz", roundtrip(prod(1)).c_str());
+  ertia->SetAttribute("iyz", roundtrip(prod(2)).c_str());
+}
+
+void FindLinks(XMLElement* el, std::vector<XMLElement*>* links) {
+  if (std::string(el->Name()) == "link") {
+    links->push_back(el);
+    return;
+  }
+  for (XMLElement* kid = el->FirstChildElement();
+       kid;
+       kid = kid->NextSiblingElement()) {
+    FindLinks(kid, links);
+  }
 }
 
 void UpdateInertiaSdf(
@@ -100,7 +117,51 @@ void UpdateInertiaSdf(
     BodyIndex body_index,
     const SpatialInertia<double>& inertia,
     XMLDocument* doc) {
-  unused(plant, body_index, inertia, doc);
+  // We may well be limited to a naive implementation of "write back to sdf"
+  // here. Because sdf has nested models and (multiple kinds of?) inclusion, it
+  // may be arbitrarily difficult to complete the job of writing back all of
+  // the inertias in a multi-file model. It's probably possible to fix the
+  // inertias in the primary document we loaded, but that's it.
+  const auto& body_name = plant.get_body(body_index).name();
+  XMLElement* root = doc->RootElement();
+  // Crawl through the document, finding all of the 'link' elements, regardless
+  // of their path back to the root. We can interrogate their parents and
+  // deduce model names to ensure unique mappings.
+  std::vector<XMLElement*> links;
+  FindLinks(root, &links);
+  XMLElement* found_link{};
+  for (XMLElement* link : links) {
+    // Find the one we want.
+    const char* name = link->Attribute("name");
+    if (!name) { continue; }
+    if (std::string(name) != body_name) { continue; }
+    // XXX use model instance names if needed.
+    found_link = link;
+    break;
+  }
+  DRAKE_DEMAND(found_link != nullptr);
+  // Fill out the inertial properties.
+  XMLElement* inertial = EnsureChildElement(found_link, "inertial");
+  XMLElement* pose = EnsureChildElement(inertial, "pose");
+  pose->SetText("0 0 0 0 0 0");
+  XMLElement* mass = EnsureChildElement(inertial, "mass");
+  mass->SetText(roundtrip(inertia.get_mass()).c_str());
+  XMLElement* ertia = EnsureChildElement(inertial, "inertia");
+  const auto rot = inertia.CalcRotationalInertia();
+  const auto mom = rot.get_moments();
+  const auto prod = rot.get_products();
+  XMLElement* ixx = EnsureChildElement(ertia, "ixx");
+  ixx->SetText(roundtrip(mom(0)).c_str());
+  XMLElement* iyy = EnsureChildElement(ertia, "iyy");
+  iyy->SetText(roundtrip(mom(1)).c_str());
+  XMLElement* izz = EnsureChildElement(ertia, "izz");
+  izz->SetText(roundtrip(mom(2)).c_str());
+  XMLElement* ixy = EnsureChildElement(ertia, "ixy");
+  ixy->SetText(roundtrip(prod(0)).c_str());
+  XMLElement* ixz = EnsureChildElement(ertia, "ixz");
+  ixz->SetText(roundtrip(prod(1)).c_str());
+  XMLElement* iyz = EnsureChildElement(ertia, "iyz");
+  iyz->SetText(roundtrip(prod(2)).c_str());
 }
 
 void UpdateInertiaXml(
@@ -118,8 +179,6 @@ void UpdateInertiaXml(
     drake::log()->error("Unknown file type: root element was {}", root_name);
     ::exit(EXIT_FAILURE);
   }
-  // Find the link/inertial node for the body we have.
-  // Rewrite the i{xyz}{xyz} values.
 }
 
 int do_main(int argc, char* argv[]) {
