@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
@@ -107,6 +108,9 @@ class RenderEngineGl final : public render::RenderEngine {
       systems::sensors::ImageLabel16I* label_image_out) const final;
 
   // Copy constructor used for cloning.
+  // Do *not* call this copy constructor directly. The resulting RenderEngineGl
+  // is not complete -- it will render nothing except the background color.
+  // Only call Clone() to get a copy.
   RenderEngineGl(const RenderEngineGl& other) = default;
 
   // Renders all geometries which use the given shader program for the given
@@ -159,8 +163,17 @@ class RenderEngineGl final : public render::RenderEngine {
                                RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
-  static OpenGlGeometry CreateGlGeometry(
-      const geometry::internal::RenderMesh& mesh_data);
+  OpenGlGeometry CreateGlGeometry(
+      const geometry::internal::RenderMesh& mesh_data) const;
+
+  // Given a geometry that has its buffers (and vertex counts assigned), ties
+  // all of the buffer data into the vertex array attributes.
+  void CreateVertexArray(OpenGlGeometry* geometry) const;
+
+  // Updates the vertex arrays in all of the OpenGlGeometry instances owned by
+  // this render engine.
+  // @pre opengl_context_ has been bound.
+  void UpdateVertexArrays();
 
   // Sets the display window visibility and populates it with the _last_ image
   // rendered, if visible.
@@ -184,9 +197,8 @@ class RenderEngineGl final : public render::RenderEngine {
   // we exploit the behind-the-scenes knowledge that Identifiers are
   // monotonically increasing. So, the shader that is added last implicitly is
   // more preferred than the earlier shader.
-  ShaderProgramData GetShaderProgram(
-      const PerceptionProperties& properties,
-      RenderType render_type) const;
+  ShaderProgramData GetShaderProgram(const PerceptionProperties& properties,
+                                     RenderType render_type) const;
 
   void SetDefaultLightPosition(const Vector3<double>& light_dir_C) override {
     light_dir_C_ = light_dir_C.normalized().cast<float>();
@@ -195,22 +207,25 @@ class RenderEngineGl final : public render::RenderEngine {
   // The cached value transformation between camera and world frames.
   math::RigidTransformd X_CW_;
 
-  // All clones of this context share the same underlying OpenGlContext. They
-  // also share the C++ abstractions of objects that *live* in the context:
+  // When the OpenGlContext gets copied, the copy shares the OpenGl objects
+  // created in GPU memory.
+  copyable_unique_ptr<OpenGlContext> opengl_context_;
+
+  // Various C++ classes store identifiers of objects in the OpenGl context.
+  // This includes:
   //
   //   OpenGlGeometry - the geometry buffers (copy safe)
   //   RenderTarget - frame buffer objects (copy safe)
   //   TextureLibrary - the textures (shared)
   //   ShaderProgram - the compiled shader programs (copy safe)
   //
-  // So, all of these quantities are simple copy-safe POD (e.g., OpenGlGeometry)
-  // or are stashed in a shared pointer.
-  std::shared_ptr<OpenGlContext> opengl_context_;
+  // So, all of these quantities can be safely copied verbatim.
 
-  // This texture library is coupled with the OpenGlContext. The texture
-  // identifiers in the library are instantiated in that context. Operations
-  // to this library must be invoked with the context bound. Both context and
-  // library are shared between a RenderEngineGl instance and all of its clones.
+  // Textures are shared across cloned OpenGl contexts. The TextureLibrary
+  // contains the identifiers to those textures. A RenderEngineGl and its clones
+  // all share the same TextureLibrary, so that if one instance loads a new
+  // texture into the GPU, they all benefit from it (rather than blindly adding
+  // the same texture redundantly).
   std::shared_ptr<TextureLibrary> texture_library_;
 
   // The engine's configuration parameters.

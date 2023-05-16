@@ -122,6 +122,7 @@ class ShaderProgramTest : public ::testing::Test {
   void SetUp() override {
     // ShaderProgram requires an active OpenGL context to perform.
     opengl_context_ = std::make_shared<OpenGlContext>();
+    opengl_context_->MakeCurrent();
   }
 
   // Reports the program id of the given program.

@@ -16,6 +16,23 @@ namespace internal {
  */
 class OpenGlContext {
  public:
+  /* Copy constructor. Provided solely so RenderEngineGl can maintain a
+   copyable_unique_ptr for this class.
+
+   - All %OpenGlContext instances share a common display.
+   - All instances have their own distinct window/OpenGL objects for connecting
+     an OpenGL context to an X-windows display.
+   - Copying an %OpenGlContext is distinct from creating a new instance in that
+     all of the OpenGl objects (buffers, textures, display lists, etc.)
+     available to `other` will also be available to the copy. New instances have
+     no OpenGl objects. */
+  OpenGlContext(const OpenGlContext& other);
+
+  /* All other copy and move semantics are simply deleted. */
+  OpenGlContext& operator=(const OpenGlContext& other) = delete;
+  OpenGlContext(OpenGlContext&&) = delete;
+  OpenGlContext& operator=(OpenGlContext&&) = delete;
+
   /* Constructor. Initializes an OpenGL context.
    @param debug  If debug is true, the OpenGl context will be a "debug" context,
    in that the OpenGl implementation's errors will be written to the Drake log.
@@ -28,6 +45,14 @@ class OpenGlContext {
   /* Makes this context current.
    @throws std::exception if not successful.  */
   void MakeCurrent() const;
+
+  /* Clears the "current" context from the current thread. Note: if this context
+   has been bound in one thread and this called in another thread, the context
+   will still be bound in the first thread. */
+  static void ClearCurrent();
+
+  /* Reports if this context is bound to the current thread. */
+  bool IsCurrent() const;
 
   /* Displays the window at the given dimensions. Calling this redundantly (on
    an already visible window of the given size) has no effect.  */

@@ -306,6 +306,20 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
+drake_cc_googletest_ubuntu_only(
+    name = "multithread_safety_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    tags = vtk_test_tags() + ["cpu:2"],
+    deps = [
+        ":factory",
+        ":internal_render_engine_gl",
+        "//common:find_resource",
+        "//systems/sensors:image",
+    ],
+)
+
 add_lint_tests(
     cpplint_extra_srcs = [
         "no_factory.cc",
