@@ -134,13 +134,6 @@ class TestParsing(unittest.TestCase):
             "drake/multibody/benchmarks/acrobot/acrobot.sdf")
         with open(sdf_file, "r") as f:
             sdf_contents = f.read()
-        plant = MultibodyPlant(time_step=0.01)
-        parser = Parser(plant=plant)
-        self.assertEqual(parser.plant(), plant)
-        with catch_drake_warnings(expected_count=1):
-            result = parser.AddModelFromString(
-                file_contents=sdf_contents, file_type="sdf")
-        self.assertIsInstance(result, ModelInstanceIndex)
 
         plant = MultibodyPlant(time_step=0.01)
         parser = Parser(plant=plant)
