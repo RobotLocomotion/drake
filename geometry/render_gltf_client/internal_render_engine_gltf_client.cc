@@ -347,14 +347,19 @@ void RenderEngineGltfClient::DoRenderLabelImage(
   ImageRgba8U colored_label_image(width, height);
   render_client_->LoadColorImage(image_path, &colored_label_image);
 
+  // By convention (see render_gltf_client_doxygen.h), server-only artifacts are
+  // colored white to indicate the "don't care" semantic.
   // Convert from RGB to Label.
+  const ColorI kDontCare{255, 255, 255};
   ColorI color;
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       color.r = colored_label_image.at(x, y)[0];
       color.g = colored_label_image.at(x, y)[1];
       color.b = colored_label_image.at(x, y)[2];
-      label_image_out->at(x, y)[0] = RenderEngine::LabelFromColor(color);
+      label_image_out->at(x, y)[0] = color == kDontCare
+                                         ? render::RenderLabel::kDontCare
+                                         : RenderEngine::LabelFromColor(color);
     }
   }
 

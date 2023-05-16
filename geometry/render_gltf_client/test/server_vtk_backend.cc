@@ -274,12 +274,9 @@ int DoMain() {
       }
     }
   } else {  // FLAGS_image_type == "label"
-    // TODO(zachfang): We need to find a workaround and document it, so that no
-    // server implementations need to hard-code these magic numbers.
-    /* NOTE: This is hard-coded to be the value that
-     RenderEngine::GetColorDFromLabel(RenderLabel::kEmpty) would produce.  If
-     that value changes, this should change to match. */
-    renderer->SetBackground(254.0 / 255.0, 127.0 / 255.0, 0.0);
+    // Following the client-server API (see render_gltf_client_doxygen.h), the
+    // background of a label image should be set to white.
+    renderer->SetBackground(1.0, 1.0, 1.0);
 
     // Same as RenderEngineVtk, label actors have lighting disabled.  Labels
     // have already been encoded as geometry materials in the glTF.  By
