@@ -128,17 +128,6 @@ PYBIND11_MODULE(parsing, m) {
             cls_doc.SetAutoRenaming.doc)
         .def("GetAutoRenaming", &Class::GetAutoRenaming,
             cls_doc.GetAutoRenaming.doc);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    cls  // BR
-        .def("AddModelFromString",
-            WrapDeprecated(cls_doc.AddModelFromString.doc_deprecated,
-                &Class::AddModelFromString),
-            py::arg("file_contents"), py::arg("file_type"),
-            py::arg("model_name") = "",
-            cls_doc.AddModelFromString.doc_deprecated);
-#pragma GCC diagnostic pop
   }
 
   // Model Directives
