@@ -210,14 +210,9 @@ class Body : public MultibodyElement<T> {
   }
 
   /// For a floating body, lock its inboard joint. Its generalized
-  /// velocities will be 0 until it is unlocked. Locking is not yet supported
-  /// for continuous-mode systems.
-  /// @throws std::exception if this body is not a floating body, or if the
-  /// parent model uses continuous state.
+  /// velocities will be 0 until it is unlocked.
+  /// @throws std::exception if this body is not a floating body.
   void Lock(systems::Context<T>* context) const {
-    // Body locking is only supported for discrete mode.
-    // TODO(sherm1): extend the design to support continuous-mode systems.
-    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     // non-floating bodies.
     if (!is_floating()) {
@@ -229,14 +224,9 @@ class Body : public MultibodyElement<T> {
         .Lock(context);
   }
 
-  /// For a floating body, unlock its inboard joint. Unlocking is not
-  /// yet supported for continuous-mode systems.
-  /// @throws std::exception if this body is not a floating body, or if the
-  /// parent model uses continuous state.
+  /// For a floating body, unlock its inboard joint.
+  /// @throws std::exception if this body is not a floating body.
   void Unlock(systems::Context<T>* context) const {
-    // Body locking is only supported for discrete mode.
-    // TODO(sherm1): extend the design to support continuous-mode systems.
-    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
     // TODO(rpoyner-tri): consider extending the design to allow locking on
     // non-floating bodies.
     if (!is_floating()) {

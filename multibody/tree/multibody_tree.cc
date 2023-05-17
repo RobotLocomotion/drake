@@ -1182,6 +1182,8 @@ void MultibodyTree<T>::CalcSpatialInertiasInWorld(
   const PositionKinematicsCache<T>& pc = this->EvalPositionKinematics(context);
 
   // Skip the world.
+  // TODO(joemasterjohn): Consider an optimization to avoid calculating spatial
+  // inertias for locked floating bodies.
   for (BodyIndex body_index(1); body_index < num_bodies(); ++body_index) {
     const Body<T>& body = get_body(body_index);
     const RigidTransform<T>& X_WB = pc.get_X_WB(body.node_index());
@@ -1253,6 +1255,8 @@ void MultibodyTree<T>::CalcSpatialAccelerationBias(
   // For the world body we opted for leaving Ab_WB initialized to NaN so that
   // an accidental usage (most likely indicating unnecessary math) in code would
   // immediately trigger a trail of NaNs that we can track to the source.
+  // TODO(joemasterjohn): Consider an optimization where we avoid computing
+  // `Ab_WB` for locked floating bodies.
   (*Ab_WB_all)[world_index()].SetNaN();
   for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
@@ -1276,6 +1280,8 @@ void MultibodyTree<T>::CalcArticulatedBodyForceBias(
   // For the world body we opted for leaving Zb_Bo_W initialized to NaN so that
   // an accidental usage (most likely indicating unnecessary math) in code would
   // immediately trigger a trail of NaNs that we can track to the source.
+  // TODO(joemasterjohn): Consider an optimization to avoid computing `Zb_Bo_W`
+  // for locked floating bodies.
   (*Zb_Bo_W_all)[world_index()].SetNaN();
   for (BodyNodeIndex body_node_index(1); body_node_index < num_bodies();
        ++body_node_index) {
@@ -2215,8 +2221,9 @@ void MultibodyTree<T>::CalcAcrossNodeJacobianWrtVExpressedInWorld(
   // Quick return on nv = 0. Nothing to compute.
   if (num_velocities() == 0) return;
 
-  for (BodyNodeIndex node_index(1);
-       node_index < num_bodies(); ++node_index) {
+  // TODO(joemasterjohn): Consider and optimization where we avoid computing
+  // `H_PB_W` for locked floating bodies.
+  for (BodyNodeIndex node_index(1); node_index < num_bodies(); ++node_index) {
     const BodyNode<T>& node = *body_nodes_[node_index];
 
     // The body-node hinge matrix is H_PB_W ∈ ℝ⁶ˣⁿᵐ, with nm ∈ [0; 6] the number
