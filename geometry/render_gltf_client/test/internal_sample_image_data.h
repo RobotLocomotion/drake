@@ -39,12 +39,14 @@ systems::sensors::ImageRgba8U CreateTestColorImage(bool pad_alpha);
 systems::sensors::ImageDepth32F CreateTestDepthImage();
 
 /* Recreates an ImageLabel16I image that should be exactly the same as the
- loaded test_colored_label_rgba_8U.png after it has been converted.
+ loaded test_colored_label_rgba_8U.png after it has been converted. Note that
+ the value of the sixth pixel is set to render::RenderLabel::kDontCare to test
+ the special conversion of white color (see render_gltf_client_doxygen.h).
 
      ┌─────────────────┬─────────────────┬─────────────────┐
      │        0        │        1        │        2        │
      ├─────────────────┼─────────────────┼─────────────────┤
-     │        3        │        4        │        5        │
+     │        3        │        4        │    kDontCare    │
      └─────────────────┴─────────────────┴─────────────────┘
 
  Returns an image (width=3, height=2) where every label value is unique. */

@@ -318,6 +318,7 @@ class TestCollisionChecker(unittest.TestCase):
         dut.SetCollisionFilteredBetween(
             bodyA=env_body, bodyB=body, filter_collision=True)
         dut.SetCollisionFilteredWithAllBodies(body_index=body.index())
+        dut.SetCollisionFilteredWithAllBodies(body=body)
 
         dut.CheckConfigCollisionFree(q=q)
         dut.CheckContextConfigCollisionFree(model_context=ccc, q=q)

@@ -11,6 +11,7 @@
 
 namespace drake {
 namespace systems {
+namespace kcov339_avoidance_magic {
 const double kInf = std::numeric_limits<double>::infinity();
 const double kEps = std::numeric_limits<double>::epsilon();
 
@@ -402,5 +403,6 @@ GTEST_TEST(SystemConstraintAdapterTest, MaybeCreateConstraintSymbolically1) {
       system_constraint_index, *context_symbolic);
   EXPECT_FALSE(constraints.has_value());
 }
+}  // namespace kcov339_avoidance_magic
 }  // namespace systems
 }  // namespace drake

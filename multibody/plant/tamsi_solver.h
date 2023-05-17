@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -132,11 +133,12 @@ struct TalsLimiter {
   // (see class's documentation) and to detect values close to
   // zero, ‖vₜ‖ < εᵥ. A value close to one could cause the solver to miss
   // transitions from/to stiction.
-  // @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ.
-  static T CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
-                     const Eigen::Ref<const Vector2<T>>& dv,
-                     double cos_theta_max, double v_stiction,
-                     double relative_tolerance);
+  // @retval α the limit in [0, 1] so that vₜᵏ⁺¹ = vₜᵏ + αΔvₜᵏ, or nullopt in
+  // case no solution was found.
+  static std::optional<T> CalcAlpha(const Eigen::Ref<const Vector2<T>>& v,
+                                    const Eigen::Ref<const Vector2<T>>& dv,
+                                    double cos_theta_max, double v_stiction,
+                                    double relative_tolerance);
 
   // Helper method for detecting when the line connecting v with v1 = v + dv
   // crosses the stiction region, a circle of radius `v_stiction`.
@@ -155,8 +157,9 @@ struct TalsLimiter {
 
   // Helper method to solve the quadratic equation aα² + bα + c = 0 for the
   // very particular case we know we have real roots (Δ = b² - 4ac > 0) and we
-  // are interested in the smallest positive root.
-  static T SolveQuadraticForTheSmallestPositiveRoot(
+  // are interested in the smallest positive root. Returns nullopt when Δ is not
+  // positive.
+  static std::optional<T> SolveQuadraticForTheSmallestPositiveRoot(
       const T& a, const T& b, const T& c);
 };
 }  // namespace internal
@@ -173,7 +176,10 @@ enum class TamsiSolverResult {
   /// The linear solver used within the Newton-Raphson loop failed.
   /// This might be caused by a divergent iteration that led to an invalid
   /// Jacobian matrix.
-  kLinearSolverFailed = 2
+  kLinearSolverFailed = 2,
+
+  /// Could not solve for the α coefficient for per-iteration angle change.
+  kAlphaSolverFailed = 3,
 };
 
 /// These are the parameters controlling the iteration process of the
@@ -1157,8 +1163,10 @@ class TamsiSolver {
   // We'll do so by computing a coefficient 0 < α ≤ 1 so that if the
   // generalized velocities are updated as vᵏ⁺¹ = vᵏ + α Δvᵏ then θ ≤ θₘₐₓ
   // for all contact points.
-  T CalcAlpha(const Eigen::Ref<const VectorX<T>>& vt,
-              const Eigen::Ref<const VectorX<T>>& Delta_vt) const;
+  // Returns nullopt in case no solution was found.
+  std::optional<T> CalcAlpha(
+      const Eigen::Ref<const VectorX<T>>& vt,
+      const Eigen::Ref<const VectorX<T>>& Delta_vt) const;
 
   // Dimensionless regularized friction function defined as:
   // ms(s) = ⌈ mu * s * (2 − s),  s  < 1

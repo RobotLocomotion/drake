@@ -4,6 +4,7 @@
 
 #include "drake/math/autodiff_gradient.h"
 #include "drake/math/differentiable_norm.h"
+#include "drake/solvers/constraint.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -304,6 +305,45 @@ void PerspectiveQuadraticCost::DoEval(
 std::ostream& PerspectiveQuadraticCost::DoDisplay(
     std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
   return DisplayCost(*this, os, "PerspectiveQuadraticCost", vars);
+}
+
+ExpressionCost::ExpressionCost(const symbolic::Expression& e)
+    : Cost(e.GetVariables().size()),
+      /* We reuse the Constraint evaluator's implementation. */
+      evaluator_(std::make_unique<ExpressionConstraint>(
+          Vector1<symbolic::Expression>{e},
+          /* The ub, lb are unused but still required. */
+          Vector1d(0.0), Vector1d(0.0))) {}
+
+const VectorXDecisionVariable& ExpressionCost::vars() const {
+  return dynamic_cast<const ExpressionConstraint&>(*evaluator_).vars();
+}
+
+const symbolic::Expression& ExpressionCost::expression() const {
+  return dynamic_cast<const ExpressionConstraint&>(*evaluator_)
+      .expressions()
+      .coeffRef(0);
+}
+
+void ExpressionCost::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                            Eigen::VectorXd* y) const {
+  evaluator_->Eval(x, y);
+}
+
+void ExpressionCost::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                            AutoDiffVecXd* y) const {
+  evaluator_->Eval(x, y);
+}
+
+void ExpressionCost::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>& x,
+    VectorX<symbolic::Expression>* y) const {
+  evaluator_->Eval(x, y);
+}
+
+std::ostream& ExpressionCost::DoDisplay(
+    std::ostream& os, const VectorX<symbolic::Variable>& vars) const {
+  return DisplayCost(*this, os, "ExpressionCost", vars);
 }
 
 }  // namespace solvers

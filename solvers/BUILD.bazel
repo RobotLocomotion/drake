@@ -203,9 +203,11 @@ drake_cc_library(
     srcs = ["cost.cc"],
     hdrs = ["cost.h"],
     interface_deps = [
+        ":decision_variable",
         ":evaluator_base",
     ],
     deps = [
+        ":constraint",
         "//math:gradient",
     ],
 )
