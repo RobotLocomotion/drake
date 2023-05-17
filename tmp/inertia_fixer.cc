@@ -21,6 +21,7 @@ using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
 using tinyxml2::XMLPrinter;
 
+// XXX Does tinyxml2 quote-swapping ('' to "") break any strings?
 
 // We jump through hoops here, just to get 2-space indented output.
 class XmlPrinter final : public XMLPrinter {
