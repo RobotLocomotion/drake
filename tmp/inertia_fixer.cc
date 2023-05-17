@@ -1,3 +1,4 @@
+#include <fstream>
 #include <regex>
 
 #include <drake_vendor/tinyxml2.h>
@@ -15,6 +16,19 @@ using geometry::SceneGraph;
 using tinyxml2::XMLNode;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
+using tinyxml2::XMLPrinter;
+
+
+// We jump through hoops here, just to get 2-space indented output.
+class XmlPrinter final : public XMLPrinter {
+ public:
+  XmlPrinter() : XMLPrinter() {}
+  void PrintSpace(int depth) final {
+    for (int i = 0; i < depth; ++i) {
+      Write("  ");
+    }
+  }
+};
 
 
 std::optional<SpatialInertia<double>> MaybeFixBodyInertia(
@@ -225,10 +239,11 @@ int do_main(int argc, char* argv[]) {
     }
   }
 
-  // tinyxml2 preserves the input text almost exactly. Probably good enough for
-  // this purpose.
-  xml_doc.SaveFile(outfile);
-
+  // Use our custom XmlPrinter to "print to memory", then dump that to file.
+  XmlPrinter printer;
+  xml_doc.Print(&printer);
+  std::ofstream out(outfile);
+  out << printer.CStr();
 
   return models.empty();
 }
