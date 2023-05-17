@@ -1151,7 +1151,6 @@ TEST_F(SdfParserTest, JointParsingTest) {
       " parameters and limits will be considered.*"));
   FlushDiagnostics();
 
-
   // Universal joint
   DRAKE_EXPECT_NO_THROW(
       plant_.GetJointByName<UniversalJoint>("universal_joint", instance1));
