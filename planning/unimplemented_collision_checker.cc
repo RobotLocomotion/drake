@@ -46,8 +46,12 @@ UnimplementedCollisionChecker::DoAddCollisionShapeToBody(
   ThrowNotImplemented(__func__);
 }
 
-void UnimplementedCollisionChecker::DoRemoveAddedGeometries(
+void UnimplementedCollisionChecker::RemoveAddedGeometries(
     const std::vector<CollisionChecker::AddedShape>&) {
+  ThrowNotImplemented(__func__);
+}
+
+void UnimplementedCollisionChecker::UpdateCollisionFilters() {
   ThrowNotImplemented(__func__);
 }
 

@@ -664,6 +664,11 @@ class CollisionChecker {
    @throws std::exception if `body_index` refers to an environment body. */
   void SetCollisionFilteredWithAllBodies(multibody::BodyIndex body_index);
 
+  /** Overload that uses body references. */
+  void SetCollisionFilteredWithAllBodies(const multibody::Body<double>& body) {
+    SetCollisionFilteredWithAllBodies(body.index());
+  }
+
   //@}
 
   /** @name Configuration collision checking */
@@ -1126,8 +1131,12 @@ class CollisionChecker {
   };
 
   /** Removes all of the given added shapes (if they exist) from the checker. */
-  virtual void DoRemoveAddedGeometries(
-      const std::vector<AddedShape>& shapes) = 0;
+  virtual void RemoveAddedGeometries(const std::vector<AddedShape>& shapes) = 0;
+
+  /** Derived collision checkers can do further work in this function in
+   response to changes in collision filters. This is called after any changes
+   are made to the collision filter matrix. */
+  virtual void UpdateCollisionFilters() = 0;
 
   /** Derived collision checkers are responsible for defining the reported
    measurements. But they must adhere to the characteristics documented on

@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 
+#include "drake/geometry/render/render_label.h"
 #include "drake/systems/sensors/image.h"
 
 namespace drake {
@@ -59,7 +60,7 @@ ImageDepth32F CreateTestDepthImage() {
 ImageLabel16I CreateTestLabelImage() {
   ImageLabel16I test_label_image{kTestImageWidth, kTestImageHeight};
   using T = ImageLabel16I::T;
-  std::vector<T> image_data{0, 1, 2, 3, 4, 5};
+  std::vector<T> image_data{0, 1, 2, 3, 4, render::RenderLabel::kDontCare};
   int p = 0;
   for (int y = 0; y < 2; ++y) {
     for (int x = 0; x < 3; ++x) {

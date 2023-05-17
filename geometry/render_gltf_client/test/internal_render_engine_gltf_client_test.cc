@@ -281,7 +281,9 @@ TEST_F(RenderEngineGltfClientTest, DoRenderLabelImage) {
     // Make sure the temporary directory is / is not being cleaned up.
     CheckExpectedFiles(engine.temp_directory(), cleanup, ".png");
 
-    // Make sure the image got loaded as expected.
+    // Make sure the image got loaded as expected. Note that it also tests
+    // whether a server-returned white pixel is properly converted to
+    // render::RenderLabel::kDontCare.
     EXPECT_EQ(label_image, CreateTestLabelImage());
   }
 }

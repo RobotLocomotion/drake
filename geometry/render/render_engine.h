@@ -334,7 +334,12 @@ class RenderEngine : public ShapeReifier {
    are encoded with unsigned bytes in the range [0, 255] per channel or
    _double-valued_ such that each channel is encoded with a double in the range
    [0, 1]. Conversion to RenderLabel is only supported from byte-valued color
-   values.  */
+   values.
+
+   These utilities are provided as a _convenience_ to derived classes. Derived
+   classes are not required to encode labels as colors in the same way. They are
+   only obliged to return label images with proper label values according to
+   the documented semantics.  */
   //@{
 
   /** Transforms the given byte-valued RGB color value into its corresponding

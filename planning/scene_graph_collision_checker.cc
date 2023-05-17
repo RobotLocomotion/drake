@@ -39,6 +39,10 @@ SceneGraphCollisionChecker::SceneGraphCollisionChecker(
     CollisionCheckerParams params)
     : CollisionChecker(std::move(params), true /* supports parallel */) {
   AllocateContexts();
+  // Enforce that all filters known to the collision checker are active in
+  // SceneGraph, as CollisionChecker introduces additional filters that may not
+  // already be present in SceneGraph (e.g. environment-environment body pairs).
+  ApplyCollisionFiltersToSceneGraph();
 }
 
 SceneGraphCollisionChecker::SceneGraphCollisionChecker(
@@ -75,31 +79,26 @@ std::optional<GeometryId> SceneGraphCollisionChecker::DoAddCollisionShapeToBody(
   // Set proximity properties in order for this geometry to actually collide.
   geometry_template.set_proximity_properties({});
 
-  using Operation = std::function<void(const RobotDiagram<double>&,
-                                       CollisionCheckerContext*)>;
-  const Operation operation = [&](const RobotDiagram<double>& model,
-                                  CollisionCheckerContext* model_context) {
+  const auto operation = [&](const RobotDiagram<double>& model,
+                             CollisionCheckerContext* model_context) {
     auto& sg_context = model_context->mutable_scene_graph_context();
-    const GeometryId added_geometry_id = model.scene_graph().RegisterGeometry(
+    model.scene_graph().RegisterGeometry(
         &sg_context, model.plant().get_source_id().value(), body_frame_id,
         std::make_unique<GeometryInstance>(geometry_template));
-    model.scene_graph()
-        .collision_filter_manager(&sg_context)
-        .Apply(CollisionFilterDeclaration().ExcludeBetween(
-            bodyA_geometries, GeometrySet{added_geometry_id}));
   };
   PerformOperationAgainstAllModelContexts(operation);
+
+  // Ensure that filters in SceneGraph cover the new geometry, including the
+  // within-body filter for the new geometry.
+  ApplyCollisionFiltersToSceneGraph();
 
   return geometry_template.id();
 }
 
-void SceneGraphCollisionChecker::DoRemoveAddedGeometries(
+void SceneGraphCollisionChecker::RemoveAddedGeometries(
     const std::vector<CollisionChecker::AddedShape>& shapes) {
-  using Operation = const std::function<void(const RobotDiagram<double>&,
-                                             CollisionCheckerContext*)>;
-  const Operation operation = [&shapes](
-                                  const RobotDiagram<double>& model,
-                                  CollisionCheckerContext* model_context) {
+  const auto operation = [&shapes](const RobotDiagram<double>& model,
+                                   CollisionCheckerContext* model_context) {
     for (const auto& checker_shape : shapes) {
       const GeometryId geometry_id = checker_shape.geometry_id;
       // Our public NVI wrapper logs "Removing geometries from group..." with
@@ -112,6 +111,11 @@ void SceneGraphCollisionChecker::DoRemoveAddedGeometries(
   };
 
   PerformOperationAgainstAllModelContexts(operation);
+}
+
+void SceneGraphCollisionChecker::UpdateCollisionFilters() {
+  // Apply changes to the collision filters to SceneGraph.
+  ApplyCollisionFiltersToSceneGraph();
 }
 
 bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
@@ -131,9 +135,13 @@ bool SceneGraphCollisionChecker::DoCheckContextConfigCollisionFree(
     const Body<double>* body_B = plant().GetBodyFromFrameId(frame_id_B);
     DRAKE_THROW_UNLESS(body_A != nullptr);
     DRAKE_THROW_UNLESS(body_B != nullptr);
-    // Ignore distance pair involving allowed collisions.
+    // Enforce that our collision filters are consistent with query results.
     if (IsCollisionFilteredBetween(*body_A, *body_B)) {
-      continue;
+      throw std::runtime_error(fmt::format(
+          "Drake internal error at {}:{} in {}(): Collision between bodies [{}]"
+          " and [{}] should already be filtered",
+          __FILE__, __LINE__, __func__, body_A->scoped_name(),
+          body_B->scoped_name()));
     }
     const bool body_A_part_of_robot = IsPartOfRobot(*body_A);
     const bool body_B_part_of_robot = IsPartOfRobot(*body_B);
@@ -205,9 +213,13 @@ RobotClearance SceneGraphCollisionChecker::DoCalcContextRobotClearance(
     const Frame<double>& frame_A = body_A.body_frame();
     const Frame<double>& frame_B = body_B.body_frame();
 
-    // Ignore distance pair involving allowed collisions.
+    // Enforce that our collision filters are consistent with query results.
     if (IsCollisionFilteredBetween(body_A, body_B)) {
-      continue;
+      throw std::runtime_error(fmt::format(
+          "Drake internal error at {}:{} in {}(): Collision between bodies [{}]"
+          " and [{}] should already be filtered",
+          __FILE__, __LINE__, __func__, body_A.scoped_name(),
+          body_B.scoped_name()));
     }
 
     // Adjust pair-specific padding, and skip now-unnecessary distances.
@@ -353,6 +365,44 @@ int SceneGraphCollisionChecker::DoMaxContextNumDistances(
     }
   }
   return valid_candidate_count;
+}
+
+void SceneGraphCollisionChecker::ApplyCollisionFiltersToSceneGraph() {
+  // Assemble the new collision filters.
+  CollisionFilterDeclaration new_collision_filters;
+
+  const int num_bodies = plant().num_bodies();
+  for (BodyIndex i(0); i < num_bodies; ++i) {
+    const FrameId frame_i = plant().GetBodyFrameIdOrThrow(i);
+    const GeometrySet geometries_i(frame_i);
+
+    // Add within-body filter.
+    new_collision_filters.ExcludeWithin(geometries_i);
+
+    // Collect body-body filters.
+    for (BodyIndex j(i + 1); j < num_bodies; ++j) {
+      const FrameId frame_j = plant().GetBodyFrameIdOrThrow(j);
+      const GeometrySet geometries_j(frame_j);
+
+      if (IsCollisionFilteredBetween(i, j)) {
+        new_collision_filters.ExcludeBetween(geometries_i, geometries_j);
+      } else {
+        new_collision_filters.AllowBetween(geometries_i, geometries_j);
+      }
+    }
+  }
+
+  // Apply the new collision filters to every context.
+  const auto operation = [&new_collision_filters](
+                             const RobotDiagram<double>& model,
+                             CollisionCheckerContext* model_context) {
+    auto& sg_context = model_context->mutable_scene_graph_context();
+    model.scene_graph()
+        .collision_filter_manager(&sg_context)
+        .Apply(new_collision_filters);
+  };
+
+  PerformOperationAgainstAllModelContexts(operation);
 }
 
 }  // namespace planning

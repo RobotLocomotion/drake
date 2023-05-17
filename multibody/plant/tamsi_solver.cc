@@ -13,7 +13,7 @@ namespace drake {
 namespace multibody {
 namespace internal {
 template <typename T>
-T TalsLimiter<T>::CalcAlpha(
+std::optional<T> TalsLimiter<T>::CalcAlpha(
     const Eigen::Ref<const Vector2<T>>& v,
     const Eigen::Ref<const Vector2<T>>& dv,
     double cos_theta_max, double v_stiction, double relative_tolerance) {
@@ -147,7 +147,13 @@ T TalsLimiter<T>::CalcAlpha(
       // quadratic equation (Δ = b² - 4ac) must be positive.
       // We use a very specialized quadratic solver for this case where we know
       // there must exist a positive (i.e. real) root.
-      alpha = SolveQuadraticForTheSmallestPositiveRoot(a, b, c);
+      // However, in case of a diverging simulation it might not hold true.
+      std::optional<T> maybe_alpha =
+          SolveQuadraticForTheSmallestPositiveRoot(a, b, c);
+      if (!maybe_alpha.has_value()) {
+        return std::nullopt;
+      }
+      alpha = *maybe_alpha;
 
       // The geometry of the problem tells us that α ≤ 1.0
       DRAKE_ASSERT(alpha <= 1.0);
@@ -195,7 +201,7 @@ bool TalsLimiter<T>::CrossesTheStictionRegion(
 }
 
 template <typename T>
-T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
+std::optional<T> TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
     const T& a, const T& b, const T& c) {
   using std::abs;
   using std::max;
@@ -214,8 +220,13 @@ T TalsLimiter<T>::SolveQuadraticForTheSmallestPositiveRoot(
   } else {
     // The determinant, Δ = b² - 4ac, of the quadratic equation.
     const T Delta = b * b - 4 * a * c;  // Uppercase, as in Δ.
-    // Geometry tell us that a real solution does exist i.e. Delta > 0.
-    DRAKE_THROW_UNLESS(Delta > 0);
+    // Geometry tell us that a real solution does exist, i.e., Delta > 0.
+    // However, in case of a diverging simulation it might not hold true.
+    if constexpr (scalar_predicate<T>::is_bool) {
+      if (!(Delta > 0)) {
+        return std::nullopt;
+      }
+    }
     const T sqrt_Delta = sqrt(Delta);
 
     // To avoid loss of significance, when 4ac is relatively small compared
@@ -583,7 +594,7 @@ void TamsiSolver<T>::CalcJacobian(
 }
 
 template <typename T>
-T TamsiSolver<T>::CalcAlpha(
+std::optional<T> TamsiSolver<T>::CalcAlpha(
     const Eigen::Ref<const VectorX<T>>& vt,
     const Eigen::Ref<const VectorX<T>>& Delta_vt) const {
   using std::min;
@@ -593,11 +604,13 @@ T TamsiSolver<T>::CalcAlpha(
     const int ik = 2 * ic;  // Index ik scans contact vector quantities.
     auto vt_ic = vt.template segment<2>(ik);
     const auto dvt_ic = Delta_vt.template segment<2>(ik);
-    alpha = min(
-        alpha,
-        internal::TalsLimiter<T>::CalcAlpha(
-            vt_ic, dvt_ic,
-            cos_theta_max_, v_stiction, parameters_.relative_tolerance));
+    const std::optional<T> tals_alpha = internal::TalsLimiter<T>::CalcAlpha(
+        vt_ic, dvt_ic, cos_theta_max_, v_stiction,
+        parameters_.relative_tolerance);
+    if (!tals_alpha.has_value()) {
+      return std::nullopt;
+    }
+    alpha = min(alpha, *tals_alpha);
   }
   DRAKE_DEMAND(0 < alpha && alpha <= 1.0);
   return alpha;
@@ -747,10 +760,13 @@ TamsiSolverResult TamsiSolver<T>::SolveWithGuess(
     vt_error = ExtractDoubleOrThrow(Delta_vt.norm());
 
     // Limit the angle change between vₜᵏ⁺¹ and vₜᵏ for all contact points.
-    T alpha = CalcAlpha(vt, Delta_vt);
+    std::optional<T> alpha = CalcAlpha(vt, Delta_vt);
+    if (!alpha.has_value()) {
+      return TamsiSolverResult::kAlphaSolverFailed;
+    }
 
     // Update generalized velocity vector.
-    v = v + alpha * Delta_v;
+    v = v + alpha.value() * Delta_v;
 
     // Save iteration statistics.
     statistics_.Update(vt_error);

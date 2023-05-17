@@ -520,6 +520,99 @@ GTEST_TEST(RotationalInertia, PrincipalMomentsOfInertia) {
                               kTolerance, MatrixCompareType::absolute));
 }
 
+// Tests the method to obtain the principal moments of inertia and axes.
+GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
+  // For a solid ellipsoid B, form B's rotational inertia about Bcm (B's center
+  // of mass) for principal directions Bx, By, Bz.
+  const double a = 5.0, b = 4.0, c = 3.0;
+  const double mass = 3.0;
+  const double Imin = 0.2 * mass * (b*b + c*c);  // Ixx = 1/5 m (b² + c²) small
+  const double Imed = 0.2 * mass * (a*a + c*c);  // Iyy = 1/5 m (a² + c²) medium
+  const double Imax = 0.2 * mass * (a*a + b*b);  // Izz = 1/5 m (a² + b²) large
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+
+  // Verify a special case of a RotationalInertia with zero products of inertia,
+  // constructed with equal principal moments of inertia: Imin = Imed = Imax.
+  // Note: Although there are an infinite number of principal directions, it is
+  // reasonable for a user to expect (and get) R_BP = identity matrix.
+  RotationalInertia<double> I_BBcm_B =
+      RotationalInertia<double>(Imed, Imed, Imed);
+  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
+      I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imed, Imed, Imed),
+                              I_BBcm_P.first, kTolerance));
+  drake::math::RotationMatrix<double> R_BP = I_BBcm_P.second;
+  drake::math::RotationMatrix<double> R_BP_expected =
+      drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // Verify a special case of a RotationalInertia with zero products of inertia,
+  // constructed with principal moments of inertia having Imin < Imed < Imax.
+  // Calculate I_BBcm_P, which contains B's principal inertia moments and axes.
+  I_BBcm_B = RotationalInertia<double>(Imin, Imed, Imax);
+  I_BBcm_P = I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_P.first, kTolerance));
+  R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
+  R_BP_expected = drake::math::RotationMatrix<double>::Identity();
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_BP_expected));
+
+  // Verify reordering for a special case of a RotationalInertia constructed
+  // with principal moments of inertia having Imed < Imin (must reorder).
+  I_BBcm_B = RotationalInertia<double>(Imed, Imin, Imax);
+  I_BBcm_P = I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_P.first, kTolerance));
+  R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
+  Vector3<double> col_min(0.0, 1.0, 0.0);  // Direction for minimum axis.
+  Vector3<double> col_med(1.0, 0.0, 0.0);  // Direction for intermediate axis.
+  Vector3<double> col_max(0.0, 0.0, 1.0);  // Direction for maximum axis.
+  R_BP_expected =
+      drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
+          col_min, col_med, -col_max);
+  EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
+
+  // Verify reordering for a special case of a RotationalInertia constructed
+  // with principal moments of inertia having Imax < Imin (must reorder).
+  I_BBcm_B = RotationalInertia<double>(Imax, Imin, Imed);
+  I_BBcm_P = I_BBcm_B.CalcPrincipalMomentsAndAxesOfInertia();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_P.first, kTolerance));
+  R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
+  col_min = Vector3<double>(0.0, 1.0, 0.0);  // Direction for minimum axis.
+  col_med = Vector3<double>(0.0, 0.0, 1.0);  // Direction for intermediate axis.
+  col_max = Vector3<double>(1.0, 0.0, 0.0);  // Direction for maximum axis.
+  R_BP_expected =
+      drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
+          col_min, col_med, col_max);
+  EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
+
+  // Rotate body B by 30 degrees and verify principal moments/axes. This tests
+  // a general case for a rotational inertia with non-zero products of inertia.
+  I_BBcm_B = RotationalInertia<double>(Imin, Imed, Imax);
+  drake::math::RotationMatrix<double> R_BC =
+      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  RotationalInertia<double> I_BBcm_C = I_BBcm_B.ReExpress(R_BC);
+  I_BBcm_P = I_BBcm_C.CalcPrincipalMomentsAndAxesOfInertia();
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
+                              I_BBcm_P.first, kTolerance));
+
+  // The orthogonal unit length eigenvectors Px_B, Py_B, Pz_B stored in the
+  // columns of R_BP are parallel to the principal axes (lines). Since lines
+  // do not have a fully-qualified direction (they lack sense), all we can check
+  // is whether these principal axes (represented by Px_B, Py_B, Pz_B) are
+  // parallel to the right-handed unit vectors Cx_B, Cy_B, Cz_B stored in the
+  // columns of R_BC and whether they form a right-handed set.
+  R_BP = I_BBcm_P.second;  // Columns of R_BP are eigenvectors (principal axes).
+  const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BC.col(0);
+  const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BC.col(1);
+  const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BC.col(2);
+  EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);  // Px parallel to Cx.
+  EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);  // Py parallel to Cy.
+  EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);  // Pz parallel to Cz.
+  EXPECT_NEAR(Px_B.cross(Py_B).dot(Pz_B), 1.0, kTolerance);  // Right-handed.
+}
+
 // Test the method RotationalInertia::CalcPrincipalMomentsOfInertia() for a
 // symmetric positive-definite matrix. This type of tri-diagonal matrix arises
 // when discretizing the Laplacian operator using either finite differences of

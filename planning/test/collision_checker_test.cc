@@ -138,9 +138,14 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
     return added_shape_id_;
   }
 
-  void DoRemoveAddedGeometries(
+  void RemoveAddedGeometries(
       const std::vector<CollisionChecker::AddedShape>& shapes) override {
     // Don't need to do work; just don't throw.
+  }
+
+  void UpdateCollisionFilters() override {
+    // Capture the updated collision filter matrix.
+    updated_filter_matrix_ = GetFilteredCollisionMatrix();
   }
 
   RobotClearance DoCalcContextRobotClearance(
@@ -215,6 +220,12 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
   // Returns the positions available in this checker from the most recent
   // Check*ConfigCollisionFree() call.
   const VectorXd& positions_for_check() const { return positions_for_check_; }
+
+  // Returns the filter matrix available in this checker from the most recent
+  // operation that modified the filter matrix.
+  const Eigen::MatrixXi& updated_filter_matrix() const {
+    return updated_filter_matrix_;
+  }
   //@}
 
  private:
@@ -226,6 +237,8 @@ class CollisionCheckerTester : public UnimplementedCollisionChecker {
   mutable VectorXd positions_for_classify_;
   // Updated with every call to DoCheckContextConfigCollisionFree().
   mutable VectorXd positions_for_check_;
+  // Updated with every call to UpdateCollisionFilters().
+  Eigen::MatrixXi updated_filter_matrix_;
 };
 
 // Makes a test checker for the given model and enumerated set of robot
@@ -928,6 +941,10 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilterMatrix) {
   EXPECT_FALSE(CompareMatrices(dut_->GetFilteredCollisionMatrix(), no_filters));
   ASSERT_NO_THROW(dut_->SetCollisionFilterMatrix(no_filters));
   EXPECT_TRUE(CompareMatrices(dut_->GetFilteredCollisionMatrix(), no_filters));
+  // Confirm that the collision filter matrix was updated before calling
+  // UpdateCollisionFilters().
+  EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
+                              dut_->GetFilteredCollisionMatrix()));
 
   // Now test the various ways we can throw.
 
@@ -1186,6 +1203,10 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilteredBetween) {
     EXPECT_FALSE(dut_->IsCollisionFilteredBetween(b[1], b[4]));
     EXPECT_NO_THROW(
         dut_->SetCollisionFilterMatrix(dut_->GetFilteredCollisionMatrix()));
+    // Confirm that the collision filter matrix was updated before calling
+    // UpdateCollisionFilters().
+    EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
+                                dut_->GetFilteredCollisionMatrix()));
   }
 
   {
@@ -1230,13 +1251,33 @@ TEST_F(TrivialCollisionCheckerTest, SetCollisionFilteredWithAllBodies) {
   }
 
   {
-    // Setting a robot body doesn't throw, produces a consistent matrix and
-    // reports filters as expected.
+    // Setting a robot body (via index) doesn't throw, produces a consistent
+    // matrix and reports filters as expected.
     EXPECT_NO_THROW(dut_->SetCollisionFilteredWithAllBodies(b[3]));
+    // Confirm that the collision filter matrix was updated before calling
+    // UpdateCollisionFilters().
+    EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
+                                dut_->GetFilteredCollisionMatrix()));
     EXPECT_NO_THROW(
         dut_->SetCollisionFilterMatrix(dut_->GetFilteredCollisionMatrix()));
     for (BodyIndex i(0); i < num_bodies; ++i) {
       EXPECT_TRUE(dut_->IsCollisionFilteredBetween(i, b[3]));
+    }
+  }
+
+  {
+    // Setting a robot body (via reference) doesn't throw, produces a consistent
+    // matrix and reports filters as expected.
+    EXPECT_NO_THROW(
+        dut_->SetCollisionFilteredWithAllBodies(dut_->get_body(b[2])));
+    // Confirm that the collision filter matrix was updated before calling
+    // UpdateCollisionFilters().
+    EXPECT_TRUE(CompareMatrices(dut_->updated_filter_matrix(),
+                                dut_->GetFilteredCollisionMatrix()));
+    EXPECT_NO_THROW(
+        dut_->SetCollisionFilterMatrix(dut_->GetFilteredCollisionMatrix()));
+    for (BodyIndex i(0); i < num_bodies; ++i) {
+      EXPECT_TRUE(dut_->IsCollisionFilteredBetween(i, b[2]));
     }
   }
 }
