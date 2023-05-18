@@ -286,6 +286,26 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
+drake_cc_googletest_ubuntu_only(
+    name = "thread_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    tags = vtk_test_tags() + [
+        # We launch up to 3 child tasks.
+        "cpu:4",
+        # Generally, GL driver shared libraries are not tsan-clean.
+        # Instead we rely on functional testing to detect threading errors.
+        "no_tsan",
+    ],
+    deps = [
+        ":factory",
+        "//common/yaml",
+        "//geometry:geometry_instance",
+        "//systems/sensors:image_writer",
+    ],
+)
+
 add_lint_tests(
     cpplint_extra_srcs = [
         "no_factory.cc",
