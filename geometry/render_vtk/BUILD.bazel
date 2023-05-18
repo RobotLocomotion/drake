@@ -104,9 +104,23 @@ drake_cc_library(
 drake_cc_googletest(
     name = "internal_render_engine_vtk_test",
     args = select({
-        # Disable test cases that break on Mac M1 CI.
+        # TODO(#19424) Disable test cases that break on Mac M1 CI.
         "@platforms//cpu:arm64": [
-            "--gtest_filter=-*HorizonTest:*TerrainTest:*SphereTest",
+            "--gtest_filter=-" + ":".join([
+                "RenderEngineVtkTest.BoxTest",
+                "RenderEngineVtkTest.CapsuleRotatedTest",
+                "RenderEngineVtkTest.CapsuleTest",
+                "RenderEngineVtkTest.CloneIndependence",
+                "RenderEngineVtkTest.ClonePersistence",
+                "RenderEngineVtkTest.CylinderTest",
+                "RenderEngineVtkTest.EllipsoidTest",
+                "RenderEngineVtkTest.HorizonTest",
+                "RenderEngineVtkTest.MeshTest",
+                "RenderEngineVtkTest.RemoveVisual",
+                "RenderEngineVtkTest.SimpleClone",
+                "RenderEngineVtkTest.SphereTest",
+                "RenderEngineVtkTest.TerrainTest",
+            ]),
         ],
         "//conditions:default": [],
     }),
