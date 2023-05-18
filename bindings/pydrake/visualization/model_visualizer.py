@@ -83,6 +83,14 @@ def _main():
         action="store_true",
         help="Visualize the frames as triads for all links.",
     )
+    assert defaults["show_rgbd_sensor"] is False
+    args_parser.add_argument(
+        "--show_rgbd_sensor",
+        action="store_true",
+        help="Add and show an RgbdSensor. At the moment, the image display "
+             "uses a native window so will not work in a remote or cloud "
+             "runtime environment.",
+    )
 
     args_parser.add_argument(
         "--triad_length",
@@ -123,6 +131,7 @@ def _main():
         os.chdir(os.environ['BUILD_WORKING_DIRECTORY'])
 
     visualizer = _ModelVisualizer(visualize_frames=args.visualize_frames,
+                                  show_rgbd_sensor=args.show_rgbd_sensor,
                                   triad_length=args.triad_length,
                                   triad_radius=args.triad_radius,
                                   triad_opacity=args.triad_opacity,

@@ -989,7 +989,7 @@ HEADER
 /* Footer */
 
 footer.site-footer {
-  padding: 50px 2.4em 75px 0;
+  padding: 15px 2.4em 15px 0;
   border-top: 1px solid rgba(0, 0, 0, .15);
 }
 
@@ -1076,7 +1076,6 @@ footer.site-footer>div.contain {
   background-color: #F5F5F5;
   color: #262626;
   overflow-y: unset;
-  padding: 0 0 calc(3.236em * 2) 0;
 }
 
 #nav-tree {
@@ -1128,7 +1127,7 @@ footer.site-footer>div.contain {
   text-shadow: none;
 }
 
-#nav-path {
+div.navpath {
   display: none;
 }
 
@@ -1292,10 +1291,6 @@ input[type=text] {
 }
 
 /* Page Content */
-
-#doc-content {
-  padding: 3.236em;
-}
 
 div.header {
   background: none;

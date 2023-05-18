@@ -194,6 +194,14 @@ class TestModelVisualizer(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "already been"):
             dut.AddModels("ignored.urdf")
 
+    def test_camera(self):
+        """
+        Checks that the rgbd sensor code does not crash.
+        """
+        dut = mut.ModelVisualizer(show_rgbd_sensor=True)
+        dut.parser().AddModelsFromString(self.SAMPLE_OBJ, "sdf")
+        dut.Run(loop_once=True)
+
     def test_reload(self):
         """
         Checks that the _reload() function does not crash.
