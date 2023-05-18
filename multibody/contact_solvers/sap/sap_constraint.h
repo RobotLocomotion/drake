@@ -267,6 +267,7 @@ class SapConstraint {
 
   /* Computes the constraint Hessian as:
        G(vc) = ∂²ℓ/∂vc² = -∂γ/∂vc.
+   @post G is of size nₑ×nₑ, with nₑ equal to num_constraint_equations().
    @post The constraint Hessian G(vc) is
    symmetric positive semi-definite, since ℓ(vc) is a convex function of vc as
    required by the SAP formulation.
