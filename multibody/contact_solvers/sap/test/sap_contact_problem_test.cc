@@ -36,8 +36,6 @@ const Eigen::Matrix4d S44 =
 // Only indexes and constraint sizes matter for the unit tests in this file.
 class TestConstraint final : public SapConstraint<double> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestConstraint);
-
   // Constructor for a constraint on a single clique.
   TestConstraint(int num_constraint_equations, int clique, int clique_nv)
       : SapConstraint<double>(
@@ -65,8 +63,12 @@ class TestConstraint final : public SapConstraint<double> {
                                              const double&) const final {
     return VectorXd::Zero(this->num_constraint_equations());
   }
-  std::unique_ptr<SapConstraint<double>> Clone() const final {
-    return std::make_unique<TestConstraint>(*this);
+
+ private:
+  TestConstraint(const TestConstraint&) = default;
+
+  std::unique_ptr<SapConstraint<double>> DoClone() const final {
+    return std::unique_ptr<TestConstraint>(new TestConstraint(*this));
   }
 };
 

@@ -3,7 +3,6 @@
 #include <memory>
 #include <utility>
 
-#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
@@ -65,7 +64,14 @@ namespace internal {
 template <typename T>
 class SapHolonomicConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapHolonomicConstraint);
+  /* We do not allow copy, move, or assignment generally to avoid slicing.
+    Protected copy construction is enabled for sub-classes to use in their
+    implementation of DoClone(). */
+  //@{
+  SapHolonomicConstraint& operator=(const SapHolonomicConstraint&) = delete;
+  SapHolonomicConstraint(SapHolonomicConstraint&&) = delete;
+  SapHolonomicConstraint& operator=(SapHolonomicConstraint&&) = delete;
+  //@}
 
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
@@ -204,9 +210,16 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
   VectorX<T> CalcDiagonalRegularization(const T& time_step,
                                         const T& wi) const final;
 
-  std::unique_ptr<SapConstraint<T>> Clone() const final;
-
  private:
+  /* Private copy construction is enabled to use in the implementation of
+   DoClone(). */
+  SapHolonomicConstraint(const SapHolonomicConstraint&) = default;
+
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<SapHolonomicConstraint<T>>(
+        new SapHolonomicConstraint<T>(*this));
+  }
+
   Parameters parameters_;
   VectorX<T> bias_;
 };

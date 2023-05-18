@@ -51,7 +51,7 @@ SapModel<T>::SapModel(const SapContactProblem<T>* problem_ptr)
   }
 
   // Computation of a diagonal approximation to the Delassus operator.
-  VectorX<T> delassus_diagonal(num_constraints());
+  VectorX<T> delassus_diagonal(num_constraint_equations());
   CalcDelassusDiagonalApproximation(dynamics_matrix, &delassus_diagonal);
 
   // Create constraints bundle.
@@ -88,6 +88,19 @@ void SapModel<T>::DeclareCacheEntries() {
       {systems::System<T>::xd_ticket()});
   system_->mutable_cache_indexes().constraint_velocities =
       constraint_velocities_cache_entry.cache_index();
+
+  const T& dt = this->time_step();
+  const auto& w = this->const_model_data_.delassus_diagonal;
+  SapConstraintBundleDataCache bundle_cache_model;
+  bundle_cache_model.bundle_data = this->constraints_bundle().MakeData(dt, w);
+  const auto& bundle_data_cache_entry = system_->DeclareCacheEntry(
+      "Constraint bundle data.",
+      systems::ValueProducer(this, bundle_cache_model,
+                             &SapModel<T>::CalcConstraintBundleDataCache),
+      {system_->cache_entry_ticket(
+          system_->cache_indexes().constraint_velocities)});
+  system_->mutable_cache_indexes().bundle_data =
+      bundle_data_cache_entry.cache_index();
 
   const auto& impulses_cache_entry = system_->DeclareCacheEntry(
       "Impulses, γ = P(−R⁻¹(vc − v̂)).",
@@ -164,6 +177,15 @@ void SapModel<T>::CalcConstraintVelocities(const Context<T>& context,
 }
 
 template <typename T>
+void SapModel<T>::CalcConstraintBundleDataCache(
+    const systems::Context<T>& context,
+    SapConstraintBundleDataCache* cache) const {
+  system_->ValidateContext(context);
+  const VectorX<T>& vc = EvalConstraintVelocities(context);
+  constraints_bundle().CalcData(vc, &cache->bundle_data);
+}
+
+template <typename T>
 void SapModel<T>::CalcImpulsesCache(const Context<T>& context,
                                     ImpulsesCache<T>* cache) const {
   // Impulses are computed as a side effect of updating the Hessian cache.
@@ -182,9 +204,9 @@ void SapModel<T>::CalcImpulsesCache(const Context<T>& context,
 
   system_->ValidateContext(context);
   cache->Resize(num_constraint_equations());
-  const VectorX<T>& vc = EvalConstraintVelocities(context);
-  constraints_bundle().CalcUnprojectedImpulses(vc, &cache->y);
-  constraints_bundle().ProjectImpulses(cache->y, &cache->gamma);
+  const SapConstraintBundleData& bundle_data =
+      EvalSapConstraintBundleData(context);
+  constraints_bundle().CalcImpulses(bundle_data, &cache->gamma);
 }
 
 template <typename T>
@@ -206,9 +228,9 @@ void SapModel<T>::CalcCostCache(const Context<T>& context,
   const VectorX<T>& velocity_gain = gain_cache.velocity_gain;
   const VectorX<T>& momentum_gain = gain_cache.momentum_gain;
   cache->momentum_cost = 0.5 * velocity_gain.dot(momentum_gain);
-  const VectorX<T>& gamma = EvalImpulses(context);
-  const VectorX<T>& R = constraints_bundle().R();
-  cache->regularizer_cost = 0.5 * T(gamma.transpose() * R.asDiagonal() * gamma);
+  const SapConstraintBundleData& bundle_data =
+      EvalSapConstraintBundleData(context);
+  cache->regularizer_cost = constraints_bundle().CalcCost(bundle_data);
   cache->cost = cache->momentum_cost + cache->regularizer_cost;
 }
 
@@ -228,10 +250,10 @@ void SapModel<T>::CalcHessianCache(const systems::Context<T>& context,
                                    HessianCache<T>* cache) const {
   system_->ValidateContext(context);
   cache->Resize(num_constraints(), num_constraint_equations());
-  const VectorX<T>& vc = EvalConstraintVelocities(context);
-  constraints_bundle().CalcUnprojectedImpulses(vc, &cache->impulses.y);
-  constraints_bundle().ProjectImpulsesAndCalcConstraintsHessian(
-      cache->impulses.y, &cache->impulses.gamma, &cache->G);
+  const SapConstraintBundleData& bundle_data =
+      EvalSapConstraintBundleData(context);
+  constraints_bundle().CalcImpulsesAndConstraintsHessian(
+      bundle_data, &cache->impulses.gamma, &cache->G);
 }
 
 template <typename T>
@@ -428,9 +450,15 @@ void SapModel<T>::CalcDelassusDiagonalApproximation(
 
   // Compute Delassus_diagonal as the rms norm of the diagonal block for the
   // i-th constraint.
-  delassus_diagonal->resize(num_constraints);
+  delassus_diagonal->resize(num_constraint_equations());
+  int constraint_start = 0;
   for (int i = 0; i < num_constraints; ++i) {
-    (*delassus_diagonal)[i] = W[i].norm() / W[i].rows();
+    const int ni = W[i].rows();
+    // TODO(amcastro-tri): consider using the scalar diagonal value W[i](e, e)
+    // or something like max(W[i](e, e), W_rms).
+    delassus_diagonal->segment(constraint_start, ni)
+        .setConstant(W[i].norm() / ni);
+    constraint_start += ni;
   }
 }
 

@@ -5,12 +5,77 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/unused.h"
+#include "drake/common/value.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+// TODO(amcastro-tri): SapConstraintData is only temporary to aid the migration
+// towards #19392 and it will soon be removed.
+/* Class to store data needed for SapConstraint computations. */
+template <typename T>
+class SapConstraintData {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapConstraintData);
+
+  /* Constructs data for a SapLimitConstraint.
+     @param R Regularization parameters.
+     @param v_hat Bias term.
+     @warning Data stored is left uninitialized to avoid the cost of an
+     unnecessary initialization. */
+  SapConstraintData(VectorX<T> R, VectorX<T> v_hat) {
+    const int nk = R.size();
+    parameters_.R.resize(nk);
+    parameters_.R_inv.resize(nk);
+    parameters_.v_hat.resize(nk);
+    parameters_.R = R;
+    parameters_.R_inv = R.cwiseInverse();
+    parameters_.v_hat = v_hat;
+    vc_.resize(nk);
+    y_.resize(nk);
+    gamma_.resize(nk);
+    dPdy_.resize(nk, nk);
+  }
+
+  /* Regularization R. */
+  const VectorX<T>& R() const { return parameters_.R; }
+
+  /* Inverse of the regularization, R⁻¹. */
+  const VectorX<T>& R_inv() const { return parameters_.R_inv; }
+
+  /* Constraint bias. */
+  const VectorX<T>& v_hat() const { return parameters_.v_hat; }
+
+  /* Const access. */
+  const VectorX<T>& vc() const { return vc_; }
+  const VectorX<T>& y() const { return y_; }
+  const VectorX<T>& gamma() const { return gamma_; }
+  const MatrixX<T>& dPdy() const { return dPdy_; }
+
+  /* Mutable access. */
+  VectorX<T>& mutable_vc() { return vc_; }
+  VectorX<T>& mutable_y() { return y_; }
+  VectorX<T>& mutable_gamma() { return gamma_; }
+  MatrixX<T>& mutable_dPdy() { return dPdy_; }
+
+ private:
+  // This struct stores parameters that remain const after construction.
+  struct ConstParameters {
+    VectorX<T> R;      // Regularization R.
+    VectorX<T> R_inv;  // Inverse of regularization R.
+    VectorX<T> v_hat;  // Constraint velocity bias.
+  };
+  ConstParameters parameters_;
+
+  VectorX<T> vc_;
+  VectorX<T> y_;      // Un-projected impulse y = −R⁻¹⋅(vc−v̂)
+  VectorX<T> gamma_;  // Impulse.
+  MatrixX<T> dPdy_;   // Gradient of the projection γ = P(y) w.r.t. y.
+};
 
 /* This class serves to represent constraints supported by the SapSolver as
 described in [Castro et al., 2021].
@@ -61,6 +126,15 @@ two cliques, see issue #16575.
 template <typename T>
 class SapConstraint {
  public:
+  /* We do not allow copy, move, or assignment generally to avoid slicing.
+    Protected copy construction is enabled for sub-classes to use in their
+    implementation of DoClone(). */
+  //@{
+  SapConstraint& operator=(const SapConstraint&) = delete;
+  SapConstraint(SapConstraint&&) = delete;
+  SapConstraint& operator=(SapConstraint&&) = delete;
+  //@}
+
   /* Constructor for a constraint among DOFs within a single `clique`.
    @param[in] clique
      Index of a clique in the SapContactProblem where this constraint will be
@@ -160,6 +234,85 @@ class SapConstraint {
     return second_clique_jacobian_;
   }
 
+  /* Makes data used by this constraint to perform computations. Different
+   constraints can opt to use `time_step` and a diagonal approximation of the
+   Delassus operator in `delassus_estimation` to pre-compute scale quantities to
+   condition the problem better.
+   N.B. Specific constraints can choose to ignore `time_step` and
+   `delassus_estimation` making a new data that does not depend on either of
+   them. Refer to the documentation for specific constraint types.
+   @pre delassus_estimation.size() equals num_constraint_equations(). */
+  std::unique_ptr<AbstractValue> MakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const;
+
+  /* Computes constraint data as a function of constraint velocities `vc`.
+   This method can be as simple as a copy of `vc` into `data`, though specific
+   constraints might want to compute commonly occurring terms in the computation
+   of the cost, impulses and Hessian into `data` to be reused.
+   @pre vc.size() equals num_constraint_equations().
+   @pre data does not equal nullptr. */
+  void CalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                AbstractValue* data) const;
+
+  /* Computes the constraint cost ℓ(vc) function of constraint velocities vc.
+   @post The cost ℓ(vc) is a convex function of vc, as required by the SAP
+   formulation. */
+  T CalcCost(const AbstractValue& data) const;
+
+  /* Computes the impulse according to:
+       γ(vc) = −∂ℓ/∂vc.
+   @pre gamma does not equal nullptr. */
+  void CalcImpulse(const AbstractValue& data, EigenPtr<VectorX<T>> gamma) const;
+
+  /* Computes the constraint Hessian as:
+       G(vc) = ∂²ℓ/∂vc² = -∂γ/∂vc.
+   @post The constraint Hessian G(vc) is
+   symmetric positive semi-definite, since ℓ(vc) is a convex function of vc as
+   required by the SAP formulation.
+   @pre G does not equal nullptr. */
+  void CalcCostHessian(const AbstractValue& data, MatrixX<T>* G) const;
+
+  /* Polymorphic deep-copy into a new instance. */
+  std::unique_ptr<SapConstraint<T>> Clone() const { return DoClone(); }
+
+ protected:
+  /* Protected copy construction is enabled for sub-classes to use in their
+   implementation of DoClone(). */
+  SapConstraint(const SapConstraint&) = default;
+
+  // @group NVI implementations. Specific constraints must implement these
+  // methods. Refer to the specific NVI documentation for details.
+  // Proper argument sizes and valid non-null pointers are already guaranteed by
+  // checks in the correspondng NVIs.
+  // TODO(amcastro-tri): Make these pure virtual per #19392.
+  // @{
+  virtual std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const;
+  virtual void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                          AbstractValue* data) const;
+  virtual T DoCalcCost(const AbstractValue& data) const;
+  virtual void DoCalcImpulse(const AbstractValue& data,
+                             EigenPtr<VectorX<T>> gamma) const;
+  virtual void DoCalcCostHessian(const AbstractValue& data,
+                                 MatrixX<T>* G) const;
+
+  /* Clone() implementation. Derived classes must override to provide
+   polymorphic deep-copy into a new instance. */
+  virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
+
+  // @}
+
+  // TODO(amcastro-tri): Remove this group of methods below per #19392.
+  // N.B. To aid migration towards #19392, the default implementations all
+  // abort. This will guarantee that all current (and future) derived classes
+  // have overridden these methods; failure to do so would lead to a program
+  // abort. This allows older implementations in terms of these methods to
+  // coexist with newly migrated constraints that implement the new DoCalcFoo()
+  // APIs. Once the migration is complete, these virtual APIs will be removed
+  // and the DoCalcFoo() APIs will be made pure virtual.
+
   /* Computes the projection γ = P(y) onto the convex set specific to a
    constraint in the norm defined by the diagonal positive matrix R, i.e. the
    norm ‖x‖ = sqrt(xᵀ⋅R⋅x). Refer to [Castro et al., 2021] for details.
@@ -174,7 +327,13 @@ class SapConstraint {
   virtual void Project(const Eigen::Ref<const VectorX<T>>& y,
                        const Eigen::Ref<const VectorX<T>>& R,
                        EigenPtr<VectorX<T>> gamma,
-                       MatrixX<T>* dPdy = nullptr) const = 0;
+                       MatrixX<T>* dPdy = nullptr) const {
+    unused(y);
+    unused(R);
+    unused(gamma);
+    unused(dPdy);
+    DRAKE_UNREACHABLE();
+  }
 
   /* Computes the bias term v̂ used to compute the constraint impulses before
    projection y = −R⁻¹⋅(vc − v̂).
@@ -187,7 +346,11 @@ class SapConstraint {
    Thus far we are assuming the same scalar factor can be used for all
    constraint equations effectively.
    TODO(amcastro-tri): Consider making wi a vector quantity. */
-  virtual VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const = 0;
+  virtual VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const {
+    unused(time_step);
+    unused(wi);
+    DRAKE_UNREACHABLE();
+  }
 
   /* Computes the regularization R used to compute the constraint impulses
    before projection as y = −R⁻¹⋅(vc − v̂).
@@ -201,14 +364,11 @@ class SapConstraint {
    constraint equations effectively.
    TODO(amcastro-tri): Consider making wi a vector quantity. */
   virtual VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                                const T& wi) const = 0;
-
-  /* Derived classes must override to provide polymorphic deep-copy into a new
-   instance. */
-  virtual std::unique_ptr<SapConstraint<T>> Clone() const = 0;
-
- protected:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapConstraint);
+                                                const T& wi) const {
+    unused(time_step);
+    unused(wi);
+    DRAKE_UNREACHABLE();
+  }
 
  private:
   int first_clique_{-1};
