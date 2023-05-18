@@ -162,6 +162,18 @@ drake_cc_library(
     deps = ["//common:default_scalars"],
 )
 
+drake_cc_library(
+    name = "validate_constraint_gradients",
+    testonly = 1,
+    srcs = ["validate_constraint_gradients.cc"],
+    hdrs = ["validate_constraint_gradients.h"],
+    deps = [
+        ":sap_constraint",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//math:gradient",
+    ],
+)
+
 drake_cc_googletest(
     name = "partial_permutation_test",
     deps = [
@@ -220,6 +232,7 @@ drake_cc_googletest(
     name = "sap_friction_cone_constraint_test",
     deps = [
         ":sap_friction_cone_constraint",
+        ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
         "//math:gradient",
