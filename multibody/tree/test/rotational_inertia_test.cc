@@ -738,6 +738,18 @@ GTEST_TEST(RotationalInertia, CalcPrincipalLengthsAndAxesForEquivalentShape) {
           col_min, col_med, -col_max);
   EXPECT_TRUE(R_BP.IsNearlyEqualTo(R_BP_expected, kTolerance));
 
+  // For a rotational inertia I_BBcm_B corresponding to a particle B,
+  // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForSolidBox() produces
+  // lmax = 0, lmed = 0, lmin = 0 (all zero dimensions).
+  // Verify principal directions (R_BP is an identity matrix).
+  I_BBcm_B = RotationalInertia<double>(0, 0, 0);
+  lxyz_R_BP = I_BBcm_B.CalcPrincipalLengthsAndAxesForSolidBox(mass);
+  lxyz = lxyz_R_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(0, 0, 0),
+                              lxyz, kTolerance));
+  R_BP = lxyz_R_BP.second;
+  EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_identity));
+
   // For a rotational inertia I_BBcm_B corresponding to a thin solid rod B,
   // verify I_BBcm_B.CalcPrincipalLengthsAndAxesForSolidBox() produces
   // lmax = a, lmed = 0, lmin = 0 (rod dimensions).
