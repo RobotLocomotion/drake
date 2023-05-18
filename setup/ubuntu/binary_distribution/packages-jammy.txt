@@ -23,7 +23,6 @@ liblz4-1
 liblzma5
 libmumps-seq-5.4
 libnetcdf19
-libnlopt-cxx0
 libogg0
 libopengl0
 libpng16-16
