@@ -19,7 +19,6 @@ liblapack-dev
 liblz4-dev
 liblzma-dev
 libmumps-seq-dev
-libnlopt-cxx-dev
 libopengl-dev
 libpng-dev
 libtiff-dev
