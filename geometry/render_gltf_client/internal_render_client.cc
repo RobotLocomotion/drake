@@ -419,16 +419,7 @@ void RenderClient::LoadDepthImage(const std::string& path,
   } else if (image_data->GetScalarType() == VTK_TYPE_UINT16) {
     ImageDepth16U u16(width, height);
     image_exporter->Export(u16.at(0, 0));
-    // Convert from millimeters to meters.
-    for (int y = 0; y < height; ++y) {
-      for (int x = 0; x < width; ++x) {
-        const std::uint16_t millimeters = u16.at(x, y)[0];
-        const float meters = (millimeters == ImageDepth16U::Traits::kTooFar)
-                                 ? ImageDepth32F::Traits::kTooFar
-                                 : millimeters * 1e-3;
-        *depth_image_out->at(x, y) = meters;
-      }
-    }
+    ConvertDepth16UTo32F(u16, depth_image_out);
   } else {
     /* no cover */
     throw std::runtime_error("RenderClient: unsupported channel type");
