@@ -152,19 +152,6 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
   }
 }
 
-void RgbdSensor::ConvertDepth32FTo16U(const ImageDepth32F& d32,
-                                      ImageDepth16U* d16) {
-  // Convert to mm and 16bits.
-  const float kDepth16UOverflowDistance =
-      std::numeric_limits<uint16_t>::max() / 1000.;
-  for (int w = 0; w < d16->width(); w++) {
-    for (int h = 0; h < d16->height(); h++) {
-      const double dist = std::min(d32.at(w, h)[0], kDepth16UOverflowDistance);
-      d16->at(w, h)[0] = static_cast<uint16_t>(dist * 1000);
-    }
-  }
-}
-
 RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
                                        double period, bool render_label_image)
     : camera_(camera.get()), period_(period) {

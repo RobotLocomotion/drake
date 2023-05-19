@@ -175,8 +175,6 @@ class RgbdSensor final : public LeafSystem<double> {
   const OutputPort<double>& body_pose_in_world_output_port() const;
 
  private:
-  friend class RgbdSensorTester;
-
   // The calculator methods for the four output ports.
   void CalcColorImage(const Context<double>& context,
                       ImageRgba8U* color_image) const;
@@ -188,11 +186,6 @@ class RgbdSensor final : public LeafSystem<double> {
                       ImageLabel16I* label_image) const;
   void CalcX_WB(const Context<double>& context,
                 math::RigidTransformd* X_WB) const;
-
-  // Convert a single channel, float depth image (with depths in meters) to a
-  // single channel, unsigned uint16_t depth image (with depths in millimeters).
-  static void ConvertDepth32FTo16U(const ImageDepth32F& d32,
-                                   ImageDepth16U* d16);
 
   // Extract the query object from the given context (via the appropriate input
   // port.
