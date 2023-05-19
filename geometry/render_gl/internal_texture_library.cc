@@ -19,31 +19,26 @@ namespace geometry {
 namespace render_gl {
 namespace internal {
 
-TextureLibrary::TextureLibrary(const OpenGlContext* context)
-    : context_(context) {
-  DRAKE_DEMAND(context_ != nullptr);
-}
+namespace fs = std::filesystem;
 
 std::optional<GLuint> TextureLibrary::GetTextureId(
-    const std::string& file_name) {
+    const std::string& file_name_in) {
+  const std::string file_name = GetTextureKey(file_name_in);
+
+  // We'll simply serialize all calls to GetTextureId(). During simulation, the
+  // majority should return after doing the simple look up of previously loaded
+  // textures. It's only during initial loading of geometries that we expect
+  // the long code path to be taken -- and initialization is generally done
+  // serially.
+  // Ideally, this would be a readers-writer lock (allowing multiple readers
+  // of the map simultaneously).
+  std::lock_guard<std::mutex> lock(mutex_);
   const auto iter = textures_.find(file_name);
-  if (iter != textures_.end()) return iter->second;
-  // If it's not a string from which we can even *consider* finding an
-  // extension, simply bail out.
-  if (file_name.size() < 4) return std::nullopt;
+  if (iter != textures_.end()) {
+    return iter->second;
+  }
 
-  context_->MakeCurrent();
-  // Otherwise load the texture, register the texture.
-  std::string ext = file_name.substr(file_name.size() - 4, 4);
-  std::transform(ext.begin(), ext.end(), ext.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
-  // TODO(SeanCurtis-TRI) Support other image types.
-  if (ext != ".png") return std::nullopt;
-
-  // Exit quickly if the file doesn't exist or is a directory.
-  // Otherwise, vtkPNGReader spams stdout.
-  if (!std::filesystem::exists(file_name) ||
-      std::filesystem::is_directory(file_name)) {
+  if (!IsSupportedImage(file_name)) {
     return std::nullopt;
   }
 
@@ -54,7 +49,7 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
     log()->warn(
         "Texture map '{}' has an unsupported bit depth, casting it to uchar "
         "channels.",
-        file_name);
+        file_name_in);
   }
 
   vtkNew<vtkImageCast> caster;
@@ -77,11 +72,15 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
   const GLint internal_format =
       num_channels == 4 ? GL_RGBA : (num_channels == 3 ? GL_RGB : 0);
   if (internal_format == 0) {
-      return std::nullopt;
+    return std::nullopt;
   }
 
   GLuint texture_id;
   glGenTextures(1, &texture_id);
+  // This will catch the problem that an OpenGl context is not bound; we have no
+  // way to tell if the *wrong* context is bound and we create the texture in
+  // the wrong place.
+  DRAKE_ASSERT(glGetError() == GL_NO_ERROR);
   glBindTexture(GL_TEXTURE_2D, texture_id);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -98,6 +97,41 @@ std::optional<GLuint> TextureLibrary::GetTextureId(
   textures_[file_name] = texture_id;
 
   return texture_id;
+}
+
+std::string TextureLibrary::GetTextureKey(const std::string& file_name) {
+  const fs::path path_in(file_name);
+  const fs::path file_path =
+      fs::is_symlink(path_in) ? fs::read_symlink(path_in) : path_in;
+  return file_path.string();
+}
+
+bool TextureLibrary::IsSupportedImage(const std::string& file_name) {
+  // TODO(SeanCurtis-TRI): We should dispatch warnings if a `file_name` is not
+  // "supported" (and why) instead of silently ignoring it.
+
+  // If it's not a string from which we can even *consider* finding an
+  // extension, simply bail out.
+  if (file_name.size() < 4) {
+    return false;
+  }
+
+  // Test for supported extension.
+  std::string ext = file_name.substr(file_name.size() - 4, 4);
+  std::transform(ext.begin(), ext.end(), ext.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  // TODO(SeanCurtis-TRI) Support other image types.
+  if (ext != ".png") {
+    return false;
+  }
+
+  // Exit quickly if the file doesn't exist or is a directory.
+  const fs::path file_path(file_name);
+  if (!fs::exists(file_path) || fs::is_directory(file_path)) {
+    return false;
+  }
+
+  return true;
 }
 
 }  // namespace internal
