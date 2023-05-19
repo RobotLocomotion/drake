@@ -12,12 +12,11 @@
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
-#include "drake/geometry/render/render_mesh.h"
 #include "drake/geometry/render_gl/internal_buffer_dim.h"
+#include "drake/geometry/render_gl/internal_geometry_library.h"
 #include "drake/geometry/render_gl/internal_opengl_context.h"
 #include "drake/geometry/render_gl/internal_opengl_geometry.h"
 #include "drake/geometry/render_gl/internal_shader_program.h"
-#include "drake/geometry/render_gl/internal_shape_meshes.h"
 #include "drake/geometry/render_gl/internal_texture_library.h"
 #include "drake/geometry/render_gl/render_engine_gl_params.h"
 #include "drake/math/rigid_transform.h"
@@ -122,16 +121,6 @@ class RenderEngineGl final : public render::RenderEngine {
   void ImplementGeometry(const OpenGlGeometry& geometry,
                          void* user_data, const Vector3<double>& scale);
 
-  // Provides triangle mesh definitions of the various canonical geometries
-  // supported by this renderer: sphere, cylinder, half space, box, and mesh.
-  // These update the stored OpenGlGeometry members of this class. They are
-  // *not* threadsafe.
-  OpenGlGeometry GetSphere();
-  OpenGlGeometry GetCylinder();
-  OpenGlGeometry GetHalfSpace();
-  OpenGlGeometry GetBox();
-  OpenGlGeometry GetMesh(const std::string& filename);
-
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render
   // type. They include:
@@ -161,19 +150,6 @@ class RenderEngineGl final : public render::RenderEngine {
   // draw commands.
   RenderTarget GetRenderTarget(const render::RenderCameraCore& camera,
                                RenderType render_type) const;
-
-  // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
-  OpenGlGeometry CreateGlGeometry(
-      const geometry::internal::RenderMesh& mesh_data) const;
-
-  // Given a geometry that has its buffers (and vertex counts assigned), ties
-  // all of the buffer data into the vertex array attributes.
-  void CreateVertexArray(OpenGlGeometry* geometry) const;
-
-  // Updates the vertex arrays in all of the OpenGlGeometry instances owned by
-  // this render engine.
-  // @pre opengl_context_ has been bound.
-  void UpdateVertexArrays();
 
   // Sets the display window visibility and populates it with the _last_ image
   // rendered, if visible.
@@ -207,19 +183,71 @@ class RenderEngineGl final : public render::RenderEngine {
   // The cached value transformation between camera and world frames.
   math::RigidTransformd X_CW_;
 
-  // When the OpenGlContext gets copied, the copy shares the OpenGl objects
-  // created in GPU memory.
-  copyable_unique_ptr<OpenGlContext> opengl_context_;
+  // The engine's configuration parameters.
+  RenderEngineGlParams parameters_;
 
-  // Various C++ classes store identifiers of objects in the OpenGl context.
-  // This includes:
+  // A simple wrapper of an `OpenGlContext` that behaves like a unique pointer
+  // (in that operator*, operator-> and get() are implemented) and it confers
+  // unique ownership on the underlying OpenGlContext.
   //
-  //   OpenGlGeometry - the geometry buffers (copy safe)
-  //   RenderTarget - frame buffer objects (copy safe)
-  //   TextureLibrary - the textures (shared)
-  //   ShaderProgram - the compiled shader programs (copy safe)
+  // When constructed or copy constructed it automatically binds the context.
+  // In constructing or cloning a RenderEngineGl instance, there is further work
+  // that needs to be done beyond simply copying the C++ constructs. The
+  // new RenderEngineGl instance has to properly configure the OpenGL context.
+  // Automatically binding it, guarantees an available OpenGl context to all
+  // subsequent operations
   //
-  // So, all of these quantities can be safely copied verbatim.
+  // This works in conjunction with the ContextUnbinder class (see below) to
+  // unbind the context at the conclusion of the copy constructor, leaving the
+  // cloned RenderEngine with its context unbound.
+  class OpenGlContextWrapper {
+   public:
+    OpenGlContextWrapper() : context_(std::make_unique<OpenGlContext>()) {
+      context_->MakeCurrent();
+    }
+    OpenGlContextWrapper(const OpenGlContextWrapper& other)
+        : context_(std::make_unique<OpenGlContext>(*other.context_)) {
+      context_->MakeCurrent();
+    }
+    OpenGlContextWrapper& operator=(const OpenGlContextWrapper&) = delete;
+    OpenGlContextWrapper(OpenGlContextWrapper&&) = delete;
+    OpenGlContextWrapper& operator=(OpenGlContextWrapper&&) = delete;
+
+    const OpenGlContext& operator*() const { return *context_; }
+    OpenGlContext& operator*() { return *context_; }
+    const OpenGlContext* operator->() const { return context_.get(); }
+    OpenGlContext* operator->() { return context_.get(); }
+    const OpenGlContext* get() const { return context_.get(); }
+    OpenGlContext* get() { return context_.get(); }
+    // SetWindowVisibility needs to mutate the context based on camera settings.
+    OpenGlContext* mutatable() const { return context_.get(); }
+
+   private:
+    std::unique_ptr<OpenGlContext> context_;
+  };
+
+  // Members *above* this member cannot depend on OpenGl. All members that
+  // depend on OpenGl must follow this member. This allows the context to get
+  // automatically bound prior to initializing/cloning the other members.
+  OpenGlContextWrapper opengl_context_;
+
+  // When OpenGlContext is cloned, it shares OpenGl *objects* stored on the GPU
+  // with the original context. But it does not share the context *state*.
+  // This class initializes the state for an OpenGL context in a consistent
+  // manner and it automatically configures it during initial construction
+  // and cloning.
+  class ContextGlInitializer {
+   public:
+    ContextGlInitializer();
+    ContextGlInitializer(const ContextGlInitializer&);
+    ContextGlInitializer& operator=(const ContextGlInitializer&) = delete;
+    ContextGlInitializer(ContextGlInitializer&&) = delete;
+    ContextGlInitializer& operator=(ContextGlInitializer&&) = delete;
+  };
+
+  ContextGlInitializer initializer_;
+
+  // All remaining data types can be simply copied by value.
 
   // Textures are shared across cloned OpenGl contexts. The TextureLibrary
   // contains the identifiers to those textures. A RenderEngineGl and its clones
@@ -228,8 +256,7 @@ class RenderEngineGl final : public render::RenderEngine {
   // the same texture redundantly).
   std::shared_ptr<TextureLibrary> texture_library_;
 
-  // The engine's configuration parameters.
-  RenderEngineGlParams parameters_;
+  GeometryLibrary geometries_;
 
   // A "shader family" is all of the shaders used to produce a particular image
   // type. Each unique shader is associated with the geometries to which it
@@ -244,23 +271,6 @@ class RenderEngineGl final : public render::RenderEngine {
                                 copyable_unique_ptr<ShaderProgram>>,
              RenderType::kTypeCount>
       shader_programs_;
-
-  // One OpenGlGeometry per primitive type. They represent a canonical, "unit"
-  // version of the primitive type. Each instance scales and poses the
-  // corresponding primitive to create arbitrarily sized geometries.
-  OpenGlGeometry sphere_;
-  OpenGlGeometry cylinder_;
-  OpenGlGeometry half_space_;
-  OpenGlGeometry box_;
-  // TODO(SeanCurtis-TRI): Figure out how to re-use capsules - if two capsules
-  // have the same dimensions (or are related by a *uniform* scale*), we can
-  // re-use the same geometry.
-  // Each capsule is unique; they cannot generally be related by a linear
-  // transform (i.e., translation, rotation, and non-uniform scale).
-  std::vector<OpenGlGeometry> capsules_;
-
-  // Mapping from obj filename to the mesh loaded into an OpenGlGeometry.
-  std::unordered_map<std::string, OpenGlGeometry> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The
@@ -288,6 +298,22 @@ class RenderEngineGl final : public render::RenderEngine {
 
   // The direction *to* the light expressed in the camera frame.
   Vector3<float> light_dir_C_{0.0f, 0.0f, 1.0f};
+
+  // Upon instantiation or copying, it unbinds the current OpenGlContext.
+  class ContextUnbinder {
+   public:
+    ContextUnbinder() { OpenGlContext::ClearCurrent(); }
+    ContextUnbinder(const ContextUnbinder&) : ContextUnbinder() {}
+    ContextUnbinder& operator=(const ContextUnbinder&) = delete;
+    ContextUnbinder(ContextUnbinder&&) = delete;
+    ContextUnbinder& operator=(ContextUnbinder&&) = delete;
+  };
+
+  // This member must *always* be last. Nothing comes after it. We rely on C++
+  // protocol of initializing members in declaration order to process this
+  // member after all other members have completed doing any work that
+  // depends on a bound OpenGlContext.
+  ContextUnbinder unbinder_;
 };
 
 }  // namespace internal

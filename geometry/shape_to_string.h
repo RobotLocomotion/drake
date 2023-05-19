@@ -24,6 +24,7 @@ namespace geometry {
  SceneGraph.  */
 class ShapeToString final : public ShapeReifier {
  public:
+  ShapeToString(const Shape& shape) { shape.Reify(this); }
   /** @name  Implementation of ShapeReifier interface  */
   //@{
   using ShapeReifier::ImplementGeometry;

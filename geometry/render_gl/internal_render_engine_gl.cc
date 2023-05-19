@@ -7,9 +7,7 @@
 
 #include <fmt/format.h>
 
-#include "drake/common/scope_exit.h"
-#include "drake/common/text_logging.h"
-#include "drake/common/unused.h"
+#include "drake/geometry/render/render_mesh.h"
 
 namespace drake {
 namespace geometry {
@@ -19,7 +17,6 @@ namespace internal {
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using geometry::internal::RenderMesh;
-using geometry::internal::LoadRenderMeshFromObj;
 using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
@@ -469,22 +466,15 @@ void main() {
 
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
     : RenderEngine(params.default_label),
-      opengl_context_(make_unique<OpenGlContext>()),
-      texture_library_(make_shared<TextureLibrary>()),
-      parameters_(std::move(params)) {
+      parameters_(std::move(params)),
+      texture_library_(make_shared<TextureLibrary>()) {
+  // TODO(SeanCurtis-TRI): Put the shaders into its own ShaderLibrary class that
+  // gets initialized as part of the initialization of all members. Then we
+  // can rely on the ContextCloningWrapper and ContextUnbinder() to manage the
+  // OpenGlContext bindings during construction and copying.
+
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-  glClearDepth(1.0);
-  glEnable(GL_DEPTH_TEST);
-  // Generally, there should be no blending for depth and label images. We'll
-  // selectively enable blending for color images.
-  glDisable(GL_BLEND);
-  // We blend the rgb values (the first two parameters), but simply accumulate
-  // transparency (the last two parameters).
-  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
   // Color shaders. See documentation on GetShaderProgram. We want color from
   // texture to be "more preferred" than color from rgba, so we add the
@@ -507,6 +497,8 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
     return Vector4<float>(color.r, color.g, color.b, 1.f);
   };
   AddShader(make_unique<DefaultLabelShader>(label_encoder), RenderType::kLabel);
+
+  OpenGlContext::ClearCurrent();
 }
 
 RenderEngineGl::~RenderEngineGl() = default;
@@ -516,59 +508,49 @@ void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
 }
 
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
-  OpenGlGeometry geometry = GetBox();
-  ImplementGeometry(geometry, user_data,
+  ImplementGeometry(geometries_.GetBox(), user_data,
                     Vector3d(box.width(), box.depth(), box.height()));
 }
 
 void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
                                        void* user_data) {
-  const int resolution = 50;
-  RenderMesh mesh_data =
-      MakeCapsule(resolution, capsule.radius(), capsule.length());
-
-  OpenGlGeometry geometry = CreateGlGeometry(mesh_data);
-  capsules_.push_back(geometry);
-
-  ImplementGeometry(geometry, user_data, Vector3d::Ones());
+  ImplementGeometry(geometries_.GetCapsule(capsule), user_data,
+                    Vector3d::Ones());
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
-  OpenGlGeometry geometry = GetMesh(convex.filename());
-  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
+  ImplementMesh(geometries_.GetMesh(std::filesystem::path(convex.filename()),
+                                    parameters_.default_diffuse),
+                user_data, Vector3d(1, 1, 1) * convex.scale(),
                 convex.filename());
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
                                        void* user_data) {
-  OpenGlGeometry geometry = GetCylinder();
   const double r = cylinder.radius();
   const double l = cylinder.length();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, l));
+  ImplementGeometry(geometries_.GetCylinder(), user_data, Vector3d(r, r, l));
 }
 
 void RenderEngineGl::ImplementGeometry(const Ellipsoid& ellipsoid,
                                        void* user_data) {
-  OpenGlGeometry geometry = GetSphere();
-  ImplementGeometry(geometry, user_data,
+  ImplementGeometry(geometries_.GetSphere(), user_data,
                     Vector3d(ellipsoid.a(), ellipsoid.b(), ellipsoid.c()));
 }
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
-  OpenGlGeometry geometry = GetHalfSpace();
-  ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1));
+  ImplementGeometry(geometries_.GetHalfSpace(), user_data, Vector3d(1, 1, 1));
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  OpenGlGeometry geometry = GetMesh(mesh.filename());
-  ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
-                mesh.filename());
+  ImplementMesh(geometries_.GetMesh(std::filesystem::path(mesh.filename()),
+                                    parameters_.default_diffuse),
+                user_data, Vector3d(1, 1, 1) * mesh.scale(), mesh.filename());
 }
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  OpenGlGeometry geometry = GetSphere();
   const double r = sphere.radius();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, r));
+  ImplementGeometry(geometries_.GetSphere(), user_data, Vector3d(r, r, r));
 }
 
 void RenderEngineGl::ImplementMesh(const OpenGlGeometry& geometry,
@@ -643,32 +625,7 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
 }
 
 unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
-  // The clone still requires some last-minute patching before it can work
-  // correctly.
-  auto clone = unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
-
-  ScopeExit unbind([]() {
-    OpenGlContext::ClearCurrent();
-  });
-  clone->opengl_context_->MakeCurrent();
-
-  // Configure OpenGl state.
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-  glClearDepth(1.0);
-  glEnable(GL_DEPTH_TEST);
-  // Generally, there should be no blending for depth and label images. We'll
-  // selectively enable blending for color images.
-  glDisable(GL_BLEND);
-  // We blend the rgb values (the first two parameters), but simply accumulate
-  // transparency (the last two parameters).
-  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
-
-  // Update the vertex array objects on the shared vertex buffers.
-  clone->UpdateVertexArrays();
-
-  return clone;
+  return unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
 }
 
 void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
@@ -854,86 +811,6 @@ void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
       data.id);
 }
 
-OpenGlGeometry RenderEngineGl::GetSphere() {
-  if (!sphere_.is_defined()) {
-    const int kLatitudeBands = 50;
-    const int kLongitudeBands = 50;
-
-    RenderMesh mesh_data =
-        MakeLongLatUnitSphere(kLongitudeBands, kLatitudeBands);
-
-    sphere_ = CreateGlGeometry(mesh_data);
-  }
-
-  sphere_.throw_if_undefined("Built-in sphere has some invalid objects");
-
-  return sphere_;
-}
-
-OpenGlGeometry RenderEngineGl::GetCylinder() {
-  if (!cylinder_.is_defined()) {
-    const int kLongitudeBands = 50;
-
-    // For long skinny cylinders, it would be better to offer some subdivisions
-    // along the length. For now, we'll simply save the triangles.
-    RenderMesh mesh_data = MakeUnitCylinder(kLongitudeBands, 1);
-    cylinder_ = CreateGlGeometry(mesh_data);
-  }
-
-  cylinder_.throw_if_undefined("Built-in cylinder has some invalid objects");
-
-  return cylinder_;
-}
-
-OpenGlGeometry RenderEngineGl::GetHalfSpace() {
-  if (!half_space_.is_defined()) {
-    // This matches the RenderEngineVtk half space size. Keep them matching
-    // so that the common "horizon" unit test passes.
-    const GLfloat kMeasure = 100.f;
-    // TODO(SeanCurtis-TRI): For vertex-lighting (as opposed to fragment
-    //  lighting), this will render better with tighter resolution. Consider
-    //  making this configurable.
-    RenderMesh mesh_data = MakeSquarePatch(kMeasure, 1);
-    half_space_ = CreateGlGeometry(mesh_data);
-  }
-
-  half_space_.throw_if_undefined(
-      "Built-in half space has some invalid objects");
-
-  return half_space_;
-}
-
-OpenGlGeometry RenderEngineGl::GetBox() {
-  if (!box_.is_defined()) {
-    RenderMesh mesh_data = MakeUnitBox();
-    box_ = CreateGlGeometry(mesh_data);
-  }
-
-  box_.throw_if_undefined("Built-in box has some invalid objects");
-
-  return box_;
-}
-
-OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
-  OpenGlGeometry mesh;
-  if (meshes_.count(filename) == 0) {
-    // TODO(SeanCurtis-TRI): We're ignoring the declared perception properties
-    //  for the mesh. We need to pass it in and return a mesh *and* the
-    //  resulting material properties.
-    RenderMesh mesh_data = LoadRenderMeshFromObj(
-        filename, PerceptionProperties(), parameters_.default_diffuse);
-    mesh = CreateGlGeometry(mesh_data);
-    meshes_.insert({filename, mesh});
-  } else {
-    mesh = meshes_[filename];
-  }
-
-  mesh.throw_if_undefined(
-      fmt::format("Error creating object for mesh {}", filename).c_str());
-
-  return mesh;
-}
-
 std::tuple<GLint, GLenum, GLenum> RenderEngineGl::get_texture_format(
     RenderType render_type) {
   switch (render_type) {
@@ -1039,142 +916,6 @@ RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
   return target;
 }
 
-OpenGlGeometry RenderEngineGl::CreateGlGeometry(
-    const RenderMesh& mesh_data) const {
-  // Confirm that the context is allocated.
-  DRAKE_ASSERT(opengl_context_->IsCurrent());
-
-  OpenGlGeometry geometry;
-
-  // Create the vertex buffer object (VBO).
-  glCreateBuffers(1, &geometry.vertex_buffer);
-
-  // We're representing the vertex data as a concatenation of positions,
-  // normals, and texture coordinates (i.e., (VVVNNNUU)). There should be an
-  // equal number of vertices, normals, and texture coordinates.
-  DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.normals.rows());
-  DRAKE_DEMAND(mesh_data.positions.rows() == mesh_data.uvs.rows());
-  const int v_count = mesh_data.positions.rows();
-  vector<GLfloat> vertex_data;
-  // 3 floats each for position and normal, 2 for texture coordinates.
-  const int kFloatsPerPosition = 3;
-  const int kFloatsPerNormal = 3;
-  const int kFloatsPerUv = 2;
-  vertex_data.reserve(
-      v_count * (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv));
-  // N.B. we are implicitly converting from double to float by inserting them
-  // into the vector.
-  vertex_data.insert(vertex_data.end(), mesh_data.positions.data(),
-                     mesh_data.positions.data() + v_count * kFloatsPerPosition);
-  vertex_data.insert(vertex_data.end(), mesh_data.normals.data(),
-                     mesh_data.normals.data() + v_count * kFloatsPerNormal);
-  vertex_data.insert(vertex_data.end(), mesh_data.uvs.data(),
-                     mesh_data.uvs.data() + v_count * kFloatsPerUv);
-  glNamedBufferStorage(geometry.vertex_buffer,
-                       vertex_data.size() * sizeof(GLfloat),
-                       vertex_data.data(), 0);
-
-  // Create the index buffer object (IBO).
-  using indices_uint_t = decltype(mesh_data.indices)::Scalar;
-  static_assert(sizeof(GLuint) == sizeof(indices_uint_t),
-                "If this fails, cast from unsigned int to GLuint");
-  glCreateBuffers(1, &geometry.index_buffer);
-  glNamedBufferStorage(geometry.index_buffer,
-                       mesh_data.indices.size() * sizeof(GLuint),
-                       mesh_data.indices.data(), 0);
-
-  geometry.index_buffer_size = mesh_data.indices.size();
-
-  geometry.has_tex_coord = mesh_data.has_tex_coord;
-
-  geometry.v_count = v_count;
-  CreateVertexArray(&geometry);
-
-  // Note: We won't need to call the corresponding glDeleteVertexArrays or
-  // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
-  // particular GeometryId is removed, it was only referencing its corresponding
-  // canonical mesh. We keep all canonical meshes alive for the lifetime of the
-  // OpenGL context for convenient reuse.
-  return geometry;
-}
-
-void RenderEngineGl::CreateVertexArray(OpenGlGeometry* geometry) const {
-  // Confirm that the context is allocated.
-  DRAKE_ASSERT(opengl_context_->IsCurrent());
-
-  glCreateVertexArrays(1, &geometry->vertex_array);
-
-  // 3 floats each for position and normal, 2 for texture coordinates.
-  const int kFloatsPerPosition = 3;
-  const int kFloatsPerNormal = 3;
-  const int kFloatsPerUv = 2;
-
-  std::size_t vbo_offset = 0;
-
-  const int position_attrib = 0;
-  glVertexArrayVertexBuffer(geometry->vertex_array, position_attrib,
-                            geometry->vertex_buffer, vbo_offset,
-                            kFloatsPerPosition * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry->vertex_array, position_attrib,
-                            kFloatsPerPosition, GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry->vertex_array, position_attrib);
-  vbo_offset += geometry->v_count * kFloatsPerPosition * sizeof(GLfloat);
-
-  const int normal_attrib = 1;
-  glVertexArrayVertexBuffer(
-      geometry->vertex_array, normal_attrib, geometry->vertex_buffer,
-      vbo_offset, kFloatsPerNormal * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry->vertex_array, normal_attrib,
-                            kFloatsPerNormal, GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry->vertex_array, normal_attrib);
-  vbo_offset += geometry->v_count * kFloatsPerNormal * sizeof(GLfloat);
-
-  const int uv_attrib = 2;
-  glVertexArrayVertexBuffer(
-      geometry->vertex_array, uv_attrib, geometry->vertex_buffer,
-      vbo_offset, kFloatsPerUv * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry->vertex_array, uv_attrib,
-                            kFloatsPerUv, GL_FLOAT,
-                            GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry->vertex_array, uv_attrib);
-  vbo_offset += geometry->v_count * kFloatsPerUv * sizeof(GLfloat);
-
-  const float float_count =
-      geometry->v_count *
-      (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv);
-  DRAKE_DEMAND(vbo_offset == float_count * sizeof(GLfloat));
-
-  // Bind IBO with the VAO.
-  glVertexArrayElementBuffer(geometry->vertex_array, geometry->index_buffer);
-}
-
-void RenderEngineGl::UpdateVertexArrays() {
-  DRAKE_ASSERT(opengl_context_->IsCurrent());
-  // Creating the vertex arrays requires the context to be bound.
-  auto update_array = [this](OpenGlGeometry* geometry) {
-    if (!geometry->is_defined()) {
-      // The geometry data hasn't been defined for this geometry yet.
-      // E.g.., we're cloning a RenderEngineGl that hasn't instantiated
-      // sphere_ yet.
-      return;
-    }
-    this->CreateVertexArray(geometry);
-  };
-
-  // All stored OpenGlGeometry instances need to rebuild their vertex arrays.
-  // Vertex arrays are *not* shared between contexts.
-  update_array(&sphere_);
-  update_array(&cylinder_);
-  update_array(&half_space_);
-  update_array(&box_);
-  for (auto& capsule : capsules_) {
-    update_array(&capsule);
-  }
-  for (auto& [_, mesh] : meshes_) {
-    update_array(&mesh);
-  }
-}
-
 void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
                                          bool show_window,
                                          const RenderTarget& target) const {
@@ -1185,16 +926,17 @@ void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
     // image from source to destination. The semantics of glBlitNamedFrameBuffer
     // are inclusive of the "minimum" pixel (0, 0) and exclusive of the
     // "maximum" pixel (width, height).
-    opengl_context_->DisplayWindow(intrinsics.width(), intrinsics.height());
+    opengl_context_.mutatable()->DisplayWindow(intrinsics.width(),
+                                               intrinsics.height());
     glBlitNamedFramebuffer(target.frame_buffer, 0,
                            // Src bounds.
                            0, 0, intrinsics.width(), intrinsics.height(),
                            // Dest bounds.
                            0, 0, intrinsics.width(), intrinsics.height(),
                            GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    opengl_context_->UpdateWindow();
+    opengl_context_.mutatable()->UpdateWindow();
   } else {
-    opengl_context_->HideWindow();
+    opengl_context_.mutatable()->HideWindow();
   }
 }
 
@@ -1225,6 +967,23 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
   DRAKE_DEMAND(data.has_value());
   return *data;
 }
+
+RenderEngineGl::ContextGlInitializer::ContextGlInitializer() {
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+  glClearDepth(1.0);
+  glEnable(GL_DEPTH_TEST);
+  // Generally, there should be no blending for depth and label images. We'll
+  // selectively enable blending for color images.
+  glDisable(GL_BLEND);
+  // We blend the rgb values (the first two parameters), but simply accumulate
+  // transparency (the last two parameters).
+  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+}
+
+RenderEngineGl::ContextGlInitializer::ContextGlInitializer(
+    const RenderEngineGl::ContextGlInitializer&) :  ContextGlInitializer() {}
 
 }  // namespace internal
 }  // namespace render_gl

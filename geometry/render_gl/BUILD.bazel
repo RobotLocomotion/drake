@@ -36,6 +36,21 @@ drake_cc_package_library(
 )
 
 drake_cc_library_ubuntu_only(
+    name = "internal_geometry_library",
+    srcs = ["internal_geometry_library.cc"],
+    hdrs = ["internal_geometry_library.h"],
+    deps = [
+        ":internal_opengl_geometry",
+        ":internal_shape_meshes",
+        "//geometry:geometry_roles",
+        "//geometry:rgba",
+        "//geometry:shape_specification",
+        "//geometry:shape_to_string",
+        "//geometry/render:render_mesh",
+    ],
+)
+
+drake_cc_library_ubuntu_only(
     name = "internal_opengl_context",
     srcs = ["internal_opengl_context.cc"],
     hdrs = [
@@ -72,10 +87,10 @@ drake_cc_library_ubuntu_only(
         "internal_render_engine_gl.h",
     ],
     deps = [
+        ":internal_geometry_library",
         ":internal_opengl_context",
         ":internal_opengl_geometry",
         ":internal_shader_program",
-        ":internal_shape_meshes",
         ":internal_texture_library",
         ":render_engine_gl_params",
         "//geometry/render:render_engine",

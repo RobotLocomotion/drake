@@ -2,6 +2,7 @@
 
 #include <array>
 #include <limits>
+#include <string>
 #include <utility>
 
 #include "drake/geometry/render/render_label.h"
@@ -76,8 +77,8 @@ struct OpenGlGeometry {
   /* Throws an exception with the given `message` if `this` hasn't been
    populated with meaningful values.
    @see if_defined().  */
-  void throw_if_undefined(const char* message) const {
-    if (!is_defined()) throw std::logic_error(message);
+  void throw_if_undefined(std::string_view message) const {
+    if (!is_defined()) throw std::logic_error(std::string(message));
   }
 
   // TODO(SeanCurtis-TRI): This can't really be a struct; there are invariants
