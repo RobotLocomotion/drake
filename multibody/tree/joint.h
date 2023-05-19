@@ -339,24 +339,15 @@ class Joint : public MultibodyElement<T> {
   }
 
   /// Lock the joint. Its generalized velocities will be 0 until it is
-  /// unlocked. Locking is not yet supported for continuous-mode systems.
-  /// @throws std::exception if the parent model uses continuous state.
+  /// unlocked.
   void Lock(systems::Context<T>* context) const {
-    // Joint locking is only supported for discrete mode.
-    // TODO(sherm1): extend the design to support continuous-mode systems.
-    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
     for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
       mobilizer->Lock(context);
     }
   }
 
-  /// Unlock the joint. Unlocking is not yet supported for continuous-mode
-  /// systems.
-  /// @throws std::exception if the parent model uses continuous state.
+  /// Unlock the joint.
   void Unlock(systems::Context<T>* context) const {
-    // Joint locking is only supported for discrete mode.
-    // TODO(sherm1): extend the design to support continuous-mode systems.
-    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
     for (internal::Mobilizer<T>* mobilizer : implementation_->mobilizers_) {
       mobilizer->Unlock(context);
     }
