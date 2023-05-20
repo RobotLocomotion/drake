@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_throw.h"
 #include "drake/common/reset_after_move.h"
 #include "drake/systems/sensors/pixel_types.h"
 
@@ -81,27 +82,24 @@ class Image {
   /// The format for pixels.
   static constexpr PixelFormat kPixelFormat = Traits::kPixelFormat;
 
+  /// Constructs a zero-sized image.
+  Image() = default;
+
   /// Image size only constructor.  Specifies a width and height for the image.
+  /// The width and height can be either both zero or both strictly positive.
   /// All the channel values in all the pixels are initialized with zero.
-  /// @param width Size of width for image which should be greater than zero
-  /// @param height Size of height for image which should be greater than zero
   Image(int width, int height) : Image(width, height, 0) {}
 
   /// Image size and initial value constructor.  Specifies a
   /// width, height and an initial value for all the channels in all the pixels.
-  /// @param width Size of width for image which should be greater than zero.
-  /// @param height Size of height for image which should be greater than zero.
-  /// @param initial_value A value set to all the channels in all the pixels
+  /// The width and height can be either both zero or both strictly positive.
   Image(int width, int height, T initial_value)
       : width_(width),
         height_(height),
         data_(width * height * kNumChannels, initial_value) {
-    DRAKE_ASSERT(width > 0);
-    DRAKE_ASSERT(height > 0);
+    DRAKE_THROW_UNLESS((width >= 0) && (height >= 0));
+    DRAKE_THROW_UNLESS((width == 0) == (height == 0));
   }
-
-  /// Constructs a zero-sized image.
-  Image() = default;
 
   /// Returns the size of width for the image
   int width() const { return width_; }
@@ -113,14 +111,12 @@ class Image {
   /// channels in a pixel
   int size() const { return width_ * height_ * kNumChannels; }
 
-  /// Changes the sizes of the width and height for the image.  The values for
-  /// them should be greater than zero.  (To resize to zero, assign a default-
-  /// constructed Image into this; do not use this method.)  All the values in
-  /// the pixels become zero after resize.
+  /// Changes the sizes of the width and height for the image.  The new width
+  /// and height can be either both zero or both strictly positive.  All the
+  /// values in the pixels become zero after resize.
   void resize(int width, int height) {
-    DRAKE_ASSERT(width > 0);
-    DRAKE_ASSERT(height > 0);
-
+    DRAKE_THROW_UNLESS((width >= 0) && (height >= 0));
+    DRAKE_THROW_UNLESS((width == 0) == (height == 0));
     data_.resize(width * height * kNumChannels);
     std::fill(data_.begin(), data_.end(), 0);
     width_ = width;
