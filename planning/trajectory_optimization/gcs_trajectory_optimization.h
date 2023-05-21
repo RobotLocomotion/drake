@@ -384,6 +384,12 @@ class GcsTrajectoryOptimization final {
       const Subgraph& source, const Subgraph& target,
       const geometry::optimization::GraphOfConvexSetsOptions& options = {});
 
+  /** Provide a heuristic estimate of the complexity of the underlying
+  GCS mathematical program, for regression testing purposes.
+  Here we sum the total number of variable appearances in our costs and
+  constraints as a rough approximation of the complexity of the subproblems. */
+  double EstimateComplexity() const;
+
  private:
   const int num_positions_;
 
