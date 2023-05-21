@@ -163,7 +163,7 @@ and the team at TRI
 
 *Source Code:* [https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe](https://github.com/RobotLocomotion/gym/tree/master/gym/envs/robot_locomotion_group/drake/shoe)
 
-## AcoMonk:An underactuated brachiation robot that uses trajectory optimization and stabilization using drake
+## AcoMonk:An underactuated brachiation robot that uses Pydrake for trajectory optimization and stabilization
 AcroMonk is an underactuated brachiation robot that is able to brachiate over a horizontally laid ladder with a passive gripper on the real system. 
 Taking advantage of Pydrake, we have generated optimal trajectories and furthere stabilized them using Time-Varying LQR. 
 The project is open-sourced to support education and research of brachiation with easy to implement hardware and the work is published in the journal of IEEE Robotics and Automation Letters 2023([IEEE](https://ieeexplore.ieee.org/document/10106397), [arXiv](https://arxiv.org/abs/2305.08373)). 
