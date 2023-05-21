@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -135,6 +136,7 @@ class GcsTrajectoryOptimization final {
 
     const geometry::optimization::ConvexSets regions_;
     const int order_;
+    const double h_min_;
     const std::string name_;
     GcsTrajectoryOptimization& traj_opt_;
 
@@ -167,6 +169,19 @@ class GcsTrajectoryOptimization final {
 
     ~EdgesBetweenSubgraphs();
 
+    /** Adds a linear velocity constraint to the control point connecting the
+    subgraphs `lb` ≤ q̇(t) ≤ `ub`.
+    @param lb is the lower bound of the velocity.
+    @param ub is the upper bound of the velocity.
+
+    @throws std::exception if both subgraphs order is zero, since the velocity
+    is defined as the derivative of the Bézier curve. At least one of the
+    subgraphs must have an order of at least 1.
+    @throws std::exception if lb or ub are not of size num_positions().
+    */
+    void AddVelocityBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
+                           const Eigen::Ref<const Eigen::VectorXd>& ub);
+
    private:
     EdgesBetweenSubgraphs(const Subgraph& from_subgraph,
                           const Subgraph& to_subgraph,
@@ -182,6 +197,8 @@ class GcsTrajectoryOptimization final {
         const geometry::optimization::ConvexSet& subspace);
 
     GcsTrajectoryOptimization& traj_opt_;
+    const int from_subgraph_order_;
+    const int to_subgraph_order_;
 
     std::vector<geometry::optimization::GraphOfConvexSets::Edge*> edges_;
 
@@ -239,7 +256,7 @@ class GcsTrajectoryOptimization final {
   Subgraph& AddRegions(
       const geometry::optimization::ConvexSets& regions,
       const std::vector<std::pair<int, int>>& edges_between_regions, int order,
-      double h_min = 1e-6, double h_max = 20, std::string name = "");
+      double h_min = 0, double h_max = 20, std::string name = "");
 
   /** Creates a Subgraph with the given regions.
   This function will compute the edges between the regions based on the set
@@ -257,7 +274,7 @@ class GcsTrajectoryOptimization final {
   @param name is the name of the subgraph. A default name will be provided.
   */
   Subgraph& AddRegions(const geometry::optimization::ConvexSets& regions,
-                       int order, double h_min = 1e-6, double h_max = 20,
+                       int order, double h_min = 0, double h_max = 20,
                        std::string name = "");
 
   /** Connects two subgraphs with directed edges.
@@ -380,6 +397,8 @@ class GcsTrajectoryOptimization final {
   // Store the subgraphs by reference.
   std::vector<std::unique_ptr<Subgraph>> subgraphs_;
   std::vector<std::unique_ptr<EdgesBetweenSubgraphs>> subgraph_edges_;
+  std::map<const geometry::optimization::GraphOfConvexSets::Vertex*, Subgraph*>
+      vertex_to_subgraph_;
   std::vector<double> global_time_costs_;
   std::vector<Eigen::MatrixXd> global_path_length_costs_;
   std::vector<std::pair<Eigen::VectorXd, Eigen::VectorXd>>

@@ -395,7 +395,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
     const auto& subgraph_edges_doc =
         doc.GcsTrajectoryOptimization.EdgesBetweenSubgraphs;
     py::class_<Class::EdgesBetweenSubgraphs>(
-        gcs_traj_opt, "EdgesBetweenSubgraphs", subgraph_edges_doc.doc);
+        gcs_traj_opt, "EdgesBetweenSubgraphs", subgraph_edges_doc.doc)
+        .def("AddVelocityBounds",
+            &Class::EdgesBetweenSubgraphs::AddVelocityBounds, py::arg("lb"),
+            py::arg("ub"), subgraph_edges_doc.AddVelocityBounds.doc);
 
     gcs_traj_opt  // BR
         .def(py::init<int>(), py::arg("num_positions"), cls_doc.ctor.doc)
