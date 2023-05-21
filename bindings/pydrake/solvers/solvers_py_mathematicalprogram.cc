@@ -1882,7 +1882,11 @@ void BindEvaluatorsAndBindings(py::module m) {
   py::class_<LinearComplementarityConstraint, Constraint,
       std::shared_ptr<LinearComplementarityConstraint>>(m,
       "LinearComplementarityConstraint",
-      doc.LinearComplementarityConstraint.doc);
+      doc.LinearComplementarityConstraint.doc)
+      .def("M", &LinearComplementarityConstraint::M,
+          doc.LinearComplementarityConstraint.M.doc)
+      .def("q", &LinearComplementarityConstraint::q,
+          doc.LinearComplementarityConstraint.q.doc);
 
   py::class_<ExponentialConeConstraint, Constraint,
       std::shared_ptr<ExponentialConeConstraint>>(

@@ -834,6 +834,8 @@ class TestMathematicalProgram(unittest.TestCase):
         M = np.array([[1, 3], [4, 1]])
         q = np.array([-16, -15])
         binding = prog.AddLinearComplementarityConstraint(M, q, x)
+        np.testing.assert_equal(binding.evaluator().M(), M)
+        np.testing.assert_equal(binding.evaluator().q(), q)
         self.assertEqual(len(prog.linear_complementarity_constraints()), 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
