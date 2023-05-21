@@ -1,6 +1,7 @@
 #include "drake/planning/trajectory_optimization/gcs_trajectory_optimization.h"
 
 #include <limits>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -30,6 +31,7 @@ using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Point;
 using solvers::Binding;
+using solvers::ConcatenateVariableRefList;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::L2NormCost;
@@ -49,6 +51,60 @@ using VertexId = GraphOfConvexSets::VertexId;
 using EdgeId = GraphOfConvexSets::EdgeId;
 
 const double kInf = std::numeric_limits<double>::infinity();
+
+namespace {
+using VectorXb = Eigen::Matrix<bool, 1, Eigen::Dynamic>;
+
+// Given a list of matrices, return the matrices with every column where all
+// of the matrices are zero in that column, along with a boolean vector
+// indicating which columns were preserved (true) or removed (false).
+std::tuple<std::vector<MatrixXd>, VectorXb> CondenseToNonzeroColumns(
+    std::vector<MatrixXd> matrices) {
+  // Validate inputs.
+  DRAKE_DEMAND(matrices.size() > 0);
+  const int num_cols = matrices[0].cols();
+  for (const MatrixXd& matrix : matrices) {
+    DRAKE_DEMAND(matrix.cols() == num_cols);
+  }
+
+  // Find non-zero columns.
+  VectorXb nonzero_cols_mask = VectorXb::Constant(num_cols, false);
+  for (const MatrixXd& matrix : matrices) {
+    nonzero_cols_mask += matrix.cast<bool>().colwise().any();
+  }
+  const int nonzero_cols_count = nonzero_cols_mask.count();
+
+  // Create the output, copying only the non-zero columns.
+  std::vector<MatrixXd> condensed_matrices;
+  for (const MatrixXd& matrix : matrices) {
+    MatrixXd& condensed_matrix =
+        condensed_matrices.emplace_back(matrix.rows(), nonzero_cols_count);
+    int condensed_col = 0;
+    for (int orig_col = 0; orig_col < matrix.cols(); ++orig_col) {
+      if (nonzero_cols_mask(orig_col)) {
+        condensed_matrix.col(condensed_col) = matrix.col(orig_col);
+        condensed_col++;
+      }
+    }
+  }
+  return std::make_tuple(condensed_matrices, nonzero_cols_mask);
+}
+
+// Filters variables given a vector of variables along with a boolean vector
+// indicating which rows were preserved (true) or removed (false).
+VectorX<symbolic::Variable> FilterVariables(
+    const VectorX<symbolic::Variable>& vars,
+    const VectorXb& nonzero_cols_mask) {
+  VectorX<symbolic::Variable> vars_dense(nonzero_cols_mask.count());
+  int row = 0;
+  for (int i = 0; i < vars.size(); ++i) {
+    if (nonzero_cols_mask(i)) {
+      vars_dense(row++) = vars(i);
+    }
+  }
+  return vars_dense;
+}
+}  // namespace
 
 Subgraph::Subgraph(
     const ConvexSets& regions,
@@ -109,12 +165,14 @@ Subgraph::Subgraph(
       u_r_trajectory_.control_points().col(order);
   MatrixXd M(num_positions(), edge_vars.size());
   DecomposeLinearExpressions(path_continuity_error, edge_vars, &M);
-  // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-  // here.
+  // Condense M to only keep non-zero columns.
+  const auto& [condensed_matrices, nonzero_cols_mask] =
+      CondenseToNonzeroColumns({M});
+  MatrixXd M_dense = condensed_matrices[0];
 
   const auto path_continuity_constraint =
       std::make_shared<LinearEqualityConstraint>(
-          M, VectorXd::Zero(num_positions()));
+          M_dense, VectorXd::Zero(num_positions()));
 
   // Add Regions with time scaling set.
   for (size_t i = 0; i < regions_.size(); ++i) {
@@ -142,8 +200,10 @@ Subgraph::Subgraph(
     edges_.emplace_back(uv_edge);
 
     // Add path continuity constraints.
-    uv_edge->AddConstraint(
-        Binding<Constraint>(path_continuity_constraint, {u.x(), v.x()}));
+    uv_edge->AddConstraint(Binding<Constraint>(
+        path_continuity_constraint,
+        FilterVariables(ConcatenateVariableRefList({u.x(), v.x()}),
+                        nonzero_cols_mask)));
   }
 }
 
@@ -187,15 +247,18 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
   for (int i = 0; i < u_rdot_control.cols(); ++i) {
     MatrixXd M(num_positions(), u_vars_.size());
     DecomposeLinearExpressions(u_rdot_control.col(i) / order(), u_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // here.
+    // Condense M to only keep non-zero columns.
+    const auto& [condensed_matrices, nonzero_cols_mask] =
+        CondenseToNonzeroColumns({M});
+    MatrixXd M_dense = condensed_matrices[0];
 
     const auto path_length_cost = std::make_shared<L2NormCost>(
-        weight_matrix * M, VectorXd::Zero(num_positions()));
+        weight_matrix * M_dense, VectorXd::Zero(num_positions()));
 
     for (Vertex* v : vertices_) {
       // The duration variable is the last element of the vertex.
-      v->AddCost(Binding<L2NormCost>(path_length_cost, v->x()));
+      v->AddCost(Binding<L2NormCost>(
+          path_length_cost, FilterVariables(v->x(), nonzero_cols_mask)));
     }
   }
 }
@@ -236,18 +299,22 @@ void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
   for (int i = 0; i < u_rdot_control.cols(); ++i) {
     MatrixXd M(num_positions(), u_vars_.size());
     DecomposeLinearExpressions(u_rdot_control.col(i), u_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // for both M and b here.
+    // Condense M and b to only keep non-zero columns.
+    const auto& [condensed_matrices, nonzero_cols_mask] =
+        CondenseToNonzeroColumns({M, b});
+    MatrixXd M_dense = condensed_matrices[0];
+    MatrixXd b_dense = condensed_matrices[1];
 
-    MatrixXd H(2 * num_positions(), M.cols());
-    H << M - ub * b, -M + lb * b;
+    MatrixXd H(2 * num_positions(), nonzero_cols_mask.count());
+    H << M_dense - ub * b_dense, -M_dense + lb * b_dense;
 
     const auto velocity_constraint = std::make_shared<LinearConstraint>(
         H, VectorXd::Constant(2 * num_positions(), -kInf),
         VectorXd::Zero(2 * num_positions()));
 
     for (Vertex* v : vertices_) {
-      v->AddConstraint(Binding<LinearConstraint>(velocity_constraint, v->x()));
+      v->AddConstraint(Binding<LinearConstraint>(
+          velocity_constraint, FilterVariables(v->x(), nonzero_cols_mask)));
     }
   }
 }
@@ -308,12 +375,14 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       u_r_trajectory_.control_points().col(from_subgraph.order());
   MatrixXd M(num_positions(), edge_vars.size());
   DecomposeLinearExpressions(path_continuity_error, edge_vars, &M);
-  // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-  // here.
+  // Condense M to only keep non-zero columns.
+  const auto& [condensed_matrices, nonzero_cols_mask] =
+      CondenseToNonzeroColumns({M});
+  MatrixXd M_dense = condensed_matrices[0];
 
   const auto path_continuity_constraint =
       std::make_shared<LinearEqualityConstraint>(
-          M, VectorXd::Zero(num_positions()));
+          M_dense, VectorXd::Zero(num_positions()));
 
   // TODO(wrangelvid) this can be parallelized.
   for (int i = 0; i < from_subgraph.size(); ++i) {
@@ -337,7 +406,9 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
 
         // Add path continuity constraints.
         uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
-            path_continuity_constraint, {u.x(), v.x()}));
+            path_continuity_constraint,
+            FilterVariables(ConcatenateVariableRefList({u.x(), v.x()}),
+                            nonzero_cols_mask)));
 
         if (subspace != nullptr) {
           // Add subspace constraints to the first control point of the v
@@ -420,10 +491,14 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
     MatrixXd M(num_positions(), u_vars_.size());
     DecomposeLinearExpressions(u_rdot_control.col(u_rdot_control.cols() - 1),
                                u_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // for both M and b here.
-    MatrixXd H(2 * num_positions(), M.cols());
-    H << M - ub * b, -M + lb * b;
+    // Condense M and b to only keep non-zero columns.
+    const auto& [condensed_matrices, nonzero_cols_mask] =
+        CondenseToNonzeroColumns({M, b});
+    MatrixXd M_dense = condensed_matrices[0];
+    MatrixXd b_dense = condensed_matrices[1];
+
+    MatrixXd H(2 * num_positions(), nonzero_cols_mask.count());
+    H << M_dense - ub * b_dense, -M_dense + lb * b_dense;
 
     const auto last_ctrl_pt_velocity_constraint =
         std::make_shared<LinearConstraint>(
@@ -432,7 +507,8 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
 
     for (Edge* edge : edges_) {
       edge->AddConstraint(Binding<LinearConstraint>(
-          last_ctrl_pt_velocity_constraint, edge->xu()));
+          last_ctrl_pt_velocity_constraint,
+          FilterVariables(edge->xu(), nonzero_cols_mask)));
     }
   }
 
@@ -449,11 +525,14 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
     // First control point velocity constraint.
     MatrixXd M(num_positions(), v_vars_.size());
     DecomposeLinearExpressions(v_rdot_control.col(0), v_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // for both M and b here.
+    // Condense M and b to only keep non-zero columns.
+    const auto& [condensed_matrices, nonzero_cols_mask] =
+        CondenseToNonzeroColumns({M, b});
+    MatrixXd M_dense = condensed_matrices[0];
+    MatrixXd b_dense = condensed_matrices[1];
 
-    MatrixXd H(2 * num_positions(), M.cols());
-    H << M - ub * b, -M + lb * b;
+    MatrixXd H(2 * num_positions(), nonzero_cols_mask.count());
+    H << M_dense - ub * b_dense, -M_dense + lb * b_dense;
 
     const auto first_ctrl_pt_velocity_constraint =
         std::make_shared<LinearConstraint>(
@@ -462,7 +541,8 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
 
     for (Edge* edge : edges_) {
       edge->AddConstraint(Binding<LinearConstraint>(
-          first_ctrl_pt_velocity_constraint, edge->xv()));
+          first_ctrl_pt_velocity_constraint,
+          FilterVariables(edge->xv(), nonzero_cols_mask)));
     }
   }
 }
