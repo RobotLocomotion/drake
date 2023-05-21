@@ -119,6 +119,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, MinimumTimeVsPathLength) {
   // Add shortest path objective to compare against the minimum time objective.
   gcs.AddPathLengthCost();
 
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 1.5e2);
+
   if (!GurobiOrMosekSolverAvailable()) {
     return;
   }
@@ -268,6 +271,9 @@ GTEST_TEST(GcsTrajectoryOptimizationTest, VelocityBoundsOnEdges) {
 
   // Bob wants to beat the time record!
   gcs.AddTimeCost();
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 1e2);
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
@@ -600,6 +606,9 @@ TEST_F(SimpleEnv2D, BasicShortestPath) {
 
   gcs.AddPathLengthCost();
 
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 1e3);
+
   if (!GurobiOrMosekSolverAvailable()) {
     return;
   }
@@ -641,6 +650,9 @@ TEST_F(SimpleEnv2D, DurationDelay) {
 
   gcs.AddEdges(source, regions);
   gcs.AddEdges(regions, target);
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 1e3);
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
@@ -724,6 +736,9 @@ TEST_F(SimpleEnv2D, MultiStartGoal) {
 
   gcs.AddPathLengthCost();
   gcs.AddTimeCost();
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 1e3);
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
@@ -832,6 +847,9 @@ TEST_F(SimpleEnv2D, IntermediatePoint) {
       Eigen::MatrixXd::Identity(gcs.num_positions(), gcs.num_positions());
   weight_matrix(1, 1) = 3.0;
   main2.AddPathLengthCost(weight_matrix);
+
+  // Nonregression bound on the complexity of the underlying GCS MICP.
+  EXPECT_LT(gcs.EstimateComplexity(), 1e3);
 
   if (!GurobiOrMosekSolverAvailable()) {
     return;
