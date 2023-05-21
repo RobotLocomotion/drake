@@ -30,6 +30,7 @@ using geometry::optimization::GraphOfConvexSetsOptions;
 using geometry::optimization::HPolyhedron;
 using geometry::optimization::Point;
 using solvers::Binding;
+using solvers::ConcatenateVariableRefList;
 using solvers::Constraint;
 using solvers::Cost;
 using solvers::L2NormCost;
@@ -109,12 +110,23 @@ Subgraph::Subgraph(
       u_r_trajectory_.control_points().col(order);
   MatrixXd M(num_positions(), edge_vars.size());
   DecomposeLinearExpressions(path_continuity_error, edge_vars, &M);
-  // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-  // here.
+  // Find non-zero columns.
+  Eigen::Matrix<bool, 1, Eigen::Dynamic> nonzero_cols_mask =
+      M.cast<bool>().colwise().any();
+  const int nonzero_cols_count = nonzero_cols_mask.count();
+
+  // Only keep non-zero columns.
+  MatrixXd M_dense(num_positions(), nonzero_cols_count);
+  int col_idx = 0;
+  for (int k = 0; k < M.cols(); ++k) {
+    if (nonzero_cols_mask(k)) {
+      M_dense.col(col_idx++) = M.col(k);
+    }
+  }
 
   const auto path_continuity_constraint =
       std::make_shared<LinearEqualityConstraint>(
-          M, VectorXd::Zero(num_positions()));
+          M_dense, VectorXd::Zero(num_positions()));
 
   // Add Regions with time scaling set.
   for (size_t i = 0; i < regions_.size(); ++i) {
@@ -142,8 +154,18 @@ Subgraph::Subgraph(
     edges_.emplace_back(uv_edge);
 
     // Add path continuity constraints.
+    VectorX<symbolic::Variable> vars_dense(nonzero_cols_count);
+    VectorX<symbolic::Variable> path_continuity_vars =
+        ConcatenateVariableRefList({u.x(), v.x()});
+    int row_idx = 0;
+    for (int k = 0; k < path_continuity_vars.size(); ++k) {
+      if (nonzero_cols_mask(k)) {
+        vars_dense(row_idx++) = path_continuity_vars(k);
+      }
+    }
+
     uv_edge->AddConstraint(
-        Binding<Constraint>(path_continuity_constraint, {u.x(), v.x()}));
+        Binding<Constraint>(path_continuity_constraint, vars_dense));
   }
 }
 
@@ -187,15 +209,33 @@ void Subgraph::AddPathLengthCost(const MatrixXd& weight_matrix) {
   for (int i = 0; i < u_rdot_control.cols(); ++i) {
     MatrixXd M(num_positions(), u_vars_.size());
     DecomposeLinearExpressions(u_rdot_control.col(i) / order(), u_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // here.
+    // Find non-zero columns.
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> nonzero_cols_mask =
+        M.cast<bool>().colwise().any();
+    const int nonzero_cols_count = nonzero_cols_mask.count();
+
+    // Only keep non-zero columns.
+    MatrixXd M_dense(num_positions(), nonzero_cols_count);
+    int col_idx = 0;
+    for (int k = 0; k < M.cols(); ++k) {
+      if (nonzero_cols_mask(k)) {
+        M_dense.col(col_idx++) = M.col(k);
+      }
+    }
 
     const auto path_length_cost = std::make_shared<L2NormCost>(
-        weight_matrix * M, VectorXd::Zero(num_positions()));
+        weight_matrix * M_dense, VectorXd::Zero(num_positions()));
 
     for (Vertex* v : vertices_) {
       // The duration variable is the last element of the vertex.
-      v->AddCost(Binding<L2NormCost>(path_length_cost, v->x()));
+      VectorX<symbolic::Variable> vars_dense(nonzero_cols_count);
+      int row_idx = 0;
+      for (int k = 0; k < v->x().size(); ++k) {
+        if (nonzero_cols_mask(k)) {
+          vars_dense(row_idx++) = v->x()(k);
+        }
+      }
+      v->AddCost(Binding<L2NormCost>(path_length_cost, vars_dense));
     }
   }
 }
@@ -232,22 +272,46 @@ void Subgraph::AddVelocityBounds(const Eigen::Ref<const VectorXd>& lb,
 
   MatrixXd b(u_h_.rows(), u_vars_.size());
   DecomposeLinearExpressions(u_h_.cast<Expression>(), u_vars_, &b);
+  Eigen::Matrix<bool, 1, Eigen::Dynamic> b_nonzero_cols_mask =
+      b.cast<bool>().colwise().any();
 
   for (int i = 0; i < u_rdot_control.cols(); ++i) {
     MatrixXd M(num_positions(), u_vars_.size());
     DecomposeLinearExpressions(u_rdot_control.col(i), u_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // for both M and b here.
+    // Find non-zero columns.
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> M_nonzero_cols_mask =
+        M.cast<bool>().colwise().any();
+    const int nonzero_cols_count =
+        M_nonzero_cols_mask.count() + b_nonzero_cols_mask.count();
 
-    MatrixXd H(2 * num_positions(), M.cols());
-    H << M - ub * b, -M + lb * b;
+    // Only keep non-zero columns.
+    MatrixXd M_dense(num_positions(), nonzero_cols_count);
+    MatrixXd b_dense(u_h_.rows(), nonzero_cols_count);
+    int col_idx = 0;
+    for (int k = 0; k < M.cols(); ++k) {
+      if (M_nonzero_cols_mask(k) || b_nonzero_cols_mask(k)) {
+        b_dense.col(col_idx) = b.col(k);
+        M_dense.col(col_idx++) = M.col(k);
+      }
+    }
+
+    MatrixXd H(2 * num_positions(), nonzero_cols_count);
+    H << M_dense - ub * b_dense, -M_dense + lb * b_dense;
 
     const auto velocity_constraint = std::make_shared<LinearConstraint>(
         H, VectorXd::Constant(2 * num_positions(), -kInf),
         VectorXd::Zero(2 * num_positions()));
 
     for (Vertex* v : vertices_) {
-      v->AddConstraint(Binding<LinearConstraint>(velocity_constraint, v->x()));
+      VectorX<symbolic::Variable> vars_dense(nonzero_cols_count);
+      int row_idx = 0;
+      for (int k = 0; k < v->x().size(); ++k) {
+        if (M_nonzero_cols_mask(k) || b_nonzero_cols_mask(k)) {
+          vars_dense(row_idx++) = v->x()(k);
+        }
+      }
+      v->AddConstraint(
+          Binding<LinearConstraint>(velocity_constraint, vars_dense));
     }
   }
 }
@@ -308,12 +372,23 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
       u_r_trajectory_.control_points().col(from_subgraph.order());
   MatrixXd M(num_positions(), edge_vars.size());
   DecomposeLinearExpressions(path_continuity_error, edge_vars, &M);
-  // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-  // here.
+  // Find non-zero columns.
+  Eigen::Matrix<bool, 1, Eigen::Dynamic> nonzero_cols_mask =
+      M.cast<bool>().colwise().any();
+  const int nonzero_cols_count = nonzero_cols_mask.count();
+
+  // Only keep non-zero columns.
+  MatrixXd M_dense(num_positions(), nonzero_cols_count);
+  int col_idx = 0;
+  for (int k = 0; k < M.cols(); ++k) {
+    if (nonzero_cols_mask(k)) {
+      M_dense.col(col_idx++) = M.col(k);
+    }
+  }
 
   const auto path_continuity_constraint =
       std::make_shared<LinearEqualityConstraint>(
-          M, VectorXd::Zero(num_positions()));
+          M_dense, VectorXd::Zero(num_positions()));
 
   // TODO(wrangelvid) this can be parallelized.
   for (int i = 0; i < from_subgraph.size(); ++i) {
@@ -336,8 +411,17 @@ EdgesBetweenSubgraphs::EdgesBetweenSubgraphs(
         edges_.emplace_back(uv_edge);
 
         // Add path continuity constraints.
+        VectorX<symbolic::Variable> vars_dense(nonzero_cols_count);
+        VectorX<symbolic::Variable> path_continuity_vars =
+            ConcatenateVariableRefList({u.x(), v.x()});
+        int row_idx = 0;
+        for (int k = 0; k < path_continuity_vars.size(); ++k) {
+          if (nonzero_cols_mask(k)) {
+            vars_dense(row_idx++) = path_continuity_vars(k);
+          }
+        }
         uv_edge->AddConstraint(Binding<LinearEqualityConstraint>(
-            path_continuity_constraint, {u.x(), v.x()}));
+            path_continuity_constraint, vars_dense));
 
         if (subspace != nullptr) {
           // Add subspace constraints to the first control point of the v
@@ -415,15 +499,32 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
 
     MatrixXd b(u_h_.rows(), u_vars_.size());
     DecomposeLinearExpressions(u_h_.cast<Expression>(), u_vars_, &b);
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> b_nonzero_cols_mask =
+        b.cast<bool>().colwise().any();
 
     // Last control point velocity constraint.
     MatrixXd M(num_positions(), u_vars_.size());
     DecomposeLinearExpressions(u_rdot_control.col(u_rdot_control.cols() - 1),
                                u_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // for both M and b here.
-    MatrixXd H(2 * num_positions(), M.cols());
-    H << M - ub * b, -M + lb * b;
+    // Find non-zero columns.
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> M_nonzero_cols_mask =
+        M.cast<bool>().colwise().any();
+    const int nonzero_cols_count =
+        M_nonzero_cols_mask.count() + b_nonzero_cols_mask.count();
+
+    // Only keep non-zero columns.
+    MatrixXd M_dense(num_positions(), nonzero_cols_count);
+    MatrixXd b_dense(u_h_.rows(), nonzero_cols_count);
+    int col_idx = 0;
+    for (int k = 0; k < M.cols(); ++k) {
+      if (M_nonzero_cols_mask(k) || b_nonzero_cols_mask(k)) {
+        b_dense.col(col_idx) = b.col(k);
+        M_dense.col(col_idx++) = M.col(k);
+      }
+    }
+
+    MatrixXd H(2 * num_positions(), nonzero_cols_count);
+    H << M_dense - ub * b_dense, -M_dense + lb * b_dense;
 
     const auto last_ctrl_pt_velocity_constraint =
         std::make_shared<LinearConstraint>(
@@ -431,8 +532,16 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
             VectorXd::Zero(2 * num_positions()));
 
     for (Edge* edge : edges_) {
+      VectorX<symbolic::Variable> vars_dense(nonzero_cols_count);
+      int row_idx = 0;
+      for (int k = 0; k < edge->xu().size(); ++k) {
+        if (M_nonzero_cols_mask(k) || b_nonzero_cols_mask(k)) {
+          vars_dense(row_idx++) = edge->xu()(k);
+        }
+      }
+
       edge->AddConstraint(Binding<LinearConstraint>(
-          last_ctrl_pt_velocity_constraint, edge->xu()));
+          last_ctrl_pt_velocity_constraint, vars_dense));
     }
   }
 
@@ -445,15 +554,31 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
 
     MatrixXd b(v_h_.rows(), v_vars_.size());
     DecomposeLinearExpressions(v_h_.cast<Expression>(), v_vars_, &b);
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> b_nonzero_cols_mask =
+        b.cast<bool>().colwise().any();
 
     // First control point velocity constraint.
     MatrixXd M(num_positions(), v_vars_.size());
     DecomposeLinearExpressions(v_rdot_control.col(0), v_vars_, &M);
-    // TODO(wrangelvid) The matrix M might be sparse, so we could drop columns
-    // for both M and b here.
+    // Find non-zero columns.
+    Eigen::Matrix<bool, 1, Eigen::Dynamic> M_nonzero_cols_mask =
+        M.cast<bool>().colwise().any();
+    const int nonzero_cols_count =
+        M_nonzero_cols_mask.count() + b_nonzero_cols_mask.count();
 
-    MatrixXd H(2 * num_positions(), M.cols());
-    H << M - ub * b, -M + lb * b;
+    // Only keep non-zero columns.
+    MatrixXd M_dense(num_positions(), nonzero_cols_count);
+    MatrixXd b_dense(u_h_.rows(), nonzero_cols_count);
+    int col_idx = 0;
+    for (int k = 0; k < M.cols(); ++k) {
+      if (M_nonzero_cols_mask(k) || b_nonzero_cols_mask(k)) {
+        b_dense.col(col_idx) = b.col(k);
+        M_dense.col(col_idx++) = M.col(k);
+      }
+    }
+
+    MatrixXd H(2 * num_positions(), nonzero_cols_count);
+    H << M_dense - ub * b_dense, -M_dense + lb * b_dense;
 
     const auto first_ctrl_pt_velocity_constraint =
         std::make_shared<LinearConstraint>(
@@ -461,8 +586,15 @@ void EdgesBetweenSubgraphs::AddVelocityBounds(
             VectorXd::Zero(2 * num_positions()));
 
     for (Edge* edge : edges_) {
+      VectorX<symbolic::Variable> vars_dense(nonzero_cols_count);
+      int row_idx = 0;
+      for (int k = 0; k < edge->xv().size(); ++k) {
+        if (M_nonzero_cols_mask(k) || b_nonzero_cols_mask(k)) {
+          vars_dense(row_idx++) = edge->xv()(k);
+        }
+      }
       edge->AddConstraint(Binding<LinearConstraint>(
-          first_ctrl_pt_velocity_constraint, edge->xv()));
+          first_ctrl_pt_velocity_constraint, vars_dense));
     }
   }
 }
