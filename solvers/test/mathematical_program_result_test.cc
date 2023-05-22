@@ -306,6 +306,13 @@ GTEST_TEST(TestMathematicalProgramResult, GetInfeasibleConstraintBindings) {
   }
 }
 
+// Remove this whole stanza upon completion of deprecation 2023-09-01.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+static_assert(SolutionResult::kUnknownError ==
+              SolutionResult::kSolverSpecificError);
+#pragma GCC diagnostic pop
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake
