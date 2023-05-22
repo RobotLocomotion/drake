@@ -122,10 +122,10 @@ void CheckParseRotatedLorentzConeConstraint(
 
 void CheckParseRotatedLorentzConeConstraint(
     const Expression& linear_expression1, const Expression& linear_expression2,
-    const Expression& quadratic_expression) {
+    const Expression& quadratic_expression, const double tol = 0) {
   Binding<RotatedLorentzConeConstraint> binding =
       internal::ParseRotatedLorentzConeConstraint(
-          linear_expression1, linear_expression2, quadratic_expression);
+          linear_expression1, linear_expression2, quadratic_expression, tol);
   const Eigen::MatrixXd A = binding.evaluator()->A();
   const Eigen::VectorXd b = binding.evaluator()->b();
   const VectorX<Expression> z = A * binding.variables() + b;
@@ -274,7 +274,8 @@ TEST_F(ParseRotatedLorentzConeConstraintTest, Test2) {
   CheckParseRotatedLorentzConeConstraint(expression);
   CheckParseRotatedLorentzConeConstraint(
       expression(0), expression(1),
-      pow(x_(1) + x_(2), 2) + pow(x_(2) + 2 * x_(3) + 2, 2) + 5);
+      pow(x_(1) + x_(2), 2) + pow(x_(2) + 2 * x_(3) + 2, 2) + 5,
+      4 * std::numeric_limits<double>::epsilon());
 }
 
 TEST_F(ParseRotatedLorentzConeConstraintTest, Test3) {
