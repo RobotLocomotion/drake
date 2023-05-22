@@ -178,10 +178,7 @@ int DoMain() {
   builder.Connect(adder.get_output_port(0), plant.get_actuation_input_port());
 
   auto meshcat = std::make_shared<geometry::Meshcat>();
-  visualization::ApplyVisualizationConfig(
-      visualization::VisualizationConfig(),
-      &builder, nullptr, nullptr, nullptr,
-      meshcat);
+  visualization::AddDefaultVisualization(&builder, meshcat);
 
   // Construct a simulator.
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
