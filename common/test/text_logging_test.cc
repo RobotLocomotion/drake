@@ -55,7 +55,7 @@ GTEST_TEST(TextLoggingTest, SmokeTestFormattable) {
 // Check that floating point values format sensibly.  We'll just test fmt
 // directly, since we know that spdlog uses it internally.
 GTEST_TEST(TextLoggingTest, FloatingPoint) {
-  EXPECT_EQ(fmt::format("{:#}", 1.0), "1.0");
+  EXPECT_EQ(fmt::format("{}", 1.1), "1.1");
   // This number is particularly challenging.
   EXPECT_EQ(fmt::format("{}", 0.009), "0.009");
 }

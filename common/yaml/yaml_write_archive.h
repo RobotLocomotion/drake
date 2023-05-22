@@ -219,12 +219,9 @@ class YamlWriteArchive final {
     using T = typename NVP::value_type;
     const T& value = *nvp.value();
     if constexpr (std::is_floating_point_v<T>) {
-      // Different versions of fmt disagree on whether to omit the trailing
-      // ".0" when formatting integer-valued floating-point numbers.  Force
-      // the ".0" in all cases by using the "#" option for floats.  Also be
-      // sure to add the required leading period for special values.
-      auto scalar = internal::Node::MakeScalar(
-          fmt::format("{}{:#}", std::isfinite(value) ? "" : ".", value));
+      // We must be sure to add the required leading period for special values.
+      auto scalar = internal::Node::MakeScalar(fmt::format(
+          "{}{}", std::isfinite(value) ? "" : ".", fmt_floating_point(value)));
       scalar.SetTag(internal::JsonSchemaTag::kFloat);
       root_.Add(nvp.name(), std::move(scalar));
       return;
