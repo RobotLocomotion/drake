@@ -466,17 +466,27 @@ GeometryId GeometryState<T>::GetGeometryIdByName(
 
   if (count == 1) return result;
   if (count < 1) {
-    throw std::logic_error("The frame '" + frame_name + "' (" +
-        to_string(frame_id) + ") has no geometry with the role '" +
-        to_string(role) + "' and the canonical name '" + canonical_name + "'");
+    std::vector<std::string_view> names;
+    for (GeometryId geometry_id : frame.child_geometries()) {
+      const InternalGeometry& geometry = geometries_.at(geometry_id);
+      if (geometry.has_role(role)) {
+        names.emplace_back(geometry.name());
+      }
+    }
+    throw std::logic_error(fmt::format(
+        "The frame '{}' ({}) has no geometry with the role '{}' and the "
+        "canonical name '{}'. The names associated with this frame/role are "
+        "{{{}}}.",
+        frame_name, frame_id, role, canonical_name, fmt::join(names, ", ")));
   }
   // This case should only be possible for unassigned geometries - internal
   // invariants require unique names for actual geometries with the _same_
   // role on the same frame.
   DRAKE_DEMAND(role == Role::kUnassigned);
-  throw std::logic_error("The frame '" + frame_name + "' (" +
-      to_string(frame_id) + ") has multiple geometries with the role '" +
-      to_string(role) + "' and the canonical name '" + canonical_name + "'");
+  throw std::logic_error(
+      fmt::format("The frame '{}' ({}) has multiple geometries with the role "
+                  "'{}' and the canonical name '{}'",
+                  frame_name, frame_id, role, canonical_name));
 }
 
 template <typename T>

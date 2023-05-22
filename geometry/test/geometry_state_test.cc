@@ -2623,6 +2623,13 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
 
   // Failure cases.
 
+  // Look up with the wrong name.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      geometry_state_.GetGeometryIdByName(frames_[0], Role::kProximity, "bad"),
+      "The frame 'f0' .\\d+. has no geometry with the role 'proximity' and the "
+      "canonical name 'bad'. The names associated with this frame/role are "
+      "\\{\\d+_g1, \\d+_g0\\}.");
+
   // Bad frame id.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetGeometryIdByName(FrameId::get_new_id(),
@@ -2634,14 +2641,16 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetGeometryIdByName(world_id, Role::kUnassigned, "bad"),
       "The frame 'world' .\\d+. has no geometry with the role 'unassigned' "
-      "and the canonical name '.+'");
+      "and the canonical name '.+'. The names associated with this frame/role "
+      "are \\{\\}.");
 
   // Bad *dynamic* geometry name.
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetGeometryIdByName(frames_[0], Role::kUnassigned,
                                           "bad_name"),
       "The frame '.+?' .\\d+. has no geometry with the role 'unassigned' and "
-      "the canonical name '.+'");
+      "the canonical name '.+'. The names associated with this frame/role are "
+      "\\{\\}.");
 
   // Multiple unassigned geometries with the same name.
 
