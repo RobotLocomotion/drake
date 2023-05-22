@@ -11,7 +11,7 @@ const int kWidth = 640;
 const int kHeight = 480;
 const uint8_t kInitialValue = 100;
 
-GTEST_TEST(TestImage, EmptyTest) {
+GTEST_TEST(TestImage, EmptyTest0) {
   ImageRgb8U dut;
 
   EXPECT_EQ(dut.width(), 0);
@@ -20,6 +20,30 @@ GTEST_TEST(TestImage, EmptyTest) {
   EXPECT_EQ(dut.kNumChannels, 3);
   EXPECT_EQ(dut.kPixelSize, 3);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kRgb);
+}
+
+GTEST_TEST(TestImage, EmptyTest2) {
+  ImageRgb8U dut(0, 0);
+  EXPECT_EQ(dut.width(), 0);
+  EXPECT_EQ(dut.height(), 0);
+  EXPECT_EQ(dut.size(), 0);
+
+  EXPECT_THROW(ImageRgb8U(0, 1), std::exception);
+  EXPECT_THROW(ImageRgb8U(1, 0), std::exception);
+  EXPECT_THROW(ImageRgb8U(-1, 1), std::exception);
+  EXPECT_THROW(ImageRgb8U(1, -1), std::exception);
+}
+
+GTEST_TEST(TestImage, EmptyTest3) {
+  ImageRgb8U dut(0, 0, 0);
+  EXPECT_EQ(dut.width(), 0);
+  EXPECT_EQ(dut.height(), 0);
+  EXPECT_EQ(dut.size(), 0);
+
+  EXPECT_THROW(ImageRgb8U(0, 1, 0), std::exception);
+  EXPECT_THROW(ImageRgb8U(1, 0, 0), std::exception);
+  EXPECT_THROW(ImageRgb8U(-1, 1, 0), std::exception);
+  EXPECT_THROW(ImageRgb8U(1, -1, 0), std::exception);
 }
 
 GTEST_TEST(TestImage, InstantiateTest) {
@@ -160,15 +184,27 @@ GTEST_TEST(TestImage, ResizeTest) {
   const int kWidthResized = 64;
   const int kHeightResized = 48;
   const int kNumChannels = 1;
-  dut.resize(kWidthResized, kHeightResized);
 
+  // Resize to non-zero.
+  dut.resize(kWidthResized, kHeightResized);
   EXPECT_EQ(dut.width(), kWidthResized);
   EXPECT_EQ(dut.height(), kHeightResized);
   EXPECT_EQ(dut.kNumChannels, kNumChannels);
   EXPECT_EQ(dut.kPixelFormat, PixelFormat::kDepth);
   EXPECT_EQ(dut.kPixelSize, 2);
-
   EXPECT_EQ(dut.size(), kWidthResized * kHeightResized * kNumChannels);
+
+  // Invalid resizes.
+  EXPECT_THROW(dut.resize(0, 1), std::exception);
+  EXPECT_THROW(dut.resize(1, 0), std::exception);
+  EXPECT_THROW(dut.resize(-1, 1), std::exception);
+  EXPECT_THROW(dut.resize(1, -1), std::exception);
+
+  // Resize to zero.
+  dut.resize(0, 0);
+  EXPECT_EQ(dut.width(), 0);
+  EXPECT_EQ(dut.height(), 0);
+  EXPECT_EQ(dut.size(), 0);
 }
 
 }  // namespace
