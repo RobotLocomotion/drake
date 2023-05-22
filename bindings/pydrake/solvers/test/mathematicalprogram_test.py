@@ -1544,6 +1544,10 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
         self.assertEqual(mp.GetProgramType(prog), mp.ProgramType.kQP)
 
+    def test_solution_result_deprecation(self):
+        self.assertEqual(mp.SolutionResult.kUnknownError,
+                         mp.SolutionResult.kSolverSpecificError)
+
 
 class DummySolverInterface(SolverInterface):
 

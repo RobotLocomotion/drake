@@ -1572,6 +1572,14 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kIterationLimit.doc)
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
           doc.SolutionResult.kDualInfeasible.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  solution_result_enum.value("kUnknownError", SolutionResult::kUnknownError,
+      "Deprecated. This has been renamed to kSolverSpecificError; for details, "
+      "see https://github.com/RobotLocomotion/drake/pull/19450. The deprecated "
+      "code will be removed from Drake on or after 2023-09-01.");
+#pragma GCC diagnostic pop
 }  // NOLINT(readability/fn_size)
 
 void BindEvaluatorsAndBindings(py::module m) {
