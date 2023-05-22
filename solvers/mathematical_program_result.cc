@@ -15,7 +15,7 @@ SolverId UnknownId() {
 
 MathematicalProgramResult::MathematicalProgramResult()
     : decision_variable_index_{},
-      solution_result_{SolutionResult::kUnknownError},
+      solution_result_{SolutionResult::kSolutionResultNotSet},
       x_val_{0},
       optimal_cost_{NAN},
       solver_id_{UnknownId()},

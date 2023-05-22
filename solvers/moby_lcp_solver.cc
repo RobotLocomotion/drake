@@ -203,7 +203,7 @@ void MobyLCPSolver<T>::DoSolve(const MathematicalProgram& prog,
     bool solved = SolveLcpLemkeRegularized(constraint->M(), constraint->q(),
                                            &constraint_solution);
     if (!solved) {
-      result->set_solution_result(SolutionResult::kUnknownError);
+      result->set_solution_result(SolutionResult::kSolverSpecificError);
       return;
     }
     for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {

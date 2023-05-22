@@ -188,7 +188,7 @@ void EqualityConstrainedQPSolver::DoSolve(
   }
 
   Eigen::VectorXd x{};
-  SolutionResult solution_result{SolutionResult::kUnknownError};
+  SolutionResult solution_result{SolutionResult::kSolverSpecificError};
   // lambda stores the dual variable solutions.
   Eigen::VectorXd lambda(num_constraints);
   if (num_constraints > 0) {

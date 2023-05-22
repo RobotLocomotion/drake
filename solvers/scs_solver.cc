@@ -1098,7 +1098,7 @@ void ScsSolver::DoSolve(const MathematicalProgram& prog,
   solver_details.scs_setup_time = scs_info.setup_time;
   solver_details.scs_solve_time = scs_info.solve_time;
 
-  SolutionResult solution_result{SolutionResult::kUnknownError};
+  SolutionResult solution_result{SolutionResult::kSolverSpecificError};
   solver_details.y.resize(A_row_count);
   solver_details.s.resize(A_row_count);
   for (int i = 0; i < A_row_count; ++i) {
