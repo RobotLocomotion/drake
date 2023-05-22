@@ -251,18 +251,24 @@ class SapConstraint {
    constraints might want to compute commonly occurring terms in the computation
    of the cost, impulses and Hessian into `data` to be reused.
    @pre vc.size() equals num_constraint_equations().
-   @pre data does not equal nullptr. */
+   @pre data does not equal nullptr.
+   @pre data was created via MakeData() on `this` object and therefore the type
+   wrapped by AbstractValue is consistent with the concrete subclass. */
   void CalcData(const Eigen::Ref<const VectorX<T>>& vc,
                 AbstractValue* data) const;
 
   /* Computes the constraint cost ℓ(vc) function of constraint velocities vc.
    @post The cost ℓ(vc) is a convex function of vc, as required by the SAP
-   formulation. */
+   formulation.
+   @pre data was created via MakeData() on `this` object and therefore the type
+   wrapped by AbstractValue is consistent with the concrete subclass. */
   T CalcCost(const AbstractValue& data) const;
 
   /* Computes the impulse according to:
        γ(vc) = −∂ℓ/∂vc.
-   @pre gamma does not equal nullptr. */
+   @pre gamma does not equal nullptr.
+   @pre data was created via MakeData() on `this` object and therefore the type
+   wrapped by AbstractValue is consistent with the concrete subclass. */
   void CalcImpulse(const AbstractValue& data, EigenPtr<VectorX<T>> gamma) const;
 
   /* Computes the constraint Hessian as:
@@ -271,7 +277,9 @@ class SapConstraint {
    @post The constraint Hessian G(vc) is
    symmetric positive semi-definite, since ℓ(vc) is a convex function of vc as
    required by the SAP formulation.
-   @pre G does not equal nullptr. */
+   @pre G does not equal nullptr.
+   @pre data was created via MakeData() on `this` object and therefore the type
+   wrapped by AbstractValue is consistent with the concrete subclass. */
   void CalcCostHessian(const AbstractValue& data, MatrixX<T>* G) const;
 
   /* Polymorphic deep-copy into a new instance. */
@@ -281,6 +289,14 @@ class SapConstraint {
   /* Protected copy construction is enabled for sub-classes to use in their
    implementation of DoClone(). */
   SapConstraint(const SapConstraint&) = default;
+
+  /* Helper to pack `data` of type `U` into an AbstractValue.
+   Derived constraint classes can use this helper to implement DoMakeData(). */
+  template <typename U>
+  static std::unique_ptr<AbstractValue> MoveAndMakeAbstractValue(U&& data) {
+    auto owned_data = std::make_unique<U>(std::move(data));
+    return std::make_unique<Value<U>>(std::move(owned_data));
+  }
 
   // @group NVI implementations. Specific constraints must implement these
   // methods. Refer to the specific NVI documentation for details.
