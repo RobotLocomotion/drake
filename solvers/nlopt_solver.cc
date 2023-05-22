@@ -517,29 +517,29 @@ void NloptSolver::DoSolve(const MathematicalProgram& prog,
           result->set_solution_result(SolutionResult::kUnbounded);
           minf = -std::numeric_limits<double>::infinity();
         } else {
-          result->set_solution_result(SolutionResult::kUnknownError);
+          result->set_solution_result(SolutionResult::kSolverSpecificError);
         }
         break;
       }
       default: {
-        result->set_solution_result(SolutionResult::kUnknownError);
+        result->set_solution_result(SolutionResult::kSolverSpecificError);
       }
     }
   } catch (std::invalid_argument&) {
     result->set_solution_result(SolutionResult::kInvalidInput);
   } catch (std::bad_alloc&) {
-    result->set_solution_result(SolutionResult::kUnknownError);
+    result->set_solution_result(SolutionResult::kSolverSpecificError);
   } catch (nlopt::roundoff_limited&) {
     if (minf < kUnboundedTol) {
       result->set_solution_result(SolutionResult::kUnbounded);
       minf = MathematicalProgram::kUnboundedCost;
     } else {
-      result->set_solution_result(SolutionResult::kUnknownError);
+      result->set_solution_result(SolutionResult::kSolverSpecificError);
     }
   } catch (nlopt::forced_stop&) {
-    result->set_solution_result(SolutionResult::kUnknownError);
+    result->set_solution_result(SolutionResult::kSolverSpecificError);
   } catch (std::runtime_error&) {
-    result->set_solution_result(SolutionResult::kUnknownError);
+    result->set_solution_result(SolutionResult::kSolverSpecificError);
   }
 
   result->set_optimal_cost(minf);

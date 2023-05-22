@@ -2,10 +2,12 @@ import unittest
 
 import numpy as np
 
+from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.solvers import (
     MathematicalProgram,
     SnoptSolver,
+    SolutionResult,
     SolverType,
 )
 
@@ -35,3 +37,17 @@ class TestSnoptSolver(unittest.TestCase):
                 result.get_solver_details().F, np.array([0, 1.]))
             np.testing.assert_allclose(
                 result.get_solver_details().Fmul, np.array([0, 1.]))
+
+    def test_solver_specific_error(self):
+        # Intentionally write a constraint with incorrect gradients.
+        def my_constraint(x):
+            return [AutoDiffXd(np.sin(x[0].value()), np.ones(1))]
+        prog = MathematicalProgram()
+        x = prog.NewContinuousVariables(1, "x")
+        prog.AddConstraint(my_constraint, [1], [1], x)
+        solver = SnoptSolver()
+        result = solver.Solve(prog)
+        self.assertEqual(result.is_success(), False)
+        self.assertEqual(result.get_solution_result(),
+                         SolutionResult.kSolverSpecificError)
+        self.assertEqual(result.get_solver_details().info, 41)

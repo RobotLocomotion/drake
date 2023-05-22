@@ -37,7 +37,7 @@ MixedIntegerBranchAndBoundNode::MixedIntegerBranchAndBoundNode(
       fixed_binary_variable_{},
       fixed_binary_value_{-1},
       remaining_binary_variables_{binary_variables},
-      solution_result_{SolutionResult::kUnknownError},
+      solution_result_{SolutionResult::kSolverSpecificError},
       optimal_solution_is_integral_{OptimalSolutionIsIntegral::kUnknown},
       solver_id_{solver_id} {
   // Check if there are still binary variables.

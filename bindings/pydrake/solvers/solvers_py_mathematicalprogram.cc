@@ -1564,8 +1564,8 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kInfeasibleConstraints.doc)
       .value("kUnbounded", SolutionResult::kUnbounded,
           doc.SolutionResult.kUnbounded.doc)
-      .value("kUnknownError", SolutionResult::kUnknownError,
-          doc.SolutionResult.kUnknownError.doc)
+      .value("kSolverSpecificError", SolutionResult::kSolverSpecificError,
+          doc.SolutionResult.kSolverSpecificError.doc)
       .value("kInfeasibleOrUnbounded", SolutionResult::kInfeasibleOrUnbounded,
           doc.SolutionResult.kInfeasibleOrUnbounded.doc)
       .value("kIterationLimit", SolutionResult::kIterationLimit,

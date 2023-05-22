@@ -12,7 +12,11 @@ enum SolutionResult {
   kInvalidInput = -1,           ///< Invalid input.
   kInfeasibleConstraints = -2,  ///< The primal is infeasible.
   kUnbounded = -3,              ///< The primal is unbounded.
-  kUnknownError = -4,           ///< Unknown error.
+  kUnknownError = -4,  ///< Deprecated name for kSolverSpecificError. This field
+                       ///< will be removed from Drake on or after 2023-09-01.
+  kSolverSpecificError =
+      -4,  ///< Solver-specific error (Try get_solver_details() or enabling
+           ///< verbose solver output)
   kInfeasibleOrUnbounded =
       -5,                ///< The primal is either infeasible or unbounded.
   kIterationLimit = -6,  ///< Reaches the iteration limits.
