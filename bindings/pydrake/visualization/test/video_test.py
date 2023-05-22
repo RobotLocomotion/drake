@@ -203,6 +203,18 @@ class TestVideoWriter(unittest.TestCase):
         filename = os.environ["TEST_UNDECLARED_OUTPUTS_DIR"] + "/multi.mp4"
         self._test_usage(filename, "cv2", ("color", "depth", "label"))
 
+    @unittest.skipUnless(_PLATFORM_SUPPORTS_CV2, "Not tested on this platform")
+    def test_cv2_bad_fourcc(self):
+        """Tests cv2 sanity checking of fourcc."""
+        builder = DiagramBuilder()
+        AddMultibodyPlantSceneGraph(builder, time_step=0.0)
+        filename = os.environ["TEST_UNDECLARED_OUTPUTS_DIR"] + "/bad.mp4"
+        with self.assertRaisesRegex(ValueError, "wrong.*must be"):
+            VideoWriter.AddToBuilder(
+                filename=filename, builder=builder,
+                sensor_pose=RigidTransform(), fps=16, backend="cv2",
+                fourcc="wrong")
+
     def test_bad_backend(self):
         """Tests detection of a malformed backend setting."""
         builder = DiagramBuilder()
