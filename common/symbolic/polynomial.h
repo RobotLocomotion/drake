@@ -422,6 +422,8 @@ class Polynomial {
 [[nodiscard]] Polynomial operator+(double c, const Monomial& m);
 [[nodiscard]] Polynomial operator+(Polynomial p, const Variable& v);
 [[nodiscard]] Polynomial operator+(const Variable& v, Polynomial p);
+[[nodiscard]] Expression operator+(const Expression& e, const Polynomial& p);
+[[nodiscard]] Expression operator+(const Polynomial& p, const Expression& e);
 
 [[nodiscard]] Polynomial operator-(Polynomial p1, const Polynomial& p2);
 [[nodiscard]] Polynomial operator-(Polynomial p, const Monomial& m);
@@ -433,11 +435,14 @@ class Polynomial {
 [[nodiscard]] Polynomial operator-(double c, const Monomial& m);
 [[nodiscard]] Polynomial operator-(Polynomial p, const Variable& v);
 [[nodiscard]] Polynomial operator-(const Variable& v, const Polynomial& p);
+[[nodiscard]] Expression operator-(const Expression& e, const Polynomial& p);
+[[nodiscard]] Expression operator-(const Polynomial& p, const Expression& e);
 
 [[nodiscard]] Polynomial operator*(Polynomial p1, const Polynomial& p2);
 [[nodiscard]] Polynomial operator*(Polynomial p, const Monomial& m);
 [[nodiscard]] Polynomial operator*(Polynomial p, double c);
 [[nodiscard]] Polynomial operator*(const Monomial& m, Polynomial p);
+
 // Note that `Monomial * Monomial -> Monomial` is provided in
 // monomial.h file.
 [[nodiscard]] Polynomial operator*(const Monomial& m, double c);
@@ -445,9 +450,14 @@ class Polynomial {
 [[nodiscard]] Polynomial operator*(double c, const Monomial& m);
 [[nodiscard]] Polynomial operator*(Polynomial p, const Variable& v);
 [[nodiscard]] Polynomial operator*(const Variable& v, Polynomial p);
+[[nodiscard]] Expression operator*(const Expression& e, const Polynomial& p);
+[[nodiscard]] Expression operator*(const Polynomial& p, const Expression& e);
 
 /// Returns `p / v`.
 [[nodiscard]] Polynomial operator/(Polynomial p, double v);
+[[nodiscard]] Expression operator/(double v, const Polynomial& p);
+[[nodiscard]] Expression operator/(const Expression& e, const Polynomial& p);
+[[nodiscard]] Expression operator/(const Polynomial& p, const Expression& e);
 
 /// Returns polynomial @p raised to @p n.
 [[nodiscard]] Polynomial pow(const Polynomial& p, int n);
