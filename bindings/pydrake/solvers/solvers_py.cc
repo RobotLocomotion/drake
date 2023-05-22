@@ -33,6 +33,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   internal::DefineSolversOsqp(m);
   internal::DefineSolversScs(m);
   internal::DefineSolversSnopt(m);
+  internal::DefineSolversUnrevisedLemke(m);
 }
 
 }  // namespace pydrake

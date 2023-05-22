@@ -67,6 +67,7 @@ drake_pybind_library(
         "solvers_py_scs.cc",
         "solvers_py_sdpa_free_format.cc",
         "solvers_py_snopt.cc",
+        "solvers_py_unrevised_lemke.cc",
     ],
     package_info = PACKAGE_INFO,
     py_deps = [
@@ -196,6 +197,14 @@ drake_py_unittest(
 drake_py_unittest(
     name = "snopt_solver_test",
     tags = ["snopt"],
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "unrevised_lemke_solver_test",
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
