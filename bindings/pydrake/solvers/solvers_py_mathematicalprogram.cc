@@ -473,7 +473,9 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kNlopt", SolverType::kNlopt, doc.SolverType.kNlopt.doc)
       .value("kOsqp", SolverType::kOsqp, doc.SolverType.kOsqp.doc)
       .value("kScs", SolverType::kScs, doc.SolverType.kScs.doc)
-      .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
+      .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc)
+      .value("kUnrevisedLemke", SolverType::kUnrevisedLemke,
+          doc.SolverType.kUnrevisedLemke.doc);
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
@@ -1153,6 +1155,7 @@ void BindMathematicalProgram(py::module m) {
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearComplementarityConstraint),
+          py::arg("M"), py::arg("q"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearComplementarityConstraint.doc)
       .def(
           "AddPositiveSemidefiniteConstraint",
