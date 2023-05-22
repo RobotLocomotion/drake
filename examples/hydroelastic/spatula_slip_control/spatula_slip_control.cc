@@ -178,7 +178,12 @@ int DoMain() {
   builder.Connect(adder.get_output_port(0), plant.get_actuation_input_port());
 
   auto meshcat = std::make_shared<geometry::Meshcat>();
-  visualization::AddDefaultVisualization(&builder, meshcat);
+  visualization::ApplyVisualizationConfig(
+      visualization::VisualizationConfig{
+          .default_proximity_color = geometry::Rgba{1, 0, 0, 0.25},
+          .enable_alpha_sliders = true,
+      },
+      &builder, nullptr, nullptr, nullptr, meshcat);
 
   // Construct a simulator.
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
