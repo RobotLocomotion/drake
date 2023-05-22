@@ -117,7 +117,6 @@ TEST_P(SapLimitConstraintTest, Construction) {
   EXPECT_EQ(dut_->num_cliques(), 1);
   EXPECT_EQ(dut_->first_clique(), clique_);
   EXPECT_THROW(dut_->second_clique(), std::exception);
-  EXPECT_EQ(dut_->constraint_function(), MakeExpectedConstraintFunction());
   EXPECT_EQ(dut_->first_clique_jacobian().MakeDenseMatrix(),
             MakeExpectedJacobian());
   EXPECT_THROW(dut_->second_clique_jacobian(), std::exception);
@@ -139,9 +138,8 @@ TEST_P(SapLimitConstraintTest, CalcBias) {
   std::unique_ptr<AbstractValue> abstract_data =
       dut_->MakeData(time_step, delassus_approximation);
   const auto& data = abstract_data->get_value<SapLimitConstraintData<double>>();
-
   const VectorXd v_hat_expected =
-      -dut_->constraint_function() / (time_step + dissipation_time_scale);
+      -MakeExpectedConstraintFunction() / (time_step + dissipation_time_scale);
   EXPECT_TRUE(CompareMatrices(data.v_hat(), v_hat_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
@@ -292,7 +290,6 @@ TEST_P(SapLimitConstraintTest, Clone) {
   EXPECT_EQ(clone->num_cliques(), 1);
   EXPECT_EQ(clone->first_clique(), clique_);
   EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->constraint_function(), dut_->constraint_function());
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
             dut_->first_clique_jacobian().MakeDenseMatrix());
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);

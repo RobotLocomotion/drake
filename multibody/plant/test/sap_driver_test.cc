@@ -170,8 +170,6 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
             &problem.get_constraint(i));
     // In this test we do know all constraints are contact constraints.
     ASSERT_NE(constraint, nullptr);
-    EXPECT_EQ(constraint->constraint_function(),
-              Vector3d(0., 0., pair_kinematics.phi));
     EXPECT_EQ(constraint->num_cliques(), pair_kinematics.jacobian.size());
     EXPECT_EQ(constraint->first_clique(), pair_kinematics.jacobian[0].tree);
     EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
