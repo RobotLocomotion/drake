@@ -11,33 +11,8 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
-SapConstraint<T>::SapConstraint(int clique, VectorX<T> g, MatrixBlock<T> J)
-    : first_clique_(clique),
-      g_(std::move(g)),
-      first_clique_jacobian_(std::move(J)) {
-  DRAKE_THROW_UNLESS(clique >= 0);
-  DRAKE_THROW_UNLESS(constraint_function().size() >= 0);
-  DRAKE_THROW_UNLESS(first_clique_jacobian().rows() ==
-                     constraint_function().size());
-}
-
-template <typename T>
-SapConstraint<T>::SapConstraint(int first_clique, int second_clique,
-                                VectorX<T> g, MatrixBlock<T> J_first_clique,
-                                MatrixBlock<T> J_second_clique)
-    : first_clique_(first_clique),
-      second_clique_(second_clique),
-      g_(std::move(g)),
-      first_clique_jacobian_(std::move(J_first_clique)),
-      second_clique_jacobian_(std::move(J_second_clique)) {
-  DRAKE_THROW_UNLESS(first_clique >= 0);
-  DRAKE_THROW_UNLESS(second_clique >= 0);
-  DRAKE_THROW_UNLESS(first_clique != second_clique);
-  DRAKE_THROW_UNLESS(constraint_function().size() >= 0);
-  DRAKE_THROW_UNLESS(first_clique_jacobian().rows() ==
-                     second_clique_jacobian().rows());
-  DRAKE_THROW_UNLESS(constraint_function().size() ==
-                     first_clique_jacobian().rows());
+SapConstraint<T>::SapConstraint(SapConstraintJacobian<T> J) : J_(std::move(J)) {
+  DRAKE_THROW_UNLESS(J_.rows() > 0);
 }
 
 template <typename T>

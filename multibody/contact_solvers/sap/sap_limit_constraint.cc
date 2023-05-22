@@ -35,21 +35,19 @@ template <typename T>
 SapLimitConstraint<T>::SapLimitConstraint(int clique, int clique_dof,
                                           int clique_nv, const T& q0,
                                           Parameters parameters)
-    : SapConstraint<T>(clique,
-                       CalcConstraintFunction(q0, parameters.lower_limit(),
-                                              parameters.upper_limit()),
-                       CalcConstraintJacobian(clique_dof, clique_nv,
+    : SapConstraint<T>(CalcConstraintJacobian(clique, clique_dof, clique_nv,
                                               parameters.lower_limit(),
                                               parameters.upper_limit())),
       parameters_(std::move(parameters)),
       clique_dof_(clique_dof),
-      q0_{q0} {}
+      q0_{q0},
+      g_(CalcConstraintFunction(q0, parameters.lower_limit(),
+                                parameters.upper_limit())) {}
 
 template <typename T>
 VectorX<T> SapLimitConstraint<T>::CalcBiasTerm(const T& time_step,
                                                const T&) const {
-  return -this->constraint_function() /
-         (time_step + parameters_.dissipation_time_scale());
+  return -g_ / (time_step + parameters_.dissipation_time_scale());
 }
 
 template <typename T>
@@ -117,10 +115,8 @@ VectorX<T> SapLimitConstraint<T>::CalcConstraintFunction(const T& q0,
 }
 
 template <typename T>
-MatrixX<T> SapLimitConstraint<T>::CalcConstraintJacobian(int clique_dof,
-                                                         int clique_nv,
-                                                         const T& ql,
-                                                         const T& qu) {
+SapConstraintJacobian<T> SapLimitConstraint<T>::CalcConstraintJacobian(
+    int clique, int clique_dof, int clique_nv, const T& ql, const T& qu) {
   constexpr double kInf = std::numeric_limits<double>::infinity();
   DRAKE_DEMAND(ql < kInf);
   DRAKE_DEMAND(qu > -kInf);
@@ -133,7 +129,7 @@ MatrixX<T> SapLimitConstraint<T>::CalcConstraintJacobian(int clique_dof,
   if (ql > -kInf) J(i++, clique_dof) = 1;
   if (qu < kInf) J(i, clique_dof) = -1;
 
-  return J;
+  return SapConstraintJacobian<T>(clique, std::move(J));
 }
 
 }  // namespace internal
