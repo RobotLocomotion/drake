@@ -2628,7 +2628,7 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
       geometry_state_.GetGeometryIdByName(frames_[0], Role::kProximity, "bad"),
       "The frame 'f0' .\\d+. has no geometry with the role 'proximity' and the "
       "canonical name 'bad'. The names associated with this frame/role are "
-      "\\{.\\d+._g1, .\\d+._g0\\}.");
+      "\\{\\d+_g1, \\d+_g0\\}.");
 
   // Bad frame id.
   DRAKE_EXPECT_THROWS_MESSAGE(
