@@ -18,6 +18,7 @@ drake_cc_package_library(
         ":partial_permutation",
         ":sap_constraint",
         ":sap_constraint_bundle",
+        ":sap_constraint_jacobian",
         ":sap_contact_problem",
         ":sap_friction_cone_constraint",
         ":sap_holonomic_constraint",
@@ -53,6 +54,7 @@ drake_cc_library(
     srcs = ["sap_constraint.cc"],
     hdrs = ["sap_constraint.h"],
     deps = [
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
@@ -75,6 +77,17 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sap_constraint_jacobian",
+    srcs = ["sap_constraint_jacobian.cc"],
+    hdrs = ["sap_constraint_jacobian.h"],
+    deps = [
+        "//common:default_scalars",
+        "//common:essential",
+        "//multibody/contact_solvers:matrix_block",
+    ],
+)
+
+drake_cc_library(
     name = "sap_contact_problem",
     srcs = ["sap_contact_problem.cc"],
     hdrs = ["sap_contact_problem.h"],
@@ -92,6 +105,7 @@ drake_cc_library(
     hdrs = ["sap_holonomic_constraint.h"],
     deps = [
         ":sap_constraint",
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -103,6 +117,7 @@ drake_cc_library(
     hdrs = ["sap_limit_constraint.h"],
     deps = [
         ":sap_constraint",
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
     ],
@@ -114,6 +129,7 @@ drake_cc_library(
     hdrs = ["sap_friction_cone_constraint.h"],
     deps = [
         ":sap_constraint",
+        ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
     ],

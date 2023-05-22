@@ -23,7 +23,8 @@ class SapHolonomicConstraintTests : public ::testing::Test {
     SapHolonomicConstraint<double>::Parameters parameters =
         MakeArbitraryParameters();
     dut_ = std::make_unique<SapHolonomicConstraint<double>>(
-        clique1_, g_, J_, b_, std::move(parameters));
+        g_, SapConstraintJacobian<double>{clique1_, J_}, b_,
+        std::move(parameters));
   }
 
   static SapHolonomicConstraint<double>::Parameters MakeArbitraryParameters(
@@ -68,7 +69,6 @@ TEST_F(SapHolonomicConstraintTests, SingleCliqueConstruction) {
 
   EXPECT_EQ(dut_->first_clique(), clique1_);
   EXPECT_THROW(dut_->second_clique(), std::exception);
-  EXPECT_EQ(dut_->constraint_function(), g_);
   EXPECT_EQ(dut_->first_clique_jacobian().MakeDenseMatrix(), J_);
   EXPECT_THROW(dut_->second_clique_jacobian(), std::exception);
   EXPECT_EQ(dut_->bias(), b_);
@@ -92,15 +92,14 @@ TEST_F(SapHolonomicConstraintTests, TwoCliquesConstruction) {
   const VectorXd g = g_;
   const MatrixXd J1 = J_;
   const MatrixXd J2 = 1.5 * J_;
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(clique1, clique2, g,
-                                                          J1, J2, p);
+  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+      g, SapConstraintJacobian<double>{clique1, J1, clique2, J2}, p);
 
   EXPECT_EQ(dut_->num_cliques(), 2);
   EXPECT_EQ(dut_->num_constraint_equations(), 3);
 
   EXPECT_EQ(dut_->first_clique(), clique1);
   EXPECT_EQ(dut_->second_clique(), clique2);
-  EXPECT_EQ(dut_->constraint_function(), g);
   EXPECT_EQ(dut_->first_clique_jacobian().MakeDenseMatrix(), J1);
   EXPECT_EQ(dut_->second_clique_jacobian().MakeDenseMatrix(), J2);
   EXPECT_EQ(dut_->bias(), Vector3d::Zero());
@@ -188,8 +187,8 @@ TEST_F(SapHolonomicConstraintTests, CalcDiagonalRegularization) {
   const double beta = 1.5;
   SapHolonomicConstraint<double>::Parameters parameters =
       MakeArbitraryParameters(beta);
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(clique1_, g_, J_,
-                                                          parameters);
+  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+      g_, SapConstraintJacobian<double>{clique1_, J_}, parameters);
 
   const double time_step = 0.01;
   const double delassus_inverse_approximation = 2.0;
@@ -221,8 +220,8 @@ TEST_F(SapHolonomicConstraintTests,
   const double beta = 1.5;
   SapHolonomicConstraint<double>::Parameters parameters =
       MakeArbitraryParametersWithInfiniteStiffness(beta);
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(clique1_, g_, J_,
-                                                          parameters);
+  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+      g_, SapConstraintJacobian<double>{clique1_, J_}, parameters);
 
   const double time_step = 0.01;
   const double delassus_inverse_approximation = 2.0;
@@ -255,8 +254,8 @@ TEST_F(SapHolonomicConstraintTests, CalcBiasTerm) {
   const double beta = 1.5;
   SapHolonomicConstraint<double>::Parameters parameters =
       MakeArbitraryParameters(beta);
-  dut_ = std::make_unique<SapHolonomicConstraint<double>>(clique1_, g_, J_, b_,
-                                                          parameters);
+  dut_ = std::make_unique<SapHolonomicConstraint<double>>(
+      g_, SapConstraintJacobian<double>{clique1_, J_}, b_, parameters);
 
   const double time_step = 0.01;
   const double delassus_inverse_approximation = 2.0;
@@ -288,7 +287,6 @@ TEST_F(SapHolonomicConstraintTests, Clone) {
   EXPECT_EQ(clone->num_cliques(), 1);
   EXPECT_EQ(clone->first_clique(), clique1_);
   EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->constraint_function(), dut_->constraint_function());
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(),
             dut_->first_clique_jacobian().MakeDenseMatrix());
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);

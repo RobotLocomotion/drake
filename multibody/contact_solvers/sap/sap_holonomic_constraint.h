@@ -123,74 +123,32 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
     double beta_{0.1};
   };
 
-  /* Constructs a holonomic constraint involving a single clique. The bias term
-   b is zero.
-   @param[in] clique The clique involved in the constraint.
+  /* Constructs a holonomic constraint with zero bias term.
    @param[in] g The value of the constraint function.
    @param[in] J The Jacobian w.r.t. to the clique's generalized velocities.
    @param[in] parameters Constraint parameters. See Parameters for details.
 
    @pre clique is non-negative.
    @pre g.size() == J.rows() == parameters.num_constraint_equations(). */
-  SapHolonomicConstraint(int clique, VectorX<T> g, MatrixBlock<T> J,
+  SapHolonomicConstraint(VectorX<T> g, SapConstraintJacobian<T> J,
                          Parameters parameters);
 
-  /* Alternative holonomic constraint constructor for a single clique that takes
-   a dense Jacobian and zero bias. */
-  SapHolonomicConstraint(int clique, VectorX<T> g, MatrixX<T> J,
-                         Parameters parameters)
-      : SapHolonomicConstraint(clique, std::move(g),
-                               MatrixBlock<T>(std::move(J)), parameters) {}
-
-  /* Constructs a holonomic constraint involving two cliques. The bias term b is
-   zero.
-   @param[in] first_clique First clique involved in the constraint.
-   @param[in] second_clique Second clique involved in the constraint.
-   @param[in] g The value of the constraint function.
-   @param[in] J_first_clique The Jacobian w.r.t. to the first clique's
-   generalized velocities.
-   @param[in] J_second_clique The Jacobian w.r.t. to the second clique's
-   generalized velocities.
-   @param[in] parameters Constraint parameters. See Parameters for details.
-
-   @pre first_clique and second_clique are non-negative.
-   @pre g.size() == J_first_clique.rows() == J_second_clique.rows() ==
-   parameters.num_constraint_equations(). */
-  SapHolonomicConstraint(int first_clique, int second_clique, VectorX<T> g,
-                         MatrixBlock<T> J_first_clique,
-                         MatrixBlock<T> J_second_clique, Parameters parameters);
-
-  /* Alternative holonomic constraint constructor for two cliques that takes
-   dense Jacobians and zero bias. */
-  SapHolonomicConstraint(int first_clique, int second_clique, VectorX<T> g,
-                         MatrixX<T> J_first_clique, MatrixX<T> J_second_clique,
-                         Parameters parameters)
-      : SapHolonomicConstraint(first_clique, second_clique, std::move(g),
-                               MatrixBlock<T>(std::move(J_first_clique)),
-                               MatrixBlock<T>(std::move(J_second_clique)),
-                               parameters) {}
-
-  /* Single clique holonomic constraints with non-zero bias.
-   @param[in] clique The clique involved in the constraint.
+  /* Constructs a holonomic constraint with a non-zero bias b.
    @param[in] g The value of the constraint function.
    @param[in] J The Jacobian w.r.t. to the clique's generalized velocities.
    @param[in] b The bias term, such that ġ = J⋅v + b.
    @param[in] parameters Constraint parameters. See Parameters for details.
 
    @pre clique is non-negative.
-   @pre g.size() == J.rows() == parameters.num_constraint_equations(). */
-  SapHolonomicConstraint(int clique, VectorX<T> g, MatrixBlock<T> J,
-                         VectorX<T> b, Parameters parameters);
-
-  /* Alternative holonomic constraint constructor for single clique that takes
-   a dense Jacobian and non-zero bias. */
-  SapHolonomicConstraint(int clique, VectorX<T> g, MatrixX<T> J, VectorX<T> b,
-                         Parameters parameters)
-      : SapHolonomicConstraint(clique, std::move(g),
-                               MatrixBlock<T>(std::move(J)), std::move(b),
-                               parameters) {}
+   @pre g.size() == J.rows() == b.size() ==
+   parameters.num_constraint_equations(). */
+  SapHolonomicConstraint(VectorX<T> g, SapConstraintJacobian<T> J, VectorX<T> b,
+                         Parameters parameters);
 
   const Parameters& parameters() const { return parameters_; }
+
+  /* Returns the constraint function provided at construction */
+  const VectorX<T>& constraint_function() const { return g_; }
 
   /* Returns the holonomic constraint bias b. */
   const VectorX<T>& bias() const { return bias_; }
@@ -220,8 +178,9 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
         new SapHolonomicConstraint<T>(*this));
   }
 
-  Parameters parameters_;
+  VectorX<T> g_;
   VectorX<T> bias_;
+  Parameters parameters_;
 };
 
 }  // namespace internal
