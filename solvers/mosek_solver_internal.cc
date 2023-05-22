@@ -5,6 +5,7 @@
 #include <atomic>
 #include <limits>
 
+#include "drake/common/fmt_ostream.h"
 #include "drake/common/never_destroyed.h"
 #include "drake/math/quadratic_form.h"
 #include "drake/solvers/aggregate_costs_constraints.h"
@@ -1251,7 +1252,8 @@ void ThrowForInvalidOption(MSKrescodee rescode, const std::string& option,
         "https://docs.mosek.com/{version}/pythonapi/param-groups.html "
         "for allowable values in python.",
         fmt::arg("option", option), fmt::arg("value", val),
-        fmt::arg("code", rescode), fmt::arg("version", mosek_version)));
+        fmt::arg("code", fmt_streamed(rescode)),
+        fmt::arg("version", mosek_version)));
   }
 }
 
