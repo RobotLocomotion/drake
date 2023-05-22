@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 #include <fmt/format.h>
@@ -27,6 +28,18 @@ inline auto fmt_runtime(std::string_view s) {
 }
 #define DRAKE_FMT8_CONST
 #endif  // FMT_VERSION
+
+/** Returns `fmt::to_string(x)` but always with at least one digit after the
+decimal point. Different versions of fmt disagree on whether to omit the
+trailing ".0" when formatting integer-valued floating-point numbers. */
+template <typename T>
+std::string fmt_floating_point(T x) {
+  std::string result = fmt::format("{:#}", x);
+  if (result.back() == '.') {
+    result.push_back('0');
+  }
+  return result;
+}
 
 namespace internal::formatter_as {
 

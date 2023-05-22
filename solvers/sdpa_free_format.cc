@@ -891,7 +891,7 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
       // ".0" when formatting integer-valued floating-point numbers. Force
       // the ".0" in all cases by using the "#" option for floats, so that
       // our output is consistent on all platforms.
-      sdpa_file << fmt::format("{:#}", g[i]);
+      sdpa_file << fmt_floating_point(g[i]);
     }
     sdpa_file << "\n";
     // block_start_rows[i] records the starting row index of the i'th block in
@@ -921,7 +921,7 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
                     << " "
                     << i - block_start_row +
                            1 /* block column index, starts from 1*/
-                    << " " << fmt::format("{:#}", it.value()) << "\n";
+                    << " " << fmt_floating_point(it.value()) << "\n";
         }
       }
     }
@@ -937,7 +937,7 @@ bool GenerateSdpaImpl(const std::vector<BlockInX>& X_blocks,
                              1 /* block number, starts from 1 */
                       << " " << it.row() - block_start_row + 1 << " "
                       << j - block_start_row + 1 << " "
-                      << fmt::format("{:#}", it.value()) << "\n";
+                      << fmt_floating_point(it.value()) << "\n";
           }
         }
       }
