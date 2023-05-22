@@ -53,9 +53,10 @@ XMLElement* EnsureChildElement(XMLElement* el, const char* child) {
   return kid;
 }
 
-// Format a double in shortest round-trip representation.
+// Format a double in shortest round-trip representation, obeying the platform
+// consistency rules enforced by drake::fmt_floating_point().
 std::string roundtrip(double x) {
-  return fmt::format("{}", x);
+  return fmt_floating_point(x);
 }
 
 // Recursively find all of the descendant elements of 'el` named "link", and
@@ -246,14 +247,39 @@ class InertiaProcessor {
       // No geometry to fix inertia from.
       return {};
     }
-    SpatialInertia<double> M_BBo_B(0, {0, 0, 0}, {0, 0, 0});
-    // XXX mass calculations are all wrong for the case of multiple geometries.
+
+    // We only get one mass to describe potentially multiple geometries;
+    // proceed carefully to apportion masses correctly.
     const double mass = old_inertia.get_mass();
+
+    // Collect some density==1 inertias for all geometries.
+    std::vector<SpatialInertia<double>> M_GG_G_ones;
+    M_GG_G_ones.reserve(geoms.size());
     for (const auto& geom : geoms) {
-      const auto M_GG_G_one = CalcSpatialInertia(inspector.GetShape(geom), 1.0);
-      SpatialInertia<double> M_GG_G(mass, M_GG_G_one.get_com(),
+      M_GG_G_ones.push_back(CalcSpatialInertia(inspector.GetShape(geom), 1.0));
+    }
+
+    // Work out the total volume, and save the individual volumes.
+    double total_volume{};
+    std::vector<double> volumes;
+    volumes.reserve(M_GG_G_ones.size());
+    for (const auto& M_GG_G_one : M_GG_G_ones) {
+      // density = mass / volume; volume = mass / density ( 1.0! );
+      // volume = mass!
+      const double volume = M_GG_G_one.get_mass();
+      volumes.push_back(volume);
+      total_volume += volume;
+    }
+
+    // Make the individual mass-corrected inertias, express them in a common
+    // frame, and combine them.
+    SpatialInertia<double> M_BBo_B(0, {0, 0, 0}, {0, 0, 0});
+    for (int k = 0; k < ssize(M_GG_G_ones); ++k) {
+      const double portion = volumes[k] / total_volume;
+      const auto& M_GG_G_one = M_GG_G_ones[k];
+      SpatialInertia<double> M_GG_G(mass * portion, M_GG_G_one.get_com(),
                                     M_GG_G_one.get_unit_inertia());
-      const auto& X_BG = inspector.GetPoseInFrame(geom);
+      const auto& X_BG = inspector.GetPoseInFrame(geoms[k]);
       const auto M_GBo_B = M_GG_G.ReExpress(X_BG.rotation())
                            .Shift(-X_BG.translation());
       M_BBo_B += M_GBo_B;
