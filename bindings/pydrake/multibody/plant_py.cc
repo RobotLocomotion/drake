@@ -1158,7 +1158,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetPositionNames",
             overload_cast_explicit<std::vector<std::string>, bool, bool>(
                 &Class::GetPositionNames),
-            py::arg("add_model_instance_prefix") = false,
+            py::arg("add_model_instance_prefix") = true,
             py::arg("always_add_suffix") = true,
             cls_doc.GetPositionNames.doc_2args)
         .def("GetPositionNames",
@@ -1171,7 +1171,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetVelocityNames",
             overload_cast_explicit<std::vector<std::string>, bool, bool>(
                 &Class::GetVelocityNames),
-            py::arg("add_model_instance_prefix") = false,
+            py::arg("add_model_instance_prefix") = true,
             py::arg("always_add_suffix") = true,
             cls_doc.GetVelocityNames.doc_2args)
         .def("GetVelocityNames",
@@ -1184,7 +1184,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetStateNames",
             overload_cast_explicit<std::vector<std::string>, bool>(
                 &Class::GetStateNames),
-            py::arg("add_model_instance_prefix") = false,
+            py::arg("add_model_instance_prefix") = true,
             cls_doc.GetStateNames.doc_1args)
         .def("GetStateNames",
             overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
@@ -1195,12 +1195,13 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetActuatorNames",
             overload_cast_explicit<std::vector<std::string>, bool>(
                 &Class::GetActuatorNames),
-            py::arg("add_model_instance_prefix"),
+            py::arg("add_model_instance_prefix") = true,
             cls_doc.GetActuatorNames.doc_1args)
         .def("GetActuatorNames",
             overload_cast_explicit<std::vector<std::string>, ModelInstanceIndex,
                 bool>(&Class::GetActuatorNames),
-            py::arg("model_instance"), py::arg("add_model_instance_prefix"),
+            py::arg("model_instance"),
+            py::arg("add_model_instance_prefix") = false,
             cls_doc.GetActuatorNames.doc_2args);
   }
 
