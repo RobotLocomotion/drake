@@ -42,6 +42,9 @@ void DefineSolversMixedIntegerOptimizationUtil(py::module m);
 /* Defines bindings per solvers_py_mixed_integer_rotation_constraint.cc */
 void DefineSolversMixedIntegerRotationConstraint(py::module m);
 
+/* Defines the MobyLCP bindings. See solvers_py_mobylcp.cc. */
+void DefineSolversMobyLCP(py::module m);
+
 /* Defines the MOSEK™ bindings. See solvers_py_mosek.cc. */
 void DefineSolversMosek(py::module m);
 
