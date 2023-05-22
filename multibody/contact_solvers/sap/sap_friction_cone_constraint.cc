@@ -11,39 +11,15 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
-SapFrictionConeConstraint<T>::SapFrictionConeConstraint(int clique,
-                                                        MatrixBlock<T> J,
-                                                        const T& phi0,
-                                                        const Parameters& p)
-    : SapConstraint<T>(clique, Vector3<T>(0.0, 0.0, phi0), std::move(J)),
-      parameters_(p),
-      phi0_(phi0) {
-  DRAKE_DEMAND(clique >= 0);
-  DRAKE_DEMAND(p.mu >= 0.0);
-  DRAKE_DEMAND(p.stiffness > 0.0);
-  DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);
-  DRAKE_DEMAND(p.beta >= 0.0);
-  DRAKE_DEMAND(p.sigma > 0.0);
-  DRAKE_DEMAND(this->first_clique_jacobian().rows() == 3);
-}
-
-template <typename T>
 SapFrictionConeConstraint<T>::SapFrictionConeConstraint(
-    int clique0, int clique1, MatrixBlock<T> J0, MatrixBlock<T> J1,
-    const T& phi0, const Parameters& p)
-    : SapConstraint<T>(clique0, clique1, Vector3<T>(0.0, 0.0, phi0),
-                       std::move(J0), std::move(J1)),
-      parameters_(p),
-      phi0_(phi0) {
-  DRAKE_DEMAND(clique0 >= 0);
-  DRAKE_DEMAND(clique1 >= 0);
+    SapConstraintJacobian<T> J, const T& phi0, const Parameters& p)
+    : SapConstraint<T>(std::move(J)), parameters_(p), phi0_(phi0) {
   DRAKE_DEMAND(p.mu >= 0.0);
   DRAKE_DEMAND(p.stiffness > 0.0);
   DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);
   DRAKE_DEMAND(p.beta >= 0.0);
   DRAKE_DEMAND(p.sigma > 0.0);
   DRAKE_DEMAND(this->first_clique_jacobian().rows() == 3);
-  DRAKE_DEMAND(this->second_clique_jacobian().rows() == 3);
 }
 
 template <typename T>

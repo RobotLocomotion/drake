@@ -45,13 +45,14 @@ GTEST_TEST(SapAutoDiffTest, SolveWithGuess) {
   constexpr double kPhi0 = 0.1;
   SapFrictionConeConstraint<AutoDiffXd>::Parameters parameters;
   parameters.stiffness = 1.0;
-  MatrixX<AutoDiffXd> J =
-      MatrixX<AutoDiffXd>::Ones(kNumConstraintEquations, kNumDofs);
+  SapConstraintJacobian<AutoDiffXd> J(
+      kCliqueIndex,
+      MatrixX<AutoDiffXd>::Ones(kNumConstraintEquations, kNumDofs));
   SapContactProblem<AutoDiffXd> contact_problem_with_constraint(
       std::move(contact_problem_without_constraint));
   contact_problem_with_constraint.AddConstraint(
       std::make_unique<SapFrictionConeConstraint<AutoDiffXd>>(
-          kCliqueIndex, std::move(J), kPhi0, parameters));
+          std::move(J), kPhi0, parameters));
   DRAKE_EXPECT_THROWS_MESSAGE(
       sap.SolveWithGuess(contact_problem_with_constraint, v_guess, &result),
       ".*Only.*double is supported.*");

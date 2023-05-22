@@ -161,8 +161,8 @@ class SapLimitConstraint final : public SapConstraint<T> {
 
   /* Computes the constraint Jacobian, independent of the configuration for this
    constraint. */
-  static MatrixX<T> CalcConstraintJacobian(int clique_dof, int clique_nv,
-                                           const T& ql, const T& qu);
+  static SapConstraintJacobian<T> CalcConstraintJacobian(
+      int clique, int clique_dof, int clique_nv, const T& ql, const T& qu);
 
   /* Private copy construction is enabled to use in the implementation of
    DoClone(). */
@@ -176,6 +176,7 @@ class SapLimitConstraint final : public SapConstraint<T> {
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.
   T q0_{};              // position at the configuration from construction.
+  VectorX<T> g_;        // Constraint function g. See CalcConstraintFunction().
 };
 
 }  // namespace internal

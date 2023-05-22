@@ -189,11 +189,14 @@ class PizzaSaverProblem {
     MatrixXd J;  // Full system Jacobian for the three contacts.
     CalcContactJacobian(q0(3), &J);
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(0, 3), phi0, parameters));
+        SapConstraintJacobian<double>{0, J.middleRows(0, 3)}, phi0,
+        parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(3, 3), phi0, parameters));
+        SapConstraintJacobian<double>{0, J.middleRows(3, 3)}, phi0,
+        parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        0, J.middleRows(6, 3), phi0, parameters));
+        SapConstraintJacobian<double>{0, J.middleRows(6, 3)}, phi0,
+        parameters));
 
     return problem;
   }
@@ -679,10 +682,7 @@ class LimitConstraint final : public SapConstraint<T> {
   // limit vu and regularization R.
   LimitConstraint(int clique, const VectorX<T>& vl, const VectorX<T>& vu,
                   VectorX<T> R)
-      : SapConstraint<T>(
-            clique,
-            ConcatenateVectors(vl, vu) /* Dummy vector of the right size. */,
-            CalcConstraintJacobian(vl.size())),
+      : SapConstraint<T>({clique, CalcConstraintJacobian(vl.size())}),
         R_(std::move(R)),
         vhat_(ConcatenateVectors(vl, -vu)) {
     DRAKE_DEMAND(vl.size() == vu.size());

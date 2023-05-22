@@ -39,17 +39,16 @@ class TestConstraint final : public SapConstraint<double> {
   // Constructor for a constraint on a single clique.
   TestConstraint(int num_constraint_equations, int clique, int clique_nv)
       : SapConstraint<double>(
-            clique, VectorXd::Zero(num_constraint_equations),
-            MatrixXd::Zero(num_constraint_equations, clique_nv)) {}
+            {clique, MatrixXd::Zero(num_constraint_equations, clique_nv)}) {}
 
   // Constructor for a constraint between two cliques.
   TestConstraint(int num_constraint_equations, int first_clique,
                  int first_clique_nv, int second_clique, int second_clique_nv)
       : SapConstraint<double>(
-            first_clique, second_clique,
-            VectorXd::Zero(num_constraint_equations),
-            MatrixXd::Zero(num_constraint_equations, first_clique_nv),
-            MatrixXd::Zero(num_constraint_equations, second_clique_nv)) {}
+            {first_clique,
+             MatrixXd::Zero(num_constraint_equations, first_clique_nv),
+             second_clique,
+             MatrixXd::Zero(num_constraint_equations, second_clique_nv)}) {}
 
   // N.B no-op overloads to allow us compile this testing constraint. These
   // methods are only tested for specific derived classes, not in this file.

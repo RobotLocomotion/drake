@@ -49,14 +49,14 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraint) {
   const double sigma = 1.0e-4;
   const int clique = 12;
   const double phi0 = -2.5e-3;
+  SapConstraintJacobian<double> J(clique, J32);
   SapFrictionConeConstraint<double>::Parameters parameters{
       mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J32, phi0, parameters);
+  SapFrictionConeConstraint<double> c(std::move(J), phi0, parameters);
   EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 1);
   EXPECT_EQ(c.first_clique(), clique);
   EXPECT_THROW(c.second_clique(), std::exception);
-  EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
   EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(c.second_clique_jacobian(), std::exception);
   EXPECT_EQ(c.mu(), mu);
@@ -76,15 +76,14 @@ GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraint) {
   const int clique0 = 12;
   const int clique1 = 13;
   const double phi0 = -2.5e-3;
+  SapConstraintJacobian<double> J(clique0, J32, clique1, J34);
   SapFrictionConeConstraint<double>::Parameters parameters{
       mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique0, clique1, J32, J34, phi0,
-                                      parameters);
+  SapFrictionConeConstraint<double> c(std::move(J), phi0, parameters);
   EXPECT_EQ(c.num_constraint_equations(), 3);
   EXPECT_EQ(c.num_cliques(), 2);
   EXPECT_EQ(c.first_clique(), clique0);
   EXPECT_EQ(c.second_clique(), clique1);
-  EXPECT_EQ(c.constraint_function(), Vector3d(0., 0., phi0));
   EXPECT_EQ(c.first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_EQ(c.second_clique_jacobian().MakeDenseMatrix(), J34);
   EXPECT_EQ(c.mu(), mu);
@@ -107,16 +106,16 @@ GTEST_TEST(SapFrictionConeConstraint, CalcBias) {
   const double sigma = bad_number;
   const int clique = 12;
   const double phi0 = -2.5e-3;
-  const Matrix3d J = Matrix3d::Constant(bad_number);
+  SapConstraintJacobian<double> J(clique, Matrix3d::Constant(bad_number));
   SapFrictionConeConstraint<double>::Parameters parameters{
       mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J, phi0, parameters);
+  SapFrictionConeConstraint<double> c(std::move(J), phi0, parameters);
 
   const double time_step = 5e-3;
   const double delassus_approximation = NAN;  // Does not participate.
   const Vector3d vhat = c.CalcBiasTerm(time_step, delassus_approximation);
-  const Vector3d vhat_expected =
-      -c.constraint_function() / (time_step + dissipation_time_scale);
+  const double vn_hat = -phi0 / (time_step + dissipation_time_scale);
+  const Vector3d vhat_expected(0., 0., vn_hat);
   EXPECT_TRUE(CompareMatrices(vhat, vhat_expected,
                               std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
@@ -134,10 +133,10 @@ GTEST_TEST(SapFrictionConeConstraint, CalcRegularization) {
   const double sigma = 1.0e-4;
   const int clique = 12;
   const double phi0 = -2.5e-3;
-  const Matrix3d J = Matrix3d::Constant(bad_number);
+  SapConstraintJacobian<double> J(clique, Matrix3d::Constant(bad_number));
   SapFrictionConeConstraint<double>::Parameters parameters{
       mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J, phi0, parameters);
+  SapFrictionConeConstraint<double> c(std::move(J), phi0, parameters);
 
   const double time_step = 5e-3;
   const double delassus_approximation = NAN;  // Does not participate.
@@ -219,8 +218,9 @@ void ValidateProjection(double mu, const Vector3d& R, const Vector3d& y) {
       mu, bad_number, bad_number, bad_number, bad_number};
   const int clique = 0;
   const AutoDiffXd phi0 = bad_number;
-  const Matrix3<AutoDiffXd> J = Matrix3<AutoDiffXd>::Constant(bad_number);
-  SapFrictionConeConstraint<AutoDiffXd> c(clique, J, phi0, p);
+  SapConstraintJacobian<AutoDiffXd> J(
+      clique, Matrix3<AutoDiffXd>::Constant(bad_number));
+  SapFrictionConeConstraint<AutoDiffXd> c(std::move(J), phi0, p);
   Vector3<AutoDiffXd> y_ad = drake::math::InitializeAutoDiff(y);
   Vector3<AutoDiffXd> R_ad(R);
   Vector3<AutoDiffXd> gamma_ad;
@@ -331,9 +331,10 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
   const double sigma = 1.0e-4;
   const int clique = 12;
   const double phi0 = -2.5e-3;
+  SapConstraintJacobian<double> J(clique, J32);
   SapFrictionConeConstraint<double>::Parameters parameters{
       mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique, J32, phi0, parameters);
+  SapFrictionConeConstraint<double> c(std::move(J), phi0, parameters);
   // N.B. Here we dynamic cast to the derived type so that we can test that the
   // clone is a deep-copy of the original constraint.
   auto clone =
@@ -343,7 +344,6 @@ GTEST_TEST(SapFrictionConeConstraint, SingleCliqueConstraintClone) {
   EXPECT_EQ(clone->num_cliques(), 1);
   EXPECT_EQ(clone->first_clique(), clique);
   EXPECT_THROW(clone->second_clique(), std::exception);
-  EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_THROW(clone->second_clique_jacobian(), std::exception);
   EXPECT_EQ(clone->mu(), mu);
@@ -363,17 +363,16 @@ GTEST_TEST(SapFrictionConeConstraint, TwoCliquesConstraintClone) {
   const int clique0 = 12;
   const int clique1 = 13;
   const double phi0 = -2.5e-3;
+  SapConstraintJacobian<double> J(clique0, J32, clique1, J34);
   SapFrictionConeConstraint<double>::Parameters parameters{
       mu, stiffness, dissipation_time_scale, beta, sigma};
-  SapFrictionConeConstraint<double> c(clique0, clique1, J32, J34, phi0,
-                                      parameters);
+  SapFrictionConeConstraint<double> c(std::move(J), phi0, parameters);
   auto clone =
       dynamic_pointer_cast<SapFrictionConeConstraint<double>>(c.Clone());
   EXPECT_EQ(clone->num_constraint_equations(), 3);
   EXPECT_EQ(clone->num_cliques(), 2);
   EXPECT_EQ(clone->first_clique(), clique0);
   EXPECT_EQ(clone->second_clique(), clique1);
-  EXPECT_EQ(clone->constraint_function(), Vector3d(0., 0., phi0));
   EXPECT_EQ(clone->first_clique_jacobian().MakeDenseMatrix(), J32);
   EXPECT_EQ(clone->second_clique_jacobian().MakeDenseMatrix(), J34);
   EXPECT_EQ(clone->mu(), mu);
