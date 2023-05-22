@@ -160,6 +160,18 @@ class Image {
   std::vector<T> data_;
 };
 
+/// Converts a single channel 32-bit float depth image with depths in meters to
+/// a single channel 16-bit unsigned int depth image with depths in millimeters.
+///
+/// Note that pixels that are not kTooFar in the input image may saturate to be
+/// kTooFar in the output image due to the smaller representable range.
+void ConvertDepth32FTo16U(const ImageDepth32F& input, ImageDepth16U* output);
+
+/// Converts a single channel 16-bit unsigned int depth image with depths in
+/// millimeters to a single channel 32-bit float depth image with depths in
+/// meters.
+void ConvertDepth16UTo32F(const ImageDepth16U& input, ImageDepth32F* output);
+
 }  // namespace sensors
 }  // namespace systems
 }  // namespace drake
