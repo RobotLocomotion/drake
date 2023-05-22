@@ -1430,6 +1430,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         numpy_compare.assert_equal(0 + p, p)
         numpy_compare.assert_equal(x + p, sym.Polynomial(x) + p)
         numpy_compare.assert_equal(p + x, p + sym.Polynomial(x))
+        numpy_compare.assert_equal(p + e_x, p.ToExpression() + e_x)
+        numpy_compare.assert_equal(e_x + p, e_x + p.ToExpression())
 
     def test_subtraction(self):
         p = sym.Polynomial(0.0, [x])
@@ -1441,6 +1443,8 @@ class TestSymbolicPolynomial(unittest.TestCase):
         numpy_compare.assert_equal(0 - p, -p)
         numpy_compare.assert_equal(x - p, sym.Polynomial(x))
         numpy_compare.assert_equal(p - x, sym.Polynomial(-x))
+        numpy_compare.assert_equal(p - e_x, p.ToExpression() - e_x)
+        numpy_compare.assert_equal(e_x - p, e_x - p.ToExpression())
 
     def test_multiplication(self):
         p = sym.Polynomial(0.0, [x])
@@ -1454,11 +1458,15 @@ class TestSymbolicPolynomial(unittest.TestCase):
                                    sym.Polynomial(x * x))
         numpy_compare.assert_equal(x * sym.Polynomial(x),
                                    sym.Polynomial(x * x))
+        numpy_compare.assert_equal(p * e_x, p.ToExpression() * e_x)
+        numpy_compare.assert_equal(e_x * p, e_x * p.ToExpression())
 
     def test_division(self):
         p = sym.Polynomial(x * x + x)
         numpy_compare.assert_equal(p / 2,
                                    sym.Polynomial(1 / 2 * x * x + 1 / 2 * x))
+        numpy_compare.assert_equal(p / e_x, p.ToExpression() / e_x)
+        numpy_compare.assert_equal(e_x / p, e_x / p.ToExpression())
 
     def test_addition_assignment(self):
         p = sym.Polynomial()
