@@ -276,7 +276,7 @@ class OpenGlContext::Impl {
     // (https://linux.die.net/man/3/xclosedisplay)
     // TODO(duy): If problems crop up in the future, this can/should be
     // investigated.
-    static Display* g_display = XOpenDisplay(0);
+    static Display* g_display = (XInitThreads(), XOpenDisplay(0));
     DRAKE_THROW_UNLESS(g_display != nullptr);
     return g_display;
   }
