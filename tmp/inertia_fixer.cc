@@ -157,7 +157,9 @@ class SdfInertiaMapper final : public XmlInertiaMapper {
       }
     }
   }
+
   const Mapping& mapping() const final { return mapping_; }
+
   void UpdateInertia(XMLElement* el,
                      const SpatialInertia<double>& inertia) final {
     // Fill out the inertial properties.
