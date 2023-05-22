@@ -326,6 +326,22 @@ TEST_F(SymbolicPolynomialTest, AdditionMonomialDouble) {
   }
 }
 
+TEST_F(SymbolicPolynomialTest, AdditionPolynomialExpression) {
+  // (Polynomial(e₁) + e₂).Expand() = (e₁ + e₂).Expand() = (Polynomial(e₁) +
+  // Polynomial(e₂).ToExpression()).Expand()
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      const Polynomial p1{e1};
+      const Polynomial p2{e2};
+      EXPECT_PRED2(ExprEqual, (p1 + e2).Expand(), (e1 + e2).Expand());
+      EXPECT_PRED2(ExprEqual, (e1 + p2).Expand(), (e1 + e2).Expand());
+      // Tests that the return of Polynomial + Expression is the correct
+      // Polynomial
+      EXPECT_PRED2(PolyEqual, Polynomial{p1 + e2}, p1 + p2);
+    }
+  }
+}
+
 TEST_F(SymbolicPolynomialTest, SubtractionPolynomialPolynomial) {
   // (Polynomial(e₁) - Polynomial(e₂)).ToExpression() = (e₁ - e₂).Expand()
   for (const Expression& e1 : exprs_) {
@@ -409,6 +425,22 @@ TEST_F(SymbolicPolynomialTest, SubtractionMonomialDouble) {
     for (const double c : doubles_) {
       EXPECT_PRED2(ExprEqual, (m - c).ToExpression(), m.ToExpression() - c);
       EXPECT_PRED2(ExprEqual, (c - m).ToExpression(), c - m.ToExpression());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, SubtractionPolynomialExpression) {
+  // (Polynomial(e₁) - e₂).Expand() = (e₁ - e₂).Expand() = (Polynomial(e₁) -
+  // Polynomial(e₂).ToExpression()).Expand()
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      const Polynomial p1{e1};
+      const Polynomial p2{e2};
+      EXPECT_PRED2(ExprEqual, (p1 - e2).Expand(), (e1 - e2).Expand());
+      EXPECT_PRED2(ExprEqual, (e1 - p2).Expand(), (e1 - e2).Expand());
+      // Tests that the return of Polynomial - Expression is the correct
+      // Polynomial
+      EXPECT_PRED2(PolyEqual, Polynomial{p1 - e2}, p1 - p2);
     }
   }
 }
@@ -538,6 +570,23 @@ TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialPolynomial2) {
   EXPECT_EQ(product_map_expected, (p1 * p2).monomial_to_coefficient_map());
 }
 
+TEST_F(SymbolicPolynomialTest, MultiplicationPolynomialExpression) {
+  // (Polynomial(e₁) * e₂).Expand() = (e₁ * e₂).Expand() = (Polynomial(e₁) *
+  // Polynomial(e₂).ToExpression()).Expand()
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      const Polynomial computed_left_product{Polynomial(e1) * e2};
+      const Polynomial computed_right_product{e1 * Polynomial(e2)};
+      const Polynomial expected{e1 * e2};
+      const double tol = 1e-12;
+      // Use PolynomialEqual rather than ExprEqual to be able to use floating
+      // point rather than exact equality.
+      EXPECT_TRUE(test::PolynomialEqual(computed_left_product, expected, tol));
+      EXPECT_TRUE(test::PolynomialEqual(computed_right_product, expected, tol));
+    }
+  }
+}
+
 TEST_F(SymbolicPolynomialTest, BinaryOperationBetweenPolynomialAndVariable) {
   // p = 2a²x² + 3ax + 7.
   const Polynomial p{2 * pow(a_, 2) * pow(x_, 2) + 3 * a_ * x_ + 7, {var_x_}};
@@ -651,6 +700,32 @@ TEST_F(SymbolicPolynomialTest, DivideByConstant) {
     for (const Expression& e : exprs_) {
       EXPECT_PRED2(ExprEqual, (Polynomial(e) / v).ToExpression(),
                    Polynomial(e / v).ToExpression());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, ConstantDividedByPolynomial) {
+  for (double v = -5.5; v <= 5.5; v += 1.0) {
+    for (const Expression& e : exprs_) {
+      if (e.EqualTo(0)) {
+        continue;
+      }
+      EXPECT_PRED2(ExprEqual, (v / Polynomial(e)).Expand(), (v / e).Expand());
+    }
+  }
+}
+
+TEST_F(SymbolicPolynomialTest, DivPolynomialExpression) {
+  // (Polynomial(e₁) / e₂).Expand() = (e₁ / e₂).Expand().
+  for (const Expression& e1 : exprs_) {
+    for (const Expression& e2 : exprs_) {
+      if (e2.EqualTo(0)) {
+        continue;
+      }
+      EXPECT_PRED2(ExprEqual, (Polynomial(e1) / e2).Expand(),
+                   (e1 / e2).Expand());
+      EXPECT_PRED2(ExprEqual, (e1 / Polynomial(e2)).Expand(),
+                   (e1 / e2).Expand());
     }
   }
 }
