@@ -301,7 +301,7 @@ class VideoWriter(LeafSystem):
         depends on either one.
     """
 
-    def __init__(self, *, filename, fps=16.0, backend="PIL"):
+    def __init__(self, *, filename, fps=16.0, backend="PIL", fourcc=None):
         """Constructs a VideoWriter system.
 
         In many cases, the AddToBuilder() or ConnectRgbdSensor() methods might
@@ -312,6 +312,9 @@ class VideoWriter(LeafSystem):
                 ``"output.mp4"``
             fps: the output video's frame rate (in frames per second)
             backend: which backend to use: "PIL" or "cv2"
+            fourcc: when using the cv2 backend, which encoder to use;
+                good choices are "mp4v" or "avc1"; defaults to "mp4v";
+                refer to the OpenCV documentation for details.
         """
         LeafSystem.__init__(self)
         self._filename = filename
@@ -332,13 +335,16 @@ class VideoWriter(LeafSystem):
             import cv2
             self._backend = cv2
             self._write = self._write_cv2
+            self._fourcc = fourcc or "mp4v"
+            if len(self._fourcc) != 4:
+                raise ValueError(f"The fourcc={fourcc!r} must be 4 characters")
         else:
             raise RuntimeError(f"Invalid backend={backend!r}")
 
     @staticmethod
     def AddToBuilder(*, filename, builder, sensor_pose, fps=16.0,
-                     width=320, height=240, fov_y=np.pi/6,
-                     near=0.01, far=10.0, kinds=None, backend="PIL"):
+                     width=320, height=240, fov_y=np.pi/6, near=0.01, far=10.0,
+                     kinds=None, backend="PIL", fourcc=None):
         """Adds a RgbdSensor and VideoWriter system to the given builder, using
         a world-fixed pose. Returns the VideoWriter system.
 
@@ -359,6 +365,9 @@ class VideoWriter(LeafSystem):
             kinds: which image kind(s) to include in the video; valid
                 options are ``"color"``, ``"label"``, and/or ``"depth"``
             backend: which backend to use: "PIL" or "cv2".
+            fourcc: when using the cv2 backend, which encoder to use;
+                good choices are "mp4v" or "avc1"; defaults to "mp4v"
+                refer to the OpenCV documentation for details.
 
         Warning:
             Once all images have been published, you must call
@@ -367,7 +376,8 @@ class VideoWriter(LeafSystem):
         sensor = VideoWriter._AddRgbdSensor(
             builder=builder, pose=sensor_pose,
             width=width, height=height, fov_y=fov_y, near=near, far=far)
-        writer = VideoWriter(filename=filename, fps=fps, backend=backend)
+        writer = VideoWriter(filename=filename, fps=fps, backend=backend,
+                             fourcc=fourcc)
         builder.AddSystem(writer)
         writer.ConnectRgbdSensor(builder=builder, sensor=sensor, kinds=kinds)
         return writer
@@ -482,7 +492,7 @@ class VideoWriter(LeafSystem):
         cv2 = self._backend
         # Open the output file upon the first publish event.
         if self._cv2_writer is None:
-            fourcc = cv2.VideoWriter.fourcc("a", "v", "c", "1")
+            fourcc = cv2.VideoWriter.fourcc(*self._fourcc)
             (height, width, _) = rgba.shape
             self._cv2_writer = cv2.VideoWriter(
                 self._filename, fourcc, self._fps, (width, height))
