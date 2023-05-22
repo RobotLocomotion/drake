@@ -72,6 +72,8 @@ template <typename T>
 void SapConstraint<T>::CalcCostHessian(const AbstractValue& data,
                                        MatrixX<T>* G) const {
   DRAKE_DEMAND(G != nullptr);
+  const int ne = num_constraint_equations();
+  G->resize(ne, ne);
   DoCalcCostHessian(data, G);
 }
 
