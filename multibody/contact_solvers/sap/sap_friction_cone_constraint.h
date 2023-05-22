@@ -6,6 +6,7 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 
 namespace drake {
 namespace multibody {
@@ -182,47 +183,16 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
     double sigma{1.0e-3};
   };
 
-  /* Constructs a contact constraint for the case in which only a single clique
-   is involved. E.g. contact with the world or self-contact.
-   @param[in] clique The clique involved in the contact. Must be non-negative.
-   @param[in] J The Jacobian, such that vc = J⋅v. It must have three rows or an
-   exception is thrown.
-   @param[in] phi0 The value of the signed distance at the previous time step.
-   @param[in] parameters Constraint parameters. See Parameters for details. */
-  SapFrictionConeConstraint(int clique, MatrixBlock<T> J, const T& phi0,
+  /* Constructs a contact constraint given its Jacobian and signed distance at
+   the current configuration.
+   @param[in] J The contact Jacobian, which defines the contact velocity `vc` as
+   vc = J⋅v.
+   @param[in] phi0 The value of the signed distance at the current
+   configuration.
+   @param[in] parameters Constraint parameters. See Parameters for details.
+   @pre J has three rows. */
+  SapFrictionConeConstraint(SapConstraintJacobian<T> J, const T& phi0,
                             const Parameters& parameters);
-
-  /* Alternative constructor for a contact constraint involving a single clique
-   that takes a dense Jacobian. */
-  SapFrictionConeConstraint(int clique, MatrixX<T> J, const T& phi0,
-                            const Parameters& parameters)
-      : SapFrictionConeConstraint(clique, MatrixBlock<T>(std::move(J)), phi0,
-                                  parameters) {}
-
-  /* Constructs a contact constraint for the case in which two cliques
-   are involved.
-   @param[in] clique0 First clique involved in the contact. Must be
-   non-negative.
-   @param[in] clique1 Second clique involved in the contact. Must be
-   non-negative.
-   @param[in] J0 The Jacobian w.r.t. to the first clique's generalized
-   velocities. It must have three rows or an exception is thrown.
-   @param[in] J1 The Jacobian w.r.t. to the second clique's generalized
-   velocities. It must have three rows or an exception is thrown.
-   @param[in] phi0 The value of the signed distance at the previous time step.
-   @param[in] parameters Constraint parameters. See Parameters for details. */
-  SapFrictionConeConstraint(int clique0, int clique1, MatrixBlock<T> J0,
-                            MatrixBlock<T> J1, const T& phi0,
-                            const Parameters& parameters);
-
-  /* Alternative constructor for a contact constraint involving two cliques
-   that takes a dense Jacobian. */
-  SapFrictionConeConstraint(int clique0, int clique1, MatrixX<T> J0,
-                            MatrixX<T> J1, const T& phi0,
-                            const Parameters& parameters)
-      : SapFrictionConeConstraint(
-            clique0, clique1, MatrixBlock<T>(std::move(J0)),
-            MatrixBlock<T>(std::move(J1)), phi0, parameters) {}
 
   /* Returns the coefficient of friction for this constraint. */
   const T& mu() const { return parameters_.mu; }
