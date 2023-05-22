@@ -20,6 +20,7 @@ officially supports:
 | Ubuntu 22.04 LTS (Jammy Jellyfish) | x86_64       | 3.10 ⁽³⁾   |
 | macOS Monterey (12)                | x86_64       | 3.11       |
 | macOS Monterey (12)                | arm64        | 3.11       |
+| macOS Ventura (13)                 | arm64        | 3.11       |
 
 "Official support" means that we have Continuous Integration test coverage to
 notice regressions, so if it doesn't work for you then please file a bug report.
