@@ -39,7 +39,7 @@ DRAKE_FORMATTER_AS(typename... Ts, sample, Pair<Ts...>, x, std::pair(x.t, x.u))
 namespace drake {
 namespace {
 
-// Spot check the for "format as" formatter.
+// Spot check for the "format as" formatter.
 GTEST_TEST(FmtTest, FormatAsFormatter) {
   const sample::Int plain{1};
   EXPECT_EQ(fmt::format("{}", plain), "1");
@@ -65,6 +65,17 @@ GTEST_TEST(FmtTest, TestPrinter) {
 
   const sample::Pair<int, int> pear{1, 2};
   EXPECT_EQ(testing::PrintToString(pear), "(1, 2)");
+}
+
+// Spot check for the floating point formatter.
+GTEST_TEST(FmtTest, FloatingPoint) {
+  EXPECT_EQ(fmt_floating_point(1.11), "1.11");
+  EXPECT_EQ(fmt_floating_point(1.1), "1.1");
+  EXPECT_EQ(fmt_floating_point(1.0), "1.0");
+
+  EXPECT_EQ(fmt_floating_point(1.11f), "1.11");
+  EXPECT_EQ(fmt_floating_point(1.1f), "1.1");
+  EXPECT_EQ(fmt_floating_point(1.0f), "1.0");
 }
 
 }  // namespace
