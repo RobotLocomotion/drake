@@ -83,7 +83,7 @@ std::string CurlInfoTypeAsString(curl_infotype type) {
     return "CURLINFO_SSL_DATA_OUT";
   else if (type == CURLINFO_END)
     return "CURLINFO_END";
-  return fmt::format("UNKNOWN_CURLINFO_TYPE={}", type);
+  return fmt::format("UNKNOWN_CURLINFO_TYPE={}", static_cast<uint64_t>(type));
 }
 
 /* Removes leading / trailing whitespace from `message` before logging.  Curl
