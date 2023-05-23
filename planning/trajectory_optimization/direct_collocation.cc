@@ -149,7 +149,7 @@ void DirectCollocationConstraint::DoEval(
 }
 
 // The format of the input to the eval() function is the
-// tuple { timestep, state 0, state 1, input 0, input 1 },
+// tuple { time step, state 0, state 1, input 0, input 1 },
 // which has a total length of 1 + 2*num_states + 2*num_inputs.
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const AutoDiffVecXd>& x, AutoDiffVecXd* y) const {
@@ -189,24 +189,24 @@ void DirectCollocationConstraint::DoEval(
 
 Binding<Constraint> AddDirectCollocationConstraint(
     std::shared_ptr<DirectCollocationConstraint> constraint,
-    const Eigen::Ref<const VectorXDecisionVariable>& timestep,
+    const Eigen::Ref<const VectorXDecisionVariable>& time_step,
     const Eigen::Ref<const VectorXDecisionVariable>& state,
     const Eigen::Ref<const VectorXDecisionVariable>& next_state,
     const Eigen::Ref<const VectorXDecisionVariable>& input,
     const Eigen::Ref<const VectorXDecisionVariable>& next_input,
     MathematicalProgram* prog) {
-  DRAKE_DEMAND(timestep.size() == 1);
+  DRAKE_DEMAND(time_step.size() == 1);
   DRAKE_DEMAND(state.size() == constraint->num_states());
   DRAKE_DEMAND(next_state.size() == constraint->num_states());
   DRAKE_DEMAND(input.size() == constraint->num_inputs());
   DRAKE_DEMAND(next_input.size() == constraint->num_inputs());
   return prog->AddConstraint(constraint,
-                             {timestep, state, next_state, input, next_input});
+                             {time_step, state, next_state, input, next_input});
 }
 
 DirectCollocation::DirectCollocation(
     const System<double>* system, const Context<double>& context,
-    int num_time_samples, double minimum_timestep, double maximum_timestep,
+    int num_time_samples, double minimum_time_step, double maximum_time_step,
     std::variant<InputPortSelection, InputPortIndex> input_port_index,
     bool assume_non_continuous_states_are_fixed,
     solvers::MathematicalProgram* prog)
@@ -215,7 +215,7 @@ DirectCollocation::DirectCollocation(
               ? system->get_input_port_selection(input_port_index)->size()
               : 0,
           CheckAndReturnStates(context.num_continuous_states()),
-          num_time_samples, minimum_timestep, maximum_timestep, prog),
+          num_time_samples, minimum_time_step, maximum_time_step, prog),
       system_(system),
       context_(context.Clone()),
       input_port_index_(input_port_index),
@@ -240,7 +240,7 @@ DirectCollocation::DirectCollocation(
   // just use the one context_ad.
 
   // Add the dynamic constraints.
-  // For N-1 timesteps, add a constraint which depends on the breakpoint
+  // For N-1 time steps, add a constraint which depends on the breakpoint
   // along with the state and input vectors at that breakpoint and the
   // next.
   for (int i = 0; i < N() - 1; ++i) {

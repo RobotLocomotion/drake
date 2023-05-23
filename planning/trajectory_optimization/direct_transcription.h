@@ -18,7 +18,7 @@ namespace trajectory_optimization {
 // Helper struct holding a time-step value for continuous-time
 // DirectTranscription. This is currently needed to disambiguate between the
 // constructors; DirectTranscription(system, context, int, int) could cast the
-// last int into a fixed_timestep or the input_port_index.
+// last int into a fixed_time_step or the input_port_index.
 struct TimeStep {
   double value{-1};
   explicit TimeStep(double step) : value(step) {}
@@ -36,8 +36,8 @@ class DirectTranscription : public MultipleShooting {
 
   /// Constructs the MathematicalProgram and adds the dynamic constraints.
   /// This version of the constructor is only for simple discrete-time systems
-  /// (with a single periodic timestep update).  Continuous-time systems
-  /// must call one of the constructors that takes bounds on the timestep as
+  /// (with a single periodic time step update).  Continuous-time systems
+  /// must call one of the constructors that takes bounds on the time step as
   /// an argument.
   ///
   /// @param system A dynamical system to be used in the dynamic constraints.
@@ -68,7 +68,7 @@ class DirectTranscription : public MultipleShooting {
   //  efficiency).
   /// Constructs the MathematicalProgram and adds the dynamic constraints.  This
   /// version of the constructor is only for *linear time-varying* discrete-time
-  /// systems (with a single periodic timestep update).  This constructor adds
+  /// systems (with a single periodic time step update).  This constructor adds
   /// value because the symbolic short-cutting does not yet support systems
   /// that are affine in state/input, but not time.
   ///
@@ -114,7 +114,7 @@ class DirectTranscription : public MultipleShooting {
   ///    context after calling this method will NOT impact the trajectory
   ///    optimization.
   /// @param num_time_samples The number of breakpoints in the trajectory.
-  /// @param fixed_timestep The spacing between sample times.
+  /// @param fixed_time_step The spacing between sample times.
   /// @param input_port_index A valid input port index or valid
   /// InputPortSelection for @p system.  All other inputs on the system will be
   /// left disconnected (if they are disconnected in @p context) or will be set
@@ -125,7 +125,7 @@ class DirectTranscription : public MultipleShooting {
   DirectTranscription(
       const systems::System<double>* system,
       const systems::Context<double>& context, int num_time_samples,
-      TimeStep fixed_timestep,
+      TimeStep fixed_time_step,
       const std::variant<systems::InputPortSelection, systems::InputPortIndex>&
           input_port_index =
               systems::InputPortSelection::kUseFirstInputIfItExists);
@@ -149,7 +149,7 @@ class DirectTranscription : public MultipleShooting {
       const solvers::MathematicalProgramResult& result) const override;
 
  private:
-  // Implements a running cost at all timesteps.
+  // Implements a running cost at all time steps.
   void DoAddRunningCost(const symbolic::Expression& e) override;
 
   // Attempts to create a symbolic version of the plant, and to add linear

@@ -37,7 +37,7 @@ namespace trajectory_optimization {
 /// constructor.
 ///
 /// This class assumes that there are a fixed number (N) time steps/samples,
-/// and that the trajectory is discretized into timesteps h (N-1 of these),
+/// and that the trajectory is discretized into time steps h (N-1 of these),
 /// state x (N of these), and control input u (N of these).
 ///
 /// @ingroup planning_trajectory
@@ -56,14 +56,19 @@ class MultipleShooting {
   /// @exclude_from_pydrake_mkdoc{This overload is not bound.}
   const solvers::MathematicalProgram& prog() const { return prog_; }
 
-  /// Returns the decision variable associated with the timestep, h, at time
+  /// Returns the decision variable associated with the time step, h, at time
   /// index @p index.
-  /// @throws std::exception if timesteps are not declared as decision
+  /// @throws std::exception if time steps are not declared as decision
   /// variables.
-  const solvers::VectorDecisionVariable<1> timestep(int index) const {
-    DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+  const solvers::VectorDecisionVariable<1> time_step(int index) const {
+    DRAKE_THROW_UNLESS(time_steps_are_decision_variables_);
     DRAKE_DEMAND(index >= 0 && index < N_ - 1);
     return h_vars_.segment<1>(index);
+  }
+
+  DRAKE_DEPRECATED("2023-09-01", "Use time_step() instead.")
+  const solvers::VectorDecisionVariable<1> timestep(int index) const {
+    return time_step(index);
   }
 
   /// Returns a placeholder decision variable (not actually declared as a
@@ -209,14 +214,14 @@ class MultipleShooting {
   /// @param lower_bound  A scalar double lower bound.
   /// @param upper_bound  A scalar double upper bound.
   /// @return The bounding box constraint enforcing time interval bounds.
-  /// @throws std::exception if timesteps are not declared as decision
+  /// @throws std::exception if time steps are not declared as decision
   /// variables.
   solvers::Binding<solvers::BoundingBoxConstraint> AddTimeIntervalBounds(
       double lower_bound, double upper_bound);
 
-  /// Adds constraints to enforce that all timesteps have equal duration.
+  /// Adds constraints to enforce that all time steps have equal duration.
   /// @return A vector of constraints enforcing all time intervals are equal.
-  /// @throws std::exception if timesteps are not declared as decision
+  /// @throws std::exception if time steps are not declared as decision
   /// variables.
   std::vector<solvers::Binding<solvers::LinearConstraint>>
   AddEqualTimeIntervalsConstraints();
@@ -225,7 +230,7 @@ class MultipleShooting {
   /// @param lower_bound  A scalar double lower bound.
   /// @param upper_bound  A scalar double upper bound.
   /// @return The constraint enforcing the duration bounds.
-  /// @throws std::exception if timesteps are not declared as decision
+  /// @throws std::exception if time steps are not declared as decision
   /// variables.
   solvers::Binding<solvers::LinearConstraint> AddDurationBounds(
       double lower_bound, double upper_bound);
@@ -386,10 +391,13 @@ class MultipleShooting {
   virtual trajectories::PiecewisePolynomial<double> ReconstructStateTrajectory(
       const solvers::MathematicalProgramResult&) const = 0;
 
-  double fixed_timestep() const {
-    DRAKE_THROW_UNLESS(!timesteps_are_decision_variables_);
-    return fixed_timestep_;
+  double fixed_time_step() const {
+    DRAKE_THROW_UNLESS(!time_steps_are_decision_variables_);
+    return fixed_time_step_;
   }
+
+  DRAKE_DEPRECATED("2023-09-01", "Use fixed_time_step() instead.")
+  double fixed_timestep() const { return fixed_time_step(); }
 
  protected:
   /// Constructs a MultipleShooting instance with fixed sample times. It creates
@@ -398,7 +406,7 @@ class MultipleShooting {
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
   /// @param num_time_samples Number of time samples.
-  /// @param fixed_timestep The spacing between sample times.
+  /// @param fixed_time_step The spacing between sample times.
   /// @param prog (optional).  If non-null, then additional decision variables,
   /// costs, and constraints will be added into the existing
   /// MathematicalProgram. This can be useful for, e.g., combining multiple
@@ -406,7 +414,7 @@ class MultipleShooting {
   /// constraints.  If nullptr, then a new MathematicalProgram will be
   /// allocated.
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
-                   double fixed_timestep,
+                   double fixed_time_step,
                    solvers::MathematicalProgram* prog = nullptr);
 
   /// Constructs a MultipleShooting instance with fixed sample times. It uses
@@ -416,7 +424,7 @@ class MultipleShooting {
   /// @param input Placeholder variables for input.
   /// @param state Placeholder variables for state.
   /// @param num_time_samples Number of time samples.
-  /// @param fixed_timestep The spacing between sample times.
+  /// @param fixed_time_step The spacing between sample times.
   /// @param prog (optional).  If non-null, then additional decision variables,
   /// costs, and constraints will be added into the existing
   /// MathematicalProgram. This can be useful for, e.g., combining multiple
@@ -425,7 +433,7 @@ class MultipleShooting {
   /// allocated.
   MultipleShooting(const solvers::VectorXDecisionVariable& input,
                    const solvers::VectorXDecisionVariable& state,
-                   int num_time_samples, double fixed_timestep,
+                   int num_time_samples, double fixed_time_step,
                    solvers::MathematicalProgram* prog = nullptr);
 
   /// Constructs a MultipleShooting instance with sample times as decision
@@ -435,8 +443,8 @@ class MultipleShooting {
   /// @param num_inputs Number of inputs at each sample point.
   /// @param num_states Number of states at each sample point.
   /// @param num_time_samples Number of time samples.
-  /// @param minimum_timestep Minimum spacing between sample times.
-  /// @param maximum_timestep Maximum spacing between sample times.
+  /// @param minimum_time_step Minimum spacing between sample times.
+  /// @param maximum_time_step Maximum spacing between sample times.
   /// @param prog (optional).  If non-null, then additional decision variables,
   /// costs, and constraints will be added into the existing
   /// MathematicalProgram. This can be useful for, e.g., combining multiple
@@ -444,7 +452,7 @@ class MultipleShooting {
   /// constraints.  If nullptr, then a new MathematicalProgram will be
   /// allocated.
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
-                   double minimum_timestep, double maximum_timestep,
+                   double minimum_time_step, double maximum_time_step,
                    solvers::MathematicalProgram* prog = nullptr);
 
   /// Constructs a MultipleShooting instance with sample times as decision
@@ -455,8 +463,8 @@ class MultipleShooting {
   /// @param state Placeholder variables for state.
   /// @param time Placeholder variable for time.
   /// @param num_time_samples Number of time samples.
-  /// @param minimum_timestep Minimum spacing between sample times.
-  /// @param maximum_timestep Maximum spacing between sample times.
+  /// @param minimum_time_step Minimum spacing between sample times.
+  /// @param maximum_time_step Maximum spacing between sample times.
   /// @param prog (optional).  If non-null, then additional decision variables,
   /// costs, and constraints will be added into the existing
   /// MathematicalProgram. This can be useful for, e.g., combining multiple
@@ -466,7 +474,7 @@ class MultipleShooting {
   MultipleShooting(const solvers::VectorXDecisionVariable& input,
                    const solvers::VectorXDecisionVariable& state,
                    const solvers::DecisionVariable& time, int num_time_samples,
-                   double minimum_timestep, double maximum_timestep,
+                   double minimum_time_step, double maximum_time_step,
                    solvers::MathematicalProgram* prog = nullptr);
 
   /// Replaces e.g. placeholder_x_var_ with x_vars_ at time interval
@@ -485,8 +493,14 @@ class MultipleShooting {
 
   int N() const { return N_; }
 
+  bool time_steps_are_decision_variables() const {
+    return time_steps_are_decision_variables_;
+  }
+
+  DRAKE_DEPRECATED("2023-09-01",
+                   "Use time_steps_are_decision_variables() instead.")
   bool timesteps_are_decision_variables() const {
-    return timesteps_are_decision_variables_;
+    return time_steps_are_decision_variables_;
   }
 
   const solvers::VectorXDecisionVariable& h_vars() const { return h_vars_; }
@@ -505,12 +519,12 @@ class MultipleShooting {
                    const solvers::VectorXDecisionVariable& state,
                    int num_time_samples,
                    const std::optional<solvers::DecisionVariable>& time_var,
-                   double minimum_timestep, double maximum_timestep,
+                   double minimum_time_step, double maximum_time_step,
                    solvers::MathematicalProgram* prog = nullptr);
 
   MultipleShooting(int num_inputs, int num_states, int num_time_samples,
-                   bool timesteps_are_decision_variables,
-                   double minimum_timestep, double maximum_timestep,
+                   bool time_steps_are_decision_variables,
+                   double minimum_time_step, double maximum_time_step,
                    solvers::MathematicalProgram* prog = nullptr);
 
   virtual void DoAddRunningCost(const symbolic::Expression& g) = 0;
@@ -525,12 +539,13 @@ class MultipleShooting {
   const int num_inputs_{};
   const int num_states_{};
   const int N_{};  // Number of time samples
-  const bool timesteps_are_decision_variables_{false};
-  const double fixed_timestep_{0.0};
+  const bool time_steps_are_decision_variables_{false};
+  const double fixed_time_step_{0.0};
 
-  solvers::VectorXDecisionVariable h_vars_;  // Time deltas between each
-                                             // input/state sample or the empty
-                                             // vector (if timesteps are fixed).
+  solvers::VectorXDecisionVariable
+      h_vars_;  // Time deltas between each
+                // input/state sample or the empty
+                // vector (if time steps are fixed).
   solvers::VectorXDecisionVariable x_vars_;
   solvers::VectorXDecisionVariable u_vars_;
 

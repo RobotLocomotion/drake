@@ -3,6 +3,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -57,10 +58,10 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("time", &Class::time, cls_doc.time.doc)
         .def("prog", overload_cast_explicit<MathematicalProgram&>(&Class::prog),
             py_rvp::reference_internal, cls_doc.prog.doc)
-        .def("timestep", &Class::timestep, py::arg("index"),
-            cls_doc.timestep.doc)
-        .def("fixed_timestep", &Class::fixed_timestep,
-            cls_doc.fixed_timestep.doc)
+        .def("time_step", &Class::time_step, py::arg("index"),
+            cls_doc.time_step.doc)
+        .def("fixed_time_step", &Class::fixed_time_step,
+            cls_doc.fixed_time_step.doc)
         // TODO(eric.cousineau): The original bindings returned references
         // instead of copies using VectorXBlock. Restore this once dtype=custom
         // is resolved.
@@ -200,6 +201,18 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                 const solvers::MathematicalProgramResult&>(
                 &Class::ReconstructStateTrajectory),
             py::arg("result"), cls_doc.ReconstructStateTrajectory.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    cls.def("timestep",
+           WrapDeprecated(cls_doc.timestep.doc_deprecated, &Class::timestep),
+           py::arg("index"), cls_doc.timestep.doc_deprecated)
+        .def("fixed_timestep",
+            WrapDeprecated(
+                cls_doc.fixed_timestep.doc_deprecated, &Class::fixed_timestep),
+            cls_doc.fixed_timestep.doc_deprecated);
+#pragma GCC diagnostic pop
+
     RegisterAddConstraintToAllKnotPoints<solvers::BoundingBoxConstraint>(&cls);
     RegisterAddConstraintToAllKnotPoints<solvers::LinearEqualityConstraint>(
         &cls);
@@ -216,6 +229,21 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
                  std::variant<systems::InputPortSelection,
                      systems::InputPortIndex>,
                  bool, solvers::MathematicalProgram*>(),
+            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+            py::arg("minimum_time_step"), py::arg("maximum_time_step"),
+            py::arg("input_port_index") =
+                systems::InputPortSelection::kUseFirstInputIfItExists,
+            py::arg("assume_non_continuous_states_are_fixed") = false,
+            py::arg("prog") = nullptr, cls_doc.ctor.doc)
+        .def(
+            py_init_deprecated<Class, const systems::System<double>*,
+                const systems::Context<double>&, int, double, double,
+                std::variant<systems::InputPortSelection,
+                    systems::InputPortIndex>,
+                bool, solvers::MathematicalProgram*>(
+                "The arguments minimum_timestep and maximum_timestep have been "
+                "renamed to minimum_time_step and maximum_time_step. This "
+                "version will be removed on or after 2023-09-01."),
             py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
             py::arg("minimum_timestep"), py::arg("maximum_timestep"),
             py::arg("input_port_index") =
@@ -242,6 +270,13 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
   }
 
   m.def("AddDirectCollocationConstraint", &AddDirectCollocationConstraint,
+      py::arg("constraint"), py::arg("time_step"), py::arg("state"),
+      py::arg("next_state"), py::arg("input"), py::arg("next_input"),
+      py::arg("prog"), doc.AddDirectCollocationConstraint.doc);
+  m.def("AddDirectCollocationConstraint",
+      WrapDeprecated("Argument timestep has been renamed to time_step. This "
+                     "version will be removed on or after 2023-09-01.",
+          AddDirectCollocationConstraint),
       py::arg("constraint"), py::arg("timestep"), py::arg("state"),
       py::arg("next_state"), py::arg("input"), py::arg("next_input"),
       py::arg("prog"), doc.AddDirectCollocationConstraint.doc);
@@ -268,12 +303,23 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
             py::arg("input_port_index") =
                 systems::InputPortSelection::kUseFirstInputIfItExists,
             cls_doc.ctor.doc_4args)
+        .def(py_init_deprecated<Class, const systems::System<double>*,
+                 const systems::Context<double>&, int, TimeStep,
+                 std::variant<systems::InputPortSelection,
+                     systems::InputPortIndex>>(
+                 "Argument fixed_timestep has been renamed to fixed_time_step. "
+                 "This version will be removed on or after 2023-09-01."),
+            py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
+            py::arg("fixed_timestep"),
+            py::arg("input_port_index") =
+                systems::InputPortSelection::kUseFirstInputIfItExists,
+            cls_doc.ctor.doc_5args)
         .def(py::init<const systems::System<double>*,
                  const systems::Context<double>&, int, TimeStep,
                  std::variant<systems::InputPortSelection,
                      systems::InputPortIndex>>(),
             py::arg("system"), py::arg("context"), py::arg("num_time_samples"),
-            py::arg("fixed_timestep"),
+            py::arg("fixed_time_step"),
             py::arg("input_port_index") =
                 systems::InputPortSelection::kUseFirstInputIfItExists,
             cls_doc.ctor.doc_5args);

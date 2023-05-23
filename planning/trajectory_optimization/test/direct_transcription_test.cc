@@ -45,22 +45,22 @@ namespace {
 template <typename T>
 class CubicPolynomialSystem final : public systems::LeafSystem<T> {
  public:
-  explicit CubicPolynomialSystem(double timestep)
+  explicit CubicPolynomialSystem(double time_step)
       : systems::LeafSystem<T>(
             systems::SystemTypeTag<
                 trajectory_optimization::CubicPolynomialSystem>{}),
-        timestep_(timestep) {
+        time_step_(time_step) {
     // Zero inputs, zero outputs.
     this->DeclareDiscreteState(1);  // One state variable.
-    this->DeclarePeriodicDiscreteUpdateNoHandler(timestep);
+    this->DeclarePeriodicDiscreteUpdateNoHandler(time_step);
   }
 
   // Scalar-converting copy constructor.
   template <typename U>
   explicit CubicPolynomialSystem(const CubicPolynomialSystem<U>& system)
-      : CubicPolynomialSystem(system.timestep()) {}
+      : CubicPolynomialSystem(system.time_step()) {}
 
-  double timestep() const { return timestep_; }
+  double time_step() const { return time_step_; }
 
  private:
   // x[n+1] = x³[n]
@@ -73,7 +73,7 @@ class CubicPolynomialSystem final : public systems::LeafSystem<T> {
         pow(context.get_discrete_state(0).GetAtIndex(0), 3.0);
   }
 
-  const double timestep_{0.0};
+  const double time_step_{0.0};
 };
 
 template <typename T>
@@ -137,7 +137,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeConstraintTest) {
   DirectTranscription dirtran(&system, *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
-  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_time_step(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -182,7 +182,7 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeConstraintTest) {
                               TimeStep{kTimeStep});
   auto& prog = dirtran.prog();
 
-  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_time_step(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -217,7 +217,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeSymbolicConstraintTest) {
   DirectTranscription dirtran(system.get(), *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
-  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_time_step(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -260,7 +260,7 @@ GTEST_TEST(DirectTranscriptionTest, ContinuousTimeSymbolicConstraintTest) {
                               TimeStep{kTimeStep});
   auto& prog = dirtran.prog();
 
-  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_time_step(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -395,7 +395,7 @@ GTEST_TEST(DirectTranscriptionTest, DiscreteTimeLinearSystemTest) {
   DirectTranscription dirtran(&system, *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
-  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_time_step(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(
@@ -467,7 +467,7 @@ GTEST_TEST(DirectTranscriptionTest, TimeVaryingLinearSystemTest) {
   DirectTranscription dirtran(&system, *context, kNumSampleTimes);
   auto& prog = dirtran.prog();
 
-  EXPECT_EQ(dirtran.fixed_timestep(), kTimeStep);
+  EXPECT_EQ(dirtran.fixed_time_step(), kTimeStep);
 
   // Sets all decision variables to trivial known values (1,2,3,...).
   prog.SetInitialGuessForAllVariables(

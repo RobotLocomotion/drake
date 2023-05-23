@@ -26,63 +26,63 @@ using trajectories::PiecewisePolynomial;
 
 // For readability of long lines, these single-letter variables names are
 // sometimes used:
-// N number of timesteps/samples
-// h timesteps (there are N-1 of these)
+// N number of time steps (aka samples)
+// h time steps (there are N-1 of these)
 // x state
 // u control input
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
-                                   int num_time_samples, double fixed_timestep,
+                                   int num_time_samples, double fixed_time_step,
                                    solvers::MathematicalProgram* prog)
     : MultipleShooting(num_inputs, num_states, num_time_samples,
-                       false /* timesteps_are_decision_variables */,
-                       fixed_timestep, fixed_timestep, prog) {}
+                       false /* time_steps_are_decision_variables */,
+                       fixed_time_step, fixed_time_step, prog) {}
 
 MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state, int num_time_samples,
-    double fixed_timestep, solvers::MathematicalProgram* prog)
+    double fixed_time_step, solvers::MathematicalProgram* prog)
     : MultipleShooting(input, state, num_time_samples, std::nullopt,
-                       fixed_timestep, fixed_timestep, prog) {}
+                       fixed_time_step, fixed_time_step, prog) {}
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
-                                   double minimum_timestep,
-                                   double maximum_timestep,
+                                   double minimum_time_step,
+                                   double maximum_time_step,
                                    solvers::MathematicalProgram* prog)
     : MultipleShooting(num_inputs, num_states, num_time_samples,
-                       true /* timesteps_are_decision_variables */,
-                       minimum_timestep, maximum_timestep, prog) {}
+                       true /* time_steps_are_decision_variables */,
+                       minimum_time_step, maximum_time_step, prog) {}
 
 MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state,
     const solvers::DecisionVariable& time, int num_time_samples,
-    double minimum_timestep, double maximum_timestep,
+    double minimum_time_step, double maximum_time_step,
     solvers::MathematicalProgram* prog)
-    : MultipleShooting(input, state, num_time_samples, time, minimum_timestep,
-                       maximum_timestep, prog) {}
+    : MultipleShooting(input, state, num_time_samples, time, minimum_time_step,
+                       maximum_time_step, prog) {}
 
 MultipleShooting::MultipleShooting(int num_inputs, int num_states,
                                    int num_time_samples,
-                                   bool timesteps_are_decision_variables,
-                                   double minimum_timestep,
-                                   double maximum_timestep,
+                                   bool time_steps_are_decision_variables,
+                                   double minimum_time_step,
+                                   double maximum_time_step,
                                    solvers::MathematicalProgram* prog)
     : MultipleShooting(
           MakeVectorContinuousVariable(num_inputs, "u"),
           MakeVectorContinuousVariable(num_states, "x"), num_time_samples,
-          timesteps_are_decision_variables
+          time_steps_are_decision_variables
               ? std::optional<
                     solvers::DecisionVariable>{solvers::DecisionVariable{"t"}}
               : std::nullopt,
-          minimum_timestep, maximum_timestep, prog) {}
+          minimum_time_step, maximum_time_step, prog) {}
 
 MultipleShooting::MultipleShooting(
     const solvers::VectorXDecisionVariable& input,
     const solvers::VectorXDecisionVariable& state, int num_time_samples,
     const std::optional<solvers::DecisionVariable>& time_var,
-    double minimum_timestep, double maximum_timestep,
+    double minimum_time_step, double maximum_time_step,
     solvers::MathematicalProgram* prog)
     : owned_prog_(prog ? nullptr
                        : std::make_unique<solvers::MathematicalProgram>()),
@@ -90,8 +90,8 @@ MultipleShooting::MultipleShooting(
       num_inputs_(input.size()),
       num_states_(state.size()),
       N_(num_time_samples),
-      timesteps_are_decision_variables_(time_var),
-      fixed_timestep_(minimum_timestep),
+      time_steps_are_decision_variables_(time_var),
+      fixed_time_step_(minimum_time_step),
       x_vars_(prog_.NewContinuousVariables(num_states_ * N_, "x")),
       u_vars_(prog_.NewContinuousVariables(num_inputs_ * N_, "u")),
       placeholder_x_vars_(state),
@@ -112,14 +112,15 @@ MultipleShooting::MultipleShooting(
   DRAKE_DEMAND(num_time_samples > 1);
   DRAKE_DEMAND(num_states_ > 0);
   DRAKE_DEMAND(num_inputs_ >= 0);
-  if (timesteps_are_decision_variables_) {
+  if (time_steps_are_decision_variables_) {
     h_vars_ = prog_.NewContinuousVariables(N_ - 1, "h");
-    DRAKE_DEMAND(minimum_timestep >
+    DRAKE_DEMAND(minimum_time_step >
                  0);  // == 0 tends to cause numerical issues.
-    DRAKE_DEMAND(maximum_timestep >= minimum_timestep &&
-                 std::isfinite(maximum_timestep));
+    DRAKE_DEMAND(maximum_time_step >= minimum_time_step &&
+                 std::isfinite(maximum_time_step));
 
-    prog_.AddBoundingBoxConstraint(minimum_timestep, maximum_timestep, h_vars_);
+    prog_.AddBoundingBoxConstraint(minimum_time_step, maximum_time_step,
+                                   h_vars_);
     RowVectorX<Expression> t_expressions(N_);
     t_expressions(0) = 0;
     for (int i = 1; i < N_; ++i) {
@@ -130,11 +131,11 @@ MultipleShooting::MultipleShooting(
         placeholder_t_var_, t_expressions, "t");
   } else {
     h_vars_ = solvers::VectorXDecisionVariable(0);
-    DRAKE_DEMAND(fixed_timestep_ > 0);
+    DRAKE_DEMAND(fixed_time_step_ > 0);
     placeholder_t_var_(0) =
         sequential_expression_manager_.RegisterSequentialExpressions(
             RowVectorX<Expression>::LinSpaced(N_, 0,
-                                              (N_ - 1) * fixed_timestep_),
+                                              (N_ - 1) * fixed_time_step_),
             "t")(0);
   }
 }
@@ -168,13 +169,13 @@ MultipleShooting::AddConstraintToAllKnotPoints(
 solvers::Binding<solvers::BoundingBoxConstraint>
 MultipleShooting::AddTimeIntervalBounds(double lower_bound,
                                         double upper_bound) {
-  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+  DRAKE_THROW_UNLESS(time_steps_are_decision_variables_);
   return prog_.AddBoundingBoxConstraint(lower_bound, upper_bound, h_vars_);
 }
 
 std::vector<solvers::Binding<solvers::LinearConstraint>>
 MultipleShooting::AddEqualTimeIntervalsConstraints() {
-  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+  DRAKE_THROW_UNLESS(time_steps_are_decision_variables_);
   std::vector<solvers::Binding<solvers::LinearConstraint>> constraints;
   for (int i = 1; i < N_ - 1; i++) {
     constraints.push_back(
@@ -185,7 +186,7 @@ MultipleShooting::AddEqualTimeIntervalsConstraints() {
 
 solvers::Binding<solvers::LinearConstraint> MultipleShooting::AddDurationBounds(
     double lower_bound, double upper_bound) {
-  DRAKE_THROW_UNLESS(timesteps_are_decision_variables_);
+  DRAKE_THROW_UNLESS(time_steps_are_decision_variables_);
   return prog_.AddLinearConstraint(VectorXd::Ones(h_vars_.size()), lower_bound,
                                    upper_bound, h_vars_);
 }
@@ -260,9 +261,9 @@ void MultipleShooting::SetInitialTrajectory(
     const PiecewisePolynomial<double>& traj_init_u,
     const PiecewisePolynomial<double>& traj_init_x) {
   double start_time = 0;
-  double h = fixed_timestep_;
-  if (timesteps_are_decision_variables_) {
-    double end_time = fixed_timestep_ * N_;
+  double h = fixed_time_step_;
+  if (time_steps_are_decision_variables_) {
+    double end_time = fixed_time_step_ * N_;
     DRAKE_THROW_UNLESS(!traj_init_u.empty() || !traj_init_x.empty());
     if (!traj_init_u.empty()) {
       start_time = traj_init_u.start_time();
@@ -309,14 +310,14 @@ Eigen::VectorXd MultipleShooting::GetSampleTimes(
     const Eigen::Ref<const Eigen::VectorXd>& h_var_values) const {
   Eigen::VectorXd times(N_);
 
-  if (timesteps_are_decision_variables_) {
+  if (time_steps_are_decision_variables_) {
     times[0] = 0.0;
     for (int i = 1; i < N_; i++) {
       times[i] = times[i - 1] + h_var_values(i - 1);
     }
   } else {
     for (int i = 0; i < N_; i++) {
-      times[i] = i * fixed_timestep_;
+      times[i] = i * fixed_time_step_;
     }
   }
   return times;
