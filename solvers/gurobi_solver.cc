@@ -1376,7 +1376,7 @@ void GurobiSolver::DoSolve(const MathematicalProgram& prog,
     }
   }
 
-  SolutionResult solution_result = SolutionResult::kUnknownError;
+  SolutionResult solution_result = SolutionResult::kSolverSpecificError;
 
   GurobiSolverDetails& solver_details =
       result->SetSolverDetailsType<GurobiSolverDetails>();

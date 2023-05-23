@@ -995,7 +995,7 @@ void SetConstraintDualSolutions(
 }
 
 SolutionResult MapSnoptInfoToSolutionResult(int snopt_info) {
-  SolutionResult solution_result{SolutionResult::kUnknownError};
+  SolutionResult solution_result{SolutionResult::kSolverSpecificError};
   // Please refer to User's Guide for SNOPT Versions 7, section 8.6 on the
   // meaning of these snopt_info.
   if (snopt_info >= 1 && snopt_info <= 6) {

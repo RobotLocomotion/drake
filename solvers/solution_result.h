@@ -8,16 +8,31 @@
 namespace drake {
 namespace solvers {
 enum SolutionResult {
-  kSolutionFound = 0,           ///< Found the optimal solution.
-  kInvalidInput = -1,           ///< Invalid input.
-  kInfeasibleConstraints = -2,  ///< The primal is infeasible.
-  kUnbounded = -3,              ///< The primal is unbounded.
-  kUnknownError = -4,           ///< Unknown error.
-  kInfeasibleOrUnbounded =
-      -5,                ///< The primal is either infeasible or unbounded.
-  kIterationLimit = -6,  ///< Reaches the iteration limits.
-  kDualInfeasible = -7,  ///< Dual problem is infeasible. In this case we cannot
-                         /// infer the status of the primal problem.
+  /** Found the optimal solution. */
+  kSolutionFound = 0,
+  /** Invalid input. */
+  kInvalidInput = -1,
+  /** The primal is infeasible. */
+  kInfeasibleConstraints = -2,
+  /** The primal is unbounded. */
+  kUnbounded = -3,
+  /** Solver-specific error. (Try
+  MathematicalProgramResult::get_solver_details() or enabling verbose solver
+  output.) */
+  kSolverSpecificError = -4,
+  /** The primal is either infeasible or unbounded. */
+  kInfeasibleOrUnbounded = -5,
+  /** Reaches the iteration limits. */
+  kIterationLimit = -6,
+  /** Dual problem is infeasible. In this case we cannot infer the status of the
+  primal problem. */
+  kDualInfeasible = -7,
+  /** The initial (invalid) solution result. This value should be overwritten by
+  the solver during Solve(). */
+  kSolutionResultNotSet = -8,
+  // clang-format off
+  kUnknownError [[deprecated("DRAKE DEPRECATED: This has been renamed to kSolverSpecificError; for details, see https://github.com/RobotLocomotion/drake/pull/19450. The deprecated code will be removed from Drake on or after 2023-09-01.")]] = kSolverSpecificError // NOLINT
+  // clang-format on
 };
 
 std::string to_string(SolutionResult solution_result);

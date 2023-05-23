@@ -247,7 +247,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
     }
   }
 
-  result->set_solution_result(SolutionResult::kUnknownError);
+  result->set_solution_result(SolutionResult::kSolverSpecificError);
   // Run optimizer.
   if (rescode == MSK_RES_OK) {
     // TODO(hongkai.dai@tri.global): add trmcode to the returned struct.
@@ -288,7 +288,7 @@ void MosekSolver::DoSolve(const MathematicalProgram& prog,
         break;
       }
       default: {
-        result->set_solution_result(SolutionResult::kUnknownError);
+        result->set_solution_result(SolutionResult::kSolverSpecificError);
         break;
       }
     }

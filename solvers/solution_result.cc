@@ -16,10 +16,12 @@ std::string to_string(SolutionResult solution_result) {
       return "InfeasibleOrUnbounded";
     case SolutionResult::kIterationLimit:
       return "IterationLimit";
-    case SolutionResult::kUnknownError:
-      return "UnknownError";
+    case SolutionResult::kSolverSpecificError:
+      return "SolverSpecificError";
     case SolutionResult::kDualInfeasible:
       return "DualInfeasible";
+    case SolutionResult::kSolutionResultNotSet:
+      return "SolutionResultNotSet";
   }
   // The following lines should not be reached, we add this line due to a defect
   // in the compiler.
