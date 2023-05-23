@@ -175,9 +175,9 @@ class DirectCollocationConstraint : public solvers::Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
  private:
-  void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
-                systems::Context<AutoDiffXd>* context,
-                AutoDiffVecXd* xdot) const;
+  void CalcDynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                    systems::Context<AutoDiffXd>* context,
+                    AutoDiffVecXd* xdot) const;
 
   // Note: owned_system_ and owned_context_ can be nullptr.
   std::unique_ptr<systems::System<AutoDiffXd>> owned_system_;
