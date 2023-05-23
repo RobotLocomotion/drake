@@ -8,15 +8,8 @@
 #include <Eigen/Dense>
 
 #include "drake/common/drake_copyable.h"
+#include "drake/multibody/contact_solvers/block_sparse_cholesky_solver.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
-
-#ifndef DRAKE_DOXYGEN_CXX
-// Forward declaration to avoid the inclusion of conex's headers within a Drake
-// header.
-namespace conex {
-class SupernodalKKTSolver;
-}
-#endif
 
 namespace drake {
 namespace multibody {
@@ -67,16 +60,8 @@ class SuperNodalSolver {
   //   Specifies a block-diagonal mass matrix M of size nᵥ x nᵥ.  The block
   //   columns of the mass matrix and the block columns of the Jacobian J both
   //   induce a partition of the set {0, 1, ..., nᵥ}, where nᵥ denotes the
-  //   number of scalar decision variables. The partition induced by M must
-  //   refine the partition induced by J, otherwise an exception is thrown. (See
-  //   https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
-  //   refinement.)  For instance, if J has block structure
-  //     J = |J₁  0|
-  //         |J₂ J₃|
-  //   Then we require existence of n such that
-  //     num_cols(J₁) =  ∑num_cols(Mₜ), t = 1…n
-  //     num_cols(J₃) =  ∑num_cols(Mₜ), t = n+1…nᵥ
-  //   If this condition fails, an exception is thrown.
+  //   number of scalar decision variables. These two partitions must be the
+  //   same, otherwise an exception is thrown.
   SuperNodalSolver(int num_jacobian_row_blocks,
                    const std::vector<BlockMatrixTriplet>& jacobian_blocks,
                    const std::vector<Eigen::MatrixXd>& mass_matrices);
@@ -84,9 +69,11 @@ class SuperNodalSolver {
   ~SuperNodalSolver();
 
   // Sets the block-diagonal weight matrix G.  The block rows of J and G both
-  // partition the set {1, 2, ..., num_rows(J)}. Similar to the mass_matrix,
-  // the partition induced by G must refine the partition induced by J,
-  // otherwise an exception is thrown.
+  // partition the set {1, 2, ..., num_rows(J)}.
+  // The partition induced by G must refine the partition induced by J,
+  // otherwise an exception is thrown.  (See
+  // https://en.wikipedia.org/wiki/Partition_of_a_set for definition of
+  // refinement.)
   void SetWeightMatrix(const std::vector<Eigen::MatrixXd>& block_diagonal_G);
 
   // Returns the M + J^T G J as a dense matrix (for debugging).
@@ -112,26 +99,14 @@ class SuperNodalSolver {
   void SolveInPlace(Eigen::VectorXd* b) const;
 
  private:
-  // This class is responsible for filling a dense matrix of the form
-  // sub_matrix(M) +  Jᵀₚ Gₚ Jₚ where Jₚ is a block row of the Jacobian. Each
-  // row of the Jacobian can have at most two blocks, i.e. Jₚ = [Jₚ,ₜ₁ Jₚ,ₜ₂],
-  // where blocks t₁ and t₂ correspond to block-diagonal entries in M. That is,
-  // sub_matrix(M) = diag(Mₜ₁ Mₜ₂).
-  class CliqueAssembler;
-
-  void Initialize(const std::vector<std::vector<int>>& cliques,
-                  int num_jacobian_row_blocks,
-                  const std::vector<BlockMatrixTriplet>& jacobian_blocks,
-                  const std::vector<Eigen::MatrixXd>& mass_matrices);
-
   bool factorization_ready_ = false;
   bool matrix_ready_ = false;
-
-  std::unique_ptr<::conex::SupernodalKKTSolver> solver_;
-  // N.B. This array stores pointers to clique assemblers owned by
-  // owned_clique_assemblers_.
-  std::vector<CliqueAssembler*> clique_assemblers_ptrs_;
-  std::vector<std::unique_ptr<CliqueAssembler>> owned_clique_assemblers_;
+  std::unique_ptr<BlockSparseSymmetricMatrix> A_;
+  // The indices into `jacobian_blocks_` on row i organized by column.
+  std::vector<std::vector<int>> row_to_triplet_list_;
+  std::vector<Eigen::MatrixXd> mass_matrices_;
+  std::vector<BlockMatrixTriplet> jacobian_blocks_;
+  std::unique_ptr<BlockSparseCholeskySolver<Eigen::MatrixXd>> solver_;
 };
 
 }  // namespace internal

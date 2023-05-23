@@ -208,12 +208,10 @@ drake_cc_library(
     name = "supernodal_solver",
     srcs = ["supernodal_solver.cc"],
     hdrs = ["supernodal_solver.h"],
-    interface_deps = [
+    deps = [
+        ":block_sparse_cholesky_solver",
         ":matrix_block",
         "//common:essential",
-    ],
-    deps = [
-        "@conex//conex:supernodal_solver",
     ],
 )
 
