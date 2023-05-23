@@ -89,6 +89,7 @@ drake_py_unittest(
     name = "trajectory_optimization_test",
     deps = [
         ":planning",
+        "//bindings/pydrake/common/test_utilities:deprecation_py",
         "//bindings/pydrake/examples",
     ],
 )
