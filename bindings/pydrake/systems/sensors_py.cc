@@ -173,6 +173,13 @@ PYBIND11_MODULE(sensors, m) {
     type_visit(instantiation_visitor, PixelTypeList{});
   }
 
+  // Image conversion functions.
+  m  // BR
+      .def("ConvertDepth32FTo16U", &ConvertDepth32FTo16U, py::arg("input"),
+          py::arg("output"))
+      .def("ConvertDepth16UTo32F", &ConvertDepth16UTo32F, py::arg("input"),
+          py::arg("output"));
+
   using T = double;
 
   // Systems.

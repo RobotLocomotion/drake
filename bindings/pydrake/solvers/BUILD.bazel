@@ -61,6 +61,7 @@ drake_pybind_library(
         "solvers_py_mathematicalprogram.cc",
         "solvers_py_mixed_integer_optimization_util.cc",
         "solvers_py_mixed_integer_rotation_constraint.cc",
+        "solvers_py_mobylcp.cc",
         "solvers_py_mosek.cc",
         "solvers_py_nlopt.cc",
         "solvers_py_osqp.cc",
@@ -140,6 +141,14 @@ drake_py_unittest(
     deps = [
         ":solvers",
         "//bindings/pydrake/common/test_utilities",
+    ],
+)
+
+drake_py_unittest(
+    name = "mobylcp_solver_test",
+    deps = [
+        ":solvers",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 

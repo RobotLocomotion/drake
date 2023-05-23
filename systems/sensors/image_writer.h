@@ -36,16 +36,19 @@ namespace sensors {
 /** Writes the color (8-bit, RGBA) image data to disk.  */
 void SaveToPng(const ImageRgba8U& image, const std::string& file_path);
 
-/** Writes the depth (32-bit) image data to disk. Png files do not support
- channels larger than 16-bits and its support for floating point values is
- also limited at best. So, depth images can only be written as tiffs.  */
+/** Writes the depth (32-bit) image data to disk. A 32-bit depth image can only
+ be saved as TIFF (not PNG) because PNG files do not support channels larger
+ than 16-bits and its support for floating point values is also limited at
+ best. See ConvertDepth32FTo16U() for converting 32-bit to 16-bit to enable
+ saving as PNG.  */
 void SaveToTiff(const ImageDepth32F& image, const std::string& file_path);
+
+/** Writes the depth (16-bit) image data to disk. See ConvertDepth16UTo32F() for
+ converting 16-bit to 32-bit to enable saving as TIFF.  */
+void SaveToPng(const ImageDepth16U& image, const std::string& file_path);
 
 /** Writes the label (16-bit) image data to disk.  */
 void SaveToPng(const ImageLabel16I& image, const std::string& file_path);
-
-/** Writes the depth (16-bit) image data to disk.  */
-void SaveToPng(const ImageDepth16U& image, const std::string& file_path);
 
 /** Writes the grey scale (8-bit) image data to disk.  */
 void SaveToPng(const ImageGrey8U& image, const std::string& file_path);
