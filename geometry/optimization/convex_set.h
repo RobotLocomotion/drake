@@ -171,7 +171,7 @@ class ConvexSet : public ShapeReifier {
   /** Implements non-virtual base class serialization. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(DRAKE_NVP(ambient_dimension_));
+    a->Visit(MakeNameValue("ambient_dimension", &ambient_dimension_));
   }
 
   /** Non-virtual interface implementation for Clone(). */
