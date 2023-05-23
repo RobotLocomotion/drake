@@ -142,8 +142,7 @@ GTEST_TEST(SupernodalSolver, IncompatibleJacobianAndMass) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      "Column partition induced by mass matrix must refine the partition "
-      "induced by the Jacobian.");
+      "Mass matrices.*incompatible.*");
 }
 
 // Basic test of SupernodalSolver's public APIs.
@@ -278,8 +277,7 @@ GTEST_TEST(SupernodalSolver,
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      "Column partition induced by mass matrix must refine the partition "
-      "induced by the Jacobian.");
+      "Mass matrices.*incompatible.*");
 }
 
 // In this test the partition induced by M refines the partition of the columns
@@ -324,12 +322,9 @@ GTEST_TEST(SupernodalSolver,
       {{3, 2}, {3, 2}, {3, 2}, {3, 2}});
   // clang-format on
 
-  const auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
-
-  SuperNodalSolver solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_G);
-  const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      (SuperNodalSolver{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
+      "Mass matrices.*incompatible.*");
 }
 
 // Test the condition when J blocks might have different number of rows. Of
