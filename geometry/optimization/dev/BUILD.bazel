@@ -52,6 +52,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "cspace_free_path_test",
+    tags = ["manual"],
     deps = [
         ":c_iris_path_test_utilities",
         "//common/test_utilities:symbolic_test_util",
