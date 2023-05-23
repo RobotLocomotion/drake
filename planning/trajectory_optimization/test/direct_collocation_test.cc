@@ -19,6 +19,7 @@ namespace drake {
 namespace planning {
 namespace trajectory_optimization {
 
+using Eigen::VectorXd;
 using solvers::Solve;
 using systems::Context;
 using systems::InputPortSelection;
@@ -222,13 +223,14 @@ GTEST_TEST(DirectCollocation, TestCollocationConstraintCaching) {
                                          sample_context[1].get(),
                                          collocation_context.get());
 
-  VectorX<AutoDiffXd> x(5), y(1);
+  VectorXd x(5);
   x << 0.1, 1.2, 2.3, 3.4, 4.56;
+  VectorX<AutoDiffXd> x_ad = math::InitializeAutoDiff(x), y_ad(1);
   EXPECT_EQ(system.evaluation_count(), 0);
-  constraint.Eval(x, &y);
+  constraint.Eval(x_ad, &y_ad);
   EXPECT_EQ(system.evaluation_count(), 3);
   // Same x, so this should not evaluate the dynamics.
-  constraint.Eval(x, &y);
+  constraint.Eval(x_ad, &y_ad);
   EXPECT_EQ(system.evaluation_count(), 3);
 
   // A second constraint using shifted contexts
@@ -236,9 +238,10 @@ GTEST_TEST(DirectCollocation, TestCollocationConstraintCaching) {
                                               sample_context[2].get(),
                                               collocation_context.get());
   x << 0.1, x[2], 0.52, x[4], 0.25;
+  x_ad = math::InitializeAutoDiff(x);
   // This should have a cache hit on sample_context[1], and so will evaluate
   // the dynamics 2 times instead of 3.
-  next_constraint.Eval(x, &y);
+  next_constraint.Eval(x_ad, &y_ad);
   EXPECT_EQ(system.evaluation_count(), 5);
 }
 

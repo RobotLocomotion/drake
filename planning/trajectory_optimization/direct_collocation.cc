@@ -12,7 +12,13 @@ namespace drake {
 namespace planning {
 namespace trajectory_optimization {
 
+using Eigen::MatrixXd;
+using Eigen::VectorXd;
 using math::AreAutoDiffVecXdEqual;
+using math::ExtractGradient;
+using math::ExtractValue;
+using math::InitializeAutoDiff;
+using math::InitializeAutoDiffTuple;
 using solvers::Binding;
 using solvers::Constraint;
 using solvers::MathematicalProgram;
@@ -125,27 +131,50 @@ DirectCollocationConstraint::DirectCollocationConstraint(
   }
 }
 
-void DirectCollocationConstraint::dynamics(const AutoDiffVecXd& state,
-                                           const AutoDiffVecXd& input,
-                                           Context<AutoDiffXd>* context,
-                                           AutoDiffVecXd* xdot) const {
+void DirectCollocationConstraint::CalcDynamics(
+    const AutoDiffVecXd& x_with_dvars, const AutoDiffVecXd& u_with_dvars,
+    Context<AutoDiffXd>* context, AutoDiffVecXd* xdot_with_dvars) const {
+  // To have cache hits, we must match not only the x and u values, but also
+  // the derivatives. To get cache hits even when dvars are different, we use
+  // the chain rule locally in this method, so that the gradients in the cache
+  // are always with respect to exactly the current x and u.
+  AutoDiffVecXd x_with_dxu, u_with_dxu;
+  std::tie(x_with_dxu, u_with_dxu) = InitializeAutoDiffTuple(
+      ExtractValue(x_with_dvars), ExtractValue(u_with_dvars));
+
   if (input_port_ &&
       (!input_port_->HasValue(*context) ||
-       !AreAutoDiffVecXdEqual(input, input_port_->Eval(*context)))) {
-    input_port_->FixValue(context, input);
+       !AreAutoDiffVecXdEqual(u_with_dxu, input_port_->Eval(*context)))) {
+    input_port_->FixValue(context, u_with_dxu);
   }
   if (!AreAutoDiffVecXdEqual(
-          state, context->get_continuous_state_vector().CopyToVector())) {
-    context->SetContinuousState(state);
+          x_with_dxu, context->get_continuous_state_vector().CopyToVector())) {
+    context->SetContinuousState(x_with_dxu);
   }
-  *xdot = system_.EvalTimeDerivatives(*context).CopyToVector();
+
+  AutoDiffVecXd xdot_with_dxu =
+      system_.EvalTimeDerivatives(*context).CopyToVector();
+
+  const VectorXd xdot = ExtractValue(xdot_with_dxu);
+  const MatrixXd dxdot_dxu = ExtractGradient(xdot_with_dxu);
+
+  xdot_with_dvars->resize(num_states_);
+  // dxdot_dvars = dxdot_dx * dx_dvars + dxdot_du * du_dvars.
+  InitializeAutoDiff(
+      xdot,
+      dxdot_dxu.leftCols(num_states_) * ExtractGradient(x_with_dvars) +
+          dxdot_dxu.rightCols(num_inputs_) *
+              ExtractGradient(u_with_dvars,
+                              // pass in num_derivatives in case u is empty.
+                              x_with_dvars[0].derivatives().size()),
+      xdot_with_dvars);
 }
 
 void DirectCollocationConstraint::DoEval(
     const Eigen::Ref<const Eigen::VectorXd>& x, Eigen::VectorXd* y) const {
   AutoDiffVecXd y_t;
   Eval(x.cast<AutoDiffXd>(), &y_t);
-  *y = math::ExtractValue(y_t);
+  *y = ExtractValue(y_t);
 }
 
 // The format of the input to the eval() function is the
@@ -166,17 +195,17 @@ void DirectCollocationConstraint::DoEval(
   const auto u1 = x.segment(1 + (2 * num_states_) + num_inputs_, num_inputs_);
 
   AutoDiffVecXd xdot0;
-  dynamics(x0, u0, context_sample_, &xdot0);
+  CalcDynamics(x0, u0, context_sample_, &xdot0);
 
   AutoDiffVecXd xdot1;
-  dynamics(x1, u1, context_next_sample_, &xdot1);
+  CalcDynamics(x1, u1, context_next_sample_, &xdot1);
 
   // Cubic interpolation to get xcol and xdotcol.
   const AutoDiffVecXd xcol = 0.5 * (x0 + x1) + h / 8 * (xdot0 - xdot1);
   const AutoDiffVecXd xdotcol = -1.5 * (x0 - x1) / h - .25 * (xdot0 + xdot1);
 
   AutoDiffVecXd g;
-  dynamics(xcol, 0.5 * (u0 + u1), context_collocation_, &g);
+  CalcDynamics(xcol, 0.5 * (u0 + u1), context_collocation_, &g);
   *y = xdotcol - g;
 }
 
