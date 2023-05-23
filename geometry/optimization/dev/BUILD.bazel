@@ -20,8 +20,8 @@ drake_cc_library(
         "//common:polynomial",
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",
-        "//geometry/optimization:c_iris_separating_plane",
-        "//geometry/optimization:cspace_free_polytope",
+        "//geometry/optimization:cspace_free_internal",
+        "//geometry/optimization/dev:cspace_free_path_separating_plane",
         "//geometry/optimization/dev:polynomial_positive_on_path",
         "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
@@ -41,6 +41,16 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "cspace_free_path_separating_plane",
+    srcs = ["cspace_free_path_separating_plane.cc"],
+    hdrs = ["cspace_free_path_separating_plane.h"],
+    deps = [
+        "//common/symbolic:monomial_util",
+        "//geometry/optimization:cspace_separating_plane",
+    ],
+)
+
+drake_cc_library(
     name = "c_iris_path_test_utilities",
     testonly = 1,
     hdrs = ["test/c_iris_path_test_utilities.h"],
@@ -52,6 +62,7 @@ drake_cc_library(
 
 drake_cc_googletest(
     name = "cspace_free_path_test",
+    timeout = "long",
     deps = [
         ":c_iris_path_test_utilities",
         "//common/test_utilities:symbolic_test_util",
@@ -79,6 +90,14 @@ drake_cc_googletest(
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization/dev:polynomial_positive_on_path",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_path_separating_plane_test",
+    deps = [
+        "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization/dev:cspace_free_path_separating_plane",
     ],
 )
 
