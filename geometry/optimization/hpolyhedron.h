@@ -194,8 +194,8 @@ class HPolyhedron final : public ConvexSet {
   template <typename Archive>
   void Serialize(Archive* a) {
     ConvexSet::Serialize(a);
-    a->Visit(DRAKE_NVP(A_));
-    a->Visit(DRAKE_NVP(b_));
+    a->Visit(MakeNameValue("A", &A_));
+    a->Visit(MakeNameValue("b", &b_));
     CheckInvariants();
   }
 
