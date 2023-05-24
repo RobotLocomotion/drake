@@ -58,7 +58,7 @@ class DifferentialInverseKinematicsIntegrator
   @param frame_E End-effector frame.
   @param time_step the discrete time step of the (Euler) integration.
   @param parameters Collection of various problem specific constraints and
-  constants.  The `timestep` parameter will be set to @p time_step.
+  constants.  The `time_step` parameter will be set to @p time_step.
   @param robot_context Optional Context of the MultibodyPlant.  The position
   values of this context will be overwritten during integration; you only need
   to pass this in if the robot has any non-default parameters.  @default

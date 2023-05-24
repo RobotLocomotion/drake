@@ -27,7 +27,7 @@ struct MeshcatVisualizerParams {
   }
 
   /** The duration (in simulation seconds) between attempts to update poses in
-   the visualizer. (To help avoid small simulation timesteps, we use a default
+   the visualizer. (To help avoid small simulation time steps, we use a default
    period that has an exact representation in binary floating point; see
    drake#15021 for details.) */
   double publish_period{1 / 64.0};

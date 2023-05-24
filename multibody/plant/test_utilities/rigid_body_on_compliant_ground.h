@@ -222,10 +222,10 @@ class RigidBodyOnCompliantGround
                                                             forces);
   }
 
-  void Simulate(int num_timesteps) {
+  void Simulate(int num_time_steps) {
     simulator_.reset(new Simulator<double>(*diagram_, std::move(context_)));
     simulator_->Initialize();
-    simulator_->AdvanceTo(num_timesteps * kTimeStep_);
+    simulator_->AdvanceTo(num_time_steps * kTimeStep_);
   }
 
   std::unique_ptr<Diagram<double>> diagram_;
@@ -241,7 +241,7 @@ class RigidBodyOnCompliantGround
   std::unique_ptr<Simulator<double>> simulator_;
 
   // Parameters of the problem.
-  const double kTimeStep_{0.001};  // Discrete timestep of the plant.
+  const double kTimeStep_{0.001};  // Discrete time step of the plant.
   const double kGravity_{10.0};    // Acceleration of gravity, in m/s².
   const double kMass_{10.0};       // Mass of the rigid body, in kg.
   const double kPointContactSphereRadius_{0.02};  // In m.

@@ -46,7 +46,7 @@ namespace systems {
  *     qₖ₊₁ = qⁿ + h N(qₖ) vₖ₊₁.                     (5)
  *     yₖ₊₁ = yⁿ + h f_y(tⁿ⁺¹,qₖ₊₁,yₖ₊₁);            (6)
  *
- * In this notation, the `n`'s index timesteps, while the `k`'s index the
+ * In this notation, the `n`'s index time steps, while the `k`'s index the
  * specific Newton-Raphson iterations within each time step.
  *
  * Notice that we've intentionally lagged N(qₖ) one iteration behind in Eq (5).
@@ -416,7 +416,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // differentiation. See math::ComputeNumericalGradient() for more details on
   // the first two methods.
   // @param t refers to tⁿ⁺¹, the time used in the definition of ℓ(y)
-  // @param h is the timestep size parameter, h, used in the definition of
+  // @param h is the time-step size parameter, h, used in the definition of
   //        ℓ(y)
   // @param y is the generalized velocity and miscellaneous states around which
   //        to evaluate Jₗ(y).
@@ -438,7 +438,7 @@ class VelocityImplicitEulerIntegrator final : public ImplicitIntegrator<T> {
   // In this method, we compute the Jacobian Jₗ(y) using automatic
   // differentiation.
   // @param t refers to tⁿ⁺¹, the time used in the definition of ℓ(y).
-  // @param h is the timestep size parameter, h, used in the definition of
+  // @param h is the time-step size parameter, h, used in the definition of
   //        ℓ(y).
   // @param y is the generalized velocity and miscellaneous states around which
   //        to evaluate Jₗ(y).

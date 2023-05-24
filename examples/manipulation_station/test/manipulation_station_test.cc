@@ -40,7 +40,7 @@ using systems::Context;
 // @note This function helps unit test the calculation of the gripper's spatial
 //   inertia done in CalcGripperSpatialInertia() in manipulation_station.cc.
 multibody::SpatialInertia<double> MakeCompositeGripperInertia() {
-  // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
+  // Set time_step to 1.0 since it is arbitrary, to quiet joint limit warnings.
   multibody::MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
   parser.AddModelsFromUrl(

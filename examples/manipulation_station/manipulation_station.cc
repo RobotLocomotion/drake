@@ -165,7 +165,7 @@ class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
 // @retval M_SGo_G spatial inertia of set S about Go, expressed in frame G.
 SpatialInertia<double> CalcGripperSpatialInertia(
     const std::string& wsg_sdf_path) {
-  // Set timestep to 1.0 since it is arbitrary, to quiet joint limit warnings.
+  // Set time_step to 1.0 since it is arbitrary, to quiet joint limit warnings.
   MultibodyPlant<double> plant(1.0);
   multibody::Parser parser(&plant);
   parser.AddModels(wsg_sdf_path);

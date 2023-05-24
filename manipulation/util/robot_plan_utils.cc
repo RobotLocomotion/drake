@@ -45,7 +45,7 @@ void ApplyJointVelocityLimits(
   DRAKE_DEMAND(times->front() ==0);
   const int num_time_steps = keyframes.size();
 
-  // Calculate a matrix of velocities between each timestep.  We'll
+  // Calculate a matrix of velocities between each time step.  We'll
   // use this later to determine by how much the plan exceeds the
   // joint velocity limits.
   Eigen::MatrixXd velocities(limits.size(), num_time_steps - 1);
@@ -90,7 +90,7 @@ lcmt_robot_plan EncodeKeyFrames(
   plan.num_states = num_time_steps;
   const lcmt_robot_state default_robot_state{};
   plan.plan.resize(num_time_steps, default_robot_state);
-  /// Encode the q_sol returned for each timestep into the vector of
+  /// Encode the q_sol returned for each time step into the vector of
   /// robot states.
   for (int i = 0; i < num_time_steps; i++) {
     DRAKE_DEMAND(keyframes[i].size() == static_cast<int>(joint_names.size()));

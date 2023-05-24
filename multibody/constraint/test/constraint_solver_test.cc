@@ -2447,7 +2447,7 @@ class Constraint2DSolverTest : public ::testing::Test {
   }
 
  private:
-  // The timestep size for discretization. Note: if the timestep is too
+  // The time-step size for discretization. Note: if the time step is too
   // large, the accuracy might be too low for the necessary effect to emerge).
   // But we also want the step size to be large enough to test robustness. The
   // selected value should be a good compromise.
