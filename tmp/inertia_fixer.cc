@@ -9,6 +9,8 @@
 
 DEFINE_bool(invalid_only, false,
             "if true, only fix physically invalid inertias");
+DEFINE_bool(in_place, false,
+            "if true, modify the file in-place");
 
 namespace drake {
 namespace multibody {
@@ -280,7 +282,9 @@ int do_main(int argc, char* argv[]) {
     drake::log()->error("missing input filename");
     return 1;
   }
-  const char* outfile = (argc > 2) ? argv[2] : "/dev/stdout";
+  const char* outfile =
+      FLAGS_in_place ? argv[1] : ((argc > 2) ? argv[2] : "/dev/stdout");
+
 
   XMLDocument xml_doc;
   xml_doc.LoadFile(argv[1]);
