@@ -764,6 +764,9 @@ TEST_F(SdfParserTest, BallJointWithAxis2Error) {
   </joint>
 </model>)""");
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*A ball joint axis will be ignored. Only the dynamic"
+      " parameters and limits will be considered.*"));
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       R"(.*Actuation \(via non-zero effort limits\) for ball joint )"
       R"('should_not_have_axis' is not implemented yet and will be )"
       R"(ignored.*)"));
@@ -1142,6 +1145,12 @@ TEST_F(SdfParserTest, JointParsingTest) {
   EXPECT_TRUE(CompareMatrices(ball_joint.position_upper_limits(), inf3));
   EXPECT_TRUE(CompareMatrices(ball_joint.velocity_lower_limits(), neg_inf3));
   EXPECT_TRUE(CompareMatrices(ball_joint.velocity_upper_limits(), inf3));
+  // Ball joints with axis produce a waring indicating it only some params
+  // of it are used.
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*A ball joint axis will be ignored. Only the dynamic"
+      " parameters and limits will be considered.*"));
+  FlushDiagnostics();
 
   // Universal joint
   DRAKE_EXPECT_NO_THROW(
@@ -1383,6 +1392,9 @@ TEST_F(SdfParserTest, ActuatedBallJointParsingTest) {
     </axis>
   </joint>
 </model>)""");
+  EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
+      ".*A ball joint axis will be ignored. Only the dynamic"
+      " parameters and limits will be considered.*"));
   EXPECT_THAT(TakeWarning(), ::testing::MatchesRegex(
       ".*effort limits.*ball joint.*not implemented.*"));
 }
