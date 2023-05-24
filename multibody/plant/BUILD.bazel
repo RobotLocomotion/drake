@@ -394,6 +394,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:matrix_block",
     ],
 )
 
@@ -985,6 +986,10 @@ drake_cc_googletest(
     name = "joint_locking_test",
     deps = [
         ":plant",
+        "//geometry:meshcat",
+        "//geometry:meshcat_visualizer",
+        "//geometry/test_utilities:meshcat_environment",
+        "//multibody/meshcat:contact_visualizer",
         "//systems/analysis:simulator",
     ],
 )
