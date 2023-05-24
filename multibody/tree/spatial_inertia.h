@@ -5,6 +5,7 @@
 #include <limits>
 #include <ostream>
 #include <string>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -529,6 +530,57 @@ class SpatialInertia {
     return ret_value;
   }
 
+  /// @anchor spatial_inertia_equivalent_shapes
+  /// @name Spatial inertia equivalent shapes
+  /// Calculates semi-diameters (half-lengths) and a rigid transform (position
+  /// and orientation) for the uniform-density object whose spatial inertia
+  /// is equal to `this` spatial inertia.
+  /// @returns 3 principal semi-diameters (half-lengths) [a b c] sorted in
+  /// descending order (a ≥ b ≥ c), their associated principal directions
+  /// [Px Py Pz] stored in columns of a rotation matrix R_EP, and the position
+  /// vector p_EoPo_E from `this` spatial inertia's about-point Eo to Po (`this
+  /// spatial inertia's center of mass). The rotation matrix R_EP relates the
+  /// expressed-in frame E for `this` spatial inertia to the frame P with origin
+  /// Po that contains right-handed orthogonal unit vectors Px, Py, Pz.
+  /// The 1ˢᵗ column of R_EP is Px_E (Px expressed in frame E) which is parallel
+  /// to the principal axis associated with a (largest principal semi-diameter).
+  /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
+  /// parallel to principal axes associated with b and c (the intermediate and
+  /// smallest principal semi-diameters). The principal semi-diameters are
+  /// measured from Scm. If a = b = c, R_EP is the identity matrix.
+  /// Together, R_EP and p_EoPo_E are returned via the rigid transform X_EP.
+  /// @note This function is useful for visualization or physical interpretation
+  /// of the geometric extents of `this` spatial inertia for a given shape.
+  /// @throws std::exception if the elements of `this` spatial inertia cannot
+  /// be converted to a real finite double. For example, an exception is thrown
+  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  /// @see CalcPrincipalMomentsAndAxesOfInertia() to calculate principal moments
+  /// of inertia and their associated principal directions.
+  ///@{
+
+  /// Returns semi-diameters, associated axes orientations, and the position of
+  /// a solid ellipsoid whose spatial inertia is equal to this spatial inertia.
+  /// See @ref spatial_inertia_equivalent_shapes
+  /// "Spatial inertia equivalent shapes" for more details.
+  std::pair<Vector3<double>, math::RigidTransform<double>>
+  CalcPrincipalSemiDiametersAndRigidTransformForSolidEllipsoid() const {
+    constexpr double inertia_shape_factor = 1.0 / 5.0;
+    return CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+        inertia_shape_factor);
+  }
+
+  /// Returns half-lengths, associated axes orientations, and the position of
+  /// a solid box whose spatial inertia is equal to this spatial inertia.
+  /// See @ref spatial_inertia_equivalent_shapes
+  /// "Spatial inertia equivalent shapes" for more details.
+  std::pair<Vector3<double>, math::RigidTransform<double>>
+  CalcPrincipalHalfLengthsAndRigidTransformForSolidBox() const {
+    constexpr double inertia_shape_factor = 1.0 / 3.0;
+    return CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+        inertia_shape_factor);
+  }
+  ///@}
+
   /// Copy to a full 6x6 matrix representation.
   Matrix6<T> CopyToFullMatrix6() const {
     using drake::math::VectorToSkewSymmetric;
@@ -812,6 +864,42 @@ class SpatialInertia {
   // appended to `message`, e.g., to help identify a rotational inertia that
   // violates the "triangle inequality".
   void WriteExtraCentralInertiaProperties(std::string* message) const;
+
+  // Returns semi-diameters (half-lengths), associated axes orientations, and
+  // the position of a uniform-density object whose shape is specified by
+  // inertia_shape_factor and whose spatial inertia is equal to `this`
+  // spatial inertia. See @ref spatial_inertia_equivalent_shapes
+  // "Spatial inertia equivalent shapes" for more details.
+  // @param[in] inertia_shape_factor real positive number in the range
+  // 0 < inertia_shape_factor ≤ 1 associated with the rotational moment of
+  // inertia (Ixx, Iyy, Izz) formulas for I_BBcm_P, where B is a uniform-density
+  // body (e.g., a solid ellipsoid, hollow ellipsoid, solid box, hollow box,
+  // massless box with 8 equal-mass particles at its corners, etc.).
+  // solid box), Bcm is B's center of mass, and frame P contains right-handed
+  // orthogonal unit vectors Px, Py, Pz that are aligned with B's principal
+  // inertia axes. The examples below are for bodies B of mass m.
+  //-----------------------------------------|----------------------------------
+  // Solid ellipsoid with semi-axes a, b, c  | Solid box with ½ lengths a, b, c
+  // Ixx = 1/5 m (b² + c²)                   | Ixx = 1/3 m (b² + c²)
+  // Iyy = 1/5 m (a² + c²)                   | Iyy = 1/3 m (a² + c²)
+  // Izz = 1/5 m (a² + b²)                   | Izz = 1/3 m (a² + b²)
+  // shape_factor = 1/5                      | shape_factor = 1/3
+  //-----------------------------------------|----------------------------------
+  // Hollow ellipsoid with semi-axes a, b, c | Hollow box with ½ lengths a, b, c
+  // Ixx = 1/3 m (b² + c²)                   | Ixx = ?/? m (b² + c²)
+  // Iyy = 1/3 m (a² + c²)                   | Iyy = ?/? m (a² + c²)
+  // Izz = 1/3 m (a² + b²)                   | Izz = ?/? m (a² + b²)
+  // shape_factor = 1/3                      | shape_factor = ?/?
+  //-----------------------------------------|----------------------------------
+  // Ellipsoid with semi-axes a, b, c        | Box with ½ lengths a, b, c
+  // Mass m concentrated in 6 particles      | Mass m concentrated in 8 particle
+  // Ixx = 1/3 m (b² + c²)                   | Ixx = m (b² + c²)
+  // Iyy = 1/3 m (a² + c²)                   | Iyy = m (a² + c²)
+  // Izz = 1/3 m (a² + b²)                   | Izz = m (a² + b²)
+  // shape_factor = 1/3                      | shape_factor = 1
+  std::pair<Vector3<double>, math::RigidTransform<double>>
+  CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+      double inertia_shape_factor) const;
 };
 
 /// Writes an instance of SpatialInertia into a std::ostream.

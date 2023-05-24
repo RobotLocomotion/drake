@@ -108,31 +108,6 @@ Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
 }
 
 template <typename T>
-std::pair<Vector3<double>, math::RotationMatrix<double>>
-RotationalInertia<T>::CalcPrincipalLengthsAndAxesForEquivalentShape(
-    double shape_factor, double mass) const {
-  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
-      CalcPrincipalMomentsAndAxesOfInertia();
-  const Vector3<double>& Imoments = I_BBcm_P.first;
-  const math::RotationMatrix<double> R_EP = I_BBcm_P.second;
-  const double Imin = Imoments(0);
-  const double Imed = Imoments(1);
-  const double Imax = Imoments(2);
-  DRAKE_ASSERT(Imin <= Imed && Imed <= Imax);
-  DRAKE_THROW_UNLESS(shape_factor > 0 && shape_factor <= 1);
-  DRAKE_THROW_UNLESS(is_positive_finite(mass));
-  const double coef = 0.5 / (mass * shape_factor);
-  using std::max;  // Avoid round-off issues that result in e.g., sqrt(-1E-15).
-  const double lmax_squared = max(coef * (Imed + Imax - Imin), 0.0);
-  const double lmed_squared = max(coef * (Imin + Imax - Imed), 0.0);
-  const double lmin_squared = max(coef * (Imin + Imed - Imax), 0.0);
-  const double lmax = std::sqrt(lmax_squared);
-  const double lmed = std::sqrt(lmed_squared);
-  const double lmin = std::sqrt(lmin_squared);
-  return std::pair(Vector3<double>(lmax, lmed, lmin), R_EP);
-}
-
-template <typename T>
 void RotationalInertia<T>::ThrowNotPhysicallyValid(const char* func_name)
     const {
   std::string error_message = fmt::format(

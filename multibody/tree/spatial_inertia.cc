@@ -439,6 +439,31 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
 }
 
 template <typename T>
+std::pair<Vector3<double>, math::RigidTransform<double>>
+SpatialInertia<T>::CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+    double inertia_shape_factor) const {
+  const T& mass = get_mass();
+
+  // Get position vector from Eo (`this` spatial inertia's about point) to
+  // Po (`this` spatial inertia's center of mass).
+  const Vector3<T>& p_EoPo_E = get_com();
+
+  // Shift `this` spatial inertia's unit inertia from the Eo to Po.
+  const UnitInertia<T>& G_SEo_E = get_unit_inertia();
+  const UnitInertia<T> G_SPo_E = G_SEo_E.ShiftToCenterOfMass(p_EoPo_E);
+
+  // Form the principal semi-diameters (half-lengths) and rotation matrix R_EP
+  // that contains the associated principal axes directions.
+  std::pair<Vector3<double>, math::RotationMatrix<double>> abc_R_EP =
+      G_SPo_E.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          inertia_shape_factor);
+  const Vector3<double>& abc = abc_R_EP.first;
+  const drake::math::RotationMatrix<double>& R_EP = abc_R_EP.second;
+  const RigidTransform<double> X_EP(R_EP, p_EoPo_E);
+  return std::pair(Vector3<double>(abc), X_EP);
+}
+
+template <typename T>
 void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
     std::string* message) const {
   DRAKE_DEMAND(message != nullptr);
