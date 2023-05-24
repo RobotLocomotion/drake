@@ -67,7 +67,7 @@ void RunFirstOrderHold(const bool suppress_initial_transient) {
       EXPECT_TRUE(CompareMatrices(log.data().col(i), Vector2d(0., 0.)));
     } else if (log.sample_times()(i) <= time_step) {
       if (!suppress_initial_transient) {
-        // The outputs should jump for one timestep because u(0) is non-zero.
+        // The outputs should jump for one time step because u(0) is non-zero.
         EXPECT_TRUE(CompareMatrices(
             log.data().col(i), Vector2d(4. / time_step, 5. / time_step),
             1e-12));

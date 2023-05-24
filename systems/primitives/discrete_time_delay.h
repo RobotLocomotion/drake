@@ -55,16 +55,16 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
 
   /// Constructs a DiscreteTimeDelay system updating every `update_sec` and
   /// delaying a vector-valued input of size `vector_size` for
-  /// `delay_timesteps` number of updates.
-  DiscreteTimeDelay(double update_sec, int delay_timesteps, int vector_size)
-      : DiscreteTimeDelay(update_sec, delay_timesteps, vector_size, nullptr) {}
+  /// `delay_time_steps` number of updates.
+  DiscreteTimeDelay(double update_sec, int delay_time_steps, int vector_size)
+      : DiscreteTimeDelay(update_sec, delay_time_steps, vector_size, nullptr) {}
 
   /// Constructs a DiscreteTimeDelay system updating every `update_sec` and
   /// delaying an abstract-valued input of type `abstract_model_value` for
-  /// `delay_timesteps` number of updates.
-  DiscreteTimeDelay(double update_sec, int delay_timesteps,
+  /// `delay_time_steps` number of updates.
+  DiscreteTimeDelay(double update_sec, int delay_time_steps,
                     const AbstractValue& abstract_model_value)
-      : DiscreteTimeDelay(update_sec, delay_timesteps, -1,
+      : DiscreteTimeDelay(update_sec, delay_time_steps, -1,
                           abstract_model_value.Clone()) {}
 
   /// Scalar-type converting copy constructor.
@@ -90,7 +90,7 @@ class DiscreteTimeDelay final : public LeafSystem<T> {
   template <typename U> friend class DiscreteTimeDelay;
 
   // All of the other constructors delegate here.
-  DiscreteTimeDelay(double update_sec, int delay_timesteps, int vector_size,
+  DiscreteTimeDelay(double update_sec, int delay_time_steps, int vector_size,
                     std::unique_ptr<const AbstractValue> model_value);
 
   // Sets the output port value to the properly delayed vector value.
