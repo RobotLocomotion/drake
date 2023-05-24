@@ -176,6 +176,31 @@ UnitInertia<T> UnitInertia<T>::SolidTetrahedronAboutVertex(
   return UnitInertia(Ixx, Iyy, Izz, Ixy, Ixz, Iyz);
 }
 
+template <typename T>
+std::pair<Vector3<double>, math::RotationMatrix<double>>
+UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+    double inertia_shape_factor) const {
+  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
+      CalcPrincipalMomentsAndAxesOfInertia();
+  const Vector3<double>& Imoments = I_BBcm_P.first;
+  const math::RotationMatrix<double> R_EP = I_BBcm_P.second;
+  const double Imin = Imoments(0);
+  const double Imed = Imoments(1);
+  const double Imax = Imoments(2);
+  DRAKE_ASSERT(Imin <= Imed && Imed <= Imax);
+  DRAKE_THROW_UNLESS(inertia_shape_factor > 0 && inertia_shape_factor <= 1);
+  const double coef = 0.5 / inertia_shape_factor;
+  using std::max;  // Avoid round-off issues that result in e.g., sqrt(-1E-15).
+  const double lmax_squared = max(coef * (Imed + Imax - Imin), 0.0);
+  const double lmed_squared = max(coef * (Imin + Imax - Imed), 0.0);
+  const double lmin_squared = max(coef * (Imin + Imed - Imax), 0.0);
+  const double lmax = std::sqrt(lmax_squared);
+  const double lmed = std::sqrt(lmed_squared);
+  const double lmin = std::sqrt(lmin_squared);
+  return std::pair(Vector3<double>(lmax, lmed, lmin), R_EP);
+}
+
+
 }  // namespace multibody
 }  // namespace drake
 
