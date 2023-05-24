@@ -27,6 +27,13 @@ GTEST_TEST(SlicingAndIndexing, SelectRows) {
   EXPECT_EQ(S, S_expected);
 }
 
+GTEST_TEST(SlicingAndIndexing, ExcludeRows) {
+  const VectorXd M = MakeMatrixWithLinSpacedValues(6, 1);
+  const MatrixXd S = ExcludeRows(M, indices);
+  const VectorXd S_expected = (VectorXd(3, 1) << 1, 3, 6).finished();
+  EXPECT_EQ(S, S_expected);
+}
+
 GTEST_TEST(SlicingAndIndexing, SelectCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 5);
   const MatrixXd S = SelectCols(M, indices);
@@ -42,6 +49,21 @@ GTEST_TEST(SlicingAndIndexing, SelectCols) {
   EXPECT_EQ(S, S_expected);
 }
 
+GTEST_TEST(SlicingAndIndexing, ExcludeCols) {
+  const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 5);
+  const MatrixXd S = ExcludeCols(M, indices);
+  // clang-format off
+  const MatrixXd S_expected = (MatrixXd(6, 2) <<
+    1, 13,
+    2, 14,
+    3, 15,
+    4, 16,
+    5, 17,
+    6, 18).finished();
+  // clang-format on
+  EXPECT_EQ(S, S_expected);
+}
+
 GTEST_TEST(SlicingAndIndexing, SelectRowsCols) {
   const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 6);
   const MatrixXd S = SelectRowsCols(M, indices);
@@ -50,6 +72,18 @@ GTEST_TEST(SlicingAndIndexing, SelectRowsCols) {
      8, 20, 26,
     10, 22, 28,
     11, 23, 29).finished();
+  // clang-format on
+  EXPECT_EQ(S, S_expected);
+}
+
+GTEST_TEST(SlicingAndIndexing, ExcludeRowsCols) {
+  const MatrixXd M = MakeMatrixWithLinSpacedValues(6, 6);
+  const MatrixXd S = ExcludeRowsCols(M, indices);
+  // clang-format off
+  const MatrixXd S_expected = (MatrixXd(3, 3) <<
+     1, 13, 31,
+     3, 15, 33,
+     6, 18, 36).finished();
   // clang-format on
   EXPECT_EQ(S, S_expected);
 }

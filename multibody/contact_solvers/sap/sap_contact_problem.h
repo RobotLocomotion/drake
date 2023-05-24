@@ -13,6 +13,13 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+/* Simple struct to keep the mapping from a SapContactProblem to a reduced dof
+   counterpart.*/
+struct ReducedMapping {
+  PartialPermutation clique_permutation;
+  PartialPermutation constraint_permutation;
+};
+
 /* In the SAP formulation of contact the state of a mechanical system is
 advanced from the previous state x₀ = [q₀,v₀] to the next state x = [q,v]. The
 SAP formulation linearizes the discrete time dynamics of the mechanical system
@@ -116,6 +123,12 @@ class SapContactProblem {
 
   /* Returns a deep-copy of `this` instance. */
   std::unique_ptr<SapContactProblem<T>> Clone() const;
+
+  // Project the contact problem to a reduced DOF contact
+  // problem according to the set of contributing/non-contributing DOFs included
+  // in `locked_indices` and `clique_locked_indices` coming from joint locking.
+  ReducedMapping Reduce(std::vector<int> locked_indices,
+                        std::vector<std::vector<int>> clique_locked_indices);
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */

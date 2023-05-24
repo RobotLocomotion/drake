@@ -234,6 +234,49 @@ class SapConstraint {
     return second_clique_jacobian_;
   }
 
+  /* Sets the index of the first (and maybe only) participating clique.
+     Throws and exception if `first_clique` is negative.
+  */
+  void set_first_clique(int first_clique) {
+    if (first_clique < 0) {
+      throw std::logic_error("Clique index must be non-negative.");
+    }
+    first_clique_ = first_clique;
+  }
+
+  /* Sets the index of the second  participating clique. */
+  void set_second_clique(int second_clique) { second_clique_ = second_clique; }
+
+  /* Sets the Jacobian with respect to the DOFs of the first clique. */
+  void set_first_clique_jacobian(MatrixX<T>&& jacobian) {
+    first_clique_jacobian_ = MatrixBlock<T>(std::move(jacobian));
+  }
+
+  /* Sets the Jacobian with respect to the DOFs of the first clique. */
+  void set_first_clique_jacobian(const MatrixBlock<T>& jacobian) {
+    first_clique_jacobian_ = jacobian;
+  }
+
+  /* Sets the Jacobian with respect to the DOFs of the second clique. Throws an
+     exception if `num_cliques() < 2`. */
+  void set_second_clique_jacobian(MatrixX<T>&& jacobian) {
+    if (num_cliques() < 2) {
+      throw std::logic_error(
+          "Error setting second clique jacobian when num_cliques() < 2.");
+    }
+    second_clique_jacobian_ = MatrixBlock<T>(std::move(jacobian));
+  }
+
+  /* Sets the Jacobian with respect to the DOFs of the second clique. Throws an
+     exception if `num_cliques() < 2`. */
+  void set_second_clique_jacobian(const MatrixBlock<T>& jacobian) {
+    if (num_cliques() < 2) {
+      throw std::logic_error(
+          "Error setting second clique jacobian when num_cliques() < 2.");
+    }
+    second_clique_jacobian_ = jacobian;
+  }
+
   /* Makes data used by this constraint to perform computations. Different
    constraints can opt to use `time_step` and a diagonal approximation of the
    Delassus operator in `delassus_estimation` to pre-compute scale quantities to
