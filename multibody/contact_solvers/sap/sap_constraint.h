@@ -2,12 +2,14 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 
 namespace drake {
@@ -156,6 +158,32 @@ class SapConstraint {
 
   /* Polymorphic deep-copy into a new instance. */
   std::unique_ptr<SapConstraint<T>> Clone() const { return DoClone(); }
+
+  /* Creates a clone, cᵣ, of this constraint, c, modified by the clique and dof
+    permutation given by `clique_permutation` and `per_clique_locked_dofs`. The
+    following table breaks down how the returned constraint relates to this
+    constraint where participates(x) is true iff index x participates in the
+    partial permutation given by `clique_permutation` and permuted(x) is its
+    permuted index. For convenience c.first_clique = i and c.second_clique = j
+    and cᵣ.first_clique = iᵣ and cᵣ.second_clique = jᵣ:
+     ________________________________________________________________________
+    | participates(i) | participates(j) |        iᵣ       |         jᵣ       |
+    |------------------------------------------------------------------------|
+    |     FALSE       |     FALSE       |         No constraint made.        |
+    |     TRUE        |     FALSE       |   permuted(i)   |        -1        |
+    |     FALSE       |     TRUE        |   permuted(j)   |        -1        |
+    |     TRUE        |     TRUE        |   permuted(i)   |    permuted(j)   |
+    |------------------------------------------------------------------------|
+
+    The constraint Jacobian for a participating clique is modified by removing
+    all columns that correspond to dofs included in
+    `per_clicked_locked_dofs[clique_index]`.
+
+    Note: if both cliques do not participate, this function returns `nullptr`.
+  */
+  std::unique_ptr<SapConstraint<T>> MakeReduced(
+      const PartialPermutation& clique_permutation,
+      const std::vector<std::vector<int>>& per_clique_locked_dofs) const;
 
  protected:
   /* Protected copy construction is enabled for sub-classes to use in their

@@ -259,6 +259,133 @@ GTEST_TEST(ContactProblem, Clone) {
   EXPECT_EQ(graph.num_constraint_equations(), 17);
 }
 
+/* We test reducing the ContactProblem. The graph setup sketched below
+(with the same semantics as the graph described in `AddConstraints`) is the
+resulting graph from locking dofs {0, 1, 2, 3, 4, 9}. This has the effect of
+eliminating clique 0 and 1 from the problem. One constraint from the original
+problem will be completely removed. Other constraints that involved one of the
+eliminated clique now become single clique constraints.
+
+           0[0](1)
+             ┌─┐
+             │ │
+            ┌┴─┴┐     ┌───┐
+         ┌──┤ 1 │     │ 0 │
+  0[2](2)└──└┬─┬┘     └───┘
+             | │
+             └─┘
+         0[1, 3](6,5)
+*/
+GTEST_TEST(ContactProblem, MakeReduced) {
+  const double time_step = 0.01;
+  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  AddConstraints(&problem);
+
+  // Lock all the dofs of clique 0 and 1. Lock velocity index 9, local index 1
+  // of clique 3.
+  const std::vector<int> locked_indices{0, 1, 2, 3, 4, 9};
+  const std::vector<std::vector<int>> clique_locked_indices{
+      {0, 1}, {0, 1, 2}, {}, {1}};
+  ReducedMapping mapping;
+  std::unique_ptr<SapContactProblem<double>> reduced_problem =
+      problem.MakeReduced(locked_indices, clique_locked_indices, &mapping);
+
+  EXPECT_EQ(reduced_problem->num_cliques(), 2);
+  EXPECT_EQ(reduced_problem->num_constraints(), 4);
+  EXPECT_EQ(reduced_problem->num_constraint_equations(), 14);
+  // Verify some expected data.
+  EXPECT_EQ(reduced_problem->v_star().size(), 5);
+  // Two cliques eliminated, so two remain.
+  EXPECT_EQ(reduced_problem->dynamics_matrix().size(), 2);
+  // Original clique 2 (reduced clique 0) is unaffected.
+  EXPECT_EQ(reduced_problem->dynamics_matrix()[0], S44);
+  // Original clique 3 (reduced clique 1) has only 1 dof now.
+  EXPECT_EQ(reduced_problem->dynamics_matrix()[1].size(), 1);
+  EXPECT_EQ(reduced_problem->dynamics_matrix()[1](0, 0), 2);
+
+  const ContactProblemGraph& graph = reduced_problem->graph();
+  EXPECT_EQ(graph.num_cliques(), 2);
+  EXPECT_EQ(graph.num_constraints(), 4);
+  EXPECT_EQ(graph.num_clusters(), 1);
+  EXPECT_EQ(graph.num_constraint_equations(), 14);
+
+  /* Clique permutation. We expect the first two cliques to be eliminated. */
+  EXPECT_EQ(mapping.clique_permutation.permuted_domain_size(), 2);
+  EXPECT_FALSE(mapping.clique_permutation.participates(0));
+  EXPECT_FALSE(mapping.clique_permutation.participates(1));
+  EXPECT_TRUE(mapping.clique_permutation.participates(2));
+  EXPECT_TRUE(mapping.clique_permutation.participates(3));
+
+  EXPECT_EQ(mapping.clique_permutation.permuted_index(2), 0);
+  EXPECT_EQ(mapping.clique_permutation.permuted_index(3), 1);
+
+  /* Constraint permutation. We expect the second constraint between the two
+   * eliminated cliques (0 and 1) to be eliminated. */
+  EXPECT_EQ(mapping.constraint_permutation.permuted_domain_size(), 4);
+  EXPECT_TRUE(mapping.constraint_permutation.participates(0));
+  EXPECT_FALSE(mapping.constraint_permutation.participates(1));
+  EXPECT_TRUE(mapping.constraint_permutation.participates(2));
+  EXPECT_TRUE(mapping.constraint_permutation.participates(3));
+  EXPECT_TRUE(mapping.constraint_permutation.participates(4));
+
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(0), 0);
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(2), 1);
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(3), 2);
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(4), 3);
+
+  /* Original constraint: num_equations(1) first_clique(3) first_clique_nv(2)
+     Reduced  constraint: num_equations(1) first_clique(1) first_clique_nv(1) */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(0);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 1);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              A[3].cols() - clique_locked_indices[3].size());
+  }
+
+  /* Original constraint: num_equations(6)  first_clique(0)  first_clique_nv(2)
+                                           second_clique(3) second_clique_nv(2)
+     Reduced  constraint: num_equations(6)  first_clique(1)  first_clique_nv(1)
+   */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(1);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 6);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              A[3].cols() - clique_locked_indices[3].size());
+  }
+
+  /* Original constraint: num_equations(2) first_clique(1)  first_clique_nv(3)
+                                          second_clique(3) second_clique_nv(2)
+     Reduced  constraint: num_equations(2) first_clique(1)  first_clique_nv(1)
+  */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(2);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 2);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              A[3].cols() - clique_locked_indices[3].size());
+  }
+
+  /* Original constraint: num_equations(5)  first_clique(0)  first_clique_nv(2)
+                                           second_clique(3) second_clique_nv(2)
+     Reduced  constraint: num_equations(5)  first_clique(1)  first_clique_nv(1)
+  */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(3);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 5);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              A[3].cols() - clique_locked_indices[3].size());
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace contact_solvers
