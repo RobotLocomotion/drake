@@ -4,6 +4,8 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/common/ssize.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
 namespace multibody {
@@ -50,6 +52,51 @@ void SapConstraint<T>::CalcCostHessian(const AbstractValue& data,
   const int ne = num_constraint_equations();
   G->resize(ne, ne);
   DoCalcCostHessian(data, G);
+}
+
+template <typename T>
+std::unique_ptr<SapConstraint<T>> SapConstraint<T>::MakeReduced(
+    const PartialPermutation& clique_permutation,
+    const std::vector<std::vector<int>>& per_clique_known_dofs) const {
+  DRAKE_DEMAND(clique_permutation.domain_size() ==
+               ssize(per_clique_known_dofs));
+  DRAKE_DEMAND(first_clique() < clique_permutation.domain_size());
+  DRAKE_DEMAND(num_cliques() <= 1 ||
+               second_clique() < clique_permutation.domain_size());
+
+  std::unique_ptr<SapConstraint<T>> c = this->Clone();
+  const bool first_participates =
+      clique_permutation.participates(first_clique());
+  const bool second_participates =
+      num_cliques() > 1 && clique_permutation.participates(second_clique());
+
+  // Neither clique participates, no constraint made.
+  if (!first_participates && !second_participates) return nullptr;
+
+  if (first_participates && second_participates) {
+    // Permute both cliques.
+    c->J_ = SapConstraintJacobian<T>(
+        clique_permutation.permuted_index(first_clique()),
+        drake::multibody::internal::ExcludeCols(
+            first_clique_jacobian(), per_clique_known_dofs[first_clique()]),
+        clique_permutation.permuted_index(second_clique()),
+        drake::multibody::internal::ExcludeCols(
+            second_clique_jacobian(), per_clique_known_dofs[second_clique()]));
+  } else if (first_participates) {
+    // Single clique, permute the first clique.
+    c->J_ = SapConstraintJacobian<T>(
+        clique_permutation.permuted_index(first_clique()),
+        drake::multibody::internal::ExcludeCols(
+            first_clique_jacobian(), per_clique_known_dofs[first_clique()]));
+  } else {
+    // Single clique, permute the second clique.
+    c->J_ = SapConstraintJacobian<T>(
+        clique_permutation.permuted_index(second_clique()),
+        drake::multibody::internal::ExcludeCols(
+            second_clique_jacobian(), per_clique_known_dofs[second_clique()]));
+  }
+
+  return c;
 }
 
 }  // namespace internal

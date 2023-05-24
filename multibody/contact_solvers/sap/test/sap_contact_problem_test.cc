@@ -259,6 +259,174 @@ GTEST_TEST(ContactProblem, Clone) {
   EXPECT_EQ(graph.num_constraint_equations(), 17);
 }
 
+/* We test reducing the SapContactProblem. The graph setup sketched below
+(having the same semantics as the graph described in `AddConstraints`)
+corresponds to the graph of the contact problem that results from locking DoFs
+{0,1,2,3,4,9} in the contact problem produced by AddConstraints(). The indices
+in the graph below are the new mapped indices of the reduced problem. The
+following tables explain the mapping between original clique and constraint
+indices and their corresponding indices in the reduced problem:
+
+┌────────────┬────────────────────┬┬─────────────────────────────────────────┐
+| clique idx | reduced clique idx || constraint idx | reduced constraint idx |
+├────────────|────────────────────┤├────────────────|────────────────────────┤
+|     0      |         N/A        ||       0        |           0            |
+|     1      |         N/A        ||       1        |          N/A           |
+|     2      |          0         ||       2        |           1            |
+|     3      |          1         ||       3        |           2            |
+└────────────┴────────────────────┘|       4        |           3            |
+                                   └────────────────┴────────────────────────┘
+
+Locking these DoFs has the effect of eliminating clique 0 and 1 from the
+problem. One constraint from the original problem will be completely removed.
+Other constraints that involved one of the eliminated clique now become single
+clique constraints:
+
+    0[0, 1, 2, 3](1, 6, 2, 5)
+             ┌─┐
+             │ │
+            ┌┴─┴┐     ┌───┐
+            | 1 │     │ 0 │
+            └───┘     └───┘
+
+TODO(joemasterjohn): Make a fixture to consolidate the creation of this problem
+and its constraints.
+*/
+GTEST_TEST(ContactProblem, MakeReduced) {
+  const double time_step = 0.01;
+  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  AddConstraints(&problem);
+
+  // Lock all the dofs of clique 0 and 1. Lock velocity index 9, local index 1
+  // of clique 3.
+  const std::vector<int> locked_indices{0, 1, 2, 3, 4, 9};
+  const std::vector<std::vector<int>> clique_locked_indices{
+      {0, 1}, {0, 1, 2}, {}, {1}};
+  ReducedMapping mapping;
+  std::unique_ptr<SapContactProblem<double>> reduced_problem =
+      problem.MakeReduced(locked_indices, clique_locked_indices, &mapping);
+
+  EXPECT_EQ(reduced_problem->num_cliques(), 2);
+  EXPECT_EQ(reduced_problem->num_constraints(), 4);
+  EXPECT_EQ(reduced_problem->num_constraint_equations(), 14);
+  // Verify some expected data.
+  EXPECT_EQ(reduced_problem->v_star().size(), 5);
+  // Two cliques eliminated, so two remain.
+  EXPECT_EQ(reduced_problem->dynamics_matrix().size(), 2);
+  // Original clique 2 (reduced clique 0) is unaffected.
+  EXPECT_EQ(reduced_problem->dynamics_matrix()[0], S44);
+  // Original clique 3 (reduced clique 1) has only 1 dof now.
+  EXPECT_EQ(reduced_problem->dynamics_matrix()[1].size(), 1);
+  EXPECT_EQ(reduced_problem->dynamics_matrix()[1](0, 0), 2);
+
+  const ContactProblemGraph& graph = reduced_problem->graph();
+  EXPECT_EQ(graph.num_cliques(), 2);
+  EXPECT_EQ(graph.num_constraints(), 4);
+  EXPECT_EQ(graph.num_clusters(), 1);
+  EXPECT_EQ(graph.num_constraint_equations(), 14);
+
+  /* Clique permutation. We expect the first two cliques to be eliminated. */
+  EXPECT_EQ(mapping.clique_permutation.domain_size(), problem.num_cliques());
+  EXPECT_EQ(mapping.clique_permutation.permuted_domain_size(), 2);
+  EXPECT_FALSE(mapping.clique_permutation.participates(0));
+  EXPECT_FALSE(mapping.clique_permutation.participates(1));
+  EXPECT_TRUE(mapping.clique_permutation.participates(2));
+  EXPECT_TRUE(mapping.clique_permutation.participates(3));
+
+  EXPECT_EQ(mapping.clique_permutation.permuted_index(2), 0);
+  EXPECT_EQ(mapping.clique_permutation.permuted_index(3), 1);
+
+  /* Constraint permutation. We expect the second constraint between the two
+     eliminated cliques (0 and 1) to be eliminated. */
+  EXPECT_EQ(mapping.constraint_permutation.domain_size(),
+            problem.num_constraints());
+  EXPECT_EQ(mapping.constraint_permutation.permuted_domain_size(), 4);
+  EXPECT_TRUE(mapping.constraint_permutation.participates(0));
+  EXPECT_FALSE(mapping.constraint_permutation.participates(1));
+  EXPECT_TRUE(mapping.constraint_permutation.participates(2));
+  EXPECT_TRUE(mapping.constraint_permutation.participates(3));
+  EXPECT_TRUE(mapping.constraint_permutation.participates(4));
+
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(0), 0);
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(2), 1);
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(3), 2);
+  EXPECT_EQ(mapping.constraint_permutation.permuted_index(4), 3);
+
+  /* Verify that the each constraint's index mapping is as expected and
+     described by the graph. For each constraint, the table lists the original
+     problem constraint properties and the reduced problem properties.*/
+
+  /*
+    ┌──────────┬───────┬───────────────┬────────────────┬─────────────────┐
+    | problem  | index | num_equations | first_clique() | second_clique() |
+    ├──────────|───────|───────────────|────────────────|─────────────────┤
+    | original |   0   |      1        |       3        |      N/A        |
+    | reduced  |   0   |      1        |       1        |      N/A        |
+    └──────────┴───────┴───────────────┴────────────────┴─────────────────┘
+  */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(0);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 1);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              reduced_problem->num_velocities(c.first_clique()));
+  }
+
+  /*
+    ┌──────────┬───────┬───────────────┬────────────────┬─────────────────┐
+    | problem  | index | num_equations | first_clique() | second_clique() |
+    ├──────────|───────|───────────────|────────────────|─────────────────┤
+    | original |   2   |      6        |       0        |       3         |
+    | reduced  |   1   |      6        |       1        |      N/A        |
+    └──────────┴───────┴───────────────┴────────────────┴─────────────────┘
+  */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(1);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 6);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              reduced_problem->num_velocities(c.first_clique()));
+  }
+
+  /*
+    ┌──────────┬───────┬───────────────┬────────────────┬─────────────────┐
+    | problem  | index | num_equations | first_clique() | second_clique() |
+    ├──────────|───────|───────────────|────────────────|─────────────────┤
+    | original |   3   |      2        |       1        |       3         |
+    | reduced  |   2   |      2        |       1        |      N/A        |
+    └──────────┴───────┴───────────────┴────────────────┴─────────────────┘
+  */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(2);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 2);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              reduced_problem->num_velocities(c.first_clique()));
+  }
+
+  /*
+    ┌──────────┬───────┬───────────────┬────────────────┬─────────────────┐
+    | problem  | index | num_equations | first_clique() | second_clique() |
+    ├──────────|───────|───────────────|────────────────|─────────────────┤
+    | original |   4   |      5        |       0        |       3         |
+    | reduced  |   3   |      5        |       1        |      N/A        |
+    └──────────┴───────┴───────────────┴────────────────┴─────────────────┘
+  */
+  {
+    const SapConstraint<double>& c = reduced_problem->get_constraint(3);
+    EXPECT_EQ(c.num_cliques(), 1);
+    EXPECT_EQ(c.first_clique(), mapping.clique_permutation.permuted_index(3));
+    EXPECT_EQ(c.num_constraint_equations(), 5);
+    EXPECT_EQ(c.first_clique_jacobian().cols(),
+              reduced_problem->num_velocities(c.first_clique()));
+  }
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace contact_solvers
