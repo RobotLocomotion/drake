@@ -110,8 +110,9 @@ BlockSparseSymmetricMatrix MakeSymmetricMatrix() {
 }
 
 GTEST_TEST(TriangularBlockSparseMatrixTest, Construction) {
-  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
-  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  const BlockSparseLowerTriangularMatrix A_triangular =
+      MakeLowerTriangularMatrix();
+  const BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
   EXPECT_EQ(A_triangular.MakeDenseMatrix(), MakeDenseMatrix(false));
   EXPECT_EQ(A_symmetric.MakeDenseMatrix(), MakeDenseMatrix(true));
 }
@@ -133,6 +134,9 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, Getter) {
   ASSERT_TRUE(A_symmetric.HasBlock(0, 0));
   ASSERT_FALSE(A_triangular.HasBlock(1, 2));
   ASSERT_TRUE(A_symmetric.HasBlock(1, 2));
+  ASSERT_TRUE(A_triangular.HasBlock(2, 1));
+  ASSERT_TRUE(A_symmetric.HasBlock(2, 1));
+  ASSERT_FALSE(A_symmetric.HasBlock(100, 200));  // out of range.
 
   EXPECT_EQ(A_triangular.block(2, 1), A21);
   EXPECT_EQ(A_symmetric.block(2, 1), A21);
