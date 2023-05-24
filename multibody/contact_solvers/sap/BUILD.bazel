@@ -60,6 +60,8 @@ drake_cc_library(
         "//common:unused",
         "//common:value",
         "//multibody/contact_solvers:matrix_block",
+        "//multibody/contact_solvers/sap:partial_permutation",
+        "//multibody/plant:slicing_and_indexing",
     ],
 )
 
@@ -96,6 +98,7 @@ drake_cc_library(
         ":sap_constraint",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/plant:slicing_and_indexing",
     ],
 )
 

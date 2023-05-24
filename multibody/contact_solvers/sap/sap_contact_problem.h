@@ -13,6 +13,13 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
+/* Struct returned by SapContactProblem::MakeReduced() which stores the mapping
+   between the original and reduced problems.*/
+struct ReducedMapping {
+  PartialPermutation clique_permutation;
+  PartialPermutation constraint_permutation;
+};
+
 /* In the SAP formulation of contact the state of a mechanical system is
 advanced from the previous state x₀ = [q₀,v₀] to the next state x = [q,v]. The
 SAP formulation linearizes the discrete time dynamics of the mechanical system
@@ -116,6 +123,39 @@ class SapContactProblem {
 
   /* Returns a deep-copy of `this` instance. */
   std::unique_ptr<SapContactProblem<T>> Clone() const;
+
+  /* Makes a "reduced" contact problem given the DOFs specified in
+    `known_free_motion_dofs` are known to equal the free-motion velocities.
+    That is, for an i-th DOF in `known_free_motion_dofs`, we know that vᵢ = vᵢ*.
+    `per_clique_known_free_motion_dofs` contains the same information stored in
+    `known_free_motion_dofs`, but expressed per-clique and in clique local
+    indices. e.g. If clique 0 corresponds to global velocity indices {5, 6, 7},
+    then its local velocity indices are {0, 1, 2}. If `known_free_motion_dofs` =
+    {6}, i.e. we know v₆ = v₆*, then `per_clique_known_free_motion_dofs[0] =
+    {1}` containing the known clique local index 1, corresponding to the known
+    global velocity index 6.
+
+    @param[in] known_free_motion_dofs Specifies known DOFs to be eliminated.
+    i ∈ known_free_motion_dofs specifies the i-th DOF.
+    @param[in] per_clique_known_free_motion_dofs Specifies known DOFs to be
+    eliminated, per clique. i ∈ per_clique_known_free_motion_dofs[c] specifies
+    the i-th DOF of the c-th clique. This parameter should contain the same
+    information in `known_free_motion_dofs`, but transformed to clique local
+    indices.
+    @param[out] mapping On output it will store information to map DOFs and
+    constraints between the original and reduced problems in a ReducedMapping.
+
+    @pre known_free_motion_dofs is a strict ordered subset of
+         [0, ..., num_velocities()-1].
+    @pre per_clique_known_free_motion_dofs.size() == num_cliques().
+    @pre per_clique_known_free_motion_dofs[c] is a strict ordered subset of
+         [0, ..., num_velocities(c)-1].
+    @pre mapping != nullptr.
+  */
+  std::unique_ptr<SapContactProblem<T>> MakeReduced(
+      const std::vector<int>& known_free_motion_dofs,
+      const std::vector<std::vector<int>>& per_clique_known_free_motion_dofs,
+      ReducedMapping* mapping) const;
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */

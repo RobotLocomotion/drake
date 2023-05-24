@@ -2,12 +2,14 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/unused.h"
 #include "drake/common/value.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
+#include "drake/multibody/contact_solvers/sap/partial_permutation.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 
 namespace drake {
@@ -156,6 +158,33 @@ class SapConstraint {
 
   /* Polymorphic deep-copy into a new instance. */
   std::unique_ptr<SapConstraint<T>> Clone() const { return DoClone(); }
+
+  /* Creates a "reduced" clone of this constraint by removing known DoFs from
+   the constraint's Jacobian. That is, the newly reduced constraint will have
+   this constraint's Jacobian excluding columns for known DoFs. The following
+   table breaks down how the returned constraint relates to this constraint
+   where:
+     participates(clique_index) = clique_permutation.participates(clique_index)
+     permuted(clique_index) = clique_permutation.permuted_index(clique_index)
+   For convenience: c.first_clique  = i   c.second_clique  = j
+                    cᵣ.first_clique = iᵣ  cᵣ.second_clique = jᵣ
+     ________________________________________________________________________
+    | participates(i) | participates(j) |        iᵣ       |         jᵣ       |
+    |------------------------------------------------------------------------|
+    |     FALSE       |     FALSE       |       N/A       |       N/A        |
+    |     TRUE        |     FALSE       |   permuted(i)   |       N/A        |
+    |     FALSE       |     TRUE        |   permuted(j)   |       N/A        |
+    |     TRUE        |     TRUE        |   permuted(i)   |    permuted(j)   |
+    |------------------------------------------------------------------------|
+    Note: if both cliques do not participate, this function returns `nullptr`.
+    @pre clique_permutation.domain_size() == per_clique_known_dofs.size().
+    @pre first_clique() < clique_permutation.domain_size().
+    @pre if num_cliques() > 1,
+      second_clique() < clique_permutation.domain_size().
+  */
+  std::unique_ptr<SapConstraint<T>> MakeReduced(
+      const PartialPermutation& clique_permutation,
+      const std::vector<std::vector<int>>& per_clique_known_dofs) const;
 
  protected:
   /* Protected copy construction is enabled for sub-classes to use in their
