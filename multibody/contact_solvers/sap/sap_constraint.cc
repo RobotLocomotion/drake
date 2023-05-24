@@ -4,6 +4,7 @@
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
 namespace multibody {
@@ -122,6 +123,46 @@ void SapConstraint<T>::DoCalcCostHessian(const AbstractValue& abstract_data,
                                          MatrixX<T>* G) const {
   const auto& data = abstract_data.get_value<SapConstraintData<T>>();
   *G = data.dPdy() * data.R_inv().asDiagonal();
+}
+
+template <typename T>
+std::unique_ptr<SapConstraint<T>> SapConstraint<T>::MakeReduced(
+    const PartialPermutation& clique_permutation,
+    const std::vector<std::vector<int>>& per_clique_locked_dofs) const {
+  std::unique_ptr<SapConstraint<T>> c = this->Clone();
+  const bool first_participates =
+      clique_permutation.participates(first_clique());
+  const bool second_participates =
+      num_cliques() > 1 && clique_permutation.participates(second_clique());
+
+  // Neither clique participates, no constraint made.
+  if (!first_participates && !second_participates) return nullptr;
+
+  // Permute the first clique, if it participates.
+  if (first_participates) {
+    c->first_clique_ = clique_permutation.permuted_index(first_clique());
+    c->first_clique_jacobian_ = drake::multibody::internal::ExcludeCols(
+        first_clique_jacobian(), per_clique_locked_dofs[first_clique()]);
+  }
+
+  // Permute the second clique, if it participates.
+  if (second_participates) {
+    // Decide whether it becomes the first clique or second clique of the new
+    // constraint.
+    if (first_participates) {
+      c->second_clique_ = clique_permutation.permuted_index(second_clique());
+      c->second_clique_jacobian_ = drake::multibody::internal::ExcludeCols(
+          second_clique_jacobian(), per_clique_locked_dofs[second_clique()]);
+    } else {
+      c->first_clique_ = clique_permutation.permuted_index(second_clique());
+      c->first_clique_jacobian_ = drake::multibody::internal::ExcludeCols(
+          second_clique_jacobian(), per_clique_locked_dofs[second_clique()]);
+      // Mark the new constraint as having just 1 participating clique.
+      c->second_clique_ = -1;
+    }
+  }
+
+  return c;
 }
 
 }  // namespace internal
