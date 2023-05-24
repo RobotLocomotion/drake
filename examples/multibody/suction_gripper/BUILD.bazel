@@ -1,0 +1,97 @@
+package(default_visibility = ["//visibility:public"])
+
+load(
+    "@drake//tools/skylark:drake_cc.bzl",
+    "drake_cc_binary",
+    "drake_cc_googletest",
+    "drake_cc_library",
+)
+load("//tools/lint:lint.bzl", "add_lint_tests")
+
+drake_cc_library(
+    name = "suction_force_model",
+    srcs = [
+        "suction_force_model.cc",
+    ],
+    hdrs = [
+        "suction_force_model.h",
+    ],
+    deps = [
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//systems/framework:leaf_system",
+    ],
+)
+
+drake_cc_library(
+    name = "suction_gripper_multibody_model",
+    srcs = [
+        "suction_gripper_multibody_model.cc",
+    ],
+    hdrs = [
+        "suction_gripper_multibody_model.h",
+    ],
+    deps = [
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//multibody/tree",
+    ],
+)
+
+drake_cc_library(
+    name = "example_gripper_multibody_model",
+    srcs = [
+        "example_gripper_multibody_model.cc",
+    ],
+    hdrs = [
+        "example_gripper_multibody_model.h",
+    ],
+    deps = [
+        ":suction_gripper_multibody_model",
+    ],
+)
+
+drake_cc_binary(
+    name = "package_swing",
+    srcs = ["package_swing.cc"],
+    deps = [
+        ":example_gripper_multibody_model",
+        ":suction_force_model",
+        ":suction_gripper_multibody_model",
+        "//geometry:drake_visualizer",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//visualization:visualization_config_functions",
+        "@gflags",
+    ],
+)
+
+drake_cc_binary(
+    name = "pick_and_place",
+    srcs = ["pick_and_place.cc"],
+    deps = [
+        ":example_gripper_multibody_model",
+        ":suction_force_model",
+        ":suction_gripper_multibody_model",
+        "//common/trajectories:piecewise_polynomial",
+        "//geometry:drake_visualizer",
+        "//multibody/plant",
+        "//multibody/tree",
+        "//systems/analysis:simulator",
+        "//systems/analysis:simulator_gflags",
+        "//systems/analysis:simulator_print_stats",
+        "//systems/controllers:pid_controller",
+        "//systems/framework:diagram",
+        "//systems/framework:diagram_builder",
+        "//systems/primitives:first_order_low_pass_filter",
+        "//systems/primitives:trajectory_source",
+        "//visualization:visualization_config_functions",
+        "@gflags",
+    ],
+)
+
+add_lint_tests()
