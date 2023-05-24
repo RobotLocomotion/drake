@@ -28,7 +28,7 @@ namespace {
 const double kMachineTol = 10 * std::numeric_limits<double>::epsilon();
 
 const double kUpdatePeriod = 0.1;
-const int kBuffer = 5;  // Number of timesteps the signal is delayed.
+const int kBuffer = 5;  // Number of time steps the signal is delayed.
 const int kLength = 3;  // Length of vector passing through the block.
 
 // A simple type containing a vector, to simplify checking expected values for

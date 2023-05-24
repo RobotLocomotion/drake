@@ -4,6 +4,7 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
+#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/eigen_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -151,14 +152,31 @@ PYBIND11_MODULE(primitives, m) {
     DefineTemplateClassWithDefault<DiscreteTimeDelay<T>, LeafSystem<T>>(
         m, "DiscreteTimeDelay", GetPyParam<T>(), doc.DiscreteTimeDelay.doc)
         .def(py::init<double, int, int>(), py::arg("update_sec"),
-            py::arg("delay_timesteps"), py::arg("vector_size"),
+            py::arg("delay_time_steps"), py::arg("vector_size"),
             doc.DiscreteTimeDelay.ctor
-                .doc_3args_update_sec_delay_timesteps_vector_size)
+                .doc_3args_update_sec_delay_time_steps_vector_size)
         .def(py::init<double, int, const AbstractValue&>(),
+            py::arg("update_sec"), py::arg("delay_time_steps"),
+            py::arg("abstract_model_value"),
+            doc.DiscreteTimeDelay.ctor
+                .doc_3args_update_sec_delay_time_steps_abstract_model_value)
+        .def(py_init_deprecated<DiscreteTimeDelay<T>, double, int, int>(
+                 "Argument delay_timesteps has been renamed to "
+                 "delay_time_steps. This version will be removed on or after "
+                 "2023-09-01."),
+            py::arg("update_sec"), py::arg("delay_timesteps"),
+            py::arg("vector_size"),
+            doc.DiscreteTimeDelay.ctor
+                .doc_3args_update_sec_delay_time_steps_vector_size)
+        .def(py_init_deprecated<DiscreteTimeDelay<T>, double, int,
+                 const AbstractValue&>(
+                 "Argument delay_timesteps has been renamed to "
+                 "delay_time_steps. This version will be removed on or after "
+                 "2023-09-01."),
             py::arg("update_sec"), py::arg("delay_timesteps"),
             py::arg("abstract_model_value"),
             doc.DiscreteTimeDelay.ctor
-                .doc_3args_update_sec_delay_timesteps_abstract_model_value);
+                .doc_3args_update_sec_delay_time_steps_abstract_model_value);
 
     DefineTemplateClassWithDefault<DiscreteDerivative<T>, LeafSystem<T>>(
         m, "DiscreteDerivative", GetPyParam<T>(), doc.DiscreteDerivative.doc)
