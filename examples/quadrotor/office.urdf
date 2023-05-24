@@ -316,14 +316,14 @@
     </inertial>
     <visual>
       <origin xyz="-3.3 5.3 1.4" rpy="0 0 0"/>
-      <geometry>5
+      <geometry>
         <box size="2. 1. .33"/>
       </geometry>
       <material name="White"/>
     </visual>
     <collision>
       <origin xyz="-3.3 5.3 1.4" rpy="0 0 0"/>
-      <geometry>5
+      <geometry>
         <box size="2. 1. .33"/>
       </geometry>
       <material name="White"/>
