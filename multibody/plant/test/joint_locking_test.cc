@@ -221,7 +221,7 @@ std::unique_ptr<MultibodyPlant<double>> MakeDoublePendulumPlant(
 // elbow joint of `plant_locked` is a revolute joint that has been locked at the
 // configuration (0, kElbowPosition). We verify that the generalized
 // accelerations, velocities and positions match to a given accuracy at each
-// timestep.
+// time step.
 GTEST_TEST(JointLockingTest, TrajectoryTest) {
   // Allow 2 digits of precision loss to account for roundoff differences
   // between the two code paths. This value was determined empircally by

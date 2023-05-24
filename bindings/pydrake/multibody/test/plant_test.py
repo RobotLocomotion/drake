@@ -1614,9 +1614,9 @@ class TestPlant(unittest.TestCase):
             "drake/manipulation/models/"
             "iiwa_description/sdf/iiwa14_no_collision.sdf")
 
-        timestep = 0.0002
+        time_step = 0.0002
         # N.B. `Parser` only supports `MultibodyPlant_[float]`.
-        plant_f = MultibodyPlant_[float](timestep)
+        plant_f = MultibodyPlant_[float](time_step)
         parser = Parser(plant_f)
 
         iiwa_model, = parser.AddModels(file_name=iiwa_sdf_path)

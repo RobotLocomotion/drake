@@ -76,7 +76,7 @@ class Scenario:
         accuracy=1.0e-2,
         target_realtime_rate=1.0)
 
-    # Plant configuration (timestep and contact parameters).
+    # Plant configuration (time step and contact parameters).
     plant_config: MultibodyPlantConfig = MultibodyPlantConfig()
 
     # All of the fully deterministic elements of the simulation.

@@ -616,7 +616,7 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInStiction) {
 
   ApplyTangentialForceForBodyInStiction();
 
-  // Simulate the plant for 50 timesteps, long enough to reach steady state.
+  // Simulate the plant for 50 time steps, long enough to reach steady state.
   Simulate(50);
 
   std::unique_ptr<ContactResults<double>> contact_results =
@@ -672,7 +672,7 @@ TEST_P(RigidBodyOnCompliantGround, VerifyContactResultsBodyInSlip) {
 
   ApplyTangentialForceForBodyInSlip();
 
-  // Simulate the plant for 10 timesteps, long enough to reach steady state.
+  // Simulate the plant for 10 time steps, long enough to reach steady state.
   Simulate(10);
 
   std::unique_ptr<ContactResults<double>> contact_results =
