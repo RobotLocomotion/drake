@@ -16,6 +16,7 @@
 #include "drake/common/text_logging.h"
 #include "drake/math/cross_product.h"
 #include "drake/math/rotation_matrix.h"
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/math/spatial_algebra.h"
 #include "drake/multibody/tree/rotational_inertia.h"
 #include "drake/multibody/tree/unit_inertia.h"
@@ -562,10 +563,10 @@ class SpatialInertia {
   /// a solid ellipsoid whose spatial inertia is equal to this spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
-  std::pair<Vector3<double>, math::RigidTransform<double>>
-  CalcPrincipalSemiDiametersAndRigidTransformForSolidEllipsoid() const {
+  std::pair<Vector3<double>, drake::math::RigidTransform<double>>
+  CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid() const {
     constexpr double inertia_shape_factor = 1.0 / 5.0;
-    return CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+    return CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
         inertia_shape_factor);
   }
 
@@ -573,10 +574,10 @@ class SpatialInertia {
   /// a solid box whose spatial inertia is equal to this spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
-  std::pair<Vector3<double>, math::RigidTransform<double>>
-  CalcPrincipalHalfLengthsAndRigidTransformForSolidBox() const {
+  std::pair<Vector3<double>, drake::math::RigidTransform<double>>
+  CalcPrincipalHalfLengthsAndPoseForSolidBox() const {
     constexpr double inertia_shape_factor = 1.0 / 3.0;
-    return CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+    return CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
         inertia_shape_factor);
   }
   ///@}
@@ -897,8 +898,8 @@ class SpatialInertia {
   // Iyy = 1/3 m (a² + c²)                   | Iyy = m (a² + c²)
   // Izz = 1/3 m (a² + b²)                   | Izz = m (a² + b²)
   // shape_factor = 1/3                      | shape_factor = 1
-  std::pair<Vector3<double>, math::RigidTransform<double>>
-  CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+  std::pair<Vector3<double>, drake::math::RigidTransform<double>>
+  CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
       double inertia_shape_factor) const;
 };
 
