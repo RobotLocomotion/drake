@@ -223,6 +223,7 @@ drake_cc_googletest(
     name = "sap_limit_constraint_test",
     deps = [
         ":sap_limit_constraint",
+        ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
     ],
