@@ -1168,6 +1168,85 @@ GTEST_TEST(SpatialInertia, PlusEqualOperatorForTwoMasslessBodies) {
   EXPECT_EQ(M_BcP_E.get_unit_inertia().CopyToFullMatrix3(), G_CP_E);
 }
 
+// Test the SpatialInertia function that determines an inertia-equivalent shape.
+GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
+  // Consider a body B whose shape (e.g., an ellipsoid or box) is defined by
+  // semi-diameters (half-lengths) a, b, c.
+  const double a = 5.0, b = 4.0, c = 3.0;
+  const double density = 2.34;
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+  const drake::math::RotationMatrix R_identity =
+      drake::math::RotationMatrix<double>::Identity();
+
+  // For a solid ellipsoid B, verify the function under test produces
+  // identical semi-diameters lmax = a, lmed = b, lmin = c.
+  // Verify principal directions (R_BP is an identity matrix).
+  // Verify p_EoPo is the zero vector.
+  SpatialInertia<double> M_BBcm_B =
+      SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, c);
+  std::pair<Vector3<double>, drake::math::RigidTransform<double>> abc_X_BP =
+      M_BBcm_B.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
+  Vector3<double> abc = abc_X_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  drake::math::RigidTransform<double> X_BP = abc_X_BP.second;
+  EXPECT_TRUE(X_BP.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BP.translation() == Vector3<double>::Zero());
+
+  // For a solid box B, verify the function under test produces
+  // identical half-length lmax = a, lmed = b, lmin = c.
+  // Verify principal directions (R_BP is an identity matrix).
+  // Verify p_EoPo is the zero vector.
+  M_BBcm_B =
+      SpatialInertia<double>::SolidBoxWithDensity(density, 2*a, 2*b, 2*c);
+  abc_X_BP = M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
+  abc = abc_X_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  X_BP = abc_X_BP.second;
+  EXPECT_TRUE(X_BP.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BP.translation() == Vector3<double>::Zero());
+
+
+  // Translate the solid box B and ensure half-lengths and principal axes are
+  // unchanged, whereas the position vector returned in X_BP has changed.
+  const Vector3<double> p_BoBcm_B(1.2, 3.4, 5.6);
+  SpatialInertia<double> M_BBo_B = M_BBcm_B.Shift(-p_BoBcm_B);
+  abc_X_BP = M_BBo_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
+  abc = abc_X_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  X_BP = abc_X_BP.second;
+  EXPECT_TRUE(X_BP.rotation().IsExactlyEqualTo(R_identity));
+  EXPECT_TRUE(X_BP.translation() == p_BoBcm_B);
+
+  // Rotate the solid box B and ensure half-lengths are unchanged, principal
+  // axes are changed.
+  // Note: This tests a rotational inertia with non-zero products of inertia.
+  drake::math::RotationMatrix<double> R_BE =
+      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  SpatialInertia<double> M_BBo_E = M_BBo_B.ReExpress(R_BE);
+  abc_X_BP = M_BBo_E.CalcPrincipalHalfLengthsAndPoseForSolidBox();
+  abc = abc_X_BP.first;
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  X_BP = abc_X_BP.second;
+
+  // The orthogonal unit length eigenvectors Px_B, Py_B, Pz_B stored in the
+  // columns of R_BP are parallel to the principal axes (lines). Since lines
+  // do not have a fully-qualified direction (they lack sense), all we can check
+  // is whether these principal axes (represented by Px_B, Py_B, Pz_B) are
+  // parallel to the right-handed unit vectors Ex_B, Ey_B, Ez_B stored in the
+  // columns of R_BE and whether they form a right-handed set.
+  const drake::math::RotationMatrix<double> R_BP = X_BP.rotation();
+  const Vector3<double> Px_B = R_BP.col(0), Ex_B = R_BE.col(0);
+  const Vector3<double> Py_B = R_BP.col(1), Ey_B = R_BE.col(1);
+  const Vector3<double> Pz_B = R_BP.col(2), Ez_B = R_BE.col(2);
+  EXPECT_TRUE(Px_B(0) != 0.0 && Px_B(1) != 0.0);    // Px != [1 0 0]
+  EXPECT_TRUE(Py_B(0) != 0.0 && Py_B(1) != 0.0);    // Py != [0 1 0]
+  EXPECT_NEAR(std::abs(Pz_B(2)), 1.0, kTolerance);  // Pz = [0 0 1] or [0 0 -1]
+  EXPECT_NEAR(std::abs(Px_B.dot(Ex_B)), 1.0, kTolerance);  // Px parallel to Cx.
+  EXPECT_NEAR(std::abs(Py_B.dot(Ey_B)), 1.0, kTolerance);  // Py parallel to Cy.
+  EXPECT_NEAR(std::abs(Pz_B.dot(Ez_B)), 1.0, kTolerance);  // Pz parallel to Cz.
+  EXPECT_NEAR(Px_B.cross(Py_B).dot(Pz_B), 1.0, kTolerance);  // Right-handed.
+}
+
 }  // namespace
 }  // namespace multibody
 }  // namespace drake

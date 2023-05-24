@@ -797,9 +797,6 @@ class RotationalInertia {
   }
 
  private:
-  // Facilitate testing.
-  friend class RotationalInertiaTester;
-
   // Make RotationalInertia<Scalar> templated on any other type Scalar be a
   // friend of this class templated on T. That way the method
   // RotationalInertia<T>::cast<Scalar>() can make use of the private

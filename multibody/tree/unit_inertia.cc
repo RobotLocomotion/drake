@@ -181,7 +181,7 @@ std::pair<Vector3<double>, math::RotationMatrix<double>>
 UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
     double inertia_shape_factor) const {
   std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
-      CalcPrincipalMomentsAndAxesOfInertia();
+      this->CalcPrincipalMomentsAndAxesOfInertia();
   const Vector3<double>& Imoments = I_BBcm_P.first;
   const math::RotationMatrix<double> R_EP = I_BBcm_P.second;
   const double Imin = Imoments(0);
