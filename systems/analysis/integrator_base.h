@@ -1556,8 +1556,13 @@ class IntegratorBase {
           "size of {}; working minimum is ", new_step_size,
           get_working_minimum_step_size());
       std::ostringstream str;
-      str << "Error control wants to select step smaller than minimum" <<
-           " allowed (" << get_working_minimum_step_size() << ")";
+      // TODO(russt): Link to the "debugging dynamical systems" tutorial
+      // (#17249) once it exists.
+      str << "Error control wants to select step smaller than minimum"
+          << " allowed (" << get_working_minimum_step_size()
+          << "). This is typically an indication that some part of your system "
+             "*with continuous state* is going unstable and/or is producing "
+             "excessively large derivatives.";
       throw std::runtime_error(str.str());
     }
   }
