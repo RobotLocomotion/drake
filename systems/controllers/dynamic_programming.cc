@@ -25,7 +25,7 @@ FittedValueIteration(
     Simulator<double>* simulator,
     const std::function<double(const Context<double>& context)>& cost_function,
     const math::BarycentricMesh<double>::MeshGrid& state_grid,
-    const math::BarycentricMesh<double>::MeshGrid& input_grid, double timestep,
+    const math::BarycentricMesh<double>::MeshGrid& input_grid, double time_step,
     const DynamicProgrammingOptions& options) {
   DRAKE_DEMAND(options.discount_factor > 0. && options.discount_factor <= 1.);
 
@@ -61,7 +61,7 @@ FittedValueIteration(
         "pass a non-default `options.input_port_index`?");
   }
 
-  DRAKE_DEMAND(timestep > 0.);
+  DRAKE_DEMAND(time_step > 0.);
 
   // TODO(russt): check that the system is time-invariant.
 
@@ -103,9 +103,9 @@ FittedValueIteration(
       sim_state.SetFromVector(state_mesh.get_mesh_point(state));
       simulator->Initialize();
 
-      cost[input](state) = timestep * cost_function(context);
+      cost[input](state) = time_step * cost_function(context);
 
-      simulator->AdvanceTo(timestep);
+      simulator->AdvanceTo(time_step);
       state_vec = sim_state.CopyToVector();
 
       for (const auto& b : options.periodic_boundary_conditions) {
@@ -172,7 +172,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
                              const VectorX<symbolic::Variable>& parameters)>&
         linearly_parameterized_cost_to_go_function,
     int num_parameters, const Eigen::Ref<const Eigen::MatrixXd>& state_samples,
-    const Eigen::Ref<const Eigen::MatrixXd>& input_samples, double timestep,
+    const Eigen::Ref<const Eigen::MatrixXd>& input_samples, double time_step,
     const DynamicProgrammingOptions& options) {
   // discount_factor needs to be < 1 to avoid unbounded solutions (J = J* + ∞).
   DRAKE_DEMAND(options.discount_factor > 0. && options.discount_factor <= 1.);
@@ -196,7 +196,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
   DRAKE_DEMAND(context.num_input_ports() == 1);
   DRAKE_DEMAND(system.num_total_inputs() == input_size);
 
-  DRAKE_DEMAND(timestep > 0.);
+  DRAKE_DEMAND(time_step > 0.);
 
   // TODO(russt): check that the system is time-invariant.
 
@@ -234,9 +234,9 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
       sim_state.SetFromVector(state_vec);
       simulator->Initialize();
 
-      const double cost = timestep * cost_function(context);
+      const double cost = time_step * cost_function(context);
 
-      simulator->AdvanceTo(timestep);
+      simulator->AdvanceTo(time_step);
       next_state_vec = sim_state.CopyToVector();
 
       for (const auto& b : options.periodic_boundary_conditions) {

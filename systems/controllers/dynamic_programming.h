@@ -76,23 +76,23 @@ struct DynamicProgrammingOptions {
 /// http://underactuated.csail.mit.edu/underactuated.html?chapter=dp .
 /// It currently requires that the system to be optimized has only continuous
 /// state and it is assumed to be time invariant.  This code makes a
-/// discrete-time approximation (using @p timestep) for the value iteration
+/// discrete-time approximation (using @p time_step) for the value iteration
 /// update.
 ///
 /// @param simulator contains the reference to the System being optimized and to
 /// a Context for that system, which may contain non-default Parameters, etc.
-/// The @p simulator is run for @p timestep seconds from every point on the mesh
-/// in order to approximate the dynamics; all of the simulation parameters
+/// The @p simulator is run for @p time_step seconds from every point on the
+/// mesh in order to approximate the dynamics; all of the simulation parameters
 /// (integrator, etc) are relevant during that evaluation.
 ///
 /// @param cost_function is the continuous-time instantaneous cost.  This
 /// implementation of the discrete-time formulation above uses the approximation
-///   g(x,u) = timestep*cost_function(x,u).
+///   g(x,u) = time_step*cost_function(x,u).
 /// @param state_grid defines the mesh on the state space used to represent
 /// the cost-to-go function and the resulting policy.
 /// @param input_grid defines the discrete action space used in the value
 /// iteration update.
-/// @param timestep a time in seconds used for the discrete-time approximation.
+/// @param time_step a time in seconds used for the discrete-time approximation.
 /// @param options optional DynamicProgrammingOptions structure.
 ///
 /// @return a std::pair containing the resulting policy, implemented as a
@@ -108,7 +108,7 @@ FittedValueIteration(
     Simulator<double>* simulator,
     const std::function<double(const Context<double>& context)>& cost_function,
     const math::BarycentricMesh<double>::MeshGrid& state_grid,
-    const math::BarycentricMesh<double>::MeshGrid& input_grid, double timestep,
+    const math::BarycentricMesh<double>::MeshGrid& input_grid, double time_step,
     const DynamicProgrammingOptions& options = DynamicProgrammingOptions());
 
 // TODO(russt): Handle the specific case where system is control affine and the
@@ -134,19 +134,19 @@ FittedValueIteration(
 /// http://underactuated.csail.mit.edu/underactuated.html?chapter=dp .
 /// It currently requires that the system to be optimized has only continuous
 /// state and it is assumed to be time invariant.  This code makes a
-/// discrete-time approximation (using @p timestep) for the value iteration
+/// discrete-time approximation (using @p time_step) for the value iteration
 /// update.
 ///
 /// @param simulator contains the reference to the System being optimized and to
 /// a Context for that system, which may contain non-default Parameters, etc.
-/// The @p simulator is run for @p timestep seconds from every pair of
+/// The @p simulator is run for @p time_step seconds from every pair of
 /// input/state sample points in order to approximate the dynamics; all of
 /// the simulation parameters (integrator, etc) are relevant during that
 /// evaluation.
 ///
 /// @param cost_function is the continuous-time instantaneous cost.  This
 /// implementation of the discrete-time formulation above uses the approximation
-///   g(x,u) = timestep*cost_function(x,u).
+///   g(x,u) = time_step*cost_function(x,u).
 ///
 /// @param linearly_parameterized_cost_to_go_function must define a function
 /// to approximate the cost-to-go, which takes the state vector as the first
@@ -161,7 +161,7 @@ FittedValueIteration(
 ///
 /// @param input_samples is a list of inputs (one per column) which are
 /// evaluated *at every sample point*.
-/// @param timestep a time in seconds used for the discrete-time approximation.
+/// @param time_step a time in seconds used for the discrete-time approximation.
 /// @param options optional DynamicProgrammingOptions structure.
 ///
 /// @return params the VectorXd of parameters that optimizes the
@@ -178,7 +178,7 @@ Eigen::VectorXd LinearProgrammingApproximateDynamicProgramming(
     int num_parameters,
     const Eigen::Ref<const Eigen::MatrixXd>& state_samples,
     const Eigen::Ref<const Eigen::MatrixXd>& input_samples,
-    double timestep,
+    double time_step,
     const DynamicProgrammingOptions& options = DynamicProgrammingOptions());
 
 // TODO(russt): could easily provide a version of LPADP that accepts the same
