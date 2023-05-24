@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <string>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"

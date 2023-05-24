@@ -439,28 +439,33 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
 }
 
 template <typename T>
-std::pair<Vector3<double>, math::RigidTransform<double>>
-SpatialInertia<T>::CalcPrincipalHalfLengthsAndRigidTransformForEquivalentShape(
+std::pair<Vector3<double>, drake::math::RigidTransform<double>>
+SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
     double inertia_shape_factor) const {
-  const T& mass = get_mass();
-
   // Get position vector from Eo (`this` spatial inertia's about point) to
-  // Po (`this` spatial inertia's center of mass).
-  const Vector3<T>& p_EoPo_E = get_com();
+  // Scm (`this` spatial inertia's center of mass).
+  const Vector3<T>& p_EoScm_E = get_com();
 
   // Shift `this` spatial inertia's unit inertia from the Eo to Po.
   const UnitInertia<T>& G_SEo_E = get_unit_inertia();
-  const UnitInertia<T> G_SPo_E = G_SEo_E.ShiftToCenterOfMass(p_EoPo_E);
+  const UnitInertia<T> G_SScm_E = G_SEo_E.ShiftToCenterOfMass(p_EoScm_E);
 
   // Form the principal semi-diameters (half-lengths) and rotation matrix R_EP
   // that contains the associated principal axes directions.
   std::pair<Vector3<double>, math::RotationMatrix<double>> abc_R_EP =
-      G_SPo_E.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+      G_SScm_E.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
           inertia_shape_factor);
   const Vector3<double>& abc = abc_R_EP.first;
   const drake::math::RotationMatrix<double>& R_EP = abc_R_EP.second;
-  const RigidTransform<double> X_EP(R_EP, p_EoPo_E);
-  return std::pair(Vector3<double>(abc), X_EP);
+
+  // Since R_EP is of type double and X_EP must also be of type double,
+  // create a position vector from Eo to Scm that is of type double.
+  const double xcm = ExtractDoubleOrThrow(p_EoScm_E(0));
+  const double ycm = ExtractDoubleOrThrow(p_EoScm_E(1));
+  const double zcm = ExtractDoubleOrThrow(p_EoScm_E(2));
+  const Vector3<double> p_EoPo_E(xcm, ycm, zcm);
+  const drake::math::RigidTransform<double> X_EP(R_EP, p_EoPo_E);
+  return std::pair(abc, X_EP);
 }
 
 template <typename T>
