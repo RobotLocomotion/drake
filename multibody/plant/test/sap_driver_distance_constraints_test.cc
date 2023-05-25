@@ -280,6 +280,7 @@ GTEST_TEST(DistanceConstraintsTests, VerifyIdMapping) {
   // Throw on id to wrong constraint specs type.
   EXPECT_THROW(plant.get_coupler_constraint_specs(distance_id), std::exception);
   EXPECT_THROW(plant.get_ball_constraint_specs(distance_id), std::exception);
+  EXPECT_THROW(plant.get_weld_constraint_specs(distance_id), std::exception);
 }
 
 GTEST_TEST(DistanceConstraintTests, FailOnTAMSI) {

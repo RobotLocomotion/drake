@@ -7,6 +7,7 @@
 
 #include <limits>
 
+#include "drake/math/rigid_transform.h"
 #include "drake/multibody/tree/multibody_tree_indexes.h"
 
 namespace drake {
@@ -91,6 +92,28 @@ struct BallConstraintSpec {
   BodyIndex body_B;      // Index of body B.
   Vector3<double> p_BQ;  // Position of point Q in body frame B.
   MultibodyConstraintId id;       // Id of this constraint in the plant.
+};
+
+// Struct to store the specification for a weld constraint. A weld constraint is
+// modeled as a holonomic constraint:
+//   X_PQ_N(q) = 0
+// F is a frame rigidly affixed to body A and Q is a frame rigidly affixed to
+// body B. X_PQ_N(q) denotes the relative pose of frame Q in frame P expressed
+// in an intermediate frame N, as a function of the configuration of the model,
+// q. Imposing this constraint forces P and Q to be coincident.
+//
+// @pre body_A != bodyB. @see IsValid().
+struct WeldConstraintSpec {
+  // Returns `true` iff `this` specification is valid to define a weld
+  // constraint. A weld constraint specification is considered to be valid iff:
+  //   body_A != body_B.
+  bool IsValid() { return body_A != body_B; }
+
+  BodyIndex body_A;                   // Index of body A.
+  math::RigidTransform<double> X_AP;  // Pose of frame P in A's body frame
+  BodyIndex body_B;                   // Index of body B.
+  math::RigidTransform<double> X_BQ;  // Pose of frame Q in B's body frame.
+  MultibodyConstraintId id;           // Id of this constraint in the plant.
 };
 
 }  // namespace internal
