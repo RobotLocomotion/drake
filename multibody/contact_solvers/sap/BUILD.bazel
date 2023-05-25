@@ -31,6 +31,7 @@ drake_cc_package_library(
         ":sap_pd_controller_constraint",
         ":sap_solver",
         ":sap_solver_results",
+        ":sap_weld_constraint",
     ],
 )
 
@@ -212,6 +213,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "sap_weld_constraint",
+    srcs = ["sap_weld_constraint.cc"],
+    hdrs = ["sap_weld_constraint.h"],
+    deps = [
+        ":sap_constraint",
+        ":sap_constraint_jacobian",
+        ":sap_holonomic_constraint",
+        "//common:default_scalars",
+        "//common:essential",
+    ],
+)
+
+drake_cc_library(
     name = "sap_model",
     srcs = ["sap_model.cc"],
     hdrs = ["sap_model.h"],
@@ -388,6 +402,16 @@ drake_cc_googletest(
         "//solvers:mathematical_program",
         "//solvers:scs_solver",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
+    name = "sap_weld_constraint_test",
+    deps = [
+        ":sap_weld_constraint",
+        ":validate_constraint_gradients",
+        "//common:pointer_cast",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
