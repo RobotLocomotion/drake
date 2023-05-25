@@ -177,29 +177,33 @@ class SapConstraint {
       const Eigen::Ref<const VectorX<T>>& delassus_estimation) const;
 
   /* Computes constraint data as a function of constraint velocities `vc`.
-   This method can be as simple as a copy of `vc` into `data`, though specific
-   constraints might want to compute commonly occurring terms in the computation
-   of the cost, impulses and Hessian into `data` to be reused.
+   This method can be as simple as a copy of `vc` into `abstract_data`, though
+   specific constraints might want to compute commonly occurring terms in the
+   computation of the cost, impulses and Hessian into `data` to be reused.
    @pre vc.size() equals num_constraint_equations().
-   @pre data does not equal nullptr.
-   @pre data was created via MakeData() on `this` object and therefore the type
-   wrapped by AbstractValue is consistent with the concrete subclass. */
+   @pre abstract_data does not equal nullptr.
+   @pre abstract_data was created via MakeData() on `this` object and therefore
+   the type wrapped by AbstractValue is consistent with the concrete subclass.
+  */
   void CalcData(const Eigen::Ref<const VectorX<T>>& vc,
-                AbstractValue* data) const;
+                AbstractValue* abstract_data) const;
 
   /* Computes the constraint cost ℓ(vc) function of constraint velocities vc.
    @post The cost ℓ(vc) is a convex function of vc, as required by the SAP
    formulation.
-   @pre data was created via MakeData() on `this` object and therefore the type
-   wrapped by AbstractValue is consistent with the concrete subclass. */
-  T CalcCost(const AbstractValue& data) const;
+   @pre abstract_data was created via MakeData() on `this` object and therefore
+   the type wrapped by AbstractValue is consistent with the concrete subclass.
+  */
+  T CalcCost(const AbstractValue& abstract_data) const;
 
   /* Computes the impulse according to:
        γ(vc) = −∂ℓ/∂vc.
    @pre gamma does not equal nullptr.
-   @pre data was created via MakeData() on `this` object and therefore the type
-   wrapped by AbstractValue is consistent with the concrete subclass. */
-  void CalcImpulse(const AbstractValue& data, EigenPtr<VectorX<T>> gamma) const;
+   @pre abstract_data was created via MakeData() on `this` object and therefore
+   the type wrapped by AbstractValue is consistent with the concrete subclass.
+  */
+  void CalcImpulse(const AbstractValue& abstract_data,
+                   EigenPtr<VectorX<T>> gamma) const;
 
   /* Computes the constraint Hessian as:
        G(vc) = ∂²ℓ/∂vc² = -∂γ/∂vc.
@@ -208,9 +212,10 @@ class SapConstraint {
    symmetric positive semi-definite, since ℓ(vc) is a convex function of vc as
    required by the SAP formulation.
    @pre G does not equal nullptr.
-   @pre data was created via MakeData() on `this` object and therefore the type
-   wrapped by AbstractValue is consistent with the concrete subclass. */
-  void CalcCostHessian(const AbstractValue& data, MatrixX<T>* G) const;
+   @pre abstract_data was created via MakeData() on `this` object and therefore
+   the type wrapped by AbstractValue is consistent with the concrete subclass.
+  */
+  void CalcCostHessian(const AbstractValue& abstract_data, MatrixX<T>* G) const;
 
   /* Polymorphic deep-copy into a new instance. */
   std::unique_ptr<SapConstraint<T>> Clone() const { return DoClone(); }
