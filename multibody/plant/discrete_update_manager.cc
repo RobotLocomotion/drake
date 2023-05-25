@@ -224,6 +224,13 @@ DiscreteUpdateManager<T>::ball_constraints_specs() const {
 }
 
 template <typename T>
+const std::map<MultibodyConstraintId, internal::WeldConstraintSpec>&
+DiscreteUpdateManager<T>::weld_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::weld_constraints_specs(
+      *plant_);
+}
+
+template <typename T>
 const std::map<MultibodyConstraintId, bool>&
 DiscreteUpdateManager<T>::GetConstraintActiveStatus(
     const systems::Context<T>& context) const {

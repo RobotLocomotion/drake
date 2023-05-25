@@ -1227,7 +1227,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the total number of constraints specified by the user.
   int num_constraints() const {
     return num_coupler_constraints() + num_distance_constraints() +
-           num_ball_constraints();
+           num_ball_constraints() + num_weld_constraints();
   }
 
   /// Returns the total number of coupler constraints specified by the user.
@@ -1243,6 +1243,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// Returns the total number of ball constraints specified by the user.
   int num_ball_constraints() const {
     return ssize(ball_constraints_specs_);
+  }
+
+  /// Returns the total number of weld constraints specified by the user.
+  int num_weld_constraints() const {
+    return ssize(weld_constraints_specs_);
   }
 
   /// (Internal use only) Returns the coupler constraint specification
@@ -1272,6 +1277,15 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
     return ball_constraints_specs_.at(id);
   }
 
+  /// (Internal use only)  Returns the weld constraint specification
+  /// corresponding to `id`
+  /// @throws if `id` is not a valid identifier for a weld constraint.
+  const internal::WeldConstraintSpec& get_weld_constraint_specs(
+      MultibodyConstraintId id) const {
+    DRAKE_THROW_UNLESS(weld_constraints_specs_.count(id) > 0);
+    return weld_constraints_specs_.at(id);
+  }
+
   /// (Internal use only)  Returns a reference to the all of the coupler
   /// constraints in this plant as a map from MultibodyConstraintId to
   /// CouplerConstraintSpec.
@@ -1293,6 +1307,13 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   const std::map<MultibodyConstraintId, internal::BallConstraintSpec>&
   get_ball_constraint_specs() const {
     return ball_constraints_specs_;
+  }
+
+  /// (Internal use only) Returns a reference to the all of the weld constraints
+  /// in this plant as a map from MultibodyConstraintId to WeldConstraintSpec.
+  const std::map<MultibodyConstraintId, internal::WeldConstraintSpec>&
+  get_weld_constraint_specs() const {
+    return weld_constraints_specs_;
   }
 
   /// Returns the active status of the constraint given by `id` in `context`.
@@ -1394,6 +1415,22 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                     const Vector3<double>& p_AP,
                                     const Body<T>& body_B,
                                     const Vector3<double>& p_BQ);
+
+  /// Defines a constraint such that frame P affixed to body A is coincident at
+  /// all times with frame Q affixed to body B, effectively modeling a weld
+  /// joint.
+  ///
+  /// @param[in] body_A Body to which frame P is rigidly attached.
+  /// @param[in] X_AP Pose of frame P in body A's frame.
+  /// @param[in] body_B Body to which frame Q is rigidly attached.
+  /// @param[in] X_BQ Pose of frame Q in body B's frame.
+  /// @returns the id of the newly added constraint.
+  ///
+  /// @throws std::exception if bodies A and B are the same body.
+  /// @throws std::exception if the %MultibodyPlant has already been finalized.
+  MultibodyConstraintId AddWeldConstraint(
+      const Body<T>& body_A, const math::RigidTransform<double>& X_AP,
+      const Body<T>& body_B, const math::RigidTransform<double>& X_BQ);
 
   /// <!-- TODO(#18732): Add getters to interrogate existing constraints.
   /// -->
@@ -5499,6 +5536,10 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   // Map of ball constraint specifications.
   std::map<MultibodyConstraintId, internal::BallConstraintSpec>
       ball_constraints_specs_;
+
+  // Map of weld constraint specifications.
+  std::map<MultibodyConstraintId, internal::WeldConstraintSpec>
+      weld_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
