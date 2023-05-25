@@ -29,6 +29,8 @@ with other versions of Python or Java. However, these are not supported so if it
 doesn't work for you then please file a pull request with the fix, not a bug
 report.
 
+All else being equal, we would recommend developers use Ubuntu 22.04 (Jammy).
+
 ⁽¹⁾ Drake features that perform image rendering (e.g., camera simulation)
 require a working display server. Most personal computers will have this
 already built in, but some cloud or docker environments may require extra
@@ -40,15 +42,10 @@ setup steps.
 
 # Getting Drake
 
-We recommend that you [setup SSH access to GitHub.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
-to avoid needing to type your password each time you access it. The following
-instructions assume you have uploaded your public SSH key to your GitHub
-account.
-
-Now run:
+Run:
 
 ```
-git clone git@github.com:RobotLocomotion/drake.git
+git clone --filter=blob:none https://github.com/RobotLocomotion/drake.git
 ```
 
 Note: we suggest you keep the default clone directory name (``drake``) and not
@@ -59,29 +56,46 @@ Note: the build process may encounter problems if you have unusual characters
 like parentheses in the absolute path to the drake directory
 (see [#394](https://github.com/RobotLocomotion/drake/issues/394)).
 
+## Using a fork of Drake
+
 The above ``git clone`` command will configure Drake's primary repository as a
-remote called ``origin``. We recommend that you configure your fork of Drake's
-primary repository as the ``origin`` remote and Drake's primary repository as
-the ``upstream`` remote. This can be done by executing the following commands:
+remote called ``origin``. If you plan to fork Drake for development, we
+recommend that you configure your fork of Drake's primary repository as the
+``origin`` remote and Drake's primary repository as the ``upstream``
+remote. This can be done by executing the following commands:
 
 ```
 cd drake
 git remote set-url origin git@github.com:[your github user name]/drake.git
-git remote add upstream git@github.com:RobotLocomotion/drake.git
+git remote add upstream https://github.com/RobotLocomotion/drake.git
 git remote set-url --push upstream no_push
 ```
+
+We recommend that you
+[setup SSH access to github.com](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/)
+to avoid needing to type your password each time you access it.
 
 # Mandatory platform-specific instructions
 
 Before running the build, you must follow some one-time platform-specific
-setup steps:
+setup steps.
 
-* [macOS](/mac.html)
-* [Ubuntu](/ubuntu.html)
+*Ubuntu:*
 
-See [above](#supported-configurations)
-for the configurations and platforms that Drake officially supports.
-All else being equal, we would recommend developers use Ubuntu Focal.
+```
+sudo ./setup/ubuntu/install_prereqs.sh
+```
+
+*macOS:*
+
+We assume that you have already installed Xcode
+([from the Mac App Store](https://itunes.apple.com/us/app/xcode/id497799835)).
+
+After that, run:
+
+```
+./setup/mac/install_prereqs.sh
+```
 
 # Build with Bazel
 
@@ -109,6 +123,15 @@ effect on the Drake build. You might need to add a bazel configuration dotfile
 to your home directory if your build is running out of memory. See the
 [troubleshooting](/troubleshooting.html#build-oom) page for details.
 
+Be aware that repeatedly running `make` will install the recompiled version of
+Drake *on top of* the prior version. This will lead to disaster unless the set
+of installed filenames is exactly the same (because old files will be hanging
+around polluting your PYTHONPATH). It is safe if you are merely tweaking a
+source code file and repeatedly installing, without any changes to the build
+system. For any kind of larger change (e.g., upgrading to a newer Drake), we
+strongly advise that you delete the prior tree (within the `install`
+sub-directory) before running `make`.
+
 Please note the additional CMake options which affect the Python bindings:
 
 * ``-DWITH_GUROBI={ON, [OFF]}`` - Build with Gurobi enabled.
@@ -131,6 +154,14 @@ You will also need to have your ``PYTHONPATH`` configured correctly.
 cd drake-build
 export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
 ```
+
+*Ubuntu 22.04 (Jammy):*
+
+```bash
+cd drake-build
+export PYTHONPATH=${PWD}/install/lib/python3.10/site-packages:${PYTHONPATH}
+```
+
 *macOS:*
 
 ```bash
