@@ -238,11 +238,13 @@ CspaceFreePath::ConstructPlaneSearchProgramOnPath(
   // Now add the separation conditions to the program
   for (const auto& condition :
        plane_geometries_on_path.positive_side_conditions) {
-    condition.AddPositivityConstraintToProgram(param_eval_map, ret.prog.get());
+    condition.AddPositivityConstraintToProgram(param_eval_map,
+                                               ret.prog.get_mutable());
   }
   for (const auto& condition :
        plane_geometries_on_path.negative_side_conditions) {
-    condition.AddPositivityConstraintToProgram(param_eval_map, ret.prog.get());
+    condition.AddPositivityConstraintToProgram(param_eval_map,
+                                               ret.prog.get_mutable());
   }
   return ret;
 }
@@ -251,7 +253,7 @@ CspaceFreePath::SeparationCertificateResult
 CspaceFreePath::SolveSeparationCertificateProgram(
     const CspaceFreePath::SeparationCertificateProgram& certificate_program,
     const FindSeparationCertificateOptions& options) const {
-  CspaceFreePath::SeparationCertificateResult result;
+  CspaceFreePath::SeparationCertificateResult result{};
   internal::SolveSeparationCertificateProgramBase(
       certificate_program, options,
       separating_planes_[certificate_program.plane_index], &result);

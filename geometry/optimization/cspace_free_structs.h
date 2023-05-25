@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -31,6 +32,10 @@ struct PlaneSeparatesGeometries {
 };
 
 struct FindSeparationCertificateOptions {
+  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FindSeparationCertificateOptions)
+  FindSeparationCertificateOptions() = default;
+
+  virtual ~FindSeparationCertificateOptions() = default;
   // We can find the certificate for each pair of geometries in parallel.
   // num_threads specifies how many threads we run in parallel. If num_threads
   // <=0, then we use all available threads on the computer.
@@ -59,8 +64,11 @@ struct FindSeparationCertificateOptions {
  separating_planes()[plane_index] in the C-space region.
  */
 struct SeparationCertificateResultBase {
+  SeparationCertificateResultBase() {}
+  virtual ~SeparationCertificateResultBase() = default;
+
   int plane_index{-1};
-  // The separating plane is { x | aᵀx+b=0 }
+  /** The separating plane is { x | aᵀx+b=0 } */
   Vector3<symbolic::Polynomial> a;
   symbolic::Polynomial b;
   // The value of the plane.decision_variables at solution. This field is used
@@ -69,15 +77,29 @@ struct SeparationCertificateResultBase {
 
   // The result of solving a SeparationCertificateProgramBase
   solvers::MathematicalProgramResult result;
+
+ protected:
+  // We put the copy/move/assignment constructors as protected to avoid copy
+  // slicing. The inherited final subclasses should put them in public
+  // functions.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResultBase)
 };
 
 struct SeparationCertificateProgramBase {
   SeparationCertificateProgramBase()
       : prog{new solvers::MathematicalProgram()} {}
+
+  virtual ~SeparationCertificateProgramBase() = default;
   /// The program that stores all the constraints to search for the separating
   /// plane and Lagrangian multipliers as certificate.
-  std::unique_ptr<solvers::MathematicalProgram> prog;
+  copyable_unique_ptr<solvers::MathematicalProgram> prog;
   int plane_index{-1};
+
+ protected:
+  // We put the copy/move/assignment constructors as protected to avoid copy
+  // slicing. The inherited final subclasses should put them in public
+  // functions.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgramBase)
 };
 
 }  // namespace optimization
