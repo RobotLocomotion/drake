@@ -180,20 +180,35 @@ template <typename T>
 std::pair<Vector3<double>, math::RotationMatrix<double>>
 UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
     double inertia_shape_factor) const {
-  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> I_BBcm_P =
-      this->CalcPrincipalMomentsAndAxesOfInertia();
-  const Vector3<double>& Imoments = I_BBcm_P.first;
-  const math::RotationMatrix<double> R_EP = I_BBcm_P.second;
-  const double Imin = Imoments(0);
-  const double Imed = Imoments(1);
-  const double Imax = Imoments(2);
-  DRAKE_ASSERT(Imin <= Imed && Imed <= Imax);
   DRAKE_THROW_UNLESS(inertia_shape_factor > 0 && inertia_shape_factor <= 1);
+  // The formulas below are derived for a shape B whose principal unit moments
+  // of inertia Gmin, Gmed, Gmax about Bcm (B's center of mass) have the form:
+  // Gmin = inertia_shape_factor * (b² + c²)
+  // Gmed = inertia_shape_factor * (a² + c²)
+  // Gmax = inertia_shape_factor * (a² + b²)
+  // Casting these equations into matrix form, gives
+  // ⌈0  1  1⌉ ⌈a²⌉   ⌈Gmin ⌉
+  // |1  0  1⌉ |b²⌉ = |Gmed ⌉ / inertia_shape_factor
+  // ⌊1  1  0⌋ ⌊c²⌋   ⌊Gmax ⌉
+  // Inverting the coefficient matrix and solving for a², b², c² leads to
+  // ⌈a²⌉   ⌈-1  1  1⌉ ⌈Gmin ⌉
+  // |b²⌉ = | 1 -1  1⌉ |Gmed ⌉ * 0.5 / inertia_shape_factor
+  // ⌊c²⌋   ⌊ 1  1 -1⌋ ⌊Gmax ⌉
+  // Since Gmin ≤ Gmed ≤ Gmax, we can deduce a² ≥ b² ≥ c², so we designate
+  // lmax² = a², lmed² = b², lmin² = c².
+  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> G_BBcm_P =
+      this->CalcPrincipalMomentsAndAxesOfInertia();
+  const Vector3<double>& Gmoments = G_BBcm_P.first;
+  const math::RotationMatrix<double> R_EP = G_BBcm_P.second;
+  const double Gmin = Gmoments(0);
+  const double Gmed = Gmoments(1);
+  const double Gmax = Gmoments(2);
+  DRAKE_ASSERT(Gmin <= Gmed && Gmed <= Gmax);
   const double coef = 0.5 / inertia_shape_factor;
   using std::max;  // Avoid round-off issues that result in e.g., sqrt(-1E-15).
-  const double lmax_squared = max(coef * (Imed + Imax - Imin), 0.0);
-  const double lmed_squared = max(coef * (Imin + Imax - Imed), 0.0);
-  const double lmin_squared = max(coef * (Imin + Imed - Imax), 0.0);
+  const double lmax_squared = max(coef * (Gmed + Gmax - Gmin), 0.0);
+  const double lmed_squared = max(coef * (Gmin + Gmax - Gmed), 0.0);
+  const double lmin_squared = max(coef * (Gmin + Gmed - Gmax), 0.0);
   const double lmax = std::sqrt(lmax_squared);
   const double lmed = std::sqrt(lmed_squared);
   const double lmin = std::sqrt(lmin_squared);

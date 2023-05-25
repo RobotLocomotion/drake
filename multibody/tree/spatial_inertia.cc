@@ -446,7 +446,7 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
   // Scm (`this` spatial inertia's center of mass).
   const Vector3<T>& p_EoScm_E = get_com();
 
-  // Shift `this` spatial inertia's unit inertia from the Eo to Po.
+  // Shift `this` spatial inertia's unit inertia from Eo to Po.
   const UnitInertia<T>& G_SEo_E = get_unit_inertia();
   const UnitInertia<T> G_SScm_E = G_SEo_E.ShiftToCenterOfMass(p_EoScm_E);
 
