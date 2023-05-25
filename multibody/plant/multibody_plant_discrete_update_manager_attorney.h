@@ -110,6 +110,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.ball_constraints_specs_;
   }
 
+  static const std::map<MultibodyConstraintId, internal::WeldConstraintSpec>&
+  weld_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.weld_constraints_specs_;
+  }
+
   static const std::map<MultibodyConstraintId, bool>&
   GetConstraintActiveStatus(const systems::Context<T>& context,
                                const MultibodyPlant<T>& plant) {
