@@ -129,6 +129,12 @@ int do_main() {
     return -1;
   }
 
+  if (FLAGS_contact_solver == "sap") {
+    const drake::multibody::Body<double>& bodyB = plant.GetBodyByName("BodyB");
+    plant.AddWeldConstraint(plant.world_body(), math::RigidTransformd(), bodyB,
+                            math::RigidTransformd());
+  }
+
   plant.Finalize();
   plant.set_penetration_allowance(FLAGS_penetration_allowance);
 
@@ -165,8 +171,9 @@ int do_main() {
   // inclined plane provided `0 < inclined_plane_angle < 40`.
   const drake::multibody::Body<double>& bodyB = plant.GetBodyByName("BodyB");
   const Vector3<double> p_WoBo_W(-1.0, 0, 1.2);
-  const math::RigidTransform<double> X_WB(p_WoBo_W);
+  const math::RigidTransform<double> X_WB(math::RollPitchYawd(0.4, 0.3, 0.2), p_WoBo_W);
   plant.SetFreeBodyPoseInWorldFrame(&plant_context, bodyB, X_WB);
+
 
   systems::Simulator<double> simulator(*diagram, std::move(diagram_context));
   systems::IntegratorBase<double>& integrator =
