@@ -382,6 +382,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     coupler_constraints_specs_ = other.coupler_constraints_specs_;
     distance_constraints_specs_ = other.distance_constraints_specs_;
     ball_constraints_specs_ = other.ball_constraints_specs_;
+    weld_constraints_specs_ = other.weld_constraints_specs_;
 
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
@@ -557,6 +558,50 @@ MultibodyConstraintId MultibodyPlant<T>::AddBallConstraint(
   }
 
   ball_constraints_specs_[constraint_id] = spec;
+
+  return constraint_id;
+}
+
+template <typename T>
+MultibodyConstraintId MultibodyPlant<T>::AddWeldConstraint(
+    const Body<T>& body_A, const math::RigidTransform<double>& X_AP,
+    const Body<T>& body_B, const math::RigidTransform<double>& X_BQ) {
+  // N.B. The manager is set up at Finalize() and therefore we must require
+  // constraints to be added pre-finalize.
+  DRAKE_MBP_THROW_IF_FINALIZED();
+
+  if (!is_discrete()) {
+    throw std::runtime_error(
+        "Currently weld constraints are only supported for discrete "
+        "MultibodyPlant models.");
+  }
+
+  // TAMSI does not support weld constraints. For all other solvers, we let
+  // the discrete update manager throw an exception at finalize time.
+  if (contact_solver_enum_ == DiscreteContactSolver::kTamsi) {
+    throw std::runtime_error(
+        "Currently this MultibodyPlant is set to use the TAMSI solver. TAMSI "
+        "does not support weld constraints. Use "
+        "set_discrete_contact_solver(DiscreteContactSolver::kSap) to use the "
+        "SAP solver instead. For other solvers, refer to "
+        "DiscreteContactSolver.");
+  }
+
+  const MultibodyConstraintId constraint_id =
+      MultibodyConstraintId::get_new_id();
+
+  internal::WeldConstraintSpec spec{body_A.index(), X_AP, body_B.index(), X_BQ,
+                                     constraint_id};
+  if (!spec.IsValid()) {
+    const std::string msg = fmt::format(
+        "Invalid set of parameters for constraint between bodies '{}' and "
+        "'{}'. For a weld constraint, frames P and Q must be on two distinct "
+        "bodies, i.e. body_A != body_B must be satisfied.",
+        body_A.name(), body_B.name());
+    throw std::logic_error(msg);
+  }
+
+  weld_constraints_specs_[constraint_id] = spec;
 
   return constraint_id;
 }
