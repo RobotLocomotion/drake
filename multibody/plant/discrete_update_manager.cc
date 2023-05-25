@@ -224,6 +224,13 @@ DiscreteUpdateManager<T>::ball_constraints_specs() const {
 }
 
 template <typename T>
+const std::map<MultibodyConstraintId, internal::WeldConstraintSpec>&
+DiscreteUpdateManager<T>::weld_constraints_specs() const {
+  return MultibodyPlantDiscreteUpdateManagerAttorney<T>::weld_constraints_specs(
+      *plant_);
+}
+
+template <typename T>
 BodyIndex DiscreteUpdateManager<T>::FindBodyByGeometryId(
     geometry::GeometryId geometry_id) const {
   return MultibodyPlantDiscreteUpdateManagerAttorney<T>::FindBodyByGeometryId(
