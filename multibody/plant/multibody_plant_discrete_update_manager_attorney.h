@@ -113,6 +113,11 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.ball_constraints_specs_;
   }
 
+  static const std::vector<internal::WeldConstraintSpecs>&
+  weld_constraints_specs(const MultibodyPlant<T>& plant) {
+    return plant.weld_constraints_specs_;
+  }
+
   static BodyIndex FindBodyByGeometryId(const MultibodyPlant<T>& plant,
                                         geometry::GeometryId geometry_id) {
     return plant.FindBodyByGeometryId(geometry_id);

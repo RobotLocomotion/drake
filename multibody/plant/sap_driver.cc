@@ -594,6 +594,134 @@ void SapDriver<T>::AddBallConstraints(
 }
 
 template <typename T>
+void SapDriver<T>::AddWeldConstraints(
+    const systems::Context<T>& context,
+    contact_solvers::internal::SapContactProblem<T>* problem) const {
+  DRAKE_DEMAND(problem != nullptr);
+
+  // Weld constraints do not have impulse limits, they are bi-lateral
+  // constraints. Each weld constraint introduces six constraint
+  // equations.
+  constexpr double kInfinity = std::numeric_limits<double>::infinity();
+  const Vector6<T> gamma_lower = -kInfinity * Vector6<T>::Ones();
+  const Vector6<T> gamma_upper =  kInfinity * Vector6<T>::Ones();
+
+  // Stiffness and dissipation are set so that the constraint is in the
+  // "near-rigid" regime, [Castro et al., 2022].
+  const Vector6<T> stiffness = kInfinity * Vector6<T>::Ones();
+  const Vector6<T> relaxation_time = plant().time_step() * Vector6<T>::Ones();
+
+  const int nv = plant().num_velocities();
+  Matrix6X<T> Jv_WFp_W(6, nv);
+  Matrix6X<T> Jv_WFq_W(6, nv);
+  MatrixX<T> Jv_FpFq_W = MatrixX<T>::Zero(6, nv);
+
+  // Linear interpolation of two poses measured in the common frame M.
+  const auto& interpolate =
+      [](const math::RigidTransform<T>& X_MA,
+         const math::RigidTransform<T>& X_MB, const T t) {
+        return math::RigidTransform<T>(
+            X_MA.rotation().ToQuaternion().slerp(
+                t, X_MB.rotation().ToQuaternion()),
+            (1.0 - t) * X_MA.translation() + t * X_MB.translation());
+      };
+
+  const Frame<T>& frame_W = plant().world_frame();
+
+  for (const WeldConstraintSpecs& specs : manager().weld_constraints_specs()) {
+    const Body<T>& body_A = plant().get_body(specs.body_A);
+    const Body<T>& body_B = plant().get_body(specs.body_B);
+
+    const math::RigidTransform<T>& X_WA = body_A.EvalPoseInWorld(context);
+    const math::RigidTransform<T>& X_WB = body_B.EvalPoseInWorld(context);
+
+    const math::RigidTransform<T>& X_WFp = X_WA * specs.X_AFp.cast<T>();
+    const math::RigidTransform<T>& X_WFq = X_WB * specs.X_BFq.cast<T>();
+    const math::RigidTransform<T>& X_WN = interpolate(X_WFp, X_WFq, 0.5);
+
+    const math::RigidTransform<T>& X_NFp = X_WN.InvertAndCompose(X_WFp);
+    const math::RigidTransform<T>& X_NFq = X_WN.InvertAndCompose(X_WFq);
+
+    const Vector3<T> p_FpFq_N = X_NFq.translation() - X_NFp.translation();
+    const RotationMatrix<T> R_FpFq = X_NFp.rotation().transpose() * X_NFq.rotation();
+
+    const Matrix3<T>& R = R_FpFq.matrix();
+    const Vector3<T> a0_N(0.5 * (R(2,1) - R(1,2)),
+                          0.5 * (R(0,2) - R(2,0)),
+                          0.5 * (R(1,0) - R(0,1)));
+
+    // Dense Jacobian.
+    manager().internal_tree().CalcJacobianSpatialVelocity(
+        context, JacobianWrtVariable::kV, body_A.body_frame(),
+        specs.X_AFp.translation().cast<T>(), frame_W, frame_W, &Jv_WFp_W);
+    manager().internal_tree().CalcJacobianSpatialVelocity(
+        context, JacobianWrtVariable::kV, body_B.body_frame(),
+        specs.X_BFq.translation().cast<T>(), frame_W, frame_W, &Jv_WFq_W);
+    Jv_FpFq_W = (Jv_WFq_W - Jv_WFp_W);
+
+    // TODO(amcastro-tri): consider exposing this parameter.
+    const double beta = 0.1;
+    const typename SapHolonomicConstraint<T>::Parameters parameters{
+        gamma_lower, gamma_upper, stiffness, relaxation_time, beta};
+
+    const TreeIndex treeA_index =
+        tree_topology().body_to_tree_index(specs.body_A);
+    const TreeIndex treeB_index =
+        tree_topology().body_to_tree_index(specs.body_B);
+
+    // TODO(joemasterjohn): Move this exception up to the plant level so that it
+    // fails as fast as possible. Currently, the earliest this can happen is
+    // in MbP::Finalize() after the topology has been finalized.
+    if (!treeA_index.is_valid() && !treeB_index.is_valid()) {
+      const std::string msg = fmt::format(
+          "Creating a weld Constraint between bodies '{}' and '{}' where both "
+          "are welded to the world is not allowed.",
+          body_A.name(), body_B.name());
+      throw std::runtime_error(msg);
+    }
+
+    // Both bodies A and B belong to the same tree or one of them is the world.
+    const bool single_tree = !treeA_index.is_valid() ||
+                             !treeB_index.is_valid() ||
+                             treeA_index == treeB_index;
+
+    // Constraint function at current time step.
+    const Vector6<T> g0 = (Vector6<T>() << a0_N, p_FpFq_N).finished();
+
+    Matrix3<T> R_NW = X_WN.rotation().matrix().transpose();
+    if (single_tree) {
+      const TreeIndex tree_index =
+          treeA_index.is_valid() ? treeA_index : treeB_index;
+      MatrixX<T> Jtree_W = Jv_FpFq_W.middleCols(
+          tree_topology().tree_velocities_start(tree_index),
+          tree_topology().num_tree_velocities(tree_index));
+      // Re-express the Jacobian in frame N.
+      MatrixX<T> Jtree_N(Jtree_W.rows(), Jtree_W.cols());
+      Jtree_N << R_NW * Jtree_W.middleRows(0, 3),
+                 R_NW * Jtree_W.middleRows(3, 3);
+      SapConstraintJacobian<T> J(tree_index, std::move(Jtree_N));
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          g0, std::move(J), parameters));
+    } else {
+      MatrixX<T> JA_W = Jv_FpFq_W.middleCols(
+          tree_topology().tree_velocities_start(treeA_index),
+          tree_topology().num_tree_velocities(treeA_index));
+      MatrixX<T> JB_W = Jv_FpFq_W.middleCols(
+          tree_topology().tree_velocities_start(treeB_index),
+          tree_topology().num_tree_velocities(treeB_index));
+      MatrixX<T> JA_N(JA_W.rows(), JA_W.cols());
+      JA_N << R_NW * JA_W.middleRows(0, 3), R_NW * JA_W.middleRows(3, 3);
+      MatrixX<T> JB_N(JB_W.rows(), JB_W.cols());
+      JB_N << R_NW * JB_W.middleRows(0, 3), R_NW * JB_W.middleRows(3, 3);
+      SapConstraintJacobian<T> J(treeA_index, std::move(JA_N), treeB_index,
+                                 std::move(JB_N));
+      problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
+          g0, std::move(J), parameters));
+    }
+  }
+}
+
+template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
   std::vector<MatrixX<T>> A;
@@ -612,6 +740,7 @@ void SapDriver<T>::CalcContactProblemCache(
   AddCouplerConstraints(context, &problem);
   AddDistanceConstraints(context, &problem);
   AddBallConstraints(context, &problem);
+  AddWeldConstraints(context, &problem);
 }
 
 template <typename T>

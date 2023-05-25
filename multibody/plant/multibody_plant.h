@@ -1185,7 +1185,8 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   int num_constraints() const {
     return static_cast<int>(coupler_constraints_specs_.size() +
                             distance_constraints_specs_.size() +
-                            ball_constraints_specs_.size());
+                            ball_constraints_specs_.size() +
+                            weld_constraints_specs_.size());
   }
 
   /// Defines a holonomic constraint between two single-dof joints `joint0`
@@ -1272,6 +1273,11 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                                     const Vector3<double>& p_AP,
                                     const Body<T>& body_B,
                                     const Vector3<double>& p_BQ);
+
+  ConstraintIndex AddWeldConstraint(const Body<T>& body_A,
+                                    const math::RigidTransform<double>& X_AP,
+                                    const Body<T>& body_B,
+                                    const math::RigidTransform<double>& X_BQ);
 
   /// <!-- TODO(#18732): Add getters to interrogate existing constraints.
   /// -->
@@ -5353,6 +5359,9 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
 
   // Vector of ball constraint specifications.
   std::vector<internal::BallConstraintSpecs> ball_constraints_specs_;
+
+  // Vector of weld constraint specifications.
+  std::vector<internal::WeldConstraintSpecs> weld_constraints_specs_;
 
   // All MultibodyPlant cache indexes are stored in cache_indexes_.
   CacheIndexes cache_indexes_;
