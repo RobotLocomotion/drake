@@ -5,19 +5,24 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/rigid_transform.h"
+#include "drake/math/rotation_matrix.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_holonomic_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_weld_constraint.h"
 #include "drake/multibody/plant/compliant_contact_manager.h"
 #include "drake/multibody/plant/multibody_plant.h"
 #include "drake/multibody/plant/sap_driver.h"
 #include "drake/multibody/plant/test/compliant_contact_manager_tester.h"
 
-/* @file This file tests SapDriver's support for ball constraints. */
+/* @file This file tests SapDriver's support for weld constraints. */
 
 using drake::math::RigidTransformd;
+using drake::math::RotationMatrixd;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
+using drake::multibody::contact_solvers::internal::SapWeldConstraint;
 using drake::systems::Context;
+using Eigen::Matrix3d;
 using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
@@ -51,8 +56,10 @@ std::ostream& operator<<(std::ostream& out, const TestConfig& c) {
   return out;
 }
 
+constexpr double theta = 0.01 * M_PI;
+
 // Fixture that sets a MultibodyPlant model of two bodies A and B with a
-// ball constraint connecting point P on body A and point Q on body B.
+// weld constraint connecting point P on body A and point Q on body B.
 class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
  public:
   // Makes the model described in the fixture's documentation.
@@ -74,7 +81,7 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
       plant_.WeldFrames(plant_.world_frame(), bodyA_->body_frame());
     }
 
-    plant_.AddBallConstraint(*bodyA_, p_AP_, *bodyB_, p_BQ_);
+    plant_.AddWeldConstraint(*bodyA_, X_AP_, *bodyB_, X_BQ_);
 
     plant_.Finalize();
 
@@ -82,7 +89,7 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
         std::make_unique<CompliantContactManager<double>>();
     manager_ = owned_contact_manager.get();
     plant_.SetDiscreteUpdateManager(std::move(owned_contact_manager));
-    // Model with a single ball constraint.
+    // Model with a single weld constraint.
     EXPECT_EQ(plant_.num_constraints(), 1);
 
     context_ = plant_.CreateDefaultContext();
@@ -100,12 +107,16 @@ class TwoBodiesTest : public ::testing::TestWithParam<TestConfig> {
   std::unique_ptr<Context<double>> context_;
 
   // Parameters of the problem. Arbitrary and non-zero.
-  Vector3d p_AP_{1.0, -2.0, 3.0};
-  Vector3d p_BQ_{-5.0, 4.0, -6.0};
+  const Vector3d p_AP_{1.0, -2.0, 3.0};
+  const Vector3d p_BQ_{-5.0, 4.0, -6.0};
+  const RigidTransformd X_AP_{RotationMatrixd::MakeZRotation(theta),
+                              p_AP_};
+  const RigidTransformd X_BQ_{RotationMatrixd::MakeZRotation(-theta),
+                              p_BQ_};
   const Vector3d kOffset_{0.1, 0.2, 0.3};
 };
 
-// This test configures a single ball constraint in variety of ways (causing
+// This test configures a single weld constraint in variety of ways (causing
 // differing numbers of cliques and varying constraint properties). It then
 // examines the newly added constraint to confirm that its instantiation
 // reflects the specification.
@@ -122,19 +133,18 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
   // function.
   plant_.SetFreeBodyPoseInWorldFrame(context_.get(), *bodyB_,
                                      RigidTransformd(kOffset_));
-
   const ContactProblemCache<double>& problem_cache =
       SapDriverTest::EvalContactProblemCache(sap_driver(), *context_);
   const SapContactProblem<double>& problem = *problem_cache.sap_problem;
 
   // Verify the expected number of constraints and equations for a single
-  // ball constraint.
+  // weld constraint.
   EXPECT_EQ(problem.num_constraints(), 1);
-  EXPECT_EQ(problem.num_constraint_equations(), 3);
+  EXPECT_EQ(problem.num_constraint_equations(), 6);
 
-  const auto* constraint = dynamic_cast<const SapHolonomicConstraint<double>*>(
+  const auto* constraint = dynamic_cast<const SapWeldConstraint<double>*>(
       &problem.get_constraint(0));
-  // Verify it is a SapHolonomicConstraint as expected.
+  // Verify it is a SapWeldConstraint as expected.
   ASSERT_NE(constraint, nullptr);
 
   // One clique if body A is anchored, two if not.
@@ -149,69 +159,127 @@ TEST_P(TwoBodiesTest, ConfirmConstraintProperties) {
 
   // Verify parameters.
   const SapHolonomicConstraint<double>::Parameters p = constraint->parameters();
-  EXPECT_EQ(p.num_constraint_equations(), 3);
+  EXPECT_EQ(p.num_constraint_equations(), 6);
   // bi-lateral constraint with no impulse bounds.
-  EXPECT_EQ(p.impulse_lower_limits(),
-            Vector3d(-kInfinity, -kInfinity, -kInfinity));
-  EXPECT_EQ(p.impulse_upper_limits(),
-            Vector3d(kInfinity, kInfinity, kInfinity));
-
-  EXPECT_EQ(p.stiffnesses(), Vector3d(kInfinity, kInfinity, kInfinity));
-  EXPECT_EQ(p.relaxation_times(), Vector3d::Zero());
+  EXPECT_EQ(p.impulse_lower_limits(), -kInfinity * Vector6d::Ones());
+  EXPECT_EQ(p.impulse_upper_limits(), kInfinity * Vector6d::Ones());
+  EXPECT_EQ(p.stiffnesses(), kInfinity * Vector6d::Ones());
+  EXPECT_EQ(p.relaxation_times(), Vector6d::Zero());
 
   // This value is hard-coded in the source. This test serves as a brake to
   // prevent the value changing without notification. Changing this value
   // would lead to a behavior change and shouldn't happen silently.
   EXPECT_EQ(p.beta(), 0.1);
 
-  // The constraint function for a ball constraint is defined as:
-  //   g = p_WQ - p_WP
-  // We verify its value.
-  const VectorXd& g = constraint->constraint_function();
+  // The constraint function for a weld constraint is defined as:
+  //   g = (a_PQ_N, p_PQ_N)
+  //
+  // Where frame N is defined as an interpolated frame "halfway" between frames
+  // P and Q. The position of the origin of frame N in the world frame, p_WNo,
+  // is the midpoint of p_WPo and p_WQo and its orientation in the world R_WN
+  // frame is the midpoint of the spherical linear interpolation of R_WP and
+  // R_WQ.
+  //
+  // a_PQ_N = θ⋅k is the axis-angle representation of of the relative
+  // orientation between frames P and Q, expressed in frame N.
+
+  const Vector6d& g = constraint->constraint_function();
   const RigidTransformd& X_WA = plant_.EvalBodyPoseInWorld(*context_, *bodyA_);
   const RigidTransformd& X_WB = plant_.EvalBodyPoseInWorld(*context_, *bodyB_);
-  const Vector3d g_expected = X_WB * p_BQ_ - X_WA * p_AP_;
-  EXPECT_TRUE(CompareMatrices(g, g_expected));
+  const RigidTransformd X_WP = X_WA * X_AP_;
+  const RigidTransformd X_WQ = X_WB * X_BQ_;
+
+  // Linear interpolation of two poses measured in the common frame M.
+  const auto& interpolate = [](const RigidTransformd& X_MA,
+                               const RigidTransformd& X_MB, double t) {
+    return math::RigidTransformd(
+        X_MA.rotation().ToQuaternion().slerp(t, X_MB.rotation().ToQuaternion()),
+        (1.0 - t) * X_MA.translation() + t * X_MB.translation());
+  };
+
+  const math::RigidTransformd X_WN = interpolate(X_WP, X_WQ, 0.5);
+
+  const math::RigidTransformd X_NP = X_WN.InvertAndCompose(X_WP);
+  const math::RigidTransformd X_NQ = X_WN.InvertAndCompose(X_WQ);
+
+  const Vector3d p_PQ_N = X_NQ.translation() - X_NP.translation();
+  EXPECT_TRUE(CompareMatrices(g.template tail<3>(), p_PQ_N));
+
+  const RotationMatrixd R_PQ = X_NP.rotation().transpose() * X_NQ.rotation();
+  const Eigen::AngleAxis<double> a = R_PQ.ToAngleAxis();
+  const Vector3d a_PQ_N = a.angle() * a.axis();
+  // The constraint makes a small angle approximation on sin(θ) so we have
+  // and expected relative error of magnitude of order O(θ³).
+  const double expected_error = 2 * std::pow(theta, 3);
+  EXPECT_TRUE(CompareMatrices(g.template head<3>(), a_PQ_N, expected_error,
+                              MatrixCompareType::relative));
 
   // Verify the constraint Jacobians (based on number of cliques).
   // We know by construction that the 6 generalized velocities for a floating
   // body, A, are laid out in the same order as V_WA. We can express the
   // Jacobian of the constraint with respect to each body's spatial velocity:
   //
-  // g = p_PQ_W
+  // g = (a_PQ_N, p_PQ_N)
   //
-  // d(g)/dt = v_PQ_W
+  // d(g)/dt = V_W_PQ_N
   //
-  // v_PQ_W = v_WQ - v_WP
-  //        = (v_WB + w_WB x p_BQ) - (v_WA + w_WA x p_AP)
-  //        = (v_WB - p_BQ x w_WB) - (v_WA - p_AP x w_WA)
-  //        = [-[p_BQ]ₓ [I]] ⋅ V_WB - [-[p_AP]ₓ [I]] ⋅ V_WA
+  // N.B. Only when P and Q are coincident is their relative velocity
+  // independent of which frame it is measured in. We choose to measure in the
+  // world frame as our most convenient Newtonian frame. See the class
+  // documentation of SapWeldConstraint for more details.
+  //
+  // V_W_PQ_N = V_WQ_N - V_WP_N
+  //
+  //        =   (w_WB_N, v_WB_N + w_WB_N x p_BQ_N)
+  //          - (w_WA_N, v_WA_N + w_WA_N x p_AP_N)
+  //
+  //        =   (w_WB_N, v_WB_N - p_BQ_N x w_WB_N)
+  //          - (w_WA_N, v_WA_N - p_AP_N x w_WA_N)
+  //
+  //        = [   [R_NW]       0 ]            [   [R_NW]       0 ]
+  //          [-[p_BQ_N]ₓ [R_NW] ] ⋅ V_WB_W - [-[p_AP_N]ₓ [R_NW] ] ⋅ V_WA_W
+  //
   //        = J_B ⋅ V_WB - J_A ⋅ V_WA
+
+  const Matrix3d& R_NW = X_WN.rotation().matrix().transpose();
+  const Matrix3d R_NA =
+      X_WN.rotation().InvertAndCompose(X_WA.rotation()).matrix();
+  const Matrix3d R_NB =
+      X_WN.rotation().InvertAndCompose(X_WB.rotation()).matrix();
+  const Vector3d p_BQ_N = R_NB * X_BQ_.translation();
+  const Vector3d p_AP_N = R_NA * X_AP_.translation();
+  // clang-format off
+  const Matrix3d p_AP_Nx =
+      (Matrix3d() <<          0, -p_AP_N(2),  p_AP_N(1),
+                      p_AP_N(2),          0, -p_AP_N(0),
+                     -p_AP_N(1),  p_AP_N(0),          0).finished();
+  const Matrix3d p_BQ_Nx =
+      (Matrix3d() <<          0, -p_BQ_N(2),  p_BQ_N(1),
+                      p_BQ_N(2),          0, -p_BQ_N(0),
+                     -p_BQ_N(1),  p_BQ_N(0),          0).finished();
+  // clang-format on
   if (expected_num_cliques == 1) {
     const MatrixXd& J = constraint->first_clique_jacobian().MakeDenseMatrix();
     // clang-format off
       const MatrixXd J_expected =
-        (MatrixXd(3, 6) <<         0,  p_BQ_(2), -p_BQ_(1), 1, 0, 0,
-                           -p_BQ_(2),         0,  p_BQ_(0), 0, 1, 0,
-                            p_BQ_(1), -p_BQ_(0),         0, 0, 0, 1).finished();
+        (MatrixXd(6, 6) <<     R_NW, Matrix3d::Zero(),
+                           -p_BQ_Nx,             R_NW).finished();
     // clang-format on
     EXPECT_TRUE(CompareMatrices(J, J_expected));
   } else {
     const MatrixXd& Ja = constraint->first_clique_jacobian().MakeDenseMatrix();
     // clang-format off
     const MatrixXd Ja_expected =
-      -(MatrixXd(3, 6) <<         0,  p_AP_(2), -p_AP_(1), 1, 0, 0,
-                          -p_AP_(2),         0,  p_AP_(0), 0, 1, 0,
-                           p_AP_(1), -p_AP_(0),         0, 0, 0, 1).finished();
+      -(MatrixXd(6, 6) <<      R_NW, Matrix3d::Zero(),
+                           -p_AP_Nx,             R_NW).finished();
     // clang-format on
     EXPECT_TRUE(CompareMatrices(Ja, Ja_expected));
 
     const MatrixXd& Jb = constraint->second_clique_jacobian().MakeDenseMatrix();
     // clang-format off
       const MatrixXd Jb_expected =
-        (MatrixXd(3, 6) <<         0,  p_BQ_(2), -p_BQ_(1), 1, 0, 0,
-                           -p_BQ_(2),         0,  p_BQ_(0), 0, 1, 0,
-                            p_BQ_(1), -p_BQ_(0),         0, 0, 0, 1).finished();
+        (MatrixXd(6, 6) <<     R_NW, Matrix3d::Zero(),
+                           -p_BQ_Nx,             R_NW).finished();
     // clang-format on
     EXPECT_TRUE(CompareMatrices(Jb, Jb_expected));
   }
@@ -224,78 +292,66 @@ std::vector<TestConfig> MakeTestCases() {
   };
 }
 
-INSTANTIATE_TEST_SUITE_P(SapBallConstraintTests, TwoBodiesTest,
+INSTANTIATE_TEST_SUITE_P(SapWeldConstraintTests, TwoBodiesTest,
                          testing::ValuesIn(MakeTestCases()),
                          testing::PrintToStringParamName());
 
-GTEST_TEST(BallConstraintsTests, VerifyIdMapping) {
+GTEST_TEST(WeldConstraintsTests, VerifyIdMapping) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>{});
-  const Vector3d p_AP(1, 2, 3);
-  const Vector3d p_BQ(4, 5, 6);
-  MultibodyConstraintId ball_id =
-      plant.AddBallConstraint(bodyA, p_AP, bodyB, p_BQ);
-  const BallConstraintSpec& ball_spec =
-      plant.get_ball_constraint_specs(ball_id);
-  EXPECT_EQ(ball_spec.id, ball_id);
-  EXPECT_EQ(ball_spec.body_A, bodyA.index());
-  EXPECT_EQ(ball_spec.body_B, bodyB.index());
-  EXPECT_EQ(ball_spec.p_AP, p_AP);
-  EXPECT_EQ(ball_spec.p_BQ, p_BQ);
+  const RigidTransformd X_AP(Vector3d(1, 2, 3));
+  const RigidTransformd X_BQ(Vector3d(4, 5, 6));
+  MultibodyConstraintId weld_id =
+      plant.AddWeldConstraint(bodyA, X_AP, bodyB, X_BQ);
+  const WeldConstraintSpec& weld_spec =
+      plant.get_weld_constraint_specs(weld_id);
+  EXPECT_EQ(weld_spec.id, weld_id);
+  EXPECT_EQ(weld_spec.body_A, bodyA.index());
+  EXPECT_EQ(weld_spec.body_B, bodyB.index());
+  EXPECT_TRUE(weld_spec.X_AP.IsExactlyEqualTo(X_AP));
+  EXPECT_TRUE(weld_spec.X_BQ.IsExactlyEqualTo(X_BQ));
 
-  const std::map<MultibodyConstraintId, BallConstraintSpec>& ball_specs =
-      plant.get_ball_constraint_specs();
-  ASSERT_EQ(ssize(ball_specs), 1);
+  const std::map<MultibodyConstraintId, WeldConstraintSpec>& weld_specs =
+      plant.get_weld_constraint_specs();
+  ASSERT_EQ(ssize(weld_specs), 1);
 
-  const MultibodyConstraintId ball_id_from_map = ball_specs.begin()->first;
-  const BallConstraintSpec& ball_spec_from_map = ball_specs.begin()->second;
+  const MultibodyConstraintId weld_id_from_map = weld_specs.begin()->first;
+  const WeldConstraintSpec& weld_spec_from_map = weld_specs.begin()->second;
 
   // Check the id in the map matches the one returned.
-  EXPECT_EQ(ball_id, ball_id_from_map);
+  EXPECT_EQ(weld_id, weld_id_from_map);
 
-  // Check that the one spec in the map is equal to `ball_spec`.
-  EXPECT_EQ(ball_spec.id, ball_spec_from_map.id);
-  EXPECT_EQ(ball_spec.body_A, ball_spec_from_map.body_A);
-  EXPECT_EQ(ball_spec.body_B, ball_spec_from_map.body_B);
-  EXPECT_EQ(ball_spec.p_AP, ball_spec_from_map.p_AP);
-  EXPECT_EQ(ball_spec.p_BQ, ball_spec_from_map.p_BQ);
+  // Check that the one spec in the map is equal to `weld_spec`.
+  EXPECT_EQ(weld_spec.id, weld_spec_from_map.id);
+  EXPECT_EQ(weld_spec.body_A, weld_spec_from_map.body_A);
+  EXPECT_EQ(weld_spec.body_B, weld_spec_from_map.body_B);
+  EXPECT_TRUE(weld_spec.X_AP.IsExactlyEqualTo(weld_spec_from_map.X_AP));
+  EXPECT_TRUE(weld_spec.X_BQ.IsExactlyEqualTo(weld_spec_from_map.X_BQ));
 
   // Throw on id to wrong constraint specs type.
-  EXPECT_THROW(plant.get_coupler_constraint_specs(ball_id), std::exception);
-  EXPECT_THROW(plant.get_distance_constraint_specs(ball_id), std::exception);
-  EXPECT_THROW(plant.get_weld_constraint_specs(ball_id), std::exception);
+  EXPECT_THROW(plant.get_coupler_constraint_specs(weld_id), std::exception);
+  EXPECT_THROW(plant.get_ball_constraint_specs(weld_id), std::exception);
+  EXPECT_THROW(plant.get_distance_constraint_specs(weld_id), std::exception);
 }
 
-GTEST_TEST(BallConstraintTests, FailOnTAMSI) {
-  MultibodyPlant<double> plant{0.1};
-  plant.set_discrete_contact_solver(DiscreteContactSolver::kTamsi);
-  const RigidBody<double>& bodyA =
-      plant.AddRigidBody("A", SpatialInertia<double>{});
-  const RigidBody<double>& bodyB =
-      plant.AddRigidBody("B", SpatialInertia<double>{});
-  DRAKE_EXPECT_THROWS_MESSAGE(plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0},
-                                                      bodyB, Vector3d{0, 0, 0}),
-                              ".*TAMSI does not support ball constraints.*");
-}
-
-GTEST_TEST(BallConstraintTests, FailOnContinuous) {
+GTEST_TEST(WeldConstraintTests, FailOnContinuous) {
   MultibodyPlant<double> plant{0.0};
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   const RigidBody<double>& bodyB =
       plant.AddRigidBody("B", SpatialInertia<double>{});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
-                              Vector3d{0, 0, 0}),
-      ".*Currently ball constraints are only supported for discrete "
+      plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
+                              RigidTransformd{Vector3d{0, 0, 0}}),
+      ".*Currently weld constraints are only supported for discrete "
       "MultibodyPlant models.*");
 }
 
-GTEST_TEST(BallConstraintTests, FailOnFinalized) {
+GTEST_TEST(WeldConstraintTests, FailOnFinalized) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   const RigidBody<double>& bodyA =
@@ -304,19 +360,19 @@ GTEST_TEST(BallConstraintTests, FailOnFinalized) {
       plant.AddRigidBody("B", SpatialInertia<double>{});
   plant.Finalize();
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyB,
-                              Vector3d{0, 0, 0}),
-      ".*Post-finalize calls to 'AddBallConstraint\\(\\)' are not allowed.*");
+      plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyB,
+                              RigidTransformd{Vector3d{0, 0, 0}}),
+      ".*Post-finalize calls to 'AddWeldConstraint\\(\\)' are not allowed.*");
 }
 
-GTEST_TEST(BallConstraintTests, FailOnSameBody) {
+GTEST_TEST(WeldConstraintTests, FailOnSameBody) {
   MultibodyPlant<double> plant{0.1};
   plant.set_discrete_contact_solver(DiscreteContactSolver::kSap);
   const RigidBody<double>& bodyA =
       plant.AddRigidBody("A", SpatialInertia<double>{});
   DRAKE_EXPECT_THROWS_MESSAGE(
-      plant.AddBallConstraint(bodyA, Vector3d{0, 0, 0}, bodyA,
-                              Vector3d{0, 0, 0}),
+      plant.AddWeldConstraint(bodyA, RigidTransformd{Vector3d{0, 0, 0}}, bodyA,
+                              RigidTransformd{Vector3d{0, 0, 0}}),
       ".*Invalid set of parameters for constraint between bodies 'A' and "
       "'A'.*");
 }
