@@ -3,6 +3,7 @@
 #include <memory>
 #include <utility>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
@@ -13,6 +14,63 @@ namespace internal {
 
 // TODO(amcastro-tri): update reference [Castro et al., 2022] to the follow up
 // paper on arbitrary constraints.
+
+/* Structure to store data needed for SapHolonomicConstraint computations.
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+class SapHolonomicConstraintData {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapHolonomicConstraintData);
+
+  /* Constructs data for a SapHolonomicConstraintData.
+     Refer to SapHolonomicConstraint's documentation for further details.
+     @param R Regularization parameters.
+     @param v_hat Bias term. */
+  SapHolonomicConstraintData(VectorX<T> R, VectorX<T> v_hat) {
+    const int nk = R.size();
+    parameters_.R_inv = R.cwiseInverse();
+    parameters_.R = std::move(R);
+    parameters_.v_hat = std::move(v_hat);
+    vc_.resize(nk);
+    y_.resize(nk);
+    gamma_.resize(nk);
+    dPdy_.resize(nk, nk);
+  }
+
+  /* Regularization R. */
+  const VectorX<T>& R() const { return parameters_.R; }
+
+  /* Inverse of the regularization, R⁻¹. */
+  const VectorX<T>& R_inv() const { return parameters_.R_inv; }
+
+  /* Constraint bias. */
+  const VectorX<T>& v_hat() const { return parameters_.v_hat; }
+
+  /* Const access. */
+  const VectorX<T>& vc() const { return vc_; }
+  const VectorX<T>& y() const { return y_; }
+  const VectorX<T>& gamma() const { return gamma_; }
+  const MatrixX<T>& dPdy() const { return dPdy_; }
+
+  /* Mutable access. */
+  VectorX<T>& mutable_vc() { return vc_; }
+  VectorX<T>& mutable_y() { return y_; }
+  VectorX<T>& mutable_gamma() { return gamma_; }
+  MatrixX<T>& mutable_dPdy() { return dPdy_; }
+
+ private:
+  struct ConstParameters {
+    VectorX<T> R;      // Regularization R.
+    VectorX<T> R_inv;  // Inverse of the regularization, R⁻¹.
+    VectorX<T> v_hat;  // Constraint velocity bias.
+  };
+  ConstParameters parameters_;
+
+  VectorX<T> vc_;     // Constraint velocity.
+  VectorX<T> y_;      // Un-projected impulse y = −R⁻¹⋅(vc−v̂)
+  VectorX<T> gamma_;  // Projected impulse γ = P(y).
+  MatrixX<T> dPdy_;   // Gradient of the projection γ = P(y) w.r.t. y.
+};
 
 /* Implements an arbitrary holonomic constraint for the SAP formulation [Castro
  et al., 2022].
@@ -147,32 +205,28 @@ class SapHolonomicConstraint final : public SapConstraint<T> {
 
   const Parameters& parameters() const { return parameters_; }
 
-  /* Returns the constraint function provided at construction. */
+  /* Returns the value of the constraint function provided at construction. */
   const VectorX<T>& constraint_function() const { return g_; }
 
   /* Returns the holonomic constraint bias b. */
   const VectorX<T>& bias() const { return bias_; }
 
-  /* Implements the projection operation P(y) = max(γₗ, min(γᵤ, y)). For this
-   specific constraint, the result is independent of the regularization R. Refer
-   to SapConstraint::Project() for details. */
-  void Project(const Eigen::Ref<const VectorX<T>>& y,
-               const Eigen::Ref<const VectorX<T>>& R,
-               EigenPtr<VectorX<T>> gamma,
-               MatrixX<T>* dPdy = nullptr) const final;
-
-  // TODO(amcastro-tri): Extend SapConstraint so that wi can be a vector with an
-  // entry for each constraint equation.
-  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
-
-  VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                        const T& wi) const final;
-
  private:
   /* Private copy construction is enabled to use in the implementation of
-   DoClone(). */
+     DoClone(). */
   SapHolonomicConstraint(const SapHolonomicConstraint&) = default;
 
+  /* Implementations of SapConstraint NVI functions. */
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const override;
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* data) const override;
+  T DoCalcCost(const AbstractValue& abstract_data) const override;
+  void DoCalcImpulse(const AbstractValue& abstract_data,
+                     EigenPtr<VectorX<T>> gamma) const override;
+  void DoCalcCostHessian(const AbstractValue& abstract_data,
+                         MatrixX<T>* G) const override;
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<SapHolonomicConstraint<T>>(
         new SapHolonomicConstraint<T>(*this));
