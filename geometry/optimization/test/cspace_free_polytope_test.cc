@@ -312,6 +312,32 @@ TEST_F(CIrisToyRobotTest, AddCspacePolytopeContainment) {
   }
 }
 
+TEST_F(CIrisToyRobotTest, GetPolyhedronWithJointLimits) {
+  const Eigen::Vector3d q_star(0, 0, 0);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine, q_star);
+  Eigen::MatrixXd C(4, 3);
+  // clang-format off
+  C << 0.5, 1, 2,
+       0.4, -0.5, -0.2,
+       1, -2, 3,
+       0.5, -2, 1;
+  // clang-format on
+  Eigen::Vector4d d(1, 3, 2, 0.5);
+  const HPolyhedron polytope = tester.GetPolyhedronWithJointLimits(C, d);
+
+  const Eigen::VectorXd s_lower =
+      tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
+          plant_->GetPositionLowerLimits(), q_star);
+  const Eigen::VectorXd s_upper =
+      tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
+          plant_->GetPositionUpperLimits(), q_star);
+
+  HPolyhedron Cd_polytope(C, d);
+  auto joint_limits_polytope = HPolyhedron::MakeBox(s_lower, s_upper);
+  auto intersection_polytope = Cd_polytope.Intersection(joint_limits_polytope);
+  EXPECT_TRUE(polytope.ContainedIn(intersection_polytope));
+}
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
