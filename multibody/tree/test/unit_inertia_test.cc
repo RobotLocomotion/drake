@@ -633,7 +633,7 @@ GTEST_TEST(UnitInertia, CalcPrincipalHalfLengthsAndAxesForEquivalentShape) {
       drake::math::RotationMatrix<double>::Identity();
 
   // For a solid ellipsoid B, verify the function under test produces
-  // identical semi-diameters lmax = a, lmed = b, lmin = c.
+  // semi-diameters lmax = a, lmed = b, lmin = c.
   // Verify principal directions (R_BP is an identity matrix).
   const double shape_factor_solid_ellipsoid = 0.2;  // Inertia shape factor.
   double Gmin = shape_factor_solid_ellipsoid * (b*b + c*c);  // 1/5 (b² + c²)
@@ -649,7 +649,7 @@ GTEST_TEST(UnitInertia, CalcPrincipalHalfLengthsAndAxesForEquivalentShape) {
   EXPECT_TRUE(R_BP.IsExactlyEqualTo(R_identity));
 
   // For a solid box B, verify the function under test produces
-  // identical half-lengths lmax = a, lmed = b, lmin = c.
+  // half-lengths lmax = a, lmed = b, lmin = c.
   // Verify principal directions (R_BP is an identity matrix).
   const double shape_factor_solid_box = 1.0 / 3.0;  // Inertia shape factor.
   Gmin = shape_factor_solid_box * (b*b + c*c);  // Gxx = 1/3 (b² + c²)  small
@@ -694,7 +694,7 @@ GTEST_TEST(UnitInertia, CalcPrincipalHalfLengthsAndAxesForEquivalentShape) {
   EXPECT_TRUE(CompareMatrices(ratio * Vector3<double>(a, b, c),
                               abc, kTolerance));
 
-  // For a hollow sphere B, verify the function under test produces identical
+  // For a hollow sphere B, verify the function under test produces
   // semi-diameters lmax = a, lmed = a, lmin = a.
   // Verify principal directions (R_BP is an identity matrix).
   // For a hollow sphere with radius a, Gmin = Gmed = Gmax = 2/3 a².

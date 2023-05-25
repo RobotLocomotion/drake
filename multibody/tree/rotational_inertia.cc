@@ -7,15 +7,6 @@
 namespace drake {
 namespace multibody {
 
-namespace {
-
-template <typename T>
-const boolean<T> is_positive_finite(const T& value) {
-  using std::isfinite;
-  return isfinite(value) && value > 0;
-}
-}  // namespace
-
 template <typename T>
 Vector3<double> RotationalInertia<T>::CalcPrincipalMomentsAndMaybeAxesOfInertia(
       math::RotationMatrix<double>* principal_directions) const {

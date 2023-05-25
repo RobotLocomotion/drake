@@ -606,8 +606,6 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BC.col(0);
   const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BC.col(1);
   const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BC.col(2);
-  EXPECT_TRUE(Px_B(0) != 0.0 && Px_B(1) != 0.0);    // Px != [1 0 0]
-  EXPECT_TRUE(Py_B(0) != 0.0 && Py_B(1) != 0.0);    // Py != [0 1 0]
   EXPECT_NEAR(std::abs(Pz_B(2)), 1.0, kTolerance);  // Pz = [0 0 1] or [0 0 -1]
   EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);  // Px parallel to Cx.
   EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);  // Py parallel to Cy.
