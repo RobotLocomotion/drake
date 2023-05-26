@@ -17,78 +17,6 @@ namespace geometry {
 namespace optimization {
 namespace {
 const double kInf = std::numeric_limits<double>::infinity();
-/*
- The monomials in the numerator of body point position has the form ∏ᵢ pow(tᵢ,
- dᵢ) * ∏ⱼ pow(xⱼ, cⱼ), where tᵢ is the configuration variable tᵢ = tan(Δθᵢ/2)
- for the revolute joint, dᵢ = 0, 1, or 2, on the kinematic chain between the
- pair of bodies; xⱼ is the prismatic joint displacement on the same kinematic
- chain, cⱼ = 0 or 1. When we use SeparatingPlaneOrder = kAffine, the monomial
- basis would include all the monomials in the form ∏ᵢ pow(sᵢ, nᵢ) with nᵢ = 0
- or 1, s ∈ {tᵢ, xⱼ}. Let's denote this monomial basis as m(s).
-
- When we have non-polytopic collision geometries, we will also impose a matrix
- of rational functions being positive semidefinite. This requires a matrix-sos
- constraint with slack variable y. We will need the monomial basis in the form
- yᵢ*m(s) with i=0,1,2.
-
- @param[in/out] map_body_to_monomial_basis_array stores all the monomials basis
- already computed.
- @param[out] monomial_basis_array The monomial basis array for this pair of
- body, monomial_basis_array = [m(s), y₀*m(s), y₁*m(s), y₂*m(s)]
- */
-void FindMonomialBasisArray(
-    const multibody::RationalForwardKinematics& rational_forward_kin,
-    const Vector3<symbolic::Variable>& y_slack,
-    const SortedPair<multibody::BodyIndex>& body_pair,
-    std::unordered_map<SortedPair<multibody::BodyIndex>,
-                       std::array<VectorX<symbolic::Monomial>, 4>>*
-        map_body_to_monomial_basis_array,
-    std::array<VectorX<symbolic::Monomial>, 4>* monomial_basis_array) {
-  auto body_pair_it = map_body_to_monomial_basis_array->find(body_pair);
-  if (body_pair_it == map_body_to_monomial_basis_array->end()) {
-    const std::vector<multibody::internal::MobilizerIndex> mobilizer_indices =
-        multibody::internal::FindMobilizersOnPath(rational_forward_kin.plant(),
-                                                  body_pair.first(),
-                                                  body_pair.second());
-    const auto& tree =
-        multibody::internal::GetInternalTree(rational_forward_kin.plant());
-    symbolic::Variables s_set;
-    for (const auto& mobilizer_index : mobilizer_indices) {
-      const auto& mobilizer = tree.get_mobilizer(mobilizer_index);
-      if ((mobilizer.can_rotate() && !mobilizer.can_translate()) ||
-          (mobilizer.can_translate() && !mobilizer.can_rotate())) {
-        // This is a revolute or prismatic joint.
-        s_set.insert(
-            rational_forward_kin
-                .s()[rational_forward_kin
-                         .map_mobilizer_to_s_index()[mobilizer_index]]);
-      } else if (mobilizer.num_velocities() > 0) {
-        throw std::runtime_error(
-            "FindMonomialBasis: we only support revolute, prismatic or weld "
-            "mobilizers.");
-      }
-    }
-    if (s_set.empty()) {
-      // No s variable. The monomial basis is just [1].
-      (*monomial_basis_array)[0].resize(1);
-      (*monomial_basis_array)[0](0) = symbolic::Monomial();
-    } else {
-      (*monomial_basis_array)[0] =
-          symbolic::CalcMonomialBasisOrderUpToOne(s_set);
-    }
-    // monomial_basis_array[i+1] = y(i) * monomial_basis_array[0]
-    for (int i = 0; i < 3; ++i) {
-      const symbolic::Monomial yi(y_slack(i));
-      (*monomial_basis_array)[i + 1].resize((*monomial_basis_array)[0].rows());
-      for (int j = 0; j < (*monomial_basis_array)[0].rows(); ++j) {
-        (*monomial_basis_array)[i + 1](j) = yi * (*monomial_basis_array)[0](j);
-      }
-    }
-    map_body_to_monomial_basis_array->emplace(body_pair, *monomial_basis_array);
-  } else {
-    *monomial_basis_array = body_pair_it->second;
-  }
-}
 
 // Return the total size of the lower triangular variables in the Gram
 // matrices.
@@ -313,83 +241,27 @@ CspaceFreePolytope::CspaceFreePolytope(
     const multibody::MultibodyPlant<double>* plant,
     const geometry::SceneGraph<double>* scene_graph,
     SeparatingPlaneOrder plane_order,
-    const Eigen::Ref<const Eigen::VectorXd>& q_star, const Options& options)
-    : rational_forward_kin_(plant),
-      scene_graph_{*scene_graph},
-      link_geometries_{internal::GetCollisionGeometries(*plant, *scene_graph)},
-      plane_order_{plane_order},
-      s_set_{rational_forward_kin_.s()},
-      q_star_{q_star},
-      with_cross_y_{options.with_cross_y} {
-  // Create separating planes.
-  // collision_pairs maps each pair of body to the pair of collision geometries
-  // on that pair of body.
-  std::map<SortedPair<multibody::BodyIndex>,
-           std::vector<std::pair<const CIrisCollisionGeometry*,
-                                 const CIrisCollisionGeometry*>>>
-      collision_pairs;
-  int num_collision_pairs = internal::GenerateCollisionPairs(
-      rational_forward_kin_.plant(), scene_graph_, link_geometries_,
-      &collision_pairs);
-
-  separating_planes_.reserve(num_collision_pairs);
-  const symbolic::Monomial monomial_one{};
-  for (const auto& [link_pair, geometry_pairs] : collision_pairs) {
-    for (const auto& geometry_pair : geometry_pairs) {
-      Vector3<symbolic::Polynomial> a;
-      symbolic::Polynomial b;
-      VectorX<symbolic::Variable> plane_decision_vars;
-      switch (plane_order) {
-        case SeparatingPlaneOrder::kAffine: {
-          const VectorX<symbolic::Variable> s_for_plane =
-              rational_forward_kin_.s();
-          plane_decision_vars.resize(4 * s_for_plane.rows() + 4);
-          for (int i = 0; i < plane_decision_vars.rows(); ++i) {
-            plane_decision_vars(i) =
-                symbolic::Variable(fmt::format("plane_var{}", i));
-          }
-          CalcPlane<symbolic::Variable, symbolic::Variable,
-                    symbolic::Polynomial>(plane_decision_vars, s_for_plane,
-                                          plane_order_, &a, &b);
-        }
-      }
-      const multibody::BodyIndex expressed_body =
-          multibody::internal::FindBodyInTheMiddleOfChain(
-              rational_forward_kin_.plant(), link_pair.first(),
-              link_pair.second());
-      separating_planes_.emplace_back(a, b, geometry_pair.first,
-                                      geometry_pair.second, expressed_body,
-                                      plane_order_, plane_decision_vars);
-
-      map_geometries_to_separating_planes_.emplace(
-          SortedPair<geometry::GeometryId>(geometry_pair.first->id(),
-                                           geometry_pair.second->id()),
-          static_cast<int>(separating_planes_.size()) - 1);
-    }
-  }
-
-  for (int i = 0; i < 3; ++i) {
-    y_slack_(i) = symbolic::Variable("y" + std::to_string(i));
-  }
-
-  s_lower_ = rational_forward_kin_.ComputeSValue(
-      rational_forward_kin_.plant().GetPositionLowerLimits(), q_star_);
-  s_upper_ = rational_forward_kin_.ComputeSValue(
-      rational_forward_kin_.plant().GetPositionUpperLimits(), q_star_);
-  CalcSBoundsPolynomial();
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const CspaceFreePolytope::Options& options)
+    : CspaceFreePolytopeBase(plant, scene_graph, plane_order, options),
+      q_star_{q_star} {
+  s_lower_ = rational_forward_kin().ComputeSValue(
+      rational_forward_kin().plant().GetPositionLowerLimits(), q_star_);
+  s_upper_ = rational_forward_kin().ComputeSValue(
+      rational_forward_kin().plant().GetPositionUpperLimits(), q_star_);
+  this->CalcSBoundsPolynomial(s_lower_, s_upper_, &s_minus_s_lower_,
+                              &s_upper_minus_s_);
 
   std::vector<std::unique_ptr<CSpaceSeparatingPlane<symbolic::Variable>>>
       separating_planes_ptrs;
-  separating_planes_ptrs.reserve(separating_planes_.size());
-  for (const auto& plane : separating_planes_) {
+  separating_planes_ptrs.reserve(separating_planes().size());
+  for (const auto& plane : separating_planes()) {
     separating_planes_ptrs.push_back(
         std::make_unique<CIrisSeparatingPlane<symbolic::Variable>>(plane));
   }
 
-  internal::GenerateRationals(separating_planes_ptrs, y_slack_, q_star_,
-                              rational_forward_kin_, &plane_geometries_);
-
-  this->CalcMonomialBasis();
+  internal::GenerateRationals(separating_planes_ptrs, y_slack(), q_star_,
+                              rational_forward_kin(), &plane_geometries_);
 }
 
 CspaceFreePolytope::SeparatingPlaneLagrangians
@@ -416,8 +288,8 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
     const std::unordered_set<int>& s_upper_redundant_indices) const {
   SeparationCertificateProgram ret;
   ret.plane_index = plane_geometries.plane_index;
-  ret.prog->AddIndeterminates(rational_forward_kin_.s());
-  const auto& plane = separating_planes_[plane_geometries.plane_index];
+  ret.prog->AddIndeterminates(rational_forward_kin().s());
+  const auto& plane = separating_planes()[plane_geometries.plane_index];
   ret.prog->AddDecisionVariables(plane.decision_variables);
 
   // First count the total size of the gram matrix variables.
@@ -429,27 +301,27 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
                             monomial_basis_array) {
     // Each rational >= 0 requires the Lagrangian multiplier for d-C*s,
     // s-s_lower and s_upper-s.
-    const int s_size = this->rational_forward_kin_.s().rows();
+    const int s_size = this->rational_forward_kin().s().rows();
     const int num_sos =
         1 + d_minus_Cs.rows() + 2 * s_size - C_redundant_indices.size() -
         s_lower_redundant_indices.size() - s_upper_redundant_indices.size();
-    const int y_size = internal::GetNumYInRational(rational, this->y_slack_);
+    const int y_size = internal::GetNumYInRational(rational, this->y_slack());
     const int num_gram_vars_per_sos =
-        GetGramVarSize(monomial_basis_array, this->with_cross_y_, y_size);
+        GetGramVarSize(monomial_basis_array, this->with_cross_y(), y_size);
     return num_gram_vars_per_sos * num_sos;
   };
   const SortedPair<multibody::BodyIndex> positive_body_pair(
       plane.expressed_body, plane.positive_side_geometry->body_index());
   const std::array<VectorX<symbolic::Monomial>, 4>&
       monomial_basis_array_positive_side =
-          this->map_body_to_monomial_basis_array_.at(positive_body_pair);
+          this->map_body_to_monomial_basis_array().at(positive_body_pair);
   for (const auto& rational : plane_geometries.positive_side_rationals) {
     gram_var_count += count_gram(rational, monomial_basis_array_positive_side);
   }
   const SortedPair<multibody::BodyIndex> negative_body_pair(
       plane.expressed_body, plane.negative_side_geometry->body_index());
   const auto& monomial_basis_array_negative_side =
-      this->map_body_to_monomial_basis_array_.at(negative_body_pair);
+      this->map_body_to_monomial_basis_array().at(negative_body_pair);
   for (const auto& rational : plane_geometries.negative_side_rationals) {
     gram_var_count += count_gram(rational, monomial_basis_array_negative_side);
   }
@@ -464,11 +336,11 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
           const symbolic::RationalFunction& rational,
           const std::array<VectorX<symbolic::Monomial>, 4>&
               monomial_basis_array) -> SeparatingPlaneLagrangians {
-    const int y_size = internal::GetNumYInRational(rational, this->y_slack_);
+    const int y_size = internal::GetNumYInRational(rational, this->y_slack());
     GramAndMonomialBasis gram_and_monomial_basis(monomial_basis_array,
-                                                 this->with_cross_y_, y_size);
+                                                 this->with_cross_y(), y_size);
     const int num_gram_vars_per_sos = gram_and_monomial_basis.gram_var_size;
-    const int s_size = this->rational_forward_kin_.s().rows();
+    const int s_size = this->rational_forward_kin().s().rows();
     SeparatingPlaneLagrangians lagrangians(d_minus_Cs.rows(), s_size);
 
     // Set lagrangians.polytope, add sos constraints.
@@ -517,7 +389,7 @@ CspaceFreePolytope::ConstructPlaneSearchProgram(
 
   if (plane.positive_side_geometry->type() != CIrisGeometryType::kPolytope ||
       plane.negative_side_geometry->type() != CIrisGeometryType::kPolytope) {
-    ret.prog->AddIndeterminates(y_slack_);
+    ret.prog->AddIndeterminates(y_slack());
   }
 
   ret.certificate.positive_side_rational_lagrangians.reserve(
@@ -590,14 +462,14 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
     C_redundant_indices.clear();
   }
 
-  // Stores the indices in separating_planes_ that don't appear in
+  // Stores the indices in separating_planes() that don't appear in
   // ignored_collision_pairs.
   std::vector<int> active_plane_indices;
-  active_plane_indices.reserve(separating_planes_.size());
-  for (int i = 0; i < static_cast<int>(separating_planes_.size()); ++i) {
+  active_plane_indices.reserve(separating_planes().size());
+  for (int i = 0; i < static_cast<int>(separating_planes().size()); ++i) {
     if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
-            separating_planes_[i].positive_side_geometry->id(),
-            separating_planes_[i].negative_side_geometry->id())) == 0) {
+            separating_planes()[i].positive_side_geometry->id(),
+            separating_planes()[i].negative_side_geometry->id())) == 0) {
       active_plane_indices.push_back(i);
     }
   }
@@ -623,9 +495,9 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
                 &result);
     if (result.is_success()) {
       ret[plane_count].emplace(certificate_program.certificate.GetSolution(
-          plane_index, separating_planes_[plane_index].a,
-          separating_planes_[plane_index].b,
-          separating_planes_[plane_index].decision_variables, result));
+          plane_index, separating_planes()[plane_index].a,
+          separating_planes()[plane_index].b,
+          separating_planes()[plane_index].decision_variables, result));
       is_success[plane_count].emplace(true);
     } else {
       ret[plane_count].reset();
@@ -701,7 +573,7 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   } else {
     if (options.verbose) {
       std::string bad_pairs;
-      const auto& inspector = scene_graph_.model_inspector();
+      const auto& inspector = scene_graph().model_inspector();
       for (int plane_count = 0;
            plane_count < static_cast<int>(active_plane_indices.size());
            ++plane_count) {
@@ -710,9 +582,9 @@ CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
             !(is_success[plane_count].value())) {
           bad_pairs.append(fmt::format(
               "({}, {})\n",
-              inspector.GetName(
-                  separating_planes_[plane_index].positive_side_geometry->id()),
-              inspector.GetName(separating_planes_[plane_index]
+              inspector.GetName(separating_planes()[plane_index]
+                                    .positive_side_geometry->id()),
+              inspector.GetName(separating_planes()[plane_index]
                                     .negative_side_geometry->id())));
         }
       }
@@ -751,7 +623,7 @@ bool CspaceFreePolytope::FindSeparationCertificateGivenPolytope(
   bool is_success = true;
   for (const auto& certificate : certificates_vec) {
     if (certificate.has_value()) {
-      const auto& plane = separating_planes_[certificate->plane_index];
+      const auto& plane = separating_planes()[certificate->plane_index];
       certificates->emplace(
           SortedPair<geometry::GeometryId>(plane.positive_side_geometry->id(),
                                            plane.negative_side_geometry->id()),
@@ -776,21 +648,22 @@ int CspaceFreePolytope::GetGramVarSizeForPolytopeSearchProgram(
         // s_upper-s (if search_s_bounds_lagrangian=true), together with one
         // sos that rational.numerator() - λ(s)ᵀ * (d - C*s) - λ_lower(s)ᵀ *
         // (s - s_lower) -λ_upper(s)ᵀ * (s_upper - s) is sos
-        const int s_size = this->rational_forward_kin_.s().rows();
+        const int s_size = this->rational_forward_kin().s().rows();
         const int num_sos =
             (1 + (search_s_bounds_lagrangians ? 2 * s_size : 0));
-        const int num_y = internal::GetNumYInRational(rational, this->y_slack_);
-        ret += num_sos *
-               GetGramVarSize(monomial_basis_array, this->with_cross_y_, num_y);
+        const int num_y =
+            internal::GetNumYInRational(rational, this->y_slack());
+        ret += num_sos * GetGramVarSize(monomial_basis_array,
+                                        this->with_cross_y(), num_y);
       };
 
   for (const auto& plane_geometries : plane_geometries_) {
-    const auto& plane = separating_planes_[plane_geometries.plane_index];
+    const auto& plane = separating_planes()[plane_geometries.plane_index];
     if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
             plane.positive_side_geometry->id(),
             plane.negative_side_geometry->id())) == 0) {
       const auto& monomial_basis_array_positive_side =
-          this->map_body_to_monomial_basis_array_.at(
+          this->map_body_to_monomial_basis_array().at(
               SortedPair<multibody::BodyIndex>(
                   plane.expressed_body,
                   plane.positive_side_geometry->body_index()));
@@ -798,7 +671,7 @@ int CspaceFreePolytope::GetGramVarSizeForPolytopeSearchProgram(
         count_gram_per_rational(rational, monomial_basis_array_positive_side);
       }
       const auto& monomial_basis_array_negative_side =
-          this->map_body_to_monomial_basis_array_.at(
+          this->map_body_to_monomial_basis_array().at(
               SortedPair<multibody::BodyIndex>(
                   plane.expressed_body,
                   plane.negative_side_geometry->body_index()));
@@ -820,10 +693,10 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
     bool search_s_bounds_lagrangians, int gram_total_size,
     std::unordered_map<int, SeparationCertificate>* new_certificates) const {
   auto prog = std::make_unique<solvers::MathematicalProgram>();
-  prog->AddIndeterminates(rational_forward_kin_.s());
+  prog->AddIndeterminates(rational_forward_kin().s());
   // Add the indeterminates y if we need to certify non-polytopic collision
   // geometry
-  for (const auto& plane : separating_planes_) {
+  for (const auto& plane : separating_planes()) {
     if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
             plane.positive_side_geometry->id(),
             plane.negative_side_geometry->id())) == 0) {
@@ -831,7 +704,7 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
               CIrisGeometryType::kPolytope ||
           plane.negative_side_geometry->type() !=
               CIrisGeometryType::kPolytope) {
-        prog->AddIndeterminates(y_slack_);
+        prog->AddIndeterminates(y_slack());
         break;
       }
     }
@@ -849,12 +722,12 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
   for (int i = 0; i < static_cast<int>(certificates_vec.size()); ++i) {
     plane_to_certificate_map.emplace(certificates_vec[i]->plane_index, i);
   }
-  const int s_size = rational_forward_kin_.s().rows();
+  const int s_size = rational_forward_kin().s().rows();
   int gram_var_count = 0;
   for (int plane_index = 0;
-       plane_index < static_cast<int>(separating_planes_.size());
+       plane_index < static_cast<int>(separating_planes().size());
        ++plane_index) {
-    const auto& plane = separating_planes_[plane_index];
+    const auto& plane = separating_planes()[plane_index];
     const SortedPair<geometry::GeometryId> geometry_pair(
         plane.positive_side_geometry->id(), plane.negative_side_geometry->id());
     if (ignored_collision_pairs.count(geometry_pair) == 0) {
@@ -884,11 +757,11 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
             DRAKE_THROW_UNLESS(rationals.size() == lagrangians_vec.size());
             for (int i = 0; i < static_cast<int>(rationals.size()); ++i) {
               const int num_y =
-                  internal::GetNumYInRational(rationals[i], this->y_slack_);
+                  internal::GetNumYInRational(rationals[i], this->y_slack());
               const int num_gram_vars_per_sos = GetGramVarSize(
-                  monomial_basis_array, this->with_cross_y_, num_y);
+                  monomial_basis_array, this->with_cross_y(), num_y);
               GramAndMonomialBasis gram_and_monomial_basis(
-                  monomial_basis_array, this->with_cross_y_, num_y);
+                  monomial_basis_array, this->with_cross_y(), num_y);
               // Add Lagrangian multipliers for joint limits.
               if (search_s_bounds_lagrangians) {
                 for (int j = 0; j < s_size; ++j) {
@@ -936,7 +809,7 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
       // Add the constraint that positive_side_rationals are nonnegative in
       // C-space polytope.
       const auto& monomial_basis_array_positive_side =
-          this->map_body_to_monomial_basis_array_.at(
+          this->map_body_to_monomial_basis_array().at(
               SortedPair<multibody::BodyIndex>(
                   plane.expressed_body,
                   plane.positive_side_geometry->body_index()));
@@ -951,7 +824,7 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
       // Add the constraint that negative_side_rationals are nonnegative in
       // C-space polytope.
       const auto& monomial_basis_array_negative_side =
-          this->map_body_to_monomial_basis_array_.at(
+          this->map_body_to_monomial_basis_array().at(
               SortedPair<multibody::BodyIndex>(
                   plane.expressed_body,
                   plane.negative_side_geometry->body_index()));
@@ -979,7 +852,7 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
   DRAKE_THROW_UNLESS(C != nullptr);
   DRAKE_THROW_UNLESS(d != nullptr);
   DRAKE_THROW_UNLESS(new_certificates != nullptr);
-  const int s_size = rational_forward_kin_.s().rows();
+  const int s_size = rational_forward_kin().s().rows();
   const int C_rows = certificates.begin()
                          ->second.positive_side_rational_lagrangians[0]
                          .polytope()
@@ -991,13 +864,13 @@ CspaceFreePolytope::InitializePolytopeSearchProgram(
   // In order to get consistent result, I put the elements into certificates_vec
   // in a sorted order, based on the plane index.
   std::vector<std::optional<SeparationCertificateResult>> certificates_vec;
-  for (const auto& plane : separating_planes_) {
+  for (const auto& plane : separating_planes()) {
     const SortedPair<geometry::GeometryId> geometry_pair(
         plane.positive_side_geometry->id(), plane.negative_side_geometry->id());
     if (ignored_collision_pairs.count(geometry_pair) == 0) {
       const auto it = certificates.find(geometry_pair);
       if (it == certificates.end()) {
-        const auto& inspector = scene_graph_.model_inspector();
+        const auto& inspector = scene_graph().model_inspector();
         throw std::runtime_error(
             fmt::format("InitializePolytopeSearchProgram: certificates doesn't "
                         "contain result for the geometry pair ({}, {})",
@@ -1057,7 +930,7 @@ void CspaceFreePolytope::AddCspacePolytopeContainment(
     const VectorX<symbolic::Variable>& d,
     const Eigen::MatrixXd& s_inner_pts) const {
   DRAKE_THROW_UNLESS(s_inner_pts.rows() ==
-                     this->rational_forward_kin_.s().rows());
+                     this->rational_forward_kin().s().rows());
   // Check that s_inner_pts is within [s_lower_, s_upper_].
   for (int i = 0; i < s_inner_pts.rows(); ++i) {
     for (int j = 0; j < s_inner_pts.cols(); ++j) {
@@ -1149,7 +1022,7 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
     const Eigen::Ref<const Eigen::VectorXd>& d_init,
     const BilinearAlternationOptions& options) const {
   DRAKE_THROW_UNLESS(C_init.rows() == d_init.rows());
-  DRAKE_THROW_UNLESS(C_init.cols() == this->rational_forward_kin_.s().rows());
+  DRAKE_THROW_UNLESS(C_init.cols() == this->rational_forward_kin().s().rows());
   DRAKE_THROW_UNLESS(options.max_iter >= 0);
   DRAKE_THROW_UNLESS(options.convergence_tol >= 0);
   DRAKE_THROW_UNLESS(options.ellipsoid_scaling > 0);
@@ -1269,9 +1142,9 @@ CspaceFreePolytope::BinarySearch(
 
   // geometry_pair_scale_lower_bounds[i] stores the certified lower bound on
   // the scaling factor for the i'th pair of geometries (the geometries in
-  // this->separating_planes_[i]).
+  // this->separating_planes()[i]).
   std::vector<double> geometry_pair_scale_lower_bounds(
-      this->separating_planes_.size(), 0);
+      this->separating_planes().size(), 0);
 
   // Determines if we can certify the scaled C-space polytope {s |C*s<=d,
   // s_lower<=s<=s_upper} is collision free or not. Also update `ret` if eps
@@ -1294,8 +1167,8 @@ CspaceFreePolytope::BinarySearch(
     // geometry_pair_scale_lower_bounds[plane_index].
     CspaceFreePolytope::IgnoredCollisionPairs
         ignored_collision_pairs_for_scale = ignored_collision_pairs;
-    for (int i = 0; i < static_cast<int>(separating_planes_.size()); ++i) {
-      const auto& plane = separating_planes_[i];
+    for (int i = 0; i < static_cast<int>(separating_planes().size()); ++i) {
+      const auto& plane = separating_planes()[i];
       const SortedPair<geometry::GeometryId> geometry_pair(
           plane.positive_side_geometry->id(),
           plane.negative_side_geometry->id());
@@ -1376,14 +1249,14 @@ CspaceFreePolytope::MakeIsGeometrySeparableProgram(
   const VectorX<symbolic::Polynomial> d_minus_Cs =
       this->CalcDminusCs<double>(C, d);
   auto geometry_pair_it =
-      map_geometries_to_separating_planes_.find(geometry_pair);
-  if (geometry_pair_it == map_geometries_to_separating_planes_.end()) {
+      map_geometries_to_separating_planes().find(geometry_pair);
+  if (geometry_pair_it == map_geometries_to_separating_planes().end()) {
     throw std::runtime_error(fmt::format(
         "MakeIsGeometrySeparableProgram(): geometry pair ({}, {}) does not "
         "need "
         "a separation certificate",
-        scene_graph_.model_inspector().GetName(geometry_pair.first()),
-        scene_graph_.model_inspector().GetName(geometry_pair.second())));
+        scene_graph().model_inspector().GetName(geometry_pair.first()),
+        scene_graph().model_inspector().GetName(geometry_pair.second())));
   }
   const int plane_index = geometry_pair_it->second;
 
@@ -1408,11 +1281,11 @@ CspaceFreePolytope::SolveSeparationCertificateProgram(
 
   DRAKE_THROW_UNLESS(certificate_program.plane_index >= 0 &&
                      certificate_program.plane_index <
-                         static_cast<int>(this->separating_planes_.size()));
+                         static_cast<int>(this->separating_planes().size()));
 
   internal::SolveSeparationCertificateProgramBase(
       certificate_program, options,
-      separating_planes_[certificate_program.plane_index], &(ret.value()));
+      separating_planes()[certificate_program.plane_index], &(ret.value()));
   std::optional<CspaceFreePolytope::SeparationCertificateResult> ret_optional{
       std::nullopt};
   if (ret->result.is_success()) {
@@ -1507,9 +1380,9 @@ CspaceFreePolytope::FindPolytopeGivenLagrangian(
     ret.C = result.GetSolution(C);
     ret.d = result.GetSolution(d);
     for (int plane_index = 0;
-         plane_index < static_cast<int>(this->separating_planes_.size());
+         plane_index < static_cast<int>(this->separating_planes().size());
          ++plane_index) {
-      const auto& plane = this->separating_planes_[plane_index];
+      const auto& plane = this->separating_planes()[plane_index];
       const SortedPair<geometry::GeometryId> geometry_pair(
           plane.positive_side_geometry->id(),
           plane.negative_side_geometry->id());
@@ -1527,9 +1400,9 @@ CspaceFreePolytope::FindPolytopeGivenLagrangian(
     if (certificates_result != nullptr) {
       certificates_result->clear();
       for (int plane_index = 0;
-           plane_index < static_cast<int>(separating_planes_.size());
+           plane_index < static_cast<int>(separating_planes().size());
            ++plane_index) {
-        const auto& plane = separating_planes_[plane_index];
+        const auto& plane = separating_planes()[plane_index];
         if (ignored_collision_pairs.count(SortedPair<geometry::GeometryId>(
                 plane.positive_side_geometry->id(),
                 plane.negative_side_geometry->id())) == 0) {
@@ -1537,9 +1410,9 @@ CspaceFreePolytope::FindPolytopeGivenLagrangian(
               plane_index,
               new_certificates_map.at(plane_index)
                   .GetSolution(
-                      plane_index, separating_planes_[plane_index].a,
-                      separating_planes_[plane_index].b,
-                      separating_planes_[plane_index].decision_variables,
+                      plane_index, separating_planes()[plane_index].a,
+                      separating_planes()[plane_index].b,
+                      separating_planes()[plane_index].decision_variables,
                       result));
         }
       }
@@ -1586,26 +1459,12 @@ void CspaceFreePolytope::FindRedundantInequalities(
   }
 }
 
-void CspaceFreePolytope::CalcSBoundsPolynomial() {
-  const int s_size = rational_forward_kin_.s().rows();
-  s_minus_s_lower_.resize(s_size);
-  s_upper_minus_s_.resize(s_size);
-  const symbolic::Monomial monomial_one{};
-  const auto& s = rational_forward_kin_.s();
-  for (int i = 0; i < s_size; ++i) {
-    s_minus_s_lower_(i) = symbolic::Polynomial(symbolic::Polynomial::MapType(
-        {{symbolic::Monomial(s(i)), 1}, {monomial_one, -s_lower_(i)}}));
-    s_upper_minus_s_(i) = symbolic::Polynomial(symbolic::Polynomial::MapType(
-        {{monomial_one, s_upper_(i)}, {symbolic::Monomial(s(i)), -1}}));
-  }
-}
-
 template <typename T>
 VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs(
     const Eigen::Ref<const MatrixX<T>>& C,
     const Eigen::Ref<const VectorX<T>>& d) const {
   // Now build the polynomials d(i) - C.row(i) * s
-  const auto& s = rational_forward_kin_.s();
+  const auto& s = rational_forward_kin().s();
   DRAKE_THROW_UNLESS(C.rows() == d.rows() &&
                      C.cols() == static_cast<int>(s.size()));
   const symbolic::Monomial monomial_one{};
@@ -1635,23 +1494,6 @@ VectorX<symbolic::Polynomial> CspaceFreePolytope::CalcDminusCs(
   return d_minus_Cs;
 }
 
-void CspaceFreePolytope::CalcMonomialBasis() {
-  for (int plane_index = 0;
-       plane_index < static_cast<int>(separating_planes_.size());
-       ++plane_index) {
-    const auto& plane = separating_planes_[plane_index];
-    for (const auto collision_geometry :
-         {plane.positive_side_geometry, plane.negative_side_geometry}) {
-      const SortedPair<multibody::BodyIndex> body_pair(
-          plane.expressed_body, collision_geometry->body_index());
-      std::array<VectorX<symbolic::Monomial>, 4> monomial_basis_array;
-      FindMonomialBasisArray(rational_forward_kin_, y_slack_, body_pair,
-                             &map_body_to_monomial_basis_array_,
-                             &monomial_basis_array);
-    }
-  }
-}
-
 std::map<multibody::BodyIndex,
          std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
 GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
@@ -1661,14 +1503,14 @@ GetCollisionGeometries(const multibody::MultibodyPlant<double>& plant,
 
 int CspaceFreePolytope::GetSeparatingPlaneIndex(
     const SortedPair<geometry::GeometryId>& pair) const {
-  return (map_geometries_to_separating_planes_.count(pair) == 0)
+  return (map_geometries_to_separating_planes().count(pair) == 0)
              ? -1
-             : map_geometries_to_separating_planes_.at(pair);
+             : map_geometries_to_separating_planes().at(pair);
 }
 
 HPolyhedron CspaceFreePolytope::GetPolyhedronWithJointLimits(
     const Eigen::MatrixXd& C, const Eigen::VectorXd& d) const {
-  const int s_size = rational_forward_kin_.s().rows();
+  const int s_size = rational_forward_kin().s().rows();
   Eigen::MatrixXd A(C.rows() + 2 * s_size, s_size);
   Eigen::VectorXd b(A.rows());
   A.topRows(C.rows()) = C;

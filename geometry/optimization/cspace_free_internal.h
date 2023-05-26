@@ -41,6 +41,18 @@ void GenerateRationals(
     std::vector<PlaneSeparatesGeometries>* plane_geometries);
 
 /*
+ Overloads GenerateRationals.
+ Use separating_planes as the map of the plane_index to the separating plane.
+ */
+void GenerateRationals(
+    const std::map<int, const CSpaceSeparatingPlane<symbolic::Variable>*>&
+        separating_planes,
+    const Vector3<symbolic::Variable>& y_slack,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const multibody::RationalForwardKinematics& rational_forward_kin,
+    std::vector<PlaneSeparatesGeometries>* plane_geometries);
+
+/*
  Returns the number of y_slack variables in `rational`.
  Not all y_slack necessarily appear in `rational`.
  */
