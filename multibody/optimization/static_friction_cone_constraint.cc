@@ -48,9 +48,6 @@ void StaticFrictionConeConstraint::DoEval(
   Vector3<AutoDiffXd> f_Cb_W = F_Cb_W.tail<3>();
 
   // First get the signed distance result for the pair of geometries.
-  // TODO(hongkai.dai): do not compute the signed distance results for every
-  // pair of geometries, instead just compute the pair in the
-  // contact_wrench_evaluator_
   const auto& query_port = plant.get_geometry_query_input_port();
   if (!query_port.HasValue(context)) {
     throw std::invalid_argument(
@@ -60,57 +57,40 @@ void StaticFrictionConeConstraint::DoEval(
   }
   const auto& query_object =
       query_port.Eval<geometry::QueryObject<AutoDiffXd>>(context);
-  const std::vector<geometry::SignedDistancePair<AutoDiffXd>>
-      signed_distance_pairs =
-          query_object.ComputeSignedDistancePairwiseClosestPoints();
-  bool found_geometry_pair = false;
-  for (const auto& signed_distance_pair : signed_distance_pairs) {
-    // In SceneGraph::ComputeSignedDistancePairwiseClosestPoints(), the geometry
-    // IDs in each signed_distance_pair is guaranteed to be sorted, in the same
-    // order as the SortedPair returned by geometry_id_pair().
-    if (signed_distance_pair.id_A ==
-            contact_wrench_evaluator_->geometry_id_pair().first() &&
-        signed_distance_pair.id_B ==
-            contact_wrench_evaluator_->geometry_id_pair().second()) {
-      found_geometry_pair = true;
-      // Compute the friction.
-      const geometry::ProximityProperties& geometryA_props =
-          *query_object.inspector().GetProximityProperties(
-              signed_distance_pair.id_A);
-      const geometry::ProximityProperties& geometryB_props =
-          *query_object.inspector().GetProximityProperties(
-              signed_distance_pair.id_B);
+  const geometry::SignedDistancePair<AutoDiffXd> signed_distance_pair =
+      query_object.ComputeSignedDistancePairClosestPoints(
+          contact_wrench_evaluator_->geometry_id_pair().first(),
+          contact_wrench_evaluator_->geometry_id_pair().second());
 
-      const CoulombFriction<double>& geometryA_friction =
-          geometryA_props.GetProperty<CoulombFriction<double>>(
-              "material", "coulomb_friction");
-      const CoulombFriction<double>& geometryB_friction =
-          geometryB_props.GetProperty<CoulombFriction<double>>(
-              "material", "coulomb_friction");
+  // Compute the friction.
+  const geometry::ProximityProperties& geometryA_props =
+      *query_object.inspector().GetProximityProperties(
+          signed_distance_pair.id_A);
+  const geometry::ProximityProperties& geometryB_props =
+      *query_object.inspector().GetProximityProperties(
+          signed_distance_pair.id_B);
 
-      CoulombFriction<double> combined_friction =
-          CalcContactFrictionFromSurfaceProperties(geometryA_friction,
-                                                   geometryB_friction);
+  const CoulombFriction<double>& geometryA_friction =
+      geometryA_props.GetProperty<CoulombFriction<double>>(
+          "material", "coulomb_friction");
+  const CoulombFriction<double>& geometryB_friction =
+      geometryB_props.GetProperty<CoulombFriction<double>>(
+          "material", "coulomb_friction");
 
-      const auto& nhat_BA_W = signed_distance_pair.nhat_BA_W;
-      // The constraint n̂_AB_W.dot(f_Cb_W) >= 0
-      (*y)(0) = -nhat_BA_W.dot(f_Cb_W);
+  CoulombFriction<double> combined_friction =
+      CalcContactFrictionFromSurfaceProperties(geometryA_friction,
+                                                geometryB_friction);
 
-      // The constraint f_Cb_Wᵀ * ((μ² + 1)* n̂_AB_W * n̂_AB_Wᵀ - I) * f_Cb_W >= 0
-      (*y)(1) =
-          f_Cb_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
-                          nhat_BA_W * nhat_BA_W.transpose() -
-                      Eigen::Matrix3d::Identity()) *
-                     f_Cb_W);
-      break;
-    }
-  }
-  if (!found_geometry_pair) {
-    throw std::runtime_error(
-        "StaticFrictionConeConstraint: the input contact_wrench_evaluator "
-        "contains a pair of geometries that have not been registered to the "
-        "SceneGraph for distance computation.");
-  }
+  const auto& nhat_BA_W = signed_distance_pair.nhat_BA_W;
+  // The constraint n̂_AB_W.dot(f_Cb_W) >= 0
+  (*y)(0) = -nhat_BA_W.dot(f_Cb_W);
+
+  // The constraint f_Cb_Wᵀ * ((μ² + 1)* n̂_AB_W * n̂_AB_Wᵀ - I) * f_Cb_W >= 0
+  (*y)(1) =
+      f_Cb_W.dot(((std::pow(combined_friction.static_friction(), 2) + 1) *
+                      nhat_BA_W * nhat_BA_W.transpose() -
+                  Eigen::Matrix3d::Identity()) *
+                  f_Cb_W);
 }
 
 void StaticFrictionConeConstraint::DoEval(
