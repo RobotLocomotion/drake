@@ -14,6 +14,7 @@
 #include "drake/common/drake_deprecated.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/c_iris_separating_plane.h"
+#include "drake/geometry/optimization/cspace_free_polytope_base.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/rational/rational_forward_kinematics.h"
@@ -41,60 +42,15 @@ namespace optimization {
  for Robot Manipulators
  by Alexandre Amice*, Hongkai Dai*, Peter Werner, Annan Zhang and Russ Tedrake.
  */
-class CspaceFreePolytope {
+class CspaceFreePolytope : public CspaceFreePolytopeBase {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(CspaceFreePolytope)
 
-  using IgnoredCollisionPairs =
-      std::unordered_set<SortedPair<geometry::GeometryId>>;
+  using CspaceFreePolytopeBase::IgnoredCollisionPairs;
 
-  ~CspaceFreePolytope() {}
+  ~CspaceFreePolytope() override = default;
 
-  /** Optional argument for constructing CspaceFreePolytope */
-  struct Options {
-    Options() {}
-
-    /**
-     For non-polytopic collision geometries, we will impose a matrix-sos
-     constraint X(s) being psd, with a slack indeterminates y, such that the
-     polynomial
-     <pre>
-     p(s, y) = ⌈ 1 ⌉ᵀ * X(s) * ⌈ 1 ⌉
-               ⌊ y ⌋           ⌊ y ⌋
-     </pre>
-     is positive. This p(s, y) polynomial doesn't contain the cross term of y
-     (namely it doesn't have y(i)*y(j), i≠j). When we select the monomial
-     basis for this polynomial, we can also exclude the cross term of y in the
-     monomial basis.
-
-     To illustrate the idea, let's consider the following toy example: if we
-     want to certify that
-     a(0) + a(1)*y₀ + a(2)*y₁ + a(3)*y₀² + a(4)*y₁² is positive
-     (this polynomial doesn't have the cross term y₀*y₁), we can write it as
-     <pre>
-     ⌈ 1⌉ᵀ * A₀ * ⌈ 1⌉ + ⌈ 1⌉ᵀ * A₁ * ⌈ 1⌉
-     ⌊y₀⌋         ⌊y₀⌋   ⌊y₁⌋         ⌊y₁⌋
-     </pre>
-     with two small psd matrices A₀, A₁
-     Instead of
-     <pre>
-     ⌈ 1⌉ᵀ * A * ⌈ 1⌉
-     |y₀|        |y₀|
-     ⌊y₁⌋        ⌊y₁⌋
-     </pre>
-     with one large psd matrix A. The first parameterization won't have the
-     cross term y₀*y₁ by construction, while the second parameterization
-     requires imposing extra constraints on certain off-diagonal terms in A
-     so that the cross term vanishes.
-
-     If we set with_cross_y = false, then we will use the monomial basis that
-     doesn't generate cross terms of y, leading to smaller size sos problems.
-     If we set with_cross_y = true, then we will use the monomial basis that
-     will generate cross terms of y, causing larger size sos problems, but
-     possibly able to certify a larger C-space polytope.
-     */
-    bool with_cross_y{false};
-  };
+  using CspaceFreePolytopeBase::Options;
 
   /**
    @param plant The plant for which we compute the C-space free polytopes. It
@@ -113,30 +69,6 @@ class CspaceFreePolytope {
                      SeparatingPlaneOrder plane_order,
                      const Eigen::Ref<const Eigen::VectorXd>& q_star,
                      const Options& options = Options{});
-
-  [[nodiscard]] const multibody::RationalForwardKinematics&
-  rational_forward_kin() const {
-    return rational_forward_kin_;
-  }
-
-  /**
-   separating_planes()[map_geometries_to_separating_planes.at(geometry1_id,
-   geometry2_id)] is the separating plane that separates geometry1 and
-   geometry 2.
-   */
-  [[nodiscard]] const std::unordered_map<SortedPair<geometry::GeometryId>, int>&
-  map_geometries_to_separating_planes() const {
-    return map_geometries_to_separating_planes_;
-  }
-
-  [[nodiscard]] const std::vector<CIrisSeparatingPlane<symbolic::Variable>>&
-  separating_planes() const {
-    return separating_planes_;
-  }
-
-  [[nodiscard]] const Vector3<symbolic::Variable>& y_slack() const {
-    return y_slack_;
-  }
 
   /**
    When searching for the separating plane, we want to certify that the
@@ -514,15 +446,10 @@ class CspaceFreePolytope {
   // Forward declaration the tester class. This tester class will expose the
   // private members of CspaceFreePolytope for unit test.
   friend class CspaceFreePolytopeTester;
-  [[nodiscard]] const symbolic::Variables& get_s_set() const { return s_set_; }
 
-  [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
+  [[nodiscard]] std::vector<PlaneSeparatesGeometries>&
   get_mutable_plane_geometries() {
     return plane_geometries_;
-  }
-
-  const geometry::SceneGraph<double>& get_scene_graph() const {
-    return scene_graph_;
   }
 
   // Returns the index of the plane which will separate the geometry pair.
@@ -537,9 +464,6 @@ class CspaceFreePolytope {
       double tighten, std::unordered_set<int>* C_redundant_indices,
       std::unordered_set<int>* s_lower_redundant_indices,
       std::unordered_set<int>* s_upper_redundant_indices) const;
-
-  // Computes s-s_lower and s_upper - s as polynomials of s.
-  void CalcSBoundsPolynomial();
 
   // Computes d - C*s as a vector of polynomials on indeterminate s.
   template <typename T>
@@ -684,24 +608,6 @@ class CspaceFreePolytope {
   HPolyhedron GetPolyhedronWithJointLimits(const Eigen::MatrixXd& C,
                                            const Eigen::VectorXd& d) const;
 
-  multibody::RationalForwardKinematics rational_forward_kin_;
-  const geometry::SceneGraph<double>& scene_graph_;
-  std::map<multibody::BodyIndex,
-           std::vector<std::unique_ptr<CIrisCollisionGeometry>>>
-      link_geometries_;
-
-  SeparatingPlaneOrder plane_order_;
-  std::vector<CIrisSeparatingPlane<symbolic::Variable>> separating_planes_;
-  std::unordered_map<SortedPair<geometry::GeometryId>, int>
-      map_geometries_to_separating_planes_;
-
-  // Sometimes we need to impose that a certain matrix of polynomials are always
-  // psd (for example with sphere or capsule collision geometries). We will use
-  // this slack variable to help us impose the matrix-sos constraint.
-  Vector3<symbolic::Variable> y_slack_;
-
-  symbolic::Variables s_set_;
-
   Eigen::VectorXd q_star_;
   Eigen::VectorXd s_lower_;
   Eigen::VectorXd s_upper_;
@@ -709,18 +615,6 @@ class CspaceFreePolytope {
   VectorX<symbolic::Polynomial> s_upper_minus_s_;
   // We have the invariant plane_geometries_[i].plane_index == i.
   std::vector<PlaneSeparatesGeometries> plane_geometries_;
-
-  // Maps a pair of body (body1, body2) to an array of monomial basis
-  // `monomial_basis_array`. monomial_basis_array[0] contains all the monomials
-  // of form ∏ᵢ pow(sᵢ, dᵢ), dᵢ=0 or 1, sᵢ correspond to the revolute/prismatic
-  // joint on the kinematic chain between body1 and body2.
-  // monomial_basis_array[i+1] = y_slack_[i] * monomial_basis_array[0]
-  std::unordered_map<SortedPair<multibody::BodyIndex>,
-                     std::array<VectorX<symbolic::Monomial>, 4>>
-      map_body_to_monomial_basis_array_;
-
-  // See Options::with_cross_y for its meaning.
-  bool with_cross_y_;
 };
 
 DRAKE_DEPRECATED("2023-09-01", "This function was not intended for public use.")
