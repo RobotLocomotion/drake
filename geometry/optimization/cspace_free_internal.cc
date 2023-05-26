@@ -156,8 +156,8 @@ int GenerateCollisionPairs(
 }
 
 void GenerateRationals(
-    const std::vector<std::unique_ptr<
-        CSpaceSeparatingPlane<symbolic::Variable>>>& separating_planes,
+    const std::map<int, const CSpaceSeparatingPlane<symbolic::Variable>*>&
+        separating_planes,
     const Vector3<symbolic::Variable>& y_slack,
     const Eigen::Ref<const Eigen::VectorXd>& q_star,
     const multibody::RationalForwardKinematics& rational_forward_kin,
@@ -170,11 +170,9 @@ void GenerateRationals(
       multibody::RationalForwardKinematics::Pose<symbolic::Polynomial>,
       BodyPairHash>
       body_pair_to_X_AB_multilinear;
-  for (int plane_index = 0;
-       plane_index < static_cast<int>(separating_planes.size());
-       ++plane_index) {
-    DRAKE_ASSERT(separating_planes.at(plane_index) != nullptr);
-    const auto& separating_plane = *(separating_planes.at(plane_index));
+  for (const auto& [plane_index, plane_ptr] : separating_planes) {
+    DRAKE_ASSERT(plane_ptr != nullptr);
+    const auto& separating_plane = *plane_ptr;
     // Compute X_AB for both side of the geometries.
     std::vector<symbolic::RationalFunction> positive_side_rationals;
     std::vector<symbolic::RationalFunction> negative_side_rationals;
@@ -262,8 +260,24 @@ void GenerateRationals(
       plane_geometries->emplace_back(
           positive_side_rationals, negative_side_rationals_with_y, plane_index);
     }
-    DRAKE_DEMAND(plane_geometries->at(plane_index).plane_index == plane_index);
+    DRAKE_DEMAND(plane_geometries->back().plane_index == plane_index);
   }
+}
+
+void GenerateRationals(
+    const std::vector<std::unique_ptr<
+        CSpaceSeparatingPlane<symbolic::Variable>>>& separating_planes,
+    const Vector3<symbolic::Variable>& y_slack,
+    const Eigen::Ref<const Eigen::VectorXd>& q_star,
+    const multibody::RationalForwardKinematics& rational_forward_kin,
+    std::vector<PlaneSeparatesGeometries>* plane_geometries) {
+  std::map<int, const CSpaceSeparatingPlane<symbolic::Variable>*>
+      separating_planes_map;
+  for (int i = 0; i < static_cast<int>(separating_planes.size()); ++i) {
+    separating_planes_map.emplace(i, separating_planes.at(i).get());
+  }
+  GenerateRationals(separating_planes_map, y_slack, q_star,
+                    rational_forward_kin, plane_geometries);
 }
 
 void SolveSeparationCertificateProgramBase(
