@@ -217,6 +217,38 @@ GTEST_TEST(OsqpSolverTest, WarmStartPrimalOnly) {
     const Eigen::VectorXd x_sol = result.get_x_val();
     osqp_solver.Solve(prog, x_sol, solver_options, &result);
     EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
+
+    // Show that with only 1 iteration, we do not converge on a solution.
+    solver_options.SetOption(osqp_solver.solver_id(), "max_iter", 1);
+    osqp_solver.Solve(prog, x_sol, solver_options, &result);
+    EXPECT_FALSE(result.is_success());
+  }
+}
+
+GTEST_TEST(OsqpSolverTest, WarmStartDual) {
+  MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<3>();
+  AddTestProgram(&prog, x);
+
+  MathematicalProgramResult result;
+  OsqpSolver osqp_solver;
+  if (osqp_solver.available()) {
+    const int OSQP_SOLVED = 1;
+    SolverOptions solver_options;
+    solver_options.SetOption(
+        osqp_solver.solver_id(), "drake_warm_start_dual", 1);
+
+    // Solve with no prior solution; should be same as above test case.
+    osqp_solver.Solve(prog, {}, solver_options, &result);
+    EXPECT_TRUE(result.is_success());
+
+    // Solve with warm-starting using prior solution, but with only 1
+    // iteration.
+    solver_options.SetOption(osqp_solver.solver_id(), "max_iter", 1);
+
+    const Eigen::VectorXd x_sol = result.get_x_val();
+    osqp_solver.Solve(prog, x_sol, solver_options, &result);
+    EXPECT_EQ(result.get_solver_details<OsqpSolver>().status_val, OSQP_SOLVED);
   }
 }
 
