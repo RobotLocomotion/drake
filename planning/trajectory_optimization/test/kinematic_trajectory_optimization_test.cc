@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solve.h"
 
 using Eigen::MatrixXd;
@@ -22,6 +23,7 @@ namespace trajectory_optimization {
 
 using solvers::ExpressionConstraint;
 using solvers::MathematicalProgramResult;
+using solvers::OsqpSolver;
 using solvers::Solve;
 using solvers::VectorXDecisionVariable;
 using symbolic::Expression;
@@ -200,8 +202,15 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPositionBounds) {
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
   q = trajopt_.ReconstructTrajectory(result);
+
+  double tol = 0.0;
+  if (result.get_solver_id() == OsqpSolver::id()) {
+    // N.B. When providing an initial guess to OSQP, it's tolerances may allow
+    // for slight violation of its contraints.
+    tol = 1e-4;
+  }
   for (double t = q.start_time(); t <= q.end_time(); t += 0.01) {
-    EXPECT_LE(q.value(t).maxCoeff(), 1.0);  // All values are <= 1.0.
+    EXPECT_LE(q.value(t).maxCoeff(), 1.0 + tol);  // All values are <= 1.0.
   }
 }
 
