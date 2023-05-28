@@ -319,6 +319,20 @@ void SetDualSolution(
                                    constraint.evaluator()->num_constraints()));
   }
 }
+
+template <typename T>
+T GetOptionOrDefault(
+    const SolverOptions& merged_options,
+    const std::string& key,
+    T default_value) {
+  const auto& options = merged_options.GetOptions<T>(OsqpSolver::id());
+  auto iter = options.find(key);
+  if (iter != options.end()) {
+    return iter->second;
+  } else {
+    return default_value;
+  }
+}
 }  // namespace
 
 bool OsqpSolver::is_available() {
@@ -332,8 +346,22 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
 
-  // TODO(hongkai.dai): OSQP uses initial guess to warm start.
-  unused(initial_guess);
+  const Eigen::VectorXd& warm_primal = initial_guess;
+
+  const bool warm_start = GetOptionOrDefault<int>(
+      merged_options, "drake_warm_start", 0);
+  const bool warm_start_primal_only = GetOptionOrDefault<int>(
+      merged_options, "drake_warm_start_primal_only", 0);
+  // Retrieve information from prior solution.
+  const Eigen::VectorXd warm_dual = solver_details.y;
+  if (warm_start) {
+    // Manually clear details when warm-starting.
+    // TODO(eric.cousineau): Add something like `result->Reset()` to keep
+    // "pre-solve" data (solver id, etc) and reset "post-solve" data?
+    solver_details = {};
+  } else {
+    DRAKE_THROW_UNLESS(!warm_start_primal_only);
+  }
 
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
@@ -388,6 +416,22 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
     const c_int osqp_setup_err = osqp_setup(&work, data, settings);
     if (osqp_setup_err != 0) {
       solution_result = SolutionResult::kInvalidInput;
+    }
+  }
+
+  if (warm_start) {
+    if (warm_start_primal_only && warm_primal.array().isFinite().all()) {
+      const c_int osqp_warm_err = osqp_warm_start_x(
+          work, warm_primal.data());
+      if (osqp_warm_err != 0) {
+        solution_result = SolutionResult::kInvalidInput;
+      }
+    } else if (warm_dual.size() > 0) {
+      const c_int osqp_warm_err = osqp_warm_start(
+          work, warm_primal.data(), warm_dual.data());
+      if (osqp_warm_err != 0) {
+        solution_result = SolutionResult::kInvalidInput;
+      }
     }
   }
 

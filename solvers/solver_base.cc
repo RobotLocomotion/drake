@@ -47,13 +47,40 @@ namespace {
 std::string ShortName(const SolverInterface& solver) {
   return NiceTypeName::RemoveNamespaces(NiceTypeName::Get(solver));
 }
+
+template <typename T>
+T GetOptionOrDefault(
+    SolverId solver_id,
+    const std::optional<SolverOptions>& merged_options,
+    const std::string& key,
+    T default_value) {
+  if (!merged_options) {
+    return default_value;
+  }
+  const auto& options = merged_options->GetOptions<T>(solver_id);
+  auto iter = options.find(key);
+  if (iter != options.end()) {
+    return iter->second;
+  } else {
+    return default_value;
+  }
+}
 }  // namespace
 
 void SolverBase::Solve(const MathematicalProgram& prog,
                        const std::optional<Eigen::VectorXd>& initial_guess,
                        const std::optional<SolverOptions>& solver_options,
                        MathematicalProgramResult* result) const {
-  *result = {};
+  const bool warm_start = GetOptionOrDefault<int>(
+      solver_id(), solver_options, "drake_warm_start", 0);
+  if (!warm_start) {
+    // If we are warm starting, we will rely on the solver itself to
+    // keep relevant data from the the prior result.
+    // Note: Solvers that are warm-starting should take care to retrieve the
+    // results they need and then clear out prior results.
+    *result = {};
+  }
+
   if (!available()) {
     const std::string name = ShortName(*this);
     throw std::invalid_argument(fmt::format(
