@@ -1178,10 +1178,9 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   const drake::math::RotationMatrix R_identity =
       drake::math::RotationMatrix<double>::Identity();
 
-  // For a solid ellipsoid B, verify the function under test produces
-  // semi-diameters lmax = a, lmed = b, lmin = c.
-  // Verify principal directions (R_BP is an identity matrix).
-  // Verify p_EoPo is the zero vector.
+  // Basic test: For a solid ellipsoid B, verify the function under test
+  // produces semi-diameters lmax = a, lmed = b, lmin = c.
+  // Verify principal directions (R_BP is identity matrix) and p_EoPo is zero.
   SpatialInertia<double> M_BBcm_B =
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, c);
   std::pair<Vector3<double>, drake::math::RigidTransform<double>> abc_X_BP =
@@ -1192,10 +1191,9 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BP.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BP.translation() == Vector3<double>::Zero());
 
-  // For a solid box B, verify the function under test produces
+  // Basic test: For a solid box B, verify the function under test produces
   // half-length lmax = a, lmed = b, lmin = c.
-  // Verify principal directions (R_BP is an identity matrix).
-  // Verify p_EoPo is the zero vector.
+  // Verify principal directions (R_BP is identity matrix) and p_EoPo is zero.
   M_BBcm_B =
       SpatialInertia<double>::SolidBoxWithDensity(density, 2*a, 2*b, 2*c);
   abc_X_BP = M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
@@ -1216,12 +1214,15 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   EXPECT_TRUE(X_BP.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BP.translation() == p_BoBcm_B);
 
-  // Rotate the solid box B and ensure half-lengths are unchanged, principal
-  // axes are changed.
+  // Rotate the solid box B so R_BE is not the identity matrix. Verify ½-lengths
+  // are unchanged and principal axes directions Px Py Pz are parallel to
+  // Bx, By, Bz (although Bx ≠ Ex, By ≠ Ey).
   // Note: This tests a rotational inertia with non-zero products of inertia.
   drake::math::RotationMatrix<double> R_BE =
       drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
   SpatialInertia<double> M_BBo_E = M_BBo_B.ReExpress(R_BE);
+  const Vector3<double> G_products = M_BBo_E.get_unit_inertia().get_products();
+  EXPECT_GE(std::abs(G_products[1]), 0.1);  // Sufficiently non-zero.
   abc_X_BP = M_BBo_E.CalcPrincipalHalfLengthsAndPoseForSolidBox();
   abc = abc_X_BP.first;
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
