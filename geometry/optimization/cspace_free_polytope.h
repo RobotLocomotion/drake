@@ -190,7 +190,10 @@ class CspaceFreePolytope {
    separating plane {x | aᵀx+b=0 } separates the two geometries in
    separating_planes()[plane_index] in the C-space polytope.
    */
-  struct SeparationCertificateResult : SeparationCertificateResultBase {
+  struct SeparationCertificateResult final : SeparationCertificateResultBase {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult)
+    SeparationCertificateResult() {}
+    ~SeparationCertificateResult() override = default;
     std::vector<SeparatingPlaneLagrangians> positive_side_rational_lagrangians;
     std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
   };
@@ -223,9 +226,20 @@ class CspaceFreePolytope {
     std::vector<SeparatingPlaneLagrangians> negative_side_rational_lagrangians;
   };
 
-  struct SeparationCertificateProgram : SeparationCertificateProgramBase {
+  struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
     SeparationCertificateProgram()
         : SeparationCertificateProgramBase(), certificate{} {}
+    virtual ~SeparationCertificateProgram() = default;
+
+    // We need the move constructor to support return-value-optimization that
+    // returns a SeparationCertificateProgram object.
+    // This class is not copyable because the base class is not (the base class
+    // contains a unique_ptr as data member).
+    SeparationCertificateProgram(SeparationCertificateProgram&&) = default;
+
+    SeparationCertificateProgram& operator=(SeparationCertificateProgram&&) =
+        default;
+
     SeparationCertificate certificate;
   };
 
@@ -310,19 +324,43 @@ class CspaceFreePolytope {
         EllipsoidMarginCost::kGeometricMean};
   };
 
-  struct SearchResult {
-    Eigen::MatrixXd C;
-    Eigen::VectorXd d;
-    // This is the certified C-space polytope {s | C * s <= d, s_lower <= s <=
-    // s_upper}.
-    HPolyhedron certified_polytope;
-    // a[i].dot(x) + b[i]=0 is the separation plane for separating_planes()[i].
-    std::unordered_map<int, Vector3<symbolic::Polynomial>> a;
-    std::unordered_map<int, symbolic::Polynomial> b;
-    // The number of iterations at termination.
-    int num_iter;
+  class SearchResult {
+   public:
+    SearchResult() {}
+
+    [[nodiscard]] const Eigen::MatrixXd& C() const { return C_; }
+
+    [[nodiscard]] const Eigen::VectorXd& d() const { return d_; }
+
+    [[nodiscard]] const HPolyhedron& certified_polytope() const {
+      return certified_polytope_;
+    }
+
+    [[nodiscard]] const std::unordered_map<int, Vector3<symbolic::Polynomial>>&
+    a() const {
+      return a_;
+    }
+
+    [[nodiscard]] const std::unordered_map<int, symbolic::Polynomial>& b()
+        const {
+      return b_;
+    }
+
+    [[nodiscard]] int num_iter() const { return num_iter_; }
+
+   private:
+    friend class CspaceFreePolytope;
+    void SetPolytope(const Eigen::Ref<const Eigen::MatrixXd>& C,
+                     const Eigen::Ref<const Eigen::VectorXd>& d,
+                     const CspaceFreePolytope& cspace_free_polytope);
+
+    void SetSeparatingPlanes(
+        std::unordered_map<int, Vector3<symbolic::Polynomial>> a,
+        std::unordered_map<int, symbolic::Polynomial> b);
 
     // Clear this->a and this->b and reset their values.
+    // Each entry in certificates_result should have a value (cannot be
+    // nullopt).
     void SetSeparatingPlanes(
         const std::vector<std::optional<SeparationCertificateResult>>&
             certificates_result);
@@ -331,6 +369,17 @@ class CspaceFreePolytope {
     void UpdateSeparatingPlanes(
         const std::vector<std::optional<SeparationCertificateResult>>&
             certificates_results);
+
+    Eigen::MatrixXd C_;
+    Eigen::VectorXd d_;
+    // This is the certified C-space polytope {s | C * s <= d, s_lower <= s <=
+    // s_upper}.
+    HPolyhedron certified_polytope_;
+    // a[i].dot(x) + b[i]=0 is the separation plane for separating_planes()[i].
+    std::unordered_map<int, Vector3<symbolic::Polynomial>> a_;
+    std::unordered_map<int, symbolic::Polynomial> b_;
+    // The number of iterations at termination.
+    int num_iter_{};
   };
 
   struct BilinearAlternationOptions {
@@ -344,6 +393,9 @@ class CspaceFreePolytope {
      * scaled ellipsoid. ellipsoid_scaling=1 corresponds to no scaling.
      */
     double ellipsoid_scaling{0.99};
+
+    /// Checks if the options are sane.
+    void SanityCheck() const;
   };
 
   /** Search for a collision-free C-space polytope.
@@ -366,9 +418,14 @@ class CspaceFreePolytope {
       const BilinearAlternationOptions& options) const;
 
   struct BinarySearchOptions {
+    /// The maximal value of the scaling factor.
     double scale_max{1};
+    /// The minimal value of the scaling factor.
     double scale_min{0.01};
+    /// The maximal number of iterations in binary search.
     int max_iter{10};
+    /// When the gap between the upper bound and the lower bound of the scaling
+    /// factor is below this `convergence_tol`, stops the binary search.
     double convergence_tol{1E-3};
     FindSeparationCertificateGivenPolytopeOptions find_lagrangian_options;
   };
@@ -436,7 +493,10 @@ class CspaceFreePolytope {
       const SeparationCertificateProgram& certificate_program,
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
- protected:
+ private:
+  // Forward declaration the tester class. This tester class will expose the
+  // private members of CspaceFreePolytope for unit test.
+  friend class CspaceFreePolytopeTester;
   [[nodiscard]] const symbolic::Variables& get_s_set() const { return s_set_; }
 
   [[nodiscard]] const std::vector<PlaneSeparatesGeometries>&
@@ -453,10 +513,6 @@ class CspaceFreePolytope {
   int GetSeparatingPlaneIndex(
       const SortedPair<geometry::GeometryId>& pair) const;
 
- private:
-  // Forward declaration the tester class. This tester class will expose the
-  // private members of CspaceFreePolytope for unit test.
-  friend class CspaceFreePolytopeTester;
   // Find the redundant inequalities in C*s <= d, s_lower <= s <= s_upper
   void FindRedundantInequalities(
       const Eigen::MatrixXd& C, const Eigen::VectorXd& d,
@@ -474,7 +530,7 @@ class CspaceFreePolytope {
       const Eigen::Ref<const MatrixX<T>>& C,
       const Eigen::Ref<const VectorX<T>>& d) const;
 
-  /**
+  /*
    Computes the monomial basis for each pair of bodies.
 
    There can be multiple collision geometries on the same body, and their SOS
@@ -484,7 +540,7 @@ class CspaceFreePolytope {
    */
   void CalcMonomialBasis();
 
-  /**
+  /*
    Constructs the program which searches for the plane separating a pair of
    geometries, for all configuration in the set {s | C * s <= d, s_lower <= s
    <= s_upper}.
@@ -508,7 +564,7 @@ class CspaceFreePolytope {
       const std::unordered_set<int>& s_lower_redundant_indices,
       const std::unordered_set<int>& s_upper_redundant_indices) const;
 
-  /**
+  /*
    For each pair of geometries, find the certificate that the pair is collision
    free in the C-space region {s | C*s<=d, s_lower<=s<=s_upper}.
 
@@ -530,7 +586,7 @@ class CspaceFreePolytope {
       const Eigen::Ref<const Eigen::VectorXd>& d,
       const FindSeparationCertificateGivenPolytopeOptions& options) const;
 
-  /** When we fix the Lagrangian multipliers and search for the C-space polytope
+  /* When we fix the Lagrangian multipliers and search for the C-space polytope
   {s | C*s<=d, s_lower<=s<=s_upper}, we count the total size of all Gram
   matrices in the SOS program.
   */
@@ -538,12 +594,12 @@ class CspaceFreePolytope {
       const IgnoredCollisionPairs& ignored_collision_pairs,
       bool search_s_bounds_lagrangians) const;
 
-  /**
-   Constructs a program to search for the C-space polytope {s | C*s<=d,
-   s_lower<=s<=s_upper} such that this polytope is collision free.
-   This program takes C and d as decision variables, and searches for the
-   separating planes between each pair of geometries.
-   Note that this program doesn't contain any cost yet.
+  /*
+   Overloads InitializePolytopeSearchProgram, but with C, d, d_minus_Cs,
+   certificates_vec as the input arguments. This function will be called
+   repeated (for example in bilinear alternation) with the same arguments C, d,
+   d_minus_Cs; hence it is better to construct these arguments beforehand and
+   call this overloaded function.
    @param certificates_vec The return of
    FindSeparationCertificateGivenPolytope().
    @param search_s_bounds_lagrangians Set to true if we search for the
@@ -566,7 +622,7 @@ class CspaceFreePolytope {
       std::unordered_map<int, SeparationCertificate>* new_certificates =
           nullptr) const;
 
-  /** Adds the constraint that the ellipsoid {Q*u+s₀ | uᵀu≤1} is inside the
+  /* Adds the constraint that the ellipsoid {Q*u+s₀ | uᵀu≤1} is inside the
      polytope {s | C*s <= d} with margin δ. Namely for the i'th face cᵢᵀs≤dᵢ, we
      have |cᵢᵀQ|₂ ≤ dᵢ − cᵢᵀs₀ − δᵢ and |cᵢ|₂≤1
      cᵢᵀ is the i'th row of C, dᵢ is the i'th entry of d, δᵢ is the i'th entry
@@ -588,7 +644,7 @@ class CspaceFreePolytope {
     Eigen::VectorXd ellipsoid_margins;
   };
 
-  /**
+  /*
    @param[out] certificates_result If certificates_result=nullptr, then we don't
    update its value; otherwise we set it to map the plane index to the
    separation certificates result for the plane.
@@ -607,7 +663,7 @@ class CspaceFreePolytope {
       std::unordered_map<int, SeparationCertificateResult>* certificates_result)
       const;
 
-  /** Gets the H-polyhedron {s | C*s<=d, s_lower<=s<=s_upper}. */
+  /* Gets the H-polyhedron {s | C*s<=d, s_lower<=s<=s_upper}. */
   HPolyhedron GetPolyhedronWithJointLimits(const Eigen::MatrixXd& C,
                                            const Eigen::VectorXd& d) const;
 

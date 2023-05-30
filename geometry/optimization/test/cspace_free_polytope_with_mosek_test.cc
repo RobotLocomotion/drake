@@ -1139,9 +1139,10 @@ TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
           ignored_collision_pairs, C, d, bilinear_alternation_options);
   ASSERT_FALSE(bilinear_alternation_results.empty());
   ASSERT_EQ(bilinear_alternation_results.size(),
-            bilinear_alternation_results.back().num_iter + 1);
+            bilinear_alternation_results.back().num_iter() + 1);
   EXPECT_EQ(bilinear_alternation_results.back()
-                .certified_polytope.ambient_dimension(),
+                .certified_polytope()
+                .ambient_dimension(),
             C.cols());
   // Sample many s_values, project to {s | C*s <= d}. And then make sure that
   // the corresponding configurations are collision free.
@@ -1159,14 +1160,14 @@ TEST_F(CIrisToyRobotTest, SearchWithBilinearAlternation) {
                0.2, -1.5, 1;
   // clang-format on
   for (const auto& result : bilinear_alternation_results) {
-    EXPECT_EQ(result.a.size(),
+    EXPECT_EQ(result.a().size(),
               tester.cspace_free_polytope().separating_planes().size() -
                   ignored_collision_pairs.size());
-    EXPECT_EQ(result.a.size(),
+    EXPECT_EQ(result.a().size(),
               tester.cspace_free_polytope().separating_planes().size() -
                   ignored_collision_pairs.size());
-    CheckSeparationBySamples(tester, *diagram_, s_samples, result.C, result.d,
-                             result.a, result.b, q_star,
+    CheckSeparationBySamples(tester, *diagram_, s_samples, result.C(),
+                             result.d(), result.a(), result.b(), q_star,
                              ignored_collision_pairs);
   }
 
@@ -1213,8 +1214,8 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
   auto result = tester.cspace_free_polytope().BinarySearch(
       ignored_collision_pairs, C, d, s_center, options);
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(result->certified_polytope.ambient_dimension(), C.cols());
-  EXPECT_GT(result->num_iter, 0);
+  EXPECT_EQ(result->certified_polytope().ambient_dimension(), C.cols());
+  EXPECT_GT(result->num_iter(), 0);
   Eigen::Matrix<double, 10, 3> s_samples;
   // clang-format off
   s_samples << 1, 2, -1,
@@ -1228,14 +1229,14 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
              0, 0, 0,
              0.2, -1.5, 1;
   // clang-format on
-  EXPECT_EQ(result->a.size(),
+  EXPECT_EQ(result->a().size(),
             tester.cspace_free_polytope().separating_planes().size() -
                 ignored_collision_pairs.size());
-  EXPECT_EQ(result->a.size(),
+  EXPECT_EQ(result->a().size(),
             tester.cspace_free_polytope().separating_planes().size() -
                 ignored_collision_pairs.size());
-  CheckSeparationBySamples(tester, *diagram_, s_samples, result->C, result->d,
-                           result->a, result->b, q_star,
+  CheckSeparationBySamples(tester, *diagram_, s_samples, result->C(),
+                           result->d(), result->a(), result->b(), q_star,
                            ignored_collision_pairs);
 
   // Now test epsilon_max being feasible.
@@ -1244,19 +1245,19 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
   result = tester.cspace_free_polytope().BinarySearch(ignored_collision_pairs,
                                                       C, d, s_center, options);
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(result->num_iter, 0);
-  EXPECT_TRUE(CompareMatrices(result->C, C));
+  EXPECT_EQ(result->num_iter(), 0);
+  EXPECT_TRUE(CompareMatrices(result->C(), C));
   EXPECT_TRUE(CompareMatrices(
-      result->d, options.scale_max * d + (1 - options.scale_max) * C * s_center,
-      1E-10));
-  EXPECT_EQ(result->a.size(),
+      result->d(),
+      options.scale_max * d + (1 - options.scale_max) * C * s_center, 1E-10));
+  EXPECT_EQ(result->a().size(),
             tester.cspace_free_polytope().separating_planes().size() -
                 ignored_collision_pairs.size());
-  EXPECT_EQ(result->a.size(),
+  EXPECT_EQ(result->a().size(),
             tester.cspace_free_polytope().separating_planes().size() -
                 ignored_collision_pairs.size());
-  CheckSeparationBySamples(tester, *diagram_, s_samples, result->C, result->d,
-                           result->a, result->b, q_star,
+  CheckSeparationBySamples(tester, *diagram_, s_samples, result->C(),
+                           result->d(), result->a(), result->b(), q_star,
                            ignored_collision_pairs);
 
   // Now check infeasible epsilon_min
@@ -1265,7 +1266,7 @@ TEST_F(CIrisToyRobotTest, BinarySearch) {
   result = tester.cspace_free_polytope().BinarySearch(ignored_collision_pairs,
                                                       C, d, s_center, options);
   ASSERT_FALSE(result.has_value());
-  EXPECT_EQ(result->num_iter, 0);
+  EXPECT_EQ(result->num_iter(), 0);
 }
 }  // namespace optimization
 }  // namespace geometry
