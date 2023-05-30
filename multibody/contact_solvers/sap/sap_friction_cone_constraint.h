@@ -209,8 +209,8 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
       const T& time_step,
       const Eigen::Ref<const VectorX<T>>& delassus_estimation) const final;
   void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
-                  AbstractValue* data) const final;
-  T DoCalcCost(const AbstractValue& data) const final;
+                  AbstractValue* abstract_data) const final;
+  T DoCalcCost(const AbstractValue& abstract_data) const final;
   void DoCalcImpulse(const AbstractValue& abstract_data,
                      EigenPtr<VectorX<T>> gamma) const final;
   void DoCalcCostHessian(const AbstractValue& abstract_data,

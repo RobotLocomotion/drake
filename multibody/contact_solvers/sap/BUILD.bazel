@@ -183,6 +183,7 @@ drake_cc_library(
     testonly = 1,
     srcs = ["validate_constraint_gradients.cc"],
     hdrs = ["validate_constraint_gradients.h"],
+    visibility = ["//visibility:private"],
     deps = [
         ":sap_constraint",
         "//common/test_utilities:eigen_matrix_compare",
@@ -230,6 +231,7 @@ drake_cc_googletest(
     name = "sap_holonomic_constraint_test",
     deps = [
         ":sap_holonomic_constraint",
+        ":validate_constraint_gradients",
         "//common:pointer_cast",
         "//common/test_utilities:eigen_matrix_compare",
     ],

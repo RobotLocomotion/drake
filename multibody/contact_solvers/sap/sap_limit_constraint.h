@@ -212,7 +212,7 @@ class SapLimitConstraint final : public SapConstraint<T> {
       const T& time_step,
       const Eigen::Ref<const VectorX<T>>& delassus_estimation) const override;
   void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
-                  AbstractValue* data) const override;
+                  AbstractValue* abstract_data) const override;
   T DoCalcCost(const AbstractValue& abstract_data) const override;
   void DoCalcImpulse(const AbstractValue& abstract_data,
                      EigenPtr<VectorX<T>> gamma) const override;
