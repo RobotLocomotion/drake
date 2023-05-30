@@ -690,16 +690,10 @@ class LimitConstraint final : public SapConstraint<T> {
     DRAKE_DEMAND((vl.array() <= vu.array()).all());
   }
 
-  VectorX<T> CalcBiasTerm(const T&, const T&) const final { return vhat_; }
-  VectorX<T> CalcDiagonalRegularization(const T&, const T&) const final {
-    return R_;
-  }
-
   // For this constraint the projection is γ = P(y) = max(0, y), componentwise.
   void Project(const Eigen::Ref<const VectorX<double>>& y,
-               const Eigen::Ref<const VectorX<double>>& R,
                EigenPtr<VectorX<double>> gamma,
-               MatrixX<double>* dPdy) const final {
+               MatrixX<double>* dPdy = nullptr) const {
     // For this constraint the number of equations equals the number of
     // velocities in the constrained clique.
     const int nv = this->num_constraint_equations();
@@ -717,7 +711,7 @@ class LimitConstraint final : public SapConstraint<T> {
         (*gamma)(i) = 0.0;
       }
     }
-  };
+  }
 
  private:
   static VectorX<T> ConcatenateVectors(const VectorX<T>& v1,
@@ -746,6 +740,36 @@ class LimitConstraint final : public SapConstraint<T> {
 
   LimitConstraint(const LimitConstraint&) = default;
 
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T&, const Eigen::Ref<const VectorX<T>>&) const final {
+    // We'll store the constraint velocity in our data.
+    VectorX<T> vc(this->num_constraint_equations());
+    return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(vc));
+  }
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* abstract_data) const final {
+    abstract_data->get_mutable_value<VectorX<T>>() = vc;
+  }
+  T DoCalcCost(const AbstractValue& abstract_data) const final {
+    // SAP regularizer cost, the R-norm of the impulse.
+    VectorX<T> gamma(this->num_constraint_equations());
+    this->CalcImpulse(abstract_data, &gamma);
+    return 0.5 * gamma.dot(R_.asDiagonal() * gamma);
+  }
+  void DoCalcImpulse(const AbstractValue& abstract_data,
+                     EigenPtr<VectorX<T>> gamma) const final {
+    const auto& vc = abstract_data.get_value<VectorX<T>>();
+    const VectorX<T> y = R_.asDiagonal() * (vhat_ - vc);
+    Project(y, gamma);
+  }
+  void DoCalcCostHessian(const AbstractValue& abstract_data,
+                         MatrixX<T>* G) const final {
+    const auto& vc = abstract_data.get_value<VectorX<T>>();
+    const VectorX<T> y = R_.asDiagonal() * (vhat_ - vc);
+    VectorX<T> gamma(vc.size());
+    Project(y, &gamma, G);
+    (*G) *= R_.cwiseSqrt().asDiagonal();
+  }
   std::unique_ptr<SapConstraint<T>> DoClone() const final {
     return std::unique_ptr<LimitConstraint<T>>(new LimitConstraint<T>(*this));
   }
