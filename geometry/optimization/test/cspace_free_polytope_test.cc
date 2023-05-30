@@ -312,6 +312,49 @@ TEST_F(CIrisToyRobotTest, AddCspacePolytopeContainment) {
   }
 }
 
+TEST_F(CIrisToyRobotTest, GetPolyhedronWithJointLimits) {
+  const Eigen::Vector3d q_star(0, 0, 0);
+  CspaceFreePolytopeTester tester(plant_, scene_graph_,
+                                  SeparatingPlaneOrder::kAffine, q_star);
+  Eigen::MatrixXd C(4, 3);
+  // clang-format off
+  C << 0.5, 1, 2,
+       0.4, -0.5, -0.2,
+       1, -2, 3,
+       0.5, -2, 1;
+  // clang-format on
+  Eigen::Vector4d d(1, 3, 2, 0.5);
+  const HPolyhedron polytope = tester.GetPolyhedronWithJointLimits(C, d);
+  // Now take many samples
+  std::array<Eigen::VectorXd, 3> q_samples_per_axis;
+  for (int i = 0; i < 3; ++i) {
+    q_samples_per_axis[i] = Eigen::VectorXd::LinSpaced(
+        11, plant_->GetPositionLowerLimits()[i] - 0.5,
+        plant_->GetPositionUpperLimits()[i] + 0.5);
+  }
+  for (int i = 0; i < q_samples_per_axis[0].rows(); ++i) {
+    for (int j = 0; j < q_samples_per_axis[1].rows(); ++j) {
+      for (int k = 0; k < q_samples_per_axis[2].rows(); ++k) {
+        const Eigen::Vector3d q_val(q_samples_per_axis[0](i),
+                                    q_samples_per_axis[1](j),
+                                    q_samples_per_axis[2](k));
+        Eigen::Vector3d s_val =
+            tester.cspace_free_polytope().rational_forward_kin().ComputeSValue(
+                q_val, q_star);
+        const bool in_polyhedron =
+            ((polytope.A() * s_val).array() <= polytope.b().array()).all();
+        if ((q_val.array() < plant_->GetPositionLowerLimits().array()).any() ||
+            (q_val.array() > plant_->GetPositionUpperLimits().array()).any()) {
+          EXPECT_FALSE(in_polyhedron);
+        } else if (((C * s_val).array() > d.array()).any()) {
+          EXPECT_FALSE(in_polyhedron);
+        } else {
+          EXPECT_TRUE(in_polyhedron);
+        }
+      }
+    }
+  }
+}
 }  // namespace optimization
 }  // namespace geometry
 }  // namespace drake
