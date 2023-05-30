@@ -251,7 +251,7 @@ CspaceFreePath::SeparationCertificateResult
 CspaceFreePath::SolveSeparationCertificateProgram(
     const CspaceFreePath::SeparationCertificateProgram& certificate_program,
     const FindSeparationCertificateOptions& options) const {
-  CspaceFreePath::SeparationCertificateResult result;
+  CspaceFreePath::SeparationCertificateResult result{};
   internal::SolveSeparationCertificateProgramBase(
       certificate_program, options,
       separating_planes_[certificate_program.plane_index], &result);

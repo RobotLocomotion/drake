@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/common/drake_copyable.h"
 #include "drake/common/symbolic/rational_function.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/mathematical_program_result.h"
@@ -59,6 +60,9 @@ struct FindSeparationCertificateOptions {
  separating_planes()[plane_index] in the C-space region.
  */
 struct SeparationCertificateResultBase {
+  SeparationCertificateResultBase() {}
+  virtual ~SeparationCertificateResultBase() = default;
+
   int plane_index{-1};
   // The separating plane is { x | aᵀx+b=0 }
   Vector3<symbolic::Polynomial> a;
@@ -69,15 +73,35 @@ struct SeparationCertificateResultBase {
 
   // The result of solving a SeparationCertificateProgramBase
   solvers::MathematicalProgramResult result;
+
+ protected:
+  // We put the copy/move/assignment constructors as protected to avoid copy
+  // slicing. The inherited final subclasses should put them in public
+  // functions.
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResultBase)
 };
 
 struct SeparationCertificateProgramBase {
   SeparationCertificateProgramBase()
       : prog{new solvers::MathematicalProgram()} {}
+
+  virtual ~SeparationCertificateProgramBase() = default;
   /// The program that stores all the constraints to search for the separating
   /// plane and Lagrangian multipliers as certificate.
   std::unique_ptr<solvers::MathematicalProgram> prog;
   int plane_index{-1};
+
+ protected:
+  // We allow move constructor so that the child class can do return value
+  // optimization to return a child class object (return value optimization
+  // requires the existence of either copy or move constructor). But we put this
+  // move constructor in protected so that no function can return this base
+  // class, which avoids copy slicing.
+  SeparationCertificateProgramBase(SeparationCertificateProgramBase&&) =
+      default;
+
+  SeparationCertificateProgramBase& operator=(
+      SeparationCertificateProgramBase&&) = default;
 };
 
 }  // namespace optimization
