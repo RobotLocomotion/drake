@@ -52,16 +52,15 @@ class TestConstraint final : public SapConstraint<double> {
 
   // N.B no-op overloads to allow us compile this testing constraint. These
   // methods are only tested for specific derived classes, not in this file.
-  void Project(const Eigen::Ref<const VectorX<double>>&,
-               const Eigen::Ref<const VectorX<double>>&,
-               EigenPtr<VectorX<double>>, MatrixX<double>*) const final {}
-  VectorX<double> CalcBiasTerm(const double&, const double&) const final {
-    return VectorXd::Zero(this->num_constraint_equations());
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const double&, const Eigen::Ref<const VectorXd>&) const final {
+    DRAKE_UNREACHABLE();
   }
-  VectorX<double> CalcDiagonalRegularization(const double&,
-                                             const double&) const final {
-    return VectorXd::Zero(this->num_constraint_equations());
-  }
+  void DoCalcData(const Eigen::Ref<const VectorXd>&,
+                  AbstractValue*) const final {}
+  double DoCalcCost(const AbstractValue&) const final { DRAKE_UNREACHABLE(); }
+  void DoCalcImpulse(const AbstractValue&, EigenPtr<VectorXd>) const final {}
+  void DoCalcCostHessian(const AbstractValue&, MatrixX<double>*) const final {}
 
  private:
   TestConstraint(const TestConstraint&) = default;
