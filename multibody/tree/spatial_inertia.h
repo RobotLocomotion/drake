@@ -537,20 +537,12 @@ class SpatialInertia {
   /// and orientation) for the uniform-density object whose spatial inertia
   /// is equal to `this` spatial inertia.
   /// @returns 3 principal semi-diameters (half-lengths) [a b c] sorted in
-  /// descending order (a ≥ b ≥ c), their associated principal directions
-  /// [Px Py Pz] stored in columns of a rotation matrix R_EP, and the position
-  /// vector p_EoPo_E from `this` spatial inertia's about-point Eo to Po (`this`
-  /// spatial inertia's center of mass). The rotation matrix R_EP relates the
-  /// expressed-in frame E for `this` spatial inertia to the frame P with origin
-  /// Po that contains right-handed orthogonal unit vectors Px, Py, Pz.
-  /// The 1ˢᵗ column of R_EP is Px_E (Px expressed in frame E) which is parallel
-  /// to the principal axis associated with a (largest principal semi-diameter).
-  /// Similarly, the 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are
-  /// parallel to principal axes associated with b and c (the intermediate and
-  /// smallest principal semi-diameters). The principal semi-diameters [a b c]
-  /// are measured from Scm (center of mass for `this` spatial inertia).
-  /// If a = b = c, R_EP is the identity matrix.
-  /// Together, R_EP and p_EoPo_E are returned via the rigid transform X_EP.
+  /// descending order (a ≥ b ≥ c) and the rigid transform X_EP that contains
+  /// the rotation matrix R_EP and position vector p_EoPo_E. The principal
+  /// semi-diameters [a b c] are measured from Scm which is colocated with frame
+  /// P's origin Po. Their associated principal directions [Px Py Pz] are stored
+  /// in columns of the rotation matrix R_EP. The position vector p_EoPo_E is
+  /// from `this` spatial inertia's about-point Eo to Po (Scm).
   /// @note This function is useful for visualization or physical interpretation
   /// of the geometric extents of `this` spatial inertia for a given shape.
   /// For example, `this` may be the spatial inertia of an oddly-shaped body
@@ -559,6 +551,13 @@ class SpatialInertia {
   /// intermediate, and minor semi-axes, respectively, and the returned rotation
   /// matrix R_EP contains the directions of the ellipsoid's associated
   /// principal axes as described above.
+  /// @note The rotation matrix R_EP relates the expressed-in frame E for `this`
+  /// spatial inertia to the frame P with origin Po and unit vectors Px, Py, Pz.
+  /// The 1ˢᵗ column of R_EP is Px_E (Px expressed in frame E) which is parallel
+  /// to the principal axis associated with a (largest principal semi-diameter).
+  /// The 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are parallel to
+  /// principal axes associated with b and c (the intermediate and smallest
+  /// principal semi-diameters). If a = b = c, R_EP is the identity matrix.
   /// @throws std::exception if the elements of `this` spatial inertia cannot
   /// be converted to a real finite double. For example, an exception is thrown
   /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
