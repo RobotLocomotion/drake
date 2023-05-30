@@ -71,7 +71,7 @@ std::unique_ptr<AbstractValue> SapFrictionConeConstraint<T>::DoMakeData(
   const T vn_hat = -phi0_ / (time_step + taud);
 
   SapFrictionConeConstraintData<T> data(parameters_.mu, Rt, Rn, vn_hat);
-  return AbstractValue::Make(data);
+  return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(data));
 }
 
 template <typename T>
