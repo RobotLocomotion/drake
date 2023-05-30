@@ -478,26 +478,29 @@ class UnitInertia : public RotationalInertia<T> {
   // End of Doxygen group
   //@}
 
-  /// (Internal use only) Returns half-lengths and orientation specification for
-  /// an object whose shape corresponds to a given inertia_shape_factor for a
-  /// uniform-density body B (e.g., a solid box or hollow ellipsoid).
-  /// @param[in] inertia_shape_factor real positive number in the range
-  /// 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
-  /// (Gxx, Gyy, Gzz) formulas for G_BBcm_P.
-  /// @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
-  /// (lmax ≥ lmed ≥ lmin) and their associated principal directions [Px Py Pz]
-  /// stored in columns of the returned rotation matrix R_EP.
-  /// @throws std::exception if the elements of `this` unit inertia cannot
-  /// be converted to a real finite double. For example, an exception is thrown
-  /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
-  /// @throws std::exception if shape_factor ≤ 0 or shape_factor > 1.
-  /// @see CalcPrincipalMomentsAndAxesOfInertia() to calculate principal moments
-  /// of inertia and their associated principal directions.
-  /// See @ref spatial_inertia_equivalent_shapes
-  /// "Spatial inertia equivalent shapes" for more details.
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only) Returns half-lengths and orientation specification for
+  // an object whose shape corresponds to a given inertia_shape_factor for a
+  // uniform-density body B (e.g., a solid box or hollow ellipsoid).
+  // @param[in] inertia_shape_factor real positive number in the range
+  // 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
+  // (Gxx, Gyy, Gzz) formulas for G_BBcm_P. Formula examples are documented in
+  // SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape().
+  // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
+  // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Px Py Pz]
+  // stored in columns of the returned rotation matrix R_EP.
+  // @throws std::exception if the elements of `this` unit inertia cannot
+  // be converted to a real finite double. For example, an exception is thrown
+  // if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  // @throws std::exception if shape_factor ≤ 0 or shape_factor > 1.
+  // @see CalcPrincipalMomentsAndAxesOfInertia() to calculate principal moments
+  // of inertia and their associated principal directions.
+  // See @ref spatial_inertia_equivalent_shapes
+  // "Spatial inertia equivalent shapes" for more details.
   std::pair<Vector3<double>, math::RotationMatrix<double>>
   CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
       double inertia_shape_factor) const;
+#endif
 
   // Disable operators that may result in non-unit inertias
   // (these operators *are* defined in the RotationalInertia class).
