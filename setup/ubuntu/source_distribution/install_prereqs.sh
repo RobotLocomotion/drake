@@ -195,7 +195,7 @@ if [[ $(arch) = "aarch64" ]]; then
   fi
 else
   dpkg_install_from_wget \
-    bazel 6.1.1 \
-    https://releases.bazel.build/6.1.1/release/bazel_6.1.1-linux-x86_64.deb \
-    a90246165f0972629506132975a7c5d5aecd42453e03e0f88e175a33601cdf70
+    bazel 6.2.0 \
+    https://github.com/bazelbuild/bazel/releases/download/6.2.0/bazel_6.2.0-linux-x86_64.deb \
+    6a9d727294abf149edaf12d590ddb634df604b0ccf2f6b4929d18099daad5a1d
 fi
