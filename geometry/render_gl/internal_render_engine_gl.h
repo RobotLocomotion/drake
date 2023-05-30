@@ -72,7 +72,7 @@ class RenderEngineGl final : public render::RenderEngine {
   // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
   // texture, if found. When we eliminate that behavior, we can eliminate this
   // method.
-  void ImplementMesh(const OpenGlGeometry& geometry, void* user_data,
+  void ImplementMesh(int geometry_index, void* user_data,
                      const Vector3<double>& scale,
                      const std::string& file_name);
 
@@ -114,19 +114,29 @@ class RenderEngineGl final : public render::RenderEngine {
   void RenderAt(const ShaderProgram& shader_program,
                 RenderType render_type) const;
 
-  // Performs the common setup for all shape types.
-  void ImplementGeometry(const OpenGlGeometry& geometry,
-                         void* user_data, const Vector3<double>& scale);
+  // Creates a geometry instance from the referenced geometry data, scale, and
+  // user data (e.g., GeometryId, perception properties). The instance is added
+  // to visuals_.
+  void AddGeometryInstance(int geometry_index, void* user_data,
+                           const Vector3<double>& scale);
 
+  // The set of all geometries. These are the geometries that have the
+  // identifiers for the OpenGl geometries on the GPU.
+  std::vector<OpenGlGeometry> geometries_;
+
+  // TODO(SeanCurtis-TRI): Make these threadsafe. Particularly, w.r.t. the
+  // underlying OpenGl context where multiple RenderEngineGl clones share the
+  // same GPU memory objects.
   // Provides triangle mesh definitions of the various canonical geometries
   // supported by this renderer: sphere, cylinder, half space, box, and mesh.
-  // These update the stored OpenGlGeometry members of this class. They are
-  // *not* threadsafe.
-  OpenGlGeometry GetSphere();
-  OpenGlGeometry GetCylinder();
-  OpenGlGeometry GetHalfSpace();
-  OpenGlGeometry GetBox();
-  OpenGlGeometry GetMesh(const std::string& filename);
+  // The returned value is an index into geometries_.
+  // If the canonical mesh has not been defined yet, it will be defined.
+  // These are *not* threadsafe.
+  int GetSphere();
+  int GetCylinder();
+  int GetHalfSpace();
+  int GetBox();
+  int GetMesh(const std::string& filename);
 
   // Given the render type, returns the texture configuration for that render
   // type. These are the key arguments for glTexImage2D based on the render
@@ -159,8 +169,14 @@ class RenderEngineGl final : public render::RenderEngine {
                                RenderType render_type) const;
 
   // Creates an OpenGlGeometry from the mesh defined by the given `mesh_data`.
-  static OpenGlGeometry CreateGlGeometry(
+  // The geometry is added to geometries_ and its index is returned.
+  // This is *not* threadsafe.
+  int CreateGlGeometry(
       const geometry::internal::RenderMesh& mesh_data);
+
+  // Given a geometry that has its buffers (and vertex counts assigned), ties
+  // all of the buffer data into the vertex array attributes.
+  void CreateVertexArray(OpenGlGeometry* geometry) const;
 
   // Sets the display window visibility and populates it with the _last_ image
   // rendered, if visible.
@@ -184,9 +200,8 @@ class RenderEngineGl final : public render::RenderEngine {
   // we exploit the behind-the-scenes knowledge that Identifiers are
   // monotonically increasing. So, the shader that is added last implicitly is
   // more preferred than the earlier shader.
-  ShaderProgramData GetShaderProgram(
-      const PerceptionProperties& properties,
-      RenderType render_type) const;
+  ShaderProgramData GetShaderProgram(const PerceptionProperties& properties,
+                                     RenderType render_type) const;
 
   void SetDefaultLightPosition(const Vector3<double>& light_dir_C) override {
     light_dir_C_ = light_dir_C.normalized().cast<float>();
@@ -233,19 +248,21 @@ class RenderEngineGl final : public render::RenderEngine {
   // One OpenGlGeometry per primitive type. They represent a canonical, "unit"
   // version of the primitive type. Each instance scales and poses the
   // corresponding primitive to create arbitrarily sized geometries.
-  OpenGlGeometry sphere_;
-  OpenGlGeometry cylinder_;
-  OpenGlGeometry half_space_;
-  OpenGlGeometry box_;
+  //
+  // There is no capsule_ because each capsule is unique. Generally, one capsule
+  // cannot be realized from another capsule via a linear transformation (i.e.,
+  // translation, rotation, and non-uniform scale).
+  int sphere_{-1};
+  int cylinder_{-1};
+  int half_space_{-1};
+  int box_{-1};
   // TODO(SeanCurtis-TRI): Figure out how to re-use capsules - if two capsules
   // have the same dimensions (or are related by a *uniform* scale*), we can
-  // re-use the same geometry.
-  // Each capsule is unique; they cannot generally be related by a linear
-  // transform (i.e., translation, rotation, and non-uniform scale).
-  std::vector<OpenGlGeometry> capsules_;
+  // re-use the same geometry. For example, if we tracked them by "aspect ratio"
+  // and allowed deviation within a small tolerance, then we could reuse them.
 
   // Mapping from obj filename to the mesh loaded into an OpenGlGeometry.
-  std::unordered_map<std::string, OpenGlGeometry> meshes_;
+  std::unordered_map<std::string, int> meshes_;
 
   // These are caches of reusable RenderTargets. There is a unique render target
   // for each unique image size (BufferDim) and output image type. The

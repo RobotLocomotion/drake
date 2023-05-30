@@ -28,35 +28,37 @@ GTEST_TEST(OpenGlGeometryTest, Construction) {
   EXPECT_EQ(default_geometry.index_buffer, OpenGlGeometry::kInvalid);
   EXPECT_EQ(default_geometry.index_buffer_size, 0);
   EXPECT_EQ(default_geometry.has_tex_coord, false);
+  EXPECT_EQ(default_geometry.v_count, 0);
 
-  const OpenGlGeometry geometry{1, 2, 3, 4, true};
+  const OpenGlGeometry geometry{1, 2, 3, 4, true, 7};
   EXPECT_EQ(geometry.vertex_array, 1);
   EXPECT_EQ(geometry.vertex_buffer, 2);
   EXPECT_EQ(geometry.index_buffer, 3);
   EXPECT_EQ(geometry.index_buffer_size, 4);
   EXPECT_EQ(geometry.has_tex_coord, true);
+  EXPECT_EQ(geometry.v_count, 7);
 
   DRAKE_EXPECT_THROWS_MESSAGE(
-      OpenGlGeometry(1, 2, 3, -1, false),
+      OpenGlGeometry(1, 2, 3, -1, false, 1),
       "Index buffer size must be non-negative");
 }
 
 GTEST_TEST(OpenGlGeometryTest, IsDefined) {
   const GLuint kInvalid = OpenGlGeometry::kInvalid;
 
-  EXPECT_TRUE(OpenGlGeometry(1, 2, 3, 4, false).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, 3, 4, false).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, 3, 4, false).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(1, 2, kInvalid, 4, false).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(kInvalid, kInvalid, 3, 4, false).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, kInvalid, 4, false).is_defined());
-  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, kInvalid, 4, false).is_defined());
+  EXPECT_TRUE(OpenGlGeometry(1, 2, 3, 4, false, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, 3, 4, false, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, 3, 4, false, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, 2, kInvalid, 4, false, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, kInvalid, 3, 4, false, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(kInvalid, 2, kInvalid, 4, false, 1).is_defined());
+  EXPECT_FALSE(OpenGlGeometry(1, kInvalid, kInvalid, 4, false, 1).is_defined());
   EXPECT_FALSE(
-      OpenGlGeometry(kInvalid, kInvalid, kInvalid, 4, false).is_defined());
+      OpenGlGeometry(kInvalid, kInvalid, kInvalid, 4, false, 1).is_defined());
 }
 
 GTEST_TEST(OpenGlGeometryTest, ThrowIfUndefined) {
-  const OpenGlGeometry valid{1, 2, 3, 4, false};
+  const OpenGlGeometry valid{1, 2, 3, 4, false, 1};
   EXPECT_NO_THROW(valid.throw_if_undefined("test message"));
   DRAKE_EXPECT_THROWS_MESSAGE(
       OpenGlGeometry().throw_if_undefined("default is undefined"),
@@ -64,7 +66,8 @@ GTEST_TEST(OpenGlGeometryTest, ThrowIfUndefined) {
 }
 
 GTEST_TEST(OpenGlInstanceTest, Construction) {
-  const OpenGlGeometry geometry(1, 2, 3, 4, true);
+  // This is a dummy index that doesn't reference into any particular geometry.
+  const int geometry_index = 2;
   const RigidTransformd X_WG{Vector3d{-1, -2, 3}};
   const Vector3d scale{0.25, 0.5, 0.75};
   // We'll create a pretend block of depth data; simply a double value with no
@@ -76,13 +79,10 @@ GTEST_TEST(OpenGlInstanceTest, Construction) {
   const ShaderProgramData color_data(
       ShaderId::get_new_id(), AbstractValue::Make(33));
 
-  const OpenGlInstance instance{geometry,   X_WG,       scale,
-                                color_data, depth_data, label_data};
+  const OpenGlInstance instance{geometry_index, X_WG,       scale,
+                                color_data,     depth_data, label_data};
 
-  EXPECT_EQ(instance.geometry.vertex_array, geometry.vertex_array);
-  EXPECT_EQ(instance.geometry.vertex_buffer, geometry.vertex_buffer);
-  EXPECT_EQ(instance.geometry.index_buffer, geometry.index_buffer);
-  EXPECT_EQ(instance.geometry.index_buffer_size, geometry.index_buffer_size);
+  EXPECT_EQ(instance.geometry, geometry_index);
   EXPECT_TRUE(
       CompareMatrices(instance.X_WG.GetAsMatrix34(), X_WG.GetAsMatrix34()));
   EXPECT_TRUE(CompareMatrices(instance.scale, scale));
