@@ -278,10 +278,18 @@ class ContactResultMaker final : public LeafSystem<double> {
       const ContactSurface<double>& surface = contacts[i];
 
       // TODO(SeanCurtis-TRI): This currently skips the full naming and doesn't
-      //  report any dynamics (e.g., force, moment, or quadrature data).
+      //  report quadrature data.
 
       surface_message.body1_name = "Id_" + to_string(surface.id_M());
       surface_message.body2_name = "Id_" + to_string(surface.id_N());
+
+      std::copy(surface.centroid().data(), surface.centroid().data() + 3,
+                surface_message.centroid_W);
+      const std::array<double, 3> fake_force{1e-2, 0, 0};
+      std::copy(fake_force.begin(), fake_force.end(),
+                surface_message.force_C_W);
+      const std::array<double, 3> moment{0, 0, 0};
+      std::copy(moment.begin(), moment.end(), surface_message.moment_C_W);
 
       const int num_vertices = surface.num_vertices();
       surface_message.num_vertices = num_vertices;
