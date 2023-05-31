@@ -312,4 +312,11 @@ drake_py_unittest(
     ],
 )
 
+drake_cc_googletest(
+    name = "merge_gltf_test",
+    deps = [
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
 add_lint_tests(enable_clang_format_lint = False)
