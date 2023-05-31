@@ -40,21 +40,20 @@ class TestConstraint final : public SapConstraint<double> {
       : SapConstraint<double>({first_clique, std::move(J_first_clique),
                                second_clique, std::move(J_second_clique)}) {}
 
-  // N.B no-op overloads to allow us compile this testing constraint. These
-  // methods are only tested for specific derived classes, not in this file.
-  void Project(const Eigen::Ref<const VectorX<double>>&,
-               const Eigen::Ref<const VectorX<double>>&,
-               EigenPtr<VectorX<double>>, MatrixX<double>*) const final {}
-  VectorX<double> CalcBiasTerm(const double&, const double&) const final {
-    return Vector3d::Zero();
-  }
-  VectorX<double> CalcDiagonalRegularization(const double&,
-                                             const double&) const final {
-    return Vector3d::Zero();
-  }
-
  private:
   TestConstraint(const TestConstraint&) = default;
+
+  // N.B no-op overloads to allow us compile this testing constraint. These
+  // methods are only tested for specific derived classes, not in this file.
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const double&, const Eigen::Ref<const VectorXd>&) const final {
+    return nullptr;
+  }
+  void DoCalcData(const Eigen::Ref<const VectorXd>&,
+                  AbstractValue*) const final {}
+  double DoCalcCost(const AbstractValue&) const final { return 0.0; }
+  void DoCalcImpulse(const AbstractValue&, EigenPtr<VectorXd>) const final {}
+  void DoCalcCostHessian(const AbstractValue&, MatrixX<double>*) const final {}
 
   std::unique_ptr<SapConstraint<double>> DoClone() const final {
     return std::unique_ptr<TestConstraint>(new TestConstraint(*this));

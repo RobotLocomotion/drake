@@ -15,69 +15,6 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-// TODO(amcastro-tri): SapConstraintData is only temporary to aid the migration
-// towards #19392 and it will soon be removed.
-/* Class to store data needed for SapConstraint computations. */
-template <typename T>
-class SapConstraintData {
- public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapConstraintData);
-
-  /* Constructs data for a SapLimitConstraint.
-     @param R Regularization parameters.
-     @param v_hat Bias term.
-     @warning Data stored is left uninitialized to avoid the cost of an
-     unnecessary initialization. */
-  SapConstraintData(VectorX<T> R, VectorX<T> v_hat) {
-    const int nk = R.size();
-    parameters_.R.resize(nk);
-    parameters_.R_inv.resize(nk);
-    parameters_.v_hat.resize(nk);
-    parameters_.R = R;
-    parameters_.R_inv = R.cwiseInverse();
-    parameters_.v_hat = v_hat;
-    vc_.resize(nk);
-    y_.resize(nk);
-    gamma_.resize(nk);
-    dPdy_.resize(nk, nk);
-  }
-
-  /* Regularization R. */
-  const VectorX<T>& R() const { return parameters_.R; }
-
-  /* Inverse of the regularization, R⁻¹. */
-  const VectorX<T>& R_inv() const { return parameters_.R_inv; }
-
-  /* Constraint bias. */
-  const VectorX<T>& v_hat() const { return parameters_.v_hat; }
-
-  /* Const access. */
-  const VectorX<T>& vc() const { return vc_; }
-  const VectorX<T>& y() const { return y_; }
-  const VectorX<T>& gamma() const { return gamma_; }
-  const MatrixX<T>& dPdy() const { return dPdy_; }
-
-  /* Mutable access. */
-  VectorX<T>& mutable_vc() { return vc_; }
-  VectorX<T>& mutable_y() { return y_; }
-  VectorX<T>& mutable_gamma() { return gamma_; }
-  MatrixX<T>& mutable_dPdy() { return dPdy_; }
-
- private:
-  // This struct stores parameters that remain const after construction.
-  struct ConstParameters {
-    VectorX<T> R;      // Regularization R.
-    VectorX<T> R_inv;  // Inverse of regularization R.
-    VectorX<T> v_hat;  // Constraint velocity bias.
-  };
-  ConstParameters parameters_;
-
-  VectorX<T> vc_;
-  VectorX<T> y_;      // Un-projected impulse y = −R⁻¹⋅(vc−v̂)
-  VectorX<T> gamma_;  // Impulse.
-  MatrixX<T> dPdy_;   // Gradient of the projection γ = P(y) w.r.t. y.
-};
-
 /* This class serves to represent constraints supported by the SapSolver as
 described in [Castro et al., 2021].
 
@@ -237,90 +174,22 @@ class SapConstraint {
   // methods. Refer to the specific NVI documentation for details.
   // Proper argument sizes and valid non-null pointers are already guaranteed by
   // checks in the correspondng NVIs.
-  // TODO(amcastro-tri): Make these pure virtual per #19392.
   // @{
   virtual std::unique_ptr<AbstractValue> DoMakeData(
       const T& time_step,
-      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const;
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const = 0;
   virtual void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
-                          AbstractValue* data) const;
-  virtual T DoCalcCost(const AbstractValue& data) const;
+                          AbstractValue* data) const = 0;
+  virtual T DoCalcCost(const AbstractValue& data) const = 0;
   virtual void DoCalcImpulse(const AbstractValue& data,
-                             EigenPtr<VectorX<T>> gamma) const;
+                             EigenPtr<VectorX<T>> gamma) const = 0;
   virtual void DoCalcCostHessian(const AbstractValue& data,
-                                 MatrixX<T>* G) const;
+                                 MatrixX<T>* G) const = 0;
 
   /* Clone() implementation. Derived classes must override to provide
    polymorphic deep-copy into a new instance. */
   virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
-
   // @}
-
-  // TODO(amcastro-tri): Remove this group of methods below per #19392.
-  // N.B. To aid migration towards #19392, the default implementations all
-  // abort. This will guarantee that all current (and future) derived classes
-  // have overridden these methods; failure to do so would lead to a program
-  // abort. This allows older implementations in terms of these methods to
-  // coexist with newly migrated constraints that implement the new DoCalcFoo()
-  // APIs. Once the migration is complete, these virtual APIs will be removed
-  // and the DoCalcFoo() APIs will be made pure virtual.
-
-  /* Computes the projection γ = P(y) onto the convex set specific to a
-   constraint in the norm defined by the diagonal positive matrix R, i.e. the
-   norm ‖x‖ = sqrt(xᵀ⋅R⋅x). Refer to [Castro et al., 2021] for details.
-   @param[in] y Impulse to be projected, of size num_constraint_equations().
-   @param[in] R Specifies the diagonal components of matrix R, of size
-   num_constraint_equations().
-   @param[in,out] gamma On output, the projected impulse γ. On input it must be
-   of size num_constraint_equations().
-   @param[in,out] dPdy Not used if nullptr. Otherwise it must be a squared
-   matrix of size num_constraint_equations() to store the Jacobian dP/dy on
-   output. */
-  virtual void Project(const Eigen::Ref<const VectorX<T>>& y,
-                       const Eigen::Ref<const VectorX<T>>& R,
-                       EigenPtr<VectorX<T>> gamma,
-                       MatrixX<T>* dPdy = nullptr) const {
-    unused(y);
-    unused(R);
-    unused(gamma);
-    unused(dPdy);
-    DRAKE_UNREACHABLE();
-  }
-
-  /* Computes the bias term v̂ used to compute the constraint impulses before
-   projection y = −R⁻¹⋅(vc − v̂).
-   @param[in] time_step The time step used in the temporal discretization.
-   @param[in] wi Approximation of the inverse of the mass for this
-   constraint. Specific constraints can use this information to estimate
-   stabilization terms in the "near-rigid" regime. Refer to [Castro et al.,
-   2021] for details.
-   @note Parameter wi provides a scale factor, with units of inverse of mass.
-   Thus far we are assuming the same scalar factor can be used for all
-   constraint equations effectively.
-   TODO(amcastro-tri): Consider making wi a vector quantity. */
-  virtual VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const {
-    unused(time_step);
-    unused(wi);
-    DRAKE_UNREACHABLE();
-  }
-
-  /* Computes the regularization R used to compute the constraint impulses
-   before projection as y = −R⁻¹⋅(vc − v̂).
-   @param[in] time_step The time step used in the temporal discretization.
-   @param[in] wi Approximation of the inverse of the mass for this
-   constraint. Specific constraints can use this information to estimate
-   stabilization terms in the "near-rigid" regime. Refer to [Castro et al.,
-   2021] for details.
-   @note Parameter wi provides a scale factor, with units of inverse of mass.
-   Thus far we are assuming the same scalar factor can be used for all
-   constraint equations effectively.
-   TODO(amcastro-tri): Consider making wi a vector quantity. */
-  virtual VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                                const T& wi) const {
-    unused(time_step);
-    unused(wi);
-    DRAKE_UNREACHABLE();
-  }
 
  private:
   SapConstraintJacobian<T> J_;
