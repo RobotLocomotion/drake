@@ -58,6 +58,7 @@ load("@drake//tools/workspace/mypy_extensions_internal:repository.bzl", "mypy_ex
 load("@drake//tools/workspace/mypy_internal:repository.bzl", "mypy_internal_repository")  # noqa
 load("@drake//tools/workspace/nanoflann_internal:repository.bzl", "nanoflann_internal_repository")  # noqa
 load("@drake//tools/workspace/net_sf_jchart2d:repository.bzl", "net_sf_jchart2d_repository")  # noqa
+load("@drake//tools/workspace/nlohmann_internal:repository.bzl", "nlohmann_internal_repository")  # noqa
 load("@drake//tools/workspace/nlopt_internal:repository.bzl", "nlopt_internal_repository")  # noqa
 load("@drake//tools/workspace/openblas:repository.bzl", "openblas_repository")
 load("@drake//tools/workspace/opencl:repository.bzl", "opencl_repository")
@@ -227,6 +228,8 @@ def add_default_repositories(excludes = [], mirrors = DEFAULT_MIRRORS):
         nanoflann_internal_repository(name = "nanoflann_internal", mirrors = mirrors)  # noqa
     if "net_sf_jchart2d" not in excludes:
         net_sf_jchart2d_repository(name = "net_sf_jchart2d", mirrors = mirrors)
+    if "nlohmann_internal" not in excludes:
+        nlohmann_internal_repository(name = "nlohmann_internal", mirrors = mirrors)  # noqa
     if "nlopt_internal" not in excludes:
         nlopt_internal_repository(name = "nlopt_internal", mirrors = mirrors)
     if "openblas" not in excludes:

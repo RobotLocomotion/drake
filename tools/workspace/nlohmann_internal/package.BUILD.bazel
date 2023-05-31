@@ -1,0 +1,25 @@
+# -*- bazel -*-
+
+load(
+    "@drake//tools/install:install.bzl",
+    "install",
+)
+
+licenses(["notice"])  # MIT
+
+package(
+    default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "nlohmann",
+    hdrs = ["single_include/nlohmann/json.hpp"],
+    include_prefix = "drake_vendor",
+    strip_include_prefix = "single_include",
+    linkstatic = 1,
+)
+
+install(
+    name = "install",
+    docs = ["LICENSE"],
+)
