@@ -332,9 +332,6 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   OsqpSolverDetails& solver_details =
       result->SetSolverDetailsType<OsqpSolverDetails>();
 
-  // TODO(hongkai.dai): OSQP uses initial guess to warm start.
-  unused(initial_guess);
-
   // OSQP solves a convex quadratic programming problem
   // min 0.5 xᵀPx + qᵀx
   // s.t l ≤ Ax ≤ u
@@ -387,6 +384,14 @@ void OsqpSolver::DoSolve(const MathematicalProgram& prog,
   if (!solution_result) {
     const c_int osqp_setup_err = osqp_setup(&work, data, settings);
     if (osqp_setup_err != 0) {
+      solution_result = SolutionResult::kInvalidInput;
+    }
+  }
+
+  if (!solution_result && initial_guess.array().isFinite().all()) {
+    const c_int osqp_warm_err = osqp_warm_start_x(
+        work, initial_guess.data());
+    if (osqp_warm_err != 0) {
       solution_result = SolutionResult::kInvalidInput;
     }
   }
