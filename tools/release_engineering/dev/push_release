@@ -9,7 +9,7 @@
 
 set -euo pipefail
 
-readonly usage="Usage: $0 {{ source version x.y.z }} {{ binary version YYYYMMDD }} [--apt] [--no-docker] [--no-sign] [--no-tar]"
+readonly usage="Usage: $0 {{ source version x.y.z }} {{ binary version YYYYMMDD }} [--apt] [--no-docker] [--no-tar]"
 
 if [[ "$#" -lt 2 ]]; then
   echo "${usage}" >&2
@@ -32,7 +32,6 @@ shift 2;
 push_apt=0
 push_docker=1
 push_tar=1
-sign=1
 
 while [[ "$#" -gt 0 ]]; do
   case "$1" in
@@ -41,9 +40,6 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     --no-docker)
       push_docker=0
-      ;;
-    --no-sign)
-      sign=0
       ;;
     --no-tar)
       push_tar=0
@@ -86,7 +82,7 @@ if [[ "${push_docker}" -ne 0 ]] && ! command -v docker &>/dev/null; then
   exit 6
 fi
 
-if [[ "${push_apt}" -ne 0 || ("${push_tar}" -ne 0 && "${sign}" -ne 0) ]] && ! command -v gpg &>/dev/null; then
+if [[ "${push_apt}" -ne 0 ]] && ! command -v gpg &>/dev/null; then
   echo 'ERROR: gpg(1) was NOT found. Fix with apt-get install gnupg or brew install gnupg.' >&2
   exit 6
 fi
@@ -131,7 +127,7 @@ if ! [[ "${gpg_key}" =~ ^[a-fA-F0-9]{40}$ ]]; then
   exit 1
 fi
 
-if [[ "${push_apt}" -ne 0 || ("${push_tar}" -ne 0 && "${sign}" -ne 0) ]] && ! gpg --list-secret-keys "${gpg_key}" &>/dev/null; then
+if [[ "${push_apt}" -ne 0 ]] && ! gpg --list-secret-keys "${gpg_key}" &>/dev/null; then
   echo "ERROR: GPG secret key ${gpg_key} does NOT exist." >&2
   exit 10
 fi
@@ -210,18 +206,8 @@ if [[ "${push_apt}" -ne 0 ]]; then
     curl --fail --location --remote-name \
       "https://drake-packages.csail.mit.edu/drake/release/${platform}/${filename}"
 
-    # Generate detached armored GPG signature and SHA256 and SHA512 checksums
-    # of the downloaded Debian package and upload the signature and checksums
-    # to S3.
-    if [[ "${sign}" -ne 0 ]]; then
-      asc_filename="${filename}.asc"
-
-      gpg --armor --detach-sign --local-user "${gpg_key}" \
-        --output "${asc_filename}" --sign "${filename}"
-      aws s3 cp "${asc_filename}" \
-        "s3://drake-packages/drake/release/${platform}/${asc_filename}"
-    fi
-
+    # Generate checksums of the downloaded Debian package and upload the
+    # checksums to S3.
     for algorithm in "${algorithms[@]}"; do
       sha_filename="${filename}.sha${algorithm}"
 
@@ -282,22 +268,12 @@ if [[ "${push_tar}" -ne 0 ]]; then
     aws configure
   fi
 
-  # Generate detached armored GPG signatures and SHA256 and SHA512 checksums of
-  # the renamed binary and source release archives and upload each archive,
-  # signature, and checksum to S3.
+  # Generate checksums of the renamed binary and source release archives and
+  # upload each archive and checksum to S3.
   for platform in "${platforms[@]}"; do
     filename="drake-${source_version}-${platform}.tar.gz"
 
     aws s3 cp "${filename}" "s3://drake-packages/drake/release/${filename}"
-
-    if [[ "${sign}" -ne 0 ]]; then
-      asc_filename="${filename}.asc"
-
-      gpg --armor --detach-sign --local-user "${gpg_key}" \
-        --output "${asc_filename}" --sign "${filename}"
-      aws s3 cp "${asc_filename}" \
-        "s3://drake-packages/drake/release/${asc_filename}"
-    fi
 
     for algorithm in "${algorithms[@]}"; do
       sha_filename="${filename}.sha${algorithm}"
