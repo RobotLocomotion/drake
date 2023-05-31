@@ -25,9 +25,12 @@ extern const bool kHasRenderEngineGl;
  Drake ecosystem, only the visualization will be upside down. This has been
  documented in https://github.com/RobotLocomotion/drake/issues/14254.
 
- @warning %RenderEngineGl is not threadsafe. If a SceneGraph is instantiated
- with a RenderEngineGl and there are multiple Context instances for that
- SceneGraph, rendering in multiple threads may exhibit issues.
+ @note %RenderEngineGl has been designed to be threadsafe for *rendering*.
+ It requires a unique RenderEngineGl instance per *thread*. In the normal
+ workflow, where a %RenderEngineGl has been added to a SceneGraph instance,
+ then simply providing a unique systems::Context for each thread will be
+ sufficient. Mutating the *contents* of the %RenderEngineGl (e.g., adding or
+ removing geometries) is *not* threadsafe.
 
  @throws std::exception if kHasRenderEngineGl is false. */
 std::unique_ptr<render::RenderEngine> MakeRenderEngineGl(

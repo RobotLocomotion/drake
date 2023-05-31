@@ -7,6 +7,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/scope_exit.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
@@ -63,9 +64,6 @@ class DefaultRgbaColorShader final : public ShaderProgram {
   explicit DefaultRgbaColorShader(const Rgba& default_diffuse)
       : ShaderProgram(), default_diffuse_(default_diffuse) {
     LoadFromSources(kVertexShader, kFragmentShader);
-    diffuse_color_loc_ = GetUniformLocation("diffuse_color");
-    normal_mat_loc_ = GetUniformLocation("normal_mat");
-    light_dir_loc_ = GetUniformLocation("light_dir_C");
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -78,6 +76,12 @@ class DefaultRgbaColorShader final : public ShaderProgram {
   }
 
  private:
+  void DoConfigureUniforms() final {
+    diffuse_color_loc_ = GetUniformLocation("diffuse_color");
+    normal_mat_loc_ = GetUniformLocation("normal_mat");
+    light_dir_loc_ = GetUniformLocation("light_dir_C");
+  }
+
   std::unique_ptr<ShaderProgram> DoClone() const final {
     return make_unique<DefaultRgbaColorShader>(*this);
   }
@@ -178,10 +182,6 @@ class DefaultTextureColorShader final : public ShaderProgram {
       : ShaderProgram(), library_(std::move(library)) {
     DRAKE_DEMAND(library_ != nullptr);
     LoadFromSources(kVertexShader, kFragmentShader);
-    diffuse_map_loc_ = GetUniformLocation("diffuse_map");
-    diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
-    normal_mat_loc_ = GetUniformLocation("normal_mat");
-    light_dir_loc_ = GetUniformLocation("light_dir_C");
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -197,6 +197,13 @@ class DefaultTextureColorShader final : public ShaderProgram {
   }
 
  private:
+  void DoConfigureUniforms() final {
+    diffuse_map_loc_ = GetUniformLocation("diffuse_map");
+    diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
+    normal_mat_loc_ = GetUniformLocation("normal_mat");
+    light_dir_loc_ = GetUniformLocation("light_dir_C");
+  }
+
   std::unique_ptr<ShaderProgram> DoClone() const final {
     return make_unique<DefaultTextureColorShader>(*this);
   }
@@ -322,8 +329,6 @@ class DefaultDepthShader final : public ShaderProgram {
 
   DefaultDepthShader() : ShaderProgram() {
     LoadFromSources(kVertexShader, kFragmentShader);
-    depth_z_near_loc_ = GetUniformLocation("depth_z_near");
-    depth_z_far_loc_ = GetUniformLocation("depth_z_far");
   }
 
   void SetDepthCameraParameters(
@@ -333,6 +338,11 @@ class DefaultDepthShader final : public ShaderProgram {
   }
 
  private:
+  void DoConfigureUniforms() final {
+    depth_z_near_loc_ = GetUniformLocation("depth_z_near");
+    depth_z_far_loc_ = GetUniformLocation("depth_z_far");
+  }
+
   std::unique_ptr<ShaderProgram> DoClone() const final {
     return make_unique<DefaultDepthShader>(*this);
   }
@@ -417,7 +427,6 @@ class DefaultLabelShader final : public ShaderProgram {
       std::function<Vector4<float>(const PerceptionProperties&)> label_encoder)
       : ShaderProgram(), label_encoder_(std::move(label_encoder)) {
     LoadFromSources(kVertexShader, kFragmentShader);
-    encoded_label_loc_ = GetUniformLocation("encoded_label");
   }
 
   void SetInstanceParameters(const ShaderProgramData& data) const final {
@@ -426,6 +435,10 @@ class DefaultLabelShader final : public ShaderProgram {
   }
 
  private:
+  void DoConfigureUniforms() final {
+    encoded_label_loc_ = GetUniformLocation("encoded_label");
+  }
+
   std::unique_ptr<ShaderProgram> DoClone() const final {
     return make_unique<DefaultLabelShader>(*this);
   }
@@ -470,22 +483,13 @@ void main() {
 
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
     : RenderEngine(params.default_label),
-      opengl_context_(make_shared<OpenGlContext>()),
+      opengl_context_(make_unique<OpenGlContext>()),
       texture_library_(make_shared<TextureLibrary>()),
       parameters_(std::move(params)) {
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-  glClearDepth(1.0);
-  glEnable(GL_DEPTH_TEST);
-  // Generally, there should be no blending for depth and label images. We'll
-  // selectively enable blending for color images.
-  glDisable(GL_BLEND);
-  // We blend the rgb values (the first two parameters), but simply accumulate
-  // transparency (the last two parameters).
-  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+
+  InitGlState();
 
   // Color shaders. See documentation on GetShaderProgram. We want color from
   // texture to be "more preferred" than color from rgba, so we add the
@@ -510,6 +514,10 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
   AddShader(make_unique<DefaultLabelShader>(label_encoder), RenderType::kLabel);
 }
 
+// TODO(SeanCurtis-TRI): There are various per-RenderEngineGl-instance OpenGl
+//  objects created. These are enumerated in DoClone(): vertex array objects,
+//  ShaderPrograms, etc. They should be deleted from the context as the owning
+//  render engine gets deleted.
 RenderEngineGl::~RenderEngineGl() = default;
 
 void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
@@ -569,6 +577,22 @@ void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
   const int geometry = GetSphere();
   const double r = sphere.radius();
   AddGeometryInstance(geometry, user_data, Vector3d(r, r, r));
+}
+
+void RenderEngineGl::InitGlState() {
+  DRAKE_ASSERT(opengl_context_->IsCurrent());
+
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glClipControl(GL_UPPER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+  glClearDepth(1.0);
+  glEnable(GL_DEPTH_TEST);
+  // Generally, there should be no blending for depth and label images. We'll
+  // selectively enable blending for color images.
+  glDisable(GL_BLEND);
+  // We blend the rgb values (the first two parameters), but simply accumulate
+  // transparency (the last two parameters).
+  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 }
 
 void RenderEngineGl::ImplementMesh(int geometry_index,
@@ -644,7 +668,33 @@ bool RenderEngineGl::DoRemoveGeometry(GeometryId id) {
 }
 
 unique_ptr<RenderEngine> RenderEngineGl::DoClone() const {
-  return unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
+  // The clone still requires some last-minute patching before it can work
+  // correctly.
+  auto clone = unique_ptr<RenderEngineGl>(new RenderEngineGl(*this));
+
+  ScopeExit unbind([]() {
+    OpenGlContext::ClearCurrent();
+  });
+  clone->opengl_context_->MakeCurrent();
+
+  clone->InitGlState();
+
+  // Update the vertex array objects on the shared vertex buffers.
+  clone->UpdateVertexArrays();
+
+  // We need to separate the ShaderProgram uniform namespaces so that setting
+  // a uniform value in one thread doesn't affect the others. This uses the
+  // inelegant expedient of creating a *new* shader program (in the OpenGl
+  // sense) using the same compiled shaders as the original. If the OpenGl
+  // context were bound during duplication, this could be done as part of the
+  // copying of a ShaderProgram. For now, it has to be done as clean up here.
+  for (auto& shader_type : clone->shader_programs_) {
+    for (auto& [_, program_ptr] : shader_type) {
+      program_ptr->Relink();
+    }
+  }
+
+  return clone;
 }
 
 void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
@@ -681,7 +731,6 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
 void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
                                         ImageRgba8U* color_image_out) const {
   opengl_context_->MakeCurrent();
-
   // TODO(SeanCurtis-TRI): For transparency to work properly, I need to
   //  segregate objects with transparency from those without. The transparent
   //  geometries then need to be sorted from farthest to nearest the camera and
@@ -1015,12 +1064,16 @@ RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
   } else {
     target = iter->second;
   }
+  DRAKE_ASSERT(glIsFramebuffer(target.frame_buffer));
   glBindFramebuffer(GL_FRAMEBUFFER, target.frame_buffer);
   glViewport(0, 0, intrinsics.width(), intrinsics.height());
   return target;
 }
 
 int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
+  // Confirm that the context is allocated.
+  DRAKE_ASSERT(opengl_context_->IsCurrent());
+
   OpenGlGeometry geometry;
 
   // Create the vertex buffer object (VBO).
@@ -1078,6 +1131,9 @@ int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
 }
 
 void RenderEngineGl::CreateVertexArray(OpenGlGeometry* geometry) const {
+  // Confirm that the context is allocated.
+  DRAKE_ASSERT(opengl_context_->IsCurrent());
+
   glCreateVertexArrays(1, &geometry->vertex_array);
 
   // 3 floats each for position and normal, 2 for texture coordinates.
@@ -1122,6 +1178,16 @@ void RenderEngineGl::CreateVertexArray(OpenGlGeometry* geometry) const {
 
   // Bind IBO with the VAO.
   glVertexArrayElementBuffer(geometry->vertex_array, geometry->index_buffer);
+}
+
+void RenderEngineGl::UpdateVertexArrays() {
+  DRAKE_ASSERT(opengl_context_->IsCurrent());
+  // Creating the vertex arrays requires the context to be bound.
+  for (auto& geometry : geometries_) {
+    // The only geometries in geometries_ should be fully defined.
+    DRAKE_ASSERT(geometry.is_defined());
+    this->CreateVertexArray(&geometry);
+  }
 }
 
 void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,

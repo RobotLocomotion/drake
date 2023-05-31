@@ -16,18 +16,43 @@ namespace internal {
  */
 class OpenGlContext {
  public:
-  /* Constructor. Initializes an OpenGL context.
+  /* Constructor. Initializes a brand new OpenGL context without any objects.
+
    @param debug  If debug is true, the OpenGl context will be a "debug" context,
    in that the OpenGl implementation's errors will be written to the Drake log.
    See https://www.khronos.org/opengl/wiki/Debug_Output for more information.
    */
   explicit OpenGlContext(bool debug = false);
 
+  /* Copy constructs a context that shares OpenGl objects with `other`.
+
+   - All %OpenGlContext instances share a common display.
+   - Each instance has a unique window/OpenGL objects for connecting an OpenGl
+     context to an X-windows display.
+   - Copying an %OpenGlContext is distinct from creating a new instance in that
+     all of the OpenGl objects (buffers, textures, display lists, etc.)
+     available to `other` will also be available to the copy. New instances have
+     no OpenGl objects. */
+  OpenGlContext(const OpenGlContext& other);
+
+  /* All other copy and move semantics are simply deleted. */
+  OpenGlContext& operator=(const OpenGlContext& other) = delete;
+  OpenGlContext(OpenGlContext&&) = delete;
+  OpenGlContext& operator=(OpenGlContext&&) = delete;
+
   ~OpenGlContext();
 
   /* Makes this context current.
    @throws std::exception if not successful.  */
   void MakeCurrent() const;
+
+  /* Clears the "current" context from the current thread. Note: if this context
+   has been bound in one thread and this called in another thread, the context
+   will still be bound in the first thread. */
+  static void ClearCurrent();
+
+  /* Reports if this context is bound to the current thread. */
+  bool IsCurrent() const;
 
   /* Displays the window at the given dimensions. Calling this redundantly (on
    an already visible window of the given size) has no effect.  */
