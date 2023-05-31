@@ -92,6 +92,7 @@ _DRAKE_EXTERNAL_PACKAGE_INSTALLS = ["@%s//:install" % p for p in [
     "msgpack_internal",
     "net_sf_jchart2d",
     "nanoflann_internal",
+    "nlohmann_internal",
     "nlopt_internal",
     "org_apache_xmlgraphics_commons",
     "petsc",
