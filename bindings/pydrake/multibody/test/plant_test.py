@@ -557,6 +557,12 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(joint_actuator.name(), str)
         self.assertIsInstance(joint_actuator.joint(), Joint)
         self.assertIsInstance(joint_actuator.effort_limit(), float)
+        self.assertIsInstance(joint_actuator.default_rotor_inertia(), float)
+        self.assertIsInstance(joint_actuator.default_gear_ratio(), float)
+        joint_actuator.set_default_rotor_inertia(1.5)
+        joint_actuator.set_default_gear_ratio(1.5)
+        self.assertIsInstance(
+            joint_actuator.default_reflected_inertia(), float)
         self.assertGreaterEqual(joint_actuator.input_start(), 0)
         self.assertEqual(joint_actuator.num_inputs(), 1)
 
@@ -1887,6 +1893,7 @@ class TestPlant(unittest.TestCase):
                 joint.set_default_damping(damping=damping)
 
             plant.Finalize()
+            context = plant.CreateDefaultContext()
             self._test_joint_api(T, joint)
             if joint.num_velocities() == 1 and T == float:
                 u = np.array([0.1])
@@ -1895,6 +1902,10 @@ class TestPlant(unittest.TestCase):
                 actuator.set_actuation_vector(
                     u_instance=np.array([0.2]), u=u)
                 numpy_compare.assert_float_equal(u, [0.2])
+                self.assertIsInstance(actuator.rotor_inertia(context), float)
+                self.assertIsInstance(actuator.gear_ratio(context), float)
+                actuator.SetRotorInertia(context=context, rotor_inertia=1.5)
+                actuator.SetGearRatio(context=context, gear_ratio=1.5)
 
             for p in range(joint.num_positions()):
                 self.assertIsNotNone(joint.position_suffix(p))
@@ -1905,7 +1916,6 @@ class TestPlant(unittest.TestCase):
                 name="uniform_random",
                 type=Variable.Type.RANDOM_UNIFORM)
 
-            context = plant.CreateDefaultContext()
             self.assertFalse(joint.is_locked(context))
             if time_step:
                 joint.Lock(context)
