@@ -32,6 +32,7 @@ class ElementFacts:
     start: SourceLocation
     end: SourceLocation = None
     parent: ElementFacts = None
+    serial_number: int = None
     # Need facts about models, for SDFormat file/plant association???
 
 
@@ -39,13 +40,15 @@ class UrdfDriver:
     def __init__(self):
         pass
 
-    def associate_plant_models(self, inertials, plant, models):
+    def associate_plant_models(self, links, inertials, plant, models):
         assert len(models) >= 1
-        assert len(inertials) == plant.num_bodies() - 1, (
-            inertials, plant.num_bodies())
+        assert len(links) == plant.num_bodies() - 1, (
+            links, plant.num_bodies())
         mapping = {}
-        for k in range(1, plant.num_bodies()):
-            mapping[k] = inertials[k - 1]
+        for inertial in inertials:
+            link = inertial.parent
+            k = 1 + link.serial_number
+            mapping[k] = inertial
             # TODO assert more sanity.
         return mapping
 
@@ -73,7 +76,7 @@ class SdformatDriver:
     def __init__(self):
         pass
 
-    def associate_plant_models(self, inertials, plant, models):
+    def associate_plant_models(self, links, inertials, plant, models):
         assert len(models) >= 1
         # XXX This assertion is likely violated by files that use include tags.
         assert len(inertials) == plant.num_bodies() - 1, (
@@ -153,7 +156,9 @@ class XmlInertiaMapper:
                 raise RuntimeError("unknown file format!")
 
         if name == "link":
-            self._links.append(self._make_el_facts(name, attributes))
+            element = self._make_el_facts(name, attributes)
+            element.serial_number = len(self._links)
+            self._links.append(element)
         if name == "inertial":
             element = self._make_el_facts(name, attributes)
             element.parent = self._links[-1]
@@ -174,7 +179,7 @@ class XmlInertiaMapper:
 
     def associate_plant_models(self, plant, models):
         self._mapping = self._format_driver.associate_plant_models(
-            self._inertials, plant, models)
+            self._links, self._inertials, plant, models)
 
     def mapping(self):
         return self._mapping
