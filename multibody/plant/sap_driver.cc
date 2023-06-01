@@ -639,14 +639,14 @@ void SapDriver<T>::AddWeldConstraints(
     const math::RigidTransform<T>& X_WFq = X_WB * specs.X_BFq.cast<T>();
     const math::RigidTransform<T>& X_WN = interpolate(X_WFp, X_WFq, 0.5);
 
-    const math::RigidTransform<T>& X_NFp_W = X_WN.InvertAndCompose(X_WFp);
-    const math::RigidTransform<T>& X_NFq_W = X_WN.InvertAndCompose(X_WFq);
+    const math::RigidTransform<T>& X_NFp = X_WN.InvertAndCompose(X_WFp);
+    const math::RigidTransform<T>& X_NFq = X_WN.InvertAndCompose(X_WFq);
 
-    const Vector3<T> p_FpFq_W = X_NFq_W.translation() - X_NFp_W.translation();
-    const RotationMatrix<T> R_FpFq_W = X_NFp_W.rotation().transpose() * X_NFq_W.rotation();
+    const Vector3<T> p_FpFq_N = X_NFq.translation() - X_NFp.translation();
+    const RotationMatrix<T> R_FpFq = X_NFp.rotation().transpose() * X_NFq.rotation();
 
-    const Matrix3<T>& R = R_FpFq_W.matrix();
-    const Vector3<T> a0_W(0.5 * (R(2,1) - R(1,2)),
+    const Matrix3<T>& R = R_FpFq.matrix();
+    const Vector3<T> a0_N(0.5 * (R(2,1) - R(1,2)),
                           0.5 * (R(0,2) - R(2,0)),
                           0.5 * (R(1,0) - R(0,1)));
 
@@ -686,28 +686,38 @@ void SapDriver<T>::AddWeldConstraints(
                              treeA_index == treeB_index;
 
     // Constraint function at current time step.
-    const Vector6<T> g0 = (Vector6<T>() << a0_W, p_FpFq_W).finished();
+    const Vector6<T> g0 = (Vector6<T>() << a0_N, p_FpFq_N).finished();
 
     drake::log()->info(fmt::format("g0: {}", g0));
+
+    Matrix3<T> R_NW = X_WN.rotation().matrix().transpose();
 
     if (single_tree) {
       const TreeIndex tree_index =
           treeA_index.is_valid() ? treeA_index : treeB_index;
-      MatrixX<T> Jtree = Jv_FpFq_W.middleCols(
+      MatrixX<T> Jtree_W = Jv_FpFq_W.middleCols(
           tree_topology().tree_velocities_start(tree_index),
           tree_topology().num_tree_velocities(tree_index));
-      SapConstraintJacobian<T> J(tree_index, std::move(Jtree));
+      // Re-express the Jacobian in frame N.
+      MatrixX<T> Jtree_N(Jtree_W.rows(), Jtree_W.cols());
+      Jtree_N << R_NW * Jtree_W.middleRows(0, 3),
+          R_NW * Jtree_W.middleRows(3, 3);
+      SapConstraintJacobian<T> J(tree_index, std::move(Jtree_N));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
           g0, std::move(J), parameters));
     } else {
-      MatrixX<T> JA = Jv_FpFq_W.middleCols(
+      MatrixX<T> JA_W = Jv_FpFq_W.middleCols(
           tree_topology().tree_velocities_start(treeA_index),
           tree_topology().num_tree_velocities(treeA_index));
-      MatrixX<T> JB = Jv_FpFq_W.middleCols(
+      MatrixX<T> JB_W = Jv_FpFq_W.middleCols(
           tree_topology().tree_velocities_start(treeB_index),
           tree_topology().num_tree_velocities(treeB_index));
-      SapConstraintJacobian<T> J(treeA_index, std::move(JA), treeB_index,
-                                 std::move(JB));
+      MatrixX<T> JA_N(JA_W.rows(), JA_W.cols());
+      JA_N << R_NW * JA_W.middleRows(0, 3), R_NW * JA_W.middleRows(3, 3);
+      MatrixX<T> JB_N(JB_W.rows(), JB_W.cols());
+      JB_N << R_NW * JB_W.middleRows(0, 3), R_NW * JB_W.middleRows(3, 3);
+      SapConstraintJacobian<T> J(treeA_index, std::move(JA_N), treeB_index,
+                                 std::move(JB_N));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
           g0, std::move(J), parameters));
     }
