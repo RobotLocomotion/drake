@@ -42,11 +42,14 @@ class UrdfDriver:
 
     def associate_plant_models(self, links, inertials, plant, models):
         assert len(models) >= 1
-        assert len(links) == plant.num_bodies() - 1, (
+        # This assertion is weakened for files that use 'drake_ignore'.
+        assert len(links) >= plant.num_bodies() - 1, (
             links, plant.num_bodies())
         mapping = {}
         for inertial in inertials:
             link = inertial.parent
+            if link.serial_number is None:
+                continue
             k = 1 + link.serial_number
             mapping[k] = inertial
             # TODO assert more sanity.
@@ -130,6 +133,7 @@ class XmlInertiaMapper:
         # Declare some state to remember during parsing.
         self._depth = 0
         self._links = []
+        self._ignored_links = 0
         self._inertials = []
         self._format_driver = None
 
@@ -157,7 +161,14 @@ class XmlInertiaMapper:
 
         if name == "link":
             element = self._make_el_facts(name, attributes)
-            element.serial_number = len(self._links)
+            element.serial_number = len(self._links) - self._ignored_links
+
+            # Handle regrettable legacy cruft.
+            for k in range(0, len(attributes), 2):
+                if attributes[k:k+2] == ["drake_ignore", "true"]:
+                    self._ignored_links += 1
+                    element.serial_number = None
+
             self._links.append(element)
         if name == "inertial":
             element = self._make_el_facts(name, attributes)
