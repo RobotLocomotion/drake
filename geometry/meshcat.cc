@@ -1272,8 +1272,14 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = buttons_.find(name);
     if (iter == buttons_.end()) {
+      std::vector<std::string> keys;
+      for (const auto& map_pair : buttons_) {
+        keys.push_back(map_pair.first);
+      }
       throw std::logic_error(
-          fmt::format("Meshcat does not have any button named {}.", name));
+          fmt::format("Meshcat does not have any button named {}.  The "
+                      "registered buttons are named ({}).",
+                      name, fmt::join(keys, ", ")));
     }
     return iter->second.num_clicks;
   }
@@ -1287,8 +1293,14 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = buttons_.find(name);
       if (iter == buttons_.end()) {
+        std::vector<std::string> keys;
+        for (const auto& map_pair : buttons_) {
+          keys.push_back(map_pair.first);
+        }
         throw std::logic_error(
-            fmt::format("Meshcat does not have any button named {}.", name));
+            fmt::format("Meshcat does not have any button named {}.  The "
+                        "registered buttons are named ({}).",
+                        name, fmt::join(keys, ", ")));
       }
       buttons_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);
@@ -1365,8 +1377,14 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
+        std::vector<std::string> keys;
+        for (const auto& map_pair : sliders_) {
+          keys.push_back(map_pair.first);
+        }
         throw std::logic_error(
-            fmt::format("Meshcat does not have any slider named {}.", name));
+            fmt::format("Meshcat does not have any slider named {}.  The "
+                        "registered sliders are named ({}).",
+                        name, fmt::join(keys, ", ")));
       }
       internal::SetSliderControl& s = iter->second;
       // Match setValue in NumberController.js from dat.GUI.
@@ -1396,8 +1414,14 @@ class Meshcat::Impl {
     std::lock_guard<std::mutex> lock(controls_mutex_);
     auto iter = sliders_.find(name);
     if (iter == sliders_.end()) {
-      throw std::logic_error(
-          fmt::format("Meshcat does not have any slider named {}.", name));
+        std::vector<std::string> keys;
+        for (const auto& map_pair : sliders_) {
+          keys.push_back(map_pair.first);
+        }
+        throw std::logic_error(
+            fmt::format("Meshcat does not have any slider named {}.  The "
+                        "registered sliders are named ({}).",
+                        name, fmt::join(keys, ", ")));
     }
     return iter->second.value;
   }
@@ -1423,8 +1447,14 @@ class Meshcat::Impl {
       std::lock_guard<std::mutex> lock(controls_mutex_);
       auto iter = sliders_.find(name);
       if (iter == sliders_.end()) {
+        std::vector<std::string> keys;
+        for (const auto& map_pair : sliders_) {
+          keys.push_back(map_pair.first);
+        }
         throw std::logic_error(
-            fmt::format("Meshcat does not have any slider named {}.", name));
+            fmt::format("Meshcat does not have any slider named {}.  The "
+                        "registered sliders are named ({}).",
+                        name, fmt::join(keys, ", ")));
       }
       sliders_.erase(iter);
       auto c_iter = std::find(controls_.begin(), controls_.end(), name);

@@ -12,8 +12,20 @@ drake_cc_package_library(
     name = "visualization",
     visibility = ["//visibility:public"],
     deps = [
+        ":meshcat_pose_sliders",
         ":visualization_config",
         ":visualization_config_functions",
+    ],
+)
+
+drake_cc_library(
+    name = "meshcat_pose_sliders",
+    srcs = ["meshcat_pose_sliders.cc"],
+    hdrs = ["meshcat_pose_sliders.h"],
+    deps = [
+        "//common:scope_exit",
+        "//geometry:meshcat",
+        "//systems/framework",
     ],
 )
 
@@ -50,6 +62,18 @@ drake_cc_library(
         "//multibody/meshcat:contact_visualizer",
         "//multibody/plant:contact_results_to_lcm",
         "//systems/lcm:lcm_config_functions",
+    ],
+)
+
+drake_cc_googletest(
+    name = "meshcat_pose_sliders_test",
+    deps = [
+        ":meshcat_pose_sliders",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:meshcat_visualizer",
+        "//geometry/test_utilities:meshcat_environment",
+        "//systems/analysis:simulator",
     ],
 )
 
