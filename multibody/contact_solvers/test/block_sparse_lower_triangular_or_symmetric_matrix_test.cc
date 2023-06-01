@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 
 namespace drake {
 namespace multibody {
@@ -21,8 +22,8 @@ const Matrix2d A00 = (Eigen::Matrix2d() << 11, 12,
 const Matrix3d A11 = (Eigen::Matrix3d() << 1, 2, 3,
                                            2, 5, 6,
                                            3, 6, 9).finished();
-const Matrix4d A22 = (Eigen::Matrix4d() << 11, 12, 13, 13,
-                                           12, 15, 16, 16,
+const Matrix4d A22 = (Eigen::Matrix4d() << 11, 12, 13, 23,
+                                           12, 15, 16, 26,
                                            13, 16, 19, 19,
                                            23, 26, 19, 23).finished();
 const Eigen::Matrix<double, 4, 3> A21 =
@@ -130,25 +131,25 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, SetZero) {
 GTEST_TEST(TriangularBlockSparseMatrixTest, Getter) {
   BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
   BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  /* Existing diagonal blocks. */
   ASSERT_TRUE(A_triangular.HasBlock(0, 0));
   ASSERT_TRUE(A_symmetric.HasBlock(0, 0));
-  ASSERT_FALSE(A_triangular.HasBlock(1, 2));
-  ASSERT_TRUE(A_symmetric.HasBlock(1, 2));
+  /* Existing lower triangular blocks. */
   ASSERT_TRUE(A_triangular.HasBlock(2, 1));
   ASSERT_TRUE(A_symmetric.HasBlock(2, 1));
-  ASSERT_FALSE(A_symmetric.HasBlock(100, 200));  // out of range.
+  /* Upper triangular block that only exist in the symmetric matrix. */
+  ASSERT_FALSE(A_triangular.HasBlock(1, 2));
+  ASSERT_TRUE(A_symmetric.HasBlock(1, 2));
+  /* Out of range block. */
+  ASSERT_FALSE(A_symmetric.HasBlock(100, 200));
+  ASSERT_FALSE(A_triangular.HasBlock(100, 200));
 
   EXPECT_EQ(A_triangular.block(2, 1), A21);
   EXPECT_EQ(A_symmetric.block(2, 1), A21);
-  EXPECT_EQ(A_triangular.mutable_block(2, 1), A21);
-  EXPECT_EQ(A_symmetric.mutable_block(2, 1), A21);
   EXPECT_EQ(A_triangular.diagonal_block(0), A00);
   EXPECT_EQ(A_symmetric.diagonal_block(0), A00);
-
   EXPECT_EQ(A_triangular.block_flat(1, 1), A21);
   EXPECT_EQ(A_symmetric.block_flat(1, 1), A21);
-  EXPECT_EQ(A_triangular.mutable_block_flat(1, 1), A21);
-  EXPECT_EQ(A_symmetric.mutable_block_flat(1, 1), A21);
 
   EXPECT_EQ(A_triangular.block_row_indices(1), std::vector<int>({1, 2}));
   EXPECT_EQ(A_symmetric.block_row_indices(1), std::vector<int>({1, 2}));
@@ -166,6 +167,54 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, SetBlock) {
   EXPECT_EQ(A.block(2, 1), 2 * m);
   A.SetBlockFlat(1, 1, m);
   EXPECT_EQ(A.block(2, 1), m);
+}
+
+GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
+  if (kDrakeAssertIsArmed) {
+    BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
+    BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+    /* i <= block_rows() fails. */
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(A_triangular.AddToBlock(200, 100, A00),
+                                         ".*out of bound.*");
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(A_symmetric.AddToBlock(200, 100, A00),
+                                         ".*out of bound.*");
+    /* j <= i fails. */
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
+        A_triangular.AddToBlock(0, 1, MakeArbitraryMatrix(2, 3)),
+        ".*out of bound.*");
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
+        A_symmetric.AddToBlock(0, 1, MakeArbitraryMatrix(2, 3)),
+        ".*out of bound.*");
+    /* 0 <= j fails. */
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
+        A_triangular.AddToBlock(0, -1, MakeArbitraryMatrix(2, 3)),
+        ".*out of bound.*");
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
+        A_symmetric.AddToBlock(0, -1, MakeArbitraryMatrix(2, 3)),
+        ".*out of bound.*");
+
+    /* Non-existing block. */
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
+        A_triangular.AddToBlock(2, 0, MakeArbitraryMatrix(2, 4)),
+        ".*doesn't exist.*");
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
+        A_symmetric.AddToBlock(2, 0, MakeArbitraryMatrix(2, 4)),
+        ".*doesn't exist.*");
+
+    MatrixXd non_symmetric_matrix = MatrixXd::Zero(4, 4);
+    non_symmetric_matrix(1, 0) = 0.1;
+    /* Non-symmetric diagonal block. */
+    DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
+        A_symmetric.AddToBlock(2, 2, non_symmetric_matrix),
+        ".*must be symmetric.*");
+
+    /* Evidence that other functions do the same checks. */
+    ASSERT_THROW(A_triangular.block(0, 1), std::exception);
+    ASSERT_THROW(A_triangular.SetBlock(0, 1, MakeArbitraryMatrix(2, 3)),
+                 std::exception);
+    ASSERT_THROW(A_symmetric.SetBlockFlat(0, 2, non_symmetric_matrix),
+                 std::exception);
+  }
 }
 
 }  // namespace

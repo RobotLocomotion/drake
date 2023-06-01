@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -73,14 +74,21 @@ class BlockSparsityPattern {
  consisting of dense blocks. It is similar to BlockSparseMatrix in that it
  enables efficient algorithms capable of exploiting highly optimized operations
  with dense blocks. It differs from BlockSparseMatrix in a few aspects:
-  1. We only store the lower triangular portion of the matrix with a template
-     argument to imply that the matrix is symmetric.
+  1. We only store the block lower triangular portion of the matrix with a
+     template argument to imply that the matrix is symmetric (i.e. A = Aᵀ and
+     Aij = Ajiᵀ where Aij is the i,j-th block of the matrix A).
   2. It allows modification to the data (but not the sparsity pattern) after
      construction. Therefore, it is suitable for storing matrices with constant
      sparsity pattern and mutable data.
+  3. This class only allows square matrices and blocks on the diagnonal must be
+     square too.
+ Most callers should use clearer and less verbose typedefs at the bottom of the
+ file (e.g. `BlockSparseSymmetricMatrix`) rather than this class template
+ directly.
 
- @tparam MatrixType   The matrix type of each block in block sparse matrix,
-                      Matrix3<double> or MatrixX<double>.
+ @tparam MatrixType   The Eigen matrix type of each block in block sparse
+                      matrix, e.g. Matrix3<double> or MatrixX<double>.
+ @pre MatrixType::RowsAtCompileType == MatrixType::ColsAtCompileTime.
  @tparam is_symmetric Determines whether the matrix is symmetric or lower
                       triangular.
  @warn Data is ALWAYS retrieved/set through the lower triangular part of the
@@ -92,6 +100,8 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(
       BlockSparseLowerTriangularOrSymmetricMatrix);
+
+  static_assert(MatrixType::RowsAtCompileTime == MatrixType::ColsAtCompileTime);
 
   /* Constructs a BlockSparseLowerTriangularOrSymmetricMatrix with the given
    block sparsity pattern.
@@ -105,15 +115,16 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   int block_rows() const { return block_cols_; }
   int block_cols() const { return block_cols_; }
 
-  /* Adds Aij to the ij-th block of this matrix.
+  /* Adds Aij to the ij-th block of this matrix. If `this` matrix is symmetric,
+   Aijᵀ is also implicitly added to the ji-th block of `this` matrix to preserve
+   symmetry.
    @pre Aij = Aij.transpose() if i==j and `this` matrix is symmetric.
-   @pre HasBlock(i, j) == true (note that HasBlock(i, j) is always false when
-   j > i and `this` matrix is not symmetric).
+   @pre i >= j and HasBlock(i, j) == true.
    @note the entire matrix is used if HasBlock(i, j) == true.
    @pre The size of Aij is compatible to the size of ij-th block implied by the
    sparsity pattern at construction. */
   void AddToBlock(int i, int j, const Eigen::Ref<const MatrixType>& Aij) {
-    DRAKE_ASSERT(HasBlock(i, j));
+    DRAKE_ASSERT_VOID(AssertValid(i, j, Aij, __func__));
     const int flat = block_row_to_flat_[j][i];
     MatrixType& old_value = blocks_[j][flat];
     DRAKE_ASSERT(old_value.rows() == Aij.rows());
@@ -121,31 +132,38 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
     old_value += Aij;
   }
 
-  /* Overwrites the ij-th block with `Aij`.
+  /* Overwrites the ij-th block with `Aij`. If `this` matrix is symmetric,
+   Aijᵀ is also implicitly overwritten to the ji-th block of `this` matrix to
+   preserve symmetry.
    @pre Aij = Aij.transpose() if i==j and `this` matrix is symmetric.
-   @pre HasBlock(i, j) == true (note that HasBlock(i, j) is always false when
-   j > i and `this` matrix is not symmetric).
+   @pre i >= j and HasBlock(i, j) == true.
    @pre The size of Aij is compatible to the size of ij-th block implied by the
    sparsity pattern at construction. */
   void SetBlock(int i, int j, MatrixType Aij) {
-    DRAKE_ASSERT(HasBlock(i, j));
+    DRAKE_ASSERT_VOID(AssertValid(i, j, Aij, __func__));
     const int flat = block_row_to_flat_[j][i];
-    MatrixType& old_value = blocks_[j][flat];
-    DRAKE_ASSERT(old_value.rows() == Aij.rows());
-    DRAKE_ASSERT(old_value.cols() == Aij.cols());
-    old_value = std::move(Aij);
+    SetBlockFlat(flat, j, std::move(Aij));
   }
 
   /* (Advanced) Similar to SetBlock, but uses flat indices instead of block row
-   indices. This is convenient when one has the flat index of block readily
+   indices. This is convenient when one has the flat index of a block readily
    available (e.g. while looping over a column when the number of nonzero blocks
    in the column is known).
    @pre 0 <= j < block_cols().
+   @pre Aij = Aij.transpose() if the entry corresponds to a diagonal block and
+   `this` matrix is symmetric.
+   @pre The size of Aij is compatible to the size of ij-th block implied by the
+   sparsity pattern at construction.
    @pre The j-th block column has at least `flat+1` nonzero entries. */
   void SetBlockFlat(int flat, int j, MatrixType Aij) {
     DRAKE_ASSERT(0 <= j && j < block_cols_);
     DRAKE_ASSERT(flat >= 0 && flat < ssize(blocks_[j]));
-    blocks_[j][flat] = std::move(Aij);
+    DRAKE_ASSERT_VOID(
+        AssertValid(block_row_indices(j)[flat], j, Aij, __func__));
+    MatrixType& old_value = blocks_[j][flat];
+    DRAKE_ASSERT(old_value.rows() == Aij.rows());
+    DRAKE_ASSERT(old_value.cols() == Aij.cols());
+    old_value = std::move(Aij);
   }
 
   /* Sets the numerical values of all nonzero blocks to zero without changing
@@ -169,16 +187,12 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   }
 
   /* Returns the ij-th block.
-   @pre HasBlock(i,j) == true. */
+   @pre i >= j and HasBlock(i,j) == true.
+   @note To obtain the value of the ij-th block where i < j, if the matrix is
+   block lower triangular, then the ij-th block is zero; if the matrix is
+   symmetric, one should obtain the Aij via Ajiᵀ. */
   const MatrixType& block(int i, int j) const {
-    DRAKE_ASSERT(HasBlock(i, j));
-    return blocks_[j][block_row_to_flat_[j][i]];
-  }
-
-  /* Returns the mutable ij-th block.
-   @pre HasBlock(i,j) == true. */
-  MatrixType& mutable_block(int i, int j) {
-    DRAKE_ASSERT(HasBlock(i, j));
+    DRAKE_ASSERT_VOID(AssertValid(i, j, std::nullopt, __func__));
     return blocks_[j][block_row_to_flat_[j][i]];
   }
 
@@ -196,16 +210,6 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    @pre 0 <= j < block_cols().
    @pre The j-th block column has at least `flat+1` nonzero entries. */
   const MatrixType& block_flat(int flat, int j) {
-    DRAKE_ASSERT(0 <= j && j < block_cols_);
-    DRAKE_ASSERT(flat >= 0 && flat < ssize(blocks_[j]));
-    return blocks_[j][flat];
-  }
-
-  /* (Advanced) Similar to `mutable_block`, but returns matrix blocks based on
-   flat indices instead of block row indices.
-   @pre 0 <= j < block_cols().
-   @pre The j-th block column has at least `flat+1` nonzero entries. */
-  MatrixType& mutable_block_flat(int flat, int j) {
     DRAKE_ASSERT(0 <= j && j < block_cols_);
     DRAKE_ASSERT(flat >= 0 && flat < ssize(blocks_[j]));
     return blocks_[j][flat];
@@ -232,6 +236,15 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   const std::vector<int>& starting_cols() const { return starting_cols_; }
 
  private:
+  /* Checks if the input block row and column indices and optionally the
+   corresponding matrix block complies with the requirement of the class; throws
+   an exception if not. Invocations provide a string explaining the origin of
+   the violation. These checks are expensive and are not suitable for inner loop
+   operations common to this class, so we only run these checks in debug builds.
+  */
+  void AssertValid(int i, int j, const std::optional<MatrixType>& Aij,
+                   const char* source) const;
+
   BlockSparsityPattern sparsity_pattern_;
   /* The number of block columns. */
   int block_cols_{};
@@ -247,7 +260,8 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
   std::vector<int> starting_cols_;
   /* Mapping from block row index to flat index for each column; i.e.,
    blocks_[j][block_row_to_flat_[j][i]] gives the (i,j) block.
-   block_row_to_flat_[j][i] == -1 if the implied block is empty. */
+   block_row_to_flat_[j][i] == -1 if the implied block is empty or is the
+   reflection of the symmetric block. */
   // TODO(xuchenhan-tri): consider using
   // std::vector<unordered_map<int, int>> to accomodate large matrices.
   std::vector<std::vector<int>> block_row_to_flat_;
