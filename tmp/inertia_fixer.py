@@ -1,4 +1,3 @@
-#!/usr/bin/python3 -B
 """
 Fix broken (non-physical) inertias in SDFormat/URDF,
 by writing a revised file.
@@ -7,8 +6,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-import math
-import sys
 import xml.parsers.expat as expat
 
 import numpy as np
@@ -35,7 +32,7 @@ class ElementFacts:
     start: SourceLocation
     end: SourceLocation = None
     parent: ElementFacts = None
-    # Need facts about models, for SDFormat???
+    # Need facts about models, for SDFormat file/plant association???
 
 
 class UrdfDriver:
@@ -59,11 +56,17 @@ class UrdfDriver:
         rot = fixed_inertia.CalcRotationalInertia()
         mom = rot.get_moments()
         prod = rot.get_products()
-        return f"""<inertial>
-{indent * (depth + 1)}<mass value="{mass}"/>
-{indent * (depth + 1)}<origin rpy=" 0 0 0" xyz="0 0 0"/>
-{indent * (depth + 1)}<inertia ixx="{mom[0]}" ixy="{prod[0]}" ixz="{prod[1]}" iyy="{mom[1]}" iyz="{prod[2]}" izz"{mom[2]}"/>
-{indent * (depth + 0)}</inertial>"""
+
+        def d(indentation):
+            return indent * (depth + indentation)
+
+        return f"""\
+<inertial>
+{d(1)}<mass value="{mass}"/>
+{d(1)}<origin rpy=" 0 0 0" xyz="0 0 0"/>
+{d(1)}<inertia ixx="{mom[0]}" ixy="{prod[0]}" ixz="{prod[1]}"\
+ iyy="{mom[1]}" iyz="{prod[2]}" izz"{mom[2]}"/>
+{d(0)}</inertial>"""
 
 
 class SdformatDriver:
@@ -88,39 +91,32 @@ class SdformatDriver:
         rot = fixed_inertia.CalcRotationalInertia()
         mom = rot.get_moments()
         prod = rot.get_products()
-        return f"""<inertial>
-{indent * (depth + 1)}<pose>0 0 0 0 0 0</pose>
-{indent * (depth + 1)}<mass>{mass}</mass>
-{indent * (depth + 1)}<inertia>
-{indent * (depth + 2)}<ixx>{mom[0]}</ixx>
-{indent * (depth + 2)}<ixy>{prod[0]}</ixy>
-{indent * (depth + 2)}<ixz>{prod[1]}</ixz>
-{indent * (depth + 2)}<iyy>{mom[1]}</iyy>
-{indent * (depth + 2)}<iyz>{prod[2]}</iyz>
-{indent * (depth + 2)}<izz>{mom[2]}</izz>
-{indent * (depth + 1)}</inertia>
-{indent * (depth + 0)}</inertial>"""
+
+        def d(indentation):
+            return indent * (depth + indentation)
+
+        return f"""\
+<inertial>
+{d(1)}<pose>0 0 0 0 0 0</pose>
+{d(1)}<mass>{mass}</mass>
+{d(1)}<inertia>
+{d(2)}<ixx>{mom[0]}</ixx>
+{d(2)}<ixy>{prod[0]}</ixy>
+{d(2)}<ixz>{prod[1]}</ixz>
+{d(2)}<iyy>{mom[1]}</iyy>
+{d(2)}<iyz>{prod[2]}</iyz>
+{d(2)}<izz>{mom[2]}</izz>
+{d(1)}</inertia>
+{d(0)}</inertial>"""
 
 
 class XmlInertiaMapper:
     def __init__(self, input_text):
         self._input_text = input_text
 
-        # Infer file global indentation. If you like literal tabs, you lose.
-        # XXX This algorithm is forgiving of a few typos, but could go wrong in
-        # corner cases. Maybe just infer indentation from the element start
-        # line and depth instead.
-        lines = self._input_text.split('\n')
-        num_bins = min(5, len(lines))
-        bins = [[] for _ in range(num_bins)]
-        for k, line in enumerate(lines):
-            bins[k % num_bins].append(line)
-        self._indentation = 0
-        for k in range(num_bins):
-            bin_lines = bins[k]
-            indents = [len(l) - len(l.lstrip()) for l in bin_lines]
-            self._indentation = max(self._indentation, math.gcd(*indents))
-        print(f"indentation: {self._indentation}", file=sys.stderr)
+        # Build a line array for later use.  Add an unused "line" to simulate
+        # 1-based indexing.
+        self._input_lines = [""] + self._input_text.split('\n')
 
         # Configure the parser.
         self._parser = expat.ParserCreate()
@@ -134,7 +130,18 @@ class XmlInertiaMapper:
         self._inertials = []
         self._format_driver = None
 
+        # Eventually build a mapping from body_index to inertial_facts.
         self._mapping = {}
+
+    def _make_el_facts(self, name, attributes):
+        return ElementFacts(
+            name,
+            attributes,
+            self._depth,
+            SourceLocation(
+                self._parser.CurrentByteIndex,
+                self._parser.CurrentLineNumber,
+                self._parser.CurrentColumnNumber))
 
     def _start_el(self, name, attributes):
         if not self._format_driver and self._depth == 0:
@@ -145,17 +152,10 @@ class XmlInertiaMapper:
             else:
                 raise RuntimeError("unknown file format!")
 
-        element = ElementFacts(
-            name,
-            attributes,
-            self._depth,
-            SourceLocation(
-                self._parser.CurrentByteIndex,
-                self._parser.CurrentLineNumber,
-                self._parser.CurrentColumnNumber))
         if name == "link":
-            self._links.append(element)
+            self._links.append(self._make_el_facts(name, attributes))
         if name == "inertial":
+            element = self._make_el_facts(name, attributes)
             element.parent = self._links[-1]
             self._inertials.append(element)
         self._depth += 1
@@ -179,35 +179,41 @@ class XmlInertiaMapper:
     def mapping(self):
         return self._mapping
 
-    def build_output(self, fixed_inertias_mapping):
-        assert self._mapping
+    def _adjusted_el_end_index(self, raw_end_index):
         input_text = self._input_text
-        preserved_inputs = []
+        if input_text[raw_end_index] == '<':
+            # Typical case:
+            # `<inertial>...</inertial>`.
+            #               ^                # Raw index points here.
+            #                          ^     # Adjusted index points here.
+            return raw_end_index + input_text[raw_end_index:].find('>') + 1
+        else:
+            # `<inertial/>` corner case.
+            #             ^     # Raw index points here; good to go
+            return raw_end_index
+
+    def build_output(self, new_inertias_mapping):
+        input_text = self._input_text
         output = ""
         index = 0
-        for body_index, fixed_inertia in sorted(fixed_inertias_mapping.items()):
-            inertial_facts = self._mapping[body_index]
-            preserved_inputs.append(
-                input_text[index:inertial_facts.start.index])
-            if input_text[inertial_facts.end.index] == '<':
-                # Typical case:
-                # `<inertial>...</inertial>`.
-                index = (
-                    inertial_facts.end.index +
-                    input_text[inertial_facts.end.index:].find('>') + 1)
-            else:
-                # `<inertial/>` corner case.
-                index = inertial_facts.end.index
-            output += preserved_inputs[-1]
-            output += self.format_inertia(body_index, fixed_inertia)
-        preserved_inputs.append(input_text[index:])
-        output += preserved_inputs[-1]
+        for body_index, new_inertia in sorted(new_inertias_mapping.items()):
+            facts = self._mapping[body_index]
+            output += input_text[index:facts.start.index]
+            output += self.format_inertia(body_index, new_inertia)
+            index = self._adjusted_el_end_index(facts.end.index)
+        output += input_text[index:]
         return output
 
     def format_inertia(self, body_index, spatial_inertia):
         inertial_facts = self._mapping[body_index]
+
+        # Compute indentation based on the first line of the target element.
+        line = self._input_lines[inertial_facts.start.line]
+        spaces = len(line) - len(line.lstrip())
+        indentation = spaces // inertial_facts.depth
+
         return self._format_driver.format_inertia(
-            inertial_facts, spatial_inertia, self._indentation)
+            inertial_facts, spatial_inertia, indentation)
 
 
 class InertiaProcessor:
@@ -256,15 +262,14 @@ class InertiaProcessor:
 
         return M_BBo_B
 
-
     def process(self):
         mapping = self._mapper.mapping()
-        fixed_inertias_mapping = {}
+        new_inertias_mapping = {}
         for body_index in sorted(mapping.keys()):
             maybe_inertia = self._maybe_fix_inertia(body_index)
             if maybe_inertia:
-                fixed_inertias_mapping[body_index] = maybe_inertia
-        return self._mapper.build_output(fixed_inertias_mapping)
+                new_inertias_mapping[body_index] = maybe_inertia
+        return self._mapper.build_output(new_inertias_mapping)
 
 
 def main():
