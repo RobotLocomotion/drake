@@ -68,7 +68,7 @@ class UrdfDriver:
 {d(1)}<mass value="{mass}"/>
 {d(1)}<origin rpy=" 0 0 0" xyz="0 0 0"/>
 {d(1)}<inertia ixx="{mom[0]}" ixy="{prod[0]}" ixz="{prod[1]}"\
- iyy="{mom[1]}" iyz="{prod[2]}" izz"{mom[2]}"/>
+ iyy="{mom[1]}" iyz="{prod[2]}" izz="{mom[2]}"/>
 {d(0)}</inertial>"""
 
 
