@@ -307,6 +307,17 @@ TEST_F(TwoPoints, AddConstraint) {
                               ".*IsSubsetOf.*");
 }
 
+GTEST_TEST(GraphOfConvexSetsTest, TwoNullPointsConstraint) {
+  GraphOfConvexSets g;
+  Point pu(Eigen::VectorXd::Zero(0));
+  Point pv(Eigen::VectorXd::Zero(0));
+  Vertex* u = g.AddVertex(pu, "u");
+  Vertex* v = g.AddVertex(pv, "v");
+  Edge* e = g.AddEdge(u->id(), v->id(), "e");
+  DRAKE_EXPECT_THROWS_MESSAGE(e->AddConstraint(symbolic::Formula::True()),
+                              ".*total.*ambient.*dimension.*");
+}
+
 /*
 Let's me test with one edge defintely on the optimal path, and one definitely
 off it.

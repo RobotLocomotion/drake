@@ -362,8 +362,9 @@ EdgesBetweenSubgraphs::~EdgesBetweenSubgraphs() = default;
 
 bool EdgesBetweenSubgraphs::RegionsConnectThroughSubspace(
     const ConvexSet& A, const ConvexSet& B, const ConvexSet& subspace) {
-  DRAKE_THROW_UNLESS(A.ambient_dimension() == B.ambient_dimension() &&
-                     A.ambient_dimension() == subspace.ambient_dimension());
+  DRAKE_THROW_UNLESS(A.ambient_dimension() > 0);
+  DRAKE_THROW_UNLESS(A.ambient_dimension() == B.ambient_dimension());
+  DRAKE_THROW_UNLESS(A.ambient_dimension() == subspace.ambient_dimension());
   // TODO(wrangelvid) Replace dynamic cast with a function that checks if the
   // convex set degenerates to a point.
   if (const Point* pt = dynamic_cast<const Point*>(&subspace)) {

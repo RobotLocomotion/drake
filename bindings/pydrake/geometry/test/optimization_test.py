@@ -40,6 +40,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.z = self.prog.NewContinuousVariables(2, "z")
 
     def test_point_convex_set(self):
+        mut.Point()
         p = np.array([11.1, 12.2, 13.3])
         point = mut.Point(p)
         self.assertEqual(point.ambient_dimension(), 3)
@@ -53,6 +54,7 @@ class TestGeometryOptimization(unittest.TestCase):
         # builds from shape.
 
     def test_h_polyhedron(self):
+        mut.HPolyhedron()
         hpoly = mut.HPolyhedron(A=self.A, b=self.b)
         self.assertEqual(hpoly.ambient_dimension(), 3)
         np.testing.assert_array_equal(hpoly.A(), self.A)
@@ -158,6 +160,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(hpoly.A().shape, (4, 3))
 
     def test_hyper_ellipsoid(self):
+        mut.Hyperellipsoid()
         ellipsoid = mut.Hyperellipsoid(A=self.A, center=self.b)
         self.assertEqual(ellipsoid.ambient_dimension(), 3)
         np.testing.assert_array_equal(ellipsoid.A(), self.A)
@@ -196,6 +199,7 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(e_ball3.center(), [0, 0, 0])
 
     def test_minkowski_sum(self):
+        mut.MinkowskiSum()
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
         hpoly = mut.HPolyhedron(A=self.A, b=self.b)
         sum = mut.MinkowskiSum(setA=point, setB=hpoly)
@@ -216,6 +220,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(s.ambient_dimension(), 6)
 
     def test_v_polytope(self):
+        mut.VPolytope()
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.VPolytope(vertices=vertices)
         self.assertEqual(vpoly.ambient_dimension(), 2)
@@ -289,6 +294,7 @@ class TestGeometryOptimization(unittest.TestCase):
         return length
 
     def test_cartesian_product(self):
+        mut.CartesianProduct()
         point = mut.Point(np.array([11.1, 12.2, 13.3]))
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])
@@ -306,6 +312,7 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertIsInstance(sum2.factor(1), mut.HPolyhedron)
 
     def test_intersection(self):
+        mut.Intersection()
         point = mut.Point(np.array([0.1, 0.2, 0.3]))
         h_box = mut.HPolyhedron.MakeBox(
             lb=[-1, -1, -1], ub=[1, 1, 1])

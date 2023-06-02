@@ -81,26 +81,33 @@ class ConvexSet : public ShapeReifier {
   finite lower and upper bound for the set.  Note: for some derived classes,
   this check is trivial, but for others it can require solving an (typically
   small) optimization problem.  Check the derived class documentation for any
-  notes. */
-  bool IsBounded() const { return DoIsBounded(); }
+  notes. When ambient_dimension is zero, returns false. */
+  bool IsBounded() const {
+    if (ambient_dimension() == 0) {
+      return false;
+    }
+    return DoIsBounded();
+  }
 
-  /** Returns true iff the point x is contained in the set. */
+  /** Returns true iff the point x is contained in the set.  When
+  ambient_dimension is zero, returns false. */
   bool PointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                   double tol = 0) const {
     DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
+    if (ambient_dimension() == 0) {
+      return false;
+    }
     return DoPointInSet(x, tol);
   }
 
   // Note: I would like to return the Binding, but the type is subclass
   // dependent.
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
-  point defined by vars is inside the set. */
+  point defined by vars is inside the set.
+  @throws std::exception if ambient_dimension() == 0 */
   void AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
-      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
-    DRAKE_THROW_UNLESS(vars.size() == ambient_dimension());
-    return DoAddPointInSetConstraints(prog, vars);
-  }
+      const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
 
   /** Let S be this convex set.  When S is bounded, this method adds the convex
   constraints to imply
@@ -114,7 +121,8 @@ class ConvexSet : public ShapeReifier {
   In this case, the constraints imply t ≥ 0, x ∈ t S ⊕ rec(S), where rec(S) is
   the recession cone of S (the asymptotic directions in which S is not bounded)
   and ⊕ is the Minkowski sum.  For t > 0, this is equivalent to x ∈ t S, but for
-  t = 0, we have only x ∈ rec(S). */
+  t = 0, we have only x ∈ rec(S).
+  @throws std::exception if ambient_dimension() == 0 */
   std::vector<solvers::Binding<solvers::Constraint>>
   AddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -139,7 +147,8 @@ class ConvexSet : public ShapeReifier {
   where rec(S) is the recession cone of S (the asymptotic directions in which S
   is not bounded) and ⊕ is the Minkowski sum.  For c' * t + d > 0, this is
   equivalent to A * x + b ∈ (c' * t + d) S, but for c' * t + d = 0, we have
-  only A * x + b ∈ rec(S). */
+  only A * x + b ∈ rec(S).
+  @throws std::exception if ambient_dimension() == 0 */
   std::vector<solvers::Binding<solvers::Constraint>>
   AddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -177,23 +186,27 @@ class ConvexSet : public ShapeReifier {
   /** Non-virtual interface implementation for Clone(). */
   virtual std::unique_ptr<ConvexSet> DoClone() const = 0;
 
-  /** Non-virtual interface implementation for IsBounded(). */
+  /** Non-virtual interface implementation for IsBounded().
+  @pre ambient_dimension() > 0 */
   virtual bool DoIsBounded() const = 0;
 
   /** Non-virtual interface implementation for PointInSet().
-  @pre x.size() == ambient_dimension() */
+  @pre x.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
   virtual bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                             double tol) const = 0;
 
   /** Non-virtual interface implementation for AddPointInSetConstraints().
-  @pre vars.size() == ambient_dimension() */
+  @pre vars.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
   virtual void DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
 
   /** Non-virtual interface implementation for
   AddPointInNonnegativeScalingConstraints().
-  @pre x.size() == ambient_dimension() */
+  @pre x.size() == ambient_dimension()
+  @pre ambient_dimension() > 0 */
   virtual std::vector<solvers::Binding<solvers::Constraint>>
   DoAddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -205,6 +218,7 @@ class ConvexSet : public ShapeReifier {
   constraints needed to keep the point A * x + b in the non-negative scaling of
   the set. Note that subclasses do not need to add the constraint c * t + d ≥ 0
   as it is already added.
+  @pre ambient_dimension() > 0
   @pre A.rows() == ambient_dimension()
   @pre A.rows() == b.rows()
   @pre A.cols() == x.size()
