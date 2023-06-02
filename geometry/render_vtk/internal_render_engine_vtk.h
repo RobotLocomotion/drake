@@ -183,7 +183,15 @@ class RenderEngineVtk : public render::RenderEngine,
    valid. */
   RenderingPipeline& get_mutable_pipeline(ImageType image_type) const;
 
- private:
+  /* A package of data required to register a visual geometry. This is passed as
+   the void* user_data in the `ShapeReifier::ImplementGeometry()` methods. */
+  struct RegistrationData {
+    const PerceptionProperties& properties;
+    const math::RigidTransformd& X_WG;
+    const GeometryId id;
+    bool accepted{true};
+  };
+
   // @see RenderEngine::DoRegisterVisual().
   bool DoRegisterVisual(GeometryId id, const Shape& shape,
                         const PerceptionProperties& properties,
@@ -214,16 +222,17 @@ class RenderEngineVtk : public render::RenderEngine,
       const render::ColorRenderCamera& camera,
       systems::sensors::ImageLabel16I* label_image_out) const override;
 
-  // Initializes the VTK pipelines.
-  void InitializePipelines();
-
   // Common interface for loading an obj file -- used for both mesh and convex
   // shapes.
   void ImplementObj(const std::string& file_name, double scale,
                     void* user_data);
 
+ private:
+  // Initializes the VTK pipelines.
+  void InitializePipelines();
+
   // Performs the common setup for all shape types.
-  void ImplementGeometry(vtkPolyDataAlgorithm* source,
+  void ImplementPolyData(vtkPolyDataAlgorithm* source,
                          const geometry::internal::RenderMaterial& material,
                          void* user_data);
 

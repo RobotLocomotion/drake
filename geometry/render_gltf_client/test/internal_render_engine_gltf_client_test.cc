@@ -5,15 +5,20 @@
 #include <set>
 #include <vector>
 
+#include <drake_vendor/nlohmann/json.hpp>
 #include <gtest/gtest.h>
 #include <vtkCamera.h>
 #include <vtkMatrix4x4.h>
 
 #include "drake/common/find_resource.h"
 #include "drake/common/fmt_eigen.h"
+#include "drake/common/scope_exit.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/render_gltf_client/internal_http_service.h"
+#include "drake/geometry/render_gltf_client/internal_merge_gltf.h"
 #include "drake/geometry/render_gltf_client/render_engine_gltf_client_params.h"
 #include "drake/geometry/render_gltf_client/test/internal_sample_image_data.h"
 
@@ -31,6 +36,8 @@ using Eigen::Vector4d;
 
 using math::RigidTransformd;
 using math::RollPitchYawd;
+using math::RotationMatrixd;
+using nlohmann::json;
 using render::ColorRenderCamera;
 using render::DepthRenderCamera;
 using render::RenderEngine;
@@ -38,6 +45,22 @@ using render_vtk::internal::ImageType;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
 using systems::sensors::ImageRgba8U;
+
+class RenderEngineGltfClientTester {
+ public:
+  using GltfRecord = RenderEngineGltfClient::GltfRecord;
+
+  static const std::map<GeometryId, GltfRecord>& gltfs(
+      const RenderEngineGltfClient& engine) {
+    return engine.gltfs_;
+  }
+
+  static void ExportScene(const RenderEngineGltfClient& engine,
+                          const std::filesystem::path& path,
+                          ImageType image_type) {
+    engine.ExportScene(path.string(), image_type);
+  }
+};
 
 namespace {
 
@@ -71,19 +94,33 @@ class RenderEngineGltfClientTest : public ::testing::Test {
 };
 
 TEST_F(RenderEngineGltfClientTest, Constructor) {
-  // Make sure that default values are passed to the underlying client.
-  const RenderEngineGltfClient default_engine{Params{}};
-  EXPECT_EQ(default_engine.get_params().GetUrl(),
-            "http://127.0.0.1:8000/render");
-  EXPECT_EQ(default_engine.get_params().verbose, false);
-  EXPECT_EQ(default_engine.get_params().cleanup, true);
+  // Reference values of default parameters; we'll use this to make sure that
+  // the client is default initialized with default parameters.
+  const Params default_params;
+
+  // In the case where we provide parameters, we want to make sure that they
+  // all get captured by the render engine. So, we'll make a set of parameters
+  // that are *completely* different from default values. However params_ is
+  // only mostly different -- it leaves `cleanup` enabled. We'll use it as the
+  // starting point (leaving it intact so the behavior of all the other tests
+  // which use it can rely on cleanup) and change `cleanup`.
+  Params test_params(params_);
+  test_params.cleanup = false;
+  ASSERT_NE(test_params.GetUrl(), default_params.GetUrl());
+  ASSERT_NE(test_params.verbose, default_params.verbose);
+  ASSERT_NE(test_params.cleanup, default_params.cleanup);
+
+  const RenderEngineGltfClient default_engine{};
+  EXPECT_EQ(default_engine.get_params().GetUrl(), default_params.GetUrl());
+  EXPECT_EQ(default_engine.get_params().verbose, default_params.verbose);
+  EXPECT_EQ(default_engine.get_params().cleanup, default_params.cleanup);
 
   // Make sure that alternative values are passed to the underlying client.
-  const RenderEngineGltfClient engine{params_};
+  const RenderEngineGltfClient engine{test_params};
   EXPECT_EQ(engine.get_params().GetUrl(),
             "http://notarealserver:8192/no_render");
   EXPECT_EQ(engine.get_params().verbose, true);
-  EXPECT_EQ(engine.get_params().cleanup, true);
+  EXPECT_EQ(engine.get_params().cleanup, false);
 }
 
 TEST_F(RenderEngineGltfClientTest, Clone) {
@@ -286,6 +323,287 @@ TEST_F(RenderEngineGltfClientTest, DoRenderLabelImage) {
     // render::RenderLabel::kDontCare.
     EXPECT_EQ(label_image, CreateTestLabelImage());
   }
+}
+
+class RenderEngineGltfClientGltfTest : public ::testing::Test {
+ public:
+  RenderEngineGltfClientGltfTest()
+      : X_WG_(Vector3d(4, 5, 6)),
+        label_(render::RenderLabel(7)),
+        temp_dir_(temp_directory()) {
+    properties_.AddProperty("label", "id", label_);
+  }
+
+ protected:
+  using Tester = RenderEngineGltfClientTester;
+
+  GeometryId AddObj() {
+    const GeometryId id = GeometryId::get_new_id();
+    EXPECT_TRUE(engine_.RegisterVisual(
+        id,
+        Mesh(FindResourceOrThrow(
+                 "drake/geometry/render_gltf_client/test/tri.obj"),
+             scale_),
+        properties_, X_WG_));
+    EXPECT_TRUE(engine_.has_geometry(id));
+    return id;
+  }
+
+  GeometryId AddGltf() {
+    const GeometryId id = GeometryId::get_new_id();
+    EXPECT_TRUE(engine_.RegisterVisual(
+        id,
+        Mesh(FindResourceOrThrow(
+                 "drake/geometry/render_gltf_client/test/tri_tree.gltf"),
+             scale_),
+        properties_, X_WG_));
+    EXPECT_TRUE(engine_.has_geometry(id));
+    return id;
+  }
+
+  /* Exports the glTF file from the engine, and reads it back as json. */
+  json ExportAndReadJson(std::string_view file_name, ImageType image_type) {
+    const std::filesystem::path file_path = temp_dir_ / file_name;
+    Tester::ExportScene(engine_, file_path, image_type);
+    return ReadJsonFile(file_path);
+  }
+
+  RenderEngineGltfClient engine_;
+  PerceptionProperties properties_;
+  const RigidTransformd X_WG_;
+  const render::RenderLabel label_;
+  const double scale_ = 2.0;
+  const std::filesystem::path temp_dir_;
+};
+
+/* RenderEngineGltfClient departs from RenderEngineVtk in registering Mesh and
+ Convex. It defers to RenderEngineVtk for meshes with .obj extensions and
+ handles everything else.
+
+ We do limited testing of the obj case, merely confirm that registration
+ reports true and the geometry id reports as registered.
+
+ For the gltf case, we directly examine the stored data for the gltf.
+
+ We also confirm that other extensions report as being unregistered. */
+TEST_F(RenderEngineGltfClientGltfTest, RegisteringMeshes) {
+  // If the extension is neither obj nor gltf, it is not accepted. (There is
+  // also a warning, but we're not testing for that).
+  EXPECT_FALSE(engine_.RegisterVisual(GeometryId::get_new_id(),
+                                      Mesh("some.stl"), properties_, X_WG_));
+  // This is the only time we'll explicitly test Convex. Given Mesh and Convex
+  // yield similar results *here*, we'll assume they'll be similar for
+  // successful registration as well.
+  EXPECT_FALSE(engine_.RegisterVisual(GeometryId::get_new_id(),
+                                      Convex("some.stl"), properties_, X_WG_));
+
+  // Objs and glTFs are both accepted.
+  AddObj();
+  const GeometryId gltf_id = AddGltf();
+
+  // Now look for proof that the gltf got added correctly.
+  const std::map<GeometryId, Tester::GltfRecord>& gltfs =
+      Tester::gltfs(engine_);
+  ASSERT_EQ(gltfs.count(gltf_id), 1);
+  const Tester::GltfRecord& record = gltfs.at(gltf_id);
+  EXPECT_EQ(record.scale, scale_);
+  EXPECT_EQ(record.label, label_);
+  // There are two nodes in the gltf, but only one root node.
+  EXPECT_EQ(record.contents["nodes"].size(), 2);
+  EXPECT_EQ(record.root_nodes.size(), 1);
+  // The pose of the stored matrix is drawn from the gltf directly.
+  EXPECT_EQ(record.contents["nodes"][record.root_nodes.begin()->first]["name"],
+            "root_tri");
+  EXPECT_TRUE(
+      CompareMatrices(record.root_nodes.begin()->second,
+                      RigidTransformd(Vector3d(1, 3, -2)).GetAsMatrix4()));
+  // The pose of the root node should have been set as part of its registration.
+  // We're not testing it here because defining that pose is a bit more
+  // elaborate. It is tested below in a dedicated test.
+}
+
+/* Currently, our server expects us to output a z-up gltf (because (a) Drake is
+ z-up and (b) VTK does not correct it). The input gltf files are y-up.
+ Therefore, we have to do some special math to apply a z-up pose to a y-up
+ object.
+
+ We do this update twice: once when the geometry is registered and once
+ when we call UpdatePoses(). This will check both.
+
+ The transform located in the gltf contents should be as follows:
+
+    T = X_t * X_r * S * R_zy * F
+
+ where:
+    X_t: a transform that translates the geometry.
+    X_r: a transform that rotates the geometry.
+    S: a transform that uniformly scales the geometry.
+    R_zy: The rotation from y-up to z-up.
+    F: The transform (not necessarily rigid) of the root node in the file.
+
+ We'll extract the matrix X out of the glTF contents, and gradually remove
+ each of the T, R, S, R_zy and compare the resultant F with that stored in the
+ GltfRecord. */
+TEST_F(RenderEngineGltfClientGltfTest, PoseComputation) {
+  const GeometryId gltf_id = AddGltf();
+
+  /* Given the non-rigid transform of a node (T_WN), the rigid pose of the
+   file's frame (T_WF) and the scale factor, extract the transform of the node
+   in the file's frame (T_FN). */
+  auto extract_T_FN = [](const Matrix4<double> T_WN,
+                         const RigidTransformd& X_WF,
+                         double scale_in) -> Matrix4<double> {
+    Matrix4<double> X_t_inv = Matrix4<double>::Identity();
+    X_t_inv.block<3, 1>(0, 3) = -X_WF.translation();
+    Matrix4<double> X_R_inv = Matrix4<double>::Identity();
+    X_R_inv.block<3, 3>(0, 0) = X_WF.rotation().inverse().matrix();
+    Matrix4<double> S_inv = Matrix4<double>::Identity();
+    S_inv(0, 0) = S_inv(1, 1) = S_inv(2, 2) = 1.0 / scale_in;
+    const RigidTransformd X_zy_inv(RotationMatrixd::MakeXRotation(-M_PI / 2));
+    const Matrix4<double> R_zy_inv = X_zy_inv.GetAsMatrix4();
+    return R_zy_inv * S_inv * X_R_inv * X_t_inv * T_WN;
+  };
+
+  // Extract the transform matrix from a node's specification. Also validate
+  // that it *only* includes "matrix" and not "translation", "rotation", or
+  // "scale".
+  auto extract_T_WN = [](const json& node) {
+    EXPECT_FALSE(node.contains("translation"));
+    EXPECT_FALSE(node.contains("rotation"));
+    EXPECT_FALSE(node.contains("scale"));
+    EXPECT_TRUE(node.contains("matrix"));
+    return EigenMatrixFromGltfMatrix(node["matrix"]);
+  };
+
+  // Previous tests already showed that there's a single root node. We'll get
+  // that node's T_FN.
+  const std::map<GeometryId, Tester::GltfRecord>& gltfs =
+      Tester::gltfs(engine_);
+  const Tester::GltfRecord& record = gltfs.at(gltf_id);
+  const Matrix4<double>& T_FN_expected = record.root_nodes.begin()->second;
+
+  // Now confirm its pose was updated during registration to X_WG and scale.
+  const json& root = record.contents["nodes"][record.root_nodes.begin()->first];
+  const Matrix4<double> X_WN_init = extract_T_WN(root);
+  const Matrix4<double> T_FN_init = extract_T_FN(X_WN_init, X_WG_, scale_);
+  EXPECT_TRUE(CompareMatrices(T_FN_init, T_FN_expected, 1e-15));
+
+  // Now we'll pose the geometry and confirm the pose is as expected.
+  const RigidTransformd X_WG_update(RollPitchYawd{M_PI * 0.5, 0, 3 * M_PI / 2},
+                                    Vector3d(-3, 1, 2));
+  engine_.UpdatePoses(
+      std::unordered_map<GeometryId, RigidTransformd>{{gltf_id, X_WG_update}});
+  const Matrix4<double> T_WN_update = extract_T_WN(root);
+  const Matrix4<double> T_FN_update =
+      extract_T_FN(T_WN_update, X_WG_update, scale_);
+  EXPECT_TRUE(CompareMatrices(T_FN_update, T_FN_expected, 1e-15));
+}
+
+/* ExportScene() is responsible for merging gltf geometries into the VTK-made
+ gltf file. The merging process entails the following:
+
+   - The gltf data is present (it's been merged).
+     - We're not validating all of the data; we've got unit tests on the
+       merging code. We'll simply look for evidence that it has merged: its
+       root node.
+   - If exporting for a label image, the materials should become simplified
+     with only material.pbrMetallicRoughness.{baseColorFactor, emissiveFactor}.
+ */
+TEST_F(RenderEngineGltfClientGltfTest, ExportScene) {
+  /* Base case where we have a single obj controlled by VTK. */
+  AddObj();
+  const json gltf_obj_only =
+      ExportAndReadJson("only_obj.gltf", ImageType::kColor);
+  /* We should have three nodes, the mesh and VTK's "Renderer Node" and "Camera
+   Node". */
+  ASSERT_EQ(gltf_obj_only["nodes"].size(), 3);
+
+  /* Now we add the gltf. It adds two nodes: "root_tri" and "child_tri". */
+  AddGltf();
+
+  const json gltf_color  = ExportAndReadJson("color.gltf", ImageType::kColor);
+  ASSERT_EQ(gltf_color["nodes"].size(), 5);
+  bool gltf_root_present = false;
+  for (const auto& n : gltf_color["nodes"]) {
+    if (n["name"].get<std::string>() == "root_tri") {
+      gltf_root_present = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(gltf_root_present);
+
+  /* Finally, let's compare label and color. */
+  auto find_mat_for_node = [](const json& gltf, std::string_view node_name) {
+    const json* node{};
+    for (const auto& n : gltf["nodes"]) {
+      if (n["name"] == node_name) {
+        node = &n;
+        break;
+      }
+    }
+    DRAKE_DEMAND(node != nullptr);
+    const json& mesh = gltf["meshes"][(*node)["mesh"].get<int>()];
+    /* We know there's only a single primitives in the "primitives" array. */
+    const json& mat =
+        gltf["materials"][mesh["primitives"][0]["material"].get<int>()];
+    return mat;
+  };
+
+  const json& color_mat = find_mat_for_node(gltf_color, "root_tri");
+  const json gltf_label = ExportAndReadJson("label.gltf", ImageType::kLabel);
+  const json& label_mat = find_mat_for_node(gltf_label, "root_tri");
+  EXPECT_NE(color_mat, label_mat);
+
+  // We're not testing the actual differences. The fact that they're different
+  // shows that something is being done. And observation of label images in the
+  // wild will quickly report if what is being done is bad.
+
+
+  // In the case of problems where we're writing the glTF file, we should throw
+  // a (somewhat) meaningful message. We use an inaccessible file as proxy for
+  // the set of conditions that might prevent a successful save to disk.
+  const std::filesystem::path bad_file = temp_dir_ / "no_access.gltf";
+  ScopeExit guard([&bad_file]() {
+    if (std::filesystem::exists(bad_file)) {
+      // Make sure the file can be deleted with the temp directory.
+      std::filesystem::permissions(bad_file,
+                                   std::filesystem::perms::owner_all |
+                                       std::filesystem::perms::group_all |
+                                       std::filesystem::perms::others_all);
+    }
+  });
+  {
+    std::ofstream f(bad_file);
+    f << "test";
+    f.close();
+    ASSERT_FALSE(f.bad());
+    std::filesystem::permissions(bad_file, std::filesystem::perms::owner_read);
+  }
+
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      ExportAndReadJson("no_access.gltf", ImageType::kColor),
+      ".*Error writing exported scene.*");
+}
+
+/* As with registering geometry, we should be able to remove both kinds of
+ geometries (gltf and non-gltf). So, we'll populate it and then strip them out
+ again. Things don't throw and the exported glTF shows it's all gone. */
+TEST_F(RenderEngineGltfClientGltfTest, RemoveGltf) {
+  // Add two kinds of meshes for later removal.
+  const GeometryId obj_id = AddObj();
+  const GeometryId gltf_id = AddGltf();
+
+  ASSERT_TRUE(engine_.has_geometry(obj_id));
+  EXPECT_TRUE(engine_.RemoveGeometry(obj_id));
+  EXPECT_FALSE(engine_.has_geometry(obj_id));
+
+  ASSERT_TRUE(engine_.has_geometry(gltf_id));
+  EXPECT_TRUE(engine_.RemoveGeometry(gltf_id));
+  EXPECT_FALSE(engine_.has_geometry(gltf_id));
+
+  const json gltf_empty = ExportAndReadJson("empty.gltf", ImageType::kColor);
+  /* An empty scene has no nodes (not even renderer and camera). */
+  ASSERT_EQ(gltf_empty["nodes"].size(), 0);
 }
 
 }  // namespace

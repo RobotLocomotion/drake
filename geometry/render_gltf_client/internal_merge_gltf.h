@@ -4,6 +4,8 @@
 
 #include <drake_vendor/nlohmann/json.hpp>
 
+#include "drake/common/eigen_types.h"
+
 namespace drake {
 namespace geometry {
 namespace render_gltf_client {
@@ -11,6 +13,14 @@ namespace internal {
 
 /* Returns the parsed result of the indicated json file. */
 nlohmann::json ReadJsonFile(const std::filesystem::path& json_path);
+
+/* Creates the glTF matrix array from the given 4x4 matrix.
+ @returns A json list of 16 number values. */
+nlohmann::json GltfMatrixFromEigenMatrix(const Matrix4<double>& matrix);
+
+/* Creates a 4x4 matrix from the the glTF json entry representing the matrix.
+ @param matrix_json  A list of 16 number values. */
+Matrix4<double> EigenMatrixFromGltfMatrix(const nlohmann::json& matrix_json);
 
 /* Note: glTF interrelates elements of arrays by having one element refer
  to another by the other's index into the array. For all of these merging
