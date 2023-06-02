@@ -15,6 +15,10 @@ namespace multibody {
  * postures of the robot satisfying certain constraints.
  * The decision variables include the generalized position of the robot.
  *
+ * Any locked joints in the `plant_context` passed to the constructor will
+ * remain fixed at their locked value. This provides a convenient way to perform
+ * IK on a subset of the plant.
+ *
  * @ingroup planning_kinematics
  */
 class InverseKinematics {
@@ -390,6 +394,13 @@ class InverseKinematics {
   systems::Context<double>* get_mutable_context() { return context_; }
 
  private:
+  /* Both public constructors delegate to here. Exactly one of owned_context or
+  plant_context must be non-null. */
+  InverseKinematics(const MultibodyPlant<double>& plant,
+                    std::unique_ptr<systems::Context<double>> owned_context,
+                    systems::Context<double>* plant_context,
+                    bool with_joint_limits);
+
   std::unique_ptr<solvers::MathematicalProgram> prog_;
   const MultibodyPlant<double>& plant_;
   std::unique_ptr<systems::Context<double>> const owned_context_;
