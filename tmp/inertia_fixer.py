@@ -4,8 +4,10 @@ by writing a revised file.
 """
 from __future__ import annotations
 
+import abc
 import argparse
 from dataclasses import dataclass
+from typing import Callable
 import xml.parsers.expat as expat
 
 import numpy as np
@@ -36,11 +38,37 @@ class ElementFacts:
     # Need facts about models, for SDFormat file/plant association???
 
 
-class UrdfDriver:
-    def __init__(self):
-        pass
+class FormatDriver(object, metaclass=abc.ABCMeta):
+    """This interface encapsulates the differences between URDF and SDFormat
+    processing, for purposes of the implementation of XmlInertiaMapper.
+    """
 
-    def associate_plant_models(self, links, inertials, plant, models):
+    @abc.abstractmethod
+    def is_element_ignored(self, name: str, attributes: dict):
+        """Return True if the element is ignored by the Drake parser."""
+        # TODO(rpoyner_tri): This method is regrettable legacy cruft that
+        # should be removed when the associated URDF cruft is removed.
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def associate_plant_models(self, links: list, inertials: list,
+                               plant: MultibodyPlant, models: list):
+        """Return a mapping of body_index to inertial ElementFacts."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def format_inertia(self, mass: float, moments: list, products: list,
+                       indenter: Callable[[int], str]):
+        """Return a formatted XML string for the fixed inertial tag."""
+        raise NotImplementedError
+
+
+class UrdfDriver(FormatDriver):
+    def is_element_ignored(self, name: str, attributes: dict):
+        return attributes.get("drake_ignore") == "true"
+
+    def associate_plant_models(self, links: list, inertials: list,
+                               plant: MultibodyPlant, models: list):
         assert len(models) >= 1
         # This assertion is weakened for files that use 'drake_ignore'.
         assert len(links) >= plant.num_bodies() - 1, (
@@ -55,29 +83,21 @@ class UrdfDriver:
             # TODO assert more sanity.
         return mapping
 
-    def format_inertia(self, inertial_facts, fixed_inertia, indentation):
-        depth = inertial_facts.depth
-        indent = " " * indentation
-        mass = fixed_inertia.get_mass()
-        rot = fixed_inertia.CalcRotationalInertia()
-        mom = rot.get_moments()
-        prod = rot.get_products()
-
-        def d(indentation):
-            return indent * (depth + indentation)
-
+    def format_inertia(self, mass: float, moments: list, products: list,
+                       indenter: Callable[[int], str]):
+        d = indenter
         return f"""\
 <inertial>
 {d(1)}<mass value="{mass}"/>
 {d(1)}<origin xyz="0 0 0" rpy="0 0 0"/>
-{d(1)}<inertia ixx="{mom[0]}" ixy="{prod[0]}" ixz="{prod[1]}"\
- iyy="{mom[1]}" iyz="{prod[2]}" izz="{mom[2]}"/>
+{d(1)}<inertia ixx="{moments[0]}" ixy="{products[0]}" ixz="{products[1]}"\
+ iyy="{moments[1]}" iyz="{products[2]}" izz="{moments[2]}"/>
 {d(0)}</inertial>"""
 
 
-class SdformatDriver:
-    def __init__(self):
-        pass
+class SdformatDriver(FormatDriver):
+    def is_element_ignored(self, name, attributes):
+        return False
 
     def associate_plant_models(self, links, inertials, plant, models):
         assert len(models) >= 1
@@ -90,28 +110,20 @@ class SdformatDriver:
             # TODO assert more sanity.
         return mapping
 
-    def format_inertia(self, inertial_facts, fixed_inertia, indentation):
-        depth = inertial_facts.depth
-        indent = " " * indentation
-        mass = fixed_inertia.get_mass()
-        rot = fixed_inertia.CalcRotationalInertia()
-        mom = rot.get_moments()
-        prod = rot.get_products()
-
-        def d(indentation):
-            return indent * (depth + indentation)
+    def format_inertia(self, mass, moments, products, indenter):
+        d = indenter
 
         return f"""\
 <inertial>
 {d(1)}<pose>0 0 0 0 0 0</pose>
 {d(1)}<mass>{mass}</mass>
 {d(1)}<inertia>
-{d(2)}<ixx>{mom[0]}</ixx>
-{d(2)}<ixy>{prod[0]}</ixy>
-{d(2)}<ixz>{prod[1]}</ixz>
-{d(2)}<iyy>{mom[1]}</iyy>
-{d(2)}<iyz>{prod[2]}</iyz>
-{d(2)}<izz>{mom[2]}</izz>
+{d(2)}<ixx>{moments[0]}</ixx>
+{d(2)}<ixy>{products[0]}</ixy>
+{d(2)}<ixz>{products[1]}</ixz>
+{d(2)}<iyy>{moments[1]}</iyy>
+{d(2)}<iyz>{products[2]}</iyz>
+{d(2)}<izz>{moments[2]}</izz>
 {d(1)}</inertia>
 {d(0)}</inertial>"""
 
@@ -126,9 +138,8 @@ class XmlInertiaMapper:
 
         # Configure the parser.
         self._parser = expat.ParserCreate()
-        self._parser.StartElementHandler = self._start_el
-        self._parser.EndElementHandler = self._end_el
-        self._parser.ordered_attributes = True
+        self._parser.StartElementHandler = self._start_element
+        self._parser.EndElementHandler = self._end_element
 
         # Declare some state to remember during parsing.
         self._depth = 0
@@ -140,7 +151,7 @@ class XmlInertiaMapper:
         # Eventually build a mapping from body_index to inertial_facts.
         self._mapping = {}
 
-    def _make_el_facts(self, name, attributes):
+    def _make_element_facts(self, name, attributes):
         return ElementFacts(
             name,
             attributes,
@@ -150,7 +161,7 @@ class XmlInertiaMapper:
                 self._parser.CurrentLineNumber,
                 self._parser.CurrentColumnNumber))
 
-    def _start_el(self, name, attributes):
+    def _start_element(self, name, attributes):
         if not self._format_driver and self._depth == 0:
             if name == "robot":
                 self._format_driver = UrdfDriver()
@@ -160,23 +171,23 @@ class XmlInertiaMapper:
                 raise RuntimeError("unknown file format!")
 
         if name == "link":
-            element = self._make_el_facts(name, attributes)
+            element = self._make_element_facts(name, attributes)
             element.serial_number = len(self._links) - self._ignored_links
 
-            # Handle regrettable legacy cruft.
-            for k in range(0, len(attributes), 2):
-                if attributes[k:k+2] == ["drake_ignore", "true"]:
-                    self._ignored_links += 1
-                    element.serial_number = None
+            if self._format_driver.is_element_ignored(name, attributes):
+                self._ignored_links += 1
+                element.serial_number = None
 
             self._links.append(element)
+
         if name == "inertial":
-            element = self._make_el_facts(name, attributes)
+            element = self._make_element_facts(name, attributes)
             element.parent = self._links[-1]
             self._inertials.append(element)
+
         self._depth += 1
 
-    def _end_el(self, name):
+    def _end_element(self, name):
         self._depth -= 1
         if name == "inertial":
             self._inertials[-1].end = SourceLocation(
@@ -195,7 +206,7 @@ class XmlInertiaMapper:
     def mapping(self):
         return self._mapping
 
-    def _adjusted_el_end_index(self, raw_end_index):
+    def _adjusted_element_end_index(self, raw_end_index):
         input_text = self._input_text
         if input_text[raw_end_index] == '<':
             # Typical case:
@@ -216,7 +227,7 @@ class XmlInertiaMapper:
             facts = self._mapping[body_index]
             output += input_text[index:facts.start.index]
             output += self.format_inertia(body_index, new_inertia)
-            index = self._adjusted_el_end_index(facts.end.index)
+            index = self._adjusted_element_end_index(facts.end.index)
         output += input_text[index:]
         return output
 
@@ -228,8 +239,20 @@ class XmlInertiaMapper:
         spaces = len(line) - len(line.lstrip())
         indentation = spaces // inertial_facts.depth
 
-        return self._format_driver.format_inertia(
-            inertial_facts, spatial_inertia, indentation)
+        # Extract the mass properties.
+        mass = fixed_inertia.get_mass()
+        rot = fixed_inertia.CalcRotationalInertia()
+        mom = rot.get_moments()
+        prod = rot.get_products()
+
+        # Build the indenter.
+        depth = inertial_facts.depth
+        indent = " " * indentation
+
+        def d(more_depth):
+            return indent * (depth + more_depth)
+
+        return self._format_driver.format_inertia(mass, mom, prod, d)
 
 
 class InertiaProcessor:
