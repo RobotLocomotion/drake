@@ -7,6 +7,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -180,7 +181,9 @@ class ConvexSet : public ShapeReifier {
   /** Implements non-virtual base class serialization. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(MakeNameValue("ambient_dimension", &ambient_dimension_));
+    // Visit the mutable reference inside the reset_after_move wrapper.
+    int& ambient_dimension = ambient_dimension_;
+    a->Visit(DRAKE_NVP(ambient_dimension));
   }
 
   /** Non-virtual interface implementation for Clone(). */
@@ -238,7 +241,7 @@ class ConvexSet : public ShapeReifier {
   DoToShapeWithPose() const = 0;
 
  private:
-  int ambient_dimension_{0};
+  reset_after_move<int> ambient_dimension_;
 };
 
 /** Provides the recommended container for passing a collection of ConvexSet

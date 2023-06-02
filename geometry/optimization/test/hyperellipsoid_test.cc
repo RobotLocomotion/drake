@@ -98,6 +98,25 @@ GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
+GTEST_TEST(HyperellipsoidTest, Move) {
+  const Eigen::Matrix3d A = Eigen::Matrix3d::Identity();
+  const Vector3d center = Vector3d::Zero();
+  Hyperellipsoid orig(A, center);
+
+  // A move-constructed Hyperellipsoid takes over the original data.
+  Hyperellipsoid dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.A(), A));
+  EXPECT_TRUE(CompareMatrices(dut.center(), center));
+
+  // The old Hyperellipsoid is in a valid but unspecified state. For convenience
+  // we'll assert that it's empty, but that's not the only valid implementation,
+  // just the one we happen to currently use.
+  EXPECT_EQ(orig.A().cols(), orig.ambient_dimension());
+  EXPECT_EQ(orig.center().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   const double radius = 0.1;
   auto [scene_graph, geom_id] =
