@@ -148,17 +148,6 @@ GTEST_TEST(SortedPair, Format) {
   EXPECT_EQ(fmt::to_string(pair), "(7, 8)");
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Tests the streaming support.
-GTEST_TEST(SortedPair, DeprecatedWriteToStream) {
-  SortedPair<int> pair{8, 7};
-  std::stringstream ss;
-  ss << pair;
-  EXPECT_EQ(ss.str(), "(7, 8)");
-}
-#pragma GCC diagnostic pop
-
 GTEST_TEST(SortedPair, StructuredBinding) {
   SortedPair<int> pair{8, 7};
 

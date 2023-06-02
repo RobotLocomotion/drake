@@ -95,7 +95,6 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.deprecation import install_numpy_warning_filters
 from pydrake.common.eigen_geometry import Quaternion_
 from pydrake.common.test_utilities import numpy_compare
-from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
 from pydrake.geometry import (
@@ -1051,13 +1050,6 @@ class TestPlant(unittest.TestCase):
                 p_BoBp_B=np.zeros(3), frame_A=world_frame,
                 frame_E=world_frame)
             self.assert_sane(Js_V_ABp_E)
-
-            with catch_drake_warnings(expected_count=1) as w:
-                Js_V_ABp_E = plant.CalcJacobianSpatialVelocity(
-                    context=context, with_respect_to=wrt, frame_B=base_frame,
-                    p_BP=np.zeros(3), frame_A=world_frame,
-                    frame_E=world_frame)
-                self.assert_sane(Js_V_ABp_E)
 
             self.assertEqual(Js_V_ABp_E.shape, (6, nw))
             Js_w_AB_E = plant.CalcJacobianAngularVelocity(

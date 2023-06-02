@@ -2,11 +2,9 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <ostream>
 #include <type_traits>
 #include <utility>
 
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/hash.h"
 #include "drake/common/is_less_than_comparable.h"
 
@@ -125,19 +123,6 @@ struct SortedPair {
   T first_{};   // The first of the two objects, according to operator<.
   T second_{};  // The second of the two objects, according to operator<.
 };
-
-template <typename T>
-DRAKE_DEPRECATED(
-    "2023-06-01",
-    "Use fmt or spdlog for logging, not operator<<. "
-    "Add an #include <fmt/ranges.h> to format SortedPair as a range."
-    "See https://github.com/RobotLocomotion/drake/issues/17742 for background.")
-// TODO(jwnimmer-tri) On 2023-06-01 also remove the <ostream> include.
-inline std::ostream&
-operator<<(std::ostream& out, const SortedPair<T>& pair) {
-  out << "(" << pair.first() << ", " << pair.second() << ")";
-  return out;
-}
 
 /// Two pairs of the same type are equal iff their members are equal after
 /// sorting.

@@ -19,7 +19,6 @@ static_assert(EIGEN_VERSION_AT_LEAST(3, 3, 5),
 #include "drake/common/constants.h"
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 
 namespace drake {
 
@@ -161,70 +160,6 @@ using AngleAxis = Eigen::AngleAxis<Scalar>;
 /// An Isometry templated on scalar type.
 template <typename Scalar>
 using Isometry3 = Eigen::Transform<Scalar, 3, Eigen::Isometry>;
-
-/// (Deprecated.)
-template <typename Scalar>
-using Translation3
-    DRAKE_DEPRECATED("2023-06-01", "This typedef is no longer used in Drake.")
-    = Eigen::Translation<Scalar, 3>;
-
-/// (Deprecated.)
-template <typename Scalar>
-using TwistVector
-    DRAKE_DEPRECATED("2023-06-01", "This typedef is no longer used in Drake.")
-    = Eigen::Matrix<Scalar, 6, 1>;
-
-/// (Deprecated.)
-template <typename Scalar>
-using TwistMatrix
-    DRAKE_DEPRECATED("2023-06-01", "This typedef is no longer used in Drake.")
-    = Eigen::Matrix<Scalar, 6, Eigen::Dynamic>;
-
-/// (Deprecated.)
-template <typename Scalar>
-using SquareTwistMatrix
-    DRAKE_DEPRECATED("2023-06-01", "This typedef is no longer used in Drake.")
-    = Eigen::Matrix<Scalar, 6, 6>;
-
-/// (Deprecated.)
-template <typename Scalar>
-using WrenchVector
-    DRAKE_DEPRECATED("2023-06-01", "This typedef is no longer used in Drake.")
-    = Eigen::Matrix<Scalar, 6, 1>;
-
-template <int a, int b>
-struct DRAKE_DEPRECATED("2023-06-01",
-    "This metaprogramming struct is no longer used in Drake.")
-EigenSizeMinPreferDynamic {
-  // clang-format off
-  static constexpr int value = (a == 0 || b == 0) ? 0 :
-                               (a == 1 || b == 1) ? 1 :
-     (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic :
-                                           a <= b ? a : b;
-  // clang-format on
-};
-
-template <int a, int b>
-struct DRAKE_DEPRECATED("2023-06-01",
-    "This metaprogramming struct is no longer used in Drake.")
-EigenSizeMinPreferFixed {
-  // clang-format off
-  static constexpr int value = (a == 0 || b == 0) ? 0 :
-                               (a == 1 || b == 1) ? 1 :
-     (a == Eigen::Dynamic && b == Eigen::Dynamic) ? Eigen::Dynamic :
-                            (a == Eigen::Dynamic) ? b :
-                            (b == Eigen::Dynamic) ? a :
-                                           a <= b ? a : b;
-  // clang-format on
-};
-
-template <int a, int b>
-struct DRAKE_DEPRECATED("2023-06-01",
-    "This metaprogramming struct is no longer used in Drake.")
-MultiplyEigenSizes {
-  static constexpr int value =
-      (a == Eigen::Dynamic || b == Eigen::Dynamic) ? Eigen::Dynamic : a * b;
-};
 
 /*
  * Determines if a type is derived from EigenBase<> (e.g. ArrayBase<>,

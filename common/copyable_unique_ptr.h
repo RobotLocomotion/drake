@@ -12,11 +12,9 @@ copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
 
 #include <cstddef>
 #include <memory>
-#include <ostream>
 #include <utility>
 
 #include "drake/common/drake_assert.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/common/fmt.h"
 
 namespace drake {
@@ -421,19 +419,6 @@ class copyable_unique_ptr : public std::unique_ptr<T> {
     }
   }
 };
-
-// TODO(jwnimmer-tri) On 2023-06-01 also remove the <ostream> include above.
-template <class charT, class traits, class T>
-DRAKE_DEPRECATED(
-    "2023-06-01",
-    "Use fmt or spdlog for logging, not operator<<. "
-    "See https://github.com/RobotLocomotion/drake/issues/17742 for details.")
-std::basic_ostream<charT, traits>&
-operator<<(std::basic_ostream<charT, traits>& os,
-           const copyable_unique_ptr<T>& cu_ptr) {
-  os << cu_ptr.get();
-  return os;
-}
 
 }  // namespace drake
 

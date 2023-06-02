@@ -255,19 +255,6 @@ TEST_F(ZmpPlannerTest, TestOptimalControl) {
   }
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-// Confirm that the deprecated spelling has simply aliased the version tested
-// above.
-GTEST_TEST(ZmpPlannerAliasTest, Deprecated) {
-  EXPECT_EQ(typeid(ZMPPlanner), typeid(ZmpPlanner));
-  EXPECT_EQ(typeid(ZMPTestTraj), typeid(ZmpTestTraj));
-  EXPECT_EQ(SimulateZMPPolicy.target_type(), typeid(&SimulateZmpPolicy));
-  EXPECT_EQ(GenerateDesiredZMPTrajs.target_type(),
-            typeid(&GenerateDesiredZmpTrajs));
-}
-#pragma GCC diagnostic pop
-
 }  // namespace
 }  // namespace controllers
 }  // namespace systems
