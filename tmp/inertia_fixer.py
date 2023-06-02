@@ -106,18 +106,18 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
 class UrdfDriver(FormatDriver):
     """Format driver for URDF files."""
 
-    def is_model_element(self, name: str):
+    def is_model_element(self, name: str) -> bool:
         return name == "robot"
 
-    def is_element_ignored(self, name: str, attributes: dict):
+    def is_element_ignored(self, name: str, attributes: dict) -> bool:
         # TODO(rpoyner_tri): The 'drake_ignore' attribute is regrettable legacy
         # cruft that should be removed when the associated URDF parser cruft is
         # removed.
-        return ((attributes.get("drake_ignore") == "true") or
-                (attributes.get("name") == "world"))
+        return ((attributes.get("drake_ignore") == "true")
+                or (attributes.get("name") == "world"))
 
     def associate_plant_models(self, models: list, links: list,
-                               inertials: list, plant: MultibodyPlant):
+                               inertials: list, plant: MultibodyPlant) -> dict:
         # This assertion is weakened for files that use 'drake_ignore'.
         assert len(links) >= plant.num_bodies() - 1, (
             links, plant.num_bodies())
@@ -133,7 +133,7 @@ class UrdfDriver(FormatDriver):
         return mapping
 
     def format_inertia(self, mass: float, moments: list, products: list,
-                       indenter: Callable[[int], str]):
+                       indenter: Callable[[int], str]) -> str:
         d = indenter
         return f"""\
 <inertial>
@@ -147,14 +147,14 @@ class UrdfDriver(FormatDriver):
 class SdformatDriver(FormatDriver):
     """Format driver for SDFormat files."""
 
-    def is_model_element(self, name: str):
+    def is_model_element(self, name: str) -> bool:
         return name == "model"
 
-    def is_element_ignored(self, name: str, attributes: dict):
+    def is_element_ignored(self, name: str, attributes: dict) -> bool:
         return False
 
     def associate_plant_models(self, models: list, links: list,
-                               inertials: list, plant: MultibodyPlant):
+                               inertials: list, plant: MultibodyPlant) -> dict:
         # Because SDFormat has both nested models and inclusions, we will have
         # to rummage around in the plant, finding body indices by using name
         # strings.
@@ -176,7 +176,7 @@ class SdformatDriver(FormatDriver):
         return mapping
 
     def format_inertia(self, mass: float, moments: list, products: list,
-                       indenter: Callable[[int], str]):
+                       indenter: Callable[[int], str]) -> str:
         d = indenter
         return f"""\
 <inertial>
@@ -222,11 +222,11 @@ class XmlInertiaMapper:
         # Eventually build a mapping from body_index to inertial_facts.
         self._mapping = {}
 
-    def _make_location(self):
+    def _make_location(self) -> SourceLocation:
         return SourceLocation(self._parser.CurrentByteIndex,
                               self._parser.CurrentLineNumber)
 
-    def _make_element_facts(self, name: str, attributes: dict):
+    def _make_element_facts(self, name: str, attributes: dict) -> ElementFacts:
         return ElementFacts(name, attributes,
                             self._depth, self._make_location())
 
@@ -275,7 +275,7 @@ class XmlInertiaMapper:
 
     def parse(self):
         """Execute the parsing of the XML text."""
-        return self._parser.Parse(self._input_text)
+        self._parser.Parse(self._input_text)
 
     def associate_plant_models(self, plant: MultibodyPlant):
         """Match body indices to inertial elements in the input text."""
@@ -283,11 +283,11 @@ class XmlInertiaMapper:
         self._mapping = self._format_driver.associate_plant_models(
             self._models, self._links, self._inertials, plant)
 
-    def mapping(self):
+    def mapping(self) -> dict:
         """Return a mapping from body indices to inertial element facts."""
         return self._mapping
 
-    def _adjusted_element_end_index(self, raw_end_index: int):
+    def _adjusted_element_end_index(self, raw_end_index: int) -> int:
         input_text = self._input_text
         if input_text[raw_end_index] == '<':
             # Typical case:
@@ -300,7 +300,7 @@ class XmlInertiaMapper:
             #             ^     # Raw index points here; good to go
             return raw_end_index
 
-    def build_output(self, new_inertias_mapping: dict):
+    def build_output(self, new_inertias_mapping: dict) -> str:
         input_text = self._input_text
         output = ""
         index = 0
@@ -313,7 +313,7 @@ class XmlInertiaMapper:
         return output
 
     def _format_inertia(self, body_index: BodyIndex,
-                        spatial_inertia: SpatialInertia):
+                        spatial_inertia: SpatialInertia) -> str:
         inertial_facts = self._mapping[body_index]
 
         # Compute indentation based on the first line of the target element.
@@ -349,7 +349,8 @@ class InertiaProcessor:
         self._scene_graph = scene_graph
         self._mapper = mapper
 
-    def _maybe_fix_inertia(self, body_index: BodyIndex):
+    def _maybe_fix_inertia(
+            self, body_index: BodyIndex) -> SpatialInertia | None:
         assert int(body_index) < self._plant.num_bodies(), (
             body_index, self._plant.num_bodies())
         body = self._plant.get_body(body_index)
