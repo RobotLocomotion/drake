@@ -772,17 +772,26 @@
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.20000000000000001, 0.25, 0, 1 ],
          "mesh" : 0,
-         "name" : "mesh0"
+         "name" : "mesh0",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.20000000000000001, -0.25, 0, 1 ],
          "mesh" : 1,
-         "name" : "mesh1"
+         "name" : "mesh1",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.050000000000000003, 0.25, 0, 1 ],
          "mesh" : 2,
-         "name" : "mesh2"
+         "name" : "mesh2",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : 
@@ -805,37 +814,58 @@
             1
          ],
          "mesh" : 3,
-         "name" : "mesh3"
+         "name" : "mesh3",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.10000000000000001, 0.25, 0, 1 ],
          "mesh" : 4,
-         "name" : "mesh4"
+         "name" : "mesh4",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.10000000000000001, -0.25, 0, 1 ],
          "mesh" : 5,
-         "name" : "mesh5"
+         "name" : "mesh5",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 0.25, 0, 1 ],
          "mesh" : 6,
-         "name" : "mesh6"
+         "name" : "mesh6",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, -0.25, 0, 1 ],
          "mesh" : 7,
-         "name" : "mesh7"
+         "name" : "mesh7",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.40000000000000002, 0.25, 0, 1 ],
          "mesh" : 8,
-         "name" : "mesh8"
+         "name" : "mesh8",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : [ 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.40000000000000002, -0.25, 0, 1 ],
          "mesh" : 9,
-         "name" : "mesh9"
+         "name" : "mesh9",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "matrix" : 
@@ -858,7 +888,10 @@
             1
          ],
          "mesh" : 10,
-         "name" : "mesh10"
+         "name" : "mesh10",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "camera" : 0,
@@ -881,11 +914,17 @@
             0.50000000000000011,
             1
          ],
-         "name" : "Camera Node"
+         "name" : "Camera Node",
+         "extras" : {
+            "from_drake" : true
+         }
       },
       {
          "children" : [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ],
-         "name" : "Renderer Node"
+         "name" : "Renderer Node",
+         "extras" : {
+            "from_drake" : true
+         }
       }
    ],
    "samplers" : 
