@@ -1,8 +1,10 @@
 #include "drake/geometry/render_gltf_client/internal_render_engine_gltf_client.h"
 
+#include <algorithm>
 #include <atomic>
 #include <cstdio>
 #include <filesystem>
+#include <set>
 #include <string_view>
 #include <utility>
 
@@ -27,6 +29,7 @@ using render::RenderCameraCore;
 using render::RenderEngine;
 using render_vtk::internal::ImageType;
 using render_vtk::internal::RenderEngineVtk;
+using systems::sensors::ColorD;
 using systems::sensors::ColorI;
 using systems::sensors::ImageDepth32F;
 using systems::sensors::ImageLabel16I;
@@ -152,6 +155,153 @@ std::string GetSceneFileName(ImageType image_type, int64_t scene_id) {
                      ImageTypeToString(image_type));
 }
 
+/* Searches the gltf and identifies all *mesh* root nodes: nodes that are not
+  referenced in a node's "children" list but do have the "mesh" attribute. */
+std::map<int, Matrix4<double>> FindRootNodes(const nlohmann::json& gltf) {
+  std::map<int, Matrix4<double>> roots;
+  std::set<int> indices;
+  if (gltf.contains("nodes")) {
+    // Cull children.
+    const nlohmann::json& nodes = gltf["nodes"];
+    const int N = ssize(nodes);
+    for (int i = 0; i < N; ++i) indices.insert(i);
+    for (const nlohmann::json& node : nodes) {
+      if (node.contains("children")) {
+        for (const auto& c : node["children"]) {
+          const int c_index = c.get<int>();
+          indices.erase(c_index);
+        }
+      }
+    }
+    // Cull non-meshes and compute transforms.
+    for (int n : indices) {
+      const auto& node = nodes[n];
+      if (node.contains("mesh")) {
+        Matrix4<double> X_FN;
+        if (node.contains("matrix")) {
+          const auto& m = node["matrix"];
+          // For glTF, transform matrix is a *column-major* matrix.
+          int i = -1;
+          for (int c = 0; c < 4; ++c) {
+            for (int r = 0; r < 4; ++r) {
+              X_FN(r, c) = m[++i].get<double>();
+            }
+          }
+        } else {
+          X_FN = Matrix4<double>::Identity();
+          if (node.contains("translation")) {
+            const auto& t = node["translation"];
+            Vector3<double> p_GN(t[0].get<double>(), t[1].get<double>(),
+                                 t[2].get<double>());
+            X_FN.block<3, 1>(0, 3) = p_GN.transpose();
+          }
+          if (node.contains("rotation")) {
+            const auto& q = node["rotation"];
+            // glTF rotation is (x, y, z, w) quaternion. Eigen is (w, x, y, z).
+            Quaternion<double> quat_GN(q[3].get<double>(), q[0].get<double>(),
+                                       q[1].get<double>(), q[2].get<double>());
+            X_FN.block<3, 3>(0, 0) = math::RotationMatrixd(quat_GN).matrix();
+          }
+          if (node.contains("scale")) {
+            const auto& s = node["scale"];
+            for (int i = 0; i < 3; ++i) {
+              X_FN.block<3, 1>(0, i) *= s[i].get<double>();
+            }
+          }
+        }
+        roots[n] = X_FN;
+      }
+    }
+  }
+
+  return roots;
+}
+
+/* Sets the local transform matrix of the given nodes in the given gltf file.
+
+ @param gltf         The json representing the gltf file; its contents will be
+                     modified.
+ @param target_nodes The set of nodes to set (indicated by integers in the range
+                     [0, N-1] such that the gltf contains N nodes.
+ @param X_WG         The pose to apply to all the indicated nodes.
+ @param scale        The scale to apply to all the indicated nodes.
+ @param strip        If true, removes any translation, rotation, or scale
+                     properties from the targeted nodes. */
+void SetRootPoses(nlohmann::json* gltf,
+                  const std::map<int, Matrix4<double>> target_nodes,
+                  const math::RigidTransformd& X_WG, double scale,
+                  bool strip = true) {
+  // We have to do some extra work for poses. A *correct* glTF file is y-up.
+  // Drake is z-up. When VTK exports a glTF file, it doesn't rotate it to be
+  // y-up, but keeps it as z-up. We can't simply pose y-up objects in a z-up
+  // world. So, we need to transform the glTF root nodes to be in a z-up manner.
+  //
+  // Furthermore, the transform X in glTF is not a Drake RigidTransform. glTF
+  // documents the transform X = T * R * S. In this function, X_WG = T * R. So,
+  // we need to include S (a matrix which scales the geometry uniformly) and
+  // X_GF (the relative pose between the file's y-up frame and the desired z-up
+  // frame). So, given the pose of the node in the file (X_FN), we can compute
+  // X_WN = X_WG * S * X_GF * X_FN.
+
+  // X_WF isn't truly X_WF at construction, but will become so after we
+  // concatenate a few more transformations.
+  Matrix4<double> X_WF = X_WG.GetAsMatrix4();
+  X_WF.block<3, 3>(0, 0) *= scale;
+  math::RigidTransformd X_GF(math::RotationMatrixd::MakeXRotation(M_PI / 2));
+  X_WF *= X_GF.GetAsMatrix4();
+
+  auto make_json = [](const Matrix4<double>& X) {
+    nlohmann::json matrix;
+    // For glTF, transform matrix is a *column-major* matrix.
+    for (int c = 0; c < 4; ++c) {
+      for (int r = 0; r < 4; ++r) {
+        matrix.push_back(X(r, c));
+      }
+    }
+    return matrix;
+  };
+  if (gltf->contains("nodes")) {
+    nlohmann::json& nodes = (*gltf)["nodes"];
+    const int N = ssize(nodes);
+    for (const auto& [n, X_FN] : target_nodes) {
+      DRAKE_DEMAND(n >= 0 && n < N);
+      if (strip) {
+        nodes[n].erase("translation");
+        nodes[n].erase("position");
+        nodes[n].erase("scale");
+      }
+      nodes[n]["matrix"] = make_json(X_WF * X_FN);
+    }
+  }
+}
+
+// TODO(SeanCurtis-TRI): This is a vague hack. It provides the right label
+// colors, but it leaves a great deal of cruft in the gltf: samplers, textures,
+// images, and, most importantly, data in the buffer. Ideally, label and depth
+// renders shouldn't transmit any of this otherwise useless data.
+
+/* Change all material definitions to be an emissive flat color. This removes
+ all references to textures. */
+void ChangeToLabelMaterials(nlohmann::json* gltf, const ColorD& color) {
+  if (gltf->contains("materials")) {
+    auto& materials = (*gltf)["materials"];
+    for (auto& mat : materials) {
+      // We're keeping the other material values (e.g., doubleSided, name,
+      // extensions, extras, etc.)
+      mat.erase("normalTexture");
+      mat.erase("occlusionTexture");
+      mat.erase("emissiveTexture");
+      mat["emissiveFactor"] = {color.r, color.g, color.b};
+      auto& pbr = mat["pbrMetallicRoughness"];
+      pbr["baseColorFactor"] = {color.r, color.g, color.b, 1.0};
+      pbr.erase("baseColorTexture");
+      pbr.erase("metallicFactor");
+      pbr.erase("roughnessFactor");
+      pbr.erase("metallicRoughnessTexture");
+    }
+  }
+}
+
 }  // namespace
 
 RenderEngineGltfClient::RenderEngineGltfClient(
@@ -162,7 +312,8 @@ RenderEngineGltfClient::RenderEngineGltfClient(
 RenderEngineGltfClient::RenderEngineGltfClient(
     const RenderEngineGltfClient& other)
     : RenderEngineVtk(other),
-      render_client_(std::make_unique<RenderClient>(other.get_params())) {}
+      render_client_(std::make_unique<RenderClient>(other.get_params())),
+      gltfs_(other.gltfs_) {}
 
 std::unique_ptr<RenderEngine> RenderEngineGltfClient::DoClone() const {
   return std::unique_ptr<RenderEngineGltfClient>(
@@ -370,11 +521,119 @@ void RenderEngineGltfClient::DoRenderLabelImage(
 
 void RenderEngineGltfClient::ExportScene(const std::string& export_path,
                                          ImageType image_type) const {
+  // TODO(SeanCurtis-TRI): Given the ability to edit the gltf in place, we
+  //  should use VTK to create the vtk and merge the gltfs *once* and use that
+  //  as the reference gltf. Then, with a mapping from geometry id to node
+  //  index, we can simply mutate the poses before saving the result. This
+  //  would decrease the cost of transmitting the gltf file *significantly*.
+  //  It would probably be good to key this on scene graphs perception version
+  //  so I can rebuild the VTK as appropriate.
   vtkNew<vtkGLTFExporter> gltf_exporter;
   gltf_exporter->InlineDataOn();
   gltf_exporter->SetRenderWindow(get_mutable_pipeline(image_type).window);
-  gltf_exporter->SetFileName(export_path.c_str());
-  gltf_exporter->Write();
+  const std::string gltf_contents = gltf_exporter->WriteToString();
+  nlohmann::json gltf = nlohmann::json::parse(gltf_contents);
+
+  // Merge in gltf files.
+  for (const auto& [id, record] : gltfs_) {
+    nlohmann::json temp = record.contents;
+    if (image_type == render_vtk::internal::kLabel) {
+      const ColorD color = RenderEngine::GetColorDFromLabel(record.label);
+      ChangeToLabelMaterials(&temp, color);
+    }
+    MergeGltf(&gltf, std::move(temp));
+  }
+
+  // TODO(SeanCurtis-Tri): Where does this get documented for authors of
+  // servers?
+
+  // We'll tag every node in the gltf with the "extras" : {from_drake":true}
+  // property. Consumers can detect it and tell which nodes came from the gltf
+  // client (assuming the consumer supports the nodes.extras data).
+  // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extras)
+  for (nlohmann::json& node : gltf["nodes"]) {
+    node["extras"]["from_drake"] = true;
+  }
+
+  // TODO(SeanCurtis-TRI): Update materials for label images. Because the gltf
+  // might contain arbitrary materials, it might make more sense to do this
+  // as part of registration, storing two versions of the json (the color/depth
+  // and the label). It might also make sense to strip out the textures if
+  // doing depth as unnecessary. A future optimization.
+
+  std::ofstream f(export_path);
+  f << gltf;
+}
+
+void RenderEngineGltfClient::DoUpdateVisualPose(
+    GeometryId id, const math::RigidTransformd& X_WG) {
+  if (gltfs_.count(id) == 1) {
+    GltfRecord& gltf = gltfs_[id];
+    SetRootPoses(&gltf.contents, gltf.root_nodes, X_WG, gltf.scale,
+                 false /* strip */);
+    return;
+  }
+  RenderEngineVtk::DoUpdateVisualPose(id, X_WG);
+}
+
+bool RenderEngineGltfClient::DoRemoveGeometry(GeometryId id) {
+  if (gltfs_.count(id) == 1) {
+    gltfs_.erase(id);
+    return true;
+  } else {
+    return RenderEngineVtk::DoRemoveGeometry(id);
+  }
+}
+
+void RenderEngineGltfClient::ImplementGeometry(const Convex& convex,
+                                               void* user_data) {
+  ImplementMesh(convex.filename(), convex.scale(), user_data);
+}
+
+void RenderEngineGltfClient::ImplementGeometry(const Mesh& mesh,
+                                               void* user_data) {
+  ImplementMesh(mesh.filename(), mesh.scale(), user_data);
+}
+
+void RenderEngineGltfClient::ImplementMesh(
+    const std::filesystem::path& mesh_path, double scale, void* user_data) {
+  std::string extension = mesh_path.extension();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char c) {
+                   return std::tolower(c);
+                 });
+  if (extension == ".obj") {
+    ImplementObj(mesh_path.string(), scale, user_data);
+  } else if (extension == ".gltf") {
+    ImplementGltf(mesh_path, scale, user_data);
+  } else   {
+    auto* data = static_cast<RegistrationData*>(user_data);
+    data->accepted = false;
+    static const logging::Warn one_time(
+        "RenderEngineGltfClient only supports Mesh/Convex specifications which "
+        "use .obj or .gltf files. Mesh specifications using other mesh types "
+        "(e.g., .stl, .dae, etc.) will be ignored.");
+  }
+}
+
+void RenderEngineGltfClient::ImplementGltf(
+    const std::filesystem::path& gltf_path, double scale, void* user_data) {
+  auto& data = *static_cast<RenderEngineVtk::RegistrationData*>(user_data);
+
+  nlohmann::json mesh_data = ReadJsonFile(gltf_path);
+
+  // TODO(SeanCurtis-TRI) What to do about a gltf that has no materials? We need
+  // to apply the same logic of the data.properties as we do to OBJ. We'll
+  // defer for now because the expectation is that the gltf is used *because*
+  // of materials.
+
+  std::map<int, Matrix4<double>> root_nodes = FindRootNodes(mesh_data);
+  SetRootPoses(&mesh_data, root_nodes, data.X_WG, scale, true);
+
+  DRAKE_DEMAND(gltfs_.count(data.id) == 0);
+  gltfs_.insert({data.id,
+                 {std::move(mesh_data), std::move(root_nodes), scale,
+                  GetRenderLabelOrThrow(data.properties)}});
 }
 
 Eigen::Matrix4d RenderEngineGltfClient::CameraModelViewTransformMatrix(
