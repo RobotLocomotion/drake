@@ -122,6 +122,18 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "merge_gltf",
+    srcs = ["merge_gltf.cc"],
+    hdrs = ["merge_gltf.h"],
+    internal = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//common:essential",
+        "@nlohmann_internal//:nlohmann",
+    ],
+)
+
 # === test/ ===
 
 drake_cc_googletest(
@@ -309,6 +321,26 @@ drake_py_unittest(
     ],
     deps = [
         "@bazel_tools//tools/python/runfiles",
+    ],
+)
+
+filegroup(
+    name = "merge_resources",
+    srcs = [
+        "test/red_box.gltf",
+        "test/textured_green_box.gltf",
+    ],
+)
+
+drake_cc_googletest(
+    name = "merge_gltf_test",
+    data = [
+        ":merge_resources",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":merge_gltf",
+        "//common:find_resource",
     ],
 )
 
