@@ -484,7 +484,7 @@ class CallbackScalarSupport : public ::testing::Test {
     EncodedData data_B(id_B, true);
     collision_filter_.AddGeometry(data_A.id());
     collision_filter_.AddGeometry(data_B.id());
-    X_WGs_[id_A] = RigidTransform<T>{Translation3<T>{10, 11, 12}};
+    X_WGs_[id_A] = RigidTransform<T>{Eigen::Translation<T, 3>{10, 11, 12}};
     X_WGs_[id_B] = RigidTransform<T>::Identity();
 
     auto apply_data = [&data_A, &data_B](auto& shapes) {
@@ -774,7 +774,7 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
       (kMaxDistance + radius_A + radius_B - kEps);
   std::unordered_map<GeometryId, RigidTransform<T>> X_WGs{
       {id_A, RigidTransform<T>::Identity()},
-      {id_B, RigidTransform<T>{Translation3<T>{p_WB}}}};
+      {id_B, RigidTransform<T>{Eigen::Translation<T, 3>{p_WB}}}};
 
   // Case: just inside the max distance.
   {
@@ -790,8 +790,8 @@ TYPED_TEST(CallbackMaxDistanceTest, MaxDistanceThreshold) {
   // Case: just outside the max distance.
   {
     X_WGs.at(id_B) = RigidTransform<T>(
-        Translation3<T>{Vector3<T>(2, 3, 4).normalized() *
-                        (kMaxDistance + radius_A + radius_B + kEps)});
+        Eigen::Translation<T, 3>{Vector3<T>(2, 3, 4).normalized() *
+                                 (kMaxDistance + radius_A + radius_B + kEps)});
     std::vector<SignedDistancePair<T>> results;
     CallbackData<T> data(&collision_filter, &X_WGs, kMaxDistance, &results);
     // NOTE: When done, this should match kMaxDistance.

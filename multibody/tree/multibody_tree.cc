@@ -320,55 +320,26 @@ int MultibodyTree<T>::NumBodiesWithName(std::string_view name) const {
   return static_cast<int>(body_name_to_index_.count(name));
 }
 
-namespace {
-// In case the given (name, model_instance) uses the the deprecated name for
-// the world body, logs a warning and returns the non-deprecated name. Remove
-// this deprecation shim on or after 2023-06-01.
-std::string_view MaybeRewriteWorldBodyName(
-    std::string_view name, ModelInstanceIndex model_instance) {
-  if (model_instance == world_model_instance() && name == "WorldBody") {
-    static const logging::Warn log_once(
-        "MultibodyPlant's world body is named 'world' now, not 'WorldBody'. "
-        "Please update your hard-coded string literals to match. "
-        "The old name will no longer work on or after 2023-06-01.");
-    return "world";
-  }
-  return name;
-}
-}  // namespace
-
 template <typename T>
 bool MultibodyTree<T>::HasBodyNamed(std::string_view name) const {
-  const std::string_view rewritten_name = MaybeRewriteWorldBodyName(
-      name, world_model_instance());
-  return HasElementNamed(*this, rewritten_name, std::nullopt,
-    body_name_to_index_);
+  return HasElementNamed(*this, name, std::nullopt, body_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasBodyNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  const std::string_view rewritten_name = MaybeRewriteWorldBodyName(
-      name, model_instance);
-  return HasElementNamed(*this, rewritten_name, model_instance,
-    body_name_to_index_);
+  return HasElementNamed(*this, name, model_instance, body_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasFrameNamed(std::string_view name) const {
-  const std::string_view rewritten_name = MaybeRewriteWorldBodyName(
-      name, world_model_instance());
-  return HasElementNamed(*this, rewritten_name, std::nullopt,
-     frame_name_to_index_);
+  return HasElementNamed(*this, name, std::nullopt, frame_name_to_index_);
 }
 
 template <typename T>
 bool MultibodyTree<T>::HasFrameNamed(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  const std::string_view rewritten_name = MaybeRewriteWorldBodyName(
-      name, model_instance);
-  return HasElementNamed(*this, rewritten_name, model_instance,
-      frame_name_to_index_);
+  return HasElementNamed(*this, name, model_instance, frame_name_to_index_);
 }
 
 template <typename T>
@@ -400,19 +371,13 @@ bool MultibodyTree<T>::HasModelInstanceNamed(std::string_view name) const {
 
 template <typename T>
 const Body<T>& MultibodyTree<T>::GetBodyByName(std::string_view name) const {
-  const std::string_view rewritten_name = MaybeRewriteWorldBodyName(
-      name, world_model_instance());
-  return GetElementByName(*this, rewritten_name, std::nullopt,
-      body_name_to_index_);
+  return GetElementByName(*this, name, std::nullopt, body_name_to_index_);
 }
 
 template <typename T>
 const Body<T>& MultibodyTree<T>::GetBodyByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  const std::string_view rewritten_name =
-      MaybeRewriteWorldBodyName(name, model_instance);
-  return GetElementByName(*this, rewritten_name, model_instance,
-      body_name_to_index_);
+  return GetElementByName(*this, name, model_instance, body_name_to_index_);
 }
 
 template <typename T>
@@ -470,19 +435,13 @@ std::vector<FrameIndex> MultibodyTree<T>::GetFrameIndices(
 
 template <typename T>
 const Frame<T>& MultibodyTree<T>::GetFrameByName(std::string_view name) const {
-  const std::string_view rewritten_name = MaybeRewriteWorldBodyName(
-      name, world_model_instance());
-  return GetElementByName(*this, rewritten_name, std::nullopt,
-      frame_name_to_index_);
+  return GetElementByName(*this, name, std::nullopt, frame_name_to_index_);
 }
 
 template <typename T>
 const Frame<T>& MultibodyTree<T>::GetFrameByName(
     std::string_view name, ModelInstanceIndex model_instance) const {
-  const std::string_view rewritten_name = MaybeRewriteWorldBodyName(
-      name, model_instance);
-  return GetElementByName(*this, rewritten_name, model_instance,
-      frame_name_to_index_);
+  return GetElementByName(*this, name, model_instance, frame_name_to_index_);
 }
 
 template <typename T>

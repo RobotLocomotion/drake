@@ -38,13 +38,9 @@ drake_pybind_library(
     package_info = PACKAGE_INFO,
     py_deps = [
         "//bindings/pydrake/systems:framework_py",
-        # 2023-06-01 Remove this dependency upon completion of deprecation.
-        "//bindings/pydrake/multibody:inverse_kinematics_py",
     ],
     py_srcs = [
         "_manipulation_extra.py",
-        # 2023-06-01 Remove this target upon completion of deprecation.
-        "planner.py",
         # TODO(jwnimmer-tri) On 2023-06-01 add deprecation for these modules.
         # See #18683 for an example of what to do.
         "kuka_iiwa.py",
@@ -63,14 +59,6 @@ drake_py_unittest(
         ":manipulation",
         "//bindings/pydrake/multibody",
         "//bindings/pydrake/systems",
-    ],
-)
-
-drake_py_unittest(
-    name = "planner_deprecated_test",
-    deps = [
-        ":manipulation",
-        "//bindings/pydrake/common/test_utilities:deprecation_py",
     ],
 )
 

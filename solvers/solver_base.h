@@ -7,7 +7,6 @@
 #include <Eigen/Core>
 
 #include "drake/common/drake_copyable.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/solvers/mathematical_program.h"
 #include "drake/solvers/solution_result.h"
 #include "drake/solvers/solver_id.h"
@@ -37,7 +36,9 @@ class SolverBase : public SolverInterface {
              MathematicalProgramResult*) const override;
   bool available() const override;
   bool enabled() const override;
-  SolverId solver_id() const override;
+  SolverId solver_id() const final {
+    return solver_id_;
+  }
   bool AreProgramAttributesSatisfied(const MathematicalProgram&) const override;
   std::string ExplainUnsatisfiedProgramAttributes(
       const MathematicalProgram&) const override;
@@ -51,13 +52,6 @@ class SolverBase : public SolverInterface {
   override the matching virtual method instead, except for `explain_unsatisfied`
   which already has a default implementation. */
   SolverBase(const SolverId& id, std::function<bool()> available,
-             std::function<bool()> enabled,
-             std::function<bool(const MathematicalProgram&)> are_satisfied,
-             std::function<std::string(const MathematicalProgram&)>
-                 explain_unsatisfied = nullptr);
-
-  DRAKE_DEPRECATED("2023-06-01", "Pass SolverId directly as the first argument")
-  SolverBase(std::function<SolverId()> id, std::function<bool()> available,
              std::function<bool()> enabled,
              std::function<bool(const MathematicalProgram&)> are_satisfied,
              std::function<std::string(const MathematicalProgram&)>
