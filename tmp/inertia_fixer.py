@@ -7,7 +7,6 @@ from __future__ import annotations
 import abc
 import argparse
 from dataclasses import dataclass
-import pprint
 from typing import Callable
 import xml.parsers.expat as expat
 
@@ -67,27 +66,40 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def is_model_element(self, name: str):
+    def is_model_element(self, name: str) -> bool:
         """Return True if the element directly encloses link elements."""
         raise NotImplementedError
 
     @abc.abstractmethod
-    def is_element_ignored(self, name: str, attributes: dict):
+    def is_element_ignored(self, name: str, attributes: dict) -> bool:
         """Return True if the element is ignored by the Drake parser."""
-        # TODO(rpoyner_tri): This method is regrettable legacy cruft that
-        # should be removed when the associated URDF cruft is removed.
         raise NotImplementedError
 
     @abc.abstractmethod
     def associate_plant_models(self, models: list, links: list,
-                               inertials: list, plant: MultibodyPlant):
+                               inertials: list, plant: MultibodyPlant) -> dict:
         """Return a mapping of body_index to inertial ElementFacts."""
         raise NotImplementedError
 
     @abc.abstractmethod
     def format_inertia(self, mass: float, moments: list, products: list,
-                       indenter: Callable[[int], str]):
-        """Return a formatted XML string for the repaired inertial tag."""
+                       indenter: Callable[[int], str]) -> str:
+        """Return a formatted XML string for the repaired inertial tag.
+
+        The provided products and moments of inertia should be expressed in the
+        body frame.
+
+        The indenter function takes an indentation level relative to the
+        indentation depth of the element to be replaced, and returns a string
+        of white space necessary to reach that indentation level.
+
+        Args:
+            mass: the mass of the body (kg).
+            moments: the principle moments of inertia -- ixx, iyy, izz.
+            products: the products of inertia -- ixy, ixz, iyz.
+            indenter: the indenter function (see above).
+
+        """
         raise NotImplementedError
 
 
@@ -98,7 +110,11 @@ class UrdfDriver(FormatDriver):
         return name == "robot"
 
     def is_element_ignored(self, name: str, attributes: dict):
-        return attributes.get("drake_ignore") == "true"
+        # TODO(rpoyner_tri): The 'drake_ignore' attribute is regrettable legacy
+        # cruft that should be removed when the associated URDF parser cruft is
+        # removed.
+        return ((attributes.get("drake_ignore") == "true") or
+                (attributes.get("name") == "world"))
 
     def associate_plant_models(self, models: list, links: list,
                                inertials: list, plant: MultibodyPlant):
@@ -111,6 +127,7 @@ class UrdfDriver(FormatDriver):
             if link.serial_number is None:
                 continue
             k = 1 + link.serial_number
+            assert k < plant.num_bodies()
             mapping[BodyIndex(k)] = inertial
             # TODO assert more sanity.
         return mapping
@@ -158,7 +175,8 @@ class SdformatDriver(FormatDriver):
             # TODO assert more sanity.
         return mapping
 
-    def format_inertia(self, mass, moments, products, indenter):
+    def format_inertia(self, mass: float, moments: list, products: list,
+                       indenter: Callable[[int], str]):
         d = indenter
         return f"""\
 <inertial>
@@ -180,7 +198,7 @@ class XmlInertiaMapper:
     of inertias in some formats of XML robot model files.
     """
 
-    def __init__(self, input_text):
+    def __init__(self, input_text: str):
         self._input_text = input_text
 
         # Build a line array for later use.  Add an unused "line" to simulate
@@ -208,11 +226,11 @@ class XmlInertiaMapper:
         return SourceLocation(self._parser.CurrentByteIndex,
                               self._parser.CurrentLineNumber)
 
-    def _make_element_facts(self, name, attributes):
+    def _make_element_facts(self, name: str, attributes: dict):
         return ElementFacts(name, attributes,
                             self._depth, self._make_location())
 
-    def _start_element(self, name, attributes):
+    def _start_element(self, name: str, attributes: dict):
         if not self._format_driver and self._depth == 0:
             if name == "robot":
                 self._format_driver = UrdfDriver()
@@ -246,29 +264,30 @@ class XmlInertiaMapper:
 
         self._depth += 1
 
-    def _end_element(self, name):
+    def _end_element(self, name: str):
         self._depth -= 1
 
-        if name == "model":
+        if self._format_driver.is_model_element(name):
             self._model_stack.pop()
 
         if name == "inertial":
             self._inertials[-1].end = self._make_location()
-            print(f"inertial facts: {self._inertials[-1]}")
 
     def parse(self):
         """Execute the parsing of the XML text."""
         return self._parser.Parse(self._input_text)
 
-    def associate_plant_models(self, plant, models):
+    def associate_plant_models(self, plant: MultibodyPlant):
+        """Match body indices to inertial elements in the input text."""
         assert self._format_driver is not None
         self._mapping = self._format_driver.associate_plant_models(
             self._models, self._links, self._inertials, plant)
 
     def mapping(self):
+        """Return a mapping from body indices to inertial element facts."""
         return self._mapping
 
-    def _adjusted_element_end_index(self, raw_end_index):
+    def _adjusted_element_end_index(self, raw_end_index: int):
         input_text = self._input_text
         if input_text[raw_end_index] == '<':
             # Typical case:
@@ -281,7 +300,7 @@ class XmlInertiaMapper:
             #             ^     # Raw index points here; good to go
             return raw_end_index
 
-    def build_output(self, new_inertias_mapping):
+    def build_output(self, new_inertias_mapping: dict):
         input_text = self._input_text
         output = ""
         index = 0
@@ -293,7 +312,8 @@ class XmlInertiaMapper:
         output += input_text[index:]
         return output
 
-    def _format_inertia(self, body_index, spatial_inertia):
+    def _format_inertia(self, body_index: BodyIndex,
+                        spatial_inertia: SpatialInertia):
         inertial_facts = self._mapping[body_index]
 
         # Compute indentation based on the first line of the target element.
@@ -318,14 +338,20 @@ class XmlInertiaMapper:
 
 
 class InertiaProcessor:
-    def __init__(self, args, plant, scene_graph, models, mapper):
+    """Handles selection, repair, and replacement of inertial properties,
+    in model files pre-processed by drake parsing and XmlInertiaMapper.
+    """
+
+    def __init__(self, args: argparse.Namespace, plant: MultibodyPlant,
+                 scene_graph: SceneGraph, mapper: XmlInertiaMapper):
         self._args = args
         self._plant = plant
         self._scene_graph = scene_graph
-        self._models = models
         self._mapper = mapper
 
-    def _maybe_fix_inertia(self, body_index):
+    def _maybe_fix_inertia(self, body_index: BodyIndex):
+        assert int(body_index) < self._plant.num_bodies(), (
+            body_index, self._plant.num_bodies())
         body = self._plant.get_body(body_index)
         if not isinstance(body, RigidBody):
             # Only rigid bodies have constant inertia, for which model file
@@ -361,7 +387,10 @@ class InertiaProcessor:
 
         return M_BBo_B
 
-    def process(self):
+    def process(self) -> str:
+        """Return a new model file text, with selected inertial properties
+        replaced by new ones calculated from supplied geometry.
+        """
         mapping = self._mapper.mapping()
         new_inertias_mapping = {}
         for body_index in sorted(mapping.keys()):
@@ -372,7 +401,7 @@ class InertiaProcessor:
 
 
 def main():
-    # Prepare to parse arguments.
+    # Parse arguments.
     args_parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -402,7 +431,7 @@ def main():
 
     # Read from the disk file here, to get more lenient processing of URIs,
     # better error messages, etc.
-    models = parser.AddModels(args.input_file)
+    parser.AddModels(args.input_file)
 
     # Slurp input file for indexing and editing.
     with open(args.input_file) as fo:
@@ -411,10 +440,10 @@ def main():
     # Parse with expat to build index.
     mapper = XmlInertiaMapper(input_text)
     mapper.parse()
-    mapper.associate_plant_models(plant, models)
+    mapper.associate_plant_models(plant)
 
     # Fix indicated inertias.
-    processor = InertiaProcessor(args, plant, scene_graph, models, mapper)
+    processor = InertiaProcessor(args, plant, scene_graph, mapper)
     output_text = processor.process()
 
     # Write output.
