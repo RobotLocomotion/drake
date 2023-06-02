@@ -26,14 +26,26 @@ using solvers::Solve;
 using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
 
-MinkowskiSum::MinkowskiSum(const ConvexSets& sets)
-    : ConvexSet(sets.size() > 0 ? sets[0]->ambient_dimension() : 0),
-      sets_(sets) {
-  for (int i = 1; i < ssize(sets_); ++i) {
-    DRAKE_THROW_UNLESS(sets_[i]->ambient_dimension() ==
-                       sets_[0]->ambient_dimension());
+namespace {
+
+int GetAmbientDimension(const ConvexSets& sets) {
+  if (sets.empty()) {
+    return 0;
   }
+  const int ambient_dimension = sets[0]->ambient_dimension();
+  for (const copyable_unique_ptr<ConvexSet>& set : sets) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+    DRAKE_THROW_UNLESS(set->ambient_dimension() == ambient_dimension);
+  }
+  return ambient_dimension;
 }
+
+}  // namespace
+
+MinkowskiSum::MinkowskiSum() : MinkowskiSum(ConvexSets{}) {}
+
+MinkowskiSum::MinkowskiSum(const ConvexSets& sets)
+    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {}
 
 MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension()) {

@@ -84,6 +84,20 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   // sphere is rotationally symmetric.
 }
 
+GTEST_TEST(HyperellipsoidTest, DefaultCtor) {
+  const Hyperellipsoid dut;
+  EXPECT_EQ(dut.A().rows(), 0);
+  EXPECT_EQ(dut.A().cols(), 0);
+  EXPECT_EQ(dut.center().size(), 0);
+  EXPECT_EQ(dut.Volume(), 0.0);
+  EXPECT_THROW(dut.MinimumUniformScalingToTouch(dut), std::exception);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_FALSE(dut.IsBounded());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
 GTEST_TEST(HyperellipsoidTest, ScaledSphereTest) {
   const double radius = 0.1;
   auto [scene_graph, geom_id] =
