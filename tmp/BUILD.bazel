@@ -28,6 +28,7 @@ drake_cc_binary(
 drake_py_binary(
     name = "inertia_fixer_py",
     srcs = ["inertia_fixer.py"],
+    data = ["@drake_models"],
     deps = [
         "//bindings/pydrake",
     ],
