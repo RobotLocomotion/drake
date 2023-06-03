@@ -33,6 +33,7 @@ drake_cc_package_library(
         ":multibody_plant_core",
         ":point_pair_contact_info",
         ":propeller",
+        ":rigid_transform_selector",
         ":slicing_and_indexing",
         ":tamsi_solver",
         ":wing",
@@ -355,6 +356,17 @@ drake_cc_library(
     hdrs = ["propeller.h"],
     deps = [
         ":multibody_plant_core",
+    ],
+)
+
+drake_cc_library(
+    name = "rigid_transform_selector",
+    srcs = ["rigid_transform_selector.cc"],
+    hdrs = ["rigid_transform_selector.h"],
+    deps = [
+        "//common:default_scalars",
+        "//math:geometric_transform",
+        "//systems/framework:leaf_system",
     ],
 )
 
@@ -1052,6 +1064,15 @@ drake_cc_googletest(
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
         "//systems/framework",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rigid_transform_selector_test",
+    deps = [
+        ":rigid_transform_selector",
+        "//common/test_utilities:expect_throws_message",
+        "//systems/framework/test_utilities",
     ],
 )
 

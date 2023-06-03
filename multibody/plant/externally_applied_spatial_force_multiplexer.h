@@ -23,6 +23,7 @@ output_ports:
 @endsystem
 
 @tparam_default_scalar
+@ingroup multibody_systems
 */
 template <typename T>
 class ExternallyAppliedSpatialForceMultiplexer final

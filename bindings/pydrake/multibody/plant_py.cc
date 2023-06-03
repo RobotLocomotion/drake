@@ -26,6 +26,7 @@
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/plant/point_pair_contact_info.h"
 #include "drake/multibody/plant/propeller.h"
+#include "drake/multibody/plant/rigid_transform_selector.h"
 #include "drake/multibody/plant/wing.h"
 #include "drake/multibody/tree/spatial_inertia.h"
 
@@ -1310,6 +1311,17 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_spatial_forces_output_port",
             &Class::get_spatial_forces_output_port, py_rvp::reference_internal,
             cls_doc.get_spatial_forces_output_port.doc);
+  }
+
+  // RigidTransformSelector
+  {
+    using Class = RigidTransformSelector<T>;
+    constexpr auto& cls_doc = doc.RigidTransformSelector;
+    auto cls = DefineTemplateClassWithDefault<Class, systems::LeafSystem<T>>(
+        m, "RigidTransformSelector", param, cls_doc.doc);
+    cls  // BR
+        .def(py::init<int>(), py::arg("index"), cls_doc.ctor.doc)
+        .def("index", &Class::index, cls_doc.index.doc);
   }
 
   // Wing

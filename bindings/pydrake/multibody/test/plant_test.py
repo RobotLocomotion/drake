@@ -83,6 +83,7 @@ from pydrake.multibody.plant import (
     PointPairContactInfo_,
     PropellerInfo,
     Propeller_,
+    RigidTransformSelector_,
     Wing,
 )
 from pydrake.multibody.parsing import Parser
@@ -2662,6 +2663,11 @@ class TestPlant(unittest.TestCase):
 
         prop2 = Propeller_[float]([info, info])
         self.assertEqual(prop2.num_propellers(), 2)
+
+    @numpy_compare.check_all_types
+    def test_rigid_transform_selector(self, T):
+        system = RigidTransformSelector_[T](index=2)
+        self.assertIsInstance(system, LeafSystem_[T])
 
     def test_wing(self):
         builder = DiagramBuilder()
