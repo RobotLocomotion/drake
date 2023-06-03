@@ -479,6 +479,28 @@ void System<T>::GetInitializationEvents(
 }
 
 template <typename T>
+void System<T>::ExecuteInitializationEvents(Context<T>* context) const {
+  auto discrete_updates = AllocateDiscreteVariables();
+  auto state = context->CloneState();
+  auto init_events = AllocateCompositeEventCollection();
+
+  GetInitializationEvents(*context, init_events.get());
+  if (init_events->get_publish_events().HasEvents()) {
+    Publish(*context, init_events->get_publish_events());
+  }
+  if (init_events->get_discrete_update_events().HasEvents()) {
+    CalcDiscreteVariableUpdate(*context,
+                               init_events->get_discrete_update_events(),
+                               discrete_updates.get());
+  }
+  if (init_events->get_unrestricted_update_events().HasEvents()) {
+    CalcUnrestrictedUpdate(*context,
+                           init_events->get_unrestricted_update_events(),
+                           state.get());
+  }
+}
+
+template <typename T>
 std::optional<PeriodicEventData>
     System<T>::GetUniquePeriodicDiscreteUpdateAttribute() const {
   std::optional<PeriodicEventData> saved_attr;

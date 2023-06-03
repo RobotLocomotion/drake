@@ -2880,6 +2880,16 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   EXPECT_TRUE(dut.get_pub_init());
   EXPECT_TRUE(dut.get_dis_update_init());
   EXPECT_TRUE(dut.get_unres_update_init());
+
+  // Now again with the ExecuteInitializationEvents method.
+  InitializationTestSystem dut2;
+  auto context2 = dut2.CreateDefaultContext();
+
+  dut2.ExecuteInitializationEvents(context2.get());
+
+  EXPECT_TRUE(dut2.get_pub_init());
+  EXPECT_TRUE(dut2.get_dis_update_init());
+  EXPECT_TRUE(dut2.get_unres_update_init());
 }
 
 // Although many of the tests above validate behavior of events when the
