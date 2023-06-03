@@ -410,6 +410,9 @@ struct Impl {
         .def("CalcForcedUnrestrictedUpdate",
             &System<T>::CalcForcedUnrestrictedUpdate, py::arg("context"),
             py::arg("state"), doc.System.CalcForcedUnrestrictedUpdate.doc)
+        .def("ExecuteInitializationEvents",
+            &System<T>::ExecuteInitializationEvents, py::arg("context"),
+            doc.System.ExecuteInitializationEvents.doc)
         .def("GetUniquePeriodicDiscreteUpdateAttribute",
             &System<T>::GetUniquePeriodicDiscreteUpdateAttribute,
             doc.System.GetUniquePeriodicDiscreteUpdateAttribute.doc)

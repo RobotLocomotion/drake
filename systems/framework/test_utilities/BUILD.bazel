@@ -13,9 +13,20 @@ drake_cc_package_library(
     testonly = 1,
     visibility = ["//visibility:public"],
     deps = [
+        ":initialization_test_system",
         ":my_vector",
         ":pack_value",
         ":scalar_conversion",
+    ],
+)
+
+drake_cc_library(
+    name = "initialization_test_system",
+    testonly = 1,
+    srcs = [],
+    hdrs = ["initialization_test_system.h"],
+    deps = [
+        "//systems/framework",
     ],
 )
 
