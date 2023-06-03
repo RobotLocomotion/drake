@@ -3752,17 +3752,7 @@ GTEST_TEST(InitializationTest, InitializationTest) {
   auto dut = builder.Build();
 
   auto context = dut->CreateDefaultContext();
-  auto discrete_updates = dut->AllocateDiscreteVariables();
-  auto state = context->CloneState();
-  auto init_events = dut->AllocateCompositeEventCollection();
-  dut->GetInitializationEvents(*context, init_events.get());
-
-  dut->Publish(*context, init_events->get_publish_events());
-  dut->CalcDiscreteVariableUpdate(*context,
-                                  init_events->get_discrete_update_events(),
-                                  discrete_updates.get());
-  dut->CalcUnrestrictedUpdate(
-      *context, init_events->get_unrestricted_update_events(), state.get());
+  dut->ExecuteInitializationEvents(context.get());
 
   EXPECT_TRUE(sys0->get_pub_init());
   EXPECT_TRUE(sys0->get_dis_update_init());
