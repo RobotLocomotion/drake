@@ -1092,6 +1092,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcPrincipalMomentsOfInertia",
             &Class::CalcPrincipalMomentsOfInertia,
             cls_doc.CalcPrincipalMomentsOfInertia.doc)
+        .def("CalcPrincipalMomentsAndAxesOfInertia",
+            &Class::CalcPrincipalMomentsAndAxesOfInertia,
+            cls_doc.CalcPrincipalMomentsAndAxesOfInertia.doc)
         .def("CouldBePhysicallyValid", &Class::CouldBePhysicallyValid,
             cls_doc.CouldBePhysicallyValid.doc)
         .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
