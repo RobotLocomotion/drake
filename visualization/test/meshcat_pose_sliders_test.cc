@@ -7,6 +7,7 @@
 #include "drake/geometry/test_utilities/meshcat_environment.h"
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
+#include "drake/systems/framework/test_utilities/initialization_test_system.h"
 
 namespace drake {
 namespace visualization {
@@ -180,6 +181,9 @@ GTEST_TEST(MeshcatPoseSlidersTest, Run) {
   auto* dut = builder.AddSystem<MeshcatPoseSliders>(meshcat, initial_pose);
   auto* recorder = builder.AddSystem<PosePublishRecorder>();
   builder.Connect(dut->get_output_port(), recorder->get_input_port());
+
+  auto init_system = builder.AddSystem<systems::InitializationTestSystem>();
+
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();
 
@@ -189,6 +193,11 @@ GTEST_TEST(MeshcatPoseSlidersTest, Run) {
   EXPECT_TRUE(X.IsExactlyEqualTo(initial_pose));
   // Check that the recorder's Publish method was called.
   EXPECT_TRUE(recorder->pose().IsExactlyEqualTo(initial_pose));
+
+  // Confirm that initialization events were triggered.
+  EXPECT_TRUE(init_system->get_pub_init());
+  EXPECT_TRUE(init_system->get_dis_update_init());
+  EXPECT_TRUE(init_system->get_unres_update_init());
 
   // Note: the stop button is deleted on timeout, so we cannot easily check
   // that it was created correctly here.

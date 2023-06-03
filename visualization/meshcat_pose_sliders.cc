@@ -210,22 +210,7 @@ RigidTransformd MeshcatPoseSliders<T>::Run(
   using Duration = std::chrono::duration<double>;
   const auto start_time = Clock::now();
 
-  // Handle initialization events.
-  auto init_events = system.AllocateCompositeEventCollection();
-  system.GetInitializationEvents(system_context, init_events.get());
-  if (init_events->get_publish_events().HasEvents()) {
-    system.Publish(system_context, init_events->get_publish_events());
-  }
-  if (init_events->get_discrete_update_events().HasEvents()) {
-    system.CalcDiscreteVariableUpdate(
-        system_context, init_events->get_discrete_update_events(),
-        &root_context->get_mutable_discrete_state());
-  }
-  if (init_events->get_unrestricted_update_events().HasEvents()) {
-    system.CalcUnrestrictedUpdate(system_context,
-                                  init_events->get_unrestricted_update_events(),
-                                  &root_context->get_mutable_state());
-  }
+  system.ExecuteInitializationEvents(root_context.get());
 
   RigidTransformd pose = nominal_pose_;
 

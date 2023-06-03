@@ -87,6 +87,7 @@ drake_cc_googletest(
         "//geometry:meshcat_visualizer",
         "//geometry/test_utilities:meshcat_environment",
         "//systems/analysis:simulator",
+        "//systems/framework/test_utilities",
     ],
 )
 
