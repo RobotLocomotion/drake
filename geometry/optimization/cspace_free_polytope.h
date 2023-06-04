@@ -386,7 +386,13 @@ class CspaceFreePolytope {
 
   /** Options for bilinear alternation. */
   struct BilinearAlternationOptions {
+    /** TODO(hongkai-dai) Write an explanation of what this field denotes.
+     Must be non-negative.
+     */
     int max_iter{10};
+    /** TODO(hongkai-dai) Write an explanation of what this field denotes.
+     Must be non-negative.
+     */
     double convergence_tol{1E-3};
     FindPolytopeGivenLagrangianOptions find_polytope_options;
     FindSeparationCertificateGivenPolytopeOptions find_lagrangian_options;
@@ -394,11 +400,9 @@ class CspaceFreePolytope {
      C*s<=d, s_lower<=s<=s_upper}, we scale this ellipsoid by
      ellipsoid_scaling, and require the new C-space polytope to contain this
      scaled ellipsoid. ellipsoid_scaling=1 corresponds to no scaling.
+     Must be strictly positive and no greater than 1.
      */
     double ellipsoid_scaling{0.99};
-
-    // Checks if the options are sane.
-    void SanityCheck() const;
   };
 
   /** Search for a collision-free C-space polytope.
@@ -413,7 +417,6 @@ class CspaceFreePolytope {
    @param options The options for the bilinear alternation.
    @retval results Stores the certification result in each iteration of the
    bilinear alternation.
-   @pre options should be sane.
    */
   [[nodiscard]] std::vector<SearchResult> SearchWithBilinearAlternation(
       const IgnoredCollisionPairs& ignored_collision_pairs,
@@ -423,21 +426,22 @@ class CspaceFreePolytope {
 
   /** Options for binary search. */
   struct BinarySearchOptions {
-    /** The maximal value of the scaling factor. */
+    /** The maximal value of the scaling factor.
+     Must be finite and no less than scale_min. */
     double scale_max{1};
-    /** The minimal value of the scaling factor. */
+    /** The minimal value of the scaling factor.
+     Must be non-negative. */
     double scale_min{0.01};
-    /** The maximal number of iterations in binary search. */
+    /** The maximal number of iterations in binary search.
+     Must be non-negative. */
     int max_iter{10};
     /** When the gap between the upper bound and the lower bound of the scaling
      factor is below this `convergence_tol`, stops the binary search.
+     Must be strictly positive.
      */
     double convergence_tol{1E-3};
 
     FindSeparationCertificateGivenPolytopeOptions find_lagrangian_options;
-
-    // Checks if the options are sane.
-    void SanityCheck() const;
   };
 
   /** Binary search on d such that the C-space polytope {s | C*s<=d,
@@ -445,7 +449,6 @@ class CspaceFreePolytope {
    We scale the polytope {s | C*s<=d_init} about its center `s_center` and
    search the scaling factor.
    @pre s_center is in the polytope {s | C*s<=d_init, s_lower<=s<=s_upper}
-   @pre options should be sane.
    */
   [[nodiscard]] std::optional<SearchResult> BinarySearch(
       const IgnoredCollisionPairs& ignored_collision_pairs,

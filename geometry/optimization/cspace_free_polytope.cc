@@ -1142,22 +1142,6 @@ void CspaceFreePolytope::SearchResult::UpdateSeparatingPlanes(
   }
 }
 
-void CspaceFreePolytope::BilinearAlternationOptions::SanityCheck() const {
-  if (!(max_iter >= 0)) {
-    throw std::runtime_error(
-        "BilinearAlternationOptions::max_iter should be non-negative.");
-  }
-  if (!(convergence_tol >= 0)) {
-    throw std::runtime_error(
-        "BilinearAlternationOptions::convergence_tol should be non-negative.");
-  }
-  if (!(ellipsoid_scaling <= 1 && ellipsoid_scaling > 0)) {
-    throw std::runtime_error(
-        "BilinearAlternationOptions::ellipsoid_scaling should be within (0, "
-        "1].");
-  }
-}
-
 std::vector<CspaceFreePolytope::SearchResult>
 CspaceFreePolytope::SearchWithBilinearAlternation(
     const IgnoredCollisionPairs& ignored_collision_pairs,
@@ -1166,7 +1150,10 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
     const BilinearAlternationOptions& options) const {
   DRAKE_THROW_UNLESS(C_init.rows() == d_init.rows());
   DRAKE_THROW_UNLESS(C_init.cols() == this->rational_forward_kin_.s().rows());
-  options.SanityCheck();
+  DRAKE_THROW_UNLESS(options.max_iter >= 0);
+  DRAKE_THROW_UNLESS(options.convergence_tol >= 0);
+  DRAKE_THROW_UNLESS(options.ellipsoid_scaling > 0);
+  DRAKE_THROW_UNLESS(options.ellipsoid_scaling <= 1);
   std::vector<CspaceFreePolytope::SearchResult> ret{};
   int iter = 0;
   // When we search for the C-space polytope {s |C*s<=d, s_lower<=s<=s_upper},
@@ -1257,31 +1244,6 @@ CspaceFreePolytope::SearchWithBilinearAlternation(
   return ret;
 }
 
-void CspaceFreePolytope::BinarySearchOptions::SanityCheck() const {
-  if (!(scale_max >= scale_min)) {
-    throw std::runtime_error(
-        "CspaceFreePolytope::BinarySearchOptions: scale_max is smaller than "
-        "scale_min");
-  }
-  if (!(scale_min >= 0)) {
-    throw std::runtime_error(
-        "CspaceFreePolytope::BinarySearchOptions: scale_min is negative.");
-  }
-  if (!std::isfinite(scale_max)) {
-    throw std::runtime_error(
-        "CspaceFreePolytope::BinarySearchOptions: scale_max should be finite.");
-  }
-  if (!(max_iter >= 0)) {
-    throw std::runtime_error(
-        "CspaceFreePolytope::BinarySearchOptions max_iter is negative.");
-  }
-  if (!(convergence_tol > 0)) {
-    throw std::runtime_error(
-        "CspaceFreePolytope::BinarySearchOptions convergence_tol should be "
-        "positive.");
-  }
-}
-
 std::optional<CspaceFreePolytope::SearchResult>
 CspaceFreePolytope::BinarySearch(
     const IgnoredCollisionPairs& ignored_collision_pairs,
@@ -1289,10 +1251,14 @@ CspaceFreePolytope::BinarySearch(
     const Eigen::Ref<const Eigen::VectorXd>& d_init,
     const Eigen::Ref<const Eigen::VectorXd>& s_center,
     const BinarySearchOptions& options) const {
-  options.SanityCheck();
   DRAKE_THROW_UNLESS(((C * s_center).array() <= d_init.array()).all());
   DRAKE_THROW_UNLESS((s_center.array() >= s_lower_.array()).all());
   DRAKE_THROW_UNLESS((s_center.array() <= s_upper_.array()).all());
+  DRAKE_THROW_UNLESS(options.scale_min >= 0);
+  DRAKE_THROW_UNLESS(std::isfinite(options.scale_max));
+  DRAKE_THROW_UNLESS(options.scale_min <= options.scale_max);
+  DRAKE_THROW_UNLESS(options.max_iter >= 0);
+  DRAKE_THROW_UNLESS(options.convergence_tol > 0);
   CspaceFreePolytope::SearchResult ret;
 
   const Eigen::ArrayXd C_row_norm = C.rowwise().norm().array();
