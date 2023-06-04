@@ -604,7 +604,8 @@ class TestPlant(unittest.TestCase):
         self.assertIsInstance(
             dut.CalcPrincipalMomentsAndAxesOfInertia()[0], np.ndarray)
         self.assertIsInstance(
-            dut.CalcPrincipalMomentsAndAxesOfInertia()[1], RotationMatrix_[float])
+            dut.CalcPrincipalMomentsAndAxesOfInertia()[1],
+            RotationMatrix_[float])
         dut.CouldBePhysicallyValid()
         self.assertIsInstance(dut.ReExpress(R_AE=RotationMatrix()), Class)
         self.assertIsInstance(copy.copy(dut), Class)
