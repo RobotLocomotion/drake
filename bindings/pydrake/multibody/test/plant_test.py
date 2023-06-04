@@ -598,6 +598,14 @@ class TestPlant(unittest.TestCase):
         dut.IsNaN()
         dut.SetZero()
         self.assertIsInstance(dut.CalcPrincipalMomentsOfInertia(), np.ndarray)
+        self.assertIsInstance(
+            dut.CalcPrincipalMomentsAndAxesOfInertia(), tuple)
+        self.assertEqual(len(dut.CalcPrincipalMomentsAndAxesOfInertia()), 2)
+        self.assertIsInstance(
+            dut.CalcPrincipalMomentsAndAxesOfInertia()[0], np.ndarray)
+        self.assertIsInstance(
+            dut.CalcPrincipalMomentsAndAxesOfInertia()[1],
+            RotationMatrix_[float])
         dut.CouldBePhysicallyValid()
         self.assertIsInstance(dut.ReExpress(R_AE=RotationMatrix()), Class)
         self.assertIsInstance(copy.copy(dut), Class)
