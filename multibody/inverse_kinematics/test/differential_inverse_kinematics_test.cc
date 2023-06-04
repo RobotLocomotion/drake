@@ -30,18 +30,19 @@ using solvers::LinearConstraint;
 
 class DifferentialInverseKinematicsTest : public ::testing::Test {
  protected:
-  void SetUp() {
-    // Load the IIWA SDF, welding link_0 to the world.
+  void SetUpRobot(bool floating = false) {
+    // Load the IIWA SDF, welding link_0 to the world if floating==false.
     plant_ = std::make_unique<MultibodyPlant<double>>(0.0);
     multibody::Parser parser(plant_.get());
     const std::string filename = FindResourceOrThrow(
         "drake/manipulation/models/"
         "iiwa_description/sdf/iiwa14_no_collision.sdf");
     parser.AddModels(filename);
-    plant_->WeldFrames(
-        plant_->world_frame(),
-        plant_->GetFrameByName("iiwa_link_0"));
-
+    if (!floating) {
+      plant_->WeldFrames(
+          plant_->world_frame(),
+          plant_->GetFrameByName("iiwa_link_0"));
+    }
     // Add the EE frame.
     const math::RigidTransformd X_7E(AngleAxis<double>(M_PI, Vector3d::UnitZ()),
                                      Vector3d(0.1, 0, 0));
@@ -62,20 +63,30 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
     // Get position and velocity limits.
     VectorXd pos_upper_limits = plant_->GetPositionUpperLimits();
     VectorXd pos_lower_limits = plant_->GetPositionLowerLimits();
-
-    VectorXd vel_limits = get_iiwa_max_joint_velocities();
     params_->set_joint_position_limits({pos_lower_limits, pos_upper_limits});
+
+    VectorXd vel_limits = VectorXd::Constant(
+        plant_->num_velocities(), std::numeric_limits<double>::infinity());
+    vel_limits.tail<7>() = get_iiwa_max_joint_velocities();
     params_->set_joint_velocity_limits({-vel_limits, vel_limits});
 
-    // Set the initial plant state.  These values were randomly generated.
-    const VectorXd q = (VectorXd(7) <<
+    // Set the initial plant state.
+    VectorXd q = plant_->GetPositions(*context_);
+    if (floating) {
+      plant_->SetFreeBodyPoseInWorldFrame(
+          context_, plant_->GetBodyByName("iiwa_link_0"),
+          math::RigidTransformd(math::RollPitchYawd(0.12, 0.24, 0.35),
+                                Vector3d{-1.2, 2.5, 5.3}));
+    }
+    // Set the revolute joints. These values were randomly generated.
+    q.tail<7>() <<
         0.155184061989378285773000,
         1.401571412639109226461187,
         2.230260142950035717746004,
         0.902511993417089097846428,
         1.416899102195978255025465,
         -1.76907066662500445097805,
-        -2.20957017122533594388755).finished();
+        -2.20957017122533594388755;
     const VectorXd v = VectorXd::Zero(plant_->num_velocities());
     plant_->SetPositions(context_, q);
     plant_->SetVelocities(context_, v);
@@ -133,6 +144,7 @@ class DifferentialInverseKinematicsTest : public ::testing::Test {
 };
 
 TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
+  SetUpRobot();
   const multibody::SpatialVelocity<double> V_WE_W(Vector3d(1.0, 2.0, 3.0),
                                                   Vector3d(4.0, 5.0, 6.0));
   // Test without additional linear constraints.
@@ -152,6 +164,7 @@ TEST_F(DifferentialInverseKinematicsTest, PositiveTest) {
 }
 
 TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
+  SetUpRobot();
   const multibody::SpatialVelocity<double> V_WE_W(Vector3d(1.0, 2.0, 3.0),
                                                   Vector3d(4.0, 5.0, 6.0));
   // clang-format off
@@ -168,6 +181,7 @@ TEST_F(DifferentialInverseKinematicsTest, OverConstrainedTest) {
 }
 
 TEST_F(DifferentialInverseKinematicsTest, GainTest) {
+  SetUpRobot();
   const VectorXd q = plant_->GetPositions(*context_);
 
   const math::RotationMatrix<double> R_WE =
@@ -219,6 +233,7 @@ TEST_F(DifferentialInverseKinematicsTest, GainTest) {
 
 // Use the solver to track a fixed end effector pose.
 TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
+  SetUpRobot();
   math::RigidTransform<double> X_WE = frame_E_->CalcPoseInWorld(*context_);
   math::RigidTransform<double> X_WE_desired =
       math::RigidTransform<double>(Vector3d(-0.02, -0.01, -0.03)) * X_WE;
@@ -239,6 +254,7 @@ TEST_F(DifferentialInverseKinematicsTest, SimpleTracker) {
 }
 
 TEST_F(DifferentialInverseKinematicsTest, EndEffectorVelocityLimits) {
+  SetUpRobot();
   math::RigidTransform<double> X_WE = frame_E_->CalcPoseInWorld(*context_);
   // Choosing too large a displacement can cause us to get "stuck".
   math::RigidTransform<double> X_WE_desired =
@@ -255,6 +271,23 @@ TEST_F(DifferentialInverseKinematicsTest, EndEffectorVelocityLimits) {
   params_->set_end_effector_angular_speed_limit(0.2);
   params_->set_end_effector_translational_velocity_limits(
       Vector3d::Constant(-0.1), Vector3d::Constant(0.1));
+  const DifferentialInverseKinematicsResult result2 =
+      DoDiffIKForRigidTransform(X_WE_desired);
+  EXPECT_EQ(result2.status,
+            DifferentialInverseKinematicsStatus::kSolutionFound);
+}
+
+TEST_F(DifferentialInverseKinematicsTest, FloatingBase) {
+  SetUpRobot(true);
+  const multibody::SpatialVelocity<double> V_WE_W(Vector3d(1.0, 2.0, 3.0),
+                                                  Vector3d(4.0, 5.0, 6.0));
+  DifferentialInverseKinematicsResult result =
+      DoDiffIKForSpatialVelocity(V_WE_W);
+  CheckPositiveResult(V_WE_W, result);
+
+  math::RigidTransform<double> X_WE = frame_E_->CalcPoseInWorld(*context_);
+  math::RigidTransform<double> X_WE_desired =
+      math::RigidTransform<double>(Vector3d(-0.02, -0.01, -0.03)) * X_WE;
   const DifferentialInverseKinematicsResult result2 =
       DoDiffIKForRigidTransform(X_WE_desired);
   EXPECT_EQ(result2.status,
