@@ -12,6 +12,8 @@
 namespace drake {
 namespace multibody {
 
+using Eigen::SparseMatrix;
+
 namespace internal {
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& q_current,
@@ -19,7 +21,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const math::RigidTransform<double>& X_WE,
     const Eigen::Ref<const Matrix6X<double>>& J_WE_W,
     const SpatialVelocity<double>& V_WE_desired,
-    const DifferentialInverseKinematicsParameters& parameters) {
+    const DifferentialInverseKinematicsParameters& parameters,
+    const std::optional<Eigen::Ref<const SparseMatrix<double>>>& N,
+    const std::optional<Eigen::Ref<const SparseMatrix<double>>>& Nplus) {
   const math::RotationMatrix<double> R_EW = X_WE.rotation().transpose();
   const SpatialVelocity<double> V_WE_E = R_EW * V_WE_desired;
 
@@ -44,8 +48,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
 
   return DoDifferentialInverseKinematics(
       q_current, v_current, V_WE_E_with_flags.head(num_cart_constraints),
-      J_WE_E_with_flags.topRows(num_cart_constraints), parameters);
+      J_WE_E_with_flags.topRows(num_cart_constraints), parameters, N, Nplus);
 }
+
 }  // namespace internal
 
 std::ostream& operator<<(std::ostream& os,
@@ -105,7 +110,7 @@ DifferentialInverseKinematicsParameters::
       num_velocities_(num_velocities.value_or(num_positions)),
       nominal_joint_position_(VectorX<double>::Zero(num_positions)),
       joint_centering_gain_(
-          MatrixX<double>::Zero(num_velocities_, num_positions)) {
+          MatrixX<double>::Zero(num_positions_, num_positions)) {
   DRAKE_DEMAND(num_positions > 0);
   DRAKE_DEMAND(num_velocities > 0);
 }
@@ -115,7 +120,9 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
     const Eigen::Ref<const VectorX<double>>& v_current,
     const Eigen::Ref<const VectorX<double>>& V,
     const Eigen::Ref<const MatrixX<double>>& J,
-    const DifferentialInverseKinematicsParameters& parameters) {
+    const DifferentialInverseKinematicsParameters& parameters,
+    const std::optional<Eigen::Ref<const SparseMatrix<double>>>& N,
+    const std::optional<Eigen::Ref<const SparseMatrix<double>>>& Nplus) {
   const int num_positions = parameters.get_num_positions();
   const int num_velocities = parameters.get_num_velocities();
   const double dt = parameters.get_time_step();
@@ -124,9 +131,6 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   DRAKE_DEMAND(v_current.size() == num_velocities);
   DRAKE_DEMAND(J.rows() == num_cart_constraints);
   DRAKE_DEMAND(J.cols() == num_velocities);
-  // A bunch of the operations below assume num_positions == num_velocities.
-  DRAKE_DEMAND(num_positions == num_velocities);
-
   const auto identity_num_positions =
       MatrixX<double>::Identity(num_positions, num_positions);
 
@@ -141,15 +145,30 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   const double kPrimaryObjectiveGain = 100;
   prog.AddLinearCost(-Vector1d{kPrimaryObjectiveGain}, 0.0, alpha);
 
-  // | P * (v_next - K * (q_nominal - q_current)) |^2
+  // |P⋅(v_next - N⁺(q)⋅K⋅(q_nominal - q_current))|²
   const Eigen::FullPivLU<MatrixX<double>> lu(J);
   if (lu.rank() < num_velocities) {
     const Eigen::MatrixXd P = lu.kernel().transpose();
-    prog.Add2NormSquaredCost(
-        P,
-        P * parameters.get_joint_centering_gain() *
-            (parameters.get_nominal_joint_position() - q_current),
-        v_next);
+    if (Nplus) {
+      DRAKE_DEMAND(Nplus->rows() == num_velocities);
+      DRAKE_DEMAND(Nplus->cols() == num_positions);
+      prog.Add2NormSquaredCost(
+          P,
+          P * (*Nplus) * parameters.get_joint_centering_gain() *
+              (parameters.get_nominal_joint_position() - q_current),
+          v_next);
+    } else if (num_positions != num_velocities) {
+      throw std::runtime_error(
+          "You must pass the Nplus matrix to DoDifferentialInverseKinematics "
+          "when J is not full column rank and num_positions != "
+          "num_velocities.");
+    } else {
+      prog.Add2NormSquaredCost(
+          P,
+          P * parameters.get_joint_centering_gain() *
+              (parameters.get_nominal_joint_position() - q_current),
+          v_next);
+    }
     quadratic_cost = true;
   }
 
@@ -165,12 +184,26 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
   // 0 <= alpha <= 1
   prog.AddBoundingBoxConstraint(0, 1, alpha);
 
-  // joint_lim_min <= q_current + v_next*dt <= joint_lim_max
+  // joint_lim_min <= q_current + N⋅v_next⋅dt <= joint_lim_max
   if (parameters.get_joint_position_limits()) {
-    prog.AddBoundingBoxConstraint(
-        (parameters.get_joint_position_limits()->first - q_current) / dt,
-        (parameters.get_joint_position_limits()->second - q_current) / dt,
-        v_next);
+    const Eigen::VectorXd lb =
+        (parameters.get_joint_position_limits()->first - q_current) / dt;
+    const Eigen::VectorXd ub =
+        (parameters.get_joint_position_limits()->second - q_current) / dt;
+    if (N) {
+      DRAKE_DEMAND(N->rows() == num_positions);
+      DRAKE_DEMAND(N->cols() == num_velocities);
+      // We cannot currently use prog.AddLinearConstraint with a SparseMatrix.
+      prog.AddConstraint(
+          std::make_shared<solvers::LinearConstraint>(*N, lb, ub), v_next);
+    } else if (num_positions != num_velocities) {
+      throw std::runtime_error(
+          "You must pass the N matrix to DoDifferentialInverseKinematics "
+          "when you have joint position limits and num_positions != "
+          "num_velocities.");
+    } else {
+      prog.AddBoundingBoxConstraint(lb, ub, v_next);
+    }
   }
 
   // joint_vel_lim_min <= v_next <= joint_vel_lim_max
@@ -237,9 +270,17 @@ DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(
                                     frame_E, Vector3<double>::Zero(),
                                     frame_W, frame_W, &J_WE);
 
+  std::optional<Eigen::SparseMatrix<double>> N = std::nullopt;
+  std::optional<Eigen::SparseMatrix<double>> Nplus = std::nullopt;
+  if (!plant.IsVelocityEqualToQDot()) {
+    if (parameters.get_joint_position_limits()) {
+      N = plant.MakeVelocityToQDotMap(context);
+    }
+    Nplus = plant.MakeQDotToVelocityMap(context);
+  }
   return internal::DoDifferentialInverseKinematics(
-      plant.GetPositions(context), plant.GetVelocities(context),
-      X_WE, J_WE, SpatialVelocity<double>(V_WE_desired), parameters);
+      plant.GetPositions(context), plant.GetVelocities(context), X_WE, J_WE,
+      SpatialVelocity<double>(V_WE_desired), parameters, N, Nplus);
 }
 
 DifferentialInverseKinematicsResult DoDifferentialInverseKinematics(

@@ -3389,7 +3389,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @see MapVelocityToQDot()
   Eigen::SparseMatrix<T> MakeVelocityToQDotMap(
-      const systems::Context<T>& context) {
+      const systems::Context<T>& context) const {
     this->ValidateContext(context);
     return internal_tree().MakeVelocityToQDotMap(context);
   }
@@ -3405,7 +3405,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   ///
   /// @see MapVelocityToQDot()
   Eigen::SparseMatrix<T> MakeQDotToVelocityMap(
-      const systems::Context<T>& context) {
+      const systems::Context<T>& context) const {
     this->ValidateContext(context);
     return internal_tree().MakeQDotToVelocityMap(context);
   }

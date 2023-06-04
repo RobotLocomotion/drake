@@ -114,14 +114,25 @@ void DefineIkDifferential(py::module m) {
       "DoDifferentialInverseKinematics",
       [](const Eigen::VectorXd& q_current, const Eigen::VectorXd& v_current,
           const Eigen::VectorXd& V, const Eigen::MatrixXd& J,
-          const DifferentialInverseKinematicsParameters& parameters) {
+          const DifferentialInverseKinematicsParameters& parameters,
+          const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& N,
+          const std::optional<Eigen::Ref<const Eigen::MatrixXd>>& Nplus) {
+        std::optional<Eigen::SparseMatrix<double>> N_sparse{std::nullopt};
+        std::optional<Eigen::SparseMatrix<double>> Nplus_sparse{std::nullopt};
+        if (N) {
+          N_sparse = N->sparseView();
+        }
+        if (Nplus) {
+          Nplus_sparse = Nplus->sparseView();
+        }
         return DoDifferentialInverseKinematics(
-            q_current, v_current, V, J, parameters);
+            q_current, v_current, V, J, parameters, N_sparse, Nplus_sparse);
       },
       py::arg("q_current"), py::arg("v_current"), py::arg("V"), py::arg("J"),
-      py::arg("parameters"),
+      py::arg("parameters"), py::arg("N") = std::nullopt,
+      py::arg("Nplus") = std::nullopt,
       doc.DoDifferentialInverseKinematics
-          .doc_5args_q_current_v_current_V_J_parameters);
+          .doc_7args_q_current_v_current_V_J_parameters_N_Nplus);
 
   m.def(
       "DoDifferentialInverseKinematics",
