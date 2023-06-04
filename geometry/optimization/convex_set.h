@@ -125,7 +125,7 @@ class ConvexSet : public ShapeReifier {
   constraints to imply
   @verbatim
   A * x + b ∈ (c' * t + d) S,
-  c * t + d ≥ 0,
+  c' * t + d ≥ 0,
   @endverbatim
   where A is an n-by-m matrix (with n the ambient_dimension), b is a vector of
   size n, c is a vector of size p, x is a point in ℜᵐ, and t is a point in ℜᵖ.
