@@ -118,14 +118,15 @@ void DefineIkDifferential(py::module m) {
       "DoDifferentialInverseKinematics",
       [](const Eigen::VectorXd& q_current, const Eigen::VectorXd& v_current,
           const Eigen::VectorXd& V, const Eigen::MatrixXd& J,
-          const DifferentialInverseKinematicsParameters& parameters) {
+          const DifferentialInverseKinematicsParameters& parameters,
+          const std::optional<Eigen::Ref<const MatrixX<double>>>& Nplus) {
         return DoDifferentialInverseKinematics(
-            q_current, v_current, V, J, parameters);
+            q_current, v_current, V, J, parameters, Nplus);
       },
       py::arg("q_current"), py::arg("v_current"), py::arg("V"), py::arg("J"),
-      py::arg("parameters"),
+      py::arg("parameters"), py::arg("Nplus") = std::nullopt,
       doc.DoDifferentialInverseKinematics
-          .doc_5args_q_current_v_current_V_J_parameters);
+          .doc_6args_q_current_v_current_V_J_parameters_Nplus);
 
   m.def(
       "DoDifferentialInverseKinematics",
