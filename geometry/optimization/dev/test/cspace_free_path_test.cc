@@ -64,7 +64,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathConstructor) {
            dut.map_geometries_to_separating_planes()) {
         // check plane
         const auto& plane = dut.separating_planes()[plane_index];
-        EXPECT_EQ(plane.plane_degree, plane_order);
+        EXPECT_EQ(plane.plane_order, plane_order);
         if (plane.positive_side_geometry->id() <
             plane.negative_side_geometry->id()) {
           EXPECT_EQ(geometry_pair.first(), plane.positive_side_geometry->id());

@@ -8,7 +8,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-GTEST_TEST(CalcPathPlane, TestAllSymbolic) {
+GTEST_TEST(CalcPlane, TestAllSymbolic) {
   symbolic::Variable mu("mu");
   for (int plane_degree = 1; plane_degree < 3; ++plane_degree) {
     const int num_coeffs_per_poly = plane_degree + 1;
@@ -20,7 +20,7 @@ GTEST_TEST(CalcPathPlane, TestAllSymbolic) {
     }
     Vector3<symbolic::Polynomial> a;
     symbolic::Polynomial b;
-    CalcPathPlane<symbolic::Variable, symbolic::Variable, symbolic::Polynomial>(
+    CalcPlane<symbolic::Variable, symbolic::Variable, symbolic::Polynomial>(
         decision_vars, mu, plane_degree, &a, &b);
     int decision_var_ctr = 0;
     for (int i = 0; i < 3; ++i) {
@@ -44,8 +44,8 @@ GTEST_TEST(CalcPathPlane, TestAllSymbolic) {
   }
 }
 
-//// Test decision_vars taking double values and mu takes symbolic values.
-GTEST_TEST(CalcPathPlane, TestDoubleDecisionVariableSymbolicMu) {
+// Test decision_vars taking double values and mu takes symbolic values.
+GTEST_TEST(CalcPlane, TestDoubleDecisionVariableSymbolicMu) {
   symbolic::Variable mu("mu");
   for (int plane_degree = 1; plane_degree < 3; ++plane_degree) {
     const int num_coeffs_per_poly = plane_degree + 1;
@@ -56,7 +56,7 @@ GTEST_TEST(CalcPathPlane, TestDoubleDecisionVariableSymbolicMu) {
     }
     Vector3<symbolic::Polynomial> a;
     symbolic::Polynomial b;
-    CalcPathPlane<double, symbolic::Variable, symbolic::Polynomial>(
+    CalcPlane<double, symbolic::Variable, symbolic::Polynomial>(
         decision_vars, mu, plane_degree, &a, &b);
     int decision_var_ctr = 0;
     for (int i = 0; i < 3; ++i) {
@@ -92,7 +92,7 @@ GTEST_TEST(CalcPlane, TestDoubleDecisionVariableDoubleMu) {
     }
     Eigen::Vector3d a = Eigen::Vector3d::Zero();
     double b{0};
-    CalcPathPlane<double, double, double>(decision_vars, mu, plane_degree, &a,
+    CalcPlane<double, double, double>(decision_vars, mu, plane_degree, &a,
                                           &b);
     int decision_var_ctr = 0;
     for (int i = 0; i < 3; ++i) {
