@@ -57,7 +57,7 @@ template <typename D, typename S, typename V>
 void CalcPlane(const VectorX<D>& decision_variables,
                const VectorX<S>& s_for_plane, SeparatingPlaneOrder order,
                Vector3<V>* a_val, V* b_val) {
-  CalcPlane<D, S, V>(decision_variables, s_for_plane, static_cast<int>(order),
+  CalcPlane(decision_variables, s_for_plane, static_cast<int>(order),
                      a_val, b_val);
 }
 }  // namespace optimization

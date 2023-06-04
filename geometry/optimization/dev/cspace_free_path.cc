@@ -15,9 +15,8 @@ initialize_path_map(
     CspaceFreePath* cspace_free_path, int maximum_path_degree,
     const Eigen::Ref<const VectorX<symbolic::Variable>>& s_variables) {
   std::unordered_map<symbolic::Variable, symbolic::Polynomial> ret;
-  const VectorX<symbolic::Monomial> basis =
-      symbolic::MonomialBasis(symbolic::Variables{cspace_free_path->mu_},
-                              maximum_path_degree);
+  const VectorX<symbolic::Monomial> basis = symbolic::MonomialBasis(
+      symbolic::Variables{cspace_free_path->mu_}, maximum_path_degree);
 
   for (int i = 0; i < s_variables.size(); ++i) {
     const symbolic::Variable s{s_variables(i)};
@@ -107,9 +106,8 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
         plane_decision_vars(i) =
             symbolic::Variable(fmt::format("plane_var{}", i));
       }
-      CalcPlane<symbolic::Variable, symbolic::Variable,
-                    symbolic::Polynomial>(plane_decision_vars, mu_, plane_order,
-                                          &a, &b);
+      CalcPlane(plane_decision_vars, Vector1<symbolic::Variable>(mu_),
+                plane_order, &a, &b);
 
       // Compute the expressed body for this plane
       const multibody::BodyIndex expressed_body =

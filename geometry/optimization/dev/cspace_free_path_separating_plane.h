@@ -40,7 +40,7 @@ struct CSpacePathSeparatingPlane : public CSpaceSeparatingPlane<T> {
 template <typename D, typename S, typename V>
 void CalcPlane(const VectorX<D>& decision_variables, const S& mu_for_plane,
                int plane_degree, Vector3<V>* a_val, V* b_val) {
-  CalcPlane<D, S, V>(decision_variables, Vector1<S>(mu_for_plane), plane_degree,
+  CalcPlane(decision_variables, Vector1<S>(mu_for_plane), plane_degree,
                      a_val, b_val);
 }
 
