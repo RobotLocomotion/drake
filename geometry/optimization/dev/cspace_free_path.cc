@@ -107,7 +107,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
         plane_decision_vars(i) =
             symbolic::Variable(fmt::format("plane_var{}", i));
       }
-      CalcPathPlane<symbolic::Variable, symbolic::Variable,
+      CalcPlane<symbolic::Variable, symbolic::Variable,
                     symbolic::Polynomial>(plane_decision_vars, mu_, plane_order,
                                           &a, &b);
 
