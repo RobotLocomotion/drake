@@ -14,6 +14,7 @@ namespace optimization {
 namespace {
 
 using Eigen::MatrixXd;
+using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using solvers::MathematicalProgram;
@@ -106,21 +107,21 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   A << 1, 1, 1, -1;
   EXPECT_TRUE(CompareMatrices(
       prog3.linear_equality_constraints()[0].evaluator()->GetDenseA(), A));
-  A.resize(1, 2);
-  A << 1, 1;
   EXPECT_EQ(prog3.linear_constraints().size(),
             2 /* from the bounding box constraint */ +
                 2 /* from the linear constraint */);
-  EXPECT_TRUE(CompareMatrices(
-      prog3.linear_constraints()[0].evaluator()->GetDenseA(), A));
-  A << 1, -1;
-  EXPECT_TRUE(CompareMatrices(
-      prog3.linear_constraints()[1].evaluator()->GetDenseA(), A));
   A.resize(1, 4);
   A << 1, -2, 1, 2;
   EXPECT_TRUE(CompareMatrices(
-      prog3.linear_constraints()[2].evaluator()->GetDenseA(), A));
+      prog3.linear_constraints()[0].evaluator()->GetDenseA(), A));
   A << 1, -2, 1, 0;
+  EXPECT_TRUE(CompareMatrices(
+      prog3.linear_constraints()[1].evaluator()->GetDenseA(), A));
+  A.resize(1, 2);
+  A << 1, 1;
+  EXPECT_TRUE(CompareMatrices(
+      prog3.linear_constraints()[2].evaluator()->GetDenseA(), A));
+  A << 1, -1;
   EXPECT_TRUE(CompareMatrices(
       prog3.linear_constraints()[3].evaluator()->GetDenseA(), A));
   Vector<double, 7> xt_test;
@@ -131,11 +132,82 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   xt_test << x_bad, 1;
   EXPECT_FALSE(prog3.CheckSatisfied(prog3.GetAllConstraints(), xt_test));
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      spect.AddPointInNonnegativeScalingConstraints(
-          &prog3, MatrixXd::Identity(6, 6), Vector6d::Zero(), Vector1d::Zero(),
-          0, x3, t3),
-      ".*not implemented yet.*");
+  // Test the A * x + b ∈ (c' * t + d) S variant.
+  MathematicalProgram prog4;
+  auto x4 = prog4.NewContinuousVariables<6>("x");
+  auto t4 = prog4.NewContinuousVariables<1>("t");
+  // Using A = I, b = 0, c = 1, d = 0 should produce the same program as prog3
+  // (except that the PSD constraint uses additional slack variables).
+  spect.AddPointInNonnegativeScalingConstraints(
+      &prog4, MatrixXd::Identity(6, 6), Vector6d::Zero(), Vector1d::Ones(), 0,
+      x4, t4);
+
+  // We expect prog4 to have one additional linear constraint (for t >= 0).
+  EXPECT_EQ(prog3.linear_constraints().size() + 1,
+            prog4.linear_constraints().size());
+  VectorXd guess = VectorXd::LinSpaced(7, 0.1, 0.9);
+  prog3.SetInitialGuessForAllVariables(guess);
+  prog4.SetInitialGuessForAllVariables(VectorXd::Zero(prog4.num_vars()));
+  prog4.SetInitialGuess(x4, guess.head<6>());
+  prog4.SetInitialGuess(t4, guess.tail<1>());
+  const double kCoeffTol = 1e-14;
+  for (int i = 0; i < static_cast<int>(prog3.linear_constraints().size());
+       ++i) {
+    const auto& b3 = prog3.linear_constraints()[i];
+    const auto& b4 = prog4.linear_constraints()[i];
+    // b4 depends on all of the variables, but b3 just depends on a subset, so
+    // we eval instead of checking the coefficients.
+    EXPECT_TRUE(CompareMatrices(prog3.EvalBindingAtInitialGuess(b3),
+                                prog4.EvalBindingAtInitialGuess(b4), kTol));
+    EXPECT_TRUE(CompareMatrices(b3.evaluator()->lower_bound(),
+                                b4.evaluator()->lower_bound(), kCoeffTol));
+    EXPECT_TRUE(CompareMatrices(b3.evaluator()->upper_bound(),
+                                b4.evaluator()->upper_bound(), kCoeffTol));
+  }
+  // We only expect the first linear equality constraint to match (prog4 has
+  // additional equality constraints for the PSD slack variables).
+  {
+    const auto& b3 = prog3.linear_equality_constraints()[0];
+    const auto& b4 = prog4.linear_equality_constraints()[0];
+    EXPECT_TRUE(CompareMatrices(prog3.EvalBindingAtInitialGuess(b3),
+                                prog4.EvalBindingAtInitialGuess(b4), kTol));
+    EXPECT_TRUE(CompareMatrices(b3.evaluator()->lower_bound(),
+                                b4.evaluator()->lower_bound(), kCoeffTol));
+  }
+
+  // Test the A * x + b ∈ (c' * t + d) S variant with different sizes.
+  MathematicalProgram prog5;
+  auto x5 = prog5.NewContinuousVariables<8>("x");
+  auto t5 = prog5.NewContinuousVariables<2>("t");
+  spect.AddPointInNonnegativeScalingConstraints(
+      &prog5, MatrixXd::Identity(6, 8), Vector6d::Zero(), Vector2d(1, 0), 0, x5,
+      t5);
+  prog5.SetInitialGuessForAllVariables(VectorXd::Zero(prog5.num_vars()));
+  prog5.SetInitialGuess(x5.head<6>(), guess.head<6>());
+  prog5.SetInitialGuess(t5.head<1>(), guess.tail<1>());
+  for (int i = 0; i < static_cast<int>(prog3.linear_constraints().size());
+       ++i) {
+    const auto& b3 = prog3.linear_constraints()[i];
+    const auto& b5 = prog5.linear_constraints()[i];
+    // b4 depends on all of the variables, but b3 just depends on a subset, so
+    // we eval instead of checking the coefficients.
+    EXPECT_TRUE(CompareMatrices(prog3.EvalBindingAtInitialGuess(b3),
+                                prog5.EvalBindingAtInitialGuess(b5), kTol));
+    EXPECT_TRUE(CompareMatrices(b3.evaluator()->lower_bound(),
+                                b5.evaluator()->lower_bound(), kCoeffTol));
+    EXPECT_TRUE(CompareMatrices(b3.evaluator()->upper_bound(),
+                                b5.evaluator()->upper_bound(), kCoeffTol));
+  }
+  // We only expect the first linear equality constraint to match (prog4 has
+  // additional equality constraints for the PSD slack variables).
+  {
+    const auto& b3 = prog3.linear_equality_constraints()[0];
+    const auto& b5 = prog5.linear_equality_constraints()[0];
+    EXPECT_TRUE(CompareMatrices(prog3.EvalBindingAtInitialGuess(b3),
+                                prog5.EvalBindingAtInitialGuess(b5), kTol));
+    EXPECT_TRUE(CompareMatrices(b3.evaluator()->lower_bound(),
+                                b5.evaluator()->lower_bound(), kCoeffTol));
+  }
 }
 
 }  // namespace
