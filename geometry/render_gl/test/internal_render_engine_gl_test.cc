@@ -48,7 +48,8 @@ class RenderEngineGlTester {
   }
 
   const internal::OpenGlGeometry GetMesh(const std::string& filename) const {
-    return const_cast<RenderEngineGl&>(engine_).GetMesh(filename);
+    const int index = const_cast<RenderEngineGl&>(engine_).GetMesh(filename);
+    return engine_.geometries_[index];
   }
 
  private:
