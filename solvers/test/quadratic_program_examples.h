@@ -200,6 +200,14 @@ will have repeated entries for given variables.
  */
 void TestDuplicatedVariableQuadraticProgram(const SolverInterface& solver,
                                             double tol = 1E-7);
+
+/**
+ This program is reported in
+ https://github.com/RobotLocomotion/drake/issues/19524
+ This program has infinitely many equally good optimal solution.
+ */
+void TestEqualityConstrainedQP1(const SolverInterface& solver,
+                                double tol = 1E-7);
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
