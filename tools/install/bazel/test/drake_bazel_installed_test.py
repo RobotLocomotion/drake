@@ -45,7 +45,7 @@ load(
 http_archive(
     name = "bazel_skylib",
     sha256 = "{bazel_skylib_sha256}",
-    strip_prefix = "bazel_skylib-{bazel_skylib_commit}",
+    strip_prefix = "bazel-skylib-{bazel_skylib_commit}",
     urls = {bazel_skylib_urls!r},
 )
 http_archive(
