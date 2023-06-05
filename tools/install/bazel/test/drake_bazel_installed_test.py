@@ -17,6 +17,15 @@ def main():
     scratch_dir = install_test_helper.create_temporary_dir("scratch")
 
     # The commit (version) here should be identical to the commit listed in
+    # drake/tools/workspace/bazel_skylib/repository.bzl.
+    bazel_skylib_commit = "1.4.2"
+    bazel_skylib_urls = [
+        f"https://github.com/bazelbuild/bazel-skylib/archive/{bazel_skylib_commit}.tar.gz",  # noqa
+        f"https://drake-mirror.csail.mit.edu/github/bazelbuild/bazel-skylib/{bazel_skylib_commit}.tar.gz",  # noqa
+    ]
+    bazel_skylib_sha256 = "de9d2cedea7103d20c93a5cc7763099728206bd5088342d0009315913a592cc0"  # noqa
+
+    # The commit (version) here should be identical to the commit listed in
     # drake/tools/workspace/rules_python/repository.bzl.
     rules_python_commit = "0.22.0"
     rules_python_urls = [
@@ -32,6 +41,12 @@ workspace(name = "scratch")
 load(
     "@bazel_tools//tools/build_defs/repo:http.bzl",
     "http_archive",
+)
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "{bazel_skylib_sha256}",
+    strip_prefix = "bazel_skylib-{bazel_skylib_commit}",
+    urls = {bazel_skylib_urls!r},
 )
 http_archive(
     name = "rules_python",
