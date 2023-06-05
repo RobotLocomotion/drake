@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "drake/common/eigen_types.h"
@@ -854,6 +855,15 @@ TEST_F(GeometryStateTest, SourceRegistrationWithNames) {
   DRAKE_EXPECT_NO_THROW((s_id = geometry_state_.RegisterNewSource(name)));
   EXPECT_TRUE(geometry_state_.SourceIsRegistered(s_id));
   EXPECT_EQ(geometry_state_.GetName(s_id), name);
+
+  // The first source id is the internal source.
+  ASSERT_EQ(geometry_state_.GetAllSourceIds().size(), 2);
+  const SourceId world_source = geometry_state_.GetAllSourceIds().front();
+  EXPECT_THAT(geometry_state_.FramesForSource(world_source),
+              testing::ElementsAre(gs_tester_.get_world_frame()));
+
+  // The second source id is the one we added.
+  EXPECT_EQ(geometry_state_.GetAllSourceIds().back(), s_id);
 
   // Case: User-specified name duplicates previously registered name.
   DRAKE_EXPECT_THROWS_MESSAGE(
