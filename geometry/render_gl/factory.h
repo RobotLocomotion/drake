@@ -25,9 +25,23 @@ extern const bool kHasRenderEngineGl;
  Drake ecosystem, only the visualization will be upside down. This has been
  documented in https://github.com/RobotLocomotion/drake/issues/14254.
 
- @warning %RenderEngineGl is not threadsafe. If a SceneGraph is instantiated
- with a RenderEngineGl and there are multiple Context instances for that
- SceneGraph, rendering in multiple threads may exhibit issues.
+ <b> Using RenderEngineGl in multiple threads </b>
+
+ Most importantly, a single %RenderEngineGl should *not* be exercised in
+ multiple threads. One thread, one %RenderEngineGl instance.
+
+ A %RenderEngineGl instance and its *clones* can be used in different threads
+ simultaneously, but *only* the rendering APIs are threadsafe. Do not mutate the
+ contents of the engine (e.g., adding/removing geometries, etc.) in parallel.
+
+ Two independently constructed %RenderEngineGl instances can be freely used in
+ different threads -- all APIs are available.
+
+ The expected workflow is to add a %RenderEngineGl instance a SceneGraph
+ instance (see SceneGraph::AddRenderer()) and then to populate SceneGraph with
+ the desired geometry. Each systems::Context allocated for that SceneGraph will
+ receive a clone of the original %RenderEngineGl. One systems::Context can be
+ used per thread to create rendered images in parallel.
 
  @throws std::exception if kHasRenderEngineGl is false. */
 std::unique_ptr<render::RenderEngine> MakeRenderEngineGl(
