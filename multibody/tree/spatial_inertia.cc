@@ -447,6 +447,7 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
   const Vector3<T>& p_PScm_E = get_com();
 
   // Shift `this` spatial inertia's unit inertia from P to Scm.
+  // Note: The expressed-in frame E is unchanged.
   const UnitInertia<T>& G_SP_E = get_unit_inertia();
   const UnitInertia<T> G_SScm_E = G_SP_E.ShiftToCenterOfMass(p_PScm_E);
 
@@ -463,7 +464,7 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
   const double xcm = ExtractDoubleOrThrow(p_PScm_E(0));
   const double ycm = ExtractDoubleOrThrow(p_PScm_E(1));
   const double zcm = ExtractDoubleOrThrow(p_PScm_E(2));
-  const Vector3<double> p_PAo_E(xcm, ycm, zcm);  // Note: Regard Ao is at Scm.
+  const Vector3<double> p_PAo_E(xcm, ycm, zcm);  // Note: Point Ao is at Scm.
   const drake::math::RigidTransform<double> X_EA(R_EA, p_PAo_E);
   return std::pair(abc, X_EA);
 }
