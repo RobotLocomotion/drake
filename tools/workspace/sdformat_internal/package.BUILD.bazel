@@ -119,6 +119,7 @@ _MOST_HDRS = [
     "include/sdf/Plugin.hh",
     "include/sdf/Polyline.hh",
     "include/sdf/PrintConfig.hh",
+    "include/sdf/Projector.hh",
     "include/sdf/Root.hh",
     "include/sdf/SDFImpl.hh",
     "include/sdf/Scene.hh",
@@ -222,6 +223,7 @@ _SRCS = [
     "src/Plugin.cc",
     "src/Polyline.cc",
     "src/PrintConfig.cc",
+    "src/Projector.cc",
     "src/Root.cc",
     "src/SDF.cc",
     "src/SDFExtension.cc",
@@ -325,7 +327,6 @@ install(
     name = "install",
     visibility = ["//visibility:public"],
     docs = [
-        "COPYING",
         "LICENSE",
     ],
 )
