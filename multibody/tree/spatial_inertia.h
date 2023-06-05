@@ -538,8 +538,8 @@ class SpatialInertia {
   /// inertia is equal to `this` spatial inertia.
   /// @returns 3 principal semi-diameters (half-lengths) [a b c] sorted in
   /// descending order (a ≥ b ≥ c) which are measured from Scm (the center of
-  /// mass of `this` spatial inertia) and the pose of the uniform-density object
-  /// that represents `this` spatial inertia.
+  /// mass of `this` spatial inertia). Also returns the pose of the uniform
+  /// density object that represents `this` spatial inertia.
   ///
   /// Example: Consider an oddly-shaped rigid body B with a known spatial
   /// inertia M_BBo_B about B's origin Bo, expressed in frame B. This function
