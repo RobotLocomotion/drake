@@ -404,6 +404,11 @@ TEST_F(EqualityConstrainedQPSolverTest, WrongSolverOptions2) {
       "FeasibilityTol should be a non-negative number.");
 }
 
+GTEST_TEST(TestEqualityConstrainedQP1, Test) {
+  EqualityConstrainedQPSolver solver;
+  TestEqualityConstrainedQP1(solver);
+}
+
 GTEST_TEST(EqualityConstrainedQPSolverDualSolutionTest, DualSolution1) {
   EqualityConstrainedQPSolver solver;
   TestEqualityConstrainedQPDualSolution1(solver);
@@ -413,7 +418,6 @@ GTEST_TEST(EqualityConstrainedQPSolverDualSolutionTest, DualSolution2) {
   EqualityConstrainedQPSolver solver;
   TestEqualityConstrainedQPDualSolution2(solver);
 }
-
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
