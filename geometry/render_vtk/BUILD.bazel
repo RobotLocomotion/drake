@@ -120,6 +120,7 @@ drake_cc_googletest(
                 "RenderEngineVtkTest.HorizonTest",
                 "RenderEngineVtkTest.IntrinsicsAndRenderProperties",
                 "RenderEngineVtkTest.MeshTest",
+                "RenderEngineVtkTest.NonUcharChannelTextures",
                 "RenderEngineVtkTest.PreservePropertyTexturesOverClone",
                 "RenderEngineVtkTest.RemoveVisual",
                 "RenderEngineVtkTest.SimpleClone",
