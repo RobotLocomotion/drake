@@ -186,7 +186,7 @@ TEST_F(CIrisToyRobotTest, MakeAndSolveIsGeometrySeparableOnPathProgram) {
                                                        body2_sphere_};
 
   CspaceFreePolytope::FindSeparationCertificateGivenPolytopeOptions
-      find_certificate_options;
+      find_certificate_options{};
   find_certificate_options.verbose = false;
   solvers::MosekSolver solver;
   find_certificate_options.solver_id = solver.id();

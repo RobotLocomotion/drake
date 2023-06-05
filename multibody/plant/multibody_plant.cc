@@ -715,10 +715,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   //  and illustration in favor of a protocol that allows definition.
   geometry::PerceptionProperties perception_props;
   perception_props.AddProperty("label", "id", RenderLabel(body.index()));
-  perception_props.AddProperty(
-      "phong", "diffuse",
-      properties.GetPropertyOrDefault(
-          "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  if (properties.HasProperty("phong", "diffuse")) {
+    perception_props.AddProperty(
+        "phong", "diffuse",
+        properties.GetProperty<geometry::Rgba>("phong", "diffuse"));
+  }
   if (properties.HasProperty("phong", "diffuse_map")) {
     perception_props.AddProperty(
         "phong", "diffuse_map",

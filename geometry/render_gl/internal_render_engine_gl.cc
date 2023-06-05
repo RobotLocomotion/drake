@@ -7,6 +7,7 @@
 
 #include <fmt/format.h>
 
+#include "drake/common/ssize.h"
 #include "drake/common/text_logging.h"
 #include "drake/common/unused.h"
 
@@ -22,6 +23,7 @@ using geometry::internal::LoadRenderMeshFromObj;
 using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
@@ -40,6 +42,8 @@ using systems::sensors::ImageTraits;
 using systems::sensors::PixelType;
 
 namespace {
+
+namespace fs = std::filesystem;
 
 constexpr char kInternalGroup[] = "render_engine_gl_internal";
 constexpr char kHasTexCoordProperty[] = "has_tex_coord";
@@ -164,10 +168,16 @@ class DefaultTextureColorShader final : public ShaderProgram {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultTextureColorShader)
 
   /* Constructs the texture shader with the given library. The library will be
-   used to access OpenGl textures.  */
-  explicit DefaultTextureColorShader(TextureLibrary* library)
-      : ShaderProgram(), library_(library) {
-    DRAKE_DEMAND(library != nullptr);
+   used to access OpenGl textures.
+
+   When the RenderEngineGl is cloned, instances of this shader program are
+   likewise cloned, each with a shared ptr to the *same* texture library. This
+   is alright, because the owning RenderEngineGl instances share that library
+   as well -- so the shader program instances are consistent with the render
+   engine instances. */
+  explicit DefaultTextureColorShader(shared_ptr<TextureLibrary> library)
+      : ShaderProgram(), library_(std::move(library)) {
+    DRAKE_DEMAND(library_ != nullptr);
     LoadFromSources(kVertexShader, kFragmentShader);
     diffuse_map_loc_ = GetUniformLocation("diffuse_map");
     diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
@@ -241,7 +251,7 @@ class DefaultTextureColorShader final : public ShaderProgram {
     glUniformMatrix3fv(normal_mat_loc_, 1, GL_FALSE, normal_mat.data());
   }
 
-  TextureLibrary* library_{};
+  std::shared_ptr<TextureLibrary> library_{};
 
   // The location of the "diffuse_map" uniform in the shader.
   GLint diffuse_map_loc_{};
@@ -462,7 +472,7 @@ void main() {
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
     : RenderEngine(params.default_label),
       opengl_context_(make_shared<OpenGlContext>()),
-      texture_library_(make_shared<TextureLibrary>(opengl_context_.get())),
+      texture_library_(make_shared<TextureLibrary>()),
       parameters_(std::move(params)) {
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
@@ -483,7 +493,7 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
   // texture color shader *after* the rgba color shader.
   AddShader(make_unique<DefaultRgbaColorShader>(params.default_diffuse),
             RenderType::kColor);
-  AddShader(make_unique<DefaultTextureColorShader>(texture_library_.get()),
+  AddShader(make_unique<DefaultTextureColorShader>(texture_library_),
             RenderType::kColor);
 
   // Depth shaders -- a single shader that accepts all geometry.
@@ -508,9 +518,9 @@ void RenderEngineGl::UpdateViewpoint(const RigidTransformd& X_WR) {
 }
 
 void RenderEngineGl::ImplementGeometry(const Box& box, void* user_data) {
-  OpenGlGeometry geometry = GetBox();
-  ImplementGeometry(geometry, user_data,
-                    Vector3d(box.width(), box.depth(), box.height()));
+  const int geometry = GetBox();
+  AddGeometryInstance(geometry, user_data,
+                      Vector3d(box.width(), box.depth(), box.height()));
 }
 
 void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
@@ -519,57 +529,57 @@ void RenderEngineGl::ImplementGeometry(const Capsule& capsule,
   RenderMesh mesh_data =
       MakeCapsule(resolution, capsule.radius(), capsule.length());
 
-  OpenGlGeometry geometry = CreateGlGeometry(mesh_data);
-  capsules_.push_back(geometry);
+  const int geometry = CreateGlGeometry(mesh_data);
 
-  ImplementGeometry(geometry, user_data, Vector3d::Ones());
+  AddGeometryInstance(geometry, user_data, Vector3d::Ones());
 }
 
 void RenderEngineGl::ImplementGeometry(const Convex& convex, void* user_data) {
-  OpenGlGeometry geometry = GetMesh(convex.filename());
+  const int geometry = GetMesh(convex.filename());
   ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * convex.scale(),
                 convex.filename());
 }
 
 void RenderEngineGl::ImplementGeometry(const Cylinder& cylinder,
                                        void* user_data) {
-  OpenGlGeometry geometry = GetCylinder();
+  const int geometry = GetCylinder();
   const double r = cylinder.radius();
   const double l = cylinder.length();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, l));
+  AddGeometryInstance(geometry, user_data, Vector3d(r, r, l));
 }
 
 void RenderEngineGl::ImplementGeometry(const Ellipsoid& ellipsoid,
                                        void* user_data) {
-  OpenGlGeometry geometry = GetSphere();
-  ImplementGeometry(geometry, user_data,
-                    Vector3d(ellipsoid.a(), ellipsoid.b(), ellipsoid.c()));
+  const int geometry = GetSphere();
+  AddGeometryInstance(geometry, user_data,
+                      Vector3d(ellipsoid.a(), ellipsoid.b(), ellipsoid.c()));
 }
 
 void RenderEngineGl::ImplementGeometry(const HalfSpace&, void* user_data) {
-  OpenGlGeometry geometry = GetHalfSpace();
-  ImplementGeometry(geometry, user_data, Vector3d(1, 1, 1));
+  const int geometry = GetHalfSpace();
+  AddGeometryInstance(geometry, user_data, Vector3d(1, 1, 1));
 }
 
 void RenderEngineGl::ImplementGeometry(const Mesh& mesh, void* user_data) {
-  OpenGlGeometry geometry = GetMesh(mesh.filename());
+  const int geometry = GetMesh(mesh.filename());
   ImplementMesh(geometry, user_data, Vector3d(1, 1, 1) * mesh.scale(),
                 mesh.filename());
 }
 
 void RenderEngineGl::ImplementGeometry(const Sphere& sphere, void* user_data) {
-  OpenGlGeometry geometry = GetSphere();
+  const int geometry = GetSphere();
   const double r = sphere.radius();
-  ImplementGeometry(geometry, user_data, Vector3d(r, r, r));
+  AddGeometryInstance(geometry, user_data, Vector3d(r, r, r));
 }
 
-void RenderEngineGl::ImplementMesh(const OpenGlGeometry& geometry,
+void RenderEngineGl::ImplementMesh(int geometry_index,
                                    void* user_data,
                                    const Vector3<double>& scale,
                                    const std::string& file_name) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   PerceptionProperties temp_props(data.properties);
 
+  const OpenGlGeometry& geometry = geometries_[geometry_index];
   temp_props.AddProperty(
       kInternalGroup, kHasTexCoordProperty, geometry.has_tex_coord);
 
@@ -588,7 +598,7 @@ void RenderEngineGl::ImplementMesh(const OpenGlGeometry& geometry,
   }
 
   RegistrationData temp_data{data.id, data.X_WG, temp_props};
-  ImplementGeometry(geometry, &temp_data, scale);
+  AddGeometryInstance(geometry_index, &temp_data, scale);
 }
 
 bool RenderEngineGl::DoRegisterVisual(GeometryId id, const Shape& shape,
@@ -650,7 +660,8 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
   for (const GeometryId& g_id :
        shader_families_.at(render_type).at(shader_program.shader_id())) {
     const OpenGlInstance& instance = visuals_.at(g_id);
-    glBindVertexArray(instance.geometry.vertex_array);
+    const OpenGlGeometry& geometry = geometries_[instance.geometry];
+    glBindVertexArray(geometry.vertex_array);
 
     shader_program.SetInstanceParameters(instance.shader_data[render_type]);
     // TODO(SeanCurtis-TRI): Consider storing the float-valued pose in the
@@ -661,7 +672,7 @@ void RenderEngineGl::RenderAt(const ShaderProgram& shader_program,
     shader_program.SetModelViewMatrix(
         X_CW * instance.X_WG.GetAsMatrix4().cast<float>(), instance.scale);
 
-    glDrawElements(GL_TRIANGLES, instance.geometry.index_buffer_size,
+    glDrawElements(GL_TRIANGLES, geometry.index_buffer_size,
                    GL_UNSIGNED_INT, 0);
   }
   // Unbind the vertex array back to the default of 0.
@@ -681,14 +692,10 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
 
   const RenderTarget render_target =
       GetRenderTarget(camera.core(), RenderType::kColor);
-  // TODO(SeanCurtis-TRI) Consider converting Rgba to float[4] as a method on
-  //  Rgba.
-  const Rgba& clear = parameters_.default_clear_color;
-  float clear_color[4] = {
-      static_cast<float>(clear.r()), static_cast<float>(clear.g()),
-      static_cast<float>(clear.b()), static_cast<float>(clear.a())};
+  const Vector4<float> clear_color =
+      parameters_.default_clear_color.rgba().cast<float>();
   glClearNamedFramebufferfv(render_target.frame_buffer, GL_COLOR, 0,
-                            &clear_color[0]);
+                            clear_color.data());
   glClear(GL_DEPTH_BUFFER_BIT);
   // We only want blending for color; not for label or depth.
   glEnable(GL_BLEND);
@@ -698,9 +705,7 @@ void RenderEngineGl::DoRenderColorImage(const ColorRenderCamera& camera,
   const Eigen::Matrix4f T_DC =
       camera.core().CalcProjectionMatrix().cast<float>();
 
-  for (const auto& [shader_id, shader_ptr] :
-       shader_programs_[RenderType::kColor]) {
-    unused(shader_id);
+  for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kColor]) {
     const ShaderProgram& shader_program = *shader_ptr;
     shader_program.Use();
 
@@ -741,8 +746,8 @@ void RenderEngineGl::DoRenderDepthImage(const DepthRenderCamera& camera,
   const Eigen::Matrix4f T_DC =
       camera.core().CalcProjectionMatrix().cast<float>();
 
-  for (const auto& id_shader_pair : shader_programs_[RenderType::kDepth]) {
-    const ShaderProgram& shader_program = *(id_shader_pair.second);
+  for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kDepth]) {
+    const ShaderProgram& shader_program = *shader_ptr;
     shader_program.Use();
 
     shader_program.SetProjectionMatrix(T_DC);
@@ -778,8 +783,8 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
   const Eigen::Matrix4f T_DC =
       camera.core().CalcProjectionMatrix().cast<float>();
 
-  for (const auto& id_shader_pair : shader_programs_[RenderType::kLabel]) {
-    const ShaderProgram& shader_program = *(id_shader_pair.second);
+  for (const auto& [_, shader_ptr] : shader_programs_[RenderType::kLabel]) {
+    const ShaderProgram& shader_program = *shader_ptr;
     shader_program.Use();
 
     shader_program.SetProjectionMatrix(T_DC);
@@ -800,8 +805,8 @@ void RenderEngineGl::DoRenderLabelImage(const ColorRenderCamera& camera,
   GetLabelImage(label_image_out, render_target);
 }
 
-void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
-                                       void* user_data, const Vector3d& scale) {
+void RenderEngineGl::AddGeometryInstance(int geometry_index, void* user_data,
+                                         const Vector3d& scale) {
   const RegistrationData& data = *static_cast<RegistrationData*>(user_data);
   std::optional<ShaderProgramData> color_data =
       GetShaderProgram(data.properties, RenderType::kColor);
@@ -813,7 +818,7 @@ void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
                label_data.has_value());
 
   visuals_.emplace(data.id,
-                   OpenGlInstance(geometry, data.X_WG, scale, *color_data,
+                   OpenGlInstance(geometry_index, data.X_WG, scale, *color_data,
                                   *depth_data, *label_data));
 
   shader_families_[RenderType::kColor][color_data->shader_id()].push_back(
@@ -824,8 +829,8 @@ void RenderEngineGl::ImplementGeometry(const OpenGlGeometry& geometry,
       data.id);
 }
 
-OpenGlGeometry RenderEngineGl::GetSphere() {
-  if (!sphere_.is_defined()) {
+int RenderEngineGl::GetSphere() {
+  if (sphere_ < 0) {
     const int kLatitudeBands = 50;
     const int kLongitudeBands = 50;
 
@@ -835,13 +840,14 @@ OpenGlGeometry RenderEngineGl::GetSphere() {
     sphere_ = CreateGlGeometry(mesh_data);
   }
 
-  sphere_.throw_if_undefined("Built-in sphere has some invalid objects");
+  geometries_[sphere_].throw_if_undefined(
+      "Built-in sphere has some invalid objects");
 
   return sphere_;
 }
 
-OpenGlGeometry RenderEngineGl::GetCylinder() {
-  if (!cylinder_.is_defined()) {
+int RenderEngineGl::GetCylinder() {
+  if (cylinder_ < 0) {
     const int kLongitudeBands = 50;
 
     // For long skinny cylinders, it would be better to offer some subdivisions
@@ -850,13 +856,14 @@ OpenGlGeometry RenderEngineGl::GetCylinder() {
     cylinder_ = CreateGlGeometry(mesh_data);
   }
 
-  cylinder_.throw_if_undefined("Built-in cylinder has some invalid objects");
+  geometries_[cylinder_].throw_if_undefined(
+      "Built-in cylinder has some invalid objects");
 
   return cylinder_;
 }
 
-OpenGlGeometry RenderEngineGl::GetHalfSpace() {
-  if (!half_space_.is_defined()) {
+int RenderEngineGl::GetHalfSpace() {
+  if (half_space_ < 0) {
     // This matches the RenderEngineVtk half space size. Keep them matching
     // so that the common "horizon" unit test passes.
     const GLfloat kMeasure = 100.f;
@@ -867,39 +874,45 @@ OpenGlGeometry RenderEngineGl::GetHalfSpace() {
     half_space_ = CreateGlGeometry(mesh_data);
   }
 
-  half_space_.throw_if_undefined(
+  geometries_[half_space_].throw_if_undefined(
       "Built-in half space has some invalid objects");
 
   return half_space_;
 }
 
-OpenGlGeometry RenderEngineGl::GetBox() {
-  if (!box_.is_defined()) {
+int RenderEngineGl::GetBox() {
+  if (box_ < 0) {
     RenderMesh mesh_data = MakeUnitBox();
     box_ = CreateGlGeometry(mesh_data);
   }
 
-  box_.throw_if_undefined("Built-in box has some invalid objects");
+  geometries_[box_].throw_if_undefined("Built-in box has some invalid objects");
 
   return box_;
 }
 
-OpenGlGeometry RenderEngineGl::GetMesh(const string& filename) {
-  OpenGlGeometry mesh;
+int RenderEngineGl::GetMesh(const string& filename_in) {
+  int mesh = -1;
+  // Handle the case where filename_in is a symlink.
+  const fs::path path_in(filename_in);
+  const fs::path file_path =
+      fs::is_symlink(path_in) ? fs::read_symlink(path_in) : path_in;
+  const std::string filename = file_path.string();
+
   if (meshes_.count(filename) == 0) {
     // TODO(SeanCurtis-TRI): We're ignoring the declared perception properties
     //  for the mesh. We need to pass it in and return a mesh *and* the
     //  resulting material properties.
     RenderMesh mesh_data = LoadRenderMeshFromObj(
-        filename, PerceptionProperties(), parameters_.default_diffuse);
+        filename_in, PerceptionProperties(), parameters_.default_diffuse);
     mesh = CreateGlGeometry(mesh_data);
     meshes_.insert({filename, mesh});
   } else {
     mesh = meshes_[filename];
   }
 
-  mesh.throw_if_undefined(
-      fmt::format("Error creating object for mesh {}", filename).c_str());
+  geometries_[mesh].throw_if_undefined(
+      fmt::format("Error creating object for mesh {}", filename_in).c_str());
 
   return mesh;
 }
@@ -1008,10 +1021,8 @@ RenderTarget RenderEngineGl::GetRenderTarget(const RenderCameraCore& camera,
   return target;
 }
 
-OpenGlGeometry RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
+int RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
   OpenGlGeometry geometry;
-  // Create the vertex array object (VAO).
-  glCreateVertexArrays(1, &geometry.vertex_array);
 
   // Create the vertex buffer object (VBO).
   glCreateBuffers(1, &geometry.vertex_buffer);
@@ -1041,37 +1052,6 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
                        vertex_data.size() * sizeof(GLfloat),
                        vertex_data.data(), 0);
 
-  std::size_t vbo_offset = 0;
-
-  const int position_attrib = 0;
-  glVertexArrayVertexBuffer(geometry.vertex_array, position_attrib,
-                            geometry.vertex_buffer, vbo_offset,
-                            kFloatsPerPosition * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, position_attrib,
-                            kFloatsPerPosition, GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry.vertex_array, position_attrib);
-  vbo_offset += v_count * kFloatsPerPosition * sizeof(GLfloat);
-
-  const int normal_attrib = 1;
-  glVertexArrayVertexBuffer(
-      geometry.vertex_array, normal_attrib, geometry.vertex_buffer,
-      vbo_offset, kFloatsPerNormal * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, normal_attrib,
-                            kFloatsPerNormal, GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry.vertex_array, normal_attrib);
-  vbo_offset += v_count * kFloatsPerNormal * sizeof(GLfloat);
-
-  const int uv_attrib = 2;
-  glVertexArrayVertexBuffer(
-      geometry.vertex_array, uv_attrib, geometry.vertex_buffer,
-      vbo_offset, kFloatsPerUv * sizeof(GLfloat));
-  glVertexArrayAttribFormat(geometry.vertex_array, uv_attrib,
-                            kFloatsPerUv, GL_FLOAT,
-                            GL_FALSE, 0);
-  glEnableVertexArrayAttrib(geometry.vertex_array, uv_attrib);
-  vbo_offset += v_count * kFloatsPerUv * sizeof(GLfloat);
-  DRAKE_DEMAND(vbo_offset == vertex_data.size() * sizeof(GLfloat));
-
   // Create the index buffer object (IBO).
   using indices_uint_t = decltype(mesh_data.indices)::Scalar;
   static_assert(sizeof(GLuint) == sizeof(indices_uint_t),
@@ -1080,19 +1060,69 @@ OpenGlGeometry RenderEngineGl::CreateGlGeometry(const RenderMesh& mesh_data) {
   glNamedBufferStorage(geometry.index_buffer,
                        mesh_data.indices.size() * sizeof(GLuint),
                        mesh_data.indices.data(), 0);
-  // Bind IBO with the VAO.
-  glVertexArrayElementBuffer(geometry.vertex_array, geometry.index_buffer);
 
   geometry.index_buffer_size = mesh_data.indices.size();
 
   geometry.has_tex_coord = mesh_data.has_tex_coord;
+
+  geometry.v_count = v_count;
+  CreateVertexArray(&geometry);
 
   // Note: We won't need to call the corresponding glDeleteVertexArrays or
   // glDeleteBuffers. The meshes we store are "canonical" meshes. Even if a
   // particular GeometryId is removed, it was only referencing its corresponding
   // canonical mesh. We keep all canonical meshes alive for the lifetime of the
   // OpenGL context for convenient reuse.
-  return geometry;
+  const int index = ssize(geometries_);
+  geometries_.push_back(geometry);
+  return index;
+}
+
+void RenderEngineGl::CreateVertexArray(OpenGlGeometry* geometry) const {
+  glCreateVertexArrays(1, &geometry->vertex_array);
+
+  // 3 floats each for position and normal, 2 for texture coordinates.
+  const int kFloatsPerPosition = 3;
+  const int kFloatsPerNormal = 3;
+  const int kFloatsPerUv = 2;
+
+  std::size_t vbo_offset = 0;
+
+  const int position_attrib = 0;
+  glVertexArrayVertexBuffer(geometry->vertex_array, position_attrib,
+                            geometry->vertex_buffer, vbo_offset,
+                            kFloatsPerPosition * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry->vertex_array, position_attrib,
+                            kFloatsPerPosition, GL_FLOAT, GL_FALSE, 0);
+  glEnableVertexArrayAttrib(geometry->vertex_array, position_attrib);
+  vbo_offset += geometry->v_count * kFloatsPerPosition * sizeof(GLfloat);
+
+  const int normal_attrib = 1;
+  glVertexArrayVertexBuffer(
+      geometry->vertex_array, normal_attrib, geometry->vertex_buffer,
+      vbo_offset, kFloatsPerNormal * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry->vertex_array, normal_attrib,
+                            kFloatsPerNormal, GL_FLOAT, GL_FALSE, 0);
+  glEnableVertexArrayAttrib(geometry->vertex_array, normal_attrib);
+  vbo_offset += geometry->v_count * kFloatsPerNormal * sizeof(GLfloat);
+
+  const int uv_attrib = 2;
+  glVertexArrayVertexBuffer(
+      geometry->vertex_array, uv_attrib, geometry->vertex_buffer,
+      vbo_offset, kFloatsPerUv * sizeof(GLfloat));
+  glVertexArrayAttribFormat(geometry->vertex_array, uv_attrib,
+                            kFloatsPerUv, GL_FLOAT,
+                            GL_FALSE, 0);
+  glEnableVertexArrayAttrib(geometry->vertex_array, uv_attrib);
+  vbo_offset += geometry->v_count * kFloatsPerUv * sizeof(GLfloat);
+
+  const float float_count =
+      geometry->v_count *
+      (kFloatsPerPosition + kFloatsPerNormal + kFloatsPerUv);
+  DRAKE_DEMAND(vbo_offset == float_count * sizeof(GLfloat));
+
+  // Bind index buffer object (IBO) with the vertex array object (VAO).
+  glVertexArrayElementBuffer(geometry->vertex_array, geometry->index_buffer);
 }
 
 void RenderEngineGl::SetWindowVisibility(const RenderCameraCore& camera,
@@ -1131,12 +1161,13 @@ ShaderProgramData RenderEngineGl::GetShaderProgram(
   std::optional<ShaderProgramData> data{std::nullopt};
   for (const auto& id_shader_pair : shader_programs_[render_type]) {
     const ShaderProgram& program = *(id_shader_pair.second);
+
+    // We prioritize the shader by id; higher ids will always win.
+    if (data.has_value() && program.shader_id() < data->shader_id()) continue;
+
     std::optional<ShaderProgramData> candidate_data =
         program.CreateProgramData(properties);
     if (candidate_data.has_value()) {
-      if (data.has_value()) {
-        if (candidate_data->shader_id() < data->shader_id()) continue;
-      }
       data = std::move(candidate_data);
     }
   }

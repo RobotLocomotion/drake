@@ -108,7 +108,6 @@ drake_cc_library(
     name = "cspace_free_polytope",
     srcs = [
         "cspace_free_polytope.cc",
-        "//geometry/optimization/dev:cspace_free_polytope.cc",
     ],
     hdrs = ["cspace_free_polytope.h"],
     deps = [
@@ -246,6 +245,7 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization:c_iris_test_utilities",
         "//geometry/optimization:cspace_free_polytope",

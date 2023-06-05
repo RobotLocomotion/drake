@@ -88,7 +88,12 @@ class CspaceFreePath {
    A certificate of safety that the pair of geometries are separated by a plane
    along the whole trajectory.
    */
-  struct SeparationCertificateResult : SeparationCertificateResultBase {};
+  struct SeparationCertificateResult final : SeparationCertificateResultBase {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateResult)
+
+    SeparationCertificateResult() {}
+    ~SeparationCertificateResult() override = default;
+  };
 
   /**
    A SeparationCertificateProgram which allows stores the path that this
@@ -98,7 +103,8 @@ class CspaceFreePath {
    taken by that configuration space variable. The path must be given
    i.e. no polynomials in the path may contain decision variables.
    */
-  struct SeparationCertificateProgram : SeparationCertificateProgramBase {
+  struct SeparationCertificateProgram final : SeparationCertificateProgramBase {
+    DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SeparationCertificateProgram)
     SeparationCertificateProgram(
         const std::unordered_map<symbolic::Variable, symbolic::Polynomial>
             m_path,
@@ -109,7 +115,10 @@ class CspaceFreePath {
         DRAKE_DEMAND(item.second.decision_variables().empty());
       }
     }
-    const std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
+
+    ~SeparationCertificateProgram() override = default;
+
+    std::unordered_map<symbolic::Variable, symbolic::Polynomial> path;
   };
 
   [[nodiscard]] const symbolic::Variable& mu() const { return mu_; }
