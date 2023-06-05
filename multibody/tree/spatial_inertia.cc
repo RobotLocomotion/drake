@@ -447,7 +447,6 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
   const Vector3<T>& p_PScm_E = get_com();
 
   // Shift `this` spatial inertia's unit inertia from P to Scm.
-  // Note: The expressed-in frame E is unchanged.
   const UnitInertia<T>& G_SP_E = get_unit_inertia();
   const UnitInertia<T> G_SScm_E = G_SP_E.ShiftToCenterOfMass(p_PScm_E);
 
