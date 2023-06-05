@@ -50,10 +50,14 @@ SolutionResult SolveUnconstrainedQP(const Eigen::Ref<const Eigen::MatrixXd>& G,
 
     // We first check if G is positive semidefinite, by doing an LDLT
     // decomposition.
-    Eigen::LDLT<Eigen::MatrixXd> ldlt(G);
-    if (ldlt.info() == Eigen::Success && ldlt.isPositive()) {
+    // I do not use LDLT to check the positive semidefiniteness. I found LDLT
+    // not very reliable.
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(G);
+    if (es.info() == Eigen::Success &&
+        (es.eigenvalues().array() >= -feasibility_tol).all()) {
       // G is positive semidefinite.
-      *x = ldlt.solve(-c);
+      Eigen::HouseholderQR<Eigen::MatrixXd> qr(G);
+      *x = qr.solve(-c);
       if ((G * (*x)).isApprox(-c, feasibility_tol)) {
         return SolutionResult::kSolutionFound;
       }

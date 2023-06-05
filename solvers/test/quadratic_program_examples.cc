@@ -761,6 +761,29 @@ void TestDuplicatedVariableQuadraticProgram(const SolverInterface& solver,
   }
 }
 
+void TestEqualityConstrainedQP1(const SolverInterface& solver, double tol) {
+  MathematicalProgram prog{};
+  auto x = prog.NewContinuousVariables<2, 6>();
+  prog.AddQuadraticCost(0.5 * x(0, 5) * x(0, 5));
+  prog.AddLinearEqualityConstraint(x(0, 0) + 3 * x(0, 1) + 9 * x(0, 2) +
+                                       27 * x(0, 3) + 81 * x(0, 4) +
+                                       243 * x(0, 5) - x(1, 0),
+                                   0);
+  prog.AddLinearEqualityConstraint(x(0, 1) + 6 * x(0, 2) + 27 * x(0, 3) +
+                                       108 * x(0, 4) + 405 * x(0, 5) - x(1, 1),
+                                   0);
+  prog.AddLinearEqualityConstraint(x(0, 0), 0);
+  prog.AddLinearEqualityConstraint(x(0, 1), 0);
+  prog.AddLinearEqualityConstraint(x(1, 0), 6);
+  prog.AddLinearEqualityConstraint(x(1, 1), 0);
+
+  MathematicalProgramResult result;
+  solver.Solve(prog, std::nullopt, std::nullopt, &result);
+  EXPECT_TRUE(result.is_success());
+  const auto x_sol = result.GetSolution(x);
+  EXPECT_NEAR(x_sol(0, 5), 0, tol);
+}
+
 }  // namespace test
 }  // namespace solvers
 }  // namespace drake
