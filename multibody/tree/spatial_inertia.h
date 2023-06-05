@@ -533,31 +533,32 @@ class SpatialInertia {
 
   /// @anchor spatial_inertia_equivalent_shapes
   /// @name Spatial inertia equivalent shapes
-  /// Calculates semi-diameters (half-lengths) and a rigid transform (position
-  /// and orientation) for the uniform-density object whose spatial inertia
-  /// is equal to `this` spatial inertia.
+  /// Calculates principal semi-diameters (half-lengths), principal axes
+  /// orientations, and the position of a uniform-density object whose spatial
+  /// inertia is equal to `this` spatial inertia.
   /// @returns 3 principal semi-diameters (half-lengths) [a b c] sorted in
-  /// descending order (a ≥ b ≥ c) and the rigid transform X_EP that contains
-  /// the rotation matrix R_EP and position vector p_EoPo_E. The principal
-  /// semi-diameters [a b c] are measured from Scm which is colocated with frame
-  /// P's origin Po. Their associated principal directions [Px Py Pz] are stored
-  /// in columns of the rotation matrix R_EP. The position vector p_EoPo_E is
-  /// from `this` spatial inertia's about-point Eo to Po (Scm).
+  /// descending order (a ≥ b ≥ c) which are measured from Scm (the center of
+  /// mass of `this` spatial inertia) and the pose of the uniform-density object
+  /// that represents `this` spatial inertia.
+  ///
+  /// Example: Consider an oddly-shaped rigid body B with a known spatial
+  /// inertia M_BBo_B about B's origin Bo, expressed in frame B. To form the
+  /// principal semi-diameters a, b, c, principal axes orientations Ax, Ay, Az
+  /// stored as columns of the rotation matrix R_BA, and the position vector
+  /// p_BoAo_B from Bo to the center of mass Ao of a uniform-density solid
+  /// ellipsoid whose spatial inertia is equal to M_BBo_B, proceed as follows:
+  /// @code{.cpp}
+  ///   const SpatialInertia<double>& M_BBo_B = B.default_spatial_inertia();
+  ///   std::pair<Vector3<double>, RigidTransform<double>> abc_X_BA =
+  ///     M_BBo_B.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
+  ///   Vector3<double> abc = abc_X_BA.first;            // Semi-diameters.
+  ///   RigidTransform<double> X_BA = abc_X_BA.second;
+  ///   RotationMatrix<double>& R_BA = X_BA.rotation();  // Axes orientations.
+  ///   Vector3<double>& p_BoAo_B = X_BA.translation();  // Position Bo to Ao.
+  ///   // Note: Ao is coincident with Bcm (B's center of mass).
+  /// @endcode
   /// @note This function is useful for visualization or physical interpretation
   /// of the geometric extents of `this` spatial inertia for a given shape.
-  /// For example, `this` may be the spatial inertia of an oddly-shaped body
-  /// (or set of bodies), but if the solid ellipsoid version of this function
-  /// is called, the returned lengths are [a b c] for the ellipsoid's major,
-  /// intermediate, and minor semi-axes, respectively, and the returned rotation
-  /// matrix R_EP contains the directions of the ellipsoid's associated
-  /// principal axes as described above.
-  /// @note The rotation matrix R_EP relates the expressed-in frame E for `this`
-  /// spatial inertia to the frame P with origin Po and unit vectors Px, Py, Pz.
-  /// The 1ˢᵗ column of R_EP is Px_E (Px expressed in frame E) which is parallel
-  /// to the principal axis associated with a (largest principal semi-diameter).
-  /// The 2ⁿᵈ and 3ʳᵈ columns of R_EP are Py_E and Pz_E, which are parallel to
-  /// principal axes associated with b and c (the intermediate and smallest
-  /// principal semi-diameters). If a = b = c, R_EP is the identity matrix.
   /// @throws std::exception if the elements of `this` spatial inertia cannot
   /// be converted to a real finite double. For example, an exception is thrown
   /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
@@ -873,14 +874,14 @@ class SpatialInertia {
   void WriteExtraCentralInertiaProperties(std::string* message) const;
 
   // Returns semi-diameters (half-lengths), associated axes orientations, and
-  // the position of a uniform-density object B whose shape is specified by
+  // the position of a uniform-density object D whose shape is specified by
   // @p inertia_shape_factor and whose spatial inertia is equal to `this`
   // spatial inertia.
   // @param[in] inertia_shape_factor real positive number in the range
   // 0 < inertia_shape_factor ≤ 1 associated with the unit moment of inertia
-  // (Gxx, Gyy, Gzz) formulas for G_BBcm_P, where Bcm is B's center of mass and
-  // frame P contains right-handed orthogonal unit vectors Px, Py, Pz that are
-  // aligned with B's principal inertia axes.
+  // (Gxx, Gyy, Gzz) formulas for G_DDcm_A, where Dcm is D's center of mass and
+  // frame A contains right-handed orthogonal unit vectors Ax, Ay, Az that are
+  // aligned with D's principal inertia axes.
   //-----------------------------------------|----------------------------------
   // Solid ellipsoid with semi-axes a, b, c  | Solid box with ½ lengths a, b, c
   // Gxx = 1/5 (b² + c²)                     | Gxx = 1/3 (b² + c²)

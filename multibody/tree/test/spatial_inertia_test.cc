@@ -1170,8 +1170,8 @@ GTEST_TEST(SpatialInertia, PlusEqualOperatorForTwoMasslessBodies) {
 
 // Test the SpatialInertia function that determines an inertia-equivalent shape.
 GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
-  // Consider a body B whose shape (e.g., an ellipsoid or box) is defined by
-  // semi-diameters (half-lengths) a, b, c.
+  // Consider a body B whose shape (e.g., a solid or hollow ellipsoid or box) is
+  // defined by semi-diameters (half-lengths) a, b, c.
   const double a = 5.0, b = 4.0, c = 3.0;
   const double density = 2.34;
   constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();

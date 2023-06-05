@@ -181,7 +181,7 @@ std::pair<Vector3<double>, math::RotationMatrix<double>>
 UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
     double inertia_shape_factor) const {
   DRAKE_THROW_UNLESS(inertia_shape_factor > 0 && inertia_shape_factor <= 1);
-  // The formulas below are derived for a shape B whose principal unit moments
+  // The formulas below are derived for a shape D whose principal unit moments
   // of inertia Gmin, Gmed, Gmax about Bcm (B's center of mass) have the form:
   // Gmin = inertia_shape_factor * (b² + c²)
   // Gmed = inertia_shape_factor * (a² + c²)
@@ -196,10 +196,10 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   // ⌊c²⌋   ⌊ 1  1 -1⌋ ⌊Gmax ⌉
   // Since Gmin ≤ Gmed ≤ Gmax, we can deduce a² ≥ b² ≥ c², so we designate
   // lmax² = a², lmed² = b², lmin² = c².
-  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> G_BBcm_P =
+  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> G_DDcm_A =
       this->CalcPrincipalMomentsAndAxesOfInertia();
-  const Vector3<double>& Gmoments = G_BBcm_P.first;
-  const math::RotationMatrix<double> R_EP = G_BBcm_P.second;
+  const Vector3<double>& Gmoments = G_DDcm_A.first;        // Principal moments.
+  const math::RotationMatrix<double> R_EA = G_DDcm_A.second;  // Principal axes.
   const double Gmin = Gmoments(0);
   const double Gmed = Gmoments(1);
   const double Gmax = Gmoments(2);
@@ -212,7 +212,7 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   const double lmax = std::sqrt(lmax_squared);
   const double lmed = std::sqrt(lmed_squared);
   const double lmin = std::sqrt(lmin_squared);
-  return std::pair(Vector3<double>(lmax, lmed, lmin), R_EP);
+  return std::pair(Vector3<double>(lmax, lmed, lmin), R_EA);
 }
 
 

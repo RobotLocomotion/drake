@@ -481,14 +481,14 @@ class UnitInertia : public RotationalInertia<T> {
 #ifndef DRAKE_DOXYGEN_CXX
   // (Internal use only) Returns half-lengths and orientation specification for
   // an object whose shape corresponds to a given inertia_shape_factor for a
-  // uniform-density body B (e.g., a solid box or hollow ellipsoid).
+  // uniform-density body D (e.g., a solid or hollow ellipsoid or box).
   // @param[in] inertia_shape_factor real positive number in the range
   // 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
-  // (Gxx, Gyy, Gzz) formulas for G_BBcm_P. Formula examples are documented in
+  // (Gxx, Gyy, Gzz) formulas for G_DDcm_E. Formula examples are documented in
   // SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape().
   // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
-  // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Px Py Pz]
-  // stored in columns of the returned rotation matrix R_EP.
+  // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Ax Ay Az]
+  // stored in columns of the returned rotation matrix R_EA.
   // @throws std::exception if the elements of `this` unit inertia cannot
   // be converted to a real finite double. For example, an exception is thrown
   // if `this` contains an erroneous NaN or if scalar type T is symbolic.
