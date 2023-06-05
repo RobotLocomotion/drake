@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/eigen_types.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/geometry/render/render_engine.h"
@@ -27,7 +28,64 @@ namespace geometry {
 namespace render_gl {
 namespace internal {
 
-/** See documentation of MakeRenderEngineGl().  */
+/* See documentation of MakeRenderEngineGl().
+
+ A discussion on using RenderEngineGl in multiple threads.
+ --------------------------------------------------------
+
+ Most importantly, a single %RenderEngineGl should *not* be exercised in
+ multiple threads. One thread, one %RenderEngineGl instance.
+
+ A %RenderEngineGl instance and its *clone* can be used in different threads
+ simultaneously, but *only* the rendering APIs are threadsafe. Do not mutate the
+ contents of the engine (e.g., adding/removing geometries, etc.) in parallel.
+
+ Two independently constructed %RenderEngineGl instances can be freely used in
+ different threads -- all APIs are available.
+
+ Implementation of thread safety
+ -------------------------------
+
+ We expect the following common case:
+
+   - A SceneGraph gets populated with some model.
+   - We want to render multiple images of the contents of that world, perhaps
+     from different views or even different configurations - one rendering per
+     thread.
+
+ %RenderEngineGl relies on some basic assumptions to *efficiently* achieve this:
+
+   - The %RenderEngineGl will typically be part of a systems::Context (cloned
+     from SceneGraph's model engine) and each context will be used in a single
+     thread.
+   - OpenGl allows for multiple OpenGl "contexts" (not the same as
+     systems::Context) to share objects stored on the GPU. We use this to share
+     various rendering data like textures, meshes, etc., reducing memory
+     overhead and %RenderEngineGl cloning time.
+   - Each RenderEngineGl has its own OpenGlContext (which corresponds to an
+     "OpenGl context"). A cloned %RenderEngineGl instance gets a clone of the
+     source engine's OpenGlContext. When an OpenGlContext is cloned, the clone
+     shares the shareable objects of the source.
+
+ However, in sharing data across multiple OpenGl contexts not all data is
+ shareable, or *should* be.
+
+   - OpenGl doesn't share "container" objects. This includes the Vertex Array
+     Objects (referenced in OpenGlGeometry) that stitch vertex and triangle data
+     into coherent meshes.
+   - OpenGl context state (such is which features are enabled/disabled, etc.)
+     are unique in each context. Each OpenGlContext needs to be configured
+     explicitly to have matching state.
+   - If a single OpenGl shader program is used across multiple threads, they
+     will conflict when setting the "uniform" parameters. For example, one
+     rendering thread, in setting the color of the object it will draw, can
+     change the color of an object being drawn in another thread. For now, we
+     avoid this by making sure each RenderEngineGl instance has its own
+     shader programs with their own uniform namespaces.
+
+ These exceptions to the "shared" data have to be explicitly managed for each
+ clone. Furthermore, the work has to be done with the engine's OpenGl context
+ bound. Currently, all of this "clean up" work is done in DoClone(). */
 class RenderEngineGl final : public render::RenderEngine {
  public:
   /** @name Does not allow public copy, move, or assignment  */
@@ -67,6 +125,11 @@ class RenderEngineGl final : public render::RenderEngine {
 
  private:
   friend class RenderEngineGlTester;
+
+  // Initializes the OpenGl state (e.g., enabling back face culling, etc.) This
+  // should be called upon construction and cloning.
+  // @pre `this` engine's OpenGl context should be bound.
+  void InitGlState();
 
   // Mangles the mesh data before adding it to the engine to support the
   // legacy behavior of mapping mesh.obj -> mesh.png, applying it as a diffuse
@@ -110,6 +173,9 @@ class RenderEngineGl final : public render::RenderEngine {
       systems::sensors::ImageLabel16I* label_image_out) const final;
 
   // Copy constructor used for cloning.
+  // Do *not* call this copy constructor directly. The resulting RenderEngineGl
+  // is not complete -- it will render nothing except the background color.
+  // Only call Clone() to get a copy.
   RenderEngineGl(const RenderEngineGl& other) = default;
 
   // Renders all geometries which use the given shader program for the given
@@ -184,6 +250,11 @@ class RenderEngineGl final : public render::RenderEngine {
   // all of the buffer data into the vertex array attributes.
   void CreateVertexArray(OpenGlGeometry* geometry) const;
 
+  // Updates the vertex arrays in all of the OpenGlGeometry instances owned by
+  // this render engine.
+  // @pre opengl_context_ has been bound.
+  void UpdateVertexArrays();
+
   // Sets the display window visibility and populates it with the _last_ image
   // rendered, if visible.
   // If `show_window` is true:
@@ -216,22 +287,26 @@ class RenderEngineGl final : public render::RenderEngine {
   // The cached value transformation between camera and world frames.
   math::RigidTransformd X_CW_;
 
-  // All clones of this context share the same underlying OpenGlContext. They
-  // also share the C++ abstractions of objects that *live* in the context:
+  // When the OpenGlContext gets copied, the copy shares the OpenGl objects
+  // created in GPU memory.
+  copyable_unique_ptr<OpenGlContext> opengl_context_;
+
+  // Various C++ classes store identifiers of objects in the OpenGl context.
+  // This includes:
   //
   //   OpenGlGeometry - the geometry buffers (copy safe)
   //   RenderTarget - frame buffer objects (copy safe)
   //   TextureLibrary - the textures (shared)
   //   ShaderProgram - the compiled shader programs (copy safe)
   //
-  // So, all of these quantities are simple copy-safe POD (e.g., OpenGlGeometry)
-  // or are stashed in a shared pointer.
-  std::shared_ptr<OpenGlContext> opengl_context_;
+  // So, all of these quantities can be safely copied verbatim.
 
-  // This texture library is coupled with the OpenGlContext. The texture
-  // identifiers in the library are instantiated in that context. Operations
-  // on this library must be invoked with the context bound. Both context and
-  // library are shared between a RenderEngineGl instance and all of its clones.
+  // OpenGl texture objects are shared across OpenGl contexts. The
+  // TextureLibrary simply stores the *identifiers* to those texture objects. A
+  // RenderEngineGl instance and its clones share the same TextureLibrary, so
+  // that if one instance loads a new texture into the GPU, they all have
+  // equal access to it (rather than blindly adding the same texture
+  // redundantly).
   std::shared_ptr<TextureLibrary> texture_library_;
 
   // The engine's configuration parameters.
