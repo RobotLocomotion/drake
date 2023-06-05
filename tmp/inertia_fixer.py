@@ -75,12 +75,16 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
         """Return True if the element is ignored by the Drake parser."""
         raise NotImplementedError
 
+    # TODO: support some per-format element indexing.
+
     @abc.abstractmethod
     def associate_plant_models(self, models: list, links: list,
                                inertials: list, plant: MultibodyPlant) -> dict:
         """Return a mapping of body_index to inertial ElementFacts."""
         raise NotImplementedError
 
+    # TODO: adjust interface to allow passing inertia pose.
+    # Or, maybe split this into mass/pose/inertia APIs?
     @abc.abstractmethod
     def format_inertia(self, mass: float, moments: list, products: list,
                        indenter: Callable[[int], str]) -> str:
@@ -385,6 +389,8 @@ class InertiaProcessor:
             mass = old_inertia.get_mass()
             M_BBo_B = SpatialInertia(mass, M_BBo_B_one.get_com(),
                                      M_BBo_B_one.get_unit_inertia())
+
+        # TODO: shift the summed-up inertia back to Bcm, and return that.
 
         return M_BBo_B
 
