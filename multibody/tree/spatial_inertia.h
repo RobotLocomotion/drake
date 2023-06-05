@@ -544,12 +544,12 @@ class SpatialInertia {
   /// Example: Consider an oddly-shaped rigid body B with a known spatial
   /// inertia M_BBo_B about B's origin Bo, expressed in frame B. This function
   /// returns an easily visualized simple shape whose spatial inertial is equal
-  /// to M_BBo_B. The simple shape is defined by a frame A whose origin Ao is at
-  /// Bcm (B's center of mass) and has dimensions [a, b, c] along Ax, Ay, Az.
-  /// To form the principal semi-diameters a, b, c, principal axes orientations
-  /// Ax, Ay, Az stored as columns of the rotation matrix R_BA, and the position
-  /// vector p_BoAo_B from Bo to the center of mass of a uniform-density solid
-  /// ellipsoid whose spatial inertia is equal to M_BBo_B, proceed as follows:
+  /// to M_BBo_B. The simple shape is defined by a frame A with origin Ao at Bcm
+  /// (B's center of mass), has principal dimensions [a b c], and has unit
+  /// vectors Ax, Ay, Az parallel to the simple shape's principal directions.
+  /// When the simple shape is a uniform-density solid ellipsoid, proceed as
+  /// follows to form [a b c], the rotation matrix R_BA describing Ax, Ay, Az,
+  /// and the position vector p_BoAo_B from Bo to Ao (ellipsoid center of mass).
   /// @code{.cpp}
   ///   const SpatialInertia<double>& M_BBo_B = B.default_spatial_inertia();
   ///   std::pair<Vector3<double>, RigidTransform<double>> abc_X_BA =
