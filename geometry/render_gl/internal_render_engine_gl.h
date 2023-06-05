@@ -228,6 +228,10 @@ class RenderEngineGl final : public render::RenderEngine {
   // or are stashed in a shared pointer.
   std::shared_ptr<OpenGlContext> opengl_context_;
 
+  // This texture library is coupled with the OpenGlContext. The texture
+  // identifiers in the library are instantiated in that context. Operations
+  // on this library must be invoked with the context bound. Both context and
+  // library are shared between a RenderEngineGl instance and all of its clones.
   std::shared_ptr<TextureLibrary> texture_library_;
 
   // The engine's configuration parameters.

@@ -23,6 +23,7 @@ using geometry::internal::LoadRenderMeshFromObj;
 using math::RigidTransformd;
 using std::make_shared;
 using std::make_unique;
+using std::shared_ptr;
 using std::string;
 using std::unique_ptr;
 using std::unordered_map;
@@ -167,10 +168,16 @@ class DefaultTextureColorShader final : public ShaderProgram {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(DefaultTextureColorShader)
 
   /* Constructs the texture shader with the given library. The library will be
-   used to access OpenGl textures.  */
-  explicit DefaultTextureColorShader(TextureLibrary* library)
-      : ShaderProgram(), library_(library) {
-    DRAKE_DEMAND(library != nullptr);
+   used to access OpenGl textures.
+
+   When the RenderEngineGl is cloned, instances of this shader program are
+   likewise cloned, each with a shared ptr to the *same* texture library. This
+   is alright, because the owning RenderEngineGl instances share that library
+   as well -- so the shader program instances are consistent with the render
+   engine instances. */
+  explicit DefaultTextureColorShader(shared_ptr<TextureLibrary> library)
+      : ShaderProgram(), library_(std::move(library)) {
+    DRAKE_DEMAND(library_ != nullptr);
     LoadFromSources(kVertexShader, kFragmentShader);
     diffuse_map_loc_ = GetUniformLocation("diffuse_map");
     diffuse_scale_loc_ = GetUniformLocation("diffuse_map_scale");
@@ -244,7 +251,7 @@ class DefaultTextureColorShader final : public ShaderProgram {
     glUniformMatrix3fv(normal_mat_loc_, 1, GL_FALSE, normal_mat.data());
   }
 
-  TextureLibrary* library_{};
+  std::shared_ptr<TextureLibrary> library_{};
 
   // The location of the "diffuse_map" uniform in the shader.
   GLint diffuse_map_loc_{};
@@ -465,7 +472,7 @@ void main() {
 RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
     : RenderEngine(params.default_label),
       opengl_context_(make_shared<OpenGlContext>()),
-      texture_library_(make_shared<TextureLibrary>(opengl_context_.get())),
+      texture_library_(make_shared<TextureLibrary>()),
       parameters_(std::move(params)) {
   // Configuration of basic OpenGl state.
   opengl_context_->MakeCurrent();
@@ -486,7 +493,7 @@ RenderEngineGl::RenderEngineGl(RenderEngineGlParams params)
   // texture color shader *after* the rgba color shader.
   AddShader(make_unique<DefaultRgbaColorShader>(params.default_diffuse),
             RenderType::kColor);
-  AddShader(make_unique<DefaultTextureColorShader>(texture_library_.get()),
+  AddShader(make_unique<DefaultTextureColorShader>(texture_library_),
             RenderType::kColor);
 
   // Depth shaders -- a single shader that accepts all geometry.
