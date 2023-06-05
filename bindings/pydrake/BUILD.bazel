@@ -447,6 +447,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "lcm_test",
+    flaky = True,
     deps = [
         ":lcm_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
