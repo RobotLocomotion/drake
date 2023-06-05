@@ -93,10 +93,13 @@ drake_cc_library(
     name = "continuous_algebraic_riccati_equation",
     srcs = ["continuous_algebraic_riccati_equation.cc"],
     hdrs = ["continuous_algebraic_riccati_equation.h"],
+    interface_deps = [],
     deps = [
         "//common:essential",
         "//common:is_approx_equal_abstol",
-        "//systems/primitives:linear_system",
+        # TODO(jwnimmer-tri) Move this code into //math to avoid the circular
+        # dependency.
+        "//systems/primitives:linear_system_internal",
     ],
 )
 

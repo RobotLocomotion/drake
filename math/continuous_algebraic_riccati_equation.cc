@@ -1,8 +1,10 @@
 #include "drake/math/continuous_algebraic_riccati_equation.h"
 
+#include <optional>
+
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
-#include "drake/systems/primitives/linear_system.h"
+#include "drake/systems/primitives/linear_system_internal.h"
 
 namespace drake {
 namespace math {
@@ -43,14 +45,15 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
         "detectable.");
   }
   // Now we actually check if the system is stabilizable and detectable.
-  const systems::LinearSystem<double> sys(
-      A, B, Q, Eigen::MatrixXd::Zero(Q.rows(), 0), 0 /* time_period=0.*/);
-  if (!systems::IsStabilizable(sys)) {
+  constexpr bool continuous_time = true;
+  constexpr std::optional<double> threshold = std::nullopt;
+  if (!systems::internal::IsStabilizable(A, B, continuous_time, threshold)) {
     throw std::runtime_error(
         "ContinuousAlgebraicRiccatiEquation fails. The system is not "
         "stabilizable.");
   }
-  if (!systems::IsDetectable(sys)) {
+  if (!systems::internal::IsDetectable(A, /* C = */ Q, continuous_time,
+                                       threshold)) {
     throw std::runtime_error(
         "ContinuousAlgebraicRiccatiEquation fails. The system is not "
         "detectable.");
