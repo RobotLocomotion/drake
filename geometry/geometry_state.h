@@ -195,6 +195,11 @@ class GeometryState {
   /** @name          Sources and source-related data  */
   //@{
 
+  /** Returns all of the source ids in the scene graph. The order is guaranteed
+   to be stable and consistent. The first element is the SceneGraph-internal
+   source.  */
+  std::vector<SourceId> GetAllSourceIds() const;
+
   /** Implementation of SceneGraphInspector::SourceIsRegistered().  */
   bool SourceIsRegistered(SourceId source_id) const;
 

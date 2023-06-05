@@ -143,17 +143,15 @@ class QueryObject;
  registered with %SceneGraph as producers (a.k.a. _geometry sources_). They
  do this by acquiring a SourceId (via SceneGraph::RegisterSource()). The
  SourceId serves as a unique handle through which the producer's identity is
- validated and its ownership of its registered geometry is maintained.
+ validated.
 
  _Registering Geometry_
 
  %SceneGraph cannot know what geometry _should_ be part of the shared world.
  Other systems are responsible for introducing geometry into the world. This
  process (defining geometry and informing %SceneGraph) is called
- _registering_ the geometry. The source that registers the geometry "owns" the
- geometry; the source's unique SourceId is required to perform any operations
- on the geometry registered with that SourceId. Geometry can be registered as
- _anchored_ or _dynamic_.
+ _registering_ the geometry. Geometry can be registered as  _anchored_ or
+ _dynamic_, and is always registered to (associated with) a SourceId.
 
  Dynamic geometry can move; more specifically, its kinematics (e.g., pose)
  depends on a system's Context. Particularly, a non-deformable dynamic geometry
@@ -405,10 +403,6 @@ class SceneGraph final : public systems::LeafSystem<T> {
    access to all geometries in the world. For example, queries will return
    GeometryId values that span all sources and the properties of the associated
    geometries can be queried by arbitrary sources.
-
-   That said, if one source _chooses_ to share its SourceId externally, then
-   arbitrary code can use that SourceId to modify the geometry resources that
-   are associated with that SourceId.
 
    @note There are no Context-modifying variants for source or frame
    registration yet, as these methods modify the port semantics.  */

@@ -21,6 +21,12 @@ int SceneGraphInspector<T>::num_frames() const {
 }
 
 template <typename T>
+std::vector<SourceId> SceneGraphInspector<T>::GetAllSourceIds() const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetAllSourceIds();
+}
+
+template <typename T>
 std::vector<FrameId> SceneGraphInspector<T>::GetAllFrameIds() const {
   DRAKE_DEMAND(state_ != nullptr);
   typename GeometryState<T>::FrameIdRange range = state_->get_frame_ids();
