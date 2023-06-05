@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "drake/common/eigen_types.h"
+#include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 #include "drake/multibody/fem/fem_indexes.h"
 #include "drake/multibody/fem/fem_state.h"
 #include "drake/multibody/fem/petsc_symmetric_block_sparse_matrix.h"
@@ -78,6 +79,18 @@ class DirichletBoundaryCondition {
    to `this` BC is greater than or equal to the `tangent_matrix->cols()`. */
   void ApplyBoundaryConditionToTangentMatrix(
       PetscSymmetricBlockSparseMatrix* tangent_matrix) const;
+
+  /* Modifies the given tangent matrix that arises from an FEM model into the
+   tangent matrix for the same model subject to this BC. More specifically,
+   the rows and columns corresponding to DoFs under this BC will be zeroed out
+   with the exception of the diagonal entries for those DoFs which will be set
+   to be non-zero.
+   @pre tangent_matrix != nullptr.
+   @pre Indices of all DoFs associated with nodes subject to `this` BC are
+   smaller than `tangent_matrix->cols()`. */
+  void ApplyBoundaryConditionToTangentMatrix(
+      contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+      const;
 
   /* Modifies the given vector `v` (e.g, the residual of the system or the
    velocities/positions) that arises from an FEM model without BC into the a

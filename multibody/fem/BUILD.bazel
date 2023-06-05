@@ -158,6 +158,13 @@ drake_cc_library(
     ],
 )
 
+# Alias to avoid the "line too long" linter complaint.
+MATRIX_PATH = "//multibody/contact_solvers"
+
+MATRIX_TARGET = ":block_sparse_lower_triangular_or_symmetric_matrix"
+
+BLOCK_SPARSE_MATRIX = MATRIX_PATH + MATRIX_TARGET
+
 drake_cc_library(
     name = "dirichlet_boundary_condition",
     srcs = [
@@ -170,6 +177,7 @@ drake_cc_library(
         ":fem_state",
         ":petsc_symmetric_block_sparse_matrix",
         "//common:essential",
+        BLOCK_SPARSE_MATRIX,
     ],
 )
 
@@ -233,6 +241,7 @@ drake_cc_library(
         ":fem_state",
         ":petsc_symmetric_block_sparse_matrix",
         "//common:essential",
+        BLOCK_SPARSE_MATRIX,
     ],
 )
 
