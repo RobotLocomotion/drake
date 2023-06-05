@@ -542,10 +542,13 @@ class SpatialInertia {
   /// that represents `this` spatial inertia.
   ///
   /// Example: Consider an oddly-shaped rigid body B with a known spatial
-  /// inertia M_BBo_B about B's origin Bo, expressed in frame B. To form the
-  /// principal semi-diameters a, b, c, principal axes orientations Ax, Ay, Az
-  /// stored as columns of the rotation matrix R_BA, and the position vector
-  /// p_BoAo_B from Bo to the center of mass Ao of a uniform-density solid
+  /// inertia M_BBo_B about B's origin Bo, expressed in frame B. This function
+  /// returns an easily visualized simple shape whose spatial inertial is equal
+  /// to M_BBo_B. The simple shape is defined by a frame A whose origin Ao is at
+  /// Bcm (B's center of mass) and has dimensions [a, b, c] along Ax, Ay, Az.
+  /// To form the principal semi-diameters a, b, c, principal axes orientations
+  /// Ax, Ay, Az stored as columns of the rotation matrix R_BA, and the position
+  /// vector p_BoAo_B from Bo to the center of mass of a uniform-density solid
   /// ellipsoid whose spatial inertia is equal to M_BBo_B, proceed as follows:
   /// @code{.cpp}
   ///   const SpatialInertia<double>& M_BBo_B = B.default_spatial_inertia();
@@ -555,7 +558,6 @@ class SpatialInertia {
   ///   RigidTransform<double> X_BA = abc_X_BA.second;
   ///   RotationMatrix<double>& R_BA = X_BA.rotation();  // Axes orientations.
   ///   Vector3<double>& p_BoAo_B = X_BA.translation();  // Position Bo to Ao.
-  ///   // Note: Ao is coincident with Bcm (B's center of mass).
   /// @endcode
   /// @note This function is useful for visualization or physical interpretation
   /// of the geometric extents of `this` spatial inertia for a given shape.

@@ -484,7 +484,8 @@ class UnitInertia : public RotationalInertia<T> {
   // uniform-density body D (e.g., a solid or hollow ellipsoid or box).
   // @param[in] inertia_shape_factor real positive number in the range
   // 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
-  // (Gxx, Gyy, Gzz) formulas for G_DDcm_E. Formula examples are documented in
+  // (Gxx, Gyy, Gzz) formulas for G_DDcm_E (D's unit inertia about Dcm,
+  // expressed in a frame E. Formula examples are documented in
   // SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape().
   // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
   // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Ax Ay Az]

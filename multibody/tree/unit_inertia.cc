@@ -182,7 +182,7 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
     double inertia_shape_factor) const {
   DRAKE_THROW_UNLESS(inertia_shape_factor > 0 && inertia_shape_factor <= 1);
   // The formulas below are derived for a shape D whose principal unit moments
-  // of inertia Gmin, Gmed, Gmax about Bcm (B's center of mass) have the form:
+  // of inertia Gmin, Gmed, Gmax about Dcm (D's center of mass) have the form:
   // Gmin = inertia_shape_factor * (b² + c²)
   // Gmed = inertia_shape_factor * (a² + c²)
   // Gmax = inertia_shape_factor * (a² + b²)
