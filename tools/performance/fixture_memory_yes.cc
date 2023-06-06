@@ -28,7 +28,7 @@ class GlibcMemoryManager final : public MemoryManager {
   GlibcMemoryManager() = default;
 
   void Start() final { Tare(); }
-  void Stop(Result* result) final;
+  void Stop(Result* result);
   void Stop(Result& result) final { this->Stop(&result); }  // NOLINT
 
   // Resets all counters back to zero.
