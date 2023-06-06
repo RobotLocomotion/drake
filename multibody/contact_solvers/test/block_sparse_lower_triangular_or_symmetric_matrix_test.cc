@@ -169,6 +169,26 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, SetBlock) {
   EXPECT_EQ(A.block(2, 1), m);
 }
 
+GTEST_TEST(TriangularBlockSparseMatrixTest, ZeroRowsAndColumns) {
+  /* Throws for lower triangular matrix. */
+  BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
+  DRAKE_EXPECT_THROWS_MESSAGE(A_triangular.ZeroRowsAndColumns({0, 1}),
+                              ".*is_symmetric.*");
+
+  /* Keeps the diagonal entries for the diagonal blocks 0 and 1. Keeps the
+   diagonal block 2 untouched. All off-diagonal blocks are zeroed out. */
+  BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
+  MatrixXd A_symmetric_dense = MakeDenseMatrix(true);
+  A_symmetric.ZeroRowsAndColumns({0, 1});
+  A_symmetric_dense = A_symmetric_dense.diagonal().asDiagonal();
+  A_symmetric_dense.bottomRightCorner<4, 4>() = A22;
+  EXPECT_EQ(A_symmetric.MakeDenseMatrix(), A_symmetric_dense);
+
+  /* Throws if input is out of range. */
+  DRAKE_EXPECT_THROWS_MESSAGE(A_symmetric.ZeroRowsAndColumns({42}),
+                              ".* out of range.*42 is given.*");
+}
+
 GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
   if (kDrakeAssertIsArmed) {
     BlockSparseLowerTriangularMatrix A_triangular = MakeLowerTriangularMatrix();
