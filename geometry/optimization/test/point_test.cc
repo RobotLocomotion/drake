@@ -71,6 +71,20 @@ GTEST_TEST(PointTest, DefaultCtor) {
   EXPECT_NO_THROW(P.set_x(Eigen::VectorXd::Zero(0)));
 }
 
+GTEST_TEST(PointTest, Move) {
+  const Vector3d p_W{1.2, 4.5, -2.8};
+  Point orig(p_W);
+
+  // A move-constructed Point takes over the original data.
+  Point dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 3);
+  EXPECT_TRUE(CompareMatrices(dut.x(), p_W));
+
+  // The old Point is in a valid but unspecified state.
+  EXPECT_EQ(orig.x().size(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(PointTest, FromSceneGraphTest) {
   Vector3d p_W{1.2, 4.5, -2.8};
 
