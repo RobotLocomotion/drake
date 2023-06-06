@@ -87,6 +87,11 @@ class SceneGraphInspector {
    (including the world frame).  */
   int num_frames() const;
 
+  /** Returns all of the source ids in the scene graph. The order is guaranteed
+   to be stable and consistent. The first element is the SceneGraph-internal
+   source.  */
+  std::vector<SourceId> GetAllSourceIds() const;
+
   /** Returns all of the frame ids in the scene graph. The order is guaranteed
    to be stable and consistent. The ids include the world frame's id.  */
   std::vector<FrameId> GetAllFrameIds() const;

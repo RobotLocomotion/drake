@@ -45,6 +45,7 @@ GTEST_TEST(SceneGraphInspector, ExerciseEverything) {
 
   // Scene-graph wide data methods.
   inspector.num_sources();
+  inspector.GetAllSourceIds();
 
   inspector.num_frames();
   inspector.num_geometries();

@@ -85,6 +85,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         self.assertEqual(inspector.num_sources(), 2)
         self.assertEqual(inspector.num_frames(), 3)
+        self.assertEqual(len(inspector.GetAllSourceIds()), 2)
         self.assertEqual(len(inspector.GetAllFrameIds()), 3)
         self.assertTrue(inspector.world_frame_id()
                         in inspector.GetAllFrameIds())

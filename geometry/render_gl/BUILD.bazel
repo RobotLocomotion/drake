@@ -306,6 +306,31 @@ drake_cc_googletest_ubuntu_only(
     ],
 )
 
+drake_cc_googletest_ubuntu_only(
+    name = "multithread_safety_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    tags = vtk_test_tags() + ["cpu:4"],
+    deps = [
+        ":internal_texture_library",
+        "//common:find_resource",
+    ],
+)
+
+drake_cc_googletest_ubuntu_only(
+    name = "internal_texture_library_test",
+    data = [
+        "//geometry/render:test_models",
+    ],
+    tags = vtk_test_tags(),
+    deps = [
+        ":internal_texture_library",
+        "//common:find_resource",
+        "//common:temp_directory",
+    ],
+)
+
 add_lint_tests(
     cpplint_extra_srcs = [
         "no_factory.cc",

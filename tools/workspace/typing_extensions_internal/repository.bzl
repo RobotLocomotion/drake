@@ -6,8 +6,8 @@ def typing_extensions_internal_repository(
     github_archive(
         name = name,
         repository = "python/typing_extensions",
-        commit = "4.5.0",
-        sha256 = "c8fd5561e1bd88b743ef2ee065a5e661b2fd7b56e9cbe9ae2aeb928f41438819",  # noqa
+        commit = "4.6.3",
+        sha256 = "14a7279d1e2b13d9f24acecab576e8c82a066173e5e620782a95e6856eca615e",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

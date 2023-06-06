@@ -224,7 +224,7 @@ TEST_F(TwoPoints, Basic) {
   EXPECT_EQ(g_.Edges().at(0), e_);
 }
 
-// Confirms that I can add costs (both ways) and get the solution.
+// Confirms that we can add costs (both ways) and get the solution.
 // The correctness of the added costs will be established by the solution tests.
 TEST_F(TwoPoints, AddCost) {
   auto [ell0, b0] = e_->AddCost((e_->xv().head<2>() - e_->xu()).squaredNorm());
@@ -269,7 +269,7 @@ TEST_F(TwoPoints, AddCost) {
   DRAKE_EXPECT_THROWS_MESSAGE(v_->AddCost(other_var), ".*IsSubsetOf.*");
 }
 
-// Confirms that I can add constraints (both ways).
+// Confirms that we can add constraints (both ways).
 // The correctness of the added constraints will be established by the solution
 // tests.
 TEST_F(TwoPoints, AddConstraint) {
@@ -307,9 +307,19 @@ TEST_F(TwoPoints, AddConstraint) {
                               ".*IsSubsetOf.*");
 }
 
-/*
-Let's me test with one edge defintely on the optimal path, and one definitely
-off it.
+GTEST_TEST(GraphOfConvexSetsTest, TwoNullPointsConstraint) {
+  GraphOfConvexSets g;
+  Point pu(Eigen::VectorXd::Zero(0));
+  Point pv(Eigen::VectorXd::Zero(0));
+  Vertex* u = g.AddVertex(pu, "u");
+  Vertex* v = g.AddVertex(pv, "v");
+  Edge* e = g.AddEdge(u->id(), v->id(), "e");
+  DRAKE_EXPECT_THROWS_MESSAGE(e->AddConstraint(symbolic::Formula::True()),
+                              ".*total.*ambient.*dimension.*");
+}
+
+/* A graph with one edge definitely on the optimal path, and one definitely off
+it.
 ┌──────┐         ┌──────┐
 │source├──e_on──►│target│
 └───┬──┘         └──────┘
@@ -1097,7 +1107,7 @@ GTEST_TEST(ShortestPathTest, TwoStepLoopConstraint) {
   EXPECT_EQ(non_zero_edges, 6);
 }
 
-// Test that all optimization variables are properly set, even when constrained
+// Tests that all optimization variables are properly set, even when constrained
 // to be on or off.
 GTEST_TEST(ShortestPathTest, PhiConstraint) {
   GraphOfConvexSets spp;

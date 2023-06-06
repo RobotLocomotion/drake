@@ -58,6 +58,7 @@ cc_library(
         "include/scaling.h",
         "include/types.h",
         "include/util.h",
+        "include/version.h",
         # These headers are enabled in CMakeLists only when building in normal
         # mode.
         "include/kkt.h",
