@@ -235,6 +235,15 @@ class BlockSparseLowerTriangularOrSymmetricMatrix {
    [0, 2, 5, 16]. */
   const std::vector<int>& starting_cols() const { return starting_cols_; }
 
+  /* If this matrix is symmetric, zeros out all row and column blocks whose
+   block indices are included in `indices` and then sets the off-diagonal
+   entries of the associated diagonal blocks to zero. This function doesn't
+   change the sparsity pattern as it's forbidden by this class (see class
+   documentation).
+   @pre All entries in `indices` are in [0, block_cols()).
+   @throws if `this` matrix is block lower triangular. */
+  void ZeroRowsAndColumns(const std::vector<int>& indices);
+
  private:
   /* Checks if the input block row and column indices and optionally the
    corresponding matrix block complies with the requirement of the class; throws
