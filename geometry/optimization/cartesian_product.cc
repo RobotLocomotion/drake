@@ -27,18 +27,21 @@ using symbolic::Variable;
 
 namespace {
 
-int sum_ambient_dimensions(const ConvexSets& sets) {
+int SumAmbientDimensions(const ConvexSets& sets) {
   int dim = 0;
-  for (const auto& s : sets) {
-    dim += s->ambient_dimension();
+  for (const copyable_unique_ptr<ConvexSet>& set : sets) {
+    DRAKE_THROW_UNLESS(set != nullptr);
+    dim += set->ambient_dimension();
   }
   return dim;
 }
 
 }  // namespace
 
+CartesianProduct::CartesianProduct() : CartesianProduct(ConvexSets{}) {}
+
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(sum_ambient_dimensions(sets)), sets_{sets} {}
+    : ConvexSet(SumAmbientDimensions(sets)), sets_(sets) {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
@@ -49,9 +52,12 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
                                    const Eigen::Ref<const MatrixXd>& A,
                                    const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(A.cols()), sets_{sets}, A_{A}, b_{b} {
-  DRAKE_THROW_UNLESS(A_->rows() == b_->rows());
-  DRAKE_THROW_UNLESS(A_->rows() == sum_ambient_dimensions(sets));
+    : ConvexSet(A.cols()), sets_(sets), A_(A), b_(b) {
+  const int y_ambient_dimension = SumAmbientDimensions(sets);
+  const int x_ambient_dimension = ambient_dimension();
+  DRAKE_THROW_UNLESS(A_->rows() == y_ambient_dimension);
+  DRAKE_THROW_UNLESS(b_->rows() == y_ambient_dimension);
+  DRAKE_THROW_UNLESS(A_->cols() == x_ambient_dimension);
   DRAKE_THROW_UNLESS(A_->colPivHouseholderQr().rank() == A_->cols());
 }
 

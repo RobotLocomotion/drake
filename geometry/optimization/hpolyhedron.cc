@@ -115,7 +115,7 @@ HPolyhedron::HPolyhedron() : ConvexSet(0) {}
 
 HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
                          const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(A.cols()), A_{A}, b_{b} {
+    : ConvexSet(A.cols()), A_(A), b_(b) {
   CheckInvariants();
 }
 
