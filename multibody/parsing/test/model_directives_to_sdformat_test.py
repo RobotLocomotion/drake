@@ -184,6 +184,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         # Convert
         args = self.parser.parse_args(['-m', file_path])
         sdformat_tree = convert_directives(args)
+        sdformat_tree = sdformat_tree.getroot()
         ET.indent(sdformat_tree)
         sfdormat_result = ET.tostring(
             sdformat_tree, encoding="unicode")
@@ -375,15 +376,14 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       </include>
     </model>
   </model>
-</sdf>
-"""
+</sdf>"""
         expected_expanded_sdf = """<sdf version="1.9">
   <model name="hidden_frame">
     <include>
       <name>simple_model</name>
       <uri>package://process_model_directives_test/simple_model.sdf</uri>
       <placement_frame>frame</placement_frame>
-      <pose relative_to="top_level_model::top_injected_frame"/>
+      <pose relative_to="top_level_model::top_injected_frame" />
     </include>
     <model name="top_level_model">
       <include merge="true">
@@ -400,24 +400,14 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       <child>simple_model::frame</child>
     </joint>
   </model>
-</sdf>
-"""
-        expected_world_sdf = f"""
-<sdf version="1.9">
-  <world name="add_directives">
-    <!--Provides a direct inclusion of agiven model, with no nesting-->
-    <include merge="true">
-      <uri>package://{tempdir}/add_directives.sdf</uri>
-    </include>
-  </world>
-</sdf>
-"""
+</sdf>"""
         model_directives_to_sdformat.main(['-m',
                                            'multibody/parsing/test/model_'
                                            'directives_to_sdformat_files/'
                                            'add_directives.dmd.yaml',
                                            '--expand-included',
                                            '-o', tempdir])
+
         self.assertEqual(expected_sdf, open(
             os.path.join(tempdir, 'add_directives.sdf')).read())
         self.assertEqual(expected_expanded_sdf, open(
@@ -437,7 +427,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       </frame>
     </model>
     <model name="mid_level_model" placement_frame="base">
-      <pose relative_to="top_level_model::top_injected_frame"/>
+      <pose relative_to="top_level_model::top_injected_frame" />
       <include merge="true">
         <name>mid_level_model</name>
         <uri>package://process_model_directives_test/simple_model.sdf</uri>
@@ -455,7 +445,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       <name>bottom_level_model</name>
       <uri>package://process_model_directives_test/simple_model.sdf</uri>
       <placement_frame>base</placement_frame>
-      <pose relative_to="mid_level_model::mid_injected_frame"/>
+      <pose relative_to="mid_level_model::mid_injected_frame" />
     </include>
     <joint name="mid_level_model__mid_injected_frame__to__bottom_level_""" \
             """model__base__weld_joint" type="fixed">
@@ -463,13 +453,13 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       <child>bottom_level_model::base</child>
     </joint>
   </model>
-</sdf>
-"""
+</sdf>"""
         args = self.parser.parse_args(['-m',
                                        'multibody/parsing/test/model_'
                                        'directives_to_sdformat_files/'
                                        'inject_frames.dmd.yaml'])
         result = convert_directives(args)
+        result = result.getroot()
         ET.indent(result)
         self.assertEqual(expected_xml,
                          ET.tostring(result, encoding="unicode"))
