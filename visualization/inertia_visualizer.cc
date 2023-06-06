@@ -187,13 +187,11 @@ std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
   Vector3d abc{std::sqrt((5.0 / 2.0) * std::max(0.0, -Ixx + Iyy + Izz)),
                std::sqrt((5.0 / 2.0) * std::max(0.0, +Ixx - Iyy + Izz)),
                std::sqrt((5.0 / 2.0) * std::max(0.0, +Ixx + Iyy - Izz))};
-  drake::log()->info("abc = {}", fmt_eigen(abc));
 
   // An ellipse that has one of its diameters >100x greater than another one
   // does not render well on the screen, so we'll bound the relative scale of
   // each of the unit ellipsoid's radii.
   abc = abc.array().max(1e-2 * abc.maxCoeff());
-  drake::log()->info("abc' = {}", fmt_eigen(abc));
 
   // Assuming the ~density of water for the visualization ellipsoid, scale
   // it to have a volume that matches the body's mass.
@@ -202,7 +200,6 @@ std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
       density * (4.0 / 3.0) * M_PI * abc(0) * abc(1) * abc(2);
   const double volume_scale = mass / solved_mass;
   const Vector3d scaled_abc = abc * std::cbrt(volume_scale);
-  drake::log()->info("scaled_abc = {}", fmt_eigen(scaled_abc));
 
   return std::pair<Ellipsoid, RigidTransform<double>>(Ellipsoid(scaled_abc),
                                                       X_BoBcm);
