@@ -575,6 +575,11 @@ GTEST_TEST(GurobiTest, QPDualSolution3) {
   TestQPDualSolution3(solver);
 }
 
+GTEST_TEST(GurobiTest, TestEqualityConstrainedQP1) {
+  GurobiSolver solver;
+  TestEqualityConstrainedQP1(solver);
+}
+
 GTEST_TEST(GurobiTest, EqualityConstrainedQPDualSolution1) {
   GurobiSolver solver;
   TestEqualityConstrainedQPDualSolution1(solver);
