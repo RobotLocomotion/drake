@@ -479,13 +479,14 @@ class UnitInertia : public RotationalInertia<T> {
   //@}
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Returns half-lengths and orientation specification for
-  // an object whose shape corresponds to a given inertia_shape_factor for a
-  // uniform-density body D (e.g., a solid or hollow ellipsoid or box).
+  // (Internal use only) Returns principal semi-diameters (half-lengths) and
+  // principal axes orientations of a simple easily-visualized uniform-density
+  // body D whose unit inertia is equal to `this` unit inertia and whose shape
+  // corresponds to a @p inertia_shape_factor (e.g., solid ellipsoid or box).
   // @param[in] inertia_shape_factor real positive number in the range
   // 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
-  // (Gxx, Gyy, Gzz) formulas for G_DDcm_E (D's unit inertia about Dcm,
-  // expressed in a frame E. Formula examples are documented in
+  // (Gxx, Gyy, Gzz) formulas for G_DDcm_A (D's unit inertia about Dcm,
+  // expressed in a principally-oriented frame A. Formula are documented in
   // SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape().
   // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
   // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Ax Ay Az]
