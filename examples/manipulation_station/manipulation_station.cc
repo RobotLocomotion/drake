@@ -59,7 +59,7 @@ namespace internal {
 namespace {
 
 // This system computes the generalized forces on the IIWA arm of the
-// manipulation resulting from externally applied spatial forces.
+// manipulation station resulting from externally applied spatial forces.
 //
 // @system
 // name: ExternalGeneralizedForcesComputer
@@ -796,6 +796,10 @@ void ManipulationStation<T>::Finalize(
                   computer->GetInputPort("multibody_state"));
   builder.ExportInput(computer->GetInputPort("applied_spatial_force"),
                       "applied_spatial_force");
+  // Connect the exported input to the plant's applied spatial force input as
+  // well.
+  builder.ConnectToSame(computer->GetInputPort("applied_spatial_force"),
+                        plant_->get_applied_spatial_force_input_port());
 
   // Adder to compute τ_external = τ_applied_spatial_force + τ_contact
   systems::Adder<double>* external_forces_adder =
