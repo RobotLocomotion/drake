@@ -88,6 +88,13 @@ class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
                 "applied_spatial_force",
                 Value<std::vector<ExternallyAppliedSpatialForce<double>>>())
             .get_index();
+    applied_spatial_force_output_port_ =
+        this->DeclareAbstractOutputPort(
+                "applied_spatial_force",
+                std::vector<ExternallyAppliedSpatialForce<double>>(),
+                &ExternalGeneralizedForcesComputer::
+                    CalcAppliedSpatialForceOutput)
+            .get_index();
     applied_generalized_force_output_port_ =
         this->DeclareVectorOutputPort(
                 "applied_generalized_force", iiwa_num_dofs,
@@ -96,6 +103,20 @@ class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
   }
 
  private:
+  void CalcAppliedSpatialForceOutput(
+      const drake::systems::Context<double>& context,
+      std::vector<ExternallyAppliedSpatialForce<double>>* output) const {
+    if (this->get_input_port(applied_spatial_force_input_port_)
+            .HasValue(context)) {
+      *output =
+          this->get_input_port(applied_spatial_force_input_port_)
+              .template Eval<
+                  std::vector<ExternallyAppliedSpatialForce<double>>>(context);
+    } else {
+      output->clear();
+    }
+  }
+
   void CalcGeneralizedForcesOutput(
       const drake::systems::Context<double>& context,
       drake::systems::BasicVector<double>* output_vector) const {
@@ -151,6 +172,7 @@ class ExternalGeneralizedForcesComputer : public systems::LeafSystem<double> {
   int iiwa_velocity_start_{0};
   systems::InputPortIndex multibody_state_;
   systems::InputPortIndex applied_spatial_force_input_port_;
+  systems::OutputPortIndex applied_spatial_force_output_port_;
   systems::OutputPortIndex applied_generalized_force_output_port_;
 };
 
@@ -794,6 +816,8 @@ void ManipulationStation<T>::Finalize(
           plant_, num_iiwa_positions);
   builder.Connect(plant_->get_state_output_port(),
                   computer->GetInputPort("multibody_state"));
+  builder.Connect(computer->GetOutputPort("applied_spatial_force"),
+                  plant_->get_applied_spatial_force_input_port());
   builder.ExportInput(computer->GetInputPort("applied_spatial_force"),
                       "applied_spatial_force");
 
