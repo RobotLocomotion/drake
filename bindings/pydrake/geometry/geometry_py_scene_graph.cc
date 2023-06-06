@@ -52,9 +52,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
     cls  // BR
          // Scene-graph wide data.
         .def("num_sources", &Class::num_sources, cls_doc.num_sources.doc)
-        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc);
-
-    cls  // BR
+        .def("num_frames", &Class::num_frames, cls_doc.num_frames.doc)
+        .def("GetAllSourceIds", &Class::GetAllSourceIds,
+            cls_doc.GetAllSourceIds.doc)
         .def("GetAllFrameIds", &Class::GetAllFrameIds,
             cls_doc.GetAllFrameIds.doc)
         .def("world_frame_id", &Class::world_frame_id,
