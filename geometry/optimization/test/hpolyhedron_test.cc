@@ -44,6 +44,10 @@ GTEST_TEST(HPolyhedronTest, DefaultConstructor) {
   EXPECT_EQ(H.ambient_dimension(), 0);
   EXPECT_EQ(H.A().size(), 0);
   EXPECT_EQ(H.b().size(), 0);
+  EXPECT_NO_THROW(H.Clone());
+  EXPECT_FALSE(H.IntersectsWith(H));
+  EXPECT_TRUE(H.IsBounded());
+  EXPECT_FALSE(H.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
 GTEST_TEST(HPolyhedronTest, UnitBoxTest) {

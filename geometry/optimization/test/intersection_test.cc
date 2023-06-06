@@ -58,6 +58,16 @@ GTEST_TEST(IntersectionTest, BasicTest) {
   EXPECT_FALSE(S2.PointInSet(out));
 }
 
+GTEST_TEST(IntersectionTest, DefaultCtor) {
+  const Intersection dut;
+  EXPECT_EQ(dut.num_elements(), 0);
+  EXPECT_NO_THROW(dut.Clone());
+  EXPECT_EQ(dut.ambient_dimension(), 0);
+  EXPECT_FALSE(dut.IntersectsWith(dut));
+  EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
+}
+
 GTEST_TEST(IntersectionTest, TwoBoxes) {
   HPolyhedron H1 = HPolyhedron::MakeBox(Vector2d{0, 0}, Vector2d{2, 2});
   HPolyhedron H2 = HPolyhedron::MakeBox(Vector2d{1, -1}, Vector2d{3, 1});
