@@ -177,7 +177,9 @@ GTEST_TEST(FemModelTest, DirichletBoundaryCondition) {
 
   /* Create a BC and add it to the model. */
   DirichletBoundaryCondition<double> bc;
-  bc.AddBoundaryCondition(0, Vector3<double>(3, 2, 1));
+  bc.AddBoundaryCondition(FemNodeIndex(0),
+                          {Vector3<double>(1, 1, 1), Vector3<double>(2, 2, 2),
+                           Vector3<double>(3, 3, 3)});
   model.SetDirichletBoundaryCondition(bc);
   /* Verify that BC is applied to the state, but it doesn't matter whether BC is
    applied from the model or directly from the BC.*/

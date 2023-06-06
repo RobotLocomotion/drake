@@ -24,8 +24,10 @@ using std::vector;
 class DirichletBoundaryConditionTest : public ::testing::Test {
  protected:
   void SetUp() {
-    bc_.AddBoundaryCondition(0, Vector3<double>(3, 2, 1));
-    bc_.AddBoundaryCondition(2, Vector3<double>(-3, -2, 0));
+    const Vector3<double> bc_q(1, 2, 3);
+    const Vector3<double> bc_v(4, 5, 6);
+    const Vector3<double> bc_a(7, 8, 9);
+    bc_.AddBoundaryCondition(FemNodeIndex(0), {bc_q, bc_v, bc_a});
     /* Makes an arbitrary compatible model state. */
     Vector6<double> q, v, a;
     q << 0.1, 0.2, 0.3, 1.1, 1.2, 1.3;
@@ -82,9 +84,9 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
 TEST_F(DirichletBoundaryConditionTest, ApplyBoundaryConditionToState) {
   bc_.ApplyBoundaryConditionToState(fem_state_.get());
   Vector<double, kNumDofs> expected_q, expected_v, expected_a;
-  expected_q << 3, 0.2, -3, 1.1, 1.2, 1.3;
-  expected_v << 2, 0.6, -2, 0.8, 0.9, 1.0;
-  expected_a << 1, 1.0, 0, 1.2, 1.4, 1.6;
+  expected_q << 1, 2, 3, 1.1, 1.2, 1.3;
+  expected_v << 4, 5, 6, 0.8, 0.9, 1.0;
+  expected_a << 7, 8, 9, 1.2, 1.4, 1.6;
   EXPECT_TRUE(CompareMatrices(fem_state_->GetPositions(), expected_q));
   EXPECT_TRUE(CompareMatrices(fem_state_->GetVelocities(), expected_v));
   EXPECT_TRUE(CompareMatrices(fem_state_->GetAccelerations(), expected_a));
@@ -96,7 +98,7 @@ TEST_F(DirichletBoundaryConditionTest, ApplyHomogeneousBoundaryCondition) {
   VectorXd b = MakeResidual();
   bc_.ApplyHomogeneousBoundaryCondition(&b);
   Vector<double, kNumDofs> expected_residual;
-  expected_residual << 0, 2.2, 0, 4.4, 5.5, 6.6;
+  expected_residual << 0, 0, 0, 4.4, 5.5, 6.6;
   EXPECT_TRUE(CompareMatrices(b, expected_residual));
 }
 
@@ -107,7 +109,7 @@ TEST_F(DirichletBoundaryConditionTest,
   DenseMatrix A_expected;
   // clang-format off
   A_expected << 1, 0, 0,    0,    0,     0,
-                0, 2, 0,    0,    0,     0,
+                0, 1, 0,    0,    0,     0,
                 0, 0, 1,    0,    0,     0,
 
                 0, 0, 0,    0.3,  0.1,   0.05,
@@ -123,7 +125,9 @@ TEST_F(DirichletBoundaryConditionTest,
 /* Tests out-of-bound boundary conditions throw an exception. */
 TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
   /* Put a dof that is out-of-bound under boundary condition. */
-  bc_.AddBoundaryCondition(kNumDofs, Vector3<double>(9, 1, 1));
+  bc_.AddBoundaryCondition(FemNodeIndex(100),
+                           {Vector3<double>::Zero(), Vector3<double>::Zero(),
+                            Vector3<double>::Zero()});
   DRAKE_EXPECT_THROWS_MESSAGE(
       bc_.ApplyBoundaryConditionToState(fem_state_.get()),
       "An index of the Dirichlet boundary condition is out of range.");
