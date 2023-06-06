@@ -329,17 +329,10 @@ void DeformableDriver<T>::AppendContactKinematics(
     std::vector<int> num_bcs(fem_model.num_nodes(), 0);
     for (const auto& it : bc.index_to_boundary_state()) {
       /* Note that we currently only allow zero boundary conditions. */
-      DRAKE_DEMAND(it.second.y() == 0);
-      DRAKE_DEMAND(it.second.z() == 0);
-      const int dof_index = it.first;
-      const int vertex_index = dof_index / 3;
+      DRAKE_DEMAND(it.second.v == Vector3<T>::Zero());
+      DRAKE_DEMAND(it.second.a == Vector3<T>::Zero());
+      const int vertex_index = it.first;
       ++num_bcs[vertex_index];
-    }
-    /* Note that we currently do not allow partial boundary condition; i.e.,
-     if any dof of a vertex is under bc, then all three dofs associated with the
-     vertex are under bc. */
-    for (int n : num_bcs) {
-      DRAKE_ASSERT(n % 3 == 0);
     }
 
     for (int i = 0; i < surface.num_contact_points(); ++i) {

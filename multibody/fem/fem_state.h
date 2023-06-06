@@ -81,6 +81,9 @@ class FemState {
         .size();
   }
 
+  /** Returns the number of nodes in the FEM model. */
+  int num_nodes() const { return num_dofs() / 3; }
+
   /** Returns true if this FemState is constructed from the given system. */
   bool is_created_from_system(const internal::FemStateSystem<T>& system) const {
     return &system == system_;
