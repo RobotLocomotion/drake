@@ -1,7 +1,7 @@
 import argparse
 import copy
 import dataclasses as dc
-import lxml.etree as ET
+import xml.etree.ElementTree as ET
 import os
 import sys
 from typing import List
@@ -489,8 +489,8 @@ def _save_world(root_world_name, world_output_path, output_filename):
     uri_elem.text = 'package://' + package_name + '/' + \
         os.path.basename(output_filename)
     world_tree = ET.ElementTree(world_root)
-    world_tree.write(world_output_path,
-                     pretty_print=True)
+    ET.indent(world_tree)
+    world_tree.write(world_output_path)
 
 
 def _generate_output(result_tree: ET.ElementTree,
@@ -500,7 +500,8 @@ def _generate_output(result_tree: ET.ElementTree,
                      generate_world: bool = True):
 
     if print_only:
-        print(ET.tostring(result_tree, pretty_print=True, encoding="unicode"))
+        ET.indent(result_tree)
+        print(ET.tostring(result_tree, encoding="unicode"))
         return
 
     # if an output path was selected the files will be
@@ -529,7 +530,8 @@ def _generate_output(result_tree: ET.ElementTree,
         root_world_name = result_tree.find('model').get('name')
         _save_world(root_world_name, world_output_path, output_filename_path)
     # Saving the converted model
-    result_tree.write(output_filename_path, pretty_print=True)
+    ET.indent(result_tree)
+    result_tree.write(output_filename_path)
 
 
 def _create_parser():

@@ -1,5 +1,5 @@
 import argparse
-import lxml.etree as ET
+import xml.etree.ElementTree as ET
 import os
 import unittest
 
@@ -184,8 +184,9 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         # Convert
         args = self.parser.parse_args(['-m', file_path])
         sdformat_tree = convert_directives(args)
+        ET.indent(sdformat_tree)
         sfdormat_result = ET.tostring(
-            sdformat_tree, pretty_print=True, encoding="unicode")
+            sdformat_tree, encoding="unicode")
 
         # Load model directives
         directives_plant = MultibodyPlant(time_step=0.01)
@@ -469,9 +470,9 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                                        'directives_to_sdformat_files/'
                                        'inject_frames.dmd.yaml'])
         result = convert_directives(args)
+        ET.indent(result)
         self.assertEqual(expected_xml,
-                         ET.tostring(result, pretty_print=True,
-                                     encoding="unicode"))
+                         ET.tostring(result, encoding="unicode"))
 
     def test_not_supported_default_(self):
         with self.assertRaisesRegex(
