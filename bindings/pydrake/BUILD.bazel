@@ -447,8 +447,6 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "lcm_test",
-    # See #19394, this test fails frequently on Mac ARM CI
-    flaky = True,
     deps = [
         ":lcm_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
