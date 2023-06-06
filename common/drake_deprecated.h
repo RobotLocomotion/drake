@@ -56,10 +56,9 @@ Sample uses: @code
 
 #else  // DRAKE_DOXYGEN_CXX
 
-#define DRAKE_DEPRECATED(removal_date, message)         \
-  [[deprecated(                                         \
-  "\nDRAKE DEPRECATED: " message                        \
-  "\nThe deprecated code will be removed from Drake"    \
-  " on or after " removal_date ".")]]
+#define DRAKE_DEPRECATED(removal_date, message)                   \
+  [[deprecated("\nDRAKE DEPRECATED: " message                     \
+               "\nThe deprecated code will be removed from Drake" \
+               " on or after " removal_date ".")]]
 
 #endif  // DRAKE_DOXYGEN_CXX

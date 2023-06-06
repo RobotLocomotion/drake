@@ -66,6 +66,11 @@ class BezierCurve final : public trajectories::Trajectory<T> {
            a trajectory defined over [0, 1]. */
   MatrixX<T> value(const T& time) const override;
 
+  /** Extracts the expanded underlying polynomial expression of this curve in
+   terms of variable `time`. */
+  VectorX<symbolic::Expression> GetExpression(
+      symbolic::Variable time = symbolic::Variable("t")) const;
+
   Eigen::Index rows() const override { return control_points_.rows(); }
 
   Eigen::Index cols() const override { return 1; }
@@ -83,6 +88,8 @@ class BezierCurve final : public trajectories::Trajectory<T> {
 
   std::unique_ptr<trajectories::Trajectory<T>> DoMakeDerivative(
       int derivative_order) const override;
+
+  VectorX<T> EvaluateT(const T& time) const;
 
   double start_time_{};
   double end_time_{};

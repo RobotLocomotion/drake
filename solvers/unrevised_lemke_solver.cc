@@ -70,7 +70,7 @@ VectorX<double> LinearSolver<double>::Solve(const VectorX<double>& v) const {
   }
   return lu_.solve(v);
 }
-}  // anonymous namespace
+}  // namespace
 
 template <>
 void UnrevisedLemkeSolver<AutoDiffXd>::DoSolve(
@@ -113,7 +113,7 @@ void UnrevisedLemkeSolver<T>::DoSolve(const MathematicalProgram& prog,
     bool solved = SolveLcpLemke(constraint->M(), constraint->q(),
                                 &constraint_solution, &num_pivots);
     if (!solved) {
-      result->set_solution_result(SolutionResult::kUnknownError);
+      result->set_solution_result(SolutionResult::kSolverSpecificError);
       return;
     }
     for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {

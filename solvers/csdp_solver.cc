@@ -58,7 +58,7 @@ SolutionResult ConvertCsdpReturnToSolutionResult(int csdp_ret) {
     case 4:
       return SolutionResult::kIterationLimit;
     default:
-      return SolutionResult::kUnknownError;
+      return SolutionResult::kSolverSpecificError;
   }
 }
 

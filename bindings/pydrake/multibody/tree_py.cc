@@ -820,7 +820,27 @@ void DoScalarDependentDefinitions(py::module m, T) {
             cls_doc.set_actuation_vector.doc)
         .def("input_start", &Class::input_start, cls_doc.input_start.doc)
         .def("num_inputs", &Class::num_inputs, cls_doc.num_inputs.doc)
-        .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc);
+        .def("effort_limit", &Class::effort_limit, cls_doc.effort_limit.doc)
+        .def("default_rotor_inertia", &Class::default_rotor_inertia,
+            cls_doc.default_rotor_inertia.doc)
+        .def("default_gear_ratio", &Class::default_gear_ratio,
+            cls_doc.default_gear_ratio.doc)
+        .def("set_default_rotor_inertia", &Class::set_default_rotor_inertia,
+            py::arg("rotor_inertia"), cls_doc.set_default_rotor_inertia.doc)
+        .def("set_default_gear_ratio", &Class::set_default_gear_ratio,
+            py::arg("gear_ratio"), cls_doc.set_default_gear_ratio.doc)
+        .def("default_reflected_inertia", &Class::default_reflected_inertia,
+            cls_doc.default_reflected_inertia.doc)
+        .def("rotor_inertia", &Class::rotor_inertia, py::arg("context"),
+            cls_doc.rotor_inertia.doc)
+        .def("gear_ratio", &Class::gear_ratio, py::arg("context"),
+            cls_doc.gear_ratio.doc)
+        .def("SetRotorInertia", &Class::SetRotorInertia, py::arg("context"),
+            py::arg("rotor_inertia"), cls_doc.SetRotorInertia.doc)
+        .def("SetGearRatio", &Class::SetGearRatio, py::arg("context"),
+            py::arg("gear_ratio"), cls_doc.SetGearRatio.doc)
+        .def("calc_reflected_inertia", &Class::calc_reflected_inertia,
+            py::arg("context"), cls_doc.calc_reflected_inertia.doc);
   }
 
   // Force Elements.
@@ -1072,6 +1092,9 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("CalcPrincipalMomentsOfInertia",
             &Class::CalcPrincipalMomentsOfInertia,
             cls_doc.CalcPrincipalMomentsOfInertia.doc)
+        .def("CalcPrincipalMomentsAndAxesOfInertia",
+            &Class::CalcPrincipalMomentsAndAxesOfInertia,
+            cls_doc.CalcPrincipalMomentsAndAxesOfInertia.doc)
         .def("CouldBePhysicallyValid", &Class::CouldBePhysicallyValid,
             cls_doc.CouldBePhysicallyValid.doc)
         .def("ReExpress", &Class::ReExpress, py::arg("R_AE"),
@@ -1201,9 +1224,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def_static("SolidSphereWithDensity", &Class::SolidSphereWithDensity,
             py::arg("density"), py::arg("radius"),
             cls_doc.SolidSphereWithDensity.doc)
+        .def_static("SolidSphereWithMass", &Class::SolidSphereWithMass,
+            py::arg("mass"), py::arg("radius"), cls_doc.SolidSphereWithMass.doc)
         .def_static("HollowSphereWithDensity", &Class::HollowSphereWithDensity,
             py::arg("area_density"), py::arg("radius"),
             cls_doc.HollowSphereWithDensity.doc)
+        .def_static("HollowSphereWithMass", &Class::HollowSphereWithMass,
+            py::arg("mass"), py::arg("radius"),
+            cls_doc.HollowSphereWithMass.doc)
         .def(py::init(), cls_doc.ctor.doc_0args)
         .def(py::init<const T&, const Eigen::Ref<const Vector3<T>>&,
                  const UnitInertia<T>&, const bool>(),

@@ -11,33 +11,45 @@ namespace contact_solvers {
 namespace internal {
 
 template <typename T>
-SapConstraint<T>::SapConstraint(int clique, VectorX<T> g, MatrixBlock<T> J)
-    : first_clique_(clique),
-      g_(std::move(g)),
-      first_clique_jacobian_(std::move(J)) {
-  DRAKE_THROW_UNLESS(clique >= 0);
-  DRAKE_THROW_UNLESS(constraint_function().size() >= 0);
-  DRAKE_THROW_UNLESS(first_clique_jacobian().rows() ==
-                     constraint_function().size());
+SapConstraint<T>::SapConstraint(SapConstraintJacobian<T> J) : J_(std::move(J)) {
+  DRAKE_THROW_UNLESS(J_.rows() > 0);
 }
 
 template <typename T>
-SapConstraint<T>::SapConstraint(int first_clique, int second_clique,
-                                VectorX<T> g, MatrixBlock<T> J_first_clique,
-                                MatrixBlock<T> J_second_clique)
-    : first_clique_(first_clique),
-      second_clique_(second_clique),
-      g_(std::move(g)),
-      first_clique_jacobian_(std::move(J_first_clique)),
-      second_clique_jacobian_(std::move(J_second_clique)) {
-  DRAKE_THROW_UNLESS(first_clique >= 0);
-  DRAKE_THROW_UNLESS(second_clique >= 0);
-  DRAKE_THROW_UNLESS(first_clique != second_clique);
-  DRAKE_THROW_UNLESS(constraint_function().size() >= 0);
-  DRAKE_THROW_UNLESS(first_clique_jacobian().rows() ==
-                     second_clique_jacobian().rows());
-  DRAKE_THROW_UNLESS(constraint_function().size() ==
-                     first_clique_jacobian().rows());
+std::unique_ptr<AbstractValue> SapConstraint<T>::MakeData(
+    const T& time_step,
+    const Eigen::Ref<const VectorX<T>>& delassus_estimation) const {
+  DRAKE_DEMAND(delassus_estimation.size() == num_constraint_equations());
+  return DoMakeData(time_step, delassus_estimation);
+}
+
+template <typename T>
+void SapConstraint<T>::CalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                                AbstractValue* data) const {
+  DRAKE_DEMAND(vc.size() == num_constraint_equations());
+  DRAKE_DEMAND(data != nullptr);
+  DoCalcData(vc, data);
+}
+
+template <typename T>
+T SapConstraint<T>::CalcCost(const AbstractValue& data) const {
+  return DoCalcCost(data);
+}
+
+template <typename T>
+void SapConstraint<T>::CalcImpulse(const AbstractValue& data,
+                                   EigenPtr<VectorX<T>> gamma) const {
+  DRAKE_DEMAND(gamma != nullptr);
+  DoCalcImpulse(data, gamma);
+}
+
+template <typename T>
+void SapConstraint<T>::CalcCostHessian(const AbstractValue& data,
+                                       MatrixX<T>* G) const {
+  DRAKE_DEMAND(G != nullptr);
+  const int ne = num_constraint_equations();
+  G->resize(ne, ne);
+  DoCalcCostHessian(data, G);
 }
 
 }  // namespace internal

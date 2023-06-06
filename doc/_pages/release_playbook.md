@@ -219,11 +219,14 @@ the email address associated with your github account.
    1. Edit the first line to refer to the YYYYMMDD for this release.
       1. For reference, the typical content is thus:
          ```
-         FROM robotlocomotion/drake:jammy-20220929
+         FROM robotlocomotion/drake:jammy-20230518
 
          RUN apt-get -q update && apt-get -q install -y --no-install-recommends nginx-light xvfb && apt-get -q clean
 
          ENV DISPLAY=:1
+
+         ENV PATH="/opt/drake/bin:${PATH}" \
+           PYTHONPATH="/opt/drake/lib/python3.10/site-packages:${PYTHONPATH}"
          ```
       2. If the current content differs by more than just the date from the
          above template, ask for help on slack in the ``#releases`` channel.
@@ -281,6 +284,8 @@ the email address associated with your github account.
          copy. Our goal is to replace the old copy with the new.
       2. Scroll down to the "FILES" and choose the top-most name. Right click on
          it and select "Move to notebooks".
+         Be patient because the web interface could be slow, and there might be
+         delay between copying and deleting the file.
       3. Because a notebook of that name already existed in "NOTEBOOKS" (the old
          copy), the moved notebook will be renamed with a ``-2`` suffix.
       4. Scroll up to "NOTEBOOKS". Right click on the old copy (without ``-2`)

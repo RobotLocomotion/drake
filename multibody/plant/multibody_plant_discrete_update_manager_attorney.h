@@ -47,22 +47,16 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.EvalContactSurfaces(context);
   }
 
-  static void AddInForcesFromInputPorts(const MultibodyPlant<T>& plant,
-                                        const systems::Context<T>& context,
-                                        MultibodyForces<T>* forces) {
+  static void AddJointLimitsPenaltyForces(const MultibodyPlant<T>& plant,
+                                          const systems::Context<T>& context,
+                                          MultibodyForces<T>* forces) {
+    plant.AddJointLimitsPenaltyForces(context, forces);
+  }
+
+  static void AddInForcesFromInputPorts(
+      const MultibodyPlant<T>& plant, const drake::systems::Context<T>& context,
+      MultibodyForces<T>* forces) {
     plant.AddInForcesFromInputPorts(context, forces);
-  }
-
-  static void CalcNonContactForces(const MultibodyPlant<T>& plant,
-                            const drake::systems::Context<T>& context,
-                            MultibodyForces<T>* forces) {
-    return plant.CalcNonContactForces(context, true /* is discrete */, forces);
-  }
-
-  [[nodiscard]] static ScopeExit ThrowIfNonContactForceInProgress(
-      const MultibodyPlant<T>& plant,
-      const drake::systems::Context<T>& context) {
-    return plant.ThrowIfNonContactForceInProgress(context);
   }
 
   static void CalcForceElementsContribution(
@@ -98,9 +92,15 @@ class MultibodyPlantDiscreteUpdateManagerAttorney {
     return plant.coupler_constraints_specs_;
   }
 
-  static const std::vector<int>& EvalJointLockingIndices(
+  static const std::vector<int>& EvalUnlockedVelocityIndices(
       const MultibodyPlant<T>& plant, const systems::Context<T>& context) {
-    return plant.EvalJointLockingIndices(context);
+    return plant.EvalUnlockedVelocityIndices(context);
+  }
+
+  static const std::vector<std::vector<int>>&
+  EvalUnlockedVelocityIndicesPerTree(const MultibodyPlant<T>& plant,
+                                     const systems::Context<T>& context) {
+    return plant.EvalUnlockedVelocityIndicesPerTree(context);
   }
 
   static const std::vector<internal::DistanceConstraintSpecs>&

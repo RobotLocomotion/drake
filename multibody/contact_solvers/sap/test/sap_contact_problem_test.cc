@@ -36,37 +36,37 @@ const Eigen::Matrix4d S44 =
 // Only indexes and constraint sizes matter for the unit tests in this file.
 class TestConstraint final : public SapConstraint<double> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestConstraint);
-
   // Constructor for a constraint on a single clique.
   TestConstraint(int num_constraint_equations, int clique, int clique_nv)
       : SapConstraint<double>(
-            clique, VectorXd::Zero(num_constraint_equations),
-            MatrixXd::Zero(num_constraint_equations, clique_nv)) {}
+            {clique, MatrixXd::Zero(num_constraint_equations, clique_nv)}) {}
 
   // Constructor for a constraint between two cliques.
   TestConstraint(int num_constraint_equations, int first_clique,
                  int first_clique_nv, int second_clique, int second_clique_nv)
       : SapConstraint<double>(
-            first_clique, second_clique,
-            VectorXd::Zero(num_constraint_equations),
-            MatrixXd::Zero(num_constraint_equations, first_clique_nv),
-            MatrixXd::Zero(num_constraint_equations, second_clique_nv)) {}
+            {first_clique,
+             MatrixXd::Zero(num_constraint_equations, first_clique_nv),
+             second_clique,
+             MatrixXd::Zero(num_constraint_equations, second_clique_nv)}) {}
 
   // N.B no-op overloads to allow us compile this testing constraint. These
   // methods are only tested for specific derived classes, not in this file.
-  void Project(const Eigen::Ref<const VectorX<double>>&,
-               const Eigen::Ref<const VectorX<double>>&,
-               EigenPtr<VectorX<double>>, MatrixX<double>*) const final {}
-  VectorX<double> CalcBiasTerm(const double&, const double&) const final {
-    return VectorXd::Zero(this->num_constraint_equations());
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const double&, const Eigen::Ref<const VectorXd>&) const final {
+    return nullptr;
   }
-  VectorX<double> CalcDiagonalRegularization(const double&,
-                                             const double&) const final {
-    return VectorXd::Zero(this->num_constraint_equations());
-  }
-  std::unique_ptr<SapConstraint<double>> Clone() const final {
-    return std::make_unique<TestConstraint>(*this);
+  void DoCalcData(const Eigen::Ref<const VectorXd>&,
+                  AbstractValue*) const final {}
+  double DoCalcCost(const AbstractValue&) const final { return 0.0; }
+  void DoCalcImpulse(const AbstractValue&, EigenPtr<VectorXd>) const final {}
+  void DoCalcCostHessian(const AbstractValue&, MatrixX<double>*) const final {}
+
+ private:
+  TestConstraint(const TestConstraint&) = default;
+
+  std::unique_ptr<SapConstraint<double>> DoClone() const final {
+    return std::unique_ptr<TestConstraint>(new TestConstraint(*this));
   }
 };
 

@@ -92,8 +92,7 @@ class PathConstraint : public Constraint {
 class WrappedVelocityConstraint : public Constraint {
  public:
   WrappedVelocityConstraint(std::shared_ptr<Constraint> wrapped_constraint,
-                            Eigen::MatrixXd M_pos,
-                            Eigen::MatrixXd M_vel)
+                            Eigen::MatrixXd M_pos, Eigen::MatrixXd M_vel)
       : Constraint(wrapped_constraint->num_outputs(),
                    M_pos.cols() + M_vel.cols() + 1,
                    wrapped_constraint->lower_bound(),
@@ -140,8 +139,7 @@ class WrappedVelocityConstraint : public Constraint {
 */
 class DerivativeConstraint : public Constraint {
  public:
-  DerivativeConstraint(const Eigen::MatrixXd& M,
-                       int derivative_order,
+  DerivativeConstraint(const Eigen::MatrixXd& M, int derivative_order,
                        const Eigen::Ref<const VectorXd>& lb,
                        const Eigen::Ref<const VectorXd>& ub)
       : Constraint(M.rows(), M.cols() + 1, lb, ub),
@@ -298,8 +296,7 @@ void KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
   VectorX<Expression> rdot = sym_rdot_->value(s);
   VectorXDecisionVariable vars_pos, vars_vel;
   std::unordered_map<symbolic::Variable::Id, int> unused_map;
-  std::tie(vars_pos, unused_map) =
-      symbolic::ExtractVariablesFromExpression(r);
+  std::tie(vars_pos, unused_map) = symbolic::ExtractVariablesFromExpression(r);
   std::tie(vars_vel, unused_map) =
       symbolic::ExtractVariablesFromExpression(rdot);
   Eigen::MatrixXd M_pos(num_positions(), vars_pos.size());
@@ -315,8 +312,8 @@ void KinematicTrajectoryOptimization::AddVelocityConstraintAtNormalizedTime(
 }
 
 void KinematicTrajectoryOptimization::AddPathAccelerationConstraint(
-      const Eigen::Ref<const Eigen::VectorXd>& lb,
-      const Eigen::Ref<const Eigen::VectorXd>& ub, double s) {
+    const Eigen::Ref<const Eigen::VectorXd>& lb,
+    const Eigen::Ref<const Eigen::VectorXd>& ub, double s) {
   DRAKE_DEMAND(lb.size() == num_positions());
   DRAKE_DEMAND(ub.size() == num_positions());
   DRAKE_DEMAND(0 <= s && s <= 1);
@@ -380,7 +377,7 @@ void KinematicTrajectoryOptimization::AddAccelerationBounds(
   VectorXDecisionVariable vars, duration_and_vars;
   std::unordered_map<symbolic::Variable::Id, int> unused_map;
   for (int i = 0; i < sym_rddot_->num_control_points(); ++i) {
-    for (int j=0; j < num_positions(); ++j) {
+    for (int j = 0; j < num_positions(); ++j) {
       std::tie(vars, unused_map) = symbolic::ExtractVariablesFromExpression(
           sym_rddot_->control_points()[i](j));
       M.resize(vars.size());
@@ -409,7 +406,7 @@ void KinematicTrajectoryOptimization::AddJerkBounds(
   VectorXDecisionVariable vars, duration_and_vars;
   std::unordered_map<symbolic::Variable::Id, int> map_var_to_index;
   for (int i = 0; i < sym_rdddot_->num_control_points(); ++i) {
-    for (int j=0; j < num_positions(); ++j) {
+    for (int j = 0; j < num_positions(); ++j) {
       std::tie(vars, map_var_to_index) =
           symbolic::ExtractVariablesFromExpression(
               sym_rdddot_->control_points()[i](j));
@@ -440,7 +437,7 @@ void KinematicTrajectoryOptimization::AddPathLengthCost(
   VectorXDecisionVariable vars(2 * num_positions_);
   for (int i = 1; i < num_control_points(); ++i) {
     vars.head(num_positions_) = control_points_.col(i);
-    vars.tail(num_positions_) = control_points_.col(i-1);
+    vars.tail(num_positions_) = control_points_.col(i - 1);
     if (use_conic_constraint) {
       prog_.AddL2NormCostUsingConicConstraint(A, b, vars);
     } else {

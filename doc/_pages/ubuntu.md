@@ -2,8 +2,4 @@
 title: Ubuntu
 ---
 
-Prerequisite setup is automated, simply run:
-
-```
-sudo ./setup/ubuntu/install_prereqs.sh
-```
+This content has been moved to [Source Installation](/from_source.html).

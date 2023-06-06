@@ -14,8 +14,7 @@ namespace optimization {
 /** A convex set that contains exactly one element.  Also known as a
 singleton or unit set.
 
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class Point final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Point)
@@ -23,30 +22,30 @@ class Point final : public ConvexSet {
   /** Constructs a Point. */
   explicit Point(const Eigen::Ref<const Eigen::VectorXd>& x);
 
-  /** Constructs a Point from a SceneGraph geometry and pose in
-  the @p reference_frame frame, obtained via the QueryObject. If @p
-  reference_frame frame is std::nullopt, then it will be expressed in the world
-  frame.
-
+  /** Constructs a Point from a SceneGraph geometry and pose in the
+  `reference_frame` frame, obtained via the QueryObject. If `reference_frame`
+  frame is std::nullopt, then it will be expressed in the world frame.
   @throws std::exception if geometry_id does not correspond to a Sphere or if
-  the Sphere has radius greater than @p maximum_allowable_radius. */
+  the Sphere has radius greater than `maximum_allowable_radius`. */
   Point(const QueryObject<double>& query_object, GeometryId geometry_id,
         std::optional<FrameId> reference_frame = std::nullopt,
         double maximum_allowable_radius = 0.0);
 
   ~Point() final;
 
-  /** Returns true if the point is within @p tol of x(), under the L∞-norm. */
+  /** Returns true if the point is within `tol` of x(), under the L∞-norm. */
   using ConvexSet::PointInSet;
 
   /** Retrieves the point. */
   const Eigen::VectorXd& x() const { return x_; }
 
-  /** Changes the element @p x describing the set.
-  @pre @p x must be of size ambient_dimension(). */
+  /** Changes the element `x` describing the set.
+  @pre x must be of size ambient_dimension(). */
   void set_x(const Eigen::Ref<const Eigen::VectorXd>& x);
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final { return true; }
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

@@ -284,11 +284,8 @@ void SceneGraphInspector<T>::Reify(GeometryId geometry_id,
 template <typename T>
 std::unique_ptr<GeometryInstance> SceneGraphInspector<T>::CloneGeometryInstance(
     GeometryId id) const {
-  const std::string name = GetName(id);
-  const math::RigidTransformd X_PG = GetPoseInFrame(id);
-  std::unique_ptr<Shape> shape = GetShape(id).Clone();
-  auto geometry_instance =
-      std::make_unique<GeometryInstance>(X_PG, std::move(shape), name);
+  auto geometry_instance = std::make_unique<GeometryInstance>(
+      GetPoseInFrame(id), GetShape(id), GetName(id));
   if (const auto* props = GetProximityProperties(id)) {
     geometry_instance->set_proximity_properties(*props);
   }

@@ -794,7 +794,7 @@ GTEST_TEST(testConstraint, testExponentialConeConstraint) {
   Eigen::Vector2d y_expected;
   y_expected(0) = z(0) - z(1) * std::exp(z(2) / z(1));
   y_expected(1) = z(1);
-  const double tol = 5 * std::numeric_limits<double>::epsilon();
+  const double tol = 8.0 * std::numeric_limits<double>::epsilon();
   EXPECT_TRUE(CompareMatrices(y, y_expected, tol));
 
   // Check autodiff evaluation.

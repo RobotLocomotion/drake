@@ -5,6 +5,7 @@ import numpy as np
 from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
+from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.value import AbstractValue
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.framework import (
@@ -33,7 +34,9 @@ from pydrake.systems.primitives import (
     Gain, Gain_,
     Integrator, Integrator_,
     IsControllable,
+    IsDetectable,
     IsObservable,
+    IsStabilizable,
     Linearize,
     LinearSystem, LinearSystem_,
     LinearTransformDensity, LinearTransformDensity_,
@@ -151,9 +154,13 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(Co.shape, (2, 2))
         self.assertFalse(IsControllable(system))
         self.assertFalse(IsControllable(system, 1e-6))
+        self.assertFalse(IsStabilizable(sys=system))
+        self.assertFalse(IsStabilizable(sys=system, threshold=1e-6))
         Ob = ObservabilityMatrix(system)
         self.assertEqual(Ob.shape, (2, 2))
         self.assertFalse(IsObservable(system))
+        self.assertFalse(IsDetectable(sys=system))
+        self.assertFalse(IsDetectable(sys=system, threshold=1e-6))
 
         system = AffineSystem(A, B, f0, C, D, y0, .1)
         self.assertEqual(system.get_input_port(0), system.get_input_port())
@@ -661,10 +668,16 @@ class TestGeneral(unittest.TestCase):
         are not tested above.
         """
         ConstantValueSource(AbstractValue.Make("Hello world"))
-        DiscreteTimeDelay(update_sec=0.1, delay_timesteps=5, vector_size=2)
+        DiscreteTimeDelay(update_sec=0.1, delay_time_steps=5, vector_size=2)
         DiscreteTimeDelay(
-            update_sec=0.1, delay_timesteps=5,
+            update_sec=0.1, delay_time_steps=5,
             abstract_model_value=AbstractValue.Make("Hello world"))
+        with catch_drake_warnings(expected_count=2) as w:
+            DiscreteTimeDelay(update_sec=0.1, delay_timesteps=5, vector_size=2)
+            DiscreteTimeDelay(
+                update_sec=0.1, delay_timesteps=5,
+                abstract_model_value=AbstractValue.Make("Hello world"))
+
         ZeroOrderHold(period_sec=0.1, vector_size=2)
         ZeroOrderHold(
             period_sec=0.1,
@@ -716,18 +729,18 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(discrete_derivative.get_input_port(0).size(), 5)
         self.assertEqual(discrete_derivative.get_output_port(0).size(), 5)
         self.assertEqual(discrete_derivative.time_step(), 0.5)
-        self.assertFalse(discrete_derivative.suppress_initial_transient())
+        self.assertTrue(discrete_derivative.suppress_initial_transient())
 
         discrete_derivative = DiscreteDerivative(
-            num_inputs=5, time_step=0.5, suppress_initial_transient=True)
-        self.assertTrue(discrete_derivative.suppress_initial_transient())
+            num_inputs=5, time_step=0.5, suppress_initial_transient=False)
+        self.assertFalse(discrete_derivative.suppress_initial_transient())
 
     def test_state_interpolator_with_discrete_derivative(self):
         state_interpolator = StateInterpolatorWithDiscreteDerivative(
             num_positions=5, time_step=0.4)
         self.assertEqual(state_interpolator.get_input_port(0).size(), 5)
         self.assertEqual(state_interpolator.get_output_port(0).size(), 10)
-        self.assertFalse(state_interpolator.suppress_initial_transient())
+        self.assertTrue(state_interpolator.suppress_initial_transient())
 
         # test set_initial_position using context
         context = state_interpolator.CreateDefaultContext()

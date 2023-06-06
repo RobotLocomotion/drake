@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "drake/common/default_scalars.h"
@@ -1084,6 +1085,14 @@ class MultibodyTree {
   // See MultibodyPlant::GetFreeBodyPose.
   math::RigidTransform<T> GetFreeBodyPoseOrThrow(
       const systems::Context<T>& context, const Body<T>& body) const;
+
+  // See MultibodyPlant::SetDefaultFreeBodyPose.
+  void SetDefaultFreeBodyPose(const Body<T>& body,
+                              const math::RigidTransform<double>& X_WB);
+
+  // See MultibodyPlant::GetDefaultFreeBodyPose.
+  math::RigidTransform<double> GetDefaultFreeBodyPose(
+      const Body<T>& body) const;
 
   // See MultibodyPlant::SetFreeBodyPose.
   void SetFreeBodyPoseOrThrow(
@@ -3003,6 +3012,10 @@ class MultibodyTree {
   std::optional<BodyIndex> MaybeGetUniqueBaseBodyIndex(
       ModelInstanceIndex model_instance) const;
 
+  // Helper function for GetDefaultFreeBodyPose().
+  std::pair<Eigen::Quaternion<double>, Vector3<double>>
+  GetDefaultFreeBodyPoseAsQuaternionVec3Pair(const Body<T>& body) const;
+
   // TODO(amcastro-tri): In future PR's adding MBT computational methods, write
   // a method that verifies the state of the topology with a signature similar
   // to RoadGeometry::CheckHasRightSizeForModel().
@@ -3068,6 +3081,20 @@ class MultibodyTree {
   // mobilizer model of the joint, or an invalid index if the joint is modeled
   // with constraints instead.
   std::vector<MobilizerIndex> joint_to_mobilizer_;
+
+  // Maps the default body poses of all floating bodies AND bodies touched by
+  // MultibodyPlant::SetDefaultFreeBodyPose(). During Finalize(), the default
+  // pose of a floating body is converted to the joint index of the floating
+  // joint connecting the world and the body. Post-finalize and the default
+  // poses of such floating bodies can (and should) be retrieved via the joints'
+  // default positions. The poses are stored as a quaternion-translation pair to
+  // match the default positions stored in the quaternion floating joints
+  // without any numerical conversions and thereby avoiding roundoff errors and
+  // surprising discrepancies pre and post finalize.
+  std::unordered_map<
+      BodyIndex, std::variant<JointIndex, std::pair<Eigen::Quaternion<double>,
+                                                    Vector3<double>>>>
+      default_body_poses_;
 
   MultibodyTreeTopology topology_;
 

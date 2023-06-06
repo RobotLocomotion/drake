@@ -1,6 +1,5 @@
 coinor-libclp1
 coinor-libcoinutils3v5
-coinor-libipopt1v5
 default-jre
 jupyter-notebook
 libblas-dev
@@ -24,7 +23,6 @@ liblz4-1
 liblzma5
 libmumps-seq-5.4
 libnetcdf19
-libnlopt-cxx0
 libogg0
 libopengl0
 libpng16-16

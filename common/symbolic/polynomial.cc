@@ -370,7 +370,7 @@ Variables GetDecisionVariables(const Polynomial::MapType& m) {
 }  // namespace
 
 Polynomial::Polynomial(MapType map)
-    : monomial_to_coefficient_map_{move(map)},
+    : monomial_to_coefficient_map_{std::move(map)},
       indeterminates_{GetIndeterminates(monomial_to_coefficient_map_)},
       decision_variables_{GetDecisionVariables(monomial_to_coefficient_map_)} {
   // Remove all [monomial, coeff] pair in monomial_to_coefficient_map_ if
@@ -1092,6 +1092,12 @@ Polynomial operator+(const double c, const Monomial& m) {
 }
 Polynomial operator+(Polynomial p, const Variable& v) { return p += v; }
 Polynomial operator+(const Variable& v, Polynomial p) { return p += v; }
+Expression operator+(const Expression& e, const Polynomial& p) {
+  return e + p.ToExpression();
+}
+Expression operator+(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() + e;
+}
 
 Polynomial operator-(Polynomial p1, const Polynomial& p2) { return p1 -= p2; }
 Polynomial operator-(Polynomial p, const Monomial& m) { return p -= m; }
@@ -1113,6 +1119,12 @@ Polynomial operator-(Polynomial p, const Variable& v) { return p -= v; }
 Polynomial operator-(const Variable& v, const Polynomial& p) {
   return Polynomial(v, p.indeterminates()) - p;
 }
+Expression operator-(const Expression& e, const Polynomial& p) {
+  return e - p.ToExpression();
+}
+Expression operator-(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() - e;
+}
 
 Polynomial operator*(Polynomial p1, const Polynomial& p2) { return p1 *= p2; }
 Polynomial operator*(Polynomial p, const Monomial& m) { return p *= m; }
@@ -1123,12 +1135,27 @@ Polynomial operator*(const Monomial& m, double c) { return Polynomial(m) * c; }
 Polynomial operator*(double c, const Monomial& m) { return c * Polynomial(m); }
 Polynomial operator*(Polynomial p, const Variable& v) { return p *= v; }
 Polynomial operator*(const Variable& v, Polynomial p) { return p *= v; }
+Expression operator*(const Expression& e, const Polynomial& p) {
+  return e * p.ToExpression();
+}
+Expression operator*(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() * e;
+}
 
 Polynomial operator/(Polynomial p, const double v) {
   for (auto& item : p.monomial_to_coefficient_map_) {
     item.second /= v;
   }
   return p;
+}
+Expression operator/(const double v, const Polynomial& p) {
+  return v / p.ToExpression();
+}
+Expression operator/(const Expression& e, const Polynomial& p) {
+  return e / p.ToExpression();
+}
+Expression operator/(const Polynomial& p, const Expression& e) {
+  return p.ToExpression() / e;
 }
 
 Polynomial pow(const Polynomial& p, int n) {

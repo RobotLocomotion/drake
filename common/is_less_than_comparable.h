@@ -12,7 +12,7 @@ namespace is_less_than_comparable_internal {
 
 // Default case; assumes that a class is *not* less-than comparable.
 template <typename T, typename = void>
-struct is_less_than_comparable_helper : std::false_type { };
+struct is_less_than_comparable_helper : std::false_type {};
 
 // Special sauce for SFINAE. Only compiles if it can finds the method
 // `operator<`. If this exists, the is_less_than_comparable implicitly

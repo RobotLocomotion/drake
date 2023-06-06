@@ -18,7 +18,6 @@ using drake::multibody::BodyIndex;
 using drake::multibody::default_model_instance;
 using drake::multibody::SpatialInertia;
 using Eigen::VectorXd;
-using std::move;
 using std::unique_ptr;
 
 double ZeroDistanceFunc(const VectorXd&, const VectorXd&) {
@@ -60,7 +59,7 @@ class DummyCollisionChecker final : public UnimplementedCollisionChecker {
   /* This clearance data will define the distance/jacobian data that will be
    given back to ComputeCollisionAvoidanceDisplacement() when invoking
    CalcRobotClearance(). */
-  void set_robot_clearance(RobotClearance data) { data_ = move(data); }
+  void set_robot_clearance(RobotClearance data) { data_ = std::move(data); }
 
  private:
   void DoUpdateContextPositions(
@@ -154,7 +153,7 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     RobotClearance clearance(kQSize);
     clearance.Append(robot_body, env_body, env_type, kMin - 0.1,
                      q1.transpose());
-    checker.set_robot_clearance(move(clearance));
+    checker.set_robot_clearance(std::move(clearance));
     const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
     EXPECT_TRUE(CompareMatrices(grad, q1));
@@ -165,7 +164,7 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     RobotClearance clearance(kQSize);
     clearance.Append(robot_body, env_body, env_type, kMax + 0.1,
                      q1.transpose());
-    checker.set_robot_clearance(move(clearance));
+    checker.set_robot_clearance(std::move(clearance));
     const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
     EXPECT_TRUE(CompareMatrices(grad, q0));
@@ -177,7 +176,7 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
     RobotClearance clearance(kQSize);
     clearance.Append(robot_body, env_body, env_type, kMax - kRange * kWeight,
                      q1.transpose());
-    checker.set_robot_clearance(move(clearance));
+    checker.set_robot_clearance(std::move(clearance));
     const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
     EXPECT_EQ(grad.size(), kQSize);
@@ -193,7 +192,7 @@ GTEST_TEST(ComputeCollisionAvoidanceDisplacementTest, WeightedCombinations) {
                      q1.transpose());
     clearance.Append(robot_body, env_body, env_type, kMax - kRange * kWeight2,
                      q2.transpose());
-    checker.set_robot_clearance(move(clearance));
+    checker.set_robot_clearance(std::move(clearance));
     const VectorXd grad =
         ComputeCollisionAvoidanceDisplacement(checker, q0, kMin, kMax);
     EXPECT_EQ(grad.size(), kQSize);

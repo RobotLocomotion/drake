@@ -842,6 +842,16 @@ class TestGeneral(unittest.TestCase):
         html = GenerateHtml(system, initial_depth=2)
         self.assertRegex(html, r'key: "zoh"')
 
+    def test_diagram_builder_remove(self):
+        builder = DiagramBuilder()
+        source = builder.AddSystem(ConstantVectorSource([0.0]))
+        adder = builder.AddSystem(Adder(1, 1))
+        builder.ExportOutput(source.get_output_port())
+        builder.RemoveSystem(adder)  # N.B. Deletes 'adder'; don't use after!
+        diagram = builder.Build()
+        self.assertEqual(diagram.num_input_ports(), 0)
+        self.assertEqual(diagram.num_output_ports(), 1)
+
     def test_diagram_fan_out(self):
         builder = DiagramBuilder()
         adder = builder.AddSystem(Adder(7, 1))

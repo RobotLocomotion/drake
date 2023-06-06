@@ -972,7 +972,7 @@ GTEST_TEST(SimulatorTest, RealtimeRate) {
   EXPECT_TRUE(simulator.get_actual_realtime_rate() <= 5.1);
 }
 
-// Tests that if publishing every timestep is disabled and publish on
+// Tests that if publishing every time step is disabled and publish on
 // initialization is enabled, publish only happens on initialization.
 GTEST_TEST(SimulatorTest, DisablePublishEveryTimestep) {
   analysis_test::MySpringMassSystem<double> spring_mass(1., 1., 0.);

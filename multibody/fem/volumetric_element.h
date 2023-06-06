@@ -58,6 +58,7 @@ struct VolumetricElementData {
   using T = typename ConstitutiveModelType::T;
   /* The states evaluated at nodes of the element. */
   Vector<T, num_dofs> element_q;
+  Vector<T, num_dofs> element_q0;
   Vector<T, num_dofs> element_v;
   Vector<T, num_dofs> element_a;
   typename ConstitutiveModelType::Data deformation_gradient_data;
@@ -411,10 +412,13 @@ class VolumetricElement
   Data DoComputeData(const FemState<T>& state) const {
     Data data;
     data.element_q = this->ExtractElementDofs(state.GetPositions());
+    data.element_q0 =
+        this->ExtractElementDofs(state.GetPreviousStepPositions());
     data.element_v = this->ExtractElementDofs(state.GetVelocities());
     data.element_a = this->ExtractElementDofs(state.GetAccelerations());
     data.deformation_gradient_data.UpdateData(
-        CalcDeformationGradient(data.element_q));
+        CalcDeformationGradient(data.element_q),
+        CalcDeformationGradient(data.element_q0));
     this->constitutive_model().CalcElasticEnergyDensity(
         data.deformation_gradient_data, &data.Psi);
     this->constitutive_model().CalcFirstPiolaStress(

@@ -111,18 +111,18 @@ bool IsRedundant(const Eigen::Ref<const MatrixXd>& c, double d,
 
 }  // namespace
 
-HPolyhedron::HPolyhedron() : ConvexSet(&ConvexSetCloner<HPolyhedron>, 0) {}
+HPolyhedron::HPolyhedron() : ConvexSet(0) {}
 
 HPolyhedron::HPolyhedron(const Eigen::Ref<const MatrixXd>& A,
                          const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(&ConvexSetCloner<HPolyhedron>, A.cols()), A_{A}, b_{b} {
+    : ConvexSet(A.cols()), A_{A}, b_{b} {
   CheckInvariants();
 }
 
 HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
                          GeometryId geometry_id,
                          std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<HPolyhedron>, 3) {
+    : ConvexSet(3) {
   std::pair<MatrixXd, VectorXd> Ab_G;
   query_object.inspector().GetShape(geometry_id).Reify(this, &Ab_G);
 
@@ -137,7 +137,7 @@ HPolyhedron::HPolyhedron(const QueryObject<double>& query_object,
 }
 
 HPolyhedron::HPolyhedron(const VPolytope& vpoly)
-    : ConvexSet(&ConvexSetCloner<HPolyhedron>, vpoly.ambient_dimension()) {
+    : ConvexSet(vpoly.ambient_dimension()) {
   orgQhull::Qhull qhull;
   qhull.runQhull("", vpoly.ambient_dimension(), vpoly.vertices().cols(),
                  vpoly.vertices().data(), "");
@@ -146,7 +146,7 @@ HPolyhedron::HPolyhedron(const VPolytope& vpoly)
         fmt::format("Qhull terminated with status {} and  message:\n{}",
                     qhull.qhullStatus(), qhull.qhullMessage()));
   }
-  A_.resize(qhull.facetCount(), ambient_dimension_);
+  A_.resize(qhull.facetCount(), ambient_dimension());
   b_.resize(qhull.facetCount());
   int facet_count = 0;
   for (const auto& facet : qhull.facetList()) {
@@ -254,6 +254,7 @@ HPolyhedron HPolyhedron::CartesianPower(int n) const {
 HPolyhedron HPolyhedron::Intersection(const HPolyhedron& other,
                                       bool check_for_redundancy,
                                       double tol) const {
+  DRAKE_THROW_UNLESS(ambient_dimension() == other.ambient_dimension());
   if (check_for_redundancy) {
     return this->DoIntersectionWithChecks(other, tol);
   }
@@ -307,8 +308,8 @@ VectorXd HPolyhedron::UniformSample(RandomGenerator* generator) const {
 
 HPolyhedron HPolyhedron::MakeBox(const Eigen::Ref<const VectorXd>& lb,
                                  const Eigen::Ref<const VectorXd>& ub) {
-  DRAKE_DEMAND(lb.size() == ub.size());
-  DRAKE_DEMAND((lb.array() <= ub.array()).all());
+  DRAKE_THROW_UNLESS(lb.size() == ub.size());
+  DRAKE_THROW_UNLESS((lb.array() <= ub.array()).all());
   const int N = lb.size();
   MatrixXd A(2 * N, N);
   A << MatrixXd::Identity(N, N), -MatrixXd::Identity(N, N);
@@ -363,7 +364,7 @@ bool HPolyhedron::DoIsBounded() const {
 }
 
 bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
-  DRAKE_DEMAND(other.A().cols() == A_.cols());
+  DRAKE_THROW_UNLESS(other.A().cols() == A_.cols());
   // `this` defines an empty set and therefore is contained in any `other`
   // HPolyhedron.
   if (DoIsEmpty(A_, b_)) {
@@ -395,7 +396,6 @@ bool HPolyhedron::ContainedIn(const HPolyhedron& other, double tol) const {
 
 HPolyhedron HPolyhedron::DoIntersectionNoChecks(
     const HPolyhedron& other) const {
-  DRAKE_DEMAND(ambient_dimension() == other.ambient_dimension());
   MatrixXd A_intersect =
       MatrixXd::Zero(A_.rows() + other.A().rows(), A_.cols());
   A_intersect.topRows(A_.rows()) = A_;
@@ -407,8 +407,6 @@ HPolyhedron HPolyhedron::DoIntersectionNoChecks(
 
 HPolyhedron HPolyhedron::DoIntersectionWithChecks(const HPolyhedron& other,
                                                   double tol) const {
-  DRAKE_DEMAND(other.A().cols() == A_.cols());
-
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A(
       A_.rows() + other.A().rows(), A_.cols());
   VectorXd b(A_.rows() + other.A().rows());
@@ -524,7 +522,13 @@ std::set<int> HPolyhedron::FindRedundant(double tol) const {
   return redundant_indices;
 }
 
-bool HPolyhedron::IsEmpty() const { return DoIsEmpty(A_, b_); }
+bool HPolyhedron::IsEmpty() const {
+  return DoIsEmpty(A_, b_);
+}
+
+std::unique_ptr<ConvexSet> HPolyhedron::DoClone() const {
+  return std::make_unique<HPolyhedron>(*this);
+}
 
 bool HPolyhedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                double tol) const {
@@ -614,14 +618,14 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
    * where hᵢ = max aᵢᵀx subject to x ∈ Q
    */
 
-  DRAKE_DEMAND(this->ambient_dimension() == other.ambient_dimension());
-  DRAKE_DEMAND(this->IsBounded());
-  DRAKE_DEMAND(other.IsBounded());
+  DRAKE_THROW_UNLESS(this->ambient_dimension() == other.ambient_dimension());
+  DRAKE_THROW_UNLESS(this->IsBounded());
+  DRAKE_THROW_UNLESS(other.IsBounded());
 
   VectorXd b_diff(b_.rows());
   MathematicalProgram prog;
   solvers::VectorXDecisionVariable x =
-      prog.NewContinuousVariables(ambient_dimension_, "x");
+      prog.NewContinuousVariables(ambient_dimension(), "x");
   // -inf <= Ax <= b
   prog.AddLinearConstraint(
       other.A(), VectorXd::Constant(other.b().rows(), -kInf), other.b(), x);
@@ -653,12 +657,12 @@ HPolyhedron HPolyhedron::PontryaginDifference(const HPolyhedron& other) const {
 }
 
 void HPolyhedron::CheckInvariants() const {
-  DRAKE_DEMAND(this->ambient_dimension() == A_.cols());
-  DRAKE_DEMAND(A_.rows() == b_.size());
+  DRAKE_THROW_UNLESS(this->ambient_dimension() == A_.cols());
+  DRAKE_THROW_UNLESS(A_.rows() == b_.size());
   // Note: If necessary, we could support infinite b, either by removing the
   // corresponding rows of A (since the constraint is vacuous), or checking
   // this explicitly in all relevant computations (like IsBounded).
-  DRAKE_DEMAND(b_.array().isFinite().all());
+  DRAKE_THROW_UNLESS(b_.array().isFinite().all());
 }
 
 }  // namespace optimization

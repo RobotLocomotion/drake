@@ -287,7 +287,6 @@ MultibodyPlant<T>::MultibodyPlant(
   // it less brittle.
   visual_geometries_.emplace_back();  // Entries for the "world" body.
   collision_geometries_.emplace_back();
-  X_WB_default_list_.emplace_back();
   // Add the world body to the graph.
   multibody_graph_.AddBody(world_body().name(), world_body().model_instance());
   DeclareSceneGraphPorts();
@@ -336,6 +335,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     num_collision_geometries_ = other.num_collision_geometries_;
     contact_model_ = other.contact_model_;
     contact_solver_enum_ = other.contact_solver_enum_;
+    sap_near_rigid_threshold_ = other.sap_near_rigid_threshold_;
     contact_surface_representation_ = other.contact_surface_representation_;
     // geometry_query_port_ is set during DeclareSceneGraphPorts() below.
     // geometry_pose_port_ is set during DeclareSceneGraphPorts() below.
@@ -395,7 +395,6 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
 
     // cache_indexes_ is set in DeclareCacheEntries() in
     // DeclareStateCacheAndPorts() in FinalizePlantOnly().
-    X_WB_default_list_ = other.X_WB_default_list_;
 
     adjacent_bodies_collision_filters_ =
         other.adjacent_bodies_collision_filters_;
@@ -603,6 +602,19 @@ DiscreteContactSolver MultibodyPlant<T>::get_discrete_contact_solver()
 }
 
 template <typename T>
+void MultibodyPlant<T>::set_sap_near_rigid_threshold(
+    double near_rigid_threshold) {
+  DRAKE_MBP_THROW_IF_FINALIZED();
+  DRAKE_THROW_UNLESS(near_rigid_threshold >= 0.0);
+  sap_near_rigid_threshold_ = near_rigid_threshold;
+}
+
+template <typename T>
+double MultibodyPlant<T>::get_sap_near_rigid_threshold() const {
+  return sap_near_rigid_threshold_;
+}
+
+template <typename T>
 ContactModel MultibodyPlant<T>::get_contact_model() const {
   return contact_model_;
 }
@@ -703,10 +715,11 @@ geometry::GeometryId MultibodyPlant<T>::RegisterVisualGeometry(
   //  and illustration in favor of a protocol that allows definition.
   geometry::PerceptionProperties perception_props;
   perception_props.AddProperty("label", "id", RenderLabel(body.index()));
-  perception_props.AddProperty(
-      "phong", "diffuse",
-      properties.GetPropertyOrDefault(
-          "phong", "diffuse", Vector4<double>(0.9, 0.9, 0.9, 1.0)));
+  if (properties.HasProperty("phong", "diffuse")) {
+    perception_props.AddProperty(
+        "phong", "diffuse",
+        properties.GetProperty<geometry::Rgba>("phong", "diffuse"));
+  }
   if (properties.HasProperty("phong", "diffuse_map")) {
     perception_props.AddProperty(
         "phong", "diffuse_map",
@@ -1327,20 +1340,6 @@ void MultibodyPlant<T>::SetDefaultPositions(
     joint.set_default_positions(
         q.segment(joint.position_start(), joint.num_positions()));
   }
-  for (BodyIndex i : GetFloatingBaseBodies()) {
-    const Body<T>& body = get_body(i);
-    RigidTransform<double> X_WB;
-    const int pos = body.floating_positions_start();
-    if (body.has_quaternion_dofs()) {
-      X_WB = RigidTransform<double>(
-          Eigen::Quaternion<double>(q[pos], q[pos + 1], q[pos + 2], q[pos + 3]),
-          q.segment(pos + 4, 3));
-    } else {
-      X_WB = RigidTransform<double>(
-          math::RollPitchYaw<double>(q.segment(pos, 3)), q.segment(pos + 3, 3));
-    }
-    SetDefaultFreeBodyPose(body, X_WB);
-  }
 }
 
 template <typename T>
@@ -1356,21 +1355,6 @@ void MultibodyPlant<T>::SetDefaultPositions(ModelInstanceIndex model_instance,
     Joint<T>& joint = get_mutable_joint(i);
     joint.set_default_positions(
         q.segment(joint.position_start(), joint.num_positions()));
-  }
-  for (BodyIndex i : GetBodyIndices(model_instance)) {
-    const Body<T>& body = get_body(i);
-    if (!body.is_floating()) continue;
-    RigidTransform<double> X_WB;
-    const int pos = body.floating_positions_start();
-    if (body.has_quaternion_dofs()) {
-      X_WB = RigidTransform<double>(
-          Eigen::Quaternion<double>(q[pos], q[pos + 1], q[pos + 2], q[pos + 3]),
-          q.segment(pos + 4, 3));
-    } else {
-      X_WB = RigidTransform<double>(
-          math::RollPitchYaw<double>(q.segment(pos, 3)), q.segment(pos + 3, 3));
-    }
-    SetDefaultFreeBodyPose(body, X_WB);
   }
 }
 
@@ -2322,7 +2306,7 @@ void MultibodyPlant<symbolic::Expression>::CalcHydroelasticWithFallback(
 }
 
 template <typename T>
-void MultibodyPlant<T>::CalcJointLockingIndices(
+void MultibodyPlant<T>::CalcUnlockedVelocityIndices(
     const systems::Context<T>& context,
     std::vector<int>* unlocked_velocity_indices) const {
   DRAKE_DEMAND(unlocked_velocity_indices != nullptr);
@@ -2348,6 +2332,26 @@ void MultibodyPlant<T>::CalcJointLockingIndices(
   std::sort(indices.begin(), indices.end());
   internal::DemandIndicesValid(indices, num_velocities());
   DRAKE_DEMAND(ssize(indices) == unlocked_cursor);
+}
+
+template <typename T>
+void MultibodyPlant<T>::CalcUnlockedVelocityIndicesPerTree(
+    const systems::Context<T>& context,
+    std::vector<std::vector<int>>* unlocked_velocity_indices_per_tree) const {
+  DRAKE_DEMAND(unlocked_velocity_indices_per_tree != nullptr);
+
+  const auto& unlocked_velocity_indices =
+      this->EvalUnlockedVelocityIndices(context);
+  const auto& topology = internal_tree().get_topology();
+  auto& indices = *unlocked_velocity_indices_per_tree;
+  indices.clear();
+  indices.resize(topology.num_trees());
+
+  for (int dof : unlocked_velocity_indices) {
+    const internal::TreeIndex tree = topology.velocity_to_tree_index(dof);
+    const int tree_dof = dof - topology.tree_velocities_start(tree);
+    indices[tree].push_back(tree_dof);
+  }
 }
 
 template <typename T>
@@ -2459,60 +2463,23 @@ void MultibodyPlant<T>::CalcNonContactForces(
   this->ValidateContext(context);
   DRAKE_DEMAND(forces != nullptr);
   DRAKE_DEMAND(forces->CheckHasRightSizeForModel(*this));
-
-  const ScopeExit guard = ThrowIfNonContactForceInProgress(context);
-
-  // Compute forces applied through force elements. Note that this resets
-  // forces to empty so must come first.
-  CalcForceElementsContribution(context, forces);
-
-  AddInForcesFromInputPorts(context, forces);
-
-  // Only discrete models support joint limits.
   if (discrete) {
-    AddJointLimitsPenaltyForces(context, forces);
+    discrete_update_manager_->CalcNonContactForces(
+        context, /* include joint limit penalty forces */ true, forces);
+    return;
   } else {
+    // Compute forces applied through force elements. Note that this resets
+    // forces to empty so must come first.
+    CalcForceElementsContribution(context, forces);
+    AddInForcesFromInputPorts(context, forces);
+    // Only discrete models support joint limits. We log a warning if joint
+    // limits are set.
     auto& warning = joint_limits_parameters_.pending_warning_message;
     if (!warning.empty()) {
       drake::log()->warn(warning);
       warning.clear();
     }
   }
-}
-template <typename T>
-ScopeExit MultibodyPlant<T>::ThrowIfNonContactForceInProgress(
-    const systems::Context<T>& context) const {
-  // To overcame issue #12786, we use this additional cache entry
-  // to detect algebraic loops.
-  systems::CacheEntryValue& value =
-      this->get_cache_entry(
-              cache_indexes_.non_contact_forces_evaluation_in_progress)
-          .get_mutable_cache_entry_value(context);
-  bool& evaluation_in_progress = value.GetMutableValueOrThrow<bool>();
-  if (evaluation_in_progress) {
-    const char* error_message =
-        "Algebraic loop detected. This situation is caused when connecting "
-        "the input of your MultibodyPlant to the output of a feedback system "
-        "which is an algebraic function of a feedthrough output of the "
-        "plant. Ways to remedy this: 1. Revisit the model for your feedback "
-        "system. Consider if its output can be written in terms of other "
-        "inputs. 2. Break the algebraic loop by adding state to the "
-        "controller, typically to 'remember' a previous input. 3. Break the "
-        "algebraic loop by adding a zero-order hold system between the "
-        "output of the plant and your feedback system. This effectively "
-        "delays the input signal to the controller.";
-    throw std::runtime_error(error_message);
-  }
-  // Mark the start of the computation. If within an algebraic
-  // loop, pulling from the plant's input ports during the
-  // computation will trigger the recursive evaluation of this
-  // method and the exception above will be thrown.
-  evaluation_in_progress = true;
-  // If the exception above is triggered, we will leave this method and the
-  // computation will no longer be "in progress". We use a scoped guard so
-  // that we have a chance to mark it as such when we leave this scope.
-  return ScopeExit(
-      [&evaluation_in_progress]() { evaluation_in_progress = false; });
 }
 
 template <typename T>
@@ -2610,14 +2577,12 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
   DeclareCacheEntries();
 
   // Declare per model instance actuation ports.
-  int num_actuated_instances = 0;
   ModelInstanceIndex last_actuated_instance;
   instance_actuation_ports_.resize(num_model_instances());
   for (ModelInstanceIndex model_instance_index(0);
        model_instance_index < num_model_instances(); ++model_instance_index) {
     const int instance_num_dofs = num_actuated_dofs(model_instance_index);
     if (instance_num_dofs > 0) {
-      ++num_actuated_instances;
       last_actuated_instance = model_instance_index;
     }
     instance_actuation_ports_[model_instance_index] =
@@ -2806,17 +2771,6 @@ void MultibodyPlant<T>::DeclareStateCacheAndPorts() {
                                   {contact_results_cache_entry.ticket()})
                               .get_index();
 
-  // See ThrowIfNonContactForceInProgress().
-  const auto& non_contact_forces_evaluation_in_progress =
-      this->DeclareCacheEntry(
-          "Evaluation of non-contact forces and accelerations is in progress.",
-          // N.B. This flag is set to true only when the computation is in
-          // progress. Therefore its default value is `false`.
-          systems::ValueProducer(false, &systems::ValueProducer::NoopCalc),
-          {systems::System<T>::nothing_ticket()});
-  cache_indexes_.non_contact_forces_evaluation_in_progress =
-      non_contact_forces_evaluation_in_progress.cache_index();
-
   // Let external model managers declare their state, cache and ports in
   // `this` MultibodyPlant.
   for (auto& physical_model : physical_models_) {
@@ -2924,13 +2878,23 @@ void MultibodyPlant<T>::DeclareCacheEntries() {
   cache_indexes_.generalized_contact_forces_continuous =
       generalized_contact_forces_continuous_cache_entry.cache_index();
 
-  // Cache joint locking indices.
+  // Cache joint locking data. A joint's locked/unlocked state is stored as an
+  // abstract parameter, so this is the only dependency needed.
   const auto& joint_locking_data_cache_entry =
-      this->DeclareCacheEntry("Joint Locking Indices.", std::vector<int>(),
-                              &MultibodyPlant::CalcJointLockingIndices,
+      this->DeclareCacheEntry("Unlocked Velocity Indices.", std::vector<int>(),
+                              &MultibodyPlant::CalcUnlockedVelocityIndices,
                               {this->all_parameters_ticket()});
   cache_indexes_.joint_locking_data =
       joint_locking_data_cache_entry.cache_index();
+
+  // Cache joint locking per tree data. A joint's locked/unlocked state is
+  // stored as an abstract parameter, so this is the only dependency needed.
+  const auto& joint_locking_data_per_tree_cache_entry = this->DeclareCacheEntry(
+      "Unlocked Velocity Indices Per Tree.", std::vector<std::vector<int>>(),
+      &MultibodyPlant::CalcUnlockedVelocityIndicesPerTree,
+      {this->all_parameters_ticket()});
+  cache_indexes_.joint_locking_data_per_tree =
+      joint_locking_data_per_tree_cache_entry.cache_index();
 }
 
 template <typename T>

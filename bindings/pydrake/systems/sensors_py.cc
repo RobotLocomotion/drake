@@ -61,7 +61,7 @@ PYBIND11_MODULE(sensors, m) {
 
   py::module::import("pydrake.common.eigen_geometry");
   py::module::import("pydrake.common.schema");
-  py::module::import("pydrake.geometry.render");
+  py::module::import("pydrake.geometry");
   py::module::import("pydrake.systems.framework");
 
   // Expose only types that are used.
@@ -172,6 +172,13 @@ PYBIND11_MODULE(sensors, m) {
     };
     type_visit(instantiation_visitor, PixelTypeList{});
   }
+
+  // Image conversion functions.
+  m  // BR
+      .def("ConvertDepth32FTo16U", &ConvertDepth32FTo16U, py::arg("input"),
+          py::arg("output"))
+      .def("ConvertDepth16UTo32F", &ConvertDepth16UTo32F, py::arg("input"),
+          py::arg("output"));
 
   using T = double;
 

@@ -51,6 +51,23 @@ using symbolic::Expression;
 using symbolic::Variable;
 using symbolic::Variables;
 
+namespace {
+MathematicalProgramResult Solve(const MathematicalProgram& prog,
+                                const GraphOfConvexSetsOptions& options,
+                                bool rounding) {
+  MathematicalProgramResult result;
+  auto solver_options = (rounding && options.rounding_solver_options)
+                            ? options.rounding_solver_options
+                            : options.solver_options;
+  if (options.solver) {
+    options.solver->Solve(prog, {}, solver_options, &result);
+  } else {
+    result = solvers::Solve(prog, {}, solver_options);
+  }
+  return result;
+}
+}  // namespace
+
 GraphOfConvexSets::~GraphOfConvexSets() = default;
 
 Vertex::Vertex(VertexId id, const ConvexSet& set, std::string name)
@@ -144,9 +161,13 @@ Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
   return binding;
 }
 
-void Edge::AddPhiConstraint(bool phi_value) { phi_value_ = phi_value; }
+void Edge::AddPhiConstraint(bool phi_value) {
+  phi_value_ = phi_value;
+}
 
-void Edge::ClearPhiConstraints() { phi_value_ = std::nullopt; }
+void Edge::ClearPhiConstraints() {
+  phi_value_ = std::nullopt;
+}
 
 double Edge::GetSolutionCost(const MathematicalProgramResult& result) const {
   return result.GetSolution(ell_).sum();
@@ -216,7 +237,9 @@ void GraphOfConvexSets::RemoveEdge(EdgeId edge_id) {
   edges_.erase(edge_id);
 }
 
-void GraphOfConvexSets::RemoveEdge(const Edge& edge) { RemoveEdge(edge.id()); }
+void GraphOfConvexSets::RemoveEdge(const Edge& edge) {
+  RemoveEdge(edge.id());
+}
 
 std::vector<Vertex*> GraphOfConvexSets::Vertices() {
   std::vector<Vertex*> vertices;
@@ -304,7 +327,8 @@ std::string GraphOfConvexSets::GetGraphvizString(
 // "Motion Planning around Obstacles with Convex Optimization":
 // https://arxiv.org/abs/2205.04422
 std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
-    VertexId source_id, VertexId target_id) const {
+    VertexId source_id, VertexId target_id,
+    const GraphOfConvexSetsOptions& options) const {
   DRAKE_DEMAND(vertices_.find(source_id) != vertices_.end());
   DRAKE_DEMAND(vertices_.find(target_id) != vertices_.end());
 
@@ -426,7 +450,7 @@ std::set<EdgeId> GraphOfConvexSets::PreprocessShortestPath(
     degree.at(e->v().id()).evaluator()->set_bounds(Vector1d(0), Vector1d(0));
 
     // Check if edge e = (u,v) could be on a path from start to goal.
-    auto result = Solve(prog);
+    auto result = Solve(prog, options, false);
     if (!result.is_success()) {
       unusable_edges.insert(edge_id);
     }
@@ -620,19 +644,6 @@ void GraphOfConvexSets::AddPerspectiveConstraint(
   }
 }
 
-namespace {
-MathematicalProgramResult Solve(const MathematicalProgram& prog,
-                                const GraphOfConvexSetsOptions& options) {
-  MathematicalProgramResult result;
-  if (options.solver) {
-    options.solver->Solve(prog, {}, options.solver_options, &result);
-  } else {
-    result = solvers::Solve(prog, {}, options.solver_options);
-  }
-  return result;
-}
-}  // namespace
-
 MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     VertexId source_id, VertexId target_id,
     const GraphOfConvexSetsOptions& options) const {
@@ -641,7 +652,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
 
   std::set<EdgeId> unusable_edges;
   if (options.preprocessing) {
-    unusable_edges = PreprocessShortestPath(source_id, target_id);
+    unusable_edges = PreprocessShortestPath(source_id, target_id, options);
   }
 
   MathematicalProgram prog;
@@ -885,7 +896,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     }
   }
 
-  MathematicalProgramResult result = Solve(prog, options);
+  MathematicalProgramResult result = Solve(prog, options, false);
 
   // Implements the rounding scheme put forth in Section 4.2 of
   // "Motion Planning around Obstacles with Convex Optimization":
@@ -976,7 +987,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
         }
       }
 
-      MathematicalProgramResult rounded_result = Solve(prog, options);
+      MathematicalProgramResult rounded_result = Solve(prog, options, true);
 
       // Check path quality.
       if (rounded_result.is_success() &&
@@ -1059,7 +1070,7 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     // prevent the projection back into the Xᵤ, then we prefer to return NaN.
     if (sum_phi < 100.0 * std::numeric_limits<double>::epsilon()) {
       x_v = VectorXd::Constant(v->ambient_dimension(),
-                                std::numeric_limits<double>::quiet_NaN());
+                               std::numeric_limits<double>::quiet_NaN());
     } else if (options.convex_relaxation) {
       x_v /= sum_phi;
     }

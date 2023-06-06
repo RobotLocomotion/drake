@@ -170,7 +170,7 @@ class KinematicTrajectoryOptimization {
   to the jerk trajectory, d³qdt³(t).  These constraints will be respected at all
   times.  Note that this does NOT directly constrain d³rds³(s). */
   void AddJerkBounds(const Eigen::Ref<const Eigen::VectorXd>& lb,
-                             const Eigen::Ref<const Eigen::VectorXd>& ub);
+                     const Eigen::Ref<const Eigen::VectorXd>& ub);
 
   /** Adds a linear cost on the duration of the trajectory. */
   void AddDurationCost(double weight = 1.0);

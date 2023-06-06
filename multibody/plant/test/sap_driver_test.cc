@@ -170,8 +170,6 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
             &problem.get_constraint(i));
     // In this test we do know all constraints are contact constraints.
     ASSERT_NE(constraint, nullptr);
-    EXPECT_EQ(constraint->constraint_function(),
-              Vector3d(0., 0., pair_kinematics.phi));
     EXPECT_EQ(constraint->num_cliques(), pair_kinematics.jacobian.size());
     EXPECT_EQ(constraint->first_clique(), pair_kinematics.jacobian[0].tree);
     EXPECT_EQ(constraint->first_clique_jacobian().MakeDenseMatrix(),
@@ -185,10 +183,10 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
     EXPECT_EQ(constraint->parameters().stiffness, discrete_pair.stiffness);
     EXPECT_EQ(constraint->parameters().dissipation_time_scale,
               discrete_pair.dissipation_time_scale);
-    // These two parameters, beta and sigma, are for now hard-code in the
-    // manager to these values. Here we simply tests they are consistent with
-    // those hard-coded values.
-    EXPECT_EQ(constraint->parameters().beta, 1.0);
+    EXPECT_EQ(constraint->parameters().beta,
+              plant_->get_sap_near_rigid_threshold());
+    // This parameter sigma is for now hard-code in the manager to these value.
+    // Here we simply test they are consistent with those hard-coded values.
     EXPECT_EQ(constraint->parameters().sigma, 1.0e-3);
 
     // Verify contact frame orientation matrix R_WC.

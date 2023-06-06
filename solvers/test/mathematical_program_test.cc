@@ -63,7 +63,6 @@ using std::is_permutation;
 using std::is_same_v;
 using std::make_shared;
 using std::map;
-using std::move;
 using std::numeric_limits;
 using std::pair;
 using std::runtime_error;
@@ -2799,7 +2798,7 @@ void CheckAddedSymbolicQuadraticCostUserFun(const MathematicalProgram& prog,
   EXPECT_EQ(binding.variables(), prog.quadratic_costs().back().variables());
 
   auto cnstr = prog.quadratic_costs().back().evaluator();
-  // Check the added cost is 0.5 * x' * Q * x + b' * x
+  // Check the added cost is 0.5 * x' * Q * x + b' * x + c
   const auto& x_bound = binding.variables();
   const Expression e_added = 0.5 * x_bound.dot(cnstr->Q() * x_bound) +
                              cnstr->b().dot(x_bound) + cnstr->c();
@@ -2832,6 +2831,11 @@ GTEST_TEST(TestMathematicalProgram, AddSymbolicQuadraticCost) {
   Expression e2 = x.transpose() * x + 1;
   CheckAddedSymbolicQuadraticCost(&prog, e2, true);
   EXPECT_TRUE(prog.quadratic_costs().back().evaluator()->is_convex());
+  // Confirm that const terms are respected.
+  auto b = prog.AddQuadraticCost(e2);
+  VectorXd y(1);
+  b.evaluator()->Eval(Vector3d::Zero(), &y);
+  EXPECT_EQ(y[0], 1);
 
   // Identity diagonal term.
   Expression e3 = x(0) * x(0) + x(1) * x(1) + 2;
@@ -3136,9 +3140,6 @@ GTEST_TEST(TestMathematicalProgram, TestAddCostThrowError) {
   MathematicalProgram prog;
   auto x = prog.NewContinuousVariables<2>();
 
-  // Add a non-polynomial cost.
-  EXPECT_THROW(prog.AddCost(sin(x(0))), runtime_error);
-
   // Add a cost containing variable not included in the mathematical program.
   Variable y("y");
   DRAKE_EXPECT_THROWS_MESSAGE(prog.AddCost(x(0) + y),
@@ -3161,6 +3162,27 @@ GTEST_TEST(TestMathematicalProgram, TestAddGenericCost) {
   GenericPtr quadratic_cost(new QuadraticCost(Matrix1d(1), Vector1d(1)));
   prog.AddCost(quadratic_cost, x);
   EXPECT_EQ(prog.quadratic_costs().size(), 1);
+}
+
+GTEST_TEST(TestMathematicalProgram, TestAddGenericCostExpression) {
+  MathematicalProgram prog;
+  Variable x = prog.NewContinuousVariables<1>()[0];
+  Variable y = prog.NewContinuousVariables<1>()[0];
+
+  using std::atan2;
+  auto b = prog.AddCost(atan2(y, x));
+  EXPECT_EQ(prog.generic_costs().size(), 1);
+  Vector2d x_test(0.5, 0.2);
+  Vector1d y_expected(atan2(0.2, 0.5));
+  EXPECT_TRUE(CompareMatrices(prog.EvalBinding(b, x_test), y_expected));
+}
+
+// Confirm that even constant costs are supported.
+GTEST_TEST(TestMathematicalProgram, TestAddCostConstant) {
+  MathematicalProgram prog;
+
+  auto b = prog.AddCost(Expression(0.5));
+  EXPECT_EQ(prog.linear_costs().size(), 1);
 }
 
 GTEST_TEST(TestMathematicalProgram, TestClone) {

@@ -29,7 +29,6 @@ using geometry::render::DepthRange;
 using geometry::render::DepthRenderCamera;
 using math::RigidTransformd;
 using std::make_pair;
-using std::move;
 using std::pair;
 
 RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
@@ -43,8 +42,8 @@ RgbdSensor::RgbdSensor(FrameId parent_id, const RigidTransformd& X_PB,
                        ColorRenderCamera color_camera,
                        DepthRenderCamera depth_camera)
     : parent_frame_id_(parent_id),
-      color_camera_(move(color_camera)),
-      depth_camera_(move(depth_camera)),
+      color_camera_(std::move(color_camera)),
+      depth_camera_(std::move(depth_camera)),
       X_PB_(X_PB) {
   const CameraInfo& color_intrinsics = color_camera_.core().intrinsics();
   const CameraInfo& depth_intrinsics = depth_camera_.core().intrinsics();
@@ -153,19 +152,6 @@ void RgbdSensor::CalcX_WB(const Context<double>& context,
   }
 }
 
-void RgbdSensor::ConvertDepth32FTo16U(const ImageDepth32F& d32,
-                                      ImageDepth16U* d16) {
-  // Convert to mm and 16bits.
-  const float kDepth16UOverflowDistance =
-      std::numeric_limits<uint16_t>::max() / 1000.;
-  for (int w = 0; w < d16->width(); w++) {
-    for (int h = 0; h < d16->height(); h++) {
-      const double dist = std::min(d32.at(w, h)[0], kDepth16UOverflowDistance);
-      d16->at(w, h)[0] = static_cast<uint16_t>(dist * 1000);
-    }
-  }
-}
-
 RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
                                        double period, bool render_label_image)
     : camera_(camera.get()), period_(period) {
@@ -173,7 +159,7 @@ RgbdSensorDiscrete::RgbdSensorDiscrete(std::unique_ptr<RgbdSensor> camera,
   const auto& depth_camera_info = camera->depth_camera_info();
 
   DiagramBuilder<double> builder;
-  builder.AddSystem(move(camera));
+  builder.AddSystem(std::move(camera));
   query_object_port_ =
       builder.ExportInput(camera_->query_object_input_port(), "geometry_query");
 

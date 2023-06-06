@@ -84,11 +84,9 @@ void SliceTetrahedronWithPlane(
   // No intersecting edges --> no intersection.
   if (intersected_edges[0] == -1) return;
 
-  int num_intersections = 0;
   for (int e = 0; e < 4; ++e) {
     const int edge_index = intersected_edges[e];
     if (edge_index == -1) break;
-    ++num_intersections;
     const TetrahedronEdge& tet_edge = kTetEdges[edge_index];
     const int v0 = mesh_M.element(tet_index).vertex(tet_edge.first);
     const int v1 = mesh_M.element(tet_index).vertex(tet_edge.second);

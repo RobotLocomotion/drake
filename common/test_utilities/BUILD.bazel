@@ -24,6 +24,7 @@ drake_cc_package_library(
     testonly = 1,
     visibility = ["//visibility:public"],
     deps = [
+        ":diagnostic_policy_test_base",
         ":eigen_matrix_compare",
         ":expect_no_throw",
         ":expect_throws_message",
@@ -32,6 +33,16 @@ drake_cc_package_library(
         ":measure_execution",
         ":random_polynomial_matrix",
         ":symbolic_test_util",
+    ],
+)
+
+drake_cc_library(
+    name = "diagnostic_policy_test_base",
+    testonly = 1,
+    hdrs = ["diagnostic_policy_test_base.h"],
+    deps = [
+        "//common:diagnostic_policy",
+        "@gtest//:without_main",
     ],
 )
 

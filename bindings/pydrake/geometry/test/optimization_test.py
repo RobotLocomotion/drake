@@ -9,7 +9,7 @@ from pydrake.common import RandomGenerator, temp_directory
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.geometry import (
     Box, Capsule, Cylinder, Ellipsoid, FramePoseVector, GeometryFrame,
-    GeometryInstance, SceneGraph, Sphere,
+    GeometryInstance, ProximityProperties, SceneGraph, Sphere,
 )
 from pydrake.math import RigidTransform
 from pydrake.multibody.inverse_kinematics import InverseKinematics
@@ -206,6 +206,15 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(sum2.num_terms(), 2)
         self.assertIsInstance(sum2.term(0), mut.Point)
 
+    def test_spectrahedron(self):
+        s = mut.Spectrahedron()
+        prog = MathematicalProgram()
+        X = prog.NewSymmetricContinuousVariables(3)
+        prog.AddPositiveSemidefiniteConstraint(X)
+        prog.AddLinearEqualityConstraint(X[0, 0] + X[1, 1] + X[2, 2], 1)
+        s = mut.Spectrahedron(prog=prog)
+        self.assertEqual(s.ambient_dimension(), 6)
+
     def test_v_polytope(self):
         vertices = np.array([[0.0, 1.0, 2.0], [3.0, 7.0, 5.0]])
         vpoly = mut.VPolytope(vertices=vertices)
@@ -337,6 +346,10 @@ class TestGeometryOptimization(unittest.TestCase):
             geometry=GeometryInstance(X_PG=RigidTransform(),
                                       shape=Capsule(1., 1.0),
                                       name="capsule"))
+        for geometry_id in [box_geometry_id, cylinder_geometry_id,
+                            sphere_geometry_id, capsule_geometry_id]:
+            scene_graph.AssignRole(source_id, geometry_id,
+                                   properties=ProximityProperties())
         context = scene_graph.CreateDefaultContext()
         pose_vector = FramePoseVector()
         pose_vector.set_value(frame_id, RigidTransform())
@@ -372,12 +385,16 @@ class TestGeometryOptimization(unittest.TestCase):
         obstacles = mut.MakeIrisObstacles(
             query_object=query_object,
             reference_frame=scene_graph.world_frame_id())
+        self.assertGreater(len(obstacles), 0)
+        for obstacle in obstacles:
+            self.assertIsInstance(obstacle, mut.ConvexSet)
         options = mut.IrisOptions()
         options.require_sample_point_is_contained = True
         options.iteration_limit = 1
         options.termination_threshold = 0.1
         options.relative_termination_threshold = 0.01
         options.random_seed = 1314
+        options.starting_ellipse = mut.Hyperellipsoid.MakeUnitBall(3)
         self.assertNotIn("object at 0x", repr(options))
         region = mut.Iris(
             obstacles=obstacles, sample=[2, 3.4, 5],
@@ -431,6 +448,10 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertTrue(region.PointInSet([1.0]))
         self.assertFalse(region.PointInSet([3.0]))
         options.configuration_obstacles = [mut.Point([-0.5])]
+        point, = options.configuration_obstacles
+        self.assertEqual(point.x(), [-0.5])
+        point2, = options.configuration_obstacles
+        self.assertIs(point2, point)
         region = mut.IrisInConfigurationSpace(
             plant=plant, context=plant.GetMyContextFromRoot(context),
             options=options)
@@ -450,8 +471,12 @@ class TestGeometryOptimization(unittest.TestCase):
         options.solver = ClpSolver()
         options.solver_options = SolverOptions()
         options.solver_options.SetOption(ClpSolver.id(), "scaling", 2)
+        options.rounding_solver_options = SolverOptions()
+        options.rounding_solver_options.SetOption(ClpSolver.id(), "dual", 0)
         self.assertIn("scaling",
                       options.solver_options.GetOptions(ClpSolver.id()))
+        self.assertIn(
+            "dual", options.rounding_solver_options.GetOptions(ClpSolver.id()))
         self.assertIn("convex_relaxation", repr(options))
 
         spp = mut.GraphOfConvexSets()

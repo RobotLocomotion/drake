@@ -548,6 +548,8 @@ void DoScalarDependentDefinitions(py::module m) {
           py::keep_alive<1, 0>(),
           // Keep alive, ownership: `system` keeps `self` alive.
           py::keep_alive<3, 1>(), doc.DiagramBuilder.AddNamedSystem.doc)
+      .def("RemoveSystem", &DiagramBuilder<T>::RemoveSystem, py::arg("system"),
+          doc.DiagramBuilder.RemoveSystem.doc)
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
       .def("already_built", &DiagramBuilder<T>::already_built,
           doc.DiagramBuilder.already_built.doc)

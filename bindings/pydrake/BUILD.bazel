@@ -447,6 +447,8 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "lcm_test",
+    # See #19394, this test fails frequently on Mac ARM CI
+    flaky = True,
     deps = [
         ":lcm_py",
         "//bindings/pydrake/common/test_utilities:deprecation_py",
@@ -468,6 +470,15 @@ drake_py_unittest(
         ":autodiffutils_py",
         ":math_py",
         ":symbolic_py",
+    ],
+)
+
+drake_py_unittest(
+    name = "math_overloads_matrix_test",
+    deps = [
+        ":math_py",
+        "//bindings/pydrake/common/test_utilities:meta_py",
+        "//bindings/pydrake/common/test_utilities:numpy_compare_py",
     ],
 )
 
@@ -563,17 +574,10 @@ PYI_FILES = [
     "pydrake/common/yaml.pyi",
     "pydrake/examples/__init__.pyi",
     "pydrake/examples/_examples_extra.pyi",
-    "pydrake/examples/acrobot.pyi",
-    "pydrake/examples/compass_gait.pyi",
-    "pydrake/examples/manipulation_station.pyi",
     "pydrake/examples/multibody/__init__.pyi",
     "pydrake/examples/multibody/cart_pole_passive_simulation.pyi",
     "pydrake/examples/multibody/pendulum_lqr_monte_carlo_analysis.pyi",
     "pydrake/examples/multibody/run_planar_scenegraph_visualizer.pyi",
-    "pydrake/examples/pendulum.pyi",
-    "pydrake/examples/quadrotor.pyi",
-    "pydrake/examples/rimless_wheel.pyi",
-    "pydrake/examples/van_der_pol.pyi",
     "pydrake/forwarddiff.pyi",
     "pydrake/geometry/__init__.pyi",
     "pydrake/lcm.pyi",

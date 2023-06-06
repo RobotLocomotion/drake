@@ -36,7 +36,6 @@ using render::ColorRenderCamera;
 using render::DepthRenderCamera;
 using std::make_pair;
 using std::make_unique;
-using std::move;
 using std::set;
 using std::string;
 using std::swap;
@@ -467,17 +466,27 @@ GeometryId GeometryState<T>::GetGeometryIdByName(
 
   if (count == 1) return result;
   if (count < 1) {
-    throw std::logic_error("The frame '" + frame_name + "' (" +
-        to_string(frame_id) + ") has no geometry with the role '" +
-        to_string(role) + "' and the canonical name '" + canonical_name + "'");
+    std::vector<std::string_view> names;
+    for (GeometryId geometry_id : frame.child_geometries()) {
+      const InternalGeometry& geometry = geometries_.at(geometry_id);
+      if (geometry.has_role(role)) {
+        names.emplace_back(geometry.name());
+      }
+    }
+    throw std::logic_error(fmt::format(
+        "The frame '{}' ({}) has no geometry with the role '{}' and the "
+        "canonical name '{}'. The names associated with this frame/role are "
+        "{{{}}}.",
+        frame_name, frame_id, role, canonical_name, fmt::join(names, ", ")));
   }
   // This case should only be possible for unassigned geometries - internal
   // invariants require unique names for actual geometries with the _same_
   // role on the same frame.
   DRAKE_DEMAND(role == Role::kUnassigned);
-  throw std::logic_error("The frame '" + frame_name + "' (" +
-      to_string(frame_id) + ") has multiple geometries with the role '" +
-      to_string(role) + "' and the canonical name '" + canonical_name + "'");
+  throw std::logic_error(
+      fmt::format("The frame '{}' ({}) has multiple geometries with the role "
+                  "'{}' and the canonical name '{}'",
+                  frame_name, frame_id, role, canonical_name));
 }
 
 template <typename T>
@@ -1161,7 +1170,7 @@ void GeometryState<T>::AddRenderer(
         "AddRenderer(): A renderer with the name '{}' already exists", name));
   }
   render::RenderEngine* render_engine = renderer.get();
-  render_engines_[name] = move(renderer);
+  render_engines_[name] = std::move(renderer);
   bool accepted = false;
   for (auto& id_geo_pair : geometries_) {
     InternalGeometry& geometry = id_geo_pair.second;
@@ -1205,7 +1214,8 @@ void GeometryState<T>::RenderColorImage(const ColorRenderCamera& camera,
                                         FrameId parent_frame,
                                         const RigidTransformd& X_PC,
                                         ImageRgba8U* color_image_out) const {
-  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
+  const RigidTransformd X_WC =
+      CalcCameraWorldPose(camera.core(), parent_frame, X_PC);
   const render::RenderEngine& engine =
       GetRenderEngineOrThrow(camera.core().renderer_name());
   // TODO(SeanCurtis-TRI): Invoke UpdateViewpoint() as part of a calc cache
@@ -1219,7 +1229,8 @@ void GeometryState<T>::RenderDepthImage(const DepthRenderCamera& camera,
                                         FrameId parent_frame,
                                         const RigidTransformd& X_PC,
                                         ImageDepth32F* depth_image_out) const {
-  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
+  const RigidTransformd X_WC =
+      CalcCameraWorldPose(camera.core(), parent_frame, X_PC);
   const render::RenderEngine& engine =
       GetRenderEngineOrThrow(camera.core().renderer_name());
   // See note in RenderColorImage() about this const cast.
@@ -1232,7 +1243,8 @@ void GeometryState<T>::RenderLabelImage(const ColorRenderCamera& camera,
                                         FrameId parent_frame,
                                         const RigidTransformd& X_PC,
                                         ImageLabel16I* label_image_out) const {
-  const RigidTransformd X_WC = GetDoubleWorldPose(parent_frame) * X_PC;
+  const RigidTransformd X_WC =
+      CalcCameraWorldPose(camera.core(), parent_frame, X_PC);
   const render::RenderEngine& engine =
       GetRenderEngineOrThrow(camera.core().renderer_name());
   // See note in RenderColorImage() about this const cast.
@@ -1702,6 +1714,14 @@ const render::RenderEngine& GeometryState<T>::GetRenderEngineOrThrow(
 
   throw std::logic_error(
       fmt::format("No renderer exists with name: '{}'", renderer_name));
+}
+
+template <typename T>
+RigidTransformd GeometryState<T>::CalcCameraWorldPose(
+    const render::RenderCameraCore& core, FrameId parent_frame,
+    const RigidTransformd& X_PC) const {
+  return GetDoubleWorldPose(parent_frame) * X_PC *
+         core.sensor_pose_in_camera_body();
 }
 
 template <typename T>

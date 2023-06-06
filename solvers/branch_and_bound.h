@@ -163,17 +163,23 @@ class MixedIntegerBranchAndBoundNode {
   /** Getter for solver id. */
   const SolverId& solver_id() const { return solver_id_; }
 
- private:
-  /**
-   * If the solution to a binary variable is either less than integral_tol or
-   * larger than 1 - integral_tol, then we regard the solution to be binary.
-   * This method set this tolerance.
+  /** If the mathematical program in this node has been solved and the result is
+   * stored inside this node, then we say this node has been explored. */
+  [[nodiscard]] bool is_explored() const;
+
+  /** Returns the total number of explored nodes in the subtree
+   * (including this node if it has been explored).
    */
+  [[nodiscard]] int NumExploredNodesInSubtree() const;
+
+ private:
+  // If the solution to a binary variable is either less than integral_tol or
+  // larger than 1 - integral_tol, then we regard the solution to be binary.
+  // This method set this tolerance.
   void set_integral_tolerance(double integral_tol) {
     integral_tol_ = integral_tol;
   }
 
- private:
   // Constructs an empty node. Clone the input mathematical program to this
   // node. The child and the parent nodes are all nullptr.
   // @param prog The optimization program whose binary variable constraints are
@@ -273,6 +279,15 @@ class MixedIntegerBranchAndBound {
     kMinLowerBound,  ///< Pick the node with the smallest optimal cost.
   };
 
+  struct Options {
+    Options() {}
+    // The maximal number of explored nodes in the tree. The branch and bound
+    // process will terminate if the tree has explored this number of nodes.
+    // max_explored_nodes <= 0 means that we don't put an upper bound on
+    // the number of explored nodes.
+    int max_explored_nodes{-1};
+  };
+
   /**
    * The function signature for the user defined method to pick a branching node
    * or a branching variable.
@@ -292,7 +307,8 @@ class MixedIntegerBranchAndBound {
    * @param solver_id The ID of the solver for the optimization.
    */
   explicit MixedIntegerBranchAndBound(const MathematicalProgram& prog,
-                                      const SolverId& solver_id);
+                                      const SolverId& solver_id,
+                                      Options options = Options{});
 
   /**
    * Solve the mixed-integer problem (MIP) through a branch and bound process.
@@ -636,6 +652,8 @@ class MixedIntegerBranchAndBound {
 
   // The root node of the tree.
   std::unique_ptr<MixedIntegerBranchAndBoundNode> root_;
+
+  MixedIntegerBranchAndBound::Options options_;
 
   // We re-created the decision variables in the optimization program in the
   // branch-and-bound. All nodes uses the same new set of decision variables,

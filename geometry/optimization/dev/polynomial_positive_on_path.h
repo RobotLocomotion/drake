@@ -10,8 +10,8 @@ namespace optimization {
 
 /**
  * Certifying a path as collision free will require certifying that many matrix
- * SOS conditions [1;y]ᵀP(μ;s)[1;y] ≥ 0 for μ ∈ [0,1] where the s is a
- * multivariate parameter which must be evaluated before the optimization
+ * SOS conditions poly(μ,y) = [1;y]ᵀP(μ;s)[1;y] ≥ 0 for μ ∈ [0,1] where the s is
+ * a multivariate parameter which must be evaluated before the optimization
  * program is solved. This class contains the information for adding the
  * constraint that a polynomial be positive on the unit interval. The polynomial
  * is parametrized as some of its indeterminates needing to be evaluated before
@@ -43,6 +43,7 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
 
   const symbolic::Variable& get_mu() const { return mu_; }
   const symbolic::Polynomial& get_p() const { return p_; }
+  const symbolic::Polynomial& get_poly() const { return poly_; }
   const symbolic::Polynomial& get_lambda() const { return lambda_; }
   const symbolic::Polynomial& get_nu() const { return nu_; }
   const symbolic::Variables& get_parameters() const { return parameters_; }
@@ -58,21 +59,27 @@ class ParametrizedPolynomialPositiveOnUnitInterval {
   // polynomial is positive for μ ∈ [0,1].
   const symbolic::Variable mu_;
 
-  // A polynomial q(μ,y) = [1;y]ᵀP(μ;s)[1;y] (where μ is univariate and y is
-  // multivariate) is positive on the interval μ ∈ [0,1] if and only if there
-  // exists biforms λ(μ,y) = ∑ ϕᵢ²(μ,y) and ν(μ,y) = ∑ ψᵢ²(μ,y) such that
-  // q(μ,y) = λ(μ,y) + ν(μ,y)*μ*(1-μ) if deg(q, μ) = 2d or q(μ,y) = λ(μ,y)*μ +
-  // ν(μ,y)*(1-μ) if deg(q, μ) = 2d + 1. Moreover, in both cases deg(ϕᵢ, μ) ≤ d,
-  // deg(ϕᵢ, y) = 1, and and deg(ψᵢ, y) = 1. In the first case
-  // deg(ψᵢ, μ) ≤ d - 1, and in the second deg(ψᵢ, μ) ≤ d. If deg(poly,μ) > 0 we
-  // construct the polynomial p_(μ,y) = poly(μ,y)-q(μ,y) which we will later
-  // constrain to be equal to 0. If deg(poly,μ) = 0, then q is either
-  // constrained to be a positive scalar if it has no other indeterminates, or
-  // it is constrained to be a sum-of-squares if it is a quadratic form in y.
+  // The polynomial that this structure will certify is positive.
+  symbolic::Polynomial poly_;
+
+  // Consider polynomial poly(μ,y) = [1;y]ᵀP(μ;s)[1;y] (where μ is univariate
+  // and y is multivariate), biforms λ(μ,y) = ∑ ϕᵢ²(μ,y) and ν(μ,y) = ∑
+  // ψᵢ²(μ,y), and define q(μ,y) = λ(μ,y) + ν(μ,y)*μ*(1-μ) if deg(poly, μ) = 2d
+  // or q(μ,y) = λ(μ,y)*μ + ν(μ,y)*(1-μ) if deg(poly, μ) = 2d + 1. Then
+  // poly(μ,y) is positive on the interval μ ∈ [0,1] if and only if p_(μ,y) =
+  // poly(μ,y)-q(μ,y) = 0. Moreover, in both the odd and even degree case
+  // deg(ϕᵢ, μ) ≤ d, deg(ϕᵢ, y) = 1, and and deg(ψᵢ, y) = 1. In the even case,
+  // deg(ψᵢ, μ) ≤ d - 1, and in the odd case deg(ψᵢ, μ) ≤ d.
+  //
+  // If deg(poly,μ) > 0 we construct the polynomial p_(μ,y) = poly(μ,y)-q(μ,y)
+  // which we will later constrain to be equal to 0 when a value of parameters.
+  // If deg(poly,μ) = 0, then q is either constrained to be a positive scalar if
+  // it has no other indeterminates, or it is constrained to be a sum-of-squares
+  // if it is a quadratic form in y.
   symbolic::Polynomial p_;
 
   // The subset of the decision variables in p_ which must be evaluated before
-  // we enforce it's positivity in a Mathematical Program.
+  // we enforce poly_'s positivity in a Mathematical Program.
   const symbolic::Variables parameters_;
 
   // The λ(μ,y) in the documentation of p_

@@ -6,11 +6,99 @@
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
 
 namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+/* The contact constraint mode given in terms of the radial component γᵣ and
+the normal component γₙ of the contact impulse γ. */
+enum class ContactMode {
+  /* Contact constraint is in stiction, i.e. γᵣ < μγₙ. */
+  kStiction,
+  /* Contact constraint is in sliding, i.e. γᵣ = μγₙ. */
+  kSliding,
+  /* Contact constraint is out of contact, i.e. γ = 0. */
+  kNoContact
+};
+
+/* Structure to store data needed for SapFrictionConeConstraint computations. */
+template <typename T>
+struct SapFrictionConeConstraintData {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapFrictionConeConstraintData);
+
+  /* Constructs data for a SapFrictionConeConstraint.
+     @param mu Friction coefficient.
+     @param Rt Regularization parameter for the tangential direction.
+     @param Rn Regularization parameter for the normal direction.
+     @param vn_hat Bias term for the normal direction.
+
+     @warning Data stored is left uninitialized to avoid the cost of an
+     unnecessary initialization. */
+  SapFrictionConeConstraintData(const T& mu, const T& Rt, const T& Rn,
+                                const T& vn_hat);
+
+  /* Getters for regularization R, R⁻¹,  sqrt(R) and sqrt(R)⁻¹. */
+  const Vector3<T>& R() const { return parameters_.R; }
+  const Vector3<T>& R_inv() const { return parameters_.R_inv; }
+  const Vector3<T>& Rsqrt() const { return parameters_.Rsqrt; }
+  const Vector3<T>& Rsqrt_inv() const { return parameters_.Rsqrt_inv; }
+  const T& Rt() const { return parameters_.R(0); }
+  const T& Rn() const { return parameters_.R(2); }
+
+  /* Returns constraint bias v̂. */
+  const Vector3<T>& v_hat() const { return parameters_.v_hat; }
+
+  const T& mu() const { return parameters_.mu; }
+
+  /* Returns mu_tilde = mu ⋅ sqrt(Rt / Rn). */
+  const T& mu_tilde() const { return parameters_.mu_tilde; }
+
+  /* Returns mu_hat = mu ⋅ Rt / Rn. */
+  const T& mu_hat() const { return parameters_.mu_hat; }
+
+  /* Const access. */
+  const Vector3<T>& vc() const { return vc_; }
+  const ContactMode& mode() const { return mode_; }
+  const Vector3<T>& y() const { return y_; }
+  const T& yr() const { return yr_; }
+  const T& yn() const { return yn_; }
+  const Vector2<T>& t_hat() const { return t_hat_; }
+  const Vector3<T>& gamma() const { return gamma_; }
+
+  /* Mutable access. */
+  Vector3<T>& mutable_vc() { return vc_; }
+  ContactMode& mutable_mode() { return mode_; }
+  Vector3<T>& mutable_y() { return y_; }
+  T& mutable_yr() { return yr_; }
+  T& mutable_yn() { return yn_; }
+  Vector2<T>& mutable_t_hat() { return t_hat_; }
+  Vector3<T>& mutable_gamma() { return gamma_; }
+
+ private:
+  // Values stored in this struct remain const after construction.
+  struct ConstParameters {
+    Vector3<T> R;          // Regularization R.
+    Vector3<T> R_inv;      // Inverse of regularization R⁻¹.
+    Vector3<T> v_hat;      // Constraint velocity bias.
+    Vector3<T> Rsqrt;      // = R^{1/2}.
+    Vector3<T> Rsqrt_inv;  // = R^{-1/2}.
+    T mu;
+    T mu_tilde;
+    T mu_hat;
+  };
+  ConstParameters parameters_;
+
+  ContactMode mode_{};  // The contact mode.
+  Vector3<T> vc_;       // Contact velocity.
+  Vector3<T> y_;        // Un-projected impulse y = −R⁻¹⋅(vc−v̂)
+  T yr_{}, yn_{};       // Radial and normal components of y, respectively.
+  Vector2<T> t_hat_;    // Tangent vector.
+  Vector3<T> gamma_;    // Impulse.
+};
 
 /* Implements contact constraints for the SAP solver.
  Here we provide a brief description of the contact forces modeled by this
@@ -65,7 +153,15 @@ namespace internal {
 template <typename T>
 class SapFrictionConeConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapFrictionConeConstraint);
+  /* We do not allow copy, move, or assignment generally to avoid slicing.
+    Protected copy construction is enabled for sub-classes to use in their
+    implementation of DoClone(). */
+  //@{
+  SapFrictionConeConstraint& operator=(const SapFrictionConeConstraint&) =
+      delete;
+  SapFrictionConeConstraint(SapFrictionConeConstraint&&) = delete;
+  SapFrictionConeConstraint& operator=(SapFrictionConeConstraint&&) = delete;
+  //@}
 
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
@@ -87,76 +183,70 @@ class SapFrictionConeConstraint final : public SapConstraint<T> {
     double sigma{1.0e-3};
   };
 
-  /* Constructs a contact constraint for the case in which only a single clique
-   is involved. E.g. contact with the world or self-contact.
-   @param[in] clique The clique involved in the contact. Must be non-negative.
-   @param[in] J The Jacobian, such that vc = J⋅v. It must have three rows or an
-   exception is thrown.
-   @param[in] phi0 The value of the signed distance at the previous time step.
-   @param[in] parameters Constraint parameters. See Parameters for details. */
-  SapFrictionConeConstraint(int clique, MatrixBlock<T> J, const T& phi0,
+  /* Constructs a contact constraint given its Jacobian and signed distance at
+   the current configuration.
+   @param[in] J The contact Jacobian, which defines the contact velocity `vc` as
+   vc = J⋅v.
+   @param[in] phi0 The value of the signed distance at the current
+   configuration.
+   @param[in] parameters Constraint parameters. See Parameters for details.
+   @pre J has three rows. */
+  SapFrictionConeConstraint(SapConstraintJacobian<T> J, const T& phi0,
                             const Parameters& parameters);
-
-  /* Alternative constructor for a contact constraint involving a single clique
-   that takes a dense Jacobian. */
-  SapFrictionConeConstraint(int clique, MatrixX<T> J, const T& phi0,
-                            const Parameters& parameters)
-      : SapFrictionConeConstraint(clique, MatrixBlock<T>(std::move(J)), phi0,
-                                  parameters) {}
-
-  /* Constructs a contact constraint for the case in which two cliques
-   are involved.
-   @param[in] clique0 First clique involved in the contact. Must be
-   non-negative.
-   @param[in] clique1 Second clique involved in the contact. Must be
-   non-negative.
-   @param[in] J0 The Jacobian w.r.t. to the first clique's generalized
-   velocities. It must have three rows or an exception is thrown.
-   @param[in] J1 The Jacobian w.r.t. to the second clique's generalized
-   velocities. It must have three rows or an exception is thrown.
-   @param[in] phi0 The value of the signed distance at the previous time step.
-   @param[in] parameters Constraint parameters. See Parameters for details. */
-  SapFrictionConeConstraint(int clique0, int clique1, MatrixBlock<T> J0,
-                            MatrixBlock<T> J1, const T& phi0,
-                            const Parameters& parameters);
-
-  /* Alternative constructor for a contact constraint involving two cliques
-   that takes a dense Jacobian. */
-  SapFrictionConeConstraint(int clique0, int clique1, MatrixX<T> J0,
-                            MatrixX<T> J1, const T& phi0,
-                            const Parameters& parameters)
-      : SapFrictionConeConstraint(
-            clique0, clique1, MatrixBlock<T>(std::move(J0)),
-            MatrixBlock<T>(std::move(J1)), phi0, parameters) {}
 
   /* Returns the coefficient of friction for this constraint. */
   const T& mu() const { return parameters_.mu; }
 
   const Parameters& parameters() const { return parameters_; }
 
-  /* Implements the projection operation. Refer to SapConstraint::Project() for
-   details. */
-  void Project(const Eigen::Ref<const VectorX<T>>& y,
-               const Eigen::Ref<const VectorX<T>>& R,
-               EigenPtr<VectorX<T>> gamma,
-               MatrixX<T>* dPdy = nullptr) const final;
+ private:
+  /* Private copy construction is enabled to use in the implementation of
+    DoClone(). */
+  SapFrictionConeConstraint(const SapFrictionConeConstraint&) = default;
 
-  /* Computes bias term. Refer to SapConstraint::CalcBiasTerm() for details. */
-  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
-
-  /* Computes the diagonal of the regularization matrix (positive diagonal) R.
-   This computes R = [Rt, Rt, Rn] with:
-     Rn = max(β²/(4π²)⋅wᵢ, (δt⋅(δt+tau_d)⋅k)⁻¹),
-     Rt = σ⋅wᵢ
-   Refer to [Castro et al., 2021] for details. */
-  VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                        const T& wi) const final;
-
-  std::unique_ptr<SapConstraint<T>> Clone() const final {
-    return std::make_unique<SapFrictionConeConstraint<T>>(*this);
+  /* Implementations of SapConstraint NVI functions. */
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const final;
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* abstract_data) const final;
+  T DoCalcCost(const AbstractValue& abstract_data) const final;
+  void DoCalcImpulse(const AbstractValue& abstract_data,
+                     EigenPtr<VectorX<T>> gamma) const final;
+  void DoCalcCostHessian(const AbstractValue& abstract_data,
+                         MatrixX<T>* G) const final;
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<SapFrictionConeConstraint<T>>(
+        new SapFrictionConeConstraint<T>(*this));
   }
 
- private:
+  /* Computes the "soft norm" ‖x‖ₛ defined by ‖x‖ₛ² = ‖x‖² + ε², where ε =
+   soft_tolerance. Using the soft norm we define the tangent vector as t̂ =
+   γₜ/‖γₜ‖ₛ, which is well defined event for γₜ = 0. Also gradients are well
+   defined and follow the same equations presented in [Castro et al., 2021]
+   where regular norms are simply replaced by soft norms. */
+  static T SoftNorm(const Eigen::Ref<const VectorX<T>>& x) {
+    using std::sqrt;
+    // TODO(amcastro-tri): consider exposing this as a parameter.
+    constexpr double soft_tolerance = 1.0e-7;
+    constexpr double soft_tolerance_squared = soft_tolerance * soft_tolerance;
+    return sqrt(x.squaredNorm() + soft_tolerance_squared);
+  }
+
+  /* Compute in what region the un-projected impulse y is:
+      1. Stiction: yr < mu * yn,
+      2. Sliding: -mu_hat * yr < yn && yn < yn < yr/mu,
+      3. No contact: yn < -mu * yr.
+  */
+  static ContactMode CalcContactMode(const T& mu, const T& mu_hat, const T& yr,
+                                     const T& yn);
+
+  /* Performs the SAP projection γ = P(y), where the un-projected impulse y has
+    already been computed into `data`.
+    @pre y, yr, yn, t_hat and region are already computed into `data`. */
+  void ProjectImpulse(const SapFrictionConeConstraintData<T>& data,
+                      Vector3<T>* gamma) const;
+
   Parameters parameters_;
   T phi0_;
 };

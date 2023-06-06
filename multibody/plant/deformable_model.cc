@@ -7,6 +7,7 @@
 #include "drake/multibody/fem/corotated_model.h"
 #include "drake/multibody/fem/fem_state.h"
 #include "drake/multibody/fem/linear_constitutive_model.h"
+#include "drake/multibody/fem/linear_corotated_model.h"
 #include "drake/multibody/fem/linear_simplex_element.h"
 #include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/volumetric_model.h"
@@ -168,6 +169,10 @@ void DeformableModel<T>::BuildLinearVolumetricModel(
     case MaterialModel::kCorotated:
       BuildLinearVolumetricModelHelper<fem::internal::CorotatedModel>(id, mesh,
                                                                       config);
+      break;
+    case MaterialModel::kLinearCorotated:
+      BuildLinearVolumetricModelHelper<fem::internal::LinearCorotatedModel>(
+          id, mesh, config);
       break;
   }
 }

@@ -16,6 +16,8 @@ drake_cc_package_library(
         ":render_camera",
         ":render_engine",
         ":render_label",
+        ":render_material",
+        ":render_mesh",
     ],
 )
 
@@ -62,19 +64,55 @@ drake_cc_library(
     ],
 )
 
+drake_cc_library(
+    name = "render_material",
+    srcs = ["render_material.cc"],
+    hdrs = ["render_material.h"],
+    interface_deps = [
+        "//common:diagnostic_policy",
+        "//common:essential",
+        "//geometry:geometry_properties",
+        "//geometry:rgba",
+    ],
+    deps = [
+        "@tinyobjloader",
+    ],
+)
+
+drake_cc_library(
+    name = "render_mesh",
+    srcs = ["render_mesh.cc"],
+    hdrs = ["render_mesh.h"],
+    interface_deps = [
+        ":render_material",
+        "//common:diagnostic_policy",
+        "//common:essential",
+        "//geometry:geometry_properties",
+        "//geometry:rgba",
+    ],
+    deps = [
+        "@tinyobjloader",
+    ],
+)
+
 # === test/ ===
+
+genrule(
+    name = "box_no_mtl",
+    srcs = ["test/meshes/box.obj"],
+    outs = ["test/meshes/box_no_mtl.obj"],
+    cmd = "sed '/mtllib/d; /usemtl/d' $< > $@",
+    visibility = ["//visibility:private"],
+)
 
 filegroup(
     name = "test_models",
     testonly = 1,
-    srcs = [
+    srcs = [":box_no_mtl"] + glob([
+        "test/meshes/*",
         "test/box.sdf",
         "test/diag_gradient.png",
-        "test/meshes/box.obj",
-        "test/meshes/box.obj.mtl",
-        "test/meshes/box.png",
-        "test/meshes/box16u.png",
-    ],
+    ]),
 )
 
 drake_cc_googletest(
@@ -101,6 +139,30 @@ drake_cc_googletest(
         ":render_label",
         "//common/test_utilities:expect_no_throw",
         "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_material_test",
+    data = [":test_models"],
+    deps = [
+        ":render_material",
+        "//common/test_utilities:diagnostic_policy_test_base",
+        "//geometry:geometry_roles",
+    ],
+)
+
+drake_cc_googletest(
+    name = "render_mesh_test",
+    data = [":test_models"],
+    deps = [
+        ":render_mesh",
+        "//common:find_resource",
+        "//common:temp_directory",
+        "//common/test_utilities:diagnostic_policy_test_base",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry:geometry_roles",
     ],
 )
 

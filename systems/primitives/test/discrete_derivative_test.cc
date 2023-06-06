@@ -67,7 +67,7 @@ void RunFirstOrderHold(const bool suppress_initial_transient) {
       EXPECT_TRUE(CompareMatrices(log.data().col(i), Vector2d(0., 0.)));
     } else if (log.sample_times()(i) <= time_step) {
       if (!suppress_initial_transient) {
-        // The outputs should jump for one timestep because u(0) is non-zero.
+        // The outputs should jump for one time step because u(0) is non-zero.
         EXPECT_TRUE(CompareMatrices(
             log.data().col(i), Vector2d(4. / time_step, 5. / time_step),
             1e-12));
@@ -109,7 +109,7 @@ GTEST_TEST(DiscreteDerivativeTest, ToSymbolic) {
 // This confirms that we've correctly conditioned the extra state for the
 // update counter to be declared only when strictly required.
 GTEST_TEST(DiscreteDerivativeTest, IsAffine) {
-  const DiscreteDerivative<double> dut(2, 0.1);
+  const DiscreteDerivative<double> dut(2, 0.1, false);
   auto symbolic = dut.ToSymbolic();
   SystemSymbolicInspector inspector(*symbolic);
   EXPECT_TRUE(inspector.IsTimeInvariant());

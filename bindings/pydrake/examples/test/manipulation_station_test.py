@@ -11,7 +11,7 @@ from pydrake.examples import (
     ManipulationStation,
     ManipulationStationHardwareInterface,
 )
-from pydrake.geometry.render import (
+from pydrake.geometry import (
     ClippingRange,
     ColorRenderCamera,
     DepthRange,

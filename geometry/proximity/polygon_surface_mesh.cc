@@ -6,7 +6,6 @@ namespace drake {
 namespace geometry {
 
 using math::RigidTransform;
-using std::move;
 using std::vector;
 
 std::unique_ptr<SurfacePolygon> SurfacePolygon::copy_to_unique() const {
@@ -17,8 +16,8 @@ std::unique_ptr<SurfacePolygon> SurfacePolygon::copy_to_unique() const {
 template <typename T>
 PolygonSurfaceMesh<T>::PolygonSurfaceMesh(vector<int> face_data,
                                           vector<Vector3<T>> vertices)
-    : face_data_(move(face_data)),
-      vertices_M_(move(vertices)),
+    : face_data_(std::move(face_data)),
+      vertices_M_(std::move(vertices)),
       p_MSc_(Vector3<T>::Zero()) {
   /* Build the polygons and derived quantities from the given data. */
   int poly_count = -1;

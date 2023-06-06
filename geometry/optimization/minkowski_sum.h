@@ -16,8 +16,7 @@ namespace optimization {
 S = X₁ ⨁ X₂ ⨁ ... ⨁ Xₙ =
     {x₁ + x₂ + ... + xₙ | x₁ ∈ X₁, x₂ ∈ X₂, ..., xₙ ∈ Xₙ}
 
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class MinkowskiSum final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(MinkowskiSum)
@@ -28,17 +27,15 @@ class MinkowskiSum final : public ConvexSet {
   /** Constructs the sum from a pair of convex sets. */
   MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB);
 
-  /** Constructs a MinkowskiSum from a SceneGraph geometry and pose in
-  the @p reference_frame frame, obtained via the QueryObject. If @p
-  reference_frame frame is std::nullopt, then it will be expressed in the world
-  frame.
+  /** Constructs a MinkowskiSum from a SceneGraph geometry and pose in the
+  `reference_frame` frame, obtained via the QueryObject. If `reference_frame`
+  frame is std::nullopt, then it will be expressed in the world frame.
 
   Although in principle a MinkowskiSum can represent any ConvexSet as the sum of
   a single set, here we only support Capsule geometry, which will be represented
   as the (non-trivial) Minkowski sum of a sphere with a line segment.  Most
   SceneGraph geometry types are supported by at least one of the ConvexSet class
   constructors.
-
   @throws std::exception if geometry_id does not correspond to a Capsule. */
   MinkowskiSum(const QueryObject<double>& query_object, GeometryId geometry_id,
                std::optional<FrameId> reference_frame = std::nullopt);
@@ -48,19 +45,20 @@ class MinkowskiSum final : public ConvexSet {
   /** The number of terms (or sets) used in the sum. */
   int num_terms() const { return sets_.size(); }
 
-  /** Returns a reference to the ConvexSet defining the @p index term in the
+  /** Returns a reference to the ConvexSet defining the `index` term in the
   sum. */
   const ConvexSet& term(int index) const;
 
   /** Returns true if the point is in the set.
-
-  Note: This requires the solution of a convex program; the @p tol parameter is
+  Note: This requires the solution of a convex program; the `tol` parameter is
   currently ignored, and the solver tolerance is used instead.
   @see ConvexSet::set_solver
   */
   using ConvexSet::PointInSet;
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

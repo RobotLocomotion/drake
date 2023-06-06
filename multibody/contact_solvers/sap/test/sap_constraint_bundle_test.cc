@@ -4,8 +4,10 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
@@ -37,58 +39,58 @@ MatrixXd MakeJacobian(int rows, int cols) {
 // is clique + 1. We use this constraint to test that the constraint bundle
 // properly composes projections.
 // The constraint has a single numeric parameter `param` to define an arbitrary
-// projection function within Project() as gamma = param * R * y.
-class TestConstraint final : public SapConstraint<double> {
+// projection function such that gamma = -param * vc.
+template <typename T>
+class TestConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(TestConstraint);
-
-  TestConstraint(int clique, int size, double param)
-      : SapConstraint<double>(clique, VectorXd::Zero(size),
-                              MakeJacobian(size, clique + 1)),
+  TestConstraint(int clique, int size, T param)
+      : SapConstraint<T>({clique, MakeJacobian(size, clique + 1)}),
         param_(param) {}
 
-  TestConstraint(int clique0, int clique1, int size, double param)
-      : SapConstraint<double>(clique0, clique1, VectorXd::Zero(size),
-                              MakeJacobian(size, clique0 + 1),
-                              MakeJacobian(size, clique1 + 1)),
+  TestConstraint(int clique0, int clique1, int size, T param)
+      : SapConstraint<T>({clique0, MakeJacobian(size, clique0 + 1), clique1,
+                          MakeJacobian(size, clique1 + 1)}),
         param_(param) {}
 
   // Implements a fake projection operation where the result is given by:
-  //   gamma = param * R * y, and
-  //   dPdy = param * R
+  //   cost = 0.5 * param * ||vc||^2
+  //   gamma = -param * vc, and
+  //   G = param * Id
   // This is only meant to verify input and output arguments are properly
   // sliced by Constraintbundle.
-  void Project(const Eigen::Ref<const VectorX<double>>& y,
-               const Eigen::Ref<const VectorX<double>>& R,
-               EigenPtr<VectorX<double>> gamma,
-               MatrixX<double>* dPdy) const final {
-    *gamma = param_ * (R.asDiagonal() * y);
-    if (dPdy != nullptr) {
-      *dPdy = param_ * R.asDiagonal();
-    }
-  };
-
-  // Implements a non-zero bias term with arbitrary non-zero values.
-  // More precisely vhat = -2.0 * [1, num_constraint_equations()].
-  VectorX<double> CalcBiasTerm(const double&, const double&) const final {
-    return -2.0 * VectorX<double>::LinSpaced(num_constraint_equations(), 1.0,
-                                             num_constraint_equations());
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const final {
+    // Data to store constraint velocities vc only.
+    return AbstractValue::Make(VectorX<T>(this->num_constraint_equations()));
   }
-
-  // Implements regularization with arbitrary non-zero values.
-  // More precisely, R = [1, num_constraint_equations()].
-  VectorX<double> CalcDiagonalRegularization(const double& time_step,
-                                             const double& wi) const final {
-    return VectorX<double>::LinSpaced(num_constraint_equations(), 1.0,
-                                      num_constraint_equations());
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* data) const final {
+    data->get_mutable_value<VectorX<T>>() = vc;
   }
-
-  std::unique_ptr<SapConstraint<double>> Clone() const final {
-    return std::make_unique<TestConstraint>(*this);
+  T DoCalcCost(const AbstractValue& data) const final {
+    const VectorX<T> vc = data.get_value<VectorX<T>>();
+    return 0.5 * param_ * vc.squaredNorm();
+  }
+  void DoCalcImpulse(const AbstractValue& data,
+                     EigenPtr<VectorX<T>> gamma) const final {
+    const VectorX<T> vc = data.get_value<VectorX<T>>();
+    *gamma = -param_ * vc;
+  }
+  void DoCalcCostHessian(const AbstractValue& data, MatrixX<T>* G) const final {
+    const VectorX<T> vc = data.get_value<VectorX<T>>();
+    const int nk = vc.size();
+    *G = param_ * MatrixX<T>::Identity(nk, nk);
   }
 
  private:
-  double param_{0.0};
+  TestConstraint(const TestConstraint&) = default;
+
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<TestConstraint<T>>(new TestConstraint<T>(*this));
+  }
+
+  T param_{0.0};
 };
 
 namespace {
@@ -100,33 +102,41 @@ class SapConstraintBundleTest : public ::testing::Test {
  public:
   void SetUp() override {
     const double time_step = 1.0e-3;
-    std::vector<MatrixXd> A = {MatrixXd::Ones(1, 1), MatrixXd::Ones(2, 2),
-                               MatrixXd::Ones(3, 3)};
-    VectorXd v_star = VectorXd::LinSpaced(6, 1., 6.);
-    problem_ = std::make_unique<SapContactProblem<double>>(
+    std::vector<MatrixX<AutoDiffXd>> A = {MatrixX<AutoDiffXd>::Ones(1, 1),
+                                          MatrixX<AutoDiffXd>::Ones(2, 2),
+                                          MatrixX<AutoDiffXd>::Ones(3, 3)};
+    VectorX<AutoDiffXd> v_star = VectorX<AutoDiffXd>::LinSpaced(6, 1., 6.);
+    problem_ = std::make_unique<SapContactProblem<AutoDiffXd>>(
         time_step, std::move(A), std::move(v_star));
     // First cluster of constraints between cliques 0 and 2.
-    problem_->AddConstraint(std::make_unique<TestConstraint>(0, 2, 1, 1.0));
-    problem_->AddConstraint(std::make_unique<TestConstraint>(2, 0, 2, 2.0));
+    problem_->AddConstraint(
+        std::make_unique<TestConstraint<AutoDiffXd>>(0, 2, 1, 1.0));
+    problem_->AddConstraint(
+        std::make_unique<TestConstraint<AutoDiffXd>>(2, 0, 2, 2.0));
     // A second cluster of constraints between cliques 0 and 1.
-    problem_->AddConstraint(std::make_unique<TestConstraint>(0, 1, 3, 3.0));
-    problem_->AddConstraint(std::make_unique<TestConstraint>(0, 1, 2, 4.0));
-    problem_->AddConstraint(std::make_unique<TestConstraint>(0, 1, 3, 5.0));
+    problem_->AddConstraint(
+        std::make_unique<TestConstraint<AutoDiffXd>>(0, 1, 3, 3.0));
+    problem_->AddConstraint(
+        std::make_unique<TestConstraint<AutoDiffXd>>(0, 1, 2, 4.0));
+    problem_->AddConstraint(
+        std::make_unique<TestConstraint<AutoDiffXd>>(0, 1, 3, 5.0));
     // A third cluster only involving clique 1.
-    problem_->AddConstraint(std::make_unique<TestConstraint>(1, 4, 6.0));
-    problem_->AddConstraint(std::make_unique<TestConstraint>(1, 2, 7.0));
+    problem_->AddConstraint(
+        std::make_unique<TestConstraint<AutoDiffXd>>(1, 4, 6.0));
+    problem_->AddConstraint(
+        std::make_unique<TestConstraint<AutoDiffXd>>(1, 2, 7.0));
 
-    delassus_diagonal_.resize(7);
-    delassus_diagonal_ = VectorXd::LinSpaced(7, 1., 7.0);
+    delassus_diagonal_.resize(17);
+    delassus_diagonal_ = VectorX<AutoDiffXd>::LinSpaced(17, 1., 7.0);
 
-    bundle_ = std::make_unique<SapConstraintBundle<double>>(problem_.get(),
-                                                            delassus_diagonal_);
+    bundle_ = std::make_unique<SapConstraintBundle<AutoDiffXd>>(
+        problem_.get(), delassus_diagonal_);
   }
 
  protected:
-  std::unique_ptr<SapContactProblem<double>> problem_;
-  VectorXd delassus_diagonal_;
-  std::unique_ptr<SapConstraintBundle<double>> bundle_;
+  std::unique_ptr<SapContactProblem<AutoDiffXd>> problem_;
+  VectorX<AutoDiffXd> delassus_diagonal_;
+  std::unique_ptr<SapConstraintBundle<AutoDiffXd>> bundle_;
 };
 
 TEST_F(SapConstraintBundleTest, VerifyJacobian) {
@@ -138,27 +148,27 @@ TEST_F(SapConstraintBundleTest, VerifyJacobian) {
 
   // Build the expected block sparse Jacobian.
   const PartialPermutation& p = problem_->graph().participating_cliques();
-  BlockSparseMatrixBuilder<double> builder(3, 3, 5);
+  BlockSparseMatrixBuilder<AutoDiffXd> builder(3, 3, 5);
   // Cluster of constraints between cliques 0 and 2.
-  MatrixXd J_cluster0_clique0(3, 1);
+  MatrixX<AutoDiffXd> J_cluster0_clique0(3, 1);
   J_cluster0_clique0
       << problem_->get_constraint(0).first_clique_jacobian().MakeDenseMatrix(),
       problem_->get_constraint(1).second_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(0, p.permuted_index(0), J_cluster0_clique0);
-  MatrixXd J_cluster0_clique2(3, 3);
+  MatrixX<AutoDiffXd> J_cluster0_clique2(3, 3);
   J_cluster0_clique2
       << problem_->get_constraint(0).second_clique_jacobian().MakeDenseMatrix(),
       problem_->get_constraint(1).first_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(0, p.permuted_index(2), J_cluster0_clique2);
 
   // Cluster of constraints between cliques 0 and 1.
-  MatrixXd J_cluster1_clique0(8, 1);
+  MatrixX<AutoDiffXd> J_cluster1_clique0(8, 1);
   J_cluster1_clique0
       << problem_->get_constraint(2).first_clique_jacobian().MakeDenseMatrix(),
       problem_->get_constraint(3).first_clique_jacobian().MakeDenseMatrix(),
       problem_->get_constraint(4).first_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(1, p.permuted_index(0), J_cluster1_clique0);
-  MatrixXd J_cluster1_clique1(8, 2);
+  MatrixX<AutoDiffXd> J_cluster1_clique1(8, 2);
   J_cluster1_clique1
       << problem_->get_constraint(2).second_clique_jacobian().MakeDenseMatrix(),
       problem_->get_constraint(3).second_clique_jacobian().MakeDenseMatrix(),
@@ -166,103 +176,51 @@ TEST_F(SapConstraintBundleTest, VerifyJacobian) {
   builder.PushBlock(1, p.permuted_index(1), J_cluster1_clique1);
 
   // Cluster with only clique1.
-  MatrixXd J_cluster2_clique1(6, 2);
+  MatrixX<AutoDiffXd> J_cluster2_clique1(6, 2);
   J_cluster2_clique1
       << problem_->get_constraint(5).first_clique_jacobian().MakeDenseMatrix(),
       problem_->get_constraint(6).first_clique_jacobian().MakeDenseMatrix();
   builder.PushBlock(2, p.permuted_index(1), J_cluster2_clique1);
 
-  BlockSparseMatrix<double> Jblock = builder.Build();
+  BlockSparseMatrix<AutoDiffXd> Jblock = builder.Build();
 
   EXPECT_EQ(bundle_->J().MakeDenseMatrix(), Jblock.MakeDenseMatrix());
 }
 
-// Verify CalcUnprojectedImpulses() produces y = −R⁻¹⋅(vc−v̂).
-TEST_F(SapConstraintBundleTest, CalcUnprojectedImpulses) {
-  const VectorXd& R = bundle_->R();
-  const VectorXd& vhat = bundle_->vhat();
-  const VectorXd vc =
-      VectorXd::LinSpaced(problem_->num_constraint_equations(), -1.0, 5.0);
-  VectorXd y(problem_->num_constraint_equations());
-  bundle_->CalcUnprojectedImpulses(vc, &y);
-  const VectorXd y_expected = R.cwiseInverse().asDiagonal() * (vhat - vc);
-  EXPECT_TRUE(CompareMatrices(y, y_expected));
-}
-
-TEST_F(SapConstraintBundleTest, ProjectImpulses) {
-  // Each constraint projects the corresponding segment yᵢ of y into the convex
-  // set Cᵢ defined by the constraint using the norm defined by the positive
-  // diagonal matrix Rᵢ. In this test we do not verify the projection function,
-  // but we only verify that the bundle correctly composes each projection
-  // function into the full projection P for the entire bundle.
-  // TestConstraint implements the test projection (not really a projection but
-  // not relevant for this test) gammaᵢ = paramᵢ * Rᵢ * yᵢ. At construction, we
-  // specified paramᵢ = i + 1.
-
-  // clang-format off
-  const VectorXd all_params = (VectorXd(problem_->num_constraint_equations()) <<
-    1.,              // constraint 0, param = 1., of size 1.
-    2., 2.,          // constraint 1, param = 2., of size 2.
-    3., 3., 3.,      // constraint 2, param = 3., of size 3.
-    4., 4.,          // constraint 3, param = 4., of size 2.
-    5., 5., 5.,      // constraint 4, param = 5., of size 3.
-    6., 6., 6., 6.,  // constraint 5, param = 6., of size 4.
-    7., 7.)          // constraint 6, param = 7., of size 2.
-  .finished();
-  // clang-format on
-
-  const auto& R = bundle_->R();
-  const VectorXd y =
-      VectorXd::LinSpaced(problem_->num_constraint_equations(), 1., 17.);
-  const VectorXd gamma_expected = all_params.array() * R.array() * y.array();
-
-  VectorXd gamma(problem_->num_constraint_equations());
-  std::vector<MatrixXd> dPdy(problem_->num_constraints());
-  bundle_->ProjectImpulses(y, &gamma, &dPdy);
-  EXPECT_TRUE(CompareMatrices(gamma, gamma_expected,
-                              std::numeric_limits<double>::epsilon(),
+TEST_F(SapConstraintBundleTest, VerifyGradients) {
+  const AutoDiffXd time_step = 0.02;
+  SapConstraintBundleData data =
+      bundle_->MakeData(time_step, delassus_diagonal_);
+  const VectorXd vc = VectorXd::LinSpaced(17, -1.0, 2.5);  // Arbitrary values.
+  const VectorX<AutoDiffXd> vc_ad = drake::math::InitializeAutoDiff(vc);
+  bundle_->CalcData(vc_ad, &data);
+  const AutoDiffXd cost = bundle_->CalcCost(data);
+  VectorX<AutoDiffXd> gamma(vc.size());
+  bundle_->CalcImpulses(data, &gamma);
+  const VectorXd minus_cost_gradient = -cost.derivatives();
+  EXPECT_TRUE(CompareMatrices(gamma, minus_cost_gradient,
+                              20 * std::numeric_limits<double>::epsilon(),
                               MatrixCompareType::relative));
 
-  // For this case we expect dPdyᵢ = paramᵢ * Rᵢ.
-  std::vector<MatrixXd> dPdy_expected;
+  // Extract Hessian computed by automatic differentiation of gamma.
+  MatrixXd Gdense = -math::ExtractGradient(gamma, gamma.size());
+  std::vector<MatrixXd> minus_gamma_gradient(problem_->num_constraints());
   int offset = 0;
-  const VectorXi constraint_size =
-      (VectorXi(problem_->num_constraints()) << 1, 2, 3, 2, 3, 4, 2).finished();
-  for (int i = 0; i < problem_->num_constraints(); ++i) {
-    const int size = constraint_size(i);
-    const double param = i + 1;
-    const MatrixXd dPdy_i = R.segment(offset, size).asDiagonal() * param;
-    offset += size;
-    dPdy_expected.push_back(dPdy_i);
+  for (int k = 0; k < problem_->num_constraints(); ++k) {
+    const auto& c = problem_->get_constraint(k);
+    const int nk = c.num_constraint_equations();
+    MatrixXd& Gk = minus_gamma_gradient[k];
+    Gk.resize(nk, nk);
+    Gk = Gdense.block(offset, offset, nk, nk);
+    offset += nk;
   }
 
-  for (int i = 0; i < bundle_->num_constraints(); ++i) {
-    EXPECT_TRUE(CompareMatrices(dPdy[i], dPdy_expected[i],
-                                std::numeric_limits<double>::epsilon(),
-                                MatrixCompareType::relative));
-  }
-
-  // Verify the computation of the Hessian. For this case we expect
-  // Gᵢ = paramᵢ * Iᵢ₊₁.
-  std::vector<MatrixXd> G(problem_->num_constraints());
-  bundle_->ProjectImpulsesAndCalcConstraintsHessian(y, &gamma, &G);
-  EXPECT_TRUE(CompareMatrices(gamma, gamma_expected,
-                              std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::relative));
-
-  // G = ∇²ℓ = d²ℓ/dvc² = dP/dy⋅R⁻¹
-  std::vector<MatrixXd> G_expected(problem_->num_constraints());
-  offset = 0;
-  for (int i = 0; i < problem_->num_constraints(); ++i) {
-    const int size = constraint_size(i);
-    const double param = i + 1;
-    G_expected[i].resize(size, size);
-    G_expected[i] = param * MatrixXd::Identity(size, size);
-    offset += size;
-  }
-  for (int i = 0; i < bundle_->num_constraints(); ++i) {
-    EXPECT_TRUE(CompareMatrices(G[i], G_expected[i],
-                                std::numeric_limits<double>::epsilon(),
+  std::vector<MatrixX<AutoDiffXd>> G(problem_->num_constraints());
+  bundle_->CalcImpulsesAndConstraintsHessian(data, &gamma, &G);
+  for (int k = 0; k < problem_->num_constraints(); ++k) {
+    const MatrixXd Gk = math::ExtractValue(G[k]);
+    EXPECT_TRUE(CompareMatrices(Gk, minus_gamma_gradient[k],
+                                20 * std::numeric_limits<double>::epsilon(),
                                 MatrixCompareType::relative));
   }
 }

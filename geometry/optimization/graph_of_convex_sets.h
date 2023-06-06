@@ -65,6 +65,13 @@ struct GraphOfConvexSetsOptions {
 
   /** Options passed to the solver when solving the generated problem.*/
   solvers::SolverOptions solver_options;
+
+  /** Optional solver options for the rounded problems.
+  If not set, solver_options is used.
+  For instance, one might want to set tighter (i.e., lower) tolerances for
+  running the relaxed problem and looser (i.e., higher) tolerances for final
+  solves during rounding. */
+  std::optional<solvers::SolverOptions> rounding_solver_options{std::nullopt};
 };
 
 /**
@@ -498,8 +505,9 @@ class GraphOfConvexSets {
   /* Facilitates testing. */
   friend class PreprocessShortestPathTest;
 
-  std::set<EdgeId> PreprocessShortestPath(VertexId source_id,
-                                          VertexId target_id) const;
+  std::set<EdgeId> PreprocessShortestPath(
+      VertexId source_id, VertexId target_id,
+      const GraphOfConvexSetsOptions& options) const;
 
   // Adds a perspective constraint to the mathematical program to upper bound
   // the cost below a slack variable, ℓ. Specifically given a cost g(x) to

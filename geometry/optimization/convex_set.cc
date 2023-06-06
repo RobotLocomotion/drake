@@ -11,16 +11,12 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
-ConvexSet::ConvexSet(
-    std::function<std::unique_ptr<ConvexSet>(const ConvexSet&)> cloner,
-    int ambient_dimension)
-    : cloner_(std::move(cloner)), ambient_dimension_(ambient_dimension) {
-  DRAKE_DEMAND(ambient_dimension >= 0);
+ConvexSet::ConvexSet(int ambient_dimension)
+    : ambient_dimension_(ambient_dimension) {
+  DRAKE_THROW_UNLESS(ambient_dimension >= 0);
 }
 
 ConvexSet::~ConvexSet() = default;
-
-std::unique_ptr<ConvexSet> ConvexSet::Clone() const { return cloner_(*this); }
 
 bool ConvexSet::IntersectsWith(const ConvexSet& other) const {
   DRAKE_THROW_UNLESS(other.ambient_dimension() == this->ambient_dimension());
@@ -37,7 +33,7 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const symbolic::Variable& t) const {
-  DRAKE_DEMAND(x.size() == ambient_dimension());
+  DRAKE_THROW_UNLESS(x.size() == ambient_dimension());
   std::vector<solvers::Binding<solvers::Constraint>> constraints =
       DoAddPointInNonnegativeScalingConstraints(prog, x, t);
   constraints.emplace_back(prog->AddBoundingBoxConstraint(
@@ -53,10 +49,10 @@ ConvexSet::AddPointInNonnegativeScalingConstraints(
     const Eigen::Ref<const Eigen::VectorXd>& c, double d,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& t) const {
-  DRAKE_DEMAND(A.rows() == ambient_dimension());
-  DRAKE_DEMAND(A.rows() == b.rows());
-  DRAKE_DEMAND(A.cols() == x.size());
-  DRAKE_DEMAND(c.rows() == t.size());
+  DRAKE_THROW_UNLESS(A.rows() == ambient_dimension());
+  DRAKE_THROW_UNLESS(A.rows() == b.rows());
+  DRAKE_THROW_UNLESS(A.cols() == x.size());
+  DRAKE_THROW_UNLESS(c.rows() == t.size());
   std::vector<solvers::Binding<solvers::Constraint>> constraints =
       DoAddPointInNonnegativeScalingConstraints(prog, A, b, c, d, x, t);
   constraints.emplace_back(prog->AddLinearConstraint(

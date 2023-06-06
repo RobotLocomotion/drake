@@ -27,18 +27,17 @@ using solvers::VectorXDecisionVariable;
 using symbolic::Variable;
 
 MinkowskiSum::MinkowskiSum(const ConvexSets& sets)
-    : ConvexSet(&ConvexSetCloner<MinkowskiSum>,
-                sets.size() > 0 ? sets[0]->ambient_dimension() : 0),
+    : ConvexSet(sets.size() > 0 ? sets[0]->ambient_dimension() : 0),
       sets_(sets) {
-  for (int i = 1; i < static_cast<int>(sets_.size()); ++i) {
-    DRAKE_DEMAND(sets_[i]->ambient_dimension() ==
-                 sets_[0]->ambient_dimension());
+  for (int i = 1; i < ssize(sets_); ++i) {
+    DRAKE_THROW_UNLESS(sets_[i]->ambient_dimension() ==
+                       sets_[0]->ambient_dimension());
   }
 }
 
 MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(&ConvexSetCloner<MinkowskiSum>, setA.ambient_dimension()) {
-  DRAKE_DEMAND(setB.ambient_dimension() == setA.ambient_dimension());
+    : ConvexSet(setA.ambient_dimension()) {
+  DRAKE_THROW_UNLESS(setB.ambient_dimension() == setA.ambient_dimension());
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
@@ -46,7 +45,7 @@ MinkowskiSum::MinkowskiSum(const ConvexSet& setA, const ConvexSet& setB)
 MinkowskiSum::MinkowskiSum(const QueryObject<double>& query_object,
                            GeometryId geometry_id,
                            std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<MinkowskiSum>, 3) {
+    : ConvexSet(3) {
   Capsule capsule(1., 1.);
   query_object.inspector().GetShape(geometry_id).Reify(this, &capsule);
 
@@ -75,8 +74,12 @@ MinkowskiSum::MinkowskiSum(const QueryObject<double>& query_object,
 MinkowskiSum::~MinkowskiSum() = default;
 
 const ConvexSet& MinkowskiSum::term(int index) const {
-  DRAKE_DEMAND(0 <= index && index < static_cast<int>(sets_.size()));
+  DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
+}
+
+std::unique_ptr<ConvexSet> MinkowskiSum::DoClone() const {
+  return std::make_unique<MinkowskiSum>(*this);
 }
 
 bool MinkowskiSum::DoIsBounded() const {
@@ -88,7 +91,7 @@ bool MinkowskiSum::DoIsBounded() const {
   return true;
 }
 
-bool MinkowskiSum::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+bool MinkowskiSum::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                 double) const {
   // TODO(russt): Figure out if there is a general way to communicate tol
   // to/through the solver.

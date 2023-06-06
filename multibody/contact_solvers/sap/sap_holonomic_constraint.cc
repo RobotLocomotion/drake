@@ -34,61 +34,53 @@ SapHolonomicConstraint<T>::Parameters::Parameters(
 }
 
 template <typename T>
-SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
-                                                  MatrixBlock<T> J,
+SapHolonomicConstraint<T>::SapHolonomicConstraint(VectorX<T> g,
+                                                  SapConstraintJacobian<T> J,
                                                   Parameters parameters)
-    : SapConstraint<T>(clique, std::move(g), std::move(J)),
+    : SapConstraint<T>(std::move(J)),
+      g_(std::move(g)),
       parameters_(std::move(parameters)) {
-  // N.B. SapConstraint's constructor already checked the sizes of g its
-  // Jacobian.
-  DRAKE_DEMAND(this->constraint_function().size() ==
-               parameters_.num_constraint_equations());
-  bias_.setZero(parameters_.num_constraint_equations());
+  DRAKE_THROW_UNLESS(g_.size() == this->jacobian().rows());
+  DRAKE_THROW_UNLESS(g_.size() == parameters_.num_constraint_equations());
+  bias_.setZero(this->num_constraint_equations());
 }
 
 template <typename T>
-SapHolonomicConstraint<T>::SapHolonomicConstraint(
-    int first_clique, int second_clique, VectorX<T> g,
-    MatrixBlock<T> J_first_clique, MatrixBlock<T> J_second_clique,
-    Parameters parameters)
-    : SapConstraint<T>(first_clique, second_clique, std::move(g),
-                       std::move(J_first_clique), std::move(J_second_clique)),
-      parameters_(std::move(parameters)) {
-  // N.B. SapConstraint's constructor already checked the sizes of g and its
-  // Jacobian.
-  DRAKE_DEMAND(this->constraint_function().size() ==
-               parameters_.num_constraint_equations());
-  bias_.setZero(parameters_.num_constraint_equations());
-}
-
-template <typename T>
-SapHolonomicConstraint<T>::SapHolonomicConstraint(int clique, VectorX<T> g,
-                                                  MatrixBlock<T> J,
+SapHolonomicConstraint<T>::SapHolonomicConstraint(VectorX<T> g,
+                                                  SapConstraintJacobian<T> J,
                                                   VectorX<T> b,
                                                   Parameters parameters)
-    : SapConstraint<T>(clique, std::move(g), std::move(J)),
-      parameters_(std::move(parameters)),
-      bias_(std::move(b)) {
-  // N.B. SapConstraint's constructor already checked the sizes of g and its
-  // Jacobian.
-  DRAKE_DEMAND(this->constraint_function().size() ==
-               parameters_.num_constraint_equations());
+    : SapConstraint<T>(std::move(J)),
+      g_(std::move(g)),
+      bias_(std::move(b)),
+      parameters_(std::move(parameters)) {
+  DRAKE_THROW_UNLESS(g_.size() == this->jacobian().rows());
+  DRAKE_THROW_UNLESS(bias_.size() == this->jacobian().rows());
+  DRAKE_THROW_UNLESS(g_.size() == parameters_.num_constraint_equations());
 }
 
 template <typename T>
-VectorX<T> SapHolonomicConstraint<T>::CalcBiasTerm(const T& time_step,
-                                                   const T& wi) const {
-  using std::min;
+std::unique_ptr<AbstractValue> SapHolonomicConstraint<T>::DoMakeData(
+    const T& time_step,
+    const Eigen::Ref<const VectorX<T>>& delassus_estimation) const {
   const double beta = parameters_.beta();
 
+  // Estimate regularization based on near-rigid regime threshold.
+  // Rigid approximation constant: Rₙ = β²/(4π²)⋅wᵢ when the contact frequency
+  // ωₙ is below the limit ωₙ⋅δt ≤ 2π. That is, the period is Tₙ = β⋅δt. See
+  // [Castro et al., 2021] for details.
+  const double beta_factor = beta * beta / (4.0 * M_PI * M_PI);
+
   // Relaxation used in the near-rigid regime.
-  const T R_near_rigid = beta * beta / (4.0 * M_PI * M_PI) * wi;
+  const VectorX<T> R_near_rigid = beta_factor * delassus_estimation;
 
   // Regularization for the specified stiffness and dissipation.
   const VectorX<T>& k = parameters_.stiffnesses();
   VectorX<T> tau = parameters_.relaxation_times();
-  const VectorX<T> R =
+  const VectorX<T> R_compliant =
       1.0 / (time_step * (time_step + tau.array()) * k.array());
+
+  VectorX<T> R = R_compliant.array().max(R_near_rigid.array());
 
   // Adjusted relaxation times to the near-rigid regime.
   // In this near-rigid regime a relaxation time equal to the time step leads to
@@ -99,61 +91,88 @@ VectorX<T> SapHolonomicConstraint<T>::CalcBiasTerm(const T& time_step,
     // dynamics introduced by this constraint. We call this the "near-rigid"
     // regime. Here we clamp relaxation time to the time step. Refer to Section
     // V of [Castro et al., 2022] for further details.
-    if (R(e) < R_near_rigid) {
+    if (R_compliant(e) < R_near_rigid(e)) {
       tau(e) = time_step;
     }
   }
 
-  return -VectorX<T>(this->constraint_function().array() /
-                     (time_step + tau.array())) -
-         bias_;
+  // Componentwise computation: v̂ᵢ = −gᵢ / (δt + τᵢ) − bᵢ.
+  VectorX<T> v_hat = -VectorX<T>(this->constraint_function().array() /
+                                 (time_step + tau.array())) -
+                     bias_;
+
+  // Make data.
+  SapHolonomicConstraintData<T> data(std::move(R), std::move(v_hat));
+  return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(data));
 }
 
 template <typename T>
-VectorX<T> SapHolonomicConstraint<T>::CalcDiagonalRegularization(
-    const T& time_step, const T& wi) const {
-  using std::max;
-
-  // Regularization for the specified stiffness and dissipation.
-  const VectorX<T>& k = parameters_.stiffnesses();
-  const VectorX<T>& tau = parameters_.relaxation_times();
-  const VectorX<T> R =
-      1.0 / (time_step * (time_step + tau.array()) * k.array());
-
-  // Minimum relaxation in the near-rigid regime.
-  const double beta = parameters_.beta();
-  const T R_near_rigid = beta * beta / (4.0 * M_PI * M_PI) * wi;
-
-  return R.array().max(R_near_rigid);
-}
-
-template <typename T>
-void SapHolonomicConstraint<T>::Project(const Eigen::Ref<const VectorX<T>>& y,
-                                        const Eigen::Ref<const VectorX<T>>&,
-                                        EigenPtr<VectorX<T>> gamma,
-                                        MatrixX<T>* dPdy) const {
-  DRAKE_DEMAND(gamma != nullptr);
-  DRAKE_DEMAND(gamma->size() == this->num_constraint_equations());
-  // Limits in the impulses.
+void SapHolonomicConstraint<T>::DoCalcData(
+    const Eigen::Ref<const VectorX<T>>& vc,
+    AbstractValue* abstract_data) const {
+  auto& data =
+      abstract_data->get_mutable_value<SapHolonomicConstraintData<T>>();
   const VectorX<T>& gl = parameters_.impulse_lower_limits();
   const VectorX<T>& gu = parameters_.impulse_upper_limits();
+  const VectorX<T>& R_inv = data.R_inv();
+  const VectorX<T>& v_hat = data.v_hat();
+  VectorX<T>& y = data.mutable_y();
 
-  *gamma = y.array().max(gl.array()).min(gu.array());
-  if (dPdy != nullptr) {
-    const int nk = this->num_constraint_equations();
-    // N.B. Eigen resizes the object on the left-hand side automatically so that
-    // it matches the size of the object on the right-hand side. There is no
-    // resizing if dPdy already has the proper size.
-    (*dPdy) = MatrixX<T>::Zero(nk, nk);
-    for (int i = 0; i < nk; ++i) {
-      if (gl(i) < y(i) && y(i) < gu(i)) (*dPdy)(i, i) = 1.0;
-    }
-  }
+  data.mutable_vc() = vc;
+  y = R_inv.asDiagonal() * (v_hat - vc);
+
+  // The analytical projection γ = P(y) results in bounds componentwise, i.e.
+  //   γ = max(gₗ, min(gᵤ, y)).
+  data.mutable_gamma() = y.array().max(gl.array()).min(gu.array());
 }
 
 template <typename T>
-std::unique_ptr<SapConstraint<T>> SapHolonomicConstraint<T>::Clone() const {
-  return std::make_unique<SapHolonomicConstraint<T>>(*this);
+T SapHolonomicConstraint<T>::DoCalcCost(
+    const AbstractValue& abstract_data) const {
+  const auto& data = abstract_data.get_value<SapHolonomicConstraintData<T>>();
+  const int nk = this->num_constraint_equations();
+  const VectorX<T>& gl = parameters_.impulse_lower_limits();
+  const VectorX<T>& gu = parameters_.impulse_upper_limits();
+  const VectorX<T>& R = data.R();
+  const VectorX<T>& vc = data.vc();
+  const VectorX<T>& y = data.y();
+
+  T cost = 0.0;
+  for (int i = 0; i < nk; ++i) {
+    if (y(i) < gl(i)) {  // Below lower limit.
+      cost -= gl(i) * vc(i);
+    } else if (y(i) > gu(i)) {  // Above upper limit.
+      cost -= gu(i) * vc(i);
+    } else {
+      cost += 0.5 * R(i) * y(i) * y(i);
+    }
+  }
+  return cost;
+}
+
+template <typename T>
+void SapHolonomicConstraint<T>::DoCalcImpulse(
+    const AbstractValue& abstract_data, EigenPtr<VectorX<T>> gamma) const {
+  const auto& data = abstract_data.get_value<SapHolonomicConstraintData<T>>();
+  *gamma = data.gamma();
+}
+
+template <typename T>
+void SapHolonomicConstraint<T>::DoCalcCostHessian(
+    const AbstractValue& abstract_data, MatrixX<T>* G) const {
+  const auto& data = abstract_data.get_value<SapHolonomicConstraintData<T>>();
+  const VectorX<T>& gl = parameters_.impulse_lower_limits();
+  const VectorX<T>& gu = parameters_.impulse_upper_limits();
+  const VectorX<T>& R_inv = data.R_inv();
+  const VectorX<T>& y = data.y();
+
+  const int nk = this->num_constraint_equations();
+  (*G) = MatrixX<T>::Zero(nk, nk);
+  for (int i = 0; i < nk; ++i) {
+    if (gl(i) < y(i) && y(i) < gu(i)) {
+      (*G)(i, i) = R_inv(i);
+    }
+  }
 }
 
 }  // namespace internal

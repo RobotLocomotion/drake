@@ -2,7 +2,6 @@
 
 #include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/planning/planning_py.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -88,23 +87,6 @@ void DefinePlanningRobotDiagram(py::module m) {
               // until the builder (and all of its internal references) are
               // finished.
               py::keep_alive<1, 0>(), cls_doc.Build.doc);
-      // Remove these deprecations on 2023-06-01.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-      cls  // BR
-          .def("BuildDiagram",
-              WrapDeprecated(
-                  cls_doc.BuildDiagram.doc_deprecated, &Class::BuildDiagram),
-              py::keep_alive<1, 0>(), cls_doc.BuildDiagram.doc_deprecated)
-          .def("IsPlantFinalized",
-              WrapDeprecated(cls_doc.IsPlantFinalized.doc_deprecated,
-                  &Class::IsPlantFinalized),
-              cls_doc.IsPlantFinalized.doc_deprecated)
-          .def("FinalizePlant",
-              WrapDeprecated(
-                  cls_doc.FinalizePlant.doc_deprecated, &Class::FinalizePlant),
-              cls_doc.FinalizePlant.doc_deprecated);
-#pragma GCC diagnostic pop
     }
   };
   type_visit(bind_common_scalar_types, CommonScalarPack{});

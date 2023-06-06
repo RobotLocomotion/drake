@@ -29,8 +29,7 @@ class RandomGenerator {
   RandomGenerator() = default;
 
   /// Creates a generator using given `seed`.
-  explicit RandomGenerator(result_type seed)
-      : generator_(CreateEngine(seed)) {}
+  explicit RandomGenerator(result_type seed) : generator_(CreateEngine(seed)) {}
 
   static constexpr result_type min() { return Engine::min(); }
   static constexpr result_type max() { return Engine::max(); }

@@ -28,6 +28,7 @@ namespace planning {
 
 using geometry::GeometryId;
 using geometry::QueryObject;
+using geometry::SceneGraphInspector;
 using geometry::Shape;
 using math::RigidTransform;
 using multibody::Body;
@@ -38,7 +39,6 @@ using multibody::JointIndex;
 using multibody::ModelInstanceIndex;
 using multibody::MultibodyPlant;
 using multibody::world_model_instance;
-using std::move;
 using systems::Context;
 
 // Default interpolator; it uses SLERP for quaternion-valued groups of dofs and
@@ -263,7 +263,7 @@ void CollisionChecker::RemoveAllAddedCollisionShapes(
   auto iter = geometry_groups_.find(group_name);
   if (iter != geometry_groups_.end()) {
     drake::log()->debug("Removing geometries from group [{}].", group_name);
-    DoRemoveAddedGeometries(iter->second);
+    RemoveAddedGeometries(iter->second);
     geometry_groups_.erase(iter);
   }
 }
@@ -271,7 +271,7 @@ void CollisionChecker::RemoveAllAddedCollisionShapes(
 void CollisionChecker::RemoveAllAddedCollisionShapes() {
   drake::log()->debug("Removing all added geometries");
   for (const auto& [group_name, group_ids] : geometry_groups_) {
-    DoRemoveAddedGeometries(group_ids);
+    RemoveAddedGeometries(group_ids);
   }
   geometry_groups_.clear();
 }
@@ -417,12 +417,15 @@ void CollisionChecker::SetCollisionFilterMatrix(
                     filtered_collisions_.rows(), filtered_collisions_.cols(),
                     filter_matrix.rows(), filter_matrix.cols()));
   }
-  // Now test for consistency.
-  ValidateFilteredCollisionMatrix(filter_matrix, __func__);
-  filtered_collisions_ = filter_matrix;
-  log()->debug("Set collision filter matrix to:\n{}",
-               fmt_eigen(filtered_collisions_));
-  UpdateMaxCollisionPadding();
+  // Only perform additional work if the provided filter matrix is different
+  // from the current matrix.
+  if (filtered_collisions_ != filter_matrix) {
+    // Now test for consistency.
+    ValidateFilteredCollisionMatrix(filter_matrix, __func__);
+    filtered_collisions_ = filter_matrix;
+    // Allow derived checkers to perform any post-filter-change work.
+    UpdateCollisionFilters();
+  }
 }
 
 bool CollisionChecker::IsCollisionFilteredBetween(BodyIndex bodyA_index,
@@ -447,22 +450,37 @@ void CollisionChecker::SetCollisionFilteredBetween(BodyIndex bodyA_index,
                     "be used on pairs of environment bodies: ({}, {})",
                     bodyA_index, bodyB_index));
   }
-  const int encoded = filter_collision ? 1 : 0;
-  // The tests above should mean that we're not trying to write to an entry that
-  // is locked in a filtered state (-1); just in case, we'll add one more test.
-  DRAKE_ASSERT(filtered_collisions_(int{bodyA_index}, int{bodyB_index}) != -1);
-  filtered_collisions_(int{bodyA_index}, int{bodyB_index}) = encoded;
-  filtered_collisions_(int{bodyB_index}, int{bodyA_index}) = encoded;
+  const int current_value =
+      filtered_collisions_(int{bodyA_index}, int{bodyB_index});
+  const int new_value = filter_collision ? 1 : 0;
+  // Only perform additional work if the specified filter will change the filter
+  // matrix.
+  if (new_value != current_value) {
+    // The tests above should mean that we're not trying to write to an entry
+    // that is locked in a filtered state (-1); just in case, we'll add one more
+    // explicit test.
+    DRAKE_ASSERT(current_value != -1);
+    filtered_collisions_(int{bodyA_index}, int{bodyB_index}) = new_value;
+    filtered_collisions_(int{bodyB_index}, int{bodyA_index}) = new_value;
+    // Allow derived checkers to perform any post-filter-change work.
+    UpdateCollisionFilters();
+  }
 }
 
 void CollisionChecker::SetCollisionFilteredWithAllBodies(BodyIndex body_index) {
   DRAKE_THROW_UNLESS(body_index >= 0 &&
                      body_index < filtered_collisions_.rows());
   DRAKE_THROW_UNLESS(IsPartOfRobot(body_index));
+  const Eigen::MatrixXi prior_filter_matrix = filtered_collisions_;
   filtered_collisions_.row(body_index).setConstant(1);
   filtered_collisions_.col(body_index).setConstant(1);
   // Maintain the invariant that the diagonal is always -1.
   filtered_collisions_(int{body_index}, int{body_index}) = -1;
+  // Only perform additional work if the filter matrix has changed.
+  if (prior_filter_matrix != filtered_collisions_) {
+    // Allow derived checkers to perform any post-filter-change work.
+    UpdateCollisionFilters();
+  }
 }
 
 bool CollisionChecker::CheckConfigCollisionFree(
@@ -764,7 +782,7 @@ std::vector<RobotCollisionType> CollisionChecker::ClassifyContextBodyCollisions(
 
 CollisionChecker::CollisionChecker(CollisionCheckerParams params,
                                    bool supports_parallel_checking)
-    : setup_model_(move(params.model)),
+    : setup_model_(std::move(params.model)),
       robot_model_instances_([&params]() {
         // Sort (and de-duplicate) the robot model instances for faster lookups.
         DRAKE_THROW_UNLESS(params.robot_model_instances.size() > 0);
@@ -790,7 +808,7 @@ CollisionChecker::CollisionChecker(CollisionCheckerParams params,
       Eigen::MatrixXd::Zero(plant().num_bodies(), plant().num_bodies());
   // Set parameters with safety checks.
   SetConfigurationDistanceFunction(
-      move(params.configuration_distance_function));
+      std::move(params.configuration_distance_function));
   set_edge_step_size(params.edge_step_size);
   SetPaddingAllRobotEnvironmentPairs(params.env_collision_padding);
   SetPaddingAllRobotRobotPairs(params.self_collision_padding);
@@ -809,7 +827,7 @@ CollisionChecker::CollisionChecker(const CollisionChecker&) = default;
 void CollisionChecker::AllocateContexts() {
   DRAKE_THROW_UNLESS(IsInitialSetup());
   // Move to a const model.
-  model_ = move(setup_model_);
+  model_ = std::move(setup_model_);
   // Make a diagram & plant context for each thread.
   const int num_omp_threads =
       common_robotics_utilities::openmp_helpers::GetNumOmpThreads();
@@ -964,7 +982,7 @@ Eigen::MatrixXi CollisionChecker::GenerateFilteredCollisionMatrix() const {
 
       const Body<double>& body_j = get_body(BodyIndex(j));
 
-      // Check if collisions between the geometries_i are already filtered.
+      // Check if collisions between the geometries are already filtered.
       bool collisions_filtered = false;
       const std::vector<GeometryId>& geometries_j =
           plant().GetCollisionGeometriesForBody(body_j);

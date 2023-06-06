@@ -168,10 +168,10 @@ class TestResampleLogInterp1d(unittest.TestCase):
         r_log = ReverseLog()
         self.validate_resample(r_log, step, expected_t, expected_y)
 
-    def validate_resample(self, log, timestep, t_expected, x_expected):
+    def validate_resample(self, log, time_step, t_expected, x_expected):
         """Perform the resampling and validate with the provided values."""
         t, x = log.sample_times(), log.data()
-        t, x = _resample_interp1d(t, x, timestep)
+        t, x = _resample_interp1d(t, x, time_step)
         self.assertTrue(
             t.shape[0] == x.shape[1],
             msg=f"Expected t.shape={t.shape} to match x.shape={x.shape}.")

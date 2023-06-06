@@ -42,6 +42,9 @@ void DefineSolversMixedIntegerOptimizationUtil(py::module m);
 /* Defines bindings per solvers_py_mixed_integer_rotation_constraint.cc */
 void DefineSolversMixedIntegerRotationConstraint(py::module m);
 
+/* Defines the MobyLCP bindings. See solvers_py_mobylcp.cc. */
+void DefineSolversMobyLCP(py::module m);
+
 /* Defines the MOSEK™ bindings. See solvers_py_mosek.cc. */
 void DefineSolversMosek(py::module m);
 
@@ -57,9 +60,12 @@ void DefineSolversScs(py::module m);
 /* Defines bindings per solvers_py_sdpa_free_format.cc. */
 void DefineSolversSdpaFreeFormat(py::module m);
 
-/* Defines the SNOPT bindings. See solvers_snopt.cc. */
+/* Defines the SNOPT bindings. See solvers_py_snopt.cc. */
 void DefineSolversSnopt(py::module m);
 
+/* Defines the UnrevisedLemkeSolver bindings. See solvers_py_unrevised_lemke.cc.
+ */
+void DefineSolversUnrevisedLemke(py::module m);
 }  // namespace internal
 }  // namespace pydrake
 }  // namespace drake

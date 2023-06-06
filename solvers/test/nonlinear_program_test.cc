@@ -534,7 +534,7 @@ GTEST_TEST(testNonlinearProgram, HeatExchangerDesignProblem) {
   // gradient.
   HeatExchangerDesignProblem prob;
   Eigen::VectorXd x_init(8);
-  x_init << 5000, 5000, 5000, 200, 350, 150, 225, 425;
+  x_init << 4999.4, 5000, 5000, 200, 350, 150, 225, 425;
   MathematicalProgramResult result;
   // The optimal solution given in Hock's reference has low precision, and the
   // magnitude of the solution is large, so we choose a large tolerance 0.2.

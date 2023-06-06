@@ -42,8 +42,8 @@ class DirectCollocation : public MultipleShooting {
   /// will also be "cloned" by the optimization; changes to the context after
   /// calling this method will NOT impact the trajectory optimization.
   /// @param num_time_samples The number of breakpoints in the trajectory.
-  /// @param minimum_timestep Minimum spacing between sample times.
-  /// @param maximum_timestep Maximum spacing between sample times.
+  /// @param minimum_time_step Minimum spacing between sample times.
+  /// @param maximum_time_step Maximum spacing between sample times.
   /// @param input_port_index A valid input port index for @p system or
   /// InputPortSelection.  All other inputs on the system will be left
   /// disconnected (if they are disconnected in @p context) or will be fixed to
@@ -66,14 +66,14 @@ class DirectCollocation : public MultipleShooting {
   DirectCollocation(
       const systems::System<double>* system,
       const systems::Context<double>& context, int num_time_samples,
-      double minimum_timestep, double maximum_timestep,
+      double minimum_time_step, double maximum_time_step,
       std::variant<systems::InputPortSelection, systems::InputPortIndex>
           input_port_index =
               systems::InputPortSelection::kUseFirstInputIfItExists,
       bool assume_non_continuous_states_are_fixed = false,
       solvers::MathematicalProgram* prog = nullptr);
 
-  // NOTE: The fixed timestep constructor, which would avoid adding h as
+  // NOTE: The fixed-time-step constructor, which would avoid adding h as
   // decision variables, has been (temporarily) removed since it complicates
   // the API and code.
 
@@ -86,7 +86,7 @@ class DirectCollocation : public MultipleShooting {
       const solvers::MathematicalProgramResult& result) const override;
 
  private:
-  // Implements a running cost at all timesteps using trapezoidal integration.
+  // Implements a running cost at all time steps using trapezoidal integration.
   void DoAddRunningCost(const symbolic::Expression& e) override;
 
   // Store system-relevant data for e.g. computing the derivatives during
@@ -175,9 +175,9 @@ class DirectCollocationConstraint : public solvers::Constraint {
               VectorX<symbolic::Expression>* y) const override;
 
  private:
-  void dynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
-                systems::Context<AutoDiffXd>* context,
-                AutoDiffVecXd* xdot) const;
+  void CalcDynamics(const AutoDiffVecXd& state, const AutoDiffVecXd& input,
+                    systems::Context<AutoDiffXd>* context,
+                    AutoDiffVecXd* xdot) const;
 
   // Note: owned_system_ and owned_context_ can be nullptr.
   std::unique_ptr<systems::System<AutoDiffXd>> owned_system_;
@@ -200,7 +200,7 @@ class DirectCollocationConstraint : public solvers::Constraint {
 /// expected by the constraint.
 solvers::Binding<solvers::Constraint> AddDirectCollocationConstraint(
     std::shared_ptr<DirectCollocationConstraint> constraint,
-    const Eigen::Ref<const solvers::VectorXDecisionVariable>& timestep,
+    const Eigen::Ref<const solvers::VectorXDecisionVariable>& time_step,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& state,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& next_state,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& input,

@@ -262,9 +262,9 @@ class QueryObject {
    | Convex    | throwsᵉ | throwsᵉ  | throwsᵉ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Cylinder  | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Ellipsoid | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵉ  |  ░░░░░  |  ░░░░░  |
+   | HalfSpace | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
    | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |    throwsᵉ  |    ᵇ    | throwsᵉ |
+   | Sphere    | throwsᵉ | throwsᵉ  | throwsᵉ |  throwsᵉ  |   throwsᵉ  |   throwsᵉ  |    ᵇ    | throwsᵉ |
    __*Table 3*__: Support for `T` = @ref drake::symbolic::Expression.
 
    - ᵃ Penetration depth between two HalfSpace instances has no meaning; either
@@ -315,8 +315,23 @@ class QueryObject {
        | Capsule   |    yes    |  yes  |
        | Ellipsoid |    yes    |  yes  |
        | HalfSpace |    yes    |  yes  |
-       | Mesh      |    no     |  yes  |
-       | Convex    |    yes    |  yes  |
+       | Mesh      |    yesᵃ   |  yesᵇ |
+       | Convex    |    yesᶜ   |  yesᶜ |
+
+         <!-- TODO(DamrongGuoy): Instead of the external working document for
+         the guidance how to generate tetrahedral meshes, write a Drake
+         document, for example, an appendix in Hydroelastic User Guide
+         when it's ready. -->
+
+     - ᵃ For compliant Mesh, please specify a tetrahedral mesh
+         in a VTK file in Mesh(filename). This external working
+         <a href="https://docs.google.com/document/d/1VZtVsxIjOLKvgQ8SNSrF6PtWuPW5z9PP7-dQuxfmqpc/edit?usp=sharing">
+         document</a> provides guidance how to generate a tetrahedral mesh
+         in a VTK file from a surface mesh in an OBJ file.
+     - ᵇ For rigid Mesh, please specify a surface mesh
+         in an OBJ file in Mesh(filename).
+     - ᶜ For both compliant Convex and rigid Convex, please specify a surface
+         mesh in an OBJ file in Convex(filename).
 
      - We do not support contact between two rigid geometries. One geometry
        *must* be compliant, and the other could be rigid or compliant. If
@@ -540,7 +555,7 @@ class QueryObject {
    | Cylinder  | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Ellipsoid | throwsᵇ |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | HalfSpace | throwsᵃ |  throwsᵃ | throwsᵃ |  throwsᵃ  |  throwsᵃ   |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |      ᵃ     |    ᶜ    |  ░░░░░  |
+   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  |
    | Sphere    |  2e-15  |  throwsᵇ | throwsᵇ |  throwsᵇ  |  throwsᵇ   |    2e-15   |    ᶜ    |  5e-15  |
    __*Table 5*__: Worst observed error (in m) for 2mm penetration/separation
    between geometries approximately 20cm in size for `T` =
@@ -553,9 +568,9 @@ class QueryObject {
    | Convex    | throwsᵈ | throwsᵈ  | throwsᵈ |  ░░░░░░░  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Cylinder  | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   ░░░░░░   |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
    | Ellipsoid | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   ░░░░░░   |  ░░░░░  |  ░░░░░  |
-   | HalfSpace | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵈ  |  ░░░░░  |  ░░░░░  |
-   | Mesh      |    ᵇ    |    ᵇ     |    ᵇ    |     ᵇ     |      ᵇ     |     ᵇ      |    ᵇ    |  ░░░░░  |
-   | Sphere    | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |    throwsᵈ  |    ᵇ    | throwsᵈ |
+   | HalfSpace | throwsᵃ | throwsᵃ  | throwsᵃ |  throwsᵃ  |   throwsᵃ  |   throwsᵃ  |  ░░░░░  |  ░░░░░  |
+   | Mesh      |    ᶜ    |    ᶜ     |    ᶜ    |     ᶜ     |      ᶜ     |   throwsᵃ  |    ᶜ    |  ░░░░░  |
+   | Sphere    | throwsᵈ | throwsᵈ  | throwsᵈ |  throwsᵈ  |   throwsᵈ  |   throwsᵈ  |    ᶜ    | throwsᵈ |
    __*Table 6*__: Support for `T` = @ref drake::symbolic::Expression.
 
    - ᵃ We don't currently support queries between HalfSpace and any other shape

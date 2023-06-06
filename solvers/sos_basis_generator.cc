@@ -262,6 +262,10 @@ ExponentList ConstructMonomialBasis(const ExponentList& exponents_of_p) {
 
 MonomialVector ConstructMonomialBasis(const drake::symbolic::Polynomial& p) {
   const Variables& indeterminates{p.indeterminates()};
+  if (indeterminates.empty()) {
+    // p is a constant.
+    return Vector1<Monomial>(Monomial());
+  }
   drake::VectorX<Variable> vars(indeterminates.size());
   int cnt = 0;
   for (auto& var : indeterminates) {

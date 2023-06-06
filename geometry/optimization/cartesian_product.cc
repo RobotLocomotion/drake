@@ -38,44 +38,36 @@ int sum_ambient_dimensions(const ConvexSets& sets) {
 }  // namespace
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                sum_ambient_dimensions(sets)),
-      sets_{sets} {}
+    : ConvexSet(sum_ambient_dimensions(sets)), sets_{sets} {}
 
 CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                setA.ambient_dimension() + setB.ambient_dimension()) {
+    : ConvexSet(setA.ambient_dimension() + setB.ambient_dimension()) {
   sets_.emplace_back(setA.Clone());
   sets_.emplace_back(setB.Clone());
 }
 
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
-                                   const Eigen::Ref<const Eigen::MatrixXd>& A,
-                                   const Eigen::Ref<const Eigen::VectorXd>& b)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>,
-                A.cols()),
-      sets_{sets}, A_{A}, b_{b} {
-  DRAKE_DEMAND(A_->rows() == b_->rows());
-  DRAKE_DEMAND(A_->rows() == sum_ambient_dimensions(sets));
-  DRAKE_DEMAND(A_->colPivHouseholderQr().rank() == A_->cols());
+                                   const Eigen::Ref<const MatrixXd>& A,
+                                   const Eigen::Ref<const VectorXd>& b)
+    : ConvexSet(A.cols()), sets_{sets}, A_{A}, b_{b} {
+  DRAKE_THROW_UNLESS(A_->rows() == b_->rows());
+  DRAKE_THROW_UNLESS(A_->rows() == sum_ambient_dimensions(sets));
+  DRAKE_THROW_UNLESS(A_->colPivHouseholderQr().rank() == A_->cols());
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
                                    GeometryId geometry_id,
                                    std::optional<FrameId> reference_frame)
-    : ConvexSet(&ConvexSetCloner<CartesianProduct>, 3) {
+    : ConvexSet(3) {
   Cylinder cylinder(1., 1.);
-  query_object.inspector()
-      .GetShape(geometry_id)
-      .Reify(this, &cylinder);
+  query_object.inspector().GetShape(geometry_id).Reify(this, &cylinder);
 
   // Make the cylinder out of a circle (2D sphere) and a line segment (1D box).
   sets_.emplace_back(
       Hyperellipsoid::MakeHypersphere(cylinder.radius(), Vector2d::Zero())
           .Clone());
-  sets_.emplace_back(HPolyhedron
-                         ::MakeBox(Vector1d{-cylinder.length() / 2.0},
-                                  Vector1d{cylinder.length() / 2.0})
+  sets_.emplace_back(HPolyhedron::MakeBox(Vector1d{-cylinder.length() / 2.0},
+                                          Vector1d{cylinder.length() / 2.0})
                          .Clone());
 
   const RigidTransformd X_WF =
@@ -91,8 +83,12 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
 CartesianProduct::~CartesianProduct() = default;
 
 const ConvexSet& CartesianProduct::factor(int index) const {
-  DRAKE_DEMAND(0 <= index && index < static_cast<int>(sets_.size()));
+  DRAKE_THROW_UNLESS(0 <= index && index < ssize(sets_));
   return *sets_[index];
+}
+
+std::unique_ptr<ConvexSet> CartesianProduct::DoClone() const {
+  return std::make_unique<CartesianProduct>(*this);
 }
 
 bool CartesianProduct::DoIsBounded() const {
@@ -105,13 +101,12 @@ bool CartesianProduct::DoIsBounded() const {
   return true;
 }
 
-bool CartesianProduct::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
-                                double tol) const {
+bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
+                                    double tol) const {
   int index = 0;
-  VectorXd y = A_ ? (*A_)*x + (*b_) : x;
+  VectorXd y = A_ ? (*A_) * x + (*b_) : x;
   for (const auto& s : sets_) {
-    if (!s->PointInSet(y.segment(index, s->ambient_dimension()),
-                       tol)) {
+    if (!s->PointInSet(y.segment(index, s->ambient_dimension()), tol)) {
       return false;
     }
     index += s->ambient_dimension();
@@ -135,8 +130,7 @@ void CartesianProduct::DoAddPointInSetConstraints(
   }
   int index = 0;
   for (const auto& s : sets_) {
-    s->AddPointInSetConstraints(
-        prog, y.segment(index, s->ambient_dimension()));
+    s->AddPointInSetConstraints(prog, y.segment(index, s->ambient_dimension()));
     index += s->ambient_dimension();
   }
 }

@@ -23,7 +23,6 @@ using Eigen::MatrixXd;
 using Eigen::Vector3d;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 
 namespace drake {
 namespace multibody {
@@ -58,17 +57,17 @@ class CompliantContactManagerTester {
 DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                               std::string name,
                                               const RigidTransformd& X_WF) {
-  auto geometry =
-      make_unique<GeometryInstance>(X_WF, make_unique<Sphere>(1.0), move(name));
+  auto geometry = make_unique<GeometryInstance>(X_WF, make_unique<Sphere>(1.0),
+                                                std::move(name));
   geometry::ProximityProperties props;
   geometry::AddContactMaterial({}, {}, CoulombFriction<double>(1.0, 1.0),
                                &props);
-  geometry->set_proximity_properties(move(props));
+  geometry->set_proximity_properties(std::move(props));
   fem::DeformableBodyConfig<double> body_config;
   /* Make the resolution hint large enough so that we get an octahedron. */
   constexpr double kRezHint = 10.0;
   DeformableBodyId body_id =
-      model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+      model->RegisterDeformableBody(std::move(geometry), body_config, kRezHint);
   return body_id;
 }
 
@@ -97,7 +96,7 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     deformable_body_id_ = RegisterDeformableOctahedron(deformable_model.get(),
                                                        "deformable", X_WF_);
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
 
     /* Define proximity properties for all rigid geometries. */
     geometry::ProximityProperties rigid_proximity_props;
@@ -134,7 +133,7 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     plant_->Finalize();
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
 
     builder.Connect(model_->vertex_positions_port(),
@@ -312,7 +311,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   /* Put the bottom vertex under bc. */
   model->SetWallBoundaryCondition(body_id, Vector3d(0, 0, -0.5),
                                   Vector3d(0, 0, 1));
-  plant.AddPhysicalModel(move(deformable_model));
+  plant.AddPhysicalModel(std::move(deformable_model));
 
   /* Define proximity properties for all rigid geometries. */
   geometry::ProximityProperties rigid_proximity_props;
@@ -335,7 +334,7 @@ GTEST_TEST(DeformableDriverContactKinematicsWithBcTest,
   plant.Finalize();
   auto contact_manager = make_unique<CompliantContactManager<double>>();
   const CompliantContactManager<double>* manager = contact_manager.get();
-  plant.SetDiscreteUpdateManager(move(contact_manager));
+  plant.SetDiscreteUpdateManager(std::move(contact_manager));
   const DeformableDriver<double>* driver =
       CompliantContactManagerTester::deformable_driver(*manager);
 

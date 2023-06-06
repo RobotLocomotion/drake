@@ -32,7 +32,7 @@ class NewmarkScheme : public DiscreteTimeIntegrator<T> {
  protected:
   NewmarkScheme() = default;
 
-  /* Constructs a Newmark scheme with the provided timestep, `gamma` and `beta`.
+  /* Constructs a Newmark scheme with the provided time step, `gamma` and `beta`.
    @pre dt > 0.
    @pre 0.5 <= gamma <= 1.
    @pre 0 <= beta <= 0.5. */

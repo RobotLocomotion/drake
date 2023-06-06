@@ -27,7 +27,7 @@ GTEST_TEST(CalcLameParametersTest, InvalidParameters) {
                               "Poisson's ratio must be in .*");
 }
 
-/* Verify that the calculated Lame parameters match pen and paper calculation.
+/* Verify that the calculated Lamé parameters match pen and paper calculation.
  */
 GTEST_TEST(CalcLameParametersTest, AnalyticResults) {
   const LameParameters<double> lame_params =

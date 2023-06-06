@@ -41,7 +41,7 @@ void AddWeld(
         info.child_frame_name = child_frame.name();
       }
     }
-    DRAKE_DEMAND(found);
+    DRAKE_THROW_UNLESS(found);
   }
 }
 

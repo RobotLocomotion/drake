@@ -102,7 +102,8 @@ class ShaderProgram {
    The derived classes define the details in DoCreateProgramData.
 
    @returns The validated and packaged shader program properties, `nullopt` if
-            `this` shader program cannot be applied for the given properties. */
+            `this` shader program cannot be applied for the given properties.
+   @pre The OpenGl context to which this program belongs has been bound. */
   std::optional<ShaderProgramData> CreateProgramData(
       const PerceptionProperties& properties) const {
     return DoCreateProgramData(properties);

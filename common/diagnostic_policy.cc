@@ -55,13 +55,11 @@ void DiagnosticPolicy::Error(std::string message) const {
   this->Error(d);
 }
 
-void DiagnosticPolicy::WarningDefaultAction(
-    const DiagnosticDetail& detail) {
+void DiagnosticPolicy::WarningDefaultAction(const DiagnosticDetail& detail) {
   log()->warn(detail.FormatWarning());
 }
 
-void DiagnosticPolicy::ErrorDefaultAction(
-    const DiagnosticDetail& detail) {
+void DiagnosticPolicy::ErrorDefaultAction(const DiagnosticDetail& detail) {
   throw std::runtime_error(detail.FormatError());
 }
 

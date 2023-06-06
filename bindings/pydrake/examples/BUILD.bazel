@@ -44,13 +44,6 @@ drake_pybind_library(
     ],
     py_srcs = [
         "_examples_extra.py",
-        "acrobot.py",
-        "compass_gait.py",
-        "manipulation_station.py",
-        "pendulum.py",
-        "quadrotor.py",
-        "rimless_wheel.py",
-        "van_der_pol.py",
     ],
 )
 

@@ -39,7 +39,6 @@ using math::RigidTransformd;
 using math::RollPitchYawd;
 using std::make_pair;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 using systems::Context;
@@ -68,15 +67,6 @@ std::ostream& operator<<(std::ostream& out, const DepthRenderCamera& camera) {
       << "\n  max_depth: " << camera.depth_range().max_depth();
   return out;
 }
-
-// Helper class for exercising private methods in RgbdSensor.
-class RgbdSensorTester {
- public:
-  static void ConvertDepth32FTo16U(const ImageDepth32F& d32,
-                                   ImageDepth16U* d16) {
-    RgbdSensor::ConvertDepth32FTo16U(d32, d16);
-  }
-};
 
 namespace {
 
@@ -408,42 +398,15 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
       sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
 }
 
-// We don't explicitly test any of the image outputs. Most of the image outputs
-// simple wrap the corresponding QueryObject call; the only calculations they
-// do is to produce the X_PC matrix (which is implicitly tested in the
-// construction tests above). The *one* exception is the 16U depth image which
-// converts 32F to 16U. In this case, we test the conversion method directly.
-TEST_F(RgbdSensorTest, DepthImage32FTo16U) {
-  // The largest uint16_t value (unitless). Period.
-  const uint16_t kMax16 = std::numeric_limits<uint16_t>::max();
-  // The saturation depth (in mm) that will be reported.
-  const double kDepth16Saturation = kMax16 / 1000.0;
+// We don't explicitly test any of the image outputs. The image outputs simply
+// wrap the corresponding QueryObject call; the only calculations they do is to
+// produce the X_PC matrix (which is implicitly tested in the construction tests
+// above).
 
-  // Create a simple depth image with some representative values and their
-  // corresponding uint16 values.
-  std::array<uint16_t, 4> expected_depths;
-  ImageDepth32F depth32(1, 4);
-  // Too near.
-  *depth32.at(0, 0) = 0.0;
-  expected_depths[0] = 0;
-  // Valid and representable.
-  *depth32.at(0, 1) = kDepth16Saturation / 2;
-  expected_depths[1] = kMax16 / 2;
-  // Valid but not representable.
-  *depth32.at(0, 2) = kDepth16Saturation * 1.1;
-  expected_depths[2] = kMax16;
-  // Too far.
-  *depth32.at(0, 3) = std::numeric_limits<float>::infinity();
-  expected_depths[3] = kMax16;
-
-  // Perform conversion.
-  ImageDepth16U depth16(1, 4);
-  RgbdSensorTester::ConvertDepth32FTo16U(depth32, &depth16);
-
-  for (int c = 0; c < 4; ++c) {
-    EXPECT_EQ(*depth16.at(0, c), expected_depths[c]);
-  }
-}
+// TODO(jwnimmer-tri) The body_pose_in_world_output_port should have unit test
+// coverage of its output value, not just its name. It ends up being indirectly
+// tested in sim_rgbd_sensor_test.cc but it would be better to identify bugs in
+// the RgbdSensor directly instead of intermingled with the wrapper code.
 
 // Tests that the discrete sensor is properly constructed.
 GTEST_TEST(RgbdSensorDiscrete, Construction) {
@@ -484,7 +447,7 @@ GTEST_TEST(RgbdSensorDiscrete, ImageHold) {
   RgbdSensor* sensor_raw = sensor.get();
   const double kPeriod = 0.1;
   const bool include_render_port = true;
-  RgbdSensorDiscrete discrete_sensor(move(sensor), kPeriod,
+  RgbdSensorDiscrete discrete_sensor(std::move(sensor), kPeriod,
                                      include_render_port);
 
   // This tests very *explicit* knowledge of what the wiring should be. As such,

@@ -22,7 +22,6 @@ namespace symbolic {
 namespace {
 
 using std::map;
-using std::move;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
@@ -81,7 +80,7 @@ TEST_F(VariableTest, MoveCopyPreserveId) {
   const size_t x_id{x.get_id()};
   const size_t x_hash{get_std_hash(x)};
   const Variable x_copied{x};
-  const Variable x_moved{move(x)};
+  const Variable x_moved{std::move(x)};
   EXPECT_EQ(x_id, x_copied.get_id());
   EXPECT_EQ(x_hash, get_std_hash(x_copied));
   EXPECT_EQ(x_id, x_moved.get_id());

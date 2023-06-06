@@ -2,6 +2,7 @@
 
 #include <limits>
 #include <memory>
+#include <utility>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -11,6 +12,60 @@ namespace drake {
 namespace multibody {
 namespace contact_solvers {
 namespace internal {
+
+/* Structure to store data needed for SapLimitConstraint computations.
+ @tparam_nonsymbolic_scalar */
+template <typename T>
+class SapLimitConstraintData {
+ public:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapLimitConstraintData);
+
+  /* Constructs data for a SapLimitConstraint.
+    Refer to SapLimitConstraint's documentation for further details.
+    @param R Regularization parameters.
+    @param v_hat Bias term. */
+  SapLimitConstraintData(VectorX<T> R, VectorX<T> v_hat) {
+    const int nk = R.size();
+    parameters_.R_inv = R.cwiseInverse();
+    parameters_.R = std::move(R);
+    parameters_.v_hat = std::move(v_hat);
+    vc_.resize(nk);
+    y_.resize(nk);
+    gamma_.resize(nk);
+  }
+
+  /* Regularization R. */
+  const VectorX<T>& R() const { return parameters_.R; }
+
+  /* Inverse of the regularization, R⁻¹. */
+  const VectorX<T>& R_inv() const { return parameters_.R_inv; }
+
+  /* Constraint bias. */
+  const VectorX<T>& v_hat() const { return parameters_.v_hat; }
+
+  /* Const access. */
+  const VectorX<T>& vc() const { return vc_; }
+  const VectorX<T>& y() const { return y_; }
+  const VectorX<T>& gamma() const { return gamma_; }
+
+  /* Mutable access. */
+  VectorX<T>& mutable_vc() { return vc_; }
+  VectorX<T>& mutable_y() { return y_; }
+  VectorX<T>& mutable_gamma() { return gamma_; }
+
+ private:
+  // Values stored in this struct remain const after construction.
+  struct ConstParameters {
+    VectorX<T> R;  // Regularization R.
+    VectorX<T> R_inv;
+    VectorX<T> v_hat;  // Constraint velocity bias.
+  };
+  ConstParameters parameters_;
+
+  VectorX<T> vc_;     // Constraint velocity.
+  VectorX<T> y_;      // Un-projected impulse y = −R⁻¹⋅(vc−v̂).
+  VectorX<T> gamma_;  // Projected impulse γ = P(y).
+};
 
 /* Implements limit constraints for the SAP solver, [Castro et al., 2021]. This
  constraint is used to impose a (compliant, see below) limit on the i-th degree
@@ -67,7 +122,14 @@ namespace internal {
 template <typename T>
 class SapLimitConstraint final : public SapConstraint<T> {
  public:
-  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(SapLimitConstraint);
+  /* We do not allow copy, move, or assignment generally to avoid slicing.
+    Protected copy construction is enabled for sub-classes to use in their
+    implementation of DoClone(). */
+  //@{
+  SapLimitConstraint& operator=(const SapLimitConstraint&) = delete;
+  SapLimitConstraint(SapLimitConstraint&&) = delete;
+  SapLimitConstraint& operator=(SapLimitConstraint&&) = delete;
+  //@}
 
   /* Numerical parameters that define the constraint. Refer to this class's
    documentation for details. */
@@ -128,26 +190,11 @@ class SapLimitConstraint final : public SapConstraint<T> {
   /* Returns the position provided at construction. */
   const T& position() const { return q0_; }
 
-  /* Implements the projection operation. In this case P(y) = (y)₊, independent
-   of the regularization R. Refer to SapConstraint::Project() for details. */
-  void Project(const Eigen::Ref<const VectorX<T>>& y,
-               const Eigen::Ref<const VectorX<T>>& R,
-               EigenPtr<VectorX<T>> gamma,
-               MatrixX<T>* dPdy = nullptr) const final;
-
-  /* Computes bias term. Refer to SapConstraint::CalcBiasTerm() for details. */
-  VectorX<T> CalcBiasTerm(const T& time_step, const T& wi) const final;
-
-  /* Computes the diagonal of the regularization matrix (positive diagonal) R.
-   This computes R = [Ri, Ri] (or R = [Ri] if only one limit is imposed) with
-     Ri = max(β²/(4π²)⋅wᵢ, (δt⋅(δt+tau_d)⋅k)⁻¹),
-   Refer to [Castro et al., 2021] for details. */
-  VectorX<T> CalcDiagonalRegularization(const T& time_step,
-                                        const T& wi) const final;
-
-  std::unique_ptr<SapConstraint<T>> Clone() const final;
-
  private:
+  /* Private copy construction is enabled to use in the implementation of
+    DoClone(). */
+  SapLimitConstraint(const SapLimitConstraint&) = default;
+
   /* Computes the constraint function g(q0) as a function of q0 for given lower
    limit ql and upper limit qu.
    @pre lower_limit < +∞
@@ -157,12 +204,29 @@ class SapLimitConstraint final : public SapConstraint<T> {
 
   /* Computes the constraint Jacobian, independent of the configuration for this
    constraint. */
-  static MatrixX<T> CalcConstraintJacobian(int clique_dof, int clique_nv,
-                                           const T& ql, const T& qu);
+  static SapConstraintJacobian<T> CalcConstraintJacobian(
+      int clique, int clique_dof, int clique_nv, const T& ql, const T& qu);
+
+  /* Implementations of SapConstraint NVI functions. */
+  std::unique_ptr<AbstractValue> DoMakeData(
+      const T& time_step,
+      const Eigen::Ref<const VectorX<T>>& delassus_estimation) const override;
+  void DoCalcData(const Eigen::Ref<const VectorX<T>>& vc,
+                  AbstractValue* abstract_data) const override;
+  T DoCalcCost(const AbstractValue& abstract_data) const override;
+  void DoCalcImpulse(const AbstractValue& abstract_data,
+                     EigenPtr<VectorX<T>> gamma) const override;
+  void DoCalcCostHessian(const AbstractValue& abstract_data,
+                         MatrixX<T>* G) const override;
+  std::unique_ptr<SapConstraint<T>> DoClone() const final {
+    return std::unique_ptr<SapLimitConstraint<T>>(
+        new SapLimitConstraint<T>(*this));
+  }
 
   Parameters parameters_;
   int clique_dof_{-1};  // Initialized to an invalid value.
   T q0_{};              // position at the configuration from construction.
+  VectorX<T> g_;        // Constraint function g. See CalcConstraintFunction().
 };
 
 }  // namespace internal

@@ -51,7 +51,7 @@ class TestControllers(unittest.TestCase):
 
         input_limit = 2.
         input_mesh = [set(np.linspace(-input_limit, input_limit, 5))]
-        timestep = 0.01
+        time_step = 0.01
 
         num_callbacks = [0]
 
@@ -75,7 +75,7 @@ class TestControllers(unittest.TestCase):
         policy, cost_to_go = FittedValueIteration(simulator,
                                                   quadratic_regulator_cost,
                                                   state_grid, input_mesh,
-                                                  timestep, options)
+                                                  time_step, options)
 
         self.assertGreater(num_callbacks[0], 0)
 
@@ -97,13 +97,13 @@ class TestControllers(unittest.TestCase):
         state_samples = np.array([[-4., -3., -2., -1., 0., 1., 2., 3., 4.]])
         input_samples = np.array([[-1., 0., 1.]])
 
-        timestep = 1.0
+        time_step = 1.0
         options = DynamicProgrammingOptions()
         options.discount_factor = 1.
 
         J = LinearProgrammingApproximateDynamicProgramming(
             simulator, cost_function, cost_to_go_function, 1,
-            state_samples, input_samples, timestep, options)
+            state_samples, input_samples, time_step, options)
 
         self.assertAlmostEqual(J[0], 1., delta=1e-6)
 

@@ -3,6 +3,7 @@
 /// @file
 /// Helpers for defining C++ LCM type serializers.
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -32,9 +33,9 @@ py::object BindCppSerializer(const std::string& lcm_package) {
   py::object py_type =
       py::module::import(lcm_package.c_str()).attr(CppType::getTypeName());
   py::module lcm_py = py::module::import("pydrake.systems.lcm");
-  auto py_cls =
-      DefineTemplateClassWithDefault<Serializer<CppType>, SerializerInterface>(
-          lcm_py, "_Serializer", py::make_tuple(py_type));
+  auto py_cls = DefineTemplateClassWithDefault<Serializer<CppType>,
+      SerializerInterface, std::shared_ptr<Serializer<CppType>>>(
+      lcm_py, "_Serializer", py::make_tuple(py_type));
   py_cls.def(py::init());
   // We use move here because the type of py_class differs from our declared
   // return type.

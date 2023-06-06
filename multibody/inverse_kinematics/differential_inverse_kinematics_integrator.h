@@ -17,23 +17,23 @@ produce joint position commands.
 In each evaluation, DoDifferentialInverseKinematics uses a linearization of the
 robot kinematics around a nominal position. The nominal position is obtained by
 either:
-1) If the optional boolean (abstract-)valued input port `use_robot_state` is
+1. If the optional boolean (abstract-)valued input port `use_robot_state` is
    connected and set to `true`, then differential IK is computed using the
    `robot_state` input port (which must also be connected). Note: Using
    measured joint positions in a feedback loop can lead to undamped
    oscillations in the redundant joints; we hope to resolve this and are
    tracking it in #9773.
-2) Otherwise, differential IK is computed using this System's internal state,
+2. Otherwise, differential IK is computed using this System's internal state,
    representing the current joint position command. This is equivalent to
    integrating (open loop) the velocity commands obtained from the differential
    IK solutions.
 
 It is also important to set the initial state of the integrator:
-1) If the `robot_state` port is connected, then the initial state of the
+1. If the `robot_state` port is connected, then the initial state of the
    integrator is set to match the positions from this port (the port accepts
    the state vector with positions and velocities for easy of use with
    MultibodyPlant, but only the positions are used).
-2) Otherwise, it is highly recommended that the user call `SetPosition()` to
+2. Otherwise, it is highly recommended that the user call SetPositions() to
    initialize the integrator state.
 
 @system
@@ -58,7 +58,7 @@ class DifferentialInverseKinematicsIntegrator
   @param frame_E End-effector frame.
   @param time_step the discrete time step of the (Euler) integration.
   @param parameters Collection of various problem specific constraints and
-  constants.  The `timestep` parameter will be set to @p time_step.
+  constants.  The `time_step` parameter will be set to @p time_step.
   @param robot_context Optional Context of the MultibodyPlant.  The position
   values of this context will be overwritten during integration; you only need
   to pass this in if the robot has any non-default parameters.  @default

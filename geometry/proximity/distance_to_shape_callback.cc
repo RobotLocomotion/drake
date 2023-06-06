@@ -273,11 +273,13 @@ bool Callback(fcl::CollisionObjectd* object_A_ptr,
         data.nearest_pairs.emplace_back(std::move(signed_pair));
       }
     } else {
-      throw std::logic_error(
-          fmt::format("Signed distance queries between shapes '{}' and '{}' "
-                      "are not supported for scalar type {}",
-                      GetGeometryName(*object_A_ptr),
-                      GetGeometryName(*object_B_ptr), NiceTypeName::Get<T>()));
+      throw std::logic_error(fmt::format(
+          "Signed distance queries between shapes '{}' and '{}' "
+          "are not supported for scalar type {}. See the documentation for "
+          "QueryObject::ComputeSignedDistancePairwiseClosestPoints() for the "
+          "full status of supported geometries.",
+          GetGeometryName(*object_A_ptr), GetGeometryName(*object_B_ptr),
+          NiceTypeName::Get<T>()));
     }
   }
   // Returning true would tell the broadphase manager to terminate early. Since

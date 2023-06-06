@@ -7,12 +7,11 @@ def lcm_repository(
         name = name,
         repository = "lcm-proj/lcm",
         upgrade_advice = """
-        When upgrading this commit, check if the LCM maintainers have tagged
-        a new version number; if so, then update the version numbers within
-        the two lcm-*.cmake files in this directory to match.
+        When updating, the version numbers within the two lcm-*.cmake files in
+        this directory must also be updated to match the new version.
         """,
-        commit = "ab70eaff2bf9e7da097ae3f6183da7c234a286f1",
-        sha256 = "21a93b77bc20025070c6cb9c2d1da30e85ede5d503570130822743768ee2c2ed",  # noqa
+        commit = "v1.5.0",
+        sha256 = "590a7d996daa3d33a7f3094e4054c35799a3d7a4780d732be78971323e730eeb",  # noqa
         build_file = ":package.BUILD.bazel",
         mirrors = mirrors,
     )

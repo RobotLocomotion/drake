@@ -22,16 +22,6 @@ SolverBase::SolverBase(
       default_are_satisfied_(std::move(are_satisfied)),
       default_explain_unsatisfied_(std::move(explain_unsatisfied)) {}
 
-// Remove 2023-06-01 upon completion of deprecation.
-SolverBase::SolverBase(
-    std::function<SolverId()> id, std::function<bool()> available,
-    std::function<bool()> enabled,
-    std::function<bool(const MathematicalProgram&)> are_satisfied,
-    std::function<std::string(const MathematicalProgram&)> explain_unsatisfied)
-    : SolverBase((id != nullptr) ? id() : SolverId{"MISSING"},
-                 std::move(available), std::move(enabled),
-                 std::move(are_satisfied), std::move(explain_unsatisfied)) {}
-
 SolverBase::~SolverBase() = default;
 
 MathematicalProgramResult SolverBase::Solve(
@@ -100,12 +90,6 @@ bool SolverBase::available() const {
 bool SolverBase::enabled() const {
   DRAKE_DEMAND(default_enabled_ != nullptr);
   return default_enabled_();
-}
-
-// On 2023-06-01 upon completion of deprecation, move this function definition
-// to the header file and change it from `override` to `final`.
-SolverId SolverBase::solver_id() const {
-  return solver_id_;
 }
 
 bool SolverBase::AreProgramAttributesSatisfied(

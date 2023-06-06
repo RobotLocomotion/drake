@@ -2,6 +2,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/is_approx_equal_abstol.h"
+#include "drake/systems/primitives/linear_system.h"
 
 namespace drake {
 namespace math {
@@ -22,13 +23,45 @@ Eigen::MatrixXd ContinuousAlgebraicRiccatiEquation(
   Eigen::MatrixXd H(2 * n, 2 * n);
 
   H << A, B * R_cholesky.solve(B.transpose()), Q, -A.transpose();
+  // For the closed-loop system ẋ = (A+BK)x (where K is the LQR controller
+  // gain), we denote the eigenvalues of A+BK as λ₁, ..., λₙ, then with Q
+  // satisfying the algebraic Riccati equation, the eigenvalues of H are λ₁,
+  // ..., λₙ and -λ₁, ..., -λₙ (refer to
+  // https://stanford.edu/class/ee363/lectures/clqr.pdf for more details). Since
+  // the LQR gains should stabilize the closed-loop system, we know that the
+  // real parts of λ₁, ..., λₙ should be strictly negative. Hence half of the
+  // eigenvalues of H should have strictly negative real parts, and the other
+  // half have strictly positive real parts.
+  if (H.determinant() == 0) {
+    // If H.determinant() is 0, then H must have at least one eigenvalue being
+    // 0, contradicting to the requirement on H. This is a sufficient condition
+    // for the system being stabilizable and detectable, and checking the
+    // determinant is cheap.
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation fails. The Hamiltonian is not "
+        "invertible. Either your (A, B) is not stabilizable, or (Q, A) is not "
+        "detectable.");
+  }
+  // Now we actually check if the system is stabilizable and detectable.
+  const systems::LinearSystem<double> sys(
+      A, B, Q, Eigen::MatrixXd::Zero(Q.rows(), 0), 0 /* time_period=0.*/);
+  if (!systems::IsStabilizable(sys)) {
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation fails. The system is not "
+        "stabilizable.");
+  }
+  if (!systems::IsDetectable(sys)) {
+    throw std::runtime_error(
+        "ContinuousAlgebraicRiccatiEquation fails. The system is not "
+        "detectable.");
+  }
 
   Eigen::MatrixXd Z = H;
   Eigen::MatrixXd Z_old;
 
   // these could be options
   const double tolerance = 1e-9;
-  const double max_iterations = 100;
+  const int max_iterations = 100;
 
   double relative_norm;
   size_t iteration = 0;

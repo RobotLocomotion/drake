@@ -34,7 +34,6 @@ using math::RigidTransform;
 using multibody::internal::FullBodyName;
 using std::function;
 using std::make_unique;
-using std::move;
 using std::nullopt;
 using std::optional;
 using std::string;
@@ -155,7 +154,8 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
   vertices.emplace_back(Vector3<double>(0.5, -0.5, -0.5) + offset);
   faces.emplace_back(0, 1, 2);
   faces.emplace_back(2, 3, 0);
-  auto mesh = make_unique<TriangleSurfaceMesh<T>>(move(faces), move(vertices));
+  auto mesh = make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
+                                                  std::move(vertices));
 
   /* Create the "e" field values (i.e., "hydroelastic pressure") - simply
    increasing values at each vertex. */
@@ -165,8 +165,8 @@ ContactSurface<T> MakeContactSurface(GeometryId id_M, GeometryId id_N,
   TriangleSurfaceMesh<T>* mesh_pointer = mesh.get();
   EXPECT_EQ(mesh->num_triangles(), kNumFaces);
   return ContactSurface<T>(
-      id_M, id_N, move(mesh),
-      make_unique<MeshFieldLinear<T, TriangleSurfaceMesh<T>>>(move(e_MN),
+      id_M, id_N, std::move(mesh),
+      make_unique<MeshFieldLinear<T, TriangleSurfaceMesh<T>>>(std::move(e_MN),
                                                               mesh_pointer));
 }
 

@@ -10,12 +10,12 @@ from pydrake.common import FindResourceOrThrow
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
 from pydrake.common.test_utilities.pickle_compare import assert_pickle
 from pydrake.common.value import AbstractValue, Value
-from pydrake.geometry import FrameId
-from pydrake.geometry.render import (
+from pydrake.geometry import (
     ClippingRange,
     ColorRenderCamera,
     DepthRange,
     DepthRenderCamera,
+    FrameId,
     RenderCameraCore,
 )
 from pydrake.lcm import DrakeLcm
@@ -184,6 +184,19 @@ class TestSensors(unittest.TestCase):
             gc.collect()
             np.testing.assert_array_equal(data, channel_default)
             np.testing.assert_array_equal(mutable_data, channel_default)
+
+    def test_depth_image_conversion(self):
+        foo = mut.ImageDepth32F(width=3, height=4)
+        bar = mut.ImageDepth16U()
+        mut.ConvertDepth32FTo16U(input=foo, output=bar)
+        self.assertEqual(bar.width(), 3)
+        self.assertEqual(bar.height(), 4)
+
+        foo = mut.ImageDepth16U(width=3, height=4)
+        bar = mut.ImageDepth32F()
+        mut.ConvertDepth16UTo32F(input=foo, output=bar)
+        self.assertEqual(bar.width(), 3)
+        self.assertEqual(bar.height(), 4)
 
     def test_camera_config(self):
         mut.CameraConfig()

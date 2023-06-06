@@ -113,8 +113,6 @@ class TestAll(unittest.TestCase):
             "yaml_load_data",
             # schema
             "ToDistributionVector",
-            # - render
-            "ColorRenderCamera",
             # lcm
             "DrakeLcm",
             # symbolic

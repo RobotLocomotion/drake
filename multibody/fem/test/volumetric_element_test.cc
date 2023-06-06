@@ -174,11 +174,13 @@ class VolumetricElementTest : public ::testing::Test {
   /* Calculates the DeformationGradientData for the only element evaluated with
    the given node positions. */
   DeformationGradientDataType CalcDeformationGradientData(
-      const VectorX<AD>& q) const {
+      const VectorX<AD>& q, const VectorX<AD>& q0) const {
     const std::array<Matrix3<AD>, kNumQuads> F =
         element().CalcDeformationGradient(q);
+    const std::array<Matrix3<AD>, kNumQuads> F0 =
+        element().CalcDeformationGradient(q0);
     DeformationGradientDataType deformation_gradient_data;
-    deformation_gradient_data.UpdateData(F);
+    deformation_gradient_data.UpdateData(F, F0);
     return deformation_gradient_data;
   }
 
@@ -257,8 +259,8 @@ TEST_F(VolumetricElementTest, DeformedState) {
   unique_ptr<FemState<AD>> fem_state = MakeReferenceState();
   /* Deform the element by scaling the initial position by a factor of 2. */
   fem_state->SetPositions(fem_state->GetPositions() * 2.0);
-  const auto deformation_gradient_data =
-      CalcDeformationGradientData(fem_state->GetPositions());
+  const auto deformation_gradient_data = CalcDeformationGradientData(
+      fem_state->GetPositions(), fem_state->GetPreviousStepPositions());
   std::array<AD, kNumQuads> energy_density_array;
   constitutive_model().CalcElasticEnergyDensity(deformation_gradient_data,
                                                 &energy_density_array);

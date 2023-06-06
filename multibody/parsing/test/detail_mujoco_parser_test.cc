@@ -6,10 +6,10 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/find_resource.h"
+#include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/text_logging.h"
-#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/multibody/tree/revolute_joint.h"
@@ -104,6 +104,8 @@ class MujocoParserTest : public test::DiagnosticPolicyTestBase {
 
   std::string box_obj_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/meshes/box.obj"))};
+  std::string non_convex_obj_{std::filesystem::canonical(FindResourceOrThrow(
+      "drake/geometry/test/non_convex_mesh.obj"))};
   std::string box_urdf_{std::filesystem::canonical(FindResourceOrThrow(
       "drake/multibody/parsing/test/box_package/urdfs/box.urdf"))};
 };
@@ -575,6 +577,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   </default>
   <asset>
     <mesh name="box_mesh" file="{}"/>
+    <mesh name="non_convex_mesh" file="{}"/>
   </asset>
   <worldbody>
     <body name="default">
@@ -616,10 +619,13 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
     <body name="box_from_mesh">
       <geom name="box_from_mesh" type="mesh" mesh="box_mesh" mass="1.0"/>
     </body>
+    <body name="non_convex_body">
+      <geom name="non_convex" type="mesh" mesh="non_convex_mesh" mass="1.0"/>
+    </body>
   </worldbody>
 </mujoco>
 )""",
-                                box_obj_);
+                                box_obj_, non_convex_obj_);
 
   AddModelFromString(xml, "test");
 
@@ -628,6 +634,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   <compiler inertiafromgeom="auto"/>
   <asset>
     <mesh name="box_mesh" file="{}"/>
+    <mesh name="non_convex_mesh" file="{}"/>
   </asset>
   <worldbody>
     <body name="sphere_auto">
@@ -644,10 +651,14 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
       <geom name="box_from_mesh_w_density" type="mesh" mesh="box_mesh"
             density="1.0"/>
     </body>
+    <body name="non_convex_body_w_density">
+      <geom name="non_convex_w_density" type="mesh" mesh="non_convex_mesh"
+            density="1.0"/>
+    </body>
   </worldbody>
 </mujoco>
 )""",
-                    box_obj_);
+                    box_obj_, non_convex_obj_);
 
   AddModelFromString(xml, "test_auto");
 
@@ -699,6 +710,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   auto check_body = [this, &context](
                         const std::string& body_name,
                         const UnitInertia<double>& unit_M_BBo_B) {
+    SCOPED_TRACE(fmt::format("checking body {}", body_name));
     const Body<double>& body = plant_.GetBodyByName(body_name);
     EXPECT_TRUE(CompareMatrices(
         body.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
@@ -711,6 +723,7 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
                                 const std::string& body_name,
                                 const SpatialInertia<double>& M_BBo_B,
                                 double tol = 1e-14) {
+    SCOPED_TRACE(fmt::format("checking body {} (spatial)", body_name));
     const Body<double>& body = plant_.GetBodyByName(body_name);
     EXPECT_TRUE(CompareMatrices(
         body.CalcSpatialInertiaInBodyFrame(*context).CopyToFullMatrix6(),
@@ -731,10 +744,9 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body("ellipsoid_from_default",
              UnitInertia<double>::SolidEllipsoid(0.1, 0.2, 0.3));
   check_body("box_from_sub", UnitInertia<double>::SolidBox(0.8, 1.0, 1.2));
-  SpatialInertia<double> M_BBo_B = SpatialInertia<double>(
-      2.53, Vector3d::Zero(), UnitInertia<double>::SolidSphere(0.1));
-  M_BBo_B += SpatialInertia<double>(2.53, Vector3d::Zero(),
-                                    UnitInertia<double>::SolidSphere(0.2));
+  SpatialInertia<double> M_BBo_B =
+      SpatialInertia<double>::SolidSphereWithMass(2.53, 0.1);
+  M_BBo_B += SpatialInertia<double>::SolidSphereWithMass(2.53, 0.2);
   check_body_spatial("two_spheres", M_BBo_B);
   // Use the equation for the moment of inertia of a cylinder about one end.
   M_BBo_B = SpatialInertia<double>(
@@ -747,6 +759,17 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
   check_body_spatial(
       "box_from_mesh",
       SpatialInertia<double>::SolidCubeWithMass(1.0, 2.0),
+      1e-13);
+  // This unit inertia and center of mass were collected empirically from the
+  // results of multibody::CalcSpatialInertia() on the non-convex mesh. The
+  // important fact is that it differs from the result obtained by estimating
+  // inertia on an oriented bounding box.
+  const UnitInertia<double> non_convex_unit_inertia{0.168,  0.168,  0.168,
+                                                    -0.034, -0.034, -0.034};
+  const Vector3d non_convex_com = Vector3d::Constant(0.2166666666666666);
+  check_body_spatial(
+      "non_convex_body",
+      SpatialInertia<double>{1.0, non_convex_com, non_convex_unit_inertia},
       1e-13);
 
   check_body_spatial("sphere_auto", inertia_from_inertial_tag);
@@ -763,6 +786,10 @@ TEST_F(MujocoParserTest, InertiaFromGeometry) {
       "box_from_mesh_w_density",
       SpatialInertia<double>::SolidCubeWithMass(8.0, 2.0),
       1e-12);
+  check_body_spatial(
+      "non_convex_body_w_density",
+      SpatialInertia<double>{0.1, non_convex_com, non_convex_unit_inertia},
+      1e-13);
 
   // A cube rotating about its corner.
   RotationalInertia<double> I_BFo_B(2, 2, 2, -.75, -.75, -.75);

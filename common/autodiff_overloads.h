@@ -115,11 +115,10 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
   // The two AutoDiffScalars being exponentiated must have the same matrix
   // type. This includes, but is not limited to, the same scalar type and
   // the same dimension.
-  static_assert(
-      std::is_same_v<
-          typename internal::remove_all<DerTypeA>::type::PlainObject,
-          typename internal::remove_all<DerTypeB>::type::PlainObject>,
-      "The derivative types must match.");
+  static_assert(std::is_same_v<
+                    typename internal::remove_all<DerTypeA>::type::PlainObject,
+                    typename internal::remove_all<DerTypeB>::type::PlainObject>,
+                "The derivative types must match.");
 
   internal::make_coherent(base.derivatives(), exponent.derivatives());
 
@@ -128,8 +127,8 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
   const auto& y = exponent.value();
   const auto& ygrad = exponent.derivatives();
 
-  using std::pow;
   using std::log;
+  using std::pow;
   const auto x_to_the_y = pow(x, y);
   if (ygrad.isZero(std::numeric_limits<double>::epsilon()) ||
       ygrad.size() == 0) {
@@ -145,8 +144,8 @@ pow(const Eigen::AutoDiffScalar<DerTypeA>& base,
       // df/dv_i = (∂f/∂x * dx/dv_i) + (∂f/∂y * dy/dv_i)
       // ∂f/∂x is y*x^(y-1)
       y * pow(x, y - 1) * xgrad +
-      // ∂f/∂y is (x^y)*ln(x)
-      x_to_the_y * log(x) * ygrad);
+          // ∂f/∂y is (x^y)*ln(x)
+          x_to_the_y * log(x) * ygrad);
 }
 
 }  // namespace Eigen
@@ -205,8 +204,7 @@ if_then_else(bool f_cond, const Eigen::AutoDiffScalar<DerType1>& x,
   typedef Eigen::AutoDiffScalar<
       typename Eigen::internal::remove_all<DerType2>::type::PlainObject>
       ADS2;
-  static_assert(std::is_same_v<ADS1, ADS2>,
-                "The derivative types must match.");
+  static_assert(std::is_same_v<ADS1, ADS2>, "The derivative types must match.");
   return f_cond ? ADS1(x) : ADS2(y);
 }
 

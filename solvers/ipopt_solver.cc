@@ -619,7 +619,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
     SetAllConstraintDualSolution(*problem_, solver_details.lambda,
                                  constraint_dual_start_index_, result_);
 
-    result_->set_solution_result(SolutionResult::kUnknownError);
+    result_->set_solution_result(SolutionResult::kSolverSpecificError);
     switch (status) {
       case Ipopt::SUCCESS: {
         result_->set_solution_result(SolutionResult::kSolutionFound);
@@ -649,7 +649,7 @@ class IpoptSolver_NLP : public Ipopt::TNLP {
         break;
       }
       default: {
-        result_->set_solution_result(SolutionResult::kUnknownError);
+        result_->set_solution_result(SolutionResult::kSolverSpecificError);
         break;
       }
     }

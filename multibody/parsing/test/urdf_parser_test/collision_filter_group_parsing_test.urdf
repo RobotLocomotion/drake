@@ -58,7 +58,7 @@ Defines a URDF model with collision filter groups.
     <drake:member link="link2"/>
     <drake:member link="link4"/>
     <drake:ignored_collision_filter_group name="group_link24"/>
-   </drake:collision_filter_group>
+  </drake:collision_filter_group>
   <drake:collision_filter_group name="group_link3">
     <drake:member link="link3"/>
     <drake:ignored_collision_filter_group name="group_link14"/>

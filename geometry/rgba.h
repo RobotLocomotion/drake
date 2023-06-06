@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/common/name_value.h"
@@ -46,6 +48,15 @@ class Rgba {
    @throws std::exception if the vector is not size 3 or 4.
    @throws std::exception if any values are outside of the range [0, 1]. */
   void set(const Eigen::Ref<const Eigen::VectorXd>& rgba);
+
+  /** Updates individual (r, g, b, a) values; any values not provided will
+   remain unchanged.
+   @throws std::exception if any values are outside of the range [0, 1]. */
+  void update(std::optional<double> r = {}, std::optional<double> g = {},
+              std::optional<double> b = {}, std::optional<double> a = {}) {
+    set(r.value_or(this->r()), g.value_or(this->g()), b.value_or(this->b()),
+        a.value_or(this->a()));
+  }
 
   /** Reports if two %Rgba values are equal within a given absolute `tolerance`.
    They are "equal" so long as the difference in no single channel is larger

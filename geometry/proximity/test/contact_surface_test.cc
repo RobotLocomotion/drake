@@ -31,7 +31,6 @@ namespace {
 
 using Eigen::Vector3d;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 
@@ -59,10 +58,12 @@ unique_ptr<MeshType> GenerateMesh() {
       {0., 0., 0.}, {1., 0., 0.}, {1., 1., 0.}, {0., 1., 0.}};
   if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
     vector<SurfaceTriangle> faces{{0, 1, 2}, {2, 3, 0}};
-    return make_unique<TriangleSurfaceMesh<T>>(move(faces), move(vertices));
+    return make_unique<TriangleSurfaceMesh<T>>(std::move(faces),
+                                               std::move(vertices));
   } else {
     vector<int> face_data{3, 0, 1, 2, 3, 2, 3, 0};
-    return make_unique<PolygonSurfaceMesh<T>>(move(face_data), move(vertices));
+    return make_unique<PolygonSurfaceMesh<T>>(std::move(face_data),
+                                              std::move(vertices));
   }
 }
 
@@ -72,7 +73,8 @@ unique_ptr<MeshFieldLinear<typename MeshType::ScalarType, MeshType>> MakeField(
     vector<typename MeshType::ScalarType>&& e_values, const MeshType& mesh) {
   using T = typename MeshType::ScalarType;
   if constexpr (std::is_same_v<MeshType, TriangleSurfaceMesh<T>>) {
-    return make_unique<MeshFieldLinear<T, MeshType>>(move(e_values), &mesh);
+    return make_unique<MeshFieldLinear<T, MeshType>>(std::move(e_values),
+                                                     &mesh);
   } else {
     // A MeshFieldLinear on PolygonSurfaceMesh requires the gradients to be
     // provided. So, we'll create the equivalent triangle mesh and field and
@@ -85,8 +87,8 @@ unique_ptr<MeshFieldLinear<typename MeshType::ScalarType, MeshType>> MakeField(
     for (int t = 0; t < tri_mesh->num_elements(); ++t) {
       e_grad.push_back(field.EvaluateGradient(t));
     }
-    return make_unique<MeshFieldLinear<T, MeshType>>(move(e_values), &mesh,
-                                                     move(e_grad));
+    return make_unique<MeshFieldLinear<T, MeshType>>(std::move(e_values), &mesh,
+                                                     std::move(e_grad));
   }
 }
 
@@ -117,10 +119,10 @@ ContactSurface<typename MeshType::ScalarType> TestContactSurface(
   const T e3{3.};
   vector<T> e_values = {e0, e1, e2, e3};
   unique_ptr<MeshFieldLinear<T, MeshType>> e_field =
-      MakeField(move(e_values), *surface_mesh);
+      MakeField(std::move(e_values), *surface_mesh);
 
-  ContactSurface<T> contact_surface(id_M, id_N, move(surface_mesh),
-                                    move(e_field));
+  ContactSurface<T> contact_surface(id_M, id_N, std::move(surface_mesh),
+                                    std::move(e_field));
 
   if (test_return_value) {
     // Start testing the ContactSurface<> data structure.
@@ -207,7 +209,7 @@ GTEST_TEST(ContactSurfaceTest, ConstituentGradients) {
   auto make_e_field = [](TriangleSurfaceMesh<double>* mesh) {
     vector<double> e_values{0, 1, 2, 3};
     return make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
-        move(e_values), mesh, false /* calc_gradient */);
+        std::move(e_values), mesh, false /* calc_gradient */);
   };
   vector<Vector3d> grad_e;
   for (int i = 0; i < surface_mesh->num_elements(); ++i) {
@@ -401,9 +403,9 @@ GTEST_TEST(ContactSurfaceTest, TestEqual) {
   vector<double> field2_values(field.values());
   field2_values.at(0) += 2.0;
   auto field2 = make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
-      move(field2_values), mesh2.get());
+      std::move(field2_values), mesh2.get());
   auto surface2 = ContactSurface<double>(surface.id_M(), surface.id_N(),
-                                         move(mesh2), move(field2));
+                                         std::move(mesh2), std::move(field2));
   EXPECT_FALSE(surface.Equal(surface2));
 }
 
@@ -424,9 +426,9 @@ GTEST_TEST(ContactSurfaceTest, TestSwapMAndN) {
   auto id_M = GeometryId::get_new_id();
   ASSERT_LT(id_N, id_M);
   ContactSurface<double> dut(
-      id_M, id_N, move(mesh),
+      id_M, id_N, std::move(mesh),
       make_unique<TriangleSurfaceMeshFieldLinear<double, double>>(
-          move(e_MN_values), mesh_pointer));
+          std::move(e_MN_values), mesh_pointer));
 
   // We rely on the underlying meshes and mesh fields to *do* the right thing.
   // These tests are just to confirm that those things changed where we

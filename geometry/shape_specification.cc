@@ -174,40 +174,44 @@ Sphere::Sphere(double radius)
 
 ShapeReifier::~ShapeReifier() = default;
 
-void ShapeReifier::ImplementGeometry(const Box&, void*) {
-  ThrowUnsupportedGeometry("Box");
+void ShapeReifier::ImplementGeometry(const Box& box, void*) {
+  DefaultImplementGeometry(box);
 }
 
-void ShapeReifier::ImplementGeometry(const Capsule&, void*) {
-  ThrowUnsupportedGeometry("Capsule");
+void ShapeReifier::ImplementGeometry(const Capsule& capsule, void*) {
+  DefaultImplementGeometry(capsule);
 }
 
-void ShapeReifier::ImplementGeometry(const Convex&, void*) {
-  ThrowUnsupportedGeometry("Convex");
+void ShapeReifier::ImplementGeometry(const Convex& convex, void*) {
+  DefaultImplementGeometry(convex);
 }
 
-void ShapeReifier::ImplementGeometry(const Cylinder&, void*) {
-  ThrowUnsupportedGeometry("Cylinder");
+void ShapeReifier::ImplementGeometry(const Cylinder& cylinder, void*) {
+  DefaultImplementGeometry(cylinder);
 }
 
-void ShapeReifier::ImplementGeometry(const Ellipsoid&, void*) {
-  ThrowUnsupportedGeometry("Ellipsoid");
+void ShapeReifier::ImplementGeometry(const Ellipsoid& ellipsoid, void*) {
+  DefaultImplementGeometry(ellipsoid);
 }
 
-void ShapeReifier::ImplementGeometry(const HalfSpace&, void*) {
-  ThrowUnsupportedGeometry("HalfSpace");
+void ShapeReifier::ImplementGeometry(const HalfSpace& hs, void*) {
+  DefaultImplementGeometry(hs);
 }
 
-void ShapeReifier::ImplementGeometry(const Mesh&, void*) {
-  ThrowUnsupportedGeometry("Mesh");
+void ShapeReifier::ImplementGeometry(const Mesh& mesh, void*) {
+  DefaultImplementGeometry(mesh);
 }
 
-void ShapeReifier::ImplementGeometry(const MeshcatCone&, void*) {
-  ThrowUnsupportedGeometry("MeshcatCone");
+void ShapeReifier::ImplementGeometry(const MeshcatCone& cone, void*) {
+  DefaultImplementGeometry(cone);
 }
 
-void ShapeReifier::ImplementGeometry(const Sphere&, void*) {
-  ThrowUnsupportedGeometry("Sphere");
+void ShapeReifier::ImplementGeometry(const Sphere& sphere, void*) {
+  DefaultImplementGeometry(sphere);
+}
+
+void ShapeReifier::DefaultImplementGeometry(const Shape& shape) {
+  ThrowUnsupportedGeometry(ShapeName(shape).name());
 }
 
 void ShapeReifier::ThrowUnsupportedGeometry(const std::string& shape_name) {

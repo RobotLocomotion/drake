@@ -6,7 +6,6 @@ namespace drake {
 namespace geometry {
 
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 using std::vector;
 

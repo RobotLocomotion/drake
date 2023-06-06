@@ -54,13 +54,24 @@ class DeformationGradientData<
    `deformation_gradient`.
    @param deformation_gradient The up-to-date deformation gradients evaluated at
    the prescribed locations. */
-  void UpdateData(std::array<Matrix3<T>, num_locations> deformation_gradient) {
+  void UpdateData(std::array<Matrix3<T>, num_locations> deformation_gradient,
+                  std::array<Matrix3<T>, num_locations>
+                      previous_step_deformation_gradient) {
     deformation_gradient_ = std::move(deformation_gradient);
+    previous_step_deformation_gradient_ =
+        std::move(previous_step_deformation_gradient);
     static_cast<Derived*>(this)->UpdateFromDeformationGradient();
   }
 
   const std::array<Matrix3<T>, num_locations>& deformation_gradient() const {
     return deformation_gradient_;
+  }
+
+  /* Returns the deformation gradient evaluated at all quadrature points at the
+   previous time step t₀. */
+  const std::array<Matrix3<T>, num_locations>&
+  previous_step_deformation_gradient() const {
+    return previous_step_deformation_gradient_;
   }
 
  protected:
@@ -70,6 +81,7 @@ class DeformationGradientData<
    */
   DeformationGradientData() {
     deformation_gradient_.fill(Matrix3<T>::Identity());
+    previous_step_deformation_gradient_.fill(Matrix3<T>::Identity());
   }
 
   /* Derived classes *must* shadow this method to compute quantities derived
@@ -84,6 +96,7 @@ class DeformationGradientData<
 
  private:
   std::array<Matrix3<T>, num_locations> deformation_gradient_;
+  std::array<Matrix3<T>, num_locations> previous_step_deformation_gradient_;
 };
 
 }  // namespace internal

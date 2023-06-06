@@ -12,7 +12,6 @@ namespace geometry {
 namespace {
 
 using std::make_unique;
-using std::move;
 
 GTEST_TEST(GeometryFrameTest, Constructor) {
   // Case: use default frame group.

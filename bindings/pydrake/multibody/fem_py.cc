@@ -22,6 +22,8 @@ void DoScalarIndependentDefinitions(py::module m) {
     using Class = MaterialModel;
     constexpr auto& cls_doc = doc.MaterialModel;
     py::enum_<Class>(m, "MaterialModel", cls_doc.doc)
+        .value("kLinearCorotated", Class::kLinearCorotated,
+            cls_doc.kLinearCorotated.doc)
         .value("kCorotated", Class::kCorotated, cls_doc.kCorotated.doc)
         .value("kLinear", Class::kLinear, cls_doc.kLinear.doc);
   }

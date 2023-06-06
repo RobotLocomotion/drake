@@ -36,9 +36,9 @@ custom:
       - title: 'API Documentation'
         subfolderitems:
         - page: 'C++'
-          url: https://drake.mit.edu/doxygen_cxx/index.html
+          url: /doxygen_cxx/index.html
         - page: 'Python'
-          url: https://drake.mit.edu/pydrake/index.html
+          url: /pydrake/index.html
       - title: 'Resources'
         subfolderitems:
         - page: 'Getting Help'
@@ -55,9 +55,9 @@ custom:
   footer:
     menu_items:
       - title: 'C++'
-        url: https://drake.mit.edu/doxygen_cxx/index.html
+        url: /doxygen_cxx/index.html
       - title: 'Python'
-        url: https://drake.mit.edu/pydrake/index.html
+        url: /pydrake/index.html
 
 # Using `:path` in the permalink allows us to preserve underscores in the
 # names, so we have a best-effort backwards-compatibility with the Sphinx URLs.

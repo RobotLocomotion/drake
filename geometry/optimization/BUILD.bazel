@@ -19,7 +19,10 @@ drake_cc_package_library(
         ":c_iris_collision_geometry",
         ":c_iris_separating_plane",
         ":convex_set",
+        ":cspace_free_internal",
         ":cspace_free_polytope",
+        ":cspace_free_structs",
+        ":cspace_separating_plane",
         ":graph_of_convex_sets",
         ":iris",
     ],
@@ -35,6 +38,7 @@ drake_cc_library(
         "intersection.cc",
         "minkowski_sum.cc",
         "point.cc",
+        "spectrahedron.cc",
         "vpolytope.cc",
     ],
     hdrs = [
@@ -45,6 +49,7 @@ drake_cc_library(
         "intersection.h",
         "minkowski_sum.h",
         "point.h",
+        "spectrahedron.h",
         "vpolytope.h",
     ],
     interface_deps = [
@@ -55,6 +60,7 @@ drake_cc_library(
     deps = [
         "//geometry:read_obj",
         "//solvers:choose_best_solver",
+        "//solvers:get_program_type",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
         "//solvers:mosek_solver",
@@ -78,9 +84,9 @@ drake_cc_library(
 )
 
 drake_cc_library(
-    name = "c_iris_separating_plane",
-    srcs = ["c_iris_separating_plane.cc"],
-    hdrs = ["c_iris_separating_plane.h"],
+    name = "cspace_separating_plane",
+    srcs = ["cspace_separating_plane.cc"],
+    hdrs = ["cspace_separating_plane.h"],
     deps = [
         "//common/symbolic:polynomial",
         "//geometry/optimization:c_iris_collision_geometry",
@@ -88,20 +94,58 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "c_iris_separating_plane",
+    srcs = ["c_iris_separating_plane.cc"],
+    hdrs = ["c_iris_separating_plane.h"],
+    deps = [
+        "//common/symbolic:polynomial",
+        "//geometry/optimization:c_iris_collision_geometry",
+        "//geometry/optimization:cspace_separating_plane",
+    ],
+)
+
+drake_cc_library(
     name = "cspace_free_polytope",
     srcs = [
         "cspace_free_polytope.cc",
-        "//geometry/optimization/dev:cspace_free_polytope.cc",
     ],
     hdrs = ["cspace_free_polytope.h"],
     deps = [
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",
         "//geometry/optimization:c_iris_separating_plane",
+        "//geometry/optimization:cspace_free_internal",
+        "//geometry/optimization:cspace_free_structs",
         "//solvers:choose_best_solver",
         "//solvers:mathematical_program",
         "//solvers:mosek_solver",
         "//solvers:solve",
+    ],
+)
+
+drake_cc_library(
+    name = "cspace_free_internal",
+    srcs = [
+        "cspace_free_internal.cc",
+    ],
+    hdrs = ["cspace_free_internal.h"],
+    deps = [
+        "//geometry/optimization:c_iris_collision_geometry",
+        "//geometry/optimization:cspace_free_structs",
+        "//geometry/optimization:cspace_separating_plane",
+        "//solvers:choose_best_solver",
+        "//solvers:mathematical_program",
+    ],
+)
+
+drake_cc_library(
+    name = "cspace_free_structs",
+    hdrs = ["cspace_free_structs.h"],
+    deps = [
+        "//common/symbolic:rational_function",
+        "//solvers:mathematical_program",
+        "//solvers:mathematical_program_result",
+        "//solvers:mosek_solver",
     ],
 )
 
@@ -159,9 +203,14 @@ drake_cc_googletest(
     name = "convex_set_test",
     deps = [
         ":convex_set",
-        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:limit_malloc",
-        "//solvers:clp_solver",
+    ],
+)
+
+drake_cc_googletest(
+    name = "convex_set_solving_test",
+    deps = [
+        ":convex_set",
     ],
 )
 
@@ -172,6 +221,15 @@ drake_cc_googletest(
         ":cspace_free_polytope",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:cspace_free_internal",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_internal_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_internal",
     ],
 )
 
@@ -187,6 +245,7 @@ drake_cc_googletest(
     use_default_main = False,
     deps = [
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
         "//common/test_utilities:symbolic_test_util",
         "//geometry/optimization:c_iris_test_utilities",
         "//geometry/optimization:cspace_free_polytope",
@@ -244,6 +303,7 @@ drake_cc_googletest(
         "//solvers:csdp_solver",
         "//solvers:gurobi_solver",
         "//solvers:ipopt_solver",
+        "//solvers:linear_system_solver",
         "//solvers:mosek_solver",
     ],
 )
@@ -328,6 +388,16 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "spectrahedron_test",
+    deps = [
+        ":convex_set",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_googletest(
     name = "vpolytope_test",
     data = ["//geometry:test_obj_files"],
     deps = [
@@ -338,4 +408,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = True)

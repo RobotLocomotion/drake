@@ -13,7 +13,7 @@ drake_cc_googlebench_binary(
     add_test_rule = True,
     test_args = [
         # When testing, skip over Args() that are >= 100.
-        "--benchmark_filter=-/.00+/.$$",
+        "--benchmark_filter=-/.00",
     ],
     test_timeout = "moderate",
     deps = [
@@ -31,4 +31,4 @@ drake_py_experiment_binary(
     googlebench_binary = ":benchmark_polynomial",
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = True)

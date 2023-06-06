@@ -216,4 +216,13 @@ drake_cc_googletest(
     ],
 )
 
+drake_cc_googletest(
+    name = "serializer_deprecated_test",
+    copts = ["-Wno-deprecated-declarations"],
+    deps = [
+        ":serializer",
+        "//lcmtypes:drake_signal",
+    ],
+)
+
 add_lint_tests()

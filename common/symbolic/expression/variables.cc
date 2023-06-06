@@ -18,7 +18,6 @@ using std::includes;
 using std::initializer_list;
 using std::inserter;
 using std::less;
-using std::move;
 using std::ostream;
 using std::ostream_iterator;
 using std::ostringstream;
@@ -129,7 +128,7 @@ Variables operator-(Variables vars, const Variable& var) {
   return vars;
 }
 
-Variables::Variables(set<Variable> vars) : vars_{move(vars)} {}
+Variables::Variables(set<Variable> vars) : vars_{std::move(vars)} {}
 
 Variables intersect(const Variables& vars1, const Variables& vars2) {
   set<Variable> intersection;
@@ -137,7 +136,7 @@ Variables intersect(const Variables& vars1, const Variables& vars2) {
                    vars2.vars_.end(),
                    inserter(intersection, intersection.begin()),
                    less<Variable>{});
-  return Variables{move(intersection)};
+  return Variables{std::move(intersection)};
 }
 
 ostream& operator<<(ostream& os, const Variables& vars) {

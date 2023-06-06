@@ -40,9 +40,7 @@ drake_cc_binary(
         "--realtime_rate=0.0",
     ],
     deps = [
-        "//geometry:drake_visualizer",
         "//multibody/parsing",
-        "//multibody/plant:contact_results_to_lcm",
         "//multibody/plant:multibody_plant_config_functions",
         "//systems/analysis:simulator",
         "//systems/analysis:simulator_config_functions",
@@ -50,6 +48,7 @@ drake_cc_binary(
         "//systems/analysis:simulator_print_stats",
         "//systems/framework:diagram",
         "//systems/primitives",
+        "//visualization",
         "@gflags",
     ],
 )

@@ -128,7 +128,7 @@ GTEST_TEST(SceneGraphInspector, CloneGeometryInstance) {
 
   // Geometry with no properties; confirm the other properties.
   const GeometryInstance original(RigidTransformd(
-      Eigen::Vector3d(1, 2, 3)), make_unique<Sphere>(1.5), "test_sphere");
+      Eigen::Vector3d(1, 2, 3)), Sphere(1.5), "test_sphere");
   const GeometryId geometry_id = tester.mutable_state().RegisterGeometry(
       source_id, frame_id, make_unique<GeometryInstance>(original));
 

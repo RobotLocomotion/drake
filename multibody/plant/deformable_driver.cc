@@ -1,5 +1,6 @@
 #include "drake/multibody/plant/deformable_driver.h"
 
+#include <limits>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -244,12 +245,12 @@ void DeformableDriver<T>::AppendDiscreteContactPairs(
 
   for (const DeformableContactSurface<double>& surface :
        deformable_contact.contact_surfaces()) {
-    /* We use an arbitrarily large stiffness as the default stiffness so that
-     the contact is in near-rigid regime and the compliance is only used as
-     stabilization. */
-    const double default_contact_stiffness = 1.0e12;
-    const T k = GetCombinedPointContactStiffness(
-        surface.id_A(), surface.id_B(), default_contact_stiffness, inspector);
+    /* While our discrete solvers might model constraints as compliant, an
+    infinite stiffness indicates to use the stiffest approximation possible
+    without sacrifycing numerical conditioning. SAP will use the "near rigid"
+    regime approximation in this case. */
+    const T k = std::numeric_limits<double>::infinity();
+
     // TODO(xuchenhan-tri): Currently, body_B is guaranteed to be
     // non-deformable. When we support deformable vs. deformable contact, we
     // need to update this logic for retrieving body names.

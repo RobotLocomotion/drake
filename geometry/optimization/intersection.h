@@ -14,8 +14,7 @@ namespace optimization {
 S = X₁ ∩ X₂ ∩ ... ∩ Xₙ =
     {x | x ∈ X₁, x ∈ X₂, ..., x ∈ Xₙ}
 
-@ingroup geometry_optimization
-*/
+@ingroup geometry_optimization */
 class Intersection final : public ConvexSet {
  public:
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(Intersection)
@@ -31,11 +30,13 @@ class Intersection final : public ConvexSet {
   /** The number of elements (or sets) used in the intersection. */
   int num_elements() const { return sets_.size(); }
 
-  /** Returns a reference to the ConvexSet defining the @p index element in the
+  /** Returns a reference to the ConvexSet defining the `index` element in the
   intersection. */
   const ConvexSet& element(int i) const;
 
  private:
+  std::unique_ptr<ConvexSet> DoClone() const final;
+
   bool DoIsBounded() const final;
 
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,

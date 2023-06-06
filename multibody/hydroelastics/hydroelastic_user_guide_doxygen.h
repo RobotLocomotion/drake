@@ -577,8 +577,7 @@ Important points to note:
 
 @section hydro_appendix_b Appendix B: Current state of implementation
 
-The implementation of hydroelastic contact in Drake is still under active
-development. This section will be updated as the scope and feature set of
+This section will be updated as the scope and feature set of
 hydroelastic contact is advanced. The main crux of this section is to clearly
 indicate what can and cannot be done with hydroelastic contact.
 
@@ -587,28 +586,52 @@ indicate what can and cannot be done with hydroelastic contact.
 - Hydroelastic contact can be used with MultibodyPlant in either continuous or
   discrete mode.
 - You can visualize the contact surfaces, their pressure fields, and the
-  resultant contact forces in Drake Visualizer (see @ref hug_visualizing).
+  resultant contact forces in MeshCat as the simulation progresses. However,
+  for playing back recordings in MeshCat, only the contact forces and moments
+  are available (see issue
+  [19142](https://github.com/RobotLocomotion/drake/issues/19142)).
 - All Drake Shape types can be used to create rigid hydroelastic bodies (this
   includes arbitrary meshes defined as OBJs).
 - Drake primitive Shape types (Box, Capsule, Cylinder, Ellipsoid, HalfSpace,
-  and Cylinder) can all be used to create compliant hydroelastic bodies.
-- The Drake Convex Shape type can be used as a compliant hydroelastic body.
+  and Cylinder) can all be used to create both compliant hydroelastic bodies
+  and rigid hydroelastic bodies.
+- The Drake Convex Shape type can be used both as a compliant hydroelastic body
+  and a rigid hydroelastic body. To use Convex, add the custom tag
+  `<drake:declare_convex/>` tag under the `<mesh>` tag in either an SDFormat
+  or URDF file.
+- The Drake Mesh Shape type can be used as a compliant hydroelastic body
+  using a tetrahedral mesh in VTK file.
+  See
+  [examples/hydroelastic/python_nonconvex_mesh.]
+  (https://github.com/RobotLocomotion/drake/tree/master/examples/hydroelastic/python_nonconvex_mesh)
 
 @subsection hug_not_yet_implemented What can’t you do with hydroelastic contact?
 
-- You can’t get contact surfaces between two rigid geometries. The contact
-  surface between rigid geometries is ill defined and will most likely never be
-  supported. If you need rigid-rigid contact, consider hydroelastics with
-  fallback (kHydroelasticWithFallback). See @ref hug_enabling on how to deal
-  with contact in these cases.
-- The Drake Mesh Shape type cannot currently serve as a compliant
-  hydroelastic geometry. However, if the mesh is convex, one can use the
-  Drake Convex Shape type as a compliant hydroelastic geometry. To do so, add
-  the custom tag `<drake:declare_convex/>` tag under the `<mesh>` tag in either
-  an SDF or URDF file.
+- You can’t get contact surfaces between two rigid hydroelastic geometries.
+  The contact surface between rigid geometries is ill defined and will most
+  likely never be supported.
+  The default drake::multibody::ContactModel::kHydroelasticWithFallback uses
+  point contact model for the rigid-rigid contact.
+  See @ref hug_enabling.
 - Hydroelastics cannot model true deformations given the model does not
   introduce state. Therefore effects such as tangential compliance or
   short time scale waves are not captured by the model.
+  Currently we are actively developing code for deformable bodies in
+  @ref drake::multibody::DeformableModel.
+
+@subsection hug_dissipation_and_solver Current dissipation models
+
+<!-- TODO(DamrongGuoy) Refer to SAP Epic Issue when it's available. -->
+
+- SAP does not support Hunt-Crossley dissipation at this time for both
+  point and hydroelastic contact.
+  See the documentation for that in the
+  [MultibodyPlant documentation.]
+  (https://drake.mit.edu/doxygen_cxx/classdrake_1_1multibody_1_1_multibody_plant.html#:~:text=%E2%81%B4%20We%20allow%20to,will%20be%20ignored.)
+  We allow the user to specify both hunt_crossley_dissipation (TAMSI and
+  continuous mode parameter) and relaxation_time (SAP specific parameter) on
+  the model, but the parameter may be ignored depending on your plant
+  configuration.
 
 @section hydro_references Sources referenced within this documentation
 

@@ -204,5 +204,5 @@ class GurobiSolver final : public SolverBase {
   MipSolCallbackFunction mip_sol_callback_;
 };
 
-}  // end namespace solvers
-}  // end namespace drake
+}  // namespace solvers
+}  // namespace drake

@@ -13,12 +13,12 @@
 #include "drake/common/find_resource.h"
 #include "drake/common/find_runfiles.h"
 #include "drake/common/temp_directory.h"
+#include "drake/common/test_utilities/diagnostic_policy_test_base.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_no_throw.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/geometry/geometry_roles.h"
 #include "drake/multibody/parsing/detail_path_utils.h"
-#include "drake/multibody/parsing/test/diagnostic_policy_test_base.h"
 #include "drake/multibody/tree/ball_rpy_joint.h"
 #include "drake/multibody/tree/linear_bushing_roll_pitch_yaw.h"
 #include "drake/multibody/tree/planar_joint.h"
@@ -1207,7 +1207,7 @@ TEST_F(UrdfParserTest, PointMass) {
   EXPECT_TRUE(body.default_rotational_inertia().get_products().isZero());
 }
 
-TEST_F(UrdfParserTest, BadInertia) {
+TEST_F(UrdfParserTest, BadInertiaFormats) {
   // Test various mis-formatted inputs.
   constexpr const char* base = R"""(
     <robot name='point_mass'>
@@ -1246,38 +1246,6 @@ TEST_F(UrdfParserTest, BadInertia) {
       fmt::format(base, "value='1'",
                   "ixx='0' ixy='0' ixz='0' iyy='0' iyz='0' izz='0 2 3'"), "f");
   EXPECT_THAT(TakeError(), MatchesRegex(".*Expected single value.*izz.*"));
-}
-
-// TODO(rpoyner-tri): these tests don't test the parser but rather error
-// behavior of underlying implementation components. Consider moving or
-// removing them.
-class ZeroMassNonZeroInertiaTest : public UrdfParserTest {
- public:
-  void ParseZeroMassNonZeroInertia() {
-    AddModelFromUrdfString(R"""(
-<robot name='bad'>
-  <link name='bad'>
-    <inertial>
-      <mass value="0"/>
-      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
-    </inertial>
-  </link>
-</robot>)""", "");
-  }
-};
-
-TEST_F(ZeroMassNonZeroInertiaTest, ExceptionType) {
-  // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  if (!::drake::kDrakeAssertIsArmed) {
-    EXPECT_THROW(ParseZeroMassNonZeroInertia(), std::runtime_error);
-  }
-}
-
-TEST_F(ZeroMassNonZeroInertiaTest, Message) {
-  // Test that attempt to parse links with zero mass and non-zero inertia fails.
-  const std::string expected_message = ".*condition 'mass > 0' failed.";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ParseZeroMassNonZeroInertia(), expected_message);
 }
 
 TEST_F(UrdfParserTest, BushingParsing) {
@@ -1794,6 +1762,29 @@ TEST_F(UrdfParserTest, UnsupportedMechanicalReductionIgnoredMaybe) {
       EXPECT_THAT(TakeWarning(), MatchesRegex(pattern));
     }
   }
+}
+
+TEST_F(UrdfParserTest, PlanarJointAxisRespected) {
+  constexpr const char* model = R"""(
+    <robot name='a'>
+      <link name="link1"/>
+      <link name="link2"/>
+      <drake:joint name="planar_joint" type="planar">
+        <parent link="link1"/>
+        <child link="link2"/>
+        <axis xyz = "0 1 0" />
+      </drake:joint>
+    </robot>)""";
+  EXPECT_NE(AddModelFromUrdfString(model, ""), std::nullopt);
+  plant_.Finalize();
+  plant_.GetMutableJointByName<PlanarJoint>("planar_joint")
+      .set_default_translation(Vector2<double>(1.2, 3.4));
+  auto context = plant_.CreateDefaultContext();
+  const math::RigidTransform<double>& X_WB =
+      plant_.EvalBodyPoseInWorld(*context, plant_.GetBodyByName("link2"));
+  // The provided axis dictates that the second link moves in the xz-plane.
+  const Vector3d expected_translation(3.4, 0, 1.2);
+  EXPECT_EQ(X_WB.translation(), expected_translation);
 }
 
 }  // namespace

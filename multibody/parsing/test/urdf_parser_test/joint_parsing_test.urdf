@@ -126,7 +126,7 @@ Defines a URDF model with various types of joints.
     <parent link="link9"/>
     <child link="link10"/>
     <mimic joint="revolute_joint" multiplier="1.23" offset="4.56"/>
-  </joint>  
+  </joint>
   <!-- Normal transmission/joint, should be created with appropriate
   effort limit. -->
   <transmission>

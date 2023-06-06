@@ -76,8 +76,8 @@ class TestGeometrySceneGraph(unittest.TestCase):
 
         # Test limited rendering API.
         scene_graph.AddRenderer("test_renderer",
-                                mut.render.MakeRenderEngineVtk(
-                                    mut.render.RenderEngineVtkParams()))
+                                mut.MakeRenderEngineVtk(
+                                    mut.RenderEngineVtkParams()))
         self.assertTrue(scene_graph.HasRenderer("test_renderer"))
         self.assertEqual(scene_graph.RendererCount(), 1)
 
@@ -236,7 +236,7 @@ class TestGeometrySceneGraph(unittest.TestCase):
         # Check AssignRole bits.
         proximity = mut.ProximityProperties()
         perception = mut.PerceptionProperties()
-        perception.AddProperty("label", "id", mut.render.RenderLabel(0))
+        perception.AddProperty("label", "id", mut.RenderLabel(0))
         illustration = mut.IllustrationProperties()
         props = [
             proximity,
@@ -348,6 +348,56 @@ class TestGeometrySceneGraph(unittest.TestCase):
         self.assertEqual(context_inspector.num_geometries(), 1)
 
     @numpy_compare.check_all_types
+    def test_scene_graph_change_shape(self, T):
+        SceneGraph = mut.SceneGraph_[T]
+        RigidTransform = RigidTransform_[float]
+        scene_graph = SceneGraph()
+        source_id = scene_graph.RegisterSource("anchored")
+        frame_id = scene_graph.world_frame_id()
+        identity = RigidTransform()
+        X_FG_alt = RigidTransform(p=(1, 2, 3))
+        geometry_id = scene_graph.RegisterGeometry(
+            source_id=source_id, frame_id=frame_id,
+            geometry=mut.GeometryInstance(X_PG=identity,
+                                          shape=mut.Sphere(1.),
+                                          name="sphere1"))
+        context = scene_graph.CreateDefaultContext()
+        model_inspector = scene_graph.model_inspector()
+
+        self.assertIsInstance(model_inspector.GetShape(geometry_id),
+                              mut.Sphere)
+        scene_graph.ChangeShape(source_id=source_id, geometry_id=geometry_id,
+                                shape=mut.Box(1, 2, 3))
+        self.assertIsInstance(model_inspector.GetShape(geometry_id),
+                              mut.Box)
+        scene_graph.ChangeShape(source_id=source_id, geometry_id=geometry_id,
+                                shape=mut.Capsule(1, 2), X_FG=X_FG_alt)
+        self.assertIsInstance(model_inspector.GetShape(geometry_id),
+                              mut.Capsule)
+        self.assertTrue(
+            (model_inspector.GetPoseInFrame(geometry_id).translation()
+             == X_FG_alt.translation()).all())
+
+        query_object = scene_graph.get_query_output_port().Eval(context)
+        context_inspector = query_object.inspector()
+
+        self.assertIsInstance(context_inspector.GetShape(geometry_id),
+                              mut.Sphere)
+        scene_graph.ChangeShape(
+            context=context, source_id=source_id, geometry_id=geometry_id,
+            shape=mut.Box(1, 2, 3))
+        self.assertIsInstance(context_inspector.GetShape(geometry_id),
+                              mut.Box)
+        scene_graph.ChangeShape(
+            context=context, source_id=source_id, geometry_id=geometry_id,
+            shape=mut.Capsule(1, 2), X_FG=X_FG_alt)
+        self.assertIsInstance(context_inspector.GetShape(geometry_id),
+                              mut.Capsule)
+        self.assertTrue(
+            (context_inspector.GetPoseInFrame(geometry_id).translation()
+             == X_FG_alt.translation()).all())
+
+    @numpy_compare.check_all_types
     def test_scene_graph_remove_geometry(self, T):
         SceneGraph = mut.SceneGraph_[T]
 
@@ -441,11 +491,10 @@ class TestGeometrySceneGraph(unittest.TestCase):
             source_id=source_id, frame_id=frame_id,
             geometry=mut.GeometryInstance(X_PG=RigidTransform(),
                                           shape=mut.Sphere(1.), name="sphere"))
-        render_params = mut.render.RenderEngineVtkParams()
+        render_params = mut.RenderEngineVtkParams()
         renderer_name = "test_renderer"
         scene_graph.AddRenderer(renderer_name,
-                                mut.render.MakeRenderEngineVtk(
-                                    params=render_params))
+                                mut.MakeRenderEngineVtk(params=render_params))
 
         context = scene_graph.CreateDefaultContext()
         pose_vector = FramePoseVector()
@@ -496,15 +545,15 @@ class TestGeometrySceneGraph(unittest.TestCase):
                 geometry_id_B=mut.GeometryId.get_new_id())
 
         # Confirm rendering API returns images of appropriate type.
-        camera_core = mut.render.RenderCameraCore(
+        camera_core = mut.RenderCameraCore(
             renderer_name=renderer_name,
             intrinsics=CameraInfo(width=10, height=10, fov_y=pi/6),
-            clipping=mut.render.ClippingRange(0.1, 10.0),
+            clipping=mut.ClippingRange(0.1, 10.0),
             X_BS=RigidTransform())
-        color_camera = mut.render.ColorRenderCamera(
+        color_camera = mut.ColorRenderCamera(
             core=camera_core, show_window=False)
-        depth_camera = mut.render.DepthRenderCamera(
-            core=camera_core, depth_range=mut.render.DepthRange(0.1, 5.0))
+        depth_camera = mut.DepthRenderCamera(
+            core=camera_core, depth_range=mut.DepthRange(0.1, 5.0))
         image = query_object.RenderColorImage(
                 camera=color_camera, parent_frame=SceneGraph.world_frame_id(),
                 X_PC=RigidTransform())

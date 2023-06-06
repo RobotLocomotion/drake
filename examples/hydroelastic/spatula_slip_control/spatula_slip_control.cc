@@ -2,9 +2,7 @@
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
-#include "drake/geometry/drake_visualizer.h"
 #include "drake/multibody/parsing/parser.h"
-#include "drake/multibody/plant/contact_results_to_lcm.h"
 #include "drake/multibody/plant/multibody_plant_config_functions.h"
 #include "drake/multibody/tree/prismatic_joint.h"
 #include "drake/systems/analysis/simulator.h"
@@ -14,6 +12,8 @@
 #include "drake/systems/framework/leaf_system.h"
 #include "drake/systems/primitives/adder.h"
 #include "drake/systems/primitives/constant_vector_source.h"
+#include "drake/visualization/visualization_config.h"
+#include "drake/visualization/visualization_config_functions.h"
 
 // Parameters for squeezing the spatula.
 DEFINE_double(gripper_force, 1,
@@ -23,10 +23,6 @@ DEFINE_double(amplitude, 5,
               "carried out by the gripper. [N].");
 DEFINE_double(duty_cycle, 0.5, "Duty cycle of the control signal.");
 DEFINE_double(period, 3, "Period of the control signal. [s].");
-
-// DrakeVisualizer Settings.
-DEFINE_bool(visualize_collision, false,
-            "Visualize collision instead of visual geometries.");
 
 // MultibodyPlant settings.
 DEFINE_double(stiction_tolerance, 1e-4, "Default stiction tolerance. [m/s].");
@@ -181,16 +177,13 @@ int DoMain() {
   // Connect the output of the adder to the plant's actuation input.
   builder.Connect(adder.get_output_port(0), plant.get_actuation_input_port());
 
-  // Create a visualizer for the system and ensure contact results are
-  // visualized.
-  geometry::DrakeVisualizerParams params;
-  params.role = FLAGS_visualize_collision ? geometry::Role::kProximity
-                                          : geometry::Role::kIllustration;
-  geometry::DrakeVisualizerd::AddToBuilder(&builder, scene_graph,
-                                           /* lcm */ nullptr, params);
-  multibody::ConnectContactResultsToDrakeVisualizer(&builder, plant,
-                                                    scene_graph,
-                                                    /* lcm */ nullptr);
+  auto meshcat = std::make_shared<geometry::Meshcat>();
+  visualization::ApplyVisualizationConfig(
+      visualization::VisualizationConfig{
+          .default_proximity_color = geometry::Rgba{1, 0, 0, 0.25},
+          .enable_alpha_sliders = true,
+      },
+      &builder, nullptr, nullptr, nullptr, meshcat);
 
   // Construct a simulator.
   std::unique_ptr<systems::Diagram<double>> diagram = builder.Build();
@@ -227,7 +220,22 @@ int DoMain() {
 
   // Simulate.
   simulator.Initialize();
+  meshcat->StartRecording();
   simulator.AdvanceTo(FLAGS_simulation_sec);
+  meshcat->StopRecording();
+
+  // TODO(#19142) According to issue 19142, we can playback contact forces and
+  //  torques; however, contact surfaces are not recorded properly.
+  //  For now, we delete contact surfaces to prevent confusion in the playback.
+  //  Remove deletion when 19142 is resovled.
+  meshcat->Delete("/drake/contact_forces/hydroelastic/"
+                 "left_finger_bubble+spatula/"
+                 "contact_surface");
+  meshcat->Delete("/drake/contact_forces/hydroelastic/"
+                  "right_finger_bubble+spatula/"
+                  "contact_surface");
+  meshcat->PublishRecording();
+
   systems::PrintSimulatorStatistics(simulator);
   return 0;
 }

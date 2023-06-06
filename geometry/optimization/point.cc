@@ -20,13 +20,13 @@ using solvers::VectorXDecisionVariable;
 using std::sqrt;
 using symbolic::Variable;
 
-Point::Point(const Eigen::Ref<const Eigen::VectorXd>& x)
-    : ConvexSet(&ConvexSetCloner<Point>, x.size()), x_{x} {}
+Point::Point(const Eigen::Ref<const VectorXd>& x)
+    : ConvexSet(x.size()), x_{x} {}
 
 Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
              std::optional<FrameId> reference_frame,
              double maximum_allowable_radius)
-    : ConvexSet(&ConvexSetCloner<Point>, 3) {
+    : ConvexSet(3) {
   double radius = -1.0;
   query_object.inspector().GetShape(geometry_id).Reify(this, &radius);
   if (radius > maximum_allowable_radius) {
@@ -46,12 +46,16 @@ Point::Point(const QueryObject<double>& query_object, GeometryId geometry_id,
 
 Point::~Point() = default;
 
-void Point::set_x(const Eigen::Ref<const Eigen::VectorXd>& x) {
-  DRAKE_DEMAND(x.size() == x_.size());
+void Point::set_x(const Eigen::Ref<const VectorXd>& x) {
+  DRAKE_THROW_UNLESS(x.size() == x_.size());
   x_ = x;
 }
 
-bool Point::DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
+std::unique_ptr<ConvexSet> Point::DoClone() const {
+  return std::make_unique<Point>(*this);
+}
+
+bool Point::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                          double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
 }

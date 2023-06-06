@@ -428,15 +428,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulum) {
   EXPECT_FALSE(region.PointInSet(Vector2d{-.4, -.3}));
 }
 
-// A block on a vertical track, free to rotate (in the plane) with width `w` and
-// height `h`, plus a ground plane at z=0.  The true configuration space is
-// min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the ±.  These
-// regions are visualized at https://www.desmos.com/calculator/ok5ckpa1kp.
-GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
-  const double w = 2.0;
-  const double h = 1.0;
-  const std::string block_urdf = fmt::format(
-      R"(
+const char block_urdf[] = R"(
 <robot name="block">
   <link name="fixed">
     <collision name="ground">
@@ -457,7 +449,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   </joint>
   <link name="link2">
     <collision name="block">
-      <geometry><box size="{w} 1 {h}"/></geometry>
+      <geometry><box size="2 1 1"/></geometry>
     </collision>
   </link>
   <joint name="joint2" type="revolute">
@@ -467,9 +459,14 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
     <child link="link2"/>
   </joint>
 </robot>
-)",
-      fmt::arg("w", w), fmt::arg("h", h));
+)";
 
+// A block on a vertical track, free to rotate (in the plane) with width `w` of
+// 2 and height `h` of 1, plus a ground plane at z=0.  The true configuration
+// space is min(q₀ ± .5w sin(q₁) ± .5h cos(q₁)) ≥ 0, where the min is over the
+// ±. These regions are visualized at
+// https://www.desmos.com/calculator/ok5ckpa1kp.
+GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   const Vector2d sample{1.0, 0.0};
   IrisOptions options;
   HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
@@ -484,6 +481,22 @@ GTEST_TEST(IrisInConfigurationSpaceTest, BlockOnGround) {
   EXPECT_EQ(region.ambient_dimension(), 2);
   // Confirm that we've found a substantial region.
   EXPECT_GE(region.MaximumVolumeInscribedEllipsoid().Volume(), 2.0);
+}
+
+GTEST_TEST(IrisInConfigurationSpaceTest, StartingEllipse) {
+  const Vector2d sample{1.0, 0.0};
+  IrisOptions options;
+  options.iteration_limit = 2;
+  HPolyhedron region = IrisFromUrdf(block_urdf, sample, options);
+
+  options.iteration_limit = 1;
+  HPolyhedron iterative_region = IrisFromUrdf(block_urdf, sample, options);
+  options.starting_ellipse = iterative_region.MaximumVolumeInscribedEllipsoid();
+  iterative_region = IrisFromUrdf(block_urdf, sample, options);
+
+  EXPECT_NEAR(region.MaximumVolumeInscribedEllipsoid().Volume(),
+              iterative_region.MaximumVolumeInscribedEllipsoid().Volume(),
+              1e-6);
 }
 
 // A (somewhat contrived) example of a concave configuration-space obstacle
@@ -542,7 +555,7 @@ GTEST_TEST(IrisInConfigurationSpaceTest, ConvexConfigurationSpace) {
   // The particular value was found by visual inspection using the desmos plot.
   const double z_test = 0, theta_test = -1.55;
   // Confirm that the pendulum is colliding with the wall with true kinematics:
-  EXPECT_LE(z_test + l*std::cos(theta_test), r);
+  EXPECT_LE(z_test + l * std::cos(theta_test), r);
 
   // With num_collision_infeasible_samples == 1, we found that SNOPT misses this
   // point (on some platforms with some random seeds).
@@ -687,20 +700,20 @@ GTEST_TEST(IrisInConfigurationSpaceTest, DoublePendulumEndEffectorConstraints) {
   {
     std::shared_ptr<Meshcat> meshcat = geometry::GetTestEnvironmentMeshcat();
     meshcat->Set2dRenderMode(math::RigidTransformd(Eigen::Vector3d{0, 0, 1}),
-                            -3.25, 3.25, -3.25, 3.25);
+                             -3.25, 3.25, -3.25, 3.25);
     meshcat->SetProperty("/Grid", "visible", true);
     Eigen::RowVectorXd theta1s = Eigen::RowVectorXd::LinSpaced(100, -1.6, 1.6);
     Eigen::Matrix3Xd points = Eigen::Matrix3Xd::Zero(3, 2 * theta1s.size());
     for (int i = 0; i < theta1s.size(); ++i) {
       points(0, i) = theta1s[i];
-      points(1, i) =  std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
+      points(1, i) = std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
       points(0, points.cols() - i - 1) = theta1s[i];
       points(1, points.cols() - i - 1) =
           -std::acos(1 - std::cos(theta1s[i])) - theta1s[i];
     }
     meshcat->SetLine("True C_free", points, 2.0, Rgba(0, 0, 1));
     VPolytope vregion = VPolytope(region).GetMinimalRepresentation();
-    points.resize(3, vregion.vertices().cols()+1);
+    points.resize(3, vregion.vertices().cols() + 1);
     points.topLeftCorner(2, vregion.vertices().cols()) = vregion.vertices();
     points.topRightCorner(2, 1) = vregion.vertices().col(0);
     points.bottomRows<1>().setZero();

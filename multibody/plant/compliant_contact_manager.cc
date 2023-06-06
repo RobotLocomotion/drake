@@ -35,8 +35,9 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-AccelerationsDueToExternalForcesCache<T>::AccelerationsDueToExternalForcesCache(
-    const MultibodyTreeTopology& topology)
+AccelerationsDueNonConstraintForcesCache<
+    T>::AccelerationsDueNonConstraintForcesCache(const MultibodyTreeTopology&
+                                                     topology)
     : forces(topology.num_bodies(), topology.num_velocities()),
       abic(topology),
       Zb_Bo_W(topology.num_bodies()),
@@ -117,26 +118,26 @@ void CompliantContactManager<T>::DoDeclareCacheEntries() {
   cache_indexes_.contact_kinematics =
       contact_kinematics_cache_entry.cache_index();
 
-  // Accelerations due to non-contact forces.
-  // We cache non-contact forces, ABA forces and accelerations into a
-  // AccelerationsDueToExternalForcesCache.
-  AccelerationsDueToExternalForcesCache<T> non_contact_forces_accelerations(
-      this->internal_tree().get_topology());
-  const auto& non_contact_forces_accelerations_cache_entry =
+  // Accelerations due to non-constraint forces.
+  // We cache non-contact forces, ABA forces and accelerations into an
+  // AccelerationsDueNonConstraintForcesCache.
+  AccelerationsDueNonConstraintForcesCache<T>
+      non_constraint_forces_accelerations(this->internal_tree().get_topology());
+  const auto base_cache_indices = DiscreteUpdateManager<T>::cache_indexes();
+  const auto& discrete_input_port_forces_cache_entry =
+      plant().get_cache_entry(base_cache_indices.discrete_input_port_forces);
+  const auto& non_constraint_forces_accelerations_cache_entry =
       this->DeclareCacheEntry(
-          "Non-contact forces accelerations.",
+          "Non-constraint forces and induced accelerations.",
           systems::ValueProducer(
-              this, non_contact_forces_accelerations,
+              this, non_constraint_forces_accelerations,
               &CompliantContactManager<
-                  T>::CalcAccelerationsDueToNonContactForcesCache),
-          // Due to issue #12786, we cannot properly mark this entry dependent
-          // on inputs. CalcAccelerationsDueToNonContactForcesCache() uses
-          // CacheIndexes::non_contact_forces_evaluation_in_progress to guard
-          // against algebraic loops.
+                  T>::CalcAccelerationsDueToNonConstraintForcesCache),
           {systems::System<T>::xd_ticket(),
-           systems::System<T>::all_parameters_ticket()});
-  cache_indexes_.non_contact_forces_accelerations =
-      non_contact_forces_accelerations_cache_entry.cache_index();
+           systems::System<T>::all_parameters_ticket(),
+           discrete_input_port_forces_cache_entry.ticket()});
+  cache_indexes_.non_constraint_forces_accelerations =
+      non_constraint_forces_accelerations_cache_entry.cache_index();
 
   if constexpr (std::is_same_v<T, double>) {
     if (deformable_driver_ != nullptr) {
@@ -347,6 +348,10 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
           .template Eval<geometry::QueryObject<T>>(context);
   const geometry::SceneGraphInspector<T>& inspector = query_object.inspector();
 
+  const std::vector<std::vector<int>>& per_tree_unlocked_indices =
+      this->EvalUnlockedVelocityIndicesPerTree(context);
+  const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
+
   // Fill in the point contact pairs.
   const std::vector<PenetrationAsPointPair<T>>& point_pairs =
       plant().EvalPointPairPenetrations(context);
@@ -358,39 +363,51 @@ void CompliantContactManager<T>::AppendDiscreteContactPairsForPointContact(
         this->geometry_id_to_body_index().at(pair.id_B);
     const Body<T>& body_B = plant().get_body(body_B_index);
 
-    const T kA = GetPointContactStiffness(
-        pair.id_A, this->default_contact_stiffness(), inspector);
-    const T kB = GetPointContactStiffness(
-        pair.id_B, this->default_contact_stiffness(), inspector);
-    const T k = GetCombinedPointContactStiffness(
-        pair.id_A, pair.id_B, this->default_contact_stiffness(), inspector);
+    const TreeIndex& treeA_index = topology.body_to_tree_index(body_A_index);
+    const TreeIndex& treeB_index = topology.body_to_tree_index(body_B_index);
 
-    // Hunt & Crossley dissipation. Used by TAMSI, ignored by SAP.
-    const T d = GetCombinedHuntCrossleyDissipation(
-        pair.id_A, pair.id_B, kA, kB, this->default_contact_dissipation(),
-        inspector);
+    //  For joint locking, filter out contacts between bodies who belong to
+    //  trees with 0 degrees of freedom. For a contact to remain in
+    //  consideration, at least one of the trees involved has to be valid and
+    //  have a non-zero number of DOFs.
+    if ((treeA_index.is_valid() &&
+         per_tree_unlocked_indices[treeA_index].size() != 0) ||
+        (treeB_index.is_valid() &&
+         per_tree_unlocked_indices[treeB_index].size() != 0)) {
+      const T kA = GetPointContactStiffness(
+          pair.id_A, this->default_contact_stiffness(), inspector);
+      const T kB = GetPointContactStiffness(
+          pair.id_B, this->default_contact_stiffness(), inspector);
+      const T k = GetCombinedPointContactStiffness(
+          pair.id_A, pair.id_B, this->default_contact_stiffness(), inspector);
 
-    // Dissipation time scale. Used by SAP, ignored by TAMSI.
-    const double default_dissipation_time_constant = 0.1;
-    const T tau = GetCombinedDissipationTimeConstant(
-        pair.id_A, pair.id_B, default_dissipation_time_constant, body_A.name(),
-        body_B.name(), inspector);
-    const T mu =
-        GetCombinedDynamicCoulombFriction(pair.id_A, pair.id_B, inspector);
+      // Hunt & Crossley dissipation. Used by TAMSI, ignored by SAP.
+      const T d = GetCombinedHuntCrossleyDissipation(
+          pair.id_A, pair.id_B, kA, kB, this->default_contact_dissipation(),
+          inspector);
 
-    // We compute the position of the point contact based on Hertz's theory
-    // for contact between two elastic bodies.
-    const T denom = kA + kB;
-    const T wA = (denom == 0 ? 0.5 : kA / denom);
-    const T wB = (denom == 0 ? 0.5 : kB / denom);
-    const Vector3<T> p_WC = wA * pair.p_WCa + wB * pair.p_WCb;
+      // Dissipation time scale. Used by SAP, ignored by TAMSI.
+      const double default_dissipation_time_constant = 0.1;
+      const T tau = GetCombinedDissipationTimeConstant(
+          pair.id_A, pair.id_B, default_dissipation_time_constant,
+          body_A.name(), body_B.name(), inspector);
+      const T mu =
+          GetCombinedDynamicCoulombFriction(pair.id_A, pair.id_B, inspector);
 
-    const T phi0 = -pair.depth;
-    const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
+      // We compute the position of the point contact based on Hertz's theory
+      // for contact between two elastic bodies.
+      const T denom = kA + kB;
+      const T wA = (denom == 0 ? 0.5 : kA / denom);
+      const T wB = (denom == 0 ? 0.5 : kB / denom);
+      const Vector3<T> p_WC = wA * pair.p_WCa + wB * pair.p_WCb;
 
-    contact_pairs.push_back({pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0,
-                             fn0, k, d, tau, mu, {} /* no surface index */,
-                             {} /* no face index */});
+      const T phi0 = -pair.depth;
+      const T fn0 = k * pair.depth;  // Used by TAMSI, ignored by SAP.
+
+      contact_pairs.push_back({pair.id_A, pair.id_B, p_WC, pair.nhat_BA_W, phi0,
+                              fn0, k, d, tau, mu, {} /* no surface index */,
+                              {} /* no face index */});
+    }
   }
 }
 
@@ -425,6 +442,10 @@ void CompliantContactManager<T>::
   const std::vector<geometry::ContactSurface<T>>& surfaces =
       this->EvalContactSurfaces(context);
 
+  const std::vector<std::vector<int>>& per_tree_unlocked_indices =
+      this->EvalUnlockedVelocityIndicesPerTree(context);
+  const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
+
   const int num_surfaces = surfaces.size();
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
     const auto& s = surfaces[surface_index];
@@ -441,106 +462,119 @@ void CompliantContactManager<T>::
         this->geometry_id_to_body_index().at(s.id_N());
     const Body<T>& body_N = plant().get_body(body_N_index);
 
-    // TODO(amcastro-tri): Consider making the modulus required, instead of
-    // a default infinite value.
-    const T hydro_modulus_M = GetHydroelasticModulus(
-        s.id_M(), std::numeric_limits<double>::infinity(), inspector);
-    const T hydro_modulus_N = GetHydroelasticModulus(
-        s.id_N(), std::numeric_limits<double>::infinity(), inspector);
+    const TreeIndex& treeM_index = topology.body_to_tree_index(body_M_index);
+    const TreeIndex& treeN_index = topology.body_to_tree_index(body_N_index);
 
-    // Hunt & Crossley dissipation. Used by TAMSI, ignored by SAP.
-    const T d = GetCombinedHuntCrossleyDissipation(
-        s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
-        0.0 /* Default value */, inspector);
+    //  For joint locking, filter out contacts between bodies who belong to
+    //  trees with 0 degrees of freedom. For a contact to remain in
+    //  consideration, at least one of the trees involved has to be valid and
+    //  have a non-zero number of DOFs.
+    if ((treeM_index.is_valid() &&
+         per_tree_unlocked_indices[treeM_index].size() != 0) ||
+        (treeN_index.is_valid() &&
+         per_tree_unlocked_indices[treeN_index].size() != 0)) {
+      // TODO(amcastro-tri): Consider making the modulus required, instead of
+      // a default infinite value.
+      const T hydro_modulus_M = GetHydroelasticModulus(
+          s.id_M(), std::numeric_limits<double>::infinity(), inspector);
+      const T hydro_modulus_N = GetHydroelasticModulus(
+          s.id_N(), std::numeric_limits<double>::infinity(), inspector);
 
-    // Dissipation time scale. Used by SAP, ignored by TAMSI.
-    const double default_dissipation_time_constant = 0.1;
-    const T tau = GetCombinedDissipationTimeConstant(
-        s.id_M(), s.id_N(), default_dissipation_time_constant, body_M.name(),
-        body_N.name(), inspector);
+      // Hunt & Crossley dissipation. Used by TAMSI, ignored by SAP.
+      const T d = GetCombinedHuntCrossleyDissipation(
+          s.id_M(), s.id_N(), hydro_modulus_M, hydro_modulus_N,
+          0.0 /* Default value */, inspector);
 
-    // Combine friction coefficients.
-    const T mu =
-        GetCombinedDynamicCoulombFriction(s.id_M(), s.id_N(), inspector);
+      // Dissipation time scale. Used by SAP, ignored by TAMSI.
+      const double default_dissipation_time_constant = 0.1;
+      const T tau = GetCombinedDissipationTimeConstant(
+          s.id_M(), s.id_N(), default_dissipation_time_constant, body_M.name(),
+          body_N.name(), inspector);
 
-    for (int face = 0; face < s.num_faces(); ++face) {
-      const T& Ae = s.area(face);  // Face element area.
+      // Combine friction coefficients.
+      const T mu =
+          GetCombinedDynamicCoulombFriction(s.id_M(), s.id_N(), inspector);
 
-      // We found out that the hydroelastic query might report
-      // infinitesimally small triangles (consider for instance an initial
-      // condition that perfectly places an object at zero distance from the
-      // ground.) While the area of zero sized triangles is not a problem by
-      // itself, the badly computed normal on these triangles leads to
-      // problems when computing the contact Jacobians (since we need to
-      // obtain an orthonormal basis based on that normal.)
-      // We therefore ignore infinitesimally small triangles. The tolerance
-      // below is somehow arbitrary and could possibly be tightened.
-      if (Ae > 1.0e-14) {
-        // From ContactSurface's documentation: The normal of each face is
-        // guaranteed to point "out of" N and "into" M.
-        const Vector3<T>& nhat_W = s.face_normal(face);
+      for (int face = 0; face < s.num_faces(); ++face) {
+        const T& Ae = s.area(face);  // Face element area.
 
-        // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
-        // 2022], for convenience we define both pressure gradients
-        // to be positive in the direction "into" the bodies. Therefore,
-        // we use the minus sign for gN.
-        // [Masterjohn 2022] Velocity Level Approximation of Pressure
-        // Field Contact Patches.
-        const T gM = M_is_compliant
-                         ? s.EvaluateGradE_M_W(face).dot(nhat_W)
-                         : T(std::numeric_limits<double>::infinity());
-        const T gN = N_is_compliant
-                         ? -s.EvaluateGradE_N_W(face).dot(nhat_W)
-                         : T(std::numeric_limits<double>::infinity());
+        // We found out that the hydroelastic query might report
+        // infinitesimally small triangles (consider for instance an initial
+        // condition that perfectly places an object at zero distance from the
+        // ground.) While the area of zero sized triangles is not a problem by
+        // itself, the badly computed normal on these triangles leads to
+        // problems when computing the contact Jacobians (since we need to
+        // obtain an orthonormal basis based on that normal.)
+        // We therefore ignore infinitesimally small triangles. The tolerance
+        // below is somehow arbitrary and could possibly be tightened.
+        if (Ae > 1.0e-14) {
+          // From ContactSurface's documentation: The normal of each face is
+          // guaranteed to point "out of" N and "into" M.
+          const Vector3<T>& nhat_W = s.face_normal(face);
 
-        constexpr double kGradientEpsilon = 1.0e-14;
-        if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
-          // Mathematically g = gN*gM/(gN+gM) and therefore g = 0 when
-          // either gradient on one of the bodies is zero. A zero gradient
-          // means there is no contact constraint, and therefore we
-          // ignore it to avoid numerical problems in the discrete solver.
-          continue;
-        }
+          // One dimensional pressure gradient (in Pa/m). Unlike [Masterjohn
+          // 2022], for convenience we define both pressure gradients
+          // to be positive in the direction "into" the bodies. Therefore,
+          // we use the minus sign for gN.
+          // [Masterjohn 2022] Velocity Level Approximation of Pressure
+          // Field Contact Patches.
+          const T gM = M_is_compliant
+                           ? s.EvaluateGradE_M_W(face).dot(nhat_W)
+                           : T(std::numeric_limits<double>::infinity());
+          const T gN = N_is_compliant
+                           ? -s.EvaluateGradE_N_W(face).dot(nhat_W)
+                           : T(std::numeric_limits<double>::infinity());
 
-        // Effective hydroelastic pressure gradient g result of
-        // compliant-compliant interaction, see [Masterjohn 2022].
-        // The expression below is mathematically equivalent to g =
-        // gN*gM/(gN+gM) but it has the advantage of also being valid if
-        // one of the gradients is infinity.
-        const T g = 1.0 / (1.0 / gM + 1.0 / gN);
+          constexpr double kGradientEpsilon = 1.0e-14;
+          if (gM < kGradientEpsilon || gN < kGradientEpsilon) {
+            // Mathematically g = gN*gM/(gN+gM) and therefore g = 0 when
+            // either gradient on one of the bodies is zero. A zero gradient
+            // means there is no contact constraint, and therefore we
+            // ignore it to avoid numerical problems in the discrete solver.
+            continue;
+          }
 
-        // Position of quadrature point Q in the world frame (since mesh_W
-        // is measured and expressed in W).
-        const Vector3<T>& p_WQ = s.centroid(face);
-        // For a triangle, its centroid has the fixed barycentric
-        // coordinates independent of the shape of the triangle. Using
-        // barycentric coordinates to evaluate field value could be
-        // faster than using Cartesian coordinates, especially if the
-        // TriangleSurfaceMeshFieldLinear<> does not store gradients and
-        // has to solve linear equations to convert Cartesian to
-        // barycentric coordinates.
-        const Vector3<T> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
-        // Pressure at the quadrature point.
-        const T p0 = s.is_triangle()
-                         ? s.tri_e_MN().Evaluate(face, tri_centroid_barycentric)
-                         : s.poly_e_MN().EvaluateCartesian(face, p_WQ);
+          // Effective hydroelastic pressure gradient g result of
+          // compliant-compliant interaction, see [Masterjohn 2022].
+          // The expression below is mathematically equivalent to g =
+          // gN*gM/(gN+gM) but it has the advantage of also being valid if
+          // one of the gradients is infinity.
+          const T g = 1.0 / (1.0 / gM + 1.0 / gN);
 
-        // Force contribution by this quadrature point.
-        const T fn0 = Ae * p0;
+          // Position of quadrature point Q in the world frame (since mesh_W
+          // is measured and expressed in W).
+          const Vector3<T>& p_WQ = s.centroid(face);
+          // For a triangle, its centroid has the fixed barycentric
+          // coordinates independent of the shape of the triangle. Using
+          // barycentric coordinates to evaluate field value could be
+          // faster than using Cartesian coordinates, especially if the
+          // TriangleSurfaceMeshFieldLinear<> does not store gradients and
+          // has to solve linear equations to convert Cartesian to
+          // barycentric coordinates.
+          const Vector3<T> tri_centroid_barycentric(1 / 3., 1 / 3., 1 / 3.);
+          // Pressure at the quadrature point.
+          const T p0 =
+              s.is_triangle()
+                  ? s.tri_e_MN().Evaluate(face, tri_centroid_barycentric)
+                  : s.poly_e_MN().EvaluateCartesian(face, p_WQ);
 
-        // Effective compliance in the normal direction for the given
-        // discrete patch, refer to [Masterjohn 2022] for details.
-        // [Masterjohn 2022] Masterjohn J., Guoy D., Shepherd J. and
-        // Castro A., 2022. Velocity Level Approximation of Pressure Field
-        // Contact Patches. Available at https://arxiv.org/abs/2110.04157.
-        const T k = Ae * g;
+          // Force contribution by this quadrature point.
+          const T fn0 = Ae * p0;
 
-        // phi < 0 when in penetration.
-        const T phi0 = -p0 / g;
+          // Effective compliance in the normal direction for the given
+          // discrete patch, refer to [Masterjohn 2022] for details.
+          // [Masterjohn 2022] Masterjohn J., Guoy D., Shepherd J. and
+          // Castro A., 2022. Velocity Level Approximation of Pressure Field
+          // Contact Patches. Available at https://arxiv.org/abs/2110.04157.
+          const T k = Ae * g;
 
-        if (k > 0) {
-          contact_pairs.push_back({s.id_M(), s.id_N(), p_WQ, nhat_W, phi0, fn0,
-                                   k, d, tau, mu, surface_index, face});
+          // phi < 0 when in penetration.
+          const T phi0 = -p0 / g;
+
+          if (k > 0) {
+            contact_pairs.push_back({s.id_M(), s.id_N(), p_WQ, nhat_W, phi0,
+                                     fn0, k, d, tau, mu, surface_index, face});
+          }
         }
       }
     }
@@ -548,27 +582,17 @@ void CompliantContactManager<T>::
 }
 
 template <typename T>
-void CompliantContactManager<T>::CalcNonContactForcesExcludingJointLimits(
-    const systems::Context<T>& context, MultibodyForces<T>* forces) const {
-  DRAKE_DEMAND(forces != nullptr);
-  DRAKE_DEMAND(forces->CheckHasRightSizeForModel(plant()));
-  // Compute forces applied through force elements. Note that this resets
-  // forces to empty so must come first.
-  this->CalcForceElementsContribution(context, forces);
-  this->AddInForcesFromInputPorts(context, forces);
-}
-
-template <typename T>
-void CompliantContactManager<T>::CalcAccelerationsDueToNonContactForcesCache(
+void CompliantContactManager<T>::CalcAccelerationsDueToNonConstraintForcesCache(
     const systems::Context<T>& context,
-    AccelerationsDueToExternalForcesCache<T>* forward_dynamics_cache) const {
+    AccelerationsDueNonConstraintForcesCache<T>* forward_dynamics_cache) const {
   DRAKE_DEMAND(forward_dynamics_cache != nullptr);
-  ScopeExit guard = this->ThrowIfNonContactForceInProgress(context);
 
-  // N.B. Joint limits are modeled as constraints. Therefore here we only add
-  // all other external forces.
-  CalcNonContactForcesExcludingJointLimits(context,
-                                           &forward_dynamics_cache->forces);
+  // We exclude joint limit penalties here as dictated by the contract of the
+  // function. This function is used for SAP (not TAMSI) which models joint
+  // limits as constraints.
+  this->CalcNonContactForces(context,
+                             /* include joint limit penalty forces */ false,
+                             &forward_dynamics_cache->forces);
 
   // Our goal is to compute accelerations from the Newton-Euler equations:
   //   M⋅v̇ = k(x)
@@ -627,11 +651,11 @@ CompliantContactManager<T>::EvalDiscreteContactPairs(
 
 template <typename T>
 const multibody::internal::AccelerationKinematicsCache<T>&
-CompliantContactManager<T>::EvalAccelerationsDueToNonContactForcesCache(
+CompliantContactManager<T>::EvalAccelerationsDueToNonConstraintForcesCache(
     const systems::Context<T>& context) const {
   return plant()
-      .get_cache_entry(cache_indexes_.non_contact_forces_accelerations)
-      .template Eval<AccelerationsDueToExternalForcesCache<T>>(context)
+      .get_cache_entry(cache_indexes_.non_constraint_forces_accelerations)
+      .template Eval<AccelerationsDueNonConstraintForcesCache<T>>(context)
       .ac;
 }
 
@@ -708,18 +732,27 @@ void CompliantContactManager<T>::AppendContactResultsForPointContact(
   const VectorX<T>& vt = solver_results.vt;
   const VectorX<T>& vn = solver_results.vn;
 
+  // N.B. Contact between two fully locked trees are filtered out of discrete
+  // pairs, therefore for purely point contact:
+  //   num_point_contacts != plant().EvalPointPairPenetrations(context).size()
+  // We find the index of the first non-point contact, whose value corresponds
+  // to num_point_contacts.
+  auto itr = std::find_if(discrete_pairs.begin(), discrete_pairs.end(),
+                          [](const auto& pair) {
+                            return pair.surface_index.has_value();
+                          });
+  const int num_point_contacts = std::distance(discrete_pairs.begin(), itr);
 
-  const int num_contacts = point_pairs.size();
-  DRAKE_DEMAND(fn.size() >= num_contacts);
-  DRAKE_DEMAND(ft.size() >= 2 * num_contacts);
-  DRAKE_DEMAND(vn.size() >= num_contacts);
-  DRAKE_DEMAND(vt.size() >= 2 * num_contacts);
+  DRAKE_DEMAND(fn.size() >= num_point_contacts);
+  DRAKE_DEMAND(ft.size() >= 2 * num_point_contacts);
+  DRAKE_DEMAND(vn.size() >= num_point_contacts);
+  DRAKE_DEMAND(vt.size() >= 2 * num_point_contacts);
 
   // The correspondence between `discrete_pairs` and `point_pairs` depends on
   // strict ordering of CompliantContactManager::CalcDiscreteContactPairs.
   // All point contacts must come first and their order in discrete_pairs
   // corresponds to their order in point_pairs.
-  for (int icontact = 0; icontact < num_contacts; ++icontact) {
+  for (int icontact = 0; icontact < num_point_contacts; ++icontact) {
     const auto& discrete_pair = discrete_pairs[icontact];
     const auto& point_pair = point_pairs[icontact];
 
@@ -800,16 +833,13 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
   DRAKE_DEMAND(vt.size() == 2 * num_contacts);
 
   // If the point contact model is used, hydroelastic contact pairs are appended
-  // after point contact pairs.
-  // TODO(amcastro-tri): right now EvalPointPairPenetrations() throws an
-  // exception if only hydroelastic is used. Consider a solution in which this
-  // method always returns a valid result, possibly empty.
-  // A possible solution could be moving this method into DiscreteUpdateManager
-  // if the plant no longer uses it.
-  const int num_point_contacts =
-      plant().get_contact_model() == ContactModel::kHydroelastic
-          ? 0
-          : plant().EvalPointPairPenetrations(context).size();
+  // after point contact pairs. The index of the first discrete pair with a
+  // valid surface index is the first non-point contact pair.
+  auto itr = std::find_if(discrete_pairs.begin(), discrete_pairs.end(),
+                          [](const auto& pair) {
+                            return pair.surface_index.has_value();
+                          });
+  const int num_point_contacts = std::distance(discrete_pairs.begin(), itr);
   const int num_surfaces = all_surfaces.size();
 
   std::vector<SpatialForce<T>> F_Ao_W_per_surface(num_surfaces,
@@ -868,11 +898,32 @@ void CompliantContactManager<T>::CalcHydroelasticContactInfo(
                                                 traction_Aq_W);
   }
 
+  const MultibodyTreeTopology& topology = this->internal_tree().get_topology();
+  const std::vector<std::vector<int>>& per_tree_unlocked_indices =
+      this->EvalUnlockedVelocityIndicesPerTree(context);
+
   // Update contact info to include the correct contact forces.
   for (int surface_index = 0; surface_index < num_surfaces; ++surface_index) {
-    contact_info->emplace_back(
-        &all_surfaces[surface_index], F_Ao_W_per_surface[surface_index],
-        std::move(quadrature_data[surface_index]));
+    BodyIndex bodyA_index = this->geometry_id_to_body_index().at(
+        all_surfaces[surface_index].id_M());
+    BodyIndex bodyB_index = this->geometry_id_to_body_index().at(
+        all_surfaces[surface_index].id_N());
+
+    const TreeIndex& treeA_index = topology.body_to_tree_index(bodyA_index);
+    const TreeIndex& treeB_index = topology.body_to_tree_index(bodyB_index);
+
+    //  For joint locking, filter out contacts between bodies who belong to
+    //  trees with 0 degrees of freedom. For a contact to remain in
+    //  consideration, at least one of the trees involved has to be valid and
+    //  have a non-zero number of DOFs.
+    if ((treeA_index.is_valid() &&
+         per_tree_unlocked_indices[treeA_index].size() != 0) ||
+        (treeB_index.is_valid() &&
+         per_tree_unlocked_indices[treeB_index].size() != 0)) {
+      contact_info->emplace_back(&all_surfaces[surface_index],
+                                 F_Ao_W_per_surface[surface_index],
+                                 std::move(quadrature_data[surface_index]));
+    }
   }
 }
 
@@ -970,7 +1021,10 @@ void CompliantContactManager<T>::ExtractModelInfo() {
       // plant to symbolic and perform other supported queries such as
       // introspection and kinematics.
       if constexpr (!std::is_same_v<T, symbolic::Expression>) {
-        sap_driver_ = std::make_unique<SapDriver<T>>(this);
+        const double near_rigid_threshold =
+            plant().get_sap_near_rigid_threshold();
+        sap_driver_ =
+            std::make_unique<SapDriver<T>>(this, near_rigid_threshold);
       }
       break;
     case DiscreteContactSolver::kTamsi:

@@ -834,6 +834,8 @@ class TestMathematicalProgram(unittest.TestCase):
         M = np.array([[1, 3], [4, 1]])
         q = np.array([-16, -15])
         binding = prog.AddLinearComplementarityConstraint(M, q, x)
+        np.testing.assert_equal(binding.evaluator().M(), M)
+        np.testing.assert_equal(binding.evaluator().q(), q)
         self.assertEqual(len(prog.linear_complementarity_constraints()), 1)
         result = mp.Solve(prog)
         self.assertTrue(result.is_success())
@@ -1543,6 +1545,15 @@ class TestMathematicalProgram(unittest.TestCase):
         prog.AddLinearConstraint(x[0] + x[1] == 2)
         prog.AddQuadraticCost(x[0] ** 2, is_convex=True)
         self.assertEqual(mp.GetProgramType(prog), mp.ProgramType.kQP)
+
+    def test_mathematical_program_result(self):
+        result = MathematicalProgramResult()
+        self.assertEqual(result.get_solution_result(),
+                         mp.SolutionResult.kSolutionResultNotSet)
+
+    def test_solution_result_deprecation(self):
+        self.assertEqual(mp.SolutionResult.kUnknownError,
+                         mp.SolutionResult.kSolverSpecificError)
 
 
 class DummySolverInterface(SolverInterface):

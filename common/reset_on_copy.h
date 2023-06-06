@@ -98,8 +98,7 @@ class reset_on_copy {
   /// construction if possible. This is an implicit conversion, so that
   /// %reset_on_copy<T> behaves more like the unwrapped type.
   // NOLINTNEXTLINE(runtime/explicit)
-  reset_on_copy(T&& value) noexcept(
-      std::is_nothrow_move_constructible_v<T>)
+  reset_on_copy(T&& value) noexcept(std::is_nothrow_move_constructible_v<T>)
       : value_(std::move(value)) {}
 
   /// @name Implements copy/move construction and assignment.
@@ -176,7 +175,7 @@ class reset_on_copy {
   // this to `value_ = T{}` which would introduce an additional dependence on
   // the behavior of T's copy assignment operator.
   void destruct_and_reset_value() {
-    value_.~T();  // Invokes destructor if there is one.
+    value_.~T();        // Invokes destructor if there is one.
     new (&value_) T{};  // Placement new; no heap activity.
   }
 

@@ -28,7 +28,6 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 using Eigen::VectorXd;
 using std::make_unique;
-using std::move;
 using std::unique_ptr;
 
 namespace drake {
@@ -51,7 +50,7 @@ constexpr double kPoissonsRatio = 0.4;       // unitless.
 constexpr double kMassDensity = 1e3;         // unit: kg/m³
 constexpr double kStiffnessDamping = 0.01;   // unit: s
 /* Time step (seconds). */
-constexpr double kDt = 5e-3;
+constexpr double kDt = 1e-2;
 /* Contact parameters. */
 const double kSlopeAngle = M_PI / 12.0;             // unit: radian
 /* The friction coefficient has to be greater than or equal to tan(θ) to hold
@@ -77,7 +76,7 @@ class DeformableIntegrationTest : public ::testing::Test {
     body_id_ =
         RegisterDeformableOctahedron(deformable_model.get(), "deformable");
     model_ = deformable_model.get();
-    plant_->AddPhysicalModel(move(deformable_model));
+    plant_->AddPhysicalModel(std::move(deformable_model));
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
 
     /* Register a rigid geometry that serves as an inclined plane. */
@@ -101,7 +100,7 @@ class DeformableIntegrationTest : public ::testing::Test {
 
     auto contact_manager = make_unique<CompliantContactManager<double>>();
     manager_ = contact_manager.get();
-    plant_->SetDiscreteUpdateManager(move(contact_manager));
+    plant_->SetDiscreteUpdateManager(std::move(contact_manager));
     driver_ = CompliantContactManagerTester::deformable_driver(*manager_);
     /* Connect visualizer. Useful for when this test is used for debugging. */
     geometry::DrakeVisualizerd::AddToBuilder(&builder, *scene_graph_);
@@ -141,10 +140,10 @@ class DeformableIntegrationTest : public ::testing::Test {
   DeformableBodyId RegisterDeformableOctahedron(DeformableModel<double>* model,
                                                 std::string name) {
     auto geometry = make_unique<GeometryInstance>(
-        RigidTransformd(), make_unique<Sphere>(0.1), move(name));
+        RigidTransformd(), make_unique<Sphere>(0.1), std::move(name));
     ProximityProperties props;
     geometry::AddContactMaterial({}, {}, kFriction, &props);
-    geometry->set_proximity_properties(move(props));
+    geometry->set_proximity_properties(std::move(props));
     fem::DeformableBodyConfig<double> body_config;
     body_config.set_youngs_modulus(kYoungsModulus);
     body_config.set_poissons_ratio(kPoissonsRatio);
@@ -152,8 +151,8 @@ class DeformableIntegrationTest : public ::testing::Test {
     body_config.set_stiffness_damping_coefficient(kStiffnessDamping);
     /* Make the resolution hint large enough so that we get an octahedron. */
     constexpr double kRezHint = 10.0;
-    DeformableBodyId id =
-        model->RegisterDeformableBody(move(geometry), body_config, kRezHint);
+    DeformableBodyId id = model->RegisterDeformableBody(std::move(geometry),
+                                                        body_config, kRezHint);
     /* Verify that the geometry has 7 vertices and is indeed an octahedron. */
     const SceneGraphInspector<double>& inspector =
         scene_graph_->model_inspector();
@@ -182,7 +181,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
       plant_->GetMyContextFromRoot(diagram_context);
   const FemState<double>& fem_state =
       EvalFemState(plant_context, DeformableBodyIndex(0));
-  constexpr double kVelocityThreshold = 1e-5;  // unit: m/s.
+  constexpr double kVelocityThreshold = 2e-5;  // unit: m/s.
   constexpr double kAccelerationThreshold = 1e-6;  // unit: m/s².
   const VectorXd& v = fem_state.GetVelocities();
   EXPECT_TRUE(CompareMatrices(v, VectorXd::Zero(v.size()), kVelocityThreshold));
@@ -208,7 +207,7 @@ TEST_F(DeformableIntegrationTest, SteadyState) {
   const Vector3d expected_contact_force =
       volume * kMassDensity * (-plant_->gravity_field().gravity_vector());
   /* Verify the contact force balances gravity. */
-  constexpr double kForceThreshold = 1e-6;  // unit: N.
+  constexpr double kForceThreshold = 1e-5;  // unit: N.
   EXPECT_TRUE(CompareMatrices(expected_contact_force, f_B_W, kForceThreshold));
 }
 

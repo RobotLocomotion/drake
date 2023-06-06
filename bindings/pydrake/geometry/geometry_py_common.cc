@@ -12,7 +12,6 @@
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/collision_filter_declaration.h"
 #include "drake/geometry/collision_filter_manager.h"
 #include "drake/geometry/geometry_frame.h"
@@ -86,8 +85,8 @@ void DoScalarIndependentDefinitions(py::module m) {
     constexpr auto& cls_doc = doc.GeometryInstance;
     py::class_<Class> cls(m, "GeometryInstance", cls_doc.doc);
     cls  // BR
-        .def(py::init<const math::RigidTransform<double>&,
-                 std::unique_ptr<Shape>, const std::string&>(),
+        .def(py::init<const math::RigidTransform<double>&, const Shape&,
+                 const std::string&>(),
             py::arg("X_PG"), py::arg("shape"), py::arg("name"),
             cls_doc.ctor.doc)
         .def("id", &Class::id, cls_doc.id.doc)
@@ -96,7 +95,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             "set_pose", &Class::set_pose, py::arg("X_PG"), cls_doc.set_pose.doc)
         .def("shape", &Class::shape, py_rvp::reference_internal,
             cls_doc.shape.doc)
-        .def("release_shape", &Class::release_shape, cls_doc.release_shape.doc)
         .def("name", &Class::name, cls_doc.name.doc)
         .def("set_name", &Class::set_name, cls_doc.set_name.doc)
         .def("set_proximity_properties", &Class::set_proximity_properties,
@@ -121,6 +119,12 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("perception_properties", &Class::perception_properties,
             py_rvp::reference_internal, cls_doc.perception_properties.doc);
     DefCopyAndDeepCopy(&cls);
+    constexpr char doc_release_deprecated[] =
+        "Ownership transfer doesn't make sense for Python. Just use shape() "
+        "instead. This function will be removed on or after 2023-08-01.";
+    cls.def("release_shape",
+        WrapDeprecated(doc_release_deprecated, &Class::release_shape),
+        doc_release_deprecated);
   }
 
   // GeometryProperties
@@ -336,6 +340,9 @@ void DoScalarIndependentDefinitions(py::module m) {
             py::overload_cast<const Eigen::Ref<const Eigen::VectorXd>&>(
                 &Class::set),
             py::arg("rgba"), cls_doc.set.doc_1args)
+        .def("update", &Class::update, py::arg("r") = py::none(),
+            py::arg("g") = py::none(), py::arg("b") = py::none(),
+            py::arg("a") = py::none(), cls_doc.update.doc)
         .def(py::self == py::self)
         .def(py::self != py::self)
         .def("__repr__", [](const Class& self) {
@@ -426,15 +433,6 @@ void DoScalarIndependentDefinitions(py::module m) {
               return Convex(info.first, info.second);
             }));
 
-    constexpr char doc_ConvexInitWithArgumentNameAbsoluteFilename[] =
-        "Convex(absolute_filename=...) is deprecated, and will be removed on "
-        "or around 2023-05-01.  Please use Convex(filename=...) instead.";
-
-    convex_cls.def(py_init_deprecated<Convex, std::string, double>(
-                       doc_ConvexInitWithArgumentNameAbsoluteFilename),
-        py::arg("absolute_filename"), py::arg("scale") = 1.0,
-        doc_ConvexInitWithArgumentNameAbsoluteFilename);
-
     py::class_<Cylinder, Shape>(m, "Cylinder", doc.Cylinder.doc)
         .def(py::init<double, double>(), py::arg("radius"), py::arg("length"),
             doc.Cylinder.ctor.doc_2args)
@@ -485,15 +483,6 @@ void DoScalarIndependentDefinitions(py::module m) {
             [](std::pair<std::string, double> info) {
               return Mesh(info.first, info.second);
             }));
-
-    constexpr char doc_MeshInitWithArgumentNameAbsoluteFilename[] =
-        "Mesh(absolute_filename=...) is deprecated, and will be removed on "
-        "or around 2023-05-01.  Please use Mesh(filename=...) instead.";
-
-    mesh_cls.def(py_init_deprecated<Mesh, std::string, double>(
-                     doc_MeshInitWithArgumentNameAbsoluteFilename),
-        py::arg("absolute_filename"), py::arg("scale") = 1.0,
-        doc_MeshInitWithArgumentNameAbsoluteFilename);
 
     py::class_<Sphere, Shape>(m, "Sphere", doc.Sphere.doc)
         .def(py::init<double>(), py::arg("radius"), doc.Sphere.ctor.doc)

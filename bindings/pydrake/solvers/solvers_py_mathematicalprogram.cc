@@ -473,7 +473,9 @@ void BindSolverInterfaceAndFlags(py::module m) {
       .value("kNlopt", SolverType::kNlopt, doc.SolverType.kNlopt.doc)
       .value("kOsqp", SolverType::kOsqp, doc.SolverType.kOsqp.doc)
       .value("kScs", SolverType::kScs, doc.SolverType.kScs.doc)
-      .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc);
+      .value("kSnopt", SolverType::kSnopt, doc.SolverType.kSnopt.doc)
+      .value("kUnrevisedLemke", SolverType::kUnrevisedLemke,
+          doc.SolverType.kUnrevisedLemke.doc);
 
   // TODO(jwnimmer-tri) Bind the accessors for SolverOptions.
   py::class_<SolverOptions>(m, "SolverOptions", doc.SolverOptions.doc)
@@ -822,9 +824,7 @@ void BindMathematicalProgram(py::module m) {
       .def("AddCost",
           static_cast<Binding<Cost> (MathematicalProgram::*)(
               const Expression&)>(&MathematicalProgram::AddCost),
-          // N.B. There is no corresponding C++ method, so the docstring here
-          // is a literal, not a reference to documentation_pybind.h
-          "Adds a cost expression.")
+          py::arg("e"), doc.MathematicalProgram.AddCost.doc_1args_e)
       .def(
           "AddCost",
           [](MathematicalProgram* self, const std::shared_ptr<Cost>& obj,
@@ -1155,6 +1155,7 @@ void BindMathematicalProgram(py::module m) {
               const Eigen::Ref<const Eigen::VectorXd>&,
               const Eigen::Ref<const VectorXDecisionVariable>&)>(
               &MathematicalProgram::AddLinearComplementarityConstraint),
+          py::arg("M"), py::arg("q"), py::arg("vars"),
           doc.MathematicalProgram.AddLinearComplementarityConstraint.doc)
       .def(
           "AddPositiveSemidefiniteConstraint",
@@ -1566,14 +1567,24 @@ for every column of ``prog_var_vals``. )""")
           doc.SolutionResult.kInfeasibleConstraints.doc)
       .value("kUnbounded", SolutionResult::kUnbounded,
           doc.SolutionResult.kUnbounded.doc)
-      .value("kUnknownError", SolutionResult::kUnknownError,
-          doc.SolutionResult.kUnknownError.doc)
+      .value("kSolverSpecificError", SolutionResult::kSolverSpecificError,
+          doc.SolutionResult.kSolverSpecificError.doc)
       .value("kInfeasibleOrUnbounded", SolutionResult::kInfeasibleOrUnbounded,
           doc.SolutionResult.kInfeasibleOrUnbounded.doc)
       .value("kIterationLimit", SolutionResult::kIterationLimit,
           doc.SolutionResult.kIterationLimit.doc)
       .value("kDualInfeasible", SolutionResult::kDualInfeasible,
-          doc.SolutionResult.kDualInfeasible.doc);
+          doc.SolutionResult.kDualInfeasible.doc)
+      .value("kSolutionResultNotSet", SolutionResult::kSolutionResultNotSet,
+          doc.SolutionResult.kSolutionResultNotSet.doc);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  solution_result_enum.value("kUnknownError", SolutionResult::kUnknownError,
+      "Deprecated. This has been renamed to kSolverSpecificError; for details, "
+      "see https://github.com/RobotLocomotion/drake/pull/19450. The deprecated "
+      "code will be removed from Drake on or after 2023-09-01.");
+#pragma GCC diagnostic pop
 }  // NOLINT(readability/fn_size)
 
 void BindEvaluatorsAndBindings(py::module m) {
@@ -1884,7 +1895,11 @@ void BindEvaluatorsAndBindings(py::module m) {
   py::class_<LinearComplementarityConstraint, Constraint,
       std::shared_ptr<LinearComplementarityConstraint>>(m,
       "LinearComplementarityConstraint",
-      doc.LinearComplementarityConstraint.doc);
+      doc.LinearComplementarityConstraint.doc)
+      .def("M", &LinearComplementarityConstraint::M,
+          doc.LinearComplementarityConstraint.M.doc)
+      .def("q", &LinearComplementarityConstraint::q,
+          doc.LinearComplementarityConstraint.q.doc);
 
   py::class_<ExponentialConeConstraint, Constraint,
       std::shared_ptr<ExponentialConeConstraint>>(

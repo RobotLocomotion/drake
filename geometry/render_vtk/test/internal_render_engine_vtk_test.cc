@@ -65,6 +65,12 @@ const double kClipFar = 100.0;
 const double kZNear = 0.5;
 const double kZFar = 5.;
 const double kFovY = M_PI_4;
+/* Note: enabling this causes failures with two tests. Try running as:
+
+ bazel test //geometry/render_vtk:internal_render_engine_vtk_test \
+    --test_filter=-*DifferentCameras:*Intrinsics*
+
+ to get past the aberrant tests; they *should* pass with this disabled. */
 const bool kShowWindow = false;
 
 // The following tolerance is used due to a precision difference between Ubuntu
@@ -369,15 +375,19 @@ class RenderEngineVtkTest : public ::testing::Test {
   // this method.
   PerceptionProperties simple_material(bool use_texture = false) const {
     PerceptionProperties material;
-    Vector4d color_n(default_color_.r / 255., default_color_.g / 255.,
-                     default_color_.b / 255., default_color_.a / 255.);
-    material.AddProperty("phong", "diffuse", color_n);
     material.AddProperty("label", "id", expected_label_);
     if (use_texture) {
+      // The simple material's texture should always reproduce the texture
+      // perfectly -- so the diffuse color must be opaque white.
+      material.AddProperty("phong", "diffuse", Rgba(1, 1, 1));
+
       material.AddProperty(
           "phong", "diffuse_map",
-          FindResourceOrThrow(
-              "drake/geometry/render/test/meshes/box.png"));
+          FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
+    } else {
+      const Rgba color_n(default_color_.r / 255.0, default_color_.g / 255.0,
+                         default_color_.b / 255.0, default_color_.a / 255.0);
+      material.AddProperty("phong", "diffuse", color_n);
     }
     return material;
   }
@@ -630,15 +640,15 @@ TEST_F(RenderEngineVtkTest, BoxTest) {
       // tiling. The default VTK cube source tiles the texture based on the
       // size of the box. We confirm that doesn't actually happen. We test both
       // the untiled default behavior and the ability to scale the texture.
-      PerceptionProperties props = simple_material(false);
+      PerceptionProperties props = simple_material(use_texture);
       if (use_texture) {
-        props.AddProperty(
+        props.UpdateProperty(
             "phong", "diffuse_map",
             FindResourceOrThrow(
                 "drake/geometry/render/test/diag_gradient.png"));
         if (texture_scaled) {
-          props.AddProperty(
-              "phong", "diffuse_scale", Vector2d{texture_scale, texture_scale});
+          props.AddProperty("phong", "diffuse_scale",
+                            Vector2d{texture_scale, texture_scale});
         }
       }
       renderer_->RegisterVisual(id, box, props,
@@ -899,76 +909,45 @@ TEST_F(RenderEngineVtkTest, EllipsoidTest) {
 }
 
 // Performs the shape-centered-in-the-image test with a mesh (which happens to
-// be a box). This simultaneously confirms that if a diffuse_map is specified
-// but it doesn't refer to a file that can be read, that the appearance defaults
-// to the diffuse rgba value.
+// be a box). The textured box will be one that is textured via its mtl
+// library. We use it to confirm that VTK is properly _invoking_ the obj
+// material handling; the _correctness_ of the material handling is tested in
+// render_mesh_test.cc. For the non-textured, we make sure we use a mesh
+// without material file or matching foo.png to preclude it being textured.
 TEST_F(RenderEngineVtkTest, MeshTest) {
-  Init(X_WC_, true);
+  for (const bool use_texture : {false, true}) {
+    Init(X_WC_, true);
 
-  auto filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  Mesh mesh(filename);
-  expected_label_ = RenderLabel(3);
-  PerceptionProperties material = simple_material();
-  material.AddProperty("phong", "diffuse_map", "bad_path");
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
-  renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-      {id, RigidTransformd::Identity()}});
+    // N.B. box_no_mtl.obj doesn't exist in the repo. It is generated from
+    // box.obj by stripping out material data.
+    auto filename =
+        use_texture
+            ? FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj")
+            : FindResourceOrThrow(
+                  "drake/geometry/render/test/meshes/box_no_mtl.obj");
 
-  PerformCenterShapeTest(renderer_.get(), "Mesh test");
-}
+    Mesh mesh(filename);
+    expected_label_ = RenderLabel(3);
+    // We do *not* pass use_texture = true to simple_material(), because we want
+    // to see that the texture comes through the natural processing.
+    // TODO(SeanCurtis-TRI): The texture applied to box.obj could be applied via
+    //  two mechanisms: box.obj.mtl *or* the foo.obj -> foo.png logic. The
+    //  assumption is that *this* test doesn't care which mechanism is in play.
+    //  If that's wrong, we'll need to create a textured mesh where the
+    //  association is strictly unique.
+    PerceptionProperties material = simple_material();
+    const GeometryId id = GeometryId::get_new_id();
+    renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
+                              true /* needs update */);
+    renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
+        {id, RigidTransformd::Identity()}});
 
-// Performs the shape-centered-in-the-image test with a *textured* mesh (which
-// happens to be a box).
-TEST_F(RenderEngineVtkTest, TextureMeshTest) {
-  Init(X_WC_, true);
-
-  auto filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  Mesh mesh(filename);
-  expected_label_ = RenderLabel(4);
-  PerceptionProperties material = simple_material();
-  material.AddProperty(
-      "phong", "diffuse_map",
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.png"));
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
-  renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-      {id, RigidTransformd::Identity()}});
-
-  expected_color_ = RgbaColor(kTextureColor, 255);
-  PerformCenterShapeTest(renderer_.get(), "Textured mesh test");
-
-  // Now confirm that the texture survives cloning.
-  unique_ptr<RenderEngine> clone = renderer_->Clone();
-  EXPECT_NE(dynamic_cast<RenderEngineVtk*>(clone.get()), nullptr);
-  PerformCenterShapeTest(dynamic_cast<RenderEngineVtk*>(clone.get()),
-                         "Cloned mesh test");
-}
-
-// Repeat the texture test but with an *implied* texture map. In other words,
-// registering a mesh "foo.obj" will look for a "foo.png" in the same folder as
-// a fall back and use it if found. But *only* as a back up. This is a
-// SHORT TERM hack to get textures in.
-TEST_F(RenderEngineVtkTest, ImpliedTextureMeshTest) {
-  Init(X_WC_, true);
-
-  auto filename =
-      FindResourceOrThrow("drake/geometry/render/test/meshes/box.obj");
-  Mesh mesh(filename);
-  expected_label_ = RenderLabel(4);
-  PerceptionProperties material = simple_material();
-  const GeometryId id = GeometryId::get_new_id();
-  renderer_->RegisterVisual(id, mesh, material, RigidTransformd::Identity(),
-                            true /* needs update */);
-  renderer_->UpdatePoses(unordered_map<GeometryId, RigidTransformd>{
-      {id, RigidTransformd::Identity()}});
-
-  expected_color_ = RgbaColor(kTextureColor, 255);
-  PerformCenterShapeTest(renderer_.get(), "Implied textured mesh test");
+    expected_color_ =
+        use_texture ? RgbaColor(kTextureColor, 255) : default_color_;
+    PerformCenterShapeTest(
+        renderer_.get(),
+        fmt::format("Mesh test {}", use_texture ? "textured" : "rgba").c_str());
+  }
 }
 
 // Performs the test to cast textures to uchar channels. It depends on the image
@@ -1008,8 +987,8 @@ TEST_F(RenderEngineVtkTest, NonUcharChannelTextures) {
     InitializeRenderer(X_WC_, false /* add terrain */, &renderer);
 
     const GeometryId id = GeometryId::get_new_id();
-    PerceptionProperties props = simple_material(false);
-    props.AddProperty("phong", "diffuse_map", file_path);
+    PerceptionProperties props = simple_material(true);
+    props.UpdateProperty("phong", "diffuse_map", file_path);
     renderer.RegisterVisual(id, box, props, RigidTransformd::Identity(), true);
     renderer.RenderColorImage(camera, &color_uint16_texture);
   }

@@ -30,7 +30,6 @@ using Eigen::MatrixXd;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 using math::RotationMatrix;
-using std::move;
 using systems::Context;
 
 // Friend access into BodyNode.
@@ -54,7 +53,7 @@ namespace {
 class DummyBody : public Body<double> {
  public:
   DummyBody(std::string name, BodyIndex index)
-      : Body(move(name), ModelInstanceIndex(0)) {
+      : Body(std::move(name), ModelInstanceIndex(0)) {
     // We need a body index for the body node test to be happy.
     MultibodyElementTester::set_index(this, index);
   }

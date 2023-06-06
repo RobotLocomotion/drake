@@ -6,6 +6,7 @@
 
 #include "drake/common/drake_assert.h"
 #include "drake/common/drake_copyable.h"
+#include "drake/common/drake_deprecated.h"
 #include "drake/common/drake_throw.h"
 #include "drake/common/value.h"
 
@@ -16,8 +17,8 @@ namespace lcm {
 /**
  * %SerializerInterface translates between LCM message bytes and
  * drake::AbstractValue objects that contain LCM messages, e.g., a
- * Value<lcmt_drake_signal>.  See Serializer for a message-specific concrete
- * subclass.
+ * Value<lcmt_drake_signal>.  All `const` methods are threadsafe.
+ * See Serializer for a message-specific concrete subclass.
  */
 class SerializerInterface {
  public:
@@ -25,7 +26,9 @@ class SerializerInterface {
 
   virtual ~SerializerInterface();
 
-  /** Creates a deep copy of this. */
+  DRAKE_DEPRECATED(
+      "2023-09-01",
+      "Use a shared_ptr<const SerializerInterface> instead of cloning.")
   virtual std::unique_ptr<SerializerInterface> Clone() const = 0;
 
   /**

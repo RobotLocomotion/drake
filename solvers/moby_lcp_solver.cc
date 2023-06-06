@@ -131,7 +131,7 @@ Eigen::Index minCoeffIdx(const Eigen::MatrixBase<Derived>& in) {
 }
 
 const double kSqrtEps = std::sqrt(std::numeric_limits<double>::epsilon());
-}  // anonymous namespace
+}  // namespace
 
 template <typename T>
 void MobyLCPSolver<T>::SetLoggingEnabled(bool enabled) {
@@ -203,7 +203,7 @@ void MobyLCPSolver<T>::DoSolve(const MathematicalProgram& prog,
     bool solved = SolveLcpLemkeRegularized(constraint->M(), constraint->q(),
                                            &constraint_solution);
     if (!solved) {
-      result->set_solution_result(SolutionResult::kUnknownError);
+      result->set_solution_result(SolutionResult::kSolverSpecificError);
       return;
     }
     for (int i = 0; i < binding.evaluator()->num_vars(); ++i) {

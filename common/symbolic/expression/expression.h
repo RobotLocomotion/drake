@@ -71,6 +71,11 @@ class Expression;
 // Expression::Substitute and Formula::Substitute methods as an argument.
 using Substitution = std::unordered_map<Variable, Expression>;
 
+namespace internal {
+template <bool>
+struct Gemm;  // Defined later in this file.
+}  // namespace internal
+
 /** Represents a symbolic form of an expression.
 
 Its syntax tree is as follows:
@@ -596,6 +601,8 @@ class Expression {
 
   friend class ExpressionAddFactory;
   friend class ExpressionMulFactory;
+  template <bool>
+  friend struct internal::Gemm;
 
  private:
   explicit Expression(std::unique_ptr<ExpressionCell> cell);
@@ -1340,6 +1347,64 @@ struct ScalarBinaryOpTraits<double, drake::symbolic::Expression, BinaryOp> {
 
 namespace drake {
 namespace symbolic {
+namespace internal {
+
+/* Optimized implementations of BLAS GEMM for symbolic types to take advantage
+of scalar type specializations. With our current mechanism for hooking this into
+Eigen, we only need to support the simplified form C ⇐ A@B rather than the more
+general C ⇐ αA@B+βC of typical GEMM; if we figure out how to hook into Eigen's
+expression templates, we could expand to the more general form. We group these
+functions using a struct so that the friendship declaration with Expression can
+be straightforward.
+@tparam reverse When true, calculates B@A instead of A@B. */
+template <bool reverse>
+struct Gemm {
+  Gemm() = delete;
+  // Allow for passing numpy.ndarray without copies.
+  template <typename T>
+  using MatrixRef = Eigen::Ref<const MatrixX<T>, 0, StrideX>;
+  // Matrix product for double, Variable.
+  // When reverse == false, sets result to D * V.
+  // When reverse == true, sets result to V * D.
+  static void CalcDV(const MatrixRef<double>& D, const MatrixRef<Variable>& V,
+                     EigenPtr<MatrixX<Expression>> result);
+  // Matrix product for double, Expression.
+  // When reverse == false, sets result to D * E.
+  // When reverse == true, sets result to E * D.
+  static void CalcDE(const MatrixRef<double>& D, const MatrixRef<Expression>& E,
+                     EigenPtr<MatrixX<Expression>> result);
+  // Matrix product for Variable, Expression.
+  // When reverse == false, sets result to V * E.
+  // When reverse == true, sets result to E * V.
+  static void CalcVE(const MatrixRef<Variable>& V,
+                     const MatrixRef<Expression>& E,
+                     EigenPtr<MatrixX<Expression>> result);
+  // Matrix product for Expression, Expression.
+  // When reverse == false, sets result to A * B.
+  // When reverse == true, sets result to B * A.
+  static void CalcEE(const MatrixRef<Expression>& A,
+                     const MatrixRef<Expression>& B,
+                     EigenPtr<MatrixX<Expression>> result);
+};
+
+/* Eigen promises "automatic conversion of the inner product to a scalar", so
+when we calculate an inner product we need to return this magic type that acts
+like both a Matrix1<Expression> and an Expression. */
+struct ExpressionInnerProduct : public Eigen::Matrix<Expression, 1, 1> {
+  using Eigen::Matrix<Expression, 1, 1>::Matrix;
+  operator const Expression() const { return this->coeff(0, 0); }
+};
+
+/* Helper to look up the return type we'll use for an Expression matmul. */
+template <typename MatrixL, typename MatrixR>
+using ExpressionMatMulResult =
+    std::conditional_t<MatrixL::RowsAtCompileTime == 1 &&
+                           MatrixR::ColsAtCompileTime == 1,
+                       ExpressionInnerProduct,
+                       Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
+                                     MatrixR::ColsAtCompileTime>>;
+
+}  // namespace internal
 
 // Matrix<Expression> * Matrix<double> => Matrix<Expression>
 template <typename MatrixL, typename MatrixR>
@@ -1348,10 +1413,14 @@ typename std::enable_if_t<
         std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
         std::is_same_v<typename MatrixL::Scalar, Expression> &&
         std::is_same_v<typename MatrixR::Scalar, double>,
-    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = true;
+  internal::Gemm<reverse>::CalcDE(rhs, lhs, &result);
+  return result;
 }
 
 // Matrix<double> * Matrix<Expression> => Matrix<Expression>
@@ -1361,10 +1430,14 @@ typename std::enable_if_t<
         std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
         std::is_same_v<typename MatrixL::Scalar, double> &&
         std::is_same_v<typename MatrixR::Scalar, Expression>,
-    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = false;
+  internal::Gemm<reverse>::CalcDE(lhs, rhs, &result);
+  return result;
 }
 
 // Matrix<Expression> * Matrix<Variable> => Matrix<Expression>
@@ -1374,10 +1447,14 @@ typename std::enable_if_t<
         std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
         std::is_same_v<typename MatrixL::Scalar, Expression> &&
         std::is_same_v<typename MatrixR::Scalar, Variable>,
-    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs * rhs.template cast<Expression>();
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = true;
+  internal::Gemm<reverse>::CalcVE(rhs, lhs, &result);
+  return result;
 }
 
 // Matrix<Variable> * Matrix<Expression> => Matrix<Expression>
@@ -1387,10 +1464,14 @@ typename std::enable_if_t<
         std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
         std::is_same_v<typename MatrixL::Scalar, Variable> &&
         std::is_same_v<typename MatrixR::Scalar, Expression>,
-    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<Expression>() * rhs;
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = false;
+  internal::Gemm<reverse>::CalcVE(lhs, rhs, &result);
+  return result;
 }
 
 // Matrix<Variable> * Matrix<double> => Matrix<Expression>
@@ -1400,10 +1481,14 @@ typename std::enable_if_t<
         std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
         std::is_same_v<typename MatrixL::Scalar, Variable> &&
         std::is_same_v<typename MatrixR::Scalar, double>,
-    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = true;
+  internal::Gemm<reverse>::CalcDV(rhs, lhs, &result);
+  return result;
 }
 
 // Matrix<double> * Matrix<Variable> => Matrix<Expression>
@@ -1413,10 +1498,31 @@ typename std::enable_if_t<
         std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
         std::is_same_v<typename MatrixL::Scalar, double> &&
         std::is_same_v<typename MatrixR::Scalar, Variable>,
-    Eigen::Matrix<Expression, MatrixL::RowsAtCompileTime,
-                  MatrixR::ColsAtCompileTime>>
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
 operator*(const MatrixL& lhs, const MatrixR& rhs) {
-  return lhs.template cast<Expression>() * rhs.template cast<Expression>();
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = false;
+  internal::Gemm<reverse>::CalcDV(lhs, rhs, &result);
+  return result;
+}
+
+// Matrix<Expression> * Matrix<Expression> => Matrix<Expression>
+template <typename MatrixL, typename MatrixR>
+typename std::enable_if_t<
+    std::is_base_of_v<Eigen::MatrixBase<MatrixL>, MatrixL> &&
+        std::is_base_of_v<Eigen::MatrixBase<MatrixR>, MatrixR> &&
+        std::is_same_v<typename MatrixL::Scalar, Expression> &&
+        std::is_same_v<typename MatrixR::Scalar, Expression>,
+    internal::ExpressionMatMulResult<MatrixL, MatrixR>>
+operator*(const MatrixL& lhs, const MatrixR& rhs) {
+  internal::ExpressionMatMulResult<MatrixL, MatrixR> result;
+  DRAKE_THROW_UNLESS(lhs.cols() == rhs.rows());
+  result.resize(lhs.rows(), rhs.cols());
+  constexpr bool reverse = false;
+  internal::Gemm<reverse>::CalcEE(lhs, rhs, &result);
+  return result;
 }
 
 /// Transform<double> * Transform<Expression> => Transform<Expression>

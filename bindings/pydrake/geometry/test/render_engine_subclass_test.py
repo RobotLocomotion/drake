@@ -22,7 +22,7 @@ class TestRenderEngineSubclass(unittest.TestCase):
         """The RenderEngine API throws exceptions for derived implementations
         that don't override DoRender*Image. This test confirms that behavior
         propagates down to Python."""
-        class MinimalEngine(mut.render.RenderEngine):
+        class MinimalEngine(mut.RenderEngine):
             """Minimal implementation of the RenderEngine virtual API"""
             def UpdateViewpoint(self, X_WC):
                 pass
@@ -56,12 +56,10 @@ class TestRenderEngineSubclass(unittest.TestCase):
 
         identity = RigidTransform_[float]()
         intrinsics = CameraInfo(10, 10, pi / 4)
-        core = mut.render.RenderCameraCore("n/a", intrinsics,
-                                           mut.render.ClippingRange(0.1, 10),
-                                           identity)
-        color_cam = mut.render.ColorRenderCamera(core, False)
-        depth_cam = mut.render.DepthRenderCamera(
-                        core, mut.render.DepthRange(0.1, 9))
+        core = mut.RenderCameraCore("n/a", intrinsics,
+                                    mut.ClippingRange(0.1, 10), identity)
+        color_cam = mut.ColorRenderCamera(core, False)
+        depth_cam = mut.DepthRenderCamera(core, mut.DepthRange(0.1, 9))
         color_image = ImageRgba8U(intrinsics.width(), intrinsics.height())
         depth_image = ImageDepth32F(intrinsics.width(), intrinsics.height())
         label_image = ImageLabel16I(intrinsics.width(), intrinsics.height())

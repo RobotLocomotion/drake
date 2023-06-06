@@ -633,7 +633,7 @@ template <typename T>
 void TestScalarShapeSupport() {
   // Configure the basic query.
   Vector3<T> p_WQ{10, 10, 10};
-  RigidTransform<T> X_WQ{Translation3<T>{p_WQ}};
+  RigidTransform<T> X_WQ{Eigen::Translation<T, 3>{p_WQ}};
   auto point_geometry = make_shared<fcl::Sphered>(0);
   const GeometryId point_id = GeometryId::get_new_id();
   fcl::CollisionObjectd query_point(point_geometry);

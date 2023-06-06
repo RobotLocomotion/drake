@@ -381,7 +381,7 @@ class Mobilizer : public MultibodyElement<T> {
   // evaluating any random distributions that were declared (via e.g.
   // MobilizerImpl::set_random_position_distribution() and/or
   // MobilizerImpl::set_random_velocity_distribution(), or calling
-  // set_zero_state() if none have been declared. Note that the intended
+  // set_default_state() if none have been declared. Note that the intended
   // caller of this method is `MultibodyTree::SetRandomState()` which treats
   // the independent samples returned from this sample as an initial guess,
   // but may change the value in order to "project" it onto a constraint
@@ -638,13 +638,10 @@ class Mobilizer : public MultibodyElement<T> {
       const internal::BodyNode<T>* parent_node,
       const Body<T>* body, const Mobilizer<T>* mobilizer) const = 0;
 
-  /// Lock the mobilizer. Its generalized velocities will be 0 until it is
-  /// unlocked. Locking is not yet supported for continuous-mode systems.
-  /// @throws std::exception if the parent model uses continuous state.
+  // Lock the mobilizer. Its generalized velocities will be 0 until it is
+  // unlocked.
   void Lock(systems::Context<T>* context) const {
     // Joint locking is only supported for discrete mode.
-    // TODO(sherm1): extend the design to support continuous-mode systems.
-    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
     context->get_mutable_abstract_parameter(is_locked_parameter_index_)
         .set_value(true);
     this->get_parent_tree()
@@ -653,18 +650,14 @@ class Mobilizer : public MultibodyElement<T> {
         .setZero();
   }
 
-  /// Unlock the mobilizer. Unlocking is not yet supported for continuous-mode
-  /// systems.
-  /// @throws std::exception if the parent model uses continuous state.
+  // Unlock the mobilizer. Unlocking is not yet supported for continuous-mode
+  // systems.
   void Unlock(systems::Context<T>* context) const {
-    // Joint locking is only supported for discrete mode.
-    // TODO(sherm1): extend the design to support continuous-mode systems.
-    DRAKE_THROW_UNLESS(this->get_parent_tree().is_state_discrete());
     context->get_mutable_abstract_parameter(is_locked_parameter_index_)
         .set_value(false);
   }
 
-  /// @return true if the mobilizer is locked, false otherwise.
+  // @return true if the mobilizer is locked, false otherwise.
   bool is_locked(const systems::Context<T>& context) const {
     return context.get_parameters().template get_abstract_parameter<bool>(
         is_locked_parameter_index_);

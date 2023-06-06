@@ -35,6 +35,8 @@ struct LinearQuadraticRegulatorResult {
 /// quadratic cost term S. The optimal feedback control is u = -Kx;
 ///
 /// @throws std::exception if R is not positive definite.
+/// @note The system (A₁, B) should be stabilizable, where A₁=A−BR⁻¹Nᵀ.
+/// @note The system (Q₁, A₁) should be detectable, where Q₁=Q−NR⁻¹Nᵀ.
 /// @ingroup control
 /// @pydrake_mkdoc_identifier{AB}
 ///

@@ -48,7 +48,7 @@ namespace mass_spring_cloth {
        qⁿ⁺¹ = qⁿ + dt*vⁿ⁺¹.
 
  which is first order accurate, but similar in spirit to the scheme in [Bridson,
- 2005]. One should be careful not to take too large a timestep when using the
+ 2005]. One should be careful not to take too large a time step when using the
  discrete system because it is conditionally stable, and large time steps can
  lead to an unstable numerical solution.
 

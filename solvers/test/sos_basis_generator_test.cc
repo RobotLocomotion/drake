@@ -88,6 +88,24 @@ TEST_F(SosBasisGeneratorTest, Singleton) {
   EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
 }
 
+TEST_F(SosBasisGeneratorTest, Constant) {
+  {
+    // Generate the monomial basis for a constant polynomial
+    const symbolic::Polynomial poly{1};
+    MonomialSet basis_ref;
+    basis_ref.insert(Monomial());
+    EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
+  }
+
+  {
+    // The polynomial p is constant after expansion.
+    const symbolic::Polynomial poly{{{Monomial(), 1}, {Monomial(x_(0), 2), 0}}};
+    MonomialSet basis_ref;
+    basis_ref.insert(Monomial());
+    EXPECT_EQ(basis_ref, GetMonomialBasis(poly));
+  }
+}
+
 }  // namespace
 }  // namespace solvers
 }  // namespace drake

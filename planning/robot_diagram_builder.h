@@ -5,7 +5,6 @@
 #include <utility>
 
 #include "drake/common/default_scalars.h"
-#include "drake/common/drake_deprecated.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/parsing/parser.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -104,40 +103,6 @@ class RobotDiagramBuilder {
   already been finalized.
   @throws exception when IsDiagramBuilt() already. */
   std::unique_ptr<RobotDiagram<T>> Build();
-
-  DRAKE_DEPRECATED("2023-06-01", "Use Build() instead of BuildDiagram().")
-  std::unique_ptr<RobotDiagram<T>> BuildDiagram() { return Build(); }
-
-  DRAKE_DEPRECATED("2023-06-01", "Use builder() instead of mutable_builder().")
-  systems::DiagramBuilder<T>& mutable_builder() { return builder(); }
-
-  template <typename T1 = T,
-            typename std::enable_if_t<std::is_same_v<T1, double>>* = nullptr>
-  DRAKE_DEPRECATED("2023-06-01", "Use parser() instead of mutable_parser().")
-  multibody::Parser& mutable_parser() {
-    return parser();
-  }
-
-  DRAKE_DEPRECATED("2023-06-01", "Use plant() instead of mutable_plant().")
-  multibody::MultibodyPlant<T>& mutable_plant() { return plant(); }
-
-  DRAKE_DEPRECATED("2023-06-01",
-                   "Use scene_graph() instead of mutable_scene_graph().")
-  geometry::SceneGraph<T>& mutable_scene_graph() { return scene_graph(); }
-
-  DRAKE_DEPRECATED("2023-06-01",
-                   "Use plant().is_finalized() instead of IsPlantFinalized().")
-  bool IsPlantFinalized() const {
-    ThrowIfAlreadyBuilt();
-    return plant_.is_finalized();
-  }
-
-  DRAKE_DEPRECATED("2023-06-01",
-                   "Use plant().Finalize() instead of FinalizePlant().")
-  void FinalizePlant() {
-    ThrowIfAlreadyBuilt();
-    plant_.Finalize();
-  }
 
  private:
   void ThrowIfAlreadyBuilt() const;

@@ -1,6 +1,6 @@
-/* This contains the bindings for the public entities in the
- drake::geometry::render namespace. They can be found in the
- pydrake.geometry.render module. */
+/* This contains the bindings for the public API in the drake/geometry/render
+ and drake/geometry/render* directories. They can be found in the
+ pydrake.geometry module. */
 
 #include "pybind11/operators.h"
 

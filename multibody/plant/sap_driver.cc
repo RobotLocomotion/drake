@@ -25,6 +25,7 @@ using drake::multibody::contact_solvers::internal::ExtractNormal;
 using drake::multibody::contact_solvers::internal::ExtractTangent;
 using drake::multibody::contact_solvers::internal::MatrixBlock;
 using drake::multibody::contact_solvers::internal::SapConstraint;
+using drake::multibody::contact_solvers::internal::SapConstraintJacobian;
 using drake::multibody::contact_solvers::internal::SapContactProblem;
 using drake::multibody::contact_solvers::internal::SapFrictionConeConstraint;
 using drake::multibody::contact_solvers::internal::SapHolonomicConstraint;
@@ -38,8 +39,11 @@ namespace multibody {
 namespace internal {
 
 template <typename T>
-SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager)
-    : manager_(manager) {
+SapDriver<T>::SapDriver(const CompliantContactManager<T>* manager,
+                        double near_rigid_threshold)
+    : manager_(manager), near_rigid_threshold_(near_rigid_threshold) {
+  DRAKE_DEMAND(manager != nullptr);
+  DRAKE_DEMAND(near_rigid_threshold >= 0.0);
   // Collect joint damping coefficients into a vector.
   joint_damping_ = VectorX<T>::Zero(plant().num_velocities());
   for (JointIndex j(0); j < plant().num_joints(); ++j) {
@@ -129,7 +133,9 @@ void SapDriver<T>::CalcFreeMotionVelocities(const systems::Context<T>& context,
   // TODO(amcastro-tri): Implement free-motion velocities update based on the
   // theta-method, as in the SAP paper.
   const VectorX<T>& vdot0 =
-      manager().EvalAccelerationsDueToNonContactForcesCache(context).get_vdot();
+      manager()
+          .EvalAccelerationsDueToNonConstraintForcesCache(context)
+          .get_vdot();
   const double dt = this->plant().time_step();
   const VectorX<T>& x0 =
       context.get_discrete_state(manager().multibody_state_index()).value();
@@ -160,7 +166,6 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
   // Parameters used by SAP to estimate regularization, see [Castro et al.,
   // 2021].
   // TODO(amcastro-tri): consider exposing these parameters.
-  constexpr double beta = 1.0;
   constexpr double sigma = 1.0e-3;
 
   const std::vector<DiscreteContactPair<T>>& contact_pairs =
@@ -184,18 +189,28 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const T phi = contact_kinematics[icontact].phi;
     const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
 
+    // Stiffness equal to infinity is used to indicate a rigid contact. Since
+    // SAP is inherently compliant, we must use the "near rigid regime"
+    // approximation, with near rigid parameter equal to 1.0.
+    // TODO(amcastrot-tri): This is mostly for deformables, consider exposing
+    // this parameter.
+    const double beta = (stiffness == std::numeric_limits<double>::infinity())
+                            ? 1.0
+                            : near_rigid_threshold_;
     const typename SapFrictionConeConstraint<T>::Parameters parameters{
         friction, stiffness, dissipation_time_scale, beta, sigma};
 
     if (jacobian_blocks.size() == 1) {
+      SapConstraintJacobian<T> J(jacobian_blocks[0].tree,
+                                 std::move(jacobian_blocks[0].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          jacobian_blocks[0].tree, std::move(jacobian_blocks[0].J), phi,
-          parameters));
+          std::move(J), phi, parameters));
     } else {
+      SapConstraintJacobian<T> J(
+          jacobian_blocks[0].tree, std::move(jacobian_blocks[0].J),
+          jacobian_blocks[1].tree, std::move(jacobian_blocks[1].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          jacobian_blocks[0].tree, jacobian_blocks[1].tree,
-          std::move(jacobian_blocks[0].J), std::move(jacobian_blocks[1].J), phi,
-          parameters));
+          std::move(J), phi, parameters));
     }
     R_WC.emplace_back(std::move(contact_kinematics[icontact].R_WC));
   }
@@ -342,7 +357,7 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
 
     // Constraint function defined as g = q₀ - ρ⋅q₁ - Δq, with ρ the gear ratio
     // and Δq a fixed position offset.
-    const Vector1<T> g0(q0[dof0] - info.gear_ratio * q0[dof1] - info.offset);
+    Vector1<T> g0(q0[dof0] - info.gear_ratio * q0[dof1] - info.offset);
 
     // TODO(amcastro-tri): consider exposing this parameter.
     const double beta = 0.1;
@@ -352,13 +367,13 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
 
     if (tree0 == tree1) {
       const int nv = tree_topology().num_tree_velocities(tree0);
-      MatrixX<T> J = MatrixX<T>::Zero(1, nv);
+      MatrixX<T> J0 = MatrixX<T>::Zero(1, nv);
       // J = dg/dv
-      J(0, tree_dof0) = 1.0;
-      J(0, tree_dof1) = -info.gear_ratio;
-
+      J0(0, tree_dof0) = 1.0;
+      J0(0, tree_dof1) = -info.gear_ratio;
+      SapConstraintJacobian<T> J(tree0, std::move(J0));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          tree0, g0, J, parameters));
+          std::move(g0), std::move(J), parameters));
     } else {
       const int nv0 = tree_topology().num_tree_velocities(tree0);
       const int nv1 = tree_topology().num_tree_velocities(tree1);
@@ -366,8 +381,9 @@ void SapDriver<T>::AddCouplerConstraints(const systems::Context<T>& context,
       MatrixX<T> J1 = MatrixX<T>::Zero(1, nv1);
       J0(0, tree_dof0) = 1.0;
       J1(0, tree_dof1) = -info.gear_ratio;
+      SapConstraintJacobian<T> J(tree0, std::move(J0), tree1, std::move(J1));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          tree0, tree1, g0, J0, J1, parameters));
+          std::move(g0), std::move(J), parameters));
     }
   }
 }
@@ -457,21 +473,23 @@ void SapDriver<T>::AddDistanceConstraints(const systems::Context<T>& context,
     if (single_tree) {
       const TreeIndex tree_index =
           treeA_index.is_valid() ? treeA_index : treeB_index;
-      const MatrixX<T> J = Jdistance.middleCols(
+      MatrixX<T> Jtree = Jdistance.middleCols(
           tree_topology().tree_velocities_start(tree_index),
           tree_topology().num_tree_velocities(tree_index));
-
+      SapConstraintJacobian<T> J(tree_index, std::move(Jtree));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          tree_index, g0, J, parameters));
+          g0, std::move(J), parameters));
     } else {
-      const MatrixX<T> JA = Jdistance.middleCols(
+      MatrixX<T> JA = Jdistance.middleCols(
           tree_topology().tree_velocities_start(treeA_index),
           tree_topology().num_tree_velocities(treeA_index));
-      const MatrixX<T> JB = Jdistance.middleCols(
+      MatrixX<T> JB = Jdistance.middleCols(
           tree_topology().tree_velocities_start(treeB_index),
           tree_topology().num_tree_velocities(treeB_index));
+      SapConstraintJacobian<T> J(treeA_index, std::move(JA), treeB_index,
+                                 std::move(JB));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          treeA_index, treeB_index, g0, JA, JB, parameters));
+          g0, std::move(J), parameters));
     }
   }
 }
@@ -500,8 +518,7 @@ void SapDriver<T>::AddBallConstraints(
   MatrixX<T> Jv_ApBq_W = MatrixX<T>::Zero(3, nv);
 
   const Frame<T>& frame_W = plant().world_frame();
-  for (const BallConstraintSpecs& specs :
-       manager().ball_constraints_specs()) {
+  for (const BallConstraintSpecs& specs : manager().ball_constraints_specs()) {
     const Body<T>& body_A = plant().get_body(specs.body_A);
     const Body<T>& body_B = plant().get_body(specs.body_B);
 
@@ -555,22 +572,23 @@ void SapDriver<T>::AddBallConstraints(
     if (single_tree) {
       const TreeIndex tree_index =
           treeA_index.is_valid() ? treeA_index : treeB_index;
-      const MatrixX<T> J = Jv_ApBq_W.middleCols(
+      MatrixX<T> Jtree = Jv_ApBq_W.middleCols(
           tree_topology().tree_velocities_start(tree_index),
           tree_topology().num_tree_velocities(tree_index));
-
+      SapConstraintJacobian<T> J(tree_index, std::move(Jtree));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          tree_index, g0, std::move(J), parameters));
+          g0, std::move(J), parameters));
     } else {
-      const MatrixX<T> JA = Jv_ApBq_W.middleCols(
+      MatrixX<T> JA = Jv_ApBq_W.middleCols(
           tree_topology().tree_velocities_start(treeA_index),
           tree_topology().num_tree_velocities(treeA_index));
-      const MatrixX<T> JB = Jv_ApBq_W.middleCols(
+      MatrixX<T> JB = Jv_ApBq_W.middleCols(
           tree_topology().tree_velocities_start(treeB_index),
           tree_topology().num_tree_velocities(treeB_index));
+      SapConstraintJacobian<T> J(treeA_index, std::move(JA), treeB_index,
+                                 std::move(JB));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
-          treeA_index, treeB_index, g0, std::move(JA), std::move(JB),
-          parameters));
+          g0, std::move(J), parameters));
     }
   }
 }
@@ -715,7 +733,10 @@ void SapDriver<T>::CalcContactSolverResults(
         "     extremely large mass ratios. Revise your model and consider "
         "     whether very small objects can be removed or welded to larger "
         "     objects in the model."
-        "  4. Some other cause. You may want to use Stack Overflow (#drake "
+        "  4. Ill-conditioning could be alleviated via SAP's near rigid "
+        "     parameter. Refer to "
+        "     MultibodyPlant::set_sap_near_rigid_threshold() for details."
+        "  5. Some other cause. You may want to use Stack Overflow (#drake "
         "     tag) to request some assistance.",
         context.get_time());
     throw std::runtime_error(msg);

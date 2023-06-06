@@ -9,6 +9,7 @@
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/text_logging.h"
 #include "drake/math/matrix_util.h"
+#include "drake/solvers/osqp_solver.h"
 #include "drake/solvers/solve.h"
 
 using Eigen::MatrixXd;
@@ -22,6 +23,7 @@ namespace trajectory_optimization {
 
 using solvers::ExpressionConstraint;
 using solvers::MathematicalProgramResult;
+using solvers::OsqpSolver;
 using solvers::Solve;
 using solvers::VectorXDecisionVariable;
 using symbolic::Expression;
@@ -63,9 +65,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathPositionConstraint) {
 // 0.1 <= |position|² <= 1
 class SimplePositionConstraint : public solvers::Constraint {
  public:
-  SimplePositionConstraint()
-      : Constraint(1, 3, Vector1d{0.1}, Vector1d{1.0}) {
-  }
+  SimplePositionConstraint() : Constraint(1, 3, Vector1d{0.1}, Vector1d{1.0}) {}
 
   void DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
               Eigen::VectorXd* y) const override {
@@ -202,8 +202,15 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPositionBounds) {
   result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
   q = trajopt_.ReconstructTrajectory(result);
+
+  double tol = 0.0;
+  if (result.get_solver_id() == OsqpSolver::id()) {
+    // N.B. When providing an initial guess to OSQP, it's tolerances may allow
+    // for slight violation of its contraints.
+    tol = 1e-4;
+  }
   for (double t = q.start_time(); t <= q.end_time(); t += 0.01) {
-    EXPECT_LE(q.value(t).maxCoeff(), 1.0);  // All values are <= 1.0.
+    EXPECT_LE(q.value(t).maxCoeff(), 1.0 + tol);  // All values are <= 1.0.
   }
 }
 
@@ -362,7 +369,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathLengthCost) {
       trajopt_.basis(), math::EigenToStdVector<double>(guess)));
   auto result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
-  EXPECT_NEAR(result.get_optimal_cost(), 2.0*std::sqrt(3.0), 1e-6);
+  EXPECT_NEAR(result.get_optimal_cost(), 2.0 * std::sqrt(3.0), 1e-6);
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, AddPathLengthCostConic) {
@@ -379,7 +386,7 @@ TEST_F(KinematicTrajectoryOptimizationTest, AddPathLengthCostConic) {
 
   auto result = Solve(trajopt_.prog());
   EXPECT_TRUE(result.is_success());
-  EXPECT_NEAR(result.get_optimal_cost(), 2.0*std::sqrt(3.0), 1e-6);
+  EXPECT_NEAR(result.get_optimal_cost(), 2.0 * std::sqrt(3.0), 1e-6);
 }
 
 TEST_F(KinematicTrajectoryOptimizationTest, SolveWithAlmostEverything) {

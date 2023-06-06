@@ -182,10 +182,10 @@ void SetSolution(
   SetBoundingBoxConstraintDualSolution(column_dual_sol,
                                        bb_con_dual_variable_indices, result);
   solver_details.status = model.status();
-  SolutionResult solution_result{SolutionResult::kUnknownError};
+  SolutionResult solution_result{SolutionResult::kSolverSpecificError};
   switch (solver_details.status) {
     case -1: {
-      solution_result = SolutionResult::kUnknownError;
+      solution_result = SolutionResult::kSolverSpecificError;
       break;
     }
     case 0: {
@@ -206,7 +206,7 @@ void SetSolution(
     }
     default: {
       // Merging multiple CLP status code into one Drake SolutionResult code.
-      solution_result = SolutionResult::kUnknownError;
+      solution_result = SolutionResult::kSolverSpecificError;
     }
   }
   double objective_val{-kInf};

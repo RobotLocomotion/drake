@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 #include <fmt/format.h>
@@ -27,6 +28,18 @@ inline auto fmt_runtime(std::string_view s) {
 }
 #define DRAKE_FMT8_CONST
 #endif  // FMT_VERSION
+
+/** Returns `fmt::to_string(x)` but always with at least one digit after the
+decimal point. Different versions of fmt disagree on whether to omit the
+trailing ".0" when formatting integer-valued floating-point numbers. */
+template <typename T>
+std::string fmt_floating_point(T x) {
+  std::string result = fmt::format("{:#}", x);
+  if (result.back() == '.') {
+    result.push_back('0');
+  }
+  return result;
+}
 
 namespace internal::formatter_as {
 
@@ -125,40 +138,38 @@ refer to the given `ARG` name which will be of type `const TYPE& ARG`.
 `format_as` customization point with this feature built-in. If so, then we can
 update this macro to use that spelling, and eventually deprecate the macro once
 Drake drops support for earlier version of fmt. */
-#define DRAKE_FORMATTER_AS(TEMPLATE_ARGS, NAMESPACE, TYPE, ARG, EXPR)         \
-  /* Specializes the Converter<> class template for our TYPE. */              \
-  namespace drake::internal::formatter_as {                                   \
-  template <TEMPLATE_ARGS>                                                    \
-  struct Converter<NAMESPACE::TYPE> {                                         \
-    using InputType = NAMESPACE::TYPE;                                        \
-    static auto call(const InputType& ARG) { return EXPR; }                   \
-  };                                                                          \
-                                                                              \
-  /* Provides the fmt::formatter<TYPE> implementation. */                     \
-  template <TEMPLATE_ARGS>                                                    \
-  struct Formatter<NAMESPACE::TYPE>                                           \
-      : fmt::formatter<typename Traits<NAMESPACE::TYPE>::OutputType> {        \
-    using MyTraits = Traits<NAMESPACE::TYPE>;                                 \
-    /* Shadow our base class member function template of the same name. */    \
-    template <typename FormatContext>                                         \
-    auto format(const typename MyTraits::InputType& x,                        \
-                FormatContext& ctx) DRAKE_FMT8_CONST {                        \
-      /* Call the base class member function after laundering the object   */ \
-      /* through the user's provided format_as function. Older versions of */ \
-      /* fmt have const-correctness bugs, which we can fix with some good  */ \
-      /* old fashioned const_cast-ing here.                                */ \
-      using Base = typename MyTraits::OutputTypeFormatter;                    \
-      const Base* const self = this;                                          \
-      return const_cast<Base*>(self)->format(                                 \
-          MyTraits::Functor::call(x),                                         \
-          ctx);                                                               \
-    }                                                                         \
-  };                                                                          \
-  } /* namespace drake::internal::formatter_as */                             \
-                                                                              \
-  /* Specializes the fmt::formatter<> class template for TYPE. */             \
-  namespace fmt {                                                             \
-  template <TEMPLATE_ARGS>                                                    \
-  struct formatter<NAMESPACE::TYPE>                                           \
-      : drake::internal::formatter_as::Formatter<NAMESPACE::TYPE> {};         \
+#define DRAKE_FORMATTER_AS(TEMPLATE_ARGS, NAMESPACE, TYPE, ARG, EXPR)          \
+  /* Specializes the Converter<> class template for our TYPE. */               \
+  namespace drake::internal::formatter_as {                                    \
+  template <TEMPLATE_ARGS>                                                     \
+  struct Converter<NAMESPACE::TYPE> {                                          \
+    using InputType = NAMESPACE::TYPE;                                         \
+    static auto call(const InputType& ARG) { return EXPR; }                    \
+  };                                                                           \
+                                                                               \
+  /* Provides the fmt::formatter<TYPE> implementation. */                      \
+  template <TEMPLATE_ARGS>                                                     \
+  struct Formatter<NAMESPACE::TYPE>                                            \
+      : fmt::formatter<typename Traits<NAMESPACE::TYPE>::OutputType> {         \
+    using MyTraits = Traits<NAMESPACE::TYPE>;                                  \
+    /* Shadow our base class member function template of the same name. */     \
+    template <typename FormatContext>                                          \
+    auto format(const typename MyTraits::InputType& x,                         \
+                FormatContext& ctx) DRAKE_FMT8_CONST {                         \
+      /* Call the base class member function after laundering the object   */  \
+      /* through the user's provided format_as function. Older versions of */  \
+      /* fmt have const-correctness bugs, which we can fix with some good  */  \
+      /* old fashioned const_cast-ing here.                                */  \
+      using Base = typename MyTraits::OutputTypeFormatter;                     \
+      const Base* const self = this;                                           \
+      return const_cast<Base*>(self)->format(MyTraits::Functor::call(x), ctx); \
+    }                                                                          \
+  };                                                                           \
+  } /* namespace drake::internal::formatter_as */                              \
+                                                                               \
+  /* Specializes the fmt::formatter<> class template for TYPE. */              \
+  namespace fmt {                                                              \
+  template <TEMPLATE_ARGS>                                                     \
+  struct formatter<NAMESPACE::TYPE>                                            \
+      : drake::internal::formatter_as::Formatter<NAMESPACE::TYPE> {};          \
   } /* namespace fmt */
