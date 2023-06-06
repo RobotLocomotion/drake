@@ -100,6 +100,7 @@ Binding<Constraint> Vertex::AddConstraint(const symbolic::Formula& f) {
 }
 
 Binding<Constraint> Vertex::AddConstraint(const Binding<Constraint>& binding) {
+  DRAKE_THROW_UNLESS(ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(
       Variables(binding.variables()).IsSubsetOf(Variables(placeholder_x_)));
   constraints_.emplace_back(binding);
@@ -156,6 +157,8 @@ Binding<Constraint> Edge::AddConstraint(const symbolic::Formula& f) {
 }
 
 Binding<Constraint> Edge::AddConstraint(const Binding<Constraint>& binding) {
+  const int total_ambient_dimension = allowed_vars_.size();
+  DRAKE_THROW_UNLESS(total_ambient_dimension > 0);
   DRAKE_THROW_UNLESS(Variables(binding.variables()).IsSubsetOf(allowed_vars_));
   constraints_.emplace_back(binding);
   return binding;
@@ -701,8 +704,12 @@ MathematicalProgramResult GraphOfConvexSets::SolveShortestPath(
     prog.AddLinearCost(VectorXd::Ones(e->ell_.size()), e->ell_);
 
     // Spatial non-negativity: y ∈ ϕX, z ∈ ϕX.
-    e->u().set().AddPointInNonnegativeScalingConstraints(&prog, e->y_, phi);
-    e->v().set().AddPointInNonnegativeScalingConstraints(&prog, e->z_, phi);
+    if (e->u().ambient_dimension() > 0) {
+      e->u().set().AddPointInNonnegativeScalingConstraints(&prog, e->y_, phi);
+    }
+    if (e->v().ambient_dimension() > 0) {
+      e->v().set().AddPointInNonnegativeScalingConstraints(&prog, e->z_, phi);
+    }
 
     // Edge costs.
     for (int i = 0; i < e->ell_.size(); ++i) {

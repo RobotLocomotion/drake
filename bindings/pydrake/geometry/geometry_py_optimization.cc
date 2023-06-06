@@ -81,6 +81,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.CartesianProduct;
     py::class_<CartesianProduct, ConvexSet>(m, "CartesianProduct", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init([](const std::vector<ConvexSet*>& sets) {
           return std::make_unique<CartesianProduct>(CloneConvexSets(sets));
         }),
@@ -110,6 +111,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.HPolyhedron;
     py::class_<HPolyhedron, ConvexSet>(m, "HPolyhedron", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("A"), py::arg("b"), cls_doc.ctor.doc_2args)
@@ -171,6 +173,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.Hyperellipsoid;
     py::class_<Hyperellipsoid, ConvexSet>(m, "Hyperellipsoid", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&,
                  const Eigen::Ref<const Eigen::VectorXd>&>(),
             py::arg("A"), py::arg("center"), cls_doc.ctor.doc_2args)
@@ -203,6 +206,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.Intersection;
     py::class_<Intersection, ConvexSet>(m, "Intersection", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init([](const std::vector<ConvexSet*>& sets) {
           return std::make_unique<Intersection>(CloneConvexSets(sets));
         }),
@@ -219,6 +223,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.MinkowskiSum;
     py::class_<MinkowskiSum, ConvexSet>(m, "MinkowskiSum", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init([](const std::vector<ConvexSet*>& sets) {
           return std::make_unique<MinkowskiSum>(CloneConvexSets(sets));
         }),
@@ -238,6 +243,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.Point;
     py::class_<Point, ConvexSet>(m, "Point", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc_0args)
         .def(py::init<const Eigen::Ref<const Eigen::VectorXd>&>(), py::arg("x"),
             cls_doc.ctor.doc_1args)
         .def(py::init<const QueryObject<double>&, GeometryId,
@@ -264,6 +270,7 @@ void DefineGeometryOptimization(py::module m) {
   {
     const auto& cls_doc = doc.VPolytope;
     py::class_<VPolytope, ConvexSet>(m, "VPolytope", cls_doc.doc)
+        .def(py::init<>(), cls_doc.ctor.doc)
         .def(py::init<const Eigen::Ref<const Eigen::MatrixXd>&>(),
             py::arg("vertices"), cls_doc.ctor.doc_vertices)
         .def(py::init<const HPolyhedron&>(), py::arg("H"),
