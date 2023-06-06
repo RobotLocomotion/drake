@@ -46,6 +46,7 @@ class InertiaVisualizerConfigTest : public ::testing::Test {
 
   void SetUpDiagramWithConfig(const VisualizationConfig& config) {
     Parser parser(&plant_);
+    parser.SetStrictParsing();
     meshcat_->Delete();
     parser.AddModels(
         FindResourceOrThrow("drake/multibody/benchmarks/acrobot/acrobot.sdf"));
@@ -249,17 +250,20 @@ TEST_P(InertiaVisualizerGeometryTest, BoxTest) {
 
   const auto ellipsoid_M = SpatialInertia<double>::SolidEllipsoidWithDensity(
       kNominalDensity, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
-  auto ellipsoid_inertia = ellipsoid_M.CalcRotationalInertia();
+  EXPECT_NEAR(ellipsoid_M.get_mass(), M.get_mass(), kTolerance);
 
-  // Check that the ratio of the moments of the box and the ellipsoid are
-  // similar along each axis.
-  const double ratio =
-      box_inertia.get_moments()[0] / ellipsoid_inertia.get_moments()[0];
-  for (int i{1}; i < 3; ++i) {
-    EXPECT_NEAR(
-        box_inertia.get_moments()[i] / ellipsoid_inertia.get_moments()[i],
-        ratio, kTolerance);
-  }
+  // Check moments of the box and the ellipsoid are proportional to each other
+  // and the scale factor isn't too wide.
+  auto ellipsoid_inertia = ellipsoid_M.CalcRotationalInertia();
+  const Vector3d ratio = ellipsoid_inertia.get_moments().array() /
+                         box_inertia.get_moments().array();
+  SCOPED_TRACE(
+      fmt::format("box_inertia = {}; ellipsoid_inertia = {}; ratio = {}",
+                  box_inertia, ellipsoid_inertia, fmt_eigen(ratio)));
+  double scale = ratio(0);
+  EXPECT_LT(std::max(scale, 1 / scale), 2.0);
+  EXPECT_NEAR(ratio(1), scale, kTolerance);
+  EXPECT_NEAR(ratio(2), scale, kTolerance);
 }
 
 // Test inertia geometry computations for a thin rod model posed with
@@ -267,6 +271,12 @@ TEST_P(InertiaVisualizerGeometryTest, BoxTest) {
 // TODO(trowell-tri) Add rotation to the test when supported.
 TEST_P(InertiaVisualizerGeometryTest, ThinRodTest) {
   const Vector3d pose = GetParam().transpose();
+  // TODO(jwnimmer-tri) Our SDFormat parser errenously rejects rods that are
+  // posed too far away.  We need to skip those test cases for now.
+  if (pose.maxCoeff() > 5) {
+    drake::log()->info("Skipping test case due to SDFormat parser bug");
+    return;
+  }
   constexpr double length = 5.0;
   const auto M =
       SpatialInertia<double>::ThinRodWithMass(10, length, Vector3d(0, 0, 1));
@@ -284,10 +294,16 @@ TEST_P(InertiaVisualizerGeometryTest, ThinRodTest) {
 
   EXPECT_TRUE(CompareMatrices(transform.translation(), pose));
 
+  const auto ellipsoid_M = SpatialInertia<double>::SolidEllipsoidWithDensity(
+      kNominalDensity, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
+  EXPECT_NEAR(ellipsoid_M.get_mass(), M.get_mass(), kTolerance);
+
   // Check that the ellipsoid dimensions are roughly shaped like a rod
   // along the z-axis.
+  SCOPED_TRACE(fmt::format("abc = {} {} {}", ellipsoid.a(), ellipsoid.b(),
+                           ellipsoid.c()));
   EXPECT_NEAR(ellipsoid.a(), ellipsoid.b(), kTolerance);
-  EXPECT_GT(ellipsoid.c(), ellipsoid.a() * 1000);
+  EXPECT_GT(ellipsoid.c(), ellipsoid.a() * 99);
 }
 
 INSTANTIATE_TEST_SUITE_P(Poses, InertiaVisualizerGeometryTest,

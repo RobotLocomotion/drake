@@ -184,26 +184,28 @@ std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
   const double Ixx = unit_inertia_moments(0);
   const double Iyy = unit_inertia_moments(1);
   const double Izz = unit_inertia_moments(2);
-  using std::max;
-  using std::sqrt;
-  Vector3d solved_abc{sqrt((5.0 / 2.0) * max(0.0, (-Ixx + Iyy + Izz))),
-                      sqrt((5.0 / 2.0) * max(0.0, (+Ixx - Iyy + Izz))),
-                      sqrt((5.0 / 2.0) * max(0.0, (+Ixx + Iyy - Izz)))};
-  // Set minimum dimensions on the mass-equivalent ellipsoid to avoid
-  // floating point issues later on (vs. the later visual minimum dimensions).
-  solved_abc = solved_abc.array().max(1e-4);
+  Vector3d abc{std::sqrt((5.0 / 2.0) * std::max(0.0, -Ixx + Iyy + Izz)),
+               std::sqrt((5.0 / 2.0) * std::max(0.0, +Ixx - Iyy + Izz)),
+               std::sqrt((5.0 / 2.0) * std::max(0.0, +Ixx + Iyy - Izz))};
+  drake::log()->info("abc = {}", fmt_eigen(abc));
 
-  // Assuming the density of water for the visualization ellipsoid, scale
+  // An ellipse that has one of its diameters >100x greater than another one
+  // does not render well on the screen, so we'll bound the relative scale of
+  // each of the unit ellipsoid's radii.
+  abc = abc.array().max(1e-2 * abc.maxCoeff());
+  drake::log()->info("abc' = {}", fmt_eigen(abc));
+
+  // Assuming the ~density of water for the visualization ellipsoid, scale
   // it to have a volume that matches the body's mass.
   const double density = 1000.0;
-  const double solved_mass = density * (4.0 / 3.0) * M_PI * solved_abc(0) *
-                             solved_abc(1) * solved_abc(2);
+  const double solved_mass =
+      density * (4.0 / 3.0) * M_PI * abc(0) * abc(1) * abc(2);
   const double volume_scale = mass / solved_mass;
-  // For the visual representation, we want to avoid geometry that is so thin
-  // as to be invisible. Place a lower limit of 1mm on the radii.
-  const Vector3d abc = (solved_abc * std::cbrt(volume_scale)).array().max(1e-3);
+  const Vector3d scaled_abc = abc * std::cbrt(volume_scale);
+  drake::log()->info("scaled_abc = {}", fmt_eigen(scaled_abc));
 
-  return std::pair<Ellipsoid, RigidTransform<double>>(Ellipsoid(abc), X_BoBcm);
+  return std::pair<Ellipsoid, RigidTransform<double>>(Ellipsoid(scaled_abc),
+                                                      X_BoBcm);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
