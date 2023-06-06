@@ -482,11 +482,11 @@ class UnitInertia : public RotationalInertia<T> {
   // (Internal use only) Returns principal semi-diameters (half-lengths) and
   // principal axes orientations of a simple easily-visualized uniform-density
   // body D whose unit inertia is equal to `this` unit inertia and whose shape
-  // corresponds to a @p inertia_shape_factor (e.g., solid ellipsoid or box).
+  // corresponds to a @p inertia_shape_factor (e.g., a solid ellipsoid or box).
   // @param[in] inertia_shape_factor real positive number in the range
   // 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
   // (Gxx, Gyy, Gzz) formulas for G_DDcm_A (D's unit inertia about Dcm,
-  // expressed in a principally-oriented frame A. Formula are documented in
+  // expressed in a principally-oriented frame A). Formula are documented in
   // SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape().
   // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
   // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Ax Ay Az]
