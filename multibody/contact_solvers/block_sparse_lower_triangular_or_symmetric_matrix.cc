@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 
 #include "drake/common/drake_throw.h"
+#include "drake/common/fmt_eigen.h"
 
 namespace drake {
 namespace multibody {
@@ -128,12 +129,16 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<
     throw std::runtime_error(fmt::format(
         "{}: The requested {},{}-th block doesn't exist.", source, i, j));
   }
-  if (is_symmetric && i == j && Aij.has_value() &&
-      !((*Aij - Aij->transpose()).norm() < 1e-12 * Aij->norm())) {
+
+  auto is_block_symmetric = [](const MatrixType& M) {
+    return (M - M.transpose()).norm() <= 1e-12 * M.norm();
+  };
+
+  if (is_symmetric && i == j && Aij.has_value() && !is_block_symmetric(*Aij)) {
     throw std::runtime_error(
         fmt::format("{}: The {}-th diagonal block must be symmetric for a "
-                    "symmetric matrix.",
-                    source, i));
+                    "symmetric matrix. Instead, the block is:\n {}",
+                    source, i, fmt_eigen(*Aij)));
   }
 }
 
