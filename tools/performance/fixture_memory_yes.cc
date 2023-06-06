@@ -28,8 +28,7 @@ class GlibcMemoryManager final : public MemoryManager {
   GlibcMemoryManager() = default;
 
   void Start() final { Tare(); }
-  void Stop(Result* result);
-  void Stop(Result& result) final { this->Stop(&result); }  // NOLINT
+  void Stop(Result& result) final;  // NOLINT(runtime/references)
 
   // Resets all counters back to zero.
   static void Tare() {
@@ -51,17 +50,15 @@ static_assert(std::is_trivially_constructible<struct mallinfo2>());
 static_assert(std::is_trivially_destructible<struct mallinfo2>());
 struct mallinfo2 GlibcMemoryManager::g_mallinfo_tare = {};
 
-void GlibcMemoryManager::Stop(Result* result) {
-  DRAKE_DEMAND(result != nullptr);
-
+void GlibcMemoryManager::Stop(Result& result) {
   struct mallinfo2 report = ::mallinfo2();
 
-  result->num_allocs = g_num_allocs;
-  result->total_allocated_bytes = g_total_allocated_bytes;
-  result->net_heap_growth = report.uordblks - g_mallinfo_tare.uordblks;
+  result.num_allocs = g_num_allocs;
+  result.total_allocated_bytes = g_total_allocated_bytes;
+  result.net_heap_growth = report.uordblks - g_mallinfo_tare.uordblks;
 
   // There's no easy way to collect this data.
-  result->max_bytes_used = 0;
+  result.max_bytes_used = 0;
 }
 
 }  // namespace
