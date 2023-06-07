@@ -46,6 +46,8 @@ void DefineGeometryOptimization(py::module m) {
         .def("IntersectsWith", &ConvexSet::IntersectsWith, py::arg("other"),
             cls_doc.IntersectsWith.doc)
         .def("IsBounded", &ConvexSet::IsBounded, cls_doc.IsBounded.doc)
+        .def("MaybeGetPoint", &ConvexSet::MaybeGetPoint,
+            cls_doc.MaybeGetPoint.doc)
         .def("PointInSet", &ConvexSet::PointInSet, py::arg("x"),
             py::arg("tol") = 1e-8, cls_doc.PointInSet.doc)
         .def("AddPointInSetConstraints", &ConvexSet::AddPointInSetConstraints,
