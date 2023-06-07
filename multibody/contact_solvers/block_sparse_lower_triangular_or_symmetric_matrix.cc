@@ -95,7 +95,8 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
        original values are the on order of millions is a bad idea), so we keep
        only the diagonal entries of the diagonal blocks and zero the
        off-diagonal entries. */
-      blocks_[j][0] = blocks_[j][0].diagonal().asDiagonal();
+      /* Calling eval() here is important to avoid aliasing. */
+      blocks_[j][0] = blocks_[j][0].diagonal().eval().asDiagonal();
       /* Zero all off diagonal blocks in the j-th column. */
       for (int flat = 1; flat < ssize(blocks_[j]); ++flat) {
         blocks_[j][flat].setZero();

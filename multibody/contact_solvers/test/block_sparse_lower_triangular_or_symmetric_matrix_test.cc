@@ -178,10 +178,13 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, ZeroRowsAndColumns) {
   /* Keeps the diagonal entries for the diagonal blocks 0 and 1. Keeps the
    diagonal block 2 untouched. All off-diagonal blocks are zeroed out. */
   BlockSparseSymmetricMatrix A_symmetric = MakeSymmetricMatrix();
-  MatrixXd A_symmetric_dense = MakeDenseMatrix(true);
   A_symmetric.ZeroRowsAndColumns({0, 1});
-  A_symmetric_dense = A_symmetric_dense.diagonal().asDiagonal();
+
+  MatrixXd A_symmetric_dense = MatrixXd::Zero(9, 9);
+  A_symmetric_dense.topLeftCorner<2, 2>() = A00.diagonal().asDiagonal();
+  A_symmetric_dense.block<3, 3>(2, 2) = A11.diagonal().asDiagonal();
   A_symmetric_dense.bottomRightCorner<4, 4>() = A22;
+
   EXPECT_EQ(A_symmetric.MakeDenseMatrix(), A_symmetric_dense);
 
   /* Throws if input is out of range. */
