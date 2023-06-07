@@ -1,8 +1,11 @@
 #include "drake/multibody/contact_solvers/block_sparse_lower_triangular_or_symmetric_matrix.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 #include <fmt/format.h>
+
+#include "drake/common/drake_throw.h"
 
 namespace drake {
 namespace multibody {
@@ -69,6 +72,45 @@ MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
     }
   }
   return result;
+}
+
+template <typename MatrixType, bool is_symmetric>
+void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType, is_symmetric>::
+    ZeroRowsAndColumns(const std::vector<int>& indices) {
+  DRAKE_THROW_UNLESS(is_symmetric);
+  for (int j : indices) {
+    if (!(0 <= j && j < block_cols())) {
+      throw std::logic_error(fmt::format(
+          "Input index out of range. Indices must lie in [0, {}); {} is given.",
+          block_cols(), j));
+    }
+  }
+  std::unordered_set<int> indices_set(indices.begin(), indices.end());
+  for (int j = 0; j < block_cols(); ++j) {
+    /* Zero all blocks in the column except the diagonal if j is among the
+     row/column indices to be zeroed out. */
+    if (indices_set.count(j) > 0) {
+      /* We want to keep the conditioning of the matrix in the ballpark of the
+       original matrix (e.g. setting diagonal blocks to identity when the
+       original values are the on order of millions is a bad idea), so we keep
+       only the diagonal entries of the diagonal blocks and zero the
+       off-diagonal entries. */
+      /* Calling eval() here is important to avoid aliasing. */
+      blocks_[j][0] = blocks_[j][0].diagonal().eval().asDiagonal();
+      /* Zero all off diagonal blocks in the j-th column. */
+      for (int flat = 1; flat < ssize(blocks_[j]); ++flat) {
+        blocks_[j][flat].setZero();
+      }
+    } else {
+      /* Otherwise, zero out all blocks with block row indices in the set. */
+      for (int i : indices) {
+        const int flat = block_row_to_flat_[j][i];
+        if (flat >= 0) {
+          blocks_[j][flat].setZero();
+        }
+      }
+    }
+  }
 }
 
 template <typename MatrixType, bool is_symmetric>

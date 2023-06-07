@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/minkowski_sum.h"
 #include "drake/geometry/optimization/vpolytope.h"
@@ -252,6 +253,33 @@ GTEST_TEST(IrisTest, ClosestPointFailure) {
   for (const auto& o : shrunk_obstacles) {
     EXPECT_FALSE(o->IntersectsWith(region));
   }
+}
+
+GTEST_TEST(IrisOptionsTest, Serialize) {
+  IrisOptions options;
+  options.require_sample_point_is_contained = false;
+  options.iteration_limit = 25;
+  options.termination_threshold = 1e-3;
+  options.relative_termination_threshold = 0.01;
+  options.configuration_space_margin = 0.05;
+  options.num_collision_infeasible_samples = 8;
+  options.num_additional_constraint_infeasible_samples = 3;
+  options.random_seed = 789;
+  const std::string yaml = yaml::SaveYamlString(options);
+  const auto options2 = yaml::LoadYamlString<IrisOptions>(yaml);
+  EXPECT_EQ(options.require_sample_point_is_contained,
+            options2.require_sample_point_is_contained);
+  EXPECT_EQ(options.iteration_limit, options2.iteration_limit);
+  EXPECT_EQ(options.termination_threshold, options2.termination_threshold);
+  EXPECT_EQ(options.relative_termination_threshold,
+            options2.relative_termination_threshold);
+  EXPECT_EQ(options.configuration_space_margin,
+            options2.configuration_space_margin);
+  EXPECT_EQ(options.num_collision_infeasible_samples,
+            options2.num_collision_infeasible_samples);
+  EXPECT_EQ(options.num_additional_constraint_infeasible_samples,
+            options2.num_additional_constraint_infeasible_samples);
+  EXPECT_EQ(options.random_seed, options2.random_seed);
 }
 
 class SceneGraphTester : public ::testing::Test {

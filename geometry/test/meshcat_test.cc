@@ -586,7 +586,7 @@ GTEST_TEST(MeshcatTest, Buttons) {
   // Asking for clicks prior to adding is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetButtonClicks("alice"),
-      "Meshcat does not have any button named alice.");
+      "Meshcat does not have any button named alice.*");
 
   // A new button starts out unclicked.
   meshcat.AddButton("alice");
@@ -614,12 +614,12 @@ GTEST_TEST(MeshcatTest, Buttons) {
   meshcat.DeleteButton("alice");
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetButtonClicks("alice"),
-      "Meshcat does not have any button named alice.");
+      "Meshcat does not have any button named alice.*");
 
   // Removing a non-existent button is an error.
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.DeleteButton("alice"),
-      "Meshcat does not have any button named alice.");
+      "Meshcat does not have any button named alice.*");
 
   // Adding the button anew starts with a zero count again.
   meshcat.AddButton("alice");
@@ -630,10 +630,10 @@ GTEST_TEST(MeshcatTest, Buttons) {
   meshcat.DeleteAddedControls();
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetButtonClicks("alice"),
-      "Meshcat does not have any button named alice.");
+      "Meshcat does not have any button named alice.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetButtonClicks("bob"),
-      "Meshcat does not have any button named bob.");
+      "Meshcat does not have any button named bob.*");
 
   // Adding a button with the keycode.
   meshcat.AddButton("alice", "KeyT");
@@ -665,7 +665,7 @@ GTEST_TEST(MeshcatTest, Sliders) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider"),
-      "Meshcat does not have any slider named slider.");
+      "Meshcat does not have any slider named slider.*");
 
   meshcat.AddSlider("slider", 0.2, 1.5, 0.1, 0.5);
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 0.5, 1e-14);
@@ -685,7 +685,7 @@ GTEST_TEST(MeshcatTest, Sliders) {
 
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider"),
-      "Meshcat does not have any slider named slider.");
+      "Meshcat does not have any slider named slider.*");
 
   meshcat.AddSlider("slider1", 2, 3, 0.01, 2.35);
   meshcat.AddSlider("slider2", 4, 5, 0.01, 4.56);
@@ -696,10 +696,10 @@ GTEST_TEST(MeshcatTest, Sliders) {
   meshcat.DeleteAddedControls();
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider1"),
-      "Meshcat does not have any slider named slider1.");
+      "Meshcat does not have any slider named slider1.*");
   DRAKE_EXPECT_THROWS_MESSAGE(
       meshcat.GetSliderValue("slider2"),
-      "Meshcat does not have any slider named slider2.");
+      "Meshcat does not have any slider named slider2.*");
 
   slider_names = meshcat.GetSliderNames();
   EXPECT_EQ(slider_names.size(), 0);
