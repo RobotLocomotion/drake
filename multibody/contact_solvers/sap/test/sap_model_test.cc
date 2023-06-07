@@ -51,7 +51,7 @@ class SpringConstraint final : public SapConstraint<T> {
   // Model a spring attached to `clique`, expected to be a 3D particle.
   SpringConstraint(int clique, Vector3<T> x0, T k, T tau_d)
       // N.B. For this constraint the Jacobian is the identity matrix.
-      : SapConstraint<T>({clique, Matrix3<T>::Identity()}),
+      : SapConstraint<T>({clique, Matrix3<T>::Identity()}, {}),
         x0_(std::move(x0)),
         k_(k),
         tau_d_(tau_d) {}
@@ -260,14 +260,14 @@ class DummyConstraint final : public SapConstraint<T> {
  public:
   DummyConstraint(int clique, MatrixX<T> J, VectorX<T> R, VectorX<T> v_hat)
       // N.B. For this constraint the Jacobian is the identity matrix.
-      : SapConstraint<T>({clique, std::move(J)}),
+      : SapConstraint<T>({clique, std::move(J)}, {}),
         R_(std::move(R)),
         v_hat_(std::move(v_hat)) {}
 
   DummyConstraint(int clique1, MatrixX<T> J1, int clique2, MatrixX<T> J2,
                   VectorX<T> R, VectorX<T> v_hat)
       // N.B. For this constraint the Jacobian is the identity matrix.
-      : SapConstraint<T>({clique1, std::move(J1), clique2, std::move(J2)}),
+      : SapConstraint<T>({clique1, std::move(J1), clique2, std::move(J2)}, {}),
         R_(std::move(R)),
         v_hat_(std::move(v_hat)) {}
 

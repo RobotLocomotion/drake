@@ -14,7 +14,7 @@ namespace internal {
 template <typename T>
 SapFrictionConeConstraint<T>::SapFrictionConeConstraint(
     SapConstraintJacobian<T> J, const T& phi0, const Parameters& p)
-    : SapConstraint<T>(std::move(J)), parameters_(p), phi0_(phi0) {
+    : SapConstraint<T>(std::move(J), {}), parameters_(p), phi0_(phi0) {
   DRAKE_DEMAND(p.mu >= 0.0);
   DRAKE_DEMAND(p.stiffness > 0.0);
   DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);

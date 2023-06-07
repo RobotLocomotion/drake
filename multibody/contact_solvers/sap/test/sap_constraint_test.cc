@@ -33,12 +33,13 @@ class TestConstraint final : public SapConstraint<double> {
  public:
   // These constructor set up an arbitrary constraint for one and two cliques.
   TestConstraint(int clique, MatrixXd J)
-      : SapConstraint<double>({clique, std::move(J)}) {}
+      : SapConstraint<double>({clique, std::move(J)}, {}) {}
 
   TestConstraint(int first_clique, int second_clique, MatrixXd J_first_clique,
                  MatrixXd J_second_clique)
       : SapConstraint<double>({first_clique, std::move(J_first_clique),
-                               second_clique, std::move(J_second_clique)}) {}
+                               second_clique, std::move(J_second_clique)},
+                              {}) {}
 
  private:
   TestConstraint(const TestConstraint&) = default;
