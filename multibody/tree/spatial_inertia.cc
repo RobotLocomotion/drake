@@ -452,11 +452,9 @@ SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
 
   // Form the principal semi-diameters (half-lengths) and rotation matrix R_EA
   // that contains the associated principal axes directions Ax, Ay, Az.
-  std::pair<Vector3<double>, math::RotationMatrix<double>> abc_R_EA =
+  const auto [abc, R_EA] =
       G_SScm_E.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
           inertia_shape_factor);
-  const Vector3<double>& abc = abc_R_EA.first;
-  const drake::math::RotationMatrix<double>& R_EA = abc_R_EA.second;
 
   // Since R_EA is of type double and X_EA must also be of type double,
   // create a position vector from P to Scm that is of type double.

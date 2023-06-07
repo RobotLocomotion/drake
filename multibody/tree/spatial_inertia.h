@@ -536,14 +536,16 @@ class SpatialInertia {
   /// Calculates principal semi-diameters (half-lengths), principal axes
   /// orientations, and the position of a uniform-density object whose spatial
   /// inertia is equal to `this` spatial inertia.
+  /// These functions are useful for visualization or physical interpretation
+  /// of the geometric extents of `this` spatial inertia for a given shape.
   /// @returns 3 principal semi-diameters (half-lengths) [a b c] sorted in
   /// descending order (a ≥ b ≥ c) which are measured from Scm (the center of
   /// mass of `this` spatial inertia). Also returns the pose of the uniform
   /// density object that represents `this` spatial inertia.
   ///
   /// Example: Consider an oddly-shaped rigid body B with a known spatial
-  /// inertia M_BBo_B about B's origin Bo, expressed in frame B. This function
-  /// returns an easily visualized simple shape whose spatial inertial is equal
+  /// inertia M_BBo_B about B's origin Bo, expressed in frame B. These functions
+  /// return an easily visualized simple shape whose spatial inertial is equal
   /// to M_BBo_B. The simple shape is defined by a frame A with origin Ao at Bcm
   /// (B's center of mass), has principal dimensions [a b c], and has unit
   /// vectors Ax, Ay, Az parallel to the simple shape's principal directions.
@@ -552,24 +554,18 @@ class SpatialInertia {
   /// and the position vector p_BoAo_B from Bo to Ao (ellipsoid center of mass).
   /// @code{.cpp}
   ///   const SpatialInertia<double>& M_BBo_B = B.default_spatial_inertia();
-  ///   std::pair<Vector3<double>, RigidTransform<double>> abc_X_BA =
+  ///   auto [abc, X_BA] =
   ///     M_BBo_B.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
-  ///   Vector3<double> abc = abc_X_BA.first;            // Semi-diameters.
-  ///   RigidTransform<double> X_BA = abc_X_BA.second;
-  ///   RotationMatrix<double>& R_BA = X_BA.rotation();  // Axes orientations.
-  ///   Vector3<double>& p_BoAo_B = X_BA.translation();  // Position Bo to Ao.
   /// @endcode
-  /// @note This function is useful for visualization or physical interpretation
-  /// of the geometric extents of `this` spatial inertia for a given shape.
   /// @throws std::exception if the elements of `this` spatial inertia cannot
   /// be converted to a real finite double. For example, an exception is thrown
   /// if `this` contains an erroneous NaN or if scalar type T is symbolic.
-  /// @see CalcPrincipalMomentsAndAxesOfInertia() to calculate principal moments
-  /// of inertia and their associated principal directions.
+  /// @see RotationalInertia::CalcPrincipalMomentsAndAxesOfInertia() to form
+  /// principal moments of inertia and their associated principal directions.
   ///@{
 
-  /// Returns semi-diameters, associated axes orientations, and the position of
-  /// a solid ellipsoid whose spatial inertia is equal to this spatial inertia.
+  /// Returns semi-diameters, orientation, and the position of a solid ellipsoid
+  /// whose spatial inertia is equal to this spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
@@ -579,8 +575,8 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
-  /// Returns half-lengths, associated axes orientations, and the position of
-  /// a solid box whose spatial inertia is equal to this spatial inertia.
+  /// Returns half-lengths, orientation, and the position of a solid box
+  /// whose spatial inertia is equal to this spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
@@ -875,12 +871,12 @@ class SpatialInertia {
   // violates the "triangle inequality".
   void WriteExtraCentralInertiaProperties(std::string* message) const;
 
-  // Returns semi-diameters (half-lengths), associated axes orientations, and
-  // the position of a uniform-density object D whose shape is specified by
-  // @p inertia_shape_factor and whose spatial inertia is equal to `this`
-  // spatial inertia.
+  // Returns principal semi-diameters (half-lengths), associated principal axes
+  // orientations, and the position of a simple uniform-density body D whose
+  // shape is specified by @p inertia_shape_factor and whose spatial inertia is
+  // equal to `this` spatial inertia.
   // @param[in] inertia_shape_factor real positive number in the range
-  // 0 < inertia_shape_factor ≤ 1 associated with the unit moment of inertia
+  // 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
   // (Gxx, Gyy, Gzz) formulas for G_DDcm_A, where Dcm is D's center of mass and
   // frame A contains right-handed orthogonal unit vectors Ax, Ay, Az that are
   // aligned with D's principal inertia axes.
@@ -906,6 +902,10 @@ class SpatialInertia {
   // shape_factor = 1/3                      | shape_factor = 1
   // See @ref spatial_inertia_equivalent_shapes
   // "Spatial inertia equivalent shapes" for more details.
+  // @see RotationalInertia::CalcPrincipalMomentsAndAxesOfInertia() to calculate
+  // principal moments of inertia and their associated principal directions.
+  // @throws See UnitInertia::CalcPrincipalHalfLengthsAndAxesForEquivalentShape
+  // for thrown exceptions.
   // TODO(Mitiguy) Calculate the shape factor for hollow box.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
   CalcPrincipalHalfLengthsAndPoseForEquivalentShape(

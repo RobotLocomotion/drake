@@ -479,24 +479,16 @@ class UnitInertia : public RotationalInertia<T> {
   //@}
 
 #ifndef DRAKE_DOXYGEN_CXX
-  // (Internal use only) Returns principal semi-diameters (half-lengths) and
-  // principal axes orientations of a simple easily-visualized uniform-density
-  // body D whose unit inertia is equal to `this` unit inertia and whose shape
-  // corresponds to a @p inertia_shape_factor (e.g., a solid ellipsoid or box).
-  // @param[in] inertia_shape_factor real positive number in the range
-  // 0 < inertia_shape_factor ≤ 1 associated with unit moment of inertia
-  // (Gxx, Gyy, Gzz) formulas for G_DDcm_A (D's unit inertia about Dcm,
-  // expressed in a principally-oriented frame A). Formula are documented in
-  // SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape().
+  // (Internal use only)
+  // @see SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape()
+  // for documentation, formulas, and details on @p inertia_shape_factor.
   // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
   // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Ax Ay Az]
   // stored in columns of the returned rotation matrix R_EA.
   // @throws std::exception if the elements of `this` unit inertia cannot
   // be converted to a real finite double. For example, an exception is thrown
   // if `this` contains an erroneous NaN or if scalar type T is symbolic.
-  // @throws std::exception if shape_factor ≤ 0 or shape_factor > 1.
-  // @see CalcPrincipalMomentsAndAxesOfInertia() to calculate principal moments
-  // of inertia and their associated principal directions.
+  // @throws std::exception if inertia_shape_factor ≤ 0 or > 1.
   // See @ref spatial_inertia_equivalent_shapes
   // "Spatial inertia equivalent shapes" for more details.
   std::pair<Vector3<double>, math::RotationMatrix<double>>
