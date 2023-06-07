@@ -527,7 +527,7 @@ class SpatialInertia {
 
       // The triangle inequality test in CouldBePhysicallyValid() uses a
       // tolerance (epsilon) that accounts for the significant digits that may
-      // be lost when subtracting mass * distance2 to shift from P to Scm.
+      // be lost when subtracting mass * distance² to shift from P to Scm.
       const T mass_dcm_squared = mass_ * p_PScm_E_.squaredNorm();
       ret_value = I_SScm_E.CouldBePhysicallyValid(mass_dcm_squared);
     }
