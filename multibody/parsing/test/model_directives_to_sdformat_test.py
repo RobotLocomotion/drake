@@ -1,5 +1,6 @@
 import argparse
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
 import os
 import unittest
 
@@ -183,11 +184,9 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
     def test_through_plant_comparison(self, *, file_path):
         # Convert
         args = self.parser.parse_args(['-m', file_path])
-        sdformat_tree = convert_directives(args)
-        sdformat_tree = sdformat_tree.getroot()
-        ET.indent(sdformat_tree)
-        sfdormat_result = ET.tostring(
-            sdformat_tree, encoding="unicode")
+        sdformat_tree = convert_directives(args).getroot()
+        sdformat_result = minidom.parseString(
+                ET.tostring(sdformat_tree)).toprettyxml(indent="  ")
 
         # Load model directives
         directives_plant = MultibodyPlant(time_step=0.01)
@@ -205,7 +204,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
         sdformat_plant = MultibodyPlant(time_step=0.01)
         sdformat_parser = Parser(sdformat_plant)
         sdformat_parser.package_map().PopulateFromFolder(model_dir)
-        sdformat_parser.AddModelsFromString(sfdormat_result, "sdf")
+        sdformat_parser.AddModelsFromString(sdformat_result, "sdf")
         sdformat_plant.Finalize()
 
         # Compare plants
@@ -368,7 +367,8 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
     def test_add_model_instance_add_directives(self):
         os.environ['ROS_PACKAGE_PATH'] = 'multibody/parsing/'
         tempdir = temp_directory()
-        expected_sdf = """<sdf version="1.9">
+        expected_sdf = """<?xml version="1.0" ?>
+<sdf version="1.9">
   <model name="add_directives">
     <model name="model_instance">
       <include merge="true">
@@ -376,14 +376,16 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       </include>
     </model>
   </model>
-</sdf>"""
-        expected_expanded_sdf = """<sdf version="1.9">
+</sdf>
+"""
+        expected_expanded_sdf = """<?xml version="1.0" ?>
+<sdf version="1.9">
   <model name="hidden_frame">
     <include>
       <name>simple_model</name>
       <uri>package://process_model_directives_test/simple_model.sdf</uri>
       <placement_frame>frame</placement_frame>
-      <pose relative_to="top_level_model::top_injected_frame" />
+      <pose relative_to="top_level_model::top_injected_frame"/>
     </include>
     <model name="top_level_model">
       <include merge="true">
@@ -400,7 +402,8 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       <child>simple_model::frame</child>
     </joint>
   </model>
-</sdf>"""
+</sdf>
+"""
         model_directives_to_sdformat.main(['-m',
                                            'multibody/parsing/test/model_'
                                            'directives_to_sdformat_files/'
@@ -415,7 +418,8 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
                          'hidden_frame.sdf')).read())
 
     def test_resulting_xml(self):
-        expected_xml = """<sdf version="1.9">
+        expected_xml = """<?xml version="1.0" ?>
+<sdf version="1.9">
   <model name="inject_frames">
     <model name="top_level_model">
       <include merge="true">
@@ -427,7 +431,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       </frame>
     </model>
     <model name="mid_level_model" placement_frame="base">
-      <pose relative_to="top_level_model::top_injected_frame" />
+      <pose relative_to="top_level_model::top_injected_frame"/>
       <include merge="true">
         <name>mid_level_model</name>
         <uri>package://process_model_directives_test/simple_model.sdf</uri>
@@ -445,7 +449,7 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       <name>bottom_level_model</name>
       <uri>package://process_model_directives_test/simple_model.sdf</uri>
       <placement_frame>base</placement_frame>
-      <pose relative_to="mid_level_model::mid_injected_frame" />
+      <pose relative_to="mid_level_model::mid_injected_frame"/>
     </include>
     <joint name="mid_level_model__mid_injected_frame__to__bottom_level_""" \
             """model__base__weld_joint" type="fixed">
@@ -453,16 +457,16 @@ class TestConvertModelDirectiveToSDF(unittest.TestCase,
       <child>bottom_level_model::base</child>
     </joint>
   </model>
-</sdf>"""
+</sdf>
+"""
         args = self.parser.parse_args(['-m',
                                        'multibody/parsing/test/model_'
                                        'directives_to_sdformat_files/'
                                        'inject_frames.dmd.yaml'])
-        result = convert_directives(args)
-        result = result.getroot()
-        ET.indent(result)
-        self.assertEqual(expected_xml,
-                         ET.tostring(result, encoding="unicode"))
+        result = convert_directives(args).getroot()
+        xmlstr = minidom.parseString(
+                ET.tostring(result)).toprettyxml(indent="  ")
+        self.assertEqual(expected_xml, xmlstr)
 
     def test_not_supported_default_(self):
         with self.assertRaisesRegex(

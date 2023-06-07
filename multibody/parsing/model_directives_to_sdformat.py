@@ -1,6 +1,7 @@
 import argparse
 import copy
 import dataclasses as dc
+from xml.dom import minidom
 import xml.etree.ElementTree as ET
 import os
 import sys
@@ -489,8 +490,11 @@ def _save_world(root_world_name, world_output_path, output_filename):
     uri_elem.text = 'package://' + package_name + '/' + \
         os.path.basename(output_filename)
     world_tree = ET.ElementTree(world_root)
-    ET.indent(world_tree)
-    world_tree.write(world_output_path)
+    world_tree = world_tree.getroot()
+    xmlstr = minidom.parseString(
+            ET.tostring(world_tree)).toprettyxml(indent="  ")
+    with open(world_output_path, "w") as f:
+        f.write(xmlstr)
 
 
 def _generate_output(result_tree: ET.ElementTree,
@@ -500,8 +504,10 @@ def _generate_output(result_tree: ET.ElementTree,
                      generate_world: bool = True):
 
     if print_only:
-        ET.indent(result_tree)
-        print(ET.tostring(result_tree, encoding="unicode"))
+        result_tree = result_tree.getroot()
+        xmlstr = minidom.parseString(
+                ET.tostring(result_tree)).toprettyxml(indent="  ")
+        print(xmlstr)
         return
 
     # if an output path was selected the files will be
@@ -530,8 +536,11 @@ def _generate_output(result_tree: ET.ElementTree,
         root_world_name = result_tree.find('model').get('name')
         _save_world(root_world_name, world_output_path, output_filename_path)
     # Saving the converted model
-    ET.indent(result_tree)
-    result_tree.write(output_filename_path)
+    result_tree = result_tree.getroot()
+    xmlstr = minidom.parseString(
+            ET.tostring(result_tree)).toprettyxml(indent="  ")
+    with open(output_filename_path, "w") as f:
+        f.write(xmlstr)
 
 
 def _create_parser():
