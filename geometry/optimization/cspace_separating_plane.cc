@@ -117,8 +117,8 @@ void CalcPlane(const VectorX<double>& decision_variables,
   InitializeCoeffVects(decision_variables, &a_coeff, &b_coeff);
   const Eigen::VectorXd evaluated_powers =
       ComputeGradedRevLexEvaluatedPowers(vars_for_plane, plane_degree);
-  (*a_val) = (a_coeff * evaluated_powers).topRows(3);
-  (*b_val) = (b_coeff.transpose() * evaluated_powers);
+  (*a_val) = a_coeff * evaluated_powers;
+  (*b_val) = b_coeff.transpose() * evaluated_powers;
 }
 
 }  // namespace optimization

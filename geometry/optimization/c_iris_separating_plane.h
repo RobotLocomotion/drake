@@ -23,6 +23,7 @@ namespace optimization {
  to RationalForwardKinematics class or the paper above on the meaning of s.
  */
 // TODO(hongkai.dai): I might support kConstant in the future.
+// TODO(hongkai.dai): Deprecate this class.
 enum class SeparatingPlaneOrder {
   kAffine = 1,  ///< a and b are affine function of s.
 };
