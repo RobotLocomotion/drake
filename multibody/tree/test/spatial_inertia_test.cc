@@ -1184,11 +1184,9 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // Verify p_BcmAo_B is zero (since Ao should be located at Bcm).
   SpatialInertia<double> M_BBcm_B =
       SpatialInertia<double>::SolidEllipsoidWithDensity(density, a, b, c);
-  std::pair<Vector3<double>, drake::math::RigidTransform<double>> abc_X_BA =
+  auto [abc, X_BA] =
       M_BBcm_B.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
-  Vector3<double> abc = abc_X_BA.first;
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
-  drake::math::RigidTransform<double> X_BA = abc_X_BA.second;
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
@@ -1198,10 +1196,8 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // Verify p_BcmAo_B is zero (since Ao should be located at Bcm).
   M_BBcm_B =
       SpatialInertia<double>::SolidBoxWithDensity(density, 2*a, 2*b, 2*c);
-  abc_X_BA = M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
-  abc = abc_X_BA.first;
+  std::tie(abc, X_BA) = M_BBcm_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
-  X_BA = abc_X_BA.second;
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == Vector3<double>::Zero());
 
@@ -1209,10 +1205,8 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   // unchanged, whereas the position vector returned in X_BA has changed.
   const Vector3<double> p_BoBcm_B(1.2, 3.4, 5.6);
   SpatialInertia<double> M_BBo_B = M_BBcm_B.Shift(-p_BoBcm_B);
-  abc_X_BA = M_BBo_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
-  abc = abc_X_BA.first;
+  std::tie(abc, X_BA) = M_BBo_B.CalcPrincipalHalfLengthsAndPoseForSolidBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
-  X_BA = abc_X_BA.second;
   EXPECT_TRUE(X_BA.rotation().IsExactlyEqualTo(R_identity));
   EXPECT_TRUE(X_BA.translation() == p_BoBcm_B);
 
@@ -1225,10 +1219,8 @@ GTEST_TEST(SpatialInertia, CalcPrincipalHalfLengthsAndPoseForEquivalentShape) {
   SpatialInertia<double> M_BBo_E = M_BBo_B.ReExpress(R_BE);
   const Vector3<double> G_products = M_BBo_E.get_unit_inertia().get_products();
   EXPECT_GE(std::abs(G_products[1]), 0.1);  // Sufficiently non-zero.
-  abc_X_BA = M_BBo_E.CalcPrincipalHalfLengthsAndPoseForSolidBox();
-  abc = abc_X_BA.first;
+  std::tie(abc, X_BA) = M_BBo_E.CalcPrincipalHalfLengthsAndPoseForSolidBox();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
-  X_BA = abc_X_BA.second;
 
   // The orthogonal unit length eigenvectors Ax_B, Ay_B, Az_B stored in the
   // columns of R_BA are parallel to the principal axes (lines). Since lines

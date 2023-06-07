@@ -196,10 +196,9 @@ UnitInertia<T>::CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
   // ⌊c²⌋   ⌊ 1  1 -1⌋ ⌊Gmax ⌉
   // Since Gmin ≤ Gmed ≤ Gmax, we can deduce a² ≥ b² ≥ c², so we designate
   // lmax² = a², lmed² = b², lmin² = c².
-  std::pair<Vector3<double>, drake::math::RotationMatrix<double>> G_DDcm_A =
-      this->CalcPrincipalMomentsAndAxesOfInertia();
-  const Vector3<double>& Gmoments = G_DDcm_A.first;        // Principal moments.
-  const math::RotationMatrix<double> R_EA = G_DDcm_A.second;  // Principal axes.
+
+  // Form principal moments Gmoments and principal axes stored in R_EA.
+  auto [Gmoments, R_EA] = this->CalcPrincipalMomentsAndAxesOfInertia();
   const double Gmin = Gmoments(0);
   const double Gmed = Gmoments(1);
   const double Gmax = Gmoments(2);
