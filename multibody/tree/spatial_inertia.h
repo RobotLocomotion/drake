@@ -564,8 +564,8 @@ class SpatialInertia {
   /// principal moments of inertia and their associated principal directions.
   ///@{
 
-  /// Returns semi-diameters, orientation, and the position of a solid ellipsoid
-  /// whose spatial inertia is equal to this spatial inertia.
+  /// Returns semi-diameters, orientation, and position of a solid ellipsoid
+  /// whose spatial inertia is equal to `this` spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
@@ -575,8 +575,8 @@ class SpatialInertia {
         inertia_shape_factor);
   }
 
-  /// Returns half-lengths, orientation, and the position of a solid box
-  /// whose spatial inertia is equal to this spatial inertia.
+  /// Returns half-lengths, orientation, and position of a solid box
+  /// whose spatial inertia is equal to `this` spatial inertia.
   /// See @ref spatial_inertia_equivalent_shapes
   /// "Spatial inertia equivalent shapes" for more details.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
@@ -904,8 +904,8 @@ class SpatialInertia {
   // "Spatial inertia equivalent shapes" for more details.
   // @see RotationalInertia::CalcPrincipalMomentsAndAxesOfInertia() to calculate
   // principal moments of inertia and their associated principal directions.
-  // @throws See UnitInertia::CalcPrincipalHalfLengthsAndAxesForEquivalentShape
-  // for thrown exceptions.
+  // @see UnitInertia::CalcPrincipalHalfLengthsAndAxesForEquivalentShape for
+  // thrown exceptions.
   // TODO(Mitiguy) Calculate the shape factor for hollow box.
   std::pair<Vector3<double>, drake::math::RigidTransform<double>>
   CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
