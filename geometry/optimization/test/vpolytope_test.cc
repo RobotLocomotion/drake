@@ -78,6 +78,24 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
+GTEST_TEST(VPolytopeTest, Move) {
+  Eigen::Matrix<double, 2, 3> triangle;
+  // clang-format off
+  triangle <<  2, 4, 3,
+              -1, 2, 5;
+  // clang-format on
+  VPolytope orig(triangle);
+
+  // A move-constructed VPolytope takes over the original data.
+  VPolytope dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 2);
+  EXPECT_TRUE(CompareMatrices(dut.vertices(), triangle));
+
+  // The old VPolytope is in a valid but unspecified state.
+  EXPECT_EQ(orig.vertices().rows(), orig.ambient_dimension());
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(VPolytopeTest, UnitBoxTest) {
   VPolytope V = VPolytope::MakeUnitBox(3);
   EXPECT_EQ(V.ambient_dimension(), 3);
