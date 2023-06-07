@@ -210,6 +210,32 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   }
 }
 
+GTEST_TEST(SpectrahedronTest, Move) {
+  auto make_sdp = []() {
+    auto sdp = std::make_unique<MathematicalProgram>();
+    sdp->AddPositiveSemidefiniteConstraint(
+        sdp->NewSymmetricContinuousVariables<3>());
+    return sdp;
+  };
+  Spectrahedron orig(*make_sdp());
+  EXPECT_EQ(orig.ambient_dimension(), 6);
+
+  // A move-constructed Spectrahedron takes over the original data.
+  Spectrahedron dut(std::move(orig));
+  EXPECT_EQ(dut.ambient_dimension(), 6);
+  EXPECT_NO_THROW(dut.Clone());
+  MathematicalProgram constraints;
+  EXPECT_NO_THROW(dut.AddPointInSetConstraints(
+      &constraints, constraints.NewContinuousVariables<6>()));
+  EXPECT_EQ(constraints.positive_semidefinite_constraints().size(), 1);
+
+  // The old set is in a valid but unspecified state. For convenience we'll
+  // assert that it's empty, but that's not the only valid implementation,
+  // just the one we happen to currently use.
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 }  // namespace
 }  // namespace optimization
 }  // namespace geometry
