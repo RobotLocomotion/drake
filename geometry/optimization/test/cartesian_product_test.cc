@@ -66,6 +66,23 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
+GTEST_TEST(CartesianProductTest, Move) {
+  const Point P1(Vector2d{1.2, 3.4}), P2(Vector2d{5.6, 7.8});
+  CartesianProduct orig(P1, P2);
+
+  // A move-constructed CartesianProduct takes over the original data.
+  CartesianProduct dut(std::move(orig));
+  EXPECT_EQ(dut.num_factors(), 2);
+  EXPECT_EQ(dut.ambient_dimension(), 4);
+
+  // The old set is in a valid but unspecified state. For convenience we'll
+  // assert that it's empty, but that's not the only valid implementation,
+  // just the one we happen to currently use.
+  EXPECT_EQ(orig.num_factors(), 0);
+  EXPECT_EQ(orig.ambient_dimension(), 0);
+  EXPECT_NO_THROW(orig.Clone());
+}
+
 GTEST_TEST(CartesianProductTest, FromSceneGraph) {
   const RigidTransformd X_WG{math::RollPitchYawd(.1, .2, 3),
                              Vector3d{.5, .87, .1}};
