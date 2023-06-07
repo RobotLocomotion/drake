@@ -278,6 +278,8 @@ TEST_F(ScrewMobilizerTest, ProjectSpatialForce) {
 }
 
 TEST_F(ScrewMobilizerTest, MapVelocityToQDotAndBack) {
+  EXPECT_TRUE(mobilizer_->is_velocity_equal_to_qdot());
+
   Vector1d v(1.5);
   Vector1d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);

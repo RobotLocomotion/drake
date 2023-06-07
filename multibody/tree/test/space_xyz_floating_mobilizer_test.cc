@@ -147,6 +147,8 @@ TEST_F(SpaceXYZFloatingMobilizerTest, CalcAcrossMobilizer) {
 }
 
 TEST_F(SpaceXYZFloatingMobilizerTest, MapVelocityToQdotAndBack) {
+  EXPECT_FALSE(mobilizer_->is_velocity_equal_to_qdot());
+
   SetArbitraryNonZeroState();
   const Vector6<double> v = (Vector6<double>() << 1, 2, 3, 4, 5, 6).finished();
   Vector6<double> qdot;

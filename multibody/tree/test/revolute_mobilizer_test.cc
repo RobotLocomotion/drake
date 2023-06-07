@@ -195,6 +195,8 @@ TEST_F(RevoluteMobilizerTest, ProjectSpatialForce) {
 }
 
 TEST_F(RevoluteMobilizerTest, MapVelocityToQDotAndBack) {
+  EXPECT_TRUE(mobilizer_->is_velocity_equal_to_qdot());
+
   Vector1d v(1.5);
   Vector1d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);

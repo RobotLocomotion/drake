@@ -252,6 +252,8 @@ TEST_F(PlanarMobilizerTest, ProjectSpatialForce) {
 }
 
 TEST_F(PlanarMobilizerTest, MapVelocityToQDotAndBack) {
+  EXPECT_TRUE(mobilizer_->is_velocity_equal_to_qdot());
+
   Vector3d v(1.5, 2.5, 3.5);
   Vector3d qdot;
   mobilizer_->MapVelocityToQDot(*context_, v, &qdot);

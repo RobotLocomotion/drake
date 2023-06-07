@@ -39,14 +39,13 @@ namespace controllers {
  * contact forces.
  *
  * The controller currently requires that plant.num_positions() ==
- * plant.num_velocities() == plant.num_actuated_dofs().
+ * plant.num_velocities() == plant.num_actuated_dofs() and that
+ * plant.IsVelocityEqualToQDot() is true.
  *
  * @system
- * name: JointStiffnessController
- * input_ports:
+ * name: JointStiffnessController input_ports:
  * - estimated_state
- * - desired_state
- * output_ports:
+ * - desired_state output_ports:
  * - generalized_force
  * @endsystem
  *
@@ -72,6 +71,7 @@ class JointStiffnessController final : public LeafSystem<T> {
    * `true`).
    * @pre plant.num_positions() == plant.num_velocities() ==
    * plant.num_actuated_dofs() == kp.size() == kd.size()
+   * @pre plant.IsVelocityEqualToQDot() is true.
    */
   JointStiffnessController(const multibody::MultibodyPlant<T>& plant,
                            const Eigen::Ref<const Eigen::VectorXd>& kp,
@@ -84,6 +84,7 @@ class JointStiffnessController final : public LeafSystem<T> {
    * `true`).
    * @pre plant.num_positions() == plant.num_velocities() ==
    * plant.num_actuated_dofs() == kp.size() == kd.size()
+   * @pre plant.IsVelocityEqualToQDot() is true.
    *
    * @exclude_from_pydrake_mkdoc{This overload is not bound.}
    */

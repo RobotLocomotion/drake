@@ -527,6 +527,8 @@ class Mobilizer : public MultibodyElement<T> {
     DoCalcNplusMatrix(context, Nplus);
   }
 
+  virtual bool is_velocity_equal_to_qdot() const = 0;
+
   // Computes the kinematic mapping `q̇ = N(q)⋅v` between generalized
   // velocities v and time derivatives of the generalized positions `qdot`.
   // The generalized positions vector is stored in `context`.

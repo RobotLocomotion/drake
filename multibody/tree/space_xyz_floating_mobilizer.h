@@ -232,6 +232,8 @@ class SpaceXYZFloatingMobilizer final : public MobilizerImpl<T, 6, 6> {
                            const SpatialForce<T>& F_Mo_F,
                            Eigen::Ref<VectorX<T>> tau) const override;
 
+  bool is_velocity_equal_to_qdot() const override { return false; }
+
   // Maps the generalized velocity v to time derivatives of configuration
   // `qdot`.
   //

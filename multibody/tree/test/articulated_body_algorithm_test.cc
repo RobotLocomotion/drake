@@ -91,6 +91,8 @@ class FeatherstoneMobilizer final : public MobilizerImpl<T, 2, 2> {
     tau = H_FM_.transpose() * F_Mo_F.get_coeffs();
   }
 
+  bool is_velocity_equal_to_qdot() const override { return true; }
+
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,
