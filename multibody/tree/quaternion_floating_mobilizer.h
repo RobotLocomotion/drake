@@ -214,6 +214,8 @@ class QuaternionFloatingMobilizer final : public MobilizerImpl<T, 7, 6> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const override;
 
+  bool is_velocity_equal_to_qdot() const override { return false; }
+
   void MapVelocityToQDot(
       const systems::Context<T>& context,
       const Eigen::Ref<const VectorX<T>>& v,

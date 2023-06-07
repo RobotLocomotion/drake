@@ -146,6 +146,8 @@ class PrismaticMobilizer final : public MobilizerImpl<T, 1, 1> {
       const SpatialForce<T>& F_Mo_F,
       Eigen::Ref<VectorX<T>> tau) const final;
 
+  bool is_velocity_equal_to_qdot() const override { return true; }
+
   // Computes the kinematic mapping from generalized velocities v to time
   // derivatives of the generalized positions `q̇`. For this mobilizer `q̇ = v`.
   void MapVelocityToQDot(

@@ -188,6 +188,8 @@ TEST_F(QuaternionFloatingMobilizerTest, MapUsesN) {
   const Vector3d p_WB(1.0, 2.0, 3.0);
   mobilizer_->set_position(context_.get(), p_WB);
 
+  EXPECT_FALSE(mobilizer_->is_velocity_equal_to_qdot());
+
   // Set arbitrary v and MapVelocityToQDot
   const Vector6<double> v =
       (Vector6<double>() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished();

@@ -164,6 +164,8 @@ class PlanarMobilizer final : public MobilizerImpl<T, 3, 3> {
                            const SpatialForce<T>& F_Mo_F,
                            Eigen::Ref<VectorX<T>> tau) const override;
 
+  bool is_velocity_equal_to_qdot() const override { return true; }
+
   /* Performs the identity mapping from v to qdot since, for this mobilizer,
    v = q̇. */
   void MapVelocityToQDot(const systems::Context<T>& context,

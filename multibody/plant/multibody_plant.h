@@ -3303,6 +3303,14 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
                              const MultibodyForces<T>& forces,
                              VectorX<T>* generalized_forces) const;
 
+  /// Returns true iff the velocity vector is exactly the time derivative of
+  /// the positions. In this case MapQDotToVelocity() and MapVelocityToQDot()
+  /// implement the identity map.
+  bool IsVelocityEqualToQDot() const {
+    if (num_positions() != num_velocities()) { return false; }
+    return internal_tree().IsVelocityEqualToQDot();
+  }
+
   // Preserve access to base overload from this class.
   using systems::System<T>::MapVelocityToQDot;
 
