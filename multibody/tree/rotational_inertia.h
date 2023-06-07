@@ -566,16 +566,22 @@ class RotationalInertia {
     return std::pair(Imoment, R_EP);
   }
 
-  /// Performs several necessary checks to verify whether `this` rotational
-  /// inertia *could* be physically valid, including:
+  /// Performs several checks to verify whether `this` rotational inertia
+  /// *could* be physically valid, including:
   ///
   /// - No NaN moments or products of inertia.
   /// - Ixx, Iyy, Izz and principal moments are all non-negative.
   /// - Ixx, Iyy  Izz and principal moments satisfy the triangle inequality:
-  ///   - `Ixx + Iyy >= Izz`
-  ///   - `Ixx + Izz >= Iyy`
-  ///   - `Iyy + Izz >= Ixx`
+  ///   - `Ixx + Iyy + epsilon >= Izz`
+  ///   - `Ixx + Izz + epsilon >= Iyy`
+  ///   - `Iyy + Izz + epsilon >= Ixx`
   ///
+  /// @param[in] mass_dcm_squared non-negative real value that provides a
+  /// minimum guide for epsilon for the aforementioned triangle inequality.
+  /// If the calling function has information about the mass associated with
+  /// `this` and knows that `this` rotational inertia was shifted from an about-
+  /// point P to Bcm (center of mass), the calling function should pass
+  /// mass_dcm_squared = mass * p_PBcm.squaredNorm().
   /// @warning These checks are necessary (but NOT sufficient) conditions for a
   /// rotational inertia to be physically valid.  The sufficient condition
   /// requires a rotational inertia to satisfy the above checks *after* `this`
@@ -583,25 +589,29 @@ class RotationalInertia {
   /// calling CouldBePhysicallyValid() when the about-point is Bcm (the body's
   /// center of mass).  Note: this class does not know its about-point or its
   /// center of mass location.
-  ///
   /// @return `true` for a plausible rotational inertia passing the above
   ///          necessary but insufficient checks and `false` otherwise.
   /// @throws std::exception if principal moments of inertia cannot be
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
-  boolean<T> CouldBePhysicallyValid() const {
-    // To check the validity of rotational inertia use an epsilon value that is
+  boolean<T> CouldBePhysicallyValid(const T mass_dcm_squared = 0.0) const {
+    DRAKE_ASSERT(mass_dcm_squared >= 0.0);
+
+    // To check the validity of rotational inertia, use an epsilon value that is
     // a number related to machine precision multiplied by the largest possible
-    // element that can appear in a valid `this` rotational inertia.  Note: The
-    // largest product of inertia is at most half the largest moment of inertia.
+    // element that can appear in a valid `this` rotational inertia. Also use
+    // mass_dcm_squared to account for the loss of significant digits that can
+    // occur when shifting rotational inertia towards the center of mass.
     using std::max;
-    const double precision = 10 * std::numeric_limits<double>::epsilon();
+    const double precision = 16 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
+    const T max_inertia_for_epsilon =
+        max(mass_dcm_squared, max_possible_inertia_moment);
 
     // In order to avoid false negatives for inertias close to zero we use, in
     // addition to a relative tolerance of "precision", an absolute tolerance
     // equal to "precision" as well.
-    const T epsilon = precision * max(1.0, max_possible_inertia_moment);
+    const T epsilon = precision * max(1.0, max_inertia_for_epsilon);
 
     // Calculate principal moments of inertia p and then test these principal
     // moments to be mostly non-negative and also satisfy triangle inequality.

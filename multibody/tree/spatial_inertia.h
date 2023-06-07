@@ -524,7 +524,12 @@ class SpatialInertia {
       const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
       const RotationalInertia<T> I_SScm_E =
           G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
-      ret_value = I_SScm_E.CouldBePhysicallyValid();
+
+      // The triangle inequality test in CouldBePhysicallyValid() uses a
+      // tolerance (epsilon) that accounts for the significant digits that may
+      // be lost when subtracting mass * distance2 to shift from P to Scm.
+      const T mass_dcm_squared = mass_ * p_PScm_E_.squaredNorm();
+      ret_value = I_SScm_E.CouldBePhysicallyValid(mass_dcm_squared);
     }
     return ret_value;
   }
