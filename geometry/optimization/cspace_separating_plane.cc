@@ -10,12 +10,11 @@ namespace optimization {
 
 namespace {
 template <typename T>
-// typename std::enable_if_t<
-//              std::is_same_v<typename T::value, symbolic::Variable> ||
-//              std::is_same_v<typename T::value, double>>
-void InitializeCoeffVects(const VectorX<T>& decision_variables,
-                          Eigen::Matrix<T, 3, Eigen::Dynamic>* a_coeff,
-                          VectorX<T>* b_coeff) {
+typename std::enable_if<std::is_same_v<T, symbolic::Variable> ||
+                        std::is_same_v<T, double>>::type
+InitializeCoeffVects(const VectorX<T>& decision_variables,
+                     Eigen::Matrix<T, 3, Eigen::Dynamic>* a_coeff,
+                     VectorX<T>* b_coeff) {
   const int num_coeffs_per_poly = decision_variables.size() / 4;
   int var_count = 0;
   for (int i = 0; i < 3; ++i) {
