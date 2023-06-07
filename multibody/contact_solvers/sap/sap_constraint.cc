@@ -55,6 +55,27 @@ void SapConstraint<T>::CalcCostHessian(const AbstractValue& data,
 }
 
 template <typename T>
+void SapConstraint<T>::AccumulateGeneralizedImpulses(
+    int c, const Eigen::Ref<const VectorX<T>>& gamma,
+    EigenPtr<VectorX<T>> tau) const {
+  DRAKE_THROW_UNLESS(0 <= c && c < num_cliques());
+  DRAKE_THROW_UNLESS(gamma.size() == num_constraint_equations());
+  DRAKE_THROW_UNLESS(tau != nullptr);
+  DRAKE_THROW_UNLESS(tau->size() == num_velocities(c));
+  DoAccumulateGeneralizedImpulses(c, gamma, tau);
+}
+
+template <typename T>
+void SapConstraint<T>::AccumulateSpatialImpulses(
+    int o, const Eigen::Ref<const VectorX<T>>& gamma,
+    SpatialForce<T>* F) const {
+  DRAKE_THROW_UNLESS(0 <= o && o < num_objects());
+  DRAKE_THROW_UNLESS(gamma.size() == num_constraint_equations());
+  DRAKE_THROW_UNLESS(F != nullptr);
+  DoAccumulateSpatialImpulses(o, gamma, F);
+}
+
+template <typename T>
 std::unique_ptr<SapConstraint<T>> SapConstraint<T>::MakeReduced(
     const PartialPermutation& clique_permutation,
     const std::vector<std::vector<int>>& per_clique_known_dofs) const {

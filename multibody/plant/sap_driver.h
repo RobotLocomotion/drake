@@ -32,10 +32,11 @@ class CompliantContactManager;
 template <typename T>
 struct ContactProblemCache {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(ContactProblemCache);
+  // Cache entry to an empty contact problem.
   explicit ContactProblemCache(double time_step) {
     sap_problem =
         std::make_unique<contact_solvers::internal::SapContactProblem<T>>(
-            time_step);
+            time_step, std::vector<MatrixX<T>>(), VectorX<T>());
   }
   copyable_unique_ptr<contact_solvers::internal::SapContactProblem<T>>
       sap_problem;

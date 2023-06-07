@@ -596,12 +596,13 @@ void SapDriver<T>::AddBallConstraints(
 template <typename T>
 void SapDriver<T>::CalcContactProblemCache(
     const systems::Context<T>& context, ContactProblemCache<T>* cache) const {
-  SapContactProblem<T>& problem = *cache->sap_problem;
   std::vector<MatrixX<T>> A;
   CalcLinearDynamicsMatrix(context, &A);
   VectorX<T> v_star;
   CalcFreeMotionVelocities(context, &v_star);
-  problem.Reset(std::move(A), std::move(v_star));
+  cache->sap_problem = std::make_unique<SapContactProblem<T>>(
+      plant().time_step(), std::move(A), std::move(v_star));
+  SapContactProblem<T>& problem = *cache->sap_problem;
   // N.B. All contact constraints must be added before any other constraint
   // types. This driver assumes this ordering of the constraints in order to
   // extract contact impulses for reporting contact results.
