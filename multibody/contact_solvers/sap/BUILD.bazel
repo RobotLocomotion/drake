@@ -60,6 +60,7 @@ drake_cc_library(
         "//common:unused",
         "//common:value",
         "//multibody/contact_solvers:matrix_block",
+        "//multibody/math:spatial_algebra",
     ],
 )
 
@@ -223,6 +224,7 @@ drake_cc_googletest(
     deps = [
         ":sap_constraint",
         ":sap_contact_problem",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )

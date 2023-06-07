@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
 namespace multibody {
@@ -129,11 +131,26 @@ class SapContactProblem {
    @returns the index to the newly added constraint. */
   int AddConstraint(std::unique_ptr<SapConstraint<T>> constraint);
 
+  /* Sets the number of physical objects associated with this problem.
+   Constraints (added with AddConstraint()) that register objects will be
+   required to register object indices strictly lower than  num_objects().
+   See @ref sap_physical_forces. */
+  void set_num_objects(int num_objects) { num_objects_ = num_objects; }
+
+  /* The number of physical objects associated with this problem. See @ref
+   sap_physical_forces. */
+  int num_objects() const { return num_objects_; }
+
   /* Returns the number of cliques. */
   int num_cliques() const { return A_.size(); }
 
   /* Returns the total number of generalized velocities for this problem. */
   int num_velocities() const { return nv_; }
+
+  int velocities_start(int clique_index) const {
+    DRAKE_THROW_UNLESS(0 <= clique_index && clique_index < num_cliques());
+    return velocities_start_[clique_index];
+  }
 
   /* Returns the number of generalized velocities for clique with index
    `clique_index`. clique_index must be in the interval [0, num_cliques()). */
@@ -171,9 +188,30 @@ class SapContactProblem {
 
   const ContactProblemGraph& graph() const { return graph_; }
 
+  /* Compute generalized forces per DoF and spatial forces per object given
+   a known vector of impulses `gamma`.
+   @param[in] gamma Constraint impulses for this full problem. Of size
+   num_constraint_equations().
+   @param[out] generalized_forces On output, the set of generalized forces
+   result of the combined action of all constraints in `this` problem given the
+   known impulses `gamma`.
+   @param[out] spatial_forces On output, the set of spatial forces
+   result of the combined action of all constraints in `this` problem given the
+   known impulses `gamma`.
+
+   @throws if gamma.size() != num_constraint_equations().
+   @throws if either generalized_forces or spatial_forces is nullptr.
+   @throws if generalized_forces.size() != num_velocities().
+   @throws spatial_forces.size() != num_objects(). */
+  void CalcConstraintMultibodyForces(
+      const VectorX<T>& gamma, VectorX<T>* generalized_forces,
+      std::vector<SpatialForce<T>>* spatial_forces) const;
+
  private:
-  int nv_{0};                  // Total number of generalized velocities.
-  T time_step_{0.0};           // Discrete time step.
+  int nv_{0};           // Total number of generalized velocities.
+  T time_step_{0.0};    // Discrete time step.
+  int num_objects_{0};  // Number of physical objects.
+  std::vector<int> velocities_start_;
   std::vector<MatrixX<T>> A_;  // Linear dynamics matrix.
   VectorX<T> v_star_;          // Free-motion velocities.
   ContactProblemGraph graph_;  // Contact graph for this problem.

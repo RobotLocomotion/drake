@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
@@ -9,6 +10,7 @@
 #include "drake/common/value.h"
 #include "drake/multibody/contact_solvers/matrix_block.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint_jacobian.h"
+#include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
 namespace multibody {
@@ -68,6 +70,14 @@ class SapConstraint {
   /* Number of participating cliques. It will always return either one (1) or
    two (2). */
   int num_cliques() const { return J_.num_cliques(); }
+
+  /* Returns the clique index for the first clique (c = 0) or for the
+   second clique (c = 1).
+   @throws if c < 0 or c >= num_cliques().*/
+  int clique(int c) const {
+    DRAKE_THROW_UNLESS(0 <= c && c < num_cliques());
+    return J_.clique(c);
+  }
 
   int num_velocities(int clique) const {
     DRAKE_THROW_UNLESS(0 <= clique && clique < num_cliques());
@@ -154,6 +164,71 @@ class SapConstraint {
   */
   void CalcCostHessian(const AbstractValue& abstract_data, MatrixX<T>* G) const;
 
+  /* @name Physical forces
+   @anchor sap_physical_forces
+   Each SAP constraint leads to a set of impulses in the solution to their
+   corresponding SapContactProblem. These impulses map to physical generalized
+   and/or spatial forces on the physical objects being constrained. As an
+   example, a distance constraint leads to a single scalar impulse value,
+   however the actual physical forces are vectors that act along the direction
+   of the two points being constrained. These forces are applied on the objects
+   being constrained, e.g. a rigid body, deformable body or particle. It is the
+   specify constraint type that knows how to map these impulses to physical
+   generalized and/or spatial forces.
+   Constraints will register indexes associated with physical objects at
+   construction with RegisterObjects(). These indexes can then be used to
+   request spatial forces on each object via AccumulateSpatialImpulses().
+   Generalized impulses are reported on a per-clique basis via
+   AccumulateGeneralizedImpulses(). */
+  //@{
+
+  /* Number of physical objects constrained by `this` constraint.
+   At construction, specific constraints must call RegisterObjects() in order to
+   register indexes that correspond to these physical objects. */
+  int num_objects() const { return objects_.size(); }
+
+  /* Returns the vector of object indexes register with RegisterObjects(). */
+  const std::vector<int>& objects() const { return objects_; }
+
+  /* Returns the index for the o-the object constrained by `this` constraint.
+   @throws if o < 0 > or if o >= num_objects(). */
+  int object(int o) const {
+    DRAKE_THROW_UNLESS(0 <= o && o < num_objects());
+    return objects_[o];
+  }
+  //@}
+
+  /* Accumulates generalized impulses applied by this constraint on the c-th
+   clique.
+   @param[in] c The c-th clique of index clique(c).
+   @param[in] gamma Impulses for this constraint, of size
+   num_constraint_equations().
+   @param[out] tau On output this function will accumulate the generalized
+   impulses applied by this constraint on the c-th clique.
+
+   @throws if c < 0 or if c >= num_cliques().
+   @throws if gamma.size() != num_constraint_equations().
+   @throws if tau is the nullptr.
+   @throws if tau.size() != num_velocities(c). */
+  void AccumulateGeneralizedImpulses(int c,
+                                     const Eigen::Ref<const VectorX<T>>& gamma,
+                                     EigenPtr<VectorX<T>> tau) const;
+
+  /* Accumulates generalized impulses applied by this constraint the o-th
+   object.
+   @param[in] o The o-th object of index object(o).
+   @param[in] gamma Impulses for this constraint, of size
+   num_constraint_equations().
+   @param[out] tau On output this function will accumulate the spatial
+   impulse applied by this constraint on the o-th object.
+
+   @throws if c < 0 or if c >= num_cliques().
+   @throws if gamma.size() != num_constraint_equations().
+   @throws if F is the nullptr. */
+  void AccumulateSpatialImpulses(int o,
+                                 const Eigen::Ref<const VectorX<T>>& gamma,
+                                 SpatialForce<T>* F) const;
+
   /* Polymorphic deep-copy into a new instance. */
   std::unique_ptr<SapConstraint<T>> Clone() const { return DoClone(); }
 
@@ -162,8 +237,17 @@ class SapConstraint {
    implementation of DoClone(). */
   SapConstraint(const SapConstraint&) = default;
 
-  /* Helper to pack `data` of type `U` into an AbstractValue.
-   Derived constraint classes can use this helper to implement DoMakeData(). */
+  /* Derived constraints must register the indexes of the objects they
+   constraint. After this call, num_objects() will equal objects.size(). See
+   @ref sap_physical_forces.
+   @throws if called more than once. */
+  void RegisterObjects(std::vector<int> objects) {
+    DRAKE_THROW_UNLESS(num_objects() == 0);
+    objects_ = std::move(objects);
+  }
+
+  /* Helper to pack `data` of type `U` into an AbstractValue. Derived constraint
+   classes can use this helper to implement DoMakeData(). */
   template <typename U>
   static std::unique_ptr<AbstractValue> MoveAndMakeAbstractValue(U&& data) {
     auto owned_data = std::make_unique<U>(std::move(data));
@@ -185,7 +269,23 @@ class SapConstraint {
                              EigenPtr<VectorX<T>> gamma) const = 0;
   virtual void DoCalcCostHessian(const AbstractValue& data,
                                  MatrixX<T>* G) const = 0;
-
+  virtual void DoAccumulateGeneralizedImpulses(
+      int, const Eigen::Ref<const VectorX<T>>&, EigenPtr<VectorX<T>>) const {
+    // TODO(amcastro-tri): Temporarily, the default implementation is a no-op
+    // until the full resolution of #19435. Once all constraints report forces,
+    // this function will be pure virtual.
+    throw std::logic_error(
+        "Constraints must implement this function. See #19435. ");
+  }
+  virtual void DoAccumulateSpatialImpulses(int,
+                                           const Eigen::Ref<const VectorX<T>>&,
+                                           SpatialForce<T>*) const {
+    // TODO(amcastro-tri): Temporarily, the default implementation is a no-op
+    // until the full resolution of #19435. Once all constraints report forces,
+    // this function will be pure virtual.
+    throw std::logic_error(
+        "Constraints must implement this function. See #19435. ");
+  }
   /* Clone() implementation. Derived classes must override to provide
    polymorphic deep-copy into a new instance. */
   virtual std::unique_ptr<SapConstraint<T>> DoClone() const = 0;
@@ -193,6 +293,7 @@ class SapConstraint {
 
  private:
   SapConstraintJacobian<T> J_;
+  std::vector<int> objects_;
 };
 
 }  // namespace internal
