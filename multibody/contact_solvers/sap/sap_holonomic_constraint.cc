@@ -37,7 +37,7 @@ template <typename T>
 SapHolonomicConstraint<T>::SapHolonomicConstraint(VectorX<T> g,
                                                   SapConstraintJacobian<T> J,
                                                   Parameters parameters)
-    : SapConstraint<T>(std::move(J)),
+    : SapConstraint<T>(std::move(J), {}),
       g_(std::move(g)),
       parameters_(std::move(parameters)) {
   DRAKE_THROW_UNLESS(g_.size() == this->jacobian().rows());
@@ -50,7 +50,7 @@ SapHolonomicConstraint<T>::SapHolonomicConstraint(VectorX<T> g,
                                                   SapConstraintJacobian<T> J,
                                                   VectorX<T> b,
                                                   Parameters parameters)
-    : SapConstraint<T>(std::move(J)),
+    : SapConstraint<T>(std::move(J), {}),
       g_(std::move(g)),
       bias_(std::move(b)),
       parameters_(std::move(parameters)) {

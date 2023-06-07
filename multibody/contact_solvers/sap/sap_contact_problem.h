@@ -1,12 +1,14 @@
 #pragma once
 
 #include <memory>
+#include <set>
 #include <vector>
 
 #include "drake/common/drake_copyable.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
 namespace multibody {
@@ -58,18 +60,6 @@ class SapContactProblem {
   SapContactProblem(SapContactProblem&&) = default;
   SapContactProblem& operator=(SapContactProblem&&) = default;
 
-  /* Constructs an empty contact problem. Typically used to cheaply instantiate
-   a problem within a container. Since `this` problem does not yet store any
-   data, it is in an invalid state until Reset() is called.
-
-   @param[in] time_step
-     The time step used to discretize the dynamics in time, it must be
-     strictly positive. E.g. the time step used to write an implicit Euler
-     scheme of the dynamics.
-
-   @throws exception if time_step is not strictly positive. */
-  explicit SapContactProblem(const T& time_step);
-
   /* Constructs a SAP contact problem for a system of equations discretized with
    a given `time_step` provided its linear dynamics matrix A and free motion
    velocities v*. See this class's documentation for details.
@@ -97,29 +87,6 @@ class SapContactProblem {
    @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
   SapContactProblem(const T& time_step, std::vector<MatrixX<T>> A,
                     VectorX<T> v_star);
-
-  /* A call to this member function resets the contact problem and effectively
-   removes any existing constraints. The problem will have a new number of
-   cliques and generalized velocities according to the sizes of `A` and `v_star`
-   and no constraints. The time step is preserved, see time_step().
-
-   @param[in] A
-     SPD approximation of the linearized dynamics, [Castro et al., 2021]. This
-     matrix is block diagonal with each block corresponding to a "clique". The
-     number of cliques is A.size() and the number of DOFs in the c-th clique
-     is A[c].rows() (or A[c].cols() since each block is square). The total
-     number of generalized velocities of the system is nv = ∑A[c].rows().
-     This class does not check for the positive definiteness of each block in
-     A, it is the responsibility of the calling code to enforce this
-     invariant. Ultimately, the SAP solver can fail to converge if this
-     requirement is not satisfied.
-   @param[in] v_star
-     Free-motion velocities, of size nv. DOFs in v_star must match the
-     ordering implicitly induced by A.
-
-   @throws exception if the blocks in A are not square.
-   @throws exception if the size of v_star is not nv = ∑A[c].rows(). */
-  void Reset(std::vector<MatrixX<T>> A, VectorX<T> v_star);
 
   /* Returns a deep-copy of `this` instance. */
   std::unique_ptr<SapContactProblem<T>> Clone() const;
@@ -161,7 +128,7 @@ class SapContactProblem {
    for v_star. It could be useful for deformables. */
 
   /* Adds `constraint` to this problem.
-   @throws exception if the clique indexes referenced by `constraint` are not in
+   @throws exception if the clique indices referenced by `constraint` are not in
    the range [0, num_cliques()).
    @throws exception if the number of columns of the Jacobian matrices in
    `constraint` is not consistent with the number of velocities for the cliques
@@ -169,11 +136,33 @@ class SapContactProblem {
    @returns the index to the newly added constraint. */
   int AddConstraint(std::unique_ptr<SapConstraint<T>> constraint);
 
+  /* Sets the number of physical objects associated with this problem.
+   This call must be performed before any constraints are added to the problem,
+   or an exception is thrown. Constraints (added with AddConstraint()) that
+   register objects will be required to register object indices strictly lower
+   than num_objects(). See @ref sap_physical_forces.
+   @throws if num_constraints() > 0. */
+  void set_num_objects(int num_objects);
+
+  /* The number of physical objects associated with this problem. See @ref
+   sap_physical_forces. */
+  int num_objects() const { return num_objects_; }
+
   /* Returns the number of cliques. */
   int num_cliques() const { return A_.size(); }
 
   /* Returns the total number of generalized velocities for this problem. */
   int num_velocities() const { return nv_; }
+
+  /* Returns the index to the first velocity for a given clique, within the
+   full vector of generalized velocities for the entire problem.
+   That is, with v the full vector of generalized velocities for this problem,
+   v.segment(velocities_start(c), num_velocities(c)) corresponds to the vector
+   of generalized velocities for the c-th clique. */
+  int velocities_start(int clique_index) const {
+    DRAKE_THROW_UNLESS(0 <= clique_index && clique_index < num_cliques());
+    return velocities_start_[clique_index];
+  }
 
   /* Returns the number of generalized velocities for clique with index
    `clique_index`. clique_index must be in the interval [0, num_cliques()). */
@@ -211,9 +200,30 @@ class SapContactProblem {
 
   const ContactProblemGraph& graph() const { return graph_; }
 
+  /* Compute generalized forces per DoF and spatial forces per object given
+   a known vector of impulses `gamma`.
+   @param[in] gamma Constraint impulses for this full problem. Of size
+   num_constraint_equations().
+   @param[out] generalized_forces On output, the set of generalized forces
+   result of the combined action of all constraints in `this` problem given the
+   known impulses `gamma`.
+   @param[out] spatial_forces On output, the set of spatial forces
+   result of the combined action of all constraints in `this` problem given the
+   known impulses `gamma`.
+
+   @throws if gamma.size() != num_constraint_equations().
+   @throws if either generalized_forces or spatial_forces is nullptr.
+   @throws if generalized_forces.size() != num_velocities().
+   @throws spatial_forces.size() != num_objects(). */
+  void CalcConstraintMultibodyForces(
+      const VectorX<T>& gamma, VectorX<T>* generalized_forces,
+      std::vector<SpatialForce<T>>* spatial_forces) const;
+
  private:
-  int nv_{0};                  // Total number of generalized velocities.
-  T time_step_{0.0};           // Discrete time step.
+  int nv_{0};           // Total number of generalized velocities.
+  T time_step_{0.0};    // Discrete time step.
+  int num_objects_{0};  // Number of physical objects.
+  std::vector<int> velocities_start_;
   std::vector<MatrixX<T>> A_;  // Linear dynamics matrix.
   VectorX<T> v_star_;          // Free-motion velocities.
   ContactProblemGraph graph_;  // Contact graph for this problem.

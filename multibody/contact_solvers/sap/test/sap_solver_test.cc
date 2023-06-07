@@ -682,7 +682,7 @@ class LimitConstraint final : public SapConstraint<T> {
   // limit vu and regularization R.
   LimitConstraint(int clique, const VectorX<T>& vl, const VectorX<T>& vu,
                   VectorX<T> R)
-      : SapConstraint<T>({clique, CalcConstraintJacobian(vl.size())}),
+      : SapConstraint<T>({clique, CalcConstraintJacobian(vl.size())}, {}),
         R_(std::move(R)),
         vhat_(ConcatenateVectors(vl, -vu)) {
     DRAKE_DEMAND(vl.size() == vu.size());
@@ -790,7 +790,6 @@ class SapNewtonIterationTest
  public:
   void SetUp() override {
     const double time_step = 0.01;
-    sap_problem_ = std::make_unique<SapContactProblem<double>>(time_step);
 
     // Arbitrary non-identity SPD matrices to build the dynamics matrix A.
     // clang-format off
@@ -828,7 +827,8 @@ class SapNewtonIterationTest
     v_star_ = v_star;
 
     std::vector<MatrixXd> A = {S22, S33, S44};
-    sap_problem_->Reset(std::move(A), std::move(v_star));
+    sap_problem_ = std::make_unique<SapContactProblem<double>>(
+        time_step, std::move(A), std::move(v_star));
 
     constexpr int num_limit_constraint_equations = 2 * clique1_nv;
     VectorXd R = VectorXd::Constant(num_limit_constraint_equations, 1.0e-3);
