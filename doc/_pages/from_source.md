@@ -152,19 +152,19 @@ You will also need to have your ``PYTHONPATH`` configured correctly.
 
 ```bash
 cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.8/site-packages:${PYTHONPATH}
+export PYTHONPATH=${PWD}/lib/python3.8/site-packages:${PYTHONPATH}
 ```
 
 *Ubuntu 22.04 (Jammy):*
 
 ```bash
 cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.10/site-packages:${PYTHONPATH}
+export PYTHONPATH=${PWD}/lib/python3.10/site-packages:${PYTHONPATH}
 ```
 
 *macOS:*
 
 ```bash
 cd drake-build
-export PYTHONPATH=${PWD}/install/lib/python3.9/site-packages:${PYTHONPATH}
+export PYTHONPATH=${PWD}/lib/python3.9/site-packages:${PYTHONPATH}
 ```
