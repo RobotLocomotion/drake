@@ -688,10 +688,7 @@ void SapDriver<T>::AddWeldConstraints(
     // Constraint function at current time step.
     const Vector6<T> g0 = (Vector6<T>() << a0_N, p_FpFq_N).finished();
 
-    drake::log()->info(fmt::format("g0: {}", g0));
-
     Matrix3<T> R_NW = X_WN.rotation().matrix().transpose();
-
     if (single_tree) {
       const TreeIndex tree_index =
           treeA_index.is_valid() ? treeA_index : treeB_index;
@@ -701,7 +698,7 @@ void SapDriver<T>::AddWeldConstraints(
       // Re-express the Jacobian in frame N.
       MatrixX<T> Jtree_N(Jtree_W.rows(), Jtree_W.cols());
       Jtree_N << R_NW * Jtree_W.middleRows(0, 3),
-          R_NW * Jtree_W.middleRows(3, 3);
+                 R_NW * Jtree_W.middleRows(3, 3);
       SapConstraintJacobian<T> J(tree_index, std::move(Jtree_N));
       problem->AddConstraint(std::make_unique<SapHolonomicConstraint<T>>(
           g0, std::move(J), parameters));
