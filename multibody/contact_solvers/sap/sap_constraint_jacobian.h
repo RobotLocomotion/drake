@@ -88,16 +88,16 @@ class SapConstraintJacobian {
   /* Returns the clique index for the first clique (local_index = 0) or the
    second clique (local_index = 1). Refer to the constructor's documentation for
    details. */
-  int clique(int local_clique) const {
-    DRAKE_DEMAND(0 <= local_clique && local_clique < num_cliques());
-    return clique_jacobians_[local_clique].clique;
+  int clique(int local_index) const {
+    DRAKE_DEMAND(0 <= local_index && local_index < num_cliques());
+    return clique_jacobians_[local_index].clique;
   }
 
   /* Returns the Jacobian block for the first clique (local_index = 0) or the
    second clique (local_index = 1). */
-  const MatrixBlock<T>& clique_jacobian(int local_clique) const {
-    DRAKE_DEMAND(local_clique < num_cliques());
-    return clique_jacobians_[local_clique].block;
+  const MatrixBlock<T>& clique_jacobian(int local_index) const {
+    DRAKE_DEMAND(local_index < num_cliques());
+    return clique_jacobians_[local_index].block;
   }
 
  private:

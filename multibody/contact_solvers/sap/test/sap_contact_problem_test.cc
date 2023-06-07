@@ -1,7 +1,10 @@
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 
+#include <set>
+
 #include <gtest/gtest.h>
 
+#include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
 
@@ -37,18 +40,22 @@ const Eigen::Matrix4d S44 =
 class TestConstraint final : public SapConstraint<double> {
  public:
   // Constructor for a constraint on a single clique.
+  // No objects are registered.
   TestConstraint(int num_constraint_equations, int clique, int clique_nv)
       : SapConstraint<double>(
             {clique, MatrixXd::Zero(num_constraint_equations, clique_nv)}) {}
 
   // Constructor for a constraint between two cliques.
+  // Registers objects with index first_clique and second_clique, for testing.
   TestConstraint(int num_constraint_equations, int first_clique,
                  int first_clique_nv, int second_clique, int second_clique_nv)
       : SapConstraint<double>(
             {first_clique,
              MatrixXd::Zero(num_constraint_equations, first_clique_nv),
              second_clique,
-             MatrixXd::Zero(num_constraint_equations, second_clique_nv)}) {}
+             MatrixXd::Zero(num_constraint_equations, second_clique_nv)}) {
+    this->RegisterObjects({first_clique, second_clique});
+  }
 
   // N.B no-op overloads to allow us compile this testing constraint. These
   // methods are only tested for specific derived classes, not in this file.
@@ -64,6 +71,22 @@ class TestConstraint final : public SapConstraint<double> {
 
  private:
   TestConstraint(const TestConstraint&) = default;
+
+  // Accumulates an arbitrary functional form for testing.
+  void DoAccumulateGeneralizedImpulses(int c,
+                                       const Eigen::Ref<const VectorXd>& gamma,
+                                       EigenPtr<VectorXd> tau) const final {
+    *tau += VectorXd::Ones(this->num_velocities(c)) * gamma.sum();
+  }
+
+  void DoAccumulateSpatialImpulses(int o,
+                                   const Eigen::Ref<const VectorXd>& gamma,
+                                   SpatialForce<double>* F) const final {
+    // Vector6d v6 = o * gamma.sum() *
+    // Vector6d::Ones();
+    Vector6d v6 = o * Vector6d::Ones() * gamma.sum();
+    *F += SpatialForce<double>(v6);
+  }
 
   std::unique_ptr<SapConstraint<double>> DoClone() const final {
     return std::unique_ptr<TestConstraint>(new TestConstraint(*this));
@@ -162,6 +185,10 @@ GTEST_TEST(ContactProblem, AddConstraintWithWrongArguments) {
    │                       │
    └───────────────────────┘
          2[2, 4](6,5)
+
+  TestConstraint with two cliques registers objects with index equal to the
+  clique indexes. Therefore we expect the problem to have 3 objects with indexes
+  0, 1 and 3.
 */
 void AddConstraints(SapContactProblem<double>* problem) {
   auto add_and_verify_access =
@@ -193,11 +220,16 @@ GTEST_TEST(ContactProblem, AddConstraints) {
   const double time_step = 0.01;
   const std::vector<MatrixXd> A{S22, S33, S44, S22};
   const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
-  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star),
+                                    4);
   AddConstraints(&problem);
 
   EXPECT_EQ(problem.num_constraints(), 5);
   EXPECT_EQ(problem.num_constraint_equations(), 17);
+
+  // Verify object registration.
+  EXPECT_EQ(problem.num_objects(), 4);
+  EXPECT_EQ(problem.objects(), (std::set{0, 1, 3}));
 
   // Verify graph for this problem.
   const ContactProblemGraph& graph = problem.graph();
@@ -221,7 +253,7 @@ GTEST_TEST(ContactProblem, Reset) {
   // problem.
   const std::vector<MatrixXd> A{S22, S33, S44, S22};
   const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
-  problem.Reset(std::move(A), std::move(v_star));
+  problem.Reset(std::move(A), std::move(v_star), 4);
   AddConstraints(&problem);
   EXPECT_EQ(problem.num_cliques(), 4);
   EXPECT_EQ(problem.num_velocities(), 11);
@@ -242,7 +274,8 @@ GTEST_TEST(ContactProblem, Clone) {
   const double time_step = 0.01;
   const std::vector<MatrixXd> A{S22, S33, S44, S22};
   const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
-  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star),
+                                    4);
   AddConstraints(&problem);
 
   std::unique_ptr<SapContactProblem<double>> clone = problem.Clone();
@@ -257,6 +290,79 @@ GTEST_TEST(ContactProblem, Clone) {
   EXPECT_EQ(graph.num_constraints(), 5);
   EXPECT_EQ(graph.num_clusters(), 4);
   EXPECT_EQ(graph.num_constraint_equations(), 17);
+}
+
+GTEST_TEST(ContactProblem, CalcConstraintMultibodyForces) {
+  const double time_step = 0.01;
+  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star),
+                                    4);
+  AddConstraints(&problem);
+
+  // Arbitrary vector of impulse values.
+  const VectorXd gamma =
+      VectorXd::LinSpaced(problem.num_constraint_equations(), -12.3, 24.5);
+
+  // Compute the multibody forces resulting from the set of constraints in the
+  // entire problem, given the known vector of impulses `gamma` for the problem.
+  VectorXd tau = VectorXd::Zero(problem.num_velocities());
+  std::vector<SpatialForce<double>> spatial_forces(
+      problem.num_objects(), SpatialForce<double>::Zero());
+  problem.CalcConstraintMultibodyForces(gamma, &tau, &spatial_forces);
+
+  // Computed expected generalized forces due to the entire set of constraint in
+  // problem. We know each constraint contributes:
+  //  tau_c = time_step * E * gamma_c.sum()
+  // where E is the vector of all ones.
+  VectorXd tau_expected = VectorXd::Zero(problem.num_velocities());
+  int offset = 0;
+  for (int i = 0; i < problem.num_constraints(); ++i) {
+    const auto& constraint = problem.get_constraint(i);
+    const int ne = constraint.num_constraint_equations();
+    const auto gamma_c = gamma.segment(offset, ne);
+    for (int c = 0; c < constraint.num_cliques(); ++c) {
+      const int clique = constraint.clique(c);
+      tau_expected
+          .segment(problem.velocities_start(clique),
+                   problem.num_velocities(clique))
+          .array() += gamma_c.sum();
+    }
+    offset += ne;
+  }
+  tau_expected /= problem.time_step();
+
+  EXPECT_TRUE(CompareMatrices(tau, tau_expected,
+                              std::numeric_limits<double>::epsilon(),
+                              MatrixCompareType::relative));
+
+  // TestConstraint applies spatial force:
+  // F = (time_step + local_object) * gamma.sum() * Vector6d::Ones().
+  std::vector<SpatialForce<double>> spatial_forces_expected(
+      problem.num_objects(), SpatialForce<double>::Zero());
+  offset = 0;
+  for (int i = 0; i < problem.num_constraints(); ++i) {
+    const auto& constraint = problem.get_constraint(i);
+    const int ne = constraint.num_constraint_equations();
+    const auto gamma_c = gamma.segment(offset, ne);
+
+    for (int o = 0; o < constraint.num_objects(); ++o) {
+      const int object = constraint.object(o);
+      spatial_forces_expected[object].get_coeffs().array() +=
+          (o * gamma_c.sum());
+    }
+    offset += ne;
+  }
+  for (SpatialForce<double>& F : spatial_forces_expected) {
+    F.get_coeffs() /= problem.time_step();
+  }
+
+  for (int object = 0; object < problem.num_objects(); ++object) {
+    EXPECT_TRUE(CompareMatrices(spatial_forces[object].get_coeffs(),
+                                spatial_forces_expected[object].get_coeffs(),
+                                std::numeric_limits<double>::epsilon(),
+                                MatrixCompareType::relative));
+  }
 }
 
 }  // namespace
