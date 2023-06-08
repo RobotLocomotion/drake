@@ -960,7 +960,16 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidHasReasonableTolerance) {
   I_BBcm_B = RotationalInertia<double>(0.01/M_PI, 0.01/M_PI, 0.02/M_PI);
   p_BoBcm_B = Vector3<double>(10, 20, 30);
   DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
-    SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B))
+    SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+
+  // Test a spatial inertia constructor with similar pre-June 2023 problems.
+  // I_BBcm_B calculates principal moments of inertia of
+  // [0.0  20.833333333332575  20.833333333333712] which violates the triangle
+  // inequality by ≈ 1.14E-12.
+  const UnitInertia<double> G_BBcm_B = M_BBcm_B.get_unit_inertia();
+  const UnitInertia<double> G_BBo_B = G_BBcm_B.ShiftFromCenterOfMass(p_BoBcm_B);
+  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
+     SpatialInertia(mass, p_BoBcm_B, G_BBo_B));
 }
 
 // Tests IsPhysicallyValid() fails within the constructor since the COM given is

@@ -587,13 +587,14 @@ class RotationalInertia {
   /// requires a rotational inertia to satisfy the above checks *after* `this`
   /// is shifted to the center of mass, i.e., the sufficient condition requires
   /// calling CouldBePhysicallyValid() when the about-point is Bcm (the body's
-  /// center of mass).  Note: this class does not know its about-point or its
-  /// center of mass location.
+  /// center of mass). Note: this class does not know its about-point or its
+  /// center of mass location. The parameter @p mass_dcm_squared is intended to
+  /// indirectly inform this function about mass and shift to center of mass.
   /// @return `true` for a plausible rotational inertia passing the above
-  ///          necessary but insufficient checks and `false` otherwise.
-  /// @throws std::exception if principal moments of inertia cannot be
-  ///         calculated (eigenvalue solver) or if scalar type T cannot be
-  ///         converted to a double.
+  /// necessary but insufficient checks and `false` otherwise.
+  /// @throws std::exception if principal moments of inertia cannot be computed
+  /// (eigenvalue solver), or if scalar type T cannot be converted to a double,
+  /// or is mass_dcm_squared < 0.
   boolean<T> CouldBePhysicallyValid(const T mass_dcm_squared = 0.0) const {
     DRAKE_ASSERT(mass_dcm_squared >= 0.0);
 
