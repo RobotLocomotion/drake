@@ -8,4 +8,6 @@
 using drake::FindResourceOrThrow;
 
 // No-op.
-int main() { return 0; }
+int main() {
+  return 0;
+}
