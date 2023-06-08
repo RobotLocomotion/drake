@@ -439,6 +439,34 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
 }
 
 template <typename T>
+std::pair<Vector3<double>, drake::math::RigidTransform<double>>
+SpatialInertia<T>::CalcPrincipalHalfLengthsAndPoseForEquivalentShape(
+    double inertia_shape_factor) const {
+  // Get position vector from P (`this` spatial inertia's about point) to
+  // Scm (`this` spatial inertia's center of mass), expressed in frame E.
+  const Vector3<T>& p_PScm_E = get_com();
+
+  // Shift `this` spatial inertia's unit inertia from P to Scm.
+  const UnitInertia<T>& G_SP_E = get_unit_inertia();
+  const UnitInertia<T> G_SScm_E = G_SP_E.ShiftToCenterOfMass(p_PScm_E);
+
+  // Form the principal semi-diameters (half-lengths) and rotation matrix R_EA
+  // that contains the associated principal axes directions Ax, Ay, Az.
+  const auto [abc, R_EA] =
+      G_SScm_E.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          inertia_shape_factor);
+
+  // Since R_EA is of type double and X_EA must also be of type double,
+  // create a position vector from P to Scm that is of type double.
+  const double xcm = ExtractDoubleOrThrow(p_PScm_E(0));
+  const double ycm = ExtractDoubleOrThrow(p_PScm_E(1));
+  const double zcm = ExtractDoubleOrThrow(p_PScm_E(2));
+  const Vector3<double> p_PAo_E(xcm, ycm, zcm);  // Note: Point Ao is at Scm.
+  const drake::math::RigidTransform<double> X_EA(R_EA, p_PAo_E);
+  return std::pair(abc, X_EA);
+}
+
+template <typename T>
 void SpatialInertia<T>::WriteExtraCentralInertiaProperties(
     std::string* message) const {
   DRAKE_DEMAND(message != nullptr);

@@ -1,7 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <limits>
 #include <string>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/drake_assert.h"
@@ -475,6 +477,24 @@ class UnitInertia : public RotationalInertia<T> {
   }
   // End of Doxygen group
   //@}
+
+#ifndef DRAKE_DOXYGEN_CXX
+  // (Internal use only)
+  // @see SpatialInertia::CalcPrincipalHalfLengthsAndPoseForEquivalentShape()
+  // for documentation, formulas, and details on @p inertia_shape_factor.
+  // @returns 3 principal ½-lengths [lmax lmed lmin] sorted in descending order
+  // (lmax ≥ lmed ≥ lmin) and their associated principal directions [Ax Ay Az]
+  // stored in columns of the returned rotation matrix R_EA.
+  // @throws std::exception if the elements of `this` unit inertia cannot
+  // be converted to a real finite double. For example, an exception is thrown
+  // if `this` contains an erroneous NaN or if scalar type T is symbolic.
+  // @throws std::exception if inertia_shape_factor ≤ 0 or > 1.
+  // See @ref spatial_inertia_equivalent_shapes
+  // "Spatial inertia equivalent shapes" for more details.
+  std::pair<Vector3<double>, math::RotationMatrix<double>>
+  CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+      double inertia_shape_factor) const;
+#endif
 
   // Disable operators that may result in non-unit inertias
   // (these operators *are* defined in the RotationalInertia class).
