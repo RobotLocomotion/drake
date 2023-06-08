@@ -87,8 +87,6 @@ void CheckQuaternion(const Eigen::Quaternion<Expression>&) {}
 
 void CheckAngleAxis(const Eigen::AngleAxis<Expression>&) {}
 
-}  // namespace
-
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
   // Do not return references to matrices (e.g. `Eigen::Ref<>`) so that we have
@@ -411,6 +409,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
     DefCast<T>(&cls, kCastDoc);
   }
 }
+
+}  // namespace
 
 PYBIND11_MODULE(eigen_geometry, m) {
   m.doc() = "Bindings for Eigen geometric types.";
