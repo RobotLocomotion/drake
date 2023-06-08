@@ -8,6 +8,7 @@
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/multibody/plant/multibody_plant.h"
+#include "drake/planning/collision_checker.h"
 
 namespace drake {
 namespace geometry {
@@ -192,6 +193,11 @@ run-time of the algorithm. The same goes for
 HPolyhedron IrisInConfigurationSpace(
     const multibody::MultibodyPlant<double>& plant,
     const systems::Context<double>& context,
+    const IrisOptions& options = IrisOptions());
+
+HPolyhedron IrisInConfigurationSpace(
+    const planning::CollisionChecker& collision_checker,
+    const Eigen::Ref<const Eigen::VectorXd>& q_seed,
     const IrisOptions& options = IrisOptions());
 
 }  // namespace optimization

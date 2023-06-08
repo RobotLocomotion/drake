@@ -1,11 +1,16 @@
 #include "drake/geometry/optimization/iris_internal.h"
 
+#include <algorithm>
 #include <limits>
+#include <utility>
+
+#include <fmt/format.h>
 
 namespace drake {
 namespace geometry {
 namespace optimization {
 namespace internal {
+const double kInf = std::numeric_limits<double>::infinity();
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -160,6 +165,72 @@ bool ClosestCollisionProgram::Solve(
     return true;
   }
   return false;
+}
+
+InCollisionConstraint::InCollisionConstraint(
+    SortedPair<multibody::BodyIndex> body_pair,
+    const planning::CollisionChecker& collision_checker,
+    double influence_distance)
+    : solvers::Constraint(1, collision_checker.plant().num_positions(),
+                          Vector1d(-kInf), Vector1d(0)),
+      body_pair_{std::move(body_pair)},
+      collision_checker_{&collision_checker},
+      influence_distance_{influence_distance} {
+  if (collision_checker_->IsCollisionFilteredBetween(body_pair_.first(),
+                                                     body_pair_.second())) {
+    throw std::runtime_error(fmt::format(
+        "InCollisionConstraint(): collision between the body {} and {} is "
+        "filtered",
+        collision_checker_->plant().get_body(body_pair_.first()).name(),
+        collision_checker_->plant().get_body(body_pair_.second()).name()));
+  }
+}
+
+void InCollisionConstraint::DoEval(const Eigen::Ref<const Eigen::VectorXd>& x,
+                                   Eigen::VectorXd* y) const {
+  y->resize(1);
+  const planning::RobotClearance robot_clearance =
+      collision_checker_->CalcRobotClearance(x, influence_distance_);
+  // Loop through every entry in robot_clearance, find the smallest distance for
+  // that pair of bodies.
+  (*y)(0) = influence_distance_;
+  for (int i = 0; i < robot_clearance.size(); ++i) {
+    if (SortedPair<multibody::BodyIndex>(robot_clearance.robot_indices()[i],
+                                         robot_clearance.other_indices()[i]) ==
+        body_pair_) {
+      (*y)(0) = std::min((*y)(0), robot_clearance.distances()(i));
+    }
+  }
+}
+
+void InCollisionConstraint::DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
+                                   AutoDiffVecXd* y) const {
+  y->resize(1);
+  const Eigen::VectorXd q_val = math::ExtractValue(x);
+  const Eigen::MatrixXd q_grad = math::ExtractGradient(x);
+  const planning::RobotClearance robot_clearance =
+      collision_checker_->CalcRobotClearance(q_val, influence_distance_);
+  // Loop through every entry in robot_clearance, find the smallest distance for
+  // that pair of bodies.
+  (*y)(0).value() = influence_distance_;
+  for (int i = 0; i < robot_clearance.size(); ++i) {
+    if (SortedPair<multibody::BodyIndex>(robot_clearance.robot_indices()[i],
+                                         robot_clearance.other_indices()[i]) ==
+        body_pair_) {
+      if (robot_clearance.distances()(i) < (*y)(0).value()) {
+        (*y)(0).value() = robot_clearance.distances()(i);
+        (*y)(0).derivatives() =
+            (robot_clearance.jacobians().row(i) * q_grad).transpose();
+      }
+    }
+  }
+}
+
+void InCollisionConstraint::DoEval(
+    const Eigen::Ref<const VectorX<symbolic::Variable>>&,
+    VectorX<symbolic::Expression>*) const {
+  throw std::runtime_error(
+      "InCollisionConstraint doesn't support Eval with symbolic variable.");
 }
 }  // namespace internal
 }  // namespace optimization
