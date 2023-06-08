@@ -57,6 +57,7 @@ install(
 )
 
 add_lint_tests(
+    enable_clang_format_lint = False,
     enable_install_lint = False,
     enable_library_lint = False,
 )
