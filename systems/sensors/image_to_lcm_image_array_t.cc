@@ -30,8 +30,7 @@ void Compress(const Image<kPixelType>& image, lcmt_image* msg) {
   dest.resize(dest_size);
 
   auto compress_status = compress2(
-      dest.data(), &dest_size,
-      reinterpret_cast<const Bytef*>(image.at(0, 0)),
+      dest.data(), &dest_size, reinterpret_cast<const Bytef*>(image.at(0, 0)),
       source_size, Z_BEST_SPEED);
   DRAKE_DEMAND(compress_status == Z_OK);
 
@@ -132,8 +131,9 @@ void PackImageToLcmImageT(const AbstractValue& untyped_image,
 
 ImageToLcmImageArrayT::ImageToLcmImageArrayT(bool do_compress)
     : do_compress_(do_compress) {
-  image_array_t_msg_output_port_index_ = DeclareAbstractOutputPort(
-      kUseDefaultName, &ImageToLcmImageArrayT::CalcImageArray)
+  image_array_t_msg_output_port_index_ =
+      DeclareAbstractOutputPort(kUseDefaultName,
+                                &ImageToLcmImageArrayT::CalcImageArray)
           .get_index();
 }
 
@@ -149,8 +149,9 @@ ImageToLcmImageArrayT::ImageToLcmImageArrayT(const string& color_frame_name,
   label_image_input_port_index_ =
       DeclareImageInputPort<PixelType::kLabel16I>(label_frame_name).get_index();
 
-  image_array_t_msg_output_port_index_ = DeclareAbstractOutputPort(
-      kUseDefaultName, &ImageToLcmImageArrayT::CalcImageArray)
+  image_array_t_msg_output_port_index_ =
+      DeclareAbstractOutputPort(kUseDefaultName,
+                                &ImageToLcmImageArrayT::CalcImageArray)
           .get_index();
 }
 
@@ -186,8 +187,8 @@ void ImageToLcmImageArrayT::CalcImageArray(
   // carefully work to reuse our message vectors' storage instead of clearing
   // it on every call.  (The headers are small, though, so we'll still clear
   // them.)
-  const int64_t utime = static_cast<int64_t>(
-      context.get_time() * kSecToMillisec);
+  const int64_t utime =
+      static_cast<int64_t>(context.get_time() * kSecToMillisec);
   msg->header = {};
   msg->header.utime = utime;
   const int num_inputs = num_input_ports();
@@ -196,8 +197,8 @@ void ImageToLcmImageArrayT::CalcImageArray(
   for (int i = 0; i < num_inputs; i++) {
     const std::string& name = this->get_input_port(i).get_name();
     const PixelType& type = input_port_pixel_type_[i];
-    const auto& value = this->get_input_port(i).
-        template Eval<AbstractValue>(context);
+    const auto& value =
+        this->get_input_port(i).template Eval<AbstractValue>(context);
     lcmt_image& packed = msg->images.at(i);
     packed.header = {};
     packed.header.utime = utime;

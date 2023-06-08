@@ -19,16 +19,16 @@ namespace systems {
 namespace sensors {
 namespace {
 
+using Eigen::Vector3d;
+using geometry::RenderEngineGlParams;
+using geometry::Rgba;
 using geometry::render::ColorRenderCamera;
 using geometry::render::DepthRenderCamera;
 using geometry::render::RenderCameraCore;
-using geometry::RenderEngineGlParams;
-using geometry::Rgba;
 using math::RigidTransformd;
 using schema::Transform;
 using yaml::LoadYamlString;
 using yaml::SaveYamlString;
-using Eigen::Vector3d;
 
 // Confirms that a default-constructed camera config has valid values.
 GTEST_TEST(CameraConfigTest, DefaultValues) {

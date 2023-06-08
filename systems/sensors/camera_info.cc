@@ -44,16 +44,19 @@ void CheckPositiveFinite(const char* name, double value, std::stringstream* s) {
 }  // namespace
 
 CameraInfo::CameraInfo(int width, int height, double focal_x, double focal_y,
-             double center_x, double center_y)
-    : CameraInfo(width, height, (
-          Eigen::Matrix3d() << focal_x, 0., center_x,
-                               0., focal_y, center_y,
-                               0., 0., 1.).finished()) {}
+                       double center_x, double center_y)
+    : CameraInfo(width, height,
+                 // clang-format off
+                 (Eigen::Matrix3d() <<
+                      focal_x,      0.0, center_x,
+                          0.0,  focal_y, center_y,
+                          0.0,      0.0,      1.0).finished()
+                 // clang-format on
+      ) {}
 
-CameraInfo::CameraInfo(
-      int width, int height, const Eigen::Matrix3d& intrinsic_matrix)
-    : width_(width), height_(height),
-      intrinsic_matrix_(intrinsic_matrix) {
+CameraInfo::CameraInfo(int width, int height,
+                       const Eigen::Matrix3d& intrinsic_matrix)
+    : width_(width), height_(height), intrinsic_matrix_(intrinsic_matrix) {
   std::stringstream errors;
 
   CheckPositive("Width", width, &errors);
@@ -80,7 +83,7 @@ CameraInfo::CameraInfo(
 }
 
 CameraInfo::CameraInfo(int width, int height, double vertical_fov_rad)
-    : CameraInfo(width, height,
+    : CameraInfo(width, height,  // BR
                  height * 0.5 / std::tan(0.5 * vertical_fov_rad),
                  height * 0.5 / std::tan(0.5 * vertical_fov_rad),
                  width * 0.5 - 0.5, height * 0.5 - 0.5) {}
@@ -89,8 +92,8 @@ CameraInfo::CameraInfo(int width, int height, double vertical_fov_rad)
 //  conventions used in various APIs (see
 //  https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_fragment_coord_conventions.txt
 //  However, we don't want to look like this class is coupled with OpenGL. How
-//  do we articulate this math in a way that *doesn't* depend on OpenGL?
-//  See https://github.com/SeanCurtis-TRI/drake/pull/5#pullrequestreview-264447958.
+//  do we articulate this math in a way that *doesn't* depend on OpenGL? See
+//  https://github.com/SeanCurtis-TRI/drake/pull/5#pullrequestreview-264447958.
 
 }  // namespace sensors
 }  // namespace systems
