@@ -14,7 +14,6 @@ namespace util {
 template <typename T>
 std::vector<std::string> GetJointNames(
     const multibody::MultibodyPlant<T>& plant) {
-
   std::map<int, std::string> position_names;
   const int num_positions = plant.num_positions();
   for (int i = 0; i < plant.num_joints(); ++i) {
@@ -37,12 +36,11 @@ std::vector<std::string> GetJointNames(
   return joint_names;
 }
 
-void ApplyJointVelocityLimits(
-    const std::vector<Eigen::VectorXd>& keyframes,
-    const Eigen::VectorXd& limits,
-    std::vector<double>* times) {
+void ApplyJointVelocityLimits(const std::vector<Eigen::VectorXd>& keyframes,
+                              const Eigen::VectorXd& limits,
+                              std::vector<double>* times) {
   DRAKE_DEMAND(keyframes.size() == times->size());
-  DRAKE_DEMAND(times->front() ==0);
+  DRAKE_DEMAND(times->front() == 0);
   const int num_time_steps = keyframes.size();
 
   // Calculate a matrix of velocities between each time step.  We'll
@@ -52,9 +50,8 @@ void ApplyJointVelocityLimits(
   for (int i = 0; i < velocities.rows(); i++) {
     for (int j = 0; j < velocities.cols(); j++) {
       DRAKE_ASSERT((*times)[j + 1] > (*times)[j]);
-      velocities(i, j) =
-          std::abs((keyframes[j + 1](i) - keyframes[j](i)) /
-                   ((*times)[j + 1] - (*times)[j]));
+      velocities(i, j) = std::abs((keyframes[j + 1](i) - keyframes[j](i)) /
+                                  ((*times)[j + 1] - (*times)[j]));
     }
   }
 
@@ -77,10 +74,9 @@ void ApplyJointVelocityLimits(
   }
 }
 
-lcmt_robot_plan EncodeKeyFrames(
-    const std::vector<std::string>& joint_names,
-    const std::vector<double>& times,
-    const std::vector<Eigen::VectorXd>& keyframes) {
+lcmt_robot_plan EncodeKeyFrames(const std::vector<std::string>& joint_names,
+                                const std::vector<double>& times,
+                                const std::vector<Eigen::VectorXd>& keyframes) {
   DRAKE_DEMAND(keyframes.size() == times.size());
 
   const int num_time_steps = keyframes.size();
@@ -108,9 +104,11 @@ lcmt_robot_plan EncodeKeyFrames(
   return plan;
 }
 
+// clang-format off
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS((
     &GetJointNames<T>
 ))
+// clang-format on
 
 }  // namespace util
 }  // namespace manipulation

@@ -14,13 +14,11 @@ const char kIiwaUrdf[] =
     "iiwa14_no_collision.urdf";
 
 GTEST_TEST(MoveIkDemoBaseTest, IiwaTest) {
-  math::RigidTransformd pose(
-      math::RollPitchYawd(0, 0, -1.57),
-      Eigen::Vector3d(0.8, -0.3, 0.25));
+  math::RigidTransformd pose(math::RollPitchYawd(0, 0, -1.57),
+                             Eigen::Vector3d(0.8, -0.3, 0.25));
 
-  MoveIkDemoBase dut(
-      FindResourceOrThrow(kIiwaUrdf),
-      "base", "iiwa_link_ee", 100);
+  MoveIkDemoBase dut(FindResourceOrThrow(kIiwaUrdf), "base", "iiwa_link_ee",
+                     100);
   dut.set_joint_velocity_limits(kuka_iiwa::get_iiwa_max_joint_velocities());
   dut.HandleStatus(Eigen::VectorXd::Ones(7));
   auto plan = dut.Plan(pose);

@@ -27,8 +27,7 @@ In a new terminal, run example of showing a Realsense d415:
 #include "drake/systems/analysis/simulator.h"
 #include "drake/systems/framework/diagram_builder.h"
 
-DEFINE_bool(
-    visualize, false, "Publish model to Drake Visualizer.");
+DEFINE_bool(visualize, false, "Publish model to Drake Visualizer.");
 
 namespace drake {
 namespace manipulation {

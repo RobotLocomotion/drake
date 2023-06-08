@@ -24,9 +24,9 @@ multibody::ModelInstanceIndex LoadFrankaCanonicalModel(
 // verifies that the URDF can be parsed by the URDF parser (similarly for the
 // remaining tests in this file).
 GTEST_TEST(FrankaArmTest, TestLoadArm) {
-  const std::string kPath(FindResourceOrThrow(
-      "drake/manipulation/models/franka_description/urdf/"
-      "panda_arm.urdf"));
+  const std::string kPath(
+      FindResourceOrThrow("drake/manipulation/models/franka_description/urdf/"
+                          "panda_arm.urdf"));
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
@@ -38,9 +38,9 @@ GTEST_TEST(FrankaArmTest, TestLoadArm) {
 }
 
 GTEST_TEST(FrankaArmTest, TestLoadHand) {
-  const std::string kPath(FindResourceOrThrow(
-      "drake/manipulation/models/franka_description/urdf/"
-      "hand.urdf"));
+  const std::string kPath(
+      FindResourceOrThrow("drake/manipulation/models/franka_description/urdf/"
+                          "hand.urdf"));
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);
@@ -51,9 +51,9 @@ GTEST_TEST(FrankaArmTest, TestLoadHand) {
 }
 
 GTEST_TEST(FrankaArmTest, TestLoadCombined) {
-  const std::string kPath(FindResourceOrThrow(
-      "drake/manipulation/models/franka_description/urdf/"
-      "panda_arm_hand.urdf"));
+  const std::string kPath(
+      FindResourceOrThrow("drake/manipulation/models/franka_description/urdf/"
+                          "panda_arm_hand.urdf"));
 
   multibody::MultibodyPlant<double> plant(0.0);
   multibody::Parser parser(&plant);

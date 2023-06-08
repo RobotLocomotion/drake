@@ -6,20 +6,18 @@
 namespace drake {
 namespace manipulation {
 
-using multibody::MultibodyPlant;
 using multibody::ModelInstanceIndex;
+using multibody::MultibodyPlant;
 using multibody::parsing::ModelInstanceInfo;
 using systems::ConstantVectorSource;
 using systems::DiagramBuilder;
 using systems::lcm::LcmBuses;
 
-void ApplyDriverConfig(
-    const ZeroForceDriver&,
-    const std::string& model_instance_name,
-    const MultibodyPlant<double>& sim_plant,
-    const std::map<std::string, ModelInstanceInfo>&,
-    const LcmBuses&,
-    DiagramBuilder<double>* builder) {
+void ApplyDriverConfig(const ZeroForceDriver&,
+                       const std::string& model_instance_name,
+                       const MultibodyPlant<double>& sim_plant,
+                       const std::map<std::string, ModelInstanceInfo>&,
+                       const LcmBuses&, DiagramBuilder<double>* builder) {
   DRAKE_THROW_UNLESS(builder != nullptr);
   const ModelInstanceIndex& model_instance =
       sim_plant.GetModelInstanceByName(model_instance_name);
