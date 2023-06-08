@@ -33,11 +33,15 @@ struct InitializeParams {
   template <typename Archive>
   void Serialize(Archive* a) {
     a->Visit(DRAKE_NVP(suppress_initialization_events));
+    a->Visit(DRAKE_NVP(initialization_count));
   }
 
   /// Whether to trigger initialization events. Events are triggered by
   /// default; it may be useful to suppress them when reusing a simulator.
   bool suppress_initialization_events{false};
+
+  // TODO: expand on this plz.
+  int initialization_count{1};
 };
 
 /** @ingroup simulation
@@ -301,6 +305,31 @@ class Simulator {
   ///                the monitor function.
   /// @see AdvanceTo(), AdvancePendingEvents(), SimulatorStatus
   SimulatorStatus Initialize(const InitializeParams& params = {});
+
+  /**
+  Repeatedly dispatches initialization events @p count times. Use this
+  if you have a system where initialization of discrete state (numeric or
+  abstract) may depend on other discrete state being properly updated.
+  Note that this should be called *instead of* Initialize().
+
+  This will not accumulate statistics across the number of repeats.
+
+  @pre count Number of times to dispatch initialization events. Must be >= 1.
+
+  This modifies the above Initialize() procedure to the following:
+
+  procedure InitializeRepeatedly(t₀, x₀, num_repeat) → status
+    // Initialization events should not and can *not* be suppressed.
+
+    for i in range(count)
+      x⁺(t₀) ← DoAnyInitializationUpdates as in Step()
+      x⁻(t₀) ← x⁺(t₀)
+
+    DoAnyPublishes(t₀, x⁻(t₀))
+    CallMonitor(t₀, x⁻(t₀))
+  */
+  // InitailizeRepeatedly(...)
+  // TODO: Fold docs into InitializeParams::initialization_count.
 
   /// Advances the System's trajectory until `boundary_time` is reached in
   /// the context or some other termination condition occurs. A variety of

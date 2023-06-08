@@ -848,6 +848,24 @@ TEST_F(DiagramContextTest, SubcontextSetStateAndParametersFrom) {
     EXPECT_EQ(subcontext.get_accuracy(), new_accuracy);
   }
 }
+
+TEST_F(DiagramContextTest, InitializationWarmUp) {
+  auto is_initialization_warm_up = [this]() {
+    const bool top = context_->is_initialization_warm_up();
+    for (SubsystemIndex i(0); i < kNumSystems; ++i) {
+      const auto& subcontext = context_->GetSubsystemContext(i);
+      EXPECT_EQ(subcontext.is_initialization_warm_up(), top);
+    }
+    return top;
+  };
+
+  EXPECT_FALSE(is_initialization_warm_up());
+  context_->SetInitializationWarmUp(true);
+  EXPECT_TRUE(is_initialization_warm_up());
+  context_->SetInitializationWarmUp(false);
+  EXPECT_FALSE(is_initialization_warm_up());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake

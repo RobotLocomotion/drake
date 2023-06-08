@@ -54,15 +54,19 @@ class ZeroOrderHold final : public LeafSystem<T> {
   /// vector-valued input of size `vector_size`. The default initial
   /// value for this system will be zero. The offset is always zero, meaning
   /// that the first update occurs at t=0.
-  ZeroOrderHold(double period_sec, int vector_size)
-      : ZeroOrderHold(period_sec, vector_size, nullptr) {}
+  ZeroOrderHold(double period_sec, int vector_size, bool initialize = false)
+      : ZeroOrderHold(period_sec, vector_size, nullptr, initialize) {}
 
   /// Constructs a ZeroOrderHold system with the given `period_sec`, over a
   /// abstract-valued input `abstract_model_value`. The default initial value
   /// for this system will be `abstract_model_value`. The offset is always
   /// zero, meaning that the first update occurs at t=0.
-  ZeroOrderHold(double period_sec, const AbstractValue& abstract_model_value)
-      : ZeroOrderHold(period_sec, -1, abstract_model_value.Clone()) {}
+  ZeroOrderHold(
+      double period_sec,
+      const AbstractValue& abstract_model_value,
+      bool initialize = false)
+      : ZeroOrderHold(period_sec, -1, abstract_model_value.Clone(), initialize)
+      {}
 
   /// Scalar-type converting copy constructor.
   /// See @ref system_scalar_conversion.
@@ -91,7 +95,8 @@ class ZeroOrderHold final : public LeafSystem<T> {
 
   // All of the other constructors delegate here.
   ZeroOrderHold(double period_sec, int vector_size,
-                std::unique_ptr<const AbstractValue> model_value);
+                std::unique_ptr<const AbstractValue> model_value,
+                bool initialize);
 
   // Latches the input port into the discrete vector-valued state.
   void LatchInputVectorToState(
@@ -103,9 +108,25 @@ class ZeroOrderHold final : public LeafSystem<T> {
       const Context<T>& context,
       State<T>* state) const;
 
+  // Optional initialization.
+  EventStatus InitializeVector(
+      const Context<T>& context,
+      DiscreteValues<T>* discrete_state) const {
+    LatchInputVectorToState(context, discrete_state);
+    return EventStatus::Succeeded();
+  }
+
+  EventStatus InitializeAbstract(
+      const Context<T>& context,
+      State<T>* state) const {
+    LatchInputAbstractValueToState(context, state);
+    return EventStatus::Succeeded();
+  }
+
   bool is_abstract() const { return abstract_model_value_ != nullptr; }
 
   double period_sec_{};
+  bool initialize_{};
   std::unique_ptr<const AbstractValue> abstract_model_value_;
 };
 

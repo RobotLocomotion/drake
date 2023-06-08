@@ -931,6 +931,14 @@ TEST_F(LeafContextTest, PerturbTime) {
   EXPECT_FALSE(context_.get_true_time());
 }
 
+TEST_F(LeafContextTest, InitializationWarmUp) {
+  EXPECT_FALSE(context_.is_initialization_warm_up());
+  context_.SetInitializationWarmUp(true);
+  EXPECT_TRUE(context_.is_initialization_warm_up());
+  context_.SetInitializationWarmUp(false);
+  EXPECT_FALSE(context_.is_initialization_warm_up());
+}
+
 }  // namespace
 }  // namespace systems
 }  // namespace drake
