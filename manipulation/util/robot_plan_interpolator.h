@@ -14,12 +14,7 @@ namespace util {
 
 /// This enum specifies the type of interpolator to use in constructing
 /// the piece-wise polynomial.
-enum class InterpolatorType {
-  ZeroOrderHold,
-  FirstOrderHold,
-  Pchip,
-  Cubic
-};
+enum class InterpolatorType { ZeroOrderHold, FirstOrderHold, Pchip, Cubic };
 
 /// This class implements a source of joint positions for a robot.
 /// It has one input port for lcmt_robot_plan messages containing a
@@ -55,13 +50,11 @@ class RobotPlanInterpolator : public systems::LeafSystem<double> {
     return this->get_input_port(plan_input_port_);
   }
 
-  const systems::OutputPort<double>&
-  get_state_output_port() const {
+  const systems::OutputPort<double>& get_state_output_port() const {
     return this->get_output_port(state_output_port_);
   }
 
-  const systems::OutputPort<double>&
-  get_acceleration_output_port() const {
+  const systems::OutputPort<double>& get_acceleration_output_port() const {
     return this->get_output_port(acceleration_output_port_);
   }
 

@@ -58,11 +58,12 @@ void ApplyDriverConfigs(
     // N.B. We can't use a structured binding here due to a Clang bug.
     const std::string& model_instance_name = config_pair.first;
     const auto& driver_config = config_pair.second;
-    std::visit([&](const auto& driver) {
-      ApplyDriverConfig(
-          driver, model_instance_name, sim_plant, models_from_directives_map,
-          lcm_buses, builder);
-    }, driver_config);
+    std::visit(
+        [&](const auto& driver) {
+          ApplyDriverConfig(driver, model_instance_name, sim_plant,
+                            models_from_directives_map, lcm_buses, builder);
+        },
+        driver_config);
   }
 }
 

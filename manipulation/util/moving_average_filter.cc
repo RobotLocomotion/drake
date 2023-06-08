@@ -8,9 +8,13 @@ namespace manipulation {
 namespace util {
 namespace {
 
-int get_dimensions(double) { return 1; }
+int get_dimensions(double) {
+  return 1;
+}
 
-int get_dimensions(VectorX<double> data) { return data.size(); }
+int get_dimensions(VectorX<double> data) {
+  return data.size();
+}
 }  // namespace
 
 template <typename T>
