@@ -79,8 +79,12 @@ static Display* display() {
   // program exits, but it seems not so evil to skip that.
   // (https://linux.die.net/man/3/xclosedisplay)
   // If problems crop up in the future, this can/should be investigated.
-  static Display* g_display = (XInitThreads(), XOpenDisplay(0));
-  DRAKE_THROW_UNLESS(g_display != nullptr);
+  static Display* g_display = []() {
+    XInitThreads();
+    Display* display = XOpenDisplay(0);
+    DRAKE_THROW_UNLESS(display != nullptr);
+    return display;
+  }();
   return g_display;
 }
 

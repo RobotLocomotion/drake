@@ -193,7 +193,7 @@ class ShaderProgram {
   /* Deletes the OpenGl program from the currently bound context. This should
    be a precursor to destroying the %ShaderProgram.
 
-   Ideally, this would be done in the constructor. However, the RenderEngineGl
+   Ideally, this would be done in the destructor. However, the RenderEngineGl
    infrastructure is not clearly wired to guarantee that the invocation of
    shader program destructors is preconditioned by a bound context.
 
