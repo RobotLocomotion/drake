@@ -45,6 +45,7 @@ class TestGeometryOptimization(unittest.TestCase):
         point = mut.Point(p)
         self.assertEqual(point.ambient_dimension(), 3)
         np.testing.assert_array_equal(point.x(), p)
+        np.testing.assert_array_equal(point.MaybeGetPoint(), p)
         point.set_x(x=2*p)
         np.testing.assert_array_equal(point.x(), 2*p)
         point.set_x(x=p)

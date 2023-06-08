@@ -35,7 +35,13 @@ int GetAmbientDimension(const ConvexSets& sets) {
 Intersection::Intersection() : Intersection(ConvexSets{}) {}
 
 Intersection::Intersection(const ConvexSets& sets)
-    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {}
+    : ConvexSet(GetAmbientDimension(sets)), sets_(sets) {
+  // TODO(jwnimmer-tri) Here we could scan sets_ to see if any are a Point,
+  // and if so we might be able to discard (or at least flag as unused) all
+  // of the other sets_, so that AddPointInSetConstraints and related could
+  // do a lot less work. It's not clear yet whether that optimization would
+  // be a good trade-off.
+}
 
 Intersection::Intersection(const ConvexSet& setA, const ConvexSet& setB)
     : ConvexSet(setA.ambient_dimension()) {
@@ -66,6 +72,21 @@ bool Intersection::DoIsBounded() const {
   throw std::runtime_error(
       "Determining the boundedness of an Intersection made up of unbounded "
       "elements is not currently supported.");
+}
+
+std::optional<VectorXd> Intersection::DoMaybeGetPoint() const {
+  std::optional<VectorXd> result;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      if (result.has_value() && !(*point == *result)) {
+        return std::nullopt;
+      }
+      result = std::move(point);
+    } else {
+      return std::nullopt;
+    }
+  }
+  return result;
 }
 
 bool Intersection::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
