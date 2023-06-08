@@ -436,11 +436,9 @@ bool EdgesBetweenSubgraphs::RegionsConnectThroughSubspace(
   DRAKE_THROW_UNLESS(A.ambient_dimension() > 0);
   DRAKE_THROW_UNLESS(A.ambient_dimension() == B.ambient_dimension());
   DRAKE_THROW_UNLESS(A.ambient_dimension() == subspace.ambient_dimension());
-  // TODO(wrangelvid) Replace dynamic cast with a function that checks if the
-  // convex set degenerates to a point.
-  if (const Point* pt = dynamic_cast<const Point*>(&subspace)) {
+  if (std::optional<VectorXd> subspace_point = subspace.MaybeGetPoint()) {
     // If the subspace is a point, then the point must be in both A and B.
-    return A.PointInSet(pt->x()) && B.PointInSet(pt->x());
+    return A.PointInSet(*subspace_point) && B.PointInSet(*subspace_point);
   } else {
     // Otherwise, we can formulate a problem to check if a point is contained in
     // A, B and the subspace.

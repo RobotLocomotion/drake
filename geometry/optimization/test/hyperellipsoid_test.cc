@@ -53,6 +53,9 @@ GTEST_TEST(HyperellipsoidTest, UnitSphereTest) {
   EXPECT_TRUE(CompareMatrices(A, E_scene_graph.A()));
   EXPECT_TRUE(CompareMatrices(center, E_scene_graph.center()));
 
+  // Test MaybeGetPoint.
+  EXPECT_FALSE(E.MaybeGetPoint().has_value());
+
   // Test PointInSet.
   const Vector3d in1_W{.99, 0, 0}, in2_W{.5, .5, .5}, out1_W{1.01, 0, 0},
       out2_W{1.0, 1.0, 1.0};

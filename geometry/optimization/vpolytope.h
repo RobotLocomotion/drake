@@ -89,6 +89,8 @@ class VPolytope final : public ConvexSet {
 
   bool DoIsBounded() const final { return true; }
 
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 

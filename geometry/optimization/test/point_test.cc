@@ -33,6 +33,10 @@ GTEST_TEST(PointTest, BasicTest) {
   EXPECT_EQ(P.ambient_dimension(), 3);
   EXPECT_TRUE(CompareMatrices(p_W, P.x()));
 
+  // Test MaybeGetPoint.
+  ASSERT_TRUE(P.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(P.MaybeGetPoint().value(), p_W));
+
   // Test PointInSet.
   EXPECT_TRUE(P.PointInSet(p_W));
   EXPECT_FALSE(P.PointInSet(p_W + Vector3d::Constant(0.01)));
@@ -56,6 +60,7 @@ GTEST_TEST(PointTest, BasicTest) {
   const Vector3d p2_W{6.2, -.23, -8.2};
   P.set_x(p2_W);
   EXPECT_TRUE(CompareMatrices(p2_W, P.x()));
+  EXPECT_TRUE(CompareMatrices(P.MaybeGetPoint().value(), p2_W));
 }
 
 GTEST_TEST(PointTest, DefaultCtor) {
@@ -65,6 +70,7 @@ GTEST_TEST(PointTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 
   Point P;
