@@ -2,18 +2,12 @@
 
 ## Initial Setup
 
-This process only needs to be done once per system. The scripts may be run on
-Linux (tested on Ubuntu Focal) or Mac (at your own risk, not tested recently).
+This process only needs to be done once per system.
+
+Note that these scripts are tested on Ubuntu Jammy;
+other platforms are not supported.
 
 ### Install required packages
-
-Mac:
-
-    brew install gnupg brew install gnupg@1.4
-    brew install aptly
-    brew install docker
-    [brew install docker-credential-helper]
-    brew install awscli
 
 Linux:
 
@@ -56,36 +50,48 @@ Using the passphrase from the AWS Secrets Manager, run:
 **Note:** It is not clear if `gpg` or `gpg1` is correct to use on Ubuntu
 
 
-### Get the push_release script
+### Get the push_release scripts
 
 Clone the drake repository:
 
     git clone https://github.com/RobotLocomotion/drake.git
+    cd drake
 
 In `tools/release_engineering/dev/push_release`, replace the placeholder
 `gpg_key` with the value from the AWS Secrets Manager.
 
-
-## Run script for docker and tar
+## Run script to mirror the .tar and .deb artifacts to S3
 
 Once your machine is set-up, run the `push_release` script as described below:
 
-    push_release <version> <date>
+    bazel run //tools/release_engineering/dev:push_release -- <version>
 
 
 The release creator will provide the version and date. Throughout this process,
 don’t use `v` on the version string. For example:
 
-    ./push_release 0.32.0 20210714
+    bazel run //tools/release_engineering/dev:push_release -- 1.0.0
 
-**Note:** If running the script while ssh’ed into Mac, you may need to
-run:
+## Run script for docker and apt
 
-    security unlock keychain
+(Before proceeding, refer to the sections below if you need to add a new
+configuration or package.)
 
-If prompted, use the docker ID and password from AWS Secrets Manager.
+Once your machine is set-up, run the `push_release` script as described below:
 
-When prompted, enter the passphrase from AWS Secrets Manager.
+    cd tools/release_engineering/dev
+    ./push_release <version> <date> --apt
+
+The release creator will provide the version and date. Again, don’t use `v` on
+the version string. For example:
+
+    ./push_release 0.32.0 20210714 --apt
+
+The script may prompt for the GPG passphrase and/or the docker ID and password,
+all of which may be found in the AWS Secrets Manager. The script may prompt for
+these multiple times.
+
+### Verification
 
 Verify that:
 
@@ -96,30 +102,8 @@ configuration (e.g. Focal, Jammy and Mac).
 1. [Dockerhub](https://hub.docker.com/r/robotlocomotion/drake/tags?ordering=last_updated&page=1)
 has `<version>` tags for each supported configuration (e.g. Focal and Jammy).
 
-## Copy apt packages to S3
-
-1. The deb files are created by Jenkins jobs run by the release manager and are
-uploaded to GitHub as release artifacts. Download the .deb files for Focal and
-Jammy from: `https://github.com/RobotLocomotion/drake/releases/tag/v<version>`
-
-
-1. Copy the .deb files to S3:
-
-        aws s3 cp drake-dev_<version>-1_amd64-<focal|jammy>.deb \
-        s3://drake-packages/drake/release/<focal|jammy>/drake-dev_<version>-1_amd64.deb
-
-**Note:** This requires the aws client, appropriate permissions, etc. If it’s easier, use the web interface to upload the deb files.
-
-**Note:** The configuration name is not include in the deb filename uploaded
-to S3
-
-Verify that:
-
 1. The `*.deb` files are in AWS
 `S3/Buckets/drake-packages/drake/release/<configuration>/drake-dev_<version>-1_amd64.deb` for each supported configuration (e.g. focal and jammy)
-
-
-## Run script to push apt release
 
 ### [Optional] Add a new configuration
 
@@ -201,11 +185,3 @@ Verify packages have been added:
       drake-dev_1.9.0-1_amd64
       lcm_1.4.0-gabdd8a2_amd64
       libbot2_0.0.1.20221116-1_amd64
-
-
-### Run the script
-
-    ./push_release <version> <date> --apt --no-docker --no-tar
-
-When prompted, enter the passphrase from AWS Secrets Manager (the script will
-prompt for the same passphrase multiple times).
