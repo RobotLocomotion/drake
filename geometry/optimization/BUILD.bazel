@@ -171,6 +171,7 @@ drake_cc_library(
     deps = [
         ":convex_set",
         "//multibody/plant",
+        "//planning:collision_checker",
         "//solvers:mathematical_program",
         "//solvers:solve",
     ],
@@ -186,6 +187,7 @@ drake_cc_library(
         "//common:name_value",
         "//geometry:scene_graph",
         "//multibody/plant",
+        "//planning:collision_checker",
         "//solvers:choose_best_solver",
         "//solvers:ipopt_solver",
         "//solvers:snopt_solver",
@@ -195,6 +197,7 @@ drake_cc_library(
 drake_cc_library(
     name = "test_utilities",
     testonly = 1,
+    visibility = ["//visibility:private"],
     srcs = ["test_utilities.cc"],
     hdrs = ["test_utilities.h"],
     deps = [
@@ -382,6 +385,31 @@ drake_cc_googletest(
         "//multibody/inverse_kinematics",
         "//multibody/parsing:parser",
         "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_library(
+    name = "iris_test_utilities",
+    testonly = 1,
+    visibility = ["//visibility:private"],
+    srcs = ["test/iris_test_utilities.cc"],
+    hdrs = ["test/iris_test_utilities.h"],
+    deps = [
+        "//geometry:scene_graph",
+        "//multibody/plant",
+        "//planning:robot_diagram_builder",
+        "@gtest//:without_main",
+    ],
+)
+
+drake_cc_googletest(
+    name = "iris_internal_test",
+    deps = [
+        ":iris_internal",
+        ":iris_test_utilities",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//planning:scene_graph_collision_checker",
     ],
 )
 
