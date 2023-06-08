@@ -66,6 +66,7 @@ drake_cc_library(
     name = "sample_header",
     testonly = 1,
     hdrs = ["test/sample_header.h"],
+    tags = ["nolint"],
     deps = [
         "//common",
     ],
@@ -103,4 +104,4 @@ generate_pybind_documentation_header(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()
