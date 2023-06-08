@@ -107,6 +107,36 @@ bool CartesianProduct::DoIsBounded() const {
   return true;
 }
 
+std::optional<VectorXd> CartesianProduct::DoMaybeGetPoint() const {
+  // If A and b are in use, we won't bother trying to compute the point.
+  // It's not clear that inverting the matrix would be worth the cost here.
+  if (A_.has_value()) {
+    return std::nullopt;
+  }
+
+  // Check if all sets are points.
+  std::vector<VectorXd> points;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      points.push_back(std::move(*point));
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  // Stack the points.
+  int start = 0;
+  VectorXd x(ambient_dimension());
+  for (const VectorXd& point : points) {
+    const int point_size = point.size();
+    x.segment(start, point_size) = point;
+    start += point_size;
+  }
+  DRAKE_DEMAND(start == x.size());
+
+  return x;
+}
+
 bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                     double tol) const {
   int index = 0;

@@ -68,6 +68,21 @@ bool Intersection::DoIsBounded() const {
       "elements is not currently supported.");
 }
 
+std::optional<VectorXd> Intersection::DoMaybeGetPoint() const {
+  std::optional<VectorXd> result;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      if (result.has_value() && !(*point == *result)) {
+        return std::nullopt;
+      }
+      result = std::move(point);
+    } else {
+      return std::nullopt;
+    }
+  }
+  return result;
+}
+
 bool Intersection::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                 double tol) const {
   for (const auto& s : sets_) {

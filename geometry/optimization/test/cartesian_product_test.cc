@@ -42,6 +42,10 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
 
+  // Test MaybeGetPoint.
+  ASSERT_TRUE(S.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), in));
+
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());
 
@@ -63,6 +67,7 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
@@ -144,6 +149,7 @@ GTEST_TEST(CartesianProductTest, TwoBoxes) {
   HPolyhedron H2 = HPolyhedron::MakeBox(Vector2d{-2, 2}, Vector2d{0, 4});
   CartesianProduct S(H1, H2);
   EXPECT_TRUE(S.IsBounded());
+  EXPECT_FALSE(S.MaybeGetPoint().has_value());
   EXPECT_TRUE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 3.9}));
   EXPECT_FALSE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 4.1}));
   EXPECT_FALSE(S.PointInSet(Vector4d{2.1, 1.9, -.1, 3.9}));
@@ -173,6 +179,18 @@ GTEST_TEST(CartesianProductTest, UnboundedSets) {
   sets.emplace_back(H);
   const CartesianProduct S4(sets);
   EXPECT_FALSE(S4.IsBounded());
+}
+
+GTEST_TEST(CartesianProductTest, ScaledPoint) {
+  const Point P(Vector2d{1.2, 3.4});
+  Eigen::Matrix2d A;
+  A << -1, 0, 0, 1;
+  Vector2d b{0, 2};
+  const CartesianProduct S(MakeConvexSets(P), A, b);
+
+  // In the current implementation, we don't try to invert A as part of
+  // MaybeGetPoint.
+  EXPECT_FALSE(S.MaybeGetPoint().has_value());
 }
 
 GTEST_TEST(CartesianProductTest, CloneTest) {

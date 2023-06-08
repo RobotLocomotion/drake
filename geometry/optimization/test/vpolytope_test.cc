@@ -43,6 +43,7 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   VPolytope V(triangle);
   EXPECT_EQ(V.ambient_dimension(), 2);
   EXPECT_TRUE(CompareMatrices(V.vertices(), triangle));
+  EXPECT_FALSE(V.MaybeGetPoint().has_value());
 
   // Check IsBounded (which is trivially true for V Polytopes).
   EXPECT_TRUE(V.IsBounded());
@@ -66,6 +67,13 @@ GTEST_TEST(VPolytopeTest, TriangleTest) {
   }
 }
 
+GTEST_TEST(VPolytopeTest, SinglePoint) {
+  Vector2d point(2, -1);
+  VPolytope V(point);
+  ASSERT_TRUE(V.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(V.MaybeGetPoint().value(), point));
+}
+
 GTEST_TEST(VPolytopeTest, DefaultCtor) {
   const VPolytope dut;
   EXPECT_NO_THROW(dut.GetMinimalRepresentation());
@@ -75,6 +83,7 @@ GTEST_TEST(VPolytopeTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
