@@ -43,9 +43,11 @@ namespace controllers {
  * plant.IsVelocityEqualToQDot() is true.
  *
  * @system
- * name: JointStiffnessController input_ports:
+ * name: JointStiffnessController
+ * input_ports:
  * - estimated_state
- * - desired_state output_ports:
+ * - desired_state
+ * output_ports:
  * - generalized_force
  * @endsystem
  *
