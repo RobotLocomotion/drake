@@ -67,6 +67,7 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
   const double kTol{1e-6};
   EXPECT_TRUE(spect.PointInSet(x_star, kTol));
   EXPECT_FALSE(spect.PointInSet(x_bad, kTol));
+  EXPECT_FALSE(spect.MaybeGetPoint().has_value());
 
   MathematicalProgram prog2;
   auto x2 = prog2.NewContinuousVariables<6>("x");

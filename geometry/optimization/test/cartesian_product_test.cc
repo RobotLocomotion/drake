@@ -20,6 +20,7 @@ namespace drake {
 namespace geometry {
 namespace optimization {
 
+using drake::Vector1d;
 using Eigen::Matrix;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
@@ -42,6 +43,10 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
 
+  // Test MaybeGetPoint.
+  ASSERT_TRUE(S.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), in));
+
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());
 
@@ -63,6 +68,7 @@ GTEST_TEST(CartesianProductTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
@@ -144,6 +150,7 @@ GTEST_TEST(CartesianProductTest, TwoBoxes) {
   HPolyhedron H2 = HPolyhedron::MakeBox(Vector2d{-2, 2}, Vector2d{0, 4});
   CartesianProduct S(H1, H2);
   EXPECT_TRUE(S.IsBounded());
+  EXPECT_FALSE(S.MaybeGetPoint().has_value());
   EXPECT_TRUE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 3.9}));
   EXPECT_FALSE(S.PointInSet(Vector4d{1.9, 1.9, -.1, 4.1}));
   EXPECT_FALSE(S.PointInSet(Vector4d{2.1, 1.9, -.1, 3.9}));
@@ -173,6 +180,42 @@ GTEST_TEST(CartesianProductTest, UnboundedSets) {
   sets.emplace_back(H);
   const CartesianProduct S4(sets);
   EXPECT_FALSE(S4.IsBounded());
+}
+
+GTEST_TEST(CartesianProductTest, ScaledPoints) {
+  const Point P1(Vector1d{1.2});
+  const Point P2(Vector1d{3.4});
+  // clang-format off
+  Eigen::Matrix2d A;
+  A << -2, 0,
+        0, 5;
+  // clang-format on
+  Vector2d b{0, 3};
+  const CartesianProduct S(MakeConvexSets(P1, P2), A, b);
+
+  const double kTol = 1e-15;
+  const Vector2d in{-0.6, 0.08};
+  EXPECT_TRUE(S.PointInSet(in, kTol));
+  ASSERT_TRUE(S.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), in, kTol));
+}
+
+GTEST_TEST(CartesianProductTest, ScaledPointInjective) {
+  const Point P(Vector3d{42, 42, 0});
+  // clang-format off
+  Eigen::MatrixXd A(3, 2);
+  A << 1, 0,
+       0, 1,
+       0, 0;
+  // clang-format on
+  Vector3d b{22, 22, 0};
+  const CartesianProduct S(MakeConvexSets(P), A, b);
+
+  const double kTol = 1e-15;
+  const Vector2d in{20, 20};
+  EXPECT_TRUE(S.PointInSet(in, kTol));
+  ASSERT_TRUE(S.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), in, kTol));
 }
 
 GTEST_TEST(CartesianProductTest, CloneTest) {

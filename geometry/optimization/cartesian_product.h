@@ -76,6 +76,8 @@ class CartesianProduct final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  std::optional<Eigen::VectorXd> DoMaybeGetPoint() const final;
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 
@@ -113,6 +115,12 @@ class CartesianProduct final : public ConvexSet {
   // in the implementation.
   std::optional<Eigen::MatrixXd> A_{std::nullopt};
   std::optional<Eigen::VectorXd> b_{std::nullopt};
+
+  // When an `A` is passed to the constructor, we'll compute its decomposition
+  // and store it here for later use. Note that even though the constructor for
+  // a scene graph cylinder sets A_, it does not set A_decomp_.
+  std::optional<Eigen::ColPivHouseholderQR<Eigen::MatrixXd>> A_decomp_{
+      std::nullopt};
 };
 
 }  // namespace optimization
