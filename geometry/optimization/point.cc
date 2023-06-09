@@ -57,6 +57,10 @@ std::unique_ptr<ConvexSet> Point::DoClone() const {
   return std::make_unique<Point>(*this);
 }
 
+std::optional<VectorXd> Point::DoMaybeGetPoint() const {
+  return x_;
+}
+
 bool Point::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                          double tol) const {
   return is_approx_equal_abstol(x, x_, tol);
