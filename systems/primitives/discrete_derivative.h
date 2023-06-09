@@ -126,7 +126,7 @@ class DiscreteDerivative final : public LeafSystem<T> {
 /// Supports the common pattern of combining a (feed-through) position with
 /// a velocity estimated with the DiscreteDerivative into a single output
 /// vector with positions and velocities stacked.  This assumes that the
-/// number of positions == the number of velocities.
+/// velocities are equal to the time derivative of the positions.
 ///
 /// ```
 ///                                  ┌─────┐

@@ -208,6 +208,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, Simulation) {
   // The generalized velocity computed last at time = kEndTime.
   const VectorX<double> v =
       context.get_continuous_state().get_generalized_velocity().CopyToVector();
+  EXPECT_FALSE(model.IsVelocityEqualToQDot());
   model.MapVelocityToQDot(context, v, &qdot_from_v);
   // MultibodyTree computes the time derivatives in the inboard frame which in
   // this case happens to be the world frame W. Thus we use DtW to denote the
@@ -297,6 +298,7 @@ GTEST_TEST(QuaternionFloatingMobilizer, MapVelocityToQDotAndBack) {
           free_body_plant.body(), {w_WB, v_WB}, context.get()));
 
   // Map generalized velocities to time derivatives of generalized positions.
+  EXPECT_FALSE(model.IsVelocityEqualToQDot());
   VectorX<double> qdot_from_v(model.num_positions());
   const VectorX<double> v =
       context->get_continuous_state().get_generalized_velocity().CopyToVector();

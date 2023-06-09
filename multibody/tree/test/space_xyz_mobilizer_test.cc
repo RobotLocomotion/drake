@@ -111,6 +111,8 @@ TEST_F(SpaceXYZMobilizerTest, MapUsesN) {
   const Vector3d rpy_value(M_PI / 3, -M_PI / 3, M_PI / 5);
   mobilizer_->set_angles(context_.get(), rpy_value);
 
+  EXPECT_FALSE(mobilizer_->is_velocity_equal_to_qdot());
+
   // Set arbitrary v and MapVelocityToQDot.
   const Vector3<double> v = (Vector3<double>() << 1, 2, 3).finished();
   Vector3<double> qdot;
