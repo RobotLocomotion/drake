@@ -9,8 +9,7 @@
 
 DEFINE_bool(invalid_only, false,
             "if true, only fix physically invalid inertias");
-DEFINE_bool(in_place, false,
-            "if true, modify the file in-place");
+DEFINE_bool(in_place, false, "if true, modify the file in-place");
 
 namespace drake {
 namespace multibody {
@@ -18,9 +17,9 @@ namespace {
 
 using geometry::Role;
 using geometry::SceneGraph;
-using tinyxml2::XMLNode;
 using tinyxml2::XMLDocument;
 using tinyxml2::XMLElement;
+using tinyxml2::XMLNode;
 using tinyxml2::XMLPrinter;
 
 // Does tinyxml2 quote-swapping ('' to "") break any strings?  Nope: it does
@@ -68,13 +67,11 @@ void FindLinks(XMLElement* el, std::vector<XMLElement*>* links) {
     links->push_back(el);
     return;
   }
-  for (XMLElement* kid = el->FirstChildElement();
-       kid;
+  for (XMLElement* kid = el->FirstChildElement(); kid;
        kid = kid->NextSiblingElement()) {
     FindLinks(kid, links);
   }
 }
-
 
 class XmlInertiaMapper {
  public:
@@ -86,10 +83,9 @@ class XmlInertiaMapper {
 
 class UrdfInertiaMapper final : public XmlInertiaMapper {
  public:
-  UrdfInertiaMapper(
-      const MultibodyPlant<double>& plant,
-      const std::vector<ModelInstanceIndex>& models,
-      XMLDocument* doc)
+  UrdfInertiaMapper(const MultibodyPlant<double>& plant,
+                    const std::vector<ModelInstanceIndex>& models,
+                    XMLDocument* doc)
       : plant_(plant) {
     DRAKE_ASSERT(models.size() == 1);
     std::vector<XMLElement*> links;
@@ -135,13 +131,11 @@ class UrdfInertiaMapper final : public XmlInertiaMapper {
   Mapping mapping_;
 };
 
-
 class SdfInertiaMapper final : public XmlInertiaMapper {
  public:
-  SdfInertiaMapper(
-      const MultibodyPlant<double>& plant,
-      const std::vector<ModelInstanceIndex>& models,
-      XMLDocument* doc)
+  SdfInertiaMapper(const MultibodyPlant<double>& plant,
+                   const std::vector<ModelInstanceIndex>& models,
+                   XMLDocument* doc)
       : plant_(plant) {
     DRAKE_ASSERT(models.size() >= 1);
     std::vector<XMLElement*> links;
@@ -191,14 +185,12 @@ class SdfInertiaMapper final : public XmlInertiaMapper {
   Mapping mapping_;
 };
 
-
 class InertiaProcessor {
  public:
-  InertiaProcessor(
-      const MultibodyPlant<double>& plant,
-      const SceneGraph<double>& scene_graph,
-      const std::vector<ModelInstanceIndex>& models,
-      XMLDocument* doc)
+  InertiaProcessor(const MultibodyPlant<double>& plant,
+                   const SceneGraph<double>& scene_graph,
+                   const std::vector<ModelInstanceIndex>& models,
+                   XMLDocument* doc)
       : plant_(plant), scene_graph_(scene_graph) {
     XMLElement* root = doc->RootElement();
     std::string root_name(root->Name());
@@ -243,8 +235,8 @@ class InertiaProcessor {
       return {};
     }
     const auto& inspector = scene_graph_.model_inspector();
-    const auto geoms = inspector.GetGeometries(*maybe_frame_id,
-                                               Role::kProximity);
+    const auto geoms =
+        inspector.GetGeometries(*maybe_frame_id, Role::kProximity);
     if (geoms.empty()) {
       // No geometry to fix inertia from.
       return {};
@@ -256,15 +248,15 @@ class InertiaProcessor {
       const auto& M_GG_G_one =
           CalcSpatialInertia(inspector.GetShape(geom), 1.0);
       const auto& X_BG = inspector.GetPoseInFrame(geom);
-      const auto M_GBo_B_one = M_GG_G_one.ReExpress(X_BG.rotation())
-                               .Shift(-X_BG.translation());
+      const auto M_GBo_B_one =
+          M_GG_G_one.ReExpress(X_BG.rotation()).Shift(-X_BG.translation());
       M_BBo_B_one += M_GBo_B_one;
     }
 
     // Rebuild the final inertia using the mass found in the input.
     const double mass = old_inertia.get_mass();
     SpatialInertia<double> M_BBo_B(mass, M_BBo_B_one.get_com(),
-                                M_BBo_B_one.get_unit_inertia());
+                                   M_BBo_B_one.get_unit_inertia());
 
     return M_BBo_B;
   }
@@ -275,8 +267,9 @@ class InertiaProcessor {
 };
 
 int do_main(int argc, char* argv[]) {
-  gflags::SetUsageMessage("[INPUT-FILE] [OUTPUT-FILE]\n"
-                          "Rewrite URDF/SDFormat with fixed-up inertias");
+  gflags::SetUsageMessage(
+      "[INPUT-FILE] [OUTPUT-FILE]\n"
+      "Rewrite URDF/SDFormat with fixed-up inertias");
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   if (argc < 2) {
     drake::log()->error("missing input filename");
@@ -285,12 +278,10 @@ int do_main(int argc, char* argv[]) {
   const char* outfile =
       FLAGS_in_place ? argv[1] : ((argc > 2) ? argv[2] : "/dev/stdout");
 
-
   XMLDocument xml_doc;
   xml_doc.LoadFile(argv[1]);
   if (xml_doc.ErrorID()) {
-    drake::log()->error("Failed to parse XML file: {}",
-                        xml_doc.ErrorName());
+    drake::log()->error("Failed to parse XML file: {}", xml_doc.ErrorName());
     ::exit(EXIT_FAILURE);
   }
 
