@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import abc
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 import xml.parsers.expat as expat
 
@@ -54,12 +54,15 @@ class ElementFacts:
     parent: ElementFacts = None
     "Facts for the parent of this element (optional)."
 
-    children: dict[str, list[ElementFacts]]
+    children: dict[str, list[ElementFacts]] = field(default_factory=dict)
     "Facts about relevant children of this element (optional)."
 
     serial_number: int = None
     """An opinionated index of this element within the sequence of similar
     elements; see XmlInertiaMapper's implementation for details."""
+
+    parent_model: ElementFacts = None
+    "Facts for the enclosing model of this model element (optional)."
 
 
 class FormatDriver(object, metaclass=abc.ABCMeta):
@@ -94,25 +97,37 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
     # TODO: adjust interface to allow passing inertia pose.
     # Or, maybe split this into mass/pose/inertia APIs?
     @abc.abstractmethod
-    def format_inertia(self, mass: float, moments: list, products: list,
-                       indenter: Callable[[int], str]) -> str:
+    def format_inertia(self, input_text: str, input_lines: list[str],
+                       inertial_facts: ElementFacts,
+                       mass: float, moments: list, products: list) -> str:
         """Return a formatted XML string for the repaired inertial tag.
 
         The provided products and moments of inertia should be expressed in the
         body frame.
 
-        The indenter function takes an indentation level relative to the
-        indentation depth of the element to be replaced, and returns a string
-        of white space necessary to reach that indentation level.
-
         Args:
+            input_text: full contents of the input file
+            input_lines: input file as a list of lines
+            inertial_facts: facts about the element to reformat
             mass: the mass of the body (kg).
             moments: the principle moments of inertia -- ixx, iyy, izz.
             products: the products of inertia -- ixy, ixz, iyz.
-            indenter: the indenter function (see above).
 
         """
         raise NotImplementedError
+
+
+def adjusted_element_end_index(input_text: str, raw_end_index: int) -> int:
+    if input_text[raw_end_index] == '<':
+        # Typical case:
+        # `<inertial>...</inertial>`.
+        #               ^                # Raw index points here.
+        #                          ^     # Adjusted index points here.
+        return raw_end_index + input_text[raw_end_index:].find('>') + 1
+    else:
+        # `<inertial/>` corner case.
+        #             ^     # Raw index points here; good to go
+        return raw_end_index
 
 
 class UrdfDriver(FormatDriver):
@@ -147,16 +162,31 @@ class UrdfDriver(FormatDriver):
             # TODO assert more sanity.
         return mapping
 
-    def format_inertia(self, mass: float, moments: list, products: list,
-                       indenter: Callable[[int], str]) -> str:
-        d = indenter
-        return f"""\
-<inertial>
-{d(1)}<mass value="{mass}"/>
-{d(1)}<origin xyz="0 0 0" rpy="0 0 0"/>
-{d(1)}<inertia ixx="{moments[0]}" ixy="{products[0]}" ixz="{products[1]}"\
- iyy="{moments[1]}" iyz="{products[2]}" izz="{moments[2]}"/>
-{d(0)}</inertial>"""
+    def format_inertia(self, input_text: str, input_lines: list[str],
+                       inertial_facts: ElementFacts,
+                       mass: float, moments: list, products: list) -> str:
+        # Now we get to slice up the inertial element, and only rewrite the
+        # parts that we must.
+        sorted_innards = sorted(
+            inertial_facts.children.values(),
+            key=lambda x: x.start.index)
+        output = ""
+        index = inertial_facts.start.index
+        for facts in sorted_innards:
+            output += input_text[index:facts.start.index]
+            match facts.name:
+                case "inertia":
+                  output += f"""\
+<inertia ixx="{moments[0]}" ixy="{products[0]}" ixz="{products[1]}"\
+ iyy="{moments[1]}" iyz="{products[2]}" izz="{moments[2]}"/>"""
+                case "mass":
+                     output += f'<mass value="{mass}"/>'
+                case "origin":
+                     output += '<origin xyz="0 0 0" rpy="0 0 0"/>'
+            index = adjusted_element_end_index(input_text, facts.end.index)
+        end = adjusted_element_end_index(input_text, inertial_facts.end.index)
+        output += input_text[index:end]
+        return output
 
 
 class SdformatDriver(FormatDriver):
@@ -181,8 +211,8 @@ class SdformatDriver(FormatDriver):
             link = inertial.parent
             model = link.parent
             enclosing_models = [model]
-            while model.parent:
-                model = model.parent
+            while model.parent_model:
+                model = model.parent_model
                 enclosing_models.append(model)
             enclosing_models.reverse()
             model_name = '::'.join(
@@ -193,22 +223,50 @@ class SdformatDriver(FormatDriver):
             # TODO assert more sanity.
         return mapping
 
-    def format_inertia(self, mass: float, moments: list, products: list,
-                       indenter: Callable[[int], str]) -> str:
-        d = indenter
-        return f"""\
-<inertial>
-{d(1)}<pose>0 0 0 0 0 0</pose>
-{d(1)}<mass>{mass}</mass>
-{d(1)}<inertia>
-{d(2)}<ixx>{moments[0]}</ixx>
-{d(2)}<ixy>{products[0]}</ixy>
-{d(2)}<ixz>{products[1]}</ixz>
-{d(2)}<iyy>{moments[1]}</iyy>
-{d(2)}<iyz>{products[2]}</iyz>
-{d(2)}<izz>{moments[2]}</izz>
-{d(1)}</inertia>
-{d(0)}</inertial>"""
+    def format_inertia(self, input_text: str, input_lines: list[str],
+                       inertial_facts: ElementFacts,
+                       mass: float, moments: list, products: list) -> str:
+        # Now we get to slice up the inertial element, and only rewrite the
+        # parts that we must.
+        sorted_innards = sorted(
+            inertial_facts.children.values(),
+            key=lambda x: x[0].start.index)
+        output = ""
+        index = inertial_facts.start.index
+        for kid_list in sorted_innards:
+            facts = kid_list[0]
+            output += input_text[index:facts.start.index]
+            match facts.name:
+                case "inertia":
+                  # Compute indentation based on the first line of the element.
+                  line = input_lines[facts.start.line]
+                  spaces = len(line) - len(line.lstrip())
+                  indentation = spaces // facts.depth
+
+                  # Build an element-specific indenter.
+                  depth = facts.depth
+                  indent = " " * indentation
+
+                  def d(more_depth):
+                      return indent * (depth + more_depth)
+
+                  output += f"""\
+<inertia>
+{d(1)}<ixx>{moments[0]}</ixx>
+{d(1)}<ixy>{products[0]}</ixy>
+{d(1)}<ixz>{products[1]}</ixz>
+{d(1)}<iyy>{moments[1]}</iyy>
+{d(1)}<iyz>{products[2]}</iyz>
+{d(1)}<izz>{moments[2]}</izz>
+{d(0)}</inertia>"""
+                case "mass":
+                     output += f"<mass>{mass}</mass>"
+                case "pose":
+                     output += "<pose>0 0 0 0 0 0</pose>"
+            index = adjusted_element_end_index(input_text, facts.end.index)
+        end = adjusted_element_end_index(input_text, inertial_facts.end.index)
+        output += input_text[index:end]
+        return output
 
 
 class XmlInertiaMapper:
@@ -230,6 +288,7 @@ class XmlInertiaMapper:
 
         # Declare some state to remember during parsing.
         self._depth = 0
+        self._element_stack = []
         self._models = []
         self._model_stack = []
         self._links = []
@@ -259,15 +318,17 @@ class XmlInertiaMapper:
                 raise RuntimeError("unknown file format!")
         self._inertial_children = self._format_driver.inertial_children()
 
+        element = self._make_element_facts(name, attributes)
+        if self._element_stack:
+            element.parent = self._element_stack[-1]
+
         if self._format_driver.is_model_element(name):
-            element = self._make_element_facts(name, attributes)
             if self._model_stack:
-                element.parent = self._model_stack[-1]
+                self._parent_model = self._model_stack[-1]
             self._models.append(element)
             self._model_stack.append(element)
 
         if name == "link":
-            element = self._make_element_facts(name, attributes)
             element.parent = self._model_stack[-1]
             element.serial_number = len(self._links) - self._ignored_links
 
@@ -278,27 +339,24 @@ class XmlInertiaMapper:
             self._links.append(element)
 
         if name == "inertial":
-            element = self._make_element_facts(name, attributes)
             element.parent = self._links[-1]
             self._inertials.append(element)
 
         if name in self._inertial_children:
-            # TODO ascertain that mass only occurs as a child of inertial.
-            element = self._make_element_facts(name, attributes)
-            element.parent = self._inertials[-1]
-            # TODO ascertain that all of these only children.
-            element.parent.children[name] = [element]
+            if self._element_stack[-1].name == "inertial":
+                # TODO ascertain that all of these only children.
+                element.parent.children[name] = [element]
 
         self._depth += 1
+        self._element_stack.append(element)
 
     def _end_element(self, name: str):
+        self._element_stack[-1].end = self._make_location()
+        self._element_stack.pop()
         self._depth -= 1
 
         if self._format_driver.is_model_element(name):
             self._model_stack.pop()
-
-        if name in self._inertial_children:
-            self._inertials[-1].children[name][0].end = self._make_location()
 
     def parse(self):
         """Execute the parsing of the XML text."""
@@ -314,54 +372,31 @@ class XmlInertiaMapper:
         """Return a mapping from body indices to inertial element facts."""
         return self._mapping
 
-    def _adjusted_element_end_index(self, raw_end_index: int) -> int:
-        input_text = self._input_text
-        if input_text[raw_end_index] == '<':
-            # Typical case:
-            # `<inertial>...</inertial>`.
-            #               ^                # Raw index points here.
-            #                          ^     # Adjusted index points here.
-            return raw_end_index + input_text[raw_end_index:].find('>') + 1
-        else:
-            # `<inertial/>` corner case.
-            #             ^     # Raw index points here; good to go
-            return raw_end_index
-
-    def build_output(self, new_inertias_mapping: dict) -> str:
-        input_text = self._input_text
+    def build_output(self, body_index: BodyIndex,
+                     new_inertias_mapping: dict) -> str:
+        inertial_facts = self._mapping[body_index]
         output = ""
-        index = 0
+        input_text = self._input_text
+        input_text_index = 0
         for body_index, new_inertia in sorted(new_inertias_mapping.items()):
-            facts = self._mapping[body_index]
-            output += input_text[index:facts.start.index]
-            output += self._format_inertia(body_index, new_inertia)
-            index = self._adjusted_element_end_index(facts.end.index)
-        output += input_text[index:]
+            output += input_text[input_text_index:inertial_facts.start.index]
+            output += self._format_inertia(inertial_facts, new_inertia)
+            input_text_index = adjusted_element_end_index(
+                input_text, inertial_facts.end.index)
+        output += input_text[input_text_index:]
         return output
 
-    def _format_inertia(self, body_index: BodyIndex,
+    def _format_inertia(self, inertial_facts: ElementFacts,
                         spatial_inertia: SpatialInertia) -> str:
-        inertial_facts = self._mapping[body_index]
-
-        # Compute indentation based on the first line of the target element.
-        line = self._input_lines[inertial_facts.start.line]
-        spaces = len(line) - len(line.lstrip())
-        indentation = spaces // inertial_facts.depth
-
         # Extract the mass properties.
         mass = spatial_inertia.get_mass()
         rot = spatial_inertia.CalcRotationalInertia()
         mom = rot.get_moments()
         prod = rot.get_products()
 
-        # Build the indenter.
-        depth = inertial_facts.depth
-        indent = " " * indentation
-
-        def d(more_depth):
-            return indent * (depth + more_depth)
-
-        return self._format_driver.format_inertia(mass, mom, prod, d)
+        return self._format_driver.format_inertia(
+            self._input_text, self._input_lines, inertial_facts,
+            mass, mom, prod)
 
 
 class InertiaProcessor:
@@ -427,7 +462,7 @@ class InertiaProcessor:
             maybe_inertia = self._maybe_fix_inertia(body_index)
             if maybe_inertia:
                 new_inertias_mapping[body_index] = maybe_inertia
-        return self._mapper.build_output(new_inertias_mapping)
+        return self._mapper.build_output(body_index, new_inertias_mapping)
 
 
 def main():
