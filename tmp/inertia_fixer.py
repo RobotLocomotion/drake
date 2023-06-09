@@ -112,17 +112,20 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
-def adjusted_element_end_index(input_text: str, raw_end_index: int) -> int:
-    if input_text[raw_end_index] == '<':
+def adjusted_element_end_index(input_text: str, facts: ElementFacts) -> int:
+    if facts.start.index == facts.end.index:
+        # Empty "pseudo" element.
+        return facts.end.index
+    if input_text[facts.end.index:].startswith(f"</{facts.name}"):
         # Typical case:
         # `<inertial>...</inertial>`.
         #               ^                # Raw index points here.
         #                          ^     # Adjusted index points here.
-        return raw_end_index + input_text[raw_end_index:].find('>') + 1
+        return facts.end.index + input_text[facts.end.index:].find('>') + 1
     else:
         # `<inertial/>` corner case.
         #             ^     # Raw index points here; good to go
-        return raw_end_index
+        return facts.end.index
 
 
 class UrdfDriver(FormatDriver):
@@ -157,6 +160,23 @@ class UrdfDriver(FormatDriver):
     def format_inertia(self, input_text: str, input_lines: list[str],
                        inertial_facts: ElementFacts,
                        mass: float, moments: list, products: list) -> str:
+        end = adjusted_element_end_index(input_text, inertial_facts)
+        # Ugly cases to consider:
+        # * <inertial/>  -- should probably just delete that.
+        if end == inertial_facts.end.index:
+            return ""
+        # * missing children -- synthesize ElementFacts to achieve insertion?
+        kid_names = [x.name for x in inertial_facts.children]
+        kid0 = inertial_facts.children[0]
+        # If 'origin' is missing, it will be interpreted as all zeros, which is
+        # what the current version of this tool would write anyway.
+        for needed_name in ["inertia", "mass"]:
+            if needed_name in kid_names:
+                continue
+            # TODO this still is weirdly missing white space.
+            synth_el = ElementFacts(needed_name, {}, kid0.depth, kid0.start)
+            synth_el.end = kid0.start
+            inertial_facts.children.insert(0, synth_el)
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
         output = ""
@@ -172,8 +192,7 @@ class UrdfDriver(FormatDriver):
                      output += f'<mass value="{mass}"/>'
                 case "origin":
                      output += '<origin rpy="0 0 0" xyz="0 0 0"/>'
-            index = adjusted_element_end_index(input_text, facts.end.index)
-        end = adjusted_element_end_index(input_text, inertial_facts.end.index)
+            index = adjusted_element_end_index(input_text, facts)
         output += input_text[index:end]
         return output
 
@@ -245,8 +264,8 @@ class SdformatDriver(FormatDriver):
                      output += f"<mass>{mass}</mass>"
                 case "pose":
                      output += "<pose>0 0 0 0 0 0</pose>"
-            index = adjusted_element_end_index(input_text, facts.end.index)
-        end = adjusted_element_end_index(input_text, inertial_facts.end.index)
+            index = adjusted_element_end_index(input_text, facts)
+        end = adjusted_element_end_index(input_text, inertial_facts)
         output += input_text[index:end]
         return output
 
@@ -355,7 +374,7 @@ class XmlInertiaMapper:
             output += input_text[input_text_index:inertial_facts.start.index]
             output += self._format_inertia(inertial_facts, new_inertia)
             input_text_index = adjusted_element_end_index(
-                input_text, inertial_facts.end.index)
+                input_text, inertial_facts)
         output += input_text[input_text_index:]
         return output
 
