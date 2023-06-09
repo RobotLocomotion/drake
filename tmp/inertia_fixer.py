@@ -169,10 +169,11 @@ class UrdfDriver(FormatDriver):
         # parts that we must.
         sorted_innards = sorted(
             inertial_facts.children.values(),
-            key=lambda x: x.start.index)
+            key=lambda x: x[0].start.index)
         output = ""
         index = inertial_facts.start.index
-        for facts in sorted_innards:
+        for kid_list in sorted_innards:
+            facts = kid_list[0]
             output += input_text[index:facts.start.index]
             match facts.name:
                 case "inertia":
@@ -182,7 +183,7 @@ class UrdfDriver(FormatDriver):
                 case "mass":
                      output += f'<mass value="{mass}"/>'
                 case "origin":
-                     output += '<origin xyz="0 0 0" rpy="0 0 0"/>'
+                     output += '<origin rpy="0 0 0" xyz="0 0 0"/>'
             index = adjusted_element_end_index(input_text, facts.end.index)
         end = adjusted_element_end_index(input_text, inertial_facts.end.index)
         output += input_text[index:end]
@@ -372,13 +373,12 @@ class XmlInertiaMapper:
         """Return a mapping from body indices to inertial element facts."""
         return self._mapping
 
-    def build_output(self, body_index: BodyIndex,
-                     new_inertias_mapping: dict) -> str:
-        inertial_facts = self._mapping[body_index]
+    def build_output(self, new_inertias_mapping: dict) -> str:
         output = ""
         input_text = self._input_text
         input_text_index = 0
         for body_index, new_inertia in sorted(new_inertias_mapping.items()):
+            inertial_facts = self._mapping[body_index]
             output += input_text[input_text_index:inertial_facts.start.index]
             output += self._format_inertia(inertial_facts, new_inertia)
             input_text_index = adjusted_element_end_index(
@@ -462,7 +462,7 @@ class InertiaProcessor:
             maybe_inertia = self._maybe_fix_inertia(body_index)
             if maybe_inertia:
                 new_inertias_mapping[body_index] = maybe_inertia
-        return self._mapper.build_output(body_index, new_inertias_mapping)
+        return self._mapper.build_output(new_inertias_mapping)
 
 
 def main():
