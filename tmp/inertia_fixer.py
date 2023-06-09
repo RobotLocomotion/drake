@@ -54,6 +54,9 @@ class ElementFacts:
     parent: ElementFacts = None
     "Facts for the parent of this element (optional)."
 
+    children: dict[str, list[ElementFacts]]
+    "Facts about relevant children of this element (optional)."
+
     serial_number: int = None
     """An opinionated index of this element within the sequence of similar
     elements; see XmlInertiaMapper's implementation for details."""
@@ -64,6 +67,11 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
     """This interface encapsulates the differences between URDF and SDFormat
     processing, for purposes of the implementation of XmlInertiaMapper.
     """
+
+    @abc.abstractmethod
+    def inertial_children(self) -> list[str]:
+        """Return the list of child elements of the inertial element."""
+        raise NotImplementedError
 
     @abc.abstractmethod
     def is_model_element(self, name: str) -> bool:
@@ -110,6 +118,9 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
 class UrdfDriver(FormatDriver):
     """Format driver for URDF files."""
 
+    def inertial_children(self) -> list[str]:
+        return ["inertia", "mass", "origin"]
+
     def is_model_element(self, name: str) -> bool:
         return name == "robot"
 
@@ -150,6 +161,9 @@ class UrdfDriver(FormatDriver):
 
 class SdformatDriver(FormatDriver):
     """Format driver for SDFormat files."""
+
+    def inertial_children(self) -> list[str]:
+        return ["inertia", "mass", "pose"]
 
     def is_model_element(self, name: str) -> bool:
         return name == "model"
@@ -222,6 +236,7 @@ class XmlInertiaMapper:
         self._ignored_links = 0
         self._inertials = []
         self._format_driver = None
+        self._inertial_children = []
 
         # Eventually build a mapping from body_index to inertial_facts.
         self._mapping = {}
@@ -242,6 +257,7 @@ class XmlInertiaMapper:
                 self._format_driver = SdformatDriver()
             else:
                 raise RuntimeError("unknown file format!")
+        self._inertial_children = self._format_driver.inertial_children()
 
         if self._format_driver.is_model_element(name):
             element = self._make_element_facts(name, attributes)
@@ -266,6 +282,13 @@ class XmlInertiaMapper:
             element.parent = self._links[-1]
             self._inertials.append(element)
 
+        if name in self._inertial_children:
+            # TODO ascertain that mass only occurs as a child of inertial.
+            element = self._make_element_facts(name, attributes)
+            element.parent = self._inertials[-1]
+            # TODO ascertain that all of these only children.
+            element.parent.children[name] = [element]
+
         self._depth += 1
 
     def _end_element(self, name: str):
@@ -274,8 +297,8 @@ class XmlInertiaMapper:
         if self._format_driver.is_model_element(name):
             self._model_stack.pop()
 
-        if name == "inertial":
-            self._inertials[-1].end = self._make_location()
+        if name in self._inertial_children:
+            self._inertials[-1].children[name][0].end = self._make_location()
 
     def parse(self):
         """Execute the parsing of the XML text."""
