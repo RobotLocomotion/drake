@@ -2,9 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "drake/geometry/proximity/make_cylinder_mesh.h"
-#include "drake/geometry/proximity/mesh_to_vtk.h"
-
 namespace drake {
 namespace geometry {
 namespace internal {
@@ -30,10 +27,10 @@ GTEST_TEST(DetectNullTetrahedronTest, TestOneNullTetrahedron) {
       std::vector<Vector3d>{Vector3d::Zero(), Vector3d::UnitX(),
                             Vector3d::UnitY(), Vector3d::UnitZ()});
 
-  std::vector<int> zero_tetrahedron = DetectNullTetrahedron(test_mesh);
+  std::vector<int> null_tetrahedron = DetectNullTetrahedron(test_mesh);
 
-  ASSERT_EQ(zero_tetrahedron.size(), 1);
-  EXPECT_EQ(zero_tetrahedron[0], 0);
+  ASSERT_EQ(null_tetrahedron.size(), 1);
+  EXPECT_EQ(null_tetrahedron[0], 0);
 }
 
 GTEST_TEST(DetectNullTetrahedronTest, TestNoNullTetrahedron) {
@@ -58,9 +55,7 @@ GTEST_TEST(DetectNullTetrahedronTest, TestNoNullTetrahedron) {
                             Vector3d::UnitY(), Vector3d::UnitZ(),
                             Vector3d{0.25, 0.25, 0.25}});
 
-  std::vector<int> zero_tetrahedron = DetectNullTetrahedron(test_mesh);
-
-  EXPECT_EQ(zero_tetrahedron.size(), 0);
+  EXPECT_EQ(DetectNullTetrahedron(test_mesh).size(), 0);
 }
 
 GTEST_TEST(DetectNullInteriorTriangleTest, TestOneNullInteriorTriangleTest) {
@@ -85,11 +80,11 @@ GTEST_TEST(DetectNullInteriorTriangleTest, TestOneNullInteriorTriangleTest) {
                             Vector3d::UnitY(), Vector3d::UnitZ(),
                             -Vector3d::UnitZ()});
 
-  std::vector<SortedTriplet<int>> zero_triangles = DetectNullInteriorTriangle
+  std::vector<SortedTriplet<int>> null_triangles = DetectNullInteriorTriangle
       (test_mesh);
 
-  ASSERT_EQ(zero_triangles.size(), 1);
-  EXPECT_EQ(zero_triangles[0], SortedTriplet<int>({0, 1, 2}));
+  ASSERT_EQ(null_triangles.size(), 1);
+  EXPECT_EQ(null_triangles[0], SortedTriplet<int>({0, 1, 2}));
 }
 
 GTEST_TEST(DetectNullInteriorTriangleTest, TestNoNullInteriorTriangleTest) {
@@ -114,9 +109,7 @@ GTEST_TEST(DetectNullInteriorTriangleTest, TestNoNullInteriorTriangleTest) {
                             Vector3d::UnitY(), Vector3d::UnitZ(),
                             Vector3d{0.25, 0.25, 0.25}});
 
-  std::vector<SortedTriplet<int>> zero_triangles = DetectNullInteriorTriangle
-      (test_mesh);
-  EXPECT_EQ(zero_triangles.size(), 0);
+  EXPECT_EQ(DetectNullInteriorTriangle(test_mesh).size(), 0);
 }
 
 GTEST_TEST(DetectNullInteriorEdgeTest, TestOneNullInteriorEdgeTest) {
@@ -140,9 +133,9 @@ GTEST_TEST(DetectNullInteriorEdgeTest, TestOneNullInteriorEdgeTest) {
                             Vector3d::UnitY(), Vector3d::UnitZ(),
                             Vector3d(0, -1, -1)});
 
-  std::vector<SortedPair<int>> zero_edges = DetectNullInteriorEdge(test_mesh);
-  ASSERT_EQ(zero_edges.size(), 1);
-  EXPECT_EQ(zero_edges[0], SortedPair<int>({0, 1}));
+  std::vector<SortedPair<int>> null_edges = DetectNullInteriorEdge(test_mesh);
+  ASSERT_EQ(null_edges.size(), 1);
+  EXPECT_EQ(null_edges[0], SortedPair<int>({0, 1}));
 }
 
 GTEST_TEST(DetectNullInteriorEdgeTest, TestNoNullInteriorEdgeTest) {
@@ -167,8 +160,7 @@ GTEST_TEST(DetectNullInteriorEdgeTest, TestNoNullInteriorEdgeTest) {
                             Vector3d::UnitY(), Vector3d::UnitZ(),
                             Vector3d{0.25, 0.25, 0.25}});
 
-  std::vector<SortedPair<int>> zero_edges = DetectNullInteriorEdge(test_mesh);
-  EXPECT_EQ(zero_edges.size(), 0);
+  EXPECT_EQ(DetectNullInteriorEdge(test_mesh).size(), 0);
 }
 
 }  // namespace
