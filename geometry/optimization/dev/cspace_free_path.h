@@ -15,7 +15,7 @@
 #include "drake/common/polynomial.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 #include "drake/geometry/optimization/cspace_free_structs.h"
-#include "drake/geometry/optimization/dev/cspace_free_path_separating_plane.h"
+#include "drake/geometry/optimization/cspace_separating_plane.h"
 #include "drake/geometry/optimization/dev/polynomial_positive_on_path.h"
 
 namespace drake {
@@ -142,7 +142,7 @@ class CspaceFreePath {
   }
 
   [[nodiscard]] const std::vector<
-      CSpacePathSeparatingPlane<symbolic::Variable>>&
+      CSpaceSeparatingPlane<symbolic::Variable>>&
   separating_planes() const {
     return separating_planes_;
   }
@@ -209,7 +209,7 @@ class CspaceFreePath {
   // We have the invariant plane_geometries_on_path_[i].plane_index == i.
   std::vector<PlaneSeparatesGeometriesOnPath> plane_geometries_on_path_;
 
-  std::vector<CSpacePathSeparatingPlane<symbolic::Variable>> separating_planes_;
+  std::vector<CSpaceSeparatingPlane<symbolic::Variable>> separating_planes_;
   std::unordered_map<SortedPair<geometry::GeometryId>, int>
       map_geometries_to_separating_planes_;
 

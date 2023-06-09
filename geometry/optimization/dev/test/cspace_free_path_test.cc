@@ -140,7 +140,7 @@ TEST_F(CIrisToyRobotTest, CspaceFreePathGeneratePathRationalsTest) {
   separating_planes_ptrs.reserve(dut.separating_planes().size());
   for (const auto& plane : dut.separating_planes()) {
     separating_planes_ptrs.push_back(
-        std::make_unique<CSpacePathSeparatingPlane<symbolic::Variable>>(plane));
+        std::make_unique<CSpaceSeparatingPlane<symbolic::Variable>>(plane));
   }
 
   // We should have the same number of path_plane_geometries as

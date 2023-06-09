@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <utility>
+
 #include "drake/common/symbolic/polynomial.h"
 #include "drake/geometry/optimization/c_iris_collision_geometry.h"
 

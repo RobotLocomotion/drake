@@ -134,7 +134,7 @@ CspaceFreePath::CspaceFreePath(const multibody::MultibodyPlant<double>* plant,
   separating_planes_ptrs.reserve(separating_planes_.size());
   for (const auto& plane : separating_planes_) {
     separating_planes_ptrs.push_back(
-        std::make_unique<CSpacePathSeparatingPlane<symbolic::Variable>>(plane));
+        std::make_unique<CSpaceSeparatingPlane<symbolic::Variable>>(plane));
   }
   // Generate the rationals for the separating planes. At this point, the plane
   // components are a function of mu, but the plane_geometries will still be in
