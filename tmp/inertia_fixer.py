@@ -54,7 +54,7 @@ class ElementFacts:
     parent: ElementFacts = None
     "Facts for the parent of this element (optional)."
 
-    children: dict[str, list[ElementFacts]] = field(default_factory=dict)
+    children: list[ElementFacts] = field(default_factory=list)
     "Facts about relevant children of this element (optional)."
 
     serial_number: int = None
@@ -70,11 +70,6 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
     """This interface encapsulates the differences between URDF and SDFormat
     processing, for purposes of the implementation of XmlInertiaMapper.
     """
-
-    @abc.abstractmethod
-    def inertial_children(self) -> list[str]:
-        """Return the list of child elements of the inertial element."""
-        raise NotImplementedError
 
     @abc.abstractmethod
     def is_model_element(self, name: str) -> bool:
@@ -133,9 +128,6 @@ def adjusted_element_end_index(input_text: str, raw_end_index: int) -> int:
 class UrdfDriver(FormatDriver):
     """Format driver for URDF files."""
 
-    def inertial_children(self) -> list[str]:
-        return ["inertia", "mass", "origin"]
-
     def is_model_element(self, name: str) -> bool:
         return name == "robot"
 
@@ -167,13 +159,9 @@ class UrdfDriver(FormatDriver):
                        mass: float, moments: list, products: list) -> str:
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
-        sorted_innards = sorted(
-            inertial_facts.children.values(),
-            key=lambda x: x[0].start.index)
         output = ""
         index = inertial_facts.start.index
-        for kid_list in sorted_innards:
-            facts = kid_list[0]
+        for facts in inertial_facts.children:
             output += input_text[index:facts.start.index]
             match facts.name:
                 case "inertia":
@@ -192,9 +180,6 @@ class UrdfDriver(FormatDriver):
 
 class SdformatDriver(FormatDriver):
     """Format driver for SDFormat files."""
-
-    def inertial_children(self) -> list[str]:
-        return ["inertia", "mass", "pose"]
 
     def is_model_element(self, name: str) -> bool:
         return name == "model"
@@ -229,13 +214,9 @@ class SdformatDriver(FormatDriver):
                        mass: float, moments: list, products: list) -> str:
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
-        sorted_innards = sorted(
-            inertial_facts.children.values(),
-            key=lambda x: x[0].start.index)
         output = ""
         index = inertial_facts.start.index
-        for kid_list in sorted_innards:
-            facts = kid_list[0]
+        for facts in inertial_facts.children:
             output += input_text[index:facts.start.index]
             match facts.name:
                 case "inertia":
@@ -296,7 +277,6 @@ class XmlInertiaMapper:
         self._ignored_links = 0
         self._inertials = []
         self._format_driver = None
-        self._inertial_children = []
 
         # Eventually build a mapping from body_index to inertial_facts.
         self._mapping = {}
@@ -317,11 +297,11 @@ class XmlInertiaMapper:
                 self._format_driver = SdformatDriver()
             else:
                 raise RuntimeError("unknown file format!")
-        self._inertial_children = self._format_driver.inertial_children()
 
         element = self._make_element_facts(name, attributes)
         if self._element_stack:
             element.parent = self._element_stack[-1]
+            element.parent.children.append(element)
 
         if self._format_driver.is_model_element(name):
             if self._model_stack:
@@ -330,7 +310,6 @@ class XmlInertiaMapper:
             self._model_stack.append(element)
 
         if name == "link":
-            element.parent = self._model_stack[-1]
             element.serial_number = len(self._links) - self._ignored_links
 
             if self._format_driver.is_element_ignored(name, attributes):
@@ -340,13 +319,7 @@ class XmlInertiaMapper:
             self._links.append(element)
 
         if name == "inertial":
-            element.parent = self._links[-1]
             self._inertials.append(element)
-
-        if name in self._inertial_children:
-            if self._element_stack[-1].name == "inertial":
-                # TODO ascertain that all of these only children.
-                element.parent.children[name] = [element]
 
         self._depth += 1
         self._element_stack.append(element)
