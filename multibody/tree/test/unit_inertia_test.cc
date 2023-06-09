@@ -623,6 +623,150 @@ GTEST_TEST(UnitInertia, ShiftFromCenterOfMassInPlace) {
   EXPECT_TRUE(G3.CouldBePhysicallyValid());
 }
 
+// Test the UnitInertia function that determines an inertia-equivalent shape.
+GTEST_TEST(UnitInertia, CalcPrincipalHalfLengthsAndAxesForEquivalentShape) {
+  // Consider a body B whose shape (e.g., an ellipsoid or box) is defined by
+  // semi-diameters (half-lengths) a, b, c.
+  const double a = 5.0, b = 4.0, c = 3.0;
+  constexpr double kTolerance = 64 * std::numeric_limits<double>::epsilon();
+  const drake::math::RotationMatrix R_identity =
+      drake::math::RotationMatrix<double>::Identity();
+
+  // Form the unit inertia G_BBcm_B for a solid ellipsoid B. Verify the function
+  // under test reproduces semi-diameters lmax = a, lmed = b, lmin = c.
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  const double shape_factor_solid_ellipsoid = 0.2;  // Inertia shape factor.
+  double Gmin = shape_factor_solid_ellipsoid * (b*b + c*c);  // 1/5 (b² + c²)
+  double Gmed = shape_factor_solid_ellipsoid * (a*a + c*c);  // 1/5 (a² + c²)
+  double Gmax = shape_factor_solid_ellipsoid * (a*a + b*b);  // 1/5 (a² + b²)
+  UnitInertia<double> G_BBcm_B = UnitInertia<double>(Gmin, Gmed, Gmax);
+  auto [abc, R_BA] =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_solid_ellipsoid);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  EXPECT_TRUE(R_BA.IsExactlyEqualTo(R_identity));
+
+  // Form the unit inertia G_BBcm_B for a solid box B. Verify the function
+  // under test reproduces half-lengths lmax = a, lmed = b, lmin = c.
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  const double shape_factor_solid_box = 1.0 / 3.0;  // Inertia shape factor.
+  Gmin = shape_factor_solid_box * (b*b + c*c);  // Gxx = 1/3 (b² + c²)  small
+  Gmed = shape_factor_solid_box * (a*a + c*c);  // Gyy = 1/3 (a² + c²)  medium
+  Gmax = shape_factor_solid_box * (a*a + b*b);  // Gzz = 1/3 (a² + b²)  large
+  G_BBcm_B = UnitInertia<double>(Gmin, Gmed, Gmax);
+  std::tie(abc, R_BA) =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_solid_box);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  EXPECT_TRUE(R_BA.IsExactlyEqualTo(R_identity));
+
+  // For a solid box B with principal moments of inertia Gmed < Gmin
+  // (not Gmin < Gmed < Gmax), verify the function under test produces
+  // lmax = a, lmed = b, lmin = c (unchanged order).
+  // Verify reordered principal directions (R_BA is not an identity matrix).
+  G_BBcm_B = UnitInertia<double>(Gmed, Gmin, Gmax);
+  std::tie(abc, R_BA) =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_solid_box);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+  Vector3<double> col_min(0.0, 1.0, 0.0);  // Direction for minimum axis.
+  Vector3<double> col_med(1.0, 0.0, 0.0);  // Direction for intermediate axis.
+  Vector3<double> col_max(0.0, 0.0, 1.0);  // Direction for maximum axis.
+  drake::math::RotationMatrix<double> R_BA_expected =
+      drake::math::RotationMatrix<double>::MakeFromOrthonormalColumns(
+          col_min, col_med, -col_max);
+  EXPECT_TRUE(R_BA.IsNearlyEqualTo(R_BA_expected, kTolerance));
+
+  // For a solid box B, verify the function under test with argument
+  // shape_factor_solid_ellipsoid produces properly scaled semi-diameters
+  // (half-lengths) [a, b, c], i.e., a solid box reshaped as an ellipsoid.
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  std::tie(abc, R_BA) =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_solid_ellipsoid);
+  const double ratio =
+      std::sqrt(shape_factor_solid_box / shape_factor_solid_ellipsoid);
+  EXPECT_NEAR(std::abs(ratio), std::sqrt(1.0/0.6), kTolerance);
+  EXPECT_TRUE(CompareMatrices(ratio * Vector3<double>(a, b, c),
+                              abc, kTolerance));
+
+  // For a hollow sphere B, verify the function under test produces
+  // semi-diameters lmax = a, lmed = a, lmin = a.
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  // For a hollow sphere with radius a, Gmin = Gmed = Gmax = 2/3 a².
+  const double shape_factor_hollow_ellipsoid = 1.0 /3.0;
+  const double G_hollow_sphere = 2.0 / 3.0 * a * a;
+  G_BBcm_B =
+      UnitInertia<double>(G_hollow_sphere, G_hollow_sphere, G_hollow_sphere);
+  std::tie(abc, R_BA) =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_hollow_ellipsoid);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, a, a), abc, kTolerance));
+  EXPECT_TRUE(R_BA.IsExactlyEqualTo(R_identity));
+
+  // For a particle B, verify the function under test produces
+  // lmax = lmed = lmin = 0 (the inertia_shape_factor is not relevant).
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  G_BBcm_B = UnitInertia<double>(0, 0, 0);
+  std::tie(abc, R_BA) =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(0.123);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(0, 0, 0), abc, kTolerance));
+  EXPECT_TRUE(R_BA.IsExactlyEqualTo(R_identity));
+
+  // For a thin solid rod B, verify the function under test produces
+  // lmax = a, lmed = 0, lmin = 0 (rod dimensions).
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  const double I_rod = 1.0 / 3.0 * a * a;  // Imed = Imax = 1/12 (2*a)².
+  G_BBcm_B = UnitInertia<double>(0, I_rod, I_rod);
+  std::tie(abc, R_BA) =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_solid_box);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, 0, 0), abc, kTolerance));
+  EXPECT_TRUE(R_BA.IsExactlyEqualTo(R_identity));
+
+  // For a thin solid flat plate B, verify the function under test produces
+  // lmax = a, lmed = b, lmin = 0 (plate dimensions).
+  // Verify principal directions Ax, Ay, Az (R_BA is an identity matrix).
+  const double Imin_plate = 1.0 / 3.0 * b*b;          // Gxx = 1/12 (2*b)²
+  const double Imed_plate = 1.0 / 3.0 * a*a;          // Gyy = 1/12 (2*a)²
+  const double Imax_plate = Imin_plate + Imed_plate;  // Gzz = 1/3 (a² + b²)
+  G_BBcm_B = UnitInertia<double>(Imin_plate, Imed_plate, Imax_plate);
+  std::tie(abc, R_BA) =
+      G_BBcm_B.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_solid_box);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, 0), abc, kTolerance));
+  EXPECT_TRUE(R_BA.IsExactlyEqualTo(R_identity));
+
+  // For a solid box B whose principal inertia axes are rotated 30 degrees from
+  // frame B, verify the function under test produces
+  // lmax = a, lmed = b, lmin = c (unchanged order).
+  // Verify principal directions Ax, Ay, Az (R_BA is not an identity matrix).
+  // Note: This tests a unit inertia with non-zero products of inertia.
+  G_BBcm_B = UnitInertia<double>(Gmin, Gmed, Gmax);
+  drake::math::RotationMatrix<double> R_BC =
+      drake::math::RotationMatrix<double>::MakeZRotation(M_PI / 6.0);
+  UnitInertia<double> G_BBcm_C = G_BBcm_B.ReExpress(R_BC);
+  std::tie(abc, R_BA) =
+      G_BBcm_C.CalcPrincipalHalfLengthsAndAxesForEquivalentShape(
+          shape_factor_solid_box);
+  EXPECT_TRUE(CompareMatrices(Vector3<double>(a, b, c), abc, kTolerance));
+
+  // The orthogonal unit length eigenvectors Ax_B, Ay_B, Az_B stored in the
+  // columns of R_BA are parallel to the principal axes (lines). Since lines
+  // do not have a fully-qualified direction (they lack sense), all we can check
+  // is whether these principal axes (represented by Ax_B, Ay_B, Az_B) are
+  // parallel to the right-handed unit vectors Cx_B, Cy_B, Cz_B stored in the
+  // columns of R_BC and whether they form a right-handed set.
+  const Vector3<double> Ax_B = R_BA.col(0), Cx_B = R_BC.col(0);
+  const Vector3<double> Ay_B = R_BA.col(1), Cy_B = R_BC.col(1);
+  const Vector3<double> Az_B = R_BA.col(2), Cz_B = R_BC.col(2);
+  EXPECT_NEAR(std::abs(Az_B(2)), 1.0, kTolerance);  // Az = [0 0 1] or [0 0 -1]
+  EXPECT_NEAR(std::abs(Ax_B.dot(Cx_B)), 1.0, kTolerance);  // Ax parallel to Cx.
+  EXPECT_NEAR(std::abs(Ay_B.dot(Cy_B)), 1.0, kTolerance);  // Ay parallel to Cy.
+  EXPECT_NEAR(std::abs(Az_B.dot(Cz_B)), 1.0, kTolerance);  // Az parallel to Cz.
+  EXPECT_NEAR(Ax_B.cross(Ay_B).dot(Az_B), 1.0, kTolerance);  // Right-handed.
+}
+
 // Tests that we can correctly cast a UnitInertia<double> to a UnitInertia
 // templated on AutoDiffXd.
 GTEST_TEST(UnitInertia, CastToAutoDiff) {

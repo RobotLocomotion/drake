@@ -76,7 +76,10 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
   // Coordinate names.
   const std::vector<std::string>& coordinate_names = dut.GetCoordinateNames();
   const std::vector<std::string> expected_names = {
-    "x", "two_word", "absone", "unset",
+      "x",
+      "two_word",
+      "absone",
+      "unset",
   };
   ASSERT_EQ(coordinate_names.size(), expected_names.size());
   for (int i = 0; i < dut.size(); ++i) {
@@ -86,9 +89,8 @@ GTEST_TEST(SampleTest, SimpleCoverage) {
 
 // When inheritance is in use, we should only permit public copy & move
 // operations to exist on classes that are marked as final.
-static_assert(
-    std::is_final_v<Sample<double>>,
-    "Sample<T> should have been final");
+static_assert(std::is_final_v<Sample<double>>,
+              "Sample<T> should have been final");
 
 // Confirm that copy semantics work.
 GTEST_TEST(SampleTest, Copy) {
@@ -197,6 +199,7 @@ GTEST_TEST(SampleTest, SetToNamedVariablesTest) {
 GTEST_TEST(SampleTest, SymbolicIsValid) {
   Sample<symbolic::Expression> dut;
   dut.SetToNamedVariables();
+  // clang-format off
   const symbolic::Formula expected_is_valid =
       !isnan(dut.x()) &&
       !isnan(dut.two_word()) &&
@@ -206,6 +209,7 @@ GTEST_TEST(SampleTest, SymbolicIsValid) {
       (dut.two_word() <= 2.0) &&
       (dut.absone() >= -1.0) &&
       (dut.absone() <= 1.0);
+  // clang-format on
   EXPECT_TRUE(dut.IsValid().EqualTo(expected_is_valid));
 }
 

@@ -9,12 +9,8 @@ Provides a C++ version libsdformat's `gz sdf` ruby command-line interface.
 
 #include "drake/common/drake_assert.h"
 
-DEFINE_string(
-    check, "",
-    "Checks an SDFormat file");
-DEFINE_string(
-    describe, "",
-    "Describes a given SDFormat version");
+DEFINE_string(check, "", "Checks an SDFormat file");
+DEFINE_string(describe, "", "Describes a given SDFormat version");
 DEFINE_string(
     print, "",
     "Prints an SDFormat file after parsing and converting to the converted "
@@ -26,8 +22,8 @@ DEFINE_string(
 // we must declare them here.
 // TODO(eric.cousineau): Remove these and include `gz.hh`. See:
 // https://github.com/osrf/sdformat/issues/323
-extern "C" int cmdCheck(const char *_path);
-extern "C" int cmdDescribe(const char *_version);
+extern "C" int cmdCheck(const char* _path);
+extern "C" int cmdDescribe(const char* _version);
 extern "C" int cmdPrint(const char* _path, int _inDegrees, int _snapToDegrees,
                         float _snapTolerance, int _preserveIncludes,
                         int _outPrecision);

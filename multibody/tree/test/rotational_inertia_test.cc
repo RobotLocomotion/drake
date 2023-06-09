@@ -596,7 +596,6 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   I_BBcm_P = I_BBcm_C.CalcPrincipalMomentsAndAxesOfInertia();
   EXPECT_TRUE(CompareMatrices(Vector3<double>(Imin, Imed, Imax),
                               I_BBcm_P.first, kTolerance));
-
   // The orthogonal unit length eigenvectors Px_B, Py_B, Pz_B stored in the
   // columns of R_BP are parallel to the principal axes (lines). Since lines
   // do not have a fully-qualified direction (they lack sense), all we can check
@@ -607,6 +606,7 @@ GTEST_TEST(RotationalInertia, CalcPrincipalMomentsAndAxesOfInertia) {
   const Vector3<double> Px_B = R_BP.col(0), Cx_B = R_BC.col(0);
   const Vector3<double> Py_B = R_BP.col(1), Cy_B = R_BC.col(1);
   const Vector3<double> Pz_B = R_BP.col(2), Cz_B = R_BC.col(2);
+  EXPECT_NEAR(std::abs(Pz_B(2)), 1.0, kTolerance);  // Pz = [0 0 1] or [0 0 -1]
   EXPECT_NEAR(std::abs(Px_B.dot(Cx_B)), 1.0, kTolerance);  // Px parallel to Cx.
   EXPECT_NEAR(std::abs(Py_B.dot(Cy_B)), 1.0, kTolerance);  // Py parallel to Cy.
   EXPECT_NEAR(std::abs(Pz_B.dot(Cz_B)), 1.0, kTolerance);  // Pz parallel to Cz.

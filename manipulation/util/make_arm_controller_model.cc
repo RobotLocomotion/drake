@@ -28,11 +28,13 @@ namespace {
 
 bool AreFramesWelded(const MultibodyPlant<double>& plant,
                      const Frame<double>& A, const Frame<double>& B) {
-  if (&A.body() == &B.body())
+  if (&A.body() == &B.body()) {
     return true;
+  }
   for (const auto* body : plant.GetBodiesWeldedTo(A.body())) {
-    if (body == &B.body())
+    if (body == &B.body()) {
       return true;
+    }
   }
   return false;
 }

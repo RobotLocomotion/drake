@@ -394,6 +394,7 @@ drake_cc_library(
     deps = [
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:matrix_block",
     ],
 )
 
@@ -538,6 +539,7 @@ drake_cc_googletest(
     deps = [
         ":slicing_and_indexing",
         "//common:essential",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -1111,4 +1113,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests()
+add_lint_tests(enable_clang_format_lint = False)

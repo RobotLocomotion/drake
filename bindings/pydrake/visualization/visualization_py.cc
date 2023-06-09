@@ -6,6 +6,7 @@
 
 namespace drake {
 namespace pydrake {
+namespace {
 
 template <typename T>
 void DoScalarDependentDefinitions(py::module m, T) {
@@ -50,6 +51,8 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("SetPose", &Class::SetPose, py::arg("pose"), cls_doc.SetPose.doc);
   }
 }
+
+}  // namespace
 
 PYBIND11_MODULE(visualization, m) {
   PYDRAKE_PREVENT_PYTHON3_MODULE_REIMPORT(m);

@@ -26,7 +26,8 @@ void main() {
   reader->Update();
   vtkPolyData* to_be_written = reader->GetOutput();
   log()->debug("The STL mesh has {} points and {} polygons",
-      to_be_written->GetNumberOfPoints(), to_be_written->GetNumberOfPolys());
+               to_be_written->GetNumberOfPoints(),
+               to_be_written->GetNumberOfPolys());
 
   // Optionally decimate.  We must to create these objects outside of the
   // "if" block (not as temporaries inside) so that they remain available
@@ -50,7 +51,8 @@ void main() {
 
   // Write the OBJ.
   log()->debug("The OBJ mesh has {} points and {} polygons",
-      to_be_written->GetNumberOfPoints(), to_be_written->GetNumberOfPolys());
+               to_be_written->GetNumberOfPoints(),
+               to_be_written->GetNumberOfPolys());
   auto writer = vtkSmartPointer<vtkOBJWriter>::New();
   writer->SetFileName(FLAGS_output.c_str());
   writer->SetInputData(to_be_written);

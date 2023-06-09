@@ -42,8 +42,9 @@ namespace internal {
  instances -- the original and all instances *cloned* from it. The library
  is threadsafe for adding new textures to the OpenGl context such that if one
  instance loads a texture, the others will benefit from it instead of blindly
- duplicating the texture in memory. This works because the OpenGlContext is
- also shared across a family of RenderEngineGl instances. */
+ duplicating the texture in memory. This works because the cloned OpenGlContext
+ instances share texture objects in GPU memory; the texture ids in this
+ texture library apply equally well to every such OpenGl context. */
 class TextureLibrary {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(TextureLibrary);

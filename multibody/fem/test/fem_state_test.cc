@@ -12,7 +12,8 @@ namespace {
 
 using Eigen::VectorXd;
 constexpr int kNumElements = 2;
-constexpr int kNumDofs = 12;
+constexpr int kNumNodes = 4;
+constexpr int kNumDofs = 3 * kNumNodes;
 
 /* Dummy values for the states. */
 template <typename T>
@@ -96,6 +97,7 @@ TYPED_TEST(FemStateTest, SharedFemState) {
   auto context = this->fem_state_system_->CreateDefaultContext();
   FemState<T> state(this->fem_state_system_.get(), context.get());
   EXPECT_EQ(state.num_dofs(), kNumDofs);
+  EXPECT_EQ(state.num_nodes(), kNumNodes);
   EXPECT_EQ(state.GetPositions(), q<T>());
   EXPECT_EQ(state.GetVelocities(), v<T>());
   EXPECT_EQ(state.GetAccelerations(), a<T>());
@@ -111,6 +113,7 @@ TYPED_TEST(FemStateTest, GetStates) {
   using T = TypeParam;
   const FemState<T> state(this->fem_state_system_.get());
   EXPECT_EQ(state.num_dofs(), kNumDofs);
+  EXPECT_EQ(state.num_nodes(), kNumNodes);
   EXPECT_EQ(state.GetPositions(), q<T>());
   EXPECT_EQ(state.GetVelocities(), v<T>());
   EXPECT_EQ(state.GetAccelerations(), a<T>());

@@ -41,10 +41,8 @@ class MoveIkDemoBase {
   ///
   /// @param print_interval Print an updated end effector position every N
   /// calls to HandleStatus.
-  MoveIkDemoBase(std::string robot_description,
-                 std::string base_link,
-                 std::string ik_link,
-                 int print_interval);
+  MoveIkDemoBase(std::string robot_description, std::string base_link,
+                 std::string ik_link, int print_interval);
 
   ~MoveIkDemoBase();
 
@@ -71,8 +69,7 @@ class MoveIkDemoBase {
   /// nullopt if planning failed.
   ///
   /// @throw If HandleStatus has not been invoked.
-  std::optional<lcmt_robot_plan> Plan(
-      const math::RigidTransformd& goal_pose);
+  std::optional<lcmt_robot_plan> Plan(const math::RigidTransformd& goal_pose);
 
   /// Returns a count of how many times `HandleStatus` has been called.
   int status_count() const { return status_count_; }

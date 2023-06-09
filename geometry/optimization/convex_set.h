@@ -7,6 +7,7 @@
 
 #include "drake/common/copyable_unique_ptr.h"
 #include "drake/common/drake_assert.h"
+#include "drake/common/reset_after_move.h"
 #include "drake/geometry/geometry_ids.h"
 #include "drake/geometry/query_object.h"
 #include "drake/geometry/shape_specification.h"
@@ -180,7 +181,9 @@ class ConvexSet : public ShapeReifier {
   /** Implements non-virtual base class serialization. */
   template <typename Archive>
   void Serialize(Archive* a) {
-    a->Visit(MakeNameValue("ambient_dimension", &ambient_dimension_));
+    // Visit the mutable reference inside the reset_after_move wrapper.
+    int& ambient_dimension = ambient_dimension_;
+    a->Visit(DRAKE_NVP(ambient_dimension));
   }
 
   /** Non-virtual interface implementation for Clone(). */
@@ -238,7 +241,21 @@ class ConvexSet : public ShapeReifier {
   DoToShapeWithPose() const = 0;
 
  private:
-  int ambient_dimension_{0};
+  // The reset_after_move wrapper adjusts ConvexSet's default move constructor
+  // and move assignment operator to set the ambient dimension of a moved-from
+  // object back to zero. This is essential to keep the ambient dimension in
+  // sync with any moved-from member fields in concrete ConvexSet subclasses.
+  //
+  // For example, the `Eigen::VectorXd x_` member field of `Point` will be moved
+  // out, ending up with `x_.size() == 0` on the moved-from Point. To maintain
+  // the invariant that `x_.size() == ambient_dimension_`, we need to zero the
+  // dimension when `x_` is moved-from.
+  //
+  // Similarly, for subclasses that are composite sets (e.g., CartesianProduct)
+  // the `ConvexSets sets_` vector becomes empty when moved-from. To maintain
+  // an invariant like `∑(set.size() for set in sets_) == ambient_dimension_`,
+  // we need to zero the dimension when `sets_` is moved-from.
+  reset_after_move<int> ambient_dimension_;
 };
 
 /** Provides the recommended container for passing a collection of ConvexSet

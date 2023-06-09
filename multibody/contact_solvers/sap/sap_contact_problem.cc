@@ -6,6 +6,7 @@
 #include "drake/common/drake_throw.h"
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
+#include "drake/multibody/plant/slicing_and_indexing.h"
 
 namespace drake {
 namespace multibody {
@@ -59,6 +60,57 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::Clone() const {
     clone->AddConstraint(c.Clone());
   }
   return clone;
+}
+
+template <typename T>
+std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::MakeReduced(
+    const std::vector<int>& known_free_motion_dofs,
+    const std::vector<std::vector<int>>& per_clique_known_free_motion_dofs,
+    ReducedMapping* mapping) const {
+  DRAKE_ASSERT_VOID(drake::multibody::internal::DemandIndicesValid(
+      known_free_motion_dofs, num_velocities()));
+  DRAKE_DEMAND(ssize(per_clique_known_free_motion_dofs) == num_cliques());
+  for (int i = 0; i < num_cliques(); ++i) {
+    DRAKE_ASSERT_VOID(drake::multibody::internal::DemandIndicesValid(
+        per_clique_known_free_motion_dofs[i], num_velocities(i)));
+  }
+  DRAKE_DEMAND(mapping != nullptr);
+
+  mapping->clique_permutation = PartialPermutation(num_cliques());
+  mapping->constraint_permutation = PartialPermutation(num_constraints());
+
+  // Project v_star and A matrices to reduced DOFs.
+  VectorX<T> v_star_reduced =
+      drake::multibody::internal::ExcludeRows(v_star_, known_free_motion_dofs);
+
+  std::vector<MatrixX<T>> A_reduced;
+  A_reduced.reserve(A_.size());
+  for (int i = 0; i < num_cliques(); ++i) {
+    // Clique participates if at least one of its dofs is not locked.
+    if (ssize(per_clique_known_free_motion_dofs[i]) < num_velocities(i)) {
+      A_reduced.push_back(drake::multibody::internal::ExcludeRowsCols(
+          A_[i], per_clique_known_free_motion_dofs[i]));
+      mapping->clique_permutation.push(i);
+    }
+  }
+
+  // Construct a problem with reduced parameters.
+  std::unique_ptr<SapContactProblem> problem =
+      std::make_unique<SapContactProblem<T>>(time_step(), std::move(A_reduced),
+                                             std::move(v_star_reduced));
+
+  // Make reduced constraints.
+  for (int i = 0; i < num_constraints(); ++i) {
+    std::unique_ptr<SapConstraint<T>> c = get_constraint(i).MakeReduced(
+        mapping->clique_permutation, per_clique_known_free_motion_dofs);
+
+    if (c) {
+      mapping->constraint_permutation.push(i);
+      problem->AddConstraint(std::move(c));
+    }
+  }
+
+  return problem;
 }
 
 template <typename T>
