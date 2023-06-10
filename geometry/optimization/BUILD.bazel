@@ -25,6 +25,7 @@ drake_cc_package_library(
         ":cspace_separating_plane",
         ":graph_of_convex_sets",
         ":iris",
+        ":iris_internal",
     ],
 )
 
@@ -164,11 +165,24 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "iris_internal",
+    srcs = ["iris_internal.cc"],
+    hdrs = ["iris_internal.h"],
+    deps = [
+        ":convex_set",
+        "//multibody/plant",
+        "//solvers:mathematical_program",
+        "//solvers:solve",
+    ],
+)
+
+drake_cc_library(
     name = "iris",
     srcs = ["iris.cc"],
     hdrs = ["iris.h"],
     deps = [
         ":convex_set",
+        ":iris_internal",
         "//common:name_value",
         "//geometry:scene_graph",
         "//multibody/plant",
