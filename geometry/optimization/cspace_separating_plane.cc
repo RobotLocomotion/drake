@@ -62,7 +62,7 @@ Eigen::VectorXd ComputeGradedRevLexEvaluatedPowers(
   }
   // Make a grevlex basis that we can now evaluate with the desired
   // values.
-  Eigen::VectorX<symbolic::Monomial> basis =
+  VectorX<symbolic::Monomial> basis =
       symbolic::MonomialBasis(vars, degree);
   Eigen::VectorXd ret{basis.size()};
   for (int i = 0; i < basis.size(); ++i) {
