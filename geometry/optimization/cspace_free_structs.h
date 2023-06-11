@@ -39,7 +39,6 @@ struct PlaneSeparatesGeometries {
 };
 
 struct FindSeparationCertificateOptions {
-  DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(FindSeparationCertificateOptions)
   FindSeparationCertificateOptions() = default;
 
   virtual ~FindSeparationCertificateOptions() = default;
@@ -60,6 +59,9 @@ struct FindSeparationCertificateOptions {
 
   // The solver options used for the SOS program.
   std::optional<solvers::SolverOptions> solver_options{std::nullopt};
+
+ protected:
+  DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(FindSeparationCertificateOptions)
 };
 
 /**
