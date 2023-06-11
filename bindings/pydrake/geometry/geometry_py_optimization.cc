@@ -4,13 +4,23 @@
 
 #include "pybind11/stl/filesystem.h"
 
+#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
+#include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
+#include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
+#include "drake/bindings/pydrake/polynomial_types_pybind.h"
+#include "drake/bindings/pydrake/pydrake_pybind.h"
+#include "drake/geometry/optimization/c_iris_collision_geometry.h"
+#include "drake/geometry/optimization/c_iris_separating_plane.h"
 #include "drake/geometry/optimization/cartesian_product.h"
+#include "drake/geometry/optimization/cspace_free_polytope.h"
+#include "drake/geometry/optimization/cspace_free_structs.h"
+#include "drake/geometry/optimization/cspace_separating_plane.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
 #include "drake/geometry/optimization/hyperellipsoid.h"
@@ -21,24 +31,10 @@
 #include "drake/geometry/optimization/spectrahedron.h"
 #include "drake/geometry/optimization/vpolytope.h"
 
-#include "drake/bindings/pydrake/common/cpp_template_pybind.h"
-#include "drake/bindings/pydrake/common/default_scalars_pybind.h"
-#include "drake/bindings/pydrake/common/sorted_pair_pybind.h"
-#include "drake/bindings/pydrake/common/value_pybind.h"
-#include "drake/bindings/pydrake/documentation_pybind.h"
-#include "drake/bindings/pydrake/polynomial_types_pybind.h"
-#include "drake/bindings/pydrake/pydrake_pybind.h"
-#include "drake/geometry/optimization/c_iris_collision_geometry.h"
-#include "drake/geometry/optimization/c_iris_separating_plane.h"
-#include "drake/geometry/optimization/cspace_free_polytope.h"
-#include "drake/geometry/optimization/cspace_free_structs.h"
-#include "drake/geometry/optimization/cspace_separating_plane.h"
-
 namespace drake {
 namespace pydrake {
 
-
-// CSpaceSeparatingPlane, CIrisSeparatingPlane, CSpacePathSeparatingPlane
+// CSpaceSeparatingPlane, CIrisSeparatingPlane
 template <typename T>
 void DoSeparatingPlaneDeclaration(py::module m, T) {
   constexpr auto& doc = pydrake_doc.drake.geometry.optimization;
@@ -70,18 +66,18 @@ void DoSeparatingPlaneDeclaration(py::module m, T) {
     auto cls =
         DefineTemplateClassWithDefault<CIrisClass, BaseClass>(
             m, "CIrisSeparatingPlane", param, ciris_cls_doc.doc)
-            .def_readonly("a", &BaseClass::a, py_rvp::copy, base_cls_doc.a.doc)
-            .def_readonly("b", &BaseClass::b, base_cls_doc.b.doc)
+            .def_readonly("a", &CIrisClass::a, py_rvp::copy, base_cls_doc.a.doc)
+            .def_readonly("b", &CIrisClass::b, base_cls_doc.b.doc)
             .def_readonly("positive_side_geometry",
-                &BaseClass::positive_side_geometry,
+                &CIrisClass::positive_side_geometry,
                 base_cls_doc.positive_side_geometry.doc)
             .def_readonly("negative_side_geometry",
-                &BaseClass::negative_side_geometry,
+                &CIrisClass::negative_side_geometry,
                 base_cls_doc.negative_side_geometry.doc)
-            .def_readonly("expressed_body", &BaseClass::expressed_body,
+            .def_readonly("expressed_body", &CIrisClass::expressed_body,
                 base_cls_doc.expressed_body.doc)
             .def_readonly("plane_order", &CIrisClass::plane_order)
-            .def_readonly("decision_variables", &BaseClass::decision_variables,
+            .def_readonly("decision_variables", &CIrisClass::decision_variables,
                 py_rvp::copy, base_cls_doc.a.doc);
     DefCopyAndDeepCopy(&cls);
     AddValueInstantiation<CIrisClass>(m);
@@ -767,8 +763,8 @@ void DefineGeometryOptimization(py::module m) {
             doc.CIrisCollisionGeometry.num_rationals.doc);
   }
   {
-    // Definitions for cspace_separating_plane.h/cc,
-    // c_iris_separating_plane.h/cc, and cspace_free_path_separating_plane.h/cc
+    // Definitions for cspace_separating_plane.h/cc and
+    // c_iris_separating_plane.h/cc
     py::enum_<SeparatingPlaneOrder>(
         m, "SeparatingPlaneOrder", doc.SeparatingPlaneOrder.doc)
         .value("kAffine", SeparatingPlaneOrder::kAffine,
@@ -778,14 +774,36 @@ void DefineGeometryOptimization(py::module m) {
   }
   {
     // Definitions for cpsace_free_structs.h/cc
-    constexpr auto& prog_doc = doc.SeparationCertificateProgramBase;
-    auto prog_cls =
-        py::class_<SeparationCertificateProgramBase>(
-            m, "SeparationCertificateProgramBase", prog_doc.doc)
-            //                        .def_readonly("prog",
-            //                                    &SeparationCertificateProgramBase::prog)
+    constexpr auto& separates_doc = doc.PlaneSeparatesGeometries;
+    auto separates_cls =
+        py::class_<PlaneSeparatesGeometries>(
+            m, "PlaneSeparatesGeometries", separates_doc.doc)
+            .def(py::init<std::vector<symbolic::RationalFunction>,
+                     std::vector<symbolic::RationalFunction>, int>(),
+                py::arg("positive_side_rationals"),
+                py::arg("negative_side_rationals"), py::arg("plane_index"))
+            .def_readonly("positive_side_rationals",
+                &PlaneSeparatesGeometries::positive_side_rationals)
+            .def_readonly("negative_side_rationals",
+                &PlaneSeparatesGeometries::negative_side_rationals)
             .def_readonly(
-                "plane_index", &SeparationCertificateProgramBase::plane_index);
+                "plane_index", &PlaneSeparatesGeometries::plane_index);
+
+    constexpr auto& find_options_doc = doc.FindSeparationCertificateOptions;
+    auto find_options_cls =
+        py::class_<FindSeparationCertificateOptions>(
+            m, "FindSeparationCertificateOptions", find_options_doc.doc)
+            .def(py::init<>())
+            .def_readwrite(
+                "num_threads", &FindSeparationCertificateOptions::num_threads)
+            .def_readwrite(
+                "verbose", &FindSeparationCertificateOptions::verbose)
+            .def_readwrite(
+                "solver_id", &FindSeparationCertificateOptions::solver_id)
+            .def_readwrite("terminate_at_failure",
+                &FindSeparationCertificateOptions::terminate_at_failure)
+            .def_readwrite("solver_options",
+                &FindSeparationCertificateOptions::solver_options);
 
     constexpr auto& result_doc = doc.SeparationCertificateResultBase;
     auto result_cls =
@@ -797,196 +815,238 @@ void DefineGeometryOptimization(py::module m) {
                 &SeparationCertificateResultBase::plane_decision_var_vals)
             .def_readonly("result", &SeparationCertificateResultBase::result);
 
-    constexpr auto& separates_doc = doc.PlaneSeparatesGeometries;
-    auto separates_cls =
-        py::class_<PlaneSeparatesGeometries>(
-            m, "PlaneSeparatesGeometries", separates_doc.doc)
-            .def_readonly("positive_side_rationals", &PlaneSeparatesGeometries::positive_side_rationals)
-            .def_readonly("negative_side_rationals", &PlaneSeparatesGeometries::negative_side_rationals)
-            .def_readonly("plane_index",
-                &PlaneSeparatesGeometries::plane_index);
+    constexpr auto& prog_doc = doc.SeparationCertificateProgramBase;
+    auto prog_cls = py::class_<SeparationCertificateProgramBase>(
+        m, "SeparationCertificateProgramBase", prog_doc.doc)
+                        .def(
+                            "prog",
+                            [](const SeparationCertificateProgramBase* self) {
+                              return self->prog.get();
+                            },
+                            py_rvp::reference_internal)
+                        .def_readonly("plane_index",
+                            &SeparationCertificateProgramBase::plane_index);
   }
   {
-//    using Class = CspaceFreePolytope;
-//    const auto& cls_doc = doc.CspaceFreePolytope;
-//    py::class_<Class> cspace_free_polytope_cls(
-//        m, "CspaceFreePolytope", cls_doc.doc);
-//
-//    py::class_<Class::Options>(
-//        cspace_free_polytope_cls, "Options", cls_doc.Options.doc)
-//        .def(py::init<>())
-//        .def_readwrite("with_cross_y", &Class::Options::with_cross_y);
-//
-//    cspace_free_polytope_cls
-//        .def(py::init<const multibody::MultibodyPlant<double>*,
-//                 const geometry::SceneGraph<double>*, SeparatingPlaneOrder,
-//                 const Eigen::Ref<const Eigen::VectorXd>&,
-//                 const Class::Options&>(),
-//            py::arg("plant"), py::arg("scene_graph"), py::arg("plane_order"),
-//            py::arg("q_star"), py::arg("options") = Class::Options(),
-//            // Keep alive, reference: `self` keeps `scene_graph` alive.
-//            py::keep_alive<1, 3>(), cls_doc.ctor.doc)
-//        .def("rational_forward_kin", &Class::rational_forward_kin,
-//            py_rvp::reference_internal, cls_doc.rational_forward_kin.doc)
-//        .def(
-//            "map_geometries_to_separating_planes",
-//            [](const CspaceFreePolytope* self) {
-//              // Template deduction for drake::SortedPair<GeometryId> does not
-//              // work. Here we manually make a map of tuples instead.
-//              py::dict ret;
-//              for (auto [k, v] : self->map_geometries_to_separating_planes()) {
-//                ret[py::make_tuple(k.first(), k.second())] = v;
-//              }
-//              return ret;
-//            },
-//            cls_doc.map_geometries_to_separating_planes.doc)
-//        .def("separating_planes", &Class::separating_planes,
-//            cls_doc.separating_planes.doc)
-//        .def("y_slack", &Class::y_slack, cls_doc.y_slack.doc)
-//        .def(
-//            "FindSeparationCertificateGivenPolytope",
-//            [](const CspaceFreePolytope* self,
-//                const Eigen::Ref<const Eigen::MatrixXd>& C,
-//                const Eigen::Ref<const Eigen::VectorXd>& d,
-//                const CspaceFreePolytope::IgnoredCollisionPairs&
-//                    ignored_collision_pairs,
-//                const CspaceFreePolytope::
-//                    FindSeparationCertificateGivenPolytopeOptions& options) {
-//              std::unordered_map<SortedPair<geometry::GeometryId>,
-//                  CspaceFreePolytope::SeparationCertificateResult>
-//                  certificates;
-//              bool success = self->FindSeparationCertificateGivenPolytope(
-//                  C, d, ignored_collision_pairs, options, &certificates);
-//              // Template deduction for drake::SortedPair<GeometryId> does not
-//              // work. Here we manually make a map of tuples instead.
-//              py::dict ret;
-//              for (const auto& [k, v] : certificates) {
-//                ret[py::make_tuple(k.first(), k.second())] = v;
-//              }
-//              return std::pair(success, ret);
-//            },
-//            py::arg("C"), py::arg("d"), py::arg("ignored_collision_pairs"),
-//            py::arg("options"))
-//        .def("SearchWithBilinearAlternation",
-//            &Class::SearchWithBilinearAlternation,
-//            py::arg("ignored_collision_pairs"), py::arg("C_init"),
-//            py::arg("d_init"), py::arg("options"),
-//            cls_doc.SearchWithBilinearAlternation.doc)
-//        .def("BinarySearch", &Class::BinarySearch,
-//            py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
-//            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc);
-//    {
-//      using BaseClass = geometry::optimization::SeparationCertificateResultBase;
-//      py::class_<Class::SeparationCertificateResult,
-//          SeparationCertificateResultBase>(cspace_free_polytope_cls,
-//          "SeparationCertificateResult",
-//          cls_doc.SeparationCertificateResult.doc)
-//          .def_readonly(
-//              "plane_index", &Class::SeparationCertificateResult::plane_index)
-//          .def_readonly("positive_side_rational_lagrangians",
-//              &Class::SeparationCertificateResult::
-//                  positive_side_rational_lagrangians,
-//              cls_doc.SeparationCertificateResult
-//                  .positive_side_rational_lagrangians.doc)
-//          .def_readonly("negative_side_rational_lagrangians",
-//              &Class::SeparationCertificateResult::
-//                  negative_side_rational_lagrangians,
-//              cls_doc.SeparationCertificateResult
-//                  .negative_side_rational_lagrangians.doc)
-//          .def_readonly("a", &BaseClass::a, py_rvp::copy)
-//          .def_readonly("b", &BaseClass::b)
-//          .def_readonly("result", &BaseClass::result)
-//          .def_readonly("plane_decision_var_vals",
-//              &BaseClass::plane_decision_var_vals, py_rvp::copy);
-//    }
-//    py::class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
-//        "SeparatingPlaneLagrangians", cls_doc.SeparatingPlaneLagrangians.doc)
-//        .def("polytope", &Class::SeparatingPlaneLagrangians::polytope,
-//            py_rvp::copy)
-//        .def("s_lower", &Class::SeparatingPlaneLagrangians::s_lower,
-//            py_rvp::copy)
-//        .def("s_upper", &Class::SeparatingPlaneLagrangians::s_upper,
-//            py_rvp::copy);
-//    py::class_<Class::FindSeparationCertificateGivenPolytopeOptions>(
-//        cspace_free_polytope_cls,
-//        "FindSeparationCertificateGivenPolytopeOptions",
-//        cls_doc.FindSeparationCertificateGivenPolytopeOptions.doc)
-//        .def(py::init<>())
-//        .def_readwrite("num_threads",
-//            &Class::FindSeparationCertificateGivenPolytopeOptions::num_threads)
-//        .def_readwrite("verbose",
-//            &Class::FindSeparationCertificateGivenPolytopeOptions::verbose)
-//        .def_readwrite("solver_id",
-//            &Class::FindSeparationCertificateGivenPolytopeOptions::solver_id)
-//        .def_readwrite("terminate_at_failure",
-//            &Class::FindSeparationCertificateGivenPolytopeOptions::
-//                terminate_at_failure)
-//        .def_readwrite("solver_options",
-//            &Class::FindSeparationCertificateGivenPolytopeOptions::
-//                solver_options)
-//        .def_readwrite("ignore_redundant_C",
-//            &Class::FindSeparationCertificateGivenPolytopeOptions::
-//                ignore_redundant_C);
-//
-//    py::class_<Class::FindPolytopeGivenLagrangianOptions>(
-//        cspace_free_polytope_cls, "FindPolytopeGivenLagrangianOptions",
-//        cls_doc.FindPolytopeGivenLagrangianOptions.doc)
-//        .def(py::init<>())
-//        .def_readwrite("backoff_scale",
-//            &Class::FindPolytopeGivenLagrangianOptions::backoff_scale)
-//        .def_readwrite("ellipsoid_margin_epsilon",
-//            &Class::FindPolytopeGivenLagrangianOptions::
-//                ellipsoid_margin_epsilon)
-//        .def_readwrite(
-//            "solver_id", &Class::FindPolytopeGivenLagrangianOptions::solver_id)
-//        .def_readwrite("solver_options",
-//            &Class::FindPolytopeGivenLagrangianOptions::solver_options)
-//        .def_readwrite("s_inner_pts",
-//            &Class::FindPolytopeGivenLagrangianOptions::s_inner_pts)
-//        .def_readwrite("search_s_bounds_lagrangians",
-//            &Class::FindPolytopeGivenLagrangianOptions::
-//                search_s_bounds_lagrangians)
-//        .def_readwrite("ellipsoid_margin_cost",
-//            &Class::FindPolytopeGivenLagrangianOptions::ellipsoid_margin_cost);
-//
-//    py::enum_<Class::EllipsoidMarginCost>(cspace_free_polytope_cls,
-//        "EllipsoidMarginCost", cls_doc.EllipsoidMarginCost.doc)
-//        .value("kSum", Class::EllipsoidMarginCost::kSum)
-//        .value("kGeometricMean", Class::EllipsoidMarginCost::kGeometricMean);
-//
-//    py::class_<Class::SearchResult>(
-//        cspace_free_polytope_cls, "SearchResult", cls_doc.SearchResult.doc)
-//        .def_readonly("C", &Class::SearchResult::C)
-//        .def_readonly("d", &Class::SearchResult::d)
-//        .def_readonly("a", &Class::SearchResult::a, py_rvp::copy)
-//        .def_readonly("b", &Class::SearchResult::b)
-//        .def_readonly("num_iter", &Class::SearchResult::num_iter)
-//        .def_readonly(
-//            "certified_polytope", &Class::SearchResult::certified_polytope);
-//
-//    py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
-//        "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)
-//        .def(py::init<>())
-//        .def_readwrite("max_iter", &Class::BilinearAlternationOptions::max_iter)
-//        .def_readwrite("convergence_tol",
-//            &Class::BilinearAlternationOptions::convergence_tol)
-//        .def_readwrite("find_polytope_options",
-//            &Class::BilinearAlternationOptions::find_polytope_options)
-//        .def_readwrite("find_lagrangian_options",
-//            &Class::BilinearAlternationOptions::find_lagrangian_options)
-//        .def_readwrite("ellipsoid_scaling",
-//            &Class::BilinearAlternationOptions::ellipsoid_scaling);
-//
-//    py::class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
-//        "BinarySearchOptions", cls_doc.BinarySearchOptions.doc)
-//        .def(py::init<>())
-//        .def_readwrite("scale_max", &Class::BinarySearchOptions::scale_max)
-//        .def_readwrite("scale_min", &Class::BinarySearchOptions::scale_min)
-//        .def_readwrite("max_iter", &Class::BinarySearchOptions::max_iter)
-//        .def_readwrite(
-//            "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
-//        .def_readwrite("find_lagrangian_options",
-//            &Class::BinarySearchOptions::find_lagrangian_options);
+    using Class = CspaceFreePolytope;
+    const auto& cls_doc = doc.CspaceFreePolytope;
+    py::class_<Class> cspace_free_polytope_cls(
+        m, "CspaceFreePolytope", cls_doc.doc);
+
+    py::class_<Class::Options>(
+        cspace_free_polytope_cls, "Options", cls_doc.Options.doc)
+        .def(py::init<>())
+        .def_readwrite("with_cross_y", &Class::Options::with_cross_y,
+            cls_doc.Options.with_cross_y.doc);
+
+    cspace_free_polytope_cls
+        .def(py::init<const multibody::MultibodyPlant<double>*,
+                 const geometry::SceneGraph<double>*, SeparatingPlaneOrder,
+                 const Eigen::Ref<const Eigen::VectorXd>&,
+                 const Class::Options&>(),
+            py::arg("plant"), py::arg("scene_graph"), py::arg("plane_order"),
+            py::arg("q_star"), py::arg("options") = Class::Options(),
+            // Keep alive, reference: `self` keeps `scene_graph` alive.
+            py::keep_alive<1, 3>(), cls_doc.ctor.doc)
+        .def("rational_forward_kin", &Class::rational_forward_kin,
+            py_rvp::reference_internal, cls_doc.rational_forward_kin.doc)
+        .def(
+            "map_geometries_to_separating_planes",
+            [](const CspaceFreePolytope* self) {
+              // Template deduction for drake::SortedPair<GeometryId> does not
+              // work. Here we manually make a map of tuples instead.
+              py::dict ret;
+              for (auto [k, v] : self->map_geometries_to_separating_planes()) {
+                ret[py::make_tuple(k.first(), k.second())] = v;
+              }
+              return ret;
+            },
+            cls_doc.map_geometries_to_separating_planes.doc)
+        .def("separating_planes", &Class::separating_planes,
+            cls_doc.separating_planes.doc)
+        .def("y_slack", &Class::y_slack, cls_doc.y_slack.doc)
+        .def("AddCspacePolytopeContainment",
+            &Class::AddCspacePolytopeContainment, py::arg("prog"), py::arg("C"),
+            py::arg("d"), py::arg("s_inner_pts"),
+            cls_doc.AddCspacePolytopeContainment.doc)
+        .def("SearchWithBilinearAlternation",
+            &Class::SearchWithBilinearAlternation,
+            py::arg("ignored_collision_pairs"), py::arg("C_init"),
+            py::arg("d_init"), py::arg("options"),
+            cls_doc.SearchWithBilinearAlternation.doc)
+        .def("BinarySearch", &Class::BinarySearch,
+            py::arg("ignored_collision_pairs"), py::arg("C"), py::arg("d"),
+            py::arg("s_center"), py::arg("options"), cls_doc.BinarySearch.doc)
+        .def(
+            "MakeIsGeometrySeparableProgram",
+            [](const CspaceFreePolytope* self,
+                const std::tuple<geometry::GeometryId, geometry::GeometryId>&
+                    geometry_pair,
+                const Eigen::Ref<const Eigen::MatrixXd>& C,
+                const Eigen::Ref<const Eigen::VectorXd>& d) {
+              const SortedPair<geometry::GeometryId> geom_pair{
+                  std::get<0>(geometry_pair), std::get<1>(geometry_pair)};
+              return self->MakeIsGeometrySeparableProgram(geom_pair, C, d);
+            },
+            py::arg("geometry_pair"), py::arg("C"), py::arg("d"),
+            cls_doc.MakeIsGeometrySeparableProgram.doc)
+        .def("SolveSeparationCertificateProgram",
+            &Class::SolveSeparationCertificateProgram,
+            py::arg("certificate_program"), py::arg("options"),
+            cls_doc.SolveSeparationCertificateProgram.doc);
+    py::class_<Class::SeparatingPlaneLagrangians>(cspace_free_polytope_cls,
+        "SeparatingPlaneLagrangians", cls_doc.SeparatingPlaneLagrangians.doc)
+        .def(py::init<int, int>(), py::arg("C_rows"), py::arg("s_size"),
+            cls_doc.SeparatingPlaneLagrangians.ctor.doc)
+        .def("GetSolution", &Class::SeparatingPlaneLagrangians::GetSolution,
+            py::arg("result"),
+            cls_doc.SeparatingPlaneLagrangians.GetSolution.doc)
+        .def("polytope", &Class::SeparatingPlaneLagrangians::mutable_polytope,
+            py_rvp::copy)
+        .def("s_lower", &Class::SeparatingPlaneLagrangians::mutable_s_lower,
+            py_rvp::copy)
+        .def("s_upper", &Class::SeparatingPlaneLagrangians::mutable_s_upper,
+            py_rvp::copy);
+    {
+      using BaseClass = geometry::optimization::SeparationCertificateResultBase;
+      using SepCertClass = Class::SeparationCertificateResult;
+      py::class_<SepCertClass, BaseClass>(cspace_free_polytope_cls,
+          "SeparationCertificateResult",
+          cls_doc.SeparationCertificateResult.doc)
+          .def_readonly("plane_index", &SepCertClass::plane_index)
+          .def_readonly("positive_side_rational_lagrangians",
+              &Class::SeparationCertificateResult::
+                  positive_side_rational_lagrangians,
+              cls_doc.SeparationCertificateResult
+                  .positive_side_rational_lagrangians.doc)
+          .def_readonly("negative_side_rational_lagrangians",
+              &Class::SeparationCertificateResult::
+                  negative_side_rational_lagrangians,
+              cls_doc.SeparationCertificateResult
+                  .negative_side_rational_lagrangians.doc)
+          .def_readonly("a", &SepCertClass::a, py_rvp::copy,
+              doc.SeparationCertificateResultBase.a.doc)
+          .def_readonly(
+              "b", &SepCertClass::b, doc.SeparationCertificateResultBase.a.doc)
+          .def_readonly("result", &SepCertClass::result)
+          .def_readonly("plane_decision_var_vals",
+              &SepCertClass::plane_decision_var_vals, py_rvp::copy);
+    }
+    py::class_<Class::SeparationCertificate>(cspace_free_polytope_cls,
+        "SeparationCertificate", cls_doc.SeparationCertificate.doc)
+        .def("GetSolution", &Class::SeparationCertificate::GetSolution,
+            py::arg("plane_index"), py::arg("a"), py::arg("b"),
+            py::arg("plane_decision_vars"), py::arg("result"),
+            cls_doc.SeparationCertificate.GetSolution.doc)
+        .def_readwrite("positive_side_rational_lagrangians",
+            &Class::SeparationCertificate::positive_side_rational_lagrangians)
+        .def_readwrite("negative_side_rational_lagrangians",
+            &Class::SeparationCertificate::negative_side_rational_lagrangians);
+    {
+      using BaseClass = SeparationCertificateProgramBase;
+      py::class_<Class::SeparationCertificateProgram, BaseClass>(
+          cspace_free_polytope_cls, "SeparationCertificateProgram",
+          cls_doc.SeparationCertificateProgram.doc)
+          .def(py::init<>())
+          .def(
+              "prog",
+              [](const Class::SeparationCertificateProgram* self) {
+                return self->prog.get();
+              },
+              py_rvp::reference_internal)
+          .def_readonly(
+              "plane_index", &Class::SeparationCertificateProgram::plane_index)
+          .def_readonly("certificate",
+              &Class::SeparationCertificateProgram::certificate);
+    }
+    {
+      using BaseClass = FindSeparationCertificateOptions;
+      py::class_<Class::FindSeparationCertificateGivenPolytopeOptions,
+          BaseClass>(cspace_free_polytope_cls,
+          "FindSeparationCertificateGivenPolytopeOptions",
+          cls_doc.FindSeparationCertificateGivenPolytopeOptions.doc)
+          .def(py::init<>())
+          .def_readwrite("num_threads",
+              &Class::FindSeparationCertificateGivenPolytopeOptions::
+                  num_threads)
+          .def_readwrite("verbose",
+              &Class::FindSeparationCertificateGivenPolytopeOptions::verbose)
+          .def_readwrite("solver_id",
+              &Class::FindSeparationCertificateGivenPolytopeOptions::solver_id)
+          .def_readwrite("terminate_at_failure",
+              &Class::FindSeparationCertificateGivenPolytopeOptions::
+                  terminate_at_failure)
+          .def_readwrite("solver_options",
+              &Class::FindSeparationCertificateGivenPolytopeOptions::
+                  solver_options)
+          .def_readwrite("ignore_redundant_C",
+              &Class::FindSeparationCertificateGivenPolytopeOptions::
+                  ignore_redundant_C);
+    }
+    py::enum_<Class::EllipsoidMarginCost>(cspace_free_polytope_cls,
+        "EllipsoidMarginCost", cls_doc.EllipsoidMarginCost.doc)
+        .value("kSum", Class::EllipsoidMarginCost::kSum)
+        .value("kGeometricMean", Class::EllipsoidMarginCost::kGeometricMean);
+
+    py::class_<Class::FindPolytopeGivenLagrangianOptions>(
+        cspace_free_polytope_cls, "FindPolytopeGivenLagrangianOptions",
+        cls_doc.FindPolytopeGivenLagrangianOptions.doc)
+        .def(py::init<>())
+        .def_readwrite("backoff_scale",
+            &Class::FindPolytopeGivenLagrangianOptions::backoff_scale)
+        .def_readwrite("ellipsoid_margin_epsilon",
+            &Class::FindPolytopeGivenLagrangianOptions::
+                ellipsoid_margin_epsilon)
+        .def_readwrite(
+            "solver_id", &Class::FindPolytopeGivenLagrangianOptions::solver_id)
+        .def_readwrite("solver_options",
+            &Class::FindPolytopeGivenLagrangianOptions::solver_options)
+        .def_readwrite("s_inner_pts",
+            &Class::FindPolytopeGivenLagrangianOptions::s_inner_pts)
+        .def_readwrite("search_s_bounds_lagrangians",
+            &Class::FindPolytopeGivenLagrangianOptions::
+                search_s_bounds_lagrangians)
+        .def_readwrite("ellipsoid_margin_cost",
+            &Class::FindPolytopeGivenLagrangianOptions::ellipsoid_margin_cost);
+
+    py::class_<Class::SearchResult>(
+        cspace_free_polytope_cls, "SearchResult", cls_doc.SearchResult.doc)
+        .def(py::init<>())
+        .def("C", &Class::SearchResult::C)
+        .def("d", &Class::SearchResult::d)
+        .def("certified_polytope", &Class::SearchResult::certified_polytope)
+        .def("a", &Class::SearchResult::a, py_rvp::copy)
+        .def("b", &Class::SearchResult::b)
+        .def("num_iter", &Class::SearchResult::num_iter);
+
+    py::class_<Class::BilinearAlternationOptions>(cspace_free_polytope_cls,
+        "BilinearAlternationOptions", cls_doc.BilinearAlternationOptions.doc)
+        .def(py::init<>())
+        .def_readwrite("max_iter", &Class::BilinearAlternationOptions::max_iter,
+                       cls_doc.BilinearAlternationOptions.max_iter.doc)
+        .def_readwrite("convergence_tol",
+            &Class::BilinearAlternationOptions::convergence_tol,
+            cls_doc.BilinearAlternationOptions.convergence_tol.doc)
+        .def_readwrite("find_polytope_options",
+            &Class::BilinearAlternationOptions::find_polytope_options,
+            cls_doc.BilinearAlternationOptions.find_polytope_options.doc)
+        .def_readwrite("find_lagrangian_options",
+            &Class::BilinearAlternationOptions::find_lagrangian_options,
+            cls_doc.BilinearAlternationOptions.find_lagrangian_options.doc)
+        .def_readwrite("ellipsoid_scaling",
+            &Class::BilinearAlternationOptions::ellipsoid_scaling,
+            cls_doc.BilinearAlternationOptions.ellipsoid_scaling.doc);
+
+    py::class_<Class::BinarySearchOptions>(cspace_free_polytope_cls,
+        "BinarySearchOptions", cls_doc.BinarySearchOptions.doc)
+        .def(py::init<>())
+        .def_readwrite("scale_max", &Class::BinarySearchOptions::scale_max)
+        .def_readwrite("scale_min", &Class::BinarySearchOptions::scale_min)
+        .def_readwrite("max_iter", &Class::BinarySearchOptions::max_iter)
+        .def_readwrite(
+            "convergence_tol", &Class::BinarySearchOptions::convergence_tol)
+        .def_readwrite("find_lagrangian_options",
+            &Class::BinarySearchOptions::find_lagrangian_options);
   }
   // NOLINTNEXTLINE(readability/fn_size)
 }
