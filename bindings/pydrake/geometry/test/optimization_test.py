@@ -929,7 +929,7 @@ class TestCspaceFreePolytope(unittest.TestCase):
     def testSeparationCertificateMethods(self):
         C_init = np.vstack([np.atleast_2d(np.eye(self.plant.num_positions(
         ))), -np.atleast_2d(np.eye(self.plant.num_positions()))])
-        d_init = 3 * np.ones((C_init.shape[0], 1))
+        d_init = 1e-10 * np.ones((C_init.shape[0], 1))
         pair = list(self.cspace_free_polytope.map_geometries_to_separating_planes().keys())[0]
         lagrangian_options = \
             mut.CspaceFreePolytope. \
@@ -948,9 +948,9 @@ class TestCspaceFreePolytope(unittest.TestCase):
         self.assertIsInstance(cert_prog.prog(), MathematicalProgram)
         self.assertGreaterEqual(cert_prog.plane_index, 0)
 
-        self.assertIsInstance(certificates.positive_side_rational_lagrangians,
+        self.assertIsInstance(certificates.positive_side_rational_lagrangians[0],
                               mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
-        self.assertIsInstance(certificates.negative_side_rational_lagrangians,
+        self.assertIsInstance(certificates.negative_side_rational_lagrangians[0],
                               mut.CspaceFreePolytope.SeparatingPlaneLagrangians)
 
         cert_prog_sol = self.cspace_free_polytope.SolveSeparationCertificateProgram(
