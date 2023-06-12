@@ -2,9 +2,6 @@
 
 #include <string>
 
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/identifier.h"

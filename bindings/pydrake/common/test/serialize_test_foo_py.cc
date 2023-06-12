@@ -1,7 +1,5 @@
 #include "drake/bindings/pydrake/common/test/serialize_test_foo_py.h"
 
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 
 namespace drake {

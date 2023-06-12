@@ -2,11 +2,13 @@
 
 #include <utility>
 
+#include "pybind11/eigen.h"
+#include "pybind11/functional.h"
+#include "pybind11/numpy.h"
+#include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
-
-// N.B. Avoid including other headers, such as `pybind11/eigen.sh` or
-// `pybind11/functional.sh`, such that modules can opt-in to (and pay the cost
-// for) these binding capabilities.
+#include "pybind11/stl.h"
+#include "pybind11/stl/filesystem.h"
 
 namespace drake {
 

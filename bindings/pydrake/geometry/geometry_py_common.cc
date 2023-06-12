@@ -4,8 +4,6 @@
  represent the input values to all of those computations. They can be found in
  the pydrake.geometry module. */
 
-#include "pybind11/operators.h"
-
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/identifier_pybind.h"
