@@ -52,13 +52,18 @@ CartesianProduct::CartesianProduct(const ConvexSet& setA, const ConvexSet& setB)
 CartesianProduct::CartesianProduct(const ConvexSets& sets,
                                    const Eigen::Ref<const MatrixXd>& A,
                                    const Eigen::Ref<const VectorXd>& b)
-    : ConvexSet(A.cols()), sets_(sets), A_(A), b_(b) {
+    : ConvexSet(A.cols()),
+      sets_(sets),
+      A_(A),
+      b_(b),
+      A_decomp_(Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(*A_)) {
   const int y_ambient_dimension = SumAmbientDimensions(sets);
   const int x_ambient_dimension = ambient_dimension();
   DRAKE_THROW_UNLESS(A_->rows() == y_ambient_dimension);
   DRAKE_THROW_UNLESS(b_->rows() == y_ambient_dimension);
   DRAKE_THROW_UNLESS(A_->cols() == x_ambient_dimension);
-  DRAKE_THROW_UNLESS(A_->colPivHouseholderQr().rank() == A_->cols());
+  // Ensure that A is injective.
+  DRAKE_THROW_UNLESS(A_decomp_->rank() == A_->cols());
 }
 
 CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
@@ -84,6 +89,8 @@ CartesianProduct::CartesianProduct(const QueryObject<double>& query_object,
 
   A_ = X_GF.rotation().matrix();
   b_ = X_GF.translation();
+  // N.B. We leave A_decomp_ unset here. It's only used by MaybeGetPoint and
+  // there it's irrelevant because a cylinder is never a point anyway.
 }
 
 CartesianProduct::~CartesianProduct() = default;
@@ -105,6 +112,43 @@ bool CartesianProduct::DoIsBounded() const {
     }
   }
   return true;
+}
+
+std::optional<VectorXd> CartesianProduct::DoMaybeGetPoint() const {
+  // Check if all sets are points.
+  std::vector<VectorXd> points;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      points.push_back(std::move(*point));
+    } else {
+      return std::nullopt;
+    }
+  }
+
+  // Stack the points.
+  const int y_ambient_dimension = A_ ? A_->rows() : ambient_dimension();
+  int start = 0;
+  VectorXd y(y_ambient_dimension);
+  for (const VectorXd& point : points) {
+    const int point_size = point.size();
+    y.segment(start, point_size) = point;
+    start += point_size;
+  }
+  DRAKE_DEMAND(start == y.size());
+
+  // When A and b are NOT in use, x is just y.
+  if (!A_.has_value()) {
+    return y;
+  }
+
+  // When A_ is in use, either A was passed to the constructor or we denote a
+  // cylinder. In the former case, we have the QR decomp already (set in the
+  // constructor). In the latter case, we can't possibly have cleared the "all
+  // sets are points" checks earlier in this function.
+  DRAKE_DEMAND(A_decomp_.has_value());
+
+  // Solve for x.
+  return A_decomp_->solve(y - *b_);
 }
 
 bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
