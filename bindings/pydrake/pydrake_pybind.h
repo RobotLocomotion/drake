@@ -2,11 +2,20 @@
 
 #include <utility>
 
+// Here we include a lot of the pybind11 API, to ensure that all code in pydrake
+// sees the same definitions ("One Definition Rule") for template types intended
+// for specialization. Any pybind11 headers with `type_caster<>` specializations
+// must be included here (e.g., eigen.h, functional.h, numpy.h, stl.h) as well
+// as ADL headers (e.g., operators.h). Headers that are unused by pydrake
+// (e.g., complex.h) are omitted, as are headers that do not specialize anything
+// (e.g., eval.h).
+#include "pybind11/eigen.h"
+#include "pybind11/functional.h"
+#include "pybind11/numpy.h"
+#include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
-
-// N.B. Avoid including other headers, such as `pybind11/eigen.sh` or
-// `pybind11/functional.sh`, such that modules can opt-in to (and pay the cost
-// for) these binding capabilities.
+#include "pybind11/stl.h"
+#include "pybind11/stl/filesystem.h"
 
 namespace drake {
 

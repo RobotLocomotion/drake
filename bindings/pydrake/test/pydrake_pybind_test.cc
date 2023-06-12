@@ -8,9 +8,6 @@
 
 #include "pybind11/embed.h"
 #include "pybind11/eval.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
 #include <gtest/gtest.h>
 
 #include "drake/bindings/pydrake/test/test_util_pybind.h"

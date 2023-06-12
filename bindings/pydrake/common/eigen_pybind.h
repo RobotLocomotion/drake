@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include "pybind11/eigen.h"
 #include <Eigen/Dense>
 
 #include "drake/bindings/pydrake/pydrake_pybind.h"
