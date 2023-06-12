@@ -165,13 +165,13 @@ class UrdfDriver(FormatDriver):
             output += input_text[index:facts.start.index]
             match facts.name:
                 case "inertia":
-                  output += f"""\
+                    output += f"""\
 <inertia ixx="{moments[0]}" ixy="{products[0]}" ixz="{products[1]}"\
  iyy="{moments[1]}" iyz="{products[2]}" izz="{moments[2]}"/>"""
                 case "mass":
-                     output += f'<mass value="{mass}"/>'
+                    output += f'<mass value="{mass}"/>'
                 case "origin":
-                     output += '<origin rpy="0 0 0" xyz="0 0 0"/>'
+                    output += '<origin rpy="0 0 0" xyz="0 0 0"/>'
             index = adjusted_element_end_index(input_text, facts.end.index)
         end = adjusted_element_end_index(input_text, inertial_facts.end.index)
         output += input_text[index:end]
@@ -220,19 +220,20 @@ class SdformatDriver(FormatDriver):
             output += input_text[index:facts.start.index]
             match facts.name:
                 case "inertia":
-                  # Compute indentation based on the first line of the element.
-                  line = input_lines[facts.start.line]
-                  spaces = len(line) - len(line.lstrip())
-                  indentation = spaces // facts.depth
+                    # Compute indentation based on the first line of
+                    # the element.
+                    line = input_lines[facts.start.line]
+                    spaces = len(line) - len(line.lstrip())
+                    indentation = spaces // facts.depth
 
-                  # Build an element-specific indenter.
-                  depth = facts.depth
-                  indent = " " * indentation
+                    # Build an element-specific indenter.
+                    depth = facts.depth
+                    indent = " " * indentation
 
-                  def d(more_depth):
-                      return indent * (depth + more_depth)
+                    def d(more_depth):
+                        return indent * (depth + more_depth)
 
-                  output += f"""\
+                    output += f"""\
 <inertia>
 {d(1)}<ixx>{moments[0]}</ixx>
 {d(1)}<ixy>{products[0]}</ixy>
@@ -242,9 +243,9 @@ class SdformatDriver(FormatDriver):
 {d(1)}<izz>{moments[2]}</izz>
 {d(0)}</inertia>"""
                 case "mass":
-                     output += f"<mass>{mass}</mass>"
+                    output += f"<mass>{mass}</mass>"
                 case "pose":
-                     output += "<pose>0 0 0 0 0 0</pose>"
+                    output += "<pose>0 0 0 0 0 0</pose>"
             index = adjusted_element_end_index(input_text, facts.end.index)
         end = adjusted_element_end_index(input_text, inertial_facts.end.index)
         output += input_text[index:end]
