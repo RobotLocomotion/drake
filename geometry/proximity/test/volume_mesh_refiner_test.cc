@@ -38,7 +38,7 @@ GTEST_TEST(VolumeMeshRefinerTest, TestRefineTetrahedron) {
   }
 
   VolumeMeshRefiner refiner(test_mesh);
-  VolumeMesh<double> refined_mesh = refiner.refine();
+  VolumeMesh<double> refined_mesh = refiner.Refine();
 
   EXPECT_EQ(DetectNullTetrahedron(refined_mesh).size(), 0);
   EXPECT_EQ(DetectNullInteriorTriangle(refined_mesh).size(), 0);
@@ -82,7 +82,7 @@ GTEST_TEST(VolumeMeshRefinerTest, TestRefineTriangle) {
   }
 
   VolumeMeshRefiner refiner(test_mesh);
-  VolumeMesh<double> refined_mesh = refiner.refine();
+  VolumeMesh<double> refined_mesh = refiner.Refine();
 
   EXPECT_EQ(DetectNullTetrahedron(refined_mesh).size(), 0);
   EXPECT_EQ(DetectNullInteriorTriangle(refined_mesh).size(), 0);
@@ -128,7 +128,7 @@ GTEST_TEST(VolumeMeshRefinerTest, TestRefineEdge) {
   }
 
   VolumeMeshRefiner refiner(test_mesh);
-  VolumeMesh<double> refined_mesh = refiner.refine();
+  VolumeMesh<double> refined_mesh = refiner.Refine();
 
   EXPECT_EQ(DetectNullTetrahedron(refined_mesh).size(), 0);
   EXPECT_EQ(DetectNullInteriorTriangle(refined_mesh).size(), 0);
