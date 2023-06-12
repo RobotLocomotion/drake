@@ -20,10 +20,10 @@ namespace sensors {
 namespace {
 
 using drake::geometry::FrameId;
-using drake::geometry::render::ColorRenderCamera;
-using drake::geometry::render::DepthRenderCamera;
 using drake::geometry::Rgba;
 using drake::geometry::SceneGraph;
+using drake::geometry::render::ColorRenderCamera;
+using drake::geometry::render::DepthRenderCamera;
 using drake::lcm::DrakeLcm;
 using drake::lcm::DrakeLcmInterface;
 using drake::math::RigidTransformd;
@@ -169,9 +169,8 @@ TEST_F(CameraConfigFunctionsTest, ParentBaseFrameSpecified) {
 TEST_F(CameraConfigFunctionsTest, InvalidParentBaseFrame) {
   CameraConfig config;
   config.X_PB.base_frame = "invalid_frame";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ApplyCameraConfig(config, &builder_),
-      ".*invalid_frame.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(config, &builder_),
+                              ".*invalid_frame.*");
 }
 
 /* Confirms that render engine is handled correctly.
@@ -314,8 +313,8 @@ TEST_F(CameraConfigFunctionsTest, SubsystemPointers) {
   // and checking that nothing throws.
   plant_->set_name("Is it secret?");
   scene_graph_->set_name("Is it safe?");
-  EXPECT_NO_THROW(ApplyCameraConfig(
-      CameraConfig{}, &builder_, {}, plant_, scene_graph_));
+  EXPECT_NO_THROW(
+      ApplyCameraConfig(CameraConfig{}, &builder_, {}, plant_, scene_graph_));
 }
 
 // Confirms that if only rgb is specified, only rgb is published.
@@ -375,9 +374,7 @@ TEST_F(CameraConfigFunctionsTest, PublishingRgbAndDepth) {
 TEST_F(CameraConfigFunctionsTest, Validation) {
   CameraConfig config = MakeConfig();
   config.fps = -10;
-  EXPECT_THROW(
-      ApplyCameraConfig(config, &builder_),
-      std::exception);
+  EXPECT_THROW(ApplyCameraConfig(config, &builder_), std::exception);
 }
 
 // When the user requests a non-standard LCM bus, it is an error to omit an
@@ -385,9 +382,8 @@ TEST_F(CameraConfigFunctionsTest, Validation) {
 TEST_F(CameraConfigFunctionsTest, BadLcmBus) {
   CameraConfig config;
   config.lcm_bus = "special_request";
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      ApplyCameraConfig(config, &builder_),
-      ".*non-default.*special_request.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(config, &builder_),
+                              ".*non-default.*special_request.*");
 }
 
 // Confirms that the render engine implementation follows the requested type
@@ -409,8 +405,8 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
                                 .renderer_class = "RenderEngineVtk"};
   ASSERT_FALSE(scene_graph_->HasRenderer(vtk_config.renderer_name));
   ApplyCameraConfig(vtk_config, &builder_);
-  ASSERT_EQ(NiceTypeName::RemoveNamespaces(scene_graph_->GetRendererTypeName(
-                vtk_config.renderer_name)),
+  ASSERT_EQ(NiceTypeName::RemoveNamespaces(
+                scene_graph_->GetRendererTypeName(vtk_config.renderer_name)),
             "RenderEngineVtk");
 
   // Specifying the same config again should not produce a new render engine.
@@ -445,9 +441,8 @@ TEST_F(CameraConfigFunctionsTest, RenderEngineRequest) {
                   scene_graph_->GetRendererTypeName(gl_config.renderer_name)),
               "RenderEngineGl");
   } else {
-    DRAKE_EXPECT_THROWS_MESSAGE(
-        ApplyCameraConfig(gl_config, &builder_),
-        ".*'RenderEngineGl' is not supported.*");
+    DRAKE_EXPECT_THROWS_MESSAGE(ApplyCameraConfig(gl_config, &builder_),
+                                ".*'RenderEngineGl' is not supported.*");
   }
 }
 

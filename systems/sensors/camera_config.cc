@@ -124,9 +124,11 @@ void CameraConfig::ValidateOrThrow() const {
   // Serialize. We don't want to validate anything if the cameras are disabled,
   // and because the default focal length is a property of the CameraConfig
   // instead of the child struct, we must not validate the child in isolation.
-  std::visit([](auto&& child) -> void {
-    child.ValidateOrThrow();
-  }, focal);
+  std::visit(
+      [](auto&& child) -> void {
+        child.ValidateOrThrow();
+      },
+      focal);
 
   if (!renderer_class.empty() && !(renderer_class == "RenderEngineVtk" ||
                                    renderer_class == "RenderEngineGl")) {
