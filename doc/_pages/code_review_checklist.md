@@ -14,31 +14,9 @@ these common errors in mind.
 
 # Is the code the minimal set of what you want?
 
-* If the PR includes more than 750 added or changed lines,
-  try to divide it into multiple PRs. The following techniques may be useful.
-  If you don't think it can be done, talk to a platform reviewer before
-  sending the PR.
-  * If you are modifying an API, consider deprecating the old interface instead
-    of migrating all call sites immediately.
-    * For deprecation, please see
-      [DRAKE_DEPRECATED](https://drake.mit.edu/doxygen_cxx/drake__deprecated_8h.html) for C++
-      and [pydrake deprecation](https://drake.mit.edu/doxygen_cxx/group__python__bindings.html#PydrakeDeprecation) for Python.
-    * To search for previous examples of C++ deprecations, please use a
-      ``git log`` search such as:
-```
-$ cd drake
-$ git log -S DRAKE_DEPRECATED
-```
-      To constrain the search to effects in Python bindings, you can also use a
-      search such as:
-```
-$ cd drake
-$ git log -S Wdeprecated-declarations -- ./bindings/
-```
-      These searches will provide you with commits that you should then inspect
-      using your favorite git UI (i.e. GitHub, ``gitk``, etc.).
-  * If you are introducing a new feature, consider adding only test cases
-    now, and deferring the first application use to a follow-up PR.
+* If the PR includes more than 1500 added or changed lines, refer to
+  [Review Process](/developers.html#review-process) for details on
+  review size limits.
 * Do a self-review, before you ask anyone else to review.
   * Before you even submit the PR, you can review the diffs using
     github.
