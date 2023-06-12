@@ -158,3 +158,6 @@ inline void ExecuteExtraPythonCode(py::module m, bool use_subdir = false) {
 
 }  // namespace pydrake
 }  // namespace drake
+
+#define DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(Type) \
+  PYBIND11_NUMPY_OBJECT_DTYPE(Type)

@@ -6,9 +6,9 @@
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/common/polynomial.h"
 
-// The macro `PYBIND11_NUMPY_OBJECT_DTYPE` places symbols into the namespace
-// `pybind11::detail`, so we should not place these in `drake::pydrake`.
-
-PYBIND11_NUMPY_OBJECT_DTYPE(drake::Polynomial<double>);
-PYBIND11_NUMPY_OBJECT_DTYPE(drake::Polynomial<drake::AutoDiffXd>);
-PYBIND11_NUMPY_OBJECT_DTYPE(drake::Polynomial<drake::symbolic::Expression>);
+DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+    drake::Polynomial<double>)
+DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+    drake::Polynomial<drake::AutoDiffXd>)
+DRAKE_PYBIND11_NUMPY_OBJECT_DTYPE(  // NOLINT
+    drake::Polynomial<drake::symbolic::Expression>)
