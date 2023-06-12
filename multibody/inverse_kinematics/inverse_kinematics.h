@@ -15,6 +15,10 @@ namespace multibody {
  * postures of the robot satisfying certain constraints.
  * The decision variables include the generalized position of the robot.
  *
+ * To perform IK on a subset of the plant, use the constructor overload that
+ * takes a `plant_context` and use `Joint::Lock` on the joints in that Context
+ * that should be fixed during IK.
+ *
  * @ingroup planning_kinematics
  */
 class InverseKinematics {
@@ -48,10 +52,12 @@ class InverseKinematics {
    * @param plant The robot on which the inverse kinematics problem will be
    * solved. This plant should have been connected to a SceneGraph within a
    * Diagram
-   * @param context The context for the plant. This context should be a part of
-   * the Diagram context.
-   * To construct a plant connected to a SceneGraph, with the corresponding
-   * plant_context, the steps are
+   * @param plant_context The context for the plant. This context should be a
+   * part of the Diagram context. Any locked joints in the `plant_context` will
+   * remain fixed at their locked value. (This provides a convenient way to
+   * perform IK on a subset of the plant.) To construct a plant connected to a
+   * SceneGraph, with the corresponding plant_context, the steps are:
+   * ```
    * // 1. Add a diagram containing the MultibodyPlant and SceneGraph
    * systems::DiagramBuilder<double> builder;
    * auto items = AddMultibodyPlantSceneGraph(&builder, 0.0);
@@ -64,6 +70,7 @@ class InverseKinematics {
    * // 5. Get the context for the plant.
    * auto plant_context = &(diagram->GetMutableSubsystemContext(items.plant,
    * diagram_context.get()));
+   * ```
    * This context will be modified during calling ik.prog.Solve(...). When
    * Solve() returns `result`, context will store the optimized posture, namely
    * plant.GetPositions(*context) will be the same as in
@@ -390,6 +397,13 @@ class InverseKinematics {
   systems::Context<double>* get_mutable_context() { return context_; }
 
  private:
+  /* Both public constructors delegate to here. Exactly one of owned_context or
+  plant_context must be non-null. */
+  InverseKinematics(const MultibodyPlant<double>& plant,
+                    std::unique_ptr<systems::Context<double>> owned_context,
+                    systems::Context<double>* plant_context,
+                    bool with_joint_limits);
+
   std::unique_ptr<solvers::MathematicalProgram> prog_;
   const MultibodyPlant<double>& plant_;
   std::unique_ptr<systems::Context<double>> const owned_context_;
