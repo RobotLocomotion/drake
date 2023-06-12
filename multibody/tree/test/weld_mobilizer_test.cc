@@ -83,6 +83,8 @@ TEST_F(WeldMobilizerTest, ProjectSpatialForce) {
 }
 
 TEST_F(WeldMobilizerTest, MapVelocityToQDotAndBack) {
+  EXPECT_TRUE(weld_body_to_world_->is_velocity_equal_to_qdot());
+
   VectorXd zero_sized_vector(0);
   // These methods are no-ops, just test we can call them with zero sized
   // vectors.

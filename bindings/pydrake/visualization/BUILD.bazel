@@ -159,6 +159,7 @@ drake_py_unittest(
 
 drake_py_unittest(
     name = "model_visualizer_test",
+    timeout = "moderate",
     data = [
         ":model_visualizer",
         "//geometry:meshcat_websocket_client",

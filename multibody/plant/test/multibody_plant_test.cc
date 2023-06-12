@@ -2175,6 +2175,8 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackFixedWorld) {
   plant.Finalize();
   unique_ptr<Context<double>> context = plant.CreateDefaultContext();
 
+  EXPECT_TRUE(plant.IsVelocityEqualToQDot());
+
   // Make sure that the mapping functions do not throw.
   BasicVector<double> qdot(0), v(0);
   ASSERT_NO_THROW(plant.MapVelocityToQDot(*context, v, &qdot));
@@ -2185,6 +2187,8 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackContinuous) {
   MultibodyPlant<double> plant(0.0);
   unique_ptr<Context<double>> context;
   InitializePlantAndContextForVelocityToQDotMapping(&plant, &context);
+
+  EXPECT_FALSE(plant.IsVelocityEqualToQDot());
 
   // Use of MultibodyPlant's mapping to convert generalized velocities to time
   // derivatives of generalized coordinates.
@@ -2210,6 +2214,8 @@ GTEST_TEST(MultibodyPlantTest, MapVelocityToQDotAndBackDiscrete) {
   MultibodyPlant<double> plant(time_step);
   unique_ptr<Context<double>> context;
   InitializePlantAndContextForVelocityToQDotMapping(&plant, &context);
+
+  EXPECT_FALSE(plant.IsVelocityEqualToQDot());
 
   // Use of MultibodyPlant's mapping to convert generalized velocities to time
   // derivatives of generalized coordinates.

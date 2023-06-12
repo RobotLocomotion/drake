@@ -1755,6 +1755,7 @@ class TestPlant(unittest.TestCase):
         self.assertNotEqual(link0.floating_positions_start(), -1)
         self.assertNotEqual(link0.floating_velocities_start(), -1)
         v_expected = np.linspace(start=-1.0, stop=-nv, num=nv)
+        self.assertFalse(plant.IsVelocityEqualToQDot())
         qdot = plant.MapVelocityToQDot(context, v_expected)
         v_remap = plant.MapQDotToVelocity(context, qdot)
         numpy_compare.assert_float_allclose(v_remap, v_expected)

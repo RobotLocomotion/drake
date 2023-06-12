@@ -77,7 +77,7 @@ RobotPlanInterpolator::RobotPlanInterpolator(const std::string& model_path,
   // TODO(sammy-tri) This implementation doesn't know how to
   // calculate velocities/accelerations for differing numbers of
   // positions and velocities.
-  DRAKE_DEMAND(plant_.num_positions() == plant_.num_velocities());
+  DRAKE_DEMAND(plant_.IsVelocityEqualToQDot());
   const int num_pv = plant_.num_positions() + plant_.num_velocities();
 
   state_output_port_ =

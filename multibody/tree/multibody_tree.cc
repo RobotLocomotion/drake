@@ -1520,6 +1520,19 @@ void MultibodyTree<T>::AddJointDampingForces(
 }
 
 template <typename T>
+bool MultibodyTree<T>::IsVelocityEqualToQDot() const {
+  if (num_positions() != num_velocities()) {
+    return false;
+  }
+  for (const auto& mobilizer : owned_mobilizers_) {
+    if (!mobilizer->is_velocity_equal_to_qdot()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename T>
 void MultibodyTree<T>::MapQDotToVelocity(
     const systems::Context<T>& context,
     const Eigen::Ref<const VectorX<T>>& qdot,
