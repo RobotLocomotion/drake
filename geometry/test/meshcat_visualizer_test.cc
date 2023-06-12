@@ -62,6 +62,17 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
   }
 
+  void CheckVisible(const std::string& path, bool visibility) {
+    ASSERT_TRUE(meshcat_->HasPath(path));
+    const std::string property =
+        meshcat_->GetPackedProperty(path, "visible");
+    msgpack::object_handle oh =
+        msgpack::unpack(property.data(), property.size());
+    auto data = oh.get().as<internal::SetPropertyData<bool>>();
+    EXPECT_EQ(data.property, "visible");
+    EXPECT_EQ(data.value, visibility);
+  }
+
   std::shared_ptr<Meshcat> meshcat_;
   multibody::MultibodyPlant<double>* plant_{};
   SceneGraph<double>* scene_graph_{};
@@ -89,6 +100,8 @@ TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
   simulator.AdvanceTo(0.1);
   EXPECT_NE(meshcat_->GetPackedTransform("visualizer/iiwa14/iiwa_link_7"),
             packed_X_W7);
+
+  CheckVisible("/drake/visualizer", true);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, PublishPeriod) {
@@ -168,26 +181,15 @@ TEST_F(MeshcatVisualizerWithIiwaTest, NotVisibleByDefault) {
 
   // Create the diagram and publish both the initialization and periodic event.
   SetUpDiagram(params);
-  {
-    auto events = diagram_->AllocateCompositeEventCollection();
-    diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
-    diagram_->ForcedPublish(*context_);
-  }
 
   // Confirm that the path was added but was set to be invisible.
-  ASSERT_TRUE(meshcat_->HasPath("/drake/visualizer"));
-  const std::string property =
-      meshcat_->GetPackedProperty("/drake/visualizer", "visible");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<bool>>();
-  EXPECT_EQ(data.property, "visible");
-  EXPECT_EQ(data.value, false);
+  CheckVisible("/drake/visualizer", false);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   MeshcatVisualizerParams params;
   params.delete_on_initialization_event = true;
+  params.visible_by_default = false;
   SetUpDiagram(params);
   // Scribble a transform onto the scene tree beneath the visualizer prefix.
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
@@ -201,10 +203,13 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   }
   // Confirm that my scribble was deleted.
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
+  // Confirm that the path that was re-added is again set to be invisible.
+  CheckVisible("/drake/visualizer", false);
 
   // Repeat, but this time with delete prefix disabled.
   params.delete_on_initialization_event = false;
   SetUpDiagram(params);
+  CheckVisible("/drake/visualizer", false);
   meshcat_->SetTransform("/drake/visualizer/my_random_path",
                         math::RigidTransformd());
   {  // Send an initialization event.
@@ -214,6 +219,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {
   }
   // Confirm that my scribble remains.
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/my_random_path"));
+  CheckVisible("/drake/visualizer", false);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, Delete) {

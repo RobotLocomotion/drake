@@ -49,6 +49,8 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
       this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
           .get_index();
 
+  meshcat_->SetProperty(params_.prefix, "visible", params_.visible_by_default);
+
   if (params_.enable_alpha_slider) {
     meshcat_->AddSlider(
       alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
