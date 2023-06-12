@@ -43,6 +43,8 @@ class Spectrahedron final : public ConvexSet {
 
   bool DoIsBounded() const final;
 
+  // N.B. No need to override DoMaybeGetPoint here.
+
   bool DoPointInSet(const Eigen::Ref<const Eigen::VectorXd>& x,
                     double tol) const final;
 

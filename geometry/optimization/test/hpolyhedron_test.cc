@@ -67,6 +67,9 @@ GTEST_TEST(HPolyhedronTest, UnitBoxTest) {
   EXPECT_TRUE(CompareMatrices(A, Hbox.A()));
   EXPECT_TRUE(CompareMatrices(b, Hbox.b()));
 
+  // Test MaybeGetPoint.
+  EXPECT_FALSE(H.MaybeGetPoint().has_value());
+
   // Test PointInSet.
   EXPECT_TRUE(H.PointInSet(Vector3d(.8, .3, -.9)));
   EXPECT_TRUE(H.PointInSet(Vector3d(-1.0, 1.0, 1.0)));

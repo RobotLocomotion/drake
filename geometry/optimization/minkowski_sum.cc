@@ -103,6 +103,22 @@ bool MinkowskiSum::DoIsBounded() const {
   return true;
 }
 
+std::optional<VectorXd> MinkowskiSum::DoMaybeGetPoint() const {
+  std::optional<VectorXd> result;
+  for (const auto& s : sets_) {
+    if (std::optional<VectorXd> point = s->MaybeGetPoint()) {
+      if (result.has_value()) {
+        *result += *point;
+      } else {
+        result = std::move(point);
+      }
+    } else {
+      return std::nullopt;
+    }
+  }
+  return result;
+}
+
 bool MinkowskiSum::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
                                 double) const {
   // TODO(russt): Figure out if there is a general way to communicate tol

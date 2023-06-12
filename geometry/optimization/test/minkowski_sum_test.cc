@@ -31,6 +31,10 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
   EXPECT_EQ(S.num_terms(), 2);
   EXPECT_EQ(S.ambient_dimension(), 2);
 
+  // Test MaybeGetPoint.
+  ASSERT_TRUE(S.MaybeGetPoint().has_value());
+  EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), P1.x() + P2.x()));
+
   // Test PointInSet.
   Vector2d in{P1.x() + P2.x()}, out{P1.x() + P2.x() + Vector2d::Constant(0.01)};
   EXPECT_TRUE(S.PointInSet(in));
@@ -60,6 +64,7 @@ GTEST_TEST(MinkowskiSumTest, DefaultCtor) {
   EXPECT_EQ(dut.ambient_dimension(), 0);
   EXPECT_FALSE(dut.IntersectsWith(dut));
   EXPECT_TRUE(dut.IsBounded());
+  EXPECT_FALSE(dut.MaybeGetPoint().has_value());
   EXPECT_FALSE(dut.PointInSet(Eigen::VectorXd::Zero(0)));
 }
 
@@ -143,6 +148,7 @@ GTEST_TEST(MinkowskiSumTest, TwoBoxes) {
   EXPECT_TRUE(S.PointInSet(Vector2d{-1, 3}));
   EXPECT_FALSE(S.PointInSet(Vector2d{-1, 2.9}));
   EXPECT_FALSE(S.PointInSet(Vector2d{-1.01, 3}));
+  EXPECT_FALSE(S.MaybeGetPoint().has_value());
 }
 
 GTEST_TEST(MinkowskiSumTest, CloneTest) {
