@@ -6,8 +6,6 @@ Please review this file and the corresponding test,
 `deprecation_utility_test.py`.
 */
 
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/deprecation_pybind.h"
 #include "drake/bindings/pydrake/common/test/deprecation_example/example_class.h"  // NOLINT
 #include "drake/bindings/pydrake/common/test/deprecation_example/example_class_documentation.h"  // NOLINT

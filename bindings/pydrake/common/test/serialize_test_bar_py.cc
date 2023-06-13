@@ -1,5 +1,3 @@
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/test/serialize_test_foo_py.h"
 #include "drake/common/name_value.h"
