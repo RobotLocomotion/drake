@@ -239,15 +239,10 @@ class ImageWriter : public LeafSystem<double> {
   //  "a/{time_usec}/c" --> thrown exception.
   //  "a/{port_name}/c" --> "a/my_port"  (assuming port_name = "my_port").
   std::string DirectoryFromFormat(const std::string& format,
-                                   const std::string& port_name,
-                                   PixelType pixel_type) const;
+                                  const std::string& port_name,
+                                  PixelType pixel_type) const;
 
-  enum class FolderState {
-    kValid,
-    kMissing,
-    kIsFile,
-    kUnwritable
-  };
+  enum class FolderState { kValid, kMissing, kIsFile, kUnwritable };
 
   // Returns true if the directory path provided is valid: it exists, it's a
   // directory, and it's writable.

@@ -44,16 +44,16 @@ int DoMain() {
       array_to_images->color_image_output_port(),
       image_to_lcm_image_array->DeclareImageInputPort<PixelType::kRgba8U>(
           "color"));
-  builder.Connect(array_to_images->depth_image_output_port(),
+  builder.Connect(
+      array_to_images->depth_image_output_port(),
       image_to_lcm_image_array->DeclareImageInputPort<PixelType::kDepth32F>(
           "depth"));
 
-  auto image_array_lcm_publisher = builder.AddSystem(
-      lcm::LcmPublisherSystem::Make<lcmt_image_array>(
+  auto image_array_lcm_publisher =
+      builder.AddSystem(lcm::LcmPublisherSystem::Make<lcmt_image_array>(
           FLAGS_publish_name, lcm, 0.1 /* publish period */));
-  builder.Connect(
-      image_to_lcm_image_array->image_array_t_msg_output_port(),
-      image_array_lcm_publisher->get_input_port());
+  builder.Connect(image_to_lcm_image_array->image_array_t_msg_output_port(),
+                  image_array_lcm_publisher->get_input_port());
 
   auto diagram = builder.Build();
   auto context = diagram->CreateDefaultContext();

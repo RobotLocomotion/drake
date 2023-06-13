@@ -19,8 +19,10 @@ drake_cc_package_library(
         ":c_iris_collision_geometry",
         ":c_iris_separating_plane",
         ":convex_set",
+        ":cspace_free_box",
         ":cspace_free_internal",
         ":cspace_free_polytope",
+        ":cspace_free_polytope_base",
         ":cspace_free_structs",
         ":cspace_separating_plane",
         ":graph_of_convex_sets",
@@ -106,11 +108,29 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "cspace_free_box",
+    srcs = ["cspace_free_box.cc"],
+    hdrs = ["cspace_free_box.h"],
+    deps = [
+        ":cspace_free_polytope_base",
+    ],
+)
+
+drake_cc_library(
     name = "cspace_free_polytope",
     srcs = [
         "cspace_free_polytope.cc",
     ],
     hdrs = ["cspace_free_polytope.h"],
+    deps = [
+        ":cspace_free_polytope_base",
+    ],
+)
+
+drake_cc_library(
+    name = "cspace_free_polytope_base",
+    srcs = ["cspace_free_polytope_base.cc"],
+    hdrs = ["cspace_free_polytope_base.h"],
     deps = [
         "//common/symbolic:monomial_util",
         "//geometry/optimization:c_iris_collision_geometry",
@@ -211,6 +231,7 @@ drake_cc_googletest(
         ":convex_set",
         ":test_utilities",
         "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
     ],
 )
 
@@ -226,6 +247,29 @@ drake_cc_googletest(
     name = "convex_set_solving_test",
     deps = [
         ":convex_set",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_polytope_base_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_polytope_base",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:cspace_free_internal",
+    ],
+)
+
+drake_cc_googletest(
+    name = "cspace_free_box_test",
+    deps = [
+        ":c_iris_test_utilities",
+        ":cspace_free_box",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+        "//common/test_utilities:symbolic_test_util",
+        "//geometry/optimization:cspace_free_internal",
     ],
 )
 
@@ -279,6 +323,7 @@ drake_cc_library(
         "test/convex.obj",
     ],
     deps = [
+        ":cspace_free_box",
         ":cspace_free_polytope",
         "//geometry:scene_graph",
         "//multibody/plant",

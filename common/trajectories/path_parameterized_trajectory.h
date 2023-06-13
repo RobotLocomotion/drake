@@ -15,8 +15,8 @@ namespace trajectories {
 /**
  * A trajectory defined by a path and timing trajectory.
  *
- * Using a path of form `q(s)` and a time_scaling of the form `s(t)`, a full
- * trajectory of form `q(t) = q(s(t))` is modeled.
+ * Using a path of form `r(s)` and a time_scaling of the form `s(t)`, a full
+ * trajectory of form `q(t) = r(s(t))` is modeled.
  *
  * @tparam_default_scalar
  */

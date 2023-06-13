@@ -9,6 +9,7 @@
 
 #include <gtest/gtest.h>
 
+#include "drake/geometry/optimization/cspace_free_box.h"
 #include "drake/geometry/optimization/cspace_free_polytope.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/multibody/plant/multibody_plant.h"
@@ -125,7 +126,7 @@ class CspaceFreePolytopeTester {
       SortedPair<multibody::BodyIndex>,
       std::array<VectorX<symbolic::Monomial>, 4>>&
   map_body_to_monomial_basis_array() const {
-    return cspace_free_polytope_->map_body_to_monomial_basis_array_;
+    return cspace_free_polytope_->map_body_to_monomial_basis_array();
   }
 
   [[nodiscard]] CspaceFreePolytope::SeparationCertificateProgram
@@ -194,6 +195,44 @@ class CspaceFreePolytopeTester {
 
  private:
   std::unique_ptr<CspaceFreePolytope> cspace_free_polytope_;
+};
+
+class CspaceFreeBoxTester {
+ public:
+  CspaceFreeBoxTester(
+      const multibody::MultibodyPlant<double>* plant,
+      const geometry::SceneGraph<double>* scene_graph,
+      SeparatingPlaneOrder plane_order,
+      const CspaceFreeBox::Options& options = CspaceFreeBox::Options{})
+      : cspace_free_box_(plant, scene_graph, plane_order, options) {}
+
+  const CspaceFreeBox& cspace_free_box() const { return cspace_free_box_; }
+
+  void ComputeSBox(const Eigen::Ref<const Eigen::VectorXd>& q_box_lower,
+                   const Eigen::Ref<const Eigen::VectorXd>& q_box_upper,
+                   Eigen::VectorXd* s_box_lower, Eigen::VectorXd* s_box_upper,
+                   Eigen::VectorXd* q_star) const {
+    return cspace_free_box_.ComputeSBox(q_box_lower, q_box_upper, s_box_lower,
+                                        s_box_upper, q_star);
+  }
+
+  struct PolynomialsToCertify {
+    CspaceFreeBox::PolynomialsToCertify data;
+  };
+
+  void GeneratePolynomialsToCertify(
+      const Eigen::Ref<const Eigen::VectorXd>& s_box_lower,
+      const Eigen::Ref<const Eigen::VectorXd>& s_box_upper,
+      const Eigen::Ref<const Eigen::VectorXd>& q_star,
+      const CspaceFreeBox::IgnoredCollisionPairs& ignored_collision_pairs,
+      PolynomialsToCertify* certify_polynomials) const {
+    return cspace_free_box_.GeneratePolynomialsToCertify(
+        s_box_lower, s_box_upper, q_star, ignored_collision_pairs,
+        &(certify_polynomials->data));
+  }
+
+ private:
+  CspaceFreeBox cspace_free_box_;
 };
 
 }  // namespace optimization

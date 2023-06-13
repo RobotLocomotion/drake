@@ -130,13 +130,7 @@ class SpatialInertia {
   /// @param[in] I_SScm_E S's RotationalInertia about Scm, expressed in frame E.
   /// @retval M_SP_E S's spatial inertia about point P, expressed in frame E.
   static SpatialInertia<T> MakeFromCentralInertia(const T& mass,
-      const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E) {
-    const RotationalInertia<T> I_SP_E =
-        I_SScm_E.ShiftFromCenterOfMass(mass, p_PScm_E);
-    UnitInertia<T> G_SP_E;
-    G_SP_E.SetFromRotationalInertia(I_SP_E, mass);
-    return SpatialInertia(mass, p_PScm_E, G_SP_E);
-  }
+      const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E);
 
   /// (Internal use only) Creates a spatial inertia whose mass is 1, position
   /// vector to center of mass is zero, and whose rotational inertia has
@@ -516,20 +510,7 @@ class SpatialInertia {
   /// condition when performed on a rotational inertia about a body's center of
   /// mass.
   /// @see RotationalInertia::CouldBePhysicallyValid().
-  boolean<T> IsPhysicallyValid() const {
-    // This spatial inertia is not physically valid if the mass is NaN or if the
-    // center of mass or unit inertia matrix have NaN elements.
-    boolean<T> ret_value = !IsNaN() && mass_ >= T(0);
-    if (ret_value) {
-      // Form a rotational inertia about the body's center of mass and then use
-      // the well-documented tests in RotationalInertia to test validity.
-      const UnitInertia<T> G_SScm_E = G_SP_E_.ShiftToCenterOfMass(p_PScm_E_);
-      const RotationalInertia<T> I_SScm_E =
-          G_SScm_E.MultiplyByScalarSkipValidityCheck(mass_);
-      ret_value = I_SScm_E.CouldBePhysicallyValid();
-    }
-    return ret_value;
-  }
+  boolean<T> IsPhysicallyValid() const;
 
   /// @anchor spatial_inertia_equivalent_shapes
   /// @name Spatial inertia equivalent shapes
@@ -629,23 +610,7 @@ class SpatialInertia {
   /// composite body S, about some point P, the supplied spatial inertia
   /// `M_BP_E` must be for some other body or composite body B about the _same_
   /// point P; B's inertia is then included in S.
-  SpatialInertia<T>& operator+=(const SpatialInertia<T>& M_BP_E) {
-    const T total_mass = get_mass() + M_BP_E.get_mass();
-    if (total_mass != 0) {
-      p_PScm_E_ = (CalcComMoment() + M_BP_E.CalcComMoment()) / total_mass;
-      G_SP_E_.SetFromRotationalInertia(
-          CalcRotationalInertia() + M_BP_E.CalcRotationalInertia(), total_mass);
-    } else {
-      // Compose the spatial inertias of two massless bodies in the limit when
-      // the two bodies have the same mass. In this limit, p_PScm_E_ and G_SP_E_
-      // are the arithmetic mean of the constituent COMs and unit inertias.
-      p_PScm_E_ = 0.5 * (get_com() + M_BP_E.get_com());
-      G_SP_E_.SetFromRotationalInertia(
-          get_unit_inertia() + M_BP_E.get_unit_inertia(), 2.0);
-    }
-    mass_ = total_mass;
-    return *this;
-  }
+  SpatialInertia<T>& operator+=(const SpatialInertia<T>& M_BP_E);
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// taken about a point P and expressed in frame E, this method computes the
@@ -686,19 +651,7 @@ class SpatialInertia {
   ///                   `this` spatial inertia is expressed in.
   /// @returns A reference to `this` spatial inertia for body or composite body
   ///          S but now computed about a new point Q.
-  SpatialInertia<T>& ShiftInPlace(const Vector3<T>& p_PQ_E) {
-    const Vector3<T> p_QScm_E = p_PScm_E_ - p_PQ_E;
-    // The following two lines apply the parallel axis theorem (in place) so
-    // that:
-    //   G_SQ = G_SP + px_QScm² - px_PScm²
-    G_SP_E_.ShiftFromCenterOfMassInPlace(p_QScm_E);
-    G_SP_E_.ShiftToCenterOfMassInPlace(p_PScm_E_);
-    p_PScm_E_ = p_QScm_E;
-    // Note: It would be a implementation bug if a shift starts with a valid
-    // spatial inertia and the shift produces an invalid spatial inertia.
-    // Hence, no need to use DRAKE_ASSERT_VOID(CheckInvariants()).
-    return *this;
-  }
+  SpatialInertia<T>& ShiftInPlace(const Vector3<T>& p_PQ_E);
 
   /// Given `this` spatial inertia `M_SP_E` for some body or composite body S,
   /// computed about point P, and expressed in frame E, this method uses
@@ -740,21 +693,7 @@ class SpatialInertia {
   /// that corresponds to the body spatial acceleration `A_WB` and `b_Bo`
   /// contains the velocity dependent gyroscopic terms (see Eq. 2.26, p. 27,
   /// in A. Jain's book).
-  SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const {
-    const Vector3<T>& alpha_WB_E = A_WB_E.rotational();
-    const Vector3<T>& a_WBo_E = A_WB_E.translational();
-    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
-    // Return (see class's documentation):
-    // ⌈ tau_Bo_E ⌉   ⌈    I_Bo_E     | m * p_BoBcm× ⌉   ⌈ alpha_WB_E ⌉
-    // |          | = |               |              | * |            |
-    // ⌊  f_Bo_E  ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊  a_WBo_E   ⌋
-    return SpatialForce<T>(
-        /* rotational */
-        CalcRotationalInertia() * alpha_WB_E + mp_BoBcm_E.cross(a_WBo_E),
-        /* translational: notice the order of the cross product is the reversed
-         * of the documentation above and thus no minus sign is needed. */
-        alpha_WB_E.cross(mp_BoBcm_E) + get_mass() * a_WBo_E);
-  }
+  SpatialForce<T> operator*(const SpatialAcceleration<T>& A_WB_E) const;
 
   /// Multiplies `this` spatial inertia `M_BP_E` of a body B about a point P
   /// by the spatial velocity `V_WBp`, in a frame W, of the body frame B shifted
@@ -774,21 +713,7 @@ class SpatialInertia {
   /// @note
   /// It is possible to show that `M_BP_E.Shift(p_PQ_E) * V_WBp_E.Shift(p_PQ_E)`
   /// exactly equals `L_WBp_E.Shift(p_PQ_E)`.
-  SpatialMomentum<T> operator*(const SpatialVelocity<T>& V_WBp_E) const {
-    const Vector3<T>& w_WB_E = V_WBp_E.rotational();
-    const Vector3<T>& v_WP_E = V_WBp_E.translational();
-    const Vector3<T>& mp_BoBcm_E = CalcComMoment();  // = m * p_BoBcm
-    // Return (see class's documentation):
-    // ⌈ h_WB  ⌉   ⌈     I_Bp      | m * p_BoBcm× ⌉   ⌈ w_WB ⌉
-    // |       | = |               |              | * |      |
-    // ⌊ l_WBp ⌋   ⌊ -m * p_BoBcm× |   m * Id     ⌋   ⌊ v_WP ⌋
-    return SpatialMomentum<T>(
-        /* rotational */
-        CalcRotationalInertia() * w_WB_E + mp_BoBcm_E.cross(v_WP_E),
-        /* translational: notice the order of the cross product is the reversed
-         * of the documentation above and thus no minus sign is needed. */
-        w_WB_E.cross(mp_BoBcm_E) + get_mass() * v_WP_E);
-  }
+  SpatialMomentum<T> operator*(const SpatialVelocity<T>& V_WBp_E) const;
 
   /// Multiplies `this` spatial inertia by a set of spatial vectors in M⁶ stored
   /// as columns of input matrix `Mmatrix`. The top three rows of Mmatrix are

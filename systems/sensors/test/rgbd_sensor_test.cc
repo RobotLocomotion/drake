@@ -46,10 +46,8 @@ using systems::Diagram;
 using systems::DiagramBuilder;
 
 std::ostream& operator<<(std::ostream& out, const CameraInfo& info) {
-  out << "\n  width: " << info.width()
-      << "\n  height: " << info.height()
-      << "\n  focal_x: " << info.focal_x()
-      << "\n  focal_y: " << info.focal_y()
+  out << "\n  width: " << info.width() << "\n  height: " << info.height()
+      << "\n  focal_x: " << info.focal_x() << "\n  focal_y: " << info.focal_y()
       << "\n  center_x: " << info.center_x()
       << "\n  center_y: " << info.center_y();
   return out;
@@ -62,7 +60,8 @@ std::ostream& operator<<(std::ostream& out, const ColorRenderCamera& camera) {
 }
 
 std::ostream& operator<<(std::ostream& out, const DepthRenderCamera& camera) {
-  out << "DepthRenderCamera\n" << camera.core().intrinsics()
+  out << "DepthRenderCamera\n"
+      << camera.core().intrinsics()
       << "\n  min_depth: " << camera.depth_range().min_depth()
       << "\n  max_depth: " << camera.depth_range().max_depth();
   return out;
@@ -202,8 +201,7 @@ class RgbdSensorTest : public ::testing::Test {
     sensor_context_ =
         &diagram_->GetMutableSubsystemContext(*sensor_, context_.get());
     // Must get the render engine instance from the context itself.
-    render_engine_ = GetDummyRenderEngine(
-        *scene_graph_context_, kRendererName);
+    render_engine_ = GetDummyRenderEngine(*scene_graph_context_, kRendererName);
   }
 
   // Confirms that the member sensor_ matches the expected properties. Part
@@ -219,15 +217,15 @@ class RgbdSensorTest : public ::testing::Test {
              << ") does not match the expected id (" << parent_id << ")";
     }
     ::testing::AssertionResult result = ::testing::AssertionSuccess();
-    result = CompareCameraInfo(
-        sensor_->color_camera_info(), color_camera_.core().intrinsics());
+    result = CompareCameraInfo(sensor_->color_camera_info(),
+                               color_camera_.core().intrinsics());
     if (!result) return result;
 
     result = Compare(sensor_->color_render_camera(), color_camera_);
     if (!result) return result;
 
-    result = CompareCameraInfo(
-        sensor_->depth_camera_info(), depth_camera_.core().intrinsics());
+    result = CompareCameraInfo(sensor_->depth_camera_info(),
+                               depth_camera_.core().intrinsics());
     if (!result) return result;
 
     result = Compare(sensor_->depth_render_camera(), depth_camera_);
@@ -244,9 +242,9 @@ class RgbdSensorTest : public ::testing::Test {
     // call to UpdateViewpoint()).
     if (pre_render_callback) pre_render_callback();
     sensor_->color_image_output_port().Eval<ImageRgba8U>(*sensor_context_);
-    EXPECT_TRUE(CompareMatrices(
-        render_engine_->last_updated_X_WC().GetAsMatrix4(),
-        X_WC_expected.GetAsMatrix4()));
+    EXPECT_TRUE(
+        CompareMatrices(render_engine_->last_updated_X_WC().GetAsMatrix4(),
+                        X_WC_expected.GetAsMatrix4()));
 
     return result;
   }
@@ -308,9 +306,9 @@ TEST_F(RgbdSensorTest, ConstructAnchoredCamera) {
 TEST_F(RgbdSensorTest, ConstructFrameFixedCamera) {
   SourceId source_id;
   const GeometryFrame frame("camera_frame");
-  const RigidTransformd X_PB(AngleAxisd(M_PI/6, Vector3d(1, 1, 1)),
+  const RigidTransformd X_PB(AngleAxisd(M_PI / 6, Vector3d(1, 1, 1)),
                              Vector3d(1, 2, 3));
-  const RigidTransformd X_WP(AngleAxisd(M_PI/7, Vector3d(-1, 0, 1)),
+  const RigidTransformd X_WP(AngleAxisd(M_PI / 7, Vector3d(-1, 0, 1)),
                              Vector3d(-2, -1, -3));
   const FramePoseVector<double> X_WPs{{frame.id(), X_WP}};
 
@@ -340,11 +338,10 @@ TEST_F(RgbdSensorTest, ConstructFrameFixedCamera) {
 
 TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
   const RigidTransformd X_BC{
-        math::RotationMatrixd::MakeFromOrthonormalRows(
-            Eigen::Vector3d(0, 0, 1),
-            Eigen::Vector3d(-1, 0, 0),
-            Eigen::Vector3d(0, -1, 0)),
-        Eigen::Vector3d(0, 0.02, 0)};
+      math::RotationMatrixd::MakeFromOrthonormalRows(Eigen::Vector3d(0, 0, 1),
+                                                     Eigen::Vector3d(-1, 0, 0),
+                                                     Eigen::Vector3d(0, -1, 0)),
+      Eigen::Vector3d(0, 0.02, 0)};
   // For uniqueness, simply invert X_BC.
   const RigidTransformd X_BD{X_BC.inverse()};
   const ColorRenderCamera color_camera{
@@ -352,25 +349,24 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsets) {
        color_camera_.core().clipping(), X_BC},
       color_camera_.show_window()};
   const DepthRenderCamera depth_camera{
-    {depth_camera_.core().renderer_name(), depth_camera_.core().intrinsics(),
+      {depth_camera_.core().renderer_name(), depth_camera_.core().intrinsics(),
        depth_camera_.core().clipping(), X_BD},
       depth_camera_.depth_range()};
   const RigidTransformd X_WB;
   const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
                           depth_camera);
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
 }
 
 TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
   const RigidTransformd X_BC{
-        math::RotationMatrixd::MakeFromOrthonormalRows(
-            Eigen::Vector3d(0, 0, 1),
-            Eigen::Vector3d(-1, 0, 0),
-            Eigen::Vector3d(0, -1, 0)),
-        Eigen::Vector3d(0, 0.02, 0)};
+      math::RotationMatrixd::MakeFromOrthonormalRows(Eigen::Vector3d(0, 0, 1),
+                                                     Eigen::Vector3d(-1, 0, 0),
+                                                     Eigen::Vector3d(0, -1, 0)),
+      Eigen::Vector3d(0, 0.02, 0)};
   // For uniqueness, simply invert X_BC.
   const RigidTransformd X_BD{X_BC.inverse()};
   const RigidTransformd X_WB;
@@ -392,10 +388,10 @@ TEST_F(RgbdSensorTest, ConstructCameraWithNonTrivialOffsetsDeprecated) {
       depth_camera_.depth_range());
   const RgbdSensor sensor(scene_graph_->world_frame_id(), X_WB, color_camera,
                           depth_camera);
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
-  EXPECT_TRUE(CompareMatrices(
-      sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BC().GetAsMatrix4(), X_BC.GetAsMatrix4()));
+  EXPECT_TRUE(
+      CompareMatrices(sensor.X_BD().GetAsMatrix4(), X_BD.GetAsMatrix4()));
 }
 
 // We don't explicitly test any of the image outputs. The image outputs simply

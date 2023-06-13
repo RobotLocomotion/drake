@@ -77,9 +77,7 @@ class Gyroscope final : public LeafSystem<T> {
   const multibody::BodyIndex& body_index() const { return body_index_; }
 
   /// Gets X_BS, the pose of sensor frame S in body B.
-  const math::RigidTransform<double>& pose() const {
-    return X_BS_;
-  }
+  const math::RigidTransform<double>& pose() const { return X_BS_; }
 
   /// Static factory method that creates a %Gyroscope object and connects
   /// it to the given plant. Modifies a Diagram by connecting the input ports

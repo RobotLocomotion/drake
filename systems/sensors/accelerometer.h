@@ -88,9 +88,7 @@ class Accelerometer final : public LeafSystem<T> {
   const Eigen::Vector3d& gravity_vector() const { return gravity_vector_; }
 
   /// Gets X_BS, the pose of sensor frame S in body B
-  const math::RigidTransform<double>& pose() const {
-    return X_BS_;
-  }
+  const math::RigidTransform<double>& pose() const { return X_BS_; }
 
   /// Static factory method that creates an Accelerometer object and connects
   /// it to the given plant. Modifies a Diagram by connecting the input ports
