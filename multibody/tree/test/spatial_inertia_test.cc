@@ -952,12 +952,8 @@ GTEST_TEST(SpatialInertia, IsPhysicallyValidThrowsNiceExceptionMessage) {
   const std::string expected_message = fmt::format(
       "Spatial inertia fails SpatialInertia::IsPhysicallyValid\\(\\).\n"
       " mass = 0.634\n"
-      " Center of mass = \\[0(\\.0)?  0.016  -0.02\\]\n"
+      " Center of mass = \\[0(\\.0)?  0(\\.0)?  0(\\.0)?\\]\n"
       " Inertia about point P, I_BP =\n"
-      "\\[  0.0023989     0.000245      1.3e-05\\]\n"
-      "\\[   0.000245    0.0023566   0.00020438\\]\n"
-      "\\[    1.3e-05   0.00020438  0.000570304\\]\n"
-      " Inertia about center of mass, I_BBcm =\n"
       "\\[0.001983  0.000245   1.3e-05\\]\n"
       "\\[0.000245  0.002103   1.5e-06\\]\n"
       "\\[ 1.3e-05   1.5e-06  0.000408\\]\n"
@@ -1011,6 +1007,78 @@ GTEST_TEST(SpatialInertia, MakeFromCentralInertia) {
   EXPECT_NEAR(products(0), Ixy, kEpsilon);
   EXPECT_NEAR(products(1), Ixz, kEpsilon);
   EXPECT_NEAR(products(2), Iyz, kEpsilon);
+}
+
+// Verify SpatialInertia::MakeFromCentralInertia() performs the inertia triangle
+// validity test _before_ shifting from about-point Bcm to an about-point Bo.
+// Before June 2023, all the tests below threw an exception due to the inertia
+// triangle inequality test. This was happening because the inertia triangle
+// inequalilty test was not occurring immediately at Bcm. Instead, significant
+// digits were lost when the spatial inertia was shifted a relatively long
+// distance from Bcm to Bo for storage and then back from Bo to Bcm for testing
+// the inertia triangle inequality. Although the inertia triangle validity test
+// has a reasonable tolerance based on the trace of the rotational inertia
+// matrix (which is invariant to the inertia's expressed-in basis), the inertia
+// triangle validity test can be adversely affected by adding/subtracting large
+// terms, e.g., of the form mass * distance².
+GTEST_TEST(SpatialInertia, IsMakeFromCentralInertiaTestValidityImmediately) {
+  // Create a spatial inertia for a thin rod B about its center of mass Bcm.
+  // The allowable violation for rotational inertia triangle inequality test is
+  // ≈ 16 * std::numeric_limits<double>::epsilon() * 20.833 ≈ 7.4E-14.
+  const double mass = 10.0,  length = 5.0;
+  const SpatialInertia<double> M_BBcm_B =
+      SpatialInertia<double>::ThinRodWithMass(mass, length, Vector3d(0, 0, 1));
+  RotationalInertia<double> I_BBcm_B = M_BBcm_B.CalcRotationalInertia();
+
+  // Form M_BBo_B (B's spatial inertia about a point Bo, expressed in B) using
+  // the mass, position from Bo to Bcm, and B's rotational inertia about Bcm.
+  // Note: With mass = 10 kg and the given position vector from Bo to Bcm,
+  // mass * dcm² = mass * (10² + 20² + 30²) = 10 * 1400 = 14000 kg*m².
+  // This 14000 kg*m² is much larger than rod B's maximum moment of inertia
+  // about Bcm of 1/12 * mass * length² ≈ 20.8333 (ratio 14000 / 28.8333 = 672).
+  // Since numbers of such differing size are added to form M_BBo_B, significant
+  // digits can be lost in the process. Before June 2023, the shift from Bcm to
+  // Bo (for storage) and a later shift from Bo to Bcm (for triangle inequalty
+  // test) caused I_BBcm_B's calculated principal moments of inertia to be:
+  // [0.0  20.833333333333712  20.83333333333485] which violated the triangle
+  // inequality by ≈ 1.14E-12.
+  Vector3<double> p_BoBcm_B(10, 20, 30);
+  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
+    SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+
+  // Scale the position vector by a factor of 10.
+  // Before June 2023, I_BBcm_B calculated principal moments of inertia of
+  // [0.0  20.833333333284827  20.833333333430346] which violates the triangle
+  // inequality by ≈ 1.46E-10. Note the ratio 1.46E-10 / 1.14E-12 ≈ 10² = 100.
+  // In other words, error scales as ≈ mass * distance² to center of mass.
+  p_BoBcm_B *= 10;
+  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
+     SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+
+  // Scale the position vector by a factor of 100 more.
+  // Before June 2023, I_BBcm_B calculated principal moments of inertia of
+  // [0.0  20.833333730697632  20.83333373069763] which violates the triangle
+  // inequality by ≈ 1.19E-06. Note the ratio 1.19E-06 / 1.14E-12 ≈ 1000² = 1E6.
+  p_BoBcm_B *= 100;
+  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
+     SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+
+  // Test for a small spatial inertia with somewhat disorderly digits.
+  // Before June 2023, the test below threw an exception (similarly as above).
+  I_BBcm_B = RotationalInertia<double>(0.01/M_PI, 0.01/M_PI, 0.02/M_PI);
+  p_BoBcm_B = Vector3<double>(10, 20, 30);
+  DRAKE_EXPECT_NO_THROW(  /* M_BBo_B = */
+    SpatialInertia<double>::MakeFromCentralInertia(mass, p_BoBcm_B, I_BBcm_B));
+
+  // Test a spatial inertia constructor with similar pre-June 2023 problems.
+  // I_BBcm_B calculates principal moments of inertia of
+  // [0.0  20.833333333332575  20.833333333333712] which violates the triangle
+  // inequality by ≈ 1.14E-12. Note: This test still throws an exception since
+  // it does not use MakeFromCentralInertia.
+  const UnitInertia<double> G_BBcm_B = M_BBcm_B.get_unit_inertia();
+  const UnitInertia<double> G_BBo_B = G_BBcm_B.ShiftFromCenterOfMass(p_BoBcm_B);
+  EXPECT_THROW(  /* M_BBo_B = */
+     SpatialInertia(mass, p_BoBcm_B, G_BBo_B),  std::exception);
 }
 
 // Verifies the operator*(const SpatialVelocity&) by computing the kinetic
