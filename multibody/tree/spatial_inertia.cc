@@ -9,10 +9,40 @@ namespace multibody {
 
 namespace {
 
-template <typename T>
-const boolean<T> is_positive_finite(const T& value) {
+template<typename T>
+const boolean<T> is_positive_finite(const T &value) {
   using std::isfinite;
   return isfinite(value) && value > 0;
+}
+
+template<typename T>
+void ThrowIfValueIsNotPositiveFinite(const T& value,
+    const std::string& value_name, const std::string& function_name) {
+  if (!is_positive_finite(value)) {
+    DRAKE_DEMAND(!value_name.empty());
+    DRAKE_DEMAND(!function_name.empty());
+    const std::string error_message = fmt::format(
+    "{}(): {} is not positive and finite: {}.",
+    function_name, value_name, value);
+  throw std::logic_error(error_message);
+  }
+}
+
+
+// Throw unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
+// Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
+template<typename T>
+void ThrowIfUnitVectorIsNotMagnitudeOne(const T& unit_vector,
+    const std::string& function_name) {
+  using std::abs;
+  constexpr double kTolerance = 1E-14;
+  if (abs(unit_vector.norm() - 1) > kTolerance) {
+    DRAKE_DEMAND(!function_name.empty());
+    const std::string error_message = fmt::format(
+        "{}(): The unit_vector argument {} is not a unit vector.",
+        function_name, fmt_eigen(unit_vector.transpose()));
+    throw std::logic_error(error_message);
+  }
 }
 }  // namespace
 
@@ -146,23 +176,26 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
-  if (!is_positive_finite(density)) {
-    const std::string error_message = fmt::format(
-        "{}(): A solid capsule's density is not positive and finite: {}.",
-        __func__, density);
-    throw std::logic_error(error_message);
-  }
-  if (!is_positive_finite(radius) || !is_positive_finite(length)) {
-    const std::string error_message = fmt::format(
-        "{}(): A solid capsule's radius = {} or length = {} is not "
-        "positive and finite.", __func__, radius, length);
-    throw std::logic_error(error_message);
-  }
+  ThrowIfValueIsNotPositiveFinite(density, "density", __func__);
+  ThrowIfValueIsNotPositiveFinite(radius, "radius", __func__);
+  ThrowIfValueIsNotPositiveFinite(length, "length", __func__);
+  ThrowIfUnitVectorIsNotMagnitudeOne(unit_vector, __func__);
 
   // Volume = π r² L + 4/3 π r³
   const T pi_r_squared = M_PI * radius * radius;
   const T volume = pi_r_squared * length + (4.0 / 3.0) * pi_r_squared * radius;
   const T mass = density * volume;
+  return SolidCapsuleWithMass(mass, radius, length, unit_vector);
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithMass(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowIfValueIsNotPositiveFinite(mass, "mass", __func__);
+  ThrowIfValueIsNotPositiveFinite(radius, "radius", __func__);
+  ThrowIfValueIsNotPositiveFinite(length, "length", __func__);
+  ThrowIfUnitVectorIsNotMagnitudeOne(unit_vector, __func__);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCapsule(radius, length, unit_vector);
@@ -173,39 +206,28 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensity(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
-  if (!is_positive_finite(density)) {
-    const std::string error_message = fmt::format(
-        "{}(): A solid cylinder's density is not positive and finite: {}.",
-        __func__, density);
-    throw std::logic_error(error_message);
-  }
-  if (!is_positive_finite(radius) || !is_positive_finite(length)) {
-    const std::string error_message = fmt::format(
-        "{}(): A solid cylinder's radius = {} or length = {} is not "
-        "positive and finite.", __func__, radius, length);
-    throw std::logic_error(error_message);
-  }
-
-  // Ensure ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
-  // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
-  using std::abs;
-  constexpr double kTolerance = 1E-14;
-  if (abs(unit_vector.norm() - 1) > kTolerance) {
-    throw std::logic_error(
-        fmt::format("{}(): The unit_vector argument {} is not a unit vector.",
-                    __func__, fmt_eigen(unit_vector.transpose())));
-  }
-
+  ThrowIfValueIsNotPositiveFinite(density, "density", __func__);
+  ThrowIfValueIsNotPositiveFinite(radius, "radius", __func__);
+  ThrowIfValueIsNotPositiveFinite(length, "length", __func__);
+  ThrowIfUnitVectorIsNotMagnitudeOne(unit_vector, __func__);
   const T volume = M_PI * radius * radius * length;  // π r² l
   const T mass = density * volume;
-  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
+  return SolidCylinderWithMass(mass, radius, length, unit_vector);
+}
 
-  // Note: Although a check is made that ‖unit_vector‖ ≈ 1, even if imperfect,
-  // UnitInertia::SolidCylinder() allows for a near zero-vector due to code in
-  // UnitInertia::AxiallySymmetric() which normalizes unit_vector before use.
-  // TODO(Mitiguy) remove normalization in UnitInertia::AxiallySymmetric().
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMass(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowIfValueIsNotPositiveFinite(mass, "mass", __func__);
+  ThrowIfValueIsNotPositiveFinite(radius, "radius", __func__);
+  ThrowIfValueIsNotPositiveFinite(length, "length", __func__);
+  ThrowIfUnitVectorIsNotMagnitudeOne(unit_vector, __func__);
+  // TODO(Mitiguy) For efficiency (and since it at most helps a few bits),
+  //  remove normalization of unit_vector in UnitInertia::AxiallySymmetric().
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCylinder(radius, length, unit_vector);
+  const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
   return SpatialInertia<T>(mass, p_BoBcm_B, G_BBo_B);
 }
 
@@ -213,21 +235,27 @@ template <typename T>
 SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
     const T& density, const T& radius, const T& length,
     const Vector3<T>& unit_vector) {
-  if (!is_positive_finite(density)) {
-    const std::string error_message = fmt::format(
-        "{}(): A solid cylinder's density is not positive and finite: {}.",
-        __func__, density);
-    throw std::logic_error(error_message);
-  }
-  if (!is_positive_finite(radius) || !is_positive_finite(length)) {
-    const std::string error_message = fmt::format(
-        "{}(): A solid cylinder's radius = {} or length = {} is not "
-        "positive and finite.", __func__, radius, length);
-    throw std::logic_error(error_message);
-  }
-  SpatialInertia<T> M_BBcm_B =
-      SpatialInertia<T>::SolidCylinderWithDensity(
-          density, radius, length, unit_vector);
+  ThrowIfValueIsNotPositiveFinite(density, "density", __func__);
+  ThrowIfValueIsNotPositiveFinite(radius, "radius", __func__);
+  ThrowIfValueIsNotPositiveFinite(length, "length", __func__);
+  ThrowIfUnitVectorIsNotMagnitudeOne(unit_vector, __func__);
+  SpatialInertia<T> M_BBcm_B = SpatialInertia<T>::SolidCylinderWithDensity(
+      density, radius, length, unit_vector);
+  const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
+  M_BBcm_B.ShiftInPlace(p_BcmBp_B);
+  return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMassAboutEnd(
+    const T& mass, const T& radius, const T& length,
+    const Vector3<T>& unit_vector) {
+  ThrowIfValueIsNotPositiveFinite(mass, "mass", __func__);
+  ThrowIfValueIsNotPositiveFinite(radius, "radius", __func__);
+  ThrowIfValueIsNotPositiveFinite(length, "length", __func__);
+  ThrowIfUnitVectorIsNotMagnitudeOne(unit_vector, __func__);
+  SpatialInertia<T> M_BBcm_B = SpatialInertia<T>::SolidCylinderWithMass(
+      mass, radius, length, unit_vector);
   const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
   M_BBcm_B.ShiftInPlace(p_BcmBp_B);
   return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.

@@ -211,6 +211,24 @@ class SpatialInertia {
       const T& density, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
 
+  /// Creates a spatial inertia for a uniform density solid capsule B about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] mass mass of the solid capsule (kg).
+  /// @param[in] radius radius of the cylinder/half-sphere part of the capsule.
+  /// @param[in] length length of the cylindrical part of the capsule (meters).
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  /// cylindrical part of the capsule, expressed in B.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bo
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if mass, radius, or length is not positive and
+  /// finite.
+  /// @pre ‖unit_vector‖ = 1; see UnitVector::SolidCapsule() for details.
+  static SpatialInertia<T> SolidCapsuleWithMass(
+      const T& mass, const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
+
   /// Creates a spatial inertia for a uniform density solid cylinder B about
   /// its geometric center Bo (which is coincident with B's center of mass Bcm).
   /// @param[in] density mass per volume (kg/m³).
@@ -229,6 +247,26 @@ class SpatialInertia {
   /// inertia about Bp (at the center of one of the cylinder's circular ends).
   static SpatialInertia<T> SolidCylinderWithDensity(
       const T& density, const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
+
+  /// Creates a spatial inertia for a uniform density solid cylinder B about
+  /// its geometric center Bo (which is coincident with B's center of mass Bcm).
+  /// @param[in] mass mass of the solid cylinder (kg).
+  /// @param[in] radius radius of the cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  /// cylinder, expressed in B.
+  /// @retval M_BBo_B B's spatial inertia about Bo, expressed in B.
+  /// @note B's rotational inertia about Bo is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bo
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if mass, radius, or length is not positive and
+  /// finite.
+  /// @pre ‖unit_vector‖ = 1.
+  /// @see SolidCylinderWithDensityAboutEnd() to calculate M_BBp_B, B's spatial
+  /// inertia about Bp (at the center of one of the cylinder's circular ends).
+  static SpatialInertia<T> SolidCylinderWithMass(
+      const T& mass, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density solid cylinder B about an
@@ -250,6 +288,27 @@ class SpatialInertia {
   /// inertia about Bcm (B's center of mass).
   static SpatialInertia<T> SolidCylinderWithDensityAboutEnd(
       const T& density, const T& radius, const T& length,
+      const Vector3<T>& unit_vector);
+
+  /// Creates a spatial inertia for a uniform-density solid cylinder B about an
+  /// end-point Bp (Bp is at the center of one of the cylinder's circular ends).
+  /// @param[in] mass mass of the solid cylinder (kg).
+  /// @param[in] radius radius of cylinder (meters).
+  /// @param[in] length length of cylinder in unit_vector direction (meters).
+  /// @param[in] unit_vector unit vector defining the axial direction of the
+  /// cylinder, expressed in B.
+  /// @retval M_BBp_B B's spatial inertia about Bp, expressed in B.
+  /// @note The position from Bp to Bcm is length / 2 * unit_vector.
+  /// @note B's rotational inertia about Bp is axially symmetric, meaning B has
+  /// an equal moment of inertia about any line that both passes through Bp
+  /// and is perpendicular to unit_vector.
+  /// @throws std::exception if mass, radius, or length is not positive and
+  /// finite.
+  /// @pre ‖unit_vector‖ = 1.
+  /// @see SolidCylinderWithDensity() to calculate M_BBcm_B, B's spatial
+  /// inertia about Bcm (B's center of mass).
+  static SpatialInertia<T> SolidCylinderWithMassAboutEnd(
+      const T& mass, const T& radius, const T& length,
       const Vector3<T>& unit_vector);
 
   /// Creates a spatial inertia for a uniform-density thin rod B about its
