@@ -118,6 +118,30 @@ green ``+###`` number as reported by github), and *must not* include more than
 The utility ``tools/prstat`` will report the total added or changed
 lines, excluding files that are easily identified to meet the exemptions above.
 
+The following techniques may be useful to reduce or split a PR into more
+bite-sized chunks.
+  * If you are introducing a new feature, consider adding only unit test cases
+    now, and deferring the first application use to a follow-up PR.
+  * If you are modifying an API, consider deprecating the old interface instead
+    of migrating all call sites immediately.
+    * For deprecation, please see
+      [DRAKE_DEPRECATED](https://drake.mit.edu/doxygen_cxx/drake__deprecated_8h.html) for C++
+      and [pydrake deprecation](https://drake.mit.edu/doxygen_cxx/group__python__bindings.html#PydrakeDeprecation) for Python.
+    * To search for previous examples of C++ deprecations, please use a
+      ``git log`` search such as:
+```
+$ cd drake
+$ git log -S DRAKE_DEPRECATED
+```
+      To constrain the search to effects in Python bindings, you can also use a
+      search such as:
+```
+$ cd drake
+$ git log -S Wdeprecated-declarations -- ./bindings/
+```
+      These searches will provide you with commits that you should then inspect
+      using your favorite git UI (i.e. GitHub, ``gitk``, etc.).
+
 We use [https://reviewable.io](https://reviewable.io/) for code reviews. You can sign in for free with
 your GitHub identity. Before your first code review, please take a look at
 [Tips for Participating In Drake Code Reviews using reviewable.io](/reviewable.html).
