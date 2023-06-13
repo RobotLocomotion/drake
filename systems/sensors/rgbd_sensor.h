@@ -149,7 +149,7 @@ class RgbdSensor final : public LeafSystem<double> {
     return depth_camera_.core().sensor_pose_in_camera_body();
   }
 
-  /** Returns the id of the frame to which the base is affixed.  */
+  /** Returns the id of the frame to which the body is affixed.  */
   geometry::FrameId parent_frame_id() const { return parent_frame_id_; }
 
   /** Returns the geometry::QueryObject<double>-valued input port.  */
