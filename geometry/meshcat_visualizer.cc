@@ -49,8 +49,6 @@ MeshcatVisualizer<T>::MeshcatVisualizer(std::shared_ptr<Meshcat> meshcat,
       this->DeclareAbstractInputPort("query_object", Value<QueryObject<T>>())
           .get_index();
 
-  meshcat_->SetProperty(params_.prefix, "visible", params_.visible_by_default);
-
   if (params_.enable_alpha_slider) {
     meshcat_->AddSlider(
       alpha_slider_name_, 0.02, 1.0, 0.02, alpha_value_);
@@ -65,7 +63,7 @@ MeshcatVisualizer<T>::MeshcatVisualizer(const MeshcatVisualizer<U>& other)
 template <typename T>
 void MeshcatVisualizer<T>::Delete() const {
   meshcat_->Delete(params_.prefix);
-  version_ = GeometryVersion();
+  version_ = std::nullopt;
 }
 
 template <typename T>
@@ -127,8 +125,15 @@ systems::EventStatus MeshcatVisualizer<T>::UpdateMeshcat(
       query_object_input_port().template Eval<QueryObject<T>>(context);
   const GeometryVersion& current_version =
       query_object.inspector().geometry_version();
-
-  if (!version_.IsSameAs(current_version, params_.role)) {
+  if (!version_.has_value()) {
+    // When our current version is null, that means we haven't added any
+    // geometry to Meshcat yet, which means we also need to establish our
+    // default visibility just prior to sending the geometry.
+    meshcat_->SetProperty(params_.prefix, "visible",
+                          params_.visible_by_default);
+  }
+  if (!version_.has_value() ||
+      !version_->IsSameAs(current_version, params_.role)) {
     SetObjects(query_object.inspector());
     version_ = current_version;
   }
@@ -281,7 +286,6 @@ template <typename T>
 systems::EventStatus MeshcatVisualizer<T>::OnInitialization(
     const systems::Context<T>&) const {
   Delete();
-  meshcat_->SetProperty(params_.prefix, "visible", params_.visible_by_default);
   return systems::EventStatus::Succeeded();
 }
 
