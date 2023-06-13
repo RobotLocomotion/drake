@@ -28,7 +28,6 @@ void ThrowIfValueIsNotPositiveFinite(const T& value,
   }
 }
 
-
 // Throw unless ‖unit_vector‖ is within ≈ 5.5 bits of 1.0.
 // Note: 1E-14 ≈ 2^5.5 * std::numeric_limits<double>::epsilon();
 template<typename T>
@@ -223,8 +222,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithMass(
   ThrowIfValueIsNotPositiveFinite(radius, "radius", __func__);
   ThrowIfValueIsNotPositiveFinite(length, "length", __func__);
   ThrowIfUnitVectorIsNotMagnitudeOne(unit_vector, __func__);
-  // TODO(Mitiguy) For efficiency (and since it at most helps a few bits),
-  //  remove normalization of unit_vector in UnitInertia::AxiallySymmetric().
+  // TODO(Mitiguy) For efficiency, remove normalization of unit_vector in
+  //  UnitInertia::AxiallySymmetric(). At best, normalization helps a few bits.
   const UnitInertia<T> G_BBo_B =
       UnitInertia<T>::SolidCylinder(radius, length, unit_vector);
   const Vector3<T> p_BoBcm_B = Vector3<T>::Zero();
