@@ -523,6 +523,7 @@ void SceneGraph<T>::ThrowUnlessRegistered(SourceId source_id,
 template <typename T>
 GeometryState<T>& SceneGraph<T>::mutable_geometry_state(
     Context<T>* context) const {
+  this->ValidateContext(context);
   return context->get_mutable_parameters()
       .template get_mutable_abstract_parameter<GeometryState<T>>(
           geometry_state_index_);
