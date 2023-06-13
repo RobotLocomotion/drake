@@ -61,6 +61,7 @@ drake_cc_library(
         "//common:value",
         "//multibody/contact_solvers:matrix_block",
         "//multibody/contact_solvers/sap:partial_permutation",
+        "//multibody/math:spatial_algebra",
         "//multibody/plant:slicing_and_indexing",
     ],
 )
@@ -226,6 +227,7 @@ drake_cc_googletest(
     deps = [
         ":sap_constraint",
         ":sap_contact_problem",
+        "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],
 )

@@ -44,12 +44,13 @@ template <typename T>
 class TestConstraint final : public SapConstraint<T> {
  public:
   TestConstraint(int clique, int size, T param)
-      : SapConstraint<T>({clique, MakeJacobian(size, clique + 1)}),
+      : SapConstraint<T>({clique, MakeJacobian(size, clique + 1)}, {}),
         param_(param) {}
 
   TestConstraint(int clique0, int clique1, int size, T param)
       : SapConstraint<T>({clique0, MakeJacobian(size, clique0 + 1), clique1,
-                          MakeJacobian(size, clique1 + 1)}),
+                          MakeJacobian(size, clique1 + 1)},
+                         {}),
         param_(param) {}
 
   // Implements a fake projection operation where the result is given by:
