@@ -6,7 +6,7 @@ from pydrake.autodiffutils import AutoDiffXd
 from pydrake.common import RandomDistribution, RandomGenerator
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.common.test_utilities.deprecation import catch_drake_warnings
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import Value
 from pydrake.symbolic import Expression, Variable
 from pydrake.systems.framework import (
     BasicVector,
@@ -312,7 +312,7 @@ class TestGeneral(unittest.TestCase):
             model_value, system.get_output_port().Eval(context))
 
     def test_abstract_pass_through(self):
-        model_value = AbstractValue.Make("Hello world")
+        model_value = Value("Hello world")
         system = PassThrough(abstract_model_value=model_value)
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, model_value)
@@ -667,21 +667,21 @@ class TestGeneral(unittest.TestCase):
         """Tests construction of systems for systems whose executions semantics
         are not tested above.
         """
-        ConstantValueSource(AbstractValue.Make("Hello world"))
+        ConstantValueSource(Value("Hello world"))
         DiscreteTimeDelay(update_sec=0.1, delay_time_steps=5, vector_size=2)
         DiscreteTimeDelay(
             update_sec=0.1, delay_time_steps=5,
-            abstract_model_value=AbstractValue.Make("Hello world"))
+            abstract_model_value=Value("Hello world"))
         with catch_drake_warnings(expected_count=2) as w:
             DiscreteTimeDelay(update_sec=0.1, delay_timesteps=5, vector_size=2)
             DiscreteTimeDelay(
                 update_sec=0.1, delay_timesteps=5,
-                abstract_model_value=AbstractValue.Make("Hello world"))
+                abstract_model_value=Value("Hello world"))
 
         ZeroOrderHold(period_sec=0.1, vector_size=2)
         ZeroOrderHold(
             period_sec=0.1,
-            abstract_model_value=AbstractValue.Make("Hello world"))
+            abstract_model_value=Value("Hello world"))
 
     def test_shared_pointer_system_ctor(self):
         dut = SharedPointerSystem(value_to_hold=[1, 2, 3])

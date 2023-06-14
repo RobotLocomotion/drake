@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 
 from pydrake.autodiffutils import AutoDiffXd
-from pydrake.common.value import AbstractValue, Value
+from pydrake.common.value import Value
 from pydrake.common.test_utilities import numpy_compare
 from pydrake.symbolic import Expression
 from pydrake.systems.framework import (
@@ -160,7 +160,7 @@ class TestValue(unittest.TestCase):
                 self.assertEqual(actual.get_value(), expected.get_value())
 
         model_numeric = BasicVector([0.])
-        model_abstract = AbstractValue.Make("Hello")
+        model_abstract = Value("Hello")
 
         params = Parameters(
             numeric=[model_numeric.Clone()], abstract=[model_abstract.Clone()])
