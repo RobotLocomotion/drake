@@ -590,17 +590,16 @@ class RotationalInertia {
   ///         calculated (eigenvalue solver) or if scalar type T cannot be
   ///         converted to a double.
   boolean<T> CouldBePhysicallyValid() const {
-    // To check the validity of rotational inertia use an epsilon value that is
-    // a number related to machine precision multiplied by the largest possible
-    // element that can appear in a valid `this` rotational inertia.  Note: The
+    // To check the validity of `this` rotational inertia, use an epsilon value
+    // related to machine precision multiplied by the largest possible element
+    // that can appear in a valid `this` rotational inertia.  Note: The
     // largest product of inertia is at most half the largest moment of inertia.
     using std::max;
-    const double precision = 10 * std::numeric_limits<double>::epsilon();
+    const double precision = 16 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
 
-    // In order to avoid false negatives for inertias close to zero we use, in
-    // addition to a relative tolerance of "precision", an absolute tolerance
-    // equal to "precision" as well.
+    // To avoid false negatives for inertias close to zero, we also use
+    // an absolute tolerance equal to "1.0 * precision".
     const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
     // Calculate principal moments of inertia p and then test these principal

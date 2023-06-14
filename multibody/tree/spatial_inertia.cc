@@ -14,16 +14,21 @@ const boolean<T> is_positive_finite(const T& value) {
   using std::isfinite;
   return isfinite(value) && value > 0;
 }
+
+template <typename T>
+const boolean<T> is_nonnegative_finite(const T& value) {
+  using std::isfinite;
+  return isfinite(value) && value >= 0;
+}
 }  // namespace
 
 template <typename T>
 SpatialInertia<T> SpatialInertia<T>::MakeFromCentralInertia(const T& mass,
     const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E) {
-  const RotationalInertia<T> I_SP_E =
-      I_SScm_E.ShiftFromCenterOfMass(mass, p_PScm_E);
-  UnitInertia<T> G_SP_E;
-  G_SP_E.SetFromRotationalInertia(I_SP_E, mass);
-  return SpatialInertia(mass, p_PScm_E, G_SP_E);
+  UnitInertia<T> G_SScm_E;
+  G_SScm_E.SetFromRotationalInertia(I_SScm_E, mass);
+  const SpatialInertia<T> M_SScm_E(mass, Vector3<T>::Zero(), G_SScm_E);
+  return M_SScm_E.Shift(-p_PScm_E);  // Shift from Scm to point P.
 }
 
 template <typename T>
@@ -435,9 +440,9 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
 
 template <typename T>
 boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
-  // This spatial inertia is not physically valid if the mass is NaN or if the
-  // center of mass or unit inertia matrix have NaN elements.
-  boolean<T> ret_value = !IsNaN() && mass_ >= T(0);
+  // This spatial inertia is not physically valid if the mass is negative or
+  // non-finite or the center of mass or unit inertia matrix have NaN elements.
+  boolean<T> ret_value = is_nonnegative_finite(mass_);
   if (ret_value) {
     // Form a rotational inertia about the body's center of mass and then use
     // the well-documented tests in RotationalInertia to test validity.

@@ -275,12 +275,6 @@ TEST_P(InertiaVisualizerGeometryTest, BoxTest) {
 // TODO(trowell-tri) Add rotation to the test when supported.
 TEST_P(InertiaVisualizerGeometryTest, ThinRodTest) {
   const Vector3d pose = GetParam().transpose();
-  // TODO(jwnimmer-tri) Our SDFormat parser erroneously rejects rods that are
-  // posed too far away.  We need to skip those test cases for now.
-  if (pose.maxCoeff() > 5) {
-    drake::log()->info("Skipping test case due to SDFormat parser bug");
-    return;
-  }
   constexpr double length = 5.0;
   const auto M =
       SpatialInertia<double>::ThinRodWithMass(10, length, Vector3d(0, 0, 1));
