@@ -17,6 +17,7 @@ drake_cc_package_library(
         ":block_3x3_sparse_matrix",
         ":block_sparse_lower_triangular_or_symmetric_matrix",
         ":block_sparse_matrix",
+        ":contact_configuration",
         ":contact_solver",
         ":contact_solver_results",
         ":contact_solver_utils",
@@ -50,6 +51,16 @@ drake_cc_library(
         "//common:default_scalars",
         "//common:essential",
         "//common:unused",
+    ],
+)
+
+drake_cc_library(
+    name = "contact_configuration",
+    srcs = ["contact_configuration.cc"],
+    hdrs = ["contact_configuration.h"],
+    deps = [
+        "//common:essential",
+        "//math:geometric_transform",
     ],
 )
 

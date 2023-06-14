@@ -189,8 +189,15 @@ TEST_F(SpheresStackTest, EvalContactProblemCache) {
     // Here we simply test they are consistent with those hard-coded values.
     EXPECT_EQ(constraint->parameters().sigma, 1.0e-3);
 
-    // Verify contact frame orientation matrix R_WC.
-    EXPECT_EQ(R_WC[i].matrix(), pair_kinematics.R_WC.matrix());
+    // Verify contact configuration.
+    const contact_solvers::internal::ContactConfiguration<double>&
+        configuration = pair_kinematics.configuration;
+    EXPECT_EQ(constraint->configuration().objectA, configuration.objectA);
+    EXPECT_EQ(constraint->configuration().objectB, configuration.objectB);
+    EXPECT_EQ(constraint->configuration().p_ApC_W, configuration.p_ApC_W);
+    EXPECT_EQ(constraint->configuration().p_BqC_W, configuration.p_BqC_W);
+    EXPECT_EQ(constraint->configuration().phi, configuration.phi);
+    EXPECT_EQ(constraint->configuration().R_WC.matrix(), R_WC[i].matrix());
   }
 }
 

@@ -127,6 +127,7 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
       rigid_geometry_id_ = plant_->RegisterCollisionGeometry(
           plant_->world_body(), X_WR, geometry::Box(10, 10, 1),
           "static_collision_geometry", rigid_proximity_props);
+      rigid_body_index_ = plant_->world_body().index();
     }
 
     plant_->set_discrete_contact_solver(DiscreteContactSolver::kSap);
@@ -198,8 +199,10 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
     for (int i = 0; i < num_contact_points; ++i) {
       const ContactPairKinematics<double>& contact_kinematic =
           contact_kinematics[i];
-      EXPECT_LT(contact_kinematic.phi, 0.0);
-      EXPECT_TRUE(contact_kinematic.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
+      const contact_solvers::internal::ContactConfiguration<double>&
+          configuration = contact_kinematic.configuration;
+      EXPECT_LT(configuration.phi, 0.0);
+      EXPECT_TRUE(configuration.R_WC.IsNearlyEqualTo(expected_R_WC, 1e-12));
       if (dynamic_rigid_body) {
         ASSERT_EQ(contact_kinematic.jacobian.size(), 2);
         const Matrix3X<double> J0 =
@@ -222,6 +225,14 @@ class DeformableDriverContactKinematicsTest : public ::testing::Test {
         ASSERT_EQ(v0.size(), J0.cols());
         EXPECT_TRUE(CompareMatrices(J0 * v0, expected_v_DpRp_C, 1e-14));
       }
+
+      // Object A is always the deformable body and B is the rigid body.
+      EXPECT_EQ(BodyIndex(configuration.objectB), rigid_body_index_);
+      const DeformableBodyIndex body_index =
+          model_->GetBodyIndex(deformable_body_id_);
+      // We expect deformable bodies to follow after rigid bodies.
+      const int objectA = body_index + plant_->num_bodies();
+      EXPECT_EQ(configuration.objectA, objectA);
     }
   }
 

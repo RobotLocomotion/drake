@@ -136,6 +136,7 @@ drake_cc_library(
         ":sap_constraint_jacobian",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:contact_configuration",
     ],
 )
 

@@ -101,6 +101,8 @@ class DeformableDriver : public ScalarConvertibleComponent<T> {
 
   ~DeformableDriver();
 
+  int num_deformable_bodies() const { return deformable_model_->num_bodies(); }
+
   // TODO(xuchenhan-tri): Implement CloneToDouble() and allow cloning to double.
   bool is_cloneable_to_double() const final { return false; }
   bool is_cloneable_to_autodiff() const final { return false; }
