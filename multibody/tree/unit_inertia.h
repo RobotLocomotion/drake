@@ -133,8 +133,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///                     inertia is expressed.
   /// @returns A reference to `this` unit inertia, which has now been taken
   ///          about point Q so can be written as `G_BQ_E`.
-  UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcQ_E) {
-    RotationalInertia<T>::operator+=(PointMass(p_BcQ_E));
+  UnitInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_BcmQ_E) {
+    RotationalInertia<T>::operator+=(PointMass(p_BcmQ_E));
     return *this;
   }
 
@@ -146,8 +146,8 @@ class UnitInertia : public RotationalInertia<T> {
   /// @retval G_BQ_E This same unit inertia taken about a point Q instead of
   ///                the centroid `Bcm`.
   UnitInertia<T> ShiftFromCenterOfMass(
-      const Vector3<T>& p_BcQ_E) const __attribute__((warn_unused_result)) {
-    return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcQ_E);
+      const Vector3<T>& p_BcmQ_E) const __attribute__((warn_unused_result)) {
+    return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQ_E);
   }
 
   /// For the unit inertia `G_BQ_E` of a body or composite body B computed about

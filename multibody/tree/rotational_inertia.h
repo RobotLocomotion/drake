@@ -598,7 +598,7 @@ class RotationalInertia {
     const double precision = 16 * std::numeric_limits<double>::epsilon();
     const T max_possible_inertia_moment = CalcMaximumPossibleMomentOfInertia();
 
-    // To avoid false negatives for inertias close to zero we use, we also use
+    // To avoid false negatives for inertias close to zero, we also use
     // an absolute tolerance equal to "1.0 * precision".
     const T epsilon = precision * max(1.0, max_possible_inertia_moment);
 
