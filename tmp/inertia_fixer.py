@@ -48,7 +48,7 @@ class ElementFacts:
 
     end: SourceLocation = None
     """The location of the end of the XML element text; may require
-    adjustments, depending on the input syntax used.
+    adjustments, depending on the input syntax used (optional).
     """
 
     parent: ElementFacts = None
@@ -57,12 +57,11 @@ class ElementFacts:
     children: list[ElementFacts] = field(default_factory=list)
     "Facts about relevant children of this element (optional)."
 
-    serial_number: int = None
-    """An opinionated index of this element within the sequence of similar
-    elements; see XmlInertiaMapper's implementation for details."""
-
     parent_model: ElementFacts = None
-    "Facts for the enclosing model of this model element (optional)."
+    """Facts for the enclosing model of this model element (optional).
+    The definition of a model element is determined by each file format;
+    see FormatDriver.is_model_element().
+    """
 
 
 class FormatDriver(object, metaclass=abc.ABCMeta):
@@ -75,13 +74,6 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
     def is_model_element(self, name: str) -> bool:
         """Return True if the element directly encloses link elements."""
         raise NotImplementedError
-
-    @abc.abstractmethod
-    def is_element_ignored(self, name: str, attributes: dict) -> bool:
-        """Return True if the element is ignored by the Drake parser."""
-        raise NotImplementedError
-
-    # TODO: support some per-format element indexing.
 
     @abc.abstractmethod
     def associate_plant_models(self, models: list, links: list,
@@ -113,6 +105,9 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
 
 
 def adjusted_element_end_index(input_text: str, facts: ElementFacts) -> int:
+    """Returns the index of the end of all of the text (including the element
+    closure), when given an ElementFacts produced by the expat parse.
+    """
     if facts.start.index == facts.end.index:
         # Empty "pseudo" element.
         return facts.end.index
@@ -134,7 +129,7 @@ class UrdfDriver(FormatDriver):
     def is_model_element(self, name: str) -> bool:
         return name == "robot"
 
-    def is_element_ignored(self, name: str, attributes: dict) -> bool:
+    def _is_element_ignored(self, name: str, attributes: dict) -> bool:
         # TODO(rpoyner_tri): The 'drake_ignore' attribute is regrettable legacy
         # cruft that should be removed when the associated URDF parser cruft is
         # removed.
@@ -147,14 +142,17 @@ class UrdfDriver(FormatDriver):
         assert len(links) >= plant.num_bodies() - 1, (
             links, plant.num_bodies())
         mapping = {}
+        serial_number = 0
         for inertial in inertials:
+            serial_number += 1
             link = inertial.parent
-            if link.serial_number is None:
+            if self._is_element_ignored(link.name, link.attributes):
                 continue
-            k = 1 + link.serial_number
+            k = serial_number
             assert k < plant.num_bodies()
             mapping[BodyIndex(k)] = inertial
             # TODO assert more sanity.
+            assert plant.get_body(k).name() == link.attributes.get("name")
         return mapping
 
     def format_inertia(self, input_text: str, input_lines: list[str],
@@ -202,9 +200,6 @@ class SdformatDriver(FormatDriver):
 
     def is_model_element(self, name: str) -> bool:
         return name == "model"
-
-    def is_element_ignored(self, name: str, attributes: dict) -> bool:
-        return False
 
     def associate_plant_models(self, models: list, links: list,
                                inertials: list, plant: MultibodyPlant) -> dict:
@@ -330,12 +325,6 @@ class XmlInertiaMapper:
             self._model_stack.append(element)
 
         if name == "link":
-            element.serial_number = len(self._links) - self._ignored_links
-
-            if self._format_driver.is_element_ignored(name, attributes):
-                self._ignored_links += 1
-                element.serial_number = None
-
             self._links.append(element)
 
         if name == "inertial":
