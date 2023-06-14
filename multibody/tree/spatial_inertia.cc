@@ -440,8 +440,8 @@ SpatialInertia<T> SpatialInertia<T>::SolidTetrahedronAboutVertexWithDensity(
 
 template <typename T>
 boolean<T> SpatialInertia<T>::IsPhysicallyValid() const {
-  // This spatial inertia is not physically valid if the mass is NaN or if the
-  // center of mass or unit inertia matrix have NaN elements.
+  // This spatial inertia is not physically valid if the mass is negative or
+  // non-finite or the center of mass or unit inertia matrix have NaN elements.
   boolean<T> ret_value = is_nonnegative_finite(mass_);
   if (ret_value) {
     // Form a rotational inertia about the body's center of mass and then use
