@@ -4,40 +4,20 @@
 #include <vector>
 
 #include "drake/math/autodiff_gradient.h"
+#include "drake/math/soft_min_max.h"
 
 namespace drake {
 namespace solvers {
 
 namespace {
-/** Computes log(∑exp(xᵢ)). Exploits the shift invariance of log-sum-exp to
-avoid overflow. */
-template <typename T>
-T LogSumExp(const std::vector<T>& x) {
-  DRAKE_ASSERT(x.size() > 0);
-  using std::exp;
-  using std::log;
-  const T x_max = *std::max_element(x.begin(), x.end());
-  T sum_exp{0.0};
-  for (const T& xi : x) {
-    sum_exp += exp(xi - x_max);
-  }
-  return x_max + log(sum_exp);
-}
-
-/** Computes a smooth approximation of max(x). */
+/** Computes a smooth over approximation of max(x). */
 template <typename T>
 T SmoothMax(const std::vector<T>& x) {
   // We compute the smooth max of x as smoothmax(x) = log(∑ᵢ exp(αxᵢ)) / α.
   // This smooth max approaches max(x) as α increases. We choose α = 100, as
   // that gives a qualitatively good fit for xᵢ ∈ [0, 1], which is the range of
   // potential penalty values when the MinimumValueConstraint is feasible.
-  DRAKE_ASSERT(x.size() > 0);
-  const double alpha{100};
-  std::vector<T> x_scaled{x};
-  for (T& xi_scaled : x_scaled) {
-    xi_scaled *= alpha;
-  }
-  return LogSumExp(x_scaled) / alpha;
+  return math::SoftOverMax(x, 100 /* alpha */);
 }
 
 template <typename T>

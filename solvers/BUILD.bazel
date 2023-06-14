@@ -195,6 +195,7 @@ drake_cc_library(
     ],
     deps = [
         "//math:gradient",
+        "//math:soft_min_max",
     ],
 )
 
