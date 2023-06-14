@@ -846,6 +846,14 @@ drake_cc_googletest(
 )
 
 drake_cc_googletest(
+    name = "contact_results_test",
+    deps = [
+        ":contact_results",
+        ":multibody_plant_core",
+    ],
+)
+
+drake_cc_googletest(
     name = "contact_results_to_lcm_test",
     deps = [
         ":contact_results_to_lcm",
