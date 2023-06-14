@@ -459,9 +459,9 @@ void SpatialInertia<T>::ThrowNotPhysicallyValid() const {
   std::string error_message = fmt::format(
           "Spatial inertia fails SpatialInertia::IsPhysicallyValid().");
   const T& mass = get_mass();
-  if (!is_nonnegative_finite(mass)) {
+  if (!is_positive_finite(mass)) {
       error_message += fmt::format(
-          "\nmass = {} is negative or not finite.\n", mass);
+          "\nmass = {} is not positive and finite.\n", mass);
   } else {
     error_message += fmt::format("{}", *this);
     WriteExtraCentralInertiaProperties(&error_message);
