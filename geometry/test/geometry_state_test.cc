@@ -2622,6 +2622,13 @@ TEST_F(GeometryStateTest, GetGeometryIdFromName) {
           geometry_state_.GetGeometryIdByName(frames_[f], Role::kProximity,
                                               " " + geometry_names_[g_index]),
           expected_id);
+      // Deprecated:
+      // Look up with a (namespace ignore) scoped name.
+      EXPECT_EQ(
+          geometry_state_.GetGeometryIdByName(
+              frames_[f], Role::kProximity,
+              "haha::" + geometry_names_[g_index]),
+          expected_id);
     }
   }
 
