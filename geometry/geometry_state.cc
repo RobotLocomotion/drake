@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <regex>
 #include <string>
 #include <utility>
 
@@ -539,6 +540,20 @@ GeometryId GeometryState<T>::GetGeometryIdByName(
     FrameId frame_id, Role role, const std::string& name) const {
   const std::string canonical_name = internal::CanonicalizeStringName(name);
 
+  // Extract the "short" name from whatever was passed in and search on that.
+  // XXX What we probably really want here is a scoped_names module in a
+  // location we can depend on (hint: not multibody/tree). Then we could use
+  // the already-implemented parsing logic to analyze the in-bound name.
+  const std::string search_name = [&]() {
+    std::regex pattern(".*::([^:]+):*");
+    std::smatch matches;
+    std::regex_match(canonical_name, matches, pattern);
+    if (matches.size() == 2) {
+      return matches[1].str();
+    }
+    return canonical_name;
+  }();
+
   GeometryId result;
   int count = 0;
   std::string frame_name;
@@ -547,7 +562,7 @@ GeometryId GeometryState<T>::GetGeometryIdByName(
   frame_name = frame.name();
   for (GeometryId geometry_id : frame.child_geometries()) {
     const InternalGeometry& geometry = geometries_.at(geometry_id);
-    if (geometry.has_role(role) && geometry.name() == canonical_name) {
+    if (geometry.has_role(role) && geometry.name() == search_name) {
       ++count;
       result = geometry_id;
     }
