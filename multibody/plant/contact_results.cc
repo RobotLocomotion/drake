@@ -111,6 +111,26 @@ int ContactResults<T>::num_hydroelastic_contacts() const {
   }
 }
 
+template <typename T>
+ContactResults<T> ContactResults<T>::SelectHydroelastic(
+    std::function<bool(const HydroelasticContactInfo<T>&)> selector) const {
+  ContactResults<T> selected_alias_pointers;
+  if (this->plant() != nullptr) {
+    selected_alias_pointers.set_plant(this->plant());
+  }
+  int num_hydroelastic_contacts = this->num_hydroelastic_contacts();
+  for (int i = 0; i < num_hydroelastic_contacts; ++i) {
+    const HydroelasticContactInfo<T>& contact_info =
+        this->hydroelastic_contact_info(i);
+    if (selector(contact_info)) {
+      selected_alias_pointers.AddContactInfo(&contact_info);
+    }
+  }
+  // Now we use copy constructor to switch to unique pointers.
+  ContactResults<T> output_unique_pointers = selected_alias_pointers;
+  return output_unique_pointers;
+}
+
 }  // namespace multibody
 }  // namespace drake
 
