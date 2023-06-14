@@ -760,6 +760,19 @@ GTEST_TEST(SceneGraphConnectionTest, FullPositionUpdateConnected) {
       SceneGraphTester::FullPoseUpdate(*scene_graph, sg_context));
   DRAKE_EXPECT_NO_THROW(
       SceneGraphTester::FullConfigurationUpdate(*scene_graph, sg_context));
+
+  // Also check that scene graph methods validate contexts.
+  auto& ms_context =
+      diagram->GetMutableSubsystemContext(*mixed_source, diagram_context.get());
+  // Check an ordinary method; glass-box knowledge shows that these all are
+  // implemented on the private mutable_geometry_state() method, which checks
+  // its context.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph->collision_filter_manager(diagram_context.get()),
+      ".*\n.*context-system-mismatch.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      scene_graph->collision_filter_manager(&ms_context),
+      ".*\n.*context-system-mismatch.*");
 }
 
 // Adversarial test case: Missing port connections.
