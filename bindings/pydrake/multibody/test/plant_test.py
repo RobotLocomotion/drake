@@ -2447,6 +2447,11 @@ class TestPlant(unittest.TestCase):
         self.assertIsNone(contact_results.plant())
         copy.copy(contact_results)
 
+        def myselector(hydroelastic_contact_info):
+            return True
+        contact_results_view = contact_results.ViewHydroelastic(myselector)
+        self.assertTrue(contact_results_view.num_point_pair_contacts() == 0)
+
     def test_contact_model(self):
         plant = MultibodyPlant_[float](0.1)
         models = [

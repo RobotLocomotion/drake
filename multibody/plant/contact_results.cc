@@ -111,6 +111,24 @@ int ContactResults<T>::num_hydroelastic_contacts() const {
   }
 }
 
+template <typename T>
+const ContactResults<T> ContactResults<T>::ViewHydroelastic(
+    std::function<bool(const HydroelasticContactInfo<T>&)> selector) const {
+  ContactResults<T> output;
+  if (this->plant() != nullptr) {
+    output.set_plant(this->plant());
+  }
+  int num_hydroelastic_contacts = this->num_hydroelastic_contacts();
+  for (int i=0; i < num_hydroelastic_contacts; ++i) {
+    const HydroelasticContactInfo<T>& contact_info =
+        this->hydroelastic_contact_info(i);
+    if (selector(contact_info)) {
+      output.AddContactInfo(&contact_info);
+    }
+  }
+  return output;
+}
+
 }  // namespace multibody
 }  // namespace drake
 

@@ -58,6 +58,23 @@ class ContactResults {
   result will be non-null, but default-constructed results might have nulls. */
   const MultibodyPlant<T>* plant() const;
 
+  /** Returns ContactResults with only HydroelasticContactInfo instances
+   satisfying the selection criterion.
+
+   Conceptually it is a view into this ContactResults with only the selected
+   contact info. Internally it copies pointers instead of deep copying.
+
+   @param selector Boolean predicate that returns true to select which
+                   HydroelasticContactInfo for viewing.
+
+   @return Non-modifiable contact results of the selected hydroelastic contacts.
+           Notice the `const` in the return type.
+
+   @note Assume the lifetime of `this` covers the lifetime of
+         the return value. */
+  const ContactResults<T> ViewHydroelastic(
+      std::function<bool(const HydroelasticContactInfo<T>&)> selector) const;
+
   // The following methods should only be called by MultibodyPlant and testing
   // fixtures and are undocumented rather than being made private with friends.
   #ifndef DRAKE_DOXYGEN_CXX
