@@ -1,6 +1,7 @@
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
 
 #include <algorithm>
+#include <utility>
 
 #include "drake/common/default_scalars.h"
 #include "drake/common/eigen_types.h"
@@ -13,13 +14,17 @@ namespace internal {
 
 template <typename T>
 SapFrictionConeConstraint<T>::SapFrictionConeConstraint(
-    SapConstraintJacobian<T> J, const T& phi0, const Parameters& p)
-    : SapConstraint<T>(std::move(J), {}), parameters_(p), phi0_(phi0) {
-  DRAKE_DEMAND(p.mu >= 0.0);
-  DRAKE_DEMAND(p.stiffness > 0.0);
-  DRAKE_DEMAND(p.dissipation_time_scale >= 0.0);
-  DRAKE_DEMAND(p.beta >= 0.0);
-  DRAKE_DEMAND(p.sigma > 0.0);
+    ContactConfiguration<T> configuration, SapConstraintJacobian<T> J,
+    Parameters parameters)
+    : SapConstraint<T>(std::move(J),
+                       {configuration.objectA, configuration.objectB}),
+      parameters_(std::move(parameters)),
+      configuration_(std::move(configuration)) {
+  DRAKE_DEMAND(parameters_.mu >= 0.0);
+  DRAKE_DEMAND(parameters_.stiffness > 0.0);
+  DRAKE_DEMAND(parameters_.dissipation_time_scale >= 0.0);
+  DRAKE_DEMAND(parameters_.beta >= 0.0);
+  DRAKE_DEMAND(parameters_.sigma > 0.0);
   DRAKE_DEMAND(this->jacobian().rows() == 3);
 }
 
@@ -68,7 +73,7 @@ std::unique_ptr<AbstractValue> SapFrictionConeConstraint<T>::DoMakeData(
   const T Rt = parameters_.sigma * wt;
 
   // Bias term.
-  const T vn_hat = -phi0_ / (time_step + taud);
+  const T vn_hat = -configuration_.phi / (time_step + taud);
 
   SapFrictionConeConstraintData<T> data(parameters_.mu, Rt, Rn, vn_hat);
   return SapConstraint<T>::MoveAndMakeAbstractValue(std::move(data));
@@ -201,6 +206,28 @@ void SapFrictionConeConstraint<T>::DoCalcCostHessian(
       G->setZero();
       break;
     }
+  }
+}
+
+template <typename T>
+void SapFrictionConeConstraint<T>::DoAccumulateSpatialImpulses(
+    int i, const Eigen::Ref<const VectorX<T>>& gamma,
+    SpatialForce<T>* F) const {
+  const math::RotationMatrix<T>& R_WC = configuration_.R_WC;
+  const Vector3<T> f_Bc_W = R_WC * gamma;
+  const SpatialForce<T> F_Bc_W(Vector3<T>::Zero(), f_Bc_W);
+
+  if (i == 0) {
+    // Object A.
+    const Vector3<T> p_CAp_W = -configuration_.p_ApC_W;
+    // N.B. F_Ap = F_Ac.Shift(p_CAp) = -F_Bc.Shift(p_CAp)
+    *F -= F_Bc_W.Shift(p_CAp_W);
+  } else {
+    // Object B.
+    const Vector3<T> p_CBq_W = -configuration_.p_BqC_W;
+    // N.B. F_Bq = F_Bc.Shift(p_CBq)
+    *F += F_Bc_W.Shift(p_CBq_W);
+    return;
   }
 }
 

@@ -181,21 +181,33 @@ class PizzaSaverProblem {
       double sigma) const {
     std::unique_ptr<SapContactProblem<double>> problem =
         MakeContactProblemWithoutConstraints(q0, v0, tau);
+    // Since contact constraints are involved, there must be at least one object
+    // with a valid index, equal to zero.
+    problem->set_num_objects(1);
 
     // Add contact constraints.
     const double phi0 = q0(2);
     const SapFrictionConeConstraint<double>::Parameters parameters{
         mu_, stiffness_, taud_, beta, 1.0e-3};
+
+    // For these tests, only the signed distance phi is relevant.
+    // Object indices must be valid, even though not used in these tests. Every
+    // other configuration will be left uninitialized.
+    const ContactConfiguration<double> configuration{
+        .objectA = 0 /* valid, though not used */,
+        .objectB = 0 /* valid, though not used */,
+        .phi = phi0};
+
     MatrixXd J;  // Full system Jacobian for the three contacts.
     CalcContactJacobian(q0(3), &J);
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        SapConstraintJacobian<double>{0, J.middleRows(0, 3)}, phi0,
+        configuration, SapConstraintJacobian<double>{0, J.middleRows(0, 3)},
         parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        SapConstraintJacobian<double>{0, J.middleRows(3, 3)}, phi0,
+        configuration, SapConstraintJacobian<double>{0, J.middleRows(3, 3)},
         parameters));
     problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<double>>(
-        SapConstraintJacobian<double>{0, J.middleRows(6, 3)}, phi0,
+        configuration, SapConstraintJacobian<double>{0, J.middleRows(6, 3)},
         parameters));
 
     return problem;

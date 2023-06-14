@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "drake/multibody/contact_solvers/contact_configuration.h"
 #include "drake/multibody/contact_solvers/contact_solver_utils.h"
 #include "drake/multibody/contact_solvers/sap/sap_contact_problem.h"
 #include "drake/multibody/contact_solvers/sap/sap_friction_cone_constraint.h"
@@ -20,6 +21,7 @@
 
 using drake::geometry::GeometryId;
 using drake::math::RotationMatrix;
+using drake::multibody::contact_solvers::internal::ContactConfiguration;
 using drake::multibody::contact_solvers::internal::ContactSolverResults;
 using drake::multibody::contact_solvers::internal::ExtractNormal;
 using drake::multibody::contact_solvers::internal::ExtractTangent;
@@ -186,7 +188,8 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const T stiffness = discrete_pair.stiffness;
     const T dissipation_time_scale = discrete_pair.dissipation_time_scale;
     const T friction = discrete_pair.friction_coefficient;
-    const T phi = contact_kinematics[icontact].phi;
+    ContactConfiguration<T>& configuration =
+        contact_kinematics[icontact].configuration;
     const auto& jacobian_blocks = contact_kinematics[icontact].jacobian;
 
     // Stiffness equal to infinity is used to indicate a rigid contact. Since
@@ -197,22 +200,24 @@ std::vector<RotationMatrix<T>> SapDriver<T>::AddContactConstraints(
     const double beta = (stiffness == std::numeric_limits<double>::infinity())
                             ? 1.0
                             : near_rigid_threshold_;
-    const typename SapFrictionConeConstraint<T>::Parameters parameters{
+    typename SapFrictionConeConstraint<T>::Parameters parameters{
         friction, stiffness, dissipation_time_scale, beta, sigma};
 
+    // TODO(amcastro-tri): remove this extra copy of R_WC. Contact constraints
+    // store R_WC in their ContactConfiguration.
+    R_WC.push_back(configuration.R_WC);
     if (jacobian_blocks.size() == 1) {
       SapConstraintJacobian<T> J(jacobian_blocks[0].tree,
                                  std::move(jacobian_blocks[0].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          std::move(J), phi, parameters));
+          std::move(configuration), std::move(J), std::move(parameters)));
     } else {
       SapConstraintJacobian<T> J(
           jacobian_blocks[0].tree, std::move(jacobian_blocks[0].J),
           jacobian_blocks[1].tree, std::move(jacobian_blocks[1].J));
       problem->AddConstraint(std::make_unique<SapFrictionConeConstraint<T>>(
-          std::move(J), phi, parameters));
+          std::move(configuration), std::move(J), std::move(parameters)));
     }
-    R_WC.emplace_back(std::move(contact_kinematics[icontact].R_WC));
   }
   return R_WC;
 }
@@ -600,8 +605,15 @@ void SapDriver<T>::CalcContactProblemCache(
   CalcLinearDynamicsMatrix(context, &A);
   VectorX<T> v_star;
   CalcFreeMotionVelocities(context, &v_star);
+  const int num_rigid_bodies = plant().num_bodies();
+  const int num_deformable_bodies =
+      (manager().deformable_driver_ == nullptr)
+          ? 0
+          : manager().deformable_driver_->num_deformable_bodies();
+  const int num_objects = num_rigid_bodies + num_deformable_bodies;
   cache->sap_problem = std::make_unique<SapContactProblem<T>>(
       plant().time_step(), std::move(A), std::move(v_star));
+  cache->sap_problem->set_num_objects(num_objects);
   SapContactProblem<T>& problem = *cache->sap_problem;
   // N.B. All contact constraints must be added before any other constraint
   // types. This driver assumes this ordering of the constraints in order to
