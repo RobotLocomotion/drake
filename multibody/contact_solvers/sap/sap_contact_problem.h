@@ -8,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
@@ -18,8 +19,9 @@ namespace internal {
 /* Struct returned by SapContactProblem::MakeReduced() which stores the mapping
    between the original and reduced problems.*/
 struct ReducedMapping {
+  PartialPermutation velocity_permutation;
   PartialPermutation clique_permutation;
-  PartialPermutation constraint_permutation;
+  PartialPermutation constraint_equation_permutation;
 };
 
 /* In the SAP formulation of contact the state of a mechanical system is
@@ -110,7 +112,8 @@ class SapContactProblem {
     information in `known_free_motion_dofs`, but transformed to clique local
     indices.
     @param[out] mapping On output it will store information to map DOFs and
-    constraints between the original and reduced problems in a ReducedMapping.
+    constraint equations between the original and reduced problems in a
+    ReducedMapping.
 
     @pre known_free_motion_dofs is a strict ordered subset of
          [0, ..., num_velocities()-1].
@@ -123,6 +126,42 @@ class SapContactProblem {
       const std::vector<int>& known_free_motion_dofs,
       const std::vector<std::vector<int>>& per_clique_known_free_motion_dofs,
       ReducedMapping* mapping) const;
+
+  /* Maps solver results for a reduced version of this problem obtained with
+    MakeReduced() into solver results for this original problem. Known
+    velocities eliminated from the reduced problem are set to v* in `results`,
+    consistent with the documentation in MakeReduced(). Constraints eliminated
+    in the reduced problem do not participate and therefore their corresponding
+    impulses are set to zero.
+
+     @param[in] reduced_mapping Stores the mapping between this problem and a
+       reduced problem obtained with MakeReduced().
+     @param[in] reduced_results Solver results for a reduced version of this
+       problem consistent with `reduced_mapping`.
+     @param[out] results On output stores the solver results contained in
+       `reduced_results` mapped back to this original problem. Known velocities
+        are set to v* and impulses for constraints eliminated from the reduced
+        problem are set to zero.
+     @pre reduced_mapping.velocity_permutation.domain_size() ==
+     num_velocities().
+     @pre reduced_mapping.clique_permutation.domain_size() == num_cliques().
+     @pre reduced_mapping.constraint_equation_permutation.domain_size() ==
+       num_constraint_equations().
+     @pre reduced_results.v.size() ==
+          reduced_mapping.velocity_permutation.permuted_domain_size()
+     @pre reduced_results.j.size() ==
+          reduced_mapping.velocity_permutation.permuted_domain_size()
+     @pre reduced_results.gamma.size() ==
+          reduced_mapping.constraint_equation_permutation.permuted_domain_size()
+     @pre reduced_results.vc.size() ==
+          reduced_mapping.constraint_equation_permutation.permuted_domain_size()
+     @pre results != nullptr.
+     @see SapContactProblem::MakeReduced() for more information.
+  */
+  void ExpandContactSolverResults(
+      const contact_solvers::internal::ReducedMapping& reduced_mapping,
+      const contact_solvers::internal::SapSolverResults<T>& reduced_results,
+      contact_solvers::internal::SapSolverResults<T>* results) const;
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */

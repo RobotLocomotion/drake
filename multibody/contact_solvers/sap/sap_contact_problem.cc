@@ -66,8 +66,19 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::MakeReduced(
   }
   DRAKE_DEMAND(mapping != nullptr);
 
+  mapping->velocity_permutation = PartialPermutation(num_velocities());
   mapping->clique_permutation = PartialPermutation(num_cliques());
-  mapping->constraint_permutation = PartialPermutation(num_constraints());
+  mapping->constraint_equation_permutation =
+      PartialPermutation(num_constraint_equations());
+
+  auto it = known_free_motion_dofs.begin();
+  for (int i = 0; i < num_velocities(); ++i) {
+    if (it != known_free_motion_dofs.end() && i == *it) {
+      ++it;
+    } else {
+      mapping->velocity_permutation.push(i);
+    }
+  }
 
   // Project v_star and A matrices to reduced DOFs.
   VectorX<T> v_star_reduced =
@@ -91,17 +102,65 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::MakeReduced(
   problem->set_num_objects(num_objects());
 
   // Make reduced constraints.
-  for (int i = 0; i < num_constraints(); ++i) {
-    std::unique_ptr<SapConstraint<T>> c = get_constraint(i).MakeReduced(
+  int constraint_equation_index = 0;
+  for (auto&& c : constraints_) {
+    std::unique_ptr<SapConstraint<T>> c_reduced = c->MakeReduced(
         mapping->clique_permutation, per_clique_known_free_motion_dofs);
 
-    if (c) {
-      mapping->constraint_permutation.push(i);
-      problem->AddConstraint(std::move(c));
+    if (c_reduced) {
+      problem->AddConstraint(std::move(c_reduced));
+      for (int j = 0; j < c->num_constraint_equations(); ++j) {
+        mapping->constraint_equation_permutation.push(
+            constraint_equation_index + j);
+      }
     }
+    constraint_equation_index += c->num_constraint_equations();
   }
 
   return problem;
+}
+
+template <typename T>
+void SapContactProblem<T>::ExpandContactSolverResults(
+    const contact_solvers::internal::ReducedMapping& reduced_mapping,
+    const contact_solvers::internal::SapSolverResults<T>& reduced_results,
+    contact_solvers::internal::SapSolverResults<T>* results) const {
+  DRAKE_DEMAND(reduced_mapping.velocity_permutation.domain_size() ==
+               num_velocities());
+  DRAKE_DEMAND(reduced_mapping.clique_permutation.domain_size() ==
+               num_cliques());
+  DRAKE_DEMAND(reduced_mapping.constraint_equation_permutation.domain_size() ==
+               num_constraint_equations());
+  DRAKE_DEMAND(reduced_results.v.size() ==
+               reduced_mapping.velocity_permutation.permuted_domain_size());
+  DRAKE_DEMAND(
+      reduced_results.gamma.size() ==
+      reduced_mapping.constraint_equation_permutation.permuted_domain_size());
+  DRAKE_DEMAND(
+      reduced_results.vc.size() ==
+      reduced_mapping.constraint_equation_permutation.permuted_domain_size());
+  DRAKE_DEMAND(reduced_results.j.size() ==
+               reduced_mapping.velocity_permutation.permuted_domain_size());
+  DRAKE_DEMAND(results != nullptr);
+
+  // Zero out everything. Results data will be selectively filled in.
+  results->Resize(num_velocities(), num_constraint_equations());
+  results->v = v_star();
+  results->gamma.setZero();
+  results->vc.setZero();
+  results->j.setZero();
+
+  // Copy v and j for participating velocities.
+  reduced_mapping.velocity_permutation.ApplyInverse(reduced_results.v,
+                                                    &results->v);
+  reduced_mapping.velocity_permutation.ApplyInverse(reduced_results.j,
+                                                    &results->j);
+
+  // Copy gamma and vc for participating constraints.
+  reduced_mapping.constraint_equation_permutation.ApplyInverse(
+      reduced_results.gamma, &results->gamma);
+  reduced_mapping.constraint_equation_permutation.ApplyInverse(
+      reduced_results.vc, &results->vc);
 }
 
 template <typename T>
