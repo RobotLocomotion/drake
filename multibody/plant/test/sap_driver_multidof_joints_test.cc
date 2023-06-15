@@ -155,9 +155,10 @@ GTEST_TEST(MultiDofJointWithLimitsTest, ThrowForUnsupportedJoints) {
   plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
   auto context = plant.CreateDefaultContext();
 
-  // Dummy v* and problem.
+  // Dummy A, v* and problem.
+  const std::vector<MatrixX<double>> A(1, Matrix3<double>::Ones());
   const VectorXd v_star = Vector3d::Zero();
-  SapContactProblem<double> problem(plant.time_step());
+  SapContactProblem<double> problem(plant.time_step(), A, v_star);
 
   const SapDriver<double>& driver =
       CompliantContactManagerTester::sap_driver(*contact_manager);
@@ -190,8 +191,10 @@ GTEST_TEST(MultiDofJointWithLimitsTest,
   plant.SetDiscreteUpdateManager(std::move(owned_contact_manager));
   auto context = plant.CreateDefaultContext();
 
+  // Arbitrary A and v*.
+  const std::vector<MatrixX<double>> A(1, Matrix3<double>::Ones());
   const VectorXd v_star = Vector3d::Zero();
-  SapContactProblem<double> problem(plant.time_step());
+  SapContactProblem<double> problem(plant.time_step(), A, v_star);
 
   const SapDriver<double>& driver =
       CompliantContactManagerTester::sap_driver(*contact_manager);

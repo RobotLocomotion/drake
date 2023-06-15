@@ -1,6 +1,5 @@
 #include "drake/bindings/pydrake/symbolic_py_unapply.h"
 
-#include "pybind11/stl.h"
 #include <fmt/format.h>
 
 namespace drake {

@@ -55,7 +55,8 @@ void ApplyVisualizationConfigImpl(const VisualizationConfig& config,
     DrakeVisualizer<double>::AddToBuilder(builder, *scene_graph, lcm, oopsie);
   }
   if (config.publish_contacts) {
-    ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm);
+    ConnectContactResultsToDrakeVisualizer(builder, plant, *scene_graph, lcm,
+                                           config.publish_period);
   }
 
   if (config.publish_inertia) {

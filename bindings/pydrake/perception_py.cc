@@ -1,7 +1,3 @@
-#include "pybind11/eigen.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-
 #include "drake/bindings/pydrake/common/cpp_param_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"

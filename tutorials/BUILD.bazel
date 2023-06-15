@@ -100,7 +100,7 @@ drake_jupyter_py_binary(
 )
 
 drake_jupyter_py_binary(
-    name = "hydroelastic_basics",
+    name = "hydroelastic_contact_basics",
     add_test_rule = 1,
     test_timeout = "moderate",
     deps = [

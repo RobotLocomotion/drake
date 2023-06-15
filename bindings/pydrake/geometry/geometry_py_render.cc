@@ -2,8 +2,6 @@
  and drake/geometry/render* directories. They can be found in the
  pydrake.geometry module. */
 
-#include "pybind11/operators.h"
-
 #include "drake/bindings/pydrake/common/default_scalars_pybind.h"
 #include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/common/value_pybind.h"

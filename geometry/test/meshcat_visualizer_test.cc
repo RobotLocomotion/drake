@@ -62,6 +62,18 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
     context_ = diagram_->CreateDefaultContext();
   }
 
+  void CheckVisible(const std::string& path, bool visibility) {
+    ASSERT_TRUE(meshcat_->HasPath(path));
+    const std::string property =
+        meshcat_->GetPackedProperty(path, "visible");
+    ASSERT_GT(property.size(), 0);
+    msgpack::object_handle oh =
+        msgpack::unpack(property.data(), property.size());
+    auto data = oh.get().as<internal::SetPropertyData<bool>>();
+    EXPECT_EQ(data.property, "visible");
+    EXPECT_EQ(data.value, visibility);
+  }
+
   std::shared_ptr<Meshcat> meshcat_;
   multibody::MultibodyPlant<double>* plant_{};
   SceneGraph<double>* scene_graph_{};
@@ -73,6 +85,10 @@ class MeshcatVisualizerWithIiwaTest : public ::testing::Test {
 TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
   SetUpDiagram();
 
+  // Visibility remains unset until geometry gets added.
+  EXPECT_EQ(meshcat_->GetPackedProperty("/drake/visualizer", "visible").size(),
+            0);
+
   EXPECT_FALSE(meshcat_->HasPath("/drake/visualizer/iiwa14"));
   diagram_->ForcedPublish(*context_);
   EXPECT_TRUE(meshcat_->HasPath("/drake/visualizer/iiwa14"));
@@ -81,6 +97,7 @@ TEST_F(MeshcatVisualizerWithIiwaTest, BasicTest) {
                   fmt::format("/drake/visualizer/iiwa14/iiwa_link_{}", link)),
               "");
   }
+  CheckVisible("/drake/visualizer", true);
 
   // Confirm that the transforms change after running a simulation.
   const std::string packed_X_W7 =
@@ -166,23 +183,13 @@ TEST_F(MeshcatVisualizerWithIiwaTest, NotVisibleByDefault) {
   MeshcatVisualizerParams params;
   params.visible_by_default = false;
 
-  // Create the diagram and publish both the initialization and periodic event.
+  // Create and run the diagram.
   SetUpDiagram(params);
-  {
-    auto events = diagram_->AllocateCompositeEventCollection();
-    diagram_->GetInitializationEvents(*context_, events.get());
-    diagram_->Publish(*context_, events->get_publish_events());
-    diagram_->ForcedPublish(*context_);
-  }
+  systems::Simulator<double> simulator(*diagram_);
+  simulator.AdvanceTo(0.1);
 
   // Confirm that the path was added but was set to be invisible.
-  ASSERT_TRUE(meshcat_->HasPath("/drake/visualizer"));
-  const std::string property =
-      meshcat_->GetPackedProperty("/drake/visualizer", "visible");
-  msgpack::object_handle oh = msgpack::unpack(property.data(), property.size());
-  auto data = oh.get().as<internal::SetPropertyData<bool>>();
-  EXPECT_EQ(data.property, "visible");
-  EXPECT_EQ(data.value, false);
+  CheckVisible("/drake/visualizer", false);
 }
 
 TEST_F(MeshcatVisualizerWithIiwaTest, DeletePrefixOnInitialization) {

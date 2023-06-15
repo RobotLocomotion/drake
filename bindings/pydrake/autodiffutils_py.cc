@@ -1,7 +1,4 @@
-#include "pybind11/eigen.h"
-#include "pybind11/operators.h"
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
+#include <Eigen/Core>
 #include <unsupported/Eigen/AutoDiff>
 
 #include "drake/bindings/pydrake/autodiff_types_pybind.h"
