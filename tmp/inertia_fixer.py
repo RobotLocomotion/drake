@@ -150,9 +150,11 @@ class UrdfDriver(FormatDriver):
                 continue
             k = serial_number
             assert k < plant.num_bodies()
-            mapping[BodyIndex(k)] = inertial
+            bik = BodyIndex(k)
+            mapping[bik] = inertial
             # TODO assert more sanity.
-            assert plant.get_body(k).name() == link.attributes.get("name")
+            assert plant.get_body(bik).name() == link.attributes.get("name"), (
+                plant.get_body(bik).name(), link.attributes.get("name"))
         return mapping
 
     def format_inertia(self, input_text: str, input_lines: list[str],
