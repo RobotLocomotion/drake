@@ -18,6 +18,7 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::meshcat::ContactVisualizerParams;
+using drake::systems::CompositeEventCollection;
 using drake::systems::DiagramBuilder;
 using drake::systems::Simulator;
 using drake::systems::lcm::LcmBuses;
@@ -265,6 +266,28 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   // Simulate for a moment and make sure nothing showed up.
   simulator.AdvanceTo(0.25);
   drake_lcm.HandleSubscriptions(1);
+}
+
+// Check that the update period is obeyed. No publish events are allowed to be
+// scheduled with a period other than what the config specifies.
+GTEST_TEST(VisualizationConfigFunctionsTest, UpdatePeriod) {
+  VisualizationConfig config;
+  // Set a gratuitously long time between publish events.
+  const double kLongPeriod = 100.0;
+  config.publish_period = kLongPeriod;
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  ApplyVisualizationConfig(config, &builder);
+  auto diagram = builder.Build();
+
+  // With a current time of 1ms, the next publish should be at t=100 seconds.
+  auto context = diagram->CreateDefaultContext();
+  context->SetTime(0.001);
+  std::unique_ptr<CompositeEventCollection<double>> events =
+      diagram->AllocateCompositeEventCollection();
+  EXPECT_EQ(diagram->CalcNextUpdateTime(*context, events.get()), kLongPeriod);
+  EXPECT_TRUE(events->HasPublishEvents());
 }
 
 // Check that a Meshcat instance is created when none is passed.
