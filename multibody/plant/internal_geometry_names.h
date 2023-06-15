@@ -33,7 +33,7 @@ class GeometryNames {
   struct Entry {
     std::string_view model_instance_name;
     std::string_view body_name;
-    std::optional<std::string> geometry_name;
+    std::optional<std::string_view> geometry_name;
 
     /* Whether the body_name is globally unique within all bodies in the plant,
     across all model instances. If so, a visualizer could choose to omit the
