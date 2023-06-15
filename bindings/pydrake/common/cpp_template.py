@@ -107,6 +107,15 @@ class TemplateBase:
             raise TypeError(
                 ("{}: incompatible function arguments for template: Cannot "
                  "call without arguments").format(self.name))
+        result = self._call_internal(*args, **kwargs)
+        if result is not None:
+            return result
+        raise TypeError(
+            ("{}: incompatible function arguments for template: No "
+             "compatible instantiations").format(self.name))
+
+    def _call_internal(self, *args, **kwargs):
+        """The implementation of __call__, to allow easy overriding."""
         for param in self.param_list:
             instantiation = self._instantiation_map[param]
             try:
@@ -114,9 +123,6 @@ class TemplateBase:
             except TypeError as e:
                 if not _is_pybind11_type_error(e):
                     raise e
-        raise TypeError(
-            ("{}: incompatible function arguments for template: No "
-             "compatible instantiations").format(self.name))
 
     def get_module_name(self):
         """

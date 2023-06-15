@@ -2,7 +2,7 @@ import copy
 import matplotlib as mpl
 import numpy as np
 
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import Value
 from pydrake.geometry import (
     ClippingRange,
     DepthRange,
@@ -57,10 +57,10 @@ class ColorizeDepthImage(LeafSystem):
         LeafSystem.__init__(self)
         self._depth32_input = self.DeclareAbstractInputPort(
             name="depth_image_32f",
-            model_value=AbstractValue.Make(ImageDepth32F()))
+            model_value=Value(ImageDepth32F()))
         self._color_output = self.DeclareAbstractOutputPort(
             "color_image",
-            alloc=lambda: AbstractValue.Make(ImageRgba8U()),
+            alloc=lambda: Value(ImageRgba8U()),
             calc=self._calc_output)
         self.invalid_color = Rgba(100/255, 0, 0, 1)
 
@@ -135,10 +135,10 @@ class ColorizeLabelImage(LeafSystem):
         LeafSystem.__init__(self)
         self._label_input = self.DeclareAbstractInputPort(
             name="label_image",
-            model_value=AbstractValue.Make(ImageLabel16I()))
+            model_value=Value(ImageLabel16I()))
         self._color_output = self.DeclareAbstractOutputPort(
             "color_image",
-            alloc=lambda: AbstractValue.Make(ImageRgba8U()),
+            alloc=lambda: Value(ImageRgba8U()),
             calc=self._calc_output)
         self._palette = self._make_palette()
         self.background_color = Rgba(0, 0, 0, 0)
@@ -237,10 +237,10 @@ class ConcatenateImages(LeafSystem):
                 key = (row, col)
                 self._inputs[key] = self.DeclareAbstractInputPort(
                     name=f"color_image_r{row}_c{col}",
-                    model_value=AbstractValue.Make(ImageRgba8U()))
+                    model_value=Value(ImageRgba8U()))
         self._output = self.DeclareAbstractOutputPort(
             "color_image",
-            alloc=lambda: AbstractValue.Make(ImageRgba8U()),
+            alloc=lambda: Value(ImageRgba8U()),
             calc=self._calc_output)
 
     def get_input_port(self, *, row, col):
@@ -321,7 +321,7 @@ class VideoWriter(LeafSystem):
         self._fps = fps
         self._input = self.DeclareAbstractInputPort(
             name="color_image",
-            model_value=AbstractValue.Make(ImageRgba8U()))
+            model_value=Value(ImageRgba8U()))
         # TODO(jwnimmer-tri) Support forced triggers as well (so users can
         # manually record videos of prescribed motion).
         self.DeclarePeriodicPublishEvent(1.0 / fps, 0.0, self._publish)
