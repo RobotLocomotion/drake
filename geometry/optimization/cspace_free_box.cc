@@ -13,7 +13,9 @@ CspaceFreeBox::CspaceFreeBox(const multibody::MultibodyPlant<double>* plant,
                              const geometry::SceneGraph<double>* scene_graph,
                              SeparatingPlaneOrder plane_order,
                              const Options& options)
-    : CspaceFreePolytopeBase(plant, scene_graph, plane_order, options) {}
+    : CspaceFreePolytopeBase(plant, scene_graph, plane_order,
+                             CspaceFreePolytopeBase::SForPlane::kOnChain,
+                             options) {}
 
 CspaceFreeBox::~CspaceFreeBox() {}
 

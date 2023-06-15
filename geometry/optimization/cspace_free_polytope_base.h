@@ -105,16 +105,27 @@ class CspaceFreePolytopeBase {
   }
 
  protected:
-  // Constructor.
-  // We put the constructor in protected method to make sure that the user
-  // cannot instantiate a CspaceFreePolytopeBase instance.
-  // @pre plant and scene_graph should be non-null pointers.
+  /** When we set up the separating plane {x | a(s)ᵀx + b(s) = 0} between a pair
+   of geometries, we need to determine which s are used in a(s) and b(s).
+   */
+  enum class SForPlane {
+    kAll,      ///< Use all s in the robot tangent-configuration space.
+    kOnChain,  ///< Use s on the kinematics chain between the pair of
+               ///< geometries.
+  };
+
+  /** Constructor.
+   We put the constructor in protected method to make sure that the user
+   cannot instantiate a CspaceFreePolytopeBase instance.
+   @pre plant and scene_graph should be non-null pointers.
+   */
   CspaceFreePolytopeBase(const multibody::MultibodyPlant<double>* plant,
                          const geometry::SceneGraph<double>* scene_graph,
                          SeparatingPlaneOrder plane_order,
+                         SForPlane s_for_plane_enum,
                          const Options& options = Options{});
 
-  // Computes s-s_lower and s_upper - s as polynomials of s.
+  /** Computes s-s_lower and s_upper - s as polynomials of s. */
   void CalcSBoundsPolynomial(
       const Eigen::VectorXd& s_lower, const Eigen::VectorXd& s_upper,
       VectorX<symbolic::Polynomial>* s_minus_s_lower,
@@ -137,6 +148,12 @@ class CspaceFreePolytopeBase {
     return plane_order_;
   }
 
+  /** Maps a pair of body (body1, body2) to an array of monomial basis
+   `monomial_basis_array`. monomial_basis_array[0] contains all the monomials
+   of form ∏ᵢ pow(sᵢ, dᵢ), dᵢ=0 or 1, sᵢ correspond to the revolute/prismatic
+   joint on the kinematic chain between body1 and body2.
+   monomial_basis_array[i+1] = y_slack_[i] * monomial_basis_array[0]
+   */
   [[nodiscard]] const std::unordered_map<
       SortedPair<multibody::BodyIndex>,
       std::array<VectorX<symbolic::Monomial>, 4>>&
@@ -144,7 +161,29 @@ class CspaceFreePolytopeBase {
     return map_body_to_monomial_basis_array_;
   }
 
+  /** Check Options::with_cross_y for more details. */
   [[nodiscard]] bool with_cross_y() const { return with_cross_y_; }
+
+  /** For a pair of bodies body_pair, returns the indices of all s on the
+   kinematics chain from body_pair.first() to body_pair.second().
+   For each pair of collidable collision geometry (A, B), we denote their body
+   as (bodyA, bodyB). This keys in this map include all these (bodyA, bodyB),
+   together with (body_middle, bodyA) and (body_middle, bodyB), where
+   body_middle is the body in the middle of the kinematics chain between bodyA
+   and bodyB.
+   */
+  [[nodiscard]] const std::unordered_map<SortedPair<multibody::BodyIndex>,
+                                         std::vector<int>>&
+  map_body_pair_to_s_on_chain() const {
+    return map_body_pair_to_s_on_chain_;
+  }
+
+  /** Returns a vector of s variable used in a(s), b(s), which parameterize the
+   separating plane {x | a(s)ᵀx+b(s) = 0}.
+   */
+  [[nodiscard]] VectorX<symbolic::Variable> GetSForPlane(
+      const SortedPair<multibody::BodyIndex>& body_pair,
+      SForPlane s_for_plane_enum) const;
 
  private:
   // Forward declare the tester class to test the private members.
@@ -158,6 +197,13 @@ class CspaceFreePolytopeBase {
    geometries on the same body pair.
    */
   void CalcMonomialBasis();
+
+  /* Set map_body_pair_to_s_on_chain.
+   We compute the indices of s on the kinematics chain from body_pair.first() to
+   body_pair.second().
+   */
+  void SetIndicesOfSOnChainForBodyPair(
+      const SortedPair<multibody::BodyIndex>& body_pair);
 
   multibody::RationalForwardKinematics rational_forward_kin_;
   const geometry::SceneGraph<double>* scene_graph_;
@@ -188,6 +234,16 @@ class CspaceFreePolytopeBase {
 
   // See Options::with_cross_y for its meaning.
   bool with_cross_y_;
+
+  // For a pair of bodies body_pair, returns the indices of all s on the
+  // kinematics chain from body_pair.first() to body_pair.second().
+  // For each pair of collidable collision geometry (A, B), we denote their body
+  // as (bodyA, bodyB). This keys in this map include all these (bodyA, bodyB),
+  // together with (body_middle, bodyA) and (body_middle, bodyB), where
+  // body_middle is the body in the middle of the kinematics chain between bodyA
+  // and bodyB.
+  std::unordered_map<SortedPair<multibody::BodyIndex>, std::vector<int>>
+      map_body_pair_to_s_on_chain_;
 };
 }  // namespace optimization
 }  // namespace geometry
