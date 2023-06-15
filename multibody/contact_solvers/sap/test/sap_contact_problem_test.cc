@@ -43,7 +43,7 @@ class TestConstraint final : public SapConstraint<double> {
   // No objects are registered.
   TestConstraint(int num_constraint_equations, int clique, int clique_nv)
       : SapConstraint<double>(
-            {clique, MatrixXd::Zero(num_constraint_equations, clique_nv)}, {}) {
+            {clique, MatrixXd::Ones(num_constraint_equations, clique_nv)}, {}) {
   }
 
   // Constructor for a constraint between two cliques.
@@ -52,9 +52,9 @@ class TestConstraint final : public SapConstraint<double> {
                  int first_clique_nv, int second_clique, int second_clique_nv)
       : SapConstraint<double>(
             {first_clique,
-             MatrixXd::Zero(num_constraint_equations, first_clique_nv),
+             MatrixXd::Ones(num_constraint_equations, first_clique_nv),
              second_clique,
-             MatrixXd::Zero(num_constraint_equations, second_clique_nv)},
+             MatrixXd::Ones(num_constraint_equations, second_clique_nv)},
             {}) {}
 
   // N.B no-op overloads to allow us compile this testing constraint. These
@@ -231,6 +231,13 @@ GTEST_TEST(ContactProblem, AddConstraints) {
   EXPECT_EQ(problem.num_constraint_equations(), 17);
   EXPECT_EQ(problem.num_objects(), 4);
 
+  // Expected constraint equation indicies.
+  const std::vector<int> constraint_equations_start_expected{0, 1, 4, 10, 12};
+  for (int i = 0; i < problem.num_constraints(); ++i) {
+    EXPECT_EQ(problem.constraint_equations_start(i),
+              constraint_equations_start_expected[i]);
+  }
+
   // Verify graph for this problem.
   const ContactProblemGraph& graph = problem.graph();
   EXPECT_EQ(graph.num_cliques(), 4);
@@ -300,14 +307,15 @@ GTEST_TEST(ContactProblem, MakeReduced) {
   SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
   AddConstraints(&problem);
 
-  // Lock all the dofs of clique 0 and 1. Lock velocity index 9, local index 1
+  // Lock all the dofs of clique 0 and 1. Lock velocity index 9, local index 0
   // of clique 3.
-  const std::vector<int> locked_indices{0, 1, 2, 3, 4, 9};
-  const std::vector<std::vector<int>> clique_locked_indices{
-      {0, 1}, {0, 1, 2}, {}, {1}};
+  const std::vector<int> unknown_indices{5, 6, 7, 8, 10};
+  const std::vector<int> known_indices{0, 1, 2, 3, 4, 9};
+  const std::vector<std::vector<int>> clique_known_indices{
+      {0, 1}, {0, 1, 2}, {}, {0}};
   ReducedMapping mapping;
   std::unique_ptr<SapContactProblem<double>> reduced_problem =
-      problem.MakeReduced(locked_indices, clique_locked_indices, &mapping);
+      problem.MakeReduced(known_indices, clique_known_indices, &mapping);
 
   EXPECT_EQ(reduced_problem->num_cliques(), 2);
   EXPECT_EQ(reduced_problem->num_constraints(), 4);
@@ -328,6 +336,21 @@ GTEST_TEST(ContactProblem, MakeReduced) {
   EXPECT_EQ(graph.num_clusters(), 1);
   EXPECT_EQ(graph.num_constraint_equations(), 14);
 
+  /* Velocity permutation. Expect velocities 5, 6, 7, 8, 10 to participate. */
+  EXPECT_EQ(mapping.velocity_permutation.domain_size(),
+            problem.num_velocities());
+  EXPECT_EQ(mapping.velocity_permutation.permuted_domain_size(), 5);
+  for (int i : unknown_indices) {
+    EXPECT_TRUE(mapping.velocity_permutation.participates(i));
+  }
+  for (int i : known_indices) {
+    EXPECT_FALSE(mapping.velocity_permutation.participates(i));
+  }
+  for (int i = 0; i < ssize(unknown_indices); ++i) {
+    EXPECT_EQ(mapping.velocity_permutation.permuted_index(unknown_indices[i]),
+              i);
+  }
+
   /* Clique permutation. We expect the first two cliques to be eliminated. */
   EXPECT_EQ(mapping.clique_permutation.domain_size(), problem.num_cliques());
   EXPECT_EQ(mapping.clique_permutation.permuted_domain_size(), 2);
@@ -341,19 +364,31 @@ GTEST_TEST(ContactProblem, MakeReduced) {
 
   /* Constraint permutation. We expect the second constraint between the two
      eliminated cliques (0 and 1) to be eliminated. */
-  EXPECT_EQ(mapping.constraint_permutation.domain_size(),
-            problem.num_constraints());
-  EXPECT_EQ(mapping.constraint_permutation.permuted_domain_size(), 4);
-  EXPECT_TRUE(mapping.constraint_permutation.participates(0));
-  EXPECT_FALSE(mapping.constraint_permutation.participates(1));
-  EXPECT_TRUE(mapping.constraint_permutation.participates(2));
-  EXPECT_TRUE(mapping.constraint_permutation.participates(3));
-  EXPECT_TRUE(mapping.constraint_permutation.participates(4));
+  EXPECT_EQ(mapping.constraint_equation_permutation.domain_size(),
+            problem.num_constraint_equations());
+  EXPECT_EQ(mapping.constraint_equation_permutation.permuted_domain_size(), 14);
 
-  EXPECT_EQ(mapping.constraint_permutation.permuted_index(0), 0);
-  EXPECT_EQ(mapping.constraint_permutation.permuted_index(2), 1);
-  EXPECT_EQ(mapping.constraint_permutation.permuted_index(3), 2);
-  EXPECT_EQ(mapping.constraint_permutation.permuted_index(4), 3);
+  int constraint_equation_index = 0;
+  int reduced_constraint_equation_index = 0;
+  for (int i = 0; i < problem.num_constraints(); ++i) {
+    const SapConstraint<double>& c = problem.get_constraint(i);
+    for (int j = 0; j < c.num_constraint_equations(); ++j) {
+      if (i == 1) {
+        EXPECT_FALSE(mapping.constraint_equation_permutation.participates(
+            constraint_equation_index + j));
+      } else {
+        EXPECT_TRUE(mapping.constraint_equation_permutation.participates(
+            constraint_equation_index + j));
+        EXPECT_EQ(mapping.constraint_equation_permutation.permuted_index(
+                      constraint_equation_index + j),
+                  reduced_constraint_equation_index + j);
+      }
+    }
+    if (i != 1) {
+      reduced_constraint_equation_index += c.num_constraint_equations();
+    }
+    constraint_equation_index += c.num_constraint_equations();
+  }
 
   /* Verify that the each constraint's index mapping is as expected and
      described by the graph. For each constraint, the table lists the original
@@ -426,6 +461,98 @@ GTEST_TEST(ContactProblem, MakeReduced) {
     EXPECT_EQ(c.first_clique_jacobian().cols(),
               reduced_problem->num_velocities(c.first_clique()));
   }
+}
+
+GTEST_TEST(ContactProblem, ExpandContactSolverResults) {
+  const double time_step = 0.01;
+  const std::vector<MatrixXd> A{S22, S33, S44, S22};
+  const VectorXd v_star = VectorXd::LinSpaced(11, 1.0, 11.0);
+  SapContactProblem<double> problem(time_step, std::move(A), std::move(v_star));
+  AddConstraints(&problem);
+
+  // Lock all the dofs of clique 0 and 1. Lock velocity index 9, local index 0
+  // of clique 3.
+  const std::vector<int> unknown_indices{5, 6, 7, 8, 10};
+  const std::vector<int> known_indices{0, 1, 2, 3, 4, 9};
+  const std::vector<std::vector<int>> clique_known_indices{
+      {0, 1}, {0, 1, 2}, {}, {0}};
+  ReducedMapping mapping;
+  std::unique_ptr<SapContactProblem<double>> reduced_problem =
+      problem.MakeReduced(known_indices, clique_known_indices, &mapping);
+
+  // Set up some dummy results.
+  SapSolverResults<double> reduced_results;
+  reduced_results.Resize(reduced_problem->num_velocities(),
+                         reduced_problem->num_constraint_equations());
+  reduced_results.v =
+      VectorXd::LinSpaced(reduced_problem->num_velocities(), 1.0,
+                          reduced_problem->num_velocities());
+  reduced_results.gamma =
+      VectorXd::LinSpaced(reduced_problem->num_constraint_equations(), 1.0,
+                          reduced_problem->num_constraint_equations());
+  reduced_results.vc =
+      VectorXd::LinSpaced(reduced_problem->num_constraint_equations(), 1.0,
+                          reduced_problem->num_constraint_equations());
+  reduced_results.j =
+      VectorXd::LinSpaced(reduced_problem->num_velocities(), 1.0,
+                          reduced_problem->num_velocities());
+
+  // Expand the results to the original problem.
+  SapSolverResults<double> results;
+  problem.ExpandContactSolverResults(mapping, reduced_results, &results);
+
+  VectorX<double> v_expected = v_star;
+  VectorX<double> gamma_expected =
+      VectorX<double>::Zero(problem.num_constraint_equations());
+  VectorX<double> vc_expected =
+      VectorX<double>::Zero(problem.num_constraint_equations());
+  VectorX<double> j_expected = VectorX<double>::Zero(problem.num_velocities());
+
+  for (int i = 0; i < ssize(unknown_indices); ++i) {
+    v_expected[unknown_indices[i]] = i + 1;
+    j_expected[unknown_indices[i]] = i + 1;
+  }
+
+  EXPECT_TRUE(CompareMatrices(results.v, v_expected));
+  EXPECT_TRUE(CompareMatrices(results.j, j_expected));
+
+  // All constraint Jacobians set to Ones() so each constraint velocity should
+  // be the sum of the segment of v_star corresponding to its cliques.
+  for (int i = 0; i < problem.num_constraints(); ++i) {
+    const SapConstraint<double>& c = problem.get_constraint(i);
+    double sum = v_star
+                     .segment(problem.velocities_start(c.first_clique()),
+                              problem.num_velocities(c.first_clique()))
+                     .sum();
+    if (c.num_cliques() > 1) {
+      sum += v_star
+                 .segment(problem.velocities_start(c.second_clique()),
+                          problem.num_velocities(c.second_clique()))
+                 .sum();
+    }
+    vc_expected.segment(problem.constraint_equations_start(i),
+                        c.num_constraint_equations()) =
+        sum * VectorXd::Ones(c.num_constraint_equations());
+  }
+
+  int equation_index = 0;
+  int reduced_equation_index = 0;
+  for (int i = 0; i < problem.num_constraints(); ++i) {
+    const SapConstraint<double>& c = problem.get_constraint(i);
+    if (mapping.constraint_equation_permutation.participates(equation_index)) {
+      for (int j = 0; j < c.num_constraint_equations(); ++j) {
+        gamma_expected[equation_index] = reduced_equation_index + 1;
+        vc_expected[equation_index] = reduced_equation_index + 1;
+        ++equation_index;
+        ++reduced_equation_index;
+      }
+    } else {
+      equation_index += c.num_constraint_equations();
+    }
+  }
+
+  EXPECT_TRUE(CompareMatrices(results.gamma, gamma_expected));
+  EXPECT_TRUE(CompareMatrices(results.vc, vc_expected));
 }
 
 GTEST_TEST(ContactProblem, CalcConstraintMultibodyForces) {
