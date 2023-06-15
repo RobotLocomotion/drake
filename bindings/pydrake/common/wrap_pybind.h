@@ -7,6 +7,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 #include "drake/bindings/pydrake/common/wrap_function.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
@@ -172,6 +173,24 @@ void DefReadUniquePtr(PyClass* cls, const char* name,
       [member](const Class* obj) { return (obj->*member).get(); },
       py_rvp::reference_internal);
   cls->def_property_readonly(name, getter, doc);
+}
+
+/// Casts `x` to either a unique_ptr<Class> or shared_ptr<Class> depending on
+/// its refcount, no matter what the pybind11 holder type is for Class. If `x`
+/// is the wrong type, throws the usual pybind11 cast error. If `x` is None,
+/// returns nullptr as a unique_ptr.
+template <typename Class>
+std::variant<std::unique_ptr<Class>, std::shared_ptr<Class>> TryCastUnique(
+    py::object&& x) {
+  if (x.is_none()) {
+    return std::unique_ptr<Class>{};
+  }
+  if (x.ref_count() == 1) {
+    Class* value = x.template cast<Class*>();
+    x.release();
+    return std::unique_ptr<Class>(value);
+  }
+  return x.template cast<std::shared_ptr<Class>>();
 }
 
 }  // namespace pydrake
