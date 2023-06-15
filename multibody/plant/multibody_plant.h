@@ -179,6 +179,7 @@ output_ports:
 - '<em style="color:gray">
   model_instance_name[i]</em>_generalized_contact_forces'
 - <span style="color:green">geometry_pose</span>
+- <em style="color:orange">[body_name]</em>_pose
 @endsystem
 
 The ports whose names begin with <em style="color:gray">
@@ -192,6 +193,10 @@ zero-length vector. (Model instances `world_model_instance()` and
 The ports shown in <span style="color:green">
 green</span> are for communication with Drake's
 @ref geometry::SceneGraph "SceneGraph" system for dealing with geometry.
+
+The ports shown in <span style="color:orange">orange</span> are not provided by
+default, but can be declared individually (e.g. via
+DeclareBodyPoseOutputPort()).
 
 %MultibodyPlant provides a user-facing API for:
 
@@ -633,6 +638,30 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   /// equal to the identity at all times.
   /// @throws std::exception if called pre-finalize.
   const systems::OutputPort<T>& get_body_poses_output_port() const;
+
+  /// Declares an output port with the name "{body.name()}_pose" for obtaining
+  /// the pose of a single `body` in the world frame, X_WB, as a
+  /// RigidTransform<T>. Returns the declared port.  See also
+  /// get_body_poses_output_port() which is always available, but may be more
+  /// cumbersome when a downstream system needs only a single pose.
+  ///
+  /// Note: You must declare the output port before creating any Context that
+  /// will make use of this port.
+  ///
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if a port for `body` has already been declared on
+  /// `this`.
+  const systems::OutputPort<T>& DeclareBodyPoseOutputPort(const Body<T>& body);
+
+  /// Returns the output port of a particular body in the world frame.
+  /// Individual body pose ports are not available by default, you must call
+  /// DeclareBodyPoseOututPort() to enable them.
+  ///
+  /// @throws std::exception if called pre-finalize.
+  /// @throws std::exception if a port for `body` has not been declared on
+  /// `this`.
+  const systems::OutputPort<T>& get_body_pose_output_port(
+      BodyIndex body_index) const;
 
   /// Returns the output port of all body spatial velocities in the world frame.
   /// You can obtain the spatial velocity `V_WB` of a body B in the world frame
@@ -5297,6 +5326,7 @@ class MultibodyPlant : public internal::MultibodyTreeSystem<T> {
   systems::OutputPortIndex body_poses_port_;
   systems::OutputPortIndex body_spatial_velocities_port_;
   systems::OutputPortIndex body_spatial_accelerations_port_;
+  std::map<BodyIndex, systems::OutputPortIndex> body_pose_ports_{};
 
   // A port presenting state x=[q v] for the whole system, and a vector of
   // ports presenting state subsets xᵢ=[qᵢ vᵢ] ⊆ x for each model instance i,

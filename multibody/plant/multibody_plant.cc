@@ -350,6 +350,7 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
     //   -body_poses_port_
     //   -body_spatial_velocities_port_
     //   -body_spatial_acclerations_port_
+    //   Note: body_pose_ports_ is initialized after FinalizePlantOnly().
     //   -state_output_port_
     //   -instance_state_output_ports_
     //   -generalized_acceleration_output_port_
@@ -410,6 +411,12 @@ MultibodyPlant<T>::MultibodyPlant(const MultibodyPlant<U>& other)
   // on the new MultibodyTree on U. Therefore we only Finalize the plant's
   // internals (and not the MultibodyTree).
   FinalizePlantOnly();
+
+  // Now declare any body pose ports that were declared on `other`.
+  for (const auto& [body_index, output_index] : other.body_pose_ports_) {
+    unused(output_index);
+    DeclareBodyPoseOutputPort(get_body(body_index));
+  }
 
   // Note: The discrete update manager needs to be copied *after* the plant is
   // finalized.
@@ -3229,6 +3236,45 @@ const OutputPort<T>& MultibodyPlant<T>::get_body_poses_output_port()
 const {
   DRAKE_MBP_THROW_IF_NOT_FINALIZED();
   return systems::System<T>::get_output_port(body_poses_port_);
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<T>::DeclareBodyPoseOutputPort(
+    const Body<T>& body) {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  if (body_pose_ports_.count(body.index()) > 0) {
+    throw std::runtime_error(fmt::format(
+        "A body pose output port for body {} has already been declared.",
+        body.name()));
+  }
+
+  const systems::OutputPort<T>& port = this->DeclareAbstractOutputPort(
+      fmt::format("{}_pose", body.name()),
+      []() {
+        return AbstractValue::Make<math::RigidTransform<T>>();
+      },
+      [this, &body](const Context<T>& context, AbstractValue* X_WB) {
+        DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+        this->ValidateContext(context);
+        X_WB->set_value(EvalBodyPoseInWorld(context, body));
+      },
+      {this->configuration_ticket()});
+
+  body_pose_ports_[body.index()] = port.get_index();
+  return port;
+}
+
+template <typename T>
+const OutputPort<T>& MultibodyPlant<T>::get_body_pose_output_port(
+    BodyIndex body_index) const {
+  DRAKE_MBP_THROW_IF_NOT_FINALIZED();
+  if (body_pose_ports_.count(body_index) < 1) {
+    throw std::runtime_error(
+        fmt::format("You must call DeclareBodyPoseOutputPort() for the body "
+                    "named {} in order to use the output port..",
+                    get_body(body_index).name()));
+  }
+  return systems::System<T>::get_output_port(body_pose_ports_.at(body_index));
 }
 
 template <typename T>

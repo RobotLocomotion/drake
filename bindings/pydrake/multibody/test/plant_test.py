@@ -1322,6 +1322,9 @@ class TestPlant(unittest.TestCase):
         plant_f.Finalize()
         plant = to_type(plant_f, T)
         models = [iiwa_model, gripper_model]
+        gripper_body = plant.GetBodyByName("body")
+        self.assertIsInstance(
+            plant.DeclareBodyPoseOutputPort(body=gripper_body), OutputPort)
 
         # Fix inputs.
         context = plant.CreateDefaultContext()
@@ -1354,9 +1357,16 @@ class TestPlant(unittest.TestCase):
             self.assertGreater(len(value), 0)
             return value[0]
 
+        def extract_value(port):
+            self.assertIsInstance(port, OutputPort)
+            return port.Eval(context)
+
         self.assertIsInstance(
             extract_list_value(plant.get_body_poses_output_port()),
             RigidTransform_[T])
+        self.assertIsInstance(
+            extract_value(plant.get_body_pose_output_port(
+                gripper_body.index())), RigidTransform_[T])
         self.assertIsInstance(
             extract_list_value(
                 plant.get_body_spatial_velocities_output_port()),

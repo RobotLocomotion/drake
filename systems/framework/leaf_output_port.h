@@ -101,9 +101,7 @@ class LeafOutputPort final : public OutputPort<T> {
   }
 
   // Invokes the cache entry's Eval() function.
-  const AbstractValue& DoEval(const Context<T>& context) const final {
-    return cache_entry().EvalAbstract(context);
-  }
+  const AbstractValue& DoEval(const Context<T>& context) const final;
 
   // Returns the cache entry's ticket and no subsystem.
   internal::OutputPortPrerequisite DoGetPrerequisite() const final {

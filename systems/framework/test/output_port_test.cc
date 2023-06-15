@@ -200,6 +200,24 @@ void calc_vector3(const ContextBase&, AbstractValue* value) {
   vec.set_value(Vector3d(99., 100., 101.));
 }
 
+// This message can also be caused by user action.
+GTEST_TEST(TestLeafOutputPort, ContextCreatedBeforePortWasDeclared) {
+  DummySystem dummy;
+  auto context = dummy.AllocateContext();
+  std::unique_ptr<LeafOutputPort<double>> port =
+      internal::FrameworkFactory::Make<LeafOutputPort<double>>(
+          &dummy,  // implicit_cast<const System<T>*>(&dummy_)
+          &dummy,  // implicit_cast<SystemBase*>(&dummy_)
+          dummy.get_system_id(), "vecport",
+          OutputPortIndex(dummy.num_output_ports()),
+          dummy.assign_next_dependency_ticket(), kVectorValued, 3 /* size */,
+          &dummy.DeclareCacheEntry(
+              "vecport", ValueProducer(alloc_myvector3, calc_vector3)));
+
+  DRAKE_EXPECT_THROWS_MESSAGE(port->Eval(*context),
+                              ".*does not have a cache entry for.*");
+}
+
 // This class creates some isolated ports we can play with. They are not
 // actually part of a System. There are lots of tests of Systems that have
 // output ports elsewhere; that's not what we're trying to test here.

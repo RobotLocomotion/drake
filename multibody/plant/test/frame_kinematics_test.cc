@@ -9,6 +9,7 @@
 
 #include "drake/common/autodiff.h"
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
+#include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/math/autodiff_gradient.h"
 #include "drake/multibody/plant/test/kuka_iiwa_model_tests.h"
 #include "drake/multibody/test_utilities/add_fixed_objects_to_plant.h"
@@ -64,6 +65,30 @@ TEST_F(KukaIiwaModelTests, FramesKinematics) {
   EXPECT_TRUE(CompareMatrices(
       X_WE.GetAsMatrix34(), X_WE_from_port.GetAsMatrix34(),
       kTolerance, MatrixCompareType::relative));
+
+  // Now again with the DeclareBodyPoseOutputPort version.
+  const systems::OutputPort<double>& end_effector_output =
+      plant_->DeclareBodyPoseOutputPort(*end_effector_link_);
+  // We must create a new context after adding the port.
+  auto context_w_new_port = plant_->CreateDefaultContext();
+  context_w_new_port->SetTimeStateAndParametersFrom(*context_);
+  EXPECT_TRUE(X_WE_from_port.IsExactlyEqualTo(
+      end_effector_output.Eval<math::RigidTransform<double>>(
+          *context_w_new_port)));
+  EXPECT_EQ(end_effector_output.get_index(),
+            plant_->get_body_pose_output_port(end_effector_link_->index())
+                .get_index());
+  // Evaluating on the context created before the declare throws.
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      end_effector_output.Eval<math::RigidTransform<double>>(
+          *context_),
+      ".*does not have a cache entry for.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->DeclareBodyPoseOutputPort(*end_effector_link_),
+      ".*has already been declared.*");
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      plant_->get_body_pose_output_port(BodyIndex(0)),
+      ".* must call DeclareBodyPoseOutputPort.*");
 
   // Verify the invariance X_WB_all[0] = RigidTransform<double>::Identity().
   EXPECT_TRUE(

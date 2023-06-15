@@ -94,6 +94,9 @@ void CompareMultibodyPlantPortIndices(const MultibodyPlant<T>& plant_t,
             plant_u.get_body_spatial_velocities_output_port().get_index());
   EXPECT_EQ(plant_t.get_body_spatial_accelerations_output_port().get_index(),
             plant_u.get_body_spatial_accelerations_output_port().get_index());
+  BodyIndex body_index = plant_t.GetBodyByName("Body").index();
+  EXPECT_EQ(plant_t.get_body_pose_output_port(body_index).get_index(),
+            plant_u.get_body_pose_output_port(body_index).get_index());
   EXPECT_EQ(plant_t.get_state_output_port().get_index(),
             plant_u.get_state_output_port().get_index());
   EXPECT_EQ(plant_t.get_generalized_acceleration_output_port().get_index(),
@@ -128,7 +131,12 @@ TYPED_TEST_P(MultibodyPlantDefaultScalarsTest, PortIndexOrdering) {
 
   systems::DiagramBuilder<double> builder;
   MultibodyPlant<double>& plant = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  const RigidBody<double>& body =
+      plant.AddRigidBody("Body", SpatialInertia<double>::MakeUnitary());
+  plant.AddJoint<RevoluteJoint>("Pin", plant.world_body(), std::nullopt, body,
+                                std::nullopt, Vector3<double>::UnitZ());
   plant.Finalize();
+  plant.DeclareBodyPoseOutputPort(body);
   std::unique_ptr<Diagram<double>> diagram = builder.Build();
 
   std::unique_ptr<Diagram<U>> diagram_u =

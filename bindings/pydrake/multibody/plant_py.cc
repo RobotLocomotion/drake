@@ -893,6 +893,16 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_body_poses_output_port),
             py_rvp::reference_internal, cls_doc.get_body_poses_output_port.doc)
+        .def("DeclareBodyPoseOutputPort",
+            overload_cast_explicit<const systems::OutputPort<T>&,
+                const Body<T>&>(&Class::DeclareBodyPoseOutputPort),
+            py::arg("body"), py_rvp::reference_internal,
+            cls_doc.DeclareBodyPoseOutputPort.doc)
+        .def("get_body_pose_output_port",
+            overload_cast_explicit<const systems::OutputPort<T>&, BodyIndex>(
+                &Class::get_body_pose_output_port),
+            py::arg("body_index"), py_rvp::reference_internal,
+            cls_doc.get_body_pose_output_port.doc)
         .def("get_body_spatial_velocities_output_port",
             overload_cast_explicit<const systems::OutputPort<T>&>(
                 &Class::get_body_spatial_velocities_output_port),
