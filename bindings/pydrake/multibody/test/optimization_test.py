@@ -261,10 +261,10 @@ class TestContactWrenchFromForceInWorldFrameEvaluator(unittest.TestCase):
         inspector = scene_graph.model_inspector()
         frame_id1 = inspector.GetGeometryIdByName(
             plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("body1").index()),
-            Role.kProximity, "body1_collision")
+            Role.kProximity, "two_bodies::body1_collision")
         frame_id2 = inspector.GetGeometryIdByName(
             plant.GetBodyFrameIdOrThrow(plant.GetBodyByName("body2").index()),
-            Role.kProximity, "body2_collision")
+            Role.kProximity, "two_bodies::body2_collision")
         dut = ContactWrenchFromForceInWorldFrameEvaluator(
             plant=ad_plant,
             context=ad_plant_context,
