@@ -237,12 +237,14 @@ PYBIND11_MODULE(analysis, m) {
     auto cls = DefineTemplateClassWithDefault<Simulator<T>>(
         m, "Simulator", GetPyParam<T>(), doc.Simulator.doc);
     cls  // BR
+#if 0
         .def(py::init<const System<T>&, unique_ptr<Context<T>>>(),
             py::arg("system"), py::arg("context") = nullptr,
             // Keep alive, reference: `self` keeps `system` alive.
             py::keep_alive<1, 2>(),
             // Keep alive, ownership: `context` keeps `self` alive.
             py::keep_alive<3, 1>(), doc.Simulator.ctor.doc)
+#endif
         .def("Initialize", &Simulator<T>::Initialize,
             doc.Simulator.Initialize.doc,
             py::arg("params") = InitializeParams{})
@@ -307,11 +309,13 @@ Parameter ``interruptible``:
             py_rvp::reference_internal, doc.Simulator.get_mutable_context.doc)
         .def("has_context", &Simulator<T>::has_context,
             doc.Simulator.has_context.doc)
+#if 0
         .def("reset_context", &Simulator<T>::reset_context, py::arg("context"),
             // Keep alive, ownership: `context` keeps `self` alive.
             py::keep_alive<2, 1>(), doc.Simulator.reset_context.doc)
         // TODO(eric.cousineau): Bind `release_context` once some form of the
         // PR RobotLocomotion/pybind11#33 lands. Presently, it fails.
+#endif
         .def("set_publish_every_time_step",
             &Simulator<T>::set_publish_every_time_step, py::arg("publish"),
             doc.Simulator.set_publish_every_time_step.doc)
@@ -398,6 +402,7 @@ Parameter ``interruptible``:
     using namespace drake::systems::analysis;
     constexpr auto& doc = pydrake_doc.drake.systems.analysis;
 
+#if 0
     m.def("RandomSimulation",
         WrapCallbacks([](const SimulatorFactory make_simulator,
                           const ScalarSystemFunction& output, double final_time,
@@ -407,6 +412,7 @@ Parameter ``interruptible``:
         }),
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("generator"), doc.RandomSimulation.doc);
+#endif
 
     py::class_<RandomSimulationResult>(
         m, "RandomSimulationResult", doc.RandomSimulationResult.doc)
@@ -416,6 +422,7 @@ Parameter ``interruptible``:
             &RandomSimulationResult::generator_snapshot,
             doc.RandomSimulationResult.generator_snapshot.doc);
 
+#if 0
     // Note: This hard-codes `parallelism` to be off, since parallel execution
     // of Python systems on multiple threads was thought to be unsupported. It's
     // possible that with `py::call_guard<py::gil_scoped_release>` it would
@@ -431,6 +438,7 @@ Parameter ``interruptible``:
         py::arg("make_simulator"), py::arg("output"), py::arg("final_time"),
         py::arg("num_samples"), py::arg("generator"),
         doc.MonteCarloSimulation.doc);
+#endif
 
     {
       using Class = RegionOfAttractionOptions;
