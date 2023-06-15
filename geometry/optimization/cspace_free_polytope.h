@@ -452,11 +452,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
     return plane_geometries_;
   }
 
-  // Returns the index of the plane which will separate the geometry pair.
-  // Returns -1 if the pair is not in map_geometries_to_separating_planes_.
-  int GetSeparatingPlaneIndex(
-      const SortedPair<geometry::GeometryId>& pair) const;
-
   // Find the redundant inequalities in C*s <= d, s_lower <= s <= s_upper
   void FindRedundantInequalities(
       const Eigen::MatrixXd& C, const Eigen::VectorXd& d,
@@ -470,16 +465,6 @@ class CspaceFreePolytope : public CspaceFreePolytopeBase {
   [[nodiscard]] VectorX<symbolic::Polynomial> CalcDminusCs(
       const Eigen::Ref<const MatrixX<T>>& C,
       const Eigen::Ref<const VectorX<T>>& d) const;
-
-  /*
-   Computes the monomial basis for each pair of bodies.
-
-   There can be multiple collision geometries on the same body, and their SOS
-   problem will all share the same monomial basis. Hence we can first compute
-   the monomial basis for each body, and reuse the result for all the collision
-   geometries on the same body pair.
-   */
-  void CalcMonomialBasis();
 
   /*
    Constructs the program which searches for the plane separating a pair of
