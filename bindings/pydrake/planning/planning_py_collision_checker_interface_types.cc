@@ -67,6 +67,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
     cls  // BR
         .def(py::init<>())
         .def(ParamInit<Class>())
+#if 0
         .def_property(
             "model",
             [](const Class& self) -> const RobotDiagram<double>* {
@@ -76,6 +77,7 @@ void DefinePlanningCollisionCheckerInterfaceTypes(py::module m) {
               self.model = std::move(model);
             },
             cls_doc.model.doc)
+#endif
         .def_readwrite("robot_model_instances", &Class::robot_model_instances,
             cls_doc.robot_model_instances.doc)
         .def_readwrite("configuration_distance_function",

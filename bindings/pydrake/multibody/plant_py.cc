@@ -211,6 +211,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("model_instance"), cls_doc.num_actuated_dofs.doc_1args);
     // Construction.
     cls  // BR
+#if 0
         .def(
             "AddJoint",
             [](Class * self, std::unique_ptr<Joint<T>> joint) -> auto& {
@@ -218,16 +219,19 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("joint"), py_rvp::reference_internal,
             cls_doc.AddJoint.doc_1args)
+#endif
         .def("AddJointActuator", &Class::AddJointActuator,
             py_rvp::reference_internal, py::arg("name"), py::arg("joint"),
             py::arg("effort_limit") = std::numeric_limits<double>::infinity(),
             cls_doc.AddJointActuator.doc)
+#if 0
         .def(
             "AddFrame",
             [](Class * self, std::unique_ptr<Frame<T>> frame) -> auto& {
               return self->AddFrame(std::move(frame));
             },
             py_rvp::reference_internal, py::arg("frame"), cls_doc.AddFrame.doc)
+#endif
         .def("AddModelInstance", &Class::AddModelInstance, py::arg("name"),
             cls_doc.AddModelInstance.doc)
         .def(
@@ -247,6 +251,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py::arg("frame_on_child_M"),
             py::arg("X_FM") = RigidTransform<double>::Identity(),
             py_rvp::reference_internal, cls_doc.WeldFrames.doc)
+#if 0
         .def(
             "AddForceElement",
             [](Class * self,
@@ -256,6 +261,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             },
             py::arg("force_element"), py_rvp::reference_internal,
             cls_doc.AddForceElement.doc)
+#endif
         .def("AddCouplerConstraint", &Class::AddCouplerConstraint,
             py::arg("joint0"), py::arg("joint1"), py::arg("gear_ratio"),
             py::arg("offset") = 0.0, py_rvp::reference_internal,
@@ -981,8 +987,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("get_adjacent_bodies_collision_filters",
             &Class::get_adjacent_bodies_collision_filters,
             cls_doc.get_adjacent_bodies_collision_filters.doc)
+#if 0
         .def("AddPhysicalModel", &Class::AddPhysicalModel, py::arg("model"),
             cls_doc.AddPhysicalModel.doc)
+#endif
         .def("physical_models", &Class::physical_models,
             py_rvp::reference_internal, cls_doc.physical_models.doc)
         .def("set_penetration_allowance", &Class::set_penetration_allowance,
@@ -1190,6 +1198,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
   }
 
   {
+#if 0
     m.def(
         "AddMultibodyPlantSceneGraph",
         [](systems::DiagramBuilder<T>* builder,
@@ -1233,6 +1242,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         py::arg("scene_graph") = nullptr,
         doc.AddMultibodyPlantSceneGraph
             .doc_3args_systemsDiagramBuilder_double_stduniqueptr);
+#endif
 
     // In C++ this function is only defined for double, not AutoDiffXd.
     if constexpr (std::is_same_v<T, double>) {
@@ -1479,9 +1489,11 @@ PYBIND11_MODULE(plant, m) {
     cls  // BR
         .def(py::init<MultibodyPlant<T>*>(), cls_doc.ctor.doc)
         .def("num_bodies", &Class::num_bodies, cls_doc.num_bodies.doc)
+#if 0
         .def("RegisterDeformableBody", &Class::RegisterDeformableBody,
             py::arg("geometry_instance"), py::arg("config"),
             py::arg("resolution_hint"), cls_doc.RegisterDeformableBody.doc)
+#endif
         .def("SetWallBoundaryCondition", &Class::SetWallBoundaryCondition,
             py::arg("id"), py::arg("p_WQ"), py::arg("n_W"),
             cls_doc.SetWallBoundaryCondition.doc)

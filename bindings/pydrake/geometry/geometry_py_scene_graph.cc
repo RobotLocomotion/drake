@@ -191,6 +191,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterFrame),
             py::arg("source_id"), py::arg("parent_id"), py::arg("frame"),
             cls_doc.RegisterFrame.doc_3args)
+#if 0
         .def("RegisterGeometry",
             py::overload_cast<SourceId, FrameId,
                 std::unique_ptr<GeometryInstance>>(&Class::RegisterGeometry),
@@ -207,6 +208,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
                 &Class::RegisterAnchoredGeometry),
             py::arg("source_id"), py::arg("geometry"),
             cls_doc.RegisterAnchoredGeometry.doc)
+#endif
         .def("ChangeShape",
             py::overload_cast<SourceId, GeometryId, const Shape&,
                 std::optional<math::RigidTransform<double>>>(
@@ -238,8 +240,10 @@ void DoScalarDependentDefinitions(py::module m, T) {
             overload_cast_explicit<CollisionFilterManager>(
                 &Class::collision_filter_manager),
             cls_doc.collision_filter_manager.doc_0args)
+#if 0
         .def("AddRenderer", &Class::AddRenderer, py::arg("name"),
             py::arg("renderer"), cls_doc.AddRenderer.doc)
+#endif
         .def("HasRenderer", &Class::HasRenderer, py::arg("name"),
             cls_doc.HasRenderer.doc)
         .def("RendererCount", &Class::RendererCount, cls_doc.RendererCount.doc)
