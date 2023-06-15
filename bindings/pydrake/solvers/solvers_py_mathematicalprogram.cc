@@ -270,9 +270,9 @@ class PyFunctionConstraint : public Constraint {
 };
 
 // pybind11 trampoline class to permit overriding virtual functions in Python.
-class PySolverInterface : public py::wrapper<solvers::SolverInterface> {
+class PySolverInterface : public wrapper<solvers::SolverInterface> {
  public:
-  using Base = py::wrapper<solvers::SolverInterface>;
+  using Base = wrapper<solvers::SolverInterface>;
 
   PySolverInterface() : Base() {}
 
