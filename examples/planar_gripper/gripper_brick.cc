@@ -86,7 +86,7 @@ GripperBrickHelper<T>::GripperBrickHelper() {
             plant_
                 ->GetBodyByName("finger" + std::to_string(i + 1) + "_tip_link")
                 .index()),
-        geometry::Role::kProximity, "tip_sphere_collision");
+        geometry::Role::kProximity, "planar_gripper::tip_sphere_collision");
   }
   const geometry::Shape& fingertip_shape =
       inspector.GetShape(finger_tip_sphere_geometry_ids_[0]);
@@ -105,7 +105,7 @@ GripperBrickHelper<T>::GripperBrickHelper() {
       inspector.GetShape(inspector.GetGeometryIdByName(
           plant_->GetBodyFrameIdOrThrow(
               plant_->GetBodyByName("brick_link").index()),
-          geometry::Role::kProximity, "box_collision"));
+          geometry::Role::kProximity, "brick::box_collision"));
   brick_size_ = dynamic_cast<const geometry::Box&>(brick_shape).size();
 
   for (int i = 0; i < 3; ++i) {
