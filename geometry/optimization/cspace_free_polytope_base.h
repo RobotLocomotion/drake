@@ -105,6 +105,14 @@ class CspaceFreePolytopeBase {
   }
 
  protected:
+  // When we set up the separating plane {x | a(s)ᵀx + b(s) = 0} between a pair
+  // of geometries, we need to determine which s are used in a(s) and b(s).
+  enum class SForPlane {
+    kAll,      ///< Use all s in the robot tangent-configuration space.
+    kOnChain,  ///< Use s on the kinematics chain between the pair of
+               ///< geometries.
+  };
+
   // Constructor.
   // We put the constructor in protected method to make sure that the user
   // cannot instantiate a CspaceFreePolytopeBase instance.
@@ -112,6 +120,7 @@ class CspaceFreePolytopeBase {
   CspaceFreePolytopeBase(const multibody::MultibodyPlant<double>* plant,
                          const geometry::SceneGraph<double>* scene_graph,
                          SeparatingPlaneOrder plane_order,
+                         SForPlane s_for_plane_enum,
                          const Options& options = Options{});
 
   // Computes s-s_lower and s_upper - s as polynomials of s.
@@ -146,6 +155,19 @@ class CspaceFreePolytopeBase {
 
   [[nodiscard]] bool with_cross_y() const { return with_cross_y_; }
 
+  [[nodiscard]] const std::unordered_map<SortedPair<multibody::BodyIndex>,
+                                         std::vector<int>>&
+  map_body_pair_to_s_on_chain() const {
+    return map_body_pair_to_s_on_chain_;
+  }
+
+  /* Returns a vector of s variable used in a(s), b(s), which parameterize the
+   * separating plane {x | a(s)ᵀx+b(s) = 0}.
+   */
+  [[nodiscard]] VectorX<symbolic::Variable> GetSForPlane(
+      const SortedPair<multibody::BodyIndex>& body_pair,
+      SForPlane s_for_plane_enum) const;
+
  private:
   // Forward declare the tester class to test the private members.
   friend class CspaceFreePolytopeBaseTester;
@@ -158,6 +180,10 @@ class CspaceFreePolytopeBase {
    geometries on the same body pair.
    */
   void CalcMonomialBasis();
+
+  /* Set map_body_pair_to_s_on_chain;
+   */
+  void SetBodyPairToS(const SortedPair<multibody::BodyIndex>& body_pair);
 
   multibody::RationalForwardKinematics rational_forward_kin_;
   const geometry::SceneGraph<double>* scene_graph_;
@@ -188,6 +214,11 @@ class CspaceFreePolytopeBase {
 
   // See Options::with_cross_y for its meaning.
   bool with_cross_y_;
+
+  // For a pair of bodies body_pair, returns the indices of all s on the
+  // kinematics chain from body_pair.first() to body_pair.second().
+  std::unordered_map<SortedPair<multibody::BodyIndex>, std::vector<int>>
+      map_body_pair_to_s_on_chain_;
 };
 }  // namespace optimization
 }  // namespace geometry
