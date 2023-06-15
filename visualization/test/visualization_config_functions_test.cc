@@ -18,7 +18,12 @@ using drake::lcm::DrakeLcm;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::meshcat::ContactVisualizerParams;
+using drake::systems::CompositeEventCollection;
 using drake::systems::DiagramBuilder;
+using drake::systems::DiagramEventCollection;
+using drake::systems::LeafEventCollection;
+using drake::systems::PeriodicEventData;
+using drake::systems::PublishEvent;
 using drake::systems::Simulator;
 using drake::systems::lcm::LcmBuses;
 
@@ -265,6 +270,46 @@ GTEST_TEST(VisualizationConfigFunctionsTest, ApplyNothing) {
   // Simulate for a moment and make sure nothing showed up.
   simulator.AdvanceTo(0.25);
   drake_lcm.HandleSubscriptions(1);
+}
+
+// Check that the update period is obeyed.  No publish events are allowed to be
+// scheduled with a period other than what the config specifies.
+GTEST_TEST(VisualizationConfigFunctionsTest, UpdatePeriod) {
+  VisualizationConfig config;
+  // Set a gratitously long time between publish events.
+  const double kLongPeriod = 100;
+  config.publish_period = kLongPeriod;
+  DiagramBuilder<double> builder;
+  auto [plant, scene_graph] = AddMultibodyPlantSceneGraph(&builder, 0.0);
+  plant.Finalize();
+  ApplyVisualizationConfig(config, &builder);
+  auto diagram = builder.Build();
+
+  // With a current time of 1ms, the next publish should be at t=100 seconds.
+  auto context = diagram->CreateDefaultContext();
+  context->SetTime(0.001);
+  std::unique_ptr<CompositeEventCollection<double>> events =
+      diagram->AllocateCompositeEventCollection();
+  diagram->GetPeriodicEvents(*context, events.get());
+  const auto& diagram_publish_events =
+      dynamic_cast<const DiagramEventCollection<PublishEvent<double>>&>(
+          events->get_publish_events());
+  int num_events = 0;
+  for (int i = 0; i < diagram_publish_events.num_subsystems(); ++i) {
+    const auto& leaf_publish_events =
+        dynamic_cast<const LeafEventCollection<PublishEvent<double>>&>(
+            diagram_publish_events.get_subevent_collection(i));
+    for (const PublishEvent<double>* event : leaf_publish_events.get_events()) {
+      DRAKE_DEMAND(event != nullptr);
+      const auto* event_data = event->get_event_data<PeriodicEventData>();
+      DRAKE_DEMAND(event_data != nullptr);
+      EXPECT_EQ(event_data->period_sec(), kLongPeriod);
+      ++num_events;
+    }
+  }
+
+  // Sanity check that we found some events.
+  EXPECT_GT(num_events, 0);
 }
 
 // Check that a Meshcat instance is created when none is passed.
