@@ -77,6 +77,18 @@ drake_py_library(
     ],
 )
 
+drake_py_library(
+    name = "model_directives_to_sdformat_py",
+    srcs = ["model_directives_to_sdformat.py"],
+    imports = PACKAGE_INFO.py_imports,
+    deps = [
+        "//bindings/pydrake/common:schema_py",
+        "//bindings/pydrake/common:yaml_py",
+        "//bindings/pydrake/multibody:parsing_py",
+        "//bindings/pydrake/multibody:plant_py",
+    ],
+)
+
 drake_pybind_library(
     name = "math_py",
     cc_deps = [
@@ -282,14 +294,28 @@ cmake_configure_file(
     ],
 )
 
+cmake_configure_file(
+    name = "generate_run_installed_model_directives_to_sdformat",
+    src = "run_installed_model_directives_to_sdformat.py.in",
+    out = "run_installed_model_directives_to_sdformat.py",
+    defines = [
+        "PYTHON_SITE_PACKAGES_RELPATH=" + PYTHON_SITE_PACKAGES_RELPATH,
+    ],
+)
+
+# Workaround to shorten up rename line in install_files.
+bin_run_dmd_to_sdf = "bin/run_installed_model_directives_to_sdformat.py"
+
 install_files(
     name = "install_wrapper_scripts",
     dest = "bin",
     files = [
         "run_installed_mesh_to_model.py",
+        "run_installed_model_directives_to_sdformat.py",
     ],
     rename = {
         "bin/run_installed_mesh_to_model.py": "mesh_to_model",
+        bin_run_dmd_to_sdf: "model_directives_to_sdformat",
     },
 )
 
@@ -310,6 +336,7 @@ PY_LIBRARIES = [
     ":jupyter_widgets_py",
     ":module_py",
     ":mesh_model_maker_py",
+    ":model_directives_to_sdformat_py",
 ]
 
 # Symbol roll-up (for user ease).
@@ -327,6 +354,9 @@ drake_py_library(
 
 install(
     name = "install",
+    install_tests = [
+        ":test/multibody_install_tests.py",
+    ],
     targets = PY_LIBRARIES + [":all_py"],
     py_dest = PACKAGE_INFO.py_dest,
     deps = get_drake_py_installs(PY_LIBRARIES_WITH_INSTALL) + [
@@ -340,6 +370,15 @@ filegroup(
         "**/*.sdf",
     ]),
     visibility = ["//:__pkg__"],
+)
+
+filegroup(
+    name = "model_directives_to_sdformat_files",
+    testonly = True,
+    data = glob(["test/model_directives_to_sdformat_files/**"]),
+    visibility = [
+        "//bindings/pydrake/multibody:__pkg__",
+    ],
 )
 
 drake_jupyter_py_binary(
@@ -487,6 +526,19 @@ drake_py_unittest(
 )
 
 drake_py_unittest(
+    name = "model_directives_to_sdformat_test",
+    data = [
+        ":model_directives_to_sdformat_files",
+        ":model_directives_to_sdformat_py",
+        "//multibody/parsing:process_model_directives_test_models",
+    ],
+    deps = [
+        "//bindings/pydrake",
+        "//bindings/pydrake/common/test_utilities:meta_py",
+    ],
+)
+
+drake_py_unittest(
     name = "mesh_to_model_test",
     data = [
         ":mesh_to_model",
@@ -504,5 +556,6 @@ drake_py_unittest(
 add_lint_tests_pydrake(
     python_lint_extra_srcs = [
         "run_installed_mesh_to_model.py.in",
+        "run_installed_model_directives_to_sdformat.py.in",
     ],
 )

@@ -36,15 +36,6 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-filegroup(
-    name = "model_directives_to_sdformat_files",
-    testonly = True,
-    data = glob(["test/model_directives_to_sdformat_files/**"]),
-    visibility = [
-        "//bindings/pydrake/multibody:__pkg__",
-    ],
-)
-
 _DM_CONTROL_MUJOCO_FILES = forward_files(
     srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
     dest_prefix = "",
@@ -62,14 +53,6 @@ drake_cc_package_library(
         ":parser",
         ":process_model_directives",
         ":scoped_names",
-    ],
-)
-
-drake_py_binary(
-    name = "model_directives_to_sdformat",
-    srcs = ["model_directives_to_sdformat.py"],
-    deps = [
-        "//bindings/pydrake",
     ],
 )
 
@@ -703,19 +686,6 @@ drake_cc_googletest(
     deps = [
         ":detail_misc",
         "//common/test_utilities:diagnostic_policy_test_base",
-    ],
-)
-
-drake_py_unittest(
-    name = "model_directives_to_sdformat_test",
-    data = [
-        ":model_directives_to_sdformat.py",
-        ":model_directives_to_sdformat_files",
-        ":process_model_directives_test_models",
-    ],
-    deps = [
-        "//bindings/pydrake",
-        "//bindings/pydrake/common/test_utilities:meta_py",
     ],
 )
 

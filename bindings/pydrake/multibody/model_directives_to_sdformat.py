@@ -645,7 +645,7 @@ def _create_parser():
     return parser
 
 
-def main(argv=None) -> None:
+def _main(argv=None) -> None:
     parser = _create_parser()
     args = parser.parse_args(argv)
 
@@ -662,4 +662,4 @@ def main(argv=None) -> None:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    _main()

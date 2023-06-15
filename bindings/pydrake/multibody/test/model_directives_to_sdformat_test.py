@@ -25,10 +25,10 @@ from pydrake.common.test_utilities.meta import (
     run_with_multiple_values,
 )
 
-from drake.multibody.parsing import (
+from pydrake.multibody import (
     model_directives_to_sdformat
 )
-from drake.multibody.parsing.model_directives_to_sdformat import (
+from pydrake.multibody.model_directives_to_sdformat import (
     convert_directives,
     ConversionError,
 )
@@ -155,19 +155,21 @@ class TestConvertModelDirectiveToSDF(
     unittest.TestCase, metaclass=ValueParameterizedTest
 ):
     files_to_test = [
-        "multibody/parsing/test/model_directives_to_sdformat_files/"
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
         "inject_frames.dmd.yaml",
-        "multibody/parsing/test/model_directives_to_sdformat_files/"
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
+        "inject_frames.dmd.yaml",
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
         "hidden_frame.dmd.yaml",
-        "multibody/parsing/test/model_directives_to_sdformat_files/"
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
         "frame_attached_to_frame.dmd.yaml",
-        "multibody/parsing/test/model_directives_to_sdformat_files/"
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
         "weld_frames_from_models.dmd.yaml",
-        "multibody/parsing/test/model_directives_to_sdformat_files/"
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
         "scoped_frame_name.dmd.yaml",
-        "multibody/parsing/test/model_directives_to_sdformat_files/"
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
         "deep_frame.dmd.yaml",
-        "multibody/parsing/test/model_directives_to_sdformat_files/"
+        "bindings/pydrake/multibody/test/model_directives_to_sdformat_files/"
         "deep_weld.dmd.yaml",
     ]
 
@@ -187,11 +189,15 @@ class TestConvertModelDirectiveToSDF(
 
         # Load model directives
         directives_plant = MultibodyPlant(time_step=0.0)
-        model_dir = os.path.dirname(
+        model_dir_multibody = os.path.dirname(
             os.path.join(GetDrakePath(), "multibody/parsing/test/")
         )
+        model_dir_bindings = os.path.dirname(
+            os.path.join(GetDrakePath(), "bindings/pydrake/multibody/test/")
+        )
         parser = Parser(plant=directives_plant)
-        parser.package_map().PopulateFromFolder(model_dir)
+        parser.package_map().PopulateFromFolder(model_dir_multibody)
+        parser.package_map().PopulateFromFolder(model_dir_bindings)
         directives = LoadModelDirectives(file_path)
         ProcessModelDirectives(
             directives=directives, plant=directives_plant, parser=parser
@@ -201,7 +207,8 @@ class TestConvertModelDirectiveToSDF(
         # Load converted SDFormat
         sdformat_plant = MultibodyPlant(time_step=0.0)
         sdformat_parser = Parser(sdformat_plant)
-        sdformat_parser.package_map().PopulateFromFolder(model_dir)
+        sdformat_parser.package_map().PopulateFromFolder(model_dir_multibody)
+        sdformat_parser.package_map().PopulateFromFolder(model_dir_bindings)
         sdformat_parser.AddModelsFromString(sdformat_result, "sdf")
         sdformat_plant.Finalize()
 
@@ -281,10 +288,9 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/"
-                    "model_directives_to_sdformat_"
-                    "files/something_not_directives"
-                    ".dmd.yaml",
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
+                    "something_not_directives.dmd.yaml",
                 ]
             )
             convert_directives(args)
@@ -298,10 +304,9 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/"
-                    "model_directives_to_sdformat"
-                    "_files/not_directives_first"
-                    ".dmd.yaml",
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
+                    "not_directives_first.dmd.yaml",
                 ]
             )
             convert_directives(args)
@@ -315,10 +320,9 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/"
-                    "model_directives_to_sdformat"
-                    "_files/implicit_hidden_base_frame"
-                    ".dmd.yaml",
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
+                    "implicit_hidden_base_frame.dmd.yaml",
                 ]
             )
             convert_directives(args)
@@ -334,8 +338,8 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/model_"
-                    "directives_to_sdformat_files/"
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
                     "different_scopes_frame.dmd.yaml",
                 ]
             )
@@ -349,8 +353,8 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/model_"
-                    "directives_to_sdformat_files/"
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
                     "world_base_frame.dmd.yaml",
                 ]
             )
@@ -366,10 +370,9 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/"
-                    "model_directives_to_sdformat"
-                    "_files/frame_same_as_base_frame"
-                    ".dmd.yaml",
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
+                    "frame_same_as_base_frame.dmd.yaml",
                 ]
             )
             convert_directives(args)
@@ -384,8 +387,8 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/model_"
-                    "directives_to_sdformat_files/"
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
                     "frames_same_name.dmd.yaml",
                 ]
             )
@@ -401,8 +404,8 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/model_"
-                    "directives_to_sdformat_files/"
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
                     "deep_child_frame_weld.dmd.yaml",
                 ]
             )
@@ -418,8 +421,8 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/model_"
-                    "directives_to_sdformat_files/"
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
                     "deep_child_weld.dmd.yaml",
                 ]
             )
@@ -435,15 +438,15 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/model_"
-                    "directives_to_sdformat_files/"
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
                     "weld_same_parent_child.dmd.yaml",
                 ]
             )
             convert_directives(args)
 
     def test_add_model_instance_add_directives(self):
-        os.environ["ROS_PACKAGE_PATH"] = "multibody/parsing/"
+        os.environ["ROS_PACKAGE_PATH"] = "bindings/pydrake/multibody"
         tempdir = temp_directory()
         expected_sdf = """<?xml version="1.0" ?>
 <sdf version="1.9">
@@ -484,11 +487,11 @@ class TestConvertModelDirectiveToSDF(
 </sdf>
 """
         )
-        model_directives_to_sdformat.main(
+        model_directives_to_sdformat._main(
             [
                 "-m",
-                "multibody/parsing/test/model_"
-                "directives_to_sdformat_files/"
+                "bindings/pydrake/multibody/test/"
+                "model_directives_to_sdformat_files/"
                 "add_directives.dmd.yaml",
                 "--expand-included",
                 "-o",
@@ -557,8 +560,8 @@ class TestConvertModelDirectiveToSDF(
         args = self.parser.parse_args(
             [
                 "-m",
-                "multibody/parsing/test/model_"
-                "directives_to_sdformat_files/"
+                "bindings/pydrake/multibody/test/"
+                "model_directives_to_sdformat_files/"
                 "inject_frames.dmd.yaml",
             ]
         )
@@ -589,10 +592,9 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/"
-                    "model_directives_to_sdformat"
-                    "_files/default_joint_positions"
-                    ".dmd.yaml",
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
+                    "default_joint_positions.dmd.yaml",
                 ]
             )
             convert_directives(args)
@@ -606,10 +608,9 @@ class TestConvertModelDirectiveToSDF(
             args = self.parser.parse_args(
                 [
                     "-m",
-                    "multibody/parsing/test/"
-                    "model_directives_to_sdformat"
-                    "_files/frame_same_as_base_frame"
-                    ".not_valid",
+                    "bindings/pydrake/multibody/test/"
+                    "model_directives_to_sdformat_files/"
+                    "frame_same_as_base_frame.not_valid",
                 ]
             )
             convert_directives(args)
