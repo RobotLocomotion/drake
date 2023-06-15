@@ -376,7 +376,13 @@ const std::string& GeometryState<T>::GetOwningSourceName(FrameId id) const {
 }
 
 template <typename T>
-const std::string& GeometryState<T>::GetName(FrameId frame_id) const {
+std::string GeometryState<T>::GetName(FrameId frame_id) const {
+  return GetQualifiedName(frame_id, kQualifierFrameGroup, "::");
+}
+
+template <typename T>
+const std::string& GeometryState<T>::GetUnqualifiedName(
+    FrameId frame_id) const {
   FindOrThrow(frame_id, frames_, [frame_id]() {
     return "No frame name available for invalid frame id: " +
         to_string(frame_id);
@@ -462,7 +468,7 @@ std::string GeometryState<T>::BuildQualifiedName(
       }
     }
   }
-  names.push_back(GetName(id));
+  names.push_back(GetUnqualifiedName(id));
   return fmt::format("{}", fmt::join(names, delimiter));
 }
 
@@ -618,12 +624,18 @@ FrameId GeometryState<T>::GetFrameId(GeometryId geometry_id) const {
 }
 
 template <typename T>
-const std::string& GeometryState<T>::GetName(GeometryId geometry_id) const {
+const std::string& GeometryState<T>::GetUnqualifiedName(
+    GeometryId geometry_id) const {
   const InternalGeometry* geometry = GetGeometry(geometry_id);
   if (geometry != nullptr) return geometry->name();
 
   throw std::logic_error("No geometry available for invalid geometry id: " +
       to_string(geometry_id));
+}
+
+template <typename T>
+std::string GeometryState<T>::GetName(GeometryId geometry_id) const {
+  return GetQualifiedName(geometry_id, kQualifierFrameGroup, "::");
 }
 
 template <typename T>

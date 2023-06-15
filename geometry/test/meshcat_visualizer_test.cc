@@ -345,7 +345,7 @@ GTEST_TEST(MeshcatVisualizerTest, HydroGeometry) {
     const auto& collision_pairs = inspector.GetCollisionCandidates();
     ASSERT_GT(collision_pairs.size(), 0);
     const GeometryId sphere1 = collision_pairs.begin()->first;
-    ASSERT_EQ(inspector.GetName(sphere1), "body1_collision");
+    ASSERT_EQ(inspector.GetName(sphere1), "two_bodies::body1_collision");
 
     // Add a proximity visualizer, with or without hydro.
     const std::string prefix = show_hydroelastic ? "show_hydro" : "non_hydro";

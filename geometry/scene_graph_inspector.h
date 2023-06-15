@@ -205,7 +205,8 @@ class SceneGraphInspector {
   /** Reports the name of the frame with the given `frame_id`.
    @throws std::exception if `frame_id` does not map to a registered frame.
    */
-  const std::string& GetName(FrameId frame_id) const;
+  std::string GetName(FrameId frame_id) const;
+  const std::string& GetUnqualifiedName(FrameId frame_id) const;
 
   /** Reports the FrameId of the parent of `frame_id`.
    @throws std::exception if `frame_id` does not map to a registered frame.
@@ -306,7 +307,8 @@ class SceneGraphInspector {
    details).
    @throws std::exception if `geometry_id` does not map to a registered
    geometry.  */
-  const std::string& GetName(GeometryId geometry_id) const;
+  std::string GetName(GeometryId geometry_id) const;
+  const std::string& GetUnqualifiedName(GeometryId geometry_id) const;
 
   /** Returns the shape specified for the geometry with the given `geometry_id`.
    In order to extract the details of the shape, it should be passed through an

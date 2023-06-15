@@ -124,9 +124,16 @@ const std::string& SceneGraphInspector<T>::GetOwningSourceName(
 }
 
 template <typename T>
-const std::string& SceneGraphInspector<T>::GetName(FrameId frame_id) const {
+std::string SceneGraphInspector<T>::GetName(FrameId frame_id) const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->GetName(frame_id);
+}
+
+template <typename T>
+const std::string& SceneGraphInspector<T>::GetUnqualifiedName(
+    FrameId frame_id) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetUnqualifiedName(frame_id);
 }
 
 template <typename T>
@@ -218,10 +225,17 @@ FrameId SceneGraphInspector<T>::GetFrameId(GeometryId geometry_id) const {
 }
 
 template <typename T>
-const std::string& SceneGraphInspector<T>::GetName(
+std::string SceneGraphInspector<T>::GetName(
     GeometryId geometry_id) const {
   DRAKE_DEMAND(state_ != nullptr);
   return state_->GetName(geometry_id);
+}
+
+template <typename T>
+const std::string& SceneGraphInspector<T>::GetUnqualifiedName(
+    GeometryId geometry_id) const {
+  DRAKE_DEMAND(state_ != nullptr);
+  return state_->GetUnqualifiedName(geometry_id);
 }
 
 template <typename T>

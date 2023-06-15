@@ -128,7 +128,7 @@ TEST_F(GeometryNamesTest, FullBox) {
   const Entry& entry = dut.Find(id);
   EXPECT_EQ(entry.model_instance_name, "box");
   EXPECT_EQ(entry.body_name, "box");
-  EXPECT_EQ(entry.geometry_name, "box");
+  EXPECT_EQ(entry.geometry_name, "box::box");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, true);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
   EXPECT_EQ(dut.GetFullName(id, "$"), "box");
@@ -154,7 +154,7 @@ TEST_F(GeometryNamesTest, FullSphere1) {
   const Entry& entry = dut.Find(id);
   EXPECT_EQ(entry.model_instance_name, "sphere1::sphere");
   EXPECT_EQ(entry.body_name, "base_link");
-  EXPECT_EQ(entry.geometry_name, "sphere_collision");
+  EXPECT_EQ(entry.geometry_name, "sphere1::sphere::sphere_collision");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, false);
   EXPECT_EQ(entry.is_sole_geometry_within_body, true);
   EXPECT_EQ(dut.GetFullName(id, "$"), "sphere1::sphere$base_link");
@@ -182,10 +182,10 @@ TEST_F(GeometryNamesTest, FullBin) {
   const Entry& entry = dut.Find(id);
   EXPECT_EQ(entry.model_instance_name, "bin_model");
   EXPECT_EQ(entry.body_name, "bin_base");
-  EXPECT_EQ(entry.geometry_name, "front");
+  EXPECT_EQ(entry.geometry_name, "bin_model::front");
   EXPECT_EQ(entry.body_name_is_unique_within_plant, true);
   EXPECT_EQ(entry.is_sole_geometry_within_body, false);
-  EXPECT_EQ(dut.GetFullName(id, "$"), "bin_base$front");
+  EXPECT_EQ(dut.GetFullName(id, "$"), "bin_base$bin_model::front");
 }
 
 }  // namespace

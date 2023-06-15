@@ -2373,7 +2373,7 @@ TEST_F(GeometryStateTest, QueryFrameProperties) {
   EXPECT_EQ(geometry_state_.GetName(world), "world");
   DRAKE_EXPECT_THROWS_MESSAGE(
       geometry_state_.GetName(FrameId::get_new_id()),
-      "No frame name available for invalid frame id: \\d+");
+      "No frame .* available for invalid frame id: \\d+");
 
   // Set the frame poses to query geometry and frame poses.
   FramePoseVector<double> poses;

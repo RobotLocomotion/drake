@@ -22,7 +22,7 @@ from the given plant; use `lookup` to obtain the geometry_name strings. */
 template <typename T>
 void ResetHelper(
     const MultibodyPlant<T>& plant,
-    const std::function<std::optional<std::string_view>(GeometryId)>& lookup,
+    const std::function<std::optional<std::string>(GeometryId)>& lookup,
     std::unordered_map<GeometryId, GeometryNames::Entry>* entries) {
   DRAKE_DEMAND(entries != nullptr);
   DRAKE_THROW_UNLESS(plant.is_finalized());
@@ -48,7 +48,7 @@ void ResetHelper(
     // Add an Entry for each collision geometry.
     for (const auto& geometry_id : geometry_ids) {
       GeometryNames::Entry entry = prototype;
-      std::optional<std::string_view> geometry_name = lookup(geometry_id);
+      std::optional<std::string> geometry_name = lookup(geometry_id);
       entry.geometry_name = geometry_name;
       entries->insert({geometry_id, entry});
     }
@@ -63,8 +63,8 @@ void GeometryNames::ResetFull(
     const SceneGraphInspector<T>& inspector) {
   DRAKE_THROW_UNLESS(plant.is_finalized());
   std::function lookup = [&inspector](GeometryId id)
-      -> std::optional<std::string_view> {
-    return inspector.GetName(id);
+      -> std::optional<std::string> {
+    return inspector.GetUnqualifiedName(id);
   };
   ResetHelper(plant, lookup, &entries_);
 }
@@ -73,7 +73,7 @@ template <typename T>
 void GeometryNames::ResetBasic(const MultibodyPlant<T>& plant) {
   DRAKE_THROW_UNLESS(plant.is_finalized());
   std::function lookup = [](GeometryId)
-      -> std::optional<std::string_view> {
+      -> std::optional<std::string> {
     return std::nullopt;
   };
   ResetHelper(plant, lookup, &entries_);
