@@ -408,9 +408,9 @@ class TestMeldis(unittest.TestCase):
 
         # The geometry isn't registered until the load is processed.
         hydro_path = "/CONTACT_RESULTS/hydroelastic/" + \
-                     "body1.body1_collision+body2"
+                     "body1.two_bodies::body1_collision+body2"
         hydro_path2 = "/CONTACT_RESULTS/hydroelastic/" + \
-                      "body1.body1_collision2+body2"
+                      "body1.two_bodies::body1_collision2+body2"
         self.assertEqual(meshcat.HasPath(hydro_path), False)
         self.assertEqual(meshcat.HasPath(hydro_path2), False)
 
