@@ -97,8 +97,10 @@ drake_cc_library(
     deps = [
         ":contact_problem_graph",
         ":sap_constraint",
+        ":sap_solver_results",
         "//common:default_scalars",
         "//common:essential",
+        "//multibody/contact_solvers:block_sparse_matrix",
         "//multibody/plant:slicing_and_indexing",
     ],
 )
