@@ -39,6 +39,11 @@ namespace sensors {
  - body_pose_in_world
  @endsystem
 
+ This system models a continuous sensor, where the output ports reflect the
+ instantaneous images observed by the sensor. In contrast, a discrete (sample
+ and hold) sensor model might be a more suitable match for a real-world camera;
+ for that case, see RgbdSensorDiscrete or RgbdSensorAsync.
+
  The following text uses terminology and conventions from CameraInfo. Please
  review its documentation.
 
@@ -149,7 +154,7 @@ class RgbdSensor final : public LeafSystem<double> {
     return depth_camera_.core().sensor_pose_in_camera_body();
   }
 
-  /** Returns the id of the frame to which the base is affixed.  */
+  /** Returns the id of the frame to which the body is affixed.  */
   geometry::FrameId parent_frame_id() const { return parent_frame_id_; }
 
   /** Returns the geometry::QueryObject<double>-valued input port.  */
@@ -213,7 +218,7 @@ class RgbdSensor final : public LeafSystem<double> {
 };
 
 /**
- Wraps a continuous %RgbdSensor with a zero-order hold to create a discrete
+ Wraps a continuous RgbdSensor with a zero-order hold to create a discrete
  sensor.
 
  @system
@@ -227,7 +232,18 @@ class RgbdSensor final : public LeafSystem<double> {
  - label_image
  - body_pose_in_world
  @endsystem
- */
+
+ See also RgbdSensorAsync for a slightly different discrete sensor model.
+
+ @note Be mindful that the discrete dynamics of a zero-order hold mean that all
+ three image types (color, depth, label) are rendered at the given `period`,
+ even if nothing ends up using the images on the output ports; this might be
+ computationally wasteful. If you only need color and depth, be sure to pass
+ `render_label_image = false` to the constructor. If you only need one image
+ type, eschew this system in favor of adding your own zero-order hold on just
+ the one RgbdSensor output port that you need.
+
+ @ingroup sensor_systems  */
 class RgbdSensorDiscrete final : public systems::Diagram<double> {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(RgbdSensorDiscrete);
