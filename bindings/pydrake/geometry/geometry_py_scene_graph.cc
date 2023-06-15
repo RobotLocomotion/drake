@@ -97,7 +97,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             py_rvp::reference_internal, py::arg("frame_id"),
             cls_doc.GetOwningSourceName.doc_1args_frame_id)
         .def("GetName",
-            overload_cast_explicit<const std::string&, FrameId>(
+            overload_cast_explicit<std::string, FrameId>(
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("frame_id"),
             cls_doc.GetName.doc_1args_frame_id)
@@ -127,7 +127,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
         .def("GetFrameId", &Class::GetFrameId, py::arg("geometry_id"),
             cls_doc.GetFrameId.doc)
         .def("GetName",
-            overload_cast_explicit<const std::string&, GeometryId>(
+            overload_cast_explicit<std::string, GeometryId>(
                 &Class::GetName),
             py_rvp::reference_internal, py::arg("geometry_id"),
             cls_doc.GetName.doc_1args_geometry_id)

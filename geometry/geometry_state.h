@@ -227,7 +227,8 @@ class GeometryState {
   const std::string& GetOwningSourceName(FrameId id) const;
 
   /** Implementation of SceneGraphInspector::GetName(FrameId) const.  */
-  const std::string& GetName(FrameId frame_id) const;
+  std::string GetName(FrameId frame_id) const;
+  const std::string& GetUnqualifiedName(FrameId frame_id) const;
 
   /** Implementation of SceneGraphInspector::GetParentFrame(FrameId) const.  */
   FrameId GetParentFrame(FrameId frame_id) const;
@@ -290,7 +291,8 @@ class GeometryState {
   FrameId GetFrameId(GeometryId geometry_id) const;
 
   /** Implementation of SceneGraphInspector::GetName(GeometryId) const.  */
-  const std::string& GetName(GeometryId geometry_id) const;
+  const std::string& GetUnqualifiedName(GeometryId geometry_id) const;
+  std::string GetName(GeometryId geometry_id) const;
 
   /** Support for SceneGraphInspector::Reify().  */
   const Shape& GetShape(GeometryId id) const;
