@@ -71,16 +71,6 @@ drake_py_library(
 )
 
 drake_cc_library(
-    name = "monostate_pybind",
-    hdrs = ["monostate_pybind.h"],
-    declare_installed_headers = 0,
-    visibility = ["//visibility:public"],
-    deps = [
-        "@pybind11",
-    ],
-)
-
-drake_cc_library(
     name = "type_pack",
     hdrs = ["type_pack.h"],
     declare_installed_headers = 0,

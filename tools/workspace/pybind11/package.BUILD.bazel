@@ -30,6 +30,8 @@ _HDRS = [
     "include/pybind11/detail/type_caster_base.h",
     "include/pybind11/detail/typeid.h",
     "include/pybind11/eigen.h",
+    "include/pybind11/eigen/matrix.h",
+    "include/pybind11/eigen/tensor.h",
     "include/pybind11/embed.h",
     "include/pybind11/eval.h",
     "include/pybind11/functional.h",
@@ -56,6 +58,7 @@ cc_library(
     name = "pybind11",
     hdrs = _HDRS,
     includes = ["include"],
+    defines = ["PYBIND11_NAMESPACE=pybind11"],
     deps = [
         "@eigen",
         "@python",
