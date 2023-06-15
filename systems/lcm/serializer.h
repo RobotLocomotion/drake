@@ -26,11 +26,6 @@ class SerializerInterface {
 
   virtual ~SerializerInterface();
 
-  DRAKE_DEPRECATED(
-      "2023-09-01",
-      "Use a shared_ptr<const SerializerInterface> instead of cloning.")
-  virtual std::unique_ptr<SerializerInterface> Clone() const = 0;
-
   /**
    * Creates a value-initialized (zeroed) instance of the message object.
    * The result can be used as the output object filled in by Deserialize.
@@ -67,10 +62,6 @@ class Serializer : public SerializerInterface {
 
   Serializer() = default;
   ~Serializer() override = default;
-
-  std::unique_ptr<SerializerInterface> Clone() const override {
-    return std::make_unique<Serializer>();
-  }
 
   std::unique_ptr<AbstractValue> CreateDefaultValue() const override {
     // NOTE: We create the message using value-initialization ("{}") to ensure

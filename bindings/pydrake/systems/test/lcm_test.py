@@ -78,11 +78,6 @@ class TestSystemsLcm(unittest.TestCase):
         raw = dut.Serialize(value)
         reconstruct = lcmt_quaternion.decode(raw)
         self.assert_lcm_equal(reconstruct, model_message)
-        # Check cloning.
-        with catch_drake_warnings(expected_count=1):
-            cloned_dut = dut.Clone()
-        fresh_value = dut.CreateDefaultValue().get_value()
-        self.assertIsInstance(fresh_value, lcmt_quaternion)
 
     def test_serializer_cpp(self):
         # Tests relevant portions of API.
