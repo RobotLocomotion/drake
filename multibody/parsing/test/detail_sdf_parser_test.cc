@@ -136,9 +136,9 @@ class SdfParserTest : public test::DiagnosticPolicyTestBase{
     const int num_links = ids.size();
     const auto& inspector = scene_graph_.model_inspector();
     for (int m = 0; m < num_links; ++m) {
-      const std::string& m_name = inspector.GetQualifiedName(ids[m]);
+      const std::string& m_name = inspector.GetName(ids[m]);
       for (int n = m + 1; n < num_links; ++n) {
-        const std::string& n_name = inspector.GetQualifiedName(ids[n]);
+        const std::string& n_name = inspector.GetName(ids[n]);
         SCOPED_TRACE(fmt::format("{}[{}] vs {}[{}]", m_name, m, n_name, n));
         CollisionPair names{m_name, n_name};
         auto contains =
@@ -1767,9 +1767,10 @@ template <typename ShapeType>
   const auto& inspector = scene_graph.model_inspector();
   const std::string name = geometry::ShapeName(shape).name();
   try {
-    // XXX behavior change
+    // Note: MBP prepends the model index to the geometry name; in this case
+    // that model instance  name is "test_robot".
     const geometry::GeometryId geometry_id =
-        inspector.GetGeometryIdByName(frame_id, role, name);
+        inspector.GetGeometryIdByName(frame_id, role, "test_robot::" + name);
     const std::string shape_type =
         geometry::ShapeName(inspector.GetShape(geometry_id)).name();
     if (shape_type != name) {
