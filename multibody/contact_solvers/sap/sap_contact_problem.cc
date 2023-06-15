@@ -66,8 +66,18 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::MakeReduced(
   }
   DRAKE_DEMAND(mapping != nullptr);
 
+  mapping->velocity_permutation = PartialPermutation(num_velocities());
   mapping->clique_permutation = PartialPermutation(num_cliques());
   mapping->constraint_permutation = PartialPermutation(num_constraints());
+
+  auto it = known_free_motion_dofs.begin();
+  for (int i = 0; i < num_velocities(); ++i) {
+    if (it != known_free_motion_dofs.end() && i == *it) {
+      ++it;
+    } else {
+      mapping->velocity_permutation.push(i);
+    }
+  }
 
   // Project v_star and A matrices to reduced DOFs.
   VectorX<T> v_star_reduced =
@@ -102,6 +112,56 @@ std::unique_ptr<SapContactProblem<T>> SapContactProblem<T>::MakeReduced(
   }
 
   return problem;
+}
+
+template <typename T>
+void SapContactProblem<T>::ExpandContactSolverResults(
+    const contact_solvers::internal::ReducedMapping& reduced_mapping,
+    const contact_solvers::internal::SapSolverResults<T>& reduced_results,
+    contact_solvers::internal::SapSolverResults<T>* sap_results) const {
+  DRAKE_DEMAND(reduced_mapping.velocity_permutation.domain_size() ==
+               num_velocities());
+  DRAKE_DEMAND(reduced_mapping.clique_permutation.domain_size() ==
+               num_cliques());
+  DRAKE_DEMAND(reduced_mapping.constraint_permutation.domain_size() ==
+               num_constraints());
+  DRAKE_DEMAND(sap_results != nullptr);
+
+  // Zero out everything. Results data will be selectively filled in.
+  sap_results->Resize(num_velocities(), num_constraint_equations());
+  sap_results->v.setZero();
+  sap_results->gamma.setZero();
+  sap_results->vc.setZero();
+  sap_results->j.setZero();
+
+  // Copy v and j for participating velocities.
+  for (int i = 0; i < num_velocities(); ++i) {
+    if (reduced_mapping.velocity_permutation.participates(i)) {
+      sap_results->v[i] =
+          reduced_results
+              .v[reduced_mapping.velocity_permutation.permuted_index(i)];
+      sap_results->j[i] =
+          reduced_results
+              .j[reduced_mapping.velocity_permutation.permuted_index(i)];
+    }
+  }
+
+  // Copy gamma and vc for participating constraints.
+  int equation_index = 0;
+  int reduced_equation_index = 0;
+  for (int i = 0; i < num_constraints(); ++i) {
+    const SapConstraint<T>& c = get_constraint(i);
+    if (reduced_mapping.constraint_permutation.participates(i)) {
+      sap_results->gamma.segment(equation_index, c.num_constraint_equations()) =
+          reduced_results.gamma.segment(reduced_equation_index,
+                                        c.num_constraint_equations());
+      sap_results->vc.segment(equation_index, c.num_constraint_equations()) =
+          reduced_results.vc.segment(reduced_equation_index,
+                                     c.num_constraint_equations());
+      reduced_equation_index += c.num_constraint_equations();
+    }
+    equation_index += c.num_constraint_equations();
+  }
 }
 
 template <typename T>

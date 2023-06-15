@@ -8,6 +8,7 @@
 #include "drake/common/eigen_types.h"
 #include "drake/multibody/contact_solvers/sap/contact_problem_graph.h"
 #include "drake/multibody/contact_solvers/sap/sap_constraint.h"
+#include "drake/multibody/contact_solvers/sap/sap_solver_results.h"
 #include "drake/multibody/math/spatial_algebra.h"
 
 namespace drake {
@@ -18,6 +19,7 @@ namespace internal {
 /* Struct returned by SapContactProblem::MakeReduced() which stores the mapping
    between the original and reduced problems.*/
 struct ReducedMapping {
+  PartialPermutation velocity_permutation;
   PartialPermutation clique_permutation;
   PartialPermutation constraint_permutation;
 };
@@ -123,6 +125,35 @@ class SapContactProblem {
       const std::vector<int>& known_free_motion_dofs,
       const std::vector<std::vector<int>>& per_clique_known_free_motion_dofs,
       ReducedMapping* mapping) const;
+
+  /* This method maps the SapSolverResults in `reduced_results` for a reduced
+     version of this SapContactProblem into results stored
+     `sap_results`. This mapping ensures that the dimensionality of the results
+     matches that of this problem and that results at permuted indices
+     are mapped back to their original indices. The ReducedMapping stored  in
+     `reduced_mapping` encodes the reduced problem and how to map
+     from permuted indices back to original indices. Velocities and impulses for
+     non-participating DoFs and constraints are set to zero.
+
+     @param[in] reduced_mapping Stores the mapping between this problem and a
+       reduced problem that `reduced_results` corresponds to.
+     @param[in] reduced_results Solver results for a reduced version of this
+     problem corresponding to the mapping in `reduced_mapping`.
+     @param[out] sap_results On output stores the solver results contained in
+       `reduced_results` mapped back to original indices. Zero values are stored
+       for non-participating velocities and constraints.
+     @pre reduced_mapping.velocity_permutation.domain_size() ==
+     num_velocities().
+     @pre reduced_mapping.clique_permutation.domain_size() == num_cliques().
+     @pre reduced_mapping.constraint_permutation.domain_size() ==
+       num_constraints().
+     @pre sap_results != nullptr.
+     @see SapContactProblem::MakeReduced() for more information.
+  */
+  void ExpandContactSolverResults(
+      const contact_solvers::internal::ReducedMapping& reduced_mapping,
+      const contact_solvers::internal::SapSolverResults<T>& reduced_results,
+      contact_solvers::internal::SapSolverResults<T>* sap_results) const;
 
   /* TODO(amcastro-tri): consider constructor API taking std::vector<VectorX<T>>
    for v_star. It could be useful for deformables. */
