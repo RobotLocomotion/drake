@@ -66,6 +66,36 @@ FemModel<T>::MakePetscSymmetricBlockSparseTangentMatrix() const {
 }
 
 template <typename T>
+void FemModel<T>::CalcTangentMatrix(
+    const FemState<T>& fem_state, const Vector3<T>& weights,
+    contact_solvers::internal::Block3x3SparseSymmetricMatrix* tangent_matrix)
+    const {
+  if constexpr (std::is_same_v<T, double>) {
+    DRAKE_DEMAND(tangent_matrix != nullptr);
+    DRAKE_DEMAND(tangent_matrix->rows() == num_dofs());
+    DRAKE_DEMAND(tangent_matrix->cols() == num_dofs());
+    DRAKE_THROW_UNLESS(weights.minCoeff() >= 0.0);
+    ThrowIfModelStateIncompatible(__func__, fem_state);
+    DoCalcTangentMatrix(fem_state, weights, tangent_matrix);
+    dirichlet_bc_.ApplyBoundaryConditionToTangentMatrix(tangent_matrix);
+  } else {
+    throw std::logic_error(
+        "FemModel::CalcTangentMatrix() only supports double at the moment.");
+  }
+}
+
+template <typename T>
+std::unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+FemModel<T>::MakeTangentMatrix() const {
+  if constexpr (std::is_same_v<T, double>) {
+    return DoMakeTangentMatrix();
+  } else {
+    throw std::logic_error(
+        "FemModel::MakeTangentMatrix() only supports double at the moment.");
+  }
+}
+
+template <typename T>
 void FemModel<T>::ApplyBoundaryCondition(FemState<T>* fem_state) const {
   DRAKE_DEMAND(fem_state != nullptr);
   ThrowIfModelStateIncompatible(__func__, *fem_state);
