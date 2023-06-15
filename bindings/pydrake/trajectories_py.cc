@@ -167,9 +167,9 @@ struct Impl {
     using Base::value;
   };
 
-  class PyTrajectory : public py::wrapper<TrajectoryPublic> {
+  class PyTrajectory : public wrapper<TrajectoryPublic> {
    public:
-    using Base = py::wrapper<TrajectoryPublic>;
+    using Base = wrapper<TrajectoryPublic>;
     using Base::Base;
 
     // Trampoline virtual methods.

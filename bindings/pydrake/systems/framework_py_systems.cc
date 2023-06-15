@@ -59,9 +59,9 @@ class SystemBasePublic : public SystemBase {
 // Provides a templated 'namespace'.
 template <typename T>
 struct Impl {
-  class PySystem : public py::wrapper<System<T>> {
+  class PySystem : public wrapper<System<T>> {
    public:
-    using Base = py::wrapper<System<T>>;
+    using Base = wrapper<System<T>>;
     using Base::Base;
     // Expose protected methods for binding.
     using Base::DeclareInputPort;
@@ -116,9 +116,9 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename LeafSystemBase = LeafSystemPublic>
-  class PyLeafSystemBase : public py::wrapper<LeafSystemBase> {
+  class PyLeafSystemBase : public wrapper<LeafSystemBase> {
    public:
-    using Base = py::wrapper<LeafSystemBase>;
+    using Base = wrapper<LeafSystemBase>;
     using Base::Base;
 
     // Trampoline virtual methods.
@@ -185,9 +185,9 @@ struct Impl {
   // documentation:
   // http://pybind11.readthedocs.io/en/stable/advanced/classes.html#combining-virtual-functions-and-inheritance
   template <typename DiagramBase = DiagramPublic>
-  class PyDiagramBase : public py::wrapper<DiagramBase> {
+  class PyDiagramBase : public wrapper<DiagramBase> {
    public:
-    using Base = py::wrapper<DiagramBase>;
+    using Base = wrapper<DiagramBase>;
     using Base::Base;
 
     SystemBase::GraphvizFragment DoGetGraphvizFragment(
@@ -216,9 +216,9 @@ struct Impl {
     using Base::DoCalcVectorTimeDerivatives;
   };
 
-  class PyVectorSystem : public py::wrapper<VectorSystemPublic> {
+  class PyVectorSystem : public wrapper<VectorSystemPublic> {
    public:
-    using Base = py::wrapper<VectorSystemPublic>;
+    using Base = wrapper<VectorSystemPublic>;
     using Base::Base;
 
     void DoCalcVectorOutput(const Context<T>& context,
@@ -267,7 +267,7 @@ struct Impl {
     }
   };
 
-  class PySystemVisitor : public py::wrapper<SystemVisitor<T>> {
+  class PySystemVisitor : public wrapper<SystemVisitor<T>> {
    public:
     // Trampoline virtual methods.
     void VisitSystem(const System<T>& system) override {

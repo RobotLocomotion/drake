@@ -158,6 +158,76 @@ struct npy_format_descriptor_object {
   static constexpr auto name = py::detail::_("object");
 };
 
+/// Wrapper to permit lifetime of a Python instance which is derived from a C++
+/// pybind type to be managed by C++. Useful when adding virtual classes to
+/// containers, where Python instance being added may be collected by Python
+/// gc / refcounting.
+/// @note Do NOT use the methods in this class.
+template <typename Base>
+class wrapper : public Base {
+ public:
+  using Base::Base;
+
+  virtual ~wrapper() { delete_py_if_in_cpp(); }
+
+  // To be used by the holder casters, by means of `wrapper_interface<>`.
+  // TODO(eric.cousineau): Make this private to ensure contract?
+  void use_cpp_lifetime(py::object&& patient) {
+    if (lives_in_cpp()) {
+      throw std::runtime_error("Instance already lives in C++");
+    }
+    patient_ = std::move(patient);
+    // @note It would be nice to put `resurrect_python3` here, but this is
+    // called by `PyObject_CallFinalizer`, which will end up reversing its
+    // effect anyways.
+  }
+
+  /// To be used by `move_only_holder_caster`.
+  py::object release_cpp_lifetime() {
+    if (!lives_in_cpp()) {
+      throw std::runtime_error("Instance does not live in C++");
+    }
+    resurrect_python3();
+    // Remove existing reference.
+    py::object tmp = std::move(patient_);
+    assert(!patient_);
+    return tmp;
+  }
+
+ protected:
+  // TODO(eric.cousineau): Verify this with an example workflow.
+  void delete_py_if_in_cpp() {
+    if (lives_in_cpp()) {
+      // Release object.
+      release_cpp_lifetime();
+    }
+  }
+
+  // Handle PEP 442, implemented in Python3, where resurrection more than once
+  // is a bit more dicey.
+  inline void resurrect_python3() {
+    // Leak it as a means to stay alive for now.
+    // See: https://bugs.python.org/issue40240
+    if (_PyGC_FINALIZED(patient_.ptr())) {
+      if (leaked_) {
+        throw std::runtime_error("__del__ called twice in Python 3.8+?");
+      }
+      leaked_ = true;
+      patient_.inc_ref();
+    }
+  }
+
+ private:
+  inline bool lives_in_cpp() const {
+    // NOTE: This is *false* if, for whatever reason, the wrapper class is
+    // constructed in C++... Meh. Not gonna worry about that situation.
+    return static_cast<bool>(patient_);
+  }
+
+  py::object patient_;
+  bool leaked_{false};
+};
+
 }  // namespace pydrake
 }  // namespace drake
 
@@ -167,5 +237,5 @@ struct npy_format_descriptor_object {
   template <>                                                     \
   struct npy_format_descriptor<Type>                              \
       : public ::drake::pydrake::npy_format_descriptor_object {}; \
-  }  /* namespace pybind11 */                                     \
-  }  // namespace pydrake
+  } /* namespace detail */                                        \
+  } /* namespace pybind11 */
