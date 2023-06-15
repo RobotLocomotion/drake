@@ -21,19 +21,21 @@ namespace pydrake {
 /// meant to bind `Value<T>` (or specializations thereof).
 /// @prereq `T` must have already been exposed to `pybind11`.
 /// @param scope Parent scope.
+/// @param is_virtual If using `Value<T>` of polymorphic type, this ensures
+///   that AbstractValue.Make(value) detects and uses the base class.
 /// @tparam T Inner parameter of `Value<T>`.
 /// @tparam Class Class to be bound. By default, `Value<T>` is used.
 /// @returns Reference to the registered Python type.
 template <typename T, typename Class = drake::Value<T>>
 py::class_<Class, drake::AbstractValue> AddValueInstantiation(
-    py::module scope) {
+    py::module scope, bool is_virtual = false) {
   static_assert(!py::detail::is_pyobject<T>::value, "See docs for GetPyParam");
-  py::module py_common = py::module::import("pydrake.common.value");
+  py::module m_value = py::module::import("pydrake.common.value");
   py::class_<Class, drake::AbstractValue> py_class(
       scope, TemporaryClassName<Class>().c_str());
   // Register instantiation.
   py::tuple param = GetPyParam<T>();
-  AddTemplateClass(py_common, "Value", py_class, param);
+  AddTemplateClass(m_value, "Value", py_class, param);
   // Only use copy (clone) construction.
   // Ownership with `unique_ptr<T>` has some annoying caveats, and some are
   // simplified by always copying.
@@ -92,6 +94,9 @@ be destroyed when it is replaced, since it is stored using `unique_ptr<>`.
                       py::str(py_T).cast<std::string>()));
             })
         .def("set_value", &Class::set_value);
+  }
+  if (is_virtual) {
+    m_value.attr("_register_virtual_value_type")(py_T);
   }
   return py_class;
 }
