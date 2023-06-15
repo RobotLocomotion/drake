@@ -37,10 +37,6 @@ drake_py_library(
     name = "meta_py",
     testonly = 1,
     srcs = ["meta.py"],
-    visibility = [
-        "//bindings/pydrake:__subpackages__",
-        "//multibody/parsing:__pkg__",
-    ],
     deps = [":module_py"],
 )
 
