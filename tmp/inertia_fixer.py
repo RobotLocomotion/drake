@@ -34,6 +34,9 @@ class SourceLocation:
 class ElementFacts:
     """Facts about an XML element as collecting by expat parsing."""
 
+    prior_data: str
+    "Character data immediately preceding the element text."
+
     name: str
     "The name of the XML element."
 
@@ -77,7 +80,7 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def associate_plant_models(self, models: list, links: list,
-                               inertials: list, plant: MultibodyPlant) -> dict:
+                               plant: MultibodyPlant) -> dict:
         """Return a mapping of body_index to inertial ElementFacts."""
         raise NotImplementedError
 
@@ -104,12 +107,44 @@ class FormatDriver(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
 
+def make_synth_element(parent: ElementFacts, name: str) -> ElementFacts:
+    """XXX """
+    # Make a fake element for expansion later.
+    assert parent.children, parent
+    kid0 = parent.children[0]  # XXX could fail
+    synth_el = ElementFacts(kid0.prior_data, name, {},
+                            kid0.depth, kid0.start)
+    synth_el.end = kid0.start
+    return synth_el
+
+
+def find_inertial_facts_for_link(link: ElementFacts) -> ElementFacts:
+    """XXX """
+    inertial_kids = [x for x in link.children if x.name == "inertial"]
+    if inertial_kids:
+        return inertial_kids[0]
+    return make_synth_element(link, "inertial")
+
+
+def maybe_synthesize_children(parent: ElementFacts, names: list[str]):
+    """XXX """
+    # * missing children -- synthesize ElementFacts to achieve insertion.
+    kid_names = [x.name for x in parent.children]
+    kid0 = parent.children[0]  # XXX could fail?
+    for needed_name in names:
+        if needed_name in kid_names:
+            continue
+        parent.children.insert(
+            0, make_synth_element(parent, needed_name))
+
+
+
 def adjusted_element_end_index(input_text: str, facts: ElementFacts) -> int:
     """Returns the index of the end of all of the text (including the element
     closure), when given an ElementFacts produced by the expat parse.
     """
     if facts.start.index == facts.end.index:
-        # Empty "pseudo" element.
+        # Empty, synthetic, "pseudo" element.
         return facts.end.index
     if input_text[facts.end.index:].startswith(f"</{facts.name}"):
         # Typical case:
@@ -121,6 +156,28 @@ def adjusted_element_end_index(input_text: str, facts: ElementFacts) -> int:
         # `<inertial/>` corner case.
         #             ^     # Raw index points here; good to go
         return facts.end.index
+
+
+def make_format_helpers(facts: ElementFacts) -> (
+        Callable[[int], str], Callable[[], str]):
+    """XXX """
+    spaces = len(facts.prior_data)
+    indentation = spaces // facts.depth
+
+    # Build an element-specific indenter.
+    depth = facts.depth
+    indent = " " * indentation
+
+    def d(more_depth):
+        return indent * (depth + more_depth)
+
+    synth = facts.end.index == facts.start.index
+
+    def coda():
+        return '\n' + d(0) if synth else ""
+
+    return (d, coda)
+
 
 
 class UrdfDriver(FormatDriver):
@@ -137,65 +194,59 @@ class UrdfDriver(FormatDriver):
                 or (facts.attributes.get("name") == "world"))
 
     def associate_plant_models(self, models: list, links: list,
-                               inertials: list, plant: MultibodyPlant) -> dict:
+                               plant: MultibodyPlant) -> dict:
         # This assertion is weakened for files that use 'drake_ignore'.
         assert len(links) >= plant.num_bodies() - 1, (
             links, plant.num_bodies())
         mapping = {}
-        world_body = plant.world_body()
-        world_bodies = plant.GetBodiesWeldedTo(world_body)
-        world_body_names = {x.name() for x in world_bodies}
         serial_number = 0
-        for inertial in inertials:
+        for link in links:
             serial_number += 1
-            link = inertial.parent
-            link_name = link.attributes.get("name")
-            if self._is_element_ignored(link) or link_name in world_bodies:
+            # XXX some files have empty links, not named 'world.' Understand why.
+            if self._is_element_ignored(link) or not link.children:
                 continue
-            k = serial_number
-            assert k < plant.num_bodies()
-            bik = BodyIndex(k)
-            mapping[bik] = inertial
+            link_name = link.attributes.get("name")
+            assert serial_number < plant.num_bodies()
+            bix = BodyIndex(serial_number)
+            mapping[bix] = find_inertial_facts_for_link(link)
             # TODO assert more sanity.
-            assert plant.get_body(bik).name() == link.attributes.get("name"), (
-                plant.get_body(bik).name(), bik, link.attributes.get("name"))
+            assert plant.get_body(bix).name() == link.attributes.get("name"), (
+                plant.get_body(bix).name(), bix, link.attributes.get("name"))
         return mapping
 
     def format_inertia(self, input_text: str, input_lines: list[str],
                        inertial_facts: ElementFacts,
                        mass: float, moments: list, products: list) -> str:
         end = adjusted_element_end_index(input_text, inertial_facts)
-        # Ugly cases to consider:
-        # * <inertial/>  -- should probably just delete that.
+        # * self-closing or no inertial tag: pave it all.
         if end == inertial_facts.end.index:
-            return ""
-        # * missing children -- synthesize ElementFacts to achieve insertion?
-        kid_names = [x.name for x in inertial_facts.children]
-        kid0 = inertial_facts.children[0]
-        # If 'origin' is missing, it will be interpreted as all zeros, which is
-        # what the current version of this tool would write anyway.
-        for needed_name in ["inertia", "mass"]:
-            if needed_name in kid_names:
-                continue
-            # TODO this still is weirdly missing white space.
-            synth_el = ElementFacts(needed_name, {}, kid0.depth, kid0.start)
-            synth_el.end = kid0.start
-            inertial_facts.children.insert(0, synth_el)
+            d, coda = make_format_helpers(inertial_facts)
+            return f"""\
+<inertial>
+{d(1)}<inertia ixx="{moments[0]}" ixy="{products[0]}" ixz="{products[1]}"\
+ iyy="{moments[1]}" iyz="{products[2]}" izz="{moments[2]}"/>
+{d(1)}<mass value="{mass}"/>
+{d(1)}<origin rpy="0 0 0" xyz="0 0 0"/>
+{d(0)}</inertial>{coda()}"""
+
+        maybe_synthesize_children(
+            inertial_facts, ["inertia", "mass", "origin"])
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
         output = ""
         index = inertial_facts.start.index
         for facts in inertial_facts.children:
             output += input_text[index:facts.start.index]
+            d, coda = make_format_helpers(facts)
             match facts.name:
                 case "inertia":
                     output += f"""\
 <inertia ixx="{moments[0]}" ixy="{products[0]}" ixz="{products[1]}"\
- iyy="{moments[1]}" iyz="{products[2]}" izz="{moments[2]}"/>"""
+ iyy="{moments[1]}" iyz="{products[2]}" izz="{moments[2]}"/>{coda()}"""
                 case "mass":
-                    output += f'<mass value="{mass}"/>'
+                    output += f"""<mass value="{mass}"/>{coda()}"""
                 case "origin":
-                    output += '<origin rpy="0 0 0" xyz="0 0 0"/>'
+                    output += f"""<origin rpy="0 0 0" xyz="0 0 0"/>{coda()}"""
             index = adjusted_element_end_index(input_text, facts)
         output += input_text[index:end]
         return output
@@ -208,13 +259,15 @@ class SdformatDriver(FormatDriver):
         return name == "model"
 
     def associate_plant_models(self, models: list, links: list,
-                               inertials: list, plant: MultibodyPlant) -> dict:
+                               plant: MultibodyPlant) -> dict:
         # Because SDFormat has both nested models and inclusions, we will have
         # to rummage around in the plant, finding body indices by using name
         # strings.
         mapping = {}
-        for inertial in inertials:
-            link = inertial.parent
+        for link in links:
+            # XXX some files have empty links, not named 'world.' Understand why.
+            if not link.children:
+                continue
             model = link.parent
             enclosing_models = [model]
             while model.parent_model:
@@ -225,34 +278,46 @@ class SdformatDriver(FormatDriver):
                 [m.attributes["name"] for m in enclosing_models])
             model_instance = plant.GetModelInstanceByName(model_name)
             body = plant.GetBodyByName(link.attributes["name"], model_instance)
-            mapping[body.index()] = inertial
+            bix = body.index()
+            mapping[bix] = find_inertial_facts_for_link(link)
             # TODO assert more sanity.
+            assert plant.get_body(bix).name() == link.attributes.get("name"), (
+                plant.get_body(bix).name(), bix, link.attributes.get("name"))
         return mapping
 
     def format_inertia(self, input_text: str, input_lines: list[str],
                        inertial_facts: ElementFacts,
                        mass: float, moments: list, products: list) -> str:
+        end = adjusted_element_end_index(input_text, inertial_facts)
+        # * self-closing or no inertial tag: pave it all.
+        if end == inertial_facts.end.index:
+            d, coda = make_format_helpers(inertial_facts)
+            return f"""\
+<inertial>
+{d(1)}<inertia>
+{d(2)}<ixx>{moments[0]}</ixx>
+{d(2)}<ixy>{products[0]}</ixy>
+{d(2)}<ixz>{products[1]}</ixz>
+{d(2)}<iyy>{moments[1]}</iyy>
+{d(2)}<iyz>{products[2]}</iyz>
+{d(2)}<izz>{moments[2]}</izz>
+{d(1)}</inertia>
+{d(1)}<mass value="{mass}"/>
+{d(1)}<pose>0 0 0 0 0 0</pose>
+{d(0)}</inertial>{coda()}"""
+
+        maybe_synthesize_children(
+            inertial_facts, ["inertia", "mass", "pose"])
         # Now we get to slice up the inertial element, and only rewrite the
         # parts that we must.
         output = ""
         index = inertial_facts.start.index
         for facts in inertial_facts.children:
             output += input_text[index:facts.start.index]
+            d, coda = make_format_helpers(facts)
             match facts.name:
                 case "inertia":
-                    # Compute indentation based on the first line of
-                    # the element.
-                    line = input_lines[facts.start.line]
-                    spaces = len(line) - len(line.lstrip())
-                    indentation = spaces // facts.depth
-
-                    # Build an element-specific indenter.
-                    depth = facts.depth
-                    indent = " " * indentation
-
-                    def d(more_depth):
-                        return indent * (depth + more_depth)
-
+                    # XXX preserve comments within here???
                     output += f"""\
 <inertia>
 {d(1)}<ixx>{moments[0]}</ixx>
@@ -261,11 +326,11 @@ class SdformatDriver(FormatDriver):
 {d(1)}<iyy>{moments[1]}</iyy>
 {d(1)}<iyz>{products[2]}</iyz>
 {d(1)}<izz>{moments[2]}</izz>
-{d(0)}</inertia>"""
+{d(0)}</inertia>{coda()}"""
                 case "mass":
-                    output += f"<mass>{mass}</mass>"
+                    output += f"<mass>{mass}</mass>{coda()}"
                 case "pose":
-                    output += "<pose>0 0 0 0 0 0</pose>"
+                    output += "<pose>0 0 0 0 0 0</pose>{coda()}"
             index = adjusted_element_end_index(input_text, facts)
         end = adjusted_element_end_index(input_text, inertial_facts)
         output += input_text[index:end]
@@ -288,6 +353,7 @@ class XmlInertiaMapper:
         self._parser = expat.ParserCreate()
         self._parser.StartElementHandler = self._start_element
         self._parser.EndElementHandler = self._end_element
+        self._parser.CharacterDataHandler = self._char_data
 
         # Declare some state to remember during parsing.
         self._depth = 0
@@ -295,9 +361,8 @@ class XmlInertiaMapper:
         self._models = []
         self._model_stack = []
         self._links = []
-        self._ignored_links = 0
-        self._inertials = []
         self._format_driver = None
+        self._last_char_data = ""
 
         # Eventually build a mapping from body_index to inertial_facts.
         self._mapping = {}
@@ -307,8 +372,11 @@ class XmlInertiaMapper:
                               self._parser.CurrentLineNumber)
 
     def _make_element_facts(self, name: str, attributes: dict) -> ElementFacts:
-        return ElementFacts(name, attributes,
+        return ElementFacts(self._last_char_data, name, attributes,
                             self._depth, self._make_location())
+
+    def _char_data(self, data: str):
+        self._last_char_data = data
 
     def _start_element(self, name: str, attributes: dict):
         if not self._format_driver and self._depth == 0:
@@ -333,9 +401,6 @@ class XmlInertiaMapper:
         if name == "link":
             self._links.append(element)
 
-        if name == "inertial":
-            self._inertials.append(element)
-
         self._depth += 1
         self._element_stack.append(element)
 
@@ -355,7 +420,7 @@ class XmlInertiaMapper:
         """Match body indices to inertial elements in the input text."""
         assert self._format_driver is not None
         self._mapping = self._format_driver.associate_plant_models(
-            self._models, self._links, self._inertials, plant)
+            self._models, self._links, plant)
 
     def mapping(self) -> dict:
         """Return a mapping from body indices to inertial element facts."""
