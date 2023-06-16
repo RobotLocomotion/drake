@@ -950,6 +950,24 @@ TEST_F(RenderEngineVtkTest, MeshTest) {
   }
 }
 
+// Confirms that meshes/convex referencing a file with an unsupported extension
+// are ignored. (There's also an untested one-time warning.)
+TEST_F(RenderEngineVtkTest, UnsupportedMeshConvex) {
+  Init(X_WC_, false);
+  const PerceptionProperties material = simple_material();
+  const GeometryId id = GeometryId::get_new_id();
+
+  const Mesh mesh("invalid.fbx");
+  EXPECT_FALSE(renderer_->RegisterVisual(id, mesh, material,
+                                         RigidTransformd::Identity(),
+                                         false /* needs update */));
+
+  const Convex convex("invalid.fbx");
+  EXPECT_FALSE(renderer_->RegisterVisual(id, convex, material,
+                                         RigidTransformd::Identity(),
+                                         false /* needs update */));
+}
+
 // Performs the test to cast textures to uchar channels. It depends on the image
 // with non-uchar channels being converted to uchar channels losslessly. An
 // uint16 image is loaded to prove the existence of the conversion, but this
