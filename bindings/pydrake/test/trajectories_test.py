@@ -107,6 +107,9 @@ class TestTrajectories(unittest.TestCase):
         for expr in curve_expression:
             self.assertTrue(isinstance(expr, Expression))
 
+        curve.ElevateOrder()
+        self.assertEqual(curve.order(), 2)
+
     @numpy_compare.check_all_types
     def test_bspline_trajectory(self, T):
         BsplineBasis = BsplineBasis_[T]

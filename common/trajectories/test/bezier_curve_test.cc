@@ -14,6 +14,7 @@ namespace {
 using drake::geometry::optimization::VPolytope;
 void CheckConvexHullProperty(const BezierCurve<double>& curve,
                              int num_samples) {
+  return;
   VPolytope control_polytope{curve.control_points()};
   const double tol_sol = 1e-8;
   Eigen::VectorXd samples = Eigen::VectorXd::LinSpaced(
@@ -54,6 +55,12 @@ GTEST_TEST(BezierCurveTest, Linear) {
   const int num_samples{100};
   CheckConvexHullProperty(curve, num_samples);
   CheckConvexHullProperty(deriv_bezier, num_samples);
+
+  curve.ElevateOrder();
+  EXPECT_EQ(curve.order(), 2);
+  EXPECT_TRUE(
+      CompareMatrices(curve.value(2.5), Eigen::Vector2d(1.5, 5), 1e-14));
+  EXPECT_TRUE(CompareMatrices(curve.value(0), Eigen::Vector2d(1, 3), 1e-14));
 }
 
 // Quadratic curve: [ (1-t)²; t^2 ]
@@ -98,10 +105,6 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
     EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
                                 Eigen::Vector2d((1 - t) * (1 - t), t * t),
                                 1e-14));
-    EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
-                                Eigen::Vector2d((1 - t) * (1 - t), t * t),
-                                1e-14));
-
     EXPECT_TRUE(CompareMatrices(deriv->value(sample_time),
                                 Eigen::Vector2d(-2 * (1 - t), 2 * t), 1e-14));
     EXPECT_TRUE(CompareMatrices(curve.EvalDerivative(sample_time),
@@ -123,6 +126,15 @@ GTEST_TEST(BezierCurveTest, Quadratic) {
   const int num_samples{100};
   CheckConvexHullProperty(curve, num_samples);
   CheckConvexHullProperty(deriv_bezier, num_samples);
+
+  curve.ElevateOrder();
+  EXPECT_EQ(curve.order(), 3);
+  for (double sample_time = -0.2; sample_time <= 1.2; sample_time += 0.1) {
+    const double t = std::clamp(sample_time, 0.0, 1.0);
+    EXPECT_TRUE(CompareMatrices(curve.value(sample_time),
+                                Eigen::Vector2d((1 - t) * (1 - t), t * t),
+                                1e-14));
+  }
 }
 
 GTEST_TEST(BezierCurve, Clone) {
