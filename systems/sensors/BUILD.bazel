@@ -445,7 +445,11 @@ drake_cc_googletest(
         ":test/rgbd_sensor_async_gl_test.dmd.yaml",
         "//examples/manipulation_station:models",
     ],
-    tags = vtk_test_tags(),
+    tags = vtk_test_tags() + [
+        # Similar to #7520, the GL vendor's libraries are not sufficiently
+        # instrumented for compatibility with TSan.
+        "no_tsan",
+    ],
     deps = [
         ":image_writer",
         ":rgbd_sensor",
