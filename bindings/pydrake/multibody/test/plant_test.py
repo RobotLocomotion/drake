@@ -261,6 +261,19 @@ class TestPlant(unittest.TestCase):
         self.assertIsNotNone(plant)
         self.assertIsNotNone(scene_graph)
 
+    def test_get_bodies_welded_to(self):
+        # Test some tedious return-type logic. The model has a link welded to
+        # the world.
+        plant_f = MultibodyPlant_[float](time_step=0.01)
+        model_instance, = Parser(plant_f).AddModels(
+            url='package://drake/examples/acrobot/Acrobot.urdf')
+
+        # Prior implementations would inadvertently attempt to copy Body
+        # objects, leading to run-time errors.
+        self.assertEqual(plant_f.GetBodiesWeldedTo(plant_f.world_body()),
+                         [plant_f.world_body(),
+                          plant_f.get_body(BodyIndex(1))])
+
     @numpy_compare.check_all_types
     def test_multibody_plant_api_via_parsing(self, T):
         MultibodyPlant = MultibodyPlant_[T]
