@@ -39,6 +39,7 @@ _DM_CONTROL_MUJOCO_FILES = forward_files(
     srcs = ["@dm_control_internal//:" + x for x in dm_control_mujoco_files()],
     dest_prefix = "",
     strip_prefix = "@dm_control_internal//:",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 
