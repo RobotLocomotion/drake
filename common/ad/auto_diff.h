@@ -110,6 +110,7 @@ class AutoDiff {
 /* clang-format off to disable clang-format-includes */
 // These further refine our AutoDiff type and must appear in exactly this order.
 #include "drake/common/ad/internal/standard_operations.h"
+#include "drake/common/ad/internal/eigen_specializations.h"
 
 /* Formats the `value()` part of x to the stream.
 To format the derivatives use `drake::fmt_eigen(x.derivatives())`. */
