@@ -48,7 +48,16 @@ class RenderEngineGlTester {
   }
 
   const internal::OpenGlGeometry GetMesh(const std::string& filename) const {
-    const int index = const_cast<RenderEngineGl&>(engine_).GetMesh(filename);
+    // A dummy registration data; we'll learn if the filename was accepted
+    // by examining the data.
+    RenderEngineGl::RegistrationData data{GeometryId::get_new_id(), {}, {}};
+    const int index =
+        const_cast<RenderEngineGl&>(engine_).GetMesh(filename, &data);
+    // We should have non-negative and accepted or negative and not accepted.
+    if ((index >= 0) != data.accepted) {
+      throw std::runtime_error(
+          "Mesh acceptance state doesn't match the returned geometry index");
+    }
     return engine_.geometries_[index];
   }
 

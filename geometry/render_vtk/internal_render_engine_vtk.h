@@ -225,7 +225,8 @@ class RenderEngineVtk : public render::RenderEngine,
   void InitializePipelines();
 
   // Common interface for loading an obj file -- used for both mesh and convex
-  // shapes.
+  // shapes. If `file_name` is of an unsupported type, no geometry will be
+  // added.
   void ImplementObj(const std::string& file_name, double scale,
                     void* user_data);
 

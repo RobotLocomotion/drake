@@ -277,8 +277,9 @@ class MeshcatShapeReifier : public ShapeReifier {
 
   using ShapeReifier::ImplementGeometry;
 
-  template <typename T>
-  void ImplementMesh(const T& mesh, void* data) {
+  // @tparam MeshType is either Mesh or Convex.
+  template <typename MeshType>
+  void ImplementMesh(const MeshType& mesh, void* data) {
     DRAKE_DEMAND(data != nullptr);
     auto& lumped = *static_cast<internal::LumpedObjectData*>(data);
 
@@ -286,8 +287,7 @@ class MeshcatShapeReifier : public ShapeReifier {
     // meshes unless necessary.  Using the filename is tempting, but that leads
     // to problems when the file contents change on disk.
 
-    const std::filesystem::path filename(mesh.filename());
-    std::string format = filename.extension();
+    std::string format = mesh.extension();
     format.erase(0, 1);  // remove the . from the extension
     std::ifstream input(mesh.filename(), std::ios::binary | std::ios::ate);
     if (!input.is_open()) {
@@ -332,7 +332,8 @@ class MeshcatShapeReifier : public ShapeReifier {
       std::string mtllib = matches.str(1);
 
       // Use filename path as the base directory for textures.
-      const std::filesystem::path basedir = filename.parent_path();
+      std::filesystem::path file_path(mesh.filename());
+      const std::filesystem::path basedir = file_path.parent_path();
 
       // Read .mtl file into geometry.mtl_library.
       std::ifstream mtl_stream(basedir / mtllib, std::ios::ate);
