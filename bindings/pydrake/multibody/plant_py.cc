@@ -799,7 +799,7 @@ void DoScalarDependentDefinitions(py::module m, T) {
             [](const Class& self, const Body<T>& body) {
               auto welded_bodies = self.GetBodiesWeldedTo(body);
               return py_keep_alive_iterable<py::list>(
-                  py::cast(welded_bodies), py::cast(&self));
+                  welded_bodies, py::cast(&self));
             },
             py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
         .def("GetBodiesKinematicallyAffectedBy",
