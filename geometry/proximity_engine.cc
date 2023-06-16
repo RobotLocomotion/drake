@@ -527,15 +527,11 @@ class ProximityEngine<T>::Impl : public ShapeReifier {
       shared_verts = make_shared<const std::vector<Vector3d>>(
           hydroelastic_geometries_.rigid_geometry(data.id).mesh().vertices());
     } else {
-      std::string extension =
-          std::filesystem::path(mesh.filename()).extension();
-      std::transform(extension.begin(), extension.end(), extension.begin(),
-                     [](unsigned char c) { return std::tolower(c); });
-      if (extension != ".obj") {
+      if (mesh.extension() != ".obj") {
         throw std::runtime_error(
             fmt::format("ProximityEngine: expect an Obj file for "
-                        "non-hydroelastics but get {} file ({}) instead.",
-                        extension, mesh.filename()));
+                        "non-hydroelastics but got ({}) instead.",
+                        mesh.filename()));
       }
       // TODO(SeanCurtis-TRI) Add a troubleshooting entry to give more helpful
       //  advice.

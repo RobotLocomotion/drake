@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <map>
+#include <optional>
 #include <set>
 #include <utility>
 #include <vector>
@@ -348,14 +349,19 @@ class ShapeToLcm : public ShapeReifier {
   ShapeToLcm() = default;
   ~ShapeToLcm() override = default;
 
-  lcmt_viewer_geometry_data Convert(const Shape& shape,
-                                    const RigidTransformd& X_PG,
-                                    const Rgba& in_color) {
+  std::optional<lcmt_viewer_geometry_data> Convert(const Shape& shape,
+                                                   const RigidTransformd& X_PG,
+                                                   const Rgba& in_color) {
     X_PG_ = X_PG;
     // NOTE: Reify *may* change X_PG_ based on the shape. For example, the
     // half-space requires an additional offset to shift the box representing
     // the plane *to* the plane.
-    shape.Reify(this);
+    bool accepted = true;
+    shape.Reify(this, &accepted);
+
+    if (!accepted) {
+      return std::nullopt;
+    }
 
     // Saves the location and orientation of the visualization geometry in the
     // `lcmt_viewer_geometry_data` object. The location and orientation are
@@ -393,7 +399,10 @@ class ShapeToLcm : public ShapeReifier {
   }
 
   // For visualization, Convex is the same as Mesh.
-  void ImplementGeometry(const Convex& mesh, void*) override {
+  void ImplementGeometry(const Convex& mesh, void* data) override {
+    if (IsUnsupportedMesh(mesh.extension(), data)) {
+      return;
+    }
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
@@ -436,7 +445,10 @@ class ShapeToLcm : public ShapeReifier {
     X_PG_ = X_PG_ * box_xform;
   }
 
-  void ImplementGeometry(const Mesh& mesh, void*) override {
+  void ImplementGeometry(const Mesh& mesh, void* data) override {
+    if (IsUnsupportedMesh(mesh.extension(), data)) {
+      return;
+    }
     geometry_data_.type = geometry_data_.MESH;
     geometry_data_.num_float_data = 3;
     geometry_data_.float_data.push_back(static_cast<float>(mesh.scale()));
@@ -452,6 +464,21 @@ class ShapeToLcm : public ShapeReifier {
   }
 
  private:
+  // Tests the extension to see if the mesh type is unsupported; if so, it
+  // sets the bool* (referenced as data) to false and dispatches a one-time
+  // warning.
+  bool IsUnsupportedMesh(std::string_view extension, void* data) const {
+    if (extension != ".obj") {
+      static const logging::Warn one_time(
+          "DrakeVisualizer only supports Mesh/Convex specifications which use "
+          ".obj files. Mesh specifications using other mesh types (e.g., "
+          ".gltf, .stl, .dae, etc.) will be ignored.");
+      *static_cast<bool*>(data) = false;
+      return true;
+    }
+    return false;
+  }
+
   lcmt_viewer_geometry_data geometry_data_{};
   // The transform from the geometry frame to its parent frame.
   RigidTransformd X_PG_;
@@ -636,7 +663,9 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
   message.link.resize(frame_count);
 
   // Helper utility to create lcm geometry description from geometry id.
-  auto make_geometry = [&params, &inspector](GeometryId g_id) {
+  auto make_geometry =
+      [&params, &inspector](
+          GeometryId g_id) -> std::optional<lcmt_viewer_geometry_data> {
     const GeometryProperties* props =
         inspector.GetProperties(g_id, params.role);
     // We assume that the g_id was obtained by asking for geometries with the
@@ -671,15 +700,21 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
   if (anchored_count) {
     message.link[0].name = "world";
     message.link[0].robot_num = 0;
+    // num_geom reflects the *upper bound* -- if geometries get skipped, we'll
+    // decrement it.
     message.link[0].num_geom = anchored_count;
-    message.link[0].geom.resize(anchored_count);
-    int geom_index = -1;  // We'll pre-increment before using.
+    message.link[0].geom.reserve(anchored_count);
     for (const GeometryId& g_id :
          inspector.GetGeometries(inspector.world_frame_id(), params.role)) {
       // Deformable geometries are handled via
       // SendDeformableGeometriesMessage().
       if (!inspector.IsDeformableGeometry(g_id)) {
-        message.link[0].geom[++geom_index] = make_geometry(g_id);
+        std::optional<lcmt_viewer_geometry_data> geo = make_geometry(g_id);
+        if (geo.has_value()) {
+          message.link[0].geom.push_back(*geo);
+        } else {
+          --message.link[0].num_geom;
+        }
       }
     }
     link_index = 1;
@@ -689,16 +724,21 @@ void DrakeVisualizer<T>::SendLoadNonDeformableMessage(
   for (const auto& [frame_id, geometry_count, name] : dynamic_frames) {
     message.link[link_index].name = name;
     message.link[link_index].robot_num = inspector.GetFrameGroup(frame_id);
+    // num_geom reflects the *upper bound* -- if geometries get skipped, we'll
+    // decrement it.
     message.link[link_index].num_geom = geometry_count;
-    message.link[link_index].geom.resize(geometry_count);
-    int geom_index = -1;  // We'll pre-increment before using.
+    message.link[link_index].geom.reserve(geometry_count);
     for (const GeometryId& g_id :
          inspector.GetGeometries(frame_id, params.role)) {
-      message.link[link_index].geom[++geom_index] = make_geometry(g_id);
+      std::optional<lcmt_viewer_geometry_data> geo = make_geometry(g_id);
+      if (geo.has_value()) {
+        message.link[link_index].geom.push_back(*geo);
+      } else {
+        --message.link[link_index].num_geom;
+      }
     }
     ++link_index;
   }
-
 
   std::string channel = MakeLcmChannelNameForRole("DRAKE_VIEWER_LOAD_ROBOT",
                                                   params);

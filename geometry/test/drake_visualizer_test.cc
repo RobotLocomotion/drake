@@ -628,6 +628,64 @@ TYPED_TEST(DrakeVisualizerTest, AnchoredAndDynamicGeometry) {
   ASSERT_EQ(results.deformable_message.num_geom, 0);
 }
 
+/* DrakeVisualizer should simply ignore Mesh and Convex with non-obj extensions.
+ (It also dispatches a warning to the log, but that's harder to test). So,
+ we'll simply confirm that a scene with a sphere, Mesh, and Convex only includes
+ the sphere in the message when the Mesh and Convex have "bad" extensions.
+ We'll make the Mesh anchored and the Convex dynamic to make sure both paths
+ get covered. */
+TYPED_TEST(DrakeVisualizerTest, IgnoreUnsupportedMeshes) {
+  using T = TypeParam;
+  this->ConfigureDiagram(
+      {.publish_period = this->kPublishPeriod, .role = Role::kIllustration,
+       .use_role_channel_suffix = true});
+  const FrameId f_id = this->scene_graph_->RegisterFrame(
+      this->pose_source_id_, GeometryFrame("frame", 0));
+  const GeometryId g0_id = this->scene_graph_->RegisterGeometry(
+      this->pose_source_id_, f_id,
+      make_unique<GeometryInstance>(RigidTransformd{},
+                                    make_unique<Mesh>("not/an/obj.gltf", 1),
+                                    "a_gltf"));
+  this->scene_graph_->AssignRole(this->pose_source_id_, g0_id,
+                                 IllustrationProperties());
+  const GeometryId g1_id = this->scene_graph_->RegisterGeometry(
+      this->pose_source_id_, f_id,
+      make_unique<GeometryInstance>(RigidTransformd{Vector3d{10, 0, 0}},
+                                    make_unique<Sphere>(1), "sphere1"));
+  this->scene_graph_->AssignRole(this->pose_source_id_, g1_id,
+                                 IllustrationProperties());
+
+  const GeometryId g2_id = this->scene_graph_->RegisterAnchoredGeometry(
+      this->pose_source_id_,
+      make_unique<GeometryInstance>(RigidTransformd{Vector3d{5, 0, 0}},
+                                    make_unique<Convex>("not/an/obj2.stl", 1),
+                                    "an_stl"));
+  this->scene_graph_->AssignRole(this->pose_source_id_, g2_id,
+                                 IllustrationProperties());
+
+  this->pose_source_->SetPoses({{f_id, RigidTransform<T>{}}});
+
+  Simulator<T> simulator(*(this->diagram_));
+  simulator.AdvanceTo(0.0);
+  MessageResults results = this->ProcessMessages(Role::kIllustration);
+
+  // Confirm load message; a single geometry, but two links. The world link is
+  // included because SceneGraph reported a non-zero number of geometries.
+  // However, when it gets to the geometry, it was skipped.
+  ASSERT_EQ(results.num_load, 1);
+  ASSERT_EQ(results.load_message.num_links, 2);
+  // We exploit the fact that we always know the world is first.
+  ASSERT_EQ(results.load_message.link[0].name, "world");
+  EXPECT_EQ(results.load_message.link[0].num_geom, 0);
+
+  // Now test for the dynamic frame (with its single geometry).
+  ASSERT_EQ(results.load_message.link[1].name,
+            string(this->kPoseSourceName) + "::frame");
+  EXPECT_EQ(results.load_message.link[1].num_geom, 1);
+
+  // Skipping the draw and deformable messages. Not relevant for this test.
+}
+
 /* Confirms that the role parameter leads to the correct geometry being
  selected, and that all roles can be directed to both suffixed channels and the
  legacy/default channel.  */
