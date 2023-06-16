@@ -30,10 +30,12 @@ tag_base = 'pip-drake'
 targets = (
     # NOTE: adding or removing a python version?  Please update the artifact
     # tallies in doc/_pages/release_playbook.md (search `Attach binaries`).
-    Target(
-        build_platform=Platform('ubuntu', '20.04', 'focal'),
-        test_platform=None,
-        python_version_tuple=(3, 8)),
+
+    # HACK: bypas 38 in CI to see if 39 produces the same error
+    # Target(
+    #     build_platform=Platform('ubuntu', '20.04', 'focal'),
+    #     test_platform=None,
+    #     python_version_tuple=(3, 8)),
     Target(
         build_platform=Platform('ubuntu', '20.04', 'focal'),
         test_platform=None,
