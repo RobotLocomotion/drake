@@ -129,12 +129,12 @@ class UrdfDriver(FormatDriver):
     def is_model_element(self, name: str) -> bool:
         return name == "robot"
 
-    def _is_element_ignored(self, name: str, attributes: dict) -> bool:
+    def _is_element_ignored(self, facts: ElementFacts) -> bool:
         # TODO(rpoyner_tri): The 'drake_ignore' attribute is regrettable legacy
         # cruft that should be removed when the associated URDF parser cruft is
         # removed.
-        return ((attributes.get("drake_ignore") == "true")
-                or (attributes.get("name") == "world"))
+        return ((facts.attributes.get("drake_ignore") == "true")
+                or (facts.attributes.get("name") == "world"))
 
     def associate_plant_models(self, models: list, links: list,
                                inertials: list, plant: MultibodyPlant) -> dict:
@@ -142,11 +142,15 @@ class UrdfDriver(FormatDriver):
         assert len(links) >= plant.num_bodies() - 1, (
             links, plant.num_bodies())
         mapping = {}
+        world_body = plant.world_body()
+        world_bodies = plant.GetBodiesWeldedTo(world_body)
+        world_body_names = {x.name() for x in world_bodies}
         serial_number = 0
         for inertial in inertials:
             serial_number += 1
             link = inertial.parent
-            if self._is_element_ignored(link.name, link.attributes):
+            link_name = link.attributes.get("name")
+            if self._is_element_ignored(link) or link_name in world_bodies:
                 continue
             k = serial_number
             assert k < plant.num_bodies()
@@ -154,7 +158,7 @@ class UrdfDriver(FormatDriver):
             mapping[bik] = inertial
             # TODO assert more sanity.
             assert plant.get_body(bik).name() == link.attributes.get("name"), (
-                plant.get_body(bik).name(), link.attributes.get("name"))
+                plant.get_body(bik).name(), bik, link.attributes.get("name"))
         return mapping
 
     def format_inertia(self, input_text: str, input_lines: list[str],
