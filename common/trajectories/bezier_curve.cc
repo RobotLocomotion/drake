@@ -7,6 +7,8 @@
 namespace drake {
 namespace trajectories {
 
+using math::BinomialCoefficient;
+
 template <typename T>
 BezierCurve<T>::BezierCurve(double start_time, double end_time,
                             const Eigen::Ref<const MatrixX<T>>& control_points)
@@ -22,7 +24,7 @@ T BezierCurve<T>::BernsteinBasis(int i, const T& time,
                                  std::optional<int> order) const {
   using std::pow;
   int n = order.value_or(order_);
-  int coeff = math::BinomialCoefficient(n, i);
+  int coeff = BinomialCoefficient(n, i);
   T s = (time - start_time_) / (end_time_ - start_time_);
   return coeff * pow(s, i) * pow(1 - s, n - i);
 }
@@ -67,6 +69,24 @@ VectorX<symbolic::Expression> BezierCurve<T>::GetExpression(
     }
     return ret;
   }
+}
+
+template <typename T>
+void BezierCurve<T>::ElevateOrder() {
+  // https://pages.mtu.edu/~shene/COURSES/cs3621/NOTES/spline/Bezier/bezier-elev.html
+  const int n = order_;
+  MatrixX<T> Q(control_points_.rows(), n + 2);
+
+  Q.col(0) = control_points_.col(0);
+  Q.col(n + 1) = control_points_.col(n);
+
+  for (int i = 1; i <= n; ++i) {
+    Q.col(i) = control_points_.col(i - 1) * static_cast<double>(i) / (n + 1) +
+               control_points_.col(i) * (1 - static_cast<double>(i) / (n + 1));
+  }
+
+  control_points_ = Q;
+  order_++;
 }
 
 template <typename T>
