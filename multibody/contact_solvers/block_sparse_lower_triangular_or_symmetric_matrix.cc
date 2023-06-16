@@ -56,17 +56,42 @@ void BlockSparseLowerTriangularOrSymmetricMatrix<MatrixType,
 template <typename MatrixType, bool is_symmetric>
 MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
     MatrixType, is_symmetric>::MakeDenseMatrix() const {
-  MatrixX<double> result = MatrixX<double>::Zero(rows(), cols());
-  for (int j = 0; j < block_cols_; ++j) {
+  return MakeDenseBottomRightCorner(block_cols());
+}
+
+template <typename MatrixType, bool is_symmetric>
+MatrixX<double> BlockSparseLowerTriangularOrSymmetricMatrix<
+    MatrixType, is_symmetric>::MakeDenseBottomRightCorner(int num_blocks)
+    const {
+  DRAKE_DEMAND(0 <= num_blocks && num_blocks <= block_cols());
+  if (num_blocks == 0) {
+    return MatrixX<double>::Zero(0, 0);
+  }
+  const int block_col_start = block_cols() - num_blocks;
+  /* The row/column in `this` matrix that corresponds to the 0,0-th entry in the
+   dense result. */
+  const int col_start = starting_cols_[block_col_start];
+  const int row_start = col_start;
+  MatrixX<double> result =
+      MatrixX<double>::Zero(rows() - row_start, cols() - col_start);
+  for (int j = block_cols() - num_blocks; j < block_cols_; ++j) {
     for (int flat = 0; flat < ssize(block_row_indices(j)); ++flat) {
       const int i = block_row_indices(j)[flat];
-      const int rows = sparsity_pattern_.block_sizes()[i];
-      const int cols = sparsity_pattern_.block_sizes()[j];
-      const int starting_row = starting_cols_[i];
-      const int starting_col = starting_cols_[j];
-      result.block(starting_row, starting_col, rows, cols) = blocks_[j][flat];
+      const int num_rows = sparsity_pattern_.block_sizes()[i];
+      const int num_cols = sparsity_pattern_.block_sizes()[j];
+      /* The starting row and column indices of the block being copied in `this`
+       matrix (the source). */
+      const int src_row = starting_cols_[i];
+      const int src_col = starting_cols_[j];
+      /* The starting row and column indices of the block being copied in the
+       resulting dense matrix (the destination). */
+      const int dest_row = src_row - row_start;
+      const int dest_col = src_col - col_start;
+      DRAKE_DEMAND(dest_row >= 0);
+      DRAKE_DEMAND(dest_col >= 0);
+      result.block(dest_row, dest_col, num_rows, num_cols) = blocks_[j][flat];
       if (i != j && is_symmetric) {
-        result.block(starting_col, starting_row, cols, rows) =
+        result.block(dest_col, dest_row, num_cols, num_rows) =
             blocks_[j][flat].transpose();
       }
     }
