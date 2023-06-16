@@ -62,24 +62,17 @@ def _path_depth(path):
     return len(pathlib.Path(path).parts[offset:])
 
 
-def _docker(*args, pipe=False):
+def _docker(*args, stdout=None):
     """
     Runs a docker command.
-
-    If `pipe` is False, blocks until completion and returns a
-    CompletedProcess instance; raises an exception on failure.
-
-    If `pipe` is True, returns the process instance with its stdout captured.
+    The value of `stdout` is passed through to the subprocess module.
+    Blocks until completion and returns a CompletedProcess instance.
     """
     command = ['docker'] + list(args)
     environment = os.environ.copy()
     environment['DOCKER_BUILDKIT'] = '1'
-    if pipe:
-        return subprocess.Popen(command, stdout=subprocess.PIPE,
-                                cwd=resource_root, env=environment)
-    else:
-        return subprocess.run(command, check=True,
-                              cwd=resource_root, env=environment)
+    return subprocess.run(command, check=True, stdout=stdout,
+                          cwd=resource_root, env=environment)
 
 
 @atexit.register
@@ -249,21 +242,19 @@ def _build_image(target, identifier, options):
     # Extract the wheel (if requested).
     if options.extract:
         print('[-] Extracting wheel(s) from', tag)
-
-        wheelhouse_parts = _path_depth(wheelhouse)
-        wheel_glob = os.path.join(wheelhouse, '*.whl')
-
-        command = f'tar -cf - {wheel_glob}'
-        extractor = _docker(
-            'run', '--rm', tag, 'bash', '-c', command, pipe=True)
-        subprocess.check_call(
-            ['tar', f'--strip-components={wheelhouse_parts}', '-xvf', '-'],
-            stdin=extractor.stdout, cwd=options.output_dir)
-
-        extractor_result = extractor.wait()
-        if extractor_result:
-            raise subprocess.CalledProcessError(extractor_result,
-                                                extractor.args, None, None)
+        container_name = f'{tag}.extract'.replace(':', '.')
+        completed_process = _docker('run', f'--name={container_name}', tag,
+                                    'bash', '-c', f'ls {wheelhouse}/*.whl',
+                                    stdout=subprocess.PIPE)
+        try:
+            wheel_paths = completed_process.stdout.decode('utf-8').splitlines()
+            assert len(wheel_paths) > 0
+            for container_path in wheel_paths:
+                wheel_basename = os.path.basename(container_path)
+                _docker('cp', f'{container_name}:{container_path}',
+                        os.path.join(options.output_dir, wheel_basename))
+        finally:
+            _docker('rm', container_name)
 
 
 def _test_wheel(target, identifier, options):
