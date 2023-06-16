@@ -269,7 +269,8 @@ struct Impl {
               cls_doc.control_points.doc)
           .def("GetExpression", &Class::GetExpression,
               py::arg("time") = symbolic::Variable("t"),
-              cls_doc.GetExpression.doc);
+              cls_doc.GetExpression.doc)
+          .def("ElevateOrder", &Class::ElevateOrder, cls_doc.ElevateOrder.doc);
       DefCopyAndDeepCopy(&cls);
     }
 

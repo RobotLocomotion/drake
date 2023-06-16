@@ -71,6 +71,11 @@ class BezierCurve final : public trajectories::Trajectory<T> {
   VectorX<symbolic::Expression> GetExpression(
       symbolic::Variable time = symbolic::Variable("t")) const;
 
+  /** Increases the order of the curve by 1. A Bézier curve of order n can be
+   converted into a Bézier curve of order n + 1 with the same shape. The
+   control points of `this` are modified to obtain the equivalent curve. */
+  void ElevateOrder();
+
   Eigen::Index rows() const override { return control_points_.rows(); }
 
   Eigen::Index cols() const override { return 1; }
