@@ -798,8 +798,14 @@ void DoScalarDependentDefinitions(py::module m, T) {
             "GetBodiesWeldedTo",
             [](const Class& self, const Body<T>& body) {
               auto welded_bodies = self.GetBodiesWeldedTo(body);
-              return py_keep_alive_iterable<py::list>(
-                  py::cast(welded_bodies), py::cast(&self));
+              // TODO(rpoyner-tri): there may be a more concise way to write
+              // this, but this formulation avoids mistakenly invoking copy on
+              // Body<T> objects.
+              py::list list;
+              for (const Body<T>* b : welded_bodies) {
+                list.append(py_keep_alive(py::cast(b), py::cast(&self)));
+              }
+              return list;
             },
             py::arg("body"), cls_doc.GetBodiesWeldedTo.doc)
         .def("GetBodiesKinematicallyAffectedBy",
