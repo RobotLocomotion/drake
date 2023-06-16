@@ -8,6 +8,7 @@
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/geometry/geometry_py.h"
 #include "drake/bindings/pydrake/geometry/optimization_pybind.h"
+#include "drake/common/yaml/yaml_io.h"
 #include "drake/geometry/optimization/cartesian_product.h"
 #include "drake/geometry/optimization/graph_of_convex_sets.h"
 #include "drake/geometry/optimization/hpolyhedron.h"
@@ -402,6 +403,27 @@ void DefineGeometryOptimization(py::module m) {
           &IrisInConfigurationSpace),
       py::arg("plant"), py::arg("context"), py::arg("options") = IrisOptions(),
       doc.IrisInConfigurationSpace.doc);
+
+  // TODO(#19597) Deprecate and remove these functions once Python
+  // can natively handle the file I/O.
+  m.def(
+      "SaveIrisRegionsYamlFile",
+      [](const std::filesystem::path& filename, const IrisRegions& regions,
+          const std::optional<std::string>& child_name) {
+        yaml::SaveYamlFile(filename, regions, child_name);
+      },
+      py::arg("filename"), py::arg("regions"),
+      py::arg("child_name") = std::nullopt,
+      "Calls SaveYamlFile() to serialize an IrisRegions object.");
+
+  m.def(
+      "LoadIrisRegionsYamlFile",
+      [](const std::filesystem::path& filename,
+          const std::optional<std::string>& child_name) {
+        return yaml::LoadYamlFile<IrisRegions>(filename, child_name);
+      },
+      py::arg("filename"), py::arg("child_name") = std::nullopt,
+      "Calls LoadYamlFile() to deserialize an IrisRegions object.");
 
   // GraphOfConvexSetsOptions
   {
