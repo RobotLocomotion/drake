@@ -1,0 +1,82 @@
+
+namespace internal {
+
+/* ... See Eigen/src/Core/DenseStorage.h. */
+class DenseStorage {
+ public:
+  DenseStorage() = default;
+  explicit DenseStorage(Eigen::internal::constructor_without_unaligned_array_assert) {}
+  DenseStorage(Eigen::Index size, Eigen::Index rows, Eigen::Index cols) {
+    resize(size, rows, cols);
+  }
+
+  DenseStorage(const DenseStorage& other);
+  DenseStorage& operator=(const DenseStorage& other);
+  DenseStorage(DenseStorage&& other) noexcept;
+  DenseStorage& operator=(DenseStorage&& other);
+
+  ~DenseStorage() = default;
+
+  Eigen::Index rows() const { return rows_; }
+  Eigen::Index cols() const { return cols_; }
+  const AutoDiffScalar* data() const { return data_.data(); }
+  AutoDiffScalar* data() { return data_.data(); }
+
+  void conservativeResize(Eigen::Index size, Eigen::Index rows, Eigen::Index cols) {
+    DRAKE_ASSERT(size == rows * cols);
+    data_.resize(size);
+    rows_ = rows;
+    cols_ = cols;
+  }
+  void resize(Eigen::Index size, Eigen::Index rows, Eigen::Index cols) {
+    conservativeResize(size, rows, cols);
+  }
+  void swap(DenseStorage& other);
+
+ private:
+  std::vector<AutoDiffScalar> data_;
+  Eigen::Index rows_{0};
+  Eigen::Index cols_{0};
+};
+}  // namespace internal
+
+namespace Eigen {
+
+/** A specialization of DenseStorage for use by Drake's AutoDiffScalar. 
+This is for fully-dynamic matrices. */
+template <>
+class DenseStorage<
+  /* T = */ drake::autodiff::AutoDiffScalar,
+  /* Size = */ Dynamic,
+  /* _Rows = */ Dynamic,
+  /* _Cols = */ Dynamic,
+  /* _Options = */ 0>
+  : public drake::autodiff::internal::DenseStorage {};
+
+}  // namespace Eigen
+#endif
+
+
+
+/// Overloads copysign from <cmath>.
+template <typename DerType, typename T>
+Eigen::AutoDiffScalar<DerType> copysign(const Eigen::AutoDiffScalar<DerType>& x,
+                                        const T& y) {
+  using std::isnan;
+  if (isnan(x)) return (y >= 0) ? NAN : -NAN;
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+    return -x;
+  else
+    return x;
+}
+
+/// Overloads copysign from <cmath>.
+template <typename DerType>
+double copysign(double x, const Eigen::AutoDiffScalar<DerType>& y) {
+  using std::isnan;
+  if (isnan(x)) return (y >= 0) ? NAN : -NAN;
+  if ((x < 0 && y >= 0) || (x >= 0 && y < 0))
+    return -x;
+  else
+    return x;
+}

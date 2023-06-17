@@ -183,7 +183,7 @@ void UndefineOutputGradWhereInputGradNonzero(const AutoDiff& input,
 
   // In case input and output are the same object, we need to call the
   // non-const member function first.
-  auto& output_grad = output->partials().get_raw_storage_mutable();
+  auto output_grad = output->partials().MakeMutableXpr();
   const auto& input_grad = input.partials().make_const_xpr();
 
   // Update the `output` per our API contract.
