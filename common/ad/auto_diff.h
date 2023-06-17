@@ -36,15 +36,11 @@ class AutoDiff {
   /** Constructs a value with a single partial derivative of 1.0 at the given
   `offset` in a vector of `size` otherwise-zero derivatives. */
   AutoDiff(double value, Eigen::Index size, Eigen::Index offset)
-      : value_{value},
-        partials_{size, offset} {}
+      : value_{value}, partials_{size, offset} {}
 
   /** Constructs a value with the given derivatives. */
-  AutoDiff(
-      double value,
-      const Eigen::Ref<const Eigen::VectorXd>& derivatives)
-      : value_{value},
-        partials_{derivatives} {}
+  AutoDiff(double value, const Eigen::Ref<const Eigen::VectorXd>& derivatives)
+      : value_{value}, partials_{derivatives} {}
 
   /** Assigns a value and clears the derivatives. */
   AutoDiff& operator=(double value) {
@@ -82,9 +78,7 @@ class AutoDiff {
   like a mutable Eigen column-vector expression (e.g., Eigen::Block<VectorXd>)
   that also allows for assignment and resizing, but we reserve the right to
   change the return type for efficiency down the road. */
-  Eigen::VectorXd& derivatives() {
-    return partials_.get_raw_storage_mutable();
-  }
+  Eigen::VectorXd& derivatives() { return partials_.get_raw_storage_mutable(); }
 
   /// @name Internal use only
   //@{

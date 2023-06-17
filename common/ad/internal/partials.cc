@@ -14,13 +14,11 @@ namespace {
 int IndexToInt(Eigen::Index index) {
   if (index < 0) {
     throw std::out_of_range(fmt::format(
-        "AutoDiff derivatives size or offset {} is negative",
-        index));
+        "AutoDiff derivatives size or offset {} is negative", index));
   }
   if (index > INT32_MAX) {
     throw std::out_of_range(fmt::format(
-        "AutoDiff derivatives size or offset {} is too large",
-        index));
+        "AutoDiff derivatives size or offset {} is too large", index));
   }
   return static_cast<int>(index);
 }
@@ -31,8 +29,7 @@ Partials::Partials(Eigen::Index size, Eigen::Index offset, double coeff)
     : derivatives_{Eigen::VectorXd::Zero(IndexToInt(size))} {
   if (IndexToInt(offset) >= size) {
     throw std::out_of_range(fmt::format(
-        "AutoDiff offset {} must be strictly less than size {}",
-        offset, size));
+        "AutoDiff offset {} must be strictly less than size {}", offset, size));
   }
   derivatives_[offset] = coeff;
 }

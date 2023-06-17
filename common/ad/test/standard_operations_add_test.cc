@@ -16,8 +16,12 @@ namespace {
 
 // We need to wrap the operator under test, to give it a name.
 // Eigen doesn't provide unary operator+, so we'll no-op instead.
-AutoDiffDut unary_add(const AutoDiffDut& x) { return +x; }
-AutoDiff3 unary_add(const AutoDiff3& x) { return x; }
+AutoDiffDut unary_add(const AutoDiffDut& x) {
+  return +x;
+}
+AutoDiff3 unary_add(const AutoDiff3& x) {
+  return x;
+}
 
 }  // namespace
 
