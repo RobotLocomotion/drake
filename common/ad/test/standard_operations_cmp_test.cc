@@ -7,15 +7,15 @@ namespace drake {
 namespace test {
 namespace {
 
-#define DRAKE_CHECK_CMP(cmp) \
+#define DRAKE_CHECK_CMP(cmp)                             \
   EXPECT_EQ(0 cmp 1, AutoDiffDut{0} cmp AutoDiffDut{1}); \
   EXPECT_EQ(1 cmp 0, AutoDiffDut{1} cmp AutoDiffDut{0}); \
   EXPECT_EQ(1 cmp 1, AutoDiffDut{1} cmp AutoDiffDut{1}); \
   EXPECT_EQ(0 cmp 1, AutoDiffDut{0} cmp 1); /* NOLINT */ \
   EXPECT_EQ(1 cmp 0, AutoDiffDut{1} cmp 0); /* NOLINT */ \
   EXPECT_EQ(1 cmp 1, AutoDiffDut{1} cmp 1); /* NOLINT */ \
-  EXPECT_EQ(0 cmp 1, 0 cmp AutoDiffDut{1}); \
-  EXPECT_EQ(1 cmp 0, 1 cmp AutoDiffDut{0}); \
+  EXPECT_EQ(0 cmp 1, 0 cmp AutoDiffDut{1});              \
+  EXPECT_EQ(1 cmp 0, 1 cmp AutoDiffDut{0});              \
   EXPECT_EQ(1 cmp 1, 1 cmp AutoDiffDut{1})
 
 TEST_F(StandardOperationsTest, CmpLt) {

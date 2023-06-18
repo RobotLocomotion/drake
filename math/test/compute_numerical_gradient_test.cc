@@ -78,8 +78,8 @@ GTEST_TEST(ComputeNumericalGradientTest, TestToyFunction) {
     auto J = ComputeNumericalGradient(
         ToyFunctionDouble, x,
         NumericalGradientOption{NumericalGradientMethod::kForward});
-    auto x_autodiff = math::InitializeAutoDiff<3>(x);
-    Vector2<AutoDiffd<3>> y_autodiff;
+    auto x_autodiff = math::InitializeAutoDiff(x);
+    Vector2<AutoDiffXd> y_autodiff;
     ToyFunction(x_autodiff, &y_autodiff);
     const double tol = 1E-7;
     EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff), tol));
@@ -132,20 +132,19 @@ GTEST_TEST(ComputeNumericalGradientTest, TestParaboloid) {
         ParaboloidDouble, x,
         NumericalGradientOption{NumericalGradientMethod::kForward});
 
-    typedef AutoDiffd<2> AD2d;
-    typedef Vector2<AD2d> Vector2AD2d;
-    typedef Vector1<AD2d> Vector1AD2d;
+    typedef Vector2<AutoDiffXd> Vector2AD2d;
+    typedef Vector1<AutoDiffXd> Vector1AD2d;
 
-    Vector2AD2d x_autodiff = math::InitializeAutoDiff<2>(x);
+    Vector2AD2d x_autodiff = math::InitializeAutoDiff(x);
     Vector1AD2d y_autodiff;
     Paraboloid(x_autodiff, &y_autodiff);
     const double tol = 2.0e-7;
-    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff), tol));
+    EXPECT_TRUE(CompareMatrices(J, ExtractGradient(y_autodiff, 2), tol));
 
     // Compute the Hessian using the autodiff version of
     // ComputeNumericalGradient().
     std::function<void(const Vector2AD2d&, Vector1AD2d*)> ParaboloidAD3d =
-        Paraboloid<AD2d>;
+        Paraboloid<AutoDiffXd>;
 
     // With forward differencing.
     auto JAD3d = ComputeNumericalGradient(
@@ -213,8 +212,8 @@ class ToyEvaluator : public solvers::EvaluatorBase {
 
   void DoEval(const Eigen::Ref<const AutoDiffVecXd>& x,
               AutoDiffVecXd* y) const override {
-    AutoDiffVecd<Eigen::Dynamic, 2> y_autodiff;
-    ToyFunction(AutoDiffVecd<Eigen::Dynamic, 3>(x), &y_autodiff);
+    Vector2<AutoDiffXd> y_autodiff;
+    ToyFunction(Vector3<AutoDiffXd>(x), &y_autodiff);
     *y = y_autodiff;
   }
 

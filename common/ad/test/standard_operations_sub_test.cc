@@ -15,8 +15,12 @@ TEST_F(StandardOperationsTest, Subtraction) {
 namespace {
 
 // We need to wrap the operator under test, to give it a name.
-AutoDiffDut unary_negate(const AutoDiffDut& x) { return -x; }
-AutoDiff3 unary_negate(const AutoDiff3& x) { return -x; }
+AutoDiffDut unary_negate(const AutoDiffDut& x) {
+  return -x;
+}
+AutoDiff3 unary_negate(const AutoDiff3& x) {
+  return -x;
+}
 
 }  // namespace
 

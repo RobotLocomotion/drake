@@ -21,9 +21,7 @@ constexpr double kTol = 1e-14;
 struct PowCase {
   DRAKE_DEFAULT_COPY_AND_MOVE_AND_ASSIGN(PowCase);
 
-  PowCase(double base_in, double exp_in)
-      : base(base_in),
-        exp(exp_in) {
+  PowCase(double base_in, double exp_in) : base(base_in), exp(exp_in) {
     expected_value = std::pow(base, exp);
 
     // Whether any of {base, exp, result} is a NaN.
@@ -32,9 +30,7 @@ struct PowCase {
     // In some cases, any non-zero element in the grad(base) leads to an
     // ill-defined (i.e., NaN) corresponding element in the grad(result).
     ill_defined_base_grad =
-        (base == 0.0) ||
-        (!std::isfinite(base)) ||
-        (!std::isfinite(exp));
+        (base == 0.0) || (!std::isfinite(base)) || (!std::isfinite(exp));
 
     // In some cases, the grad(base) is unconditionally zeroed out because
     // the result is a constant, and stays the same constant for infinitesimally
@@ -44,9 +40,7 @@ struct PowCase {
     // In some cases, any non-zero element in the grad(exp) leads to an
     // ill-defined (i.e., NaN) corresponding element in the grad(result).
     ill_defined_exp_grad =
-        (base <= 0.0) ||
-        (!std::isfinite(base)) ||
-        (!std::isfinite(exp));
+        (base <= 0.0) || (!std::isfinite(base)) || (!std::isfinite(exp));
   }
 
   double base{};
@@ -69,21 +63,8 @@ std::vector<PowCase> SweepAllCases() {
 
   // A representative sampling of both special and non-special values.
   std::initializer_list<double> sweep = {
-    -kInf,
-    -2.5,
-    -2.0,
-    -1.5,
-    -1.0,
-    -0.5,
-    -0.0,
-    +0.0,
-    0.5,
-    1.0,
-    1.5,
-    2.0,
-    2.5,
-    kInf,
-    kNaN,
+      -kInf, -2.5, -2.0, -1.5, -1.0, -0.5, -0.0, +0.0,
+      0.5,   1.0,  1.5,  2.0,  2.5,  kInf, kNaN,
   };
 
   // Let's do all-pairs testing!
@@ -116,9 +97,8 @@ std::string ToAlphaNumeric(double value) {
 
 // The test case name must be alphanumeric only (a-z0-9_).
 std::string CalcTestName(const testing::TestParamInfo<PowCase>& info) {
-  return fmt::format("{}__{}",
-      ToAlphaNumeric(info.param.base),
-      ToAlphaNumeric(info.param.exp));
+  return fmt::format("{}__{}", ToAlphaNumeric(info.param.base),
+                     ToAlphaNumeric(info.param.exp));
 }
 
 // Here we sweep the pow(AD,AD) overload only.  We don't test either of the two
@@ -130,8 +110,8 @@ TEST_P(PowSpecial, AdsAds) {
   const AutoDiffDut exp(pow_case.exp, 3, 2);
 
   const AutoDiffDut result = pow(base, exp);
-  EXPECT_THAT(result.value(), testing::NanSensitiveDoubleEq(
-      pow_case.expected_value));
+  EXPECT_THAT(result.value(),
+              testing::NanSensitiveDoubleEq(pow_case.expected_value));
   ASSERT_EQ(result.derivatives().size(), 3);
   const Eigen::Vector3d grad = result.derivatives();
 
@@ -153,8 +133,8 @@ TEST_P(PowSpecial, AdsAds) {
   } else if (pow_case.ill_defined_base_grad) {
     EXPECT_THAT(grad[1], testing::IsNan());
   } else {
-    const double expected = pow_case.exp * std::pow(
-        pow_case.base, pow_case.exp - 1);
+    const double expected =
+        pow_case.exp * std::pow(pow_case.base, pow_case.exp - 1);
     EXPECT_NEAR(grad[1], expected, kTol);
   }
 

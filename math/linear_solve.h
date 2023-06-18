@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <utility>
 
 #include "drake/common/symbolic/expression.h"
 #include "drake/math/autodiff.h"
@@ -20,14 +21,15 @@ template <typename T>
 inline constexpr bool is_double_or_symbolic_v =
     std::disjunction<std::is_same<T, double>, is_symbolic<T>>::value;
 
-template <typename T>
+template <typename, typename = void>
 struct is_autodiff : std::false_type {};
 
-template <int N>
-struct is_autodiff<drake::AutoDiffd<N>> : std::true_type {};
+template <typename T>
+struct is_autodiff<T, std::void_t<typename T::DerType>> : std::true_type {};
 
 template <typename T>
 inline constexpr bool is_autodiff_v = is_autodiff<T>::value;
+
 }  // namespace internal
 
 /**
@@ -241,19 +243,15 @@ SolveLinearSystem(const LinearSolver& linear_solver,
                     "variables, while b contains derivatives for {} variables",
                     num_z_A, num_z_b));
   }
-  Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime,
+
+  // Allocate the memory for the derivatives. Note that this is only the
+  // gradient matrix, not the values.
+  Eigen::Matrix<Eigen::VectorXd, DerivedA::RowsAtCompileTime,
                 DerivedB::ColsAtCompileTime>
       x_ad(A.rows(), b.cols());
-  // First sets the value of x_ad, and allocates the memory for the derivatives.
-  // Note that I don't call InitializeAutoDiff since I have the
-  // gradient of matrix x w.r.t scalar zᵢ, not the gradient of a vector x.col(j)
-  // w.r.t a vector z.
   for (int i = 0; i < A.rows(); ++i) {
     for (int j = 0; j < b.cols(); ++j) {
-      x_ad(i, j).value() = x_val(i, j);
-      x_ad(i, j).derivatives() =
-          Eigen::Matrix<double, DerivedA::Scalar::DerType::RowsAtCompileTime,
-                        1>::Zero(num_z_A);
+      x_ad(i, j) = Eigen::VectorXd::Zero(num_z_A);
     }
   }
 
@@ -292,11 +290,21 @@ SolveLinearSystem(const LinearSolver& linear_solver,
     dxdzi = linear_solver.solve(dbdzi - dAdzi * x_val);
     for (int j = 0; j < A.rows(); ++j) {
       for (int k = 0; k < b.cols(); ++k) {
-        x_ad(j, k).derivatives()(i) = dxdzi(j, k);
+        x_ad(j, k)(i) = dxdzi(j, k);
       }
     }
   }
-  return x_ad;
+
+  // Now move everything into AutoDiffScalar storage.
+  Eigen::Matrix<AutoDiffXd, DerivedA::RowsAtCompileTime,
+                DerivedB::ColsAtCompileTime>
+      result(A.rows(), b.cols());
+  for (int i = 0; i < A.rows(); ++i) {
+    for (int j = 0; j < b.cols(); ++j) {
+      result(i, j) = { x_val(i, j), std::move(x_ad(i, j)) };
+    }
+  }
+  return result;
 }
 
 //@}
