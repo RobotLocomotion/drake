@@ -1,9 +1,5 @@
 #!/bin/bash
 
-################################################################################
-# NOTE: before running this script, you must set the value of `gpg_key` below! #
-################################################################################
-
 # This shell script is used to complete the manual steps at the end of the
 # release process.
 
@@ -101,16 +97,11 @@ fi
 
 platforms=( focal jammy )
 
-# Unfortunately, but necessarily, the secret key is not available over any
-# network, including VPC and the Internet. The public key is at
-# https://drake-apt.csail.mit.edu/drake.asc and
-# https://drake-packages.csail.mit.edu/drake/release/drake.asc
-################################################################################
-# TODO(svenevs): allow command line or environment variable to set this.
-# The value for this variable is currently saved in the AWS Secrets Manager
-# `push_release` key.
-readonly gpg_key=0000000000000000000000000000000000000000
-################################################################################
+readonly gpg_key="$(
+  curl --fail https://drake-apt.csail.mit.edu/drake.asc | \
+  gpg --with-colons --show-keys --fingerprint | \
+  grep -m1 -E '^fpr:' | cut -c 4- | tr -d :)"
+
 if ! [[ "${gpg_key}" =~ ^[a-fA-F0-9]{40}$ ]]; then
   echo "Error: gpg_key value expected to be a length 40 hexadecimal string." >&2
   exit 1
