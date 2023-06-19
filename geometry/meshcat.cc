@@ -372,8 +372,8 @@ class MeshcatShapeReifier : public ShapeReifier {
                             std::istreambuf_iterator<char>());
             meshfile_object.resources.try_emplace(
                 map, std::string("data:image/png;base64,") +
-                          common_robotics_utilities::base64_helpers::Encode(
-                              map_data));
+                         common_robotics_utilities::base64_helpers::Encode(
+                             map_data));
           } else {
             drake::log()->warn(
                 "Meshcat: Failed to load texture. \"{}\" references {}, but "
@@ -391,7 +391,18 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(0, 0) = mesh.scale();
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
-    } else {  // not obj or no mtllib.
+    } else if (format == "gltf") {
+      auto& meshfile_object =
+          lumped.object.emplace<internal::MeshFileObjectData>();
+      meshfile_object.uuid = uuids::to_string((*uuid_generator_)());
+      meshfile_object.format = std::move(format);
+      meshfile_object.data = std::move(mesh_data);
+      Eigen::Map<Eigen::Matrix4d> matrix(meshfile_object.matrix);
+      matrix(0, 0) = mesh.scale();
+      matrix(1, 1) = mesh.scale();
+      matrix(2, 2) = mesh.scale();
+    } else {
+      // neither obj with mtllib nor gltf.
       auto geometry = std::make_unique<internal::MeshFileGeometryData>();
       geometry->uuid = uuids::to_string((*uuid_generator_)());
       geometry->format = std::move(format);
@@ -404,7 +415,7 @@ class MeshcatShapeReifier : public ShapeReifier {
       matrix(1, 1) = mesh.scale();
       matrix(2, 2) = mesh.scale();
     }
-    }
+  }
 
   void ImplementGeometry(const Box& box, void* data) override {
     DRAKE_DEMAND(data != nullptr);
