@@ -60,6 +60,9 @@ void DefineSolversScs(py::module m);
 /* Defines bindings per solvers_py_sdpa_free_format.cc. */
 void DefineSolversSdpaFreeFormat(py::module m);
 
+/* Defines bindings per solvers_py_semidefinite_relaxation.cc. */
+void DefineSolversSemidefiniteRelaxation(py::module m);
+
 /* Defines the SNOPT bindings. See solvers_py_snopt.cc. */
 void DefineSolversSnopt(py::module m);
 
