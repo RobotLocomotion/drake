@@ -296,6 +296,11 @@ GTEST_TEST(MeshcatTest, SetObjectWithShape) {
                    0.25));
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
+      "gltf", Mesh(FindResourceOrThrow(
+                       "drake/geometry/render/test/meshes/cube.gltf"),
+                   0.25));
+  EXPECT_FALSE(meshcat.GetPackedObject("gltf").empty());
+  meshcat.SetObject(
       "convex", Convex(FindResourceOrThrow(
                            "drake/geometry/render/test/meshes/box.obj"),
                        0.25));
