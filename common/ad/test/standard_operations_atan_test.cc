@@ -9,9 +9,8 @@ namespace {
 // This assumes the standard_operations_test.h is implemented using AutoDiff3.
 AutoDiff3 atan(const AutoDiff3& x) {
   // ∂/∂x atan(x) = 1 / (1 + x²)
-  return AutoDiff3{
-      std::atan(x.value()),
-      x.derivatives() / (1 + x.value() * x.value())};
+  return AutoDiff3{std::atan(x.value()),
+                   x.derivatives() / (1 + x.value() * x.value())};
 }
 
 TEST_F(StandardOperationsTest, Atan) {
