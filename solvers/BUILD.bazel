@@ -61,6 +61,7 @@ drake_cc_package_library(
         ":rotation_constraint",
         ":scs_solver",
         ":sdpa_free_format",
+        ":semidefinite_relaxation",
         ":snopt_solver",
         ":solution_result",
         ":solve",
@@ -961,6 +962,16 @@ drake_cc_library(
     deps = [],
 )
 
+drake_cc_library(
+    name = "semidefinite_relaxation",
+    srcs = ["semidefinite_relaxation.cc"],
+    hdrs = ["semidefinite_relaxation.h"],
+    interface_deps = [
+        ":mathematical_program",
+    ],
+    deps = [],
+)
+
 drake_cc_optional_library(
     name = "csdp_solver_error_handling",
     opt_out_condition = "//tools:no_csdp",
@@ -1137,6 +1148,15 @@ drake_cc_googletest(
         ":csdp_test_examples",
         ":sdpa_free_format",
         "//common:temp_directory",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//common/test_utilities:expect_throws_message",
+    ],
+)
+
+drake_cc_googletest(
+    name = "semidefinite_relaxation_test",
+    deps = [
+        ":semidefinite_relaxation",
         "//common/test_utilities:eigen_matrix_compare",
         "//common/test_utilities:expect_throws_message",
     ],

@@ -24,6 +24,7 @@ top-level documentation for :py:mod:`pydrake.math`.
   internal::DefineSolversMixedIntegerOptimizationUtil(m);
   internal::DefineSolversMixedIntegerRotationConstraint(m);
   internal::DefineSolversSdpaFreeFormat(m);
+  internal::DefineSolversSemidefiniteRelaxation(m);
   internal::DefineSolversClp(m);
   internal::DefineSolversCsdp(m);
   internal::DefineSolversGurobi(m);

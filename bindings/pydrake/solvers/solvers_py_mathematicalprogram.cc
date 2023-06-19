@@ -1471,6 +1471,14 @@ for every column of ``prog_var_vals``. )""")
           py::arg("binding"), py::arg("prog_var_vals"),
           doc.MathematicalProgram.EvalBinding.doc)
       .def(
+          "EvalBindingAtInitialGuess",
+          [](const MathematicalProgram& prog,
+              const Binding<EvaluatorBase>& binding) {
+            return prog.EvalBindingAtInitialGuess(binding);
+          },
+          py::arg("binding"),
+          doc.MathematicalProgram.EvalBindingAtInitialGuess.doc)
+      .def(
           "EvalBindings",
           [](const MathematicalProgram& prog,
               const std::vector<Binding<EvaluatorBase>>& binding,
