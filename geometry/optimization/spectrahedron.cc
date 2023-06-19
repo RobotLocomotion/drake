@@ -122,7 +122,7 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
     VectorXDecisionVariable vars = stack_xt(binding.variables());
     MatrixXd Ab(binding.evaluator()->num_constraints(), vars.size());
     Ab.leftCols(binding.evaluator()->num_vars()) =
-        binding.evaluator()->GetDenseA();
+        binding.evaluator()->get_sparse_A();
     Ab.rightCols<1>() = -binding.evaluator()->lower_bound();
     constraints.emplace_back(prog->AddLinearEqualityConstraint(Ab, 0, vars));
   }
@@ -139,7 +139,7 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
     VectorXDecisionVariable vars = stack_xt(binding.variables());
     MatrixXd Ab(binding.evaluator()->num_constraints(), vars.size());
     Ab.leftCols(binding.evaluator()->num_vars()) =
-        binding.evaluator()->GetDenseA();
+        binding.evaluator()->get_sparse_A();
     if (binding.evaluator()->lower_bound().array().isFinite().any()) {
       Ab.rightCols<1>() = -binding.evaluator()->lower_bound();
       constraints.emplace_back(prog->AddLinearConstraint(Ab, 0, kInf, vars));
@@ -199,11 +199,11 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
     const int num_constraints = binding.evaluator()->num_constraints();
     std::tie(this_A, this_b) = binding_Ab(binding.variables());
     MatrixXd A_bar(num_constraints, x.size() + t.size());
-    A_bar.leftCols(x.size()) = binding.evaluator()->GetDenseA() * this_A;
+    A_bar.leftCols(x.size()) = binding.evaluator()->get_sparse_A() * this_A;
     A_bar.rightCols(t.size()) =
         -binding.evaluator()->upper_bound() * c.transpose();
     VectorXd b_bar = d * binding.evaluator()->upper_bound() -
-                     binding.evaluator()->GetDenseA() * this_b;
+                     binding.evaluator()->get_sparse_A() * this_b;
     constraints.emplace_back(
         prog->AddLinearEqualityConstraint(A_bar, b_bar, {x, t}));
   }
@@ -221,9 +221,9 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
     const int num_constraints = binding.evaluator()->num_constraints();
     std::tie(this_A, this_b) = binding_Ab(binding.variables());
     MatrixXd A_bar(num_constraints, x.size() + t.size());
-    A_bar.leftCols(x.size()) = binding.evaluator()->GetDenseA() * this_A;
+    A_bar.leftCols(x.size()) = binding.evaluator()->get_sparse_A() * this_A;
     VectorXd b_bar = d * binding.evaluator()->lower_bound() -
-                     binding.evaluator()->GetDenseA() * this_b;
+                     binding.evaluator()->get_sparse_A() * this_b;
     if (b_bar.array().isFinite().any()) {
       A_bar.rightCols(t.size()) =
           -binding.evaluator()->lower_bound() * c.transpose();
@@ -235,7 +235,7 @@ Spectrahedron::DoAddPointInNonnegativeScalingConstraints(
     // [A_c * A, -b_c * c'][x;t] ≤ d * b_c - A_c * b
     // A̅ [x;t] ≤ b̅,
     b_bar = d * binding.evaluator()->upper_bound() -
-            binding.evaluator()->GetDenseA() * this_b;
+            binding.evaluator()->get_sparse_A() * this_b;
     if (b_bar.array().isFinite().any()) {
       A_bar.rightCols(t.size()) =
           -binding.evaluator()->upper_bound() * c.transpose();
