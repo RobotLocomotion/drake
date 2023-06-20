@@ -173,13 +173,6 @@ drake_cc_googletest(
     ],
 )
 
-drake_cc_googletest(
-    name = "optitrack_test",
-    deps = [
-        "@optitrack_driver//lcmtypes:optitrack_lcmtypes",
-    ],
-)
-
 alias(
     name = "dual_iiwa14_polytope_collision.urdf",
     actual = "//manipulation/models/iiwa_description:urdf/dual_iiwa14_polytope_collision.urdf",  # noqa
