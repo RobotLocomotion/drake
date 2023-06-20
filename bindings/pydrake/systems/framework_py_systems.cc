@@ -996,40 +996,12 @@ Note: The above is for the C++ documentation. For Python, use
               return out;
             },
             doc.Diagram.connection_map.doc)
-        .def(
-            "GetInputPortLocators",
-            [](Diagram<T>* self, InputPortIndex port_index) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto& locator : self->GetInputPortLocators(port_index)) {
-                py::object system_py =
-                    py::cast(locator.first, py_rvp::reference);
-                py::object port_index_py = py::cast(locator.second);
-                // Keep alive, ownership: `system_py` keeps `self` alive.
-                py_keep_alive(system_py, self_py);
-                py::tuple locator_py(2);
-                locator_py[0] = system_py;
-                locator_py[1] = port_index_py;
-                out.append(locator_py);
-              }
-              return out;
-            },
-            py::arg("port_index"), doc.Diagram.GetInputPortLocators.doc)
-        .def(
-            "get_output_port_locator",
-            [](Diagram<T>* self, OutputPortIndex port_index) {
-              py::object self_py = py::cast(self, py_rvp::reference);
-              const auto& locator = self->get_output_port_locator(port_index);
-              py::object system_py = py::cast(locator.first, py_rvp::reference);
-              py::object port_index_py = py::cast(locator.second);
-              // Keep alive, ownership: `system_py` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
-              py::tuple locator_py(2);
-              locator_py[0] = system_py;
-              locator_py[1] = port_index_py;
-              return locator_py;
-            },
-            py::arg("port_index"), doc.Diagram.get_output_port_locator.doc)
+        .def("GetInputPortLocators", &Diagram<T>::GetInputPortLocators,
+            py_rvp::reference_internal, py::arg("port_index"),
+            doc.Diagram.GetInputPortLocators.doc)
+        .def("get_output_port_locator", &Diagram<T>::get_output_port_locator,
+            py_rvp::reference_internal, py::arg("port_index"),
+            doc.Diagram.get_output_port_locator.doc)
         .def("GetMutableSubsystemState",
             overload_cast_explicit<State<T>&, const System<T>&, Context<T>*>(
                 &Diagram<T>::GetMutableSubsystemState),
@@ -1042,19 +1014,7 @@ Note: The above is for the C++ documentation. For Python, use
         .def("GetSubsystemByName", &Diagram<T>::GetSubsystemByName,
             py::arg("name"), py_rvp::reference_internal,
             doc.Diagram.GetSubsystemByName.doc)
-        .def(
-            "GetSystems",
-            [](Diagram<T>* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* system : self->GetSystems()) {
-                py::object system_py = py::cast(system, py_rvp::reference);
-                // Keep alive, ownership: `system` keeps `self` alive.
-                py_keep_alive(system_py, self_py);
-                out.append(system_py);
-              }
-              return out;
-            },
+        .def("GetSystems", &Diagram<T>::GetSystems, py_rvp::reference_internal,
             doc.Diagram.GetSystems.doc);
 
     // N.B. This will effectively allow derived classes of `VectorSystem` to

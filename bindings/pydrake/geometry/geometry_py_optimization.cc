@@ -639,34 +639,14 @@ void DefineGeometryOptimization(py::module m) {
             py::overload_cast<const GraphOfConvexSets::Edge&>(
                 &GraphOfConvexSets::RemoveEdge),
             py::arg("edge"), cls_doc.RemoveEdge.doc_by_reference)
-        .def(
-            "Vertices",
-            [](GraphOfConvexSets* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* vertex : self->Vertices()) {
-                py::object vertex_py = py::cast(vertex, py_rvp::reference);
-                // Keep alive, ownership: `vertex` keeps `self` alive.
-                py_keep_alive(vertex_py, self_py);
-                out.append(vertex_py);
-              }
-              return out;
-            },
-            cls_doc.Vertices.doc)
-        .def(
-            "Edges",
-            [](GraphOfConvexSets* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto* edge : self->Edges()) {
-                py::object edge_py = py::cast(edge, py_rvp::reference);
-                // Keep alive, ownership: `edge` keeps `self` alive.
-                py_keep_alive(edge_py, self_py);
-                out.append(edge_py);
-              }
-              return out;
-            },
-            cls_doc.Edges.doc)
+        .def("Vertices",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Vertex*>>(
+                &GraphOfConvexSets::Vertices),
+            py_rvp::reference_internal, cls_doc.Vertices.doc)
+        .def("Edges",
+            overload_cast_explicit<std::vector<GraphOfConvexSets::Edge*>>(
+                &GraphOfConvexSets::Edges),
+            py_rvp::reference_internal, cls_doc.Edges.doc)
         .def("ClearAllPhiConstraints",
             &GraphOfConvexSets::ClearAllPhiConstraints,
             cls_doc.ClearAllPhiConstraints.doc)

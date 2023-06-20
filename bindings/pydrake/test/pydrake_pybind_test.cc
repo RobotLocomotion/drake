@@ -52,14 +52,8 @@ GTEST_TEST(PydrakePybindTest, PyKeepAlive) {
     using Class = ExamplePyKeepAlive;
     py::class_<Class>(m, "ExamplePyKeepAlive")
         .def(py::init())
-        .def("a",
-            [](const Class& self) {
-              return py_keep_alive(py::cast(self.a()), py::cast(&self));
-            })
-        .def("a_list", [](const Class& self) {
-          return py_keep_alive_iterable<py::list>(
-              py::cast(self.a_list()), py::cast(&self));
-        });
+        .def("a", &Class::a, py_rvp::reference_internal)
+        .def("a_list", &Class::a_list, py_rvp::reference_internal);
   }
 
   PyExpectTrue(m, "isinstance(ExamplePyKeepAlive().a(), Nonce)");

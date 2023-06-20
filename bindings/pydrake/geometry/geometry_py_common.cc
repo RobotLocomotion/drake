@@ -135,19 +135,9 @@ void DoScalarIndependentDefinitions(py::module m) {
         .def("HasGroup", &Class::HasGroup, py::arg("group_name"),
             cls_doc.HasGroup.doc)
         .def("num_groups", &Class::num_groups, cls_doc.num_groups.doc)
-        .def(
-            "GetPropertiesInGroup",
-            [](const Class& self, const std::string& group_name) {
-              py::dict out;
-              py::object py_self = py::cast(&self, py_rvp::reference);
-              for (auto& [name, abstract] :
-                  self.GetPropertiesInGroup(group_name)) {
-                out[name.c_str()] = py::cast(
-                    abstract.get(), py_rvp::reference_internal, py_self);
-              }
-              return out;
-            },
-            py::arg("group_name"), cls_doc.GetPropertiesInGroup.doc)
+        .def("GetPropertiesInGroup", &Class::GetPropertiesInGroup,
+            py_rvp::reference_internal, py::arg("group_name"),
+            cls_doc.GetPropertiesInGroup.doc)
         .def("GetGroupNames", &Class::GetGroupNames, cls_doc.GetGroupNames.doc)
         .def(
             "AddProperty",

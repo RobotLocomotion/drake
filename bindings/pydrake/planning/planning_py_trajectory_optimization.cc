@@ -402,21 +402,7 @@ void DefinePlanningTrajectoryOptimization(py::module m) {
         .def("name", &Class::Subgraph::name, subgraph_doc.name.doc)
         .def("order", &Class::Subgraph::order, subgraph_doc.order.doc)
         .def("size", &Class::Subgraph::size, subgraph_doc.size.doc)
-        .def(
-            "regions",
-            [](Class::Subgraph* self) {
-              py::list out;
-              py::object self_py = py::cast(self, py_rvp::reference);
-              for (auto& region : self->regions()) {
-                const geometry::optimization::ConvexSet* region_raw =
-                    region.get();
-                py::object region_py = py::cast(region_raw, py_rvp::reference);
-                // Keep alive, ownership: `region` keeps `self` alive.
-                py_keep_alive(region_py, self_py);
-                out.append(region_py);
-              }
-              return out;
-            },
+        .def("regions", &Class::Subgraph::regions, py_rvp::reference_internal,
             subgraph_doc.regions.doc)
         .def("AddTimeCost", &Class::Subgraph::AddTimeCost,
             py::arg("weight") = 1.0, subgraph_doc.AddTimeCost.doc)

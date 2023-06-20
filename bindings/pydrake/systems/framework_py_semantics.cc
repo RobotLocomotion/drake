@@ -549,34 +549,10 @@ void DoScalarDependentDefinitions(py::module m) {
       .def("empty", &DiagramBuilder<T>::empty, doc.DiagramBuilder.empty.doc)
       .def("already_built", &DiagramBuilder<T>::already_built,
           doc.DiagramBuilder.already_built.doc)
-      .def(
-          "GetSystems",
-          [](DiagramBuilder<T>* self) {
-            py::list out;
-            py::object self_py = py::cast(self, py_rvp::reference);
-            for (const auto* system : self->GetSystems()) {
-              py::object system_py = py::cast(system, py_rvp::reference);
-              // Keep alive, ownership: `system` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
-              out.append(system_py);
-            }
-            return out;
-          },
-          doc.DiagramBuilder.GetSystems.doc)
-      .def(
-          "GetMutableSystems",
-          [](DiagramBuilder<T>* self) {
-            py::list out;
-            py::object self_py = py::cast(self, py_rvp::reference);
-            for (auto* system : self->GetMutableSystems()) {
-              py::object system_py = py::cast(system, py_rvp::reference);
-              // Keep alive, ownership: `system` keeps `self` alive.
-              py_keep_alive(system_py, self_py);
-              out.append(system_py);
-            }
-            return out;
-          },
-          doc.DiagramBuilder.GetMutableSystems.doc)
+      .def("GetSystems", &DiagramBuilder<T>::GetSystems,
+          py_rvp::reference_internal, doc.DiagramBuilder.GetSystems.doc)
+      .def("GetMutableSystems", &DiagramBuilder<T>::GetMutableSystems,
+          py_rvp::reference_internal, doc.DiagramBuilder.GetMutableSystems.doc)
       .def("HasSubsystemNamed", &DiagramBuilder<T>::HasSubsystemNamed,
           py::arg("name"), doc.DiagramBuilder.HasSubsystemNamed.doc)
       .def("GetSubsystemByName", &DiagramBuilder<T>::GetSubsystemByName,
