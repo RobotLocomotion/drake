@@ -62,7 +62,9 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(hpoly.b(), self.b)
         self.assertTrue(hpoly.PointInSet(x=[0, 0, 0], tol=0.0))
         self.assertFalse(hpoly.IsBounded())
-        hpoly.AddPointInSetConstraints(self.prog, self.x)
+        new_vars, new_constraints = hpoly.AddPointInSetConstraints(
+            self.prog, self.x)
+        self.assertEqual(new_vars.size, 0)
         constraints = hpoly.AddPointInNonnegativeScalingConstraints(
             prog=self.prog, x=self.x, t=self.t)
         self.assertGreaterEqual(len(constraints), 2)
@@ -167,7 +169,10 @@ class TestGeometryOptimization(unittest.TestCase):
         np.testing.assert_array_equal(ellipsoid.A(), self.A)
         np.testing.assert_array_equal(ellipsoid.center(), self.b)
         self.assertTrue(ellipsoid.PointInSet(x=self.b, tol=0.0))
-        ellipsoid.AddPointInSetConstraints(self.prog, self.x)
+        new_vars, new_constraints = ellipsoid.AddPointInSetConstraints(
+            self.prog, self.x)
+        self.assertEqual(new_vars.size, 0)
+        self.assertGreater(len(new_constraints), 0)
         constraints = ellipsoid.AddPointInNonnegativeScalingConstraints(
             prog=self.prog, x=self.x, t=self.t)
         self.assertGreaterEqual(len(constraints), 2)
@@ -227,7 +232,9 @@ class TestGeometryOptimization(unittest.TestCase):
         self.assertEqual(vpoly.ambient_dimension(), 2)
         np.testing.assert_array_equal(vpoly.vertices(), vertices)
         self.assertTrue(vpoly.PointInSet(x=[1.0, 5.0], tol=1e-8))
-        vpoly.AddPointInSetConstraints(self.prog, self.x[0:2])
+        new_vars, new_constraints = vpoly.AddPointInSetConstraints(
+            self.prog, self.x[0:2])
+        self.assertEqual(new_vars.size, vertices.shape[1])
         constraints = vpoly.AddPointInNonnegativeScalingConstraints(
             prog=self.prog, x=self.x[:2], t=self.t)
         self.assertGreaterEqual(len(constraints), 2)

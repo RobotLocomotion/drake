@@ -114,12 +114,18 @@ class ConvexSet : public ShapeReifier {
     return DoPointInSet(x, tol);
   }
 
-  // Note: I would like to return the Binding, but the type is subclass
-  // dependent.
   /** Adds a constraint to an existing MathematicalProgram enforcing that the
   point defined by vars is inside the set.
+  @return (new_vars, new_constraints) Some of the derived class will add new
+  decision variables to enforce this constraint, we return all the newly added
+  decision variables as new_vars. The meaning of these new decision variables
+  differs in each subclass. If no new variables are added, then we return an
+  empty Eigen vector. Also we return all the newly added constraints to `prog`
+  through this function.
   @throws std::exception if ambient_dimension() == 0 */
-  void AddPointInSetConstraints(
+  std::pair<VectorX<symbolic::Variable>,
+            std::vector<solvers::Binding<solvers::Constraint>>>
+  AddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const;
 
@@ -137,6 +143,7 @@ class ConvexSet : public ShapeReifier {
   and ⊕ is the Minkowski sum.  For t > 0, this is equivalent to x ∈ t S, but for
   t = 0, we have only x ∈ rec(S).
   @throws std::exception if ambient_dimension() == 0 */
+  // TODO(hongkai.dai): return the new variables also.
   std::vector<solvers::Binding<solvers::Constraint>>
   AddPointInNonnegativeScalingConstraints(
       solvers::MathematicalProgram* prog,
@@ -221,7 +228,9 @@ class ConvexSet : public ShapeReifier {
   /** Non-virtual interface implementation for AddPointInSetConstraints().
   @pre vars.size() == ambient_dimension()
   @pre ambient_dimension() > 0 */
-  virtual void DoAddPointInSetConstraints(
+  virtual std::pair<VectorX<symbolic::Variable>,
+                    std::vector<solvers::Binding<solvers::Constraint>>>
+  DoAddPointInSetConstraints(
       solvers::MathematicalProgram* prog,
       const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const = 0;
 

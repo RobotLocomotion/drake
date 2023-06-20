@@ -43,6 +43,13 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
 
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
+  {
+    // Test the new variables added in AddPointInSetConstraints
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables(4);
+    auto [new_vars, new_constraints] = S.AddPointInSetConstraints(&prog, x);
+    EXPECT_EQ(new_vars.rows(), 0);
+  }
 
   // Test MaybeGetPoint.
   ASSERT_TRUE(S.MaybeGetPoint().has_value());
@@ -200,6 +207,29 @@ GTEST_TEST(CartesianProductTest, ScaledPoints) {
   EXPECT_TRUE(S.PointInSet(in, kTol));
   ASSERT_TRUE(S.MaybeGetPoint().has_value());
   EXPECT_TRUE(CompareMatrices(S.MaybeGetPoint().value(), in, kTol));
+}
+
+GTEST_TEST(CartesianProductTest, ScaledPointAddPointInSet) {
+  const Point P1(Vector1d{1.2});
+  const Point P2(Vector1d{3.4});
+  // clang-format off
+  Eigen::Matrix2d A;
+  A << -2, 0,
+        0, 5;
+  // clang-format on
+  Vector2d b{0, 3};
+  const CartesianProduct S(MakeConvexSets(P1, P2), A, b);
+
+  solvers::MathematicalProgram prog;
+  auto x = prog.NewContinuousVariables<2>();
+  auto [new_vars, new_constraints] = S.AddPointInSetConstraints(&prog, x);
+  EXPECT_EQ(new_vars.rows(), 2);
+  EXPECT_EQ(new_constraints.size(), 3);
+  auto result = solvers::Solve(prog);
+  EXPECT_TRUE(result.is_success());
+  const Eigen::Vector2d new_vars_val = result.GetSolution(new_vars);
+  EXPECT_TRUE(CompareMatrices(new_vars_val,
+                              Eigen::Vector2d(P1.x()(0), P2.x()(0)), 1E-6));
 }
 
 GTEST_TEST(CartesianProductTest, ScaledPointInjective) {
