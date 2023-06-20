@@ -441,6 +441,7 @@ drake_py_unittest(
     name = "forward_diff_test",
     deps = [
         ":autodiffutils_py",
+        ":math_py",
         "//bindings/pydrake/common/test_utilities",
     ],
 )
