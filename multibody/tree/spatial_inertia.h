@@ -802,6 +802,8 @@ class SpatialInertia {
   // @param[in] p_ScmP_E Position vector from Scm to P, expressed-in frame E.
   // @return A reference to M_SP_E, `this` spatial inertia that has been shifted
   // from about-point Scm to about-point P, expressed in frame E.
+  // @pre On entry, the about-point for `this` SpatialInertia is Scm. Hence, on
+  // entry the position vector p_PScm underlying `this` is the zero vector.
   SpatialInertia<T>& ShiftFromCenterOfMassInPlace(const Vector3<T>& p_ScmP_E);
 
   // Calculates the spatial inertia that results from shifting `this` spatial
@@ -809,9 +811,11 @@ class SpatialInertia {
   // of mass) to about-point P. In other words, shifts `M_SScm_E` to `M_SP_E`
   // (both are expressed-in frame E).
   // @param[in] p_ScmP_E Position vector from Scm to P, expressed-in frame E.
-  // @retval M_SP_E S's rotational inertia about-point P expressed-in frame E.
-  SpatialInertia<T> ShiftFromCenterOfMass(const Vector3<T>& p_ScmP_E) const
-      __attribute__((warn_unused_result));
+  // @retval M_SP_E S's spatial inertia about-point P expressed-in frame E.
+  // @pre On entry, the about-point for `this` SpatialInertia is Scm. Hence, on
+  // entry the position vector p_PScm underlying `this` is the zero vector.
+  [[nodiscard]] SpatialInertia<T> ShiftFromCenterOfMass(
+      const Vector3<T>& p_ScmP_E) const;
 
   // Returns principal semi-diameters (half-lengths), associated principal axes
   // orientations, and the position of a simple uniform-density body D whose

@@ -364,7 +364,7 @@ SpatialInertia<T>& SpatialInertia<T>::ShiftFromCenterOfMassInPlace(
   DRAKE_ASSERT(p_PScm_E_ == Vector3<T>::Zero());
   G_SP_E_.ShiftFromCenterOfMassInPlace(p_ScmP_E);
   p_PScm_E_ = -p_ScmP_E;
-  return *this;  // Returns M_B
+  return *this;  // On entry, `this` is M_SScm_E. On return, `this` is M_SP_E.
 }
 
 template <typename T>

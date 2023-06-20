@@ -145,8 +145,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///                     inertia is expressed.
   /// @retval G_BQ_E This same unit inertia taken about a point Q instead of
   ///                the centroid `Bcm`.
-  UnitInertia<T> ShiftFromCenterOfMass(
-      const Vector3<T>& p_BcmQ_E) const __attribute__((warn_unused_result)) {
+  [[nodiscard]] UnitInertia<T> ShiftFromCenterOfMass(
+      const Vector3<T>& p_BcmQ_E) const {
     return UnitInertia<T>(*this).ShiftFromCenterOfMassInPlace(p_BcmQ_E);
   }
 
@@ -187,8 +187,8 @@ class UnitInertia : public RotationalInertia<T> {
   ///
   /// @warning This operation could result in a non-physical rotational inertia.
   /// Use with care. See ShiftToCenterOfMassInPlace() for details.
-  UnitInertia<T> ShiftToCenterOfMass(
-      const Vector3<T>& p_QBcm_E) const __attribute__((warn_unused_result)) {
+  [[nodiscard]] UnitInertia<T> ShiftToCenterOfMass(
+      const Vector3<T>& p_QBcm_E) const {
     return UnitInertia<T>(*this).ShiftToCenterOfMassInPlace(p_QBcm_E);
   }
 
