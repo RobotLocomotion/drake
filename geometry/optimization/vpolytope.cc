@@ -340,7 +340,7 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return is_approx_equal_abstol(x, x_sol, tol);
 }
 
-void VPolytope::DoAddPointInSetConstraints(
+VectorX<symbolic::Variable> VPolytope::DoAddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x) const {
   const int n = ambient_dimension();
@@ -356,6 +356,7 @@ void VPolytope::DoAddPointInSetConstraints(
   prog->AddLinearEqualityConstraint(A, VectorXd::Zero(n), {alpha, x});
   // ∑ αᵢ = 1.
   prog->AddLinearEqualityConstraint(RowVectorXd::Ones(m), 1.0, alpha);
+  return alpha;
 }
 
 std::vector<solvers::Binding<solvers::Constraint>>

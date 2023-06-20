@@ -35,7 +35,7 @@ std::optional<Eigen::VectorXd> ConvexSet::DoMaybeGetPoint() const {
   return std::nullopt;
 }
 
-void ConvexSet::AddPointInSetConstraints(
+VectorX<symbolic::Variable> ConvexSet::AddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& vars) const {
   DRAKE_THROW_UNLESS(vars.size() == ambient_dimension());
