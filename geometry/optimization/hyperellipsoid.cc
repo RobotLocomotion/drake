@@ -188,7 +188,7 @@ bool Hyperellipsoid::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return v.dot(v) <= 1.0 + tol;
 }
 
-void Hyperellipsoid::DoAddPointInSetConstraints(
+VectorX<symbolic::Variable> Hyperellipsoid::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
   // 1.0 ≥ |A * (x - center)|_2, written as
@@ -200,6 +200,7 @@ void Hyperellipsoid::DoAddPointInSetConstraints(
   VectorXd b_cone(m + 1);
   b_cone << 1.0, -A_ * center_;
   prog->AddLorentzConeConstraint(A_cone, b_cone, x);
+  return VectorX<symbolic::Variable>(0);
 }
 
 std::vector<Binding<Constraint>>

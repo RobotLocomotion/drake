@@ -43,6 +43,13 @@ GTEST_TEST(CartesianProductTest, BasicTest) {
 
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
+  {
+    // Test the new variables added in AddPointInSetConstraints
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables(4);
+    auto new_vars = S.AddPointInSetConstraints(&prog, x);
+    EXPECT_EQ(new_vars.rows(), 0);
+  }
 
   // Test MaybeGetPoint.
   ASSERT_TRUE(S.MaybeGetPoint().has_value());
