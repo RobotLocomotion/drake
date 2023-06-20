@@ -14,35 +14,41 @@ using std::isfinite;
 using std::log;
 
 /* We use tare_x to exploit the shift invariance of log-sum-exp to avoid
-overflow. It should be set to the extremum of x (i.e., max when alpha > 0,
-min when alpha < 0). */
+overflow. It should be set to the extremum of x (i.e., max when alpha_prime > 0,
+min when alpha_prime < 0). */
 template <typename T>
-T SoftOverMaxImpl(const std::vector<T>& x, double tare_x, double alpha) {
+T SoftOverMaxImpl(const std::vector<T>& x, double tare_x, double alpha_prime) {
+  // Note that the function
+  // f(x) = log(∑ᵢ exp(αxᵢ)) /α satisfies f(x) = f(x - m) + m for any arbitrary
+  // m. Here we use m = tare_x.
   T sum_exp{0};
   for (const T& xi : x) {
-    sum_exp += exp(alpha * (xi - tare_x));
+    sum_exp += exp(alpha_prime * (xi - tare_x));
   }
-  return log(sum_exp) / alpha + tare_x;
+  return log(sum_exp) / alpha_prime + tare_x;
 }
 
 /* We use tare_x to avoid overflow. It should be set to the extremum of x
-(i.e., max when alpha > 0, min when alpha < 0). */
+(i.e., max when alpha_prime > 0, min when alpha_prime < 0). */
 template <typename T>
-T SoftUnderMaxImpl(const std::vector<T>& x, double tare_x, double alpha) {
+T SoftUnderMaxImpl(const std::vector<T>& x, double tare_x, double alpha_prime) {
+  // Note that the function
+  // f(x) = ∑ᵢ exp(αxᵢ)*xᵢ / ∑ⱼ exp(αxⱼ) satisfies
+  // f(x) = ∑ᵢ exp(α(xᵢ-m))*xᵢ / ∑ⱼ exp(α(xⱼ-m)) for any arbitrary m, by
+  // multiplying exp(-αm) on both the numerator and denominator.
   T soft_max{0};
   T sum_exp{0};
   for (const T& xi : x) {
-    T exp_xi = exp(alpha * (xi - tare_x));
+    const T exp_xi = exp(alpha_prime * (xi - tare_x));
     sum_exp += exp_xi;
-    exp_xi *= xi;
-    soft_max += exp_xi;
+    soft_max += exp_xi * xi;
   }
   return soft_max / sum_exp;
 }
 }  // namespace
 
 template <typename T>
-T SoftOverMax(const std::vector<T>& x, double alpha) {
+T SoftOverMax(const std::vector<T>& x, const double alpha) {
   DRAKE_THROW_UNLESS(x.size() > 0);
   DRAKE_THROW_UNLESS(alpha > 0);
   DRAKE_THROW_UNLESS(std::isfinite(alpha));
@@ -52,7 +58,7 @@ T SoftOverMax(const std::vector<T>& x, double alpha) {
 }
 
 template <typename T>
-T SoftUnderMax(const std::vector<T>& x, double alpha) {
+T SoftUnderMax(const std::vector<T>& x, const double alpha) {
   DRAKE_THROW_UNLESS(x.size() > 0);
   DRAKE_THROW_UNLESS(alpha > 0);
   DRAKE_THROW_UNLESS(std::isfinite(alpha));
@@ -62,7 +68,7 @@ T SoftUnderMax(const std::vector<T>& x, double alpha) {
 }
 
 template <typename T>
-T SoftOverMin(const std::vector<T>& x, double alpha) {
+T SoftOverMin(const std::vector<T>& x, const double alpha) {
   DRAKE_THROW_UNLESS(x.size() > 0);
   DRAKE_THROW_UNLESS(alpha > 0);
   DRAKE_THROW_UNLESS(std::isfinite(alpha));
@@ -73,7 +79,7 @@ T SoftOverMin(const std::vector<T>& x, double alpha) {
 }
 
 template <typename T>
-T SoftUnderMin(const std::vector<T>& x, double alpha) {
+T SoftUnderMin(const std::vector<T>& x, const double alpha) {
   DRAKE_THROW_UNLESS(x.size() > 0);
   DRAKE_THROW_UNLESS(alpha > 0);
   DRAKE_THROW_UNLESS(std::isfinite(alpha));

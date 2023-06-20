@@ -8,7 +8,7 @@
 namespace drake {
 namespace math {
 GTEST_TEST(SoftOverMax, TestDouble) {
-  const std::vector<double> x{{1., 2., 3., 1.5, 2.9, 2.99}};
+  const std::vector<double> x{{1.0, 2.0, 3.0, 1.5, 2.9, 2.99}};
   double alpha = 1;
   const double x_max1 = SoftOverMax(x, alpha);
   EXPECT_GT(x_max1, 3);
@@ -35,7 +35,7 @@ GTEST_TEST(SoftOverMax, TestAutodiff) {
   EXPECT_GT(x_max.value(), 3);
   EXPECT_NEAR(x_max.value(), 3, 0.01);
   EXPECT_TRUE(
-      CompareMatrices(x_max.derivatives(), Eigen::Vector2d(0, -1), 1e-3));
+      CompareMatrices(x_max.derivatives(), Eigen::Vector2d(0, -1), 1E-3));
 }
 
 GTEST_TEST(SoftUnderMax, TestDouble) {
@@ -48,6 +48,7 @@ GTEST_TEST(SoftUnderMax, TestDouble) {
   const double x_max10 = SoftUnderMax(x, alpha);
   EXPECT_LT(x_max10, 3);
   EXPECT_LT(x_max1, x_max10);
+  EXPECT_NEAR(x_max10, 3, 0.1);
 
   alpha = 100;
   const double x_max100 = SoftUnderMax(x, alpha);
@@ -78,6 +79,7 @@ GTEST_TEST(SoftOverMin, TestDouble) {
   const double x_min10 = SoftOverMin(x, alpha);
   EXPECT_GT(x_min10, 1);
   EXPECT_LT(x_min10, x_min1);
+  EXPECT_NEAR(x_min10, 1, 0.1);
 
   alpha = 100;
   const double x_min100 = SoftOverMin(x, alpha);
@@ -108,6 +110,7 @@ GTEST_TEST(SoftUnderMin, TestDouble) {
   const double x_min10 = SoftUnderMin(x, alpha);
   EXPECT_LT(x_min10, 1);
   EXPECT_GT(x_min10, x_min1);
+  EXPECT_NEAR(x_min10, 1, 0.1);
 
   alpha = 100;
   const double x_min100 = SoftUnderMin(x, alpha);
