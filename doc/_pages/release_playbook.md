@@ -272,7 +272,7 @@ the email address associated with your github account.
          the option vanishes and the notebook completes.
       4. The ``rendering_multibody_plant`` sometimes crashes with an interrupted
          error. In that case, click through to the "Environment" gear in the
-         right-hand panel, then into the ``init.ipynb`` notbook and re-run the
+         right-hand panel, then into the ``init.ipynb`` notebook and re-run the
          initialization. Then go back to  ``rendering_multibody_plant`` and try
          again.
    2. To deploy run each of the ~2 dozen notebooks (i.e., do this step for
@@ -280,15 +280,15 @@ the email address associated with your github account.
       ... etc.):
       1. In the right-hand panel of your screen, take note that each notebook
          appears in two places -- in "NOTEBOOKS" near the top and in "FILES"
-         near the bottom. The "NOTBOOKS" is the old copy; the "FILES" is the new
-         copy. Our goal is to replace the old copy with the new.
+         near the bottom. The "NOTEBOOKS" is the old copy; the "FILES" is the
+         new copy. Our goal is to replace the old copy with the new.
       2. Scroll down to the "FILES" and choose the top-most name. Right click on
          it and select "Move to notebooks".
          Be patient because the web interface could be slow, and there might be
          delay between copying and deleting the file.
       3. Because a notebook of that name already existed in "NOTEBOOKS" (the old
          copy), the moved notebook will be renamed with a ``-2`` suffix.
-      4. Scroll up to "NOTEBOOKS". Right click on the old copy (without ``-2`)
+      4. Scroll up to "NOTEBOOKS". Right click on the old copy (without ``-2``)
          and select "Delete" and confirm. Right click on the new notebook (with
          ``-2``) and select "Rename" and remove the ``-2`` suffix.
       5. Open the (new) notebook and click "Run notebook". It should succeed.
