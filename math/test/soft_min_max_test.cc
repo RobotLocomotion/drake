@@ -35,7 +35,7 @@ GTEST_TEST(SoftOverMax, TestAutodiff) {
   EXPECT_GT(x_max.value(), 3);
   EXPECT_NEAR(x_max.value(), 3, 0.01);
   EXPECT_TRUE(
-      CompareMatrices(x_max.derivatives(), Eigen::Vector2d(0, -1), 1e-3));
+      CompareMatrices(x_max.derivatives(), Eigen::Vector2d(0, -1), 1E-3));
 }
 
 GTEST_TEST(SoftUnderMax, TestDouble) {
