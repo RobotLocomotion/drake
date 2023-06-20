@@ -632,8 +632,8 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is re-expressed-in frame A violates CouldBePhysicallyValid().
   /// @see ReExpressInPlace()
-  RotationalInertia<T> ReExpress(const math::RotationMatrix<T>& R_AE) const
-      __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ReExpress(
+      const math::RotationMatrix<T>& R_AE) const {
     return RotationalInertia(*this).ReExpressInPlace(R_AE);
   }
 
@@ -677,9 +677,8 @@ class RotationalInertia {
   /// @throws std::exception for Debug builds if the rotational inertia that
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating the position vector p_BcmQ_E has no affect on the result.
-  RotationalInertia<T> ShiftFromCenterOfMass(const T& mass,
-                                             const Vector3<T>& p_BcmQ_E) const
-                                           __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftFromCenterOfMass(
+      const T& mass, const Vector3<T>& p_BcmQ_E) const {
     return RotationalInertia(*this).
            ShiftFromCenterOfMassInPlace(mass, p_BcmQ_E);
   }
@@ -715,9 +714,8 @@ class RotationalInertia {
   /// is shifted to about-point `Bcm` violates CouldBePhysicallyValid().
   /// @remark Negating the position vector `p_QBcm_E` has no affect on the
   /// result.
-  RotationalInertia<T> ShiftToCenterOfMass(const T& mass,
-                                           const Vector3<T>& p_QBcm_E) const
-                                           __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftToCenterOfMass(
+      const T& mass, const Vector3<T>& p_QBcm_E) const {
     return RotationalInertia(*this).ShiftToCenterOfMassInPlace(mass, p_QBcm_E);
   }
 
@@ -759,12 +757,11 @@ class RotationalInertia {
   /// is shifted to about-point Q violates CouldBePhysicallyValid().
   /// @remark Negating either (or both) position vectors p_PBcm_E and p_QBcm_E
   ///         has no affect on the result.
-  RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
-      const T& mass,
-      const Vector3<T>& p_PBcm_E,
-      const Vector3<T>& p_QBcm_E) const __attribute__((warn_unused_result)) {
+  [[nodiscard]] RotationalInertia<T> ShiftToThenAwayFromCenterOfMass(
+      const T& mass, const Vector3<T>& p_PBcm_E,
+      const Vector3<T>& p_QBcm_E) const {
     return RotationalInertia(*this).ShiftToThenAwayFromCenterOfMassInPlace(
-                                    mass, p_PBcm_E, p_QBcm_E);
+        mass, p_PBcm_E, p_QBcm_E);
   }
   ///@}
 

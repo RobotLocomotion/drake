@@ -56,8 +56,9 @@ SpatialInertia<T> SpatialInertia<T>::MakeFromCentralInertia(const T& mass,
     const Vector3<T>& p_PScm_E, const RotationalInertia<T>& I_SScm_E) {
   UnitInertia<T> G_SScm_E;
   G_SScm_E.SetFromRotationalInertia(I_SScm_E, mass);
+  // The next line checks that M_SScm_E is physically valid.
   const SpatialInertia<T> M_SScm_E(mass, Vector3<T>::Zero(), G_SScm_E);
-  return M_SScm_E.Shift(-p_PScm_E);  // Shift from Scm to point P.
+  return M_SScm_E.ShiftFromCenterOfMass(-p_PScm_E);  // Shift to M_SP_E.
 }
 
 template <typename T>
@@ -135,6 +136,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCapsuleWithDensity(
   ThrowUnlessValueIsPositiveFinite(density, "density", __func__);
   ThrowUnlessValueIsPositiveFinite(radius, "radius", __func__);
   ThrowUnlessValueIsPositiveFinite(length, "length", __func__);
+  ThrowUnlessUnitVectorIsMagnitudeOne(unit_vector, __func__);
 
   // Volume = π r² L + 4/3 π r³
   const T pi_r_squared = M_PI * radius * radius;
@@ -179,7 +181,7 @@ SpatialInertia<T> SpatialInertia<T>::SolidCylinderWithDensityAboutEnd(
       SpatialInertia<T>::SolidCylinderWithDensity(
           density, radius, length, unit_vector);
   const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
-  M_BBcm_B.ShiftInPlace(p_BcmBp_B);
+  M_BBcm_B.ShiftFromCenterOfMassInPlace(p_BcmBp_B);
   return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
 }
 
@@ -209,7 +211,7 @@ SpatialInertia<T> SpatialInertia<T>::ThinRodWithMassAboutEnd(
   SpatialInertia<T> M_BBcm_B =
       SpatialInertia<T>::ThinRodWithMass(mass, length, unit_vector);
   const Vector3<T> p_BcmBp_B = -0.5 * length * unit_vector;
-  M_BBcm_B.ShiftInPlace(p_BcmBp_B);
+  M_BBcm_B.ShiftFromCenterOfMassInPlace(p_BcmBp_B);
   return M_BBcm_B;  // Due to shift, this actually returns M_BBp_B.
 }
 
@@ -354,6 +356,21 @@ SpatialInertia<T>& SpatialInertia<T>::operator+=(
   }
   mass_ = total_mass;
   return *this;
+}
+
+template <typename T>
+SpatialInertia<T>& SpatialInertia<T>::ShiftFromCenterOfMassInPlace(
+    const Vector3<T>& p_ScmP_E) {
+  DRAKE_ASSERT(p_PScm_E_ == Vector3<T>::Zero());
+  G_SP_E_.ShiftFromCenterOfMassInPlace(p_ScmP_E);
+  p_PScm_E_ = -p_ScmP_E;
+  return *this;  // On entry, `this` is M_SScm_E. On return, `this` is M_SP_E.
+}
+
+template <typename T>
+SpatialInertia<T> SpatialInertia<T>::ShiftFromCenterOfMass(
+    const Vector3<T>& p_ScmP_E) const {
+  return SpatialInertia(*this).ShiftFromCenterOfMassInPlace(p_ScmP_E);
 }
 
 template <typename T>
