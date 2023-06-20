@@ -1,3 +1,4 @@
+#include "drake/bindings/pydrake/common/serialize_pybind.h"
 #include "drake/bindings/pydrake/documentation_pybind.h"
 #include "drake/bindings/pydrake/pydrake_pybind.h"
 #include "drake/bindings/pydrake/symbolic_types_pybind.h"
@@ -17,12 +18,15 @@ void DefineSolversBranchAndBound(py::module m) {
     constexpr auto& cls_doc = doc.MixedIntegerBranchAndBound;
     py::class_<Class> bnb_cls(m, "MixedIntegerBranchAndBound", cls_doc.doc);
 
-    py::class_<MixedIntegerBranchAndBound::Options>(
-        bnb_cls, "Options", cls_doc.Options.doc)
-        .def(py::init<>(), cls_doc.Options.ctor.doc)
-        .def_readwrite("max_explored_nodes",
-            &MixedIntegerBranchAndBound::Options::max_explored_nodes,
-            cls_doc.Options.max_explored_nodes.doc);
+    {
+      using Nested = MixedIntegerBranchAndBound::Options;
+      constexpr auto& options_doc = cls_doc.Options;
+      py::class_<Nested> options_cls(bnb_cls, "Options", options_doc.doc);
+      options_cls.def(ParamInit<Nested>());
+      DefAttributesUsingSerialize(&options_cls, options_doc);
+      DefReprUsingSerialize(&options_cls);
+      DefCopyAndDeepCopy(&options_cls);
+    }
 
     bnb_cls
         .def(py::init<const MathematicalProgram&, const SolverId&,
