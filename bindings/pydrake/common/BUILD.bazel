@@ -228,6 +228,18 @@ drake_pybind_library(
     py_srcs = ["_eigen_geometry_extra.py"],
 )
 
+drake_cc_library(
+    name = "copyable_unique_ptr_pybind",
+    srcs = [],
+    hdrs = ["copyable_unique_ptr_pybind.h"],
+    declare_installed_headers = 0,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//bindings/pydrake:pydrake_pybind",
+        "@pybind11",
+    ],
+)
+
 # ODR does not matter, because the singleton will be stored in Python.
 drake_cc_library(
     name = "cpp_param_pybind",
@@ -643,6 +655,14 @@ drake_py_unittest(
     name = "numpy_compare_test",
     deps = [
         "//bindings/pydrake/common/test_utilities:numpy_compare_py",
+    ],
+)
+
+drake_pybind_cc_googletest(
+    name = "copyable_unique_ptr_pybind_test",
+    cc_deps = [
+        ":copyable_unique_ptr_pybind",
+        "//bindings/pydrake:test_util_pybind",
     ],
 )
 
