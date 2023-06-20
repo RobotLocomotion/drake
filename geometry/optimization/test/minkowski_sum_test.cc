@@ -42,6 +42,18 @@ GTEST_TEST(MinkowskiSumTest, BasicTest) {
 
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
+  {
+    // Check new variables in AddPointInSetConstraints;
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    auto [new_vars, new_constraints] = S.AddPointInSetConstraints(&prog, x);
+    EXPECT_EQ(new_vars.rows(), 4);
+    EXPECT_FALSE(new_constraints.empty());
+    const auto result = solvers::Solve(prog);
+    const auto new_vars_val = result.GetSolution(new_vars);
+    EXPECT_TRUE(CompareMatrices(new_vars_val.head<2>(), P1.x(), 1E-10));
+    EXPECT_TRUE(CompareMatrices(new_vars_val.tail<2>(), P2.x(), 1E-10));
+  }
 
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());

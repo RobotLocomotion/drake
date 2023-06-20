@@ -86,16 +86,22 @@ bool Spectrahedron::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return sdp_->CheckSatisfied(sdp_->GetAllConstraints(), x, tol);
 }
 
-void Spectrahedron::DoAddPointInSetConstraints(
+std::pair<VectorX<symbolic::Variable>,
+          std::vector<solvers::Binding<solvers::Constraint>>>
+Spectrahedron::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
   DRAKE_DEMAND(x.size() == sdp_->num_vars());
+  auto ret =
+      std::make_pair(VectorX<symbolic::Variable>(0),
+                     std::vector<solvers::Binding<solvers::Constraint>>{});
   for (const auto& binding : sdp_->GetAllConstraints()) {
-    prog->AddConstraint(
+    ret.second.push_back(prog->AddConstraint(
         binding.evaluator(),
         GetVariablesByIndex(
-            x, sdp_->FindDecisionVariableIndices(binding.variables())));
+            x, sdp_->FindDecisionVariableIndices(binding.variables()))));
   }
+  return ret;
 }
 
 std::vector<Binding<Constraint>>

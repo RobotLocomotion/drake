@@ -340,22 +340,28 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return is_approx_equal_abstol(x, x_sol, tol);
 }
 
-void VPolytope::DoAddPointInSetConstraints(
+std::pair<VectorX<symbolic::Variable>,
+          std::vector<solvers::Binding<solvers::Constraint>>>
+VPolytope::DoAddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x) const {
   const int n = ambient_dimension();
   const int m = vertices_.cols();
+  std::vector<solvers::Binding<solvers::Constraint>> new_constraints;
   VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
   // 0 ≤ αᵢ ≤ 1.  The one is redundant, but may be better than inf for some
   // solvers.
-  prog->AddBoundingBoxConstraint(0, 1.0, alpha);
+  new_constraints.push_back(prog->AddBoundingBoxConstraint(0, 1.0, alpha));
   // v α - x = 0.
   MatrixXd A(n, m + n);
   A.leftCols(m) = vertices_;
   A.rightCols(n) = -MatrixXd::Identity(n, n);
-  prog->AddLinearEqualityConstraint(A, VectorXd::Zero(n), {alpha, x});
+  new_constraints.push_back(
+      prog->AddLinearEqualityConstraint(A, VectorXd::Zero(n), {alpha, x}));
   // ∑ αᵢ = 1.
-  prog->AddLinearEqualityConstraint(RowVectorXd::Ones(m), 1.0, alpha);
+  new_constraints.push_back(
+      prog->AddLinearEqualityConstraint(RowVectorXd::Ones(m), 1.0, alpha));
+  return std::make_pair(alpha, new_constraints);
 }
 
 std::vector<solvers::Binding<solvers::Constraint>>
