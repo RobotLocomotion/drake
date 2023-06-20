@@ -9,6 +9,7 @@ _EVO_MESH = forward_files(
     srcs = ["@drake_models//:dishes/bowls/evo_bowl_no_mtl.obj"],
     dest_prefix = "",
     strip_prefix = "@drake_models//:dishes/bowls/",
+    tags = ["manual"],
     visibility = ["//visibility:private"],
 )
 
