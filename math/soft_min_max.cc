@@ -18,6 +18,9 @@ overflow. It should be set to the extremum of x (i.e., max when alpha > 0,
 min when alpha < 0). */
 template <typename T>
 T SoftOverMaxImpl(const std::vector<T>& x, double tare_x, double alpha) {
+  // Note that the function
+  // f(x) = log(∑ᵢ exp(αxᵢ) /α satisfies f(x) = f(x - m) + m for any arbitrary
+  // m. Here we use m = tare_x.
   T sum_exp{0};
   for (const T& xi : x) {
     sum_exp += exp(alpha * (xi - tare_x));
@@ -29,6 +32,10 @@ T SoftOverMaxImpl(const std::vector<T>& x, double tare_x, double alpha) {
 (i.e., max when alpha > 0, min when alpha < 0). */
 template <typename T>
 T SoftUnderMaxImpl(const std::vector<T>& x, double tare_x, double alpha) {
+  // Note that the function
+  // f(x) = ∑ᵢ exp(αxᵢ)*xᵢ / ∑ⱼ exp(αxⱼ) satisfies
+  // f(x) = ∑ᵢ exp(α(xᵢ-m))*xᵢ / ∑ⱼ exp(α(xⱼ-m)) for any arbitrary m, by
+  // multiplying exp(-αm) on both the numerator and denominator.
   T soft_max{0};
   T sum_exp{0};
   for (const T& xi : x) {
