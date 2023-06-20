@@ -222,6 +222,7 @@ drake_cc_library(
         "//geometry:scene_graph",
         "//solvers:mathematical_program",
         "//solvers:solve",
+        "@gtest//:without_main",
     ],
 )
 
