@@ -123,6 +123,18 @@ GTEST_TEST(VPolytopeTest, UnitBoxTest) {
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in1_W));
   EXPECT_TRUE(CheckAddPointInSetConstraints(V, in2_W));
   EXPECT_FALSE(CheckAddPointInSetConstraints(V, out_W));
+  {
+    // Test the new variables in AddPointInSetConstraint
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<3>();
+    auto new_vars = V.AddPointInSetConstraints(&prog, x);
+    EXPECT_EQ(new_vars.rows(), V.vertices().cols());
+    auto result = solvers::Solve(prog);
+    EXPECT_TRUE(result.is_success());
+    const auto new_vars_val = result.GetSolution(new_vars);
+    const Eigen::Vector3d x_val = result.GetSolution(x);
+    EXPECT_TRUE(CompareMatrices(x_val, V.vertices() * new_vars_val, kTol));
+  }
 
   // Test SceneGraph constructor.
   auto [scene_graph, geom_id] =
