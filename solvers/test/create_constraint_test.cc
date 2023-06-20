@@ -88,6 +88,12 @@ TEST_F(ParseQuadraticConstraintTest, Test0) {
   CheckParseQuadraticConstraint(
       -x0_ * x0_ + 2 * x1_, -kInf, 3, std::nullopt,
       QuadraticConstraint::HessianType::kNegativeSemidefinite);
+
+  // Confirm that ParseConstraint also parses the quadratic constraint.
+  Binding<Constraint> binding =
+      internal::ParseConstraint(-x0_ * x0_ + 2 * x1_, -kInf, 3);
+  EXPECT_NE(dynamic_cast<QuadraticConstraint*>(binding.evaluator().get()),
+            nullptr);
 }
 
 void CheckParseLorentzConeConstraint(

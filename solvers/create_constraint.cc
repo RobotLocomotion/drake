@@ -37,6 +37,14 @@ Binding<Constraint> ParseConstraint(
     const Eigen::Ref<const Eigen::VectorXd>& ub) {
   DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
 
+  // Quadratic constraints.
+  if (v.size() == 1 && v[0].is_polynomial()) {
+    const symbolic::Polynomial poly{v[0]};
+    if (poly.TotalDegree() == 2) {
+      return ParseQuadraticConstraint(v[0], lb[0], ub[0]);
+    }
+  }
+
   if (!IsAffine(v)) {
     auto constraint = make_shared<ExpressionConstraint>(v, lb, ub);
     return CreateBinding(constraint, constraint->vars());
