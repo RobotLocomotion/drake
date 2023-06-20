@@ -53,8 +53,13 @@ def jacobian(function, x):
         der[i] = 1
         x_ad.flat[i] = AutoDiffXd(x.flat[i], der)
     y_ad = np.asarray(function(x_ad))
+    # An AutoDiffXd variable with empty derivatives should be treated as
+    # having all zero derivatives. Checking the length of the derivatives
+    # vector, and replacing it with all zeros ensures np.vstack doesn't
+    # throw an error when the shapes don't line up.
     return np.vstack(
-        [y.derivatives() for y in y_ad.flat]).reshape(y_ad.shape + (-1,))
+        [y.derivatives() if len(y.derivatives()) > 0 else np.zeros(x.size)
+            for y in y_ad.flat]).reshape(y_ad.shape + (-1,))
 
 
 # Method overloads:
