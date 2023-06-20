@@ -1305,9 +1305,9 @@ class MathematicalProgram {
    * @param ub A scalar, the upper bound.
    *
    * The resulting constraint may be a BoundingBoxConstraint, LinearConstraint,
-   * LinearEqualityConstraint, or ExpressionConstraint, depending on the
-   * arguments.  Constraints of the form x == 1 (which could be created as a
-   * BoundingBoxConstraint or LinearEqualityConstraint) will be
+   * LinearEqualityConstraint, QuadraticConstraint, or ExpressionConstraint,
+   * depending on the arguments.  Constraints of the form x == 1 (which could
+   * be created as a BoundingBoxConstraint or LinearEqualityConstraint) will be
    * constructed as a LinearEqualityConstraint.
    */
   Binding<Constraint> AddConstraint(const symbolic::Expression& e, double lb,
