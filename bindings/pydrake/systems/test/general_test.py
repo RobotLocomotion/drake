@@ -624,7 +624,7 @@ class TestGeneral(unittest.TestCase):
         self.assertGreater(len(GetIntegrationSchemes()), 5)
 
     def test_abstract_output_port_eval(self):
-        model_value = AbstractValue.Make("Hello World")
+        model_value = Value("Hello World")
         source = ConstantValueSource(copy.copy(model_value))
         context = source.CreateDefaultContext()
         output_port = source.get_output_port(0)
@@ -639,7 +639,7 @@ class TestGeneral(unittest.TestCase):
 
     def test_vector_output_port_eval(self):
         np_value = np.array([1., 2., 3.])
-        model_value = AbstractValue.Make(BasicVector(np_value))
+        model_value = Value(BasicVector(np_value))
         source = ConstantVectorSource(np_value)
         context = source.CreateDefaultContext()
         output_port = source.get_output_port(0)
@@ -659,7 +659,7 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_equal(basic.get_value(), np_value)
 
     def test_abstract_input_port_eval(self):
-        model_value = AbstractValue.Make("Hello World")
+        model_value = Value("Hello World")
         system = PassThrough(copy.copy(model_value))
         context = system.CreateDefaultContext()
         fixed = system.get_input_port(0).FixValue(context,
@@ -678,7 +678,7 @@ class TestGeneral(unittest.TestCase):
 
     def test_vector_input_port_eval(self):
         np_value = np.array([1., 2., 3.])
-        model_value = AbstractValue.Make(BasicVector(np_value))
+        model_value = Value(BasicVector(np_value))
         system = PassThrough(len(np_value))
         context = system.CreateDefaultContext()
         system.get_input_port(0).FixValue(context, np_value)
@@ -700,7 +700,7 @@ class TestGeneral(unittest.TestCase):
         np.testing.assert_equal(basic.get_value(), np_value)
 
     def test_abstract_input_port_fix_string(self):
-        model_value = AbstractValue.Make("")
+        model_value = Value("")
         system = PassThrough(copy.copy(model_value))
         context = system.CreateDefaultContext()
         input_port = system.get_input_port(0)
@@ -712,7 +712,7 @@ class TestGeneral(unittest.TestCase):
         self.assertEqual(value, "Alpha")
 
         # Fix to a type-erased string.
-        input_port.FixValue(context, AbstractValue.Make("Bravo"))
+        input_port.FixValue(context, Value("Bravo"))
         value = input_port.Eval(context)
         self.assertEqual(type(value), type(model_value.get_value()))
         self.assertEqual(value, "Bravo")
@@ -721,7 +721,7 @@ class TestGeneral(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             # A RuntimeError occurs when the Context detects that the
             # type-erased Value objects are incompatible.
-            input_port.FixValue(context, AbstractValue.Make(1))
+            input_port.FixValue(context, Value(1))
         with self.assertRaises(TypeError):
             # A TypeError occurs when pybind Value.set_value cannot match any
             # overload for how to assign the argument into the erased storage.
@@ -731,13 +731,13 @@ class TestGeneral(unittest.TestCase):
 
     def test_abstract_input_port_fix_object(self):
         # The port type is py::object, not any specific C++ type.
-        model_value = AbstractValue.Make(object())
+        model_value = Value(object())
         system = PassThrough(copy.copy(model_value))
         context = system.CreateDefaultContext()
         input_port = system.get_input_port(0)
 
         # Fix to a type-erased py::object.
-        input_port.FixValue(context, AbstractValue.Make(object()))
+        input_port.FixValue(context, Value(object()))
 
         # Fix to an int.
         input_port.FixValue(context, 1)
@@ -747,7 +747,7 @@ class TestGeneral(unittest.TestCase):
 
         # Fixing to an explicitly-typed Value instantiation is an error ...
         with self.assertRaises(RuntimeError):
-            input_port.FixValue(context, AbstractValue.Make("string"))
+            input_port.FixValue(context, Value("string"))
         # ... but implicit typing works just fine.
         input_port.FixValue(context, "string")
         value = input_port.Eval(context)
@@ -780,7 +780,7 @@ class TestGeneral(unittest.TestCase):
         numpy_compare.assert_equal(value, np.array([T(3.)]))
 
         # Fix to a type-erased BasicVector.
-        input_port.FixValue(context, AbstractValue.Make(BasicVector_[T]([4.])))
+        input_port.FixValue(context, Value(BasicVector_[T]([4.])))
         value = input_port.Eval(context)
         self.assertEqual(type(value), np.ndarray)
         numpy_compare.assert_equal(value, np.array([T(4.)]))
@@ -789,8 +789,7 @@ class TestGeneral(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             input_port.FixValue(context, np.array([0., 1.]))
         with self.assertRaises(RuntimeError):
-            input_port.FixValue(
-                context, AbstractValue.Make(BasicVector_[T]([0., 1.])))
+            input_port.FixValue(context, Value(BasicVector_[T]([0., 1.])))
 
         # Fix to a non-vector.
         with self.assertRaises(TypeError):
@@ -800,7 +799,7 @@ class TestGeneral(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             # A RuntimeError occurs when the Context detects that the
             # type-erased Value objects are incompatible.
-            input_port.FixValue(context, AbstractValue.Make("string"))
+            input_port.FixValue(context, Value("string"))
 
     @numpy_compare.check_all_types
     def test_allocate_input_vector(self, T):
@@ -810,7 +809,7 @@ class TestGeneral(unittest.TestCase):
 
     @numpy_compare.check_all_types
     def test_allocate_input_abstract(self, T):
-        system = PassThrough_[T](AbstractValue.Make("a"))
+        system = PassThrough_[T](Value("a"))
         value = system.AllocateInputAbstract(system.get_input_port())
         self.assertIsInstance(value, Value[str])
 

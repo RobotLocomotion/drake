@@ -75,7 +75,6 @@ PYBIND11_MODULE(value, m) {
   // Add value instantiations for nominal data types.
   AddPrimitiveValueInstantiations(m);
 
-  // This adds Pythonic AbstractValue.Make.
   ExecuteExtraPythonCode(m);
 }
 

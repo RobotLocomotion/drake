@@ -4,7 +4,12 @@
 
 #include "drake/common/test_utilities/eigen_matrix_compare.h"
 #include "drake/common/test_utilities/expect_throws_message.h"
+#include "drake/multibody/fem/linear_corotated_model.h"
+#include "drake/multibody/fem/linear_simplex_element.h"
+#include "drake/multibody/fem/simplex_gaussian_quadrature.h"
 #include "drake/multibody/fem/test/dummy_model.h"
+#include "drake/multibody/fem/volumetric_element.h"
+#include "drake/multibody/fem/volumetric_model.h"
 
 namespace drake {
 namespace multibody {
@@ -56,14 +61,12 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   builder.AddTwoElementsWithSharedNodes();
   builder.Build();
   unique_ptr<FemState<double>> fem_state = model.MakeFemState();
-  unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix =
-      model.MakePetscSymmetricBlockSparseTangentMatrix();
+  unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+      tangent_matrix = model.MakeTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
   const Vector3d weights(0.1, 0.2, 0.3);
   model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get());
-  tangent_matrix->AssembleIfNecessary();
-  const MatrixXd tangent_matrix_dense = tangent_matrix->MakeDenseMatrix();
 
   MatrixXd expected_mass_matrix =
       MatrixXd::Zero(model.num_dofs(), model.num_dofs());
@@ -88,9 +91,51 @@ GTEST_TEST(FemModelTest, CalcTangentMatrix) {
   const MatrixXd expected_tangent_matrix =
       weights(0) * expected_stiffness_matrix +
       weights(1) * expected_damping_matrix + weights(2) * expected_mass_matrix;
-  EXPECT_TRUE(CompareMatrices(tangent_matrix_dense, expected_tangent_matrix,
-                              std::numeric_limits<double>::epsilon(),
-                              MatrixCompareType::relative));
+  EXPECT_TRUE(CompareMatrices(
+      tangent_matrix->MakeDenseMatrix(), expected_tangent_matrix,
+      std::numeric_limits<double>::epsilon(), MatrixCompareType::relative));
+
+  /* Test the PetscSymmetricBlockSparseMatrix variant of tangent matrix. */
+  unique_ptr<internal::PetscSymmetricBlockSparseMatrix> petsc_tangent_matrix =
+      model.MakePetscSymmetricBlockSparseTangentMatrix();
+  ASSERT_EQ(petsc_tangent_matrix->rows(), model.num_dofs());
+  ASSERT_EQ(petsc_tangent_matrix->cols(), model.num_dofs());
+  model.CalcTangentMatrix(*fem_state, weights, petsc_tangent_matrix.get());
+  petsc_tangent_matrix->AssembleIfNecessary();
+  EXPECT_TRUE(CompareMatrices(
+      petsc_tangent_matrix->MakeDenseMatrix(), expected_tangent_matrix,
+      std::numeric_limits<double>::epsilon(), MatrixCompareType::relative));
+}
+
+GTEST_TEST(FemModelTest, CalcTangentMatrixNoAutoDiff) {
+  using T = AutoDiffXd;
+  constexpr int kNaturalDimension = 3;
+  constexpr int kSpatialDimension = 3;
+  constexpr int kQuadratureOrder = 1;
+  using QuadratureType =
+      fem::internal::SimplexGaussianQuadrature<kNaturalDimension,
+                                               kQuadratureOrder>;
+  constexpr int kNumQuads = QuadratureType::num_quadrature_points;
+  using IsoparametricElementType =
+      fem::internal::LinearSimplexElement<T, kNaturalDimension,
+                                          kSpatialDimension, kNumQuads>;
+  using ConstitutiveModelType =
+      fem::internal::LinearCorotatedModel<T, kNumQuads>;
+  using FemElementType =
+      fem::internal::VolumetricElement<IsoparametricElementType, QuadratureType,
+                                       ConstitutiveModelType>;
+  using FemModelType = fem::internal::VolumetricModel<FemElementType>;
+  auto fem_model = std::make_unique<FemModelType>();
+  DRAKE_EXPECT_THROWS_MESSAGE(fem_model->MakeTangentMatrix(),
+                              ".*only.*double.*");
+  unique_ptr<FemState<T>> fem_state = fem_model->MakeFemState();
+  contact_solvers::internal::BlockSparsityPattern empty_pattern({}, {});
+  contact_solvers::internal::Block3x3SparseSymmetricMatrix tangent_matrix(
+      empty_pattern);
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      fem_model->CalcTangentMatrix(*fem_state, Vector3<T>(0.1, 0.2, 0.3),
+                                   &tangent_matrix),
+      ".*only.*double.*");
 }
 
 /* Verifies that performing calculations on incompatible model and states throws
@@ -116,13 +161,23 @@ GTEST_TEST(FemModelTest, IncompatibleModelState) {
 
   /* Trying to calculate tangent matrix with the old state causes an exception.
    */
-  unique_ptr<internal::PetscSymmetricBlockSparseMatrix> tangent_matrix =
-      model.MakePetscSymmetricBlockSparseTangentMatrix();
+  unique_ptr<contact_solvers::internal::Block3x3SparseSymmetricMatrix>
+      tangent_matrix = model.MakeTangentMatrix();
   ASSERT_EQ(tangent_matrix->rows(), model.num_dofs());
   ASSERT_EQ(tangent_matrix->cols(), model.num_dofs());
   const Vector3d weights(0.1, 0.2, 0.3);
   DRAKE_EXPECT_THROWS_MESSAGE(
       model.CalcTangentMatrix(*fem_state, weights, tangent_matrix.get()),
+      "CalcTangentMatrix.* model and state are not compatible.");
+
+  /* Trying to calculate the petsc tangent matrix with the old state causes an
+   exception. */
+  unique_ptr<internal::PetscSymmetricBlockSparseMatrix> petsc_tangent_matrix =
+      model.MakePetscSymmetricBlockSparseTangentMatrix();
+  ASSERT_EQ(petsc_tangent_matrix->rows(), model.num_dofs());
+  ASSERT_EQ(petsc_tangent_matrix->cols(), model.num_dofs());
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      model.CalcTangentMatrix(*fem_state, weights, petsc_tangent_matrix.get()),
       "CalcTangentMatrix.* model and state are not compatible.");
 }
 

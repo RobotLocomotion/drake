@@ -38,6 +38,7 @@ drake_cc_package_library(
         ":optitrack_receiver",
         ":optitrack_sender",
         ":rgbd_sensor",
+        ":rgbd_sensor_async",
         ":rotary_encoders",
         ":sim_rgbd_sensor",
     ],
@@ -243,6 +244,19 @@ drake_cc_library(
 )
 
 drake_cc_library(
+    name = "rgbd_sensor_async",
+    srcs = ["rgbd_sensor_async.cc"],
+    hdrs = ["rgbd_sensor_async.h"],
+    deps = [
+        ":camera_info",
+        ":image",
+        ":rgbd_sensor",
+        "//geometry:scene_graph",
+        "//systems/framework:diagram_builder",
+    ],
+)
+
+drake_cc_library(
     name = "rotary_encoders",
     srcs = ["rotary_encoders.cc"],
     hdrs = ["rotary_encoders.h"],
@@ -403,6 +417,48 @@ drake_cc_googletest(
         ":rgbd_sensor",
         "//common/test_utilities:eigen_matrix_compare",
         "//geometry/test_utilities:dummy_render_engine",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_sensor_async_test",
+    deps = [
+        ":rgbd_sensor_async",
+        "//common/test_utilities:expect_throws_message",
+        "//geometry/test_utilities:dummy_render_engine",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_sensor_async_gl_test",
+    timeout = "moderate",
+    args = select({
+        "//tools/cc_toolchain:apple": [
+            # The GL render engine is not available on macOS.
+            "--gtest_filter=-*",
+        ],
+        "//conditions:default": [],
+    }),
+    data = [
+        ":test/rgbd_sensor_async_gl_test.dmd.yaml",
+        "//examples/manipulation_station:models",
+    ],
+    tags = vtk_test_tags() + [
+        # Similar to #7520, the GL vendor's libraries are not sufficiently
+        # instrumented for compatibility with TSan.
+        "no_tsan",
+    ],
+    deps = [
+        ":image_writer",
+        ":rgbd_sensor",
+        ":rgbd_sensor_async",
+        "//common/trajectories:piecewise_pose",
+        "//geometry/render_gl",
+        "//multibody/parsing",
+        "//multibody/plant",
+        "//systems/analysis:simulator",
     ],
 )
 

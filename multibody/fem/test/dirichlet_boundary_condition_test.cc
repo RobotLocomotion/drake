@@ -16,10 +16,20 @@ namespace {
 /* An arbitrary number of degree of freedom made up for testing purpose. */
 static constexpr int kNumDofs = 6;
 using DenseMatrix = Eigen::Matrix<double, kNumDofs, kNumDofs>;
+using contact_solvers::internal::Block3x3SparseSymmetricMatrix;
+using Eigen::Matrix3d;
 using Eigen::VectorXd;
 using std::make_unique;
 using std::unique_ptr;
-using std::vector;
+
+// clang-format off
+const Matrix3d A00 = (Eigen::Matrix3d() <<  3,   1,    0.5,
+                                            1,   2,    0.25,
+                                            0.5, 0.25, 3).finished();
+const Matrix3d A11 = (Eigen::Matrix3d() <<  0.3,  0.1,    0.05,
+                                            0.1,  0.2,    0.025,
+                                            0.05, 0.025,  0.3).finished();
+// clang-format on
 
 class DirichletBoundaryConditionTest : public ::testing::Test {
  protected:
@@ -44,31 +54,31 @@ class DirichletBoundaryConditionTest : public ::testing::Test {
     return residual;
   }
 
-  /* Makes an arbitrary SPD tangent matrix with appropriate size in PETSc
-   format. The PETSc matrix contains two block matrices of size 3-by-3 on the
-   diagonal blocks.*/
+  /* Makes a block diagonal tangent matrix with
+    [ A00   0;
+      0    A11]. */
+  static unique_ptr<Block3x3SparseSymmetricMatrix> MakeTangentMatrix() {
+    const std::vector<std::vector<int>> sparsity = {std::vector<int>({0}),
+                                                    std::vector<int>({1})};
+    contact_solvers::internal::BlockSparsityPattern block_pattern(
+        std::vector<int>(2, 3), sparsity);
+    auto A = make_unique<Block3x3SparseSymmetricMatrix>(block_pattern);
+    A->SetBlock(0, 0, A00);
+    A->SetBlock(1, 1, A11);
+    return A;
+  }
+
+  /* Makes a PETSc tangent matrix with
+    [ A00   0;
+      0    A11]. */
   static unique_ptr<PetscSymmetricBlockSparseMatrix> MakePetscTangentMatrix() {
-    const vector<int> num_upper_triangular_blocks_per_row = {1, 1};
+    const std::vector<int> num_upper_triangular_blocks_per_row = {1, 1};
     auto A = make_unique<PetscSymmetricBlockSparseMatrix>(
         kNumDofs, 3, num_upper_triangular_blocks_per_row);
     const Vector1<int> index0(0);
-    Eigen::Matrix3d A_block00;
-    // clang-format off
-    A_block00 << 3,   1,    0.5,
-                 1,   2,    0.25,
-                 0.5, 0.25, 3;
-    // clang-format on
-    A->AddToBlock(index0, A_block00);
-
+    A->AddToBlock(index0, A00);
     const Vector1<int> index1(1);
-    Eigen::Matrix3d A_block11;
-    // clang-format off
-    A_block11 << 0.3,  0.1,   0.05,
-                 0.1,  0.2,   0.025,
-                 0.05, 0.025, 0.3;
-    // clang-format on
-    A->AddToBlock(index1, A_block11);
-
+    A->AddToBlock(index1, A11);
     A->AssembleIfNecessary();
     return A;
   }
@@ -106,20 +116,35 @@ TEST_F(DirichletBoundaryConditionTest, ApplyHomogeneousBoundaryCondition) {
  given tangent matrix. */
 TEST_F(DirichletBoundaryConditionTest,
        ApplyBoundaryConditionResidualAndTangentMatrix) {
-  DenseMatrix A_expected;
+  DenseMatrix expected_tangent_matrix;
   // clang-format off
-  A_expected << 1, 0, 0,    0,    0,     0,
-                0, 1, 0,    0,    0,     0,
-                0, 0, 1,    0,    0,     0,
+  expected_tangent_matrix << 3, 0, 0,    0,    0,     0,
+                             0, 2, 0,    0,    0,     0,
+                             0, 0, 3,    0,    0,     0,
 
-                0, 0, 0,    0.3,  0.1,   0.05,
-                0, 0, 0,    0.1,  0.2,   0.025,
-                0, 0, 0,    0.05, 0.025, 0.3;
+                             0, 0, 0,    0.3,  0.1,   0.05,
+                             0, 0, 0,    0.1,  0.2,   0.025,
+                             0, 0, 0,    0.05, 0.025, 0.3;
   // clang-format on
 
+  auto A = MakeTangentMatrix();
+  bc_.ApplyBoundaryConditionToTangentMatrix(A.get());
+  EXPECT_TRUE(CompareMatrices(A->MakeDenseMatrix(), expected_tangent_matrix));
+
+  DenseMatrix expected_petsc_matrix;
+  // clang-format off
+  expected_petsc_matrix << 1, 0, 0,    0,    0,     0,
+                           0, 1, 0,    0,    0,     0,
+                           0, 0, 1,    0,    0,     0,
+
+                           0, 0, 0,    0.3,  0.1,   0.05,
+                           0, 0, 0,    0.1,  0.2,   0.025,
+                           0, 0, 0,    0.05, 0.025, 0.3;
+  // clang-format on
   auto A_petsc = MakePetscTangentMatrix();
   bc_.ApplyBoundaryConditionToTangentMatrix(A_petsc.get());
-  EXPECT_TRUE(CompareMatrices(A_petsc->MakeDenseMatrix(), A_expected));
+  EXPECT_TRUE(
+      CompareMatrices(A_petsc->MakeDenseMatrix(), expected_petsc_matrix));
 }
 
 /* Tests out-of-bound boundary conditions throw an exception. */
@@ -134,6 +159,10 @@ TEST_F(DirichletBoundaryConditionTest, OutOfBound) {
   VectorXd b = MakeResidual();
   DRAKE_EXPECT_THROWS_MESSAGE(
       bc_.ApplyHomogeneousBoundaryCondition(&b),
+      "An index of the Dirichlet boundary condition is out of range.");
+  auto A = MakeTangentMatrix();
+  DRAKE_EXPECT_THROWS_MESSAGE(
+      bc_.ApplyBoundaryConditionToTangentMatrix(A.get()),
       "An index of the Dirichlet boundary condition is out of range.");
   auto A_petsc = MakePetscTangentMatrix();
   DRAKE_EXPECT_THROWS_MESSAGE(

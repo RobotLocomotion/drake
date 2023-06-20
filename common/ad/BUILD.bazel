@@ -24,6 +24,7 @@ drake_cc_library(
     ],
     hdrs = [
         "auto_diff.h",
+        "internal/eigen_specializations.h",
         "internal/partials.h",
         "internal/standard_operations.h",
     ],
@@ -36,6 +37,14 @@ drake_cc_googletest(
     name = "auto_diff_basic_test",
     deps = [
         ":auto_diff",
+    ],
+)
+
+drake_cc_googletest(
+    name = "matrix_test",
+    deps = [
+        ":auto_diff",
+        "//common/test_utilities:eigen_matrix_compare",
     ],
 )
 
@@ -107,4 +116,4 @@ drake_cc_googletest(
     ],
 )
 
-add_lint_tests(enable_clang_format_lint = False)
+add_lint_tests()

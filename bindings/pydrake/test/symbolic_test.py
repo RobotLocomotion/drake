@@ -757,16 +757,22 @@ class TestSymbolicExpression(unittest.TestCase):
         e_xv = np.array([e_x, e_x])
         e_yv = np.array([e_y, e_y])
         # N.B. In some versions of NumPy, `!=` for dtype=object implies ID
-        # comparison (e.g. `is`).
+        # comparison (e.g. `is`). Depending on the verison of numpy, we might
+        # see either a DeprecationWarning from numpy or the __nonzero__ error
+        # from our code. Once we're at numpy >= 1.25 as our minimum version
+        # (approximately 2026-05-01) we can probably simplify these checks.
         # - All false.
-        with self.assertRaises(DeprecationWarning):
+        with self.assertRaisesRegex((DeprecationWarning, RuntimeError),
+                                    "(elementwise comparison|__nonzero__)"):
             value = (e_xv == e_yv)
         # - True + False.
-        with self.assertRaises(DeprecationWarning):
+        with self.assertRaisesRegex((DeprecationWarning, RuntimeError),
+                                    "(elementwise comparison|__nonzero__)"):
             e_xyv = np.array([e_x, e_y])
             value = (e_xv == e_xyv)
         # - All true.
-        with self.assertRaises(DeprecationWarning):
+        with self.assertRaisesRegex((DeprecationWarning, RuntimeError),
+                                    "(elementwise comparison|__nonzero__)"):
             value = (e_xv == e_xv)
 
     def test_functions_with_float(self):

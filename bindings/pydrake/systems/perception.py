@@ -1,6 +1,6 @@
 import numpy as np
 
-from pydrake.common.value import AbstractValue
+from pydrake.common.value import Value
 from pydrake.math import RigidTransform
 from pydrake.perception import BaseField, Fields, PointCloud
 from pydrake.systems.framework import LeafSystem
@@ -87,14 +87,14 @@ class PointCloudConcatenation(LeafSystem):
         for id in self._id_list:
             self._point_cloud_ports[id] = self.DeclareAbstractInputPort(
                 "point_cloud_CiSi_{}".format(id),
-                AbstractValue.Make(PointCloud(fields=output_fields)))
+                Value(PointCloud(fields=output_fields)))
 
             self._transform_ports[id] = self.DeclareAbstractInputPort(
                 "X_FCi_{}".format(id),
-                AbstractValue.Make(RigidTransform.Identity()))
+                Value(RigidTransform.Identity()))
 
         self.DeclareAbstractOutputPort("point_cloud_FS",
-                                       lambda: AbstractValue.Make(
+                                       lambda: Value(
                                            PointCloud(fields=output_fields)),
                                        self.DoCalcOutput)
 

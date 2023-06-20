@@ -97,7 +97,7 @@ class TestPerception(unittest.TestCase):
         with self.assertRaises(RuntimeError) as ex:
             mut.PointCloud(new_size=0, fields=mut.Fields(mut.BaseField.kNone))
         # Test Systems' value registration.
-        self.assertIsInstance(AbstractValue.Make(pc), Value[mut.PointCloud])
+        self.assertIsInstance(Value(pc), Value[mut.PointCloud])
 
         pc = mut.PointCloud(new_size=2, fields=mut.Fields(mut.BaseField.kXYZs))
         test_xyzs = [[1., 2., 3.], [4., 5., 6.]]
