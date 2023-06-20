@@ -38,6 +38,14 @@ Binding<Constraint> ParseConstraint(
   DRAKE_ASSERT(v.rows() == lb.rows() && v.rows() == ub.rows());
 
   if (!IsAffine(v)) {
+    // Quadratic constraints.
+    if (v.size() == 1 && v[0].is_polynomial()) {
+      const symbolic::Polynomial poly{v[0]};
+      if (poly.TotalDegree() == 2) {
+        return ParseQuadraticConstraint(v[0], lb[0], ub[0]);
+      }
+    }
+
     auto constraint = make_shared<ExpressionConstraint>(v, lb, ub);
     return CreateBinding(constraint, constraint->vars());
   }  // else, continue on to linear-specific version below.

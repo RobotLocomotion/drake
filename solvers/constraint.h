@@ -543,8 +543,10 @@ class EvaluatorConstraint : public Constraint {
 /**
  * A constraint on the values of multivariate polynomials.
  *
- *  lb[i] <= P[i](x, y...) <= ub[i], where each P[i] is a multivariate
- *  polynomial in x, y...
+ * @verbatim
+ * lb[i] ≤ P[i](x, y...) ≤ ub[i],
+ * @endverbatim
+ * where each P[i] is a multivariate polynomial in x, y...
  *
  * The Polynomial class uses a different variable naming scheme; thus the
  * caller must provide a list of Polynomial::VarType variables that correspond
