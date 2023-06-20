@@ -66,10 +66,16 @@ bool Point::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return is_approx_equal_abstol(x, x_, tol);
 }
 
-void Point::DoAddPointInSetConstraints(
+std::pair<VectorX<symbolic::Variable>,
+          std::vector<solvers::Binding<solvers::Constraint>>>
+Point::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
-  prog->AddBoundingBoxConstraint(x_, x_, x);
+  auto ret =
+      std::make_pair(VectorX<symbolic::Variable>(0),
+                     std::vector<solvers::Binding<solvers::Constraint>>{});
+  ret.second.push_back(prog->AddBoundingBoxConstraint(x_, x_, x));
+  return ret;
 }
 
 std::vector<Binding<Constraint>>

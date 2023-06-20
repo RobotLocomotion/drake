@@ -137,20 +137,40 @@ bool MinkowskiSum::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return result.is_success();
 }
 
-void MinkowskiSum::DoAddPointInSetConstraints(
+std::pair<VectorX<symbolic::Variable>,
+          std::vector<solvers::Binding<solvers::Constraint>>>
+MinkowskiSum::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
   auto X = prog->NewContinuousVariables(ambient_dimension(), num_terms(), "x");
+  std::vector<symbolic::Variable> new_vars;
+  new_vars.reserve(X.size());
+  std::vector<solvers::Binding<solvers::Constraint>> new_constraints;
+  for (int j = 0; j < X.cols(); ++j) {
+    for (int i = 0; i < X.rows(); ++i) {
+      new_vars.push_back(X(i, j));
+    }
+  }
   RowVectorXd a = RowVectorXd::Ones(num_terms() + 1);
   a[0] = -1;
   for (int i = 0; i < ambient_dimension(); ++i) {
     // ∑ⱼ xⱼ[i] = x[i]
-    prog->AddLinearEqualityConstraint(
-        a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()});
+    new_constraints.push_back(prog->AddLinearEqualityConstraint(
+        a, 0.0, {Vector1<Variable>(x[i]), X.row(i).transpose()}));
   }
   for (int j = 0; j < num_terms(); ++j) {
-    sets_[j]->AddPointInSetConstraints(prog, X.col(j));
+    const auto [new_vars_in_sets_j, new_constraints_in_sets_j] =
+        sets_[j]->AddPointInSetConstraints(prog, X.col(j));
+    for (int k = 0; k < new_vars_in_sets_j.rows(); ++k) {
+      new_vars.push_back(new_vars_in_sets_j(k));
+    }
+    new_constraints.insert(new_constraints.end(),
+                           new_constraints_in_sets_j.begin(),
+                           new_constraints_in_sets_j.end());
   }
+  const VectorX<symbolic::Variable> new_vars_vec =
+      Eigen::Map<VectorX<symbolic::Variable>>(new_vars.data(), new_vars.size());
+  return std::make_pair(new_vars_vec, new_constraints);
 }
 
 std::vector<Binding<Constraint>>

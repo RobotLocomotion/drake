@@ -93,12 +93,25 @@ bool Intersection::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return true;
 }
 
-void Intersection::DoAddPointInSetConstraints(
+std::pair<VectorX<symbolic::Variable>,
+          std::vector<solvers::Binding<solvers::Constraint>>>
+Intersection::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
+  std::vector<symbolic::Variable> new_vars;
+  std::vector<solvers::Binding<solvers::Constraint>> new_constraints;
   for (const auto& s : sets_) {
-    s->AddPointInSetConstraints(prog, x);
+    const auto [new_vars_in_s, new_constraints_in_s] =
+        s->AddPointInSetConstraints(prog, x);
+    for (int i = 0; i < new_vars_in_s.rows(); ++i) {
+      new_vars.push_back(new_vars_in_s(i));
+    }
+    new_constraints.insert(new_constraints.end(), new_constraints_in_s.begin(),
+                           new_constraints_in_s.end());
   }
+  const VectorX<symbolic::Variable> new_vars_vec =
+      Eigen::Map<VectorX<symbolic::Variable>>(new_vars.data(), new_vars.size());
+  return std::make_pair(new_vars_vec, new_constraints);
 }
 
 std::vector<Binding<Constraint>>

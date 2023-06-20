@@ -3,6 +3,8 @@
 #include <limits>
 #include <utility>
 
+#include <gtest/gtest.h>
+
 #include "drake/geometry/optimization/convex_set.h"
 #include "drake/geometry/scene_graph.h"
 #include "drake/math/rigid_transform.h"
@@ -32,7 +34,9 @@ bool CheckAddPointInSetConstraints(
     const ConvexSet& set, const Eigen::Ref<const Eigen::VectorXd>& point) {
   solvers::MathematicalProgram prog;
   auto x = prog.NewContinuousVariables(point.size());
-  set.AddPointInSetConstraints(&prog, x);
+  const auto [new_vars, new_constraints] =
+      set.AddPointInSetConstraints(&prog, x);
+  EXPECT_EQ(prog.num_vars(), x.rows() + new_vars.rows());
   // x = point.
   prog.AddBoundingBoxConstraint(point, point, x);
   return solvers::Solve(prog).is_success();
