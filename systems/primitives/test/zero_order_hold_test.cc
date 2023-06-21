@@ -100,6 +100,35 @@ class ZeroOrderHoldTest : public ::testing::TestWithParam<bool> {
   Eigen::Vector3d input_value_;
 };
 
+// Tests that the vector constructor establishes the proper period and offset.
+GTEST_TEST(SimpleZeroOrderHoldTest, VectorPeriodAndOffset) {
+  const double offset = 0.02;
+  ZeroOrderHold<double> dut(kPeriod, kLength, offset);
+  EXPECT_EQ(dut.period(), kPeriod);
+  EXPECT_EQ(dut.offset(), offset);
+  const std::optional<PeriodicEventData> data =
+      dut.GetUniquePeriodicDiscreteUpdateAttribute();
+  ASSERT_TRUE(data.has_value());
+  EXPECT_EQ(data->period_sec(), kPeriod);
+  EXPECT_EQ(data->offset_sec(), offset);
+}
+
+// Tests that the abstract constructor establishes the proper period and offset.
+GTEST_TEST(SimpleZeroOrderHoldTest, AbstractPeriodAndOffset) {
+  const double offset = 0.02;
+  ZeroOrderHold<double> dut(kPeriod, Value<std::string>(), offset);
+  EXPECT_EQ(dut.period(), kPeriod);
+  EXPECT_EQ(dut.offset(), offset);
+  const auto events_by_period_map = dut.MapPeriodicEventsByTiming();
+  ASSERT_EQ(events_by_period_map.size(), 1);
+  const PeriodicEventData& schedule = events_by_period_map.begin()->first;
+  const std::vector<const Event<double>*>& events =
+      events_by_period_map.begin()->second;
+  EXPECT_EQ(schedule.period_sec(), kPeriod);
+  EXPECT_EQ(schedule.offset_sec(), offset);
+  EXPECT_EQ(events.size(), 1);
+}
+
 // Tests that the zero-order hold has one input and one output.
 TEST_P(ZeroOrderHoldTest, Topology) {
   EXPECT_EQ(1, hold_->num_input_ports());
