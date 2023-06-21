@@ -12,6 +12,7 @@
 #include "drake/systems/sensors/image_writer.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 #include "drake/systems/sensors/rgbd_sensor_async.h"
+#include "drake/systems/sensors/rgbd_sensor_discrete.h"
 
 // This is an end-to-end acceptance test of the RgbdSensorAsync.
 //

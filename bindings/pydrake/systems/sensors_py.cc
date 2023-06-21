@@ -22,6 +22,7 @@
 #include "drake/systems/sensors/pixel_types.h"
 #include "drake/systems/sensors/rgbd_sensor.h"
 #include "drake/systems/sensors/rgbd_sensor_async.h"
+#include "drake/systems/sensors/rgbd_sensor_discrete.h"
 
 using std::string;
 using std::unique_ptr;
