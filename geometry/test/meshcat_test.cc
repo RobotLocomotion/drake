@@ -276,28 +276,29 @@ GTEST_TEST(MeshcatTest, NumActive) {
 GTEST_TEST(MeshcatTest, SetObjectWithShape) {
   Meshcat meshcat;
   EXPECT_TRUE(meshcat.GetPackedObject("sphere").empty());
-  meshcat.SetObject("sphere", Sphere(.25), Rgba(1.0, 0, 0, 1));
+  meshcat.SetObject("sphere", Sphere(0.25), Rgba(1.0, 0, 0, 1));
   EXPECT_FALSE(meshcat.GetPackedObject("sphere").empty());
-  meshcat.SetObject("cylinder", Cylinder(.25, .5), Rgba(0.0, 1.0, 0, 1));
+  meshcat.SetObject("cylinder", Cylinder(0.25, 0.5), Rgba(0.0, 1.0, 0, 1));
   EXPECT_FALSE(meshcat.GetPackedObject("cylinder").empty());
   // HalfSpaces are not supported yet; this should only log a warning.
   meshcat.SetObject("halfspace", HalfSpace());
   EXPECT_TRUE(meshcat.GetPackedObject("halfspace").empty());
-  meshcat.SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
+  meshcat.SetObject("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1));
   EXPECT_FALSE(meshcat.GetPackedObject("box").empty());
-  meshcat.SetObject("ellipsoid", Ellipsoid(.25, .25, .5), Rgba(1., 0, 1, 1));
+  meshcat.SetObject("ellipsoid", Ellipsoid(0.25, 0.25, 0.5),
+                    Rgba(1.0, 0, 1, 1));
   EXPECT_FALSE(meshcat.GetPackedObject("ellipsoid").empty());
-  meshcat.SetObject("capsule", Capsule(.25, .5));
+  meshcat.SetObject("capsule", Capsule(0.25, 0.5));
   EXPECT_FALSE(meshcat.GetPackedObject("capsule").empty());
   meshcat.SetObject(
       "mesh", Mesh(FindResourceOrThrow(
                        "drake/geometry/render/test/meshes/box.obj"),
-                   .25));
+                   0.25));
   EXPECT_FALSE(meshcat.GetPackedObject("mesh").empty());
   meshcat.SetObject(
       "convex", Convex(FindResourceOrThrow(
                            "drake/geometry/render/test/meshes/box.obj"),
-                       .25));
+                       0.25));
   EXPECT_FALSE(meshcat.GetPackedObject("convex").empty());
   // Bad filename (no extension).  Should only log a warning.
   meshcat.SetObject("bad", Mesh("test"));
@@ -349,11 +350,11 @@ GTEST_TEST(MeshcatTest, SetObjectWithTriangleSurfaceMesh) {
   for (int v = 0; v < 4; ++v) vertices.emplace_back(vertex_data[v]);
   TriangleSurfaceMesh<double> surface_mesh(
       std::move(faces), std::move(vertices));
-  meshcat.SetObject("triangle_mesh", surface_mesh, Rgba(.9, 0, .9, 1.0));
+  meshcat.SetObject("triangle_mesh", surface_mesh, Rgba(0.9, 0, 0.9, 1.0));
   EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh").empty());
 
   meshcat.SetObject("triangle_mesh_wireframe", surface_mesh,
-                    Rgba(.9, 0, .9, 1.0), true, 5.0);
+                    Rgba(0.9, 0, 0.9, 1.0), true, 5.0);
   EXPECT_FALSE(meshcat.GetPackedObject("triangle_mesh_wireframe").empty());
 }
 
@@ -369,11 +370,11 @@ GTEST_TEST(MeshcatTest, PlotSurface) {
   Eigen::MatrixXd Z = (Y.array() * (5*X.array()).sin()).matrix();
 
   // Wireframe = false.
-  meshcat.PlotSurface("plot_surface", X, Y, Z, Rgba(0, 0, .9, 1.0), false);
+  meshcat.PlotSurface("plot_surface", X, Y, Z, Rgba(0, 0, 0.9, 1.0), false);
   EXPECT_FALSE(meshcat.GetPackedObject("plot_surface").empty());
 
   // Wireframe = true.
-  meshcat.PlotSurface("plot_surface_wireframe", X, Y, Z, Rgba(0, 0, .9, 1.0),
+  meshcat.PlotSurface("plot_surface_wireframe", X, Y, Z, Rgba(0, 0, 0.9, 1.0),
                       true);
   EXPECT_FALSE(meshcat.GetPackedObject("plot_surface_wireframe").empty());
 }
@@ -383,15 +384,15 @@ GTEST_TEST(MeshcatTest, SetLine) {
 
   Eigen::Matrix3Xd vertices(3, 200);
   Eigen::RowVectorXd t = Eigen::RowVectorXd::LinSpaced(200, 0, 10 * M_PI);
-  vertices << .25 * t.array().sin(), .25 * t.array().cos(), t / (10 * M_PI);
+  vertices << 0.25 * t.array().sin(), 0.25 * t.array().cos(), t / (10 * M_PI);
   meshcat.SetLine("line", vertices, 3.0, Rgba(0, 0, 1, 1));
   EXPECT_FALSE(meshcat.GetPackedObject("line").empty());
 
   Eigen::Matrix3Xd start(3, 4), end(3, 4);
   // clang-format off
-  start << -.1, -.1,  .1, .1,
-           -.1,  .1, -.1, .1,
-           0, 0, 0, 0;
+  start << -0.1, -0.1,  0.1,  0.1,
+           -0.1,  0.1, -0.1,  0.1,
+              0,    0,    0,    0;
   // clang-format on
   end = start;
   end.row(2) = Eigen::RowVector4d::Ones();
@@ -429,8 +430,8 @@ GTEST_TEST(MeshcatTest, SetTransform) {
   Meshcat meshcat;
   EXPECT_FALSE(meshcat.HasPath("frame"));
   EXPECT_TRUE(meshcat.GetPackedTransform("frame").empty());
-  const RigidTransformd X_ParentPath{math::RollPitchYawd(.5, .26, -3),
-                                     Vector3d{.9, -2., .12}};
+  const RigidTransformd X_ParentPath{math::RollPitchYawd(0.5, 0.26, -3),
+                                     Vector3d{0.9, -2.0, 0.12}};
   meshcat.SetTransform("frame", X_ParentPath);
 
   std::string transform = meshcat.GetPackedTransform("frame");
@@ -672,7 +673,7 @@ GTEST_TEST(MeshcatTest, Sliders) {
   meshcat.SetSliderValue("slider", 0.7);
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 0.7, 1e-14);
   meshcat.SetSliderValue("slider", -2.0);
-  EXPECT_NEAR(meshcat.GetSliderValue("slider"), .2, 1e-14);
+  EXPECT_NEAR(meshcat.GetSliderValue("slider"), 0.2, 1e-14);
   meshcat.SetSliderValue("slider", 2.0);
   EXPECT_NEAR(meshcat.GetSliderValue("slider"), 1.5, 1e-14);
   meshcat.SetSliderValue("slider", 1.245);
@@ -812,7 +813,7 @@ GTEST_TEST(MeshcatTest, SetOrthographicCamera) {
   Meshcat meshcat;
   Meshcat::OrthographicCamera ortho;
   ortho.left = -1.23;
-  ortho.bottom = .84;
+  ortho.bottom = 0.84;
   meshcat.SetCamera(ortho, "/my/camera");
   CheckWebsocketCommand(meshcat, {}, 1, R"""({
       "type": "set_object",
@@ -952,8 +953,8 @@ GTEST_TEST(MeshcatTest, Recording) {
   DRAKE_EXPECT_THROWS_MESSAGE(meshcat.get_mutable_recording(),
                               ".*You must create a recording.*");
 
-  const RigidTransformd X_ParentPath{math::RollPitchYawd(.5, .26, -3),
-                                     Vector3d{.9, -2., .12}};
+  const RigidTransformd X_ParentPath{math::RollPitchYawd(0.5, 0.26, -3),
+                                     Vector3d{0.9, -2.0, 0.12}};
   meshcat.SetTransform("frame", X_ParentPath, 0);
   meshcat.StartRecording();
   MeshcatAnimation* animation = &meshcat.get_mutable_recording();
@@ -1028,9 +1029,9 @@ GTEST_TEST(MeshcatTest, Recording) {
 GTEST_TEST(MeshcatTest, RecordingWithoutSetTransform) {
   Meshcat meshcat;
 
-  const RigidTransformd X_0{math::RollPitchYawd(.5, .26, -3),
-                            Vector3d{.9, -2., .12}};
-  const RigidTransformd X_1{math::RollPitchYawd(.75, .21, 2.4),
+  const RigidTransformd X_0{math::RollPitchYawd(0.5, 0.26, -3),
+                            Vector3d{0.9, -2.0, 0.12}};
+  const RigidTransformd X_1{math::RollPitchYawd(0.75, 0.21, 2.4),
                             Vector3d{6.9, -2.2, 1.12}};
 
   const double kFrameRate = 64.0;
@@ -1095,7 +1096,7 @@ GTEST_TEST(MeshcatTest, StaticHtml) {
   Meshcat meshcat;
 
   // Call each command that will be saved (at least) once.
-  meshcat.SetObject("box", Box(.25, .25, .5), Rgba(0, 0, 1, 1));
+  meshcat.SetObject("box", Box(0.25, 0.25, 0.5), Rgba(0, 0, 1, 1));
   meshcat.SetTransform("box", RigidTransformd(Vector3d{0, 0, 0}));
   meshcat.SetProperty("/Background", "visible", false);
 
