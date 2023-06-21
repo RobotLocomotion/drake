@@ -48,6 +48,13 @@ GTEST_TEST(IntersectionTest, BasicTest) {
 
   EXPECT_TRUE(internal::CheckAddPointInSetConstraints(S, in));
   EXPECT_FALSE(internal::CheckAddPointInSetConstraints(S, out));
+  {
+    solvers::MathematicalProgram prog;
+    auto x = prog.NewContinuousVariables<2>();
+    const auto [new_vars, new_constraints] =
+        S.AddPointInSetConstraints(&prog, x);
+    EXPECT_GE(new_constraints.size(), 2);
+  }
 
   // Test IsBounded.
   EXPECT_TRUE(S.IsBounded());

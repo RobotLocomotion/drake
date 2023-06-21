@@ -71,7 +71,9 @@ GTEST_TEST(SpectrahedronTest, TrivialSdp1) {
 
   MathematicalProgram prog2;
   auto x2 = prog2.NewContinuousVariables<6>("x");
-  spect.AddPointInSetConstraints(&prog2, x2);
+  const auto [new_vars, new_constraints] =
+      spect.AddPointInSetConstraints(&prog2, x2);
+  EXPECT_EQ(new_constraints.size(), prog.GetAllConstraints().size());
   EXPECT_EQ(prog2.positive_semidefinite_constraints().size(), 1);
   EXPECT_EQ(prog2.linear_equality_constraints().size(), 1);
   EXPECT_TRUE(CompareMatrices(
