@@ -4,6 +4,7 @@
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/contact_solvers/block_sparse_supernodal_solver.h"
 #include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 
 using Eigen::MatrixXd;
@@ -114,7 +115,8 @@ std::vector<BlockMatrixTriplet> MakeBlockTriplets(
 
 template <typename ConcreteSolver>
 class SuperNodalSolverTest : public ::testing::Test {};
-using Implementations = ::testing::Types<ConexSuperNodalSolver>;
+using Implementations =
+    ::testing::Types<ConexSuperNodalSolver, BlockSparseSuperNodalSolver>;
 TYPED_TEST_SUITE(SuperNodalSolverTest, Implementations);
 
 // In this test the partition of the columns of J doesn't refine the partition
@@ -144,10 +146,18 @@ TYPED_TEST(SuperNodalSolverTest, IncompatibleJacobianAndMass) {
       {{3, 4}, {3, 1}, {3, 1}});
   // clang-format on
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (TypeParam{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      "Column partition induced by mass matrix must refine the partition "
-      "induced by the Jacobian.");
+  if (std::is_same_v<TypeParam, ConexSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        (TypeParam{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
+        "Column partition induced by mass matrix must refine the partition "
+        "induced by the Jacobian.");
+  } else if (std::is_same_v<TypeParam, BlockSparseSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+        ".*Mass.*jacobians.*incompatible.*");
+  } else {
+    DRAKE_UNREACHABLE();
+  }
 }
 
 // Basic test of SuperNodalSolver's public APIs.
@@ -280,10 +290,18 @@ TYPED_TEST(SuperNodalSolverTest,
       {{3, 2}, {3, 1}, {3, 1}, {3, 1}, {3, 2}});
   // clang-format on
 
-  DRAKE_EXPECT_THROWS_MESSAGE(
-      (TypeParam{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
-      "Column partition induced by mass matrix must refine the partition "
-      "induced by the Jacobian.");
+  if (std::is_same_v<TypeParam, ConexSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        (TypeParam{num_row_blocks_of_J, Jtriplets, blocks_of_M}),
+        "Column partition induced by mass matrix must refine the partition "
+        "induced by the Jacobian.");
+  } else if (std::is_same_v<TypeParam, BlockSparseSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+        ".*Mass.*jacobians.*incompatible.*");
+  } else {
+    DRAKE_UNREACHABLE();
+  }
 }
 
 // In this test the partition induced by M refines the partition of the columns
@@ -330,10 +348,18 @@ TYPED_TEST(SuperNodalSolverTest,
 
   const auto [G, blocks_of_G] = Make9x9SpdBlockDiagonalMatrixOf3x3SpdMatrices();
 
-  TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
-  solver.SetWeightMatrix(blocks_of_G);
-  const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
-  EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
+  if (std::is_same_v<TypeParam, ConexSuperNodalSolver>) {
+    TypeParam solver(num_row_blocks_of_J, Jtriplets, blocks_of_M);
+    solver.SetWeightMatrix(blocks_of_G);
+    const MatrixXd full_matrix_ref = M + J.transpose() * G * J;
+    EXPECT_NEAR((solver.MakeFullMatrix() - full_matrix_ref).norm(), 0, 1e-15);
+  } else if (std::is_same_v<TypeParam, BlockSparseSuperNodalSolver>) {
+    DRAKE_EXPECT_THROWS_MESSAGE(
+        TypeParam(num_row_blocks_of_J, Jtriplets, blocks_of_M),
+        ".*Mass.*jacobians.*incompatible.*");
+  } else {
+    DRAKE_UNREACHABLE();
+  }
 }
 
 // Test the condition when J blocks might have different number of rows. Of
