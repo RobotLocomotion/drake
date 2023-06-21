@@ -38,7 +38,6 @@ Replace all (3) instances of "awsAccessKeyID" and "awsSecretAccessKey" in
 Set `rootDir` in `.aptly.conf` to your local home directory
 (e.g. `/Users/<username>/.aptly`)
 
-
 ### Import the gpg key
 
 Download the public key from S3.
@@ -49,6 +48,13 @@ Using the passphrase from the AWS Secrets Manager, run:
 
 **Note:** It is not clear if `gpg` or `gpg1` is correct to use on Ubuntu
 
+### Log into Docker
+
+Log into Docker to ensure that you will be able to push the Docker images:
+
+    docker login
+
+The Docker ID and password may be found in the AWS Secrets Manager.
 
 ### Get the push_release scripts
 
@@ -57,22 +63,19 @@ Clone the drake repository:
     git clone https://github.com/RobotLocomotion/drake.git
     cd drake
 
-In `tools/release_engineering/dev/push_release`, replace the placeholder
-`gpg_key` with the value from the AWS Secrets Manager.
-
-## Run script to mirror the .tar and .deb artifacts to S3
+## Run script to push docker images and mirror the .tar/.deb artifacts to S3
 
 Once your machine is set-up, run the `push_release` script as described below:
 
     bazel run //tools/release_engineering/dev:push_release -- <version>
 
 
-The release creator will provide the version and date. Throughout this process,
-don’t use `v` on the version string. For example:
+The release creator will provide the version. Throughout this process, don’t
+use `v` on the version string. For example:
 
     bazel run //tools/release_engineering/dev:push_release -- 1.0.0
 
-## Run script for docker and apt
+## Run script for apt
 
 (Before proceeding, refer to the sections below if you need to add a new
 configuration or package.)
@@ -80,16 +83,15 @@ configuration or package.)
 Once your machine is set-up, run the `push_release` script as described below:
 
     cd tools/release_engineering/dev
-    ./push_release <version> <date> --apt
+    ./push_release <version>
 
-The release creator will provide the version and date. Again, don’t use `v` on
-the version string. For example:
+The release creator will provide the version. Again, don’t use `v` on the
+version string. For example:
 
     ./push_release 0.32.0 20210714 --apt
 
-The script may prompt for the GPG passphrase and/or the docker ID and password,
-all of which may be found in the AWS Secrets Manager. The script may prompt for
-these multiple times.
+The script may prompt for the GPG passphrase, which may be found in the AWS
+Secrets Manager. The script may prompt for this multiple times.
 
 ### Verification
 
