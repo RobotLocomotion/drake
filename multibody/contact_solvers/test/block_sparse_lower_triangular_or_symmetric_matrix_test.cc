@@ -229,7 +229,9 @@ GTEST_TEST(TriangularBlockSparseMatrixTest, InvalidOperations) {
     /* Non-symmetric diagonal block. */
     DRAKE_ASSERT_THROWS_MESSAGE_IF_ARMED(
         A_symmetric.AddToBlock(2, 2, non_symmetric_matrix),
-        ".*must be symmetric.*");
+        ".*must be symmetric[^]*");
+    /* No false error when zero matrix is added to the diagonal block. */
+    EXPECT_NO_THROW(A_symmetric.AddToBlock(2, 2, MatrixXd::Zero(4, 4)));
 
     /* Evidence that other functions do the same checks. */
     ASSERT_THROW(A_triangular.block(0, 1), std::exception);
