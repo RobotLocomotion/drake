@@ -1,4 +1,4 @@
-#include "drake/multibody/contact_solvers/supernodal_solver.h"
+#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 
 #include <algorithm>
 #include <utility>
