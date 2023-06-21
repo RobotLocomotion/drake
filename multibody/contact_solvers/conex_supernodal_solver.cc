@@ -57,47 +57,12 @@ void ComputeWeightMatrixTerms(const vector<MatrixBlock<double>>& J_blocks,
   }
 }
 
-// Returns a vector<vector<int>> y where y[i] contains the indices of the block
-// Jacobians on row i organized by column.
-vector<std::vector<int>> GetRowToTripletMapping(
-    int num_row_blocks,
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
-  vector<vector<int>> y(num_row_blocks);
-  vector<vector<int>> column(num_row_blocks);
-
-  // Sorts row data by column using our assumption that at most two columns
-  // are non-zero per row.
-  auto sort_row_data_by_column = [](vector<int>* col_index,
-                                    vector<int>* triplet_position) {
-    if ((*col_index)[0] > (*col_index)[1]) {
-      std::swap((*col_index)[0], (*col_index)[1]);
-      std::swap((*triplet_position)[0], (*triplet_position)[1]);
-    }
-  };
-
-  int cnt = 0;
-  for (const auto& j : jacobian_blocks) {
-    int index = std::get<0>(j);
-    y[index].emplace_back(cnt);
-    column[index].emplace_back(std::get<1>(j));
-    if (column[index].size() == 2) {
-      sort_row_data_by_column(&column[index], &y[index]);
-    }
-    if (column[index].size() > 2) {
-      throw std::runtime_error(
-          "Jacobian can only be nonzero on at most two column blocks.");
-    }
-    ++cnt;
-  }
-  return y;
-}
-
 void VerifyMassMatrixPartitionRefinesJacobianPartition(
     const std::vector<int>& jacobian_column_block_size,
     const vector<MatrixXd>& mass_matrices) {
   int size = 0;
   size_t block_column = 0;
-  for (size_t i = 0; i < mass_matrices.size(); i++) {
+  for (size_t i = 0; i < mass_matrices.size(); ++i) {
     // Check if too many mass matrices
     if (block_column >= jacobian_column_block_size.size()) {
       throw std::runtime_error(
@@ -128,51 +93,6 @@ void VerifyMassMatrixPartitionRefinesJacobianPartition(
   }
 }
 
-std::vector<int> GetJacobianBlockSizesVerifyTriplets(
-    const std::vector<BlockMatrixTriplet>& jacobian_blocks) {
-  int max_index = -1;
-  for (const auto& j : jacobian_blocks) {
-    int col_index = std::get<1>(j);
-    if (col_index > max_index) {
-      max_index = col_index;
-    }
-  }
-
-  std::vector<int> block_column_size(max_index + 1, -1);
-
-  for (const auto& j : jacobian_blocks) {
-    int col_index = std::get<1>(j);
-
-    if ((std::get<2>(j).cols() == 0) || (std::get<2>(j).rows() == 0)) {
-      throw std::runtime_error(
-          "Invalid Jacobian triplets: a triplet contains an empty matrix");
-    }
-
-    if (block_column_size[col_index] == -1) {
-      block_column_size[col_index] = std::get<2>(j).cols();
-    } else {
-      if (block_column_size[col_index] != std::get<2>(j).cols()) {
-        throw std::runtime_error(
-            "Invalid Jacobian triplets: conflicting block sizes specified for "
-            "column " +
-            std::to_string(col_index) + ".");
-      }
-    }
-  }
-
-  for (int i = 0; i < max_index; i++) {
-    // Verify that initial value of -1 has been overwritten. (A block column
-    // size of zero will be caught by the empty matrix check.)
-    if (block_column_size[i] < 0) {
-      throw std::runtime_error(
-          "Invalid Jacobian triplets: no triplet provided for column " +
-          std::to_string(i) + ".");
-    }
-  }
-
-  return block_column_size;
-}
-
 std::vector<int> GetMassMatrixStartingColumn(
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
   vector<int> y;
@@ -187,7 +107,7 @@ std::vector<int> GetMassMatrixStartingColumn(
 
 }  // namespace
 
-class SuperNodalSolver::CliqueAssembler final
+class ConexSuperNodalSolver::CliqueAssembler final
     : public ::conex::SupernodalAssemblerBase {
  public:
   // Helper functions for specifying G_i
@@ -227,7 +147,7 @@ class SuperNodalSolver::CliqueAssembler final
   int weight_end_ = 0;
 };
 
-void SuperNodalSolver::CliqueAssembler::SetDenseData() {
+void ConexSuperNodalSolver::CliqueAssembler::SetDenseData() {
   if (!weight_matrix_) {
     throw std::runtime_error("Weight matrix not set.");
   }
@@ -277,7 +197,7 @@ void SortTheCliques(std::vector<std::vector<int>>* path) {
 // The destructor is defined in the source so we can use an incomplete
 // definition when storing unique pointers of CliqueAssembler within a
 // std::vector.
-SuperNodalSolver::~SuperNodalSolver() {}
+ConexSuperNodalSolver::~ConexSuperNodalSolver() {}
 
 // Helper struct for assembling the input to the conex supernodal solver. The
 // variable "cliques" contains the nodes of a "supernodal elimination tree,"
@@ -406,7 +326,7 @@ SparsityData GetEliminationOrdering(
   return clique_data;
 }
 
-void SuperNodalSolver::Initialize(
+void ConexSuperNodalSolver::Initialize(
     const vector<vector<int>>& cliques, int num_jacobian_row_blocks,
     const std::vector<BlockMatrixTriplet>& jacobian_blocks,
     const std::vector<Eigen::MatrixXd>& mass_matrices) {
@@ -418,7 +338,7 @@ void SuperNodalSolver::Initialize(
 
   clique_assemblers_ptrs_.resize(cliques.size());
 
-  vector<vector<int>> row_to_triplet_list =
+  std::vector<std::vector<int>> row_to_triplet_list =
       GetRowToTripletMapping(num_jacobian_row_blocks, jacobian_blocks);
   for (size_t i = 0; i < cliques.size(); ++i) {
     owned_clique_assemblers_[i] = std::make_unique<CliqueAssembler>();
@@ -443,9 +363,10 @@ void SuperNodalSolver::Initialize(
 
   // Make connections between clique_assemblers and solver->Assemble().
   solver_->Bind(clique_assemblers_ptrs_);
+  size_ = mass_matrix_starting_columns.back() + mass_matrices.back().cols();
 }
 
-SuperNodalSolver::SuperNodalSolver(
+ConexSuperNodalSolver::ConexSuperNodalSolver(
     int num_jacobian_row_blocks,
     const std::vector<BlockMatrixTriplet>& jacobian_blocks,
     const std::vector<Eigen::MatrixXd>& mass_matrices)
@@ -462,7 +383,7 @@ SuperNodalSolver::SuperNodalSolver(
              jacobian_blocks, mass_matrices);
 }
 
-void SuperNodalSolver::SetWeightMatrix(
+bool ConexSuperNodalSolver::DoSetWeightMatrix(
     const std::vector<Eigen::MatrixXd>& weight_matrix) {
   // We copy these pointers so that SetDenseData (a virtual function override)
   // can access the weight matrices when solver_->Assemble() is called
@@ -473,7 +394,7 @@ void SuperNodalSolver::SetWeightMatrix(
   }
 
   int e_last = -1;
-  bool weight_matrix_incompatible = false;
+  bool weight_matrix_compatible = true;
   for (auto& c : owned_clique_assemblers_) {
     int num_rows = c->NumRows();
     int s = e_last + 1;
@@ -484,13 +405,13 @@ void SuperNodalSolver::SetWeightMatrix(
       num_rows_found += weight_matrix[e].rows();
     }
     if (num_rows_found != num_rows) {
-      weight_matrix_incompatible = true;
+      weight_matrix_compatible = false;
     }
     e_last = e;
     c->SetWeightMatrixIndex(s, e);
   }
 
-  if (!weight_matrix_incompatible) {
+  if (weight_matrix_compatible) {
     solver_->Assemble();
   }
 
@@ -499,56 +420,23 @@ void SuperNodalSolver::SetWeightMatrix(
     c->SetWeightMatrixPointer(nullptr);
   }
 
-  if (weight_matrix_incompatible) {
-    throw std::runtime_error("Weight matrix incompatible with Jacobian.");
-  }
-
-  factorization_ready_ = false;
-  matrix_ready_ = true;
+  return weight_matrix_compatible;
 }
 
-bool SuperNodalSolver::Factor() {
-  if (!matrix_ready_) {
-    throw std::runtime_error("Call to Factor() failed: weight matrix not set.");
-  }
-  bool success = solver_->Factor();
-  factorization_ready_ = success;
-  matrix_ready_ = false;
-  return success;
+bool ConexSuperNodalSolver::DoFactor() {
+  return solver_->Factor();
 }
 
-Eigen::VectorXd SuperNodalSolver::Solve(const Eigen::VectorXd& b) const {
-  if (!factorization_ready_) {
-    throw std::runtime_error(
-        "Call to Solve() failed: factorization not ready.");
-  }
-  Eigen::VectorXd y = b;
-  // The supernodal solver uses a mapped MatrixXd as input, so we create this
-  // map.
-  Eigen::Map<MatrixXd, Eigen::Aligned> ymap(y.data(), b.rows(), 1);
-  solver_->SolveInPlace(&ymap);
-  return y;
-}
-
-void SuperNodalSolver::SolveInPlace(Eigen::VectorXd* b) const {
-  if (!factorization_ready_) {
-    throw std::runtime_error(
-        "Call to Solve() failed: factorization not ready.");
-  }
+void ConexSuperNodalSolver::DoSolveInPlace(Eigen::VectorXd* b) const {
   Eigen::Map<MatrixXd, Eigen::Aligned> ymap(b->data(), b->rows(), 1);
   solver_->SolveInPlace(&ymap);
 }
 
-Eigen::MatrixXd SuperNodalSolver::MakeFullMatrix() const {
-  if (!matrix_ready_) {
-    throw std::runtime_error(
-        "Call to MakeFullMatrix() failed: weight matrix not set or matrix has "
-        "been factored in place.");
-  }
+Eigen::MatrixXd ConexSuperNodalSolver::DoMakeFullMatrix() const {
   return solver_->KKTMatrix();
 }
 
-void SuperNodalSolver::CliqueAssembler::Initialize(
+void ConexSuperNodalSolver::CliqueAssembler::Initialize(
     std::vector<MatrixBlock<double>>&& r) {
   int num_vars = 0;
   for (size_t j = 0; j < r.size(); ++j) {
@@ -562,6 +450,7 @@ void SuperNodalSolver::CliqueAssembler::Initialize(
   SupernodalAssemblerBase::submatrix_data_.InitializeWorkspace(
       workspace_memory_.data());
 }
+
 }  // namespace internal
 }  // namespace contact_solvers
 }  // namespace multibody
