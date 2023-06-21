@@ -229,8 +229,14 @@ drake_cc_library(
 
 drake_cc_library(
     name = "rgbd_sensor",
-    srcs = ["rgbd_sensor.cc"],
-    hdrs = ["rgbd_sensor.h"],
+    srcs = [
+        "rgbd_sensor.cc",
+        "rgbd_sensor_discrete.cc",
+    ],
+    hdrs = [
+        "rgbd_sensor.h",
+        "rgbd_sensor_discrete.h",
+    ],
     deps = [
         ":camera_info",
         ":image",
@@ -428,6 +434,16 @@ drake_cc_googletest(
         "//geometry/test_utilities:dummy_render_engine",
         "//multibody/plant",
         "//systems/analysis:simulator",
+    ],
+)
+
+drake_cc_googletest(
+    name = "rgbd_sensor_discrete_test",
+    tags = vtk_test_tags(),
+    deps = [
+        ":rgbd_sensor",
+        "//common/test_utilities:eigen_matrix_compare",
+        "//geometry/test_utilities:dummy_render_engine",
     ],
 )
 
