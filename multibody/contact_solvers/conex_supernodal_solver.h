@@ -1,8 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <tuple>
-#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -23,7 +21,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-//  supernodal Cholesky solver implemented by the SuperNodalKKTSolver in Conex.
+// Supernodal Cholesky solver implemented by the SuperNodalKKTSolver in Conex.
 class ConexSuperNodalSolver final : public SuperNodalSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConexSuperNodalSolver)
