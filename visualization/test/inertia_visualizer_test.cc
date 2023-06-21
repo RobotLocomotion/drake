@@ -16,14 +16,17 @@
 using drake::geometry::Ellipsoid;
 using drake::geometry::Meshcat;
 using drake::geometry::SceneGraph;
+using drake::math::RigidTransform;
+using drake::math::RollPitchYaw;
+using drake::math::RotationMatrix;
 using drake::multibody::AddMultibodyPlantSceneGraph;
 using drake::multibody::AddMultibodyPlantSceneGraphResult;
 using drake::multibody::MultibodyPlant;
 using drake::multibody::Parser;
 using drake::multibody::SpatialInertia;
-using Eigen::RowVector3d;
 using Eigen::Vector3d;
 using Matrix34d = Eigen::Matrix<double, 3, 4>;
+using RowVector6d = Eigen::Matrix<double, 1, 6>;
 
 namespace drake {
 namespace visualization {
@@ -108,8 +111,10 @@ TEST_F(InertiaVisualizerConfigTest, InertiaButNoIllustrationConfig) {
 //
 // The CalculateInertiaGeometryFor() method returns the inertia ellipsoid
 // and transform for a single-body model when passed a GeometryTestCase.
+//
+// The RowVector6d test parameter indicates an xyzrpy pose for the inertia.
 class InertiaVisualizerGeometryTest
-    : public ::testing::TestWithParam<RowVector3d> {
+    : public ::testing::TestWithParam<RowVector6d> {
  public:
   InertiaVisualizerGeometryTest()
       : builder_{},
@@ -118,7 +123,7 @@ class InertiaVisualizerGeometryTest
         scene_graph_{plant_and_scene_graph_.scene_graph} {};
 
   struct GeometryTestCase {
-    // The visual_sdf_ should contain the visual element of the test fixture
+    // The visual_sdf should contain the visual element of the test fixture
     // to clarify the geometry being modeled.
     std::string visual_sdf;
     double mass{0};
@@ -128,47 +133,82 @@ class InertiaVisualizerGeometryTest
   };
 
   // Returns the value of CalculateInertiaGeometry for the given input.
-  std::pair<geometry::Ellipsoid, math::RigidTransform<double>>
+  std::pair<geometry::Ellipsoid, RigidTransform<double>>
   CalculateInertiaGeometryFor(const GeometryTestCase& input) {
-    const Vector3d pose = GetParam().transpose();
-    // TODO(trowell-tri) Extend to allow configuring pose rpy.
     static constexpr char kModelTemplate[] = R"""(
           <?xml version='1.0'?>
           <sdf version='1.7'>
             <model name='test_model'>
               <link name='test_body'>
                 <inertial>
-                  <mass>{}</mass>
-                  <pose>{} {} {} 0 0 0</pose>
+                  <mass>{mass}</mass>
+                  <pose>{x} {y} {z} {roll} {pitch} {yaw}</pose>
                   <inertia>
-                    <ixx>{}</ixx>
+                    <ixx>{ixx}</ixx>
                     <ixy>0</ixy>
                     <ixz>0</ixz>
-                    <iyy>{}</iyy>
+                    <iyy>{iyy}</iyy>
                     <iyz>0</iyz>
-                    <izz>{}</izz>
+                    <izz>{izz}</izz>
                   </inertia>
                 </inertial>
                 <visual name="test_visual">
-                  <pose>{} {} {} 0 0 0</pose>
+                  <pose>{x} {y} {z} {roll} {pitch} {yaw}</pose>
                   <geometry>
-                    {}
+                    {visual}
                   </geometry>
                 </visual>
               </link>
             </model>
           </sdf>
           )""";
-    const std::string model =
-        fmt::format(kModelTemplate, input.mass, pose.x(), pose.y(), pose.z(),
-                    input.moment_ixx, input.moment_iyy, input.moment_izz,
-                    pose.x(), pose.y(), pose.z(), input.visual_sdf);
+    const std::string model = fmt::format(
+        kModelTemplate, fmt::arg("mass", input.mass),
+        fmt::arg("ixx", input.moment_ixx), fmt::arg("iyy", input.moment_iyy),
+        fmt::arg("izz", input.moment_izz), fmt::arg("visual", input.visual_sdf),
+        fmt::arg("x", xyz().x()), fmt::arg("y", xyz().y()),
+        fmt::arg("z", xyz().z()), fmt::arg("roll", rpy()(0)),
+        fmt::arg("pitch", rpy()(1)), fmt::arg("yaw", rpy()(2)));
     drake::log()->info("Using SDF model: {}", model);
 
-    multibody::Parser(&plant_).AddModelsFromString(model, "sdf");
+    multibody::Parser parser(&plant_);
+    parser.SetStrictParsing();
+    parser.AddModelsFromString(model, "sdf");
     plant_.Finalize();
     const multibody::Body<double>& body = plant_.GetBodyByName("test_body");
     return CalculateInertiaGeometry(body, *plant_.CreateDefaultContext());
+  }
+
+  /* Returns the translation (xyz) vector for this test case. */
+  Vector3d xyz() const { return GetParam().transpose().head(3); }
+
+  /* Returns the rotation (rpy) vector for this test case (in radians). */
+  Vector3d rpy() const { return GetParam().transpose().tail(3); }
+
+  /* Returns a canonical ellipsoid rpy vector for the given transform's rotation
+  matrix, in the sense that any two rotations that look the same on the screen
+  when applied to an ellipsoid will be mapped to the same value here. In short,
+  we need to handle the 180 degree symmetry of an ellipsoid, and we'll do that
+  by flipping all three angles to be nonnegative. N.B. This does _not_ handle
+  the symmetry in case two or more axes of the ellipse have the same value,
+  i.e., we assume that ellipsoid axes (a, b, c) are all distinct values (we
+  assume the ellipsoid is not a sphere or spheroid). */
+  static Vector3d GetCanonicalRpy(const RigidTransform<double>& X) {
+    const RotationMatrix<double>& R = X.rotation();
+    // TODO(jwnimmer-tri) There's probably a more direct way to calculate this.
+    for (double flip_r : {0.0, M_PI}) {
+      for (double flip_p : {0.0, M_PI}) {
+        for (double flip_y : {0.0, M_PI}) {
+          const RotationMatrix<double> flips(
+              RollPitchYaw<double>(flip_r, flip_p, flip_y));
+          const Vector3d result = RollPitchYaw<double>(R * flips).vector();
+          if (result.minCoeff() >= 0.0) {
+            return result;
+          }
+        }
+      }
+    }
+    DRAKE_UNREACHABLE();
   }
 
  protected:
@@ -190,9 +230,10 @@ constexpr double kNominalDensity = 1000.0;
 // Test that an ellipsoid model that uses the same nominal density as the
 // visualization ellipsoids has the same radii. This test has translation
 // but no rotation.
-// TODO(trowell-tri) Add rotation to the test when supported.
 TEST_P(InertiaVisualizerGeometryTest, EllipsoidTest) {
-  const Vector3d pose = GetParam().transpose();
+  // We must use distinct values for all of a,b,c not only to achieve sufficient
+  // test coverage but also because GetCanonicalRpy doesn't handle certain kinds
+  // of symmetries.
   constexpr double a = 3.0;
   constexpr double b = 2.0;
   constexpr double c = 1.0;
@@ -209,7 +250,8 @@ TEST_P(InertiaVisualizerGeometryTest, EllipsoidTest) {
 
   auto [ellipsoid, transform] = CalculateInertiaGeometryFor(test_case);
 
-  EXPECT_TRUE(CompareMatrices(transform.translation(), pose));
+  EXPECT_TRUE(CompareMatrices(transform.translation(), xyz(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(GetCanonicalRpy(transform), rpy(), kTolerance));
 
   EXPECT_NEAR(ellipsoid.a(), a, kTolerance);
   EXPECT_NEAR(ellipsoid.b(), b, kTolerance);
@@ -218,7 +260,6 @@ TEST_P(InertiaVisualizerGeometryTest, EllipsoidTest) {
 
 // Test inertia geometry computations for a massless body posed with
 // translation but not rotation.
-// TODO(trowell-tri) Add rotation to the test when supported.
 TEST_P(InertiaVisualizerGeometryTest, ZeroMassTest) {
   auto [ellipsoid, transform] = CalculateInertiaGeometryFor(
       {.visual_sdf = "<sphere><radius>1.0</radius></sphere>"});
@@ -234,9 +275,10 @@ TEST_P(InertiaVisualizerGeometryTest, ZeroMassTest) {
 // Test that the inertia visualization ellipsoid for a box that uses the same
 // nominal density as those ellipsoids has spatial inertia moments in the same
 // ratio as those of the box. This test has translation but no rotation.
-// TODO(trowell-tri) Add rotation to the test when supported.
 TEST_P(InertiaVisualizerGeometryTest, BoxTest) {
-  const Vector3d pose = GetParam().transpose();
+  // We must use distinct values for all of x,y,z not only to achieve sufficient
+  // test coverage but also because GetCanonicalRpy doesn't handle certain kinds
+  // of symmetries.
   constexpr double x = 3.0;
   constexpr double y = 2.0;
   constexpr double z = 1.0;
@@ -250,14 +292,15 @@ TEST_P(InertiaVisualizerGeometryTest, BoxTest) {
        .moment_iyy = box_inertia.get_moments()[1],
        .moment_izz = box_inertia.get_moments()[2]});
 
-  EXPECT_TRUE(CompareMatrices(transform.translation(), pose));
+  EXPECT_TRUE(CompareMatrices(transform.translation(), xyz(), kTolerance));
+  EXPECT_TRUE(CompareMatrices(GetCanonicalRpy(transform), rpy(), kTolerance));
 
   const auto ellipsoid_M = SpatialInertia<double>::SolidEllipsoidWithDensity(
       kNominalDensity, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
   EXPECT_NEAR(ellipsoid_M.get_mass(), M.get_mass(), kTolerance);
 
-  // Check moments of the box and the ellipsoid are proportional to each other
-  // and the scale factor isn't too wide.
+  // Check that the moments of the box and the ellipsoid are proportional to
+  // each other and the scale factor isn't too wide.
   auto ellipsoid_inertia = ellipsoid_M.CalcRotationalInertia();
   const Vector3d ratio = ellipsoid_inertia.get_moments().array() /
                          box_inertia.get_moments().array();
@@ -270,14 +313,11 @@ TEST_P(InertiaVisualizerGeometryTest, BoxTest) {
   EXPECT_NEAR(ratio(2), scale, kTolerance);
 }
 
-// Test inertia geometry computations for a thin rod model posed with
-// translation but not rotation.
-// TODO(trowell-tri) Add rotation to the test when supported.
+// Test inertia geometry computations for a thin rod model.
 TEST_P(InertiaVisualizerGeometryTest, ThinRodTest) {
-  const Vector3d pose = GetParam().transpose();
   constexpr double length = 5.0;
   const auto M =
-      SpatialInertia<double>::ThinRodWithMass(10, length, Vector3d(0, 0, 1));
+      SpatialInertia<double>::ThinRodWithMass(10, length, Vector3d(1, 0, 0));
   const GeometryTestCase test_case{
       .visual_sdf = fmt::format(
           "<cylinder><radius>0.01</radius><length>{}</length></cylinder>",
@@ -290,25 +330,38 @@ TEST_P(InertiaVisualizerGeometryTest, ThinRodTest) {
 
   auto [ellipsoid, transform] = CalculateInertiaGeometryFor(test_case);
 
-  EXPECT_TRUE(CompareMatrices(transform.translation(), pose));
+  EXPECT_TRUE(CompareMatrices(transform.translation(), xyz(), kTolerance));
+  // The x-axis thin rod is symmetric in roll; only compare pitch and yaw.
+  EXPECT_TRUE(CompareMatrices(GetCanonicalRpy(transform).tail(2), rpy().tail(2),
+                              kTolerance));
 
   const auto ellipsoid_M = SpatialInertia<double>::SolidEllipsoidWithDensity(
       kNominalDensity, ellipsoid.a(), ellipsoid.b(), ellipsoid.c());
   EXPECT_NEAR(ellipsoid_M.get_mass(), M.get_mass(), kTolerance);
 
   // Check that the ellipsoid dimensions are roughly shaped like a rod
-  // along the z-axis.
+  // along the x-axis.
   SCOPED_TRACE(fmt::format("abc = {} {} {}", ellipsoid.a(), ellipsoid.b(),
                            ellipsoid.c()));
-  EXPECT_NEAR(ellipsoid.a(), ellipsoid.b(), kTolerance);
-  EXPECT_GT(ellipsoid.c(), ellipsoid.a() * 99);
+  EXPECT_NEAR(ellipsoid.b(), ellipsoid.c(), kTolerance);
+  EXPECT_GT(ellipsoid.a(), ellipsoid.b() * 99);
 }
 
-INSTANTIATE_TEST_SUITE_P(Poses, InertiaVisualizerGeometryTest,
-                         testing::Values(RowVector3d{0, 0, 0},
-                                         RowVector3d{10, 20, 30},
-                                         RowVector3d{5, 2, 1},
-                                         RowVector3d{10, 200, 50}));
+// clang-format off
+INSTANTIATE_TEST_SUITE_P(Poses, InertiaVisualizerGeometryTest, testing::Values(
+  //                 x,   y,  z,   r,   p,   y
+  (RowVector6d() <<  0,   0,  0,   0,   0,   0).finished(),
+  (RowVector6d() << 10,  20, 30,   0,   0,   0).finished(),
+  (RowVector6d() <<  5,   2,  1,   0,   0,   0).finished(),
+  (RowVector6d() << 10, 200, 50,   0,   0,   0).finished(),
+  (RowVector6d() <<  0,   0,  0, 0.1,   0,   0).finished(),
+  (RowVector6d() <<  0,   0,  0,   0, 0.1,   0).finished(),
+  (RowVector6d() <<  0,   0,  0,   0,   0, 0.1).finished(),
+  (RowVector6d() <<  0,   0,  0, 0.1, 0.2, 0.3).finished(),
+  (RowVector6d() <<  5,   2,  1, 0.5, 0.2, 0.1).finished(),
+  (RowVector6d() << 10, 200, 50, 0.5, 0.2, 0.1).finished()
+));
+// clang-format on
 
 }  // namespace
 }  // namespace internal
