@@ -1,8 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <tuple>
-#include <utility>
 #include <vector>
 
 #include <Eigen/Dense>
@@ -23,7 +21,7 @@ namespace multibody {
 namespace contact_solvers {
 namespace internal {
 
-//  supernodal Cholesky solver implemented by the SuperNodalKKTSolver in Conex.
+// Supernodal Cholesky solver implemented by the SuperNodalKKTSolver in Conex.
 class ConexSuperNodalSolver final : public SuperNodalSolver {
  public:
   DRAKE_NO_COPY_NO_MOVE_NO_ASSIGN(ConexSuperNodalSolver)
@@ -54,7 +52,7 @@ class ConexSuperNodalSolver final : public SuperNodalSolver {
   //     num_cols(J₃) =  ∑num_cols(Mₜ), t = n+1…nᵥ
   //   If this condition fails, an exception is thrown.
   ConexSuperNodalSolver(int num_jacobian_row_blocks,
-                        const std::vector<BlockMatrixTriplet>& jacobian_blocks,
+                        const std::vector<BlockTriplet>& jacobian_blocks,
                         const std::vector<Eigen::MatrixXd>& mass_matrices);
 
   ~ConexSuperNodalSolver();
@@ -77,7 +75,7 @@ class ConexSuperNodalSolver final : public SuperNodalSolver {
 
   void Initialize(const std::vector<std::vector<int>>& cliques,
                   int num_jacobian_row_blocks,
-                  const std::vector<BlockMatrixTriplet>& jacobian_blocks,
+                  const std::vector<BlockTriplet>& jacobian_blocks,
                   const std::vector<Eigen::MatrixXd>& mass_matrices);
 
   std::unique_ptr<::conex::SupernodalKKTSolver> solver_;
