@@ -1,11 +1,10 @@
-#include "drake/multibody/contact_solvers/supernodal_solver.h"
-
 #include <tuple>
 
 #include <gtest/gtest.h>
 
 #include "drake/common/test_utilities/expect_throws_message.h"
 #include "drake/common/unused.h"
+#include "drake/multibody/contact_solvers/conex_supernodal_solver.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
