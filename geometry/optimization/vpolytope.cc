@@ -340,14 +340,13 @@ bool VPolytope::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return is_approx_equal_abstol(x, x_sol, tol);
 }
 
-std::pair<VectorX<symbolic::Variable>,
-          std::vector<solvers::Binding<solvers::Constraint>>>
+std::pair<VectorX<Variable>, std::vector<Binding<Constraint>>>
 VPolytope::DoAddPointInSetConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x) const {
+  std::vector<Binding<Constraint>> new_constraints;
   const int n = ambient_dimension();
   const int m = vertices_.cols();
-  std::vector<solvers::Binding<solvers::Constraint>> new_constraints;
   VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
   // 0 ≤ αᵢ ≤ 1.  The one is redundant, but may be better than inf for some
   // solvers.
@@ -361,15 +360,15 @@ VPolytope::DoAddPointInSetConstraints(
   // ∑ αᵢ = 1.
   new_constraints.push_back(
       prog->AddLinearEqualityConstraint(RowVectorXd::Ones(m), 1.0, alpha));
-  return std::make_pair(alpha, new_constraints);
+  return {std::move(alpha), std::move(new_constraints)};
 }
 
-std::vector<solvers::Binding<solvers::Constraint>>
+std::vector<Binding<Constraint>>
 VPolytope::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog,
     const Eigen::Ref<const solvers::VectorXDecisionVariable>& x,
-    const symbolic::Variable& t) const {
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+    const Variable& t) const {
+  std::vector<Binding<Constraint>> constraints;
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");
@@ -391,13 +390,13 @@ VPolytope::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
-std::vector<solvers::Binding<solvers::Constraint>>
+std::vector<Binding<Constraint>>
 VPolytope::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A,
     const Eigen::Ref<const VectorXd>& b, const Eigen::Ref<const VectorXd>& c,
     double d, const Eigen::Ref<const VectorXDecisionVariable>& x,
     const Eigen::Ref<const VectorXDecisionVariable>& t) const {
-  std::vector<solvers::Binding<solvers::Constraint>> constraints;
+  std::vector<Binding<Constraint>> constraints;
   const int n = ambient_dimension();
   const int m = vertices_.cols();
   VectorXDecisionVariable alpha = prog->NewContinuousVariables(m, "a");

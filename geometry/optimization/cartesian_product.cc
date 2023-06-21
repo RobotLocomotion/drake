@@ -164,21 +164,19 @@ bool CartesianProduct::DoPointInSet(const Eigen::Ref<const VectorXd>& x,
   return true;
 }
 
-std::pair<VectorX<symbolic::Variable>,
-          std::vector<solvers::Binding<solvers::Constraint>>>
+std::pair<VectorX<symbolic::Variable>, std::vector<Binding<Constraint>>>
 CartesianProduct::DoAddPointInSetConstraints(
     MathematicalProgram* prog,
     const Eigen::Ref<const VectorXDecisionVariable>& x) const {
   // Use std::vector which allocates heap memory logarithmically instead of
   // linearly.
-  std::vector<symbolic::Variable> new_vars;
+  std::vector<Variable> new_vars;
   VectorXDecisionVariable y;
-  std::vector<solvers::Binding<solvers::Constraint>> new_constraints;
+  std::vector<Binding<Constraint>> new_constraints;
   if (A_) {
     // Note: The constructor enforces that A_ is full column rank.
     y = prog->NewContinuousVariables(A_->rows(), "y");
-    new_vars = std::vector<symbolic::Variable>(y.data(),
-                                               y.data() + y.rows() * y.cols());
+    new_vars = std::vector<Variable>(y.data(), y.data() + y.rows() * y.cols());
     // y = Ax + b, or [I,-A]*[y;x] = b.
     MatrixXd Aeq = MatrixXd::Identity(A_->rows(), A_->rows() + A_->cols());
     Aeq.rightCols(A_->cols()) = -(*A_);
@@ -199,9 +197,9 @@ CartesianProduct::DoAddPointInSetConstraints(
                            new_constraints_in_s.end());
     index += s->ambient_dimension();
   }
-  const VectorX<symbolic::Variable> new_vars_vec =
-      Eigen::Map<VectorX<symbolic::Variable>>(new_vars.data(), new_vars.size());
-  return std::make_pair(new_vars_vec, new_constraints);
+  VectorX<Variable> new_vars_vec =
+      Eigen::Map<VectorX<Variable>>(new_vars.data(), new_vars.size());
+  return {std::move(new_vars_vec), std::move(new_constraints)};
 }
 
 std::vector<Binding<Constraint>>
@@ -234,7 +232,7 @@ CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
   return constraints;
 }
 
-std::vector<solvers::Binding<solvers::Constraint>>
+std::vector<Binding<Constraint>>
 CartesianProduct::DoAddPointInNonnegativeScalingConstraints(
     solvers::MathematicalProgram* prog, const Eigen::Ref<const MatrixXd>& A_x,
     const Eigen::Ref<const VectorXd>& b_x, const Eigen::Ref<const VectorXd>& c,
