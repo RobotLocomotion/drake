@@ -139,70 +139,49 @@ void InertiaVisualizer<T>::CalcFramePoseOutput(
 
 namespace internal {
 
+// TODO(jwnimmer-tri) Add a system Parameter to configure whether to display
+// ellipsoids or boxes as the shape, and whether or not to rescale the shape
+// to match the body's mass.
 template <typename T>
 std::pair<Ellipsoid, RigidTransform<double>> CalculateInertiaGeometry(
     const multibody::Body<T>& body, const Context<T>& plant_context) {
   // Interrogate the plant context for the spatial inertia of body B about its
   // origin Bo, expressed in body frame B.
-  const SpatialInertia<T> M_BBo =
+  const SpatialInertia<T> M_BBo_B =
       body.CalcSpatialInertiaInBodyFrame(plant_context);
-  // Compute spatial inertia of B, about Bcm, expressed in B.
-  // TODO(trowell-tri) We're taking the moments as-is instead of finding the
-  // principal axes. Update this code to undo the rotations and find the
-  // principal moments when the appropriate code is landed in #19281.
-  const SpatialInertia<T> M_BBcm = M_BBo.Shift(M_BBo.get_com());
 
-  // Pose the ellipsoid at the center of mass.
-  RigidTransform<double> X_BoBcm =
-      RigidTransform<double>(ExtractDoubleOrThrow(M_BBo.get_com()));
-
-  // For a massless body, use a very tiny sphere, expressed as an ellipsoid
-  // for simplicity.
-  const double mass = ExtractDoubleOrThrow(M_BBcm.get_mass());
+  // For a massless body, use a very tiny sphere (though expressed as an
+  // ellipsoid for consistency).
+  const double mass = ExtractDoubleOrThrow(M_BBo_B.get_mass());
   if (mass == 0) {
-    return std::pair<Ellipsoid, RigidTransform<double>>(
-        Ellipsoid(0.001, 0.001, 0.001), X_BoBcm);
+    const double radius = 0.001;
+    return std::make_pair(
+        Ellipsoid(radius, radius, radius),
+        RigidTransform<double>(ExtractDoubleOrThrow(M_BBo_B.get_com())));
   }
 
-  // We need to find the equivalent solid ellipsoid for M_BBcm, as described by
-  // its semi-major axes (a, b, c) and density (p).
-  //
-  // Note that the scale of a, b, c relative to each other are independent of
-  // the mass; they only depend on Ixx, Iyy, Izz. So first, we'll convert the
-  // unit inertia to an ellipsoid to determine the relative axes. Then, we'll
-  // re-scale the axes to match the body's mass.
-  //
-  // Per multibody/tree/unit_inertia the unit inertia of a solid ellipsoid is:
-  //
-  //  Ixx = (b² + c²) / 5
-  //  Iyy = (a² + b²) / 5
-  //  Izz = (a² + c²) / 5
-  //
-  // Solving this for positive a b c, we have:
-  const Vector3d unit_inertia_moments =
-      ExtractDoubleOrThrow(M_BBcm.get_unit_inertia().get_moments());
-  const double Ixx = unit_inertia_moments(0);
-  const double Iyy = unit_inertia_moments(1);
-  const double Izz = unit_inertia_moments(2);
-  Vector3d abc{std::sqrt((5.0 / 2.0) * std::max(0.0, -Ixx + Iyy + Izz)),
-               std::sqrt((5.0 / 2.0) * std::max(0.0, +Ixx - Iyy + Izz)),
-               std::sqrt((5.0 / 2.0) * std::max(0.0, +Ixx + Iyy - Izz))};
-
+  // Find the equivalent solid ellipsoid E for M_BBo_B, as described by an
+  // assumed density, a computed pose X_BE, and computed semi-major axes
+  // (a, b, c). Note that Eo is the same point as Bcm.
+  RigidTransform<double> X_BE;
+  Vector3<double> radii;
+  std::tie(radii, X_BE) =
+      M_BBo_B.CalcPrincipalSemiDiametersAndPoseForSolidEllipsoid();
   // An ellipse that has one of its diameters >100x greater than another one
-  // does not render well on the screen, so we'll bound the relative scale of
-  // each of the unit ellipsoid's radii.
-  abc = abc.array().max(1e-2 * abc.maxCoeff());
-
-  // Assuming the ~density of water for the visualization ellipsoid, scale
-  // it to have a volume that matches the body's mass.
+  // does not render well on the screen, so we'll make sure no dimension of the
+  // unit inertia's ellipsoid is smaller than 1/100 of the maximum dimension.
+  radii = radii.array().max(1e-2 * radii.maxCoeff());
+  // Assuming the ~density of water for the visualization ellipsoid, scale up
+  // the ellipsoid representation of the unit inertia to have a volume that
+  // matches the body's actual mass, so that our ellipsoid actually has the
+  // same inertia as M_BBo_B. (We're illustrating M_BBo, not G_BBo.)
   const double density = 1000.0;
-  const double solved_mass =
-      density * (4.0 / 3.0) * M_PI * abc(0) * abc(1) * abc(2);
-  const double volume_scale = mass / solved_mass;
-  const Vector3d scaled_abc = abc * std::cbrt(volume_scale);
+  const double unit_inertia_ellipsoid_mass =
+      density * (4.0 / 3.0) * M_PI * radii(0) * radii(1) * radii(2);
+  const double volume_scale = mass / unit_inertia_ellipsoid_mass;
+  const Vector3d abc = radii * std::cbrt(volume_scale);
 
-  return std::pair<Ellipsoid, RigidTransform<double>>(Ellipsoid(scaled_abc),
-                                                      X_BoBcm);
+  return std::make_pair(Ellipsoid(abc), X_BE);
 }
 
 DRAKE_DEFINE_FUNCTION_TEMPLATE_INSTANTIATIONS_ON_DEFAULT_SCALARS(
