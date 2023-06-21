@@ -7,6 +7,7 @@ This program is only supported on Ubuntu Jammy 22.04.
 
 import argparse
 import hashlib
+import json
 import os
 import re
 import shutil
@@ -14,10 +15,13 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 import boto3
+
+import docker
 
 import github3
 from github3.repos.release import Asset, Release
@@ -29,7 +33,8 @@ _GITHUB_REPO_NAME = 'drake'
 
 _ARCHIVE_HASHES = {'sha256', 'sha512'}
 
-_DOCKER_PLATFORMS = {'focal', 'jammy'}
+_DOCKER_REGISTRY_API_URI = 'https://registry.hub.docker.com/v2/repositories'
+_DOCKER_REPOSITORY_NAME = 'robotlocomotion/drake'
 
 _AWS_BUCKET = 'drake-packages'
 
@@ -115,6 +120,7 @@ class _State:
         self.manifest = _Manifest(release)
         self._scratch = tempfile.TemporaryDirectory()
         self._s3 = boto3.client('s3')
+        self._docker = docker.APIClient()
 
         self.find_artifacts = self.manifest.find_artifacts
 
@@ -201,6 +207,17 @@ class _State:
             else:
                 self._s3.upload_file(hashfile_path, bucket, remote_path)
 
+    def push_docker_tag(self, old_tag_name: str, new_tag_name: str,
+                        repository: str = _DOCKER_REPOSITORY_NAME):
+        image = f'{repository}:{old_tag_name}'
+        if self.options.dry_run:
+            print(f'push {image!r} to {repository!r} as {new_tag_name!r}')
+        else:
+            self._docker.pull(repository, old_tag_name)
+            self._docker.tag(image, repository, new_tag_name)
+            self._docker.push(repository, new_tag_name)
+            self._docker.remove_image(image)
+
 
 def _fatal(msg: str, result: int = 1):
     width = shutil.get_terminal_size().columns
@@ -264,6 +281,22 @@ def _find_tag(repo: Repository, tag: str):
     return None
 
 
+def _list_docker_tags(repository=_DOCKER_REPOSITORY_NAME):
+    tags = []
+    uri = f'{_DOCKER_REGISTRY_API_URI}/{repository}/tags?page_size=1000'
+
+    while uri is not None:
+        with urllib.request.urlopen(uri) as response:
+            reply = json.load(response)
+
+        for t in reply['results']:
+            tags.append(t['name'])
+
+        uri = reply.get('next')
+
+    return tags
+
+
 def _push_tar(state: _State):
     """
     Downloads .tar artifacts and push them to S3.
@@ -300,6 +333,17 @@ def _push_deb(state: _State):
         state.push_artifact(deb, _AWS_BUCKET, dest_path)
 
 
+def _push_docker(state: _State):
+    """
+    Re-tags Docker staging images as release images.
+    """
+    tail = f'{state.options.source_version}-staging'
+    for tag_name in _list_docker_tags():
+        if tag_name.endswith(tail):
+            release_tag_name = tag_name.rsplit('-', 1)[0]
+            state.push_docker_tag(tag_name, release_tag_name)
+
+
 def main(args: List[str]):
     parser = argparse.ArgumentParser(
         prog='push_release', description=__doc__)
@@ -307,6 +351,10 @@ def main(args: List[str]):
         '--deb', dest='push_deb', default=True,
         action=argparse.BooleanOptionalAction,
         help='Mirror .deb packages to S3.')
+    parser.add_argument(
+        '--docker', dest='push_docker', default=True,
+        action=argparse.BooleanOptionalAction,
+        help='NOT YET IMPLEMENTED.')
     parser.add_argument(
         '--tar', dest='push_tar', default=True,
         action=argparse.BooleanOptionalAction,
@@ -367,6 +415,8 @@ def main(args: List[str]):
         _push_tar(state)
     if options.push_deb:
         _push_deb(state)
+    if options.push_docker:
+        _push_docker(state)
 
 
 if __name__ == '__main__':
